@@ -625,6 +625,11 @@ AggregateType* getManagedPtrManagerType(Type* t);
 bool isSyncType(const Type* t);
 bool isSingleType(const Type* t);
 bool isAtomicType(const Type* t);
+
+bool isOrContainsSyncType(Type* t);
+bool isOrContainsSingleType(Type* t);
+bool isOrContainsAtomicType(Type* t);
+
 bool isRefIterType(Type* t);
 
 bool isSubClass(Type* type, Type* baseType);

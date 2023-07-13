@@ -1126,6 +1126,14 @@ bool FnSymbol::isDefaultInit() const {
          isInitializer();
 }
 
+bool FnSymbol::isDefaultCopyInit() const {
+  return hasFlag(FLAG_COMPILER_GENERATED) &&
+         hasFlag(FLAG_DEFAULT_INIT) &&
+         hasFlag(FLAG_COPY_INIT) &&
+         isCopyInit();
+}
+
+
 bool FnSymbol::isCopyInit() const {
   return isMethod() && name == astrInitEquals;
 }

@@ -245,6 +245,7 @@ public:
   bool                       isInitializer()                             const;
   bool                       isPostInitializer()                         const;
   bool                       isDefaultInit()                             const;
+  bool                       isDefaultCopyInit()                         const;
   bool                       isCopyInit()                                const;
 
   bool                       isGeneric()                                 const;
