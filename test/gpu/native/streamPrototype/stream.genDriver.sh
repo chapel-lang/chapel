@@ -30,6 +30,8 @@ for var in $chpl_vars; do
   unset "$var"
 done
 
+
+
 module purge
 module load gcc
 export CHPL_HOST_PLATFORM=cray-cs
@@ -39,7 +41,7 @@ export COMPILER_PATH="$(dirname $(dirname $(gcc --print-file-name=libstdc++.so )
 export CHPL_LLVM=bundled   # bundled is needed for AMD support
 export CHPL_COMM=none
 source /cray/css/users/chapelu/setup_cmake_nightly.bash
-source ~/chapel/util/setchplenv.bash
+source $CHPL_HOME/util/setchplenv.bash
 export CHPL_LOCALE_MODEL=gpu
 
 # -----------------------------------------------------------------------------
@@ -55,7 +57,7 @@ set -x -e
 # -----------------------------------------------------------------------------
 # Some useful things to run for logging purposes
 # -----------------------------------------------------------------------------
-pushd ~/chapel
+pushd $CHPL_HOME
 date
 hostname
 git rev-parse HEAD
@@ -67,7 +69,7 @@ popd
 # -----------------------------------------------------------------------------
 
 # Build Chapel
-pushd ~/chapel
+pushd $CHPL_HOME
 module load cudatoolkit
 export CHPL_GPU=nvidia
 export CHPL_LAUNCHER_PARTITION=stormP100
@@ -85,7 +87,7 @@ load_ssl
 # -----------------------------------------------------------------------------
 
 # Build Chapel
-pushd ~/chapel
+pushd $CHPL_HOME
 module load rocm
 export CHPL_GPU=amd
 export CHPL_GPU_ARCH=gfx906

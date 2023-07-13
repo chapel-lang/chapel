@@ -1,7 +1,7 @@
-#!/bin/bash
+!/bin/bash
 
 # -- Command line arguments --
-fileSuffix="${1:none}"
+fileSuffix="${1:-none}"
 
 # -- Parameters --
 
@@ -18,6 +18,11 @@ resultFile=$logDir/results.$fileSuffix.dat
 baselineName=cuda
 if [ "$CHPL_GPU" = "amd" ]; then
   baselineName=hip
+elif [ "$CHPL_GPU" = "nvidia" ]; then
+  baselineName=cuda
+else
+  echo "stream.genDat expects CHPL_GPU to either be 'amd' or 'nvidia'."
+  exit 1
 fi
 
 # Log all subsequent output
@@ -25,7 +30,7 @@ echo "logDir=$logDir"
 echo "baselineLog=$logDir/log_stream_baseline.$fileSuffix.txt"
 echo "chplLog=$logDir/log_stream_chpl.$fileSuffix.txt"
 echo "resultFile=$logDir/results.$fileSuffix.dat"
-echo "baselineName=cuda"
+echo "baselineName=$baselineName"
 echo "------------------"
 
 mkdir $logDir
@@ -51,7 +56,7 @@ if [ "$CHPL_GPU" = "amd" ]; then
   sed -i.bak 's/stream\.cu/stream.hip.cu/g' Makefile
   sed -i.bak 's/nvcc/hipcc/g' Makefile
   sed -i.bak 's/-ccbin=$(CC)//g' Makefile
-  sed -i.bak 's/ARCH=.*/ARCH=gfx906/g' Makefile  #TODO GET ARCH FROM CHPL_ VAR
+  sed -i.bak 's/ARCH=.*/ARCH=$CHPL_GPU_ARCH/g' Makefile
   sed -i.bak 's/-arch/--offload-arch/g' Makefile
   cat Makefile
 fi
