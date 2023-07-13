@@ -2330,6 +2330,7 @@ module ChapelDomain {
     }
 
     @chpldoc.nodoc
+    @unstable("exterior() is unstable and its behavior may change in the future")
     proc exterior(off: integral ...rank) do return exterior(off);
 
     /* Return a new domain that is the exterior portion of the
@@ -2342,6 +2343,7 @@ module ChapelDomain {
        it means to compute the exterior of a range.
 
      */
+    @unstable("exterior() is unstable and its behavior may change in the future")
     proc exterior(off: rank*integral) {
       var ranges = dims();
       for i in 0..rank-1 do
@@ -2359,6 +2361,7 @@ module ChapelDomain {
        it means to compute the exterior of a range.
 
      */
+    @unstable("exterior() is unstable and its behavior may change in the future")
     proc exterior(off:integral) where rank != 1 {
       var offTup: rank*off.type;
       for i in 0..rank-1 do

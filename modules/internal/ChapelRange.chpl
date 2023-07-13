@@ -2002,6 +2002,7 @@ private inline proc rangeCastHelper(r, type t) throws {
      If the operand range is ambiguously aligned, then so is the resulting
      range.
    */
+  @unstable("range.exterior() is unstable and it's behavior may change in the future")
   proc range.exterior(offset: integral)
   {
     const i = (abs(offset)).safeCast(chpl_integralIdxType);
