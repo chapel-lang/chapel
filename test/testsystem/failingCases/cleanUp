@@ -1,0 +1,13 @@
+rm *.out.tmp
+rm compile_error_missing_good.good
+rm runtime_error_missing_good.good
+rm compile_error_missing_good_for_case.mode1.good
+rm compile_error_missing_good_for_case.mode2.good
+rm runtime_error_missing_good_for_case.mode1.good
+rm runtime_error_missing_good_for_case.mode2.good
+echo "BAD_OUTPUT" > compile_error_bad_good.good
+echo "BAD_OUTPUT" > runtime_error_bad_good.good
+echo "BAD_OUTPUT" > compile_error_bad_good_for_case.mode1.good
+echo "BAD_OUTPUT" > compile_error_bad_good_for_case.mode2.good
+echo "BAD_OUTPUT" > runtime_error_bad_good_for_case.mode1.good
+echo "BAD_OUTPUT" > runtime_error_bad_good_for_case.mode2.good

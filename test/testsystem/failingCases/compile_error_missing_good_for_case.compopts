@@ -1,0 +1,2 @@
+-sSomeParam=1 # compile_error_missing_good_for_case.mode1.good
+-sSomeParam=2 # compile_error_missing_good_for_case.mode2.good

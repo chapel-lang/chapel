@@ -1,0 +1,5 @@
+This directory contains a number of tests that are meant to demonstrate
+different failure modes that can be encountered when running `start_test`.
+
+To "reset" things use you can use the `cleanup` script (or just use normal git
+commands).
