@@ -2,6 +2,15 @@
 use CTypes;
 use Types;
 use Communication;
+use List;
+
+// TODO: once in-intents work properly, we shouldn't need this anymore.
+var pointers : list((locale, c_ptr(int)));
+proc alloc() {
+  var ret : c_ptr(int) = allocate(int, 1);
+  pointers.pushBack((here, ret));
+  return ret;
+}
 
 record R {
   var x : c_ptr(int);
@@ -9,14 +18,14 @@ record R {
 
   proc init() {
     this.complete();
-    this.x = allocate(int, 1);
+    this.x = alloc();
     home = here;
     set(42);
   }
 
   proc init=(other: R) {
     this.complete();
-    this.x = allocate(int, 1);
+    this.x = alloc();
     home = here;
     set(other.get());
     writeln("init=");
@@ -63,4 +72,6 @@ proc main() {
   writeln("before: ", x);
   foo(x);
   writeln("after: ", x);
+
+  for (loc, ptr) in pointers do on loc do deallocate(ptr);
 }
