@@ -19,7 +19,7 @@ const dx : real = xLen / (nx - 1),       // grid spacing in x
 // define block distributed array
 const indices = {0..<nx, 0..<ny},
       indicesInner = indices.expand(-1),
-      INDICES = indices dmapped Block(indicesInner);
+      INDICES = Block.createDomain(indices);
 var u: [INDICES] real;
 
 // apply initial conditions
@@ -37,18 +37,17 @@ const tidXMax = u.targetLocales().dim(0).high,
 var b = new barrier(u.targetLocales().size);
 
 enum Edge { N, E, S, W }
-class localArraySet {
-  // which of the global indices does this locale own
-  // used to index into the global array.
+class LocalArrayPair {
+  // the set of global indices that this locale owns
+  //  used to index into the global array
   var globalIndices: domain(2) = {0..0, 0..0};
 
   // indices over which local arrays are defined
-  // same as 'globalIndices' set with buffers along each edge
+  //  same as 'globalIndices' set with a halo region along the edge
   var indices: domain(2) = {0..0, 0..0};
 
   // indices over which the kernel is executed
-  // can differ from 'globalIndices' for locales along the border of th
-  //  global domain
+  //  can differ from 'globalIndices' for locales along the border of the global domain
   var compIndices: domain(2) = {0..0, 0..0};
 
   var a: [indices] real;
@@ -60,10 +59,10 @@ class localArraySet {
     this.compIndices = {0..0, 0..0};
   }
 
-  proc init(globalIndices: domain(2), globalInner: domain(2)) {
-    this.globalIndices = globalIndices;
-    this.indices = globalIndices.expand(1);
-    this.compIndices = globalIndices[globalInner];
+  proc init(myGlobalIndices: domain(2), globalInnerAll: domain(2)) {
+    this.globalIndices = myGlobalIndices;
+    this.indices = myGlobalIndices.expand(1);
+    this.compIndices = myGlobalIndices[globalInnerAll];
   }
 
   proc ref copyInitialConditions(const ref u: [] real) {
@@ -72,23 +71,23 @@ class localArraySet {
     this.b = this.a;
   }
 
-  proc fillBuffer(edge: Edge, values: [] real) {
+   proc fillBuffer(edge: Edge, values: [] real) {
     select edge {
-      when Edge.N do this.a[this.indices.dim(0).low, ..] = values;
-      when Edge.S do this.a[this.indices.dim(0).high, ..] = values;
-      when Edge.E do this.a[.., this.indices.dim(1).high] = values;
-      when Edge.W do this.a[.., this.indices.dim(1).low] = values;
+      when Edge.N do this.b[.., this.indices.dim(1).low] = values;
+      when Edge.S do this.b[.., this.indices.dim(1).high] = values;
+      when Edge.E do this.b[this.indices.dim(0).high, ..] = values;
+      when Edge.W do this.b[this.indices.dim(0).low, ..] = values;
     }
   }
 
   proc getEdge(edge: Edge) {
     select edge {
-      when Edge.N do return this.a[this.indices.dim(0).low+1, ..];
-      when Edge.S do return this.a[this.indices.dim(0).high-1, ..];
-      when Edge.E do return this.a[.., this.indices.dim(1).high-1];
-      when Edge.W do return this.a[.., this.indices.dim(1).low+1];
+      when Edge.N do return this.b[.., this.indices.dim(1).low+1];
+      when Edge.S do return this.b[.., this.indices.dim(1).high-1];
+      when Edge.E do return this.b[this.indices.dim(0).high-1, ..];
+      when Edge.W do return this.b[this.indices.dim(0).low+1, ..];
     }
-    return this.a[this.indices.dim(0).low, ..]; // never actually returned
+    return this.b[this.indices.dim(0).low, ..]; // never actually returned
   }
 
   proc swap() {
@@ -96,10 +95,9 @@ class localArraySet {
   }
 }
 
-// !!! TODO: put localArrays on their respective target locales
-
-// sets of local arrays owned by each locale
-var localArrays = [d in u.targetLocales().domain] new localArraySet();
+// set up array of local arrays over same distribution as 'u'
+var TL_DOM = Block.createDomain(u.targetLocales().domain);
+var localArrays = [d in TL_DOM] new LocalArrayPair();
 
 proc main() {
   if runCommDiag then startVerboseComm();
@@ -108,9 +106,10 @@ proc main() {
   coforall (loc, (tidX, tidY)) in zip(u.targetLocales(), u.targetLocales().domain) do on loc {
 
     // initialize local arrays owned by this task
-    localArrays[tidX, tidY] = new localArraySet(u.localSubdomain(here), indicesInner);
+    localArrays[tidX, tidY] = new LocalArrayPair(u.localSubdomain(here), indicesInner);
     localArrays[tidX, tidY].copyInitialConditions(u);
 
+    // synchronize across tasks
     b.barrier();
 
     // run the portion of the FD computation owned by this task
@@ -127,49 +126,36 @@ proc main() {
         stdDev = sqrt((+ reduce (u - mean)**2) / u.size);
 
   writeln(abs(0.102424 - stdDev) < 1e-6);
-  writeln(u);
 }
 
 proc work(tidX: int, tidY: int) {
-  var uLocal: borrowed localArraySet = localArrays[tidX, tidY];
-
-  // preliminarily populate ghost regions for neighboring locales
-  if tidX > 0       then localArrays[tidX-1, tidY].fillBuffer(Edge.S, uLocal.getEdge(Edge.N));
-  if tidX < tidXMax then localArrays[tidX+1, tidY].fillBuffer(Edge.N, uLocal.getEdge(Edge.S));
-  if tidY > 0       then localArrays[tidX, tidY-1].fillBuffer(Edge.W, uLocal.getEdge(Edge.E));
-  if tidY < tidYMax then localArrays[tidX, tidY+1].fillBuffer(Edge.E, uLocal.getEdge(Edge.W));
-
-  b.barrier();
+  // get a pointer to this task's local arrays
+  var uLocal: borrowed LocalArrayPair = localArrays[tidX, tidY];
 
   // run FD computation
   for 1..nt {
+    // store results from last iteration in neighboring tasks buffers
+    if tidX > 0       then localArrays[tidX-1, tidY].fillBuffer(Edge.E, uLocal.getEdge(Edge.W));
+    if tidX < tidXMax then localArrays[tidX+1, tidY].fillBuffer(Edge.W, uLocal.getEdge(Edge.E));
+    if tidY > 0       then localArrays[tidX, tidY-1].fillBuffer(Edge.S, uLocal.getEdge(Edge.N));
+    if tidY < tidYMax then localArrays[tidX, tidY+1].fillBuffer(Edge.N, uLocal.getEdge(Edge.S));
 
-    // writeln("(", tidX, ", ", tidY, ")\n", uLocal.a, "\n");
+    // swap 'a' and 'b' arrays
+    b.barrier();
+    uLocal.swap();
 
     // compute the FD kernel in parallel
-    forall (i, j) in uLocal.compIndices {
+    foreach (i, j) in uLocal.compIndices do
       uLocal.b[i, j] = uLocal.a[i, j] +
               nu * dt / dy**2 *
                 (uLocal.a[i-1, j] - 2 * uLocal.a[i, j] + uLocal.a[i+1, j]) +
               nu * dt / dx**2 *
                 (uLocal.a[i, j-1] - 2 * uLocal.a[i, j] + uLocal.a[i, j+1]);
-    }
-
-    b.barrier();
-
-    uLocal.swap();
-
-    b.barrier();
-
-    // populate ghost regions for neighboring locales
-    if tidX > 0       then localArrays[tidX-1, tidY].fillBuffer(Edge.S, uLocal.getEdge(Edge.N));
-    if tidX < tidXMax then localArrays[tidX+1, tidY].fillBuffer(Edge.N, uLocal.getEdge(Edge.S));
-    if tidY > 0       then localArrays[tidX, tidY-1].fillBuffer(Edge.W, uLocal.getEdge(Edge.E));
-    if tidY < tidYMax then localArrays[tidX, tidY+1].fillBuffer(Edge.E, uLocal.getEdge(Edge.W));
 
     b.barrier();
   }
 
   // store results in global array
+  uLocal.swap();
   u[uLocal.globalIndices] = uLocal.a[uLocal.globalIndices];
 }

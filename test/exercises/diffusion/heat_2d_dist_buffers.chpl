@@ -29,7 +29,7 @@ u[
   (0.5 / dy):int..<(1.0 / dy + 1):int
 ] = 2;
 
-// ghost vector type for creating a skyline array below
+// ghost vector type for creating a "skyline" array of buffers
 record GhostVec {
   var d: domain(1);
   var v: [d] real;
@@ -39,8 +39,9 @@ record GhostVec {
     this.d = {r};
 }
 
-// set up array of ghost vectors over same locale distribution as 'u'
-var ghostVecs: [u.targetLocales().domain] [0..<4] GhostVec;
+// set up array of ghost vectors over same distribution as 'u'
+var TL_DOM = Block.createDomain(u.targetLocales().domain);
+var ghostVecs: [TL_DOM] [0..<4] GhostVec;
 
 // numbers for indexing into local array edges
 param N = 0, S = 1, E = 2, W = 3;
@@ -100,16 +101,18 @@ proc work(tidX: int, tidY: int) {
         SS = localIndicesBuffered.dim(0).high,
         NN = localIndicesBuffered.dim(0).low;
 
-  // preliminarily populate ghost regions for neighboring locales
-  if tidY > 0       then ghostVecs[tidX, tidY-1][E].v = uLocal1[.., WW+1];
-  if tidY < tidYMax then ghostVecs[tidX, tidY+1][W].v = uLocal1[.., EE-1];
-  if tidX > 0       then ghostVecs[tidX-1, tidY][S].v = uLocal1[NN+1, ..];
-  if tidX < tidXMax then ghostVecs[tidX+1, tidY][N].v = uLocal1[SS-1, ..];
-
-  b.barrier();
-
   // run FD computation
   for 1..nt {
+    // store results from last iteration in neighboring tasks buffers
+    if tidY > 0       then ghostVecs[tidX, tidY-1][E].v = uLocal2[.., WW+1];
+    if tidY < tidYMax then ghostVecs[tidX, tidY+1][W].v = uLocal2[.., EE-1];
+    if tidX > 0       then ghostVecs[tidX-1, tidY][S].v = uLocal2[NN+1, ..];
+    if tidX < tidXMax then ghostVecs[tidX+1, tidY][N].v = uLocal2[SS-1, ..];
+
+    // swap arrays
+    b.barrier();
+    uLocal1 <=> uLocal2;
+
     // populate local edges from ghost regions
     if tidY > 0       then uLocal1[.., WW] = ghostVecs[tidX, tidY][W].v;
     if tidY < tidYMax then uLocal1[.., EE] = ghostVecs[tidX, tidY][E].v;
@@ -117,29 +120,17 @@ proc work(tidX: int, tidY: int) {
     if tidX < tidXMax then uLocal1[SS, ..] = ghostVecs[tidX, tidY][S].v;
 
     // compute the FD kernel in parallel
-    forall (i, j) in localIndicesInner {
+    foreach (i, j) in localIndicesInner do
       uLocal2[i, j] = uLocal1[i, j] +
               nu * dt / dy**2 *
                 (uLocal1[i-1, j] - 2 * uLocal1[i, j] + uLocal1[i+1, j]) +
               nu * dt / dx**2 *
                 (uLocal1[i, j-1] - 2 * uLocal1[i, j] + uLocal1[i, j+1]);
-    }
 
     b.barrier();
-
-    // populate ghost regions for neighboring locales
-    if tidY > 0       then ghostVecs[tidX, tidY-1][E].v = uLocal2[.., WW+1];
-    if tidY < tidYMax then ghostVecs[tidX, tidY+1][W].v = uLocal2[.., EE-1];
-    if tidX > 0       then ghostVecs[tidX-1, tidY][S].v = uLocal2[NN+1, ..];
-    if tidX < tidXMax then ghostVecs[tidX+1, tidY][N].v = uLocal2[SS-1, ..];
-
-    // synchronize with other tasks
-    b.barrier();
-
-    // swap arrays
-    uLocal1 <=> uLocal2;
   }
 
   // store results in global array
+  uLocal1 <=> uLocal2;
   u[localIndices] = uLocal1[localIndices];
 }
