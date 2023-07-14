@@ -688,11 +688,19 @@ filePathIsInInternalModule(Context* context, UniqueString filePath) {
   return filePath.startsWith(prefix);
 }
 
-static bool
+bool
 filePathIsInBundledModule(Context* context, UniqueString filePath) {
   UniqueString prefix = bundledModulePath(context);
-  if (prefix.isEmpty()) return false;
-  return filePath.startsWith(prefix);
+  if (!prefix.isEmpty() && filePath.startsWith(prefix))
+    return true;
+
+  for (auto& path : prependedInternalModulePath(context))
+    if (filePath.startsWith(path)) return true;
+
+  for (auto& path : prependedStandardModulePath(context))
+    if (filePath.startsWith(path)) return true;
+
+  return false;
 }
 
 bool
@@ -713,22 +721,19 @@ filePathIsInStandardModule(Context* context, UniqueString filePath) {
 
 bool idIsInInternalModule(Context* context, ID id) {
   UniqueString filePath;
-  UniqueString parentSymbolPath;
-  bool found = context->filePathForId(id, filePath, parentSymbolPath);
+  bool found = context->filePathForId(id, filePath);
   return found && filePathIsInInternalModule(context, filePath);
 }
 
 bool idIsInBundledModule(Context* context, ID id) {
   UniqueString filePath;
-  UniqueString parentSymbolPath;
-  bool found = context->filePathForId(id, filePath, parentSymbolPath);
+  bool found = context->filePathForId(id, filePath);
   return found && filePathIsInBundledModule(context, filePath);
 }
 
 bool idIsInStandardModule(Context* context, ID id) {
   UniqueString filePath;
-  UniqueString parentSymbolPath;
-  bool found = context->filePathForId(id, filePath, parentSymbolPath);
+  bool found = context->filePathForId(id, filePath);
   return found && filePathIsInStandardModule(context, filePath);
 }
 
@@ -827,14 +832,12 @@ getIncludedSubmoduleQuery(Context* context, ID includeModuleId) {
 
   ID parentModuleId;
   UniqueString parentModulePath;
-  UniqueString parentParentSymbolPath;
   bool found = false;
   if (include != nullptr) {
     // find the ID of the module containing the 'module include'
     parentModuleId = idToParentModule(context, includeModuleId);
     // find some other information about that parent module
-    found = context->filePathForId(parentModuleId, parentModulePath,
-                                   parentParentSymbolPath);
+    found = context->filePathForId(parentModuleId, parentModulePath);
 
     // check that the computed filename matches
     std::string name1 = Builder::filenameToModulename(parentModulePath.c_str());
@@ -1402,9 +1405,31 @@ static bool isAstDeprecated(Context* context, const AstNode* ast) {
   return attr && attr->isDeprecated();
 }
 
-static bool isAstUnstable(Context* context, const AstNode* ast) {
-  auto attr = parsing::idToAttributeGroup(context, ast->id());
-  return attr && attr->isUnstable();
+static bool isIdUnstable(Context* context, const ID& id) {
+  auto attr = parsing::idToAttributeGroup(context, id);
+  return attr && ( attr->isUnstable() || attr->hasPragma(PRAGMA_UNSTABLE) );
+}
+
+bool
+shouldWarnUnstableForPath(Context* context, UniqueString filepath) {
+  if (filePathIsInInternalModule(context, filepath))
+    return isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE_INTERNAL);
+
+  else if (filePathIsInBundledModule(context, filepath))
+    return isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE_STANDARD);
+
+  else
+    return isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE);
+}
+
+static bool
+shouldWarnUnstableForId(Context* context, const ID& id) {
+  UniqueString filepath;
+  bool found = context->filePathForId(id, filepath);
+  if (found)
+    return shouldWarnUnstableForPath(context, filepath);
+  else
+    return isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE);
 }
 
 static bool isAstCompilerGenerated(Context* context, const AstNode* ast) {
@@ -1414,20 +1439,6 @@ static bool isAstCompilerGenerated(Context* context, const AstNode* ast) {
 
 static bool isAstFormal(Context* context, const AstNode* ast) {
   return ast->isFormal();
-}
-
-static bool
-isAstSuppressedStandardModule(Context* context, const AstNode* ast) {
-  if (!ast->isModule()) return false;
-  if (!idIsInStandardModule(context, ast->id())) return false;
-  return !isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE_STANDARD);
-}
-
-static bool
-isAstSuppressedInternalModule(Context* context, const AstNode* ast) {
-  if (!ast->isModule()) return false;
-  if (!idIsInInternalModule(context, ast->id())) return false;
-  return !isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE_INTERNAL);
 }
 
 // Skip if any parent is deprecated (we want to show deprecation messages
@@ -1444,11 +1455,11 @@ shouldSkipDeprecationWarning(Context* context, const AstNode* ast) {
 // deprecated things are likely to be removed soon.
 static bool
 shouldSkipUnstableWarning(Context* context, const AstNode* ast) {
-  return isAstUnstable(context, ast)                  ||
+  return isIdUnstable(context, ast->id())             ||
          isAstDeprecated(context, ast)                ||
          isAstCompilerGenerated(context, ast)         ||
-         isAstSuppressedStandardModule(context, ast)  ||
-         isAstSuppressedInternalModule(context, ast);
+         (ast->isModule() &&
+          !shouldWarnUnstableForId(context, ast->id()));
 }
 
 static std::string
@@ -1506,12 +1517,7 @@ static bool
 unstableWarningForIdImpl(Context* context, ID idMention, ID idTarget) {
   if (idMention.isEmpty() || idTarget.isEmpty()) return false;
 
-  auto attributes = parsing::idToAttributeGroup(context, idTarget);
-  if (!attributes) return false;
-
-  bool isUnstable = attributes->hasPragma(PRAGMA_UNSTABLE) ||
-                    attributes->isUnstable();
-  if (!isUnstable) return false;
+  if (!isIdUnstable(context, idTarget)) return false;
 
   auto mention = parsing::idToAst(context, idMention);
   auto target = parsing::idToAst(context, idTarget);
@@ -1520,6 +1526,7 @@ unstableWarningForIdImpl(Context* context, ID idMention, ID idTarget) {
   auto targetNamedDecl = target->toNamedDecl();
   if (!targetNamedDecl) return false;
 
+  auto attributes = parsing::idToAttributeGroup(context, idTarget);
   auto storedMsg = attributes->unstableMessage();
   std::string msg = storedMsg.isEmpty()
       ? createDefaultUnstableMessage(context, targetNamedDecl)
@@ -1575,24 +1582,10 @@ reportDeprecationWarningForId(Context* context, ID idMention, ID idTarget) {
   deprecationWarningForIdQuery(context, idMention, idTarget);
 }
 
-static bool
-isUnstableAndShouldWarn(Context* context, ID idMention, ID idTarget) {
-  auto attr = parsing::idToAttributeGroup(context, idTarget);
-  if (!attr || !attr->isUnstable()) return false;
-
-  auto flag = CompilerFlags::WARN_UNSTABLE;
-  if (idIsInInternalModule(context, idMention)) {
-    flag = CompilerFlags::WARN_UNSTABLE_INTERNAL;
-  } else if (idIsInStandardModule(context, idMention)) {
-    flag = CompilerFlags::WARN_UNSTABLE_STANDARD;
-  }
-
-  return isCompilerFlagSet(context, flag);
-}
-
 void
 reportUnstableWarningForId(Context* context, ID idMention, ID idTarget) {
-  if (!isUnstableAndShouldWarn(context, idMention, idTarget)) return;
+  if (!isIdUnstable(context, idTarget) ||
+      !shouldWarnUnstableForId(context, idMention)) return;
 
   // Don't warn for 'this' formals with unstable types.
   if (isMentionOfWarnedTypeInReceiver(context, idMention, idTarget)) return;

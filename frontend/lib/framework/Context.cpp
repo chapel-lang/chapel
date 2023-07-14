@@ -573,30 +573,44 @@ const UniqueString& filePathForModuleIdSymbolPathQuery(Context* context,
   return QUERY_END(result);
 }
 
-bool Context::filePathForId(ID id,
-                            UniqueString& pathOut,
-                            UniqueString& parentSymbolPathOut) {
+static bool symbolAndFilePathForID(Context* context, const ID& id,
+                                   UniqueString& symbolPathOut,
+                                   UniqueString& pathOut) {
   UniqueString symbolPath = id.symbolPath();
 
   while (!symbolPath.isEmpty()) {
     auto tupleOfArgs = std::make_tuple(symbolPath);
 
-    bool got = hasCurrentResultForQuery(filePathForModuleIdSymbolPathQuery,
-                                        tupleOfArgs);
-
+    bool got = context->hasCurrentResultForQuery(
+                 filePathForModuleIdSymbolPathQuery, tupleOfArgs);
     if (got) {
-      pathOut = filePathForModuleIdSymbolPathQuery(this, symbolPath);
-      parentSymbolPathOut = ID::parentSymbolPath(this, symbolPath);
+      symbolPathOut = symbolPath;
+      pathOut = filePathForModuleIdSymbolPathQuery(context, symbolPath);
       return true;
     }
 
     // remove the last path component, e.g. M.N -> M
-    symbolPath = ID::parentSymbolPath(this, symbolPath);
+    symbolPath = ID::parentSymbolPath(context, symbolPath);
   }
 
-  pathOut = UniqueString::get(this, "<unknown file path>");
-  parentSymbolPathOut = UniqueString();
+  pathOut = UniqueString::get(context, "<unknown file path>");
   return false;
+}
+
+bool Context::filePathForId(ID id, UniqueString& pathOut) {
+  UniqueString symbolPath;
+  return symbolAndFilePathForID(this, id, symbolPath, pathOut);
+}
+
+bool Context::filePathForId(ID id,
+                            UniqueString& pathOut,
+                            UniqueString& parentSymbolPathOut) {
+  UniqueString symbolPath;
+  bool got = symbolAndFilePathForID(this, id, symbolPath, pathOut);
+  if (got)
+    parentSymbolPathOut = ID::parentSymbolPath(this, symbolPath);
+
+  return got;
 }
 
 void Context::setFilePathForModuleId(ID moduleID, UniqueString path) {
@@ -616,8 +630,7 @@ void Context::setFilePathForModuleId(ID moduleID, UniqueString path) {
   #ifndef NDEBUG
     // check that querying the module ID works...
     UniqueString gotPath;
-    UniqueString gotParentSymbolPath;
-    bool ok = filePathForId(moduleID, gotPath, gotParentSymbolPath);
+    bool ok = filePathForId(moduleID, gotPath);
     CHPL_ASSERT(ok);
 
     // ... and gives the same path

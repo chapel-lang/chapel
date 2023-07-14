@@ -1,0 +1,1 @@
+--warn-unstable $CHPL_HOME/test/unstable-keyword/in-function.helper.chpl

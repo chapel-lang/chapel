@@ -5,5 +5,12 @@
 # There and in many other prediffs, the match pattern is /:[0-9:]*:/
 # Here we drop : inside [] because it is not needed.
 
-sed '\|CHPL_HOME/modules|s/:[0-9]*:/:nnnn:/' $2 > $2.tmp
+# As of this writing, the file names in the "In function 'xyz':" lines
+# do not get their CHPL_HOME path replaced with the string '$CHPL_HOME'.
+# So we filter them out to ensure .good matches.
+# See test/unstable-keyword/in-function.future.
+
+sed -e '/CHPL_HOME\/modules/s/:[0-9]*:/:nnnn:/' \
+    -e "/: In function '/d; /: In method '/d" $2 > $2.tmp
+
 mv $2.tmp $2
