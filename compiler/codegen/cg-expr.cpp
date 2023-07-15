@@ -20,6 +20,7 @@
 
 #include "expr.h"
 
+#include "view.h"
 #include "alist.h"
 #include "astutil.h"
 #include "AstVisitor.h"
@@ -5373,11 +5374,18 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
 
     int curArgIdx = 1;
 
-    Expr* curArg = call->get(curArgIdx++);
+    Expr* curArg = call->get(curArgIdx);
     GenRet localAddr = codegenValuePtr(curArg);
+
+    std::cout << call->stringLoc() << std::endl;
+    std::cout << curArgIdx;
+    nprint_view(curArg);
+    nprint_view(localAddr);
+
 
     // destination data array
     if (curArg->isWideRef()) {
+      std::cout << "000\n";
       Symbol* sym = curArg->typeInfo()->getField("addr", true);
 
       INT_ASSERT(sym);
@@ -5385,27 +5393,35 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
       localAddr = codegenRaddr(localAddr);
 
     } else {
+      std::cout << "010\n";
       dt = curArg->typeInfo()->getValType()->symbol;
 
       if (curArg->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+        std::cout << "012\n";
         localAddr = codegenDeref(localAddr);
       }
 
       // c_ptr/ddata are already addresses, so dereference one level.
       if (dt->hasFlag(FLAG_DATA_CLASS)) {
+        std::cout << "014\n";
         localAddr = codegenValue(localAddr);
       }
     }
+    curArgIdx += 1;
 
+    // this was it!
+    localAddr = codegenCastToVoidStar(localAddr);
+
+    nprint_view(localAddr);
     args.push_back(localAddr);
 
     curArg = call->get(curArgIdx++);
     GenRet locale;
 
     if (curArg->isRefOrWideRef()) {
-      locale = codegenValue(codegenDeref(call->get(2)));
+      locale = codegenValue(codegenDeref(curArg));
     } else {
-      locale = codegenValue(call->get(2));
+      locale = codegenValue(curArg);
     }
 
     args.push_back(locale);
