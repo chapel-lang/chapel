@@ -23,10 +23,9 @@ follows, assuming the CWD is $CHPL_HOME/third-party/hwloc/:
 3. `mv hwloc-2.9.0 hwloc-src`
 4. `git add --force hwloc-src` (--force to ignore our .gitignore)
 5. update the version number mentioned above
-6. update the okversions whitelist in chpl_hwloc.py
-7. make sure these instructions are up to date :)
-8. test (std config, and that stream gets expected performance)
-9. commit, PR, merge, etc
+6. make sure these instructions are up to date :)
+7. test (std config, and that stream gets expected performance)
+8. commit, PR, merge, etc
 
 Note that these instructions are for simple 2.X API compatible updates.
 If the hwloc API changes, the runtime shim may need to be changed and
