@@ -20,7 +20,6 @@
 
 #include "expr.h"
 
-#include "view.h"
 #include "alist.h"
 #include "astutil.h"
 #include "AstVisitor.h"

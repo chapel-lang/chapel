@@ -1,1 +1,1 @@
-(kernel_launch = 4)
+(kernel_launch = 4, host_to_device = 2, device_to_host = 1, device_to_device = 0)

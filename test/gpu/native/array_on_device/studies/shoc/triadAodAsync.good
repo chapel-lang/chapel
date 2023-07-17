@@ -1,1 +1,1 @@
-(kernel_launch = 275)
+(kernel_launch = 275, host_to_device = 258, device_to_host = 128, device_to_device = 0)

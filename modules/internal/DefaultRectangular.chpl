@@ -2126,7 +2126,7 @@ module DefaultRectangular {
     // and chpl_comm_put should be changed once that is fixed.
     if Alocid==here.id {
       if debugDefaultDistBulkTransfer then
-        chpl_debug_writeln("\tlocal get() from ", Blocid, " ", Bsublocid, " of size ", len);
+        chpl_debug_writeln("\tlocal get() from ", Blocid);
       __primitive("chpl_comm_array_get", Adata[offset], Blocid, Bsublocid,
                   Bdata[offset], len);
     } else if Blocid==here.id {
