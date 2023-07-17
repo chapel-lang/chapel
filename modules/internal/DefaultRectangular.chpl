@@ -1043,7 +1043,7 @@ module DefaultRectangular {
     var shiftedData : _ddata(eltType);
 
     // note: used for external array support
-    var externFreeFunc: c_void_ptr;
+    var externFreeFunc: c_ptr(void);
     var externArr: bool = false;
     var _borrowed: bool = true;
     // should the comms post-alloc be called after initialization?
@@ -1063,7 +1063,7 @@ module DefaultRectangular {
               data:_ddata(eltType) = nil,
               externArr = false,
               _borrowed = false,
-              externFreeFunc: c_void_ptr = nil) {
+              externFreeFunc: c_ptr(void) = nil) {
       super.init(eltType=eltType, rank=rank,
                  idxType=idxType, strides=strides);
       this.dom = dom;

@@ -99,15 +99,15 @@ module CString {
   }
 
   //
-  // casts from c_string to c_void_ptr
+  // casts from c_string to c_ptr(void)
   //
-  inline operator :(x: c_string, type t:c_void_ptr) {
+  inline operator :(x: c_string, type t:c_ptr(void)) {
     return __primitive("cast", t, x);
   }
   //
-  // casts from c_void_ptr to c_string
+  // casts from c_ptr(void) to c_string
   //
-  inline operator :(x: c_void_ptr, type t:c_string) {
+  inline operator :(x: c_ptr(void), type t:c_string) {
     return __primitive("cast", t, x);
   }
 

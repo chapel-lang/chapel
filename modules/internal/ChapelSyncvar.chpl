@@ -1145,7 +1145,7 @@ private module SyncVarRuntimeSupport {
   extern proc   chpl_sync_markAndSignalEmpty(ref aux : chpl_sync_aux_t);
   extern proc   chpl_sync_markAndSignalFull (ref aux : chpl_sync_aux_t);
 
-  extern proc   chpl_sync_isFull(value   : c_void_ptr,
+  extern proc   chpl_sync_isFull(value   : c_ptr(void),
                                  ref aux : chpl_sync_aux_t) : bool;
 
 
@@ -1167,7 +1167,7 @@ private module SyncVarRuntimeSupport {
 
   extern proc   chpl_single_markAndSignalFull (ref aux : chpl_single_aux_t);
 
-  extern proc   chpl_single_isFull(value   : c_void_ptr,
+  extern proc   chpl_single_isFull(value   : c_ptr(void),
                                    ref aux : chpl_single_aux_t) : bool;
 
 

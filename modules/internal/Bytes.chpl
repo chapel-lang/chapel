@@ -108,10 +108,10 @@ module Bytes {
                                    x: c_string,
                                    length: int) {
     // copy the string to the combined buffer
-    var buf = buffer:c_void_ptr:c_ptr(uint(8));
+    var buf = buffer:c_ptr(void):c_ptr(uint(8));
     buf = buf + offset;
     import OS.POSIX.memcpy;
-    memcpy(buf:c_void_ptr, x:c_void_ptr, length.safeCast(c_size_t));
+    memcpy(buf:c_ptr(void), x:c_ptr(void), length.safeCast(c_size_t));
     // add null byte
     buf[length] = 0;
 

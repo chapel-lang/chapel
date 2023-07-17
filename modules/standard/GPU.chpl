@@ -133,7 +133,7 @@ module GPU
   }
 
   @chpldoc.nodoc
-  type GpuAsyncCommHandle = c_void_ptr;
+  type GpuAsyncCommHandle = c_ptr(void);
 
   /*
     Copy srcArr to dstArr, at least one array must be on a GPU; this function
@@ -146,8 +146,8 @@ module GPU
   proc asyncGpuComm(dstArr : ?t1, srcArr : ?t2) : GpuAsyncCommHandle
     where isArrayType(t1) && isArrayType(t2)
   {
-    extern proc chpl_gpu_comm_async(dstArr : c_void_ptr, srcArr : c_void_ptr,
-       n : c_size_t) : c_void_ptr;
+    extern proc chpl_gpu_comm_async(dstArr : c_ptr(void), srcArr : c_ptr(void),
+       n : c_size_t) : c_ptr(void);
 
     if(dstArr.size != srcArr.size) {
       halt("Arrays passed to asyncGpuComm must have the same number of elements. ",
@@ -163,7 +163,7 @@ module GPU
   */
   @chpldoc.nodoc
   proc gpuCommWait(gpuHandle : GpuAsyncCommHandle) {
-    extern proc chpl_gpu_comm_wait(stream : c_void_ptr);
+    extern proc chpl_gpu_comm_wait(stream : c_ptr(void));
 
     chpl_gpu_comm_wait(gpuHandle);
   }

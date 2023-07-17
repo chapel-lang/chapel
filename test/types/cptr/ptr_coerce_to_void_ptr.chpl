@@ -1,5 +1,5 @@
 use CTypes;
-proc test(x: c_void_ptr) {
+proc test(x: c_ptr(void)) {
   writeln(x == nil);
 }
 

@@ -29,41 +29,41 @@ module ExternalArray {
 
   extern record chpl_opaque_array {
     var _pid: int;
-    var _instance: c_void_ptr;
+    var _instance: c_ptr(void);
     var _unowned: bool;
   }
 
   pragma "export wrapper"
   extern record chpl_external_array {
-    var elts: c_void_ptr;
+    var elts: c_ptr(void);
     var num_elts: uint;
 
-    var freer: c_void_ptr;
+    var freer: c_ptr(void);
   }
 
   extern proc
   chpl_make_external_array(elt_size: uint, num_elts: uint): chpl_external_array;
 
-  extern proc chpl_make_external_array_ptr(elts: c_void_ptr,
+  extern proc chpl_make_external_array_ptr(elts: c_ptr(void),
                                            num_elts: uint): chpl_external_array;
 
   extern proc
-  chpl_make_external_array_ptr_free(elts: c_void_ptr,
+  chpl_make_external_array_ptr_free(elts: c_ptr(void),
                                     num_elts: uint): chpl_external_array;
 
   extern proc chpl_free_external_array(in x: chpl_external_array);
-  extern proc chpl_call_free_func(func: c_void_ptr, elts: c_void_ptr);
+  extern proc chpl_call_free_func(func: c_ptr(void), elts: c_ptr(void));
 
   // Creates an instance of our new array type
   pragma "no copy return"
   proc makeArrayFromPtr(value: c_ptr, num_elts: uint) {
-    var data = chpl_make_external_array_ptr(value : c_void_ptr, num_elts);
+    var data = chpl_make_external_array_ptr(value : c_ptr(void), num_elts);
     return makeArrayFromExternArray(data, value.eltType);
   }
 
   pragma "no copy return"
   proc makeArrayFromPtr(value: c_ptr, dom: domain) {
-    var data = chpl_make_external_array_ptr(value : c_void_ptr, dom.size);
+    var data = chpl_make_external_array_ptr(value : c_ptr(void), dom.size);
     return makeArrayFromExternArray(data, value.eltType, dom);
   }
 
@@ -189,7 +189,7 @@ module ExternalArray {
 
     var ret: chpl_opaque_array;
     ret._pid = arr._pid;
-    ret._instance = arr._value: c_void_ptr;
+    ret._instance = arr._value: c_ptr(void);
     ret._unowned = arr._unowned;
     if (!arr._unowned) {
       arr._unowned = true;

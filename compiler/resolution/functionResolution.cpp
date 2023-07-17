@@ -1530,12 +1530,16 @@ bool canCoerceAsSubtype(Type*     actualType,
     }
   }
 
-  // coerce c_ptr to c_void_ptr
-  if (actualType->symbol->hasFlag(FLAG_C_PTR_CLASS) && formalType == dtCVoidPtr)
+  // coerce raw_c_void_ptr to c_ptr(void)
+  if (actualType == dtCVoidPtr && isCVoidPtr(formalType))
     return true;
 
-  // coerce c_array to c_void_ptr
-  if (actualType->symbol->hasFlag(FLAG_C_ARRAY) && formalType == dtCVoidPtr)
+  // coerce c_ptr(t) to c_ptr(void)
+  if (actualType->symbol->hasFlag(FLAG_C_PTR_CLASS) && isCVoidPtr(formalType))
+    return true;
+
+  // coerce c_array to c_ptr(void)
+  if (actualType->symbol->hasFlag(FLAG_C_ARRAY) && isCVoidPtr(formalType))
     return true;
 
   // coerce c_array to c_ptr
@@ -2898,7 +2902,7 @@ static void resolveRefDeserialization(CallExpr* call) {
 
   // we need to set the resolved function to the deserializer, so that the move
   // can resolve. Otherwise, the ref deserialization primitive has return type
-  // c_void_ptr, which is surely not the type of the LHS here.
+  // raw_c_void_ptr, which is surely not the type of the LHS here.
   call->setResolvedFunction(ser.deserializer);
 
   lhsSE->symbol()->type = typeSE->symbol()->getRefType();
