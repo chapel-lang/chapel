@@ -22,7 +22,7 @@ set -e
    \
    amd    --prebuild "export CHPL_GPU_MEM_STRATEGY=array_on_device" \
           "./stream.plot.gather.sh amd_aod"
-
+ 
 if which "python3.6" >/dev/null; then
   python3.6 ./stream.plot.paint.py
 else

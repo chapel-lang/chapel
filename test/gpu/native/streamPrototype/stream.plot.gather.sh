@@ -102,8 +102,8 @@ cuda_data=$(cat $baselineLog | sed -r -n 's/Triad: //p' | tr -s ' ' | cut -d ' '
 chpl_data=$(cat $chplLog | sed -r -n 's/Performance \(GiB\/s\) = (.*)/\1/p')
 
 set +x
-echo "#title: Stream ($CHPL_GPU)" > $resultFile
-echo "#xlabel: Number of Elements (M)'" >> $resultFile
+echo "#title: Stream ($CHPL_GPU, $CHPL_GPU_MEM_STRATEGY)" > $resultFile
+echo "#xlabel: Number of Elements (M)" >> $resultFile
 echo "#ylabel: Throughput\n(GiB/s)" >> $resultFile
 echo "#better: up" >> $resultFile
 echo -e "\t$baselineName\tchpl" >> $resultFile

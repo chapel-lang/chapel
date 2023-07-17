@@ -267,6 +267,18 @@ class Plot:
 def valOrDefault(kvPairs, key, default):
   return default if key not in kvPairs else f"{kvPairs[key]}"
 
+def embedMetadata(datFilename, imgFilename):
+  from PIL import Image
+  from PIL.PngImagePlugin import PngInfo
+
+  datContent = open(datFilename).read()
+  img = Image.open(imgFilename)
+
+  metadata = PngInfo()
+  metadata.add_text("datContent", datContent)
+
+  img.save(imgFilename, pnginfo=metadata)
+
 def processDat(filename, testSpecificProcessing=None):
   (xData, yData, kvPairs) = load(filename)
 
@@ -293,6 +305,8 @@ def processDat(filename, testSpecificProcessing=None):
     testSpecificProcessing(p, xData, yData, kvPairs)
 
   p.save("logs/" + baseName, 'png')
+
+  embedMetadata(filename, "logs/" + baseName + '.png')
 
 def paintDatFiles(testSpecificProcessing=None, inDir="logs"):
   for file in os.listdir(inDir):
