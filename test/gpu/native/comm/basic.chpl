@@ -1,8 +1,10 @@
 use GpuDiagnostics;
 
 config const printArrs = false;
-config const verboseGpu = true;
+config const verboseGpu = false;
+config const gpuDiags = true;
 
+if gpuDiags then startGpuDiagnostics();
 if verboseGpu then startVerboseGpu();
 config const n = 10;
 
@@ -28,3 +30,7 @@ on here.gpus[0] {
   }
 }
 if verboseGpu then stopVerboseGpu();
+if gpuDiags {
+  stopGpuDiagnostics();
+  writeln(getGpuDiagnostics());
+}

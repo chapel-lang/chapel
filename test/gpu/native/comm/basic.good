@@ -1,6 +1,2 @@
 warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly
-0 (gpu 0): $CHPL_HOME/modules/internal/ChapelArray.chpl:3251: kernel launch (block size: 512x1x1)
-0 (gpu 0): basic.chpl:15: copy from device to host, 80 bytes, commid 198
-0 (gpu 0): basic.chpl:21: copy from host to device, 80 bytes, commid 198
-0 (gpu 0): $CHPL_HOME/modules/internal/ChapelArray.chpl:2820: kernel launch (block size: 512x1x1)
-0 (gpu 0): basic.chpl:26: copy from device (0) to device (0), 80 bytes, commid 198
+(kernel_launch = 2, host_to_device = 1, device_to_host = 1, device_to_device = 1)
