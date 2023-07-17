@@ -64,8 +64,8 @@ static bool chpl_gpu_has_context(void) {
   }
 }
 
-static void chpl_gpu_switch_context(int deviceId) {
-  CUcontext next_context = chpl_gpu_primary_ctx[deviceId];
+static void switch_context(int dev_id) {
+  CUcontext next_context = chpl_gpu_primary_ctx[dev_id];
 
   if (!chpl_gpu_has_context()) {
     CUDA_CALL(cuCtxPushCurrent(next_context));
@@ -99,7 +99,7 @@ static void chpl_gpu_impl_set_globals(c_sublocid_t dev_id, CUmodule module) {
 }
 
 void chpl_gpu_impl_use_device(c_sublocid_t dev_id) {
-  chpl_gpu_switch_context(dev_id);
+  switch_context(dev_id);
 }
 
 void chpl_gpu_impl_init(int* num_devices) {
@@ -305,23 +305,19 @@ void* chpl_gpu_impl_memset(void* addr, const uint8_t val, size_t n) {
   return addr;
 }
 
-void chpl_gpu_impl_copy_device_to_host(void* dst, c_sublocid_t src_dev,
-                                       const void* src, size_t n) {
+void chpl_gpu_impl_copy_device_to_host(void* dst, const void* src, size_t n) {
   assert(chpl_gpu_is_device_ptr(src));
 
   CUDA_CALL(cuMemcpyDtoH(dst, (CUdeviceptr)src, n));
 }
 
-void chpl_gpu_impl_copy_host_to_device(c_sublocid_t dst_dev, void* dst,
-                                       const void* src, size_t n) {
+void chpl_gpu_impl_copy_host_to_device(void* dst, const void* src, size_t n) {
   assert(chpl_gpu_is_device_ptr(dst));
 
   CUDA_CALL(cuMemcpyHtoD((CUdeviceptr)dst, src, n));
 }
 
-void chpl_gpu_impl_copy_device_to_device(c_sublocid_t dst_dev, void* dst,
-                                         c_sublocid_t src_dev,
-                                         const void* src, size_t n) {
+void chpl_gpu_impl_copy_device_to_device(void* dst, const void* src, size_t n) {
   assert(chpl_gpu_is_device_ptr(dst) && chpl_gpu_is_device_ptr(src));
 
   CUDA_CALL(cuMemcpyDtoD((CUdeviceptr)dst, (CUdeviceptr)src, n));
@@ -411,7 +407,7 @@ bool chpl_gpu_impl_can_access_peer(int dev1, int dev2) {
 }
 
 void chpl_gpu_impl_set_peer_access(int dev1, int dev2, bool enable) {
-  chpl_gpu_switch_context(dev1);
+  switch_context(dev1);
   if(enable) {
     CUDA_CALL(cuCtxEnablePeerAccess(chpl_gpu_primary_ctx[dev2], 0));
   } else {
