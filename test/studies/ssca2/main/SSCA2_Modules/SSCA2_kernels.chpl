@@ -499,7 +499,7 @@ module SSCA2_kernels
           const tpv = tpvElem!;
           var al = tpv.Active_Level;
           coforall loc in Locales do on loc {
-            var level: unmanaged Level_Set? = al[here.id];
+            var level: unmanaged Level_Set(?)? = al[here.id];
             var prev = level!.previous;
             while prev != nil {
               var p2 = prev!.previous;

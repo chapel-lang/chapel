@@ -41,9 +41,9 @@ proc main() {
   }
 
   {
-    var a : W = "hello";
+    var a : W(?) = "hello";
     writeln(a);
-    var b : W = 1234;
+    var b : W(?) = 1234;
     writeln(b);
   }
   {
