@@ -13791,6 +13791,7 @@ static bool isBuiltinGenericType(Type* t) {
 }
 
 std::set<Symbol*> gAlreadyWarnedSurprisingGenericSyms;
+std::set<Symbol*> gAlreadyWarnedSurprisingGenericManagementSyms;
 
 void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
                                  AggregateType* forFieldInHere) {
@@ -13844,6 +13845,12 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
       if (isClassLikeOrManaged(declType)) {
         auto dec = classTypeDecorator(declType);
         if (isField && isDecoratorUnknownManagement(dec)) {
+          auto pair = gAlreadyWarnedSurprisingGenericManagementSyms.insert(sym);
+          if (!pair.second) {
+            // don't warn twice for the same field
+            return;
+          }
+
           USR_WARN(sym, "field is declared with generic memory management");
           USR_PRINT("consider adding 'owned', 'shared', or 'borrowed'");
           USR_PRINT("if generic memory management is desired, "
