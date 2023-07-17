@@ -13862,6 +13862,11 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
         return;
       }
 
+      // suppress the warning for formal temps e.g.
+      // proc f(out arg: R) for a generic record R
+      if (sym->hasFlag(FLAG_FORMAL_TEMP))
+        return;
+
       bool hasQuestionArg = sym->hasFlag(FLAG_MARKED_GENERIC);
 
       // Inspect the AST to decide if there was a question mark arg
