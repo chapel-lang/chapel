@@ -24,10 +24,15 @@ var f = openTempFile();
 
   var r: Rec;
 
-  var got = reader.readf("%?", r);
-
-  writeln("got is ", got);
-  writeln("Read: ", r);
+  try {
+    var got = reader.readf("%?", r);
+    writeln("got is ", got);
+    writeln("Read: ", r);
+  } catch e : BadFormatError {
+    writeln("readf failed");
+  } catch e {
+    writeln(e);
+  }
 
   reader.close();
 }

@@ -1,9 +1,10 @@
 use FileSystem;
 use Path;
+use ChplFormat;
 
 proc repr(str) {
   use IO;
-  stdout.writeBytes(str.encode(policy=encodePolicy.unescape));
+  stdout.withSerializer(ChplSerializer).write(str.encode(policy=encodePolicy.unescape));
 }
 
 const dirName = b"\xffNOT\xffUTF8\xff".decode(policy=decodePolicy.escape);

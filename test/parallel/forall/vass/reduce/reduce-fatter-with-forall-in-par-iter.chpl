@@ -77,7 +77,7 @@ proc test1 {
     const before2 = result2;
     result1 += iii;
     result2 += iii;
-    writef("loop %i    %i -> %i    %i -> %i\n",
+    writef("loop %?    %? -> %?    %? -> %?\n",
            iii, before1, result1, before2, result2);
   }
   writeln("result1 = ", result1);
@@ -91,7 +91,7 @@ proc test2 {
     const before2 = result2;
     result1 += iii;
     result2 += iii;
-    writef("loop %i    %i -> %i    %i -> %i\n",
+    writef("loop %?    %? -> %?    %? -> %?\n",
            iii, before1, result1, before2, result2);
   }
   writeln("result1 = ", result1);

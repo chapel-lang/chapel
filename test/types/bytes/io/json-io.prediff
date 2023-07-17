@@ -1,3 +1,0 @@
-#!/bin/bash
-
-sed -i '' -r 's/path \".*\"/path TMP_FILE_PATH/g' $2

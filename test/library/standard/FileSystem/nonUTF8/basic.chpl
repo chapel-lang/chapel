@@ -3,6 +3,7 @@ use IO;
 use Sort;
 use List;
 use OS.POSIX;
+use ChplFormat;
 
 proc getMode(filename: string) throws {
 
@@ -127,7 +128,7 @@ for f in listDir(dirname1) {
   l.pushBack(f);
 }
 for f in sorted(l.toArray()) {
-  stdout.writeBytes(f.encode(policy=encodePolicy.unescape));
+  stdout.withSerializer(ChplSerializer).write(f.encode(policy=encodePolicy.unescape));
 }
 writeln();
 

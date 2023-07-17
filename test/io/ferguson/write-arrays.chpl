@@ -28,9 +28,8 @@ var A = [ new MyRecord(1,2,3.0,4.0,"test one", "test two"),
 
 writeln(A);
 
-jsonOut.writef("%?\n", A);
 chplOut.writef("%?\n", A);
-
+jsonOut.writef("%?\n", A);
 
 var B:[1..9, 1..9] int;
 

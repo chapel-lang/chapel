@@ -238,7 +238,7 @@ module ChplFormat {
         var x : readType;
         reader._readOne(reader.kind, x, here);
         return x;
-      } else if isStringType(readType) {
+      } else if isStringType(readType) || isBytesType(readType) {
         var tmp : readType;
         _oldRead(reader, tmp);
         return tmp;

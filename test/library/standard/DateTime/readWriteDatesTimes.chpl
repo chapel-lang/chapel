@@ -2,12 +2,10 @@ use Time, IO, JSON;
 
 proc testReadWrite(dt) {
   var dt2: dt.type;
-  var mem = openMemFile();
-  var writer = mem.writer(serializer = new JsonSerializer());
-  writer.writef("%?", dt);
-  var reader = mem.reader(deserializer = new JsonDeserializer());
-
-  reader.readf("%?", dt2);
+  // var mem = openMemFile();
+  var mem = open("readwdt.tmp", ioMode.cwr);
+  mem.writer(serializer = new JsonSerializer()).write(dt);
+  mem.reader(deserializer = new JsonDeserializer()).read(dt2);
 
   writeln(dt.type:string, ": ", dt == dt2);
 }

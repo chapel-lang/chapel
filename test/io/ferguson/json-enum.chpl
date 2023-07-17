@@ -1,4 +1,4 @@
-use IO;
+use IO, JSON;
 
 enum MyEnum { Type1, Type2, Type3 };
 
