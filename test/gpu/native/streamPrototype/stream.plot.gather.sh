@@ -1,4 +1,4 @@
-!/bin/bash
+#!/bin/bash
 
 # -- Command line arguments --
 fileSuffix="${1:-none}"
@@ -21,7 +21,7 @@ if [ "$CHPL_GPU" = "amd" ]; then
 elif [ "$CHPL_GPU" = "nvidia" ]; then
   baselineName=cuda
 else
-  echo "stream.genDat expects CHPL_GPU to either be 'amd' or 'nvidia'."
+  echo "stream.plot.gather.sh expects CHPL_GPU to either be 'amd' or 'nvidia'."
   exit 1
 fi
 
@@ -33,13 +33,15 @@ echo "resultFile=$logDir/results.$fileSuffix.dat"
 echo "baselineName=$baselineName"
 echo "------------------"
 
-mkdir $logDir
+mkdir -p $logDir
 set -e -x
+
+printchplenv --all
 
 # -----------------------------------------------------------------------------
 # Build Chapel code
 # -----------------------------------------------------------------------------
-
+which chpl
 chpl stream.chpl --fast -M../../../release/examples/benchmarks/hpcc
 
 # -----------------------------------------------------------------------------
@@ -56,7 +58,7 @@ if [ "$CHPL_GPU" = "amd" ]; then
   sed -i.bak 's/stream\.cu/stream.hip.cu/g' Makefile
   sed -i.bak 's/nvcc/hipcc/g' Makefile
   sed -i.bak 's/-ccbin=$(CC)//g' Makefile
-  sed -i.bak 's/ARCH=.*/ARCH=$CHPL_GPU_ARCH/g' Makefile
+  sed -i.bak "s/ARCH=.*/ARCH=$CHPL_GPU_ARCH/g" Makefile
   sed -i.bak 's/-arch/--offload-arch/g' Makefile
   cat Makefile
 fi
@@ -97,8 +99,14 @@ done
 cuda_data=$(cat $baselineLog | sed -r -n 's/Triad: //p' | tr -s ' ' | cut -d ' ' -f 2)
 chpl_data=$(cat $chplLog | sed -r -n 's/Performance \(GiB\/s\) = (.*)/\1/p')
 
-echo -e "\t$baselineName\tchpl" > $resultFile
 set +x
+echo "" > $resultFile
+echo "#title: Stream ($CHPL_GPU)" >> $resultFile
+echo "#xlabel: Number of Elements (M)'" >> $resultFile
+echo "#ylabel: Throughput\n(GiB/s)" >> $resultFile
+echo "#better: up" >> $resultFile
+echo -e "\t$baselineName\tchpl" > $resultFile
+
 paste \
   <(printf "%s\n" "${sizes[@]}") \
   <(printf "%s\n" "${cuda_data[@]}") \
