@@ -2458,9 +2458,7 @@ void prepareCodegenLLVM()
     // --ieee-float
     FM.setAllowContract(true);
   }
-  if (gCodegenGPU == false) {
-    info->irBuilder->setFastMathFlags(FM);
-  }
+  info->irBuilder->setFastMathFlags(FM);
 
   checkAdjustedDataLayout();
 
