@@ -13874,6 +13874,14 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
       if (sym->hasFlag(FLAG_FORMAL_TEMP))
         return;
 
+
+      // supress the warning for fields within owned/shared
+      // themselves (better to see the warning at uses of owned/shared
+      // that create generic owned/shared).
+      if (TypeSymbol* ts = toTypeSymbol(sym->defPoint->parentSymbol))
+        if (ts->hasFlag(FLAG_MANAGED_POINTER))
+          return;
+
       bool hasQuestionArg = sym->hasFlag(FLAG_MARKED_GENERIC);
 
       // Inspect the AST to decide if there was a question mark arg
