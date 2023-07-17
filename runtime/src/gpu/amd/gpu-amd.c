@@ -87,7 +87,11 @@ static int *deviceClockRates;
 static void switch_context(int dev_id) {
   ROCM_CALL(hipSetDevice(dev_id));
 }
-//
+
+void chpl_gpu_impl_use_device(c_sublocid_t dev_id) {
+  switch_context(dev_id);
+}
+
 static void chpl_gpu_impl_set_globals(c_sublocid_t dev_id, hipModule_t module) {
   /*
     we expect this to work, but the LLVM backend puts the device version of
@@ -131,7 +135,7 @@ void chpl_gpu_impl_init(int* num_devices) {
 
     hipDeviceGetAttribute(&deviceClockRates[i], hipDeviceAttributeClockRate, device);
 
-    chpl_gpu_impl_set_globals(module);
+    chpl_gpu_impl_set_globals(i, module);
   }
 }
 
@@ -224,7 +228,7 @@ static void chpl_gpu_launch_kernel_help(int ln,
                                              CHPL_RT_MD_GPU_KERNEL_ARG,
                                              ln, fn);
 
-      chpl_gpu_copy_impl_host_to_device(*kernel_params[i], cur_arg,
+      chpl_gpu_impl_copy_host_to_device(*kernel_params[i], cur_arg,
                                         cur_arg_size);
 
       CHPL_GPU_DEBUG("\tKernel parameter %d: %p (device ptr)\n",

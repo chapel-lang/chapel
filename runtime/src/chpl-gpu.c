@@ -232,7 +232,7 @@ void chpl_gpu_copy_device_to_device(c_sublocid_t dst_dev, void* dst,
                                                commID);
   chpl_gpu_diags_incr(device_to_device);
 
-  chpl_gpu_impl_copy_device_to_device(dst_dev, dst, src_dev, src, n);
+  chpl_gpu_impl_copy_device_to_device(dst, src, n);
 
   CHPL_GPU_DEBUG("Copy successful\n");
 }
@@ -249,7 +249,7 @@ void chpl_gpu_copy_device_to_host(void* dst, c_sublocid_t src_dev,
   chpl_gpu_diags_verbose_device_to_host_copy(ln, fn, src_dev, n, commID);
   chpl_gpu_diags_incr(device_to_host);
 
-  chpl_gpu_impl_copy_device_to_host(dst, src_dev, src, n);
+  chpl_gpu_impl_copy_device_to_host(dst, src, n);
 
   CHPL_GPU_DEBUG("Copy successful\n");
 }
@@ -266,7 +266,7 @@ void chpl_gpu_copy_host_to_device(c_sublocid_t dst_dev, void* dst,
   chpl_gpu_diags_verbose_host_to_device_copy(ln, fn, dst_dev, n, commID);
   chpl_gpu_diags_incr(host_to_device);
 
-  chpl_gpu_impl_copy_host_to_device(dst_dev, dst, src, n);
+  chpl_gpu_impl_copy_host_to_device(dst, src, n);
 
   CHPL_GPU_DEBUG("Copy successful\n");
 }
@@ -369,7 +369,7 @@ void* chpl_gpu_mem_calloc(size_t number, size_t size,
     ptr = chpl_gpu_impl_mem_alloc(total_size);
     chpl_memhook_malloc_post((void*)ptr, 1, total_size, description, lineno, filename);
 
-    chpl_gpu_impl_copy_host_to_device(dev_id, ptr, host_mem, total_size);
+    chpl_gpu_impl_copy_host_to_device(ptr, host_mem, total_size);
 
     chpl_mem_free(host_mem, lineno, filename);
 
@@ -408,8 +408,7 @@ void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
   void* new_alloc = chpl_gpu_mem_alloc(size, description, lineno, filename);
 
   const size_t copy_size = size < cur_size ? size : cur_size;
-  chpl_gpu_impl_copy_device_to_device(dev_id, new_alloc, dev_id, memAlloc,
-                                      copy_size);
+  chpl_gpu_impl_copy_device_to_device(new_alloc, memAlloc, copy_size);
   chpl_gpu_mem_free(memAlloc, lineno, filename);
 
   return new_alloc;
