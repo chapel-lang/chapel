@@ -13861,12 +13861,12 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
         return;
       }
 
-      bool hasQuestionArg = false;
+      bool hasQuestionArg = sym->hasFlag(FLAG_MARKED_GENERIC);
 
-      // If it is a variable, the type would end up in a type-expr-temp,
-      // so find our way through that, checking for question mark args
-      // such as 'R(?)', which will prevent the warning.
-      while (true) {
+      // Inspect the AST to decide if there was a question mark arg
+      // (such as 'R(?)'). This is particularly important for variable
+      // declarations with the current AST.
+      while (hasQuestionArg == false) {
         if (SymExpr* se = toSymExpr(typeExpr)) {
           if (se->symbol()->hasFlag(FLAG_MARKED_GENERIC)) {
             hasQuestionArg = true;
