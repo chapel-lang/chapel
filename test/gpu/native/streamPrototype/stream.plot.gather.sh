@@ -36,7 +36,9 @@ echo "------------------"
 mkdir -p $logDir
 set -e -x
 
-printchplenv --all
+GATHER_PRINTCHPLENV=$(printchplenv --all)
+GATHER_GIT_REV_PARSE=$(git rev-parse HEAD)
+GATHER_GIT_STATUS=$(git status)
 
 # -----------------------------------------------------------------------------
 # Build Chapel code
@@ -100,16 +102,23 @@ cuda_data=$(cat $baselineLog | sed -r -n 's/Triad: //p' | tr -s ' ' | cut -d ' '
 chpl_data=$(cat $chplLog | sed -r -n 's/Performance \(GiB\/s\) = (.*)/\1/p')
 
 set +x
-echo "" > $resultFile
-echo "#title: Stream ($CHPL_GPU)" >> $resultFile
+echo "#title: Stream ($CHPL_GPU)" > $resultFile
 echo "#xlabel: Number of Elements (M)'" >> $resultFile
 echo "#ylabel: Throughput\n(GiB/s)" >> $resultFile
 echo "#better: up" >> $resultFile
-echo -e "\t$baselineName\tchpl" > $resultFile
+echo -e "\t$baselineName\tchpl" >> $resultFile
 
 paste \
   <(printf "%s\n" "${sizes[@]}") \
   <(printf "%s\n" "${cuda_data[@]}") \
   <(printf "%s\n" "${chpl_data[@]}") >> $resultFile
+
+echo -e "\n## -- printchplenv --" >> $resultFile
+echo -e "$GATHER_PRINTCHPLENV" | sed 's/^/##    /' >> $resultFile
+echo -e "\n## -- git rev-parse HEAD --" >> $resultFile
+echo -e "$GATHER_GIT_REV_PARSE" | sed 's/^/##    /' >> $resultFile
+echo -e "\n## -- git status --" >> $resultFile
+echo -e "$GATHER_GIT_STATUS" | sed 's/^/##    /' >> $resultFile
+
 set -x
 cat $resultFile

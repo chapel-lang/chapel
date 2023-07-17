@@ -8,21 +8,23 @@ else
   cd ..
 fi
 
+set -e
+
 "$(pwd)/chplExperiment/chplExperiment" \
+   --skip-if-not-possible \
+   \
    nvidia "./stream.plot.gather.sh nvidia" \
-   amd    "./stream.plot.gather.sh amd" 
+   \
+   amd    "./stream.plot.gather.sh amd" \
+   \
+   nvidia --prebuild "export CHPL_GPU_MEM_STRATEGY=array_on_device" \
+          "./stream.plot.gather.sh nvidia_aod" \
+   \
+   amd    --prebuild "export CHPL_GPU_MEM_STRATEGY=array_on_device" \
+          "./stream.plot.gather.sh amd_aod"
 
-./stream.plot.paint.py
-
-#"$(pwd)/chplExperiment/chplExperiment" \
-#   --skipIfNotPossible --prompt \
-#   \
-#   nvidia "./stream.plot.gather.sh nvidia" \
-#   \
-#   amd    "./stream.plot.gather.sh amd" \
-#   \
-#   nvidia --preBuild="export GPU_MEM_STRATEGY=array_on_device" \
-#          "./stream.plot.gather.sh nvidia_aod"
-#   \
-#   amd    --preBuild="export GPU_MEM_STRATEGY=array_on_device" \
-#          "./stream.plot.gather.sh amd_aod"
+if which "python3.6" >/dev/null; then
+  python3.6 ./stream.plot.paint.py
+else
+  /stream.plot.paint.py
+fi
