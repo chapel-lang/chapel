@@ -1,4 +1,0 @@
-CHPL_GPU_MEM_STRATEGY==array_on_device
-# 'sort' uses features like shared memory that we don't have support for in
-# cpu-as-device mode:
-CHPL_GPU==cpu
