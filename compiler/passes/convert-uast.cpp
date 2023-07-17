@@ -392,6 +392,34 @@ struct Converter {
     return new CallExpr(PRIM_ERROR);
   }
 
+  // Used for converting special tokens in the import/use lists: for example,
+  // "align" can be used in an import statement, but is actually chpl_align.
+  Expr* reservedWordRemapForIdentInUseImport(UniqueString name) {
+    if (name == USTR("owned")) {
+      return new UnresolvedSymExpr("_owned");
+    } else if (name == USTR("shared")) {
+      return new UnresolvedSymExpr("_shared");
+    } else if (name == USTR("sync")) {
+      return new UnresolvedSymExpr("_syncvar");
+    } else if (name == USTR("single")) {
+      return new UnresolvedSymExpr("_singlevar");
+    } else if (name == USTR("domain")) {
+      return new UnresolvedSymExpr("_domain");
+    } else if (name == USTR("align")) {
+      return new UnresolvedSymExpr("chpl_align");
+    } else if (name == USTR("by")) {
+      return new UnresolvedSymExpr("chpl_by");
+    }
+
+    // if "index" becomes an actual type, rather than magic:
+    //
+    // else if (name == USTR("index")) {
+    //   return new UnresolvedSymExpr("_index");
+    // }
+
+    return nullptr;
+  }
+
   Expr* reservedWordRemapForIdent(UniqueString name) {
     if (name == USTR("?")) {
       return new SymExpr(gUninstantiated);
@@ -587,7 +615,11 @@ struct Converter {
 
     // check for a reserved word
     auto name = node->name();
-    if (!inImportOrUse) {
+    if (inImportOrUse) {
+      if (auto remap = reservedWordRemapForIdentInUseImport(name)) {
+        return remap;
+      }
+    } else {
       if (auto remap = reservedWordRemapForIdent(name)) {
         return remap;
       }
