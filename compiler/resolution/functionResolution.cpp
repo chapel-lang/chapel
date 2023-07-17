@@ -13786,7 +13786,8 @@ static bool isBuiltinGenericType(Type* t) {
          t == dtNumeric || t == dtIntegral ||
          t == dtIteratorRecord || t == dtIteratorClass ||
          t == dtAnyPOD ||
-         t == dtOwned || t == dtShared;
+         t == dtOwned || t == dtShared ||
+         t == dtAnyRecord;
 }
 
 std::set<Symbol*> gAlreadyWarnedSurprisingGenericSyms;
