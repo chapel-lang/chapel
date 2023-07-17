@@ -8,7 +8,7 @@ proc outFn(input, out output: R) {
 }
 
 proc test1() {
-  var x: R; // generic type!
+  var x: R(?); // generic type!
   outFn(1, x); // sets type of x! 
   writeln("x has type ", x.type:string, " and value ", x);
 }
