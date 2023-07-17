@@ -1,0 +1,2 @@
+popcount.chpl:5: warning: popcount is deprecated - please use popCount instead
+387389207 has 16 set bits

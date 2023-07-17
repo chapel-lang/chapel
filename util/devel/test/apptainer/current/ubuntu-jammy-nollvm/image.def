@@ -8,4 +8,4 @@ From: ubuntu:jammy
     /provision-scripts/apt-get-deps.sh
 
 %runscript
-    ../../provision-scripts/run.sh
+    ../../provision-scripts/run.sh "$@"

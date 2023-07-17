@@ -1517,18 +1517,34 @@ bool canCoerceAsSubtype(Type*     actualType,
       return true;
   }
 
+  // coerce c_ptr to c_ptrConst
+  if (actualType->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
+      !actualType->symbol->hasFlag(FLAG_C_PTRCONST_CLASS) &&
+      formalType->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
+      formalType->symbol->hasFlag(FLAG_C_PTRCONST_CLASS)) {
+    // check element types match
+    Type* actualElt = getDataClassType(actualType->symbol)->typeInfo();
+    Type* formalElt = getDataClassType(formalType->symbol)->typeInfo();
+    if (actualElt && formalElt && (actualElt == formalElt)) {
+      return true;
+    }
+  }
+
+  // coerce c_ptr to c_void_ptr
   if (actualType->symbol->hasFlag(FLAG_C_PTR_CLASS) && formalType == dtCVoidPtr)
     return true;
 
+  // coerce c_array to c_void_ptr
   if (actualType->symbol->hasFlag(FLAG_C_ARRAY) && formalType == dtCVoidPtr)
     return true;
 
+  // coerce c_array to c_ptr
   if (actualType->symbol->hasFlag(FLAG_C_ARRAY) &&
       formalType->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
     // check element types match
     Type* actualElt = getDataClassType(actualType->symbol)->typeInfo();
     Type* formalElt = getDataClassType(formalType->symbol)->typeInfo();
-    if (actualElt && formalElt && actualElt == formalElt)
+    if (actualElt && formalElt && (actualElt == formalElt))
       return true;
   }
 
@@ -10202,6 +10218,20 @@ finalLoweringForFunctionCapture(FnSymbol* fn, Expr* use, bool useClass) {
   }
 }
 
+static bool
+maybeErrorForInvalidCaptureReturnIntent(FunctionType* ft, Expr* use) {
+  auto ri = ft->returnIntent();
+  bool disallowedRetIntent = ri == RET_PARAM || ri == RET_TYPE;
+  if (disallowedRetIntent) {
+    USR_FATAL_CONT(use, "a captured %s cannot return by '%s' intent",
+                   FunctionType::kindToString(ft->kind()),
+                   FunctionType::returnIntentToString(ri));
+    return true;
+  }
+
+  return false;
+}
+
 // Create either a function pointer, a closure, or a 'c_fn_ptr' depending
 // on the function to be captured (or an error, if it does not exist or
 // could not be disambiguated to a single symbol).
@@ -10244,6 +10274,11 @@ static Expr* resolveFunctionCapture(FnSymbol* fn, Expr* use,
   // 'functions/vass/passing-iterator-as-argument'
   if (ft->kind() == FunctionType::ITER) {
     USR_FATAL_CONT(use, "passing iterators by name is not yet supported");
+    return swapInErrorSinkForCapture(ft->kind(), use);
+  }
+
+  // Make sure the return intent is acceptable.
+  if (maybeErrorForInvalidCaptureReturnIntent(ft, use)) {
     return swapInErrorSinkForCapture(ft->kind(), use);
   }
 
@@ -10344,16 +10379,6 @@ static Expr* maybeResolveFunctionCapturePrimitive(CallExpr* call) {
 
     // TODO: Need to have this compute a function type.
     case PRIM_CREATE_FN_TYPE: {
-      if (!fcfs::useLegacyBehavior()) {
-        USR_WARN(call, "the 'func(...)' function type constructor has "
-                       "been deprecated");
-        USR_PRINT(call, "consider the builtin 'proc(...)' syntax "
-                        "instead");
-      } else if (fWarnUnstable) {
-        USR_WARN(call, "the 'func(...)' function type constructor is "
-                       "unstable");
-      }
-
       if (fcfs::usePointerImplementation()) {
         INT_FATAL(call, "Not supported!");
       }
@@ -12148,6 +12173,8 @@ static void insertReturnTemps() {
             if (typeNeedsCopyInitDeinit(fn->retType) == true)
               tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
+            tmp->addFlag(FLAG_DEAD_LAST_MENTION);
+
             contextCallOrCall->insertBefore(def);
             def->insertAfter(new CallExpr(PRIM_MOVE,
                                           tmp,
@@ -12177,10 +12204,6 @@ static void insertReturnTemps() {
               tmp->addFlag(FLAG_MAYBE_TYPE);
               tmp->addFlag(FLAG_MAYBE_PARAM);
             }
-
-            // Mark the variable as last-mention or end-of-block
-            // (because this runs after fixPrimInitsAndAddCasts).
-            markTempDeadLastMention(tmp);
           }
         }
       }
@@ -13662,6 +13685,50 @@ void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx) {
                            toString(decorator), toString(decorated));
   }
 }
+
+void checkSurprisingGenericDecls(DefExpr* def, bool isField) {
+  if (def == nullptr) {
+    return;
+  }
+
+  Symbol* sym = def->sym;
+
+  bool hasQuestionArg = false;
+  if (sym && def->exprType) {
+    if (CallExpr* call = toCallExpr(def->exprType)) {
+      for_actuals(actual, call) {
+        if (SymExpr* act = toSymExpr(actual)) {
+          if (act->symbol() == gUninstantiated) {
+            hasQuestionArg = true;
+          }
+        }
+      }
+    }
+  }
+
+  if (def->exprType) {
+    Type* declType = def->exprType->typeInfo();
+    if (declType->symbol->hasFlag(FLAG_GENERIC) &&
+        !hasQuestionArg &&
+        !sym->hasFlag(FLAG_MARKED_GENERIC) &&
+        !sym->hasFlag(FLAG_TYPE_VARIABLE)) {
+      if (isField && isClassLikeOrManaged(declType)) {
+        auto dec = classTypeDecorator(declType);
+        if (isDecoratorUnknownManagement(dec)) {
+          USR_WARN(sym, "field is declared with generic memory management");
+          USR_PRINT("consider adding 'owned', 'shared', or 'borrowed'");
+          USR_PRINT("if generic memory management is desired, "
+                    "use a 'type' field to store the class type");
+        }
+      }
+      if (declType->symbol->hasFlag(FLAG_DOMAIN)) {
+        USR_WARN(sym, "please use 'domain(?)' for the type of a generic %s "
+                      "storing any domain", isField?"field":"variable");
+      }
+    }
+  }
+}
+
 
 void startGenerousResolutionForErrors() {
   generousResolutionForErrors++;

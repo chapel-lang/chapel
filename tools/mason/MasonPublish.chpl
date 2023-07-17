@@ -39,7 +39,7 @@ import Path;
  */
 proc masonPublish(args: [?d] string) {
   var listArgs: list(string);
-    for x in args do listArgs.append(x);
+    for x in args do listArgs.pushBack(x);
     masonPublish(listArgs);
 }
 
@@ -838,12 +838,12 @@ proc masonTomlFileCheck(projectHome: string) {
   const tomlFile = (parseToml(toParse));
   var missingFields : list(string);
   var name, chplVersion, version, source, author, license = false;
-  if tomlFile.pathExists("brick.name") then name = true; else missingFields.append('name');
-  if tomlFile.pathExists("brick.version") then version = true; else missingFields.append('version');
-  if tomlFile.pathExists("brick.chplVersion") then chplVersion = true; else missingFields.append('chplVersion');
-  if tomlFile.pathExists("brick.source") then source = true; else missingFields.append('source');
-  if tomlFile.pathExists("brick.license") then license = true; else missingFields.append('license');
-  if tomlFile.pathExists("brick.authors") then author = true; else missingFields.append('authors');
+  if tomlFile.pathExists("brick.name") then name = true; else missingFields.pushBack('name');
+  if tomlFile.pathExists("brick.version") then version = true; else missingFields.pushBack('version');
+  if tomlFile.pathExists("brick.chplVersion") then chplVersion = true; else missingFields.pushBack('chplVersion');
+  if tomlFile.pathExists("brick.source") then source = true; else missingFields.pushBack('source');
+  if tomlFile.pathExists("brick.license") then license = true; else missingFields.pushBack('license');
+  if tomlFile.pathExists("brick.authors") then author = true; else missingFields.pushBack('authors');
   if name && version && chplVersion && source
     && author && license then return (true, missingFields);
   else return (false, missingFields);

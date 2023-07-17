@@ -63,7 +63,7 @@ static int vrb_create_ini_qp(struct vrb_xrc_ep *ep)
 	ret = rdma_create_qp_ex(ep->base_ep.id, &attr_ex);
 	if (ret) {
 		ret = -errno;
-		VERBS_WARN(FI_LOG_EP_CTRL,
+		VRB_WARN(FI_LOG_EP_CTRL,
 			   "XRC INI QP rdma_create_qp_ex failed %d\n", -ret);
 		return ret;
 	}
@@ -89,7 +89,7 @@ int vrb_get_shared_ini_conn(struct vrb_xrc_ep *ep,
 	struct ofi_rbnode *node;
 	int ret;
 
-	assert(fastlock_held(&domain->xrc.ini_lock));
+	assert(ofi_mutex_held(&domain->xrc.ini_lock));
 	vrb_set_ini_conn_key(ep, &key);
 	node = ofi_rbmap_find(domain->xrc.ini_conn_rbmap, &key);
 	if (node) {
@@ -101,7 +101,7 @@ int vrb_get_shared_ini_conn(struct vrb_xrc_ep *ep,
 	*ini_conn = NULL;
 	conn = calloc(1, sizeof(*conn));
 	if (!conn) {
-		VERBS_WARN(FI_LOG_EP_CTRL,
+		VRB_WARN(FI_LOG_EP_CTRL,
 			   "Unable to allocate INI connection memory\n");
 		return -FI_ENOMEM;
 	}
@@ -109,7 +109,7 @@ int vrb_get_shared_ini_conn(struct vrb_xrc_ep *ep,
 	conn->tgt_qpn = VRB_NO_INI_TGT_QPNUM;
 	conn->peer_addr = mem_dup(key.addr, ofi_sizeofaddr(key.addr));
 	if (!conn->peer_addr) {
-		VERBS_WARN(FI_LOG_EP_CTRL,
+		VRB_WARN(FI_LOG_EP_CTRL,
 			   "mem_dup of peer address failed\n");
 		free(conn);
 		return -FI_ENOMEM;
@@ -124,7 +124,7 @@ int vrb_get_shared_ini_conn(struct vrb_xrc_ep *ep,
 			       (void *) &key, (void *) conn, NULL);
 	assert(ret != -FI_EALREADY);
 	if (ret) {
-		VERBS_WARN(FI_LOG_EP_CTRL, "INI QP RBTree insert failed %d\n",
+		VRB_WARN(FI_LOG_EP_CTRL, "INI QP RBTree insert failed %d\n",
 			   ret);
 		goto insert_err;
 	}
@@ -143,7 +143,7 @@ void _vrb_put_shared_ini_conn(struct vrb_xrc_ep *ep)
 	struct vrb_ini_shared_conn *ini_conn;
 	struct vrb_ini_conn_key key;
 
-	assert(fastlock_held(&domain->xrc.ini_lock));
+	assert(ofi_mutex_held(&domain->xrc.ini_lock));
 	if (!ep->ini_conn)
 		return;
 
@@ -168,7 +168,7 @@ void _vrb_put_shared_ini_conn(struct vrb_xrc_ep *ep)
 	/* Tear down physical INI/TGT when no longer being used */
 	if (!ofi_atomic_dec32(&ini_conn->ref_cnt)) {
 		if (ini_conn->ini_qp && ibv_destroy_qp(ini_conn->ini_qp))
-			VERBS_WARN(FI_LOG_EP_CTRL,
+			VRB_WARN(FI_LOG_EP_CTRL,
 				   "Destroy of XRC physical INI QP failed %d\n",
 				   errno);
 
@@ -194,7 +194,7 @@ void vrb_put_shared_ini_conn(struct vrb_xrc_ep *ep)
 void vrb_add_pending_ini_conn(struct vrb_xrc_ep *ep, int reciprocal,
 			      void *conn_param, size_t conn_paramlen)
 {
-	assert(fastlock_held(&vrb_ep_to_domain(&ep->base_ep)->xrc.ini_lock));
+	assert(ofi_mutex_held(&vrb_ep_to_domain(&ep->base_ep)->xrc.ini_lock));
 
 	ep->conn_setup->pending_recip = reciprocal;
 	ep->conn_setup->pending_paramlen = MIN(conn_paramlen,
@@ -245,7 +245,7 @@ void vrb_sched_ini_conn(struct vrb_ini_shared_conn *ini_conn)
 				       RDMA_PS_TCP : RDMA_PS_UDP,
 				       &ep->base_ep.id);
 		if (ret) {
-			VERBS_WARN(FI_LOG_EP_CTRL,
+			VRB_WARN(FI_LOG_EP_CTRL,
 				   "Failed to create active CM ID %d\n",
 				   ret);
 			goto err;
@@ -256,12 +256,12 @@ void vrb_sched_ini_conn(struct vrb_ini_shared_conn *ini_conn)
 
 			if (ep->ini_conn->ini_qp &&
 			    ibv_destroy_qp(ep->ini_conn->ini_qp)) {
-				VERBS_WARN(FI_LOG_EP_CTRL, "Failed to destroy "
+				VRB_WARN(FI_LOG_EP_CTRL, "Failed to destroy "
 					   "physical INI QP %d\n", errno);
 			}
 			ret = vrb_create_ini_qp(ep);
 			if (ret) {
-				VERBS_WARN(FI_LOG_EP_CTRL, "Failed to create "
+				VRB_WARN(FI_LOG_EP_CTRL, "Failed to create "
 					   "physical INI QP %d\n", ret);
 				goto err;
 			}
@@ -270,7 +270,7 @@ void vrb_sched_ini_conn(struct vrb_ini_shared_conn *ini_conn)
 			ep->ini_conn->phys_conn_id = ep->base_ep.id;
 		} else {
 			assert(!ep->base_ep.id->qp);
-			VERBS_DBG(FI_LOG_EP_CTRL, "Sharing XRC INI QPN %d\n",
+			VRB_DBG(FI_LOG_EP_CTRL, "Sharing XRC INI QPN %d\n",
 				  ep->ini_conn->ini_qp->qp_num);
 		}
 
@@ -279,7 +279,7 @@ void vrb_sched_ini_conn(struct vrb_ini_shared_conn *ini_conn)
 		ret = rdma_migrate_id(ep->base_ep.id,
 				      ep->base_ep.eq->channel);
 		if (ret) {
-			VERBS_WARN(FI_LOG_EP_CTRL,
+			VRB_WARN(FI_LOG_EP_CTRL,
 				   "Failed to migrate active CM ID %d\n", ret);
 			goto err;
 		}
@@ -341,7 +341,7 @@ int vrb_process_ini_conn(struct vrb_xrc_ep *ep,int reciprocal,
 	ret = rdma_resolve_route(ep->base_ep.id, VERBS_RESOLVE_TIMEOUT);
 	if (ret) {
 		ret = -errno;
-		VERBS_WARN(FI_LOG_EP_CTRL,
+		VRB_WARN(FI_LOG_EP_CTRL,
 			   "rdma_resolve_route failed %s (%d)\n",
 			   strerror(-ret), -ret);
 		vrb_prev_xrc_conn_state(ep);
@@ -375,7 +375,7 @@ int vrb_ep_create_tgt_qp(struct vrb_xrc_ep *ep, uint32_t tgt_qpn)
 		ep->tgt_ibv_qp = ibv_open_qp(domain->verbs, &open_attr);
 		if (!ep->tgt_ibv_qp) {
 			ret = -errno;
-			VERBS_WARN(FI_LOG_EP_CTRL,
+			VRB_WARN(FI_LOG_EP_CTRL,
 				   "XRC TGT QP ibv_open_qp failed %d\n", -ret);
 			return ret;
 		}
@@ -393,7 +393,7 @@ int vrb_ep_create_tgt_qp(struct vrb_xrc_ep *ep, uint32_t tgt_qpn)
 	attr_ex.xrcd = domain->xrc.xrcd;
 	if (rdma_create_qp_ex(ep->tgt_id, &attr_ex)) {
 		ret = -errno;
-		VERBS_WARN(FI_LOG_EP_CTRL,
+		VRB_WARN(FI_LOG_EP_CTRL,
 			   "Physical XRC TGT QP rdma_create_qp_ex failed %d\n",
 			   -ret);
 		return ret;
@@ -418,7 +418,7 @@ static int vrb_put_tgt_qp(struct vrb_xrc_ep *ep)
 	ret = ibv_destroy_qp(ep->tgt_ibv_qp);
 	if (ret) {
 		ret = -errno;
-		VERBS_WARN(FI_LOG_EP_CTRL,
+		VRB_WARN(FI_LOG_EP_CTRL,
 			   "Close XRC TGT QP ibv_destroy_qp failed %d\n",
 			   -ret);
 		return ret;
@@ -432,7 +432,7 @@ static int vrb_put_tgt_qp(struct vrb_xrc_ep *ep)
 
 int vrb_ep_destroy_xrc_qp(struct vrb_xrc_ep *ep)
 {
-	assert(fastlock_held(&ep->base_ep.eq->lock));
+	assert(ofi_mutex_held(&ep->base_ep.eq->lock));
 	vrb_put_shared_ini_conn(ep);
 
 	if (ep->base_ep.id) {
@@ -471,7 +471,7 @@ static int vrb_ini_conn_compare(struct ofi_rbmap *map, void *key, void *data)
 			     sizeof(ofi_sin6_addr(_key->addr)));
 		break;
 	default:
-		VERBS_WARN(FI_LOG_FABRIC, "Unsupported address format\n");
+		VRB_WARN(FI_LOG_FABRIC, "Unsupported address format\n");
 		assert(0);
 		return -FI_EINVAL;
 	}
@@ -490,7 +490,7 @@ static int vrb_domain_xrc_validate_hw(struct vrb_domain *domain)
 
 	ret = ibv_query_device(domain->verbs, &attr);
 	if (ret || !(attr.device_cap_flags & IBV_DEVICE_XRC)) {
-		VERBS_INFO(FI_LOG_DOMAIN, "XRC is not supported");
+		VRB_INFO(FI_LOG_DOMAIN, "XRC is not supported");
 		return -FI_EINVAL;
 	}
 	return FI_SUCCESS;
@@ -511,7 +511,7 @@ int vrb_domain_xrc_init(struct vrb_domain *domain)
 		domain->xrc.xrcd_fd = open(vrb_gl_data.msg.xrcd_filename,
 				       O_CREAT, S_IWUSR | S_IRUSR);
 		if (domain->xrc.xrcd_fd < 0) {
-			VERBS_WARN(FI_LOG_DOMAIN,
+			VRB_WARN(FI_LOG_DOMAIN,
 				   "XRCD file open failed %d\n", errno);
 			return -errno;
 		}
@@ -523,24 +523,23 @@ int vrb_domain_xrc_init(struct vrb_domain *domain)
 	domain->xrc.xrcd = ibv_open_xrcd(domain->verbs, &attr);
 	if (!domain->xrc.xrcd) {
 		ret = -errno;
-		VERBS_INFO_ERRNO(FI_LOG_DOMAIN, "ibv_open_xrcd", errno);
+		VRB_WARN_ERRNO(FI_LOG_DOMAIN, "ibv_open_xrcd");
 		goto xrcd_err;
 	}
 
 	domain->xrc.ini_conn_rbmap = ofi_rbmap_create(vrb_ini_conn_compare);
 	if (!domain->xrc.ini_conn_rbmap) {
 		ret = -ENOMEM;
-		VERBS_INFO_ERRNO(FI_LOG_DOMAIN, "XRC INI QP RB Tree", -ret);
 		goto rbmap_err;
 	}
 
-	fastlock_init(&domain->xrc.ini_lock);
+	ofi_mutex_init(&domain->xrc.ini_lock);
 	if (domain->util_domain.threading == FI_THREAD_DOMAIN) {
-		domain->xrc.lock_acquire = ofi_fastlock_acquire_noop;
-		domain->xrc.lock_release = ofi_fastlock_release_noop;
+		domain->xrc.lock_acquire = ofi_mutex_lock_noop;
+		domain->xrc.lock_release = ofi_mutex_unlock_noop;
 	} else {
-		domain->xrc.lock_acquire = ofi_fastlock_acquire;
-		domain->xrc.lock_release = ofi_fastlock_release;
+		domain->xrc.lock_acquire = ofi_mutex_lock_op;
+		domain->xrc.lock_release = ofi_mutex_unlock_op;
 	}
 	domain->ext_flags |= VRB_USE_XRC;
 	return FI_SUCCESS;
@@ -566,13 +565,13 @@ int vrb_domain_xrc_cleanup(struct vrb_domain *domain)
 	assert(domain->xrc.xrcd);
 	/* All endpoint and hence XRC INI QP should be closed */
 	if (!ofi_rbmap_empty(domain->xrc.ini_conn_rbmap)) {
-		VERBS_WARN(FI_LOG_DOMAIN, "XRC domain busy\n");
+		VRB_WARN(FI_LOG_DOMAIN, "XRC domain busy\n");
 		return -FI_EBUSY;
 	}
 
 	ret = ibv_close_xrcd(domain->xrc.xrcd);
 	if (ret) {
-		VERBS_WARN(FI_LOG_DOMAIN, "ibv_close_xrcd failed %d\n", ret);
+		VRB_WARN(FI_LOG_DOMAIN, "ibv_close_xrcd failed %d\n", ret);
 		return -ret;
 	}
 	if (domain->xrc.xrcd_fd >= 0) {
@@ -581,7 +580,7 @@ int vrb_domain_xrc_cleanup(struct vrb_domain *domain)
 	}
 
 	ofi_rbmap_destroy(domain->xrc.ini_conn_rbmap);
-	fastlock_destroy(&domain->xrc.ini_lock);
+	ofi_mutex_destroy(&domain->xrc.ini_lock);
 #endif /* VERBS_HAVE_XRC */
 	return 0;
 }

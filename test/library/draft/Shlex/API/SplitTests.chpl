@@ -17,7 +17,7 @@ use Shlex;
     var tok = lex.get_token();
     //since posix is false, we just need to check for empty string as EOF
     while(tok != '') {
-      ret.append(tok);
+      ret.pushBack(tok);
       tok = lex.get_token();
     }
     return ret;

@@ -42,7 +42,6 @@
 #include "mysystem.h"
 #include "stlUtil.h"
 #include "stringutil.h"
-#include "tmpdirname.h"
 
 #include <pwd.h>
 #include <unistd.h>
@@ -117,24 +116,26 @@ void ensureDirExists(const char* dirname, const char* explanation) {
   }
 }
 
-const char* makeTempDir(const char* dirPrefix) {
- std::string tmpDirPath;
- if (auto err = chpl::makeTempDir(std::string(dirPrefix), tmpDirPath)) {
-  USR_FATAL(NULL, "%s", err.message().c_str());
- }
+static const char* makeTempDir() {
+ std::string tmpDirPath = gContext->tmpDir();
+ ensureDirExists(tmpDirPath.c_str(), "ensuring tmp sub-directory exists");
+
  return astr(tmpDirPath.c_str());
 }
 
 void ensureTmpDirExists() {
   if (saveCDir[0] == '\0') {
-    if (tmpdirname == NULL) {
-      tmpdirname = makeTempDir("chpl-");
-      intDirName = tmpdirname;
+    if (intDirName == NULL) {
+      intDirName = makeTempDir();
     }
   } else {
     if (intDirName != saveCDir) {
       intDirName = saveCDir;
       ensureDirExists(saveCDir, "ensuring --savec directory exists");
+      if (0 != strcmp(makeTempDir(), saveCDir)) {
+        // expected gContext to have been constructed with saveCDir
+        INT_FATAL("misconfiguration with temp dir");
+      }
     }
   }
 }
@@ -147,40 +148,6 @@ void deleteDir(const char* dirname) {
               err.message().c_str());
   }
 }
-
-
-void deleteTmpDir() {
-  static int inDeleteTmpDir = 0; // break infinite recursion
-
-  if (inDeleteTmpDir) {
-    return;
-  }
-  inDeleteTmpDir = 1;
-
-#ifndef DEBUGTMPDIR
-  if (tmpdirname != NULL) {
-    if (strlen(tmpdirname) < 1 ||
-        strchr(tmpdirname, '*') != NULL ||
-        strcmp(tmpdirname, "//") == 0) {
-      INT_FATAL("tmp directory name looks fishy");
-    }
-    deleteDir(tmpdirname);
-    tmpdirname = NULL;
-  }
-  if (doctmpdirname != NULL) {
-    if (strlen(doctmpdirname) < 1 ||
-        strchr(doctmpdirname, '*') != NULL ||
-        strcmp(doctmpdirname, "//") == 0) {
-      INT_FATAL("doc tmp directory name looks fishy");
-    }
-    deleteDir(doctmpdirname);
-    doctmpdirname = NULL;
-  }
-#endif
-
-  inDeleteTmpDir = 0;
-}
-
 
 const char* genIntermediateFilename(const char* filename) {
   const char* slash = "/";

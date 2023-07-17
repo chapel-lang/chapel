@@ -102,11 +102,15 @@ void setupDynoError(chpl::ErrorBase::Kind errKind) {
 GpuCodegenType getGpuCodegenType() {
   static const GpuCodegenType cached = []() {
     INT_ASSERT(usingGpuLocaleModel());
-    if (0 == strcmp(CHPL_GPU_CODEGEN, "cuda")) {
+    if (0 == strcmp(CHPL_GPU, "nvidia")) {
       return GpuCodegenType::GPU_CG_NVIDIA_CUDA;
-    } else {
-      INT_ASSERT(!strcmp(CHPL_GPU_CODEGEN, "rocm"));
+    } else if (0 == strcmp(CHPL_GPU, "amd")) {
       return GpuCodegenType::GPU_CG_AMD_HIP;
+    } else if (0 == strcmp(CHPL_GPU, "cpu")) {
+      return GpuCodegenType::GPU_CG_CPU;
+    } else {
+      INT_FATAL("Unknown value for CHPL_GPU.");
+      return GpuCodegenType::GPU_CG_CPU;
     }
   }();
   return cached;
@@ -115,6 +119,10 @@ GpuCodegenType getGpuCodegenType() {
 // Return true if the current locale model needs GPU code generation
 bool usingGpuLocaleModel() {
   return 0 == strcmp(CHPL_LOCALE_MODEL, "gpu");
+}
+
+bool isFullGpuCodegen() {
+  return usingGpuLocaleModel() && (0 != strcmp(CHPL_GPU, "cpu"));
 }
 
 bool forceWidePtrsForLocal() {
@@ -183,13 +191,6 @@ static const char* cleanCompilerFilename(const char* name) {
 static void cleanup_for_exit() {
   closeCodegenFiles();
 
-  // Currently, gpu code generation is done in on forked process. This
-  // forked process produces some files in the tmp directory that are
-  // later read by the main process, so we want the main process
-  // to clean up the temp dir and not the forked process.
-  if (!gCodegenGPU) {
-    deleteTmpDir();
-  }
   stopCatchingSignals();
 }
 

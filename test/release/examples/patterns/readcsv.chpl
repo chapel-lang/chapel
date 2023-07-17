@@ -99,7 +99,7 @@ var f = open(inFileName, ioMode.r);
       // Next field of data will start after the comma.
       start = nextCommaIdx + 1; 
     }
-    dataRows.append(aRowMap);
+    dataRows.pushBack(aRowMap);
   }
   reader.close();
 
@@ -168,7 +168,7 @@ var f = open(inFileName, ioMode.r);
 
   // Reading all of the lines of the file into a list.
   while (reader.readLine(line)) {
-    dataRows.append(line);
+    dataRows.pushBack(line);
   }
 
   // Declaring an associative array, where the value type is a 1D array 
@@ -275,7 +275,7 @@ proc createListOfColNames(line : string) {
   var start = 0;
   while (start<line.size) {
     var (nextVal,commaIdx) = nextField(line,start);
-    colNames.append(nextVal);
+    colNames.pushBack(nextVal);
     start = commaIdx+1;
   }
   return colNames;

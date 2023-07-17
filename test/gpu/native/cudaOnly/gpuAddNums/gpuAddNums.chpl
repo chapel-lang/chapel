@@ -1,6 +1,10 @@
+// See the README file for more information about this test.
+
 extern {
   #include <cuda.h>
   #include <assert.h>
+  #include <stdio.h>
+  #include <stdbool.h>
 
   #define FATBIN_FILE "gpuAddNums_gpu_files/chpl__gpu.fatbin"
 
@@ -16,7 +20,7 @@ extern {
 
   extern char* chpl_gpuBinary;
 
-  static double launchKernel(){
+  static double launchKernel(void){
     CUdevice    device;
     CUmodule    cudaModule;
     CUfunction  function;

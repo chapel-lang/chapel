@@ -54,13 +54,13 @@ module ConcurrentMap {
   private use Random;
   private use IO;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   param BUCKET_UNLOCKED = 0;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   param BUCKET_LOCKED = 1;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   param BUCKET_DESTROYED = 2;
 
   /*
@@ -80,28 +80,28 @@ module ConcurrentMap {
   config param MULTIPLIER_NUM_BUCKETS : real = 2;
 
   // Note: Once this becomes distributed, we have to make it per-locale
-  pragma "no doc"
+  @chpldoc.nodoc
   var seedRNG = new owned RandomStream(uint(64), parSafe=true);
 
-  pragma "no doc"
+  @chpldoc.nodoc
   const E_AVAIL = 1;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   const E_LOCK = 2;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   const P_INNER = 3;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   const P_TERM = 4;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   const P_LOCK = 5;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   const GARBAGE = 6;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class DeferredNode {
     type eltType;
     var val : eltType;
@@ -132,7 +132,7 @@ module ConcurrentMap {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class StackNode {
     type eltType;
     var val : eltType;
@@ -148,7 +148,7 @@ module ConcurrentMap {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class Stack {
     type eltType;
     var top : unmanaged StackNode(eltType)?;
@@ -184,7 +184,7 @@ module ConcurrentMap {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   // Can be either a singular 'Bucket' or a plural 'Buckets'
   class Base {
     type keyType;
@@ -204,7 +204,7 @@ module ConcurrentMap {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   // Stores keys and values in the hash table. The lock is used to
   // determine both the 'lock'/'unlock' state of the bucket, and if
   // the bucket is going to be destroyed, meaning that the task should
@@ -234,7 +234,7 @@ module ConcurrentMap {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class Buckets : Base {
     var seed : uint(64);
     var size : int;
@@ -277,22 +277,22 @@ module ConcurrentMap {
   }
 
   class ConcurrentMap : Base {
-    pragma "no doc"
+    @chpldoc.nodoc
     var root : unmanaged Buckets(keyType, valType);
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var _manager = new owned LocalEpochManager();
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var iterRNG = new owned RandomStream(uint(64), parSafe=true);
 
-    pragma "no doc"
+    @chpldoc.nodoc
     type stackType = (unmanaged Buckets(keyType, valType)?, int, int);
 
-    pragma "no doc"
+    @chpldoc.nodoc
     type deferredType = (unmanaged Buckets(keyType, valType)?, int);
 
-    pragma "no doc"
+    @chpldoc.nodoc
     type PEListType = (unmanaged Bucket(keyType, valType)?, unmanaged Buckets(keyType, valType)?, int);
 
     proc init(type keyType, type valType) {
@@ -308,7 +308,7 @@ module ConcurrentMap {
       return _manager.register();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc getEList(key : keyType, isInsertion : bool, tok : owned TokenWrapper) : unmanaged Bucket(keyType, valType)? throws {
       var found : unmanaged Bucket(keyType, valType)?;
       var curr = root;
@@ -385,7 +385,7 @@ module ConcurrentMap {
     }
 
     // helper function to facilitate deletion of EList
-    pragma "no doc"
+    @chpldoc.nodoc
     proc getPEList(key : keyType, isInsertion : bool, tok : owned TokenWrapper) : PEListType throws {
       var found : unmanaged Bucket(keyType, valType)?;
       var retNil : PEListType;
@@ -924,7 +924,7 @@ module ConcurrentMap {
       return res;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc clearHelper(curr : unmanaged Buckets(keyType, valType)?, tok : owned TokenWrapper) throws {
       var shouldYield = false;
       var idx = 0;
@@ -1042,14 +1042,15 @@ module ConcurrentMap {
       return A;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc readThis(f) throws {
       compilerWarning("Reading a ConcurrentMap is not supported");
     }
 
-    proc init(type keyType, type valType, r: fileReader) {
+    @chpldoc.nodoc
+    proc init(type keyType, type valType, reader: fileReader, ref deserializer) {
       this.init(keyType, valType);
-      compilerWarning("Reading a ConcurrentMap is not supported");
+      compilerWarning("Deserializing a ConcurrentMap is not yet supported");
     }
 
     /*

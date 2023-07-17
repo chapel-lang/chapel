@@ -5,7 +5,7 @@ config const n = 100;
 startCommDiagnostics();
 on Locales[numLocales-1] {
   for i in 1..n {
-    date.fromTimestamp(i);
+    date.createFromTimestamp(i);
   }
 }
 stopCommDiagnostics();

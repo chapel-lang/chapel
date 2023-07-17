@@ -107,6 +107,8 @@ bool useDarwinArmFix(Type* type);
 void makeBinaryLLVM();
 void prepareCodegenLLVM();
 void finishCodegenLLVM();
+// appends clang arguments to be used to the provided vector
+void computeClangArgs(std::vector<std::string>& clangCCArgs);
 void runClang(const char* just_parse_filename);
 
 bool lookupInExternBlock(ModuleSymbol* module, const char* name,
@@ -129,6 +131,9 @@ void print_clang(const clang::TypeDecl* td);
 void print_clang(const clang::ValueDecl* vd);
 
 const char* getGeneratedAnonTypeName(const clang::RecordType* structType);
+
+// simplify the function using the function simplification pipeline
+void simplifyFunction(llvm::Function* func);
 
 #endif // HAVE_LLVM
 

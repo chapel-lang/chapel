@@ -1,6 +1,6 @@
 ---
 red..violet by 2
-range(color,both,true)
+range(color,both,positive)
 
 red
 yellow
@@ -33,7 +33,7 @@ violet
 
 ---
 yellow..indigo by 2
-range(color,both,true)
+range(color,both,positive)
 
 yellow
 blue
@@ -67,7 +67,7 @@ blue
 
 ---
 green..green by 2
-range(color,both,true)
+range(color,both,positive)
 
 green
 
@@ -92,7 +92,7 @@ green
 
 ---
 blue..green by 2
-range(color,both,true)
+range(color,both,positive)
 
 
 size = 0

@@ -49,11 +49,10 @@ module ArrayViewReindex {
         return downDistInst;
     }
 
-    override proc dsiNewRectangularDom(param rank, type idxType, param stridable, inds) {
+    override proc dsiNewRectangularDom(param rank, type idxType, param strides, inds) {
       var newdom = new unmanaged ArrayViewReindexDom(rank=rank,
                                            idxType=idxType,
-                                           //                                           stridable=true,
-                                           stridable=stridable,
+                                           strides=strides,
                                            downdomPid=downdomPid,
                                            downdomInst=downdomInst,
                                            distPid=this.pid,
@@ -106,12 +105,12 @@ module ArrayViewReindex {
   //
  class ArrayViewReindexDom: BaseRectangularDom {
     // the new reindexed index set that we represent upwards
-    var updomInst: unmanaged DefaultRectangularDom(rank, idxType, stridable)?;
+    var updomInst: unmanaged DefaultRectangularDom(rank, idxType, strides)?;
     forwarding updom except these, chpl__serialize, chpl__deserialize;
 
     // the old original index set that we're equivalent to
     var downdomPid;
-    var downdomInst; //: downdomtype(rank, idxType, stridable);
+    var downdomInst; //: downdomtype(rank, idxType, strides);
 
     const distPid;  // a reference back to our ArrayViewReindexDist
     const distInst;
@@ -133,10 +132,10 @@ module ArrayViewReindex {
     // TODO: If we put this expression into the variable declaration
     // above, we get a memory leak.  File a future against this?
     //
-    proc downdomtype(param rank: int, type idxType, param stridable: bool) type {
-      var ranges : rank*range(idxType, boundKind.both, stridable);
-      var a = dist.downDist.dsiNewRectangularDom(rank=rank, idxType=idxType,
-                                              stridable=stridable, ranges);
+    proc downdomtype(param rank: int, type idxType, param strides: bool) type {
+      var ranges : rank*range(idxType, boundKind.both, strides);
+      var a = chpl_dsiNewRectangularDom(dist.downDist, rank,
+                                        idxType, strides, ranges);
       return a.type;
     }
 
@@ -169,7 +168,7 @@ module ArrayViewReindex {
 
       // TODO: BHARSH 2019-05-13:
       // I would rather do something like this:
-      //   new _domain(_getDistribution(dist.downDist), rank, idxType, dist.downdomInst.stridable);
+      //   new _domain(_getDistribution(dist.downDist), rank, idxType, dist.downdomInst.strides);
       //
       // But that results in memory leaks. The difference is that by using a
       // proper '_distribution' the resulting domain class is linked to that
@@ -180,11 +179,10 @@ module ArrayViewReindex {
       // In short, before we can use the desired pattern, we need to replace
       // the uses of '_delete_dom' with something like the contents of
       // _domain._do_destroy().
-      var ranges : rank*range(idxType, boundKind.both, dist.downdomInst.stridable);
-      var downdomclass = dist.downDist.dsiNewRectangularDom(rank=rank,
-                                                           idxType=idxType,
-                                                           stridable=dist.downdomInst.stridable,
-                                                           ranges);
+      var ranges : rank*range(idxType, boundKind.both,
+                              dist.downdomInst.strides);
+      var downdomclass = chpl_dsiNewRectangularDom(dist.downDist, rank,
+                                idxType, dist.downdomInst.strides, ranges);
       pragma "no auto destroy"
       var downdomLoc = new _domain(downdomclass);
       downdomLoc = chpl_reindexConvertDom(inds, updom, dist.downdomInst);
@@ -328,7 +326,7 @@ module ArrayViewReindex {
     proc dsiPrivatize(privatizeData) {
       return new unmanaged ArrayViewReindexDom(rank = this.rank,
                                      idxType = this.idxType,
-                                     stridable = this.stridable,
+                                     strides = this.strides,
                                      updomInst = privatizeData(0),
                                      downdomPid = privatizeData(1),
                                      downdomInst = privatizeData(2),
@@ -771,7 +769,8 @@ module ArrayViewReindex {
       compilerError("Called chpl_reindexConvertDomMaybeSlice with incorrect rank. Got " + dims.size:string + ", expecting " + updom.rank:string);
     }
 
-    var ranges : downdom.rank * range(downdom.idxType, stridable=downdom.stridable || dims(0).stridable);
+    param newStrides = chpl_strideUnion(downdom, dims(0));
+    var ranges : downdom.rank * range(downdom.idxType, strides=newStrides);
     var actualLow, actualHigh: downdom.rank*downdom.idxType;
     for param d in 0..dims.size-1 {
       if (dims(d).sizeAs(int) == 0) {
@@ -783,7 +782,7 @@ module ArrayViewReindex {
       }
     }
     for param d in 0..updom.rank-1 {
-      if (downdom.dsiDim(d).stridable || dims(d).stridable) {
+      if ! newStrides.isOne() {  // todo: optimize when newStrides.isNegOne()
         const relStride = max(1, (dims(d).stride / updom.dsiDim(d).stride) * downdom.dsiDim(d).stride);
         // Slicing the ranges preserves the stride
         ranges(d) = downdom.dsiDim(d)[actualLow(d)..actualHigh(d) by relStride];

@@ -25,10 +25,8 @@ param eol = '\n'.toByte(),  // end-of-line, as an integer
 var pairCmpl: [0..<join(maxChars, maxChars)] uint(16);
 
 // channels for doing efficient console I/O
-var stdinBin  = (new file(0)).reader(iokind.native, locking=false,
-                                     hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED)),
-  stdoutBin = (new file(1)).writer(iokind.native, locking=false,
-                                   hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
+var stdinBin  = (new file(0)).reader(iokind.native, locking=false),
+    stdoutBin = (new file(1)).writer(iokind.native, locking=false);
 
 proc main(args: [] string) {
   // set up the 'pairCmpl' map
@@ -152,8 +150,8 @@ proc revcomp(in dstFront, in charAfter, spanLen, buff, seq) {
 
   for 2..spanLen by -2 {
     charAfter -= 2;
-    const src = c_ptrTo(seq[charAfter]): c_ptr(uint(16)),
-          dst = c_ptrTo(buff[dstFront]): c_ptr(uint(16));
+    const src = c_ptrTo(seq[charAfter]):c_void_ptr:c_ptr(uint(16)),
+          dst = c_ptrTo(buff[dstFront]):c_void_ptr:c_ptr(uint(16));
     dst.deref() = pairCmpl[src.deref()];
     dstFront += 2;
   }

@@ -55,7 +55,7 @@ static const Type* receiverTypeFromTfs(const TypedFnSignature* tfs) {
 
 static const CompositeType* typeToCompType(const Type* type) {
   if (auto cls = type->toClassType()) {
-    return cls->basicClassType();
+    return cls->toManageableType();
   } else {
     auto ret = type->toCompositeType();
     return ret;
@@ -269,6 +269,8 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
                           subs);
   } else if (auto cls = initialRecvType_->toClassType()) {
     auto oldBasic = cls->basicClassType();
+    CHPL_ASSERT(oldBasic && "Not handled!");
+
     auto basic = BasicClassType::get(ctx_, oldBasic->id(),
                                      oldBasic->name(),
                                      oldBasic->parentClassType(),
@@ -368,9 +370,11 @@ bool InitResolver::implicitlyResolveFieldType(ID id) {
   if (!state || !state->initPointId.isEmpty()) return false;
 
   if (state->qt.isParam()) {
-    CHPL_ASSERT(0 == "Not handled yet!");
+    // TODO: not yet implemented
+    state->qt = QualifiedType(QualifiedType::PARAM, ErroneousType::get(ctx_));
   } else if (state->qt.isType()) {
-    CHPL_ASSERT(0 == "Not handled yet!");
+    // TODO: not yet implemented
+    state->qt = QualifiedType(QualifiedType::TYPE, ErroneousType::get(ctx_));
   } else {
     auto ct = typeToCompType(currentRecvType_);
     auto& rf = resolveFieldDecl(ctx_, ct, id, DefaultsPolicy::USE_DEFAULTS);
@@ -670,6 +674,9 @@ bool InitResolver::handleResolvingFieldAccess(const Dot* node) {
         re.setType(qt);
         return false;
       }
+    } else {
+      // Otherwise, proceed normally.
+      return false;
     }
   }
 

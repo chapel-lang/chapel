@@ -100,7 +100,9 @@ llvm::AllocaInst* makeAlloca(llvm::Type* type,
   return tempVar;
 }
 
-llvm::AllocaInst* createLLVMAlloca(llvm::IRBuilder<>* irBuilder, llvm::Type* type, const char* name)
+llvm::AllocaInst* createAllocaInFunctionEntry(llvm::IRBuilder<>* irBuilder,
+                                              llvm::Type* type,
+                                              const char* name)
 {
   // It's important to alloca at the front of the function in order
   // to avoid having an alloca in a loop which is a good way to achieve
@@ -312,33 +314,6 @@ PromotedPair convertValuesToLarger(
   return PromotedPair(NULL, NULL, false);
 }
 
-
-void makeLifetimeStart(llvm::IRBuilder<>* irBuilder,
-                       const llvm::DataLayout& layout,
-                       llvm::LLVMContext &ctx,
-                       llvm::Type *valType, llvm::Value *addr)
-{
-  int64_t sizeInBytes = -1;
-  if (valType->isSized())
-    sizeInBytes = layout.getTypeStoreSize(valType);
-
-  llvm::ConstantInt *size = llvm::ConstantInt::getSigned(
-    llvm::Type::getInt64Ty(ctx), sizeInBytes);
-
-  irBuilder->CreateLifetimeStart(addr, size);
-}
-
-llvm::AllocaInst* makeAllocaAndLifetimeStart(llvm::IRBuilder<>* irBuilder,
-                                        const llvm::DataLayout& layout,
-                                        llvm::LLVMContext &ctx,
-                                        llvm::Type* type, const char* name) {
-
-  llvm::AllocaInst* val = createLLVMAlloca(irBuilder, type, name);
-  makeLifetimeStart(irBuilder, layout, ctx, type, val);
-
-  return val;
-}
-
 // Returns n elements in a vector/array or -1
 static
 int64_t arrayVecN(llvm::Type *t)
@@ -404,8 +379,8 @@ bool isTypeEquivalent(const llvm::DataLayout& layout, llvm::Type* a, llvm::Type*
   }
 
 
-  alignA = layout.getPrefTypeAlignment(a);
-  alignB = layout.getPrefTypeAlignment(b);
+  alignA = layout.getPrefTypeAlign(a).value();
+  alignB = layout.getPrefTypeAlign(b).value();
   sizeA = layout.getTypeStoreSize(a);
   sizeB = layout.getTypeStoreSize(b);
 
@@ -525,7 +500,7 @@ llvm::Value *convertValueToType(llvm::IRBuilder<>* irBuilder,
       else
         useTy = curType;
 
-      tmp_alloc = makeAllocaAndLifetimeStart(irBuilder, layout, ctx, useTy, "");
+      tmp_alloc = createAllocaInFunctionEntry(irBuilder, useTy, "");
       *alloca = tmp_alloc;
       // Now cast the allocation to both fromType and toType.
       llvm::Type* curPtrType = curType->getPointerTo();
@@ -626,5 +601,24 @@ void llvmAttachStructRetAttr(llvm::AttrBuilder& b, llvm::Type* returnTy) {
   #endif
 }
 
+bool isOpaquePointer(llvm::Type* ty) {
+#if HAVE_LLVM_VER >= 140
+  return ty->isOpaquePointerTy();
+#else
+  return false; // older LLVMs did not have opaque pointers
 #endif
+}
 
+llvm::Type* tryComputingPointerElementType(llvm::Value* ptr) {
+  llvm::Type* eltType = nullptr;
+  if (llvm::AllocaInst* locVar = llvm::dyn_cast<llvm::AllocaInst>(ptr)) {
+    eltType = locVar->getAllocatedType();
+  }
+  if (llvm::GlobalValue* globVar = llvm::dyn_cast<llvm::GlobalValue>(ptr)) {
+    eltType = globVar->getValueType();
+  }
+
+  return eltType;
+}
+
+#endif

@@ -86,7 +86,7 @@ static struct fi_ep_attr psmx3_ep_attr = {
 
 static struct fi_domain_attr psmx3_domain_attr = {
 	.domain			= NULL,
-	.name			= PSMX3_DOMAIN_NAME,
+	.name			= NULL,
 	.threading		= FI_THREAD_SAFE,
 	.control_progress	= FI_PROGRESS_AUTO,
 	.data_progress		= FI_PROGRESS_AUTO,
@@ -97,11 +97,11 @@ static struct fi_domain_attr psmx3_domain_attr = {
 	.cq_data_size		= 0, /* 4, 8 */
 	.cq_cnt			= 65535,
 	.ep_cnt			= 65535,
-	.tx_ctx_cnt		= 1, /* psmx3_hfi_info.free_trx_ctxt */
-	.rx_ctx_cnt		= 1, /* psmx3_hfi_info.free_trx_ctxt */
-	.max_ep_tx_ctx		= 1, /* psmx3_hfi_info.max_trx_ctxt */
-	.max_ep_rx_ctx		= 1, /* psmx3_hfi_info.max_trx_ctxt */
-	.max_ep_stx_ctx		= 1, /* psmx3_hfi_info.max_trx_ctxt */
+	.tx_ctx_cnt		= 1, /* psmx3_domain_info.free_trx_ctxt */
+	.rx_ctx_cnt		= 1, /* psmx3_domain_info.free_trx_ctxt */
+	.max_ep_tx_ctx		= 1, /* psmx3_domain_info.max_trx_ctxt */
+	.max_ep_rx_ctx		= 1, /* psmx3_domain_info.max_trx_ctxt */
+	.max_ep_stx_ctx		= 1, /* psmx3_domain_info.max_trx_ctxt */
 	.max_ep_srx_ctx		= 0,
 	.cntr_cnt		= 65535,
 	.mr_iov_limit		= 65535,
@@ -114,7 +114,7 @@ static struct fi_domain_attr psmx3_domain_attr = {
 };
 
 static struct fi_fabric_attr psmx3_fabric_attr = {
-	.name			= PSMX3_FABRIC_NAME,
+	.name			= NULL,
 };
 
 static struct fi_info psmx3_prov_info = {
@@ -265,8 +265,8 @@ fail:
 #define psmx3_dupinfo fi_dupinfo
 #endif /* HAVE_PSM3_DL */
 
-#ifdef PSM_CUDA
-/* mimic parsing functionality of psmi_getenv */
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+/* mimic parsing functionality of psm3_getenv */
 static long get_psm3_env(const char *var, int default_value) {
 	char *ep;
 	long val;
@@ -283,11 +283,19 @@ static long get_psm3_env(const char *var, int default_value) {
 	}
 	return val;
 }
-#endif
+#endif // defined(PSM_CUDA) || defined(PSM_ONEAPI)
+
 static uint64_t psmx3_check_fi_hmem_cap(void) {
 #ifdef PSM_CUDA
-	if (get_psm3_env("PSM3_CUDA", 0) || get_psm3_env("PSM3_GPUDIRECT", 0))
+	if ((get_psm3_env("PSM3_CUDA", 0) || get_psm3_env("PSM3_GPUDIRECT", 0)) &&
+		!ofi_hmem_p2p_disabled())
 		return FI_HMEM;
+#endif
+#ifdef PSM_ONEAPI
+	if ((get_psm3_env("PSM3_ONEAPI_ZE", 0) || get_psm3_env("PSM3_GPUDIRECT", 0)) &&
+		!ofi_hmem_p2p_disabled()) {
+		return FI_HMEM;
+	}
 #endif
 	return 0;
 }
@@ -319,7 +327,6 @@ static uint64_t psmx3_check_fi_hmem_cap(void) {
 
 int psmx3_init_prov_info(const struct fi_info *hints, struct fi_info **info)
 {
-	struct fi_fabric_attr *fabric_attr = &psmx3_fabric_attr;
 	struct fi_info *prov_info = &psmx3_prov_info;
 	struct fi_info *info_out, *info_new;
 	int addr_format = FI_ADDR_PSMX3;
@@ -330,13 +337,6 @@ int psmx3_init_prov_info(const struct fi_info *hints, struct fi_info **info)
 
 	if (!hints)
 		goto alloc_info;
-
-	if (hints->fabric_attr && hints->fabric_attr->name &&
-	    strcasecmp(hints->fabric_attr->name, fabric_attr->name)) {
-		FI_INFO(&psmx3_prov, FI_LOG_CORE, "Unknown fabric name\n");
-		FI_INFO_NAME(&psmx3_prov, fabric_attr, hints->fabric_attr);
-		return -FI_ENODATA;
-	}
 
 	if (hints->ep_attr) {
 		switch (hints->ep_attr->type) {
@@ -388,7 +388,7 @@ int psmx3_init_prov_info(const struct fi_info *hints, struct fi_info **info)
 
 	if ((hints->caps & prov_info->caps) != hints->caps) {
 		FI_INFO(&psmx3_prov, FI_LOG_CORE, "caps not supported\n");
-		FI_INFO_CHECK(&psmx3_prov, prov_info, hints, caps, FI_TYPE_CAPS);
+		OFI_INFO_CHECK(&psmx3_prov, prov_info, hints, caps, FI_TYPE_CAPS);
 		return -FI_ENODATA;
 	}
 
@@ -470,21 +470,36 @@ static void psmx3_expand_default_unit(struct fi_info *info)
 		next = p->next;
 		src_addr = p->src_addr;
 		if (src_addr->unit == PSMX3_DEFAULT_UNIT) {
-			if (psmx3_hfi_info.num_active_units == 1) {
-				src_addr->unit = psmx3_hfi_info.active_units[0];
-			} else {
-				for (i = 0; i < psmx3_hfi_info.num_active_units; i++) {
+			/* if we only found 1 unit, report it.
+			 * for MULTIRAIL we may find multiple units but
+			 * only report 1, in which case we leave default as is
+			 */
+			if (psmx3_domain_info.num_active_units == 1) {
+				src_addr->unit = psmx3_domain_info.active_units[0];
+			} else if (psmx3_domain_info.num_reported_units > 1) {
+				/* report all units in addition to default */
+				for (i = 0; i < psmx3_domain_info.num_reported_units; i++) {
+					/* for MULTIRAIL=-1 we have no default unit, so we omit
+					 * the default autoselect unit
+					 */
+					if (i == 0 && ! psmx3_domain_info.default_domain_name[0]) {
+						src_addr->unit = psmx3_domain_info.active_units[0];
+						continue;
+					}
 					p->next = psmx3_dupinfo(p);
 					if (!p->next) {
 						FI_WARN(&psmx3_prov, FI_LOG_CORE,
 							"Failed to duplicate info for HFI unit %d\n",
-							psmx3_hfi_info.active_units[i]);
+							psmx3_domain_info.active_units[i]);
 						break;
 					}
 					p = p->next;
 					src_addr = p->src_addr;
-					src_addr->unit = psmx3_hfi_info.active_units[i];
+					src_addr->unit = psmx3_domain_info.active_units[i];
 				}
+			} else {
+				/* only get here when 1 reported & >1 active -> MULTIRAIL>0 */
+				assert(psmx3_domain_info.default_domain_name[0]);
 			}
 		}
 		p->next = next;
@@ -492,6 +507,7 @@ static void psmx3_expand_default_unit(struct fi_info *info)
 	}
 }
 
+/* only called if num_reported_units >= 1 which implies num_active_units >= 1 */
 void psmx3_update_prov_info(struct fi_info *info,
 			    struct psmx3_ep_name *src_addr,
 			    struct psmx3_ep_name *dest_addr)
@@ -509,49 +525,116 @@ void psmx3_update_prov_info(struct fi_info *info,
 
 	for (p = info; p; p = p->next) {
 		int unit = ((struct psmx3_ep_name *)p->src_addr)->unit;
+		int port = ((struct psmx3_ep_name *)p->src_addr)->port;
+
+		/* when we have no default unit, default to 1st unit */
+		if (unit == PSMX3_DEFAULT_UNIT &&
+		    ! psmx3_domain_info.default_domain_name[0])
+			unit = 0;
 
 		if (unit == PSMX3_DEFAULT_UNIT || !psmx3_env.multi_ep) {
-			p->domain_attr->tx_ctx_cnt = psmx3_hfi_info.free_trx_ctxt;
-			p->domain_attr->rx_ctx_cnt = psmx3_hfi_info.free_trx_ctxt;
-			p->domain_attr->max_ep_tx_ctx = psmx3_hfi_info.max_trx_ctxt;
-			p->domain_attr->max_ep_rx_ctx = psmx3_hfi_info.max_trx_ctxt;
-			p->domain_attr->max_ep_stx_ctx = psmx3_hfi_info.max_trx_ctxt;
+			p->domain_attr->tx_ctx_cnt = psmx3_domain_info.free_trx_ctxt;
+			p->domain_attr->rx_ctx_cnt = psmx3_domain_info.free_trx_ctxt;
+			p->domain_attr->max_ep_tx_ctx = psmx3_domain_info.max_trx_ctxt;
+			p->domain_attr->max_ep_rx_ctx = psmx3_domain_info.max_trx_ctxt;
+			p->domain_attr->max_ep_stx_ctx = psmx3_domain_info.max_trx_ctxt;
 		} else {
-			p->domain_attr->tx_ctx_cnt = psmx3_hfi_info.unit_nfreectxts[unit];
-			p->domain_attr->rx_ctx_cnt = psmx3_hfi_info.unit_nfreectxts[unit];
-			p->domain_attr->max_ep_tx_ctx = psmx3_hfi_info.unit_nctxts[unit];
-			p->domain_attr->max_ep_rx_ctx = psmx3_hfi_info.unit_nctxts[unit];
-			p->domain_attr->max_ep_stx_ctx = psmx3_hfi_info.unit_nctxts[unit];
+			p->domain_attr->tx_ctx_cnt = psmx3_domain_info.unit_nfreectxts[unit];
+			p->domain_attr->rx_ctx_cnt = psmx3_domain_info.unit_nfreectxts[unit];
+			p->domain_attr->max_ep_tx_ctx = psmx3_domain_info.unit_nctxts[unit];
+			p->domain_attr->max_ep_rx_ctx = psmx3_domain_info.unit_nctxts[unit];
+			p->domain_attr->max_ep_stx_ctx = psmx3_domain_info.unit_nctxts[unit];
 		}
 
 		free(p->domain_attr->name);
 		if (unit == PSMX3_DEFAULT_UNIT)
-			p->domain_attr->name = strdup(psmx3_hfi_info.default_domain_name);
+			p->domain_attr->name = strdup(psmx3_domain_info.default_domain_name);
 		else {
 			char unit_name[NAME_MAX];
-			psm2_info_query_arg_t args[2];
+			psm2_info_query_arg_t args[4];
+			int unit_id = psmx3_domain_info.unit_id[unit];
+			int addr_index = psmx3_domain_info.addr_index[unit];
 
-			args[0].unit = unit;
-			args[1].length = sizeof(unit_name);
+			args[0].unit = unit_id;
+			args[1].port = port;
+			args[2].addr_index = addr_index;
+			args[3].length = sizeof(unit_name);
 
-			if (PSM2_OK != psm2_info_query(PSM2_INFO_QUERY_UNIT_NAME,
-				unit_name, 2, args)) {
+			if (PSM2_OK != psm3_info_query(PSM2_INFO_QUERY_UNIT_ADDR_NAME,
+				unit_name, 4, args)) {
 				FI_WARN(&psmx3_prov, FI_LOG_CORE,
-					"Failed to read unit name for NIC unit %d\n", unit);
+					"Failed to read domain name for NIC unit %d (id %d, port %d, index %d)\n",
+					unit, unit_id, port, addr_index);
 				if (asprintf(&p->domain_attr->name, "UNKNOWN") < 0) {
 					FI_WARN(&psmx3_prov, FI_LOG_CORE,
-						"Failed to allocate memory for unit name for NIC unit %d\n", unit);
+						"Failed to allocate memory for domain name for NIC unit %d\n", unit);
 				}
 			} else {
 				if (asprintf(&p->domain_attr->name, "%s", unit_name) <0) {
 					FI_WARN(&psmx3_prov, FI_LOG_CORE,
-						"Failed to allocate memory for unit name for NIC unit %d\n", unit);
+						"Failed to allocate memory for domain name for NIC unit %d "
+						"(id %d, port %d, index %d)\n",
+						unit, unit_id, port, addr_index);
+				}
+			}
+		}
+		free(p->fabric_attr->name);
+		if (unit == PSMX3_DEFAULT_UNIT)
+			p->fabric_attr->name = strdup(psmx3_domain_info.default_fabric_name);
+		else {
+			char fabric_name[NAME_MAX];
+			psm2_info_query_arg_t args[4];
+			int unit_id = psmx3_domain_info.unit_id[unit];
+			int addr_index = psmx3_domain_info.addr_index[unit];
+
+			args[0].unit = unit_id;
+			args[1].port = port;
+			args[2].addr_index = addr_index;
+			args[3].length = sizeof(fabric_name);
+
+			if (PSM2_OK != psm3_info_query(PSM2_INFO_QUERY_UNIT_SUBNET_NAME,
+				fabric_name, 4, args)) {
+				FI_WARN(&psmx3_prov, FI_LOG_CORE,
+					"Failed to read unit fabric name for NIC unit_id %d port %d addr %d\n", unit_id, port, addr_index);
+				if (asprintf(&p->fabric_attr->name, "UNKNOWN") < 0) {
+					FI_WARN(&psmx3_prov, FI_LOG_CORE,
+						"Failed to allocate memory for unit fabric name for NIC unit %d\n", unit);
+				}
+			} else {
+				if (asprintf(&p->fabric_attr->name, "%s", fabric_name) <0) {
+					FI_WARN(&psmx3_prov, FI_LOG_CORE,
+						"Failed to allocate memory for unit fabric name for NIC unit %d port %d addr %d\n", unit, port, addr_index);
 				}
 			}
 		}
 
 		p->tx_attr->inject_size = psmx3_env.inject_size;
 	}
+}
+
+static int psmx3_check_info(const struct util_prov *util_prov,
+                   const struct fi_info *info, uint32_t api_version,
+                   const struct fi_info *hints)
+{
+	int ret;
+
+	ret = ofi_check_info(util_prov, info, api_version, hints);
+	if (ret)
+		return ret;
+	/* some revs of ofi_check_info fail to check names, so do it here */
+	if (hints && hints->domain_attr && hints->domain_attr->name &&
+	    strcasecmp(hints->domain_attr->name, info->domain_attr->name)) {
+		FI_INFO(&psmx3_prov, FI_LOG_CORE, "skipping device %s (want %s)\n",
+			info->domain_attr->name, hints->domain_attr->name);
+		return -FI_ENODATA;
+	}
+	if (hints && hints->fabric_attr && hints->fabric_attr->name &&
+	    strcasecmp(hints->fabric_attr->name, info->fabric_attr->name)) {
+		FI_INFO(&psmx3_prov, FI_LOG_CORE, "skipping fabric %s (want %s)\n",
+			info->fabric_attr->name, hints->fabric_attr->name);
+		return -FI_ENODATA;
+	}
+	return FI_SUCCESS;
 }
 
 int psmx3_check_prov_info(uint32_t api_version,
@@ -566,7 +649,7 @@ int psmx3_check_prov_info(uint32_t api_version,
 
 	while (curr) {
 		next = curr->next;
-		if (ofi_check_info(&util_prov, curr, api_version, hints)) {
+		if (psmx3_check_info(&util_prov, curr, api_version, hints)) {
 			if (prev)
 				prev->next = next;
 			else

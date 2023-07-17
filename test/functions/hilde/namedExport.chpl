@@ -5,4 +5,4 @@
 
 export proc foo(i:int) do return i**2;
 export proc bar(i:int) do return -i;
-export "realFoo" proc foo(r:real) do return atan(r);
+export "realFoo" proc foo(r:real) do return round(r);

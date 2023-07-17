@@ -20,7 +20,6 @@ set(SRCS
     AstCount.cpp
     AstDump.cpp
     AstDumpToHtml.cpp
-    AstDumpToNode.cpp
     AstLogger.cpp
     AstToText.cpp
     astutil.cpp

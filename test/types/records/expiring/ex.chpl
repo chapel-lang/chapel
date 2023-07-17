@@ -113,7 +113,8 @@ ownedExample0LM();
 
 proc ownedExample1EOB() {
   writeln("ownedExample1EOB");
-  var b: borrowed C = (new owned C(1)).borrow();
+  var ownB = new owned C(1);
+  var b: borrowed C = ownB.borrow();
   // point 1
   writeln(b);
   writeln();

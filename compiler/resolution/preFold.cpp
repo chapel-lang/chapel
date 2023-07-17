@@ -247,12 +247,10 @@ static bool isNonNilableOwned(Type* t) {
 static void setRecordCopyableFlags(AggregateType* at) {
   TypeSymbol* ts = at->symbol;
   if (!ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST) &&
-      !ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF) &&
-      !ts->hasFlag(FLAG_TYPE_INIT_EQUAL_MISSING)) {
+      !ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF)) {
 
     if (isNonNilableOwned(at)) {
-      ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
-
+      // do nothing for this case
     } else if (Type* eltType = arrayElementType(at)) {
       if (AggregateType* eltTypeAt = toAggregateType(eltType)) {
         setRecordCopyableFlags(eltTypeAt);
@@ -260,36 +258,45 @@ static void setRecordCopyableFlags(AggregateType* at) {
           at->symbol->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
         else if (eltType->symbol->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF))
           at->symbol->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
-        else if (eltType->symbol->hasFlag(FLAG_TYPE_INIT_EQUAL_MISSING))
-          at->symbol->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
       } else {
         at->symbol->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
       }
 
     } else {
-      // Try resolving a test init= to set the flags
-      const char* err = NULL;
-      FnSymbol* initEq = findCopyInitFn(at, err);
-      if (initEq == NULL) {
-        ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
-      } else if (initEq->hasFlag(FLAG_COMPILER_GENERATED)) {
-        if (recordContainsNonNilableOwned(at))
-          ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
-        else if (recordContainsOwned(at))
-          ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
-        else
-          ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
-      } else {
-        // formals are mt, this, other
-        ArgSymbol* other = initEq->getFormal(3);
-        IntentTag intent = concreteIntentForArg(other);
-        if (intent == INTENT_IN ||
-            intent == INTENT_CONST_IN ||
-            intent == INTENT_CONST_REF) {
-          ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
+      // TODO Jade 6/27/23:
+      // special case since while implicit reads of sync/single are not yet removed
+      // with their removal, the init= that throws a warning will be gone
+      FnSymbol* initEq = NULL;
+      if(!ts->hasFlag(FLAG_SYNC) && !ts->hasFlag(FLAG_SINGLE)) {
+        // Try resolving a test init= to set the flags
+        const char* err = NULL;
+        initEq = findCopyInitFn(at, err);
+      }
+      else {
+        // sync/single variables are technically copyable until after the
+        // deprecation is removed, mark then as such
+        ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
+      }
+      if (initEq != NULL) {
+        if (initEq->hasFlag(FLAG_COMPILER_GENERATED)) {
+          if (recordContainsNonNilableOwned(at))
+            ; // do nothing for this case
+          else if (recordContainsOwned(at))
+            ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
+          else
+            ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
         } else {
-          // this case includes INTENT_REF_MAYBE_CONST
-          ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
+          // formals are mt, this, other
+          ArgSymbol* other = initEq->getFormal(3);
+          IntentTag intent = concreteIntentForArg(other);
+          if (intent == INTENT_IN ||
+              intent == INTENT_CONST_IN ||
+              intent == INTENT_CONST_REF) {
+            ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
+          } else {
+            // this case includes INTENT_REF_MAYBE_CONST
+            ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
+          }
         }
       }
     }
@@ -299,12 +306,10 @@ static void setRecordCopyableFlags(AggregateType* at) {
 static void setRecordAssignableFlags(AggregateType* at) {
   TypeSymbol* ts = at->symbol;
   if (!ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_CONST) &&
-      !ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_REF) &&
-      !ts->hasFlag(FLAG_TYPE_ASSIGN_MISSING)) {
+      !ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_REF)) {
 
     if (isNonNilableOwned(at)) {
-      ts->addFlag(FLAG_TYPE_ASSIGN_MISSING);
-
+      // do nothing for this case
     } else if (Type* eltType = arrayElementType(at)) {
 
       if (AggregateType* eltTypeAt = toAggregateType(eltType)) {
@@ -314,42 +319,40 @@ static void setRecordAssignableFlags(AggregateType* at) {
           at->symbol->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
         else if (eltType->symbol->hasFlag(FLAG_TYPE_ASSIGN_FROM_REF))
           at->symbol->addFlag(FLAG_TYPE_ASSIGN_FROM_REF);
-        else if (eltType->symbol->hasFlag(FLAG_TYPE_ASSIGN_MISSING))
-          at->symbol->addFlag(FLAG_TYPE_ASSIGN_MISSING);
       } else {
         at->symbol->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
       }
-
     } else {
       // Try resolving a test = to set the flags
       FnSymbol* assign = findAssignFn(at);
-      if (assign == NULL) {
-        ts->addFlag(FLAG_TYPE_ASSIGN_MISSING);
-      } else if (assign->hasFlag(FLAG_COMPILER_GENERATED)) {
-        if (recordContainsNonNilableOwned(at))
-          ts->addFlag(FLAG_TYPE_ASSIGN_MISSING);
-        else if (recordContainsOwned(at))
-          ts->addFlag(FLAG_TYPE_ASSIGN_FROM_REF);
-        else
-          ts->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
-      } else {
-        // formals are lhs, rhs
-        int rhsNum = 2;
-        if (assign->hasFlag(FLAG_OPERATOR) && assign->hasFlag(FLAG_METHOD)) {
-          // Sometimes operators are defined as operator methods, in which case
-          // there are an extra two arguments and we need to adjust where we
-          // look for the rhs
-          rhsNum += 2;
-        }
-        ArgSymbol* rhs = assign->getFormal(rhsNum);
-        IntentTag intent = concreteIntentForArg(rhs);
-        if (intent == INTENT_IN ||
-            intent == INTENT_CONST_IN ||
-            intent == INTENT_CONST_REF) {
-          ts->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
+      if (assign != NULL) {
+
+        if (assign->hasFlag(FLAG_COMPILER_GENERATED)) {
+          if (recordContainsNonNilableOwned(at))
+            ; // do nothing for this case
+          else if (recordContainsOwned(at))
+            ts->addFlag(FLAG_TYPE_ASSIGN_FROM_REF);
+          else
+            ts->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
         } else {
-          // this case includes INTENT_REF_MAYBE_CONST
-          ts->addFlag(FLAG_TYPE_ASSIGN_FROM_REF);
+          // formals are lhs, rhs
+          int rhsNum = 2;
+          if (assign->hasFlag(FLAG_OPERATOR) && assign->hasFlag(FLAG_METHOD)) {
+            // Sometimes operators are defined as operator methods, in which case
+            // there are an extra two arguments and we need to adjust where we
+            // look for the rhs
+            rhsNum += 2;
+          }
+          ArgSymbol* rhs = assign->getFormal(rhsNum);
+          IntentTag intent = concreteIntentForArg(rhs);
+          if (intent == INTENT_IN ||
+              intent == INTENT_CONST_IN ||
+              intent == INTENT_CONST_REF) {
+            ts->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
+          } else {
+            // this case includes INTENT_REF_MAYBE_CONST
+            ts->addFlag(FLAG_TYPE_ASSIGN_FROM_REF);
+          }
         }
       }
     }
@@ -979,7 +982,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   case PRIM_FIELD_BY_NUM: {
     // if call->get(1) is a reference type, dereference it
-    Type*          t          = canonicalDecoratedClassType(call->get(1)->getValType());
+    Type*          t          = canonicalClassType(call->get(1)->getValType());
     AggregateType* classType  = toAggregateType(t);
 
     VarSymbol*     var        = toVarSymbol(toSymExpr(call->get(2))->symbol());
@@ -1005,9 +1008,25 @@ static Expr* preFoldPrimOp(CallExpr* call) {
                 toString(classType));
     }
 
-    retval = new CallExpr(PRIM_GET_MEMBER,
-                          call->get(1)->copy(),
-                          new_CStringSymbol(name));
+    if(isManagedPtrType(call->get(1)->getValType())) {
+      // Extract the 'chpl_p' field.
+      Symbol* pField = toAggregateType(call->get(1)->getValType())->getField("chpl_p");
+      VarSymbol* pTemp = newTempConst(pField->type);
+      call->getStmtExpr()->insertBefore(new DefExpr(pTemp));
+      call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE,
+                            pTemp,
+                            new CallExpr(PRIM_GET_MEMBER,
+                                call->get(1)->copy(),
+                                pField)));
+
+      retval = new CallExpr(PRIM_GET_MEMBER,
+                            new SymExpr(pTemp),
+                            new_CStringSymbol(name));
+    } else {
+      retval = new CallExpr(PRIM_GET_MEMBER,
+                            call->get(1)->copy(),
+                            new_CStringSymbol(name));
+    }
 
     call->replace(retval);
 
@@ -1664,6 +1683,22 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     call->replace(retval);
 
+    break;
+  }
+
+  case PRIM_SIMPLE_TYPE_NAME: {
+    Type* t = call->get(1)->getValType();
+    if (AggregateType* at = toAggregateType(t)) {
+      const char* typeName = toString(at->getRootInstantiation());
+      retval = new SymExpr(new_StringSymbol(typeName));
+
+      call->replace(retval);
+    } else {
+      const char* typeName = toString(t);
+      retval = new SymExpr(new_StringSymbol(typeName));
+
+      call->replace(retval);
+    }
     break;
   }
 
@@ -2796,16 +2831,25 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
   return result;
 }
 
-// Deprecated by Vass in 1.31: given `range(boundedType=?b),
-// redirect it to `range(bounds=?b)`, with a deprecation warning.
-static void checkRangeDeprecations(AggregateType* at, VarSymbol* var,
-                                   Symbol*& retval) {
+// Deprecated by Vass in 1.31: redirect, with a deprecation warning,
+// from `range(boundedType=?b)` or `range(stridable=?s`)`
+// to   `range(bounds=?b)`      or `s = <arg>.stridable`
+static void checkRangeDeprecations(AggregateType* at, CallExpr* call,
+                                   VarSymbol* var, Symbol*& retval) {
   if (retval == nullptr && at->symbol->hasFlag(FLAG_RANGE)) {
     const char* requested = var->immediate->v_string.c_str();
     if (!strcmp(requested, "boundedType")) {
-      USR_WARN(var,
+      USR_WARN(call,
         "range.boundedType is deprecated; please use '.bounds' instead");
       retval = at->getField("bounds");
+    } else if (!strcmp(requested, "stridable")) {
+      USR_WARN(call,
+        "range.stridable is deprecated; please use '.strides' instead");
+
+      // White lie: return a bogus value just so that the PRIM_QUERY case
+      // in preFoldPrimOp() generates the call 'var.stridable'.
+      retval = new VarSymbol(requested);
+      retval->addFlag(FLAG_PARAM);
     }
   }
 }
@@ -2822,7 +2866,7 @@ static Symbol* determineQueriedField(CallExpr* call) {
 
   if (var->immediate->const_kind == CONST_KIND_STRING) {
     retval = at->getField(var->immediate->v_string.c_str(), false);
-    checkRangeDeprecations(at, var, retval); // may update 'retval'
+    checkRangeDeprecations(at, call, var, retval); // may update 'retval'
 
   } else {
     Vec<Symbol*> args;

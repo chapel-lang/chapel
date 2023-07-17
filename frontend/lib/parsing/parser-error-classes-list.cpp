@@ -274,6 +274,32 @@ void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
   auto blockingAst = std::get<1>(info);
   auto allowingAst = std::get<2>(info);
 
+  // The error for value-having return in an iterator is so specific that it's
+  // easiest to special case it.
+  if (auto ret = invalidAst->toReturn()) {
+    if (blockingAst && blockingAst->isFunction()) {
+      auto fn = blockingAst->toFunction();
+      wr.heading(kind_, type_, ret,
+                 "'return' statements with values are not allowed in iterators.");
+      wr.message("The following 'return' statement has a value:");
+      wr.code(ret, { ret->value() });
+      wr.note(locationOnly(fn), "'", fn->name(),
+                                "' is declared as an iterator here:");
+      wr.codeForLocation(fn);
+      if (allowingAst != nullptr) {
+        auto allowingFn = allowingAst->toFunction();
+        CHPL_ASSERT(allowingFn);
+        // There _was_ a function that allowed a return, but it must be further
+        // out.
+        wr.note(locationOnly(allowingFn), "'", fn->name(), "' is declared inside '",
+                allowingFn->name(), "', but returning from '", allowingFn->name(), "' here is not allowed.");
+      } else {
+        wr.message("Did you mean to use the 'yield' keyword instead of 'return'?");
+      }
+      return;
+    }
+  }
+
   std::string astType = "";
   std::string labelName = "";
   if (invalidAst->isReturn()) {
@@ -300,6 +326,8 @@ void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
     // Nothing
   } else if (blockingAst->isForall()) {
     blockingName = "'forall' statement";
+  } else if (blockingAst->isForeach()) {
+    blockingName = "'foreach' statement";
   } else if (blockingAst->isCoforall()) {
     blockingName = "'coforall' statement";
   } else if (blockingAst->isOn()) {
@@ -364,7 +392,8 @@ void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
     // If something blocked the jump, only print what it was if the jump
     // would've worked otherwise (allowingAst != null)
     if (blockingAst && allowingAst) {
-      CHPL_ASSERT(invalidAst->isBreak() || invalidAst->isContinue());
+      CHPL_ASSERT(invalidAst->isBreak() || invalidAst->isContinue() ||
+                  invalidAst->isYield());
       wr.note(locationOnly(blockingAst), "cannot '", astType, "' "
               "out of ", blockingNameArticle, " ", blockingName, ":");
       wr.codeForLocation(blockingAst);

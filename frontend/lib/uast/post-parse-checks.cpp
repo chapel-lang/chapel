@@ -112,6 +112,7 @@ struct Visitor {
   bool handleNestedDecoratorsInTypeConstructors(const FnCall* node);
   void checkForNestedClassDecorators(const FnCall* node);
   void checkExplicitDeinitCalls(const FnCall* node);
+  void checkBorrowFromNew(const FnCall* node);
   void checkConstVarNoInit(const Variable* node);
   void checkConfigVar(const Variable* node);
   void checkExportVar(const Variable* node);
@@ -124,6 +125,7 @@ struct Visitor {
   void checkFormalsForTypeOrParamProcs(const Function* node);
   void checkNoReceiverClauseOnPrimaryMethod(const Function* node);
   void checkLambdaReturnIntent(const Function* node);
+  void checkConstReturnIntent(const Function* node);
   void checkProcTypeFormalsAreAnnotated(const FunctionSignature* node);
   void checkProcDefFormalsAreNamed(const Function* node);
   void checkGenericArrayTypeUsage(const BracketLoop* node);
@@ -132,6 +134,9 @@ struct Visitor {
   void checkAttributeNameRecognizedOrToolSpaced(const Attribute* node);
   void checkAttributeUsedParens(const Attribute* node);
   void checkUserModuleHasPragma(const AttributeGroup* node);
+  void checkExternBlockAtModuleScope(const ExternBlock* node);
+  void checkLambdaDeprecated(const Function* node);
+
   /*
   TODO
   void checkProcedureFormalsAgainstRetType(const Function* node);
@@ -173,6 +178,7 @@ struct Visitor {
   void visit(const Yield* node);
   void visit(const Break* node);
   void visit(const Continue* node);
+  void visit(const ExternBlock* node);
 };
 
 /**
@@ -195,8 +201,9 @@ enum class ControlFlowModifier {
   BLOCKS,
 };
 
-// The six node types that most mess with control flow are:
+// The seven node types that most mess with control flow are:
 //   * "forall statement"
+//   * "foreach statement"
 //   * "coforall statement"
 //   * "on statement"
 //   * "begin statement"
@@ -205,9 +212,15 @@ enum class ControlFlowModifier {
 
 static ControlFlowModifier nodeAllowsReturn(const AstNode* node,
                                             const Return* ctrl) {
-  if (node->isFunction()) return ControlFlowModifier::ALLOWS;
-  if (node->isForall() || node->isCoforall() || node->isOn() ||
-      node->isBegin() || node->isSync() || node->isCobegin()) {
+  if (auto fn = node->toFunction()) {
+    if (fn->kind() == Function::ITER && ctrl->value() != nullptr) {
+      // can't return a value from an iterator.
+      return ControlFlowModifier::BLOCKS;
+    }
+    return ControlFlowModifier::ALLOWS;
+  }
+  if (node->isForall() || node->isForeach() || node->isCoforall() ||
+      node->isOn() || node->isBegin() || node->isSync() || node->isCobegin()) {
     return ControlFlowModifier::BLOCKS;
   }
   return ControlFlowModifier::NONE;
@@ -215,7 +228,14 @@ static ControlFlowModifier nodeAllowsReturn(const AstNode* node,
 
 static ControlFlowModifier nodeAllowsYield(const AstNode* node,
                                            const Yield* ctrl) {
-  if (node->isFunction()) return ControlFlowModifier::ALLOWS;
+  if (auto fn = node->toFunction()) {
+    if (fn->kind() == Function::ITER) {
+      return ControlFlowModifier::ALLOWS;
+    } else {
+      // Can't yield from non-function.
+      return ControlFlowModifier::BLOCKS;
+    }
+  }
   if (node->isBegin()) {
     return ControlFlowModifier::BLOCKS;
   }
@@ -225,8 +245,8 @@ static ControlFlowModifier nodeAllowsYield(const AstNode* node,
 static ControlFlowModifier nodeAllowsBreak(const AstNode* node,
                                            const Break* ctrl) {
   if (node->isFunction() || // functions block break
-      node->isForall() || node->isCoforall() || node->isOn() ||
-      node->isBegin() || node->isSync() || node->isCobegin()) {
+      node->isForall() || node->isForeach() || node->isCoforall() ||
+      node->isOn() || node->isBegin() || node->isSync() || node->isCobegin()) {
     return ControlFlowModifier::BLOCKS;
   }
   if (auto target = ctrl->target()) {
@@ -585,6 +605,37 @@ void Visitor::checkExplicitDeinitCalls(const FnCall* node) {
   }
 }
 
+void Visitor::checkBorrowFromNew(const FnCall* node) {
+  // look for patterns along these lines:
+  //   const x = (new C()).borrow()
+  //   var x = f((new owned C()).borrow())
+  // These worked in 1.31 but will no longer work in 1.32.
+  bool emitWarning = false;
+
+  if (auto c = node->toFnCall())
+    if (auto r = c->calledExpression())
+      if (auto dot = r->toDot())
+        if (dot->field() == USTR("borrow"))
+          if (auto receiver = dot->receiver())
+            if (auto call = receiver->toFnCall())
+              if (auto called = call->calledExpression())
+                if (called->isNew())
+                  if (const AstNode* decl = searchParentsForDecl(node, nullptr))
+                    if (auto v = decl->toVariable())
+                      if (auto ini = v->initExpression())
+                        if (ini->contains(node))
+                          if (v->kind() == Variable::VAR ||
+                              v->kind() == Variable::CONST)
+                            emitWarning = true;
+
+  if (emitWarning)
+    warn(node, "Class created by nested 'new' will be "
+               "deinitialized before the borrow can be used. "
+               "Please update this code to use a separate "
+               "variable to store the new class");
+}
+
+
 // TODO: Extend to all 'VarLikeDecl' instead of just variables?
 void Visitor::checkConstVarNoInit(const Variable* node) {
   if (!node->initExpression()) return;
@@ -777,6 +828,12 @@ void Visitor::checkNoReceiverClauseOnPrimaryMethod(const Function* node) {
   }
 }
 
+void Visitor::checkLambdaDeprecated(const Function* node) {
+  if (node->kind() != Function::LAMBDA) return;
+  warn(node, "'lambda' syntax is deprecated, please construct anonymous "
+             "procedures using the 'proc' keyword instead");
+}
+
 void Visitor::checkLambdaReturnIntent(const Function* node) {
   if (node->kind() != Function::LAMBDA) return;
 
@@ -784,7 +841,7 @@ void Visitor::checkLambdaReturnIntent(const Function* node) {
   switch (node->returnIntent()) {
     case Function::CONST_REF:
     case Function::REF:
-      disallowedReturnType = "ref";
+      disallowedReturnType = "[const] ref";
       break;
     case Function::PARAM:
       disallowedReturnType = "param";
@@ -796,9 +853,16 @@ void Visitor::checkLambdaReturnIntent(const Function* node) {
       break;
   }
   if (disallowedReturnType) {
-    error(node, "'%s' return types are not allowed in lambdas.",
+    error(node, "'%s' return intent is not allowed in lambdas.",
           disallowedReturnType);
   }
+}
+
+void Visitor::checkConstReturnIntent(const Function* node) {
+  if (node->returnIntent() != Function::CONST) return;
+  if (!shouldEmitUnstableWarning(node)) return;
+  warn(node, "'const' return intent is unstable and may work differently"
+             " in the future; please use 'out' intent instead");
 }
 
 void
@@ -1103,10 +1167,26 @@ void Visitor::visit(const BracketLoop* node) {
 
 void Visitor::checkUserModuleHasPragma(const AttributeGroup* node) {
   // determine if the module is user code
-  if (!isUserCode() || !isFlagSet(CompilerFlags::WARN_UNSTABLE)) return;
+  if (!isUserCode()) return;
 
+  bool pragmaNoDocFound = false;
+  int pragmaCount = 0;
+  for (auto pragma : node->pragmas()) {
+    pragmaCount++;
+    if (pragma == pragmatags::PRAGMA_NO_DOC) {
+      // issue a deprecation warning about pragma 'no doc' and continue
+      warn(node, "pragma 'no doc' is deprecated, use '@chpldoc.nodoc' instead");
+      pragmaNoDocFound = true;
+      continue;
+    }
+  }
+  // don't check if warn_unstable isn't set
+  if (!shouldEmitUnstableWarning(node)) return;
+
+  // don't warn if the only pragma is 'no doc', which is deprecated
+  bool noDocIsOnlyPragma = (pragmaNoDocFound && pragmaCount == 1);
   // issue a warning once for the symbol
-  if (node->pragmas().begin() != node->pragmas().end()) {
+  if (node->pragmas().begin() != node->pragmas().end() && !noDocIsOnlyPragma) {
     auto parentNode = parsing::parentAst(context_, node);
     UniqueString parentName;
     if (auto decl = parentNode->toNamedDecl()) {
@@ -1183,6 +1263,7 @@ void Visitor::visit(const FnCall* node) {
   checkNoDuplicateNamedArguments(node);
   checkForNestedClassDecorators(node);
   checkExplicitDeinitCalls(node);
+  checkBorrowFromNew(node);
 }
 
 void Visitor::visit(const Variable* node) {
@@ -1204,7 +1285,9 @@ void Visitor::visit(const Function* node) {
   checkOverrideNonMethod(node);
   checkFormalsForTypeOrParamProcs(node);
   checkNoReceiverClauseOnPrimaryMethod(node);
+  checkLambdaDeprecated(node);
   checkLambdaReturnIntent(node);
+  checkConstReturnIntent(node);
   checkProcDefFormalsAreNamed(node);
 }
 
@@ -1310,12 +1393,27 @@ void Visitor::visit(const Continue* node) {
   }
 }
 
+void Visitor::checkExternBlockAtModuleScope(const ExternBlock* node) {
+  const AstNode* p = parent();
+  if (!p->isModule()) {
+    error(node, "extern blocks are currently only supported at module scope");
+  }
+}
+
+void Visitor::visit(const ExternBlock* node) {
+  checkExternBlockAtModuleScope(node);
+}
+
 // Duplicate the contents of 'idIsInBundledModule', while skipping the
 // call to 'filePathForId', because at this point the `setFilePathForId`
 // setter query may not have been run yet.
 bool Visitor::isUserFilePath(Context* context, UniqueString filepath) {
   UniqueString modules = chpl::parsing::bundledModulePath(context);
   if (modules.isEmpty()) return true;
+  // check for internal module paths
+  if (parsing::filePathIsInInternalModule(context, filepath)) return false;
+  // check for standard module paths
+  if (parsing::filePathIsInStandardModule(context, filepath)) return false;
   bool ret = !filepath.startsWith(modules);
   return ret;
 }

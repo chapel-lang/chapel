@@ -458,6 +458,45 @@ void setModuleSearchPath(Context* context,
   QUERY_STORE_INPUT_RESULT(moduleSearchPathQuery, context, searchPath);
 }
 
+static const std::vector<UniqueString>&
+prependedStandardModulePathQuery(Context* context) {
+  QUERY_BEGIN_INPUT(prependedStandardModulePathQuery, context);
+
+  // use empty string if wasn't already set by setPrependedStandardModulePath
+  std::vector<UniqueString> result;
+
+  return QUERY_END(result);
+}
+
+const std::vector<UniqueString>& prependedStandardModulePath(Context* context) {
+  return prependedStandardModulePathQuery(context);
+}
+
+void setPrependedStandardModulePath(Context* context,
+                                    std::vector<UniqueString> paths) {
+  QUERY_STORE_INPUT_RESULT(prependedStandardModulePathQuery, context, paths);
+}
+
+
+static const std::vector<UniqueString>&
+prependedInternalModulePathQuery(Context* context) {
+  QUERY_BEGIN_INPUT(prependedInternalModulePathQuery, context);
+
+  // use empty string if wasn't already set by setPrependedInternalModulePath
+  std::vector<UniqueString> result;
+
+  return QUERY_END(result);
+}
+
+const std::vector<UniqueString>& prependedInternalModulePath(Context* context) {
+  return prependedInternalModulePathQuery(context);
+}
+
+void setPrependedInternalModulePath(Context* context,
+                                    std::vector<UniqueString> paths) {
+  QUERY_STORE_INPUT_RESULT(prependedInternalModulePathQuery, context, paths);
+}
+
 
 static const UniqueString&
 internalModulePathQuery(Context* context) {
@@ -540,10 +579,16 @@ void setupModuleSearchPaths(
   setBundledModulePath(context, UniqueString::get(context, bundled));
 
   std::vector<std::string> searchPath;
+  std::vector<UniqueString> uPrependedInternalModulePaths;
+  std::vector<UniqueString> uPrependedStandardModulePaths;
 
   for (auto& path : prependInternalModulePaths) {
     searchPath.push_back(path);
+    UniqueString uPath = UniqueString::get(context, path);
+    uPrependedInternalModulePaths.push_back(uPath);
   }
+
+  setPrependedInternalModulePath(context, uPrependedInternalModulePaths);
 
   // TODO: Shouldn't these use the internal path we just set?
   searchPath.push_back(modRoot + "/internal/localeModels/" + chplLocaleModel);
@@ -557,8 +602,10 @@ void setupModuleSearchPaths(
 
   searchPath.push_back(modRoot + "/internal");
 
-  for (auto& path : prependInternalModulePaths) {
+  for (auto& path : prependStandardModulePaths) {
     searchPath.push_back(path);
+    UniqueString uPath = UniqueString::get(context, path);
+    uPrependedStandardModulePaths.push_back(uPath);
   }
 
   // TODO: Shouldn't these use the standard path we just set?
@@ -627,8 +674,15 @@ void setupModuleSearchPaths(Context* context,
                          inputFilenames);
 }
 
-static bool
+bool
 filePathIsInInternalModule(Context* context, UniqueString filePath) {
+  // check for prepended internal module paths that may have come in from
+  // the command line flag --prepend-internal-module-dir
+  auto& prependedPaths = prependedInternalModulePath(context);
+  for (auto& path : prependedPaths) {
+    if (filePath.startsWith(path)) return true;
+  }
+
   UniqueString prefix = internalModulePath(context);
   if (prefix.isEmpty()) return false;
   return filePath.startsWith(prefix);
@@ -641,8 +695,15 @@ filePathIsInBundledModule(Context* context, UniqueString filePath) {
   return filePath.startsWith(prefix);
 }
 
-static bool
+bool
 filePathIsInStandardModule(Context* context, UniqueString filePath) {
+  // check for prepended standard module paths that may have come in from
+  // the command line flag --prepend-standard-module-dir
+  auto& prependedPaths = prependedStandardModulePath(context);
+  for (auto& path : prependedPaths) {
+    if (filePath.startsWith(path)) return true;
+  }
+
   UniqueString prefix1 = bundledModulePath(context);
   if (prefix1.isEmpty()) return false;
   auto concat = prefix1.endsWith("/") ? "standard" : "/standard";
@@ -874,13 +935,15 @@ static const AstTag& idToTagQuery(Context* context, ID id) {
 
   AstTag result = asttags::AST_TAG_UNKNOWN;
 
-  const AstNode* ast = astForIDQuery(context, id);
-  if (ast != nullptr) {
-    result = ast->tag();
-  } else if (types::CompositeType::isMissingBundledRecordType(context, id)) {
-    result = asttags::Record;
-  } else if (types::CompositeType::isMissingBundledClassType(context, id)) {
-    result = asttags::Class;
+  if (!id.isFabricatedId()) {
+    const AstNode* ast = astForIDQuery(context, id);
+    if (ast != nullptr) {
+      result = ast->tag();
+    } else if (types::CompositeType::isMissingBundledRecordType(context, id)) {
+      result = asttags::Record;
+    } else if (types::CompositeType::isMissingBundledClassType(context, id)) {
+      result = asttags::Class;
+    }
   }
 
   return QUERY_END(result);
@@ -1285,13 +1348,28 @@ const uast::AttributeGroup* idToAttributeGroup(Context* context, ID id) {
   if (id.isEmpty()) return ret;
 
   auto ast = parsing::idToAst(context, id);
-  if (ast && ast->isDecl()) {
-    auto decl = ast->toDecl();
-    ret = decl->attributeGroup();
+  ret = parsing::astToAttributeGroup(context, ast);
+
+  return ret;
+}
+
+const uast::AttributeGroup*
+astToAttributeGroup(Context* context, const uast::AstNode* ast) {
+  const uast::AttributeGroup* ret = nullptr;
+  if (ast) {
+    auto parent = parentAst(context, ast);
+    bool done = ast->isMultiDecl() || !parent ||
+                (!parent->isTupleDecl() && !parent->isMultiDecl());
+    // recurse if not done
+    return done
+           ? ast->attributeGroup()
+           : parsing::astToAttributeGroup(context, parent);
   }
 
   return ret;
 }
+
+
 
 //
 // TODO: The below queries on AST could be made into methods, and the
@@ -1524,6 +1602,25 @@ reportUnstableWarningForId(Context* context, ID idMention, ID idTarget) {
 
   unstableWarningForIdQuery(context, idMention, idTarget);
 }
+
+static const Module::Kind& getModuleKindQuery(Context* context, ID moduleId) {
+  Module::Kind ret = Module::Kind::DEFAULT_MODULE_KIND;
+  QUERY_BEGIN(getModuleKindQuery, context, moduleId);
+  const AstNode* ast = astForIDQuery(context, moduleId);
+  CHPL_ASSERT(ast && "could not find AST for module ID");
+  if (auto mod = ast->toModule()) {
+    ret = mod->kind();
+  } else {
+    CHPL_ASSERT(mod && "A module was expected, but not found");
+  }
+  return QUERY_END(ret);
+}
+
+Module::Kind idToModuleKind(Context* context, ID id) {
+  auto modID = getModuleForId(context, id);
+  return getModuleKindQuery(context, modID);
+}
+
 
 } // end namespace parsing
 } // end namespace chpl

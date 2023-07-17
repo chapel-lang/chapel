@@ -25,6 +25,7 @@
 #include "build.h"
 #include "codegen.h"
 #include "driver.h"
+#include "llvmVer.h"
 #include "ForLoop.h"
 #include "LayeredValueTable.h"
 
@@ -48,7 +49,7 @@ static llvm::MDNode* generateLoopMetadata(bool thisLoopParallelAccess,
 
   std::vector<llvm::Metadata*> args;
   // Resolve operand 0 for the loop id self reference
-  auto tmpNode        = llvm::MDNode::getTemporary(ctx, llvm::None);
+  auto tmpNode        = llvm::MDNode::getTemporary(ctx, chpl::empty);
   args.push_back(tmpNode.get());
 
   // llvm.loop.vectorize.enable metadata is only used by LoopVectorizer to:
@@ -212,7 +213,11 @@ GenRet CForLoop::codegen()
     // Create the init basic block
     blockStmtInit = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_c_for_init"));
 
+#if HAVE_LLVM_VER >= 160
+    func->insert(func->end(), blockStmtInit);
+#else
     func->getBasicBlockList().push_back(blockStmtInit);
+#endif
 
     // Insert an explicit branch from the current block to the init block
     info->irBuilder->CreateBr(blockStmtInit);
@@ -237,7 +242,11 @@ GenRet CForLoop::codegen()
     info->irBuilder->CreateCondBr(condValue0, blockStmtBody, blockStmtEnd);
 
     // Now add the body.
+#if HAVE_LLVM_VER >= 160
+    func->insert(func->end(), blockStmtBody);
+#else
     func->getBasicBlockList().push_back(blockStmtBody);
+#endif
 
     info->irBuilder->SetInsertPoint(blockStmtBody);
     info->lvt->addLayer();
@@ -276,7 +285,11 @@ GenRet CForLoop::codegen()
     if(loopMetadata)
       addLoopMetadata(endLoopBranch, loopMetadata, accessGroup);
 
+#if HAVE_LLVM_VER >= 160
+    func->insert(func->end(), blockStmtEnd);
+#else
     func->getBasicBlockList().push_back(blockStmtEnd);
+#endif
 
     info->irBuilder->SetInsertPoint(blockStmtEnd);
 

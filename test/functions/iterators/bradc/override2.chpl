@@ -14,9 +14,12 @@ class D : C {
   }
 }
 
-var c1: borrowed C = (new owned C()).borrow();
-var c2: borrowed C = (new owned D()).borrow();
-var d : borrowed D = (new owned D()).borrow();
+var ownC1 = new owned C();
+var c1: borrowed C = ownC1.borrow();
+var ownC2 = new owned D();
+var c2: borrowed C = ownC2.borrow();
+var ownD = new owned D();
+var d : borrowed D = ownD.borrow();
 
 test(c1);
 test(c2);

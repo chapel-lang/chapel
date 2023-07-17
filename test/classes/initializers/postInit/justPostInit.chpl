@@ -11,6 +11,7 @@ class C {
   }
 }
 
-var c = (new owned C()).borrow();
+var ownC = new owned C();
+var c = ownC.borrow();
 writeln("has initializer: ", canResolveMethod(c, "init"));
 writeln("c = ", c);

@@ -20,7 +20,12 @@ function loadCSModule()
 if module avail craype- 2>&1 | grep -q craype- ; then
   export CHPL_HOST_PLATFORM=cray-cs
   export CHPL_TEST_LAUNCHCMD=\$CHPL_HOME/util/test/chpl_launchcmd.py
+  # Remove unwanted modules from environment, then re-load base dependencies
+  # that wipes out. In the future this should unload only the unwanted modules,
+  # making re-loading necessary.
   module purge
+  source $CWD/load-base-deps.bash
+
   loadCSModule gcc/8.1.0
   loadCSModule cray-fftw
   export LD_LIBRARY_PATH="$FFTW_DIR:$LD_LIBRARY_PATH"

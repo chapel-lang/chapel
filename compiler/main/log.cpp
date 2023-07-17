@@ -22,7 +22,6 @@
 
 #include "AstDump.h"
 #include "AstDumpToHtml.h"
-#include "AstDumpToNode.h"
 #include "driver.h"
 #include "files.h"
 #include "misc.h"
@@ -39,7 +38,6 @@ char             log_module[FILENAME_MAX + 1]           =      "";
 
 bool             fLog                                   =    false;
 bool             fLogDir                                =    false;
-bool             fLogNode                               =    false;
 bool             fLogIds                                =    true;
 
 int              fdump_html                             =       0;
@@ -155,11 +153,7 @@ void logWriteLog(const char* passName, int passNum, char logTag) {
   if (fLog) {
     if ((logAll == true && logTag != LOG_NEVER) ||
         logOnlyName.count(passName) > 0) {
-      bool logNode = (fLogNode);
-      if (logNode)
-        AstDumpToNode::view(passName, passNum);
-      else
-        AstDump::view(passName, passNum);
+      AstDump::view(passName, passNum);
     }
   }
 }

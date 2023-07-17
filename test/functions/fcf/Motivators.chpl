@@ -164,40 +164,50 @@ proc test9() {
   writeln(n);
 }
 
+proc test10() {
+  const p = proc() const { return 6; };
+  writeln(p());
+}
+
+proc test11() {
+  proc int.method() { writeln('int'); }
+  proc string.method() { writeln('string'); }
+  record r {
+    var x = "8";
+    forwarding((proc() {
+      record inner {
+        var x = 8;
+        proc foo() { return x; }
+      }
+      var x: inner;
+      return x.foo();
+    })());
+  }
+  var x: r;
+  x.method();
+}
+
+proc test12() {
+  writeln((proc() { return 8; })());
+}
+
+proc test13() {
+  proc makeProc(): proc(): proc(): int {
+    return proc() { return proc() { return 8; }; };
+  }
+  var g = makeProc();
+  var h = g();
+  writeln(h());
+}
+
 proc main() {
-  // TODO: Can trigger hard to reproduce bug where FCF name does not print.
-  /*
   const tests = [test0, test1, test2a, test2b, test3, test4, test5, test6,
-                 test7, test8, test9];
+                 test7, test8, test9, test10, test11, test12, test13];
   type T = proc(): void;
   for test in tests {
     assert(test.type == T);
     writeln("--- ", test:string, " ---");
     test();
   }
-  */
-
-  writeln("--- ", "test0()", " ---");
-  test0();
-  writeln("--- ", "test1()", " ---");
-  test1();
-  writeln("--- ", "test2a()", " ---");
-  test2a();
-  writeln("--- ", "test2b()", " ---");
-  test2b();
-  writeln("--- ", "test3()", " ---");
-  test3();
-  writeln("--- ", "test4()", " ---");
-  test4();
-  writeln("--- ", "test5()", " ---");
-  test5();
-  writeln("--- ", "test6()", " ---");
-  test6();
-  writeln("--- ", "test7()", " ---");
-  test7();
-  writeln("--- ", "test8()", " ---");
-  test8();
-  writeln("--- ", "test9()", " ---");
-  test9();
 }
 

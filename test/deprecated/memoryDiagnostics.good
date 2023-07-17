@@ -1,0 +1,2 @@
+memoryDiagnostics.chpl:1: warning: The Memory module is deprecated
+memoryDiagnostics.chpl:1: warning: The Memory.Diagnostics module is deprecated - please use MemDiagnostics instead

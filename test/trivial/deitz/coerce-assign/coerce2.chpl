@@ -5,7 +5,8 @@ class C {
   }
 }
 
-var c = (new owned C()).borrow();
+var cOwn = new owned C();
+var c = cOwn.borrow();
 var i = 2;
 var j = 3;
 c.foo(i, j);

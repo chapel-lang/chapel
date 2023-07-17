@@ -144,6 +144,25 @@ class Module final : public NamedDecl {
 
 DECLARE_SERDE_ENUM(uast::Module::Kind, uint8_t);
 
+/// \cond DO_NOT_DOCUMENT
+template<> struct update<uast::Module::Kind> {
+  bool operator()(uast::Module::Kind& keep,
+                  uast::Module::Kind& addin) const {
+    return defaultUpdateBasic(keep, addin);
+  }
+};
+
+template<> struct mark<uast::Module::Kind> {
+  void operator()(Context* context,
+                  const uast::Module::Kind& keep) const {
+    // nothing to do for enum
+  }
+};
+
+
+/// \endcond DO_NOT_DOCUMENT
+
+
 } // end namespace chpl
 
 #endif

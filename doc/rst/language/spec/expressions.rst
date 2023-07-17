@@ -1342,8 +1342,8 @@ follows:
 
 .. code-block:: chapel
 
-   operator ==(a: object, b: object): bool
-   operator !=(a: object, b: object): bool
+   operator ==(a: RootClass, b: RootClass): bool
+   operator !=(a: RootClass, b: RootClass): bool
 
 The result of ``a == b`` is true if ``a`` and ``b`` reference the same
 storage location; otherwise the result is false. The result of

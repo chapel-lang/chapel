@@ -41,8 +41,8 @@ proc main(){
 
   var a,b:real;
   var i:int;
-  var D1={1..n by 1,1..n by 1};
-  var D2={1..n by 1,1..n by 1};
+  var D1={1..n,1..n}: domain(2, strides=strideKind.positive);
+  var D2={1..n,1..n}: domain(2, strides=strideKind.positive);
   var st,dt=timeSinceEpoch().totalSeconds();
   for (a,i) in zip(A2,{1..n*n}) do a=i;
 

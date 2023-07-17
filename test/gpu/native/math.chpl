@@ -1,8 +1,9 @@
 use Math;
 use GpuDiagnostics;
+use ChplConfig;
 
 config const verbose = false;
-config param excludeForRocm;
+config param excludeForRocm = (CHPL_GPU == "amd");
 
 proc main() {
 

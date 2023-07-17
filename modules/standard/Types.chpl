@@ -25,14 +25,14 @@ pragma "module included by default"
 module Types {
   import HaltWrappers;
 
-pragma "no doc" // joint documentation with the next one
+@chpldoc.nodoc // joint documentation with the next one
 proc isType(type t) param do return true;
 /* Returns ``true`` if the argument is a type. */
 proc isType(e) param do return false;
 
-pragma "no doc" // joint documentation with the next one
+@chpldoc.nodoc // joint documentation with the next one
 proc isParam(type t)  param do return false;
-pragma "no doc" // joint documentation with the next one
+@chpldoc.nodoc // joint documentation with the next one
 proc isParam(param p) param do return true;
 /* Returns ``true`` if the argument is a param. */
 proc isParam(e)       param do return false;
@@ -42,7 +42,7 @@ proc isParam(e)       param do return false;
 //
 
 // TODO eliminate this; beware of isPrimitive()
-pragma "no doc"
+@chpldoc.nodoc
 proc _isPrimitiveType(type t) param do return
   isBoolType(t)  ||
   isIntegralType(t) ||
@@ -197,13 +197,13 @@ proc isExternUnionType(type t) param do return __primitive("is extern union type
 /* Returns ``true`` if the type ``t`` is a ref iter type. */
 proc isRefIterType(type t) param do return __primitive("is ref iter type", t);
 
-pragma "no doc"
+@chpldoc.nodoc
 proc isOwnedClassType(type t)     param do return isSubtype(t, _owned);
-pragma "no doc"
+@chpldoc.nodoc
 proc isSharedClassType(type t)    param do return isSubtype(t, _shared);
-pragma "no doc"
+@chpldoc.nodoc
 proc isUnmanagedClassType(type t) param do return isSubtype(t, unmanaged);
-pragma "no doc"
+@chpldoc.nodoc
 proc isBorrowedClassType(type t)  param {
   return __primitive("is borrowed class type", t);
 }
@@ -233,33 +233,32 @@ c_ptr is a POD type.
 
 Primitive numeric/boolean/enum Chapel types are POD types as well.
  */
-pragma "no doc" // I don't think we want to make this public yet
+@chpldoc.nodoc // I don't think we want to make this public yet
 proc isPODType(type t) param {
   return __primitive("is pod type", t);
 }
-pragma "no doc"
+@chpldoc.nodoc
 proc isCopyableType(type t) param {
   return __primitive("is copyable type", t);
 }
-pragma "no doc"
+@chpldoc.nodoc
 proc isConstCopyableType(type t) param {
   return __primitive("is const copyable type", t);
 }
-pragma "no doc"
+@chpldoc.nodoc
 proc isAssignableType(type t) param {
   return __primitive("is assignable type", t);
 }
-pragma "no doc"
+@chpldoc.nodoc
 proc isConstAssignableType(type t) param {
   return __primitive("is const assignable type", t);
 }
-pragma "no doc"
+@chpldoc.nodoc
 proc isDefaultInitializableType(type t) param {
   return __primitive("type has default value", t);
 }
 
 // Returns the unsigned equivalent of the input type.
-pragma "no doc"
 proc chpl__unsignedType(type t) type
 {
   return uint(numBits(t));
@@ -267,13 +266,11 @@ proc chpl__unsignedType(type t) type
 
 
 // Returns the signed equivalent of the input type.
-pragma "no doc"
 proc chpl__signedType(type t) type
 {
   return int(numBits(t));
 }
 
-pragma "no doc"
 proc chpl__maxIntTypeSameSign(type t) type {
   if ! isIntegralType(t) then
     compilerError("type t is non-integral: ", t:string);
@@ -364,37 +361,37 @@ proc isSingleValue(x)    param do  return isSingleType(x.type);
 /* Returns ``true`` if the argument is an atomic value */
 proc isAtomicValue(e)    param do  return isAtomicType(e.type);
 
-pragma "no doc"
+@chpldoc.nodoc
 proc isHomogeneousTupleValue(x) param do return __primitive("is star tuple type", x);
-pragma "no doc"
 pragma "no borrow convert"
+@chpldoc.nodoc
 proc isOwnedClassValue(e)     param do return isOwnedClassType(e.type);
-pragma "no doc"
 pragma "no borrow convert"
+@chpldoc.nodoc
 proc isSharedClassValue(e)    param do return isSharedClassType(e.type);
-pragma "no doc"
 pragma "no borrow convert"
+@chpldoc.nodoc
 proc isUnmanagedClassValue(e) param do return isUnmanagedClassType(e.type);
-pragma "no doc"
 pragma "no borrow convert"
+@chpldoc.nodoc
 proc isBorrowedClassValue(e)  param do return isBorrowedClassType(e.type);
-pragma "no doc"
+@chpldoc.nodoc
 proc isNilableClassValue(e)   param do return isNilableClassType(e.type);
-pragma "no doc"
+@chpldoc.nodoc
 proc isNonNilableClassValue(e)   param do return isNonNilableClassType(e.type);
-pragma "no doc"
+@chpldoc.nodoc
 proc isRefIterValue(e)   param do  return isRefIterType(e.type);
-pragma "no doc"
+@chpldoc.nodoc
 proc isPODValue(e)       param do  return isPODType(e.type);
-pragma "no doc"
+@chpldoc.nodoc
 proc isCopyableValue(e)     param do  return isCopyableType(e.type);
-pragma "no doc"
+@chpldoc.nodoc
 proc isConstCopyableValue(e)  param do  return isConstCopyableType(e.type);
-pragma "no doc"
+@chpldoc.nodoc
 proc isAssignableValue(e)   param do  return isAssignableType(e.type);
-pragma "no doc"
+@chpldoc.nodoc
 proc isConstAssignableValue(e)  param do  return isConstAssignableType(e.type);
-pragma "no doc"
+@chpldoc.nodoc
 proc isDefaultInitializableValue(e) param do return isDefaultInitializableType(e.type);
 
 //
@@ -404,85 +401,85 @@ proc isDefaultInitializableValue(e) param do return isDefaultInitializableType(e
 // Set 1 - types.
 // In chpldoc, isBool(e) et al. will apply to types as well.
 
-pragma "no doc"
+@chpldoc.nodoc
 proc isPrimitive(type t) param do  return isPrimitiveType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isNumeric(type t)   param do  return isNumericType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isIntegral(type t)  param do  return isIntegralType(t);
 
-pragma "no doc"
+@chpldoc.nodoc
 proc isNothing(type t)  param do return isNothingType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isBool(type t)      param do  return isBoolType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isInt(type t)       param do  return isIntType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isUint(type t)      param do  return isUintType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isReal(type t)      param do  return isRealType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isImag(type t)      param do  return isImagType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isComplex(type t)   param do  return isComplexType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isString(type t)    param do  return isStringType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isBytes(type t)     param do  return isBytesType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isEnum(type t)      param do  return isEnumType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isClass(type t)     param do  return isClassType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isRecord(type t)    param do  return isRecordType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isUnion(type t)     param do  return isUnionType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isTuple(type t)     param do  return isTupleType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isRange(type t)     param do  return isRangeType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isDomain(type t)    param do  return isDomainType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isArray(type t)     param do  return isArrayType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isDmap(type t)      param do  return isDmapType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isSync(type t)      param do  return isSyncType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isSingle(type t)    param do  return isSingleType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isAtomic(type t)    param do  return isAtomicType(t);
 
-pragma "no doc"
+@chpldoc.nodoc
 proc isGeneric(type t)   param do  return isGenericType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isHomogeneousTuple(type t)  param do  return isHomogeneousTupleType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isOwnedClass(type t) param do  return isOwnedClassType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isSharedClass(type t) param do  return isSharedClassType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isUnmanagedClass(type t) param do  return isUnmanagedClassType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isBorrowedClass(type t) param do  return isBorrowedClassType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isNilableClass(type t) param do  return isNilableClassType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isNonNilableClass(type t) param do  return isNonNilableClassType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isRefIter(type t)   param do  return isRefIterType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isPOD(type t)       param do  return isPODType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isCopyable(type t)      param do  return isCopyableType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isConstCopyable(type t)   param do  return isConstCopyableType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isAssignable(type t)    param do  return isAssignableType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isConstAssignable(type t) param do  return isConstAssignableType(t);
-pragma "no doc"
+@chpldoc.nodoc
 proc isDefaultInitializable(type t) param do return isDefaultInitializableType(t);
 
 
@@ -570,9 +567,9 @@ proc isBorrowedClass(e)     param do  return isBorrowedClassValue(e);
 proc isNilableClass(e)     param do  return isNilableClassValue(e);
 /* Returns ``true`` if the argument is a class type that cannot store ``nil``. */
 proc isNonNilableClass(e)  param do  return isNonNilableClassValue(e);
-pragma "no doc"
+@chpldoc.nodoc
 proc isRefIter(e)   param do  return isRefIterValue(e);
-pragma "no doc" // Not sure how we want to document isPOD* right now
+@chpldoc.nodoc // Not sure how we want to document isPOD* right now
 proc isPOD(e)       param do  return isPODValue(e);
 
 /*
@@ -644,7 +641,6 @@ proc isDefaultInitializable(e) param do return isDefaultInitializableValue(e);
 
 
 // for internal use until we have a better name
-pragma "no doc"
 proc chpl_isSyncSingleAtomic(e: ?t) param do return
   isSyncType(t) ||
   isSingleType(t) ||
@@ -653,7 +649,6 @@ proc chpl_isSyncSingleAtomic(e: ?t) param do return
 // isSubtype(), isProperSubtype() are now directly handled by compiler
 
 // Returns true if it is legal to coerce t1 to t2, false otherwise.
-pragma "no doc"
 proc chpl__legalIntCoerce(type t1, type t2) param
 {
   if (isIntType(t2)) {
@@ -711,48 +706,48 @@ It is not available for default-width ``bool``.
 proc numBits(type t) param where t == bool {
   compilerError("default-width 'bool' does not have a well-defined size");
 }
-pragma "no doc"
+@chpldoc.nodoc
 proc numBits(type t) param where t == bool(8) do return 8;
-pragma "no doc"
+@chpldoc.nodoc
 proc numBits(type t) param where t == bool(16) do return 16;
-pragma "no doc"
+@chpldoc.nodoc
 proc numBits(type t) param where t == bool(32) do return 32;
-pragma "no doc"
+@chpldoc.nodoc
 proc numBits(type t) param where t == bool(64) do return 64;
-pragma "no doc"
+@chpldoc.nodoc
 proc numBits(type t) param where t == int(8) do return 8;
-pragma "no doc"
+@chpldoc.nodoc
 proc numBits(type t) param where t == int(16) do return 16;
-pragma "no doc"
+@chpldoc.nodoc
 proc numBits(type t) param where t == int(32) do return 32;
-pragma "no doc"
+@chpldoc.nodoc
 proc numBits(type t) param where t == int(64) do return 64;
-pragma "no doc"
+@chpldoc.nodoc
 proc numBits(type t) param where t == uint(8) do return 8;
-pragma "no doc"
+@chpldoc.nodoc
 proc numBits(type t) param where t == uint(16) do return 16;
-pragma "no doc"
+@chpldoc.nodoc
 proc numBits(type t) param where t == uint(32) do return 32;
-pragma "no doc"
+@chpldoc.nodoc
 proc numBits(type t) param where t == uint(64) do return 64;
-pragma "no doc"
+@chpldoc.nodoc
 proc numBits(type t) param where t == real(32) do return 32;
-pragma "no doc"
+@chpldoc.nodoc
 proc numBits(type t) param where t == real(64) do return 64;
-pragma "no doc"
+@chpldoc.nodoc
 proc numBits(type t) param where t == imag(32) do return 32;
-pragma "no doc"
+@chpldoc.nodoc
 proc numBits(type t) param where t == imag(64) do return 64;
-pragma "no doc"
+@chpldoc.nodoc
 proc numBits(type t) param where t == complex(64) do return 64;
-pragma "no doc"
+@chpldoc.nodoc
 proc numBits(type t) param where t == complex(128) do return 128;
 
 //
 // numBytes(type) -- returns the number of bytes in a type
 //
 
-pragma "no doc" // do we want to document this one?
+@chpldoc.nodoc // do we want to document this one?
 param bitsPerByte = 8;
 
 /*
@@ -773,29 +768,29 @@ it is a non-``param`` function.
 */
 proc min(type t) param  where isBool(t) do      return false: t;
 
-pragma "no doc"
+@chpldoc.nodoc
 proc min(type t) param  where t == int(8) do    return 0x80: t;
-pragma "no doc"
+@chpldoc.nodoc
 proc min(type t) param  where t == int(16) do   return 0x8000: t;
-pragma "no doc"
+@chpldoc.nodoc
 proc min(type t) param  where t == int(32) do   return 0x80000000: t;
-pragma "no doc"
+@chpldoc.nodoc
 proc min(type t) param  where t == int(64) do   return 0x8000000000000000: t;
 
-pragma "no doc"
+@chpldoc.nodoc
 proc min(type t) param  where isUint(t) do      return 0: t;
 
-pragma "no doc"
+@chpldoc.nodoc
 proc min(type t) where isRealType(t) || isImagType(t) do
   return __primitive( "_min", t);
 
-pragma "no doc"
+@chpldoc.nodoc
 proc min(type t) where isComplexType(t) {
   param floatwidth = numBits(t) / 2;
   return (min(real(floatwidth)), min(real(floatwidth))): t;
 }
 
-pragma "last resort" pragma "no doc"
+pragma "last resort" @chpldoc.nodoc
 proc min(type t) {
   compilerError("'min(type t)' is not defined for t=", t:string);
 }
@@ -811,50 +806,50 @@ it is a non-``param`` function.
 */
 proc max(type t) param  where isBool(t) do      return true: t;
 
-pragma "no doc"
+@chpldoc.nodoc
 proc max(type t) param  where t == int(8) do    return 0x7f: t;
-pragma "no doc"
+@chpldoc.nodoc
 proc max(type t) param  where t == int(16) do   return 0x7fff: t;
-pragma "no doc"
+@chpldoc.nodoc
 proc max(type t) param  where t == int(32) do   return 0x7fffffff: t;
-pragma "no doc"
+@chpldoc.nodoc
 proc max(type t) param  where t == int(64) do   return 0x7fffffffffffffff: t;
 
-pragma "no doc"
+@chpldoc.nodoc
 proc max(type t) param  where t == uint(8) do   return 0xff: t;
-pragma "no doc"
+@chpldoc.nodoc
 proc max(type t) param  where t == uint(16) do  return 0xffff: t;
-pragma "no doc"
+@chpldoc.nodoc
 proc max(type t) param  where t == uint(32) do  return 0xffffffff: t;
-pragma "no doc"
+@chpldoc.nodoc
 proc max(type t) param  where t == uint(64) do  return 0xffffffffffffffff: t;
 
-pragma "no doc"
+@chpldoc.nodoc
 proc max(type t) where isRealType(t) || isImagType(t) do        return __primitive( "_max", t);
 
-pragma "no doc"
+@chpldoc.nodoc
 proc max(type t) where isComplexType(t) {
   param floatwidth = numBits(t) / 2;
   return (max(real(floatwidth)), max(real(floatwidth))): t;
 }
 
-pragma "last resort" pragma "no doc"
+pragma "last resort" @chpldoc.nodoc
 proc max(type t) {
   compilerError("'max(type t)' is not defined for t=", t:string);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 iter type enum.these(){
   foreach i in 0..<this.size do
     yield chpl__orderToEnum(i, this);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc type enum.first {
   return chpl__orderToEnum(0, this);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc type enum.last {
   return chpl__orderToEnum(this.size-1, this);
 }
@@ -870,18 +865,17 @@ private proc chpl_enum_minbits(type t: enum) param {
 }
 // TODO - maybe this function can be useful for the user, for C interop?
 // If so, give it a different name.
-pragma "no doc"
 proc chpl_enum_mintype(type t: enum) type {
   return uint(chpl_enum_minbits(t));
 }
 
 
 /*
-Returns ``this``, cast to the type ``T``.
-Generates a run-time error if ``this`` cannot be represented by ``T``,
+The following ``safeCast()`` methods return ``this`` cast to the type ``T``.
+At present, these halt the program if ``this`` cannot be represented by ``T``,
 for example ``(-1).safeCast(uint)`` or ``256.safeCast(uint(8))``.
 
-This method performs the minimum number of runtime checks.
+These methods perform the minimum number of runtime checks.
 For example, when casting from ``uint(8)`` to ``uint(64)``,
 no checks at all will be done.
 */
@@ -935,23 +929,38 @@ inline proc integral.safeCast(type T: integral) : T {
   }
 }
 
-pragma "no doc" // documented with the other safeCast above
+proc integral.safeCast(type T: bool) {
+  if this != 0 && this != 1 then
+    HaltWrappers.safeCastCheckHalt("casting "+this.type:string+" to 'bool' requires it to have a value of either 0 or 1, but the current value is " + this:string);
+  return this: bool;
+}
+
+proc bool.safeCast(type T: integral) {
+  return this: T;
+}
+
+proc bool.safeCast(type T: bool) {
+  return this;
+}
+
+@chpldoc.nodoc // documented with the other safeCast above
 proc integral.safeCast(type T) {
-  compilerError("safeCast is only supported between integral types");
+  compilerError("safeCasts are not supported from " + this.type:string +
+                " to " + T:string);
 }
 
 //
 // identity functions (for reductions)
 //
-pragma "no doc"
+@chpldoc.nodoc
 inline proc _prod_id(type t) do return 1:t;
-pragma "no doc"
+@chpldoc.nodoc
 inline proc _land_id(type t) do return true;
-pragma "no doc"
+@chpldoc.nodoc
 inline proc _lor_id(type t) do return false;
-pragma "no doc"
+@chpldoc.nodoc
 inline proc _lxor_id(type t) do return false;
-pragma "no doc"
+@chpldoc.nodoc
 inline proc _band_id(type t) {
   // MPF - this doesn't really make sense for floating-point types,
   // but old code had it casting MAX_UINT to the same type...
@@ -977,9 +986,9 @@ inline proc _band_id(type t) {
   } else
     compilerError("Identity value for & over ", t:string, "is not available");
 }
-pragma "no doc"
+@chpldoc.nodoc
 inline proc _bor_id(type t) do return 0:t;
-pragma "no doc"
+@chpldoc.nodoc
 inline proc _bxor_id(type t) do return 0:t;
 
 // the following functions (isCoercible etc) are handled directly by

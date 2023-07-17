@@ -35,10 +35,10 @@ module SortedMap {
   public use Sort only defaultComparator;
 
   // Lock code lifted from modules/standard/List.chpl.
-  pragma "no doc"
+  @chpldoc.nodoc
   type _lockType = ChapelLocks.chpl_LocalSpinlock;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class _LockWrapper {
     var lock$ = new _lockType();
 
@@ -51,7 +51,7 @@ module SortedMap {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _checkKeyType(type keyType) {
     if isGenericType(keyType) {
       compilerWarning("creating a sortedMap with key type " +
@@ -63,7 +63,7 @@ module SortedMap {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _checkValType(type valType) {
     if isGenericType(valType) {
       compilerWarning("creating a sortedMap with value type " +
@@ -81,7 +81,7 @@ module SortedMap {
     and without specifying the value
     See `contains`
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   class _valueWrapper {
     var val;
   }
@@ -99,31 +99,31 @@ module SortedMap {
     var comparator: record = defaultComparator;
 
     // TODO: Maybe we want something like record optional for this?
-    pragma "no doc"
+    @chpldoc.nodoc
     type _eltType = (keyType, shared _valueWrapper?);
 
     /* The underlying implementation */
-    pragma "no doc"
+    @chpldoc.nodoc
     var _set: sortedSet;
 
 
     //TODO: Maybe we should use the lock from the underlying implementation
-    pragma "no doc"
+    @chpldoc.nodoc
     var _lock$ = if parSafe then new _LockWrapper() else none;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc _enter() {
       if parSafe then
         _lock$.lock();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc _leave() {
       if parSafe then
         _lock$.unlock();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     record _keyComparator {
       var comparator: record;
       proc compare(a, b) {
@@ -198,7 +198,7 @@ module SortedMap {
     }
 
     // Return size without acquiring the lock
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc const _size {
       return _set.size;
     }
@@ -269,7 +269,7 @@ module SortedMap {
       return result;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc const this(k: keyType) const
     where shouldReturnRvalueByValue(valType) && !isNonNilableClass(valType) {
       _enter(); defer _leave();
@@ -281,7 +281,7 @@ module SortedMap {
       return result;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc const this(k: keyType) const ref
     where !isNonNilableClass(valType) {
       _enter(); defer _leave();
@@ -293,7 +293,7 @@ module SortedMap {
       return result;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc const this(k: keyType)
     where isNonNilableClass(valType) {
       compilerError("Cannot access non-nilable class directly. Use an",

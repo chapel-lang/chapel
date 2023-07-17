@@ -72,7 +72,7 @@ module AllLocalesBarriers {
   private var globalBarrier = [b in BarrierSpace] new unmanaged aBarrier(1, reusable=true, procAtomics=true, hackIntoCommBarrier=true);
   private proc deinit() { [b in globalBarrier] delete b; }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class AllLocalesBarrier: BarrierBaseType {
 
     override proc barrier() {

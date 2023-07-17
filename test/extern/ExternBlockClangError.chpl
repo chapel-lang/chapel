@@ -1,7 +1,12 @@
 extern {
-  extern void foo();
-  void bar() {
+  extern void foo(void);
+  void bar(void) {
     foo();
+
+    // provoke a warning for casting to smaller int type
+    short x = 5;
+    short* xp = &x;
+    x = (int)xp;
   }
 }
 

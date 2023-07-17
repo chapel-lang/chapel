@@ -22,6 +22,8 @@
 // module can be used despite what locale model you're using).
 #include <stdbool.h>
 bool chpl_gpu_debug = false;
+bool chpl_gpu_no_cpu_mode_warning = false;
+int chpl_gpu_num_devices = -1;
 
 #ifdef HAS_GPU_LOCALE
 
@@ -34,13 +36,66 @@ bool chpl_gpu_debug = false;
 #include "chplcgfns.h"
 #include "chpl-linefile-support.h"
 #include "chpl-env-gen.h"
+#include "chpl-env.h"
 
 void chpl_gpu_init(void) {
-  chpl_gpu_impl_init();
+  chpl_gpu_impl_init(&chpl_gpu_num_devices);
+
+  assert(chpl_gpu_num_devices >= 0);
+
+  // override number of devices if applicable
+  const char* env;
+  int32_t num = -1;
+  if ((env = chpl_env_rt_get("NUM_GPUS_PER_LOCALE", NULL)) != NULL) {
+    if (sscanf(env, "%" SCNi32, &num) != 1) {
+      chpl_error("Cannot parse CHPL_RT_NUM_GPUS_PER_LOCALE environment "
+                 "variable", 0, 0);
+    }
+
+    if (num < 0) {
+      chpl_error("CHPL_RT_NUM_GPUS_PER_LOCALE must be >= 0", 0, 0);
+    }
+
+#ifndef GPU_RUNTIME_CPU
+    if (chpl_gpu_num_devices > 0 && num > chpl_gpu_num_devices) {
+      char msg[200];
+      snprintf(msg, sizeof(msg),
+          "CHPL_RT_NUM_GPUS_PER_LOCALE = %" PRIi32 " is too large; "
+          "it must be less than or equal to the number of GPUs per node. "
+          "Detected %" PRIi32 " GPUs in node %" PRIi32 ". "
+          "Ignoring this environment variable.",
+          num, chpl_gpu_num_devices, chpl_nodeID);
+      chpl_warning(msg, 0, 0);
+    }
+    else {
+#endif
+      assert(num!=-1);
+      chpl_gpu_num_devices = num;
+#ifndef GPU_RUNTIME_CPU
+    }
+#endif
+  }
 }
 
-void chpl_gpu_on_std_modules_finished_initializing(void) {
-  chpl_gpu_impl_on_std_modules_finished_initializing();
+void chpl_gpu_support_module_finished_initializing(void) {
+  // The standard module has some memory that we allocate when we  are "on" a
+  // GPU sublocale when in fact we want to allocate it on the device. (As of
+  // the writing of this comment this is in `helpSetupLocaleGPU` in
+  // `LocaleModelHelpSetup`).
+  //
+  // Basically during the setup of the locale model we need to be "on" a given
+  // sublocale when we instantiate the object for it (the expectation is that
+  // the wide pointer for a sublocale appears to be on that sublocale),
+  // but in practice we don't actually want the data for the GPU sublocale
+  // object to be on the GPU).
+  //
+  // It's a bit of a hack but to handle this we start off setting
+  // `chpl_gpu_device_alloc` to false indicating that we shouldn't actually
+  // do any allocations on the device. Once the standard modules have finished
+  // loading this callback function
+  // (`chpl_gpu_impl_on_std_modules_finished_initializing`) gets called and we
+  // flip the flag.
+  chpl_gpu_impl_support_module_finished_initializing();
 
   // this function is something that we're not proud of already. The following
   // adds the function more meaning and I am not happy about it. It looks like
@@ -66,9 +121,12 @@ inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
                                    int blk_dim_x, int blk_dim_y, int blk_dim_z,
                                    int nargs, ...) {
   CHPL_GPU_DEBUG("Kernel launcher called. (subloc %d)\n"
+                 "\tLocation: %s:%d\n"
                  "\tKernel: %s\n"
                  "\tNumArgs: %d\n",
                  chpl_task_getRequestedSubloc(),
+                 chpl_lookupFilename(fn),
+                 ln,
                  name,
                  nargs);
 
@@ -94,15 +152,20 @@ inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
 
 inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
                                         const char* name,
-                                        int num_threads, int blk_dim, int nargs,
+                                        int64_t num_threads, int blk_dim, int nargs,
                                         ...) {
 
   CHPL_GPU_DEBUG("Kernel launcher called. (subloc %d)\n"
+                 "\tLocation: %s:%d\n"
                  "\tKernel: %s\n"
-                 "\tNumArgs: %d\n",
+                 "\tNumArgs: %d\n"
+                 "\tNumThreads: %lld\n",
                  chpl_task_getRequestedSubloc(),
+                 chpl_lookupFilename(fn),
+                 ln,
                  name,
-                 nargs);
+                 nargs,
+                 num_threads);
 
   va_list args;
   va_start(args, nargs);
@@ -124,11 +187,13 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
 }
 
 void* chpl_gpu_memmove(void* dst, const void* src, size_t n) {
-  CHPL_GPU_DEBUG("Doing GPU memmove of %zu bytes from %p to %p.\n", n, src, dst);
+  // CHPL_GPU_DEBUG output here is too much. So, I'm commenting for now.
+
+  // CHPL_GPU_DEBUG("Doing GPU memmove of %zu bytes from %p to %p.\n", n, src, dst);
 
   void* ret = chpl_gpu_impl_memmove(dst, src, n);
 
-  CHPL_GPU_DEBUG("chpl_gpu_memmove successful\n");
+  // CHPL_GPU_DEBUG("chpl_gpu_memmove successful\n");
   return ret;
 }
 
@@ -252,7 +317,12 @@ void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
 
   assert(chpl_gpu_is_device_ptr(memAlloc));
 
+#ifdef GPU_RUNTIME_CPU
+    return chpl_mem_realloc(memAlloc, size, description, lineno, filename);
+#else
   size_t cur_size = chpl_gpu_get_alloc_size(memAlloc);
+  assert(cur_size >= 0);
+
   if (size == cur_size) {
     return memAlloc;
   }
@@ -266,6 +336,7 @@ void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
   chpl_gpu_mem_free(memAlloc, lineno, filename);
 
   return new_alloc;
+#endif
 }
 
 void* chpl_gpu_mem_memalign(size_t boundary, size_t size,
@@ -292,6 +363,14 @@ bool chpl_gpu_is_device_ptr(const void* ptr) {
 
 bool chpl_gpu_is_host_ptr(const void* ptr) {
   return chpl_gpu_impl_is_host_ptr(ptr);
+}
+
+bool chpl_gpu_can_access_peer(int dev1, int dev2) {
+  return chpl_gpu_impl_can_access_peer(dev1, dev2);
+}
+
+void chpl_gpu_set_peer_access(int dev1, int dev2, bool enable) {
+  chpl_gpu_impl_set_peer_access(dev1, dev2, enable);
 }
 
 #endif

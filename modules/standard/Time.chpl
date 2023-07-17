@@ -41,7 +41,7 @@ private extern proc chpl_now_time():real;
 
 
 
-pragma "no doc"
+@chpldoc.nodoc
 // This is comparable to a Posix struct timeval
 extern type _timevalue;
 
@@ -88,7 +88,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     Sunday =    6
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc DayOfWeek {
     compilerError("'DayOfWeek' was renamed. Please use 'dayOfWeek' instead");
   }
@@ -104,7 +104,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     Sunday =    7
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc ISODayOfWeek {
     compilerError("'ISODayOfWeek was renamed. Please use 'isoDayOfWeek' instead");
   }
@@ -132,7 +132,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     extern proc gettimeofday(ref tv: timeval, tz): int;
 
     var tv: timeval;
-    var ret = gettimeofday(tv, c_nil);
+    var ret = gettimeofday(tv, nil);
     assert(ret == 0);
     return (tv.tv_sec, tv.tv_usec);
   }
@@ -153,7 +153,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     return new timeDelta(seconds + microseconds);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern "struct tm" record tm {
     var tm_sec:    c_int;         // seconds [0,61]
     var tm_min:    c_int;         // minutes [0,59]
@@ -274,7 +274,6 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
 /* A record representing a date */
   record date {
-    pragma "no doc"
     var chpl_year, chpl_month, chpl_day: int;
 
     /* The year represented by this `date` value */
@@ -311,7 +310,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* initializers/factories for date values */
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc date.init() {
   }
 
@@ -348,19 +347,29 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     return unixEpoch.getDate() + td;
   }
 
-  /* The date that is `timestamp` seconds from the epoch */
+  @deprecated(notes="'date.fromTimestamp' is deprecated, please use 'date.createFromTimestamp' instead")
   proc type date.fromTimestamp(timestamp) {
+    return date.createFromTimestamp(timestamp);
+  }
+
+  /* The date that is `timestamp` seconds from the epoch */
+  proc type date.createFromTimestamp(timestamp: real) {
     const sec = timestamp: int;
     const us = ((timestamp-sec) * 1000000 + 0.5): int;
     const td = new timeDelta(seconds=sec, microseconds=us);
     return unixEpoch.getDate() + td;
   }
 
-  /* The `date` that is `ord` days from 1-1-0001 */
+  @deprecated(notes="'date.fromOrdinal' is deprecated, please use 'date.createFromOrdinal' instead")
   proc type date.fromOrdinal(ord) {
-    if ord < 0 || ord > 1+date.max.toOrdinal() then
-      halt("ordinal (", ord, ") out of range");
-    const (y,m,d) = ordToYmd(ord);
+    return date.createFromOrdinal(ord);
+  }
+
+  /* The `date` that is `ordinal` days from 1-1-0001 */
+  proc type date.createFromOrdinal(ordinal: int) {
+    if ordinal < 0 || ordinal > 1+date.max.toOrdinal() then
+      halt("ordinal (", ordinal, ") out of range");
+    const (y,m,d) = ordToYmd(ordinal);
     return new date(y,m,d);
   }
 
@@ -497,7 +506,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
     var str: string;
     try! {
-      str = createStringWithNewBuffer(c_ptrTo(buf):c_string);
+      str = string.createCopyingBuffer(c_ptrTo(buf):c_string);
     }
     return str;
   }
@@ -507,7 +516,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   // This method exists to work around a bug in chpldoc where the
   // 'private use' above this method somehow breaks documentation for the
   // method that follows (formerly 'writeThis')
-  pragma "no doc"
+  @chpldoc.nodoc
   proc date._chpldoc_workaround() { }
 
   /* Writes this `date` in ISO 8601 format: YYYY-MM-DD */
@@ -516,7 +525,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   // Exists to support some common functionality for `dateTime.readThis`
-  pragma "no doc"
+  @chpldoc.nodoc
   proc date._readCore(f) throws {
     const dash = "-";
 
@@ -545,49 +554,49 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   //
   // TODO: need to get this to work with the Json formatter
   //
-  pragma "no doc"
-  proc date.init(f: fileReader) {
+  @chpldoc.nodoc
+  proc date.init(reader: fileReader, ref deserializer) throws {
     this.init();
-    readThis(f);
+    readThis(reader);
   }
 
   /* Operators on date values */
-  pragma "no doc"
+  @chpldoc.nodoc
   operator date.+(d: date, t: timeDelta): date {
-    return date.fromOrdinal(d.toOrdinal() + t.days);
+    return date.createFromOrdinal(d.toOrdinal() + t.days);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator date.+(t: timeDelta, d: date): date {
     return d + t;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator date.-(d: date, t: timeDelta): date {
-    return date.fromOrdinal(d.toOrdinal() - t.days);
+    return date.createFromOrdinal(d.toOrdinal() - t.days);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator date.-(d1: date, d2: date): timeDelta {
     return new timeDelta(days=d1.toOrdinal() - d2.toOrdinal());
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator date.<(d1: date, d2: date) {
     return d1.toOrdinal() < d2.toOrdinal();
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator date.<=(d1: date, d2: date) {
     return d1.toOrdinal() <= d2.toOrdinal();
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator date.>(d1: date, d2: date) {
     return d1.toOrdinal() > d2.toOrdinal();
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator date.>=(d1: date, d2: date) {
     return d1.toOrdinal() >= d2.toOrdinal();
   }
@@ -595,9 +604,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* A record representing a time */
   record time {
-    pragma "no doc"
     var chpl_hour, chpl_minute, chpl_second, chpl_microsecond: int;
-    pragma "no doc"
     var chpl_tz: shared Timezone?;
 
     /* The hour represented by this `time` value */
@@ -625,7 +632,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
       return chpl_tz;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     @deprecated(notes="'tzinfo' is deprecated, please use 'timezone' instead")
     proc tzinfo {
       return timezone;
@@ -693,7 +700,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
      `microsecond`, and `timezone`.  All arguments are optional
    */
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc time.deinit() {
   }
 
@@ -815,7 +822,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
     var str: string;
     try! {
-      str = createStringWithNewBuffer(c_ptrTo(buf):c_string);
+      str = string.createCopyingBuffer(c_ptrTo(buf):c_string);
     }
 
     return str;
@@ -827,7 +834,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   // Exists to support some common functionality for `dateTime.readThis`
-  pragma "no doc"
+  @chpldoc.nodoc
   proc time._readCore(f) throws {
     const colon = ":";
 
@@ -858,28 +865,28 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   //
   // TODO: need to get this to work with the Json formatter
   //
-  pragma "no doc"
-  proc time.init(f: fileReader) {
+  @chpldoc.nodoc
+  proc time.init(reader: fileReader, ref deserializer) throws {
     this.init();
-    readThis(f);
+    readThis(reader);
   }
 
 
   /* Operators on time values */
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator time.==(t1: time, t2: time): bool {
     var dt1 = dateTime.combine(d=new date(2000, 1, 1), t=t1);
     var dt2 = dateTime.combine(d=new date(2000, 1, 1), t=t2);
     return dt1 == dt2;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator time.!=(t1: time, t2: time) {
     return !(t1 == t2);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator time.<(t1: time, t2: time): bool {
     if (t1.timezone.borrow() != nil && t2.timezone.borrow() == nil) ||
         (t1.timezone.borrow() == nil && t2.timezone.borrow() != nil) {
@@ -917,7 +924,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator time.<=(t1: time, t2: time): bool {
     if (t1.timezone.borrow() != nil && t2.timezone.borrow() == nil) ||
         (t1.timezone.borrow() == nil && t2.timezone.borrow() != nil) {
@@ -940,7 +947,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator time.>(t1: time, t2: time): bool {
     if (t1.timezone.borrow() != nil && t2.timezone.borrow() == nil) ||
         (t1.timezone.borrow() == nil && t2.timezone.borrow() != nil) {
@@ -963,7 +970,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator time.>=(t1: time, t2: time): bool {
     if (t1.timezone.borrow() != nil && t2.timezone.borrow() == nil) ||
         (t1.timezone.borrow() == nil && t2.timezone.borrow() != nil) {
@@ -991,9 +998,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* A record representing a combined `date` and `time` */
   record dateTime {
-    pragma "no doc"
     var chpl_date: date;
-    pragma "no doc"
     var chpl_time: time;
 
     /* The minimum representable `date` and `time` */
@@ -1051,7 +1056,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
       return chpl_time.timezone;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     @deprecated(notes="'tzinfo' is deprecated, please use 'timezone' instead")
     proc tzinfo {
       return timezone;
@@ -1060,7 +1065,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* initializers/factories for dateTime values */
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc dateTime.init() {
   }
 
@@ -1129,14 +1134,25 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     return unixEpoch + td;
   }
 
-  /* The `dateTime` that is `timestamp` seconds from the epoch */
+  @deprecated(notes="'dateTime.fromTimestamp' is deprecated, please use 'dateTime.createFromTimestamp' instead")
   proc type dateTime.fromTimestamp(timestamp: real) {
-    return dateTime.fromTimestamp(timestamp, nil);
+    return dateTime.createFromTimestamp(timestamp, nil);
+  }
+
+  @deprecated(notes="'dateTime.fromTimestamp' is deprecated, please use 'dateTime.createFromTimestamp' instead")
+  proc type dateTime.fromTimestamp(timestamp: real,
+                                   in tz: shared Timezone?) {
+    return dateTime.createFromTimestamp(timestamp, tz);
+  }
+
+  /* The `dateTime` that is `timestamp` seconds from the epoch */
+  proc type dateTime.createFromTimestamp(timestamp: real) {
+    return dateTime.createFromTimestamp(timestamp, nil);
   }
 
   /* The `dateTime` that is `timestamp` seconds from the epoch */
   @unstable("tz is unstable; its type may change in the future")
-  proc type dateTime.fromTimestamp(timestamp: real,
+  proc type dateTime.createFromTimestamp(timestamp: real,
                                    in tz: shared Timezone?) {
     if tz.borrow() == nil {
       var t = (timestamp: int, ((timestamp - timestamp: int)*1000000): int);
@@ -1146,19 +1162,29 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
                           minute=lt.tm_min,     second=lt.tm_sec,
                           microsecond=t(1));
     } else {
-      var dt = dateTime.utcFromTimestamp(timestamp);
+      var dt = dateTime.createUtcFromTimestamp(timestamp);
       return (dt + tz!.utcOffset(dt)).replace(tz=tz);
     }
   }
 
-  /* The `dateTime` that is `timestamp` seconds from the epoch in UTC */
+  @deprecated(notes="'dateTime.utcFromTimestamp' is deprecated, please use 'dateTime.createUtcFromTimestamp' instead")
   proc type dateTime.utcFromTimestamp(timestamp) {
+    return dateTime.createUtcFromTimestamp(timestamp);
+  }
+
+  /* The `dateTime` that is `timestamp` seconds from the epoch in UTC */
+  proc type dateTime.createUtcFromTimestamp(timestamp) {
     return unixEpoch + new timeDelta(seconds=timestamp: int, microseconds=((timestamp-timestamp: int)*1000000): int);
   }
 
-  /* The `dateTime` that is `ordinal` days from 1-1-0001 */
+  @deprecated(notes="'dateTime.fromOrdinal' is deprecated, please use 'dateTime.createFromOrdinal' instead")
   proc type dateTime.fromOrdinal(ordinal) {
-    return dateTime.combine(date.fromOrdinal(ordinal), new time());
+    return dateTime.createFromOrdinal(ordinal);
+  }
+
+  /* The `dateTime` that is `ordinal` days from 1-1-0001 */
+  proc type dateTime.createFromOrdinal(ordinal: int) {
+    return dateTime.combine(date.createFromOrdinal(ordinal), new time());
   }
 
   /* Form a `dateTime` value from a given `date` and `time` */
@@ -1316,7 +1342,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     return getDate().isoWeekday();
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   @deprecated(notes="'isoweekday' is deprecated, please use 'isoWeekday' instead")
   proc dateTime.isoweekday() {
     return isoWeekday();
@@ -1329,7 +1355,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     return getDate().isoCalendar();
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   @deprecated(notes="'isocalendar' is deprecated, please use 'isoCalendar' instead")
   proc dateTime.isocalendar() {
     return getDate().isoCalendar();
@@ -1451,7 +1477,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
     var str: string;
     try! {
-      str = createStringWithNewBuffer(c_ptrTo(buf):c_string);
+      str = string.createCopyingBuffer(c_ptrTo(buf):c_string);
     }
 
     return str;
@@ -1490,10 +1516,10 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   //
   // TODO: need to get this to work with the Json formatter
   //
-  pragma "no doc"
-  proc dateTime.init(f: fileReader) {
+  @chpldoc.nodoc
+  proc dateTime.init(reader: fileReader, ref deserializer) throws {
     this.init();
-    readThis(f);
+    readThis(reader);
   }
 
 
@@ -1501,7 +1527,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Operators on dateTime values */
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator dateTime.+(td: timeDelta, dt: dateTime) {
     var newmicro = dt.microsecond + td.microseconds;
     var newsec = dt.second + td.seconds;
@@ -1521,19 +1547,19 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     var adddays = td.days + newhour / 24;
     newhour %= 24;
 
-    return dateTime.combine(date.fromOrdinal(dt.getDate().toOrdinal()+adddays),
+    return dateTime.combine(date.createFromOrdinal(dt.getDate().toOrdinal()+adddays),
                             new time(hour=newhour, minute=newmin,
                                      second=newsec, microsecond=newmicro,
                                      tz=dt.timezone));
 
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator dateTime.+(dt: dateTime, td: timeDelta) {
     return td + dt;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator dateTime.-(dt: dateTime, td: timeDelta) {
     var deltasec  = td.seconds % 60;
     var deltamin  = (td.seconds / 60) % 60;
@@ -1562,13 +1588,13 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
       subDays += 1;
       newhour += 24;
     }
-    return dateTime.combine(date.fromOrdinal(dt.getDate().toOrdinal()-subDays),
+    return dateTime.combine(date.createFromOrdinal(dt.getDate().toOrdinal()-subDays),
                             new time(hour=newhour, minute=newmin,
                                      second=newsec, microsecond=newmicro,
                                      tz=dt.timezone));
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator dateTime.-(dt1: dateTime, dt2: dateTime): timeDelta {
     if (dt1.timezone.borrow() != nil && dt2.timezone.borrow() == nil) ||
        (dt1.timezone.borrow() == nil && dt2.timezone.borrow() != nil) {
@@ -1589,7 +1615,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator dateTime.==(dt1: dateTime, dt2: dateTime): bool {
     if dt1.timezone.borrow() == nil && dt2.timezone.borrow() != nil ||
        dt1.timezone.borrow() != nil && dt2.timezone.borrow() == nil {
@@ -1611,12 +1637,12 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator dateTime.!=(dt1: dateTime, dt2: dateTime) {
     return !(dt1 == dt2);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator dateTime.<(dt1: dateTime, dt2: dateTime): bool {
     if (dt1.timezone.borrow() != nil && dt2.timezone.borrow() == nil) ||
         (dt1.timezone.borrow() == nil && dt2.timezone.borrow() != nil) {
@@ -1633,7 +1659,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator dateTime.<=(dt1: dateTime, dt2: dateTime): bool {
     if (dt1.timezone.borrow() != nil && dt2.timezone.borrow() == nil) ||
         (dt1.timezone.borrow() == nil && dt2.timezone.borrow() != nil) {
@@ -1650,7 +1676,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator dateTime.>(dt1: dateTime, dt2: dateTime): bool {
     if (dt1.timezone.borrow() != nil && dt2.timezone.borrow() == nil) ||
         (dt1.timezone.borrow() == nil && dt2.timezone.borrow() != nil) {
@@ -1667,7 +1693,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator dateTime.>=(dt1: dateTime, dt2: dateTime): bool {
     if (dt1.timezone.borrow() != nil && dt2.timezone.borrow() == nil) ||
         (dt1.timezone.borrow() == nil && dt2.timezone.borrow() != nil) {
@@ -1700,13 +1726,10 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
      It is an overflow error if `days` is outside the given range.
    */
   record timeDelta {
-    pragma "no doc"
     var chpl_days: int;
 
-    pragma "no doc"
     var chpl_seconds: int;
 
-    pragma "no doc"
     var chpl_microseconds: int;
 
     /* The number of days this `timeDelta` represents */
@@ -1801,17 +1824,17 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Operators on timeDelta values */
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator timeDelta.*(i: int, t: timeDelta) {
     return new timeDelta(days=i*t.days, seconds=i*t.seconds, microseconds=i*t.microseconds);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator timeDelta.*(t: timeDelta, i: int) {
     return new timeDelta(days=i*t.days, seconds=i*t.seconds, microseconds=i*t.microseconds);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator timeDelta./(t: timeDelta, i: int) {
     var day = t.days / i;
     var second = t.seconds + (t.days % i)*24*60*60;
@@ -1826,31 +1849,31 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     return new timeDelta(days=day, seconds=second, microseconds=microsecond);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator timeDelta.+(t: timeDelta) {
     return t;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator timeDelta.-(t: timeDelta) {
     return new timeDelta(days=-t.days, seconds=-t.seconds, microseconds=-t.microseconds);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator timeDelta.+(lhs: timeDelta, rhs: timeDelta) {
     return new timeDelta(days=lhs.days+rhs.days,
                          seconds=lhs.seconds+rhs.seconds,
                          microseconds=lhs.microseconds+rhs.microseconds);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator timeDelta.-(lhs: timeDelta, rhs: timeDelta) {
     return new timeDelta(days=lhs.days-rhs.days,
                          seconds=lhs.seconds-rhs.seconds,
                          microseconds=lhs.microseconds-rhs.microseconds);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator timeDelta.>(lhs: timeDelta, rhs: timeDelta) {
     const ls = (lhs.days*(24*60*60) + lhs.seconds);
     const rs = (rhs.days*(24*60*60) + rhs.seconds);
@@ -1859,12 +1882,12 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     return lhs.microseconds > rhs.microseconds;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator timeDelta.>=(lhs: timeDelta, rhs: timeDelta) {
     return lhs > rhs || lhs == rhs;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator timeDelta.<(lhs: timeDelta, rhs: timeDelta) {
     const ls = (lhs.days*(24*60*60) + lhs.seconds);
     const rs = (rhs.days*(24*60*60) + rhs.seconds);
@@ -1873,7 +1896,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     return lhs.microseconds < rhs.microseconds;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator timeDelta.<=(lhs: timeDelta, rhs: timeDelta) {
     return lhs < rhs || lhs == rhs;
   }
@@ -1888,7 +1911,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
       return t;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator :(t: timeDelta, type s:string) {
     var str: string;
     if t.days != 0 {
@@ -1921,7 +1944,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     return str;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   @deprecated(notes="'TZInfo' is deprecated, please use 'Timezone' instead")
   class TZInfo: Timezone { }
 
@@ -2050,13 +2073,13 @@ inline proc sleep(t: real) : void {
    A :record:`!stopwatch` is either running or stopped.
 */
 record stopwatch {
-  pragma "no doc"
+  @chpldoc.nodoc
   var time:        _timevalue = chpl_null_timevalue();
 
-  pragma "no doc"
+  @chpldoc.nodoc
   var accumulated: real       = 0.0;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   var running:     bool       = false;
 
   /*
@@ -2156,13 +2179,13 @@ record stopwatch {
 
 @deprecated(notes="'Timer' is deprecated, please use 'stopwatch' instead")
 record Timer {
-  pragma "no doc"
+  @chpldoc.nodoc
   var time:        _timevalue = chpl_null_timevalue();
 
-  pragma "no doc"
+  @chpldoc.nodoc
   var accumulated: real       = 0.0;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   var running:     bool       = false;
 
   /*

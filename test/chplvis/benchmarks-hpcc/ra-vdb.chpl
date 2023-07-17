@@ -1,7 +1,7 @@
 //
-// Use standard modules for Block distributions and Timing routines
+// Use standard modules for Block distributions, Timing routines, and log2
 //
-use BlockDist, Time;
+use BlockDist, Time, Math;
 
 //
 // Use the user modules for computing HPCC problem sizes and for

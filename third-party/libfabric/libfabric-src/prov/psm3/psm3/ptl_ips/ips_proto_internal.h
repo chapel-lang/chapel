@@ -58,6 +58,27 @@
 
 #include "ips_expected_proto.h"
 #include "ips_proto_help.h"
+#include "ips_proto_connect.h"
+
+#define INC_TIME_SPEND(timer)
+
+// return 1 if seq is between first and last inclusive.  Accounts for possible
+// wraparound where numerically first >= last
+PSMI_INLINE(
+int
+between(int first_seq, int last_seq, int seq))
+{
+	if (last_seq >= first_seq) {
+		if (seq < first_seq || seq > last_seq) {
+			return 0;
+		}
+	} else {
+		if (seq > last_seq && seq < first_seq) {
+			return 0;
+		}
+	}
+	return 1;
+}
 
 /*
  * Connect protocol.
@@ -65,21 +86,21 @@
  * On receive, handled by upcalling into the connect interface.
  * On send, handled by ips_proto by having connect compose the message.
  */
-psm2_error_t ips_proto_process_connect(struct ips_proto *proto,
+psm2_error_t psm3_ips_proto_process_connect(struct ips_proto *proto,
 				      uint8_t opcode,
 				      struct ips_message_header *p_hdr,
 				      void *payload, uint32_t paylen);
-psm2_error_t ips_proto_timer_ack_callback(struct psmi_timer *, uint64_t);
-psm2_error_t ips_proto_timer_send_callback(struct psmi_timer *, uint64_t);
-psm2_error_t ips_proto_timer_ctrlq_callback(struct psmi_timer *, uint64_t);
-psm2_error_t ips_proto_timer_pendq_callback(struct psmi_timer *, uint64_t);
-void ips_proto_rv_scbavail_callback(struct ips_scbctrl *scbc, void *context);
+psm2_error_t psm3_ips_proto_timer_ack_callback(struct psmi_timer *, uint64_t);
+psm2_error_t psm3_ips_proto_timer_send_callback(struct psmi_timer *, uint64_t);
+psm2_error_t psm3_ips_proto_timer_ctrlq_callback(struct psmi_timer *, uint64_t);
+psm2_error_t psm3_ips_proto_timer_pendq_callback(struct psmi_timer *, uint64_t);
+void psm3_ips_proto_rv_scbavail_callback(struct ips_scbctrl *scbc, void *context);
 
-psm2_error_t ips_proto_recv_init(struct ips_proto *proto);
-psm2_error_t ips_proto_recv_fini(struct ips_proto *proto);
+psm2_error_t psm3_ips_proto_recv_init(struct ips_proto *proto);
+psm2_error_t psm3_ips_proto_recv_fini(struct ips_proto *proto);
 
-int ips_proto_process_err_chk(struct ips_recvhdrq_event *rcv_ev);
-int ips_proto_connect_disconnect(struct ips_recvhdrq_event *rcv_ev);
-int ips_proto_process_unknown_opcode(struct ips_recvhdrq_event *rcv_ev);
+int psm3_ips_proto_process_err_chk(struct ips_recvhdrq_event *rcv_ev);
+int psm3_ips_proto_connect_disconnect(struct ips_recvhdrq_event *rcv_ev);
+int psm3_ips_proto_process_unknown_opcode(struct ips_recvhdrq_event *rcv_ev);
 
 #endif /* _IPS_PROTO_INTERNAL_H */

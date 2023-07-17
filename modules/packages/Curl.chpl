@@ -229,7 +229,7 @@ module Curl {
   // param. Here's a compile-time check that t is at least a type that
   // we accept for some option.
   private proc check_setopt_argtype(type t) {
-    if !isIntegralType(t) && !isBoolType(t) && !isAnyCPtr(t) && t != slist &&
+    if !isIntegralType(t) && !isBoolType(t) && !chpl_isAnyCPtr(t) && t != slist &&
        t != string && t != bytes then
       compilerError("setopt() doesn't accept arguments of type ", t:string);
   }
@@ -258,15 +258,15 @@ module Curl {
       // arg to libcurl should be a pointer to an object, or to a
       // slist, or a char*, or a void* (CBPOINT).
       // CURLOPTTYPE_FUNCTIONPOINT is also in this range.
-      if isAnyCPtr(arg.type) {
+      if chpl_isAnyCPtr(arg.type) {
         var tmp:c_void_ptr = arg:c_void_ptr;
         err = curl_easy_setopt_ptr(curl, opt:CURLoption, tmp);
       } else if arg.type == slist {
         var tmp:c_void_ptr = arg.list:c_void_ptr;
         err = curl_easy_setopt_ptr(curl, opt:CURLoption, tmp);
       } else if arg.type == string || arg.type == bytes {
-        var tmp = arg.localize().c_str():c_void_ptr;
-        err = curl_easy_setopt_ptr(curl, opt:CURLoption, tmp);
+        err = curl_easy_setopt_ptr(curl, opt:CURLoption,
+                                   arg.localize().c_str():c_void_ptr);
       }
     } else {
       // Must be CURLOPTTYPE_OFF_T or CURLOPTTYPE_BLOB
@@ -312,11 +312,11 @@ module Curl {
 
   */
   record slist {
-    pragma "no doc"
+    @chpldoc.nodoc
     var home: locale = here;
     // Note: If we do not set the default value of this to NULL, we can get
     // non-deterministic segfaults from libcurl.
-    pragma "no doc"
+    @chpldoc.nodoc
     var list: c_ptr(curl_slist) = nil;
   }
 
@@ -508,7 +508,7 @@ module Curl {
   /* See https://curl.haxx.se/libcurl/c/curl_slist_free_all.html */
   extern proc curl_slist_free_all(csl: c_ptr(curl_slist));
 
-  pragma "no doc"
+  @chpldoc.nodoc
   module CurlQioIntegration {
 
     import Time;
@@ -518,7 +518,7 @@ module Curl {
     use OS.POSIX;
     import OS.{errorCode};
 
-    pragma "no doc"
+    @chpldoc.nodoc
     extern proc sys_select(nfds:c_int, readfds:c_ptr(fd_set), writefds:c_ptr(fd_set), exceptfds:c_ptr(fd_set), timeout:c_ptr(struct_timeval), ref nset:c_int):c_int;
 
     class CurlFile : QioPluginFile {
@@ -533,7 +533,7 @@ module Curl {
                           end:int(64),
                           qioChannelPtr:qio_channel_ptr_t):errorCode {
         var curlch = new unmanaged CurlChannel();
-        curlch.curlf = this:unmanaged;
+        curlch.curlf = _to_unmanaged(this);
         curlch.qio_ch = qioChannelPtr;
         pluginChannel = curlch;
         return start_channel(curlch, start, end);
@@ -565,7 +565,7 @@ module Curl {
       }
 
       override proc close():errorCode {
-        c_free(url_c:c_void_ptr);
+        deallocate(url_c:c_void_ptr);
         url_c = nil;
         return 0;
       }
@@ -665,7 +665,7 @@ module Curl {
         var curbase = (ret.vec[ret.curr].iov_base):c_ptr(uint(8));
         var dst = curbase + ret.amt_read;
         var amt = ret.vec[ret.curr].iov_len - ret.amt_read;
-        c_memcpy(dst, ptr_data, amt);
+        memcpy(dst, ptr_data, amt.safeCast(c_size_t));
         ret.total_read += amt;
         realsize -= amt;
         ptr_data = ptr_data + amt;
@@ -685,7 +685,7 @@ module Curl {
         var curbase = (ret.vec[ret.curr].iov_base):c_ptr(uint(8));
         var dst = curbase + ret.amt_read;
         var amt = realsize;
-        c_memcpy(dst, ptr_data, amt);
+        memcpy(dst, ptr_data, amt);
         ret.total_read += realsize;
         ret.amt_read += realsize;
         // We have fully populated this iovbuf
@@ -726,15 +726,15 @@ module Curl {
         var newsize = 2 * buf.alloced + realsize;
         var oldsize = buf.len;
         var newbuf:c_ptr(uint(8));
-        newbuf = c_calloc(uint(8), newsize);
+        newbuf = allocate(uint(8), newsize, clear=true);
         if newbuf == nil then
           return 0;
-        c_memcpy(newbuf, buf.mem, oldsize);
-        c_free(buf.mem);
+        memcpy(newbuf, buf.mem, oldsize.safeCast(c_size_t));
+        deallocate(buf.mem);
         buf.mem = newbuf;
       }
 
-      c_memcpy(c_ptrTo(buf.mem[buf.len]), contents, realsize);
+      memcpy(c_ptrTo(buf.mem[buf.len]), contents, realsize);
       buf.len += realsize;
       buf.mem[buf.len] = 0;
 
@@ -755,7 +755,7 @@ module Curl {
         // Headers tend to be ~800, although they can grow much larger than this. If
         // it is larger than this, we'll take care of it in curl_write_string.
 
-        buf.mem = c_calloc(uint(8), 800);
+        buf.mem = allocate(uint(8), 800, clear=true);
         buf.len = 0;
         buf.alloced = 800;
 
@@ -777,7 +777,7 @@ module Curl {
           ret = true;
         }
 
-        c_free(buf.mem);
+        deallocate(buf.mem);
 
         var lengthDouble: real(64);
         // Get the content length (for HTTP only)
@@ -1151,8 +1151,8 @@ module Curl {
       // curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "name=daniel&project=curl");
 
       // Save the url requested
-      var url_c = c_calloc(uint(8), url.size+1);
-      c_memcpy(url_c:c_void_ptr, url.localize().c_str():c_void_ptr, url.size);
+      var url_c = allocate(uint(8), url.size:c_size_t+1, clear=true);
+      memcpy(url_c:c_void_ptr, url.localize().c_str():c_void_ptr, url.size.safeCast(c_size_t));
 
       fl.url_c = url_c:c_string;
 

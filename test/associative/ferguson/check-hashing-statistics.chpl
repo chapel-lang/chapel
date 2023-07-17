@@ -1,4 +1,5 @@
 use Random;
+use Math;
 use List;
 use Set;
 use SHA256Implementation;
@@ -162,7 +163,7 @@ proc runTest() {
     counts3[shrink(l)] += 1;
 
     pairs[shrink(j), shrink(k)] += 1;
-    pairsInput[shrink(j), shrink(k)].append(i);
+    pairsInput[shrink(j), shrink(k)].pushBack(i);
 
     triples[shrink(j), shrink(k), shrink(l)] += 1;
   }
@@ -250,5 +251,3 @@ useTop = true;
 writeln("Using PCG seeds, defaultHash, defaultHashCombine, shift top down");
 runTest();
 writeln();
-
-

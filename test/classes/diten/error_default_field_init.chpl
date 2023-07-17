@@ -7,5 +7,5 @@ class C {
   var xx: int = 2.0; // Error, can't implicitly convert 2.0 to int
 }
 
-var c = (new owned C()).borrow();
+var c = new C();
 writeln(c);

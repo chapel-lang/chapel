@@ -20,7 +20,7 @@ module MyHashtable {
 
   use ChapelBase, DSIUtil;
 
-  private use CTypes;
+  private use CTypes, OS.POSIX;
 
   // empty needs to be 0 so memset 0 sets it
   enum chpl__hash_status { empty=0, full, deleted };
@@ -106,13 +106,13 @@ module MyHashtable {
       }
       when ArrayInit.serialInit {
         for slot in _allSlots(size) {
-          c_memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
+          memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
         }
       }
       when ArrayInit.parallelInit {
         // This should match the 'these' iterator in terms of idx->task
         forall slot in _allSlots(size) {
-          c_memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
+          memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
         }
       }
       otherwise {

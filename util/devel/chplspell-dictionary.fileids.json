@@ -298,6 +298,9 @@
   "d7761e16-36bd-11e7-96a7-10ddb1d4c3d5": [
     "compiler/resolution/expandVarArgs.cpp"
   ],
+  "19b44eb2-d463-11ed-ae82-c11fabc62016": [
+    "compiler/resolution/fcf-support.cpp"
+  ],
   "c50323ec-5a60-11ed-baec-ef9f14c5b529": [
     "compiler/resolution/firstClassFunctions.cpp"
   ],
@@ -461,6 +464,9 @@
   "836b6940-253d-11ea-948f-10ddb1d4c3d5": [
     "doc/rst/language/spec/expressions.rst"
   ],
+  "92abfbbc-d463-11ed-ae82-c11fabc62016": [
+    "doc/rst/language/spec/generics.rst"
+  ],
   "7717bf22-253d-11ea-948f-10ddb1d4c3d5": [
     "doc/rst/language/spec/interoperability.rst"
   ],
@@ -499,6 +505,12 @@
   ],
   "b89daf54-62e2-11eb-a43d-6f93f4244f4b": [
     "doc/rst/platforms/cray.rst"
+  ],
+  "41875858-d463-11ed-ae82-c11fabc62016": [
+    "doc/rst/platforms/raspberrypi.rst"
+  ],
+  "73f04412-d463-11ed-ae82-c11fabc62016": [
+    "doc/rst/technotes/attributes.rst"
   ],
   "e72b8a7e-1e47-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/technotes/dsi.rst"
@@ -580,6 +592,9 @@
   ],
   "59352e34-5a61-11ed-baec-ef9f14c5b529": [
     "frontend/include/chpl/framework/ErrorWriter.h"
+  ],
+  "1f55a268-ff50-11ed-8448-7105b32efc83": [
+    "frontend/include/chpl/framework/TemporaryFileResult.h"
   ],
   "7a8e3a00-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/include/chpl/framework/UniqueString.h"
@@ -833,6 +848,9 @@
   "2b010178-9f72-11ec-866d-111c8d7a1817": [
     "frontend/include/chpl/uast/Pragma.h"
   ],
+  "ed52c7a0-ff54-11ed-8448-7105b32efc83": [
+    "frontend/include/chpl/uast/PragmaList.h"
+  ],
   "ef4d808e-9f71-11ec-866d-111c8d7a1817": [
     "frontend/include/chpl/uast/PrimCall.h"
   ],
@@ -1010,6 +1028,9 @@
   "806baa5e-ac5b-11ed-b67e-4d191cd16eac": [
     "frontend/lib/resolution/scope-types.cpp"
   ],
+  "5f829238-ff50-11ed-8448-7105b32efc83": [
+    "frontend/lib/resolution/try-catch-analysis.cpp"
+  ],
   "c662e13e-9f74-11ec-866d-111c8d7a1817": [
     "frontend/lib/types/ClassType.cpp"
   ],
@@ -1037,8 +1058,14 @@
   "689a30e2-945c-11ed-b9f6-7def56659a0b": [
     "frontend/lib/util/chplenv.cpp"
   ],
+  "37ae1872-ff50-11ed-8448-7105b32efc83": [
+    "frontend/lib/util/clang-integration.cpp"
+  ],
   "b4d7b308-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/lib/util/filesystem.cpp"
+  ],
+  "e091e076-d463-11ed-ae82-c11fabc62016": [
+    "frontend/lib/util/filtering.cpp"
   ],
   "f0807cd2-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/lib/util/subprocess.cpp"
@@ -1295,6 +1322,9 @@
   "7de3ce6c-3f64-11e6-907f-843835579daa": [
     "modules/standard/Math.chpl"
   ],
+  "cb0197c8-d464-11ed-ae82-c11fabc62016": [
+    "modules/standard/MemMove.chpl"
+  ],
   "bd895c06-e3ac-11ec-a8be-cd81bce0efc4": [
     "modules/standard/OS.chpl"
   ],
@@ -1312,9 +1342,6 @@
   ],
   "83e8f86a-f561-11eb-bb15-35b7469d4b43": [
     "modules/standard/Sys.chpl"
-  ],
-  "d41572f2-1f2c-11e6-a3a6-10ddb1d4c3d5": [
-    "modules/standard/SysBasic.chpl"
   ],
   "f5a43844-9c7b-11e8-b963-10ddb1d4c3d5": [
     "modules/standard/Time.chpl"
@@ -1358,8 +1385,14 @@
   "73aae312-d1c1-11e8-954d-10ddb1d4c3d5": [
     "runtime/include/comm/ugni/comm-ugni-heap-pages.h"
   ],
+  "bc38f4c2-ff50-11ed-8448-7105b32efc83": [
+    "runtime/include/gpu/amd/chpl-gpu-gen-includes.h"
+  ],
   "2879db88-b57d-11ed-b67e-4d191cd16eac": [
     "runtime/include/gpu/cuda/chpl-gpu-gen-includes.h"
+  ],
+  "b3ec2a6e-ff50-11ed-8448-7105b32efc83": [
+    "runtime/include/gpu/nvidia/chpl-gpu-gen-includes.h"
   ],
   "302b726a-b57d-11ed-b67e-4d191cd16eac": [
     "runtime/include/gpu/rocm/chpl-gpu-gen-includes.h"
@@ -1410,11 +1443,17 @@
   "31db04f6-fecb-11ea-b2e8-10ddb1d4c3d5": [
     "runtime/src/error.c"
   ],
+  "d235b12a-ff50-11ed-8448-7105b32efc83": [
+    "runtime/src/gpu/amd/gpu-amd.c"
+  ],
   "9ede5918-3010-11ed-b71b-d7492178b4dc": [
     "runtime/src/gpu/common/cuda-shared.h"
   ],
   "607e4bce-3010-11ed-b71b-d7492178b4dc": [
     "runtime/src/gpu/cuda/gpu-cuda.c"
+  ],
+  "bff59fde-ff50-11ed-8448-7105b32efc83": [
+    "runtime/src/gpu/nvidia/gpu-nvidia.c"
   ],
   "31c40b14-b57d-11ed-b67e-4d191cd16eac": [
     "runtime/src/gpu/rocm/gpu-rocm.c"

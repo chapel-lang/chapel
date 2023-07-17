@@ -31,7 +31,6 @@ The syntax to declare an iterator is given by:
      identifier
 
    yield-intent:
-     'const'
      'const ref'
      'ref'
      'param'

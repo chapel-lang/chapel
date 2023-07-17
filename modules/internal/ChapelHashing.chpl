@@ -56,6 +56,8 @@ module ChapelHashing {
   }
 
   inline proc chpl__defaultHashCombine(a:uint, b:uint, fieldnum:int): uint {
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc chpl_bitops_rotl_64(x: uint(64), n: uint(64)) : uint(64);
     var n:uint = (17 + fieldnum):uint;
     return _gen_key(a ^ chpl_bitops_rotl_64(b, n));
@@ -107,7 +109,7 @@ module ChapelHashing {
   }
 
   // Nilable and non-nilable classes will coerce to this.
-  inline proc (borrowed object?).hash(): uint {
+  inline proc (borrowed RootClass?).hash(): uint {
     return _gen_key(__primitive( "object2int", this));
   }
 

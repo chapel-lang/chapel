@@ -43,7 +43,7 @@ int ofi_fabric_close(struct util_fabric *fabric)
 
 	ofi_fabric_remove(fabric);
 	free((char *)fabric->name);
-	fastlock_destroy(&fabric->lock);
+	ofi_mutex_destroy(&fabric->lock);
 	return 0;
 }
 
@@ -61,7 +61,7 @@ int ofi_fabric_init(const struct fi_provider *prov,
 	fabric->prov = prov;
 	ofi_atomic_initialize32(&fabric->ref, 0);
 	dlist_init(&fabric->domain_list);
-	fastlock_init(&fabric->lock);
+	ofi_mutex_init(&fabric->lock);
 	fabric->name = strdup(user_attr->name);
 	if (!fabric->name)
 		return -FI_ENOMEM;

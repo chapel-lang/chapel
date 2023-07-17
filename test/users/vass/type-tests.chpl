@@ -5,7 +5,7 @@ use BlockDist;
 class C  { var cl:int; }
 record R { var re:int; }
 union U  { var u1, u2: int; }
-
+var clsObj = new C();
 var b: bool;             test("bool", b);
 var i: int;              test("int", i);
 var ui: uint;            test("uint", ui);
@@ -13,7 +13,7 @@ var r: real;             test("real", r);
 var cmp: complex;        test("complex", cmp);
 var img: imag;           test("imag", img);
 var str: string;         test("string", str);
-var cls: borrowed C = (new owned C()).borrow();     test("class", cls);
+var cls: borrowed C = clsObj.borrow();     test("class", cls);
 var rec: R;              test("record", rec);
 var uni: U;              test("union", uni);
 var dm1 = new unmanaged Block(LocaleSpace); test("dist", dm1);

@@ -477,7 +477,7 @@ proc copyMode(src: string, dest: string) throws {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 @deprecated(notes="'FileSystem.copyMode()' is deprecated. Please use 'OS.POSIX.stat()' and 'OS.POSIX.chmod()' instead.")
 proc copyMode(out error: errorCode, src: string, dest: string) {
   var err: errorCode = 0;
@@ -602,7 +602,7 @@ proc locale.cwd(): string throws {
     // c_strings can't cross on statements.
     err = chpl_fs_cwd(tmp);
     try! {
-      ret = createStringWithNewBuffer(tmp, policy=decodePolicy.escape);
+      ret = string.createCopyingBuffer(tmp, policy=decodePolicy.escape);
     }
     // tmp was qio_malloc'd by chpl_fs_cwd
     chpl_free_c_string(tmp);
@@ -682,7 +682,7 @@ iter findfiles(startdir: string = ".", recursive: bool = false,
       yield startdir+"/"+file;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 iter findFiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false, param tag: iterKind): string
        where tag == iterKind.standalone {
@@ -702,7 +702,7 @@ iter findFiles(startdir: string = ".", recursive: bool = false,
 // addition to the one that comes from the serial iterator for a forall loop
 // that calls this. (serial, leader, follower, standalone). Rely on just
 // the serial deprecation warning to reduce it to a single message.
-pragma "no doc"
+@chpldoc.nodoc
 //@deprecated(notes="'findfiles' is deprecated, please use 'findFiles' instead")
 iter findfiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false, param tag: iterKind): string
@@ -852,7 +852,7 @@ private module GlobWrappers {
   inline proc glob_index_w(glb: glob_t, idx: int): string {
     extern proc chpl_glob_index(glb: glob_t, idx: c_size_t): c_string;
     try! {
-      return createStringWithNewBuffer(chpl_glob_index(glb,
+      return string.createCopyingBuffer(chpl_glob_index(glb,
                                                        idx.safeCast(c_size_t)),
                                        policy=decodePolicy.escape);
     }
@@ -888,7 +888,7 @@ iter glob(pattern: string = "*"): string {
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 iter glob(pattern: string = "*", param tag: iterKind): string
        where tag == iterKind.standalone {
   use GlobWrappers;
@@ -912,7 +912,7 @@ iter glob(pattern: string = "*", param tag: iterKind): string
 // should be rewritten to do so (and would require freeing
 // the state at the end of the call).
 //
-pragma "no doc"
+@chpldoc.nodoc
 iter glob(pattern: string = "*", param tag: iterKind)
        where tag == iterKind.leader {
   use GlobWrappers;
@@ -929,7 +929,7 @@ iter glob(pattern: string = "*", param tag: iterKind)
     yield followThis;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 iter glob(pattern: string = "*", followThis, param tag: iterKind): string
        where tag == iterKind.follower {
   use GlobWrappers;
@@ -1098,8 +1098,10 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
 */
 iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
               files: bool = true, listlinks: bool = true): string {
-  extern type DIRptr;
-  extern type direntptr;
+  extern record DIR {}
+  extern type DIRptr = c_ptr(DIR);
+  extern "struct dirent" record chpl_dirent {}
+  extern type direntptr = c_ptr(chpl_dirent);
   extern proc opendir(name: c_string): DIRptr;
   extern proc readdir(dirp: DIRptr): direntptr;
   extern proc closedir(dirp: DIRptr): c_int;
@@ -1111,12 +1113,12 @@ iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
   }
 
   var dir: DIRptr = opendir(unescape(path).c_str());
-  if (!is_c_nil(dir)) {
+  if (dir != nil) {
     var ent: direntptr = readdir(dir);
-    while (!is_c_nil(ent)) {
+    while (ent != nil) {
       var filename: string;
       try! {
-        filename = createStringWithNewBuffer(ent.d_name(),
+        filename = string.createCopyingBuffer(ent.d_name(),
                                              policy=decodePolicy.escape);
       }
       if (hidden || filename[0] != '.') {
@@ -1275,7 +1277,7 @@ proc remove(name: string) throws {
   if err then try ioerror(err, "in remove", name);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc remove(out error: errorCode, name: string) {
   try {
     remove(name);
@@ -1505,7 +1507,7 @@ iter walkDirs(path: string = ".", topdown: bool = true, depth: int = max(int),
     yield path;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 iter walkdirs(path: string = ".", topdown: bool = true, depth: int =max(int),
               hidden: bool = false, followlinks: bool = false,
               sort: bool = false, param tag: iterKind): string
@@ -1518,7 +1520,7 @@ iter walkdirs(path: string = ".", topdown: bool = true, depth: int =max(int),
 //
 // Here's a parallel version
 //
-pragma "no doc"
+@chpldoc.nodoc
 iter walkDirs(path: string = ".", topdown: bool = true, depth: int =max(int),
               hidden: bool = false, followlinks: bool = false,
               sort: bool = false, param tag: iterKind): string

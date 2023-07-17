@@ -2,7 +2,7 @@ r is: 1..10
 r2 is: 0..9
 r(r2) is: 1..9
 r2(r) is: 1..9
-r.type is: range(int(32),both,false)
-r2.type is: range(int(64),both,false)
-r(r2).type is: range(int(32),both,false)
-r2(r).type is: range(int(64),both,false)
+r.type is: range(int(32),both,one)
+r2.type is: range(int(64),both,one)
+r(r2).type is: range(int(32),both,one)
+r2(r).type is: range(int(64),both,one)

@@ -69,7 +69,7 @@ static struct rxd_x_entry *rxd_tx_entry_init_rma(struct rxd_ep *ep, fi_addr_t ad
 			rxd_init_sar_hdr(&ptr, tx_entry, rma_count);
 		} else {
 			tx_entry->flags |= RXD_INLINE;
-			base_hdr->flags = tx_entry->flags;
+			base_hdr->flags = (uint16_t) tx_entry->flags;
 			tx_entry->num_segs = 1;
 		}
 		rxd_init_rma_hdr(&ptr, rma_iov, rma_count);
@@ -94,15 +94,15 @@ static ssize_t rxd_generic_write_inject(struct rxd_ep *rxd_ep,
 	ssize_t ret = -FI_EAGAIN;
 
 	assert(iov_count <= RXD_IOV_LIMIT && rma_count <= RXD_IOV_LIMIT);
-	assert(ofi_total_iov_len(iov, iov_count) <= rxd_ep_domain(rxd_ep)->max_inline_rma);
+	assert(ofi_total_iov_len(iov, iov_count) <= (size_t) rxd_ep_domain(rxd_ep)->max_inline_rma);
 
-	fastlock_acquire(&rxd_ep->util_ep.lock);
+	ofi_mutex_lock(&rxd_ep->util_ep.lock);
 
 	if (ofi_cirque_isfull(rxd_ep->util_ep.tx_cq->cirq))
 		goto out;
 
 	rxd_addr = (intptr_t) ofi_idx_lookup(&(rxd_ep_av(rxd_ep)->fi_addr_idx),
-					      RXD_IDX_OFFSET(addr));
+					      RXD_IDX_OFFSET((int) addr));
 	if (!rxd_addr)
 		goto out;
 	ret = rxd_send_rts_if_needed(rxd_ep, rxd_addr);
@@ -126,7 +126,7 @@ static ssize_t rxd_generic_write_inject(struct rxd_ep *rxd_ep,
 	ret = 0;
 
 out:
-	fastlock_release(&rxd_ep->util_ep.lock);
+	ofi_mutex_unlock(&rxd_ep->util_ep.lock);
 	return ret;
 }
 
@@ -147,12 +147,12 @@ rxd_generic_rma(struct rxd_ep *rxd_ep, const struct iovec *iov,
 
 	assert(iov_count <= RXD_IOV_LIMIT && rma_count <= RXD_IOV_LIMIT);
 
-	fastlock_acquire(&rxd_ep->util_ep.lock);
+	ofi_mutex_lock(&rxd_ep->util_ep.lock);
 
 	if (ofi_cirque_isfull(rxd_ep->util_ep.tx_cq->cirq))
 		goto out;
 	rxd_addr = (intptr_t) ofi_idx_lookup(&(rxd_ep_av(rxd_ep)->fi_addr_idx),
-					     RXD_IDX_OFFSET(addr));
+					     RXD_IDX_OFFSET((int) addr));
 	if (!rxd_addr)
 		goto out;
 
@@ -177,7 +177,7 @@ rxd_generic_rma(struct rxd_ep *rxd_ep, const struct iovec *iov,
 	ret = 0;
 
 out:
-	fastlock_release(&rxd_ep->util_ep.lock);
+	ofi_mutex_unlock(&rxd_ep->util_ep.lock);
 	return ret;
 }
 

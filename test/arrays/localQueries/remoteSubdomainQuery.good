@@ -1,4 +1,4 @@
-domain(1,int(64),false):
+domain(1,int(64),one):
 I own:   {1..10}
 It owns: {1..0}
 I own:   {1..10}
@@ -6,7 +6,7 @@ It owns: {1..0}
 (<no communication>)
 
 From locale 1:
-domain(1,int(64),false):
+domain(1,int(64),one):
 I own:   {1..0}
 It owns: {1..10}
 I own:   {1..0}
@@ -26,7 +26,7 @@ It owns: {3.4}
 I own:   {}
 It owns: {3.4}
 
-DefaultSparseDom(1,int(64),domain(1,int(64),false)):
+DefaultSparseDom(1,int(64),domain(1,int(64),one)):
 I own:   {7}
 It owns: {}
 I own:   {7}
@@ -34,13 +34,13 @@ It owns: {}
 (<no communication>)
 
 From locale 1:
-DefaultSparseDom(1,int(64),domain(1,int(64),false)):
+DefaultSparseDom(1,int(64),domain(1,int(64),one)):
 I own:   {}
 It owns: {7}
 I own:   {}
 It owns: {7}
 
-[domain(1,int(64),false)] real(64):
+[domain(1,int(64),one)] real(64):
 I own:   {1..10}
 It owns: {1..0}
 I own:   {1..10}
@@ -48,7 +48,7 @@ It owns: {1..0}
 (<no communication>)
 
 From locale 1:
-[domain(1,int(64),false)] real(64):
+[domain(1,int(64),one)] real(64):
 I own:   {1..0}
 It owns: {1..10}
 I own:   {1..0}
@@ -68,7 +68,7 @@ It owns: {3.4}
 I own:   {}
 It owns: {3.4}
 
-[DefaultSparseDom(1,int(64),domain(1,int(64),false))] real(64):
+[DefaultSparseDom(1,int(64),domain(1,int(64),one))] real(64):
 I own:   {7}
 It owns: {}
 I own:   {7}
@@ -76,7 +76,7 @@ It owns: {}
 (<no communication>)
 
 From locale 1:
-[DefaultSparseDom(1,int(64),domain(1,int(64),false))] real(64):
+[DefaultSparseDom(1,int(64),domain(1,int(64),one))] real(64):
 I own:   {}
 It owns: {7}
 I own:   {}

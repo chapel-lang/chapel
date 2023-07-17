@@ -64,7 +64,7 @@ _gnix_notifier_init(void)
 {
 	global_mr_not.fd = -1;
 	global_mr_not.cntr = NULL;
-	fastlock_init(&global_mr_not.lock);
+	ofi_spin_init(&global_mr_not.lock);
 	global_mr_not.ref_cnt = 0;
 
 	return FI_SUCCESS;
@@ -77,7 +77,7 @@ _gnix_notifier_open(struct gnix_mr_notifier **mrn)
 	int kdreg_fd, ret_errno;
         kdreg_get_user_delta_args_t get_user_delta_args;
 
-	fastlock_acquire(&global_mr_not.lock);
+	ofi_spin_lock(&global_mr_not.lock);
 
 	if (!global_mr_not.ref_cnt) {
 		kdreg_fd = open(KDREG_DEV, O_RDWR | O_NONBLOCK);
@@ -119,7 +119,7 @@ _gnix_notifier_open(struct gnix_mr_notifier **mrn)
 	*mrn = &global_mr_not;
 
 err_exit:
-	fastlock_release(&global_mr_not.lock);
+	ofi_spin_unlock(&global_mr_not.lock);
 
 	return ret;
 }
@@ -130,7 +130,7 @@ _gnix_notifier_close(struct gnix_mr_notifier *mrn)
 	int ret = FI_SUCCESS;
 	int ret_errno;
 
-	fastlock_acquire(&mrn->lock);
+	ofi_spin_lock(&mrn->lock);
 
 	ret = notifier_verify_stuff(mrn);
 	if (ret != FI_SUCCESS) {
@@ -155,7 +155,7 @@ _gnix_notifier_close(struct gnix_mr_notifier *mrn)
 	mrn->fd = -1;
 	mrn->cntr = NULL;
 err_exit:
-	fastlock_release(&mrn->lock);
+	ofi_spin_unlock(&mrn->lock);
 
 	return ret;
 }
@@ -184,7 +184,7 @@ _gnix_notifier_monitor(struct gnix_mr_notifier *mrn,
 	int ret;
 	struct registration_monitor rm;
 
-	fastlock_acquire(&mrn->lock);
+	ofi_spin_lock(&mrn->lock);
 
 	ret = notifier_verify_stuff(mrn);
 	if (ret != FI_SUCCESS) {
@@ -206,7 +206,7 @@ _gnix_notifier_monitor(struct gnix_mr_notifier *mrn,
 	}
 
 err_exit:
-	fastlock_release(&mrn->lock);
+	ofi_spin_unlock(&mrn->lock);
 
 	return ret;
 }
@@ -217,7 +217,7 @@ _gnix_notifier_unmonitor(struct gnix_mr_notifier *mrn, uint64_t cookie)
 	int ret;
 	struct registration_monitor rm;
 
-	fastlock_acquire(&mrn->lock);
+	ofi_spin_lock(&mrn->lock);
 
 	ret = notifier_verify_stuff(mrn);
 	if (ret != FI_SUCCESS) {
@@ -235,7 +235,7 @@ _gnix_notifier_unmonitor(struct gnix_mr_notifier *mrn, uint64_t cookie)
 	ret = kdreg_write(mrn, &rm, sizeof(rm));
 
 err_exit:
-	fastlock_release(&mrn->lock);
+	ofi_spin_unlock(&mrn->lock);
 
 	return ret;
 }
@@ -251,7 +251,7 @@ _gnix_notifier_get_event(struct gnix_mr_notifier *mrn, void* buf, size_t len)
 		return -FI_EINVAL;
 	}
 
-	fastlock_acquire(&mrn->lock);
+	ofi_spin_lock(&mrn->lock);
 
 	if (*(mrn->cntr) > 0) {
 		GNIX_DEBUG(FI_LOG_MR, "reading kdreg event\n");
@@ -271,7 +271,7 @@ _gnix_notifier_get_event(struct gnix_mr_notifier *mrn, void* buf, size_t len)
 		ret = -FI_EAGAIN;
 	}
 
-	fastlock_release(&mrn->lock);
+	ofi_spin_unlock(&mrn->lock);
 
 	return ret;
 }

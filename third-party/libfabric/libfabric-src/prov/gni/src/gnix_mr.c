@@ -280,14 +280,14 @@ int _gnix_mr_reg(struct fid *fid, const void *buf, size_t len,
 			1 << GNIX_MR_PAGE_SHIFT);
 
 	/* call cache register op to retrieve the right entry */
-	fastlock_acquire(&info->mr_cache_lock);
+	ofi_spin_lock(&info->mr_cache_lock);
 	if (OFI_UNLIKELY(!domain->mr_ops))
 		_gnix_open_cache(domain, GNIX_DEFAULT_CACHE_TYPE);
 
 	if (OFI_UNLIKELY(!domain->mr_ops->is_init(domain, auth_key))) {
 		rc = domain->mr_ops->init(domain, auth_key);
 		if (rc != FI_SUCCESS) {
-			fastlock_release(&info->mr_cache_lock);
+			ofi_spin_unlock(&info->mr_cache_lock);
 			goto err;
 		}
 	}
@@ -295,7 +295,7 @@ int _gnix_mr_reg(struct fid *fid, const void *buf, size_t len,
 	rc = domain->mr_ops->reg_mr(domain,
 			(uint64_t) reg_addr, reg_len, &fi_reg_context,
 			(void **) &mr);
-	fastlock_release(&info->mr_cache_lock);
+	ofi_spin_unlock(&info->mr_cache_lock);
 
 	/* check retcode */
 	if (OFI_UNLIKELY(rc != FI_SUCCESS))
@@ -422,7 +422,7 @@ static int __gnix_mr_refresh(struct gnix_fid_mem_desc *desc,
 		gni_return_t grc;
 
 
-	fastlock_acquire(&desc->nic->lock);
+	ofi_spin_lock(&desc->nic->lock);
 	grc = GNI_MemRegister(desc->nic->gni_nic_hndl, addr,
 		len, NULL, GNI_MEM_UPDATE_REGION,
 		desc->mr_fid.key, &desc->mem_hndl);
@@ -431,7 +431,7 @@ static int __gnix_mr_refresh(struct gnix_fid_mem_desc *desc,
 			"failed GNI_MemRegister with UPDATE REGION, "
 			" addr=%p len=%x key=%d grc=%d\n",
 			addr, len, desc->mr_fid.key, grc);
-	fastlock_release(&desc->nic->lock);
+	ofi_spin_unlock(&desc->nic->lock);
 
 	return (grc != 0) ? -FI_EINVAL : FI_SUCCESS;
 }
@@ -545,9 +545,9 @@ static int fi_gnix_mr_close(fid_t fid)
 	info = &domain->mr_cache_info[mr->auth_key->ptag];
 
 	/* call cache deregister op */
-	fastlock_acquire(&info->mr_cache_lock);
+	ofi_spin_lock(&info->mr_cache_lock);
 	ret = domain->mr_ops->dereg_mr(domain, mr);
-	fastlock_release(&info->mr_cache_lock);
+	ofi_spin_unlock(&info->mr_cache_lock);
 
 	/* check retcode */
 	if (OFI_LIKELY(ret == FI_SUCCESS)) {
@@ -1103,33 +1103,33 @@ static int __cache_flush(struct gnix_fid_domain *domain)
 	int i;
 	struct gnix_mr_cache_info *info;
 
-	fastlock_acquire(&domain->mr_cache_lock);
+	ofi_spin_lock(&domain->mr_cache_lock);
 
 	for (i = 0; i < 256; i++) {
 		info = &domain->mr_cache_info[i];
 
-		fastlock_acquire(&info->mr_cache_lock);
+		ofi_spin_lock(&info->mr_cache_lock);
 		if (!info->inuse) {
-			fastlock_release(&info->mr_cache_lock);
+			ofi_spin_unlock(&info->mr_cache_lock);
 			continue;
 		}
 
 		ret = _gnix_mr_cache_flush(info->mr_cache_ro);
 		if (ret) {
-			fastlock_release(&info->mr_cache_lock);
+			ofi_spin_unlock(&info->mr_cache_lock);
 			break;
 		}
 
 		ret = _gnix_mr_cache_flush(info->mr_cache_rw);
 		if (ret) {
-			fastlock_release(&info->mr_cache_lock);
+			ofi_spin_unlock(&info->mr_cache_lock);
 			break;
 		}
 
-		fastlock_release(&info->mr_cache_lock);
+		ofi_spin_unlock(&info->mr_cache_lock);
 	}
 
-	fastlock_release(&domain->mr_cache_lock);
+	ofi_spin_unlock(&domain->mr_cache_lock);
 
 	return ret;
 }

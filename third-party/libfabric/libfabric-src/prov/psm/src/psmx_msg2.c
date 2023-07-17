@@ -35,17 +35,17 @@
 static inline void psmx_am_enqueue_send(struct psmx_fid_domain *domain,
 					struct psmx_am_request *req)
 {
-	fastlock_acquire(&domain->send_queue.lock);
+	ofi_spin_lock(&domain->send_queue.lock);
 	slist_insert_tail(&req->list_entry, &domain->send_queue.list);
-	fastlock_release(&domain->send_queue.lock);
+	ofi_spin_unlock(&domain->send_queue.lock);
 }
 
 static inline void psmx_am_enqueue_recv(struct psmx_fid_domain *domain,
 					struct psmx_am_request *req)
 {
-	fastlock_acquire(&domain->recv_queue.lock);
+	ofi_spin_lock(&domain->recv_queue.lock);
 	slist_insert_tail(&req->list_entry, &domain->recv_queue.list);
-	fastlock_release(&domain->recv_queue.lock);
+	ofi_spin_unlock(&domain->recv_queue.lock);
 }
 
 static int match_recv(struct slist_entry *item, const void *src_addr)
@@ -65,10 +65,10 @@ static struct psmx_am_request *psmx_am_search_and_dequeue_recv(
 {
 	struct slist_entry *item;
 
-	fastlock_acquire(&domain->recv_queue.lock);
+	ofi_spin_lock(&domain->recv_queue.lock);
 	item = slist_remove_first_match(&domain->recv_queue.list,
 					match_recv, src_addr);
-	fastlock_release(&domain->recv_queue.lock);
+	ofi_spin_unlock(&domain->recv_queue.lock);
 
 	if (!item)
 		return NULL;
@@ -79,9 +79,9 @@ static struct psmx_am_request *psmx_am_search_and_dequeue_recv(
 static inline void psmx_am_enqueue_unexp(struct psmx_fid_domain *domain,
 					 struct psmx_unexp *unexp)
 {
-	fastlock_acquire(&domain->unexp_queue.lock);
+	ofi_spin_lock(&domain->unexp_queue.lock);
 	slist_insert_tail(&unexp->list_entry, &domain->unexp_queue.list);
-	fastlock_release(&domain->unexp_queue.lock);
+	ofi_spin_unlock(&domain->unexp_queue.lock);
 }
 
 static int match_unexp(struct slist_entry *item, const void *src_addr)
@@ -102,10 +102,10 @@ static struct psmx_unexp *psmx_am_search_and_dequeue_unexp(
 {
 	struct slist_entry *item;
 
-	fastlock_acquire(&domain->unexp_queue.lock);
+	ofi_spin_lock(&domain->unexp_queue.lock);
 	item = slist_remove_first_match(&domain->unexp_queue.list,
 					match_unexp, src_addr);
-	fastlock_release(&domain->unexp_queue.lock);
+	ofi_spin_unlock(&domain->unexp_queue.lock);
 
 	if (!item)
 		return NULL;
@@ -534,7 +534,7 @@ static ssize_t _psmx_send2(struct fid_ep *ep, const void *buf, size_t len,
 	req->ep = ep_priv;
 	req->cq_flags = FI_SEND | FI_MSG;
 
-	if ((flags & PSMX_NO_COMPLETION) || 
+	if ((flags & PSMX_NO_COMPLETION) ||
 	    (ep_priv->send_selective_completion && !(flags & FI_COMPLETION)))
 		req->no_event = 1;
 

@@ -13,5 +13,5 @@ class C {
   }
 }
 
-var c = (new owned C()).borrow();
+var cObj = new C(); var c = cObj.borrow();
 c.foo();

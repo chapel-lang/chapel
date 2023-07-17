@@ -18,7 +18,9 @@
 target_sources(ChplFrontend-obj
                PRIVATE
 
+               AnyClassType.cpp
                AnyType.cpp
+               ArrayType.cpp
                BasicClassType.cpp
                BoolType.cpp
                BuiltinType.cpp
@@ -27,8 +29,11 @@ target_sources(ChplFrontend-obj
                ClassTypeDecorator.cpp
                ComplexType.cpp
                CompositeType.cpp
+               CPtrType.cpp
+               DomainType.cpp
                EnumType.cpp
                ErroneousType.cpp
+               ExternType.cpp
                ImagType.cpp
                IntType.cpp
                NilType.cpp

@@ -1,0 +1,4 @@
+parSafe.chpl:4: warning: 'set.parSafe' is unstable
+parSafe.chpl:5: warning: 'set.parSafe' is unstable
+parSafe.chpl:12: warning: 'set.parSafe' is unstable
+parSafe.chpl:13: warning: 'set.parSafe' is unstable

@@ -7,7 +7,7 @@ class C {
 
 class D : C {
   param rank: int;
-  var ranges : rank*range(int, boundKind.both, false);
+  var ranges : rank*range(int, boundKind.both);
 
   proc postinit() {
     for i in 1..rank do
@@ -19,7 +19,8 @@ class D : C {
   }
 }
 
-var d:borrowed C = (new owned D(4)).borrow();
+var dd = new owned D(4);
+var d:borrowed C = dd.borrow();
 writeln(d.bbox(1));
 writeln(d.bbox(2));
 writeln(d.bbox(3));

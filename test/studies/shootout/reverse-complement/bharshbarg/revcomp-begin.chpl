@@ -53,9 +53,8 @@ proc main(args: [] string) {
   }
 
   // Open a binary writer to stdout
-  var binout = (new file(1)).writer(iokind.native, locking=false,
-                                hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
-  binout.write(data);
+  var binout = (new file(1)).writer(iokind.native, locking=false);
+  binout.writeBinary(data);
 }
 
 proc process(data : [], in front : int, in back : int) {

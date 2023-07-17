@@ -161,7 +161,7 @@ module FFTW {
     An opaque type used to store and reuse FFTW plans across multiple
     routines.
   */
-  extern type fftw_plan; // opaque type
+  extern type fftw_plan = c_void_ptr;
 
   /*
     Type alias for FFTW flags
@@ -332,14 +332,14 @@ module FFTW {
       dims(i) = realDom.dim(i).size: c_int;
 
     return C_FFTW.fftw_plan_dft_r2c(rank, dims,
-                                    c_ptrTo(arr) : c_ptr(real),
-                                    c_ptrTo(arr) : c_ptr(complex), flags);
+                                    c_ptrTo(arr) : c_void_ptr : c_ptr(real),
+                                    c_ptrTo(arr) : c_void_ptr : c_ptr(complex), flags);
   }
 
   //
   // Error overload
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   proc plan_dft_r2c(realDom : domain, arr: [] ?t, flags : FFTW_Flag) : fftw_plan {
     compilerError("plan_dft_r2c() is only supported for arrays of type real(64) and complex(128)");
   }
@@ -409,11 +409,11 @@ module FFTW {
       dims(i) = realDom.dim(i).size: c_int;
 
     return C_FFTW.fftw_plan_dft_c2r(rank, dims,
-                                    c_ptrTo(arr) : c_ptr(complex),
-                                    c_ptrTo(arr) : c_ptr(real), flags);
+                                    c_ptrTo(arr) : c_void_ptr : c_ptr(complex),
+                                    c_ptrTo(arr) : c_void_ptr : c_ptr(real), flags);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc plan_dft_c2r(realDom : domain, arr: [] ?t, flags : FFTW_Flag) : fftw_plan {
     compilerError("plan_dft_c2r() is only supported for arrays of type real(64) and complex(128)");
   }
@@ -812,9 +812,15 @@ module FFTW {
 
     extern proc fftw_import_wisdom(read_char : fftw_read_char_func, data : c_void_ptr) : c_int;
 
-    extern proc fftw_fprint_plan(p : fftw_plan, ref output_file : c_FILE) : void;
+    // after c_FILE behavior deprecation, replace with:
+    // extern proc fftw_fprint_plan(p : fftw_plan, ref output_file : c_ptr(c_FILE)) : void;
+    extern proc fftw_fprint_plan(p : fftw_plan, ref output_file : c_ptr(chpl_cFile)) : void;
+    extern proc fftw_fprint_plan(p : fftw_plan, ref output_file : chpl_cFilePtr) : void;
 
-    extern proc fftw_fprint_plan(p : fftw_plan, output_file : c_ptr(c_FILE)) : void;
+    // after c_FILE behavior deprecation, replace with:
+    // extern proc fftw_fprint_plan(p : fftw_plan, output_file : c_ptr(c_ptr(c_FILE))) : void;
+    extern proc fftw_fprint_plan(p : fftw_plan, output_file : c_ptr(c_ptr(chpl_cFile))) : void;
+    extern proc fftw_fprint_plan(p : fftw_plan, output_file : c_ptr(chpl_cFilePtr)) : void;
 
     extern proc fftw_print_plan(p : fftw_plan) : void;
 

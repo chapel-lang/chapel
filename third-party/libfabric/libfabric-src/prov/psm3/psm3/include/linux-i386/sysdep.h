@@ -139,13 +139,12 @@ static __inline__ uint32_t ips_cmpxchg(volatile uint32_t *ptr,
 				       uint32_t old_val, uint32_t new_val)
 {
 	uint32_t prev;
-	struct xchg_dummy {
-		uint32_t a[100];
-	};
+	volatile uint32_t *__ptr = (volatile uint32_t *)(ptr);
 
-	asm volatile (LOCK_PREFIX "cmpxchgl %1,%2" : "=a"(prev)
-		      : "q"(new_val), "m"(*(struct xchg_dummy *)ptr), "0"(old_val)
-		      : "memory");
+	asm volatile(LOCK_PREFIX "cmpxchgl %2,%1"
+		: "=a" (prev), "+m" (*__ptr)
+		: "r" (new_val), "0" (old_val)
+		: "memory");
 
 	return prev;
 }

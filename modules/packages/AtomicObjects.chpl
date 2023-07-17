@@ -117,6 +117,7 @@
 prototype module AtomicObjects {
   use ChplConfig;
   private use IO;
+  private use OS.POSIX;
 
   if CHPL_TARGET_ARCH != "x86_64" {
     compilerWarning("The AtomicObjects package module cannot support CHPL_TARGET_ARCH=", CHPL_TARGET_ARCH, ", only x86_64 is supported.");
@@ -237,44 +238,43 @@ prototype module AtomicObjects {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type atomic_uint_least64_t;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type wide_ptr_t;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type c_nodeid_t;
 
-  pragma "no doc"
   extern proc chpl_return_wide_ptr_node(c_nodeid_t, c_void_ptr) : wide_ptr_t;
 
   if numLocales >= 2**16 {
     writeln("[WARNING]: AtomicObjects currently only supports up to 65535 locales!");
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   param compressedAddrMask = 0x0000FFFFFFFFFFFF;
-  pragma "no doc"
+  @chpldoc.nodoc
   param compressedLocaleIdMask = 0xFFFF;
-  pragma "no doc"
+  @chpldoc.nodoc
   param tableLocaleIdMask = 0xFFFFFFFF;
-  pragma "no doc"
+  @chpldoc.nodoc
   param tableIdxMask = 0xFFFFFFFF;
-  pragma "no doc"
+  @chpldoc.nodoc
   param compressedLocIdOffset = 48;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc castToObj(type objType, addr) {
     return __primitive("cast", objType?, uintToCVoidPtr(addr));
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc uintToCVoidPtr(addr) {
     return __primitive("cast", c_void_ptr, addr);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   // This is busted: $CHPL_HOME/test/optimizations/widepointers/return.future
   inline proc widePointerCheck(obj) {
     if !__primitive("is wide pointer", obj) {
@@ -285,18 +285,18 @@ prototype module AtomicObjects {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc getAddrAndLocality(obj) : (locale, uint(64)) {
     return (obj.locale, getAddr(obj));
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc getAddr(obj) : uint(64) {
     return __primitive("cast", uint(64), __primitive("_wide_get_addr", obj));
   }
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
      Compresses an object into a descriptor.
   */
@@ -312,7 +312,7 @@ prototype module AtomicObjects {
     return ret;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
      Decompresses a descriptor into the wide pointer object.
   */
@@ -337,7 +337,7 @@ prototype module AtomicObjects {
     var newObj : objType?;
     // Ensure that newObj is a wide pointer
     on Locales[here.id] do newObj = nil;
-    c_memcpy(c_ptrTo(newObj), c_ptrTo(wideptr), 16);
+    memcpy(c_addrOf(newObj), c_addrOf(wideptr), 16);
     return newObj;
   }
 
@@ -350,19 +350,19 @@ prototype module AtomicObjects {
   */
   record ABA {
     type __ABA_objType;
-    pragma "no doc"
+    @chpldoc.nodoc
     var __ABA_ptr : uint(64);
-    pragma "no doc"
+    @chpldoc.nodoc
     var __ABA_cnt : uint(64);
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(type __ABA_objType, ptr : uint(64), cnt : uint(64)) {
       this.__ABA_objType = __ABA_objType;
       this.__ABA_ptr = ptr;
       this.__ABA_cnt = cnt;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(obj : ?objType, cnt : uint(64)) {
       this.__ABA_objType = objType;
       this.__ABA_ptr = compress(obj);
@@ -387,14 +387,15 @@ prototype module AtomicObjects {
       return __ABA_cnt;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc readThis(f) throws {
       compilerWarning("Reading an ABA is not supported");
     }
 
-    proc init(type __ABA_objType, r: fileReader) {
+    @chpldoc.nodoc
+    proc init(type __ABA_objType, reader: fileReader, ref deserializer) {
       this.init(__ABA_objType);
-      compilerWarning("Reading an ABA is not supported");
+      compilerWarning("Deserializing an ABA is not yet supported");
     }
 
     /* Writes an ABA */
@@ -409,12 +410,12 @@ prototype module AtomicObjects {
     lhs.__ABA_cnt = rhs.__ABA_cnt;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   record _ABAInternal {
     type objType;
-    pragma "no doc"
+    @chpldoc.nodoc
     var _ABA_ptr : atomic uint(64);
-    pragma "no doc"
+    @chpldoc.nodoc
     var _ABA_cnt : atomic uint(64);
 
     proc init(type objType, ptr : uint(64), cnt : uint(64)) {
@@ -464,10 +465,10 @@ prototype module AtomicObjects {
       this.complete();
       if hasABASupport {
         var ptr : c_void_ptr;
-        var retval = posix_memalign(c_ptrTo(ptr), 16, c_sizeof(ABA(objType?)));
+        var retval = posix_memalign(c_addrOf(ptr), 16, c_sizeof(ABA(objType?)));
         if retval then halt();
         this.atomicVar = ptr:_ddata(_ABAInternal(objType?));
-        c_memset(ptr, 0, c_sizeof(ABA(objType?)));
+        memset(ptr, 0, c_sizeof(ABA(objType?)));
       }
     }
 
@@ -487,7 +488,7 @@ prototype module AtomicObjects {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc atomicVariable ref {
       if hasABASupport {
         return atomicVar[0]._ABA_ptr;
@@ -497,7 +498,7 @@ prototype module AtomicObjects {
     }
 
     // Object(objType) -> Pointer(uint(64))
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc toPointer(obj:objType?) : uint(64) {
       if hasGlobalSupport {
         return compress(obj);
@@ -513,7 +514,7 @@ prototype module AtomicObjects {
     }
 
     // Pointer(uint(64)) -> Object(objType)
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc fromPointer(ptr : uint(64)) : objType? {
       if hasGlobalSupport {
         return decompress(objType, ptr);
@@ -522,7 +523,7 @@ prototype module AtomicObjects {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc localityCheck(objs...) {
       if boundsChecking && (|| reduce [obj in objs] obj.locale != this.locale) then
         halt("Locality check failed on ", for obj in objs do getAddrAndLocality(obj), " when expected to be hosted on ", this.locale);
@@ -530,7 +531,7 @@ prototype module AtomicObjects {
 
     // Called from ABA API, which ensures that the ABA API is only called on an
     // AtomicObject which supports data
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc doABACheck() param {
       if !hasABASupport {
         compilerError("Attempt to use ABA API from AtomicObject(hasABASupport=", hasABASupport, ", hasGlobalSupport=", hasGlobalSupport, ")");
@@ -542,7 +543,7 @@ prototype module AtomicObjects {
       var ret : ABA(objType?);
       on this {
         var dest : ABA(objType?);
-        read128bit(atomicVar:c_void_ptr, c_ptrTo(dest));
+        read128bit(atomicVar:c_void_ptr, c_addrOf(dest));
         ret = dest;
       }
       return ret;
@@ -564,7 +565,7 @@ prototype module AtomicObjects {
         // Note that no 'cas128bit_special' is needed here as the 'cas128bit' will detect
         // a change from the expectedObj passed, which of course includes the _ABA_cnt.
         var val = new ABA(objType?, toPointer(newObj), atomicVar[0]._ABA_cnt.read() + 1);
-        ret = cas128bit(atomicVar:c_void_ptr, c_ptrTo(cmp), c_ptrTo(val)) : bool;
+        ret = cas128bit(atomicVar:c_void_ptr, c_addrOf(cmp), c_addrOf(val)) : bool;
       }
       return ret;
     }
@@ -583,7 +584,7 @@ prototype module AtomicObjects {
 
     proc writeABA(newObj: ABA(objType?)) {
       doABACheck();
-      write128bit(atomicVar:c_void_ptr, c_ptrTo(newObj));
+      write128bit(atomicVar:c_void_ptr, c_addrOf(newObj));
     }
 
     proc writeABA(newObj: objType?) {
@@ -609,7 +610,7 @@ prototype module AtomicObjects {
         var retval : ABA(objType?);
         var _newObj = newObj;
         var val = new ABA(objType?, toPointer(newObj), 0);
-        exchange128bit_special(atomicVar:c_void_ptr, c_ptrTo(_newObj), c_ptrTo(retval));
+        exchange128bit_special(atomicVar:c_void_ptr, c_addrOf(_newObj), c_addrOf(retval));
         ret = retval;
       }
 
@@ -623,24 +624,26 @@ prototype module AtomicObjects {
         var retval : ABA(objType?);
         var _newObj = newObj;
         var val = newObj;
-        exchange128bit(atomicVar:c_void_ptr, c_ptrTo(_newObj), c_ptrTo(retval));
+        exchange128bit(atomicVar:c_void_ptr, c_addrOf(_newObj), c_addrOf(retval));
         ret = retval;
       }
 
       return ret;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc readThis(f) throws {
       compilerWarning("Reading an AtomicObject is not supported");
     }
 
+    @chpldoc.nodoc
     proc init(type objType,
               param hasABASupport: bool,
               param hasGlobalSupport: bool,
-              r: fileReader) {
+              reader: fileReader,
+              ref deserializer) {
       init(objType, hasABASupport, hasGlobalSupport);
-      compilerWarning("Reading an AtomicObject is not supported");
+      compilerWarning("Deserializing an AtomicObject is not yet supported");
     }
 
     proc writeThis(f) throws {

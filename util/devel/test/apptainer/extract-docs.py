@@ -140,9 +140,11 @@ for d in directories:
         if "homebrew" in subpath:
             continue # skip these configurations
                      # (not sure how useful this is)
+        if "nix" in subpath:
+            continue # skip these configurations
+                     # (not sure how useful this is)
         if ("fedora-38" in subpath or
-            "fedora-37" in subpath or
-            "amazonlinux-2023" in subpath):
+            "fedora-39" in subpath):
             continue # skip due to not having working LLVM dependency right now
         if "generic-x32-debian11" in subpath:
             continue # skip this one, redudant with other debian ones

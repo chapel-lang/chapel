@@ -676,14 +676,29 @@ BlockStmt::useListClear() {
 }
 
 void
-BlockStmt::modRefsAdd(ModuleSymbol* mod) {
+BlockStmt::modRefsEnsure() {
   if (modRefs == NULL) {
-    modRefs = new CallExpr(PRIM_REFERENCED_MODULES_LIST);
-
-    if (parentSymbol)
-      insert_help(modRefs, this, parentSymbol);
+    modRefsReplace(new CallExpr(PRIM_REFERENCED_MODULES_LIST));
   }
+}
 
+void
+BlockStmt::modRefsReplace(CallExpr* replacementRefs) {
+  modRefs = replacementRefs;
+
+  if (parentSymbol)
+    insert_help(modRefs, this, parentSymbol);
+}
+
+void
+BlockStmt::modRefsAdd(ModuleSymbol* mod) {
+  modRefsEnsure();
+  modRefs->insertAtTail(new SymExpr(mod));
+}
+
+void
+BlockStmt::modRefsAdd(TemporaryConversionSymbol* mod) {
+  modRefsEnsure();
   modRefs->insertAtTail(new SymExpr(mod));
 }
 

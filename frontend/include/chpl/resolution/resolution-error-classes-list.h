@@ -27,9 +27,7 @@
 // Calls to the ERROR_CLASS/WARNING_CLASS/etc. macros should list the new
 // error's name first, followed a list of types describing error details.
 //
-// Errors are grouped by which compilation stage they relate to, and sorted
-// alphabetically within these groups. Groups themselves are ordered by the
-// order their compilation stages occur in.
+// Errors/warnings/etc should be ordered alphabetically by name.
 //
 // Also, the macro calls in this file should each be on a single line,
 // even though that makes long lines that are normally avoided.
@@ -41,6 +39,7 @@ ERROR_CLASS(AmbiguousVisibilityIdentifier, UniqueString, ID, std::vector<ID>)
 ERROR_CLASS(AsWithUseExcept, const uast::Use*, const uast::As*)
 WARNING_CLASS(Deprecation, std::string, const uast::AstNode*, const uast::NamedDecl*)
 ERROR_CLASS(DotExprInUseImport, const uast::VisibilityClause*, const uast::VisibilityClause::LimitationKind, const uast::Dot*)
+ERROR_CLASS(ExternCCompilation, ID, std::vector<std::pair<Location, std::string>>)
 WARNING_CLASS(HiddenFormal, const uast::Formal*, resolution::BorrowedIdsWithName, resolution::ResultVisibilityTrace)
 ERROR_CLASS(IfVarNonClassType, const uast::Conditional*, types::QualifiedType)
 WARNING_CLASS(ImplicitFileModule, const uast::AstNode*, const uast::Module*, const uast::Module*)
@@ -48,7 +47,9 @@ ERROR_CLASS(IncompatibleIfBranches, const uast::Conditional*, types::QualifiedTy
 ERROR_CLASS(IncompatibleKinds, types::QualifiedType::Kind, const uast::AstNode*, types::QualifiedType)
 ERROR_CLASS(IncompatibleRangeBounds, const uast::Range*, types::QualifiedType, types::QualifiedType)
 ERROR_CLASS(IncompatibleTypeAndInit, const uast::AstNode*, const uast::AstNode*, const uast::AstNode*, const types::Type*, const types::Type*)
+ERROR_CLASS(InvalidIndexCall, const uast::FnCall*, types::QualifiedType)
 ERROR_CLASS(InvalidNewTarget, const uast::New*, types::QualifiedType)
+ERROR_CLASS(InvalidSuper, const uast::Identifier*, types::QualifiedType)
 ERROR_CLASS(MemManagementNonClass, const uast::New*, const types::Type*)
 ERROR_CLASS(MissingInclude, const uast::Include*, std::string)
 ERROR_CLASS(ModuleAsVariable, const uast::AstNode*, const uast::AstNode*, const uast::Module*)
@@ -56,7 +57,7 @@ ERROR_CLASS(MultipleEnumElems, const uast::AstNode*, chpl::UniqueString, const u
 ERROR_CLASS(MultipleQuestionArgs, const uast::FnCall*, const uast::AstNode*, const uast::AstNode*)
 ERROR_CLASS(NestedClassFieldRef, const uast::AggregateDecl*, const uast::AggregateDecl*, const uast::AstNode*, ID)
 ERROR_CLASS(NonIterable, const uast::AstNode*, const uast::AstNode*, types::QualifiedType)
-ERROR_CLASS(NotInModule, const uast::Dot*, ID, UniqueString, ID)
+ERROR_CLASS(NotInModule, const uast::Dot*, ID, UniqueString, ID, bool)
 ERROR_CLASS(PrivateToPublicInclude, const uast::Include*, const uast::Module*)
 ERROR_CLASS(ProcDefExplicitAnonFormal, const uast::Function*, const uast::Formal*)
 ERROR_CLASS(ProcTypeUnannotatedFormal, const uast::FunctionSignature*, const uast::AnonFormal*)

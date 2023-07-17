@@ -21,7 +21,7 @@ proc main() {
   // all following multiples
   for potentialPrime in sieveRange {
     if (!knownComposite[potentialPrime]) {
-      primes.append(potentialPrime);
+      primes.pushBack(potentialPrime);
       for i in potentialPrime*2..limit by potentialPrime {
         knownComposite[i] = true;
       }

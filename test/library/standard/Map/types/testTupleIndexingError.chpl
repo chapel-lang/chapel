@@ -6,5 +6,5 @@ class T {
 
 type t = (shared T, shared T);
 
-// Test that indexing fails: Cannot assign to const variable
+// Test that indexing fails: KeyNotFoundError
 MapTest.testMap(t, testIndexing = true);

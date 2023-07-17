@@ -80,7 +80,7 @@ static const char* allowedItems(resolution::VisibilityStmtKind kind) {
 // end with a space.
 //
 // 'encounteredAutoModule' is set to 'false' at the start of this function
-// but will be set to 'true' if the symbol came from an automaticly use'd
+// but will be set to 'true' if the symbol came from an automatically use'd
 // module
 //
 // 'from' is set to 'name' at the start of this function and will be
@@ -295,6 +295,17 @@ void ErrorDotExprInUseImport::write(ErrorWriterBase& wr) const {
       "'use' or 'import'.");
 }
 
+void ErrorExternCCompilation::write(ErrorWriterBase& wr) const {
+  auto externBlockId = std::get<ID>(info);
+  auto errors = std::get<std::vector<std::pair<Location, std::string>>>(info);
+  wr.heading(kind_, type_, externBlockId,
+             "running clang on extern block failed",
+             (errors.size() > 0 ? " -- clang errors follow" : ""));
+  for (const auto& error : errors) {
+    wr.note(error.first, error.second);
+  }
+}
+
 void ErrorHiddenFormal::write(ErrorWriterBase& wr) const {
   auto formal = std::get<const uast::Formal*>(info);
   const auto& match = std::get<resolution::BorrowedIdsWithName>(info);
@@ -486,6 +497,26 @@ void ErrorIncompatibleTypeAndInit::write(ErrorWriterBase& wr) const {
              "initial value has type '", initExprType, "'.");
 }
 
+void ErrorInvalidIndexCall::write(ErrorWriterBase& wr) const {
+  auto fnCall = std::get<const uast::FnCall*>(info);
+  auto& type = std::get<types::QualifiedType>(info);
+
+  wr.heading(kind_, type_, fnCall,
+             "invalid use of the 'index' keyword.");
+  wr.codeForLocation(fnCall);
+  wr.message("The 'index' keyword should be used with a domain: 'index(D)'.");
+
+  if (fnCall->numActuals() == 0) {
+    wr.message("However, 'index' here did not have any actuals.");
+  } else if (fnCall->numActuals() > 1) {
+    wr.message("However, 'index' here had more than one actual.");
+    wr.code(fnCall, { fnCall->actual(1) });
+  } else if (type.type() && !type.type()->isDomainType()) {
+    wr.message("However, 'index' here is not called with a domain argument, but with ", decayToValue(type), ".");
+    wr.code(fnCall, { fnCall->actual(0) });
+  }
+}
+
 void ErrorInvalidNewTarget::write(ErrorWriterBase& wr) const {
   auto newExpr = std::get<const uast::New*>(info);
   auto type = std::get<types::QualifiedType>(info);
@@ -505,6 +536,34 @@ void ErrorInvalidNewTarget::write(ErrorWriterBase& wr) const {
   }
   wr.code(newExpr, { newExpr->typeExpression() });
   wr.message("The 'new' expression can only be used with records or classes.");
+}
+
+void ErrorInvalidSuper::write(ErrorWriterBase& wr) const {
+  auto superExpr = std::get<const uast::Identifier*>(info);
+  auto qt = std::get<types::QualifiedType>(info);
+
+  const types::RecordType* recordType = nullptr;
+  if (auto type = qt.type()) {
+    recordType = type->toRecordType();
+  }
+
+  if (recordType) {
+    wr.heading(kind_, type_, superExpr, "invalid use of 'super' in record '", recordType->name(), "'.");
+  } else {
+    wr.heading(kind_, type_, superExpr, "invalid use of 'super' with ", qt);
+  }
+  wr.code(superExpr, { superExpr });
+  if (recordType) {
+    wr.note(superExpr, "inheritance is not currently supported for records.");
+    wr.message(
+        "Thoughts on what record inheritance should entail can be added to "
+        "https://github.com/chapel-lang/chapel/issues/6851.");
+    wr.message(recordType->name(), " declared as a record here:");
+    wr.codeForLocation(recordType->id());
+    wr.message("If you meant to declare '", recordType->name(), "' as a class ",
+               "instead, you can do that by writing 'class ", recordType->name(),
+               "' instead of 'record ", recordType->name(), "'.");
+  }
 }
 
 void ErrorMemManagementNonClass::write(ErrorWriterBase& wr) const {
@@ -528,7 +587,7 @@ void ErrorMemManagementNonClass::write(ErrorWriterBase& wr) const {
   wr.message("Memory management strategies can only be used with classes.");
   if (record) {
     wr.note(record->id(), "'", record->name(), "' declared as record here:");
-    wr.code(record->id());
+    wr.codeForLocation(record->id());
     wr.message(
                "Consider removing the '", uast::New::managementToString(newCall->management()),
                "' keyword to fix this error, or defining '", record->name(),
@@ -635,9 +694,15 @@ void ErrorNotInModule::write(ErrorWriterBase& wr) const {
   //ID moduleId = std::get<1>(info);
   UniqueString moduleName = std::get<2>(info);
   ID renameClauseId = std::get<3>(info);
+  bool thereButPrivate = std::get<bool>(info);
 
-  wr.heading(kind_, type_, dot,
-             "cannot find '", dot->field(), "' in module '", moduleName, "'");
+  if (thereButPrivate) {
+    wr.heading(kind_, type_, dot,
+               "cannot access '", dot->field(), "' as it is private to '", moduleName, "'.");
+  } else {
+    wr.heading(kind_, type_, dot,
+               "cannot find '", dot->field(), "' in module '", moduleName, "'.");
+  }
 
   wr.code(dot, { dot });
 
@@ -655,7 +720,7 @@ void ErrorNotInModule::write(ErrorWriterBase& wr) const {
     } else {
       wr.note(locationOnly(renameClauseId),
               "module '", moduleName, "' was renamed to"
-              " '", dotModName, "' here");
+              " '", dotModName, "' here:");
       wr.code<ID>(renameClauseId, { renameClauseId });
     }
   }
@@ -717,8 +782,8 @@ static bool firstIdFromDecls(
     const auto& t = trace[i];
     if (t.visibleThrough.size() == 0) {
       // TODO: find the first non-function ID?
-      // To do that, would use flags in BorrowedIdsWithIter
-      // to filter Idvs.
+      // To do that, would use flags in BorrowedIdsWithName
+      // to filter Ids.
       result = matches[i].firstId();
       return true;
     }
@@ -828,11 +893,12 @@ void ErrorReductionNotReduceScanOp::write(ErrorWriterBase& wr) const {
 
   // Don't print the details of managed / unmanaged / etc.
   if (auto classType = actualType.type()->toClassType()) {
-    actualClassType = classType->basicClassType();
-    while (auto instFrom = actualClassType->instantiatedFrom()) {
-      actualClassType = instFrom;
+    if (auto actualClassType = classType->basicClassType()) {
+      while (auto instFrom = actualClassType->instantiatedFrom()) {
+        actualClassType = instFrom;
+      }
+      actualType = types::QualifiedType(actualType.kind(), actualClassType);
     }
-    actualType = types::QualifiedType(actualType.kind(), actualClassType);
   }
   wr.message("The operation must be a type extending 'ReduceScanOp', but "
              "it is ", actualType);
@@ -1126,7 +1192,6 @@ void ErrorValueUsedAsType::write(ErrorWriterBase& wr) const {
   wr.code(typeExpr, { typeExpr });
   // wr.message("Did you mean to use '.type'?");
 }
-
 
 /* end resolution errors */
 

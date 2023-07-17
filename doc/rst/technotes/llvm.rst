@@ -137,3 +137,37 @@ After the usual LLVM optimization passes run, two Chapel LLVM passes run:
 
 
 .. _LLVM-based Communication Optimizations for PGAS Programs: http://ahayashi.blogs.rice.edu/files/2013/07/Chapel_LLVM_camera_ready-q6usv4.pdf
+
+-----------------------------
+Inspecting LLVM Optimizations
+-----------------------------
+
+It may be useful to determine if specific LLVM optimizations ran and what the
+results were. LLVM remarks allow optimization passes to report what happened.
+
+To request optimization remarks, use the experimental ``--llvm-remarks`` and
+``--llvm-remarks-function`` flags.
+
+ * ``--llvm-remarks`` accepts a regular expression which matches and filters
+   optimization pass names.
+
+   * ``'.''`` -- shows remarks for all optimization passes
+   * ``inline`` -- shows remarks for any optimization pass which matches
+     '``inline``'
+   * ``(slp|loop)-vectorize`` -- shows remarks for any optimization pass which
+     matches '``slp-vectorize``' or '``loop-vectorize``'
+
+ * ``--llvm-remarks-function`` accepts a comma-separated list of function names
+   to show. Not passing this flag will show all functions
+
+These flags are also affected by if ``-g`` is set or not and whether
+``CHPL_DEVELOPER`` / ``--[no]-devel`` is set or not. Without ``-g``, the
+ability of LLVM to map remarks back to Chapel source code is limited. The
+compiler makes a best effort attempt to get Chapel source code information. If
+the compiler is run in developer mode and no function filters are set, it will
+output remarks for all code including standard and internal modules. Otherwise
+remarks will be limited to user modules only.
+
+
+.. note::
+   Introducing debug symbols with ``-g`` or changing the state of ``CHPL_DEVELOPER`` may change what optimizations can be done.

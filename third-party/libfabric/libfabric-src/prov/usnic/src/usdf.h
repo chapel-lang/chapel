@@ -36,6 +36,8 @@
 #ifndef _USDF_H_
 #define _USDF_H_
 
+#include <config.h>
+
 #include <sys/queue.h>
 #include <pthread.h>
 

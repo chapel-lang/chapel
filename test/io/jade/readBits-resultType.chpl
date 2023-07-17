@@ -26,4 +26,4 @@ assert(t3 == 0b010);
 r.close();
 f.close();
 
-// FileSystem.remove(testfile);
+FileSystem.remove(testfile);

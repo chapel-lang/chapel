@@ -48,7 +48,7 @@ developers.  A possible reading order is roughly as follows:
 
 `Compiler documentation`: 
   :ref:`compiler-internals-index`:
-    API documentation for the compiler library
+    API documentation for the frontend library
 
   The compiler overview document in 
 

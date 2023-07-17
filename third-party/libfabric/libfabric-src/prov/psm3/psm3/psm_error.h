@@ -65,10 +65,10 @@
 #define PSMI_EP_NORETURN	    ((psm2_ep_t) -2)
 #define PSMI_EP_LOGEVENT	    ((psm2_ep_t) -3)
 
-extern psm2_ep_errhandler_t psmi_errhandler_global;
+extern psm2_ep_errhandler_t psm3_errhandler_global;
 
 //
-// psmi_handle_error has a 1st argument which controls how it behaves.
+// psm3_handle_error has a 1st argument which controls how it behaves.
 // PSMI_EP_NO_RETURN – unconditionally outputs message and exits or aborts
 //		process.
 // other values – behavior is controlled by how psm2 error handler has been set
@@ -76,8 +76,8 @@ extern psm2_ep_errhandler_t psmi_errhandler_global;
 //		be silent
 //
 // to have PSM stop immediately with a message. use
-//		psmi_handle_error(PSMI_EP_NO_RETURN
-// all other uses of psmi_handle_error are under the control of the middleware
+//		psm3_handle_error(PSMI_EP_NO_RETURN
+// all other uses of psm3_handle_error are under the control of the middleware
 // or OFI provider.  The OFI provider turns all of them off.
 //
 // To have a a message be unconditionally output for all builds, regardless of
@@ -89,17 +89,17 @@ extern psm2_ep_errhandler_t psmi_errhandler_global;
 // in which case _HFI_INFO is also enabled by default (but env can disable it).
 // All others controlled by env variable.
 //
-// Currently opa_debug.h always defines _HFI_DEBUGGING and it is included by
-// opa_udebug.h, so logging is presently enabled in all builds.  At some point
+// Currently utils_debug.h always defines _HFI_DEBUGGING 
+// so logging is presently enabled in all builds.  At some point
 // may want to explore a performance optimization and disable logging macros
 // for lower level debug messages in non-debug builds.
 
-psm2_error_t MOCKABLE(psmi_handle_error)(psm2_ep_t ep, psm2_error_t error,
+psm2_error_t MOCKABLE(psm3_handle_error)(psm2_ep_t ep, psm2_error_t error,
 			      const char *buf, ...)
 			      __attribute__((format(printf, 3, 4)));
-MOCK_DCL_EPILOGUE(psmi_handle_error);
+MOCK_DCL_EPILOGUE(psm3_handle_error);
 
-psm2_error_t psmi_error_cmp(psm2_error_t errA, psm2_error_t errB);
-int psmi_error_syslog_level(psm2_error_t error);
+psm2_error_t psm3_error_cmp(psm2_error_t errA, psm2_error_t errB);
+int psm3_error_syslog_level(psm2_error_t error);
 
 #endif /* _PSMI_ERROR_H */

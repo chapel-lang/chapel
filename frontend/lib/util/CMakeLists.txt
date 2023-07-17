@@ -29,6 +29,7 @@ target_sources(ChplFrontend-obj
                bitmap.cpp
                break.cpp
                chplenv.cpp
+               clang-integration.cpp
                filesystem.cpp
                filesystem_help.h
                printf.cpp

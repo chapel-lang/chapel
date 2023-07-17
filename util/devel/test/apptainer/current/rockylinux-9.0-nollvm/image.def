@@ -8,4 +8,4 @@ From: rockylinux:9.0
     /provision-scripts/dnf-deps.sh
 
 %runscript
-    ../../provision-scripts/run.sh
+    ../../provision-scripts/run.sh "$@"

@@ -1,4 +1,4 @@
-//===- ReduceArguments.cpp - Specialized Delta Pass -----------------------===//
+//===- ReduceInstructions.cpp - Specialized Delta Pass ---------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -7,11 +7,13 @@
 //===----------------------------------------------------------------------===//
 //
 // This file implements a function which calls the Generic Delta pass in order
-// to reduce uninteresting Arguments from defined functions.
+// to reduce uninteresting Instructions from defined functions.
 //
 //===----------------------------------------------------------------------===//
 
 #include "ReduceInstructions.h"
+#include "Utils.h"
+#include "llvm/IR/Constants.h"
 
 using namespace llvm;
 
@@ -41,7 +43,7 @@ static void extractInstrFromModule(Oracle &O, Module &Program) {
     for (auto &BB : F)
       for (auto &Inst : BB)
         if (!InstToKeep.count(&Inst)) {
-          Inst.replaceAllUsesWith(UndefValue::get(Inst.getType()));
+          Inst.replaceAllUsesWith(getDefaultValue(Inst.getType()));
           InstToDelete.push_back(&Inst);
         }
 

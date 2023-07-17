@@ -1,0 +1,2 @@
+TypeReturnType.chpl:1: error: a captured proc cannot return by 'type' intent
+TypeReturnType.chpl:2: error: illegal access of procedure

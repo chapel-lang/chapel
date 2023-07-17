@@ -105,6 +105,7 @@ And all :type:`mpz_t` GMP routines, as well as the following routines:
   * :proc:`mpf_ui_sub()`
 
 */
+@unstable("The 'GMP' module is unstable")
 module GMP {
   use CTypes;
   use OS;
@@ -113,6 +114,7 @@ module GMP {
 
   require "GMPHelper/chplgmp.h";
 
+  pragma "chpldoc ignore chpl prefix"
   proc chpl_gmp_alloc(size:c_size_t) : c_void_ptr {
     pragma "insert line file info"
     extern proc chpl_mem_alloc(size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
@@ -120,6 +122,7 @@ module GMP {
     return chpl_mem_alloc(size, CHPL_RT_MD_GMP);
   }
 
+  pragma "chpldoc ignore chpl prefix"
   proc chpl_gmp_realloc(ptr:c_void_ptr,
                                old_size:c_size_t, new_size:c_size_t) : c_void_ptr {
     pragma "insert line file info"
@@ -128,15 +131,18 @@ module GMP {
     return chpl_mem_realloc(ptr, new_size, CHPL_RT_MD_GMP);
   }
 
+  pragma "chpldoc ignore chpl prefix"
   proc chpl_gmp_free(ptr:c_void_ptr, old_size:c_size_t) {
     pragma "insert line file info"
       extern proc chpl_mem_free(ptr:c_void_ptr) : void;
     chpl_mem_free(ptr);
   }
 
+
   //
   // Initialize GMP to use Chapel's allocator
   //
+  pragma "chpldoc ignore chpl prefix"
   proc chpl_gmp_init() {
     extern proc chpl_gmp_mp_set_memory_functions(alloc:c_fn_ptr,
                                                  realloc:c_fn_ptr,
@@ -202,19 +208,19 @@ module GMP {
   // the actual GMP data.
   //
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type __mpz_struct;
 
   /* The GMP ``mpz_t`` type */
   extern type mpz_t           = 1 * __mpz_struct;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type __mpf_struct;
 
   /*  The GMP ``mpf_t`` type */
   extern type mpf_t           = 1 * __mpf_struct;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type __gmp_randstate_struct;
 
 
@@ -1012,13 +1018,22 @@ module GMP {
   // 7.7 Input and Output Functions
   //
 
-  extern proc mpf_out_str(stream: c_FILE,
+  // after c_FILE behavior deprecation, replace c_ptr(chpl_cFile)/chpl_cFilePtr with c_FILE
+  extern proc mpf_out_str(stream: c_ptr(chpl_cFile),
+                          base: c_int,
+                          n_digits: c_size_t,
+                          const ref op: mpf_t);
+  extern proc mpf_out_str(stream: chpl_cFilePtr,
                           base: c_int,
                           n_digits: c_size_t,
                           const ref op: mpf_t);
 
+  // after c_FILE behavior deprecation, replace c_ptr(chpl_cFile)/chpl_cFilePtr with c_ptr(c_FILE)
   extern proc mpf_inp_str(ref rop: mpf_t,
-                          stream: c_FILE,
+                          stream: c_ptr(chpl_cFile),
+                          base: c_int);
+  extern proc mpf_inp_str(ref rop: mpf_t,
+                          stream: chpl_cFilePtr,
                           base: c_int);
 
   //
@@ -1117,6 +1132,7 @@ module GMP {
 
 
   /* Get an MPZ value stored on another locale */
+  pragma "chpldoc ignore chpl prefix"
   proc chpl_gmp_get_mpz(ref ret: mpz_t,
                         src_locale: int,
                         in from: __mpz_struct,
@@ -1154,12 +1170,14 @@ module GMP {
   }
 
   /* Return the number of limbs used in the number */
+  pragma "chpldoc ignore chpl prefix"
   proc chpl_gmp_mpz_nlimbs(const ref from: mpz_t) : uint(64) {
     var x = chpl_gmp_mpz_struct_sign_size(from[0]);
     return (abs(x)):uint(64);
   }
 
   /* Return the i'th limb used in the number (counting from 0) */
+  pragma "chpldoc ignore chpl prefix"
   proc chpl_gmp_mpz_getlimbn(const ref from: mpz_t, n:integral) : uint(64) {
     var i = n.safeCast(mp_size_t);
     // OK to cast result to maximal uint for two reasons:
@@ -1194,6 +1212,7 @@ module GMP {
   chpl_gmp_randstate_same_algorithm(a:gmp_randstate_t, b:gmp_randstate_t):c_int;
 
   /* Get an mpz_t as a string */
+  pragma "chpldoc ignore chpl prefix"
   extern proc chpl_gmp_mpz_get_str(base: c_int, const ref x: mpz_t) : c_string;
 
   class GMPRandom {
@@ -1226,7 +1245,7 @@ module GMP {
       gmp_randinit_lc_2exp_size(this.state, size.safeCast(c_ulong));
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc deinit() {
       on this {
         gmp_randclear(this.state);

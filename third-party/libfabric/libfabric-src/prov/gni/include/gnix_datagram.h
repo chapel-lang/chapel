@@ -125,7 +125,7 @@ struct gnix_dgram_hndl {
 	bool (*timeout_needed)(void *);
 	void (*timeout_progress)(void *);
 	void *timeout_data;
-	fastlock_t lock;
+	ofi_spin_t lock;
 	pthread_t progress_thread;
 	int n_dgrams;
 	int n_wc_dgrams;

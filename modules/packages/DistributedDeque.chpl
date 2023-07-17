@@ -184,7 +184,7 @@ module DistributedDeque {
     LIFO
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class DistributedDequeRC {
     type eltType;
     var _pid : int;
@@ -215,10 +215,10 @@ module DistributedDeque {
     var _impl : unmanaged DistributedDequeImpl(eltType)?;
 
     // Privatization id
-    pragma "no doc"
+    @chpldoc.nodoc
     var _pid : int;
     // Reference counting
-    pragma "no doc"
+    @chpldoc.nodoc
     var _rc : shared DistributedDequeRC(eltType);
 
     proc init(type eltType, cap = -1, targetLocales = Locales) {
@@ -227,7 +227,7 @@ module DistributedDeque {
       this._rc = new shared DistributedDequeRC(eltType, _pid = _pid);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc _value {
       if _pid == -1 {
         halt("DistDeque is uninitialized...");
@@ -243,7 +243,7 @@ module DistributedDeque {
     This comes with the benefit of being able to distribute communication across multiple
     nodes rather than one instance.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   class DistributedDequeCounter {
     var _value : atomic int;
 
@@ -257,7 +257,7 @@ module DistributedDeque {
     */
     var cap : int;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var targetLocDom : domain(1);
 
     /*
@@ -266,29 +266,29 @@ module DistributedDeque {
     var targetLocales : [targetLocDom] locale;
 
     // Privatization id
-    pragma "no doc"
+    @chpldoc.nodoc
     var pid : int;
 
     // Keeps track of which slot we are on...
-    pragma "no doc"
+    @chpldoc.nodoc
     var globalHead : unmanaged DistributedDequeCounter?;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var globalTail : unmanaged DistributedDequeCounter?;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var queueSize : unmanaged DistributedDequeCounter?;
 
     // We maintain an array of slots, wherein each slot is a pointer into a node's
     // address space. To maximize parallelism, we maintain numLocales * maxTaskPar
     // to reduce the amount of contention.
-    pragma "no doc"
+    @chpldoc.nodoc
     var nSlots : int;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var slotSpace = {0..-1};
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var slots : [slotSpace] unmanaged LocalDeque(eltType);
 
     proc init(type eltType,
@@ -334,7 +334,7 @@ module DistributedDeque {
       pid = _newPrivatizedClass(this);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(other, privData, type eltType = other.eltType) {
       super.init(eltType);
 
@@ -351,22 +351,22 @@ module DistributedDeque {
       complete();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc dsiPrivatize(privData) {
         return new unmanaged DistributedDequeImpl(this, privData);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc dsiGetPrivatizeData() {
       return pid;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc getPrivatizedThis {
       return chpl_getPrivatizedCopy(this.type, pid);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc enterRemoveBarrier() {
       // If we have a capacity of 0, then we can't really remove anything anyway.
       if cap == 0 {
@@ -409,7 +409,7 @@ module DistributedDeque {
       return true;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc enterAddBarrier() {
       // If we have a capacity of 0, then we can't really add anything anyway.
       if cap == 0 {
@@ -777,7 +777,7 @@ module DistributedDeque {
       followThis.lock$.readFE();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc Destroy() {
       for slot in slots do on slot do delete slot;
       delete globalHead;
@@ -789,7 +789,7 @@ module DistributedDeque {
   // For each node we manage an unroll block. This block needs to also support Deque
   // operations, and as such we maintain our own mini headIdx and tailIdx. Since we can
   // add and remove from either direction, we must also maintain the size ourselves...
-  pragma "no doc"
+  @chpldoc.nodoc
   class LocalDequeNode {
     type eltType;
     var elements : distributedDequeBlockSize * eltType;
@@ -856,7 +856,7 @@ module DistributedDeque {
     successor for better locality, and use the snapshot approach so that iteration
     does not prevent usage of other methods on the same Deque from the same task.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   class LocalDeque {
     type eltType;
 

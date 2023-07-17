@@ -3,10 +3,10 @@ class Gen {
   type t;
 }
 
-var Glob = (new owned Gen(real)).borrow();
+var Glob = new Gen(real);
 
 proc rets(): unmanaged Gen {
-  return Glob;
+  return Glob.borrow();
 }
 
 var x = rets();

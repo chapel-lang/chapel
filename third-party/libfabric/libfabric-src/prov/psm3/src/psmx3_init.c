@@ -39,7 +39,7 @@ static int psmx3_init_count = 0;
 static int psmx3_lib_initialized = 0;
 static pthread_mutex_t psmx3_lib_mutex;
 
-struct psmx3_hfi_info psmx3_hfi_info;
+struct psmx3_domain_info psmx3_domain_info;
 
 struct psmx3_env psmx3_env = {
 	.name_server	= 1,
@@ -109,8 +109,8 @@ static void psmx3_init_env(void)
 				 * xxxxxxxx-xxxx-XXXX-XXXX-xxxxxxxxxxxx
 				 */
 				snprintf(&uuid[14], 10, "%02hhX%02hhX-%02hhX%02hhX",
-					(uid >> 24) & 0xff, (uid >> 16) & 0xff,
-					(uid >> 8) & 0xff, uid & 0xff);
+					(uint8_t)((uid >> 24) & 0xff), (uint8_t)((uid >> 16) & 0xff),
+					(uint8_t)((uid >> 8) & 0xff), (uint8_t)(uid & 0xff));
 				uuid[23] = '-';	/* restore */
 			}
 		}
@@ -222,7 +222,7 @@ static int psmx3_check_multi_ep_cap(void)
 	uint64_t caps = PSM2_MULTI_EP_CAP;
 	char *s = getenv("PSM3_MULTI_EP");
 
-	if (psm2_get_capability_mask(caps) == caps && psmx3_get_yes_no(s, 1))
+	if (psm3_get_capability_mask(caps) == caps && psmx3_get_yes_no(s, 1))
 		psmx3_env.multi_ep = 1;
 	else
 		psmx3_env.multi_ep = 0;
@@ -246,15 +246,15 @@ static int psmx3_init_lib(void)
 	/* turn on multi-ep feature, but don't overwrite existing setting */
 	/*setenv("PSM3_MULTI_EP", "1", 0); - not needed, PSM3 default=1*/
 
-	psm2_error_register_handler(NULL, PSM2_ERRHANDLER_NO_HANDLER);
+	psm3_error_register_handler(NULL, PSM2_ERRHANDLER_NO_HANDLER);
 
 	major = PSM2_VERNO_MAJOR;
 	minor = PSM2_VERNO_MINOR;
 
-	err = psm2_init(&major, &minor);
+	err = psm3_init(&major, &minor);
 	if (err != PSM2_OK) {
 		FI_WARN(&psmx3_prov, FI_LOG_CORE,
-			"psm2_init failed: %s\n", psm2_error_get_string(err));
+			"psm3_init failed: %s\n", psm3_error_get_string(err));
 		ret = err;
 		goto out;
 	}
@@ -278,212 +278,311 @@ out:
 
 static int psmx3_update_hfi_info(void)
 {
-	unsigned short i;
+	unsigned short i, j, psmx3_unit;
 	int nctxts = 0;
 	int nfreectxts = 0;
-	int hfi_unit = -1;
-	char *hfi_name = NULL;
 	int multirail = 0;
+	int counted_unit;
 	char *s;
 	char unit_name[NAME_MAX];
+	char fabric_name[NAME_MAX];
 	uint32_t cnt = 0;
+	uint32_t addr_cnt = 0;
 	int tmp_nctxts, tmp_nfreectxts;
 	int unit_active;
 	int ret;
-	psm2_info_query_arg_t args[2];
+	psm2_info_query_arg_t args[4];
+	char first_active_unit_name[NAME_MAX];
+	char first_active_unit_fabric_name[NAME_MAX];
 
-	args[1].length = sizeof(unit_name);
-
-	if (psmx3_hfi_info.num_units > 0)
+	if (psmx3_domain_info.num_units > 0)
 		return 0;
 
-	if (psm2_info_query(PSM2_INFO_QUERY_NUM_UNITS, &cnt, 0, NULL) || !cnt)
-	{
+	if (psm3_info_query(PSM2_INFO_QUERY_NUM_UNITS, &cnt, 0, NULL)
+			|| !cnt) {
 		FI_INFO(&psmx3_prov, FI_LOG_CORE,
 			"no PSM3 device is found.\n");
 		return -FI_ENODEV;
+	} else if (cnt > PSMX3_MAX_UNITS) {
+		FI_WARN(&psmx3_prov, FI_LOG_CORE,
+			"Discovered %u devices, limited to 1st %u\n", cnt, PSMX3_MAX_UNITS);
+		cnt = PSMX3_MAX_UNITS;
 	}
-	psmx3_hfi_info.num_units = cnt;
-
-	assert(psmx3_hfi_info.num_units <= PSMX3_MAX_UNITS);
-
-	s = getenv("PSM3_NIC");
-	if (s && *s) {
-		if (0 == strcasecmp(s, "any")) {
-			hfi_unit = -1;
-		} else {
-			char *p;
-			long l = strtol(s, &p, 10);
-			if (p && *p == '\0')
-				hfi_unit = (int)l;	// consumed all of string as a number
-			else
-				hfi_name = s;	// name specified
-		}
+	if (psm3_info_query(PSM2_INFO_QUERY_NUM_ADDR_PER_UNIT, &addr_cnt, 0, NULL) || !addr_cnt)
+	{
+		FI_INFO(&psmx3_prov, FI_LOG_CORE,
+			"no PSM3 device is found (no addr per unit).\n");
+		return -FI_ENODEV;
+	}
+	psmx3_domain_info.num_units = cnt * addr_cnt;
+	if (psmx3_domain_info.num_units > PSMX3_MAX_UNITS) {
+		FI_WARN(&psmx3_prov, FI_LOG_CORE,
+			"Too many addresses per PSM3 device. For %d physical "
+			"devices only  %d addresses per device are supported.",
+			cnt, PSMX3_MAX_UNITS/cnt);
+		return-FI_ENODEV;
 	}
 
 	s = getenv("PSM3_MULTIRAIL");
 	if (s)
 		multirail = atoi(s);
 
-	psmx3_hfi_info.num_active_units = 0;
-	for (i = 0; i < psmx3_hfi_info.num_units; i++) {
+	psmx3_domain_info.num_reported_units = 0;
+	psmx3_domain_info.num_active_units = 0;
+	for (i = 0; i < cnt; i++) {
 		args[0].unit = i;
-		ret = psm2_info_query(PSM2_INFO_QUERY_UNIT_STATUS, &unit_active, 1, args);
+		ret = psm3_info_query(PSM2_INFO_QUERY_UNIT_STATUS, &unit_active, 1, args);
 		if (ret != PSM2_OK) {
 			FI_WARN(&psmx3_prov, FI_LOG_CORE,
-				"Failed to check active state of HFI unit %d\n",
+				"Failed to check active state of HFI unit_id %d\n",
 				i);
 			continue;
 		}
 
 		if (unit_active<=0) {
 			FI_WARN(&psmx3_prov, FI_LOG_CORE,
-				"NIC %d STATE = INACTIVE\n",
+				"NIC unit_id %d STATE = INACTIVE\n",
 				i);
 			continue;
 		}
 
-		if (hfi_unit >=0 && i != hfi_unit) {
-			FI_INFO(&psmx3_prov, FI_LOG_CORE,
-				"NIC %d skipped: PSM3_NIC=%d\n",
-				i, hfi_unit);
-			continue;
-		}
-
-		if (PSM2_OK != psm2_info_query(PSM2_INFO_QUERY_NUM_FREE_CONTEXTS,
+		if (PSM2_OK != psm3_info_query(PSM2_INFO_QUERY_NUM_FREE_CONTEXTS,
 						&tmp_nfreectxts, 1, args) || (tmp_nfreectxts < 0))
 		{
 			FI_WARN(&psmx3_prov, FI_LOG_CORE,
-				"Failed to read number of free contexts from HFI unit %d\n",
+				"Failed to read number of free contexts from HFI unit_id %d\n",
 				i);
 			continue;
 		}
 
-		if (PSM2_OK != psm2_info_query(PSM2_INFO_QUERY_NUM_CONTEXTS,
+		if (PSM2_OK != psm3_info_query(PSM2_INFO_QUERY_NUM_CONTEXTS,
 						&tmp_nctxts, 1, args) || (tmp_nctxts < 0))
 		{
 			FI_WARN(&psmx3_prov, FI_LOG_CORE,
-				"Failed to read number of contexts from HFI unit %d\n",
+				"Failed to read number of contexts from HFI unit_id %d\n",
 				i);
 			continue;
 		}
 
-		if (PSM2_OK != psm2_info_query(PSM2_INFO_QUERY_UNIT_NAME,
-						unit_name, 2, args))
-		{
-			FI_WARN(&psmx3_prov, FI_LOG_CORE,
-				"Failed to read name of HFI unit %d\n",
-				i);
-			continue;
+		counted_unit = 0;
+		for (j=0; j < addr_cnt; j++) {
+			psmx3_unit = i * addr_cnt + j;
+			args[1].port = 1;	// VERBS_PORT
+			args[2].addr_index = j;
+
+			args[3].length = sizeof(unit_name);
+			if (PSM2_OK != psm3_info_query(PSM2_INFO_QUERY_UNIT_ADDR_NAME,
+							unit_name, 4, args))
+			{
+				FI_WARN(&psmx3_prov, FI_LOG_CORE,
+					"Failed to read name of HFI unit_id %d addr_index %d\n",
+					i, j);
+				continue;
+			}
+
+			// IB/OPA ports only support addr_index==0 for PSM3_ADDR_PER_NIC>1
+			// in which case this will fail for addr_index>0 and prevent
+			// them from being reported in fi_info
+			args[3].length = sizeof(fabric_name);
+			if (PSM2_OK != psm3_info_query(PSM2_INFO_QUERY_UNIT_SUBNET_NAME,
+							fabric_name, 4, args))
+			{
+				FI_WARN(&psmx3_prov, FI_LOG_CORE,
+					"Failed to read name of HFI unit_id %d addr_index %d subnet\n",
+					i, j);
+				continue;
+			}
+
+			if (! counted_unit) {
+				nctxts += tmp_nctxts;
+				nfreectxts += tmp_nfreectxts;
+				counted_unit = 1;
+			}
+
+			psmx3_domain_info.num_active_units++;
+
+			/* for PSM3_MULTIRAIL only report 1 "autoselect" unit */
+			if (psmx3_domain_info.num_reported_units < 1 || multirail <= 0) {
+				psmx3_domain_info.unit_is_active[psmx3_unit] = 1;
+				psmx3_domain_info.unit_id[psmx3_unit] = i;
+				psmx3_domain_info.addr_index[psmx3_unit] = j;
+				psmx3_domain_info.unit_nctxts[psmx3_unit] = tmp_nctxts;
+				psmx3_domain_info.unit_nfreectxts[psmx3_unit] = tmp_nfreectxts;
+				psmx3_domain_info.active_units[psmx3_domain_info.num_reported_units++] = psmx3_unit;
+			}
+			if (psmx3_domain_info.num_active_units == 1) {
+				if (multirail < 0) {
+					strcpy(psmx3_domain_info.default_domain_name, "");
+					strcpy(psmx3_domain_info.default_fabric_name, "");
+				} else if (multirail) {
+					strcpy(psmx3_domain_info.default_domain_name, "autoselect:");
+					strcpy(psmx3_domain_info.default_fabric_name, "autoselect:");
+				} else {
+					strcpy(psmx3_domain_info.default_domain_name, "autoselect_one:");
+					strcpy(psmx3_domain_info.default_fabric_name, "autoselect_one:");
+				}
+				strcpy(first_active_unit_name, unit_name);
+				strcpy(first_active_unit_fabric_name, fabric_name);
+			}
+			if (multirail >= 0) {
+				if (psmx3_domain_info.num_active_units > 1) {
+					strcat(psmx3_domain_info.default_domain_name, ";");
+					strcat(psmx3_domain_info.default_fabric_name, ";");
+				}
+				strcat(psmx3_domain_info.default_domain_name, unit_name);
+				strcat(psmx3_domain_info.default_fabric_name, fabric_name);
+			}
 		}
-		if (hfi_name && 0 != strcasecmp(hfi_name, unit_name)) {
-			FI_INFO(&psmx3_prov, FI_LOG_CORE,
-				"NIC %d skipped: PSM3_NIC=%s\n",
-				i, hfi_name);
-			continue;
-		}
-
-		nctxts += tmp_nctxts;
-		nfreectxts += tmp_nfreectxts;
-
-		psmx3_hfi_info.unit_is_active[i] = 1;
-		psmx3_hfi_info.unit_nctxts[i] = tmp_nctxts;
-		psmx3_hfi_info.unit_nfreectxts[i] = tmp_nfreectxts;
-		psmx3_hfi_info.active_units[psmx3_hfi_info.num_active_units++] = i;
-
-		if (psmx3_hfi_info.num_active_units > 1)
-			strcat(psmx3_hfi_info.default_domain_name, ";");
-		strcat(psmx3_hfi_info.default_domain_name, unit_name);
-
-		if (multirail)
-			break;
+	}
+	/* replace "autoselect:" when only 1 choice */
+	if (psmx3_domain_info.num_active_units == 1 && multirail >= 0) {
+		strcpy(psmx3_domain_info.default_domain_name, first_active_unit_name);
+		strcpy(psmx3_domain_info.default_fabric_name, first_active_unit_fabric_name);
 	}
 
 	FI_INFO(&psmx3_prov, FI_LOG_CORE,
-		"hfi1 units: total %d, active %d; "
+		"hfi1 units: total %d, reported %d, active %d; "
 		"hfi1 contexts: total %d, free %d\n",
-		psmx3_hfi_info.num_units, psmx3_hfi_info.num_active_units,
-		nctxts, nfreectxts);
+		psmx3_domain_info.num_units, psmx3_domain_info.num_reported_units,
+		psmx3_domain_info.num_active_units, nctxts, nfreectxts);
 
 	if (psmx3_env.multi_ep) {
-		psmx3_hfi_info.max_trx_ctxt = nctxts;
-		psmx3_hfi_info.free_trx_ctxt = nfreectxts;
+		psmx3_domain_info.max_trx_ctxt = nctxts;
+		psmx3_domain_info.free_trx_ctxt = nfreectxts;
 	} else {
-		psmx3_hfi_info.max_trx_ctxt = 1;
-		psmx3_hfi_info.free_trx_ctxt = (nfreectxts == 0) ? 0 : 1;
+		psmx3_domain_info.max_trx_ctxt = 1;
+		psmx3_domain_info.free_trx_ctxt = (nfreectxts == 0) ? 0 : 1;
 	}
 
 	FI_INFO(&psmx3_prov, FI_LOG_CORE,
 		"Tx/Rx contexts: %d in total, %d available.\n",
-		psmx3_hfi_info.max_trx_ctxt, psmx3_hfi_info.free_trx_ctxt);
+		psmx3_domain_info.max_trx_ctxt, psmx3_domain_info.free_trx_ctxt);
 
 	return 0;
 }
 
-static void psmx3_update_hfi_nic_info(struct fi_info *info)
+static psm2_error_t psmx3_get_link_speed(int unit_id, int port, uint64_t *speed,
+					const struct fi_info *info)
 {
-        char *path;
-	char buffer[PATH_MAX];
-	char *s;
-	ssize_t n;
-	unsigned int a, b, c, d;
-	int unit;
-	char sys_dev_path[PATH_MAX];
+	psm2_error_t ret;
 	psm2_info_query_arg_t args[2];
-	args[1].length=sizeof(sys_dev_path);
+
+	args[0].unit = unit_id;
+	args[1].port = port == PSMX3_DEFAULT_PORT ? 1 : port;
+	ret = psm3_info_query(PSM2_INFO_QUERY_PORT_SPEED, speed, 2, args);
+	if (PSM2_OK != ret) {
+		FI_WARN(&psmx3_prov, FI_LOG_CORE,
+			"Failed to query link_attr (speed) for unit %d/%d: %s\n",
+			unit_id, port, info->nic && info->nic->device_attr?
+					info->nic->device_attr->name:"(null)");
+	}
+	return ret;
+}
+
+static void psmx3_update_nic_info(struct fi_info *info)
+{
+	uint32_t pci_bus[4] = {};
+	int unit, port, unit_id;
+	psm2_info_query_arg_t args[2];
+	char buffer[PATH_MAX] = {};
+	psm2_error_t err;
 
 	for ( ; info; info = info->next) {
 		unit = ((struct psmx3_ep_name *)info->src_addr)->unit;
+		port = ((struct psmx3_ep_name *)info->src_addr)->port;
+		uint64_t speed = 0;
 
-		if (unit == PSMX3_DEFAULT_UNIT)
+		if (unit == PSMX3_DEFAULT_UNIT) {
+			// only can get speed (max of available) for default
+			// as the specific device is not yet selected
+			if (PSM2_OK != psmx3_get_link_speed(unit, port, &speed, info))
+				continue;
+			if (!info->nic) {
+				info->nic = ofi_nic_dup(NULL);
+				if (!info->nic) {
+					FI_WARN(&psmx3_prov, FI_LOG_CORE,
+						"Failed to allocate nic info for unit %d\n", unit);
+					continue;
+				}
+			}
+			info->nic->link_attr->speed = (size_t)speed;
 			continue;
+		}
+
+		unit_id = psmx3_domain_info.unit_id[unit];
+		args[0].unit = unit_id;
+		args[1].length = sizeof(uint32_t) * 4;
+		err = psm3_info_query(PSM2_INFO_QUERY_UNIT_PCI_BUS, pci_bus, 2, args);
+		if (err == PSM2_EP_NO_DEVICE)
+			continue;	/* no NIC to report, probably single node job */
+		if (err != PSM2_OK) {
+			FI_WARN(&psmx3_prov, FI_LOG_CORE,
+				"Failed to query bus_attr (pci bus) for unit %d\n", unit);
+			continue;
+		}
 
 		if (!info->nic) {
 			info->nic = ofi_nic_dup(NULL);
 			if (!info->nic) {
 				FI_WARN(&psmx3_prov, FI_LOG_CORE,
-					"Failed to allocate nic info for HFI unit %d\n", unit);
+					"Failed to allocate nic info for unit %d\n", unit);
 				continue;
 			}
 		}
 
-		args[0].unit = unit;
-		if ((PSM2_OK != psm2_info_query(PSM2_INFO_QUERY_UNIT_SYS_PATH,
-			sys_dev_path, 2, args)) || 
-			(asprintf(&path, "%s/%s", sys_dev_path, "device") < 0))
-		{
-			FI_WARN(&psmx3_prov, FI_LOG_CORE,
-				"Failed to read nic info for HFI unit %d\n", unit);
-			continue;
-		}
-
-		n = readlink(path, buffer, sizeof(buffer)-1);
-		free(path);
-
-		if (n < 0) {
-			FI_WARN(&psmx3_prov, FI_LOG_CORE,
-				"Failed to read nic info for HFI unit %d\n", unit);
-			continue;
-		}
-
-		buffer[n] = '\0';
-		if ((s = strrchr(buffer, '/')))
-			s++;
-		else
-			s = buffer;
-
-		n = sscanf(s, "%x:%x:%x.%x", &a, &b, &c, &d);
-		if (n < 4) {
-			FI_WARN(&psmx3_prov, FI_LOG_CORE,
-				"Failed to read nic info for HFI unit %d\n", unit);
-			continue;
-		}
-
 		info->nic->bus_attr->bus_type = FI_BUS_PCI;
-		info->nic->bus_attr->attr.pci.domain_id = (uint16_t) a;
-		info->nic->bus_attr->attr.pci.bus_id =  (uint8_t) b;
-		info->nic->bus_attr->attr.pci.device_id = (uint8_t) c;
-		info->nic->bus_attr->attr.pci.function_id = (uint8_t) d;
+		info->nic->bus_attr->attr.pci.domain_id = (uint16_t)pci_bus[0];
+		info->nic->bus_attr->attr.pci.bus_id = (uint8_t)pci_bus[1];
+		info->nic->bus_attr->attr.pci.device_id = (uint8_t)pci_bus[2];
+		info->nic->bus_attr->attr.pci.function_id = (uint8_t)pci_bus[3];
+
+		/* ----------------------------------------------------------------------- */
+		/* Device Attr */
+		args[1].length = sizeof(buffer);
+		if (PSM2_OK != psm3_info_query(PSM2_INFO_QUERY_UNIT_NAME, buffer, 2, args)) {
+			FI_WARN(&psmx3_prov, FI_LOG_CORE,
+				"Failed to query device_attr (name) for unit %d\n", unit);
+			continue;
+		}
+		info->nic->device_attr->name = strdup(buffer);
+
+		if (PSM2_OK != psm3_info_query(PSM2_INFO_QUERY_UNIT_DEVICE_ID, buffer, 2, args)) {
+			FI_WARN(&psmx3_prov, FI_LOG_CORE,
+				"Failed to query device_attr (device_id) for unit %d: %s\n",
+				unit, info->nic->device_attr->name);
+			continue;
+		}
+		info->nic->device_attr->device_id = strdup(buffer);
+
+		if (PSM2_OK != psm3_info_query(PSM2_INFO_QUERY_UNIT_DEVICE_VERSION, buffer, 2, args)) {
+			FI_WARN(&psmx3_prov, FI_LOG_CORE,
+				"Failed to query device_attr (device_version) for unit %d: %s\n",
+				unit, info->nic->device_attr->name);
+			continue;
+		}
+		info->nic->device_attr->device_version = strdup(buffer);
+
+		if (PSM2_OK != psm3_info_query(PSM2_INFO_QUERY_UNIT_VENDOR_ID, buffer, 2, args)) {
+			FI_WARN(&psmx3_prov, FI_LOG_CORE,
+				"Failed to query device_attr (vendor_id) for unit %d: %s\n",
+				unit, info->nic->device_attr->name);
+			continue;
+		}
+		info->nic->device_attr->vendor_id = strdup(buffer);
+
+		if (PSM2_OK != psm3_info_query(PSM2_INFO_QUERY_UNIT_DRIVER, buffer, 2, args)) {
+			FI_WARN(&psmx3_prov, FI_LOG_CORE,
+				"Failed to query device_attr (driver) for unit %d: %s\n",
+				unit, info->nic->device_attr->name);
+			continue;
+		}
+		info->nic->device_attr->driver = strdup(buffer);
+
+		/* ----------------------------------------------------------------------- */
+		/* Link Attr */
+		if (PSM2_OK != psmx3_get_link_speed(unit_id, port, &speed, info))
+			continue;
+		info->nic->link_attr->speed = (size_t)speed;
 	}
 }
 
@@ -510,17 +609,31 @@ static int psmx3_getinfo(uint32_t api_version, const char *node,
 	if (psmx3_update_hfi_info())
 		goto err_out;
 
-	if (!psmx3_hfi_info.num_active_units) {
+	if (!psmx3_domain_info.num_reported_units) {
 		FI_INFO(&psmx3_prov, FI_LOG_CORE,
 			"no PSM3 device is active.\n");
 		goto err_out;
 	}
 
+	/* when available, default domain and fabric names are a superset
+	 * of all individual names, so we can do a substr search as a 1st level
+	 * filter
+	 */
 	if (hints && hints->domain_attr && hints->domain_attr->name &&
-		NULL == strcasestr(psmx3_hfi_info.default_domain_name, hints->domain_attr->name)) {
+		psmx3_domain_info.default_domain_name[0] &&
+		NULL == strcasestr(psmx3_domain_info.default_domain_name, hints->domain_attr->name)) {
 		FI_INFO(&psmx3_prov, FI_LOG_CORE, "Unknown domain name\n");
-		FI_INFO_STRING(&psmx3_prov, psmx3_hfi_info.default_domain_name,
+		OFI_INFO_STR(&psmx3_prov, psmx3_domain_info.default_domain_name,
 					   hints->domain_attr->name, "Supported", "Requested");
+		goto err_out;
+	}
+
+	if (hints && hints->fabric_attr && hints->fabric_attr->name &&
+		psmx3_domain_info.default_fabric_name[0] &&
+		NULL == strcasestr(psmx3_domain_info.default_fabric_name, hints->fabric_attr->name)) {
+		FI_INFO(&psmx3_prov, FI_LOG_CORE, "Unknown fabric name\n");
+		OFI_INFO_STR(&psmx3_prov, psmx3_domain_info.default_fabric_name,
+					   hints->fabric_attr->name, "Supported", "Requested");
 		goto err_out;
 	}
 
@@ -536,8 +649,8 @@ static int psmx3_getinfo(uint32_t api_version, const char *node,
 		} else {
 			dest_addr = addr;
 			FI_INFO(&psmx3_prov, FI_LOG_CORE,
-				"'%s' is taken as dest_addr: <epid=%"PRIu64">\n",
-				node, dest_addr->epid);
+				"'%s' is taken as dest_addr: <epid=%s>\n",
+				node, psm3_epid_fmt(dest_addr->epid, 0));
 		}
 		node = NULL;
 	}
@@ -551,17 +664,23 @@ static int psmx3_getinfo(uint32_t api_version, const char *node,
 			goto err_out;
 		}
 		src_addr->type = PSMX3_EP_SRC_ADDR;
-		src_addr->epid = PSMX3_RESERVED_EPID;
+		src_addr->epid = psm3_epid_zeroed();
 		src_addr->unit = PSMX3_DEFAULT_UNIT;
 		src_addr->port = PSMX3_DEFAULT_PORT;
 		src_addr->service = PSMX3_ANY_SERVICE;
 
 		if (flags & FI_SOURCE) {
-			if (node)
-				sscanf(node, "%*[^:]:%" SCNi8 ":%" SCNu8,
-				       &src_addr->unit, &src_addr->port);
-			if (service)
-				sscanf(service, "%" SCNu32, &src_addr->service);
+			if (node) {
+				if (sscanf(node, "%*[^:]:%" SCNi8 ":%" SCNu8,
+				           &src_addr->unit, &src_addr->port) != 2) {
+					FI_INFO(&psmx3_prov, FI_LOG_CORE, "Invalid string representation for node.\n");
+				}
+			}
+			if (service) {
+				if (sscanf(service, "%" SCNu32, &src_addr->service) != 1) {
+					FI_INFO(&psmx3_prov, FI_LOG_CORE, "Invalid string representation for service.\n");
+				}
+			}
 			FI_INFO(&psmx3_prov, FI_LOG_CORE,
 				"node '%s' service '%s' converted to <unit=%d, port=%d, service=%d>\n",
 				node, service, src_addr->unit, src_addr->port, src_addr->service);
@@ -575,7 +694,7 @@ static int psmx3_getinfo(uint32_t api_version, const char *node,
 				"invalid source address: unit %d out of range\n", src_addr->unit);
 			goto err_out;
 		}
-		if (!psmx3_hfi_info.unit_is_active[src_addr->unit]) {
+		if (!psmx3_domain_info.unit_is_active[src_addr->unit]) {
 			FI_INFO(&psmx3_prov, FI_LOG_CORE,
 				"invalid source address: unit %d is inactive\n", src_addr->unit);
 			goto err_out;
@@ -603,8 +722,8 @@ static int psmx3_getinfo(uint32_t api_version, const char *node,
 			ofi_ns_resolve_name(&ns, node, &svc);
 		if (dest_addr) {
 			FI_INFO(&psmx3_prov, FI_LOG_CORE,
-				"'%s:%u' resolved to <epid=%"PRIu64">:%d\n",
-				node, svc0, dest_addr->epid, svc);
+				"'%s:%u' resolved to <epid=%s>:%d\n",
+				node, svc0, psm3_epid_fmt(dest_addr->epid, 0), svc);
 		} else {
 			FI_INFO(&psmx3_prov, FI_LOG_CORE,
 				"failed to resolve '%s:%u'.\n", node, svc);
@@ -623,7 +742,7 @@ static int psmx3_getinfo(uint32_t api_version, const char *node,
 	psmx3_alter_prov_info(api_version, hints, prov_info);
 
 	/* Set fi_nic struture */
-	psmx3_update_hfi_nic_info(prov_info);
+	psmx3_update_nic_info(prov_info);
 
 	*info = prov_info;
 	free(src_addr);
@@ -644,17 +763,17 @@ static void psmx3_fini(void)
 
 	if (! --psmx3_init_count && psmx3_lib_initialized) {
 		/* This function is called from a library destructor, which is called
-		 * automatically when exit() is called. The call to psm2_finalize()
+		 * automatically when exit() is called. The call to psm3_finalize()
 		 * might cause deadlock if the applicaiton is terminated with Ctrl-C
 		 * -- the application could be inside a PSM3 call, holding a lock that
-		 * psm2_finalize() tries to acquire. This can be avoided by only
-		 * calling psm2_finalize() when PSM3 is guaranteed to be unused.
+		 * psm3_finalize() tries to acquire. This can be avoided by only
+		 * calling psm3_finalize() when PSM3 is guaranteed to be unused.
 		 */
 		if (psmx3_active_fabric) {
 			FI_INFO(&psmx3_prov, FI_LOG_CORE,
-				"psmx3_active_fabric != NULL, skip psm2_finalize\n");
+				"psmx3_active_fabric != NULL, skip psm3_finalize\n");
 		} else {
-			psm2_finalize();
+			psm3_finalize();
 			psmx3_lib_initialized = 0;
 		}
 	}

@@ -25,6 +25,7 @@ proc main() {
   // resulted in a compile-time failure when the backend compiler encountered
   // the type mismatch between a narrow/local actual and a wide formal.
   //
-  var data = (new owned Foo()).borrow();
+  var ownData = new owned Foo();
+  var data = ownData.borrow();
   printer!.print(data);
 }

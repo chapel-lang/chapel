@@ -15,5 +15,5 @@ class D : C {
   }
 }
 
-var myD = (new owned D(real)).borrow();
+var myD = new D(real);
 writeln(myD);

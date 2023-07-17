@@ -132,7 +132,7 @@ typedef struct gnix_buddy_alloc_handle {
 
 	gnix_bitmap_t bitmap;
 
-	fastlock_t lock;
+	ofi_spin_t lock;
 } gnix_buddy_alloc_handle_t;
 
 /**

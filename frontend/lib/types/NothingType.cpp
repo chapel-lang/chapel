@@ -36,6 +36,11 @@ const NothingType* NothingType::get(Context* context) {
   return getNothingType(context).get();
 }
 
+void NothingType::stringify(std::ostream& ss,
+                            chpl::StringifyKind stringKind) const {
+  ss << "nothing";
+}
+
 
 } // end namespace types
 } // end namespace chpl

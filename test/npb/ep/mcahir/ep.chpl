@@ -79,6 +79,8 @@ writef(" Number of tasks per locale:          %15i\n", dataParTasksPerLocale);
 totalTime.start();
 
 proc gaussPairsBatch(k: int(64), numPairs: int) {
+	use Math;
+
 	var x: [1..numPairs*2] real;
 	var q: RingsTuple;
 	var t1, t2, tx, ty, x1, x2: real;

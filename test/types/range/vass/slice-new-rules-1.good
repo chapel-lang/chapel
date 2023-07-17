@@ -26,7 +26,7 @@ ok  1..10 by 2 , 1..10 by -2 , 1..0 by -2 align 1
 ok  1..10 by 2 , 1..10 by -3 , 1..10 by -6 align 1
 ok  1..9 by 2 , 1..9 by -4 , 1..9 by -4 align 1
 done
-slice-new-rules-1.chpl:20: warning: slicing '1..10 by -3' with the unaligned range '..9 by 2 align 0' is unstable w.r.t. the choice of alignment
-slice-new-rules-1.chpl:20: warning: slicing '-10..10 by -3' with the unaligned range '..8 by 2 align 0' is unstable w.r.t. the choice of alignment
-slice-new-rules-1.chpl:20: warning: slicing '-10..10 by 3' with the unaligned range '.. by -2 align 0' is unstable w.r.t. the choice of alignment
-slice-new-rules-1.chpl:20: warning: slicing '-10..10 by -3' with the unaligned range '.. by -2 align 0' is unstable w.r.t. the choice of alignment
+slice-new-rules-1.chpl:20: warning: slicing '1..10 by -3' with the unaligned range '..9 by 2' is unstable w.r.t. the choice of alignment
+slice-new-rules-1.chpl:20: warning: slicing '-10..10 by -3' with the unaligned range '..8 by 2' is unstable w.r.t. the choice of alignment
+slice-new-rules-1.chpl:20: warning: slicing '-10..10 by 3' with the unaligned range '.. by -2' is unstable w.r.t. the choice of alignment
+slice-new-rules-1.chpl:20: warning: slicing '-10..10 by -3' with the unaligned range '.. by -2' is unstable w.r.t. the choice of alignment

@@ -113,13 +113,6 @@ static ssize_t hook_credit_handler(struct fid_ep *ep_fid, size_t credits)
 	return (*ep->domain->base_credit_handler)(&ep->ep, credits);
 }
 
-static void hook_set_threshold(struct fid_ep *ep_fid, size_t threshold)
-{
-	struct hook_ep *ep = container_of(ep_fid, struct hook_ep, ep);
-
-	return ep->domain->base_ops_flow_ctrl->set_threshold(ep->hep, threshold);
-}
-
 static void hook_set_send_handler(struct fid_domain *domain_fid,
 		ssize_t (*credit_handler)(struct fid_ep *ep, size_t credits))
 {
@@ -131,26 +124,33 @@ static void hook_set_send_handler(struct fid_domain *domain_fid,
 						     hook_credit_handler);
 }
 
-static int hook_enable_ep_flow_ctrl(struct fid_ep *ep_fid)
+static int hook_enable_ep_flow_ctrl(struct fid_ep *ep_fid, uint64_t threshold)
 {
 	struct hook_ep *ep = container_of(ep_fid, struct hook_ep, ep);
 
-	return ep->domain->base_ops_flow_ctrl->enable(ep->hep);
+	return ep->domain->base_ops_flow_ctrl->enable(ep->hep, threshold);
 }
 
 static void hook_add_credits(struct fid_ep *ep_fid, size_t credits)
 {
 	struct hook_ep *ep = container_of(ep_fid, struct hook_ep, ep);
 
-	return ep->domain->base_ops_flow_ctrl->add_credits(ep->hep, credits);
+	ep->domain->base_ops_flow_ctrl->add_credits(ep->hep, credits);
+}
+
+static bool hook_flow_ctrl_available(struct fid_ep *ep_fid)
+{
+	struct hook_ep *ep = container_of(ep_fid, struct hook_ep, ep);
+
+	return ep->domain->base_ops_flow_ctrl->available(ep->hep);
 }
 
 static struct ofi_ops_flow_ctrl hook_ops_flow_ctrl = {
 	.size = sizeof(struct ofi_ops_flow_ctrl),
-	.set_threshold = hook_set_threshold,
 	.add_credits = hook_add_credits,
 	.enable = hook_enable_ep_flow_ctrl,
 	.set_send_handler = hook_set_send_handler,
+	.available = hook_flow_ctrl_available,
 };
 
 static int hook_domain_ops_open(struct fid *fid, const char *name,
@@ -189,8 +189,8 @@ int hook_query_atomic(struct fid_domain *domain, enum fi_datatype datatype,
 	return fi_query_atomic(dom->hdomain, datatype, op, attr, flags);
 }
 
-static int hook_query_collective(struct fid_domain *domain, enum fi_collective_op coll,
-				 struct fi_collective_attr *attr, uint64_t flags)
+int hook_query_collective(struct fid_domain *domain, enum fi_collective_op coll,
+			  struct fi_collective_attr *attr, uint64_t flags)
 {
 	struct hook_domain *dom = container_of(domain, struct hook_domain, domain);
 
@@ -212,16 +212,12 @@ struct fi_ops_domain hook_domain_ops = {
 };
 
 
-int hook_domain(struct fid_fabric *fabric, struct fi_info *info,
-		struct fid_domain **domain, void *context)
+int hook_domain_init(struct fid_fabric *fabric, struct fi_info *info,
+		     struct fid_domain **domain, void *context,
+		     struct hook_domain *dom)
 {
 	struct hook_fabric *fab = container_of(fabric, struct hook_fabric, fabric);
-	struct hook_domain *dom;
 	int ret;
-
-	dom = calloc(1, sizeof *dom);
-	if (!dom)
-		return -FI_ENOMEM;
 
 	dom->fabric = fab;
 	dom->domain.fid.fclass = FI_CLASS_DOMAIN;
@@ -232,13 +228,31 @@ int hook_domain(struct fid_fabric *fabric, struct fi_info *info,
 
 	ret = fi_domain(fab->hfabric, info, &dom->hdomain, &dom->domain.fid);
 	if (ret)
-		goto err1;
+		return ret;
 
 	*domain = &dom->domain;
+
+	return 0;
+}
+
+int hook_domain(struct fid_fabric *fabric, struct fi_info *info,
+		struct fid_domain **domain, void *context)
+{
+	struct hook_domain *dom;
+	int ret;
+
+	dom = calloc(1, sizeof *dom);
+	if (!dom)
+		return -FI_ENOMEM;
+
+	ret = hook_domain_init(fabric, info, domain, context, dom);
+	if (ret)
+		goto err1;
 
 	ret = hook_ini_fid(dom->fabric->prov_ctx, &dom->domain.fid);
 	if (ret)
 		goto err2;
+
 	return 0;
 err2:
 	fi_close(&dom->domain.fid);

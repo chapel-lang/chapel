@@ -1609,8 +1609,11 @@ chpl_bool canBindTxCtxs(struct fi_info* info) {
   // we'll use bound tx contexts with this provider.
   //
   const struct fi_domain_attr* dom_attr = info->domain_attr;
-  int epCount = chpl_env_rt_get_int("COMM_OFI_EP_COUNT", dom_attr->ep_cnt);
-  int numWorkerTxCtxs = ((envPreferScalableTxEp
+  // The cxi provider has a bug in which it reports a maximum of only 128
+  // endpoints. Until that is fixed, assume it can create as many endpoints
+  // as we need.
+  size_t epCount = isInProvider("cxi", info) ? SIZE_MAX : dom_attr->ep_cnt;
+  size_t numWorkerTxCtxs = ((envPreferScalableTxEp
                           && dom_attr->max_ep_tx_ctx > 1)
                          ? dom_attr->max_ep_tx_ctx
                          : epCount)
@@ -2067,7 +2070,7 @@ void init_ofiFabricDomain(void) {
 // Reserve cores for the AM handler(s).
 //
 static
-void init_ofiReserveCores() {
+void init_ofiReserveCores(void) {
   for (int i = 0; i < numAmHandlers; i++) {
     reservedCPUs[i] = envUseDedicatedAmhCores ?
       chpl_topo_reserveCPUPhysical() : -1;

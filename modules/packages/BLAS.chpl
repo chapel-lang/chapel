@@ -204,7 +204,7 @@ module BLAS {
    */
   config param blasHeader = '';
 
-  pragma "no doc"
+  @chpldoc.nodoc
   param header = if blasHeader == '' then
                    if blasImpl == BlasImpl.off then ''
                    else if blasImpl == BlasImpl.mkl then 'mkl_cblas.h'
@@ -772,7 +772,7 @@ module BLAS {
 
   /* Level 2 BLAS */
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for the `GBMV`_ routines::
 
@@ -972,7 +972,7 @@ module BLAS {
   }
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for the `HBMV`_ routines::
 
@@ -1119,7 +1119,7 @@ module BLAS {
   }
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for the `HPMV`_ routines::
 
@@ -1153,7 +1153,7 @@ module BLAS {
   }
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for the `HPR`_ routines::
 
@@ -1188,7 +1188,7 @@ module BLAS {
   }
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for the `HPR2`_ routines::
 
@@ -1222,7 +1222,7 @@ module BLAS {
   }
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for the `SBMV`_ routines::
 
@@ -1261,7 +1261,7 @@ module BLAS {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for `SPMV`_ routines::
 
@@ -1294,7 +1294,7 @@ module BLAS {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for `SPR`_ routines::
 
@@ -1327,7 +1327,7 @@ module BLAS {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for `SPR2`_ routines::
 
@@ -1469,7 +1469,7 @@ module BLAS {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for the `TBMV`_ routines::
 
@@ -1516,7 +1516,7 @@ module BLAS {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
    Wrapper for the `TBSV`_ routines::
 
@@ -1567,7 +1567,7 @@ module BLAS {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
    Wrapper for `TPMV`_ routines::
 
@@ -1611,7 +1611,7 @@ module BLAS {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for `TPSV`_ routines::
 
@@ -2448,7 +2448,7 @@ module BLAS {
   // Helper functions
   //
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc getLeadingDim(A: [?Adom], order : Order) : c_int {
     require header;
     if order==Order.Row then
@@ -2457,7 +2457,7 @@ module BLAS {
       return Adom.dim(0).size : c_int;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc getLeadingDim(Arr: [], order : Order) : c_int
     where chpl__isArrayView(Arr)
   { require header;
@@ -2667,7 +2667,7 @@ module BLAS {
      Runs some assertions for constants defined in the underlying BLAS
      implementation to confirm compatibility.
    */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc checkBLAS()
   {
     require header;

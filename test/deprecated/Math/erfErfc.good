@@ -1,0 +1,6 @@
+erfErfc.chpl:3: warning: In an upcoming release 'erf' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it
+erfErfc.chpl:6: warning: In an upcoming release 'erfc' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it
+a = -100.0
+erf(a) = -1.0
+a = -100.0
+erfc(a) = 2.0

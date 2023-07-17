@@ -96,8 +96,8 @@ module DefaultRectangular {
 
   class DefaultDist: BaseDist {
     override proc dsiNewRectangularDom(param rank: int, type idxType,
-                                       param stridable: bool, inds) {
-      const dom = new unmanaged DefaultRectangularDom(rank, idxType, stridable,
+                                       param strides: strideKind, inds) {
+      const dom = new unmanaged DefaultRectangularDom(rank, idxType, strides,
                                                       _to_unmanaged(this));
       dom.dsiSetIndices(inds);
       return dom;
@@ -118,7 +118,7 @@ module DefaultRectangular {
     // So we don't have to copy it when a clone is requested.
     proc dsiClone() do return _to_unmanaged(this);
 
-    proc dsiAssign(other: unmanaged this.type) { }
+    proc dsiAssign(other: this.type) { }
 
     proc dsiEqualDMaps(d:unmanaged DefaultDist) param do return true;
     proc dsiEqualDMaps(d) param do return false;
@@ -154,7 +154,7 @@ module DefaultRectangular {
 
   class DefaultRectangularDom: BaseRectangularDom {
     var dist: unmanaged DefaultDist;
-    var ranges : rank*range(idxType,boundKind.both,stridable);
+    var ranges : rank*range(idxType,boundKind.both,strides);
 
     override proc linksDistribution() param do return false;
     override proc dsiLinksDistribution() do     return false;
@@ -162,12 +162,12 @@ module DefaultRectangular {
     override proc type isDefaultRectangular() param do return true;
     override proc isDefaultRectangular() param do return true;
 
-    proc init(param rank, type idxType, param stridable, dist) {
-      super.init(rank, idxType, stridable);
+    proc init(param rank, type idxType, param strides, dist) {
+      super.init(rank, idxType, strides);
       this.dist = dist;
     }
 
-    proc intIdxType type {
+    proc chpl_integralIdxType type {
       return chpl__idxTypeToIntIdxType(idxType);
     }
 
@@ -175,23 +175,23 @@ module DefaultRectangular {
       return dist;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     record _serialized_domain {
       param rank;
       type idxType;
-      param stridable;
+      param strides;
       var dims;
       param isDefaultRectangular;
     }
 
     proc chpl__serialize() {
-      return new _serialized_domain(rank, idxType, stridable, dsiDims(), true);
+      return new _serialized_domain(rank, idxType, strides, dsiDims(), true);
     }
 
     proc type chpl__deserialize(data) {
       return defaultDist.newRectangularDom(data.rank,
                                            data.idxType,
-                                           data.stridable,
+                                           data.strides,
                                            data.dims);
 
     }
@@ -279,7 +279,7 @@ module DefaultRectangular {
     iter these(tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity,
-               offset=createTuple(rank, intIdxType, 0:intIdxType)) {
+               offset=createTuple(rank, chpl_integralIdxType, 0:chpl_integralIdxType)) {
       if rank == 1 {
         for i in ranges(0) do
           yield i;
@@ -293,7 +293,7 @@ module DefaultRectangular {
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity,
-               offset=createTuple(rank, intIdxType, 0:intIdxType))
+               offset=createTuple(rank, chpl_integralIdxType, 0:chpl_integralIdxType))
       where tag == iterKind.standalone {
       if chpl__testParFlag then
         chpl__testPar("default rectangular domain standalone invoked on ", ranges);
@@ -332,18 +332,17 @@ module DefaultRectangular {
       // reasonably.  We should switch to using the RangeChunk
       // library...
       coforall chunk in 0..#numChunks {
-        var block = ranges;
-        const len = if (!ranges(parDim).stridable) then ranges(parDim).sizeAs(ranges(parDim).intIdxType)
-            else ranges(parDim).sizeAs(uint) * abs(ranges(parDim).stride):uint;
+        const ranges = this.ranges;
+        const len = ranges(parDim).sizeAs(uint)
+                    * abs(ranges(parDim).stride):uint;
         const (lo,hi) = _computeBlock(len,
                                       numChunks, chunk,
                                       ranges(parDim)._high,
                                       ranges(parDim)._low,
                                       ranges(parDim)._low);
-        if block(parDim).stridable then
-          block(parDim) = lo..hi by block(parDim).stride align chpl__idxToInt(block(parDim).alignment);
-        else
-          block(parDim) = lo..hi;
+        var block = ranges;
+        block(parDim)._low = lo;  // preserve stride, alignment
+        block(parDim)._high = hi;
         if debugDefaultDist {
           chpl_debug_writeln("*** DI[", chunk, "]: block = ", block);
         }
@@ -357,7 +356,7 @@ module DefaultRectangular {
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity,
-               offset=createTuple(rank, intIdxType, 0:intIdxType))
+               offset=createTuple(rank, chpl_integralIdxType, 0:chpl_integralIdxType))
       where tag == iterKind.leader {
 
       const numSublocs = here._getChildCount();
@@ -400,11 +399,11 @@ module DefaultRectangular {
             const numSublocTasks = (if chunk < dptpl % numChunks
                                     then dptpl / numChunks + 1
                                     else dptpl / numChunks);
-            var locBlock: rank*range(intIdxType);
+            var locBlock: rank*range(chpl_integralIdxType);
             for param i in 0..rank-1 do
-              locBlock(i) = offset(i)..#(ranges(i).sizeAs(intIdxType));
-            var followMe: rank*range(intIdxType) = locBlock;
-            const (lo,hi) = _computeBlock(locBlock(parDim).sizeAs(intIdxType),
+              locBlock(i) = offset(i)..#(ranges(i).sizeAs(chpl_integralIdxType));
+            var followMe: rank*range(chpl_integralIdxType) = locBlock;
+            const (lo,hi) = _computeBlock(locBlock(parDim).sizeAs(chpl_integralIdxType),
                                           numChunks, chunk,
                                           locBlock(parDim)._high,
                                           locBlock(parDim)._low,
@@ -415,13 +414,13 @@ module DefaultRectangular {
                                                              minIndicesPerTask,
                                                              followMe);
             coforall chunk2 in 0..#numChunks2 {
-              var locBlock2: rank*range(intIdxType);
+              var locBlock2: rank*range(chpl_integralIdxType);
               for param i in 0..rank-1 do
                 locBlock2(i) = followMe(i).lowBound..followMe(i).highBound;
-              var followMe2: rank*range(intIdxType) = locBlock2;
+              var followMe2: rank*range(chpl_integralIdxType) = locBlock2;
               const low  = locBlock2(parDim2)._low,
                 high = locBlock2(parDim2)._high;
-              const (lo,hi) = _computeBlock(locBlock2(parDim2).sizeAs(intIdxType),
+              const (lo,hi) = _computeBlock(locBlock2(parDim2).sizeAs(chpl_integralIdxType),
                                             numChunks2, chunk2,
                                             high, low, low);
               followMe2(parDim2) = lo..hi;
@@ -462,14 +461,14 @@ module DefaultRectangular {
                   "### nranges = ", ranges);
         }
 
-        var locBlock: rank*range(intIdxType);
+        var locBlock: rank*range(chpl_integralIdxType);
         for param i in 0..rank-1 do
-          locBlock(i) = offset(i)..#(ranges(i).sizeAs(intIdxType));
+          locBlock(i) = offset(i)..#(ranges(i).sizeAs(chpl_integralIdxType));
         if debugDefaultDist then
           chpl_debug_writeln("*** DI: locBlock = ", locBlock);
         coforall chunk in 0..#numChunks {
-          var followMe: rank*range(intIdxType) = locBlock;
-          const (lo,hi) = _computeBlock(locBlock(parDim).sizeAs(intIdxType),
+          var followMe: rank*range(chpl_integralIdxType) = locBlock;
+          const (lo,hi) = _computeBlock(locBlock(parDim).sizeAs(chpl_integralIdxType),
                                         numChunks, chunk,
                                         locBlock(parDim)._high,
                                         locBlock(parDim)._low,
@@ -486,7 +485,7 @@ module DefaultRectangular {
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity,
-               offset=createTuple(rank, intIdxType, 0:intIdxType))
+               offset=createTuple(rank, chpl_integralIdxType, 0:chpl_integralIdxType))
       where tag == iterKind.follower {
 
       if followThis.size != this.rank then
@@ -494,45 +493,63 @@ module DefaultRectangular {
                       followThis.size:string + "D expression with a " +
                       this.rank:string + "D domain)");
 
-      proc anyStridable(rangeTuple, param i: int = 0) param do
-        return if i == rangeTuple.size-1 then rangeTuple(i).stridable
-               else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
-
       if chpl__testParFlag then
         chpl__testPar("default rectangular domain follower invoked on ", followThis);
       if debugDefaultDist then
         chpl_debug_writeln("In domain follower code: Following ", followThis);
 
-      param stridable = this.stridable || anyStridable(followThis);
-      var block: rank*range(idxType=intIdxType, stridable=stridable);
+      param newStrides = chpl_strideProduct(this.strides,
+                                            chpl_strideUnion(followThis));
+
+      var block: rank*range(idxType=chpl_integralIdxType, strides=newStrides);
       if boundsChecking then
         for param i in 0..rank-1 do
           if followThis(i).highBound >= ranges(i).sizeAs(uint) then
             HaltWrappers.boundsCheckHalt("size mismatch in zippered iteration (dimension " + i:string + ")");
-      if stridable {
-        type strType = chpl__signedType(intIdxType);
+
+      if ! newStrides.isPosNegOne() {
+        type strType = chpl__signedType(chpl_integralIdxType);
         for param i in 0..rank-1 {
-          // See domain follower for comments about this
           const rStride = ranges(i).stride;
           const rSignedStride = rStride:strType,
                 fSignedStride = followThis(i).stride:strType;
-          if rStride > 0 {
-            const riStride = rStride:intIdxType;
+          if ranges(i).hasPositiveStride() {
+            const riStride = rStride:chpl_integralIdxType;
             const low = ranges(i).alignedLowAsInt + followThis(i).lowBound*riStride,
                   high = ranges(i).alignedLowAsInt + followThis(i).highBound*riStride,
                   stride = (rSignedStride * fSignedStride):strType;
-            block(i) = low..high by stride;
+            block(i).chpl_setFields(low, high, stride);
+
           } else {
-            const irStride = (-rStride):intIdxType;
+            const irStride = (-rStride):chpl_integralIdxType;
             const low = ranges(i).alignedHighAsInt - followThis(i).highBound*irStride,
                   high = ranges(i).alignedHighAsInt - followThis(i).lowBound*irStride,
                   stride = (rSignedStride * fSignedStride):strType;
-            block(i) = low..high by stride;
+            block(i).chpl_setFields(low, high, stride);
           }
         }
       } else {
-        for  param i in 0..rank-1 do
-          block(i) = ranges(i)._low+followThis(i).lowBound:intIdxType..ranges(i)._low+followThis(i).highBound:intIdxType;
+        // else-branch duplicates then-branch, except here strides are params
+        type strType = chpl__signedType(chpl_integralIdxType);
+        for param i in 0..rank-1 {
+          param rStride = ranges(i).stride;
+          param rSignedStride = rStride:strType,
+                fSignedStride = followThis(i).stride:strType;
+          if ranges(i).hasPositiveStride() {
+            param riStride = rStride:chpl_integralIdxType;
+            const low = ranges(i).alignedLowAsInt + followThis(i).lowBound*riStride,
+                  high = ranges(i).alignedLowAsInt + followThis(i).highBound*riStride;
+            param stride = (rSignedStride * fSignedStride):strType;
+            block(i).chpl_setFields(low, high);
+
+          } else {
+            param irStride = (-rStride):chpl_integralIdxType;
+            const low = ranges(i).alignedHighAsInt - followThis(i).highBound*irStride,
+                  high = ranges(i).alignedHighAsInt - followThis(i).lowBound*irStride;
+            param stride = (rSignedStride * fSignedStride):strType;
+            block(i).chpl_setFields(low, high);
+          }
+        }
       }
 
       if rank == 1 {
@@ -559,7 +576,7 @@ module DefaultRectangular {
       for param d in 0..rank-1 by -1 {
         const orderD = ranges(d).indexOrder(ind(d));
         // NOTE: This follows from the implementation of indexOrder()
-        if (orderD == (-1):intIdxType) then return orderD;
+        if (orderD == (-1):chpl_integralIdxType) then return orderD;
         totOrder += orderD * blk;
         blk *= ranges(d).sizeAs(int);
       }
@@ -635,7 +652,7 @@ module DefaultRectangular {
       if rank == 1 {
         return ranges(0).stride;
       } else {
-        var result: rank*chpl__signedType(intIdxType);
+        var result: rank*chpl__signedType(chpl_integralIdxType);
         for param i in 0..rank-1 do
           result(i) = ranges(i).stride;
         return result;
@@ -678,7 +695,7 @@ module DefaultRectangular {
     proc dsiBuildArray(type eltType, param initElts:bool) {
       return new unmanaged DefaultRectangularArr(eltType=eltType, rank=rank,
                                                  idxType=idxType,
-                                                 stridable=stridable,
+                                                 strides=strides,
                                                  dom=_to_unmanaged(this),
                                                  initElts=initElts);
     }
@@ -689,7 +706,7 @@ module DefaultRectangular {
       return new unmanaged DefaultRectangularArr(eltType=eltType,
                                        rank=rank,
                                        idxType=idxType,
-                                       stridable=stridable,
+                                       strides=strides,
                                        // consider the elements already inited
                                        initElts=false,
                                        // but the array should deinit them
@@ -713,7 +730,7 @@ module DefaultRectangular {
       if (this.locale == loc) {
         return _getDomain(_to_unmanaged(this));
       } else {
-        var a: domain(rank, idxType, stridable);
+        var a: domain(rank, idxType, strides);
         return a;
       }
     }
@@ -749,7 +766,7 @@ module DefaultRectangular {
     type eltType;
     param rank : int;
     type idxType;
-    param stridable: bool;
+    param strides: strideKind;
     param blkChanged : bool = false;
 
     var off: rank*idxType;
@@ -761,9 +778,10 @@ module DefaultRectangular {
     var data: _ddata(eltType);
     var shiftedData: _ddata(eltType);
 
+    proc hasUnitStride() param do return strides == strideKind.one;
 
     inline proc theData ref {
-      if stridable {
+      if ! hasUnitStride() {
         return data;
       } else {
         return shiftedData;
@@ -771,7 +789,7 @@ module DefaultRectangular {
     }
 
     inline proc getDataElem(i) ref {
-      if stridable {
+      if ! hasUnitStride() {
         return dataElem(i);
       } else {
         return shiftedDataElem(i);
@@ -794,7 +812,7 @@ module DefaultRectangular {
   // Copied from DefaultRectangularArr.getDataIndex
   //
   inline proc _remoteAccessData.getDataIndex(ind: rank*idxType) {
-    if stridable {
+    if ! hasUnitStride() {
       var sum = origin;
       for param i in 0..rank-1 do
         sum += (chpl__idxToInt(ind(i)) - chpl__idxToInt(off(i))).safeCast(int) * blk(i) / abs(str(i));
@@ -842,7 +860,7 @@ module DefaultRectangular {
   }
 
   proc _remoteAccessData.initShiftedData() {
-    if earlyShiftData && !stridable {
+    if earlyShiftData && hasUnitStride() {
       type idxSignedType = chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
       const shiftDist = if isIntType(idxType) then origin - factoredOffs
                         else origin:idxSignedType - factoredOffs:idxSignedType;
@@ -868,11 +886,11 @@ module DefaultRectangular {
     compilerAssert(this.rank == newDom.rank);
 
     // NB: Sets 'blkChanged' if the new domain is stridable.
-    var rad : _remoteAccessData(eltType, newDom.rank, newDom.idxType, newDom.stridable, newDom.stridable || this.blkChanged);
+    var rad : _remoteAccessData(eltType, newDom.rank, newDom.idxType, newDom.strides, ! newDom.hasUnitStride() || this.blkChanged);
 
     rad.initDataFrom(this);
 
-    rad.shiftedData = if newDom.stridable then this.data else this.shiftedData;
+    rad.shiftedData = if ! newDom.hasUnitStride() then this.data else this.shiftedData;
     rad.origin      = this.origin;
     rad.off         = chpl__tuplify(newDom.dsiLow);
     rad.str         = chpl__tuplify(newDom.dsiStride);
@@ -902,11 +920,11 @@ module DefaultRectangular {
     compilerAssert(this.rank == newDom.rank);
 
     // NB: Only sets 'blkChanged' if underlying RADs have it set
-    var rad : _remoteAccessData(eltType, newDom.rank, newDom.idxType, newDom.stridable, blkChanged);
+    var rad : _remoteAccessData(eltType, newDom.rank, newDom.idxType, newDom.strides, blkChanged);
 
     rad.initDataFrom(this);
 
-    rad.shiftedData  = if newDom.stridable then this.data else this.shiftedData;
+    rad.shiftedData  = if ! newDom.hasUnitStride() then this.data else this.shiftedData;
     rad.origin       = this.origin;
     rad.blk          = this.blk;
     rad.off          = chpl__tuplify(newDom.dsiLow);
@@ -924,18 +942,18 @@ module DefaultRectangular {
   //
   proc _remoteAccessData.toRankChange(newDom, cd, idx) {
     compilerAssert(this.rank == idx.size && this.rank != newDom.rank);
-    type intIdxType = newDom.intIdxType;
-    type idxSignedType = chpl__signedType(intIdxType);
+    type chpl_integralIdxType = newDom.chpl_integralIdxType;
+    type idxSignedType = chpl__signedType(chpl_integralIdxType);
 
     // Unconditionally sets 'blkChanged'
     //
     // TODO: If 'collapsedDims' were param, we would know if blk(rank-1) was 1 or not.
-    var rad : _remoteAccessData(eltType, newDom.rank, newDom.idxType, newDom.stridable, true);
+    var rad : _remoteAccessData(eltType, newDom.rank, newDom.idxType, newDom.strides, true);
     const collapsedDims = chpl__tuplify(cd);
 
     rad.initDataFrom(this);
 
-    rad.shiftedData = if newDom.stridable then this.data else this.shiftedData;
+    rad.shiftedData = if ! newDom.hasUnitStride() then this.data else this.shiftedData;
     rad.origin      = this.origin;
 
     var curDim      = 0;
@@ -967,22 +985,31 @@ module DefaultRectangular {
     type eltType;
     param rank: int;
     type idxType;
-    param stridable: bool;
+    param strides: strideKind;
     var targetLocDom: domain(rank);
     pragma "unsafe"
     var RAD: [targetLocDom] _remoteAccessData(eltType, rank, idxType,
-                                              stridable);
+                                              strides);
     var RADLocks: [targetLocDom] chpl_LocalSpinlock;
 
     pragma "dont disable remote value forwarding"
     proc init(type eltType, param rank: int, type idxType,
-              param stridable: bool, newTargetLocDom: domain(rank)) {
+              param strides: strideKind, newTargetLocDom: domain(rank)) {
       this.eltType = eltType;
       this.rank = rank;
       this.idxType = idxType;
-      this.stridable = stridable;
+      this.strides = strides;
       // This should resize the arrays
       targetLocDom=newTargetLocDom;
+    }
+
+    // supports deprecation by Vass in 1.31 to implement #17131
+    pragma "dont disable remote value forwarding"
+    @deprecated("'LocRADCache' initializer with 'stridable: bool' is deprecated; please use 'strides: strideKind' instead")
+    proc init(type eltType, param rank: int, type idxType,
+              param stridable: bool, newTargetLocDom: domain(rank)) {
+      this.init(eltType, rank, idxType, chpl_strideKind(stridable),
+                newTargetLocDom);
     }
 
     inline proc lockRAD(rlocIdx) {
@@ -995,15 +1022,12 @@ module DefaultRectangular {
   }
 
   class DefaultRectangularArr: BaseRectangularArr {
-    /*type eltType;
-    param rank : int;
-    type idxType;
-    param stridable: bool;*/
+    // inherits rank, idxType, strides, eltType
 
     type idxSignedType = chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
 
     var dom : unmanaged DefaultRectangularDom(rank=rank, idxType=idxType,
-                                           stridable=stridable);
+                                              strides=strides);
     var off: rank*idxType;
     var blk: rank*int;
     var sizesPerDim: rank*int;
@@ -1031,9 +1055,9 @@ module DefaultRectangular {
     // fields end here
 
     proc init(type eltType, param rank, type idxType,
-              param stridable,
+              param strides,
               dom:unmanaged DefaultRectangularDom(rank=rank, idxType=idxType,
-                                                  stridable=stridable),
+                                                  strides=strides),
               param initElts = true,
               param deinitElts = initElts,
               data:_ddata(eltType) = nil,
@@ -1041,7 +1065,7 @@ module DefaultRectangular {
               _borrowed = false,
               externFreeFunc: c_void_ptr = nil) {
       super.init(eltType=eltType, rank=rank,
-                 idxType=idxType, stridable=stridable);
+                 idxType=idxType, strides=strides);
       this.dom = dom;
       this.data = data;
       this.externFreeFunc = externFreeFunc;
@@ -1054,7 +1078,7 @@ module DefaultRectangular {
       this.setupFieldsAndAllocate(initElts);
     }
 
-    proc intIdxType type {
+    proc chpl_integralIdxType type {
       return chpl__idxTypeToIntIdxType(idxType);
     }
 
@@ -1138,7 +1162,7 @@ module DefaultRectangular {
     }
 
     inline proc theData ref {
-      if earlyShiftData && !stridable then
+      if earlyShiftData && hasUnitStride() then
         return shiftedData;
       else
         return data;
@@ -1215,7 +1239,7 @@ module DefaultRectangular {
     }
 
     inline proc initShiftedData() {
-      if earlyShiftData && !stridable {
+      if earlyShiftData && hasUnitStride() {
         // Lydia note 11/04/15: a question was raised as to whether this
         // check on dsiNumIndices added any value.  Performance results
         // from removing this line seemed inconclusive, which may indicate
@@ -1292,7 +1316,7 @@ module DefaultRectangular {
 
     inline proc getDataIndex(ind: rank*idxType,
                              param getShifted = true) {
-      if stridable {
+      if !hasUnitStride() {
         var sum = 0;
         for param i in 0..rank-1 do
           sum += (chpl__idxToInt(ind(i)) - chpl__idxToInt(off(i))).safeCast(int) * blk(i) / abs(str(i));
@@ -1397,7 +1421,7 @@ module DefaultRectangular {
 
     proc adjustBlkOffStrForNewDomain(d: unmanaged DefaultRectangularDom,
                                      alias: unmanaged DefaultRectangularArr)
-      where dom.stridable == false && this.stridable == false
+      where dom.hasUnitStride() && this.hasUnitStride()
     {
       for param i in 0..rank-1 {
         alias.off(i) = d.dsiDim(i).lowBound;
@@ -1410,7 +1434,7 @@ module DefaultRectangular {
     pragma "ignore transfer errors"
     override proc dsiReallocate(bounds: rank*range(idxType,
                                                    boundKind.both,
-                                                   stridable)) {
+                                                   strides)) {
 
       // check to see whether this realloc is actually changing the
       // bounds of the array
@@ -1467,7 +1491,7 @@ module DefaultRectangular {
               DefaultRectangularArr(eltType=eltType,
                                     rank=rank,
                                     idxType=idxType,
-                                    stridable=reallocD._value.stridable,
+                                    strides=reallocD._value.strides,
                                     dom=reallocD._value,
                                     initElts=initElts);
 
@@ -1532,7 +1556,7 @@ module DefaultRectangular {
           // We can't call initShiftedData here because the new domain
           // has not yet been updated (this is called from within the
           // = function for domains.
-          if earlyShiftData && !reallocD._value.stridable {
+          if earlyShiftData && reallocD._value.hasUnitStride() {
             // Lydia note 11/04/15: a question was raised as to whether this
             // check on numIndices added any value.  Performance results
             // from removing this line seemed inconclusive, which may indicate
@@ -1556,7 +1580,7 @@ module DefaultRectangular {
     }
 
     proc dsiGetRAD() {
-      var rad: _remoteAccessData(eltType, rank, idxType, stridable);
+      var rad: _remoteAccessData(eltType, rank, idxType, strides);
       rad.off = off;
       rad.blk = blk;
       rad.str = str;
@@ -1577,7 +1601,7 @@ module DefaultRectangular {
       if this.data.locale == loc {
         return _getDomain(dom);
       } else {
-        var a: domain(rank, idxType, stridable);
+        var a: domain(rank, idxType, strides);
         return a;
       }
     }
@@ -1599,7 +1623,7 @@ module DefaultRectangular {
                else arr;
     if arr.rank == 1 {
       // This is specialized to avoid overheads of calling dsiAccess()
-      if !viewDom.stridable {
+      if viewDom.hasUnitStride() {
         // Ideally we would like to be able to do something like
         // "for i in first..last by step". However, right now that would
         // result in a strided iterator which isn't as optimized. It would
@@ -1662,7 +1686,7 @@ module DefaultRectangular {
 
   proc DefaultRectangularDom.dsiSerialReadWrite(f /*: Reader or Writer*/) throws {
     inline proc rwLiteral(lit:string) throws {
-      if f.writing then f._writeLiteral(lit); else f._readLiteral(lit);
+      if f._writing then f._writeLiteral(lit); else f._readLiteral(lit);
     }
 
     rwLiteral("{");
@@ -1671,7 +1695,7 @@ module DefaultRectangular {
       if !first then rwLiteral(", ");
       else first = false;
 
-      if f.writing then f.write(ranges(i));
+      if f._writing then f.write(ranges(i));
       else ranges(i) = f.read(ranges(i).type);
     }
     rwLiteral("}");
@@ -1719,6 +1743,102 @@ module DefaultRectangular {
     chpl_serialReadWriteRectangularHelper(f, arr, dom);
   }
 
+  proc _supportsBulkElements(f, arr) param : bool {
+    use Reflection;
+    var temp : c_ptr(arr.eltType);
+    if f._writing then
+      return Reflection.canResolveMethod(f.serializer, "writeBulkElements", f, temp, 0:uint);
+    else
+      return Reflection.canResolveMethod(f.deserializer, "readBulkElements", f, temp, 0:uint);
+  }
+
+  proc _supportsSerializers(f) param : bool {
+    if f._writing then return f.serializerType != nothing;
+    else return f.deserializerType != nothing;
+  }
+
+  proc chpl_serialReadWriteRectangularHelper(f, arr, dom) throws
+  where _supportsSerializers(f) {
+    if arr.isDefaultRectangular() && !chpl__isArrayView(arr) &&
+       _isSimpleIoType(arr.eltType) && _supportsBulkElements(f, arr) &&
+       arr.isDataContiguous(dom) {
+      _readWriteBulk(f, arr, dom);
+    } else {
+      _readWriteHelper(f, arr, dom);
+    }
+  }
+
+  proc _readWriteHelper(f, arr, dom) throws {
+    param rank = arr.rank;
+    type idxType = arr.idxType;
+    type idxSignedType = chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
+
+    ref fmt = if f._writing then f.serializer else f.deserializer;
+
+    proc recursiveArrayReaderWriter(in idx: rank*idxType, dim=0, in last=false) throws {
+
+      type strType = idxSignedType;
+      const makeStridePositive = if dom.dsiDim(dim).stride > 0 then 1:strType else (-1):strType;
+
+      if f._writing then
+        fmt.startArrayDim(f, dom.dsiDim(dim).sizeAs(uint));
+      else
+        fmt.startArrayDim(f);
+
+      // The simple 1D case
+      if dim == rank-1 {
+        for j in dom.dsiDim(dim) by makeStridePositive {
+          idx(dim) = j;
+          if f._writing then
+            fmt.writeArrayElement(f, arr.dsiAccess(idx));
+          else {
+            arr.dsiAccess(idx) = fmt.readArrayElement(f, arr.eltType);
+          }
+        }
+      } else {
+        for j in dom.dsiDim(dim) by makeStridePositive {
+          var lastIdx =  dom.dsiDim(dim).last;
+          idx(dim) = j;
+
+          recursiveArrayReaderWriter(idx, dim=dim+1,
+                               last=(last || dim == 0) && (j == dom.dsiDim(dim).high));
+
+        }
+      }
+
+      fmt.endArrayDim(f);
+    }
+
+    if f._writing then
+      fmt.startArray(f, dom.dsiNumIndices:uint);
+    else
+      fmt.startArray(f);
+
+    const zeroTup: rank*idxType;
+    recursiveArrayReaderWriter(zeroTup);
+
+    fmt.endArray(f);
+  }
+
+  proc _readWriteBulk(f, arr, dom) throws {
+    ref fmt = if f._writing then f.serializer else f.deserializer;
+
+    const len = dom.dsiNumIndices:uint;
+    if f._writing then
+      fmt.startArray(f, len);
+    else
+      fmt.startArray(f);
+
+    var ptr = c_ptrTo(arr.dsiAccess(dom.dsiFirst));
+    if f._writing {
+      fmt.writeBulkElements(f, ptr, len);
+    } else {
+      fmt.readBulkElements(f, ptr, len);
+    }
+
+    fmt.endArray(f);
+  }
+
   proc chpl_serialReadWriteRectangularHelper(f, arr, dom) throws {
     param rank = arr.rank;
     type idxType = arr.idxType;
@@ -1728,7 +1848,7 @@ module DefaultRectangular {
     const isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
 
     inline proc rwLiteral(lit:string) throws {
-      if f.writing then f._writeLiteral(lit); else f._readLiteral(lit);
+      if f._writing then f._writeLiteral(lit); else f._readLiteral(lit);
     }
 
     proc rwSpaces(dim:int) throws {
@@ -1757,13 +1877,13 @@ module DefaultRectangular {
 
       if dim == rank-1 {
         var first = true;
-        if debugDefaultDist && f.writing then f.writeln(dom.dsiDim(dim));
+        if debugDefaultDist && f._writing then f.writeln(dom.dsiDim(dim));
         for j in dom.dsiDim(dim) by makeStridePositive {
           if first then first = false;
           else if isspace then rwLiteral(" ");
           else if isjson || ischpl then rwLiteral(", ");
           idx(dim) = j;
-          if f.writing then f.write(arr.dsiAccess(idx));
+          if f._writing then f.write(arr.dsiAccess(idx));
           else arr.dsiAccess(idx) = f.read(eltType);
         }
       } else {
@@ -1807,7 +1927,7 @@ module DefaultRectangular {
       // byte order is set to native or its equivalent.
       const elemSize = c_sizeof(arr.eltType);
       if boundsChecking {
-        var rw = if f.writing then "write" else "read";
+        var rw = if f._writing then "write" else "read";
         assert((dom.dsiNumIndices:uint*elemSize:uint) <= max(c_ssize_t):uint,
                "length of array to ", rw, " is greater than c_ssize_t can hold");
       }
@@ -1817,7 +1937,7 @@ module DefaultRectangular {
       const idx = arr.getDataIndex(dom.dsiLow);
       const size = len:c_ssize_t*elemSize:c_ssize_t;
       try {
-        if f.writing {
+        if f._writing {
           f._writeBytes(_ddata_shift(arr.eltType, src, idx), size);
         } else {
           f._readBytes(_ddata_shift(arr.eltType, src, idx), size);
@@ -1887,7 +2007,7 @@ module DefaultRectangular {
 
   private proc transferHelper(A, aView, B, bView) : bool {
     if A.rank == B.rank &&
-       (aView.stridable == false && bView.stridable == false) &&
+       aView.hasUnitStride() && bView.hasUnitStride() &&
        _canDoSimpleTransfer(A, aView, B, bView) {
       if debugDefaultDistBulkTransfer then
         chpl_debug_writeln("Performing simple DefaultRectangular transfer");
@@ -1919,7 +2039,7 @@ module DefaultRectangular {
     for param i in 0..rank-1 do
       Blo(i) = Bdims(i).first;
 
-    const len = aView.sizeAs(aView.intIdxType).safeCast(c_size_t);
+    const len = aView.sizeAs(aView.chpl_integralIdxType).safeCast(c_size_t);
 
     if len == 0 then return;
 
@@ -2049,7 +2169,7 @@ module DefaultRectangular {
   private proc complexTransferCore(LHS, LViewDom, RHS, RViewDom) {
     param minRank = min(LHS.rank, RHS.rank);
     type  idxType = LHS.idxType;
-    type  intIdxType = LHS.intIdxType;
+    type  chpl_integralIdxType = LHS.chpl_integralIdxType;
 
     if debugDefaultDistBulkTransfer {
       writeln("Transferring views :", LViewDom, " <-- ", RViewDom);

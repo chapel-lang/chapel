@@ -83,6 +83,135 @@ class Context {
     virtual void report(Context* context, const ErrorBase* err) = 0;
   };
 
+  /** This struct stores configuration information to use when
+      constructing a Context. */
+  struct Configuration {
+    /** Used for determining Chapel environment variables */
+    std::string chplHome;
+
+    std::unordered_map<std::string, std::string> chplEnvOverrides;
+
+    /** Temporary directory in which to store files.
+        If it is "", it will be set to something like /tmp/chpl-1234/.
+        It will be deleted when the context is deleted, unless
+        keepTmpDir is true.
+     */
+    std::string tmpDir;
+
+    /** If 'true', the tmpDir will not be deleted. */
+    bool keepTmpDir = false;
+
+    /** Tool name (for use when creating the tmpDir in /tmp if needed) */
+    std::string toolName = "chpl";
+
+    void swap(Configuration& other);
+  };
+
+  class RunResultBase {
+   private:
+    std::vector<owned<ErrorBase>> errors_;
+
+   public:
+    ~RunResultBase();
+
+    RunResultBase();
+    // Should not be called due to copy elision, but it's not guaranteed..
+    RunResultBase(const RunResultBase& other);
+
+    /** The errors that occurred while running. */
+    std::vector<owned<ErrorBase>>& errors() { return errors_; };
+    const std::vector<owned<ErrorBase>>& errors() const { return errors_; };
+    /**
+      Checks if any syntax errors or errors occurred while running.
+      Warnings do not cause this method to return false.
+    */
+    bool ranWithoutErrors() const;
+  };
+
+  template <typename T>
+  class RunResult : public RunResultBase {
+   private:
+    T result_;
+
+   public:
+    /** The result of the execution. */
+    T& result() { return result_; }
+  };
+
+  class ErrorCollectionEntry {
+   private:
+    std::vector<owned<ErrorBase>>* storeInto_;
+    const querydetail::QueryMapResultBase* collectingQuery_;
+
+    ErrorCollectionEntry(std::vector<owned<ErrorBase>>* storeInto,
+                         const querydetail::QueryMapResultBase* collectingQuery) :
+      storeInto_(storeInto), collectingQuery_(collectingQuery) {}
+
+   public:
+    /**
+      When a parent query starts tracking errors, the tracking entry contains
+      this parent query and the vector. Errors occurring within child
+      queries are stored into the vector, and not reporter to the user.
+     */
+    static ErrorCollectionEntry
+    createForTrackingQuery(std::vector<owned<ErrorBase>>*,
+                           const querydetail::QueryMapResultBase*);
+
+    /**
+      When recomputing queries (to determine if a cached result should be used),
+      a parent query may not be running that expects to receive an error
+      list back, because computations are done bottom-up. Thus, simply
+      track the query that enabled error collection, but do not store the
+      errors anywhere. They will be added to a vector, if necessary, when
+      the saved query result is used when the parent query is re-run.
+     */
+    static ErrorCollectionEntry
+    createForRecomputing(const querydetail::QueryMapResultBase*);
+
+    const querydetail::QueryMapResultBase* collectingQuery() const { return collectingQuery_; }
+    void storeError(owned<ErrorBase> toStore) const;
+  };
+
+  class RecomputeMarker {
+   friend class Context;
+
+   private:
+    Context* context_;
+    bool oldValue_;
+
+    RecomputeMarker(Context* context, bool isRecomputing) :
+      context_(context), oldValue_(isRecomputing) {
+        std::swap(context_->isRecomputing, oldValue_);
+    }
+
+   public:
+    RecomputeMarker(RecomputeMarker&& other) {
+      *this = std::move(other);
+    }
+
+    RecomputeMarker& operator=(RecomputeMarker&& other) {
+      this->context_ = other.context_;
+      this->oldValue_ = other.oldValue_;
+      other.context_ = nullptr;
+      return *this;
+    }
+
+    void restore() {
+      if (context_) {
+        std::swap(context_->isRecomputing, oldValue_);
+      }
+      context_ = nullptr;
+    }
+
+    ~RecomputeMarker() {
+      restore();
+    }
+  };
+
+  RecomputeMarker markRecomputing(bool isRecomputing) {
+    return RecomputeMarker(this, isRecomputing);
+  }
+
  private:
 
   // The implementation of the default error handler.
@@ -95,18 +224,14 @@ class Context {
     }
   };
 
+  // --------- begin all Context fields ---------
+
+  // The current Configuration
+  Configuration config_;
+
   // The current error handler.
   owned<ErrorHandler> handler_
     = toOwned<ErrorHandler>(new DefaultErrorHandler());
-
-  // Report an error to the current handler.
-  void reportError(Context* context, const ErrorBase* err);
-
-  // The CHPL_HOME variable
-  const std::string chplHome_;
-
-  // Variables to explicitly set before getting chplenv
-  const std::unordered_map<std::string, std::string> chplEnvOverrides;
 
   // State for printchplenv data
   bool computedChplEnv = false;
@@ -157,15 +282,48 @@ class Context {
   // tracks the nesting of queries, displayed during query tracing
   int queryTraceDepth = 0;
 
+  // tracks whether or not we are re-running a previously-executed query.
+  //
+  // When a query is being initially executed, its dependencies are evaluated
+  // in the order they're discovered. However, when it's re-executed, the
+  // dependencies are evaluated in a bottom-up order. Certain features
+  // of the query framework behave differently depending on whether a query
+  // is being executed "regularly" or "bottom-up" (most notably, a re-executed
+  // dependency is not used to modify the dependency graph).
+  bool isRecomputing = false;
+
+  // If this vector is non-empty, the back element is a collection into
+  // which to store emitted errors, instead of reporting them to the
+  // error handler. Errors reported to the collection stack are
+  // re-reported to the error handler if they are encountered again, even
+  // if they occurred in a cached query.
+  std::vector<ErrorCollectionEntry> errorCollectionStack;
+
   // list of query names to ignore when tracing
-  const std::vector<std::string>
+  std::vector<std::string>
   queryTraceIgnoreQueries = {"idToTagQuery", "idToParentId"};
 
   // list of colors to use for open/close braces depending on query depth
-  const std::vector<TermColorName>
-  queryDepthColor  = {BLUE, BRIGHT_YELLOW, MAGENTA};
+  std::vector<TermColorName> queryDepthColor = {BLUE, BRIGHT_YELLOW, MAGENTA};
 
   owned<std::ostream> queryTimingTraceOutput = nullptr;
+
+  std::string tmpDir_;
+  bool tmpDirExists_ = false;
+  bool tmpDirAnchorCreated_ = false;
+
+  // The following are only used for UniqueString garbage collection
+  querydetail::RevisionNumber lastPrepareToGCRevisionNumber = 0;
+  querydetail::RevisionNumber gcCounter = 1;
+
+  // --------- end all Context fields ---------
+
+  void setupGlobalStrings();
+
+  void swap(Context& other);
+
+  // Report an error to the current handler.
+  void reportError(Context* context, const ErrorBase* err);
 
   // return an ANSI color code for this query depth, if supported by terminal
   void setQueryDepthColor(int depth, std::ostream& os) {
@@ -186,11 +344,6 @@ class Context {
   }
 
 
-
-  // The following are only used for UniqueString garbage collection
-  querydetail::RevisionNumber lastPrepareToGCRevisionNumber = 0;
-  querydetail::RevisionNumber gcCounter = 1;
-
   char* setupStringMetadata(char* buf, size_t len);
   const char* getOrCreateUniqueStringWithAllocation(char* buf,
                                                     const char* str,
@@ -199,6 +352,9 @@ class Context {
 
   bool shouldMarkUnownedPointer(const void* ptr);
   bool shouldMarkOwnedPointer(const void* ptr);
+
+  void emitHiddenErrorsFor(const querydetail::QueryMapResultBase* result);
+  void storeErrorsFor(const querydetail::QueryMapResultBase* result);
 
   // saves the dependency in the parent query, which is assumed
   // to be at queryStack.back().
@@ -297,16 +453,54 @@ class Context {
   static void defaultReportError(Context* context, const ErrorBase* err);
 
   /**
-    Create a new AST Context. Optionally, specify the value of the
-    CHPL_HOME environment variable, which is used for determining
-    chapel environment variables.
+    Create a new Context without specifying chplHome or any
+    other Configuration settings.
    */
-  Context(std::string chplHome = "",
-          std::unordered_map<std::string, std::string> chplEnvOverrides = {});
+  Context();
+
+  /**
+    Create a new Context while specifying a Configuration.
+    */
+  Context(Configuration config);
+
+  /**
+    Create a new Context by consuming the contents of another Context
+    context while changing Configuration. The passed Context will no
+    longer be usable. Assumes that any queries that have run so far
+    do not depend on the Configuration settings that have changed.
+
+    This function is useful during compiler start up. */
+  Context(Context& consumeContext, Configuration newConfig);
+
   ~Context();
 
+  /** Return the Configuration used by this Context */
+  const Configuration& configuration() const { return config_; }
+
+  /** Return the configured CHPL_HOME directory */
   const std::string& chplHome() const;
 
+  /** Return a temporary directory that can be used by this process.
+      It is typically a subdirectory of '/tmp' that will be removed
+      when the Context is destroyed.
+      If it does not exist yet, create it.
+   */
+  const std::string& tmpDir();
+
+  /** Returns 'true' if this Context is configured to save the temporary
+      directory (with keepTmpDir=true). */
+  bool shouldSaveTmpDirFiles() const;
+
+  /** Return a path to a file within tmpDir that is not modified after
+      it is created, to serve as a source for normalizing modification times */
+  std::string tmpDirAnchorFile();
+
+  /** Delete the temporary directory if needed. This function
+      can be called during program exit. */
+  void cleanupTmpDirIfNeeded();
+
+  /** Change whether or not this Context is configured for detailed
+      error/warning output (vs brief output). */
   void setDetailedErrorOutput(bool useDetailed);
 
   /**
@@ -334,6 +528,22 @@ class Context {
   */
   ErrorHandler* errorHandler() {
     return this->handler_.get();
+  }
+
+  /**
+    Execute a function or lambda using the context, and track whether or not
+    errors occurred while doing so. Errors emitted from inside the function are
+    not shown to the user.
+   */
+  template <typename F>
+  auto runAndTrackErrors(F&& f) -> RunResult<decltype(f(this))> {
+    RunResult<decltype(f(this))> result;
+    auto collectionRoot = queryStack.empty() ? nullptr : queryStack.back();
+    errorCollectionStack.push_back(
+        ErrorCollectionEntry::createForTrackingQuery(&result.errors(), collectionRoot));
+    result.result() = f(this);
+    errorCollectionStack.pop_back();
+    return result;
   }
 
   /**
@@ -468,7 +678,7 @@ class Context {
      called for this ID).
 
     Returns the path by setting 'pathOut'.
-    Returns the parent symbol path (relevant for 'module include'
+    Returns the parent symbol path (relevant for 'module include')
     by setting 'parentSymbolPathOut'.
    */
   bool filePathForId(ID id,
@@ -601,7 +811,9 @@ class Context {
   */
   void setBreakOnHash(const size_t hashVal);
 
-  /** Enables/disables timing each query execution */
+  /** Enables/disables timing each query execution.
+      This does not output anything to stdout / a file / etc.
+      To see the results, call queryTimingReport. */
   void setQueryTimingFlag(bool enable) {
     enableQueryTiming = enable;
   }

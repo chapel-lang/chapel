@@ -93,10 +93,12 @@ const CompositeType* helpGetTypeForDecl(Context* context,
 
       QualifiedType qt = r.byAst(parentClassExpr).type();
       if (auto t = qt.type()) {
-        if (auto bct = t->toBasicClassType())
+        if (auto bct = t->toBasicClassType()) {
           parentClassType = bct;
-        else if (auto ct = t->toClassType())
+        } else if (auto ct = t->toClassType()) {
+          // safe because it's checked for null later.
           parentClassType = ct->basicClassType();
+        }
       }
       if (qt.isType() && parentClassType != nullptr) {
         // OK
@@ -110,12 +112,16 @@ const CompositeType* helpGetTypeForDecl(Context* context,
 
     const BasicClassType* insnFromBct = nullptr;
     if (instantiatedFrom != nullptr) {
-      if (auto bct = instantiatedFrom->toBasicClassType())
+      if (auto bct = instantiatedFrom->toBasicClassType()) {
         insnFromBct = bct;
-      else if (auto ct = instantiatedFrom->toClassType())
+      } else if (auto ct = instantiatedFrom->toClassType()) {
+        // safe because it's checked for null later.
         insnFromBct = ct->basicClassType();
-      else
+      }
+
+      if (!insnFromBct) {
         CHPL_ASSERT(false && "unexpected instantiatedFrom type");
+      }
     }
 
 
@@ -140,16 +146,23 @@ const CompositeType* helpGetTypeForDecl(Context* context,
                               insnFromBct, std::move(filteredSubs));
 
   } else if (auto r = ad->toRecord()) {
-    const RecordType* insnFromRec = nullptr;
-    if (instantiatedFrom != nullptr) {
-      if (auto rec = instantiatedFrom->toRecordType())
-        insnFromRec = rec;
-      else
-        CHPL_ASSERT(false && "unexpected instantiatedFrom type");
-    }
+    if (r->id().symbolPath() == "ChapelDomain._domain") {
+      ret = DomainType::getGenericDomainType(context);
+      // TODO: update this to call a method on ArrayType to get the id or path
+    } else if (r->id().symbolPath() == "ChapelArray._array") {
+      ret = ArrayType::getGenericArrayType(context);
+    } else {
+      const RecordType* insnFromRec = nullptr;
+      if (instantiatedFrom != nullptr) {
+        if (auto rec = instantiatedFrom->toRecordType())
+          insnFromRec = rec;
+        else
+          CHPL_ASSERT(false && "unexpected instantiatedFrom type");
+      }
 
-    ret = RecordType::get(context, r->id(), r->name(),
-                          insnFromRec, std::move(filteredSubs));
+      ret = RecordType::get(context, r->id(), r->name(),
+                            insnFromRec, std::move(filteredSubs));
+    }
 
   } else if (auto u = ad->toUnion()) {
     const UnionType* insnFromUni = nullptr;
@@ -170,14 +183,44 @@ const CompositeType* helpGetTypeForDecl(Context* context,
   return ret;
 }
 
+// TOOD:
+// This code will be duplicating a lot of stuff in VarScopeVisitor, but it's
+// different enough that I don't know how to proceed. I'm certain that there's
+// a general way to make all these traversals work.
+
+struct ReturnInferenceFrame;
+struct ReturnInferenceSubFrame {
+  // The AST node whose frame should be saved into this sub-frame
+  const AstNode* astNode = nullptr;
+  // The frame associated with the given AST node.
+  owned<ReturnInferenceFrame> frame = nullptr;
+  // Whether this sub-frame should be skipped when combining sub-results.
+  // Occurrs in particular when a branch is known statically not to occur.
+  bool skip = false;
+
+  ReturnInferenceSubFrame(const AstNode* node) : astNode(node) {}
+};
+
+struct ReturnInferenceFrame {
+  const AstNode* scopeAst = nullptr;
+  bool returnsOrThrows = false;
+  std::vector<ReturnInferenceSubFrame> subFrames;
+
+  ReturnInferenceFrame(const AstNode* node) : scopeAst(node) {}
+};
+
 struct ReturnTypeInferrer {
   using RV = ResolvedVisitor<ReturnTypeInferrer>;
 
   // input
   Context* context;
-  const AstNode* astForErr;
+  const Function* fnAstForErr;
   Function::ReturnIntent returnIntent;
+  Function::Kind functionKind;
   const Type* declaredReturnType;
+
+  // intermediate information
+  std::vector<owned<ReturnInferenceFrame>> returnFrames;
 
   // output
   std::vector<QualifiedType> returnedTypes;
@@ -186,8 +229,9 @@ struct ReturnTypeInferrer {
                      const Function* fn,
                      const Type* declaredReturnType)
     : context(context),
-      astForErr(fn),
+      fnAstForErr(fn),
       returnIntent(fn->returnIntent()),
+      functionKind(fn->kind()),
       declaredReturnType(declaredReturnType) {
   }
 
@@ -200,11 +244,23 @@ struct ReturnTypeInferrer {
 
   QualifiedType returnedType();
 
+  ReturnInferenceSubFrame& currentThenFrame();
+  ReturnInferenceSubFrame& currentElseFrame();
+
+  void enterScope(const uast::AstNode* node);
+  void exitScope(const uast::AstNode* node);
+
+  bool markReturnOrThrow();
+  bool hasReturnedOrThrown();
+
   bool enter(const Function* fn, RV& rv);
   void exit(const Function* fn, RV& rv);
 
   bool enter(const Conditional* cond, RV& rv);
   void exit(const Conditional* cond, RV& rv);
+
+  bool enter(const Select* sel, RV& rv);
+  void exit(const Select* sel, RV& rv);
 
   bool enter(const Return* ret, RV& rv);
   void exit(const Return* ret, RV& rv);
@@ -287,12 +343,123 @@ QualifiedType ReturnTypeInferrer::returnedType() {
                               (QualifiedType::Kind) returnIntent);
     if (!retType) {
       // Couldn't find common type, so return type is incorrect.
-      context->error(astForErr, "could not determine return type for function");
+      context->error(fnAstForErr, "could not determine return type for function");
       retType = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
     }
-    auto adjType = adjustForReturnIntent(returnIntent, retType.getValue());
+    auto adjType = adjustForReturnIntent(returnIntent, *retType);
     return adjType;
   }
+}
+
+ReturnInferenceSubFrame& ReturnTypeInferrer::currentThenFrame() {
+  CHPL_ASSERT(returnFrames.size() > 0);
+  auto& topFrame = returnFrames.back();
+  CHPL_ASSERT(topFrame->scopeAst->isConditional());
+  return topFrame->subFrames[0];
+}
+ReturnInferenceSubFrame& ReturnTypeInferrer::currentElseFrame() {
+  CHPL_ASSERT(returnFrames.size() > 0);
+  auto& topFrame = returnFrames.back();
+  CHPL_ASSERT(topFrame->scopeAst->isConditional());
+  return topFrame->subFrames[1];
+}
+
+void ReturnTypeInferrer::enterScope(const uast::AstNode* node) {
+  if (!createsScope(node->tag())) return;
+
+  returnFrames.push_back(toOwned(new ReturnInferenceFrame(node)));
+  auto& newFrame = returnFrames.back();
+
+  if (returnFrames.size() > 1) {
+    // If we returned in the parent frame, we already returned here.
+    newFrame->returnsOrThrows |= returnFrames[returnFrames.size() - 2]->returnsOrThrows;
+  }
+
+  if (auto condNode = node->toConditional()) {
+    newFrame->subFrames.emplace_back(condNode->thenBlock());
+    newFrame->subFrames.emplace_back(condNode->elseBlock());
+  } else if (auto selNode = node->toSelect()) {
+    bool hasOtherwise = false;
+    for (auto when : selNode->whenStmts()) {
+      if (when->isOtherwise()) hasOtherwise = true;
+      newFrame->subFrames.emplace_back(when);
+    }
+    if (!hasOtherwise) {
+      // If an 'otherwise' case is not present, then we treat it as a
+      // non-returning 'branch'.
+      newFrame->subFrames.emplace_back(nullptr);
+    }
+  } else if (auto tryNode = node->toTry()) {
+    newFrame->subFrames.emplace_back(tryNode->body());
+    for (auto clause : tryNode->handlers()) {
+      newFrame->subFrames.emplace_back(clause);
+    }
+  }
+}
+
+void ReturnTypeInferrer::exitScope(const uast::AstNode* node) {
+  if (!createsScope(node->tag())) return;
+
+  CHPL_ASSERT(returnFrames.size() > 0);
+  auto poppingFrame = std::move(returnFrames.back());
+  CHPL_ASSERT(poppingFrame->scopeAst == node);
+  returnFrames.pop_back();
+
+  bool parentReturnsOrThrows = poppingFrame->returnsOrThrows;
+
+  if (poppingFrame->scopeAst->isLoop()) {
+    // Could have while true { break; return; }, so do not propagate
+    // returns.
+    parentReturnsOrThrows = false;
+  }
+
+  // Integrate sub-frame information.
+  if (poppingFrame->subFrames.size() > 0) {
+    bool allReturnOrThrow = true;
+    bool allSkip = true;
+    for (auto& subFrame : poppingFrame->subFrames) {
+      if (subFrame.skip) continue;
+      allSkip = false;
+
+      if (subFrame.frame == nullptr || !subFrame.frame->returnsOrThrows) {
+        allReturnOrThrow = false;
+        break;
+      }
+    }
+
+    // If all subframes skipped, then there were no returns.
+    parentReturnsOrThrows = !allSkip && allReturnOrThrow;
+  }
+
+  if (returnFrames.size() > 0) {
+    // Might we become a sub-frame in another frame?
+    auto& parentFrame = returnFrames.back();
+    bool storedAsSubFrame = false;
+
+    for (auto& subFrame : parentFrame->subFrames) {
+      if (subFrame.astNode == node) {
+        subFrame.frame = std::move(poppingFrame);
+        storedAsSubFrame = true;
+      }
+    }
+
+    if (!storedAsSubFrame) {
+      parentFrame->returnsOrThrows |= parentReturnsOrThrows;
+    }
+  }
+}
+
+bool ReturnTypeInferrer::markReturnOrThrow() {
+  if (returnFrames.empty()) return false;
+  auto& topFrame = returnFrames.back();
+  bool oldValue = topFrame->returnsOrThrows;
+  topFrame->returnsOrThrows = true;
+  return oldValue;
+}
+
+bool ReturnTypeInferrer::hasReturnedOrThrown() {
+  if (returnFrames.empty()) return false;
+  return returnFrames.back()->returnsOrThrows;
 }
 
 bool ReturnTypeInferrer::enter(const Function* fn, RV& rv) {
@@ -303,6 +470,7 @@ void ReturnTypeInferrer::exit(const Function* fn, RV& rv) {
 
 
 bool ReturnTypeInferrer::enter(const Conditional* cond, RV& rv) {
+  enterScope(cond);
   auto condition = cond->condition();
   CHPL_ASSERT(condition != nullptr);
   const ResolvedExpression& r = rv.byAst(condition);
@@ -310,20 +478,97 @@ bool ReturnTypeInferrer::enter(const Conditional* cond, RV& rv) {
     auto then = cond->thenBlock();
     CHPL_ASSERT(then != nullptr);
     then->traverse(rv);
+    // It doesn't matter if we don't return in the else frame, since it's
+    // compiled out.
+    currentElseFrame().skip = true;
     return false;
   } else if (r.type().isParamFalse()) {
     auto else_ = cond->elseBlock();
     if (else_) {
       else_->traverse(rv);
     }
+    // It doesn't matter if we don't return in the then frame, since it's
+    // compiled out.
+    currentThenFrame().skip = true;
     return false;
   }
   return true;
 }
 void ReturnTypeInferrer::exit(const Conditional* cond, RV& rv) {
+  exitScope(cond);
+}
+
+bool ReturnTypeInferrer::enter(const Select* sel, RV& rv) {
+  enterScope(sel);
+
+  bool foundParamTrue = false;
+  int otherwise = -1;
+
+  for (int i = 0; i < sel->numWhenStmts(); i++) {
+    if (foundParamTrue) {
+      // previous case was param-true, so we skip all subsequent frames
+      auto& topFrame = returnFrames.back();
+      topFrame->subFrames[i].skip = true;
+      continue;
+    }
+
+    auto when = sel->whenStmt(i);
+    if (when->isOtherwise()) {
+      CHPL_ASSERT(otherwise == -1);
+      otherwise = i;
+      continue;
+    }
+
+    bool anyParamTrue = false;
+    bool allParamFalse = true;
+
+    for (auto caseExpr : when->caseExprs()) {
+      auto res = rv.byAst(caseExpr);
+
+      anyParamTrue = anyParamTrue || res.type().isParamTrue();
+      allParamFalse = allParamFalse && res.type().isParamFalse();
+    }
+
+    if (allParamFalse) {
+      // statically never resolves, so skip this case
+      auto& topFrame = returnFrames.back();
+      topFrame->subFrames[i].skip = true;
+    } else {
+      when->traverse(rv);
+    }
+
+    if (anyParamTrue) {
+      foundParamTrue = true;
+    }
+  }
+
+  if (otherwise != -1) {
+    if (foundParamTrue) {
+      auto& topFrame = returnFrames.back();
+      topFrame->subFrames[otherwise].skip = true;
+    } else {
+      sel->whenStmt(otherwise)->traverse(rv);
+    }
+  }
+
+  return false;
+}
+void ReturnTypeInferrer::exit(const Select* sel, RV& rv) {
+  exitScope(sel);
 }
 
 bool ReturnTypeInferrer::enter(const Return* ret, RV& rv) {
+  if (markReturnOrThrow()) {
+    // If it's statically known that we've already encountered a return
+    // we can safely ignore subsequent returns.
+    return false;
+  }
+
+  if (functionKind == Function::ITER) {
+    // Plain returns don't count towards type infernence for iterators.
+    return false;
+  }
+
   if (const AstNode* expr = ret->value()) {
     noteReturnType(expr, ret, rv);
   } else {
@@ -335,6 +580,12 @@ void ReturnTypeInferrer::exit(const Return* ret, RV& rv) {
 }
 
 bool ReturnTypeInferrer::enter(const Yield* ret, RV& rv) {
+  if (hasReturnedOrThrown()) {
+    // If it's statically known that we've already encountered a return
+    // we can safely ignore subsequent yields.
+    return false;
+  }
+
   noteReturnType(ret->value(), ret, rv);
   return false;
 }
@@ -342,9 +593,11 @@ void ReturnTypeInferrer::exit(const Yield* ret, RV& rv) {
 }
 
 bool ReturnTypeInferrer::enter(const AstNode* ast, RV& rv) {
+  enterScope(ast);
   return true;
 }
 void ReturnTypeInferrer::exit(const AstNode* ast, RV& rv) {
+  exitScope(ast);
 }
 
 
@@ -373,8 +626,10 @@ returnTypeForTypeCtorQuery(Context* context,
       CHPL_ASSERT(t);
 
       // ignore decorators etc for finding instantiatedFrom
-      if (auto ct = t->toClassType())
+      if (auto ct = t->toClassType()) {
         t = ct->basicClassType();
+        CHPL_ASSERT(t && "Expecting initial type for type declaration to be concrete");
+      }
 
       instantiatedFrom = t->toCompositeType();
       CHPL_ASSERT(instantiatedFrom);
@@ -468,6 +723,7 @@ static QualifiedType adjustForReturnIntent(uast::Function::ReturnIntent ri,
 struct CountReturns {
   // input
   Context* context;
+  Function::Kind functionKind;
 
   // output
   int nReturnsWithValue = 0;
@@ -475,8 +731,8 @@ struct CountReturns {
   const AstNode* firstWithValue = nullptr;
   const AstNode* firstWithoutValue = nullptr;
 
-  CountReturns(Context* context)
-    : context(context) {
+  CountReturns(Context* context, const Function* fn)
+    : context(context), functionKind(fn->kind()) {
   }
 
   void countWithValue(const AstNode* ast);
@@ -517,8 +773,14 @@ void CountReturns::exit(const Function* fn) {
 
 bool CountReturns::enter(const Return* ret) {
   if (ret->value() != nullptr) {
+    // Return statements don't contribute to the return type of iterators
+    // (yields do). However, note it here anyway so that the return type
+    // inference is kicked off, and that error reported there.
     countWithValue(ret);
-  } else {
+  } else if (functionKind != Function::ITER) {
+    // Only note void returns as returns if the function is not an iterator.
+    // Iterators can return, but that just ends the iterator; the yields are
+    // what provide the return type.
     countWithoutValue(ret);
   }
   return false;
@@ -553,7 +815,7 @@ static const bool& fnAstReturnsNonVoid(Context* context, ID fnId) {
   const Function* fn = ast->toFunction();
   CHPL_ASSERT(fn);
 
-  CountReturns cr(context);
+  CountReturns cr(context, fn);
   fn->body()->traverse(cr);
 
   result = (cr.nReturnsWithValue > 0);
@@ -589,6 +851,12 @@ static bool helpComputeReturnType(Context* context,
     CHPL_ASSERT(fn);
 
     if (const AstNode* retType = fn->returnType()) {
+      // Cannot return the correct "return type" for something value-less like
+      // "param : int".
+      if (fn->returnIntent() == Function::ReturnIntent::PARAM) {
+        return false;
+      }
+
       // resolve the return type
       ResolutionResultByPostorderID resolutionById;
       auto visitor = Resolver::createForFunction(context, fn, poiScope, sig,
@@ -650,6 +918,46 @@ static bool helpComputeReturnType(Context* context,
         // return a ref
         result = QualifiedType(QualifiedType::REF, ft.type());
       }
+      return true;
+    } else if (untyped->isMethod() && sig->formalType(0).type()->isDomainType()) {
+      auto dt = sig->formalType(0).type()->toDomainType();
+
+      if (untyped->name() == "idxType") {
+        result = dt->idxType();
+      } else if (untyped->name() == "rank") {
+        // Can't use `RankType::rank` because `D.rank` is defined for associative
+        // domains, even though they don't have a matching substitution.
+        result = QualifiedType(QualifiedType::PARAM,
+                               IntType::get(context, 64),
+                               IntParam::get(context, dt->rankInt()));
+      } else if (untyped->name() == "stridable") {
+        result = dt->stridable();
+      } else if (untyped->name() == "parSafe") {
+        result = dt->parSafe();
+      } else if (untyped->name() == "isRectangular") {
+        auto val = BoolParam::get(context, dt->kind() == DomainType::Kind::Rectangular);
+        auto type = BoolType::get(context, 0);
+        result = QualifiedType(QualifiedType::PARAM, type, val);
+      } else if (untyped->name() == "isAssociative") {
+        auto val = BoolParam::get(context, dt->kind() == DomainType::Kind::Associative);
+        auto type = BoolType::get(context, 0);
+        result = QualifiedType(QualifiedType::PARAM, type, val);
+      } else {
+        CHPL_ASSERT(false && "unhandled compiler-generated domain method");
+        return true;
+      }
+      return true;
+    } else if (untyped->isMethod() && sig->formalType(0).type()->isArrayType()) {
+      auto at = sig->formalType(0).type()->toArrayType();
+
+      if (untyped->name() == "domain") {
+        result = QualifiedType(QualifiedType::CONST_REF, at->domainType().type());
+      } else if (untyped->name() == "eltType") {
+        result = at->eltType();
+      } else {
+        CHPL_ASSERT(false && "unhandled compiler-generated array method");
+      }
+
       return true;
     } else {
       CHPL_ASSERT(false && "unhandled compiler-generated method");

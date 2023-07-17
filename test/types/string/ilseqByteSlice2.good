@@ -1,3 +1,3 @@
-uncaught CodepointSplittingError: Attempting to split a multi-byte codepoint. Byte-based string slice is not aligned to codepoint boundaries. The byte at low boundary 4 is not the first byte of a UTF-8 codepoint
+uncaught CodepointSplitError: Attempting to split a multi-byte codepoint. Byte-based string slice is not aligned to codepoint boundaries. The byte at low boundary 4 is not the first byte of a UTF-8 codepoint
   ilseqByteSlice2.chpl:4: thrown here
   ilseqByteSlice2.chpl:4: uncaught here

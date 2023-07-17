@@ -113,19 +113,19 @@ const rcDomain     = rcDomainBase dmapped new dmap(rcDomainMap);
 private param _rcErr1 = " must be 'rcDomain' or 'rcDomainBase dmapped Replicated(an array of locales)'";
 
 private proc _rcTargetLocalesHelper(replicatedVar: [?D])
-  where isSubtype(_to_borrowed(replicatedVar._value.type), ReplicatedArr)
+  where isReplicatedArr(replicatedVar)
 {
   return replicatedVar.targetLocales();
 }
 
-pragma "no doc" // documented with the following entry
+@chpldoc.nodoc // documented with the following entry
 proc rcReplicate(replicatedVar: [?D] ?MYTYPE, valToReplicate: MYTYPE): void
 { compilerError("the domain of first argument to rcReplicate()", _rcErr1); }
 
 /* Assign a value `valToReplicate` to copies of the replicated variable
    `replicatedVar` on all locales. */
 proc rcReplicate(replicatedVar: [?D] ?MYTYPE, valToReplicate: MYTYPE): void
-  where isSubtype(_to_borrowed(replicatedVar._value.type), ReplicatedArr)
+  where isReplicatedArr(replicatedVar)
 {
   assert(replicatedVar.domain == rcDomainBase);
   coforall loc in _rcTargetLocalesHelper(replicatedVar) do
@@ -133,15 +133,15 @@ proc rcReplicate(replicatedVar: [?D] ?MYTYPE, valToReplicate: MYTYPE): void
       replicatedVar[rcDomainIx] = valToReplicate;
 }
 
-pragma "no doc" // documented with the following entry
+@chpldoc.nodoc // documented with the following entry
 proc rcCollect(replicatedVar: [?D] ?MYTYPE, collected: [?CD] MYTYPE): void
-  where ! isSubtype(_to_borrowed(replicatedVar._value.type), ReplicatedArr)
+  where ! isReplicatedArr(replicatedVar)
 { compilerError("the domain of first argument to rcCollect()", _rcErr1); }
 
 /* Copy the value of the replicated variable `replicatedVar` on each locale
    into the element of the array `collected` that corresponds to that locale.*/
 proc rcCollect(replicatedVar: [?D] ?MYTYPE, collected: [?CD] MYTYPE): void
-  where isSubtype(_to_borrowed(replicatedVar._value.type), ReplicatedArr)
+  where isReplicatedArr(replicatedVar)
 {
   var targetLocales = _rcTargetLocalesHelper(replicatedVar);
   assert(replicatedVar.domain == rcDomainBase);
@@ -180,7 +180,7 @@ proc rcRemote(replicatedVar: [?D] ?MYTYPE, remoteLoc: locale) ref: MYTYPE {
 // - stores 'newVal' into its copy on the locale 'newLocale',
 // - collects all its copies into an array 'collected'.
 //
-pragma "no doc" // TODO: move to a primer
+@chpldoc.nodoc // TODO: move to a primer
 proc rcExample(initVal: ?MyType, newVal: MyType, newLocale: locale): void {
   writeln("starting rcExample");
 
@@ -229,7 +229,7 @@ private proc writeReplicands(RV, locs) {
 // This is the same as 'rcExample', except the user can provide
 // specific locales to replicate over. The two differences are marked.
 //
-pragma "no doc" // TODO: move to a primer
+@chpldoc.nodoc // TODO: move to a primer
 proc rcExampleOverLocales(initVal: ?MyType, newVal: MyType, newLocale: locale,
                           localesToReplicateOver: [] locale = Locales): void {
   writeln("starting rcExampleOverLocales over ", localesToReplicateOver);

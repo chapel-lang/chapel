@@ -20,6 +20,7 @@
 #include "chpl/resolution/resolution-queries.h"
 
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/UniqueString.h"
 #include "chpl/framework/global-strings.h"
@@ -38,6 +39,7 @@
 #include "prims.h"
 #include "return-type-inference.h"
 #include "signature-checks.h"
+#include "try-catch-analysis.h"
 
 #include <cstdio>
 #include <set>
@@ -54,6 +56,8 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
+using CandidatesVec = std::vector<const TypedFnSignature*>;
+using ForwardingInfoVec = std::vector<QualifiedType>;
 
 const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
                                                        ID id) {
@@ -126,7 +130,8 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
         if (child->isComment() ||
             child->isTypeDecl() ||
             child->isFunction() ||
-            child->isModule()) {
+            child->isModule() ||
+            child->isExternBlock()) {
             // Resolve use/import to find deprecation/unstable warnings.
             // child->isUse() ||
             // child->isImport()) {
@@ -144,10 +149,14 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
           int lastId = firstId + stmtId.numContainedChildren();
           for (int i = firstId; i <= lastId; i++) {
             ID exprId(stmtId.symbolPath(), i, 0);
-            result.byIdExpanding(exprId) = resolved.byId(exprId);
+            ResolvedExpression& re = result.byId(exprId);
+            if (auto reToCopy = resolved.byIdOrNull(exprId)) {
+              re = *reToCopy;
+            }
           }
         }
       }
+      checkThrows(context, result, mod);
     }
   }
 
@@ -175,7 +184,8 @@ scopeResolveModule(Context* context, ID id) {
             child->isTypeDecl() ||
             child->isFunction() ||
             child->isModule() ||
-            child->isInterface()) {
+            child->isInterface() ||
+            child->isExternBlock()) {
             // Resolve use/import to find deprecation/unstable warnings.
             // child->isUse() ||
             // child->isImport()) {
@@ -193,7 +203,10 @@ scopeResolveModule(Context* context, ID id) {
           int lastId = firstId + stmtId.numContainedChildren();
           for (int i = firstId; i <= lastId; i++) {
             ID exprId(stmtId.symbolPath(), i, 0);
-            result.byIdExpanding(exprId) = resolved.byId(exprId);
+            ResolvedExpression& re = result.byId(exprId);
+            if (auto reToCopy = resolved.byIdOrNull(exprId)) {
+              re = *reToCopy;
+            }
           }
         }
       }
@@ -212,7 +225,12 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
   int postOrderId = id.postOrderId();
   if (postOrderId >= 0) {
     const auto& resolvedStmt = resolveModuleStmt(context, id);
-    result = resolvedStmt.byId(id).type();
+    if (resolvedStmt.hasId(id)) {
+      result = resolvedStmt.byId(id).type();
+    } else {
+      // fall back to default value
+      result = QualifiedType();
+    }
   } else {
     QualifiedType::Kind kind = QualifiedType::UNKNOWN;
     const Type* t = nullptr;
@@ -250,22 +268,27 @@ const QualifiedType& typeForBuiltin(Context* context,
 
   QualifiedType result;
 
-  std::unordered_map<UniqueString,const Type*> map;
-  Type::gatherBuiltins(context, map);
+  std::unordered_map<UniqueString,const Type*> typeMap;
+  Type::gatherBuiltins(context, typeMap);
+  auto& globalMap = getCompilerGeneratedGlobals(context);
 
-  auto search = map.find(name);
-  if (search != map.end()) {
-    const Type* t = search->second;
+  auto searchTypes = typeMap.find(name);
+  auto searchGlobals = globalMap.find(name);
+  if (searchTypes != typeMap.end()) {
+    const Type* t = searchTypes->second;
     CHPL_ASSERT(t);
 
-    if (auto bct = t->toBasicClassType()) {
+    if (auto bct = t->toManageableType()) {
       auto d = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
       t = ClassType::get(context, bct, /*manager*/ nullptr, d);
     }
 
     result = QualifiedType(QualifiedType::TYPE, t);
+  } else if (searchGlobals != globalMap.end()) {
+    result = searchGlobals->second;
   } else {
-    CHPL_ASSERT(false && "Should not be reachable");
+    // Could be a non-type builtin like 'index'
+    result = QualifiedType();
   }
 
   return QUERY_END(result);
@@ -615,10 +638,12 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
 
     for (auto child: ad->children()) {
       // Ignore everything other than VarLikeDecl, MultiDecl, TupleDecl
+      bool isForwardingField = child->isForwardingDecl() &&
+                               child->toForwardingDecl()->expr()->isDecl();
       if (child->isVarLikeDecl() ||
           child->isMultiDecl() ||
           child->isTupleDecl() ||
-          child->isForwardingDecl()) {
+          isForwardingField) {
         const ResolvedFields& resolvedFields =
           resolveFieldDecl(context, ct, child->id(), defaultsPolicy);
         // Copy resolvedFields into result
@@ -629,12 +654,7 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
                           resolvedFields.fieldDeclId(i),
                           resolvedFields.fieldType(i));
         }
-        // Copy resolved forwarding statements into the result
-        n = resolvedFields.numForwards();
-        for (int i = 0; i < n; i++) {
-          result.addForwarding(resolvedFields.forwardingStmt(i),
-                               resolvedFields.forwardingToType(i));
-        }
+        result.addForwarding(resolvedFields);
       }
     }
 
@@ -673,6 +693,48 @@ const ResolvedFields& fieldsForTypeDecl(Context* context,
 
   // Otherwise, use the value we just computed.
   return f;
+}
+
+// Resolve all statements like 'forwarding _value;' in 'ct'
+static
+const ResolvedFields& resolveForwardingExprs(Context* context,
+                                             const CompositeType* ct) {
+  QUERY_BEGIN(resolveForwardingExprs, context, ct);
+
+  ResolvedFields result;
+
+  CHPL_ASSERT(ct);
+  result.setType(ct);
+
+  bool isObjectType = false;
+  if (auto bct = ct->toBasicClassType()) {
+    isObjectType = bct->isObjectType();
+  }
+  bool isMissingBundledType =
+    CompositeType::isMissingBundledType(context, ct->id());
+
+  if (isObjectType || isMissingBundledType) {
+    // no need to try to resolve the fields for the object type,
+    // which doesn't have a real uAST ID.
+    // for built-in types like Errors when we didn't parse the standard library
+    // don't try to resolve the fields
+  } else {
+    auto ast = parsing::idToAst(context, ct->id());
+    CHPL_ASSERT(ast && ast->isAggregateDecl());
+    auto ad = ast->toAggregateDecl();
+
+    // TODO: don't rely on 'ResolvedFields' or 'resolveFieldDecl' here...
+    for (auto child: ad->children()) {
+      if (child->isForwardingDecl() &&
+          !child->toForwardingDecl()->expr()->isDecl()) {
+        const ResolvedFields& resolvedFields =
+          resolveFieldDecl(context, ct, child->id(), DefaultsPolicy::USE_DEFAULTS);
+        result.addForwarding(resolvedFields);
+      }
+    }
+  }
+
+  return QUERY_END(result);
 }
 
 static bool typeUsesForwarding(Context* context, const Type* receiverType) {
@@ -810,13 +872,14 @@ const types::QualifiedType typeWithDefaults(Context* context,
                                             types::QualifiedType t) {
   if (t.type()) {
     if (auto clst = t.type()->toClassType()) {
-      auto bct = clst->basicClassType();
-      auto got = getTypeWithDefaultsQuery(context, bct);
-      CHPL_ASSERT(got->isBasicClassType());
-      bct = got->toBasicClassType();
+      if (auto bct = clst->basicClassType()) {
+        auto got = getTypeWithDefaultsQuery(context, bct);
+        CHPL_ASSERT(got->isBasicClassType());
+        bct = got->toBasicClassType();
 
-      auto r = ClassType::get(context, bct, clst->manager(), clst->decorator());
-      return QualifiedType(t.kind(), r, t.param());
+        auto r = ClassType::get(context, bct, clst->manager(), clst->decorator());
+        return QualifiedType(t.kind(), r, t.param());
+      }
     } else if (auto ct = t.type()->toCompositeType()) {
       auto got = getTypeWithDefaultsQuery(context, ct);
       return QualifiedType(t.kind(), got, t.param());
@@ -859,6 +922,25 @@ static Type::Genericity getFieldsGenericity(Context* context,
       }
     }
     return combined;
+  } else if (auto dt = ct->toDomainType()) {
+    Type::Genericity combined = Type::CONCRETE;
+
+    // Allows for instantiation of things like 'arg: domain'
+    // TODO: currently partially generic domains are not supported
+    if (dt->kind() == DomainType::Kind::Unknown) {
+      combined = Type::GENERIC;
+    }
+
+    return combined;
+  } else if (auto at = ct->toArrayType()) {
+    auto dt = getTypeGenericityIgnoring(context, at->domainType(), ignore);
+    auto et = getTypeGenericityIgnoring(context, at->eltType(), ignore);
+
+    if (dt != Type::CONCRETE || et != Type::CONCRETE) {
+      return Type::GENERIC;
+    } else {
+      return Type::CONCRETE;
+    }
   }
 
   // Some testing code creates CompositeType with empty IDs.
@@ -919,6 +1001,17 @@ Type::Genericity getTypeGenericityIgnoring(Context* context, const Type* t,
   if (t->isUnknownType())
     return Type::MAYBE_GENERIC;
 
+  if (auto pt = t->toCPtrType()) {
+    // Mimics the fields logic: if any field is non-concrete, the whole
+    // type is generic. Logically, the c_ptr has a single field, the element
+    // type.
+    if (getTypeGenericityIgnoring(context, pt->eltType(), ignore) == Type::CONCRETE) {
+      return Type::CONCRETE;
+    } else {
+      return Type::GENERIC;
+    }
+  }
+
   // MAYBE_GENERIC should only be returned for CompositeType /
   // ClassType right now.
   CHPL_ASSERT(t->isCompositeType() || t->isClassType());
@@ -943,8 +1036,13 @@ Type::Genericity getTypeGenericityIgnoring(Context* context, const Type* t,
     CHPL_ASSERT(!classType->decorator().isUnknownManagement());
     CHPL_ASSERT(!classType->decorator().isUnknownNilability());
 
-    auto bct = classType->basicClassType();
-    return getFieldsGenericity(context, bct, ignore);
+    auto mt = classType->manageableType();
+    if (auto bct = mt->toBasicClassType()) {
+      return getFieldsGenericity(context, bct, ignore);
+    } else {
+      CHPL_ASSERT(mt->isAnyClassType());
+      return Type::GENERIC;
+    }
   }
 
   auto compositeType = t->toCompositeType();
@@ -1150,7 +1248,13 @@ QualifiedType getInstantiationType(Context* context,
       }
 
       // which BasicClassType to use?
-      const BasicClassType* bct = formalCt->basicClassType();
+      const BasicClassType* bct;
+      if (auto formalBct = formalCt->basicClassType()) {
+        bct = formalBct;
+      } else {
+        CHPL_ASSERT(formalCt->manageableType()->toManageableType());
+        bct = actualCt->basicClassType();
+      }
       auto g = getTypeGenericity(context, bct);
       if (g != Type::CONCRETE) {
         CHPL_ASSERT(false && "not implemented yet");
@@ -1175,8 +1279,6 @@ QualifiedType getInstantiationType(Context* context,
       classBuiltinTypeDec = ClassTypeDecorator::GENERIC;
     } else if (formalT->isAnyManagementNilableType()) {
       classBuiltinTypeDec = ClassTypeDecorator::GENERIC_NILABLE;
-    } else if (formalT->isAnyManagementNonNilableType()) {
-      classBuiltinTypeDec = ClassTypeDecorator::GENERIC_NONNIL;
     } else if (formalT->isAnyOwnedType() &&
                actualCt->decorator().isManaged() &&
                actualCt->manager()->isAnyOwnedType()) {
@@ -1536,7 +1638,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
     }
 
     if (instantiateVarArgs) {
-      const TupleType* t = TupleType::getVarArgTuple(context, varargsTypes);
+      const TupleType* t = TupleType::getQualifiedTuple(context, varargsTypes);
       auto formal = faMap.byFormalIdx(varArgIdx).formal()->toVarArgFormal();
       QualifiedType vat = QualifiedType(formal->storageKind(), t);
       substitutions.insert({formal->id(), vat});
@@ -1673,6 +1775,20 @@ resolveFunctionByPoisQuery(Context* context,
   return QUERY_END(result);
 }
 
+// TODO: remove this workaround now that the build uses
+// -Wno-dangling-reference
+static const owned<ResolvedFunction>&
+resolveFunctionByPoisQueryWrapper(Context* context,
+                                  const TypedFnSignature* sig,
+                                  const PoiInfo& poiInfo) {
+  auto poiFnIdsUsedCopy = poiInfo.poiFnIdsUsed();
+  auto recursiveFnsUsedCopy = poiInfo.recursiveFnsUsed();
+
+  return resolveFunctionByPoisQuery(context, sig,
+                                    std::move(poiFnIdsUsedCopy),
+                                    std::move(recursiveFnsUsedCopy));
+}
+
 static const ResolvedFunction* const&
 resolveFunctionByInfoQuery(Context* context,
                            const TypedFnSignature* sig,
@@ -1731,9 +1847,8 @@ resolveFunctionByInfoQuery(Context* context,
                          resolvedPoiInfo.poiFnIdsUsed(),
                          resolvedPoiInfo.recursiveFnsUsed());
       auto& saved =
-        resolveFunctionByPoisQuery(context, newTfsForInitializer,
-                                   resolvedPoiInfo.poiFnIdsUsed(),
-                                   resolvedPoiInfo.recursiveFnsUsed());
+        resolveFunctionByPoisQueryWrapper(context, newTfsForInitializer,
+                                          resolvedPoiInfo);
       const ResolvedFunction* resultInit = saved.get();
       QUERY_STORE_RESULT(resolveFunctionByInfoQuery,
                          context,
@@ -1783,6 +1898,9 @@ resolveFunctionByInfoQuery(Context* context,
     // then, handle return intent overloads and maybe-const formals
     adjustReturnIntentOverloadsAndMaybeConstRefs(visitor);
 
+    // check that throws are handled or forwarded
+    checkThrows(context, resolutionById, fn);
+
     // TODO: can this be encapsulated in a method?
     resolvedPoiInfo.swap(visitor.poiInfo);
     resolvedPoiInfo.setResolved(true);
@@ -1811,9 +1929,7 @@ resolveFunctionByInfoQuery(Context* context,
 
   // Return the unique result from the query (that might have been saved above)
   const owned<ResolvedFunction>& resolved =
-    resolveFunctionByPoisQuery(context, sig,
-                               resolvedPoiInfo.poiFnIdsUsed(),
-                               resolvedPoiInfo.recursiveFnsUsed());
+    resolveFunctionByPoisQueryWrapper(context, sig, resolvedPoiInfo);
 
   const ResolvedFunction* result = resolved.get();
 
@@ -2158,6 +2274,22 @@ doIsCandidateApplicableInitial(Context* context,
   }
 
   CHPL_ASSERT(isFunction(tag) && "expected fn case only by this point");
+
+  if (ci.isMethodCall() && ci.name() == "init") {
+    // TODO: test when record has defaults for type/param fields
+    auto recv = ci.calledType();
+    auto fn = parsing::idToAst(context, candidateId)->toFunction();
+    ResolutionResultByPostorderID r;
+    auto vis = Resolver::createForInitialSignature(context, fn, r);
+    fn->thisFormal()->traverse(vis);
+    auto res = vis.byPostorder.byAst(fn->thisFormal());
+
+    auto got = canPass(context, recv, res.type());
+    if (!got.passes()) {
+      return nullptr;
+    }
+  }
+
   auto ufs = UntypedFnSignature::get(context, candidateId);
   auto faMap = FormalActualMap(ufs, ci);
   auto ret = typedSignatureInitial(context, ufs);
@@ -2222,6 +2354,15 @@ filterCandidatesInitial(Context* context,
   }
 
   return QUERY_END(result);
+}
+
+// TODO: remove this workaround now that the build uses
+// -Wno-dangling-reference
+static const std::vector<const TypedFnSignature*>&
+filterCandidatesInitialWrapper(Context* context,
+                               std::vector<BorrowedIdsWithName>&& lst,
+                               const CallInfo& call) {
+  return filterCandidatesInitial(context, std::move(lst), call);
 }
 
 void
@@ -2343,25 +2484,25 @@ static const Type* getManagedClassType(Context* context,
   if (ci.numActuals() > 0)
     t = ci.actual(0).type().type();
 
-  if (t == nullptr || !(t->isBasicClassType() || t->isClassType())) {
+  if (t == nullptr || !(t->isManageableType() || t->isClassType())) {
     context->error(astForErr, "invalid class type construction");
     return ErroneousType::get(context);
   }
 
-  const BasicClassType* bct = nullptr;
+  const ManageableType* mt = nullptr;
   if (auto ct = t->toClassType()) {
-    bct = ct->basicClassType();
+    mt = ct->manageableType();
     // get nilability from ct
     if (ct->decorator().isNilable())
       d = d.addNilable();
     if (ct->decorator().isNonNilable())
       d = d.addNonNil();
   } else {
-    bct = t->toBasicClassType();
+    mt = t->toManageableType();
   }
 
-  CHPL_ASSERT(bct);
-  return ClassType::get(context, bct, manager, d);
+  CHPL_ASSERT(mt);
+  return ClassType::get(context, mt, manager, d);
 }
 
 static const Type* getNumericType(Context* context,
@@ -2460,11 +2601,72 @@ static const Type* getNumericType(Context* context,
   return nullptr;
 }
 
+static const Type* getCPtrType(Context* context,
+                               const AstNode* astForErr,
+                               const CallInfo& ci) {
+  UniqueString name = ci.name();
+
+  if (name == USTR("c_ptr")) {
+    // Should we compute the generic version of the type (e.g. c_ptr(?))
+    bool useGenericType = false;
+
+    // There should be 0 or 1 actuals depending on if it is ?
+    if (ci.hasQuestionArg()) {
+      // handle c_ptr(?)
+      if (ci.numActuals() != 0) {
+        context->error(astForErr, "invalid c_ptr type construction");
+        return ErroneousType::get(context);
+      }
+      useGenericType = true;
+    } else {
+      // handle c_ptr(?t) or c_ptr(eltT)
+      if (ci.numActuals() != 1) {
+        context->error(astForErr, "invalid c_ptr type construction");
+        return ErroneousType::get(context);
+      }
+
+      QualifiedType qt = ci.actual(0).type();
+      if (qt.type() && qt.type()->isAnyType()) {
+        useGenericType = true;
+      }
+    }
+
+    if (useGenericType) {
+      return CPtrType::get(context);
+    }
+
+    QualifiedType qt;
+    if (ci.numActuals() > 0)
+      qt = ci.actual(0).type();
+
+    const Type* t = qt.type();
+    if (t == nullptr) {
+      // Details not yet known so return UnknownType
+      return UnknownType::get(context);
+    }
+    if (t->isUnknownType() || t->isErroneousType()) {
+      // Just propagate the Unknown / Erroneous type
+      // without raising any errors
+      return t;
+    }
+
+    if (!qt.isType()) {
+      // raise an error b/c of type mismatch
+      context->error(astForErr, "invalid c_ptr type construction");
+      return ErroneousType::get(context);
+    }
+
+    return CPtrType::get(context, qt.type());
+  }
+
+  return nullptr;
+}
+
 static const Type*
 convertClassTypeToNilable(Context* context, const Type* t) {
   const ClassType* ct = nullptr;
 
-  if (auto bct = t->toBasicClassType()) {
+  if (auto bct = t->toManageableType()) {
     auto d = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
     ct = ClassType::get(context, bct, nullptr, d);
   } else {
@@ -2486,6 +2688,8 @@ convertClassTypeToNilable(Context* context, const Type* t) {
 static const Type* resolveFnCallSpecialType(Context* context,
                                             const AstNode* astForErr,
                                             const CallInfo& ci) {
+  // none of the special type function calls are methods; we can stop here.
+  if (ci.isMethodCall()) return nullptr;
 
   if (ci.name() == USTR("?")) {
     if (ci.numActuals() > 0) {
@@ -2497,11 +2701,24 @@ static const Type* resolveFnCallSpecialType(Context* context,
     }
   }
 
+  if (ci.name() == USTR("*") && ci.numActuals() == 2) {
+    auto first = ci.actual(0).type();
+    auto second = ci.actual(1).type();
+    if (first.isParam() && first.type()->isIntType() &&
+        second.isType()) {
+      return TupleType::getStarTuple(context, first, second);
+    }
+  }
+
   if (auto t = getManagedClassType(context, astForErr, ci)) {
     return t;
   }
 
   if (auto t = getNumericType(context, astForErr, ci)) {
+    return t;
+  }
+
+  if (auto t = getCPtrType(context, astForErr, ci)) {
     return t;
   }
 
@@ -2573,8 +2790,28 @@ static bool resolveFnCallSpecial(Context* context,
   return false;
 }
 
-using CandidatesVec = std::vector<const TypedFnSignature*>;
-using ForwardingInfoVec = std::vector<QualifiedType>;
+static CallResolutionResult
+resolveFnCallDomain(Context* context,
+                    const Call* call,
+                    const CallInfo& ci,
+                    const Scope* inScope,
+                    const PoiScope* inPoiScope) {
+  // TODO: a compiler-generated type constructor would be simpler, but we
+  // don't support default values on compiler-generated methods because the
+  // default values require existing AST.
+
+  // Note: 'dmapped' is treated like a binary operator at the moment, so
+  // we don't need to worry about distribution type for 'domain(...)' exprs.
+
+  // Transform domain type expressions like `domain(arg1, ...)` into:
+  //   _domain.static_type(arg1, ...)
+  auto genericDom = DomainType::getGenericDomainType(context);
+  auto recv = QualifiedType(QualifiedType::TYPE, genericDom);
+  auto typeCtorName = UniqueString::get(context, "static_type");
+  auto ctorCall = CallInfo::createWithReceiver(ci, recv, typeCtorName);
+
+  return resolveCall(context, call, ctorCall, inScope, inPoiScope);
+}
 
 static MostSpecificCandidates
 resolveFnCallForTypeCtor(Context* context,
@@ -2627,6 +2864,7 @@ considerCompilerGeneratedCandidates(Context* context,
   // fetch the receiver type info
   CHPL_ASSERT(ci.numActuals() >= 1);
   auto& receiver = ci.actual(0);
+  // TODO: This should be the QualifiedType in case of type methods
   auto receiverType = receiver.type().type();
 
   // if not compiler-generated, then nothing to do
@@ -2696,6 +2934,10 @@ lookupCalledExpr(Context* context,
     config |= LOOKUP_ONLY_METHODS_FIELDS;
   }
 
+  if (ci.isOpCall()) {
+    config |= LOOKUP_METHODS;
+  }
+
   UniqueString name = ci.name();
 
   auto ret = lookupNameInScopeWithSet(context, scope, receiverScopes, name,
@@ -2732,16 +2974,12 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                     CandidatesVec& poiCandidates,
                                     ForwardingInfoVec& nonPoiForwardingTo,
                                     ForwardingInfoVec& poiForwardingTo) {
-  nonPoiCandidates.empty();
-  poiCandidates.empty();
-  nonPoiForwardingTo.empty();
-  poiForwardingTo.empty();
 
   const Type* receiverType = ci.actual(0).type().type();
 
   // Resolve the forwarding expression's types & decide if we
   // want to consider forwarding.
-  const ResolvedFields* forwards = nullptr;
+  ResolvedFields forwards;
   UniqueString name = ci.name();
   if (name == USTR("init") || name == USTR("init=") || name == USTR("deinit")) {
     // these are exempt from forwarding
@@ -2749,23 +2987,31 @@ gatherAndFilterCandidatesForwarding(Context* context,
     auto useDefaults = DefaultsPolicy::USE_DEFAULTS;
     const ResolvedFields& fields = fieldsForTypeDecl(context, ct,
                                                      useDefaults);
-    if (fields.numForwards() > 0) {
+    const ResolvedFields& exprs = resolveForwardingExprs(context, ct);
+    if (fields.numForwards() > 0 ||
+        exprs.numForwards() > 0) {
       // and check for cycles
       bool cycleFound = emitErrorForForwardingCycles(context, ct);
       if (cycleFound == false) {
-        forwards = &fields;
+        forwards.addForwarding(fields);
+        forwards.addForwarding(exprs);
       }
     }
   }
 
-  if (forwards) {
+  if (forwards.numForwards() > 0) {
     // Construct CallInfos with the receiver replaced for each
     // of the forwarded-to types.
     std::vector<CallInfo> forwardingCis;
 
-    int numForwards = forwards->numForwards();
+    int numForwards = forwards.numForwards();
     for (int i = 0; i < numForwards; i++) {
-      QualifiedType forwardType = forwards->forwardingToType(i);
+      QualifiedType forwardType = forwards.forwardingToType(i);
+
+      // an error occurred, skip it
+      if (forwardType.isUnknown() || forwardType.hasTypePtr() == false)
+        continue;
+
       std::vector<CallInfoActual> actuals;
       // compute the actuals
       // first, the method receiver (from the forwarded type)
@@ -2819,7 +3065,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
 
         // filter without instantiating yet
         const auto& initialCandidates =
-          filterCandidatesInitial(context, v, fci);
+          filterCandidatesInitialWrapper(context, std::move(v), fci);
 
         // find candidates, doing instantiation if necessary
         filterCandidatesInstantiating(context,
@@ -2855,7 +3101,8 @@ gatherAndFilterCandidatesForwarding(Context* context,
         auto v = lookupCalledExpr(context, curPoi->inScope(), fci, visited[i]);
 
         // filter without instantiating yet
-        auto& initialCandidates = filterCandidatesInitial(context, v, fci);
+        auto& initialCandidates =
+          filterCandidatesInitialWrapper(context, std::move(v), fci);
 
         // find candidates, doing instantiation if necessary
         filterCandidatesInstantiating(context,
@@ -2889,6 +3136,28 @@ gatherAndFilterCandidatesForwarding(Context* context,
       }
     }
   }
+}
+
+// TODO: Could/should this be a parsing query?
+static bool isInsideForwarding(Context* context, const Call* call) {
+  bool insideForwarding = false;
+  if (call != nullptr) {
+    auto p = parsing::parentAst(context, call);
+    while (p != nullptr) {
+      // If we encounter an aggregate or function, we're definitely not in
+      // a forwarding statement.
+      if (p->isAggregateDecl() || p->isFunction()) break;
+
+      if (p->isForwardingDecl()) {
+        insideForwarding = true;
+        break;
+      }
+
+      p = parsing::parentAst(context, p);
+    }
+  }
+
+  return insideForwarding;
 }
 
 // Returns candidates (including instantiating candidates)
@@ -2929,7 +3198,8 @@ gatherAndFilterCandidates(Context* context,
     auto v = lookupCalledExpr(context, inScope, ci, visited);
 
     // filter without instantiating yet
-    const auto& initialCandidates = filterCandidatesInitial(context, v, ci);
+    const auto& initialCandidates =
+      filterCandidatesInitialWrapper(context, std::move(v), ci);
 
     // find candidates, doing instantiation if necessary
     filterCandidatesInstantiating(context,
@@ -2955,7 +3225,8 @@ gatherAndFilterCandidates(Context* context,
     auto v = lookupCalledExpr(context, curPoi->inScope(), ci, visited);
 
     // filter without instantiating yet
-    const auto& initialCandidates = filterCandidatesInitial(context, v, ci);
+    const auto& initialCandidates =
+      filterCandidatesInitialWrapper(context, std::move(v), ci);
 
     // find candidates, doing instantiation if necessary
     filterCandidatesInstantiating(context,
@@ -2969,7 +3240,28 @@ gatherAndFilterCandidates(Context* context,
   // If no candidates were found and it's a method, try forwarding
   if (candidates.empty() && ci.isMethodCall() && ci.numActuals() >= 1) {
     const Type* receiverType = ci.actual(0).type().type();
-    if (typeUsesForwarding(context, receiverType)) {
+
+    // TODO: Should this information come as a boolean argument set by the
+    // Resolver? It would be less expensive to set a boolean on Resolver once
+    // we encounter a ForwardingDecl.
+    //
+    // Possible recursion here when resolving a function call in a forwarding
+    // statement:
+    //     record R { forwarding foo(); }
+    // We need to try resolving 'foo()' as a method on 'R', which eventually
+    // leads us back to this path here.
+    //
+    // By skipping the gathering of forwarding candidates below, we also
+    // prevent forwarding statements from containing expressions that
+    // themselves require forwarding. For example, if you had a couple of
+    // forwarding statements like:
+    //     forwarding b;
+    //     forwarding bar();
+    // The 'isInsideForwarding' check below would prevent resolving a method
+    // 'bar()' on 'b'.
+
+    if (typeUsesForwarding(context, receiverType) &&
+        !isInsideForwarding(context, call)) {
       CandidatesVec nonPoiCandidates;
       CandidatesVec poiCandidates;
       ForwardingInfoVec nonPoiForwardingTo;
@@ -3081,7 +3373,9 @@ CallResolutionResult resolveFnCall(Context* context,
   PoiInfo poiInfo;
   MostSpecificCandidates mostSpecific;
 
-  if (ci.calledType().kind() == QualifiedType::TYPE) {
+  // Note: currently type constructors are not implemented as methods
+  if (ci.calledType().kind() == QualifiedType::TYPE &&
+      ci.isMethodCall() == false) {
     // handle invocation of a type constructor from a type
     // (note that we might have the type through a type alias)
     mostSpecific = resolveFnCallForTypeCtor(context, ci,
@@ -3229,7 +3523,10 @@ static bool shouldAttemptImplicitReceiver(const CallInfo& ci,
                                           QualifiedType implicitReceiver) {
   return !ci.isMethodCall() &&
          !ci.isOpCall() &&
-         implicitReceiver.type() != nullptr;
+         implicitReceiver.type() != nullptr &&
+         // Assuming ci.name().isEmpty()==true implies a primitive call.
+         // TODO: Add some kind of 'isPrimitive()' to CallInfo
+         !ci.name().isEmpty();
 }
 
 CallResolutionResult resolveCall(Context* context,
@@ -3246,6 +3543,10 @@ CallResolutionResult resolveCall(Context* context,
     if (resolveFnCallSpecial(context, call, ci, tmpRetType)) {
       return CallResolutionResult(std::move(tmpRetType));
     }
+    if (ci.name() == "domain" && !ci.isMethodCall()) {
+      return resolveFnCallDomain(context, call, ci, inScope, inPoiScope);
+    }
+
     // otherwise do regular call resolution
     return resolveFnCall(context, call, ci, inScope, inPoiScope);
   } else if (auto prim = call->toPrimCall()) {
@@ -3474,6 +3775,31 @@ bool isTypeDefaultInitializable(Context* context, const Type* t) {
   return isTypeDefaultInitializableQuery(context, t);
 }
 
+
+template <typename T>
+QualifiedType paramTypeFromValue(Context* context, T value);
+
+template <>
+QualifiedType paramTypeFromValue<bool>(Context* context, bool value) {
+  return QualifiedType(QualifiedType::PARAM,
+                       BoolType::get(context, 0),
+                       BoolParam::get(context, value));
+}
+
+const std::unordered_map<UniqueString, QualifiedType>&
+getCompilerGeneratedGlobals(Context* context) {
+  QUERY_BEGIN(getCompilerGeneratedGlobals, context);
+
+  auto& globals = compilerGlobals(context);
+  std::unordered_map<UniqueString, QualifiedType> result;
+  #define COMPILER_GLOBAL(TYPE__, IDENT__, NAME__)\
+    result[UniqueString::get(context, IDENT__)] = \
+      paramTypeFromValue<TYPE__>(context, globals.NAME__);
+  #include "chpl/uast/compiler-globals-list.h"
+  #undef COMPILER_GLOBAL
+
+  return QUERY_END(result);
+}
 
 
 } // end namespace resolution

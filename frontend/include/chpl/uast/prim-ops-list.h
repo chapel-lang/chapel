@@ -123,6 +123,8 @@ PRIMITIVE_R(QUERY, "query")
 PRIMITIVE_R(QUERY_PARAM_FIELD, "query param field")
 PRIMITIVE_R(QUERY_TYPE_FIELD, "query type field")
 
+PRIMITIVE_R(STATIC_DOMAIN_TYPE, "static domain type")
+
 PRIMITIVE_G(ADDR_OF, "addr of")
 PRIMITIVE_G(DEREF, "deref")
 PRIMITIVE_G(SET_REFERENCE, "set reference")
@@ -294,6 +296,7 @@ PRIMITIVE_G(GET_SVEC_MEMBER_VALUE, "get svec member value")
 
 PRIMITIVE_G(VIRTUAL_METHOD_CALL, "virtual method call")
 
+PRIMITIVE_R(SIMPLE_TYPE_NAME, "simple type name")
 PRIMITIVE_R(NUM_FIELDS, "num fields")
 PRIMITIVE_R(FIELD_NUM_TO_NAME, "field num to name")
 PRIMITIVE_R(FIELD_NAME_TO_NUM, "field name to num")

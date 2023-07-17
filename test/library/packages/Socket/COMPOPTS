@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+ccflags=$(pkg-config --cflags libevent)
+ldflags=$(pkg-config --libs libevent)
+
+echo "${ccflags:+--ccflags '$ccflags'} ${ldflags:+--ldflags '$ldflags'}"
