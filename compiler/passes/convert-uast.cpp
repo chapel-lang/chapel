@@ -944,6 +944,13 @@ struct Converter {
       if (auto ret = convertModuleDot(node)) {
         return ret;
       }
+      if (inImportOrUse) {
+        // Skip "special" things like .locale handling if we're in
+        // something like `import M.locale`, which _should_ be valid for
+        // importing tertiary methods.
+
+        return new CallExpr(".", base, new_CStringSymbol(member.c_str()));
+      }
       return buildDotExpr(base, member.c_str());
     }
   }
