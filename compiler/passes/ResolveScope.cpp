@@ -1149,6 +1149,9 @@ bool ResolveScope::matchesTypeWithMethods(const char* name) const {
     return true;
   }
 
+  // If it doesn't re-export, no point checking public uses for matching methods.
+  if (!this->canReexport) return false;
+
   for_vector_allowing_0s(VisibilityStmt, visStmt, mUseImportList) {
     // Note: assumes that UseStmt and ImportStmt are the only subclasses of
     // VisibilityStmt
