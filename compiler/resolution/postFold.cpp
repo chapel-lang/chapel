@@ -139,6 +139,8 @@ Expr* postFold(Expr* expr) {
                     }
                   }
                 }
+                // TODO: Is this still necessary? The normalizer probably
+                // covers this case now.
                 if (hasQuestionArg && lhsSe->symbol()->hasFlag(FLAG_TEMP)) {
                   lhsSe->symbol()->addFlag(FLAG_MARKED_GENERIC);
                 }

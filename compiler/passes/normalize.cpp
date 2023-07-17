@@ -2469,6 +2469,24 @@ static void insertCallTemps(CallExpr* call) {
   }
 }
 
+// adds FLAG_MARKED_GENERIC to 'var' if the type contains a ?
+// actual or an actual that is a temp marked with that flag.
+static void propagateMarkedGeneric(Symbol* var, Expr* typeExpr) {
+  if (SymExpr* se = toSymExpr(typeExpr)) {
+    Symbol* sym = se->symbol();
+    if (sym == gUninstantiated ||
+        (sym->hasFlag(FLAG_MARKED_GENERIC) && sym->hasFlag(FLAG_TEMP)))
+      var->addFlag(FLAG_MARKED_GENERIC);
+  } else if (CallExpr* call = toCallExpr(typeExpr)) {
+    if (call->baseExpr)
+      propagateMarkedGeneric(var, call->baseExpr);
+
+    for_actuals(actual, call) {
+      propagateMarkedGeneric(var, actual);
+    }
+  }
+}
+
 // returns the added call temp's symbol
 static Symbol *insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
   SET_LINENO(call);
@@ -2515,6 +2533,10 @@ static Symbol *insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
     // attempt to access the method on the super type.
     tmp->addFlag(FLAG_SUPER_TEMP);
   }
+
+  // Set FLAG_MARKED_GENERIC if there was a (?) argument here or
+  // one of the nested calls used one.
+  propagateMarkedGeneric(tmp, call);
 
   call->replace(new SymExpr(tmp));
 
@@ -2660,6 +2682,8 @@ static bool moveMakesTypeAlias(CallExpr* call) {
 ************************************** | *************************************/
 
 static void emitTypeAliasInit(Expr* after, Symbol* var, Expr* init) {
+  propagateMarkedGeneric(var, init);
+
   // Generate a type constructor call for generic-with-defaults types
   // (Note, this does not work correctly during resolution).
   // TODO: get it working in resolution
