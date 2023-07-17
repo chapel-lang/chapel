@@ -2,7 +2,8 @@ use FileSystem;
 use Path;
 
 proc repr(str) {
-  writef("%ht\n", str.encode(policy=encodePolicy.unescape));
+  use IO;
+  stdout.writeBytes(str.encode(policy=encodePolicy.unescape));
 }
 
 const dirName = b"\xffNOT\xffUTF8\xff".decode(policy=decodePolicy.escape);

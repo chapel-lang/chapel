@@ -30,7 +30,7 @@ var bytesChannel = openTempFile();
 {
   // read them into a different object
   var bytesReader = bytesChannel.reader();
-  var readBytes = = bytesReader.readAll(bytes);
+  var readBytes = bytesReader.readAll(bytes);
   bytesReader.close();
   // compare
   if readBytes == randomBytes {

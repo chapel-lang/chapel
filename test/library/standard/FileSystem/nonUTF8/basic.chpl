@@ -127,7 +127,7 @@ for f in listDir(dirname1) {
   l.pushBack(f);
 }
 for f in sorted(l.toArray()) {
-  writef("%ht\n", f.encode(policy=encodePolicy.unescape));
+  stdout.writeBytes(f.encode(policy=encodePolicy.unescape));
 }
 writeln();
 

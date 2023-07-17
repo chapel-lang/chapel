@@ -1,4 +1,5 @@
 use HashedDist;
+use IO, ChplFormat;
 
 record MyMapper {
   proc this(ind, targetLocs: [] locale) {
@@ -12,4 +13,4 @@ var D: domain(int) dmapped Hashed(idxType=int, mapper=new MyMapper());
 D += 0;
 D += 1;
 
-writef("%ht\n", D);
+stdout.withSerializer(ChplSerializer).writef("%ht\n", D);
