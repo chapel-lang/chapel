@@ -3479,6 +3479,10 @@ void init_fixedHeap(void) {
 
   if ((page_size = get_hugepageSize()) == 0) {
     have_hugepages = false;
+  } else {
+    have_hugepages = true;
+  }
+  if (!have_hugepages) {
     page_size = chpl_getSysPageSize();
     //
     // We'll make a fixed heap, on whole pages.
@@ -3510,7 +3514,6 @@ void init_fixedHeap(void) {
     if (start == NULL)
       chpl_error("cannot create fixed heap: cannot get memory", 0, 0);
   } else {
-    have_hugepages = true;
     //
     // We'll make a fixed heap on whole hugepages.
     //
@@ -3562,10 +3565,21 @@ size_t get_hugepageSize(void) {
 
 static
 void init_hugepageSize(void) {
-  if (chpl_numNodes > 1
-      && getenv("HUGETLB_DEFAULT_PAGE_SIZE") != NULL) {
+  chpl_bool use_hugepages = chpl_env_rt_get_bool("COMM_OFI_USE_HUGEPAGES",
+                                                 false);
+  if ((chpl_numNodes > 1) && use_hugepages &&
+      (getenv("HUGETLB_DEFAULT_PAGE_SIZE") != NULL)) {
     hugepageSize = chpl_comm_ofi_hp_gethugepagesize();
   }
+
+  if (use_hugepages && (hugepageSize == 0)) {
+    if (chpl_comm_ofi_hp_supported()) {
+      chpl_error("Unable to get hugepage size. "
+                 "Ensure that a hugepage module is loaded.", 0, 0);
+    } else {
+      chpl_error("Chapel was not built with hugepage support.", 0, 0);
+    }
+ }
 
   DBG_PRINTF(DBG_HUGEPAGES,
              "setting hugepage info: use hugepages %s, sz %#zx",

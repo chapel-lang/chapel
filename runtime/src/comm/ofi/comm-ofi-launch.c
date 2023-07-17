@@ -88,5 +88,7 @@ void chpl_comm_preLaunch(int32_t numLocales) {
   // Don't map virtual hugepages to physical pages if we allocate a
   // fixed heap.
   //
-  chpl_env_set("HUGETLB_NO_RESERVE", "yes", 0);
+  if (chpl_env_rt_get_bool("COMM_OFI_USE_HUGEPAGES", false)) {
+    chpl_env_set("HUGETLB_NO_RESERVE", "yes", 0);
+  }
 }
