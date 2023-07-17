@@ -716,7 +716,7 @@ const char* FunctionType::typeToString(Type* t) {
   if (vt == dtBools[BOOL_SIZE_DEFAULT]) return "bool";
   if (vt == dtComplex[COMPLEX_SIZE_DEFAULT]) return "complex";
   if (vt == dtImag[FLOAT_SIZE_DEFAULT]) return "imag";
-  auto ret = vt->symbol->cname;
+  auto ret = vt->symbol->name;
   return ret;
 }
 

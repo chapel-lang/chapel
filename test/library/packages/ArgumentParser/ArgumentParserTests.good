@@ -1,484 +1,484 @@
-testSingleStringShortOpt()
+proc testSingleStringShortOpt(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testSingleStringShortOptEquals()
+proc testSingleStringShortOptEquals(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testSingleStringShortOptEqualsExtra()
+proc testSingleStringShortOptEqualsExtra(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testBadArgsAtFront()
+proc testBadArgsAtFront(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testMultiStringShortOptEqualsOK()
+proc testMultiStringShortOptEqualsOK(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testTryMakeEmptyOpts()
+proc testTryMakeEmptyOpts(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testThreeMultiStringShortOptPartValEquals()
+proc testThreeMultiStringShortOptPartValEquals(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testTryMakeBadOptID()
+proc testTryMakeBadOptID(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testSingleStringShortOptRepeated()
+proc testSingleStringShortOptRepeated(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testRangeStringShortOptRepeated()
+proc testRangeStringShortOptRepeated(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testRangeStringShortOptRepeatedTooManyFirst()
+proc testRangeStringShortOptRepeatedTooManyFirst(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testOptSingleStringShortOptNoOpts()
+proc testOptSingleStringShortOptNoOpts(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testOptSingleStringShortReqOptNoOpts()
+proc testOptSingleStringShortReqOptNoOpts(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testOptSingleStringShortReqOptReqVal()
+proc testOptSingleStringShortReqOptReqVal(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testNoOptsDefined()
+proc testNoOptsDefined(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testNoOptsDefinedUnknownOptGiven()
+proc testNoOptsDefinedUnknownOptGiven(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testOptRangeStringShortOpt1Val()
+proc testOptRangeStringShortOpt1Val(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testOptRangeStringShortOptOptNoVal()
+proc testOptRangeStringShortOptOptNoVal(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testOptRangeStringShortOptPresentNoVal()
+proc testOptRangeStringShortOptPresentNoVal(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testOptRangeStringShortOptExtraVal()
+proc testOptRangeStringShortOptExtraVal(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testOptRangeStringShortOptOkValBadArg()
+proc testOptRangeStringShortOptOkValBadArg(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testSingleStringShortOptNoOpts()
+proc testSingleStringShortOptNoOpts(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testSingleStringLongOpt()
+proc testSingleStringLongOpt(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testMultiStringShortOpt()
+proc testMultiStringShortOpt(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testMultiStringLongOpt()
+proc testMultiStringLongOpt(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testMultiStringShortOptVar()
+proc testMultiStringShortOptVar(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testMultiStringLongOptVar()
+proc testMultiStringLongOptVar(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testMultiStringShortOptVarLess()
+proc testMultiStringShortOptVarLess(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testMultiStringShortOptVarLessThanMin()
+proc testMultiStringShortOptVarLessThanMin(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testMultiStringShortOptVarMore()
+proc testMultiStringShortOptVarMore(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testMultiStringShortOptVarNoVal()
+proc testMultiStringShortOptVarNoVal(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testSingleStringShortOptNoVal()
+proc testSingleStringShortOptNoVal(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testUnboundStringLongOptVar()
+proc testUnboundStringLongOptVar(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testTwoStringShortOpt()
+proc testTwoStringShortOpt(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testThreeStringShortOpt()
+proc testThreeStringShortOpt(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testThreeStringShortOptMissingFirst()
+proc testThreeStringShortOptMissingFirst(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testThreeStringShortOptMissingMiddle()
+proc testThreeStringShortOptMissingMiddle(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testThreeStringShortOptMissingLast()
+proc testThreeStringShortOptMissingLast(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testThreeStringShortOptExtraFirst()
+proc testThreeStringShortOptExtraFirst(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testThreeStringShortOptExtraMiddle()
+proc testThreeStringShortOptExtraMiddle(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testThreeStringShortOptExtraLast()
+proc testThreeStringShortOptExtraLast(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testThreeStringShortOptExtraMidMissingLast()
+proc testThreeStringShortOptExtraMidMissingLast(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testThreeMixedStringShortOptAllValues()
+proc testThreeMixedStringShortOptAllValues(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testThreeMultiStringShortOptPartialValues()
+proc testThreeMultiStringShortOptPartialValues(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testSingleStringShortOptDefNoVal()
+proc testSingleStringShortOptDefNoVal(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testSingleStringShortOptDefOneVal()
+proc testSingleStringShortOptDefOneVal(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testMultStringShortOptDefMultiVal()
+proc testMultStringShortOptDefMultiVal(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testMultStringShortOptDefMultiValNoVal()
+proc testMultStringShortOptDefMultiValNoVal(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testMultStringShortOptDefMultiValReqVal()
+proc testMultStringShortOptDefMultiValReqVal(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testMultStringShortOptDefMultiValReqNoVal()
+proc testMultStringShortOptDefMultiValReqNoVal(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testTryMakeIntListOpts()
+proc testTryMakeIntListOpts(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testTryMakeIntOpt()
+proc testTryMakeIntOpt(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testTryMakeBoolListOpts()
+proc testTryMakeBoolListOpts(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testTryMakeBoolOpt()
+proc testTryMakeBoolOpt(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testEmptyListDefaultVal()
+proc testEmptyListDefaultVal(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testTryDuplicateNameOpt()
+proc testTryDuplicateNameOpt(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testTryDuplicateShortOpt()
+proc testTryDuplicateShortOpt(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testTryDuplicateLongOpt()
+proc testTryDuplicateLongOpt(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testAddSubCommand()
+proc testAddSubCommand(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testOptionPlusSubCommand()
+proc testOptionPlusSubCommand(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testAddSubCommandSubOptions()
+proc testAddSubCommandSubOptions(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testAddArgAndSubCommandOnlyArgUsed()
+proc testAddArgAndSubCommandOnlyArgUsed(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testAddArgAndSubCommandNoUseEither()
+proc testAddArgAndSubCommandNoUseEither(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testAddTwoSubCommandUseFirst()
+proc testAddTwoSubCommandUseFirst(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testAddTwoSubCommandUseSecond()
+proc testAddTwoSubCommandUseSecond(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testAddTwoSubCommandUseNone()
+proc testAddTwoSubCommandUseNone(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testAddTwoSubCommandUseUndefined()
+proc testAddTwoSubCommandUseUndefined(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testAddTwoSubCommandUseUndefinedWithGood()
+proc testAddTwoSubCommandUseUndefinedWithGood(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testStringShortOptVarBadVarNoVal()
+proc testStringShortOptVarBadVarNoVal(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testRangeStringShortOptRepeatedAllowableCount()
+proc testRangeStringShortOptRepeatedAllowableCount(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testOptionsWithSubCommandSubOptions()
+proc testOptionsWithSubCommandSubOptions(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testOptionsRangeWithSubCommandSubOptions()
+proc testOptionsRangeWithSubCommandSubOptions(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testOptionsRangeWithSubCommandSameSubOptions()
+proc testOptionsRangeWithSubCommandSameSubOptions(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testOptsRangeWithSubCommandSameSubOptionsLow()
+proc testOptsRangeWithSubCommandSameSubOptionsLow(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testFromArgParseExample()
+proc testFromArgParseExample(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testOptRangeMixedWithLeadingDash()
+proc testOptRangeMixedWithLeadingDash(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testBoolFlag()
+proc testBoolFlag(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testBoolLongFlag()
+proc testBoolLongFlag(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testBoolLongNoFlag()
+proc testBoolLongNoFlag(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testSubCommandAndBoolLongFlag()
+proc testSubCommandAndBoolLongFlag(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testParentCommandSubCommandAndBoolLongFlag()
+proc testParentCommandSubCommandAndBoolLongFlag(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testBoolEqFlag()
+proc testBoolEqFlag(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testBoolEqForceOneFlag()
+proc testBoolEqForceOneFlag(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testBoolForceOneFlag()
+proc testBoolForceOneFlag(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testBoolZeroToOneFlagNoVal()
+proc testBoolZeroToOneFlagNoVal(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testBoolForceOneFlagNoVal()
+proc testBoolForceOneFlagNoVal(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testBoolForceOneFlagExtraGiven()
+proc testBoolForceOneFlagExtraGiven(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testBoolRangeFlagExtraGiven()
+proc testBoolRangeFlagExtraGiven(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testTryMakeBadFlagRange()
+proc testTryMakeBadFlagRange(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testTryMakeNonSenseFlag()
+proc testTryMakeNonSenseFlag(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testTryMakeNonSenseFlagRange()
+proc testTryMakeNonSenseFlagRange(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testTryMakeNonSenseFlagFixed()
+proc testTryMakeNonSenseFlagFixed(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testBoolZeroToOneFlagNoValDefaultTrue()
+proc testBoolZeroToOneFlagNoValDefaultTrue(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testBoolZeroToOneFlagNoValDefaultFalse()
+proc testBoolZeroToOneFlagNoValDefaultFalse(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testBoolOneFlagNoValDefaultTrue()
+proc testBoolOneFlagNoValDefaultTrue(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testBoolOneFlagNoValDefaultFalse()
+proc testBoolOneFlagNoValDefaultFalse(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testBoolZeroFlagNoValDefaultTrue()
+proc testBoolZeroFlagNoValDefaultTrue(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testBoolZeroFlagNoValDefaultFalse()
+proc testBoolZeroFlagNoValDefaultFalse(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testBoolMultipleEntryValues()
+proc testBoolMultipleEntryValues(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testFlagBadBoolValue()
+proc testFlagBadBoolValue(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testFlagBadBoolNumArgs()
+proc testFlagBadBoolNumArgs(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-unitTestStringToBool()
+proc unitTestStringToBool(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testSinglePositionalArgument()
+proc testSinglePositionalArgument(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testPositionalArgumentDefault()
+proc testPositionalArgumentDefault(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testPositionalArgumentOptionalMissing()
+proc testPositionalArgumentOptionalMissing(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testPositionalArgumentRangeOneOrMore()
+proc testPositionalArgumentRangeOneOrMore(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testPositionalArgumentTooManyVals()
+proc testPositionalArgumentTooManyVals(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testPositionalArgumentNotEnoughVals()
+proc testPositionalArgumentNotEnoughVals(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testPositionalArgumentNoVals()
+proc testPositionalArgumentNoVals(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testPositionalArgumentRangeBeforePos()
+proc testPositionalArgumentRangeBeforePos(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testMixPosBoolOptWithValues()
+proc testMixPosBoolOptWithValues(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testMixPosBoolOptWithValuesFixed()
+proc testMixPosBoolOptWithValuesFixed(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testMixPosBoolOptWithValuesFixedPosAfterBool()
+proc testMixPosBoolOptWithValuesFixedPosAfterBool(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testMixPosBoolOptWithValuesFixedPosInterMixed()
+proc testMixPosBoolOptWithValuesFixedPosInterMixed(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testMixPosBoolOptWithValuesPosInterMixedRange()
+proc testMixPosBoolOptWithValuesPosInterMixedRange(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testMixPosBoolOptPosInterMixedRangeWithVals()
+proc testMixPosBoolOptPosInterMixedRangeWithVals(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testMixPosBoolOptPosInterMixedRangeDefVals()
+proc testMixPosBoolOptPosInterMixedRangeDefVals(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testMixPosBoolOptPosInterMixedRangeNoVals()
+proc testMixPosBoolOptPosInterMixedRangeNoVals(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testMixPosBoolOptWithValuesSubCommand()
+proc testMixPosBoolOptWithValuesSubCommand(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testMixPosBoolOptWithValuesSubCommandLight()
+proc testMixPosBoolOptWithValuesSubCommandLight(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testMockMasonNew()
+proc testMockMasonNew(test: Test) { ... }
 USAGE: mason [-h, --help] [-V, --version] [SUBCOMMAND]
 
 OPTIONS:
@@ -518,85 +518,85 @@ OPTIONS:
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testMockMasonNewDiffName()
+proc testMockMasonNewDiffName(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testMockMasonNewTypical()
+proc testMockMasonNewTypical(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testMockMasonAddExternal()
+proc testMockMasonAddExternal(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testMockMasonRun()
+proc testMockMasonRun(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testPassthrough()
+proc testPassthrough(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testPassthroughWithPositional()
+proc testPassthroughWithPositional(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testPassthroughWithPositionalNoVals()
+proc testPassthroughWithPositionalNoVals(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testSubCmdAndPassThruOnMain()
+proc testSubCmdAndPassThruOnMain(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testDefaultNameOpts()
+proc testDefaultNameOpts(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testDefaultNameToOpts()
+proc testDefaultNameToOpts(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testRangeConverter()
+proc testRangeConverter(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testSimpleNegativeIntegerArguments()
+proc testSimpleNegativeIntegerArguments(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testSimpleNegativeIntegerOptions()
+proc testSimpleNegativeIntegerOptions(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testMixedNegativeIntegerArgsOptions()
+proc testMixedNegativeIntegerArgsOptions(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testOptionZeroValueDetection()
+proc testOptionZeroValueDetection(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testMinimalHelp()
+proc testMinimalHelp(test: Test) { ... }
 This is a custom help message for testing
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testNoHelp()
+proc testNoHelp(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testCustomHelpString()
+proc testCustomHelpString(test: Test) { ... }
 Custom Message
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testCustomHandlerNoHelp()
+proc testCustomHandlerNoHelp(test: Test) { ... }
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testGenerateHelp()
+proc testGenerateHelp(test: Test) { ... }
 USAGE: progName <files ...> [-h, --help] [--flagOne] [--optionOne <OPTIONONE>] [SUBCOMMAND]
 
 ARGUMENTS:
@@ -614,7 +614,7 @@ SUBCOMMANDS:
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testGenerateEmptyHelp()
+proc testGenerateEmptyHelp(test: Test) { ... }
 USAGE: progName <files ...> [-h, --help] [--flagOne] [--optionOne <OPTIONONE>] [SUBCOMMAND]
 
 ARGUMENTS:
