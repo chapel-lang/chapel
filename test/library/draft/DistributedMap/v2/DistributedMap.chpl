@@ -445,7 +445,7 @@ module DistributedMap {
         ch._readLiteral(": ");
         ch.read(val);
 
-        this.addOrSetUnlocked(key, val);
+        this.addOrReplaceUnlocked(key, val);
       }
 
       ch._readLiteral("}");
@@ -612,7 +612,7 @@ module DistributedMap {
        set it to `v`. If the map already contains a value at position
        `k`, update it to the value `v`.
      */
-    proc addOrSet(in k: keyType, in v: valType) {
+    proc addOrReplace(in k: keyType, in v: valType) {
       var loc: int = this.getLocaleForKey(k);
 
       on loc {
@@ -629,7 +629,7 @@ module DistributedMap {
     // only be used when you know you control the accesses to the map and will
     // be managing race conditions yourself
     @chpldoc.nodoc
-    proc addOrSetUnlocked(in k: keyType, in v: valType) {
+    proc addOrReplaceUnlocked(in k: keyType, in v: valType) {
       var loc: int = this.getLocaleForKey(k);
 
       on loc {
