@@ -577,12 +577,14 @@ void update_symbols(BaseAST* ast, SymbolMap* map) {
         // BENHARSH TODO 2019-06-20: I think we need to do this because in
         // some cases the SymbolMap contains a mapping from the generic 'T' to
         // an instantiation of 'T'. Is that mapping necessary?
-        CallExpr* call = toCallExpr(sym_expr->parentExpr);
-        if (call != NULL && call->baseExpr == sym_expr) {
-          if (y->getValType()->symbol->hasFlag(FLAG_TUPLE) == false &&
-              y->getValType() != dtUnknown &&
-              sym_expr->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-            skip = true;
+        if (isTypeSymbol(sym_expr->parentSymbol)) {
+          CallExpr* call = toCallExpr(sym_expr->parentExpr);
+          if (call != NULL && call->baseExpr == sym_expr) {
+            if (y->getValType()->symbol->hasFlag(FLAG_TUPLE) == false &&
+                y->getValType() != dtUnknown &&
+                sym_expr->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+              skip = true;
+            }
           }
         }
 

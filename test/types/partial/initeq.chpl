@@ -29,7 +29,7 @@ proc W.init=(other : ?T) where isSubtype(T, W) == false {
 }
 
 proc helper(type T, val) {
-  var x : T = val;
+  var x : T(?) = val;
   writeln("initialized '", T:string, "' from '", val.type:string, "' resulting in '", x.type:string, "'");
 }
 
