@@ -94,8 +94,7 @@ static void chpl_gpu_impl_set_globals(c_sublocid_t dev_id, CUmodule module) {
   size_t glob_size;
   CUDA_CALL(cuModuleGetGlobal(&ptr, &glob_size, module, "chpl_nodeID"));
   assert(glob_size == sizeof(c_nodeid_t));
-  chpl_gpu_impl_copy_host_to_device(dev_id, (void*)ptr, &chpl_nodeID,
-                                    glob_size);
+  chpl_gpu_impl_copy_host_to_device((void*)ptr, &chpl_nodeID, glob_size);
 }
 
 void chpl_gpu_impl_use_device(c_sublocid_t dev_id) {
@@ -215,7 +214,7 @@ static void chpl_gpu_launch_kernel_help(int ln,
                                              CHPL_RT_MD_GPU_KERNEL_ARG,
                                              ln, fn);
 
-      chpl_gpu_impl_copy_host_to_device(dev_id, *kernel_params[i], cur_arg,
+      chpl_gpu_impl_copy_host_to_device(*kernel_params[i], cur_arg,
                                         cur_arg_size);
 
       CHPL_GPU_DEBUG("\tKernel parameter %d: %p (device ptr)\n",
