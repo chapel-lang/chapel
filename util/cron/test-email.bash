@@ -11,7 +11,7 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="test-email"
 $CWD/nightly -cron -hellos ${nightly_args}
 if [ $? -ne 0 ] 
    then
-     log_error "chpl pidigits.chpl failed to compile" 
+     log_error "Got errored out in the test" 
      exit 1
    else
      log_info "Compiled pidigits.chpl"  
