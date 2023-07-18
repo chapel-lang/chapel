@@ -967,7 +967,7 @@ proc BlockDom.dsiBuildArray(type eltType, param initElts:bool) {
   return arr;
 }
 
-proc BlockDom.createArrayOrThrow(type eltType) throws {
+proc BlockDom.dsiBuildArrayThrowing(type eltType) throws {
   const dom = this;
   const creationLocale = here.id;
   const dummyLBD = new unmanaged LocBlockDom(rank, idxType, strides);

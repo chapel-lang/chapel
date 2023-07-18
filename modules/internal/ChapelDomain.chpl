@@ -1499,7 +1499,7 @@ module ChapelDomain {
       chpl_checkEltType(eltType);
       chpl_checkNegativeStride();
 
-      var x = _value.createArrayOrThrow(eltType);
+      var x = _value.dsiBuildArrayThrowing(eltType);
       pragma "dont disable remote value forwarding"
       proc help() {
         _value.add_arr(x);

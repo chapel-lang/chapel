@@ -700,7 +700,7 @@ module DefaultRectangular {
                                                  initElts=initElts);
     }
 
-    proc createArrayOrThrow(type eltType) throws {
+    proc dsiBuildArrayThrowing(type eltType) throws {
       var callPostAlloc:bool;
       var data = _ddata_allocate_noinit(eltType, ranges(0).size, callPostAlloc);
       if data == nil then
@@ -712,13 +712,12 @@ module DefaultRectangular {
         _ddata_allocate_postalloc(data, ranges(0).size);
         callPostAlloc = false;
       }
-      var x = new unmanaged DefaultRectangularArr(eltType=eltType, rank=rank,
-                                                  idxType=idxType,
-                                                  strides=strides,
-                                                  dom=_to_unmanaged(this),
-                                                  data=data,
-                                                  initElts=true);
-      return _newArray(x);
+      return new unmanaged DefaultRectangularArr(eltType=eltType, rank=rank,
+                                                 idxType=idxType,
+                                                 strides=strides,
+                                                 dom=_to_unmanaged(this),
+                                                 data=data,
+                                                 initElts=true);
     }
 
     proc dsiBuildArrayWith(type eltType, data:_ddata(eltType), allocSize:int) {
