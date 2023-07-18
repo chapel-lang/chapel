@@ -26,5 +26,5 @@ set -e
 if which "python3.6" >/dev/null; then
   python3.6 ./stream.plot.paint.py
 else
-  /stream.plot.paint.py
+  ./stream.plot.paint.py
 fi

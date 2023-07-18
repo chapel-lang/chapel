@@ -1,43 +1,12 @@
-import os, re, codecs
+import os, re, codecs, shlex
 
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
-def load(filename):
-  with open(filename, 'r') as f:
-    datanames = []
-    config_vars = []
-    results = {}
-    kvPairs = {}
-    for l in f:
-      if len(l.strip()) == 0:
-          continue
-      if l.strip()[0] == '#':
-        m = re.match(r"#(\w+):\s*(.*)$", l.strip())
-        if m:
-          decodedVal = codecs.escape_decode(bytes(
-            m.groups()[1], "utf-8"))[0].decode("utf-8")
-          kvPairs[m.groups()[0]] = decodedVal
-
-
-        continue
-      if len(datanames) == 0:
-        # read the first line with datanames
-        datanames = l.split()
-        for dn in datanames:
-          results[dn] = []
-      else:
-        # read one config var and the rest are data
-        config_vars.append(float(l.split()[0]))
-        for dn, data in zip(datanames, l.split()[1:]):
-          results[dn].append(float(data))
-
-  return config_vars, results, kvPairs
-
 mpl.rcParams['text.usetex'] = False
-mpl.rcParams['font.family'] = 'Arial'
+mpl.rcParams['font.family'] = 'sans-serif'
 mpl.rcParams['savefig.dpi'] = '300'
 
 basefontsize = 24
@@ -151,6 +120,7 @@ class Plot:
 
     self.create_legend = False
     self.y_datas = []
+    self.y_lines = []
 
     # adjustments based on x_data
     self.ax.set_xlim((self.x_data[0], self.x_data[-1]))
@@ -175,12 +145,13 @@ class Plot:
           data[i] = np.nan
 
     self.y_datas.append(data)
-    self.ax.plot(self.x_data,
-                 data,
-                 label=label,
-                 zorder=zorder,
-                 clip_on=False,
-                 **chpl_plot_linestyles[linestyle])
+    self.y_lines.append(
+      self.ax.plot(self.x_data,
+                   data,
+                   label=label,
+                   zorder=zorder,
+                   clip_on=False,
+                   **chpl_plot_linestyles[linestyle]))
 
   def add_dummy(self, label=''):
     self.ax.plot(self.x_data,
@@ -212,6 +183,11 @@ class Plot:
     self.ax.set_ylim(*args, **kwargs)
     self.explicit_ylim = True
 
+  def set_linestyle(self, lineNum, styleNum):
+    for prop in chpl_plot_linestyles[styleNum]:
+      setFunc = getattr(self.y_lines[lineNum][0], 'set_' + prop)
+      setFunc(chpl_plot_linestyles[styleNum][prop])
+    
   def show(self):
     self.__finalize()
     plt.show()
@@ -264,10 +240,68 @@ class Plot:
 
 # -----------------------------------------------------------------------------
 
-def valOrDefault(kvPairs, key, default):
+def _loadDat(filename):
+  with open(filename, 'r') as f:
+    datanames = []
+    config_vars = []
+    results = {}
+    kvPairs = {'filename': os.path.basename(filename)}
+    for l in f:
+      if len(l.strip()) == 0:
+          continue
+      if l.strip()[0] == '#':
+        m = re.match(r"#(\w+):\s*(.*)$", l.strip())
+        if m:
+          decodedVal = codecs.escape_decode(bytes(
+            m.groups()[1], "utf-8"))[0].decode("utf-8")
+          kvPairs[m.groups()[0]] = decodedVal
+        continue
+      if len(datanames) == 0:
+        # read the first line with datanames
+        datanames = shlex.split(l)
+        for dn in datanames:
+          results[dn] = []
+      else:
+        # read one config var and the rest are data
+        config_vars.append(float(l.split()[0]))
+        for dn, data in zip(datanames, l.split()[1:]):
+          results[dn].append(float(data))
+
+  return config_vars, results, kvPairs
+
+
+def load(filename):
+  (xData, yData, kvPairs) = _loadDat(filename)
+
+  baseName = os.path.basename(filename)[:-4]
+  title = _valOrDefault(kvPairs, 'title', baseName)
+  xlabel = _valOrDefault(kvPairs, 'xlabel', '')
+  ylabel = _valOrDefault(kvPairs, 'ylabel', '')
+
+  p = Plot(name=title, x_data=xData)
+  p.set_title(title)
+  p.set_xlabel(xlabel)
+  p.set_ylabel(ylabel)
+  p.legend_font_size = 18
+  p.baseName = baseName
+
+  if 'better' in kvPairs:
+    p.add_arrow(position='right', direction=kvPairs['better'], text='Better', color='green')
+
+  n = 0
+  for lines in yData:
+    p.add_y_data(yData[lines], linestyle=11+n, label=lines)
+    n += 1
+ 
+  return p
+
+# -----------------------------------------------------------------------------
+
+
+def _valOrDefault(kvPairs, key, default):
   return default if key not in kvPairs else f"{kvPairs[key]}"
 
-def embedMetadata(datFilename, imgFilename):
+def _embedMetadata(datFilename, imgFilename):
   from PIL import Image
   from PIL.PngImagePlugin import PngInfo
 
@@ -279,36 +313,30 @@ def embedMetadata(datFilename, imgFilename):
 
   img.save(imgFilename, pnginfo=metadata)
 
-def processDat(filename, testSpecificProcessing=None):
-  (xData, yData, kvPairs) = load(filename)
+def paint(filename, plot):
+  plot.save("logs/" + plot.baseName, 'png')
+  _embedMetadata(filename, "logs/" + plot.baseName + '.png')
 
-  baseName = os.path.basename(filename)[:-4]
-  title = valOrDefault(kvPairs, 'title', baseName)
-  xlabel = valOrDefault(kvPairs, 'xlabel', '')
-  ylabel = valOrDefault(kvPairs, 'ylabel', '')
 
-  p = Plot(name=title, x_data=xData)
-  p.set_title(title)
-  p.set_xlabel(xlabel)
-  p.set_ylabel(ylabel)
-  p.legend_font_size = 18
+# Tips for using processFn (taking an argument p)
+#
+# Want to change the title?
+#     p.set_title('something else')
+#
+# Want to change the label on a line?
+#     p.y_lines[0][0].set_label('new label')
+#
+# How about the line style?
+#     p.set_linestyle(lineNum, styleNum)
+def paintDatFiles(processFn=None, filterFn=None, inDir="logs"):
+  for shortFilename in os.listdir(inDir):
+    if shortFilename.endswith(".dat"):
+      if filterFn and not filterFn(file):
+        continue
 
-  if 'better' in kvPairs:
-    p.add_arrow(position='right', direction=kvPairs['better'], text='Better', color='green')
-
-  n = 0
-  for lines in yData:
-    p.add_y_data(yData[lines], linestyle=11+n, label=lines)
-    n += 1
-    
-  if testSpecificProcessing:
-    testSpecificProcessing(p, xData, yData, kvPairs)
-
-  p.save("logs/" + baseName, 'png')
-
-  embedMetadata(filename, "logs/" + baseName + '.png')
-
-def paintDatFiles(testSpecificProcessing=None, inDir="logs"):
-  for file in os.listdir(inDir):
-    if file.endswith(".dat"):
-      processDat(f"logs/{file}", testSpecificProcessing)
+      filename = f"{inDir}/{shortFilename}"
+        
+      plot = load(filename)
+      if processFn:
+        processFn(plot)
+      paint(filename, plot)
