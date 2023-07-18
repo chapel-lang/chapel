@@ -1014,46 +1014,6 @@ proc BlockDom.dsiBuildArrayThrowing(type eltType) throws {
   return arr;
 }
 
-proc BlockDom.dsiBuildArrayThrowing(type eltType, size: int) throws {
-  const dom = this;
-  const creationLocale = here.id;
-  const dummyLBD = new unmanaged LocBlockDom(rank, idxType, strides);
-  const dummyLBA = new unmanaged LocBlockArr(eltType, rank, idxType,
-                                             strides, dummyLBD, false);
-  var locArrTemp: [dom.dist.targetLocDom]
-        unmanaged LocBlockArr(eltType, rank, idxType, strides) = dummyLBA;
-  var myLocArrTemp: unmanaged LocBlockArr(eltType, rank, idxType, strides)?;
-
-  // formerly in BlockArr.setup()
-  coforall (loc, locDomsElt, locArrTempElt)
-           in zip(dom.dist.targetLocales, dom.locDoms, locArrTemp)
-           with (ref myLocArrTemp) {
-    on loc {
-      var what = false;
-      var data = _ddata_allocate_noinit(eltType, size, what);
-
-      if data == nil then
-        throw new Error("Could not allocate memory");
-      
-      const LBA = new unmanaged LocBlockArr(eltType, rank, idxType, strides,
-                                            locDomsElt, data=data, size=size);
-      locArrTempElt = LBA;
-      if here.id == creationLocale then
-        myLocArrTemp = LBA;
-    }
-  }
-  delete dummyLBA, dummyLBD;
-
-  var arr = new unmanaged BlockArr(eltType=eltType, rank=rank, idxType=idxType,
-       strides=strides, sparseLayoutType=sparseLayoutType,
-       dom=_to_unmanaged(dom), locArr=locArrTemp, myLocArr=myLocArrTemp);
-
-  // formerly in BlockArr.setup()
-  if arr.doRADOpt && disableBlockLazyRAD then arr.setupRADOpt();
-
-  return arr;
-}
-
 // common redirects
 proc BlockDom.parSafe param {
   compilerError("this domain type does not support 'parSafe'");
