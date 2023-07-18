@@ -3600,7 +3600,8 @@ static void warnForCallConcreteType(CallExpr* call, Type* t) {
       } else {
         USR_PRINT(at, "'%s' has no generic fields", typeExprStr);
       }
-      USR_PRINT(call, "remove the ()");
+      USR_PRINT(call, "remove the '()'");
+      USR_PRINT("this warning will become an error in the future");
     }
   }
 }
