@@ -834,7 +834,8 @@ SymAndReferencedName ResolveScope::lookupForImport(Expr* expr,
     INT_ASSERT(rhsName != NULL);
 
     ResolveScope* scope = getScopeFor(outerMod->block);
-    if (Symbol* symbol = scope->getField(rhsName)) {
+
+    if (Symbol* symbol = scope->getFieldLocally(rhsName)) {
       if (retval == symbol) {
         USR_FATAL(expr, "duplicate mention of the same module '%s'",
                   symbol->name);
