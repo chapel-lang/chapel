@@ -1493,6 +1493,24 @@ module ChapelDomain {
       return _newArray(x);
     }
 
+    pragma "no copy return"
+    @chpldoc.nodoc
+    proc buildArrayThrowing(type eltType) throws {
+      chpl_checkEltType(eltType);
+      chpl_checkNegativeStride();
+
+      var x = _value.createArrayOrThrow(eltType);
+      pragma "dont disable remote value forwarding"
+      proc help() {
+        _value.add_arr(x);
+      }
+      help();
+
+      chpl_incRefCountsForDomainsInArrayEltTypes(x, x.eltType);
+
+      return _newArray(x);
+    }
+
     // assumes that data is already initialized
     pragma "no copy return"
     @chpldoc.nodoc

@@ -982,14 +982,21 @@ proc BlockDom.createArrayOrThrow(type eltType) throws {
     in zip(dom.dist.targetLocales, dom.locDoms, locArrTemp)
            with (ref myLocArrTemp) {
     on loc {
-      var what = false;
-      var data = _ddata_allocate_noinit(eltType, dom.whole.size, what);
-
+      const locSize = locDomsElt.myBlock.size;
+      var callPostAlloc = false;
+      var data = _ddata_allocate_noinit(eltType, locSize, callPostAlloc);
       if data == nil then
         throw new Error("Could not allocate memory");
+
+      init_elts(data, locSize, eltType);
+      
+      if callPostAlloc {
+        _ddata_allocate_postalloc(data, locSize);
+        callPostAlloc = false;
+      }
       
       const LBA = new unmanaged LocBlockArr(eltType, rank, idxType, strides,
-                                            locDomsElt, data=data, size=dom.whole.size);
+                                            locDomsElt, data=data, size=locSize);
       locArrTempElt = LBA;
       if here.id == creationLocale then
         myLocArrTemp = LBA;
@@ -1003,7 +1010,7 @@ proc BlockDom.createArrayOrThrow(type eltType) throws {
 
   // formerly in BlockArr.setup()
   if arr.doRADOpt && disableBlockLazyRAD then arr.setupRADOpt();
-
+  
   return arr;
 }
 
