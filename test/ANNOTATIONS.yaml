@@ -2346,6 +2346,8 @@ arkouda: &arkouda-base
     - Upgrade Arkouda release testing from 1.29 to 1.30 (#21969)
   03/30/23:
     - Bump bigint groupby benchmark problem size (Bears-R-Us/arkouda#2326)
+  07/05/23:
+    - Upgrade Arkouda release testing from 1.30 to 1.31 (#22669)
 
 
 arkouda-string:
