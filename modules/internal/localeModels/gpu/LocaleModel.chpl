@@ -171,9 +171,6 @@ module LocaleModel {
     return chpl_mem_good_alloc_size(min_size.safeCast(c_size_t)).safeCast(min_size.type);
   }
 
-  // see the note in LocaleModelHelpMem for the use of raw_c_void_ptr
-  extern type raw_c_void_ptr = chpl__c_void_ptr;
-
   pragma "locale model free"
   pragma "always propagate line file info"
   proc chpl_here_free(ptr:raw_c_void_ptr): void {
