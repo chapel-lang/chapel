@@ -365,7 +365,7 @@ private extern proc qio_regex_init_default_options(ref options:qio_regex_options
 private extern proc qio_regex_create_compile(str:c_string, strlen:int(64), const ref options:qio_regex_options_t, ref compiled:qio_regex_t);
 private extern proc qio_regex_create_compile_flags(str:c_string, strlen:int(64), flags:c_string, flagslen:int(64), isUtf8:bool, ref compiled:qio_regex_t);
 @chpldoc.nodoc
-extern proc qio_regex_create_compile_flags_2(str:c_void_ptr, strlen:int(64), flags:c_void_ptr, flagslen:int(64), isUtf8:bool, ref compiled:qio_regex_t);
+extern proc qio_regex_create_compile_flags_2(str:c_ptr(void), strlen:int(64), flags:c_ptr(void), flagslen:int(64), isUtf8:bool, ref compiled:qio_regex_t);
 private extern proc qio_regex_retain(const ref compiled:qio_regex_t);
 @chpldoc.nodoc
 extern proc qio_regex_release(ref compiled:qio_regex_t);

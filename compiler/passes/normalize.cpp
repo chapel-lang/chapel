@@ -2660,14 +2660,22 @@ static bool moveMakesTypeAlias(CallExpr* call) {
 ************************************** | *************************************/
 
 static void emitTypeAliasInit(Expr* after, Symbol* var, Expr* init) {
-
-  // Generate a type constructor call
+  // Generate a type constructor call for generic-with-defaults types
   // (Note, this does not work correctly during resolution).
-  if (SymExpr* se = toSymExpr(init))
-    if (isTypeSymbol(se->symbol()))
-      if (isAggregateType(se->typeInfo()) ||
-          isDecoratedClassType(se->typeInfo()))
+  // TODO: get it working in resolution
+  if (SymExpr* se = toSymExpr(init)) {
+    if (isTypeSymbol(se->symbol())) {
+      AggregateType* at = nullptr;
+      Type* t = se->typeInfo();
+      if (DecoratedClassType* dct = toDecoratedClassType(t))
+        at = dct->getCanonicalClass();
+      else
+        at = toAggregateType(t);
+
+      if (at != nullptr && at->isGenericWithDefaults())
         init = new CallExpr(se->symbol());
+    }
+  }
 
   CallExpr* move = new CallExpr(PRIM_MOVE, var, init->copy());
 
@@ -2972,6 +2980,9 @@ void normalizeVariableDefinition(DefExpr* defExpr) {
         //   move type_tmp, type-expr
         //   PRIM_INIT_VAR_SPLIT_DECL var type_tmp
         defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR_SPLIT_DECL, var, tt));
+
+        // but arrange for e.g. var x: range to use var x: range()
+        // TODO: why doesn't the resolver handle this?
         emitTypeAliasInit(defExpr, tt, defExpr->exprType->remove());
         defExpr->insertAfter(def);
 

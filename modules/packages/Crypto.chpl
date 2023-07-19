@@ -403,7 +403,7 @@ module Crypto {
     md = EVP_get_digestbyname(digestName.c_str());
 
     EVP_DigestInit_ex(CHPL_EVP_MD_CTX_ptr(ctx), md, nil: ENGINE_PTR);
-    EVP_DigestUpdate(CHPL_EVP_MD_CTX_ptr(ctx), c_ptrTo(inputBuffer.buff): c_void_ptr, inputBuffer._len: c_size_t);
+    EVP_DigestUpdate(CHPL_EVP_MD_CTX_ptr(ctx), c_ptrTo(inputBuffer.buff): c_ptr(void), inputBuffer._len: c_size_t);
     EVP_DigestFinal_ex(CHPL_EVP_MD_CTX_ptr(ctx), c_ptrTo(hash): c_ptr(c_uchar), retHashLen);
 
     CHPL_EVP_MD_CTX_free(ctx);
@@ -1282,7 +1282,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     extern proc CHPL_EVP_MD_CTX_free(ref c: CHPL_EVP_MD_CTX);
     extern proc CHPL_EVP_MD_CTX_ptr(ref c: CHPL_EVP_MD_CTX):EVP_MD_CTX_PTR;
     extern proc EVP_DigestInit_ex(ctx: EVP_MD_CTX_PTR, types: CONST_EVP_MD_PTR, impl: ENGINE_PTR): c_int;
-    extern proc EVP_DigestUpdate(ctx: EVP_MD_CTX_PTR, const d: c_void_ptr, cnt: c_size_t): c_int;
+    extern proc EVP_DigestUpdate(ctx: EVP_MD_CTX_PTR, const d: c_ptr(void), cnt: c_size_t): c_int;
     extern proc EVP_DigestFinal_ex(ctx: EVP_MD_CTX_PTR, md: c_ptr(c_uchar), ref s: c_uint): c_int;
 
     extern proc RAND_bytes(buf: c_ptr(c_uchar), num: c_int) : c_int;
@@ -1346,6 +1346,6 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     extern proc EVP_bf_cfb(): CONST_EVP_CIPHER_PTR;
     extern proc EVP_bf_ofb(): CONST_EVP_CIPHER_PTR;
 
-    extern proc RAND_seed(const buf: c_void_ptr, num: c_int);
+    extern proc RAND_seed(const buf: c_ptr(void), num: c_int);
   }
 }

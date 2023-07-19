@@ -2,6 +2,10 @@
 
 record D {
   var s: sync int;
+  proc init() {}
+  proc init=(other: D) {
+    this.s = other.s.readXX();
+  }
 }
 
 var d: D;
@@ -14,6 +18,10 @@ writeln( "i is ", i);
 
 record E {
   var sf: sync real;
+  proc init() {}
+  proc init=(other: E) {
+    this.sf = other.sf.readXX();
+  }
 }
 
 var e: E;

@@ -42,5 +42,5 @@ var xpp_char = xpp : c_ptr(c_ptr(c_int)); // acceptable to strict aliasing
 var xpp_float = xpp : c_ptr(c_ptr(c_float)); // unacceptable
 
 // casting to and from void pointer pointee type is ok
-var xpp_void = xpp : c_ptr(c_void_ptr);
+var xpp_void = xpp : c_ptr(c_ptr(void));
 var xpp_void_int_again = xpp_void : c_ptr(c_ptr(c_int));

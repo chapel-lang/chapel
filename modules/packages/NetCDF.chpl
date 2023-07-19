@@ -363,25 +363,25 @@ module NetCDF {
 
     extern proc nc_free_vlens(len : c_size_t, vlens : c_ptr(nc_vlen_t)) : c_int;
 
-    extern proc nc_put_vlen_element(ncid : c_int, typeid1 : c_int, vlen_element : c_void_ptr, len : c_size_t, data : c_void_ptr) : c_int;
+    extern proc nc_put_vlen_element(ncid : c_int, typeid1 : c_int, vlen_element : c_ptr(void), len : c_size_t, data : c_ptr(void)) : c_int;
 
-    extern proc nc_get_vlen_element(ncid : c_int, typeid1 : c_int, vlen_element : c_void_ptr, ref len : c_size_t, data : c_void_ptr) : c_int;
+    extern proc nc_get_vlen_element(ncid : c_int, typeid1 : c_int, vlen_element : c_ptr(void), ref len : c_size_t, data : c_ptr(void)) : c_int;
 
     extern proc nc_free_string(len : c_size_t, ref data : c_string) : c_int;
 
     extern proc nc_inq_user_type(ncid : c_int, xtype : nc_type, name : c_string, ref size : c_size_t, ref base_nc_typep : nc_type, ref nfieldsp : c_size_t, ref classp : c_int) : c_int;
 
-    extern proc nc_put_att(ncid : c_int, varid : c_int, name : c_string, xtype : nc_type, len : c_size_t, op : c_void_ptr) : c_int;
+    extern proc nc_put_att(ncid : c_int, varid : c_int, name : c_string, xtype : nc_type, len : c_size_t, op : c_ptr(void)) : c_int;
 
-    extern proc nc_get_att(ncid : c_int, varid : c_int, name : c_string, ip : c_void_ptr) : c_int;
+    extern proc nc_get_att(ncid : c_int, varid : c_int, name : c_string, ip : c_ptr(void)) : c_int;
 
     extern proc nc_def_enum(ncid : c_int, base_typeid : nc_type, name : c_string, ref typeidp : nc_type) : c_int;
 
-    extern proc nc_insert_enum(ncid : c_int, xtype : nc_type, name : c_string, value : c_void_ptr) : c_int;
+    extern proc nc_insert_enum(ncid : c_int, xtype : nc_type, name : c_string, value : c_ptr(void)) : c_int;
 
     extern proc nc_inq_enum(ncid : c_int, xtype : nc_type, name : c_string, ref base_nc_typep : nc_type, ref base_sizep : c_size_t, ref num_membersp : c_size_t) : c_int;
 
-    extern proc nc_inq_enum_member(ncid : c_int, xtype : nc_type, idx : c_int, name : c_string, value : c_void_ptr) : c_int;
+    extern proc nc_inq_enum_member(ncid : c_int, xtype : nc_type, idx : c_int, name : c_string, value : c_ptr(void)) : c_int;
 
     extern proc nc_inq_enum_ident(ncid : c_int, xtype : nc_type, value : c_longlong, identifier : c_string) : c_int;
 
@@ -389,25 +389,25 @@ module NetCDF {
 
     extern proc nc_inq_opaque(ncid : c_int, xtype : nc_type, name : c_string, ref sizep : c_size_t) : c_int;
 
-    extern proc nc_put_var(ncid : c_int, varid : c_int, op : c_void_ptr) : c_int;
+    extern proc nc_put_var(ncid : c_int, varid : c_int, op : c_ptr(void)) : c_int;
 
-    extern proc nc_get_var(ncid : c_int, varid : c_int, ip : c_void_ptr) : c_int;
+    extern proc nc_get_var(ncid : c_int, varid : c_int, ip : c_ptr(void)) : c_int;
 
-    extern proc nc_put_var1(ncid : c_int, varid : c_int, ref indexp : c_size_t, op : c_void_ptr) : c_int;
+    extern proc nc_put_var1(ncid : c_int, varid : c_int, ref indexp : c_size_t, op : c_ptr(void)) : c_int;
 
-    extern proc nc_get_var1(ncid : c_int, varid : c_int, ref indexp : c_size_t, ip : c_void_ptr) : c_int;
+    extern proc nc_get_var1(ncid : c_int, varid : c_int, ref indexp : c_size_t, ip : c_ptr(void)) : c_int;
 
-    extern proc nc_put_vara(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, op : c_void_ptr) : c_int;
+    extern proc nc_put_vara(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, op : c_ptr(void)) : c_int;
 
-    extern proc nc_get_vara(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ip : c_void_ptr) : c_int;
+    extern proc nc_get_vara(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ip : c_ptr(void)) : c_int;
 
-    extern proc nc_put_vars(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, op : c_void_ptr) : c_int;
+    extern proc nc_put_vars(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, op : c_ptr(void)) : c_int;
 
-    extern proc nc_get_vars(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ip : c_void_ptr) : c_int;
+    extern proc nc_get_vars(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ip : c_ptr(void)) : c_int;
 
-    extern proc nc_put_varm(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, op : c_void_ptr) : c_int;
+    extern proc nc_put_varm(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, op : c_ptr(void)) : c_int;
 
-    extern proc nc_get_varm(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ip : c_void_ptr) : c_int;
+    extern proc nc_get_varm(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ip : c_ptr(void)) : c_int;
 
     extern proc nc_def_var_deflate(ncid : c_int, varid : c_int, shuffle : c_int, deflate : c_int, deflate_level : c_int) : c_int;
 
@@ -423,9 +423,9 @@ module NetCDF {
 
     extern proc nc_inq_var_chunking(ncid : c_int, varid : c_int, ref storagep : c_int, ref chunksizesp : c_size_t) : c_int;
 
-    extern proc nc_def_var_fill(ncid : c_int, varid : c_int, no_fill : c_int, fill_value : c_void_ptr) : c_int;
+    extern proc nc_def_var_fill(ncid : c_int, varid : c_int, no_fill : c_int, fill_value : c_ptr(void)) : c_int;
 
-    extern proc nc_inq_var_fill(ncid : c_int, varid : c_int, ref no_fill : c_int, fill_valuep : c_void_ptr) : c_int;
+    extern proc nc_inq_var_fill(ncid : c_int, varid : c_int, ref no_fill : c_int, fill_valuep : c_ptr(void)) : c_int;
 
     extern proc nc_def_var_endian(ncid : c_int, varid : c_int, endian : c_int) : c_int;
 
@@ -910,11 +910,11 @@ module NetCDF {
 
     extern proc ncdimrename(ncid : c_int, dimid : c_int, name : c_string) : c_int;
 
-    extern proc ncattput(ncid : c_int, varid : c_int, name : c_string, xtype : nc_type, len : c_int, op : c_void_ptr) : c_int;
+    extern proc ncattput(ncid : c_int, varid : c_int, name : c_string, xtype : nc_type, len : c_int, op : c_ptr(void)) : c_int;
 
     extern proc ncattinq(ncid : c_int, varid : c_int, name : c_string, ref xtypep : nc_type, ref lenp : c_int) : c_int;
 
-    extern proc ncattget(ncid : c_int, varid : c_int, name : c_string, ip : c_void_ptr) : c_int;
+    extern proc ncattget(ncid : c_int, varid : c_int, name : c_string, ip : c_ptr(void)) : c_int;
 
     extern proc ncattcopy(ncid_in : c_int, varid_in : c_int, name : c_string, ncid_out : c_int, varid_out : c_int) : c_int;
 
@@ -930,29 +930,29 @@ module NetCDF {
 
     extern proc ncvarinq(ncid : c_int, varid : c_int, name : c_string, ref xtypep : nc_type, ref ndimsp : c_int, ref dimidsp : c_int, ref nattsp : c_int) : c_int;
 
-    extern proc ncvarput1(ncid : c_int, varid : c_int, ref indexp : c_long, op : c_void_ptr) : c_int;
+    extern proc ncvarput1(ncid : c_int, varid : c_int, ref indexp : c_long, op : c_ptr(void)) : c_int;
 
-    extern proc ncvarget1(ncid : c_int, varid : c_int, ref indexp : c_long, ip : c_void_ptr) : c_int;
+    extern proc ncvarget1(ncid : c_int, varid : c_int, ref indexp : c_long, ip : c_ptr(void)) : c_int;
 
-    extern proc ncvarput(ncid : c_int, varid : c_int, ref startp : c_long, ref countp : c_long, op : c_void_ptr) : c_int;
+    extern proc ncvarput(ncid : c_int, varid : c_int, ref startp : c_long, ref countp : c_long, op : c_ptr(void)) : c_int;
 
-    extern proc ncvarget(ncid : c_int, varid : c_int, ref startp : c_long, ref countp : c_long, ip : c_void_ptr) : c_int;
+    extern proc ncvarget(ncid : c_int, varid : c_int, ref startp : c_long, ref countp : c_long, ip : c_ptr(void)) : c_int;
 
-    extern proc ncvarputs(ncid : c_int, varid : c_int, ref startp : c_long, ref countp : c_long, ref stridep : c_long, op : c_void_ptr) : c_int;
+    extern proc ncvarputs(ncid : c_int, varid : c_int, ref startp : c_long, ref countp : c_long, ref stridep : c_long, op : c_ptr(void)) : c_int;
 
-    extern proc ncvargets(ncid : c_int, varid : c_int, ref startp : c_long, ref countp : c_long, ref stridep : c_long, ip : c_void_ptr) : c_int;
+    extern proc ncvargets(ncid : c_int, varid : c_int, ref startp : c_long, ref countp : c_long, ref stridep : c_long, ip : c_ptr(void)) : c_int;
 
-    extern proc ncvarputg(ncid : c_int, varid : c_int, ref startp : c_long, ref countp : c_long, ref stridep : c_long, ref imapp : c_long, op : c_void_ptr) : c_int;
+    extern proc ncvarputg(ncid : c_int, varid : c_int, ref startp : c_long, ref countp : c_long, ref stridep : c_long, ref imapp : c_long, op : c_ptr(void)) : c_int;
 
-    extern proc ncvargetg(ncid : c_int, varid : c_int, ref startp : c_long, ref countp : c_long, ref stridep : c_long, ref imapp : c_long, ip : c_void_ptr) : c_int;
+    extern proc ncvargetg(ncid : c_int, varid : c_int, ref startp : c_long, ref countp : c_long, ref stridep : c_long, ref imapp : c_long, ip : c_ptr(void)) : c_int;
 
     extern proc ncvarrename(ncid : c_int, varid : c_int, name : c_string) : c_int;
 
     extern proc ncrecinq(ncid : c_int, ref nrecvarsp : c_int, ref recvaridsp : c_int, ref recsizesp : c_long) : c_int;
 
-    extern proc ncrecget(ncid : c_int, recnum : c_long, ref datap : c_void_ptr) : c_int;
+    extern proc ncrecget(ncid : c_int, recnum : c_long, ref datap : c_ptr(void)) : c_int;
 
-    extern proc ncrecput(ncid : c_int, recnum : c_long, ref datap : c_void_ptr) : c_int;
+    extern proc ncrecput(ncid : c_int, recnum : c_long, ref datap : c_ptr(void)) : c_int;
 
     extern proc nc_finalize() : c_int;
 
@@ -962,7 +962,7 @@ module NetCDF {
 
     extern record nc_vlen_t {
       var len : c_size_t;
-      var p : c_void_ptr;
+      var p : c_ptr(void);
     }
 
     extern type nclong = c_int;

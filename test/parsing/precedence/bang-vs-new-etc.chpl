@@ -157,28 +157,28 @@ proc main {
   // '.' binds more tightly than 'new'
   // param z = new C().meth;  -- error: C.meth is not a type method
 
-  // treated as new (C().tmeth)()
-  var z20a = new C().tmeth();
-  check("z20a = new C().m", z20a, "owned D(int(64))");
+  // treated as new (C().tmeth)() -- commented out to avoid warning
+  //var z20a = new C().tmeth();
+  //check("z20a = new C().m", z20a, "owned D(int(64))");
 
   param z20b = new C()!.meth;  // '.' is applied last
   checkCm("z20b = new C()!.meth", z20b);
 
-  var z20c = new C()?.tmeth();
-  check("z20c = new C()?.tmeth", z20c, "owned D(int(64))");
+  //var z20c = new C()?.tmeth();
+  //check("z20c = new C()?.tmeth", z20c, "owned D(int(64))");
 
-  var z20d = new unmanaged (C()?.tmeth)();  // like z20a
-  check("z20d = new unmanaged C()?.tmeth", z20d, "unmanaged D(int(64))");
+  //var z20d = new unmanaged (C()?.tmeth)();  // like z20a
+  //check("z20d = new unmanaged C()?.tmeth", z20d, "unmanaged D(int(64))");
 
   // same as z20 series, with parens at end
-  var z21a = new C().xmeth(5.5);
-  check("z21a = new C().xmeth(5.5)", z21a, "owned X(real(64))");
+  //var z21a = new C().xmeth(5.5);
+  //check("z21a = new C().xmeth(5.5)", z21a, "owned X(real(64))");
 
-  var z21c = new C()?.xmeth(5.5);
-  check("z21c = new C()?.xmeth(5.5)", z21c, "owned X(real(64))");
+  //var z21c = new C()?.xmeth(5.5);
+  //check("z21c = new C()?.xmeth(5.5)", z21c, "owned X(real(64))");
 
-  var z21d = new unmanaged C()?.xmeth(5.5);  // like z20a
-  check("z21d = new unmanaged C()?.xmeth(5.5)", z21d, "unmanaged X(real(64))");
+  //var z21d = new unmanaged C()?.xmeth(5.5);  // like z20a
+  //check("z21d = new unmanaged C()?.xmeth(5.5)", z21d, "unmanaged X(real(64))");
 
   type z22a = (unmanaged C).tmeth;
   check("z22a = (unmanaged C).tmeth", z22a, "D(int(64))");

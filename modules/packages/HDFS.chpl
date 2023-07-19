@@ -165,9 +165,9 @@ module HDFS {
                                    blockSize:tSize):hdfsFile;
   private extern proc hdfsCloseFile(fs:hdfsFS, file:hdfsFile):c_int;
   private extern proc hdfsPread(fs:hdfsFS, file:hdfsFile, position:tOffset,
-                                buffer:c_void_ptr, length:tSize):tSize;
+                                buffer:c_ptr(void), length:tSize):tSize;
   private extern proc hdfsWrite(fs:hdfsFS, file:hdfsFile,
-                                buffer:c_void_ptr, length:tSize):tSize;
+                                buffer:c_ptr(void), length:tSize):tSize;
   private extern proc hdfsFlush(fs:hdfsFS, file:hdfsFile):c_int;
   private extern proc hdfsGetPathInfo(fs:hdfsFS, path:c_string):c_ptr(hdfsFileInfo);
   private extern proc hdfsFreeFileInfo(info:c_ptr(hdfsFileInfo), numEntries:c_int);
@@ -175,9 +175,9 @@ module HDFS {
   // QIO extern stuff
   private extern proc qio_strdup(s: c_string): c_string;
   private extern proc qio_mkerror_errno():errorCode;
-  private extern proc qio_channel_get_allocated_ptr_unlocked(ch:qio_channel_ptr_t, amt_requested:int(64), ref ptr_out:c_void_ptr, ref len_out:c_ssize_t, ref offset_out:int(64)):errorCode;
+  private extern proc qio_channel_get_allocated_ptr_unlocked(ch:qio_channel_ptr_t, amt_requested:int(64), ref ptr_out:c_ptr(void), ref len_out:c_ssize_t, ref offset_out:int(64)):errorCode;
   private extern proc qio_channel_advance_available_end_unlocked(ch:qio_channel_ptr_t, len:c_ssize_t);
-  private extern proc qio_channel_get_write_behind_ptr_unlocked(ch:qio_channel_ptr_t, ref ptr_out:c_void_ptr, ref len_out:c_ssize_t, ref offset_out:int(64)):errorCode;
+  private extern proc qio_channel_get_write_behind_ptr_unlocked(ch:qio_channel_ptr_t, ref ptr_out:c_ptr(void), ref len_out:c_ssize_t, ref offset_out:int(64)):errorCode;
   private extern proc qio_channel_advance_write_behind_unlocked(ch:qio_channel_ptr_t, len:c_ssize_t);
 
   private param verbose = false;
@@ -507,7 +507,7 @@ module HDFS {
 
       var remaining = amt;
       while remaining > 0 {
-        var ptr:c_void_ptr = nil;
+        var ptr:c_ptr(void) = nil;
         var len = 0:c_ssize_t;
         var offset = 0;
         err = qio_channel_get_allocated_ptr_unlocked(qio_ch, amt, ptr, len, offset);
@@ -546,7 +546,7 @@ module HDFS {
       var err:errorCode = 0;
       var remaining = amt;
       while remaining > 0 {
-        var ptr:c_void_ptr = nil;
+        var ptr:c_ptr(void) = nil;
         var len = 0:c_ssize_t;
         var offset = 0;
         err = qio_channel_get_write_behind_ptr_unlocked(qio_ch, ptr, len, offset);

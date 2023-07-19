@@ -247,7 +247,10 @@ prototype module AtomicObjects {
   @chpldoc.nodoc
   extern type c_nodeid_t;
 
-  extern proc chpl_return_wide_ptr_node(c_nodeid_t, c_void_ptr) : wide_ptr_t;
+  @chpldoc.nodoc
+  type type_c_void_ptr = c_ptr(void);
+
+  extern proc chpl_return_wide_ptr_node(c_nodeid_t, type_c_void_ptr) : wide_ptr_t;
 
   if numLocales >= 2**16 {
     writeln("[WARNING]: AtomicObjects currently only supports up to 65535 locales!");
@@ -271,7 +274,7 @@ prototype module AtomicObjects {
 
   @chpldoc.nodoc
   inline proc uintToCVoidPtr(addr) {
-    return __primitive("cast", c_void_ptr, addr);
+    return __primitive("cast", c_ptr(void), addr);
   }
 
   @chpldoc.nodoc
@@ -434,6 +437,12 @@ prototype module AtomicObjects {
     proc init(type objType) {
       this.objType = objType;
     }
+
+    proc init=(other: _ABAInternal) {
+      this.objType = other.objType;
+      this._ABA_ptr = other._ABA_ptr.read();
+      this._ABA_cnt = other._ABA_cnt.read();
+    }
   }
 
   /*
@@ -464,7 +473,7 @@ prototype module AtomicObjects {
       this.hasGlobalSupport = hasGlobalSupport;
       this.complete();
       if hasABASupport {
-        var ptr : c_void_ptr;
+        var ptr : c_ptr(void);
         var retval = posix_memalign(c_addrOf(ptr), 16, c_sizeof(ABA(objType?)));
         if retval then halt();
         this.atomicVar = ptr:_ddata(_ABAInternal(objType?));
@@ -486,6 +495,15 @@ prototype module AtomicObjects {
       } else {
         atomicVar.write(ptr);
       }
+    }
+
+    proc init=(other: AtomicObject) {
+      this.objType = other.objType;
+      this.hasABASupport = other.hasABASupport;
+      this.hasGlobalSupport = other.hasGlobalSupport;
+      if hasABASupport
+        then this.atomicVar = other.atomicVar;
+        else this.atomicVar = other.atomicVar.read();
     }
 
     @chpldoc.nodoc
@@ -543,7 +561,7 @@ prototype module AtomicObjects {
       var ret : ABA(objType?);
       on this {
         var dest : ABA(objType?);
-        read128bit(atomicVar:c_void_ptr, c_addrOf(dest));
+        read128bit(atomicVar:c_ptr(void), c_addrOf(dest));
         ret = dest;
       }
       return ret;
@@ -565,7 +583,7 @@ prototype module AtomicObjects {
         // Note that no 'cas128bit_special' is needed here as the 'cas128bit' will detect
         // a change from the expectedObj passed, which of course includes the _ABA_cnt.
         var val = new ABA(objType?, toPointer(newObj), atomicVar[0]._ABA_cnt.read() + 1);
-        ret = cas128bit(atomicVar:c_void_ptr, c_addrOf(cmp), c_addrOf(val)) : bool;
+        ret = cas128bit(atomicVar:c_ptr(void), c_addrOf(cmp), c_addrOf(val)) : bool;
       }
       return ret;
     }
@@ -584,7 +602,7 @@ prototype module AtomicObjects {
 
     proc writeABA(newObj: ABA(objType?)) {
       doABACheck();
-      write128bit(atomicVar:c_void_ptr, c_addrOf(newObj));
+      write128bit(atomicVar:c_ptr(void), c_addrOf(newObj));
     }
 
     proc writeABA(newObj: objType?) {
@@ -610,7 +628,7 @@ prototype module AtomicObjects {
         var retval : ABA(objType?);
         var _newObj = newObj;
         var val = new ABA(objType?, toPointer(newObj), 0);
-        exchange128bit_special(atomicVar:c_void_ptr, c_addrOf(_newObj), c_addrOf(retval));
+        exchange128bit_special(atomicVar:c_ptr(void), c_addrOf(_newObj), c_addrOf(retval));
         ret = retval;
       }
 
@@ -624,7 +642,7 @@ prototype module AtomicObjects {
         var retval : ABA(objType?);
         var _newObj = newObj;
         var val = newObj;
-        exchange128bit(atomicVar:c_void_ptr, c_addrOf(_newObj), c_addrOf(retval));
+        exchange128bit(atomicVar:c_ptr(void), c_addrOf(_newObj), c_addrOf(retval));
         ret = retval;
       }
 

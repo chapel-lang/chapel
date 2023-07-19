@@ -7,8 +7,8 @@ record RR {
   var r:R;
 }
 
-var ptr1:c_void_ptr;
-var ptr2:c_void_ptr;
+var ptr1:c_ptr(void);
+var ptr2:c_ptr(void);
 config const debug = false;
 
 inline proc check1(r:R) {

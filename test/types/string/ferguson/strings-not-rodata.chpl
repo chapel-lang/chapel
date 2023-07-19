@@ -20,7 +20,7 @@ writeln("Modifying");
 
 {
   var s = "Hello World!";
-  var cptr = s.c_str():c_void_ptr:c_ptr(uint(8));
+  var cptr = s.c_str():c_ptr(void):c_ptr(uint(8));
   cptr[0] = 66; // 'B'
   writeln("Hello World!");
   writeln(s);
@@ -29,7 +29,7 @@ writeln("Modifying");
 
 {
   var s = b"Hello World!";
-  var cptr = s.c_str():c_void_ptr:c_ptr(uint(8));
+  var cptr = s.c_str():c_ptr(void):c_ptr(uint(8));
   cptr[0] = 66; // 'B'
   writeln(b"Hello World!");
   writeln(s);

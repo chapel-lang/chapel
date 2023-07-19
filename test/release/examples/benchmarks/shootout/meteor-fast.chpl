@@ -341,6 +341,13 @@ record BackoffSpinLock {
       lockAttempts = 0,
       maxLockAttempts = (2**16-1);
 
+  proc init() {}
+  proc init=(other: BackoffSpinLock) {
+    this.l = other.l.read();
+    this.lockAttempts = other.lockAttempts;
+    this.maxLockAttempts = other.maxLockAttempts;
+  }
+
   inline proc lock() {
     while l.testAndSet() {
       lockAttempts += 1;

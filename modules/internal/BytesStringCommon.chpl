@@ -109,7 +109,7 @@ module BytesStringCommon {
       throws {
     import OS.{errorCode};
     pragma "fn synchronization free"
-    extern proc qio_encode_char_buf(dst: c_void_ptr, chr: int(32)): errorCode;
+    extern proc qio_encode_char_buf(dst: c_ptr(void), chr: int(32)): errorCode;
     pragma "fn synchronization free"
     extern proc qio_nbytes_char(chr: int(32)): c_int;
 

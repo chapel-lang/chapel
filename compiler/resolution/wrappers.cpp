@@ -1703,12 +1703,13 @@ static bool typeExprReturnsType(ArgSymbol* formal) {
 // Do not create copies for the bogus actuals added for PRIM_TO_FOLLOWER.
 static bool checkAnotherFunctionsFormal(FnSymbol* calleeFn, CallExpr* call,
                                         Symbol* actualSym) {
+  if (!isFollowerIterator(calleeFn)) return false;
+
   bool result = isArgSymbol(actualSym) &&
                 (call->parentSymbol != actualSym->defPoint->parentSymbol);
 
   if (result                                   &&
-      propagateNotPOD(actualSym->getValType()) &&
-      isFollowerIterator(calleeFn)             )
+      propagateNotPOD(actualSym->getValType()))
     USR_FATAL_CONT(calleeFn, "follower iterators accepting a non-POD argument by in-intent are not implemented");
 
   return result;

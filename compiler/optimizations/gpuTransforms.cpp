@@ -661,8 +661,15 @@ GpuKernel::GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
   }
 }
 
+static const char* getLoopName(CForLoop* loop) {
+  auto filename = loop->astloc.filename();
+  auto line = loop->astloc.stringLineno();
+  auto moduleName = chpl::uast::Builder::filenameToModulename(filename);
+  return astr("chpl_gpu_kernel_", moduleName.c_str(), "_line_", line);
+}
+
 void GpuKernel::buildStubOutlinedFunction(DefExpr* insertionPoint) {
-  fn_ = new FnSymbol("chpl_gpu_kernel");
+  fn_ = new FnSymbol(getLoopName(gpuLoop.loop()));
 
   fn_->body->blockInfoSet(new CallExpr(PRIM_BLOCK_LOCAL));
 

@@ -2302,13 +2302,6 @@ module ChapelArray {
     // These types cannot be default initialized
     if isSubtype(t, borrowed) || isSubtype(t, unmanaged) {
       return false;
-    } else if isSubtype(t, c_array) {
-      // c_array is a record that is not POD. Although it is bulk-transferrable.
-      // We need a more general mechanism to allow non-POD types to be
-      // transferred, or redefine what POD is. For now, allow bulk transfer
-      // between two arrays of c_arrays.
-
-      return chpl__supportedDataTypeForBulkTransfer(t.eltType);
     } else if isRecordType(t) || isTupleType(t) {
       // TODO: The current implementations of isPODType and
       //       supportedDataTypeForBulkTransfer do not completely align. I'm
@@ -2761,6 +2754,7 @@ module ChapelArray {
     chpl__transferArray(a, b);
   }
 
+  // TODO Jade 6/29/23: this should be deprecated/removed with _desync
   pragma "last resort"
   @chpldoc.nodoc
   inline operator =(ref a: [], b: ?t)
@@ -2826,6 +2820,8 @@ module ChapelArray {
     initArrFromTuple(a, b, _tElt.assign);
   }
 
+  // TODO Jade 6/29/23: post implicit sync/single reads, we should be able to
+  // make these cases give a nice error
   proc _desync(type t:_syncvar) type {
     var x: t;
     return x.valType;
@@ -2868,11 +2864,40 @@ module ChapelArray {
       e = b;
   }
 
+  // required to prevent deprecation warnings being related to internal modules
+  @chpldoc.nodoc
+  @deprecated(notes="Direct assignment to 'sync' variables is deprecated; apply a 'write??()' method to modify one")
+  operator =(ref a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
+    forall e in a do
+      e = b;
+  }
+  // required to prevent deprecation warnings being related to internal modules
+  @chpldoc.nodoc
+  @deprecated(notes="Direct assignment to 'single' variables is deprecated; apply '.writeEF()' to modify one")
+  operator =(ref a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
+    forall e in a do
+      e = b;
+  }
+
   //
   // op= overloads for array/scalar pairs
   //
   @chpldoc.nodoc
   operator +=(a: [], b: _desync(a.eltType)) {
+    forall e in a do
+      e += b;
+  }
+  // required to prevent deprecation warnings being related to internal modules
+  @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
+  operator +=(a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
+    forall e in a do
+      e += b;
+  }
+  // required to prevent deprecation warnings being related to internal modules
+  @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'single' variables are deprecated; add explicit '.read??'/'.writeEF' methods to modify one")
+  operator +=(a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
     forall e in a do
       e += b;
   }
@@ -2882,9 +2907,37 @@ module ChapelArray {
     forall e in a do
       e -= b;
   }
+  // required to prevent deprecation warnings being related to internal modules
+  @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
+  operator -=(a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
+    forall e in a do
+      e -= b;
+  }
+  // required to prevent deprecation warnings being related to internal modules
+  @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'single' variables are deprecated; add explicit '.read??'/'.writeEF' methods to modify one")
+  operator -=(a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
+    forall e in a do
+      e -= b;
+  }
 
   @chpldoc.nodoc
   operator *=(a: [], b: _desync(a.eltType)) {
+    forall e in a do
+      e *= b;
+  }
+  // required to prevent deprecation warnings being related to internal modules
+  @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
+  operator *=(a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
+    forall e in a do
+      e *= b;
+  }
+  // required to prevent deprecation warnings being related to internal modules
+  @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'single' variables are deprecated; add explicit '.read??'/'.writeEF' methods to modify one")
+  operator *=(a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
     forall e in a do
       e *= b;
   }
@@ -2894,9 +2947,37 @@ module ChapelArray {
     forall e in a do
       e /= b;
   }
+  // required to prevent deprecation warnings being related to internal modules
+  @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
+  operator /=(a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
+    forall e in a do
+      e /= b;
+  }
+  // required to prevent deprecation warnings being related to internal modules
+  @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'single' variables are deprecated; add explicit '.read??'/'.writeEF' methods to modify one")
+  operator /=(a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
+    forall e in a do
+      e /= b;
+  }
 
   @chpldoc.nodoc
   operator %=(a: [], b: _desync(a.eltType)) {
+    forall e in a do
+      e %= b;
+  }
+  // required to prevent deprecation warnings being related to internal modules
+  @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
+  operator %=(a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
+    forall e in a do
+      e %= b;
+  }
+  // required to prevent deprecation warnings being related to internal modules
+  @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'single' variables are deprecated; add explicit '.read??'/'.writeEF' methods to modify one")
+  operator %=(a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
     forall e in a do
       e %= b;
   }
@@ -2906,9 +2987,37 @@ module ChapelArray {
     forall e in a do
       e **= b;
   }
+  // required to prevent deprecation warnings being related to internal modules
+  @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
+  operator **=(a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
+    forall e in a do
+      e **= b;
+  }
+  // required to prevent deprecation warnings being related to internal modules
+  @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'single' variables are deprecated; add explicit '.read??'/'.writeEF' methods to modify one")
+  operator **=(a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
+    forall e in a do
+      e **= b;
+  }
 
   @chpldoc.nodoc
   operator &=(a: [], b: _desync(a.eltType)) {
+    forall e in a do
+      e &= b;
+  }
+  // required to prevent deprecation warnings being related to internal modules
+  @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
+  operator &=(a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
+    forall e in a do
+      e &= b;
+  }
+  // required to prevent deprecation warnings being related to internal modules
+  @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'single' variables are deprecated; add explicit '.read??'/'.writeEF' methods to modify one")
+  operator &=(a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
     forall e in a do
       e &= b;
   }
@@ -2918,9 +3027,37 @@ module ChapelArray {
     forall e in a do
       e |= b;
   }
+  // required to prevent deprecation warnings being related to internal modules
+  @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
+  operator |=(a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
+    forall e in a do
+      e |= b;
+  }
+  // required to prevent deprecation warnings being related to internal modules
+  @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'single' variables are deprecated; add explicit '.read??'/'.writeEF' methods to modify one")
+  operator |=(a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
+    forall e in a do
+      e |= b;
+  }
 
   @chpldoc.nodoc
   operator ^=(a: [], b: _desync(a.eltType)) {
+    forall e in a do
+      e ^= b;
+  }
+  // required to prevent deprecation warnings being related to internal modules
+  @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
+  operator ^=(a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
+    forall e in a do
+      e ^= b;
+  }
+  // required to prevent deprecation warnings being related to internal modules
+  @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'single' variables are deprecated; add explicit '.read??'/'.writeEF' methods to modify one")
+  operator ^=(a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
     forall e in a do
       e ^= b;
   }
@@ -2930,9 +3067,37 @@ module ChapelArray {
     forall e in a do
       e >>= b;
   }
+  // required to prevent deprecation warnings being related to internal modules
+  @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
+  operator >>=(a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
+    forall e in a do
+      e >>= b;
+  }
+  // required to prevent deprecation warnings being related to internal modules
+  @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'single' variables are deprecated; add explicit '.read??'/'.writeEF' methods to modify one")
+  operator >>=(a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
+    forall e in a do
+      e >>= b;
+  }
 
   @chpldoc.nodoc
   operator <<=(a: [], b: _desync(a.eltType)) {
+    forall e in a do
+      e <<= b;
+  }
+  // required to prevent deprecation warnings being related to internal modules
+  @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
+  operator <<=(a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
+    forall e in a do
+      e <<= b;
+  }
+  // required to prevent deprecation warnings being related to internal modules
+  @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'single' variables are deprecated; add explicit '.read??'/'.writeEF' methods to modify one")
+  operator <<=(a: [], b: _desync(a.eltType)) where isSingleType(a.eltType) {
     forall e in a do
       e <<= b;
   }
@@ -3688,7 +3853,7 @@ module ChapelArray {
   //   extern proc foo(X: []);
   //   var A: [1..3] real;
   //   foo(A);
-  // 'castToVoidStar' says whether we should cast the result to c_void_ptr
+  // 'castToVoidStar' says whether we should cast the result to c_ptr(void)
   proc chpl_arrayToPtr(arr: [], param castToVoidStar: bool = false) {
     if (!arr.isRectangular() || !domainDistIsLayout(arr.domain)) then
       compilerError("Only single-locale rectangular arrays can be passed to an external routine argument with array type", errorDepth=2);
@@ -3699,7 +3864,7 @@ module ChapelArray {
     use CTypes;
     const ptr = c_pointer_return(arr[arr.domain.low]);
     if castToVoidStar then
-      return ptr: c_void_ptr;
+      return ptr: c_ptr(void);
     else
       return ptr;
   }

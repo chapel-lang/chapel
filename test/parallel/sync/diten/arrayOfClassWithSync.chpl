@@ -1,5 +1,6 @@
 class C {
   var s: sync bool;
+  proc init() {}
 }
 
 var a: [1..3] unmanaged C = [i in 1..3] new unmanaged C();

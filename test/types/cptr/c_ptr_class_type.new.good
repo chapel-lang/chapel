@@ -17,5 +17,5 @@ true
 
 false
 5
-c_void_ptr
+c_ptr(void)
 5

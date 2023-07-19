@@ -2,6 +2,10 @@ class mysumreduce {
   type t;
   var state: sync t;
 
+  proc init(type t) {
+    this.t = t;
+  }
+
   proc initState() {
     state.writeEF(0);
   }

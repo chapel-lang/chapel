@@ -318,12 +318,17 @@ void setupModuleSearchPaths(Context* context,
 /**
  Returns true if the ID corresponds to something in an internal module.
  If the internal module path is empty, this function returns false.
+
+ Also considers paths from --prepend-internal-module-dir, if any.
  */
 bool idIsInInternalModule(Context* context, ID id);
 
 /**
  Returns true if the ID corresponds to something in a bundled module.
  If the bundled module path is empty, this function returns false.
+
+ Also considers paths, if any, from --prepend-internal-module-dir
+ and --prepend-standard-module-dir.
  */
 bool idIsInBundledModule(Context* context, ID id);
 
@@ -334,6 +339,8 @@ bool idIsInBundledModule(Context* context, ID id);
  constraints as standard modules).
 
  If the bundled module path is empty, this function returns false.
+
+ Also considers paths from --prepend-standard-module-dir, if any.
  */
 bool idIsInStandardModule(Context* context, ID id);
 
@@ -343,6 +350,9 @@ filePathIsInInternalModule(Context* context, UniqueString filePath);
 
 bool
 filePathIsInStandardModule(Context* context, UniqueString filePath);
+
+bool
+filePathIsInBundledModule(Context* context, UniqueString filePath);
 
 /**
  This query parses a toplevel module by name. Returns nullptr
@@ -500,6 +510,12 @@ astToAttributeGroup(Context* context, const uast::AstNode* node);
 */
 void reportDeprecationWarningForId(Context* context, ID idMention,
                                    ID idTarget);
+
+/**
+  Returns the state of --warn-unstable or -internal or -standard
+  depending on which of these applies to 'filepath'.
+*/
+bool shouldWarnUnstableForPath(Context* context, UniqueString filepath);
 
 /**
   Given an ID 'idMention' representing a mention of a symbol, and an

@@ -1309,7 +1309,7 @@ module ChapelBase {
       return x;
     } else if isCoercible(t, int) || isCoercible(t, uint) {
       return x != 0;
-    } else if isSubtype(t, c_ptr) || isSubtype(t, c_void_ptr) {
+    } else if isSubtype(t, c_ptr) {
       return x != nil;
     } else {
       use Reflection;
@@ -1568,7 +1568,7 @@ module ChapelBase {
     pragma "insert line file info"
     extern proc chpl_mem_array_alloc(nmemb: c_size_t, eltSize: c_size_t,
                                      subloc: chpl_sublocID_t,
-                                     ref callPostAlloc: bool): c_void_ptr;
+                                     ref callPostAlloc: bool): c_ptr(void);
     var ret: _ddata(eltType);
     ret = chpl_mem_array_alloc(size:c_size_t, _ddata_sizeof_element(ret),
                                subloc, callPostAlloc):ret.type;
@@ -1578,9 +1578,9 @@ module ChapelBase {
   inline proc _ddata_allocate_postalloc(data:_ddata, size: integral) {
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_mem_array_postAlloc(data: c_void_ptr, nmemb: c_size_t,
+    extern proc chpl_mem_array_postAlloc(data: c_ptr(void), nmemb: c_size_t,
                                          eltSize: c_size_t);
-    chpl_mem_array_postAlloc(data:c_void_ptr, size:c_size_t,
+    chpl_mem_array_postAlloc(data:c_ptr(void), size:c_size_t,
                              _ddata_sizeof_element(data));
   }
 
@@ -1606,10 +1606,10 @@ module ChapelBase {
                                          newSize: integral) {
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_mem_array_supports_realloc(ptr: c_void_ptr,
+    extern proc chpl_mem_array_supports_realloc(ptr: c_ptr(void),
                                                 oldNmemb: c_size_t, newNmemb:
                                                 c_size_t, eltSize: c_size_t): bool;
-      return chpl_mem_array_supports_realloc(oldDdata: c_void_ptr,
+      return chpl_mem_array_supports_realloc(oldDdata: c_ptr(void),
                                              oldSize.safeCast(c_size_t),
                                              newSize.safeCast(c_size_t),
                                              _ddata_sizeof_element(oldDdata));
@@ -1627,7 +1627,7 @@ module ChapelBase {
       if safeMul(numElems, elemWidthInBytes) {
         const numBytes = numElems * elemWidthInBytes;
         const shiftedPtr = _ddata_shift(eltType, ddata, lo);
-        memset(shiftedPtr:c_void_ptr, fill, numBytes.safeCast(c_size_t));
+        memset(shiftedPtr:c_ptr(void), fill, numBytes.safeCast(c_size_t));
       } else {
         halt('internal error: Unsigned integer overflow during ' +
              'memset of dynamic block');
@@ -1643,11 +1643,11 @@ module ChapelBase {
                                 policy = chpl_ddataResizePolicy.normalInit) {
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_mem_array_realloc(ptr: c_void_ptr,
+    extern proc chpl_mem_array_realloc(ptr: c_ptr(void),
                                        oldNmemb: c_size_t, newNmemb: c_size_t,
                                        eltSize: c_size_t,
                                        subloc: chpl_sublocID_t,
-                                       ref callPostAlloc: bool): c_void_ptr;
+                                       ref callPostAlloc: bool): c_ptr(void);
     var callPostAlloc: bool;
 
     // destroy any elements that are going away
@@ -1663,7 +1663,7 @@ module ChapelBase {
       }
     }
 
-    var newDdata = chpl_mem_array_realloc(oldDdata: c_void_ptr,
+    var newDdata = chpl_mem_array_realloc(oldDdata: c_ptr(void),
                                           oldSize.safeCast(c_size_t),
                                           newSize.safeCast(c_size_t),
                                           _ddata_sizeof_element(oldDdata),
@@ -1688,13 +1688,13 @@ module ChapelBase {
     if (callPostAlloc) {
       pragma "fn synchronization free"
       pragma "insert line file info"
-      extern proc chpl_mem_array_postRealloc(oldData: c_void_ptr,
+      extern proc chpl_mem_array_postRealloc(oldData: c_ptr(void),
                                              oldNmemb: c_size_t,
-                                             newData: c_void_ptr,
+                                             newData: c_ptr(void),
                                              newNmemb: c_size_t,
                                              eltSize: c_size_t);
-      chpl_mem_array_postRealloc(oldDdata:c_void_ptr, oldSize.safeCast(c_size_t),
-                                 newDdata:c_void_ptr, newSize.safeCast(c_size_t),
+      chpl_mem_array_postRealloc(oldDdata:c_ptr(void), oldSize.safeCast(c_size_t),
+                                 newDdata:c_ptr(void), newSize.safeCast(c_size_t),
                                  _ddata_sizeof_element(oldDdata));
     }
     return newDdata;
@@ -1706,10 +1706,10 @@ module ChapelBase {
 
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_mem_array_free(data: c_void_ptr,
+    extern proc chpl_mem_array_free(data: c_ptr(void),
                                     nmemb: c_size_t, eltSize: c_size_t,
                                     subloc: chpl_sublocID_t);
-    chpl_mem_array_free(data:c_void_ptr, size:c_size_t,
+    chpl_mem_array_free(data:c_ptr(void), size:c_size_t,
                         _ddata_sizeof_element(data),
                         subloc);
   }
@@ -2548,15 +2548,6 @@ module ChapelBase {
     chpl__delete(arg);
     for param i in 0..args.size-1 do
       chpl__delete(args(i));
-  }
-
-  // c_void_ptr operations
-  inline operator =(ref a: c_void_ptr, b: c_void_ptr) { __primitive("=", a, b); }
-  inline operator ==(a: c_void_ptr, b: c_void_ptr) {
-    return __primitive("ptr_eq", a, b);
-  }
-  inline operator !=(a: c_void_ptr, b: c_void_ptr) {
-    return __primitive("ptr_neq", a, b);
   }
 
   // Type functions for representing function types
