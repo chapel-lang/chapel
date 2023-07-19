@@ -15,10 +15,10 @@ SUCCESS: domain(2,int(64),one)
 --------------------
 "2002-03-01"
 ====================
-ERROR: BadFormatError: bad format: malformed number (while reading int(64) with path "unknown" offset 0)
+SUCCESS: date
 ===== writing: =====
 2002-03-01T00:00:00
 --------------------
 "2002-03-01T00:00:00"
 ====================
-ERROR: BadFormatError: bad format: malformed number (while reading int(64) with path "unknown" offset 0)
+ERROR: BadFormatError: bad format: missing expected literal (while reading ioLiteral "." with path "unknown" offset 20)
