@@ -4,12 +4,15 @@ chplSetupWrapperFunc () {
   local shortHost=$(hostname -s)
   local featureSet=""
   local dryRun=""
+  local noBaseCfg=""
 
   # TODO: make this less hacky, use getopts
   for VAR in "$@"; do
     if [[ "$VAR" == --* ]]; then
       if [[ "$VAR" == --dry-run ]]; then
         dryRun=y
+      elif [[ "$VAR" == --no-base-cfg ]]; then
+        noBaseCfg=y
       else
         >&2 echo "Unknown argument $var"
         return 1
@@ -18,10 +21,14 @@ chplSetupWrapperFunc () {
       featureSet="$VAR"
     fi
   done
-  featureSet="base:$featureSet"
 
-  echo "FEATURE SETUP: $featureSet"
-  echo "DRY_RUN: $dryRun"
+  if [[ ! "$noBaseCfg" == "y" ]]; then
+    featureSet="base:$featureSet"
+  fi
+
+  if [[ ! "$dryRun" == "y" ]]; then
+    OLD_CHPL_HOME="$CHPL_HOME"
+  fi
 
   for feature in ${featureSet//:/ }; do
     for p in ${pathsToRun[@]}; do
@@ -50,6 +57,11 @@ chplSetupWrapperFunc () {
       fi
     done
   done
+
+  if [[ ! "$dryRun" == "y" ]]; then
+    source "$OLD_CHPL_HOME/util/setchplenv.bash"
+  fi
 }
 
 chplSetupWrapperFunc $@
+

@@ -1,30 +1,28 @@
-#!/bin/bash
-
-if [[ ! -f chplExperiment ]]; then
-  git clone git@github.hpe.com:hpe/chplExperiment.git
-else
-  cd chplExperiment
-  git pull
-  cd ..
+if [[ ! -d chplSetup ]]; then
+  git clone git@github.hpe.com:hpe/chplSetup.git
 fi
 
-set -e
+set -x -e
+"$CHPL_HOME/util/test/chplExperiment" \
+   --skip-if-config-error --paint-with ./stream.plot.paint.py \
+   \
+  `#name           features    options         command`                      \
+  `#-----------------------------------------------------------------------` \
+   cuda_baseline   nvidia      --no-build-chpl                               \
+                               --skip-if-errs "nvcc --version"               \
+                                              ./stream.plot.gather.cuda.sh   \
+                                                                             \
+   hip_baseline    amd         --no-build-chpl                               \
+                               --skip-if-errs "hipcc --version"              \
+                                               ./stream.plot.gather.hip.sh   \
+                                                                             \
+   nvidia          nvidia                      ./stream.plot.gather.chpl.sh  \
+                                                                             \
+   amd             amd                         ./stream.plot.gather.chpl.sh  \
+                                                                             \
+   nvidia_aod      nvidia      --prebuild "export CHPL_GPU_MEM_STRATEGY=array_on_device" \
+                                               ./stream.plot.gather.chpl.sh  \
+                                                                             \
+   amd_aod         amd         --prebuild "export CHPL_GPU_MEM_STRATEGY=array_on_device" \
+                                               ./stream.plot.gather.chpl.sh  \
 
-"$(pwd)/chplExperiment/chplExperiment" \
-   --skip-if-not-possible \
-   \
-   nvidia "./stream.plot.gather.sh nvidia" \
-   \
-   amd    "./stream.plot.gather.sh amd" \
-   \
-   nvidia --prebuild "export CHPL_GPU_MEM_STRATEGY=array_on_device" \
-          "./stream.plot.gather.sh nvidia_aod" \
-   \
-   amd    --prebuild "export CHPL_GPU_MEM_STRATEGY=array_on_device" \
-          "./stream.plot.gather.sh amd_aod"
- 
-if which "python3.6" >/dev/null; then
-  python3.6 ./stream.plot.paint.py
-else
-  ./stream.plot.paint.py
-fi
