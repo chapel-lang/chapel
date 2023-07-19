@@ -11,13 +11,7 @@ use GpuDiagnostics;
 //
 use HPCCProblemSize;
 
-proc verifyLaunches() {
-  use ChplConfig;
-  param expected = if CHPL_GPU_MEM_STRATEGY == "unified_memory" then 12 else 16;
-  const actual = getGpuDiagnostics()[0].kernel_launch;
-  assert(actual == expected,
-         "observed ", actual, " launches instead of ", expected);
-}
+use GpuTestCommon;
 
 config param useForeach = true;
 config const useGpuDiags = true;
@@ -114,7 +108,7 @@ proc main() {
   }
   if useGpuDiags {
     stopGpuDiagnostics();
-    verifyLaunches();
+    verifyLaunches(um=12, aod=16);
   }
 }
 

@@ -12,6 +12,8 @@ use ResultDB;
 use GpuDiagnostics;
 use GPU only syncThreads, createSharedArray, setBlockSize;
 
+use GpuTestCommon;
+
 config const noisy = false;
 config const gpuDiags = false;
 config const verboseGpu = false;
@@ -45,7 +47,7 @@ proc main() {
   runSort();
   if gpuDiags {
     stopGpuDiagnostics();
-    verifyLaunches();
+    verifyLaunches(um=57, aod=58);
   }
   if verboseGpu then stopVerboseGpu();
 
@@ -694,10 +696,3 @@ proc vectorAddUniform4(ref d_vector: [] uint(32), const ref d_uniforms : [] uint
     }
 }
 
-proc verifyLaunches() {
-  use ChplConfig;
-  param expected = if CHPL_GPU_MEM_STRATEGY == "unified_memory" then 57 else 58;
-  const actual = getGpuDiagnostics()[0].kernel_launch;
-  assert(actual == expected,
-         "observed ", actual, " launches instead of ", expected);
-}
