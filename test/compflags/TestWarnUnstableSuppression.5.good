@@ -11,6 +11,9 @@ $CHPL_HOME/modules/standard/List.chpl:nnnn: warning: 'list.parSafe' is unstable 
 $CHPL_HOME/modules/standard/List.chpl:nnnn: warning: 'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future
 $CHPL_HOME/modules/standard/List.chpl:nnnn: warning: 'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future
 $CHPL_HOME/modules/standard/List.chpl:nnnn: warning: 'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future
+$CHPL_HOME/modules/standard/Set.chpl:nnnn: warning: 'set.parSafe' is unstable and is expected to be replaced by a separate set type in the future
+$CHPL_HOME/modules/standard/Set.chpl:nnnn: warning: 'set.parSafe' is unstable and is expected to be replaced by a separate set type in the future
+$CHPL_HOME/modules/standard/Set.chpl:nnnn: warning: 'set.parSafe' is unstable and is expected to be replaced by a separate set type in the future
 $CHPL_HOME/modules/standard/IO.chpl:nnnn: warning: append mode is unstable
 $CHPL_HOME/modules/standard/Errors.chpl:nnnn: warning: 'deallocate' is unstable, and may be renamed or moved
 $CHPL_HOME/modules/standard/Errors.chpl:nnnn: In initializer:
