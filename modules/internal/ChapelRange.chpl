@@ -332,6 +332,11 @@ module ChapelRange {
       compilerError("initializing a range with strideKind.", strides:string,
                            " from a range with strideKind.", s:string);
 
+    if isDeprecatedUnboundedAssignment(idxType, other.idxType, bounds) then
+      compilerWarning("initializing an unbounded range with idxType ",
+             idxType:string, " from an unbounded range with idxType ",
+       other.idxType:string, " is deprecated");
+
     param isEnumBool = isFiniteIdxType(idxType);
     type bt = other.chpl_integralIdxType;
     const low  = if isEnumBool && !other.hasLowBound()
@@ -989,6 +994,14 @@ module ChapelRange {
       return true; // can assign between `..` ranges of any idxType
     var toVar: to, fromVar: from;
     return canResolve("=", toVar, fromVar);
+  }
+
+  private proc isDeprecatedUnboundedAssignment(type to, type from,
+                                               param bounds) param {
+    // an assignment may be deprecated only between unbounded ranges
+    if bounds != boundKind.neither then return false;
+    // assignment is deprecated if it would be illegal between bounded ranges
+    return !assignIdxIsLegal(to, from, boundKind.both);
   }
 
   private proc verifyAppropriateStide(param strides, stride) {
@@ -1700,6 +1713,7 @@ private inline proc rangeCastHelper(r, type t) throws {
      ``false`` otherwise.  Returns ``false`` if either range is
      ambiguously aligned.
    */
+  @deprecated("range.boundsCheck() is deprecated, consider using range.contains() instead")
   inline proc range.boundsCheck(other: range(?e,?b,?s))
     where b == boundKind.neither
   {
@@ -1714,6 +1728,7 @@ private inline proc rangeCastHelper(r, type t) throws {
   }
 
   @chpldoc.nodoc
+  @deprecated("range.boundsCheck() is deprecated, consider using range.contains() instead")
   inline proc range.boundsCheck(other: range(?e,?b,?s))
   {
     if ! this.isAligned() || ! other.isAligned()
@@ -1729,6 +1744,7 @@ private inline proc rangeCastHelper(r, type t) throws {
   }
   /* Returns ``true`` if ``other`` is contained in this range and ``false``
      otherwise. */
+  @deprecated("range.boundsCheck() is deprecated, please use range.contains() instead")
   inline proc range.boundsCheck(other: idxType) do
     return contains(other);
 
@@ -2052,6 +2068,12 @@ private inline proc rangeCastHelper(r, type t) throws {
       compilerError("assigning to a range with strideKind.", r1.strides:string,
                            " from a range with strideKind.", r2.strides:string,
                            " without an explicit cast");
+
+    if isDeprecatedUnboundedAssignment(r1.idxType, r2.idxType, r2.bounds) then
+      compilerWarning("assignment to an unbounded range with idxType ",
+           r1.idxType:string, " from an unbounded range with idxType ",
+           r2.idxType:string, " is deprecated");
+
     r1._low = r2._low: r1.chpl_integralIdxType;
     r1._high = r2._high: r1.chpl_integralIdxType;
 
