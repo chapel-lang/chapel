@@ -1172,10 +1172,15 @@ static void      addArgCoercion(FnSymbol*  fn,
                                 SymExpr*   actual,
                                 bool&      checkAgain);
 
+static void warnForDeprecatedImplicitConversion(ArgSymbol* formal,
+                                                SymExpr* actual);
+
 static void handleCoercion(FnSymbol* fn, CallExpr* call,
                            ArgSymbol* formal, SymExpr* actual,
                            SymbolMap& copyMap,
                            SymbolMap& inTmpToActualMap) {
+
+  warnForDeprecatedImplicitConversion(formal, actual);
 
   if (fn->retTag == RET_PARAM) {
     //
@@ -1641,6 +1646,34 @@ static void addArgCoercion(FnSymbol*  fn,
   // they are not passed by ref or const ref.
   if (!castTemp->isRef()) {
     errorIfValueCoercionToRef(call, prevActual, formal);
+  }
+}
+
+static void warnForDeprecatedImplicitConversion(ArgSymbol* formal,
+                                                SymExpr* actual) {
+  if (formal->getModule()->modTag == MOD_USER) {
+    Type* formalType = formal->getValType();
+    Type* actualType = actual->getValType();
+    if (formal->hasFlag(FLAG_DEPRECATED_IMPLICIT_CONVERSION) &&
+        formalType != actualType) {
+      const char* actualTypeStr = toString(actualType);
+      const char* formalInsnTypeStr = toString(formalType);
+      const char* formalTypeStr = "?";
+      if      (is_bool_type(formalType))    formalTypeStr = "bool";
+      else if (is_int_type(formalType))     formalTypeStr = "int";
+      else if (is_uint_type(formalType))    formalTypeStr = "uint";
+      else if (is_real_type(formalType))    formalTypeStr = "real";
+      else if (is_imag_type(formalType))    formalTypeStr = "imag";
+      else if (is_complex_type(formalType)) formalTypeStr = "complex";
+
+      USR_WARN(actual, "deprecated use of implicit conversion "
+                       "when passing to a generic formal");
+      USR_PRINT(actual, "actual with type '%s'", actualTypeStr);
+      USR_PRINT(formal, "is passed to formal with type '%s(?w)'",
+                formalTypeStr);
+      USR_PRINT("consider adding a cast to '%s' or an overload to handle '%s'",
+                formalInsnTypeStr, actualTypeStr);
+    }
   }
 }
 
