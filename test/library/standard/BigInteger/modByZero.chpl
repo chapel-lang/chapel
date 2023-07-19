@@ -23,3 +23,13 @@ else if(testnum == 4) {
   var res: bigint;
   mod(res, a, b);
 }
+else if(testnum == 5) {
+  var a: bigint = 15;
+  var b: uint = 0;
+  a %= b;
+}
+else if(testnum == 6) {
+  var a: bigint = 15;
+  var b: bigint = 0;
+  a %= b;
+}
