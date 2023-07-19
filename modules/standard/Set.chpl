@@ -131,7 +131,9 @@ module Set {
     The set type is not parallel safe by default. For situations in which
     such protections are desirable, parallel safety can be enabled by setting
     `parSafe = true` in any set constructor. A set constructed from another
-    set inherits the parallel safety mode of that set by default.
+    set inherits the parallel safety mode of that set by default. Note that
+    the ``parSafe`` mode is currently unstable and will eventually be replaced
+    by a standalone parallel-safe set type.
   */
   record set {
 
@@ -139,6 +141,7 @@ module Set {
     type eltType;
 
     /* If `true`, this set will perform parallel safe operations. */
+    @unstable("'set.parSafe' is unstable and is expected to be replaced by a separate set type in the future")
     param parSafe = false;
 
     /*
@@ -189,7 +192,7 @@ module Set {
                                       initialCapacity);
     }
 
-    @unstable("'set.parSafe' is unstable")
+    @unstable("'set.parSafe' is unstable and is expected to be replaced by a separate set type in the future")
     proc init(type eltType, param parSafe,
               resizeThreshold=defaultHashTableResizeThreshold,
               initialCapacity=16) {
@@ -243,7 +246,7 @@ module Set {
       for elem in iterable do _addElem(elem);
     }
 
-    @unstable("'set.parSafe' is unstable")
+    @unstable("'set.parSafe' is unstable and is expected to be replaced by a separate set type in the future")
     proc init(type eltType, iterable, param parSafe,
               resizeThreshold=defaultHashTableResizeThreshold,
               initialCapacity=16)
