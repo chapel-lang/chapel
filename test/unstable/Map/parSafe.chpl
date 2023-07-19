@@ -11,3 +11,9 @@ class MyClass {
 var m4 = new map(int, shared MyClass);
 var m5 = new map(int, shared MyClass, parSafe=true);
 var m6 = new map(int, shared MyClass, parSafe=false);
+
+var m7 = new map(string,int,parSafe=true);
+var m8 = new map(string,int,parSafe=false);
+
+m7.addOrReplace("a",1);
+m8["a"] = 1;

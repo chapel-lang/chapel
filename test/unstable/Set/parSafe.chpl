@@ -11,3 +11,15 @@ class MyClass {
 var s4 = new set(shared MyClass);
 var s5 = new set(shared MyClass, parSafe=true);
 var s6 = new set(shared MyClass, parSafe=false);
+
+record Values {
+    iter these() {
+        for i in 0..10 do
+            yield i;
+    }
+}
+
+var v = new Values();
+
+var s7 = new set(int, v, parSafe=true);
+var s8 = new set(int, v, parSafe=false);

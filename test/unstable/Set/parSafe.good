@@ -2,3 +2,5 @@ parSafe.chpl:4: warning: 'set.parSafe' is unstable and is expected to be replace
 parSafe.chpl:5: warning: 'set.parSafe' is unstable and is expected to be replaced by a separate set type in the future
 parSafe.chpl:12: warning: 'set.parSafe' is unstable and is expected to be replaced by a separate set type in the future
 parSafe.chpl:13: warning: 'set.parSafe' is unstable and is expected to be replaced by a separate set type in the future
+parSafe.chpl:24: warning: 'set.parSafe' is unstable and is expected to be replaced by a separate set type in the future
+parSafe.chpl:25: warning: 'set.parSafe' is unstable and is expected to be replaced by a separate set type in the future

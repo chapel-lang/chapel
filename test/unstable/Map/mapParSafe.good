@@ -1,2 +1,0 @@
-mapParSafe.chpl:5: warning: 'map.parSafe' is unstable and is expected to be replaced by a separate map type in the future
-mapParSafe.chpl:6: warning: 'map.parSafe' is unstable and is expected to be replaced by a separate map type in the future
