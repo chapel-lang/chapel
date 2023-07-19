@@ -5345,24 +5345,22 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
     std::vector<GenRet> args;
     TypeSymbol* dt;
     bool isget = true;
-    bool isGpu = usingGpuLocaleModel();
 
     // we actually have 5 arguments with sublocale, but than line and file info
     // are added.
     bool hasSubloc = (call->numActuals() == 7);
-
-    INT_ASSERT(call, isGpu || !hasSubloc);
+    bool useGpuVersion = usingGpuLocaleModel() && hasSubloc;
 
     if (call->primitive->tag == PRIM_CHPL_COMM_GET ||
         call->primitive->tag == PRIM_CHPL_COMM_ARRAY_GET) {
-      if (isGpu) {
+      if (useGpuVersion) {
         fn = "chpl_gen_comm_get_gpu";
       }
       else {
         fn = "chpl_gen_comm_get";
       }
     } else {
-      if (isGpu) {
+      if (useGpuVersion) {
         fn = "chpl_gen_comm_put_gpu";
       }
       else {
@@ -5412,7 +5410,7 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
     args.push_back(locale);
 
 
-    if (isGpu) {
+    if (useGpuVersion) {
       GenRet subloc;
 
       if (hasSubloc) {
