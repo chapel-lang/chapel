@@ -1,2 +1,1 @@
 warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly
-(kernel_launch = 2, host_to_device = 1, device_to_host = 1, device_to_device = 1)

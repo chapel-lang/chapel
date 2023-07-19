@@ -1,5 +1,7 @@
 use GpuDiagnostics;
 
+use GpuTestCommon;
+
 startGpuDiagnostics();
 on here.gpus[0] {
   var A = [1,2,3,4,5];
@@ -77,7 +79,7 @@ on here.gpus[0] {
 
 stopGpuDiagnostics();
 
-writeln(getGpuDiagnostics());
+verifyLaunches(um=5, aod=5);
 
 proc writeArr(A) {
   write("Array: ");

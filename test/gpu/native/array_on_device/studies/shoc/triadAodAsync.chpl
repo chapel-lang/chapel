@@ -5,6 +5,8 @@ use GpuDiagnostics;
 use MemDiagnostics;
 use GPU;
 
+use GpuTestCommon;
+
 config const passes = 1; //10;
 config const alpha = 1.75: real(32);
 config const noisy = false;
@@ -205,6 +207,6 @@ proc main() {
     }
     else {
       stopGpuDiagnostics();
-      writeln(getGpuDiagnostics());
+      verifyLaunches(um=275, aod=275, h2d=258, d2h=128, d2d=0);
     }
 }

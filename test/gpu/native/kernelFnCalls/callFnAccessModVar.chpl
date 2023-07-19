@@ -1,5 +1,7 @@
 use GpuDiagnostics;
 
+use GpuTestCommon;
+
 config const n = 100;
 
 var x: int = 7;
@@ -17,4 +19,4 @@ on here.gpus[0] {
   stopGpuDiagnostics();
   writeln(A);
 }
-writeln(getGpuDiagnostics());
+verifyLaunches(um=1, aod=1);
