@@ -13,7 +13,7 @@ stdout.withSerializer(JsonSerializer).writef("testing json stdout: %?\n", r);
 var f = openTempFile();
 {
   var writer = f.writer();
-  var str = '{"foo": 4, "bar":b"some written bytes"}';
+  var str = '{"foo": 4, "bar":"some written bytes"}';
   writeln("Writing JSON: ", str);
   writer.write(str);
   writer.close();
