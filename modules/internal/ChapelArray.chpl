@@ -666,6 +666,7 @@ module ChapelArray {
   //
   pragma "syntactic distribution"
   @chpldoc.nodoc
+  @unstable("the type 'dmap' is unstable, instead please use distribution factory functions when available")
   record dmap { }
 
   proc chpl__buildDistType(type t) type where isSubtype(_to_borrowed(t), BaseDist) {
