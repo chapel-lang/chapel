@@ -47,7 +47,7 @@ proc main() {
   runSort();
   if gpuDiags {
     stopGpuDiagnostics();
-    verifyLaunches(um=57, aod=58);
+    verifyDiags(um=57, aod=58);
   }
   if verboseGpu then stopVerboseGpu();
 

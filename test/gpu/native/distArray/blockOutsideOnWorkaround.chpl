@@ -21,4 +21,4 @@ stopGpuDiagnostics();
 var sum = 0;
 for a in arr do sum += a;
 assert(sum == n);
-verifyLaunches(um=here.maxTaskPar, aod=here.maxTaskPar+1);
+verifyDiags(um=here.maxTaskPar, aod=here.maxTaskPar+1);

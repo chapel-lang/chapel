@@ -21,7 +21,7 @@ stopGpuDiagnostics();
                                  10 for nSteps)
    With array_on_device, you'll get 2 more for array inits.
 */
-verifyLaunches(um=21, aod=23);
+verifyDiags(um=21, aod=23);
 
 proc jacobi(loc) {
   on loc {

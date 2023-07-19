@@ -23,7 +23,7 @@ on here.gpus[0] {
   writeln(A);
 }
 stopGpuDiagnostics();
-verifyLaunches(um=1, aod=2);
+verifyDiags(um=1, aod=2);
 
 var x = foo(13);
 writeln(x);
