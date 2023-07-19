@@ -1160,7 +1160,12 @@ module ChapelDomain {
 
     /* Return the domain map that implements this domain */
     pragma "return not owned"
+    @deprecated("domain.dist is deprecated, please use domain.distribution instead")
     proc dist do return _getDistribution(_value.dist);
+
+    /* Return the domain map that implements this domain */
+    pragma "return not owned"
+    proc distribution do return _getDistribution(_value.dist);
 
     /* Return the number of dimensions in this domain */
     proc rank param {
