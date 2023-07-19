@@ -4157,20 +4157,7 @@ module BigInteger {
      It is an error if `b` == 0.
   */
   proc mod(ref result: bigint, const ref a: bigint, const ref b: bigint) {
-    if _local {
-      mpz_fdiv_r(result.mpz, a.mpz, b.mpz);
-    } else if result.localeId == chpl_nodeID {
-      const a_ = a;
-      const b_ = b;
-      mpz_fdiv_r(result.mpz, a_.mpz, b_.mpz);
-    } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
-      on __primitive("chpl_on_locale_num", resultLoc) {
-        const a_ = a;
-        const b_ = b;
-        mpz_fdiv_r(result.mpz, a_.mpz, b_.mpz);
-      }
-    }
+    BigInteger.divR(result, a, b, rounding=round.down);
   }
 
   /* Computes the mod operator on the two arguments, defined as
@@ -4198,6 +4185,10 @@ module BigInteger {
      It is an error if `b` == 0.
   */
   proc mod(ref result: bigint, const ref a: bigint, b: integral) : int {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to divide by zero");
+
     var b_ : c_ulong;
     var rem: c_ulong;
 
