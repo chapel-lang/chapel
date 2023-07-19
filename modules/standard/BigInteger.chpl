@@ -910,13 +910,13 @@ module BigInteger {
 
       } else if res.localeId == chpl_nodeID {
         const x_ = x;
-        mpz_tdiv_r_ui(res.mpz, x_.mpz, y_);
+        mpz_tdiv_r_ui(res.mpz, x_.mpz, y);
 
       } else {
         const resLoc = chpl_buildLocaleID(res.localeId, c_sublocid_any);
         on __primitive("chpl_on_locale_num", resLoc) {
           const x_ = x;
-          mpz_tdiv_r_ui(res.mpz, x_.mpz, y_);
+          mpz_tdiv_r_ui(res.mpz, x_.mpz, y);
         }
       }
     }
@@ -4176,23 +4176,23 @@ module BigInteger {
       if b == 0 then
         halt("Attempt to divide by zero");
 
-    var b_ : c_ulong;
-    var rem: c_ulong;
-
     inline proc helper(ref res, ref rem, const ref a, b) {
       if _local {
-        rem = mpz_fdiv_r_ui(res.mpz, a.mpz, b_);
+        rem = mpz_fdiv_r_ui(res.mpz, a.mpz, b);
       } else if res.localeId == chpl_nodeID {
         const a_ = a;
-        rem = mpz_fdiv_r_ui(res.mpz, a_.mpz, b_);
+        rem = mpz_fdiv_r_ui(res.mpz, a_.mpz, b);
       } else {
         const resLoc = chpl_buildLocaleID(res.localeId, c_sublocid_any);
         on __primitive("chpl_on_locale_num", resLoc) {
           const a_ = a;
-          rem = mpz_fdiv_r_ui(res.mpz, a_.mpz, b_);
+          rem = mpz_fdiv_r_ui(res.mpz, a_.mpz, b);
         }
       }
     }
+
+    var b_ : c_ulong;
+    var rem: c_ulong;
 
     if isNonnegative(b) {
       b_ = b.safeCast(c_ulong);
