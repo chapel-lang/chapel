@@ -76,6 +76,46 @@ static void checkForClassAssignOps(FnSymbol* fn) {
   }
 }
 
+// This function is checking for any AggregateType (record/class/union) which
+// contains a non-default initializable/non-copyable field
+// (sync/single/atomic), but fails to explicitly define either `init` or
+// `init=`. This includes having a field which is a container for that type
+// like an array or tuple.
+static void checkSyncSingleAtomicDefaultInit() {
+  for_alive_in_Vec(AggregateType, at, gAggregateTypes) {
+    bool hasCompilerGeneratedInit = false;
+    bool hasCompilerGeneratedCopyInit = false;
+    for (auto fn : at->methods) {
+      if (fn && fn->isDefaultInit()) {
+        hasCompilerGeneratedInit = true;
+        break;
+      }
+      if (fn && fn->isDefaultCopyInit()) {
+        hasCompilerGeneratedCopyInit = true;
+        break;
+      }
+    }
+
+    if (hasCompilerGeneratedInit || hasCompilerGeneratedCopyInit) {
+      for_fields(field, at) {
+        bool isSync = isOrContainsSyncType(field->type);
+        bool isSingle = isOrContainsSingleType(field->type);
+        bool isAtomic = isOrContainsAtomicType(field->type);
+        if (isSync || isSingle || isAtomic) {
+          USR_WARN(at,
+                  "compiler generated default initializers for %s with '%s' "
+                  "fields are deprecated, please supply an 'init%s' method",
+                  at->isClass() ? "classes" : (at->isRecord() ? "records" : "unions"),
+                  isSync ? "sync" : (isSingle ? "single" : "atomic"), hasCompilerGeneratedCopyInit ? "=" : "");
+        }
+      }
+    }
+  }
+
+}
+
+
+
 void
 checkResolved() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -135,6 +175,8 @@ checkResolved() {
   checkConstLoops();
   checkExternProcs();
   checkExportedProcs();
+
+  checkSyncSingleAtomicDefaultInit();
 }
 
 

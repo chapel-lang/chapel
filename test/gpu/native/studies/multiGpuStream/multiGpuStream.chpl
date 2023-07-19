@@ -1,5 +1,6 @@
 use Time;
 use Math;
+use ChplConfig;
 
 config type elemType = real(64);
 
@@ -79,7 +80,15 @@ coforall (gpu, id) in zip(here.gpus, here.gpus.domain) do on gpu {
 if printOutput then writeln(A);
 
 if validate {
-  const result = + reduce A;
+  var result = 0.0;
+  if CHPL_GPU=="amd" {
+    // reductions with AMD+AOD hangs see
+    // https://github.com/chapel-lang/chapel/issues/22736
+    for a in A do result += a;
+  }
+  else {
+    result = + reduce A;
+  }
   const expected = numElems*(1+alpha*2);
 
   assert(isclose(result, expected));

@@ -2458,9 +2458,7 @@ void prepareCodegenLLVM()
     // --ieee-float
     FM.setAllowContract(true);
   }
-  if (gCodegenGPU == false) {
-    info->irBuilder->setFastMathFlags(FM);
-  }
+  info->irBuilder->setFastMathFlags(FM);
 
   checkAdjustedDataLayout();
 
@@ -3669,7 +3667,7 @@ static clang::CanQualType getClangType(::Type* t, bool makeRef) {
 
   if (t == dtVoid || t == dtNothing)
     return Ctx->VoidTy;
-  // could match other builtin types like c_void_ptr or c_int here
+  // could match other builtin types like c_int here
 
   clang::TypeDecl* cTypeDecl = NULL;
   clang::ValueDecl* cValueDecl = NULL;

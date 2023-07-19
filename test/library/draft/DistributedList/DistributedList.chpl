@@ -122,6 +122,15 @@ module DistributedList {
 
             this.numEntries.write(d.size);
         }
+        proc init=(other: distributedList) {
+          this.eltType = other.eltType;
+          this.blockSize = other.blockSize;
+          this.targetLocales = other.targetLocales;
+          this.locDom = other.locDom;
+          this.locks = other.locks;
+          this.blockLists = other.blockLists;
+          this.numEntries = other.numEntries.read();
+        }
 
         // append a new element to the end of the list
         proc ref append(pragma "no auto destroy" in x: eltType): int {

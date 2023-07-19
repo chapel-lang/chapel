@@ -355,7 +355,7 @@ private extern proc event_base_free(base: c_ptr(event_base));
 private extern proc event_base_got_break(base: c_ptr(event_base)):c_int;
 private extern proc event_base_loopbreak(base: c_ptr(event_base)):c_int;
 private extern proc event_new(base: c_ptr(event_base), fd: c_int, events: c_short,
-                              callback: c_fn_ptr, callback_arg: c_void_ptr): c_ptr(event);
+                              callback: c_fn_ptr, callback_arg: c_ptr(void)): c_ptr(event);
 private extern proc event_add(ev: c_ptr(event), timeout: c_ptr(struct_timeval)):c_int;
 private extern proc event_del(ev: c_ptr(event)):c_int;
 private extern proc event_free(ev: c_ptr(event)):c_int;
@@ -364,8 +364,8 @@ private extern proc evutil_make_socket_nonblocking(fd: c_int):c_int;
 private extern proc libevent_global_shutdown();
 private extern proc evthread_use_pthreads();
 private extern proc pthread_create(thread: c_ptr(pthread_t), const attr: c_ptr(pthread_attr_t),
-                                   start_routine: c_fn_ptr, arg: c_void_ptr): c_int;
-private extern proc pthread_join(thread: pthread_t, retval: c_ptr(c_void_ptr)): c_int;
+                                   start_routine: c_fn_ptr, arg: c_ptr(void)): c_int;
+private extern proc pthread_join(thread: pthread_t, retval: c_ptr(c_ptr(void))): c_int;
 
 private extern const SOCK_STREAM:c_int;
 private extern const SOCK_DGRAM:c_int;
@@ -588,8 +588,8 @@ private extern proc getaddrinfo(node:c_string, service:c_string, ref hints:sys_a
 private extern proc sys_freeaddrinfo(res:sys_addrinfo_ptr_t);
 private extern proc sys_getpeername(sockfd:c_int, ref addr:sys_sockaddr_t):c_int;
 private extern proc sys_getsockname(sockfd:c_int, ref addr:sys_sockaddr_t):c_int;
-private extern proc sys_getsockopt(sockfd:c_int, level:c_int, optname:c_int, optval:c_void_ptr, ref optlen:socklen_t):c_int;
-private extern proc sys_setsockopt(sockfd:c_int, level:c_int, optname:c_int, optval:c_void_ptr, optlen:socklen_t):c_int;
+private extern proc sys_getsockopt(sockfd:c_int, level:c_int, optname:c_int, optval:c_ptr(void), ref optlen:socklen_t):c_int;
+private extern proc sys_setsockopt(sockfd:c_int, level:c_int, optname:c_int, optval:c_ptr(void), optlen:socklen_t):c_int;
 private extern proc sys_listen(sockfd:c_int, backlog:c_int):c_int;
 private extern proc sys_socket(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out:c_int):c_int;
 private extern proc sys_close(fd:c_int):c_int;
@@ -664,7 +664,7 @@ proc tcpListener.accept(in timeout: struct_timeval = indefiniteTimeout):tcpConn 
   }
   var localSync$: sync c_short;
   // create event pending state
-  var internalEvent = event_new(event_loop_base, this.socketFd, EV_READ | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync$):c_void_ptr);
+  var internalEvent = event_new(event_loop_base, this.socketFd, EV_READ | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync$):c_ptr(void));
   defer {
     // cleanup
     event_free(internalEvent);
@@ -859,7 +859,7 @@ proc connect(const ref address: ipAddr, in timeout = indefiniteTimeout): tcpConn
   }
   var localSync$: sync int = 0;
   localSync$.readFE();
-  var writerEvent = event_new(event_loop_base, socketFd, EV_WRITE | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync$):c_void_ptr);
+  var writerEvent = event_new(event_loop_base, socketFd, EV_WRITE | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync$):c_ptr(void));
   defer {
     event_del(writerEvent);
     event_free(writerEvent);
@@ -1018,7 +1018,7 @@ proc udpSocket.close throws {
 }
 
 @chpldoc.nodoc
-private extern proc sys_recvfrom(sockfd:c_int, buff:c_void_ptr, len:c_size_t, flags:c_int, ref src_addr_out:sys_sockaddr_t, ref num_recvd_out:c_ssize_t):c_int;
+private extern proc sys_recvfrom(sockfd:c_int, buff:c_ptr(void), len:c_size_t, flags:c_int, ref src_addr_out:sys_sockaddr_t, ref num_recvd_out:c_ssize_t):c_int;
 
 /*
   Reads upto `bufferLen` bytes from the socket, and
@@ -1057,7 +1057,7 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = indefiniteTimeout,
     throw createSystemError(err_out,"recv failed");
   }
   var localSync$: sync c_short;
-  var internalEvent = event_new(event_loop_base, this.socketFd, EV_READ | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync$):c_void_ptr);
+  var internalEvent = event_new(event_loop_base, this.socketFd, EV_READ | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync$):c_ptr(void));
   defer {
     event_free(internalEvent);
   }
@@ -1135,7 +1135,7 @@ proc udpSocket.recv(bufferLen: int, timeout: real) throws {
 }
 
 @chpldoc.nodoc
-private extern proc sys_sendto(sockfd:c_int, buff:c_void_ptr, len:c_long, flags:c_int, const ref address:sys_sockaddr_t,  ref num_sent_out:c_ssize_t):c_int;
+private extern proc sys_sendto(sockfd:c_int, buff:c_ptr(void), len:c_long, flags:c_int, const ref address:sys_sockaddr_t,  ref num_sent_out:c_ssize_t):c_int;
 
 /*
   Send `data` over socket to the provided address and
@@ -1164,7 +1164,7 @@ proc udpSocket.send(data: bytes, in address: ipAddr,
                     in timeout = indefiniteTimeout):c_ssize_t throws {
   var err_out:c_int = 0;
   var length:c_ssize_t;
-  err_out = sys_sendto(this.socketFd, data.c_str():c_void_ptr, data.size:c_long, 0, address._addressStorage, length);
+  err_out = sys_sendto(this.socketFd, data.c_str():c_ptr(void), data.size:c_long, 0, address._addressStorage, length);
   if err_out == 0 {
     return length;
   }
@@ -1172,7 +1172,7 @@ proc udpSocket.send(data: bytes, in address: ipAddr,
     throw createSystemError(err_out, "send failed");
   }
   var localSync$: sync c_short;
-  var internalEvent = event_new(event_loop_base, this.socketFd, EV_WRITE | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync$):c_void_ptr);
+  var internalEvent = event_new(event_loop_base, this.socketFd, EV_WRITE | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync$):c_ptr(void));
   defer {
     event_free(internalEvent);
   }
@@ -1189,7 +1189,7 @@ proc udpSocket.send(data: bytes, in address: ipAddr,
       throw createSystemError(ETIMEDOUT, "send timed out");
     }
     var elapsedTime = (t.elapsed()*1_000_000):c_long;
-    err_out = sys_sendto(this.socketFd, data.c_str():c_void_ptr, data.size:c_long, 0, address._addressStorage, length);
+    err_out = sys_sendto(this.socketFd, data.c_str():c_ptr(void), data.size:c_long, 0, address._addressStorage, length);
     if err_out != 0 {
       if err_out != EAGAIN && err_out != EWOULDBLOCK {
         throw createSystemError(err_out, "send failed");
@@ -1247,7 +1247,7 @@ extern const SO_SECINFO:c_int;
 proc setSockOpt(socketFd: c_int, level: c_int, optname: c_int, ref value: c_int) throws {
   var optlen = sizeof(value):socklen_t;
   var ptroptval = c_ptrTo(value);
-  var err_out = sys_setsockopt(socketFd, level, optname, ptroptval:c_void_ptr, optlen);
+  var err_out = sys_setsockopt(socketFd, level, optname, ptroptval:c_ptr(void), optlen);
   if err_out != 0 {
     throw createSystemError(err_out, "Failed to set socket option");
   }
@@ -1349,7 +1349,7 @@ proc getSockOpt(socketFd:c_int, level: c_int, optname: c_int) throws {
   var optval:c_int;
   var ptroptval = c_ptrTo(optval);
   var optlen = sizeof(optval):socklen_t;
-  var err_out = sys_getsockopt(socketFd, level, optname, ptroptval:c_void_ptr, optlen);
+  var err_out = sys_getsockopt(socketFd, level, optname, ptroptval:c_ptr(void), optlen);
   if err_out != 0 {
     throw createSystemError(err_out, "Failed to get socket option");
   }
@@ -1386,7 +1386,7 @@ proc getSockOpt(socketFd:c_int, level: c_int, optname: c_int, buflen: uint(16)) 
   else {
     var len:socklen_t = buflen;
     var buffer = allocate(c_uchar, buflen, clear=true);
-    var err_out = sys_getsockopt(socketFd, level, optname, buffer:c_void_ptr, len);
+    var err_out = sys_getsockopt(socketFd, level, optname, buffer:c_ptr(void), len);
     if err_out != 0 {
       deallocate(buffer);
       throw createSystemError(err_out, "Failed to get socket option");
@@ -1564,7 +1564,7 @@ event_loop_base = event_base_new();
 var event_loop_thread:pthread_t;
 
 @chpldoc.nodoc
-proc dispatchLoop():c_void_ptr throws {
+proc dispatchLoop():c_ptr(void) throws {
   if event_loop_base == nil {
     throw new Error("event loop wasn't initialized");
   }
@@ -1581,7 +1581,7 @@ proc dispatchLoop():c_void_ptr throws {
 pthread_create(c_ptrTo(event_loop_thread), nil:c_ptr(pthread_attr_t), c_ptrTo(dispatchLoop), nil);
 
 @chpldoc.nodoc
-proc syncRWTCallback(fd: c_int, event: c_short, arg: c_void_ptr) {
+proc syncRWTCallback(fd: c_int, event: c_short, arg: c_ptr(void)) {
   var syncVariablePtr = arg: c_ptr(sync int);
   syncVariablePtr.deref().writeEF(event);
 }
@@ -1589,7 +1589,7 @@ proc syncRWTCallback(fd: c_int, event: c_short, arg: c_void_ptr) {
 @chpldoc.nodoc
 proc deinit() {
   event_base_loopbreak(event_loop_base);
-  pthread_join(event_loop_thread, nil:c_ptr(c_void_ptr));
+  pthread_join(event_loop_thread, nil:c_ptr(c_ptr(void)));
   event_base_free(event_loop_base);
   libevent_global_shutdown();
 }

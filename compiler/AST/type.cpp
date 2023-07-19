@@ -272,8 +272,10 @@ const char* toString(Type* type, bool decorateAllClasses) {
           retval = useName;
         }
       }
-    } else if (vt == dtCVoidPtr) {  // de-sugar chpl__c_void_ptr
-      retval = "c_void_ptr";
+    } else if (vt == dtCVoidPtr) {
+      // de-sugar chpl__c_void_ptr, which is used internally and is a distinct
+      // type from c_ptr(void)
+      retval = "raw_c_void_ptr";
     }
 
     if (retval == NULL)
@@ -1166,7 +1168,7 @@ void initPrimitiveTypes() {
 
   // Could be == c_ptr(int(8)) e.g.
   // used in some runtime interfaces
-  dtCVoidPtr   = createPrimitiveType("chpl__c_void_ptr", "c_void_ptr" );
+  dtCVoidPtr   = createPrimitiveType("chpl__c_void_ptr", "raw_c_void_ptr" );
   dtCVoidPtr->symbol->addFlag(FLAG_NO_CODEGEN);
   dtCVoidPtr->defaultValue = gNil;
 
@@ -1610,6 +1612,12 @@ bool isClassLikeOrPtr(Type* t) {
                             t == dtCFnPtr);
 }
 
+bool isCVoidPtr(Type* t) {
+  return (t->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
+          getDataClassType(t->symbol)->typeInfo() == dtVoid) ||
+         t == dtCVoidPtr;
+}
+
 bool isClassLikeOrNil(Type* t) {
   if (t == dtNil) return true;
   return isClassLike(t);
@@ -1792,6 +1800,73 @@ bool isSingleType(const Type* t) {
 bool isAtomicType(const Type* t) {
   return t->symbol->hasFlag(FLAG_ATOMIC_TYPE);
 }
+
+// Returns the element type, given an array type.
+static Type* arrayElementType(AggregateType* arrayType) {
+  Type* eltType = nullptr;
+  INT_ASSERT(arrayType->symbol->hasFlag(FLAG_ARRAY));
+  Type* instType = arrayType->getField("_instance")->type;
+  AggregateType* instClass = toAggregateType(canonicalClassType(instType));
+  TypeSymbol* ts = getDataClassType(instClass->symbol);
+  // if no eltType here, go to the super class
+  while (ts == nullptr) {
+    if (Symbol* super = instClass->getSubstitutionWithName(astr("super"))) {
+        instClass = toAggregateType(canonicalClassType(super->type));
+        ts = getDataClassType(instClass->symbol);
+    } else break;
+  }
+  if (ts != NULL) eltType = ts->type;
+
+  return eltType;
+}
+
+// Returns the element type, given an array type.
+// Recurse into it if it is still an array.
+static Type* finalArrayElementType(AggregateType* arrayType) {
+  Type* eltType = nullptr;
+  do {
+    eltType = arrayElementType(arrayType);
+    arrayType = toAggregateType(eltType);
+  } while (arrayType != nullptr && arrayType->symbol->hasFlag(FLAG_ARRAY));
+
+  return eltType;
+}
+
+static bool isOrContains(Type *type, Flag flag, bool canBeTypeVar = false) {
+  if (type == nullptr) {
+    return false;
+  } else if (type->symbol->hasFlag(flag)) {
+    return true;
+  } else if (canBeTypeVar && !type->symbol->hasFlag(FLAG_TYPE_VARIABLE)) {
+    // in the base case, this function should not return true for something like
+    // type T = sync int;
+    // But when searching tuples and arrays, this is needed
+    return true;
+  } else {
+    Type* vt = type->getValType();
+    if (isDecoratedClassType(vt)) {
+      vt = canonicalClassType(vt)->getValType();
+    }
+    if (AggregateType* at = toAggregateType(vt)) {
+      // get backing array instance and recurse
+      if (at->symbol->hasFlag(FLAG_ARRAY)) {
+        Type* eltType = finalArrayElementType(at);
+        if (isOrContains(eltType, flag, true /*can be type var*/)) return true;
+      } else if (at->symbol->hasFlag(FLAG_TUPLE)) {
+        // if its a tuple, search the tuple type substitutions
+        for (const auto& ns: at->substitutionsPostResolve) {
+          Type* eltType = ns.value->type;
+          if (isOrContains(eltType, flag, true /*can be type var*/)) return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+bool isOrContainsSyncType(Type* t) { return isOrContains(t, FLAG_SYNC); }
+bool isOrContainsSingleType(Type* t) { return isOrContains(t, FLAG_SINGLE); }
+bool isOrContainsAtomicType(Type* t) { return isOrContains(t, FLAG_ATOMIC_TYPE); }
+
 
 bool isRefIterType(Type* t) {
   Symbol* iteratorRecord = NULL;

@@ -1,0 +1,4 @@
+#!/bin/bash
+
+sed '/CHPL_HOME/!s@^.*/test/@USER PATH/test/@' $2 > $2.tmp
+mv $2.tmp $2

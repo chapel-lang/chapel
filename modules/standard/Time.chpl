@@ -485,7 +485,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* Return a formatted `string` matching the `format` argument and the date */
   @unstable("'date.strftime' is unstable")
   proc date.strftime(fmt: string) {
-    extern proc strftime(s: c_void_ptr, size: c_size_t, format: c_string, ref timeStruct: tm);
+    extern proc strftime(s: c_ptr(void), size: c_size_t, format: c_string, ref timeStruct: tm);
     const bufLen: c_size_t = 100;
     var buf: [1..bufLen] c_char;
     var timeStruct: tm;
@@ -538,9 +538,12 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Reads this `date` from ISO 8601 format: YYYY-MM-DD */
   proc date.readThis(f) throws {
+    import JSON.JsonDeserializer;
+
     const binary = f.binary(),
           arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
-          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+          isjson = (arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary) ||
+            isSubtype(f.deserializerType, JsonDeserializer);
 
     if isjson then
       f._readLiteral('"');
@@ -794,7 +797,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* Return a `string` matching the `format` argument for this `time` */
   @unstable("'time.strftime' is unstable")
   proc time.strftime(fmt: string) {
-    extern proc strftime(s: c_void_ptr, size: c_size_t, format: c_string, ref timeStruct: tm);
+    extern proc strftime(s: c_ptr(void), size: c_size_t, format: c_string, ref timeStruct: tm);
     const bufLen: c_size_t = 100;
     var buf: [1..bufLen] c_char;
     var timeStruct: tm;
@@ -849,9 +852,12 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Reads this `time` from ISO format: hh:mm:ss.sss */
   proc time.readThis(f) throws {
+    import JSON.JsonDeserializer;
+
     const binary = f.binary(),
           arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
-          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary  ||
+            isSubtype(f.deserializerType, JsonDeserializer);
 
     if isjson then
       f._readLiteral('"');
@@ -1415,7 +1421,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* Create a `string` from a `dateTime` matching the `format` string */
   @unstable("'dateTime.strftime' is unstable")
   proc dateTime.strftime(fmt: string) {
-    extern proc strftime(s: c_void_ptr, size: c_size_t, format: c_string, ref timeStruct: tm);
+    extern proc strftime(s: c_ptr(void), size: c_size_t, format: c_string, ref timeStruct: tm);
     const bufLen: c_size_t = 100;
     var buf: [1..bufLen] c_char;
     var timeStruct: tm;
@@ -1498,9 +1504,12 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Reads this `dateTime` from ISO format: YYYY-MM-DDThh:mm:ss.sss */
   proc dateTime.readThis(f) throws {
+    import JSON.JsonDeserializer;
+
     const binary = f.binary(),
           arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
-          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary ||
+            isSubtype(f.deserializerType, JsonDeserializer);
 
     if isjson then
       f._readLiteral('"');

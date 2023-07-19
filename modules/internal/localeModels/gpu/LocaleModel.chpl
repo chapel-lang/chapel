@@ -40,7 +40,7 @@ module LocaleModel {
   }
 
   private inline
-  proc addrIsInGPU(addr:c_void_ptr): bool {
+  proc addrIsInGPU(addr:c_ptr(void)): bool {
     extern proc chpl_gpu_is_device_ptr(ptr): bool;
     return chpl_gpu_is_device_ptr(addr);
   }
@@ -60,14 +60,14 @@ module LocaleModel {
   pragma "allocator"
   pragma "locale model alloc"
   pragma "always propagate line file info"
-  proc chpl_here_alloc(size:int(64), md:chpl_mem_descInt_t): c_void_ptr {
+  proc chpl_here_alloc(size:int(64), md:chpl_mem_descInt_t): c_ptr(void) {
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_mem_alloc(size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_mem_alloc(size:c_size_t, md:chpl_mem_descInt_t) : c_ptr(void);
 
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_gpu_mem_alloc(size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_gpu_mem_alloc(size:c_size_t, md:chpl_mem_descInt_t) : c_ptr(void);
 
 
     if runningOnGPUSublocale() then
@@ -79,14 +79,14 @@ module LocaleModel {
   pragma "allocator"
   pragma "llvm return noalias"
   pragma "always propagate line file info"
-  proc chpl_here_alloc(size:integral, md:chpl_mem_descInt_t): c_void_ptr {
+  proc chpl_here_alloc(size:integral, md:chpl_mem_descInt_t): c_ptr(void) {
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_mem_alloc(size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_mem_alloc(size:c_size_t, md:chpl_mem_descInt_t) : c_ptr(void);
 
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_gpu_mem_alloc(size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_gpu_mem_alloc(size:c_size_t, md:chpl_mem_descInt_t) : c_ptr(void);
 
 
     if runningOnGPUSublocale() then
@@ -99,14 +99,14 @@ module LocaleModel {
   pragma "llvm return noalias"
   pragma "always propagate line file info"
   proc chpl_here_aligned_alloc(alignment:integral, size:integral,
-                               md:chpl_mem_descInt_t): c_void_ptr {
+                               md:chpl_mem_descInt_t): c_ptr(void) {
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_mem_memalign(alignment:c_size_t, size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_mem_memalign(alignment:c_size_t, size:c_size_t, md:chpl_mem_descInt_t) : c_ptr(void);
 
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_gpu_mem_memalign(alignment:c_size_t, size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_gpu_mem_memalign(alignment:c_size_t, size:c_size_t, md:chpl_mem_descInt_t) : c_ptr(void);
 
     if runningOnGPUSublocale() then
       return chpl_gpu_mem_memalign(alignment.safeCast(c_size_t),
@@ -121,14 +121,14 @@ module LocaleModel {
   pragma "allocator"
   pragma "llvm return noalias"
   pragma "always propagate line file info"
-  proc chpl_here_calloc(size:integral, number:integral, md:chpl_mem_descInt_t): c_void_ptr {
+  proc chpl_here_calloc(size:integral, number:integral, md:chpl_mem_descInt_t): c_ptr(void) {
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_mem_calloc(number:c_size_t, size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_mem_calloc(number:c_size_t, size:c_size_t, md:chpl_mem_descInt_t) : c_ptr(void);
 
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_gpu_mem_calloc(number:c_size_t, size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_gpu_mem_calloc(number:c_size_t, size:c_size_t, md:chpl_mem_descInt_t) : c_ptr(void);
 
     if runningOnGPUSublocale() then
       return chpl_gpu_mem_calloc(number.safeCast(c_size_t), size.safeCast(c_size_t), md + chpl_memhook_md_num());
@@ -138,14 +138,14 @@ module LocaleModel {
 
   pragma "allocator"
   pragma "always propagate line file info"
-  proc chpl_here_realloc(ptr:c_void_ptr, size:integral, md:chpl_mem_descInt_t): c_void_ptr {
+  proc chpl_here_realloc(ptr:c_ptr(void), size:integral, md:chpl_mem_descInt_t): c_ptr(void) {
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_mem_realloc(ptr:c_void_ptr, size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_mem_realloc(ptr:c_ptr(void), size:c_size_t, md:chpl_mem_descInt_t) : c_ptr(void);
 
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_gpu_mem_realloc(ptr:c_void_ptr, size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_gpu_mem_realloc(ptr:c_ptr(void), size:c_size_t, md:chpl_mem_descInt_t) : c_ptr(void);
 
     if addrIsInGPU(ptr) {
       if !runningOnGPUSublocale() {
@@ -173,14 +173,14 @@ module LocaleModel {
 
   pragma "locale model free"
   pragma "always propagate line file info"
-  proc chpl_here_free(ptr:c_void_ptr): void {
+  proc chpl_here_free(ptr:raw_c_void_ptr): void {
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_mem_free(ptr:c_void_ptr) : void;
+    extern proc chpl_mem_free(ptr:c_ptr(void)) : void;
 
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_gpu_mem_free(ptr:c_void_ptr) : void;
+    extern proc chpl_gpu_mem_free(ptr:c_ptr(void)) : void;
 
     if addrIsInGPU(ptr) {
       if !runningOnGPUSublocale() {

@@ -1450,6 +1450,42 @@ private proc _isDiag(A: [?D] ?eltType) {
   return true;
 }
 
+/* Return `true` if matrix is the additive identity (zero matrix). */
+proc isZero(A: [?D] ?eltType) where isDenseMatrix(A) {
+  return _isZero(A);
+}
+
+private proc _isZero(A: [?D] ?eltType) {
+  if D.rank != 2 then
+    compilerError("Rank is not 2");
+
+  for (i, j) in D {
+    if A[i, j] != 0 then return false;
+  }
+  return true;
+}
+
+private proc _isEye(A: [?D] ?eltType) {
+  if D.rank != 2 then
+    compilerError("Rank is not 2");
+
+  if !isSquare(A) then return false;
+
+  for (i, j) in D {
+    if i == j {
+      if A[i, j] != 1 then return false;
+    } else {
+      if A[i, j] != 0 then return false;
+    }
+  }
+
+  return true;
+}
+
+/* Return `true` if matrix is the multiplicative identity (identity matrix).  */
+proc isEye(A: [?D] ?eltType) where isDenseMatrix(A) {
+  return _isEye(A);
+}
 
 /* Return `true` if matrix is Hermitian */
 proc isHermitian(A: [?D]) where isDenseMatrix(A) {
@@ -3400,6 +3436,15 @@ module Sparse {
     return _isDiag(A);
   }
 
+  /* Return `true` if sparse matrix is the additive identity (zero matrix). */
+  proc isZero(A: [?D] ?eltType) where A.isSparse() {
+    return _isZero(A);
+  }
+
+  /* Return `true` if sparse matrix is the multiplicative identity (identity matrix).  */
+  proc isEye(A: [?D] ?eltType) where A.isSparse() {
+    return _isEye(A);
+  }
 
   /* Return ``true`` if matrix is Hermitian. Supports CSR and COO arrays. */
   proc isHermitian(A: [?D]) where A.isSparse() {

@@ -43,7 +43,7 @@ do
   agg.add(s);
 
 // independent of the above: test updateManager by itself
-reference.addOrSet("1234", 1_000_000);
+reference.addOrReplace("1234", 1_000_000);
 manage dm2.updateManager("1234") as element do
   element = 1_000_000;
 assert(dm2.contains("1234"));

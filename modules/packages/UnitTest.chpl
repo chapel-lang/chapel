@@ -1169,12 +1169,12 @@ module UnitTest {
 
     for test in testSuite {
       const testName = test: string;
-      testStatus.addOrSet(testName, false);
-      testsFailed.addOrSet(testName, false);
-      testsErrored.addOrSet(testName, false);
-      testsLocalFails.addOrSet(testName, false);
-      testsPassed.addOrSet(testName, false);
-      testsSkipped.addOrSet(testName, false);
+      testStatus.addOrReplace(testName, false);
+      testsFailed.addOrReplace(testName, false);
+      testsErrored.addOrReplace(testName, false);
+      testsLocalFails.addOrReplace(testName, false);
+      testsPassed.addOrReplace(testName, false);
+      testsSkipped.addOrReplace(testName, false);
     }
     if testNames != "None" {
       for test in testNames.split(" ") {

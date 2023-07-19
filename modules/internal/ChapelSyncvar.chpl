@@ -291,8 +291,8 @@ module ChapelSyncvar {
   }
 
   @chpldoc.nodoc
+  @deprecated(notes="Direct assignment to 'sync' variables is deprecated; apply a 'write??()' method to modify one")
   operator =(ref lhs : _syncvar(?t), rhs : t) {
-    compilerWarning("Direct assignment to 'sync' variables is deprecated; apply a 'write??()' method to modify one");
     lhs.wrapped.writeEF(rhs);
   }
 
@@ -310,77 +310,79 @@ module ChapelSyncvar {
   }
 
   @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
   operator +=(ref lhs : _syncvar(?t), rhs : t) {
-    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() +  rhs);
   }
 
   @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
   operator -=(ref lhs : _syncvar(?t), rhs : t) {
-    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() -  rhs);
   }
 
   @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
   operator *=(ref lhs : _syncvar(?t), rhs : t) {
-    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() *  rhs);
   }
 
   @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
   operator /=(ref lhs : _syncvar(?t), rhs : t) {
-    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() /  rhs);
   }
 
   @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
   operator %=(ref lhs : _syncvar(?t), rhs : t) {
-    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() %  rhs);
   }
 
   @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
   operator **=(ref lhs : _syncvar(?t), rhs : t) {
-    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() ** rhs);
   }
 
   @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
   operator &=(ref lhs : _syncvar(?t), rhs : t) {
-    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() &  rhs);
   }
 
   @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
   operator |=(ref lhs : _syncvar(?t), rhs : t) {
-    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() |  rhs);
   }
 
   @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
   operator ^=(ref lhs : _syncvar(?t), rhs : t) {
-    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() ^  rhs);
   }
 
   @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
   operator >>=(ref lhs : _syncvar(?t), rhs : t) {
-    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() >> rhs);
   }
 
   @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
   operator <<=(ref lhs : _syncvar(?t), rhs : t) {
-    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() << rhs);
   }
 
+  // TODO Jade: remove me when compiler generated inits are removed
   proc chpl__compilerGeneratedAssignSyncSingle(ref lhs: _syncvar(?),
                                                ref rhs: _syncvar(?)) {
     // TODO: Should this clone the value and the full/empty state instead?
     lhs.writeEF(rhs.readFE());
   }
 
+// TODO Jade: remove me when compiler generated inits are removed
   proc chpl__compilerGeneratedCopySyncSingle(ref sv : _syncvar(?)) {
     // TODO: this should probably clone the value and full/empty state instead
     var ret: sv.type = sv.readFE();
@@ -428,8 +430,9 @@ module ChapelSyncvar {
   }
 
   @chpldoc.nodoc
+  @deprecated(notes="Swapping 'sync' variables is deprecated; perform the swap manually using explicit '.read??'/'.write??' methods")
   operator <=>(lhs : _syncvar, rhs : _syncvar) {
-    compilerWarning("Swapping 'sync' variables is deprecated; perform the swap manually using explicit '.read??'/'.write??' methods");
+
     const tmp = lhs.readFE();
     lhs.writeEF(rhs.readFE());
     rhs.writeEF(tmp);
@@ -827,8 +830,8 @@ module ChapelSyncvar {
       isOwned = false;
     }
 
+    @deprecated(notes="Initializing a type-inferred variable from a 'single' is deprecated; apply a 'read??()' method to the right-hand side")
     proc init=(const ref other : _singlevar) {
-      compilerWarning("Initializing a type-inferred variable from a 'single' is deprecated; apply a 'read??()' method to the right-hand side");
       // Allow initialization from compatible single variables, e.g.:
       //   var x : single int = 5;
       //   var y : single real = x;
@@ -920,8 +923,8 @@ module ChapelSyncvar {
   }
 
   @chpldoc.nodoc
+  @deprecated("Direct assignment to 'single' variables is deprecated; apply '.writeEF()' to modify one")
   operator =(ref lhs : _singlevar(?t), rhs : t) {
-    compilerWarning("Direct assignment to 'single' variables is deprecated; apply '.writeEF()' to modify one");
     lhs.wrapped.writeEF(rhs);
   }
 
@@ -938,12 +941,14 @@ module ChapelSyncvar {
     return new _singlevar(from);
   }
 
+  // TODO Jade: remove me when compiler generated inits are removed
   proc chpl__compilerGeneratedAssignSyncSingle(ref lhs : _singlevar(?),
                                                ref rhs : _singlevar(?)) {
     // TODO: Should this clone the value and the full/empty state instead?
     lhs.writeEF(rhs.readFF());
   }
 
+// TODO Jade: remove me when compiler generated inits are removed
   proc chpl__compilerGeneratedCopySyncSingle(ref sv : _singlevar(?)) {
     // TODO: this should probably clone the value and full/empty state instead
     var ret: sv.type = sv.readFF();
@@ -951,8 +956,8 @@ module ChapelSyncvar {
   }
 
   pragma "init copy fn"
+  @deprecated(notes="Initializing a type-inferred variable from a 'single' is deprecated; apply '.readFF()' to the right-hand side")
   proc chpl__initCopy(ref sv : _singlevar(?t), definedConst: bool) {
-    compilerWarning("Initializing a type-inferred variable from a 'single' is deprecated; apply '.readFF()' to the right-hand side");
     return sv.readFF();
   }
 
@@ -1140,7 +1145,7 @@ private module SyncVarRuntimeSupport {
   extern proc   chpl_sync_markAndSignalEmpty(ref aux : chpl_sync_aux_t);
   extern proc   chpl_sync_markAndSignalFull (ref aux : chpl_sync_aux_t);
 
-  extern proc   chpl_sync_isFull(value   : c_void_ptr,
+  extern proc   chpl_sync_isFull(value   : c_ptr(void),
                                  ref aux : chpl_sync_aux_t) : bool;
 
 
@@ -1162,7 +1167,7 @@ private module SyncVarRuntimeSupport {
 
   extern proc   chpl_single_markAndSignalFull (ref aux : chpl_single_aux_t);
 
-  extern proc   chpl_single_isFull(value   : c_void_ptr,
+  extern proc   chpl_single_isFull(value   : c_ptr(void),
                                    ref aux : chpl_single_aux_t) : bool;
 
 

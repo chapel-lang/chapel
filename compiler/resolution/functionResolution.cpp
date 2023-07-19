@@ -1530,12 +1530,16 @@ bool canCoerceAsSubtype(Type*     actualType,
     }
   }
 
-  // coerce c_ptr to c_void_ptr
-  if (actualType->symbol->hasFlag(FLAG_C_PTR_CLASS) && formalType == dtCVoidPtr)
+  // coerce raw_c_void_ptr to c_ptr(void)
+  if (actualType == dtCVoidPtr && isCVoidPtr(formalType))
     return true;
 
-  // coerce c_array to c_void_ptr
-  if (actualType->symbol->hasFlag(FLAG_C_ARRAY) && formalType == dtCVoidPtr)
+  // coerce c_ptr(t) to c_ptr(void)
+  if (actualType->symbol->hasFlag(FLAG_C_PTR_CLASS) && isCVoidPtr(formalType))
+    return true;
+
+  // coerce c_array to c_ptr(void)
+  if (actualType->symbol->hasFlag(FLAG_C_ARRAY) && isCVoidPtr(formalType))
     return true;
 
   // coerce c_array to c_ptr
@@ -2898,7 +2902,7 @@ static void resolveRefDeserialization(CallExpr* call) {
 
   // we need to set the resolved function to the deserializer, so that the move
   // can resolve. Otherwise, the ref deserialization primitive has return type
-  // c_void_ptr, which is surely not the type of the LHS here.
+  // raw_c_void_ptr, which is surely not the type of the LHS here.
   call->setResolvedFunction(ser.deserializer);
 
   lhsSE->symbol()->type = typeSE->symbol()->getRefType();
@@ -3541,6 +3545,70 @@ static void warnForPartialInstantiationNoQ(CallExpr* call, Type* t) {
   }
 }
 
+static void warnForCallConcreteType(CallExpr* call, Type* t) {
+  Type* callTypeExpr = call->baseExpr->getValType();
+  AggregateType* at = toAggregateType(canonicalClassType(callTypeExpr));
+
+  // ignore generic management for this check
+  t = canonicalClassType(t);
+
+  bool foundQuestionMarkArg = false;
+  for_actuals(actual, call) {
+    if (SymExpr* se = toSymExpr(actual)) {
+      if (se->symbol() == gUninstantiated) {
+        foundQuestionMarkArg = true;
+      }
+    }
+  }
+
+  // Decide if it's actually not supposed to be a type construction,
+  // e.g. var x = R(); is supposed to be var x = new R();
+  // and this new warning isn't helpful in that case.
+  if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
+    if (parentCall->isPrimitive(PRIM_MOVE)) {
+      if (SymExpr* lhsSe = toSymExpr(parentCall->get(1))) {
+        if (lhsSe->symbol()->hasFlag(FLAG_TEMP)) {
+          for_SymbolSymExprs(se, lhsSe->symbol()) {
+            if (se != lhsSe) {
+              if (CallExpr* inCall = toCallExpr(se->parentExpr)) {
+                // is a var init using the temp we are considering?
+                if ((inCall->isPrimitive(PRIM_INIT_VAR) ||
+                     inCall->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT)) &&
+                    se == inCall->get(2)) {
+                  return;
+                }
+                // is it in 'throw Error()' ?
+                if (inCall->isNamed("chpl_fix_thrown_error")) {
+                  return;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (at != nullptr && at->isGenericWithSomeDefaults() &&
+      t->symbol->hasFlag(FLAG_GENERIC) && !foundQuestionMarkArg) {
+    USR_WARN(call, "unstable type construction with some generic defaults");
+    USR_PRINT(at, "this type construction might ignore field defaults in the type declared here but that may change");
+  } else if (at != nullptr && call->numActuals() == 0) {
+    if (at->isGenericWithDefaults()) {
+      // it's OK; e.g. range() means use the defaults
+    } else {
+      USR_WARN(call, "unnecessary type construction call");
+      const char* typeExprStr = toString(at, /* decorate classes */ false);
+      if (at->isGeneric()) {
+        USR_PRINT(at, "'%s' is generic without defaults", typeExprStr);
+      } else {
+        USR_PRINT(at, "'%s' has no generic fields", typeExprStr);
+      }
+      USR_PRINT(call, "remove the '()'");
+      USR_PRINT("this warning will become an error in the future");
+    }
+  }
+}
 
 static Type* resolveTypeSpecifier(CallInfo& info) {
   CallExpr* call = info.call;
@@ -3603,6 +3671,7 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
       }
     }
     warnForPartialInstantiationNoQ(call, ret);
+    warnForCallConcreteType(call, ret);
   }
 
   if (ret != NULL) {
@@ -4929,6 +4998,25 @@ static bool maybeIssueSplitInitMissingTypeError(CallInfo& info,
             (!isTypeVariable && t->symbol->hasFlag(FLAG_GENERIC))) {
           if (SymExpr* se = toSymExpr(actual)) {
             CallExpr* call = userCall(info.call);
+            if (AggregateType* at = toAggregateType(canonicalClassType(t))) {
+              for_fields(field, at) {
+                bool hasDefault = false;
+                bool isGenericField = at->fieldIsGeneric(field, hasDefault);
+                if (!field->hasFlag(FLAG_TYPE_VARIABLE) &&
+                    !field->hasFlag(FLAG_PARAM) &&
+                    isGenericField && hasDefault) {
+                  USR_FATAL_CONT(se->symbol(),
+                                 "default initialization with type '%s' "
+                                 "is not yet supported", toString(at));
+                  USR_PRINT(field, "field '%s' is a generic value",
+                            field->name);
+                  USR_PRINT(field,
+                            "consider separately declaring a type field for it "
+                            "or using a 'new' call");
+                  USR_STOP();
+                }
+              }
+            }
             splitInitMissingTypeError(se->symbol(), call, false);
             printedError = true;
           }
@@ -13632,13 +13720,15 @@ static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type) {
   // If it is generic then try to resolve the default type constructor
   // for better error reporting.
   if (AggregateType* at = toAggregateType(canonicalDecoratedClassType(type))) {
-    SET_LINENO(call);
-    CallExpr* typeCall = new CallExpr(at->symbol);
-    call->replace(typeCall);
+    if (at->isGenericWithDefaults()) {
+      SET_LINENO(call);
+      CallExpr* typeCall = new CallExpr(at->symbol);
+      call->replace(typeCall);
 
-    retval = (tryResolveCall(typeCall) == NULL);
+      retval = (tryResolveCall(typeCall) == NULL);
 
-    typeCall->replace(call);
+      typeCall->replace(call);
+    }
   }
 
   return retval;

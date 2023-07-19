@@ -876,7 +876,7 @@ initPrimitive() {
   prim_def(PRIM_GPU_GRIDDIM_Z, "gpu gridDim z", returnInfoInt32, true);
 
   // allocate data into shared memory (takes one parameter: number of bytes to allocate)
-  // and returns a c_void_ptr
+  // and returns a raw_c_void_ptr
   prim_def(PRIM_GPU_ALLOC_SHARED, "gpu allocShared", returnInfoCVoidPtr, true);
 
   // synchronize threads in a GPU kernel (equivalent to CUDA __syncThreads)

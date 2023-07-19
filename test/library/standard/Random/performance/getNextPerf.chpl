@@ -16,7 +16,7 @@ proc test(parallel, param parSafe) {
   t.stop();
 
   if perf then
-    writef("parallel=%t-parSafe=%t-time=%dr\n", parallel, parSafe, t.elapsed());
+    writef("parallel=%?-parSafe=%?-time=%dr\n", parallel, parSafe, t.elapsed());
   else
     writeln(a);
 }

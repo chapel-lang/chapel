@@ -4684,7 +4684,7 @@ qioerr qio_conv_parse(c_string fmt,
     }
 
     // Read a specifier character
-    if( istype(fmt[i], "ntiurmzs/cS") ) {
+    if( istype(fmt[i], "ntiurmzs?/cS") ) {
       specifier = fmt[i];
       if( fmt[i] == 'S' ) {
         // handle numbers parsed as width for e.g. %|0S
@@ -4724,6 +4724,8 @@ qioerr qio_conv_parse(c_string fmt,
       if( specifier == 't' ) {
         // Does nothing at all with width.
         spec_out->argType = QIO_CONV_ARG_TYPE_REPR;
+      } else if ( specifier == '?' ) {
+        spec_out->argType = QIO_CONV_ARG_TYPE_SERDE;
       } else if( specifier == 'n' ) {
         spec_out->argType = QIO_CONV_ARG_TYPE_NUMERIC;
       } else if( specifier == 'i' || specifier == 'u' ||
@@ -5066,6 +5068,22 @@ qioerr qio_conv_parse(c_string fmt,
         style_out->string_end = '"';
       }
       spec_out->argType = QIO_CONV_ARG_TYPE_REPR;
+    } else if ( specifier == '?' ) {
+      style_out->base = 10;
+      style_out->pad_char = ' ';
+      style_out->realfmt = 2;
+      style_out->string_format = QIO_STRING_FORMAT_WORD;
+
+      // Handle precision
+      if( precision != WIDTH_NOT_SET ) {
+        // These settings have no effect when scanning
+        if( precision == WIDTH_IN_ARG ) {
+          spec_out->preArg2 = QIO_CONV_SET_PRECISION;
+        } else {
+          style_out->precision = precision;
+        }
+      }
+      spec_out->argType = QIO_CONV_ARG_TYPE_SERDE;
     } else {
       QIO_GET_CONSTANT_ERROR(err, EINVAL, "Unknown text conversion");
     }

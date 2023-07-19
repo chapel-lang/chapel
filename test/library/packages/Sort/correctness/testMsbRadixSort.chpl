@@ -4,9 +4,12 @@ use BitOps;
  use Random;
  use Time;
  use CTypes;
+ use IO, ChplFormat;
 
  config const printStats = false;
  config const size = 10000;
+
+ var chplout = stdout.withSerializer(ChplSerializer);
 
  record uintCriterion8 {
    inline
@@ -101,16 +104,16 @@ use BitOps;
                                alwaysSerial=false));
 
    writeln(comparator.type:string);
-   writef("Sorting    %ht\n", input);
+   chplout.writef("Sorting    %?\n", input);
 
    var A = input;
    ShellSort.shellSort(A, comparator);
-   writef("shellSort  %ht\n", A);
+   chplout.writef("shellSort  %?\n", A);
    testSorted(A, comparator);
 
    var Ar = input;
    ShellSort.shellSort(Ar, new ReverseComparator(comparator));
-   writef("shellSort- %ht\n", Ar);
+   chplout.writef("shellSort- %?\n", Ar);
    testReverseSorted(Ar, comparator);
 
    for param i in 0..settingsTuple.size-1 {
@@ -119,7 +122,7 @@ use BitOps;
      MSBRadixSort.msbRadixSort(B, start, end, comparator,
                                0, max(int), s);
      if i == 1 then
-       writef("radixSort  %ht\n", B);
+      chplout.writef("radixSort  %?\n", B);
      testSorted(B, comparator);
 
      var Br = input;
@@ -127,7 +130,7 @@ use BitOps;
                                new ReverseComparator(comparator),
                                0, max(int), s);
      if i == 1 then
-       writef("radixSort- %ht\n", Br);
+      chplout.writef("radixSort- %?\n", Br);
      testReverseSorted(Br, comparator);
    }
  }

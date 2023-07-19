@@ -1,4 +1,3 @@
 Testing default array
 true
-Testing default array with json
-true
+big-precision-t-lossless.chpl:17: warning: The '%t' format specifier is deprecated; please use '%?' to invoke the type's 'serialize' method instead

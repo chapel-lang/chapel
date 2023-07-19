@@ -915,7 +915,7 @@ private extern const QIO_FILE_PTR_NULL:qio_file_ptr_t;
 
 @chpldoc.nodoc
 extern record qiovec_t {
-  var iov_base: c_void_ptr;
+  var iov_base: c_ptr(void);
   var iov_len: c_size_t;
 }
 
@@ -1145,54 +1145,54 @@ class QioPluginChannel {
 
 // These functions let the C QIO code call the plugins
 // TODO: Move more of the QIO code to be pure Chapel
-export proc chpl_qio_setup_plugin_channel(file:c_void_ptr, ref plugin_ch:c_void_ptr, start:int(64), end:int(64), qio_ch:qio_channel_ptr_t):errorCode {
+export proc chpl_qio_setup_plugin_channel(file:c_ptr(void), ref plugin_ch:c_ptr(void), start:int(64), end:int(64), qio_ch:qio_channel_ptr_t):errorCode {
   var f=(file:unmanaged QioPluginFile?)!;
   var pluginChannel:unmanaged QioPluginChannel? = nil;
   var ret = f.setupChannel(pluginChannel, start, end, qio_ch);
-  plugin_ch = pluginChannel:c_void_ptr;
+  plugin_ch = pluginChannel:c_ptr(void);
   return ret;
 }
 
-export proc chpl_qio_read_atleast(ch_plugin:c_void_ptr, amt:int(64)) {
+export proc chpl_qio_read_atleast(ch_plugin:c_ptr(void), amt:int(64)) {
   var c=(ch_plugin:unmanaged QioPluginChannel?)!;
   return c.readAtLeast(amt);
 }
-export proc chpl_qio_write(ch_plugin:c_void_ptr, amt:int(64)) {
+export proc chpl_qio_write(ch_plugin:c_ptr(void), amt:int(64)) {
   var c=(ch_plugin:unmanaged QioPluginChannel?)!;
   return c.write(amt);
 }
-export proc chpl_qio_channel_close(ch:c_void_ptr):errorCode {
+export proc chpl_qio_channel_close(ch:c_ptr(void)):errorCode {
   var c=(ch:unmanaged QioPluginChannel?)!;
   var err = c.close();
   delete c;
   return err;
 }
 
-export proc chpl_qio_filelength(file:c_void_ptr, ref length:int(64)):errorCode {
+export proc chpl_qio_filelength(file:c_ptr(void), ref length:int(64)):errorCode {
   var f=(file:unmanaged QioPluginFile?)!;
   return f.filelength(length);
 }
-export proc chpl_qio_getpath(file:c_void_ptr, ref str:c_string, ref len:int(64)):errorCode {
+export proc chpl_qio_getpath(file:c_ptr(void), ref str:c_string, ref len:int(64)):errorCode {
   var f=(file:unmanaged QioPluginFile?)!;
   return f.getpath(str, len);
 }
-export proc chpl_qio_fsync(file:c_void_ptr):errorCode {
+export proc chpl_qio_fsync(file:c_ptr(void)):errorCode {
   var f=(file:unmanaged QioPluginFile?)!;
   return f.fsync();
 }
-export proc chpl_qio_get_chunk(file:c_void_ptr, ref length:int(64)):errorCode {
+export proc chpl_qio_get_chunk(file:c_ptr(void), ref length:int(64)):errorCode {
   var f=(file:unmanaged QioPluginFile?)!;
   return f.getChunk(length);
 }
-export proc chpl_qio_get_locales_for_region(file:c_void_ptr, start:int(64),
-    end:int(64), ref localeNames:c_void_ptr, ref nLocales:int(64)):errorCode {
+export proc chpl_qio_get_locales_for_region(file:c_ptr(void), start:int(64),
+    end:int(64), ref localeNames:c_ptr(void), ref nLocales:int(64)):errorCode {
   var strPtr:c_ptr(c_string);
   var f=(file:unmanaged QioPluginFile?)!;
   var ret = f.getLocalesForRegion(start, end, strPtr, nLocales);
-  localeNames = strPtr:c_void_ptr;
+  localeNames = strPtr:c_ptr(void);
   return ret;
 }
-export proc chpl_qio_file_close(file:c_void_ptr):errorCode {
+export proc chpl_qio_file_close(file:c_ptr(void)):errorCode {
   var f = (file:unmanaged QioPluginFile?)!;
   var err = f.close();
   delete f;
@@ -1227,8 +1227,8 @@ private extern proc qio_file_sync(f:qio_file_ptr_t):errorCode;
 
 private extern proc qio_channel_end_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 private extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyleInternal);
-private extern proc qio_file_get_plugin(f:qio_file_ptr_t):c_void_ptr;
-private extern proc qio_channel_get_plugin(ch:qio_channel_ptr_t):c_void_ptr;
+private extern proc qio_file_get_plugin(f:qio_file_ptr_t):c_ptr(void);
+private extern proc qio_channel_get_plugin(ch:qio_channel_ptr_t):c_ptr(void);
 private extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):errorCode;
 
 private extern proc qio_channel_create(ref ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), const ref style:iostyleInternal, bufIoMax:int(64)):errorCode;
@@ -1293,7 +1293,7 @@ private extern proc qio_channel_read_bits(threadsafe:c_int, ch:qio_channel_ptr_t
 
 private extern proc qio_locales_for_region(fl:qio_file_ptr_t,
                                    start:int(64), end:int(64),
-                                   loc_names_out:c_void_ptr,
+                                   loc_names_out:c_ptr(void),
                                    ref num_locs_out:c_int):errorCode;
 private extern proc qio_get_chunk(fl:qio_file_ptr_t, ref len:int(64)):errorCode;
 private extern proc qio_get_fs_type(fl:qio_file_ptr_t, ref tp:c_int):errorCode;
@@ -1383,9 +1383,9 @@ private extern proc qio_channel_print_bytes(threadsafe:c_int, ch:qio_channel_ptr
 private extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:c_string, len:c_ssize_t):errorCode;
 
 private extern proc qio_channel_scan_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:c_ssize_t, skipwsbefore:c_int):errorCode;
-private extern proc qio_channel_scan_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_void_ptr, len:c_ssize_t, skipwsbefore:c_int):errorCode;
+private extern proc qio_channel_scan_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_ptr(void), len:c_ssize_t, skipwsbefore:c_int):errorCode;
 private extern proc qio_channel_print_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:c_ssize_t):errorCode;
-private extern proc qio_channel_print_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_void_ptr, len:c_ssize_t):errorCode;
+private extern proc qio_channel_print_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_ptr(void), len:c_ssize_t):errorCode;
 
 private extern proc qio_channel_skip_json_field(threadsafe:c_int, ch:qio_channel_ptr_t):errorCode;
 
@@ -1397,11 +1397,11 @@ extern record qio_conv_t {
   var argType:uint(8);
   var literal_is_whitespace:uint(8);
   var literal_length:uint(32);
-  var literal:c_void_ptr;
+  var literal:c_ptr(void);
   var regex_length:uint(32);
-  var regex:c_void_ptr;
+  var regex:c_ptr(void);
   var regex_flags_length:uint(32);
-  var regex_flags:c_void_ptr;
+  var regex_flags:c_ptr(void);
 }
 
 private extern const QIO_CONV_UNK:c_int;
@@ -1422,6 +1422,7 @@ private extern const QIO_CONV_ARG_TYPE_CHAR:c_int;
 private extern const QIO_CONV_ARG_TYPE_STRING:c_int;
 private extern const QIO_CONV_ARG_TYPE_BINARY_STRING:c_int;
 private extern const QIO_CONV_ARG_TYPE_REPR:c_int;
+private extern const QIO_CONV_ARG_TYPE_SERDE:c_int;
 private extern const QIO_CONV_ARG_TYPE_REGEX:c_int;
 private extern const QIO_CONV_ARG_TYPE_NONE_REGEX_LITERAL:c_int;
 private extern const QIO_CONV_ARG_TYPE_NONE_LITERAL:c_int;
@@ -2181,7 +2182,7 @@ proc openplugin(pluginFile: QioPluginFile, mode:ioMode,
   import HaltWrappers;
 
   extern proc qio_file_init_plugin(ref file_out:qio_file_ptr_t,
-                                   file_info:c_void_ptr, flags:c_int,
+                                   file_info:c_ptr(void), flags:c_int,
                                    const ref style:iostyleInternal):errorCode;
 
   var local_style = style;
@@ -2210,7 +2211,7 @@ proc openplugin(pluginFile: QioPluginFile, mode:ioMode,
   if seekable then
     flags |= QIO_FDFLAG_SEEKABLE;
 
-  var err = qio_file_init_plugin(ret._file_internal, pluginFile:c_void_ptr, flags, style);
+  var err = qio_file_init_plugin(ret._file_internal, pluginFile:c_ptr(void), flags, style);
   if err {
     var path:string = "unknown";
     if pluginFile {
@@ -7794,7 +7795,7 @@ proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
 }
 
 /*
-  Write ``numBytes`` of data from a :type:`~CTypes.c_void_ptr` to a ``fileWriter``
+  Write ``numBytes`` of data from a ``CTypes.c_ptr(void)`` to a ``fileWriter``
 
   The data are written to the file one byte at a time.
 
@@ -7802,7 +7803,7 @@ proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
     This method provides no protection against attempting to access invalid
     memory
 
-  :arg ptr: a typeless :type:`~CTypes.c_void_ptr` to some valid memory
+  :arg ptr: a ``c_ptr(void)`` to some valid memory
   :arg numBytes: the number of bytes to write
 
   :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
@@ -7811,7 +7812,7 @@ proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
   :throws SystemError: Thrown if data could not be written to the ``fileWriter``
                        due to a :ref:`system error<io-general-sys-error>`.
 */
-proc fileWriter.writeBinary(ptr: c_void_ptr, numBytes: int) throws {
+proc fileWriter.writeBinary(ptr: c_ptr(void), numBytes: int) throws {
   var e:errorCode = 0;
 
   var byte_ptr = ptr : c_ptr(uint(8));
@@ -8460,11 +8461,11 @@ proc fileReader.readBinary(ptr: c_ptr(?t), maxBytes: int): int throws {
 
 /*
    Read up to ``maxBytes`` bytes from a ``fileReader`` into a
-   :type:`~CTypes.c_void_ptr`
+   ``CTypes.c_ptr(void)``
 
    Note that data are read from the file one byte at a time.
 
-   :arg ptr: a typeless :type:`~CTypes.c_void_ptr` to some memory — existing
+   :arg ptr: a ``c_ptr(void)`` to some memory — existing
              values will be overwritten
    :arg maxBytes: the maximum number of bytes to read from the ``fileReader``
    :returns: the number of bytes that were read. this can be less than
@@ -8474,7 +8475,7 @@ proc fileReader.readBinary(ptr: c_ptr(?t), maxBytes: int): int throws {
    :throws SystemError: Thrown if data could not be read from the ``fileReader``
                         due to a :ref:`system error<io-general-sys-error>`.
 */
-proc fileReader.readBinary(ptr: c_void_ptr, maxBytes: int): int throws {
+proc fileReader.readBinary(ptr: c_ptr(void), maxBytes: int): int throws {
   var e: errorCode = 0,
       numRead: c_ssize_t = 0;
   var bytes_ptr = ptr: c_ptr(uint(8));
@@ -10856,7 +10857,21 @@ proc fileWriter._writefOne(fmtStr, ref arg, i: int,
         // a regex. So we just don't handle it.
         err = qio_format_error_write_regex();
       } when QIO_CONV_ARG_TYPE_REPR {
+        select style.aggregate_style {
+          when QIO_AGGREGATE_FORMAT_BRACES do // %t
+            warning("The '%t' format specifier is deprecated; please use '%?' to invoke the type's 'serialize' method instead");
+          when QIO_AGGREGATE_FORMAT_CHPL do  // %ht
+            warning("The '%ht' format specifier is deprecated; please use '%?' with the Chapel-Format Serializer instead");
+          when QIO_AGGREGATE_FORMAT_JSON do  // %jt
+            warning("The '%jt' format specifier is deprecated; please use '%?' with the JSON Serializer instead");
+        }
         try _writeOne(iokind.dynamic, arg, origLocale);
+      } when QIO_CONV_ARG_TYPE_SERDE {
+        if serializerType != nothing {
+          this._serializeOne(arg, origLocale);
+        } else {
+          try _writeOne(iokind.dynamic, arg, origLocale);
+        }
       } otherwise {
         // Unhandled argument type!
         throw new owned IllegalArgumentError("args(" + i:string + ")",
@@ -11190,7 +11205,21 @@ proc fileReader.readf(fmtStr:?t, ref args ...?k): bool throws
                 }
               }
             } when QIO_CONV_ARG_TYPE_REPR {
+              select style.array_style {
+                when QIO_ARRAY_FORMAT_SPACE do // %t
+                  warning("The '%t' format specifier is deprecated; please use '%?' to invoke the type's 'deserialize' method instead");
+                when QIO_ARRAY_FORMAT_CHPL do  // %ht
+                  warning("The '%ht' format specifier is deprecated; please use '%?' with the Chapel-Format Deserializer instead");
+                when QIO_ARRAY_FORMAT_JSON do  // %jt
+                  warning("The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead");
+              }
               try _readOne(iokind.dynamic, args(i), origLocale);
+            } when QIO_CONV_ARG_TYPE_SERDE {
+              if deserializerType != nothing {
+                this._deserializeOne(args(i), origLocale);
+              } else {
+                try _readOne(iokind.dynamic, args(i), origLocale);
+              }
             } when QIO_CONV_SET_CAPTURE {
               if r == nil {
                 err = qio_format_error_bad_regex();

@@ -15970,2665 +15970,2665 @@ inline proc LAPACKE_zsyr_work(matrix_order : lapack_memory_order, uplo : string,
 }
 
 @chpldoc.nodoc
-extern proc LAPACKE_ilaver(ref vers_major : c_int, ref vers_minor : c_int, ref vers_patch : c_int) : c_void_ptr;
+extern proc LAPACKE_ilaver(ref vers_major : c_int, ref vers_minor : c_int, ref vers_patch : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgetrf(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, ipiv : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgetrf(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, ipiv : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgetrf(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgetrf(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgetrf(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgetrf(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgetrf(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgetrf(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgbtrf(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] c_float, ref ldab : c_int, ipiv : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgbtrf(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] c_float, ref ldab : c_int, ipiv : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgbtrf(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] c_double, ref ldab : c_int, ipiv : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgbtrf(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] c_double, ref ldab : c_int, ipiv : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgbtrf(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] complex(64), ref ldab : c_int, ipiv : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgbtrf(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] complex(64), ref ldab : c_int, ipiv : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgbtrf(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] complex(128), ref ldab : c_int, ipiv : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgbtrf(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] complex(128), ref ldab : c_int, ipiv : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgttrf(ref n : c_int, dl : [] c_float, d : [] c_float, du : [] c_float, du2 : [] c_float, ipiv : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgttrf(ref n : c_int, dl : [] c_float, d : [] c_float, du : [] c_float, du2 : [] c_float, ipiv : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgttrf(ref n : c_int, dl : [] c_double, d : [] c_double, du : [] c_double, du2 : [] c_double, ipiv : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgttrf(ref n : c_int, dl : [] c_double, d : [] c_double, du : [] c_double, du2 : [] c_double, ipiv : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgttrf(ref n : c_int, dl : [] complex(64), d : [] complex(64), du : [] complex(64), du2 : [] complex(64), ipiv : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgttrf(ref n : c_int, dl : [] complex(64), d : [] complex(64), du : [] complex(64), du2 : [] complex(64), ipiv : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgttrf(ref n : c_int, dl : [] complex(128), d : [] complex(128), du : [] complex(128), du2 : [] complex(128), ipiv : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgttrf(ref n : c_int, dl : [] complex(128), d : [] complex(128), du : [] complex(128), du2 : [] complex(128), ipiv : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_spotrf(ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_spotrf(ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dpotrf(ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dpotrf(ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cpotrf(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cpotrf(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zpotrf(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zpotrf(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dpstrf(ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, piv : [] c_int, ref rank : c_int, ref tol : c_double, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dpstrf(ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, piv : [] c_int, ref rank : c_int, ref tol : c_double, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_spstrf(ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, piv : [] c_int, ref rank : c_int, ref tol : c_float, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_spstrf(ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, piv : [] c_int, ref rank : c_int, ref tol : c_float, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zpstrf(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, piv : [] c_int, ref rank : c_int, ref tol : c_double, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zpstrf(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, piv : [] c_int, ref rank : c_int, ref tol : c_double, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cpstrf(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, piv : [] c_int, ref rank : c_int, ref tol : c_float, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cpstrf(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, piv : [] c_int, ref rank : c_int, ref tol : c_float, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dpftrf(ref transr : c_char, ref uplo : c_char, ref n : c_int, a : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dpftrf(ref transr : c_char, ref uplo : c_char, ref n : c_int, a : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_spftrf(ref transr : c_char, ref uplo : c_char, ref n : c_int, a : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_spftrf(ref transr : c_char, ref uplo : c_char, ref n : c_int, a : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zpftrf(ref transr : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zpftrf(ref transr : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cpftrf(ref transr : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cpftrf(ref transr : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_spptrf(ref uplo : c_char, ref n : c_int, ap : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_spptrf(ref uplo : c_char, ref n : c_int, ap : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dpptrf(ref uplo : c_char, ref n : c_int, ap : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dpptrf(ref uplo : c_char, ref n : c_int, ap : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cpptrf(ref uplo : c_char, ref n : c_int, ap : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cpptrf(ref uplo : c_char, ref n : c_int, ap : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zpptrf(ref uplo : c_char, ref n : c_int, ap : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zpptrf(ref uplo : c_char, ref n : c_int, ap : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_spbtrf(ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] c_float, ref ldab : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_spbtrf(ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] c_float, ref ldab : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dpbtrf(ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] c_double, ref ldab : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dpbtrf(ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] c_double, ref ldab : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cpbtrf(ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(64), ref ldab : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cpbtrf(ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(64), ref ldab : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zpbtrf(ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(128), ref ldab : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zpbtrf(ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(128), ref ldab : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_spttrf(ref n : c_int, d : [] c_float, e : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_spttrf(ref n : c_int, d : [] c_float, e : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dpttrf(ref n : c_int, d : [] c_double, e : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dpttrf(ref n : c_int, d : [] c_double, e : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cpttrf(ref n : c_int, d : [] c_float, e : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cpttrf(ref n : c_int, d : [] c_float, e : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zpttrf(ref n : c_int, d : [] c_double, e : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zpttrf(ref n : c_int, d : [] c_double, e : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssytrf(ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ipiv : [] c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssytrf(ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ipiv : [] c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsytrf(ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsytrf(ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_csytrf(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_csytrf(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zsytrf(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zsytrf(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chetrf(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chetrf(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhetrf(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhetrf(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssptrf(ref uplo : c_char, ref n : c_int, ap : [] c_float, ipiv : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssptrf(ref uplo : c_char, ref n : c_int, ap : [] c_float, ipiv : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsptrf(ref uplo : c_char, ref n : c_int, ap : [] c_double, ipiv : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsptrf(ref uplo : c_char, ref n : c_int, ap : [] c_double, ipiv : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_csptrf(ref uplo : c_char, ref n : c_int, ap : [] complex(64), ipiv : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_csptrf(ref uplo : c_char, ref n : c_int, ap : [] complex(64), ipiv : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zsptrf(ref uplo : c_char, ref n : c_int, ap : [] complex(128), ipiv : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zsptrf(ref uplo : c_char, ref n : c_int, ap : [] complex(128), ipiv : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chptrf(ref uplo : c_char, ref n : c_int, ap : [] complex(64), ipiv : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chptrf(ref uplo : c_char, ref n : c_int, ap : [] complex(64), ipiv : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhptrf(ref uplo : c_char, ref n : c_int, ap : [] complex(128), ipiv : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhptrf(ref uplo : c_char, ref n : c_int, ap : [] complex(128), ipiv : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgetrs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgetrs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgetrs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgetrs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgetrs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgetrs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgetrs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgetrs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgbtrs(ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] c_float, ref ldab : c_int, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgbtrs(ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] c_float, ref ldab : c_int, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgbtrs(ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] c_double, ref ldab : c_int, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgbtrs(ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] c_double, ref ldab : c_int, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgbtrs(ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] complex(64), ref ldab : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgbtrs(ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] complex(64), ref ldab : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgbtrs(ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] complex(128), ref ldab : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgbtrs(ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] complex(128), ref ldab : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgttrs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, dl : [] c_float, d : [] c_float, du : [] c_float, du2 : [] c_float, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgttrs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, dl : [] c_float, d : [] c_float, du : [] c_float, du2 : [] c_float, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgttrs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, dl : [] c_double, d : [] c_double, du : [] c_double, du2 : [] c_double, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgttrs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, dl : [] c_double, d : [] c_double, du : [] c_double, du2 : [] c_double, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgttrs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, dl : [] complex(64), d : [] complex(64), du : [] complex(64), du2 : [] complex(64), ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgttrs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, dl : [] complex(64), d : [] complex(64), du : [] complex(64), du2 : [] complex(64), ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgttrs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, dl : [] complex(128), d : [] complex(128), du : [] complex(128), du2 : [] complex(128), ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgttrs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, dl : [] complex(128), d : [] complex(128), du : [] complex(128), du2 : [] complex(128), ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_spotrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_spotrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dpotrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dpotrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cpotrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cpotrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zpotrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zpotrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dpftrs(ref transr : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dpftrs(ref transr : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_spftrs(ref transr : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_spftrs(ref transr : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zpftrs(ref transr : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zpftrs(ref transr : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cpftrs(ref transr : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cpftrs(ref transr : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_spptrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_float, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_spptrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_float, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dpptrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_double, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dpptrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_double, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cpptrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(64), b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cpptrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(64), b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zpptrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(128), b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zpptrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(128), b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_spbtrs(ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] c_float, ref ldab : c_int, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_spbtrs(ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] c_float, ref ldab : c_int, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dpbtrs(ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] c_double, ref ldab : c_int, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dpbtrs(ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] c_double, ref ldab : c_int, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cpbtrs(ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] complex(64), ref ldab : c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cpbtrs(ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] complex(64), ref ldab : c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zpbtrs(ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] complex(128), ref ldab : c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zpbtrs(ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] complex(128), ref ldab : c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_spttrs(ref n : c_int, ref nrhs : c_int, d : [] c_float, e : [] c_float, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_spttrs(ref n : c_int, ref nrhs : c_int, d : [] c_float, e : [] c_float, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dpttrs(ref n : c_int, ref nrhs : c_int, d : [] c_double, e : [] c_double, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dpttrs(ref n : c_int, ref nrhs : c_int, d : [] c_double, e : [] c_double, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cpttrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, d : [] c_float, e : [] complex(64), b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cpttrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, d : [] c_float, e : [] complex(64), b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zpttrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, d : [] c_double, e : [] complex(128), b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zpttrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, d : [] c_double, e : [] complex(128), b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssytrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssytrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsytrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsytrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_csytrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_csytrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zsytrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zsytrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chetrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chetrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhetrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhetrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssptrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_float, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssptrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_float, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsptrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_double, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsptrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_double, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_csptrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(64), ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_csptrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(64), ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zsptrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(128), ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zsptrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(128), ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chptrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(64), ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chptrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(64), ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhptrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(128), ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhptrs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(128), ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_strtrs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_strtrs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtrtrs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtrtrs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctrtrs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctrtrs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztrtrs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztrtrs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_stptrs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_float, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_stptrs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_float, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtptrs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_double, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtptrs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_double, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctptrs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(64), b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctptrs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(64), b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztptrs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(128), b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztptrs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(128), b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_stbtrs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] c_float, ref ldab : c_int, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_stbtrs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] c_float, ref ldab : c_int, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtbtrs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] c_double, ref ldab : c_int, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtbtrs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] c_double, ref ldab : c_int, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctbtrs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] complex(64), ref ldab : c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctbtrs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] complex(64), ref ldab : c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztbtrs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] complex(128), ref ldab : c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztbtrs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] complex(128), ref ldab : c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgecon(ref norm : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ref anorm : c_float, ref rcond : c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgecon(ref norm : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ref anorm : c_float, ref rcond : c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgecon(ref norm : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ref anorm : c_double, ref rcond : c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgecon(ref norm : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ref anorm : c_double, ref rcond : c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgecon(ref norm : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ref anorm : c_float, ref rcond : c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgecon(ref norm : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ref anorm : c_float, ref rcond : c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgecon(ref norm : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ref anorm : c_double, ref rcond : c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgecon(ref norm : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ref anorm : c_double, ref rcond : c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgbcon(ref norm : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] c_float, ref ldab : c_int, ipiv : [] c_int, ref anorm : c_float, ref rcond : c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgbcon(ref norm : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] c_float, ref ldab : c_int, ipiv : [] c_int, ref anorm : c_float, ref rcond : c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgbcon(ref norm : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] c_double, ref ldab : c_int, ipiv : [] c_int, ref anorm : c_double, ref rcond : c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgbcon(ref norm : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] c_double, ref ldab : c_int, ipiv : [] c_int, ref anorm : c_double, ref rcond : c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgbcon(ref norm : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] complex(64), ref ldab : c_int, ipiv : [] c_int, ref anorm : c_float, ref rcond : c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgbcon(ref norm : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] complex(64), ref ldab : c_int, ipiv : [] c_int, ref anorm : c_float, ref rcond : c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgbcon(ref norm : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] complex(128), ref ldab : c_int, ipiv : [] c_int, ref anorm : c_double, ref rcond : c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgbcon(ref norm : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] complex(128), ref ldab : c_int, ipiv : [] c_int, ref anorm : c_double, ref rcond : c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgtcon(ref norm : c_char, ref n : c_int, dl : [] c_float, d : [] c_float, du : [] c_float, du2 : [] c_float, ipiv : [] c_int, ref anorm : c_float, ref rcond : c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgtcon(ref norm : c_char, ref n : c_int, dl : [] c_float, d : [] c_float, du : [] c_float, du2 : [] c_float, ipiv : [] c_int, ref anorm : c_float, ref rcond : c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgtcon(ref norm : c_char, ref n : c_int, dl : [] c_double, d : [] c_double, du : [] c_double, du2 : [] c_double, ipiv : [] c_int, ref anorm : c_double, ref rcond : c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgtcon(ref norm : c_char, ref n : c_int, dl : [] c_double, d : [] c_double, du : [] c_double, du2 : [] c_double, ipiv : [] c_int, ref anorm : c_double, ref rcond : c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgtcon(ref norm : c_char, ref n : c_int, dl : [] complex(64), d : [] complex(64), du : [] complex(64), du2 : [] complex(64), ipiv : [] c_int, ref anorm : c_float, ref rcond : c_float, work : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgtcon(ref norm : c_char, ref n : c_int, dl : [] complex(64), d : [] complex(64), du : [] complex(64), du2 : [] complex(64), ipiv : [] c_int, ref anorm : c_float, ref rcond : c_float, work : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgtcon(ref norm : c_char, ref n : c_int, dl : [] complex(128), d : [] complex(128), du : [] complex(128), du2 : [] complex(128), ipiv : [] c_int, ref anorm : c_double, ref rcond : c_double, work : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgtcon(ref norm : c_char, ref n : c_int, dl : [] complex(128), d : [] complex(128), du : [] complex(128), du2 : [] complex(128), ipiv : [] c_int, ref anorm : c_double, ref rcond : c_double, work : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_spocon(ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ref anorm : c_float, ref rcond : c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_spocon(ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ref anorm : c_float, ref rcond : c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dpocon(ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ref anorm : c_double, ref rcond : c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dpocon(ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ref anorm : c_double, ref rcond : c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cpocon(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ref anorm : c_float, ref rcond : c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cpocon(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ref anorm : c_float, ref rcond : c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zpocon(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ref anorm : c_double, ref rcond : c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zpocon(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ref anorm : c_double, ref rcond : c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sppcon(ref uplo : c_char, ref n : c_int, ap : [] c_float, ref anorm : c_float, ref rcond : c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sppcon(ref uplo : c_char, ref n : c_int, ap : [] c_float, ref anorm : c_float, ref rcond : c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dppcon(ref uplo : c_char, ref n : c_int, ap : [] c_double, ref anorm : c_double, ref rcond : c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dppcon(ref uplo : c_char, ref n : c_int, ap : [] c_double, ref anorm : c_double, ref rcond : c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cppcon(ref uplo : c_char, ref n : c_int, ap : [] complex(64), ref anorm : c_float, ref rcond : c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cppcon(ref uplo : c_char, ref n : c_int, ap : [] complex(64), ref anorm : c_float, ref rcond : c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zppcon(ref uplo : c_char, ref n : c_int, ap : [] complex(128), ref anorm : c_double, ref rcond : c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zppcon(ref uplo : c_char, ref n : c_int, ap : [] complex(128), ref anorm : c_double, ref rcond : c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_spbcon(ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] c_float, ref ldab : c_int, ref anorm : c_float, ref rcond : c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_spbcon(ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] c_float, ref ldab : c_int, ref anorm : c_float, ref rcond : c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dpbcon(ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] c_double, ref ldab : c_int, ref anorm : c_double, ref rcond : c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dpbcon(ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] c_double, ref ldab : c_int, ref anorm : c_double, ref rcond : c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cpbcon(ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(64), ref ldab : c_int, ref anorm : c_float, ref rcond : c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cpbcon(ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(64), ref ldab : c_int, ref anorm : c_float, ref rcond : c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zpbcon(ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(128), ref ldab : c_int, ref anorm : c_double, ref rcond : c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zpbcon(ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(128), ref ldab : c_int, ref anorm : c_double, ref rcond : c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sptcon(ref n : c_int, d : [] c_float, e : [] c_float, ref anorm : c_float, ref rcond : c_float, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sptcon(ref n : c_int, d : [] c_float, e : [] c_float, ref anorm : c_float, ref rcond : c_float, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dptcon(ref n : c_int, d : [] c_double, e : [] c_double, ref anorm : c_double, ref rcond : c_double, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dptcon(ref n : c_int, d : [] c_double, e : [] c_double, ref anorm : c_double, ref rcond : c_double, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cptcon(ref n : c_int, d : [] c_float, e : [] complex(64), ref anorm : c_float, ref rcond : c_float, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cptcon(ref n : c_int, d : [] c_float, e : [] complex(64), ref anorm : c_float, ref rcond : c_float, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zptcon(ref n : c_int, d : [] c_double, e : [] complex(128), ref anorm : c_double, ref rcond : c_double, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zptcon(ref n : c_int, d : [] c_double, e : [] complex(128), ref anorm : c_double, ref rcond : c_double, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssycon(ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ipiv : [] c_int, ref anorm : c_float, ref rcond : c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssycon(ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ipiv : [] c_int, ref anorm : c_float, ref rcond : c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsycon(ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, ref anorm : c_double, ref rcond : c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsycon(ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, ref anorm : c_double, ref rcond : c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_csycon(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, ref anorm : c_float, ref rcond : c_float, work : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_csycon(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, ref anorm : c_float, ref rcond : c_float, work : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zsycon(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, ref anorm : c_double, ref rcond : c_double, work : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zsycon(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, ref anorm : c_double, ref rcond : c_double, work : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_checon(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, ref anorm : c_float, ref rcond : c_float, work : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_checon(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, ref anorm : c_float, ref rcond : c_float, work : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhecon(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, ref anorm : c_double, ref rcond : c_double, work : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhecon(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, ref anorm : c_double, ref rcond : c_double, work : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sspcon(ref uplo : c_char, ref n : c_int, ap : [] c_float, ipiv : [] c_int, ref anorm : c_float, ref rcond : c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sspcon(ref uplo : c_char, ref n : c_int, ap : [] c_float, ipiv : [] c_int, ref anorm : c_float, ref rcond : c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dspcon(ref uplo : c_char, ref n : c_int, ap : [] c_double, ipiv : [] c_int, ref anorm : c_double, ref rcond : c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dspcon(ref uplo : c_char, ref n : c_int, ap : [] c_double, ipiv : [] c_int, ref anorm : c_double, ref rcond : c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cspcon(ref uplo : c_char, ref n : c_int, ap : [] complex(64), ipiv : [] c_int, ref anorm : c_float, ref rcond : c_float, work : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cspcon(ref uplo : c_char, ref n : c_int, ap : [] complex(64), ipiv : [] c_int, ref anorm : c_float, ref rcond : c_float, work : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zspcon(ref uplo : c_char, ref n : c_int, ap : [] complex(128), ipiv : [] c_int, ref anorm : c_double, ref rcond : c_double, work : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zspcon(ref uplo : c_char, ref n : c_int, ap : [] complex(128), ipiv : [] c_int, ref anorm : c_double, ref rcond : c_double, work : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chpcon(ref uplo : c_char, ref n : c_int, ap : [] complex(64), ipiv : [] c_int, ref anorm : c_float, ref rcond : c_float, work : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chpcon(ref uplo : c_char, ref n : c_int, ap : [] complex(64), ipiv : [] c_int, ref anorm : c_float, ref rcond : c_float, work : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhpcon(ref uplo : c_char, ref n : c_int, ap : [] complex(128), ipiv : [] c_int, ref anorm : c_double, ref rcond : c_double, work : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhpcon(ref uplo : c_char, ref n : c_int, ap : [] complex(128), ipiv : [] c_int, ref anorm : c_double, ref rcond : c_double, work : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_strcon(ref norm : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ref rcond : c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_strcon(ref norm : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ref rcond : c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtrcon(ref norm : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ref rcond : c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtrcon(ref norm : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ref rcond : c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctrcon(ref norm : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ref rcond : c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctrcon(ref norm : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ref rcond : c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztrcon(ref norm : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ref rcond : c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztrcon(ref norm : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ref rcond : c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_stpcon(ref norm : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, ap : [] c_float, ref rcond : c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_stpcon(ref norm : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, ap : [] c_float, ref rcond : c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtpcon(ref norm : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, ap : [] c_double, ref rcond : c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtpcon(ref norm : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, ap : [] c_double, ref rcond : c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctpcon(ref norm : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, ap : [] complex(64), ref rcond : c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctpcon(ref norm : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, ap : [] complex(64), ref rcond : c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztpcon(ref norm : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, ap : [] complex(128), ref rcond : c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztpcon(ref norm : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, ap : [] complex(128), ref rcond : c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_stbcon(ref norm : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, ref kd : c_int, ab : [] c_float, ref ldab : c_int, ref rcond : c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_stbcon(ref norm : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, ref kd : c_int, ab : [] c_float, ref ldab : c_int, ref rcond : c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtbcon(ref norm : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, ref kd : c_int, ab : [] c_double, ref ldab : c_int, ref rcond : c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtbcon(ref norm : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, ref kd : c_int, ab : [] c_double, ref ldab : c_int, ref rcond : c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctbcon(ref norm : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(64), ref ldab : c_int, ref rcond : c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctbcon(ref norm : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(64), ref ldab : c_int, ref rcond : c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztbcon(ref norm : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(128), ref ldab : c_int, ref rcond : c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztbcon(ref norm : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(128), ref ldab : c_int, ref rcond : c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgerfs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, af : [] c_float, ref ldaf : c_int, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgerfs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, af : [] c_float, ref ldaf : c_int, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgerfs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, af : [] c_double, ref ldaf : c_int, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgerfs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, af : [] c_double, ref ldaf : c_int, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgerfs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgerfs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgerfs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgerfs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgerfsx(ref trans : c_char, ref equed : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, af : [] c_double, ref ldaf : c_int, ipiv : [] c_int, r : [] c_double, c : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgerfsx(ref trans : c_char, ref equed : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, af : [] c_double, ref ldaf : c_int, ipiv : [] c_int, r : [] c_double, c : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgerfsx(ref trans : c_char, ref equed : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, af : [] c_float, ref ldaf : c_int, ipiv : [] c_int, r : [] c_float, c : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgerfsx(ref trans : c_char, ref equed : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, af : [] c_float, ref ldaf : c_int, ipiv : [] c_int, r : [] c_float, c : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgerfsx(ref trans : c_char, ref equed : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, ipiv : [] c_int, r : [] c_double, c : [] c_double, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgerfsx(ref trans : c_char, ref equed : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, ipiv : [] c_int, r : [] c_double, c : [] c_double, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgerfsx(ref trans : c_char, ref equed : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, ipiv : [] c_int, r : [] c_float, c : [] c_float, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgerfsx(ref trans : c_char, ref equed : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, ipiv : [] c_int, r : [] c_float, c : [] c_float, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgbrfs(ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] c_float, ref ldab : c_int, afb : [] c_float, ref ldafb : c_int, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgbrfs(ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] c_float, ref ldab : c_int, afb : [] c_float, ref ldafb : c_int, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgbrfs(ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] c_double, ref ldab : c_int, afb : [] c_double, ref ldafb : c_int, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgbrfs(ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] c_double, ref ldab : c_int, afb : [] c_double, ref ldafb : c_int, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgbrfs(ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] complex(64), ref ldab : c_int, afb : [] complex(64), ref ldafb : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgbrfs(ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] complex(64), ref ldab : c_int, afb : [] complex(64), ref ldafb : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgbrfs(ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] complex(128), ref ldab : c_int, afb : [] complex(128), ref ldafb : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgbrfs(ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] complex(128), ref ldab : c_int, afb : [] complex(128), ref ldafb : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgbrfsx(ref trans : c_char, ref equed : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] c_double, ref ldab : c_int, afb : [] c_double, ref ldafb : c_int, ipiv : [] c_int, r : [] c_double, c : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgbrfsx(ref trans : c_char, ref equed : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] c_double, ref ldab : c_int, afb : [] c_double, ref ldafb : c_int, ipiv : [] c_int, r : [] c_double, c : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgbrfsx(ref trans : c_char, ref equed : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] c_float, ref ldab : c_int, afb : [] c_float, ref ldafb : c_int, ipiv : [] c_int, r : [] c_float, c : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgbrfsx(ref trans : c_char, ref equed : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] c_float, ref ldab : c_int, afb : [] c_float, ref ldafb : c_int, ipiv : [] c_int, r : [] c_float, c : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgbrfsx(ref trans : c_char, ref equed : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] complex(128), ref ldab : c_int, afb : [] complex(128), ref ldafb : c_int, ipiv : [] c_int, r : [] c_double, c : [] c_double, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgbrfsx(ref trans : c_char, ref equed : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] complex(128), ref ldab : c_int, afb : [] complex(128), ref ldafb : c_int, ipiv : [] c_int, r : [] c_double, c : [] c_double, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgbrfsx(ref trans : c_char, ref equed : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] complex(64), ref ldab : c_int, afb : [] complex(64), ref ldafb : c_int, ipiv : [] c_int, r : [] c_float, c : [] c_float, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgbrfsx(ref trans : c_char, ref equed : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] complex(64), ref ldab : c_int, afb : [] complex(64), ref ldafb : c_int, ipiv : [] c_int, r : [] c_float, c : [] c_float, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgtrfs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, dl : [] c_float, d : [] c_float, du : [] c_float, dlf : [] c_float, df : [] c_float, duf : [] c_float, du2 : [] c_float, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgtrfs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, dl : [] c_float, d : [] c_float, du : [] c_float, dlf : [] c_float, df : [] c_float, duf : [] c_float, du2 : [] c_float, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgtrfs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, dl : [] c_double, d : [] c_double, du : [] c_double, dlf : [] c_double, df : [] c_double, duf : [] c_double, du2 : [] c_double, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgtrfs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, dl : [] c_double, d : [] c_double, du : [] c_double, dlf : [] c_double, df : [] c_double, duf : [] c_double, du2 : [] c_double, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgtrfs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, dl : [] complex(64), d : [] complex(64), du : [] complex(64), dlf : [] complex(64), df : [] complex(64), duf : [] complex(64), du2 : [] complex(64), ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgtrfs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, dl : [] complex(64), d : [] complex(64), du : [] complex(64), dlf : [] complex(64), df : [] complex(64), duf : [] complex(64), du2 : [] complex(64), ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgtrfs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, dl : [] complex(128), d : [] complex(128), du : [] complex(128), dlf : [] complex(128), df : [] complex(128), duf : [] complex(128), du2 : [] complex(128), ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgtrfs(ref trans : c_char, ref n : c_int, ref nrhs : c_int, dl : [] complex(128), d : [] complex(128), du : [] complex(128), dlf : [] complex(128), df : [] complex(128), duf : [] complex(128), du2 : [] complex(128), ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sporfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, af : [] c_float, ref ldaf : c_int, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sporfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, af : [] c_float, ref ldaf : c_int, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dporfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, af : [] c_double, ref ldaf : c_int, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dporfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, af : [] c_double, ref ldaf : c_int, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cporfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cporfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zporfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zporfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dporfsx(ref uplo : c_char, ref equed : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, af : [] c_double, ref ldaf : c_int, s : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dporfsx(ref uplo : c_char, ref equed : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, af : [] c_double, ref ldaf : c_int, s : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sporfsx(ref uplo : c_char, ref equed : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, af : [] c_float, ref ldaf : c_int, s : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sporfsx(ref uplo : c_char, ref equed : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, af : [] c_float, ref ldaf : c_int, s : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zporfsx(ref uplo : c_char, ref equed : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, s : [] c_double, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zporfsx(ref uplo : c_char, ref equed : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, s : [] c_double, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cporfsx(ref uplo : c_char, ref equed : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, s : [] c_float, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cporfsx(ref uplo : c_char, ref equed : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, s : [] c_float, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_spprfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_float, afp : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_spprfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_float, afp : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dpprfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_double, afp : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dpprfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_double, afp : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cpprfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(64), afp : [] complex(64), b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cpprfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(64), afp : [] complex(64), b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zpprfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(128), afp : [] complex(128), b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zpprfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(128), afp : [] complex(128), b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_spbrfs(ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] c_float, ref ldab : c_int, afb : [] c_float, ref ldafb : c_int, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_spbrfs(ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] c_float, ref ldab : c_int, afb : [] c_float, ref ldafb : c_int, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dpbrfs(ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] c_double, ref ldab : c_int, afb : [] c_double, ref ldafb : c_int, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dpbrfs(ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] c_double, ref ldab : c_int, afb : [] c_double, ref ldafb : c_int, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cpbrfs(ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] complex(64), ref ldab : c_int, afb : [] complex(64), ref ldafb : c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cpbrfs(ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] complex(64), ref ldab : c_int, afb : [] complex(64), ref ldafb : c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zpbrfs(ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] complex(128), ref ldab : c_int, afb : [] complex(128), ref ldafb : c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zpbrfs(ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] complex(128), ref ldab : c_int, afb : [] complex(128), ref ldafb : c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sptrfs(ref n : c_int, ref nrhs : c_int, d : [] c_float, e : [] c_float, df : [] c_float, ef : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sptrfs(ref n : c_int, ref nrhs : c_int, d : [] c_float, e : [] c_float, df : [] c_float, ef : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dptrfs(ref n : c_int, ref nrhs : c_int, d : [] c_double, e : [] c_double, df : [] c_double, ef : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dptrfs(ref n : c_int, ref nrhs : c_int, d : [] c_double, e : [] c_double, df : [] c_double, ef : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cptrfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, d : [] c_float, e : [] complex(64), df : [] c_float, ef : [] complex(64), b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cptrfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, d : [] c_float, e : [] complex(64), df : [] c_float, ef : [] complex(64), b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zptrfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, d : [] c_double, e : [] complex(128), df : [] c_double, ef : [] complex(128), b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zptrfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, d : [] c_double, e : [] complex(128), df : [] c_double, ef : [] complex(128), b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssyrfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, af : [] c_float, ref ldaf : c_int, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssyrfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, af : [] c_float, ref ldaf : c_int, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsyrfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, af : [] c_double, ref ldaf : c_int, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsyrfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, af : [] c_double, ref ldaf : c_int, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_csyrfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_csyrfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zsyrfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zsyrfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsyrfsx(ref uplo : c_char, ref equed : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, af : [] c_double, ref ldaf : c_int, ipiv : [] c_int, s : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsyrfsx(ref uplo : c_char, ref equed : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, af : [] c_double, ref ldaf : c_int, ipiv : [] c_int, s : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssyrfsx(ref uplo : c_char, ref equed : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, af : [] c_float, ref ldaf : c_int, ipiv : [] c_int, s : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssyrfsx(ref uplo : c_char, ref equed : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, af : [] c_float, ref ldaf : c_int, ipiv : [] c_int, s : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zsyrfsx(ref uplo : c_char, ref equed : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, ipiv : [] c_int, s : [] c_double, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zsyrfsx(ref uplo : c_char, ref equed : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, ipiv : [] c_int, s : [] c_double, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_csyrfsx(ref uplo : c_char, ref equed : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, ipiv : [] c_int, s : [] c_float, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_csyrfsx(ref uplo : c_char, ref equed : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, ipiv : [] c_int, s : [] c_float, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cherfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cherfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zherfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zherfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zherfsx(ref uplo : c_char, ref equed : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, ipiv : [] c_int, s : [] c_double, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zherfsx(ref uplo : c_char, ref equed : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, ipiv : [] c_int, s : [] c_double, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cherfsx(ref uplo : c_char, ref equed : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, ipiv : [] c_int, s : [] c_float, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cherfsx(ref uplo : c_char, ref equed : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, ipiv : [] c_int, s : [] c_float, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssprfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_float, afp : [] c_float, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssprfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_float, afp : [] c_float, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsprfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_double, afp : [] c_double, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsprfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_double, afp : [] c_double, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_csprfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(64), afp : [] complex(64), ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_csprfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(64), afp : [] complex(64), ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zsprfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(128), afp : [] complex(128), ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zsprfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(128), afp : [] complex(128), ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chprfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(64), afp : [] complex(64), ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chprfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(64), afp : [] complex(64), ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhprfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(128), afp : [] complex(128), ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhprfs(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(128), afp : [] complex(128), ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_strrfs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_strrfs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtrrfs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtrrfs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctrrfs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctrrfs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztrrfs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztrrfs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_stprfs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_stprfs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtprfs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtprfs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctprfs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(64), b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctprfs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(64), b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztprfs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(128), b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztprfs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(128), b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_stbrfs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] c_float, ref ldab : c_int, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_stbrfs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] c_float, ref ldab : c_int, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtbrfs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] c_double, ref ldab : c_int, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtbrfs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] c_double, ref ldab : c_int, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctbrfs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] complex(64), ref ldab : c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctbrfs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] complex(64), ref ldab : c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztbrfs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] complex(128), ref ldab : c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztbrfs(ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] complex(128), ref ldab : c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgetri(ref n : c_int, a : [] c_float, ref lda : c_int, ipiv : [] c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgetri(ref n : c_int, a : [] c_float, ref lda : c_int, ipiv : [] c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgetri(ref n : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgetri(ref n : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgetri(ref n : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgetri(ref n : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgetri(ref n : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgetri(ref n : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_spotri(ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_spotri(ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dpotri(ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dpotri(ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cpotri(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cpotri(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zpotri(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zpotri(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dpftri(ref transr : c_char, ref uplo : c_char, ref n : c_int, a : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dpftri(ref transr : c_char, ref uplo : c_char, ref n : c_int, a : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_spftri(ref transr : c_char, ref uplo : c_char, ref n : c_int, a : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_spftri(ref transr : c_char, ref uplo : c_char, ref n : c_int, a : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zpftri(ref transr : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zpftri(ref transr : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cpftri(ref transr : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cpftri(ref transr : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_spptri(ref uplo : c_char, ref n : c_int, ap : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_spptri(ref uplo : c_char, ref n : c_int, ap : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dpptri(ref uplo : c_char, ref n : c_int, ap : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dpptri(ref uplo : c_char, ref n : c_int, ap : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cpptri(ref uplo : c_char, ref n : c_int, ap : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cpptri(ref uplo : c_char, ref n : c_int, ap : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zpptri(ref uplo : c_char, ref n : c_int, ap : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zpptri(ref uplo : c_char, ref n : c_int, ap : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssytri(ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ipiv : [] c_int, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssytri(ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ipiv : [] c_int, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsytri(ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsytri(ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_csytri(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, work : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_csytri(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, work : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zsytri(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, work : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zsytri(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, work : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chetri(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, work : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chetri(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, work : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhetri(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, work : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhetri(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, work : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssptri(ref uplo : c_char, ref n : c_int, ap : [] c_float, ipiv : [] c_int, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssptri(ref uplo : c_char, ref n : c_int, ap : [] c_float, ipiv : [] c_int, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsptri(ref uplo : c_char, ref n : c_int, ap : [] c_double, ipiv : [] c_int, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsptri(ref uplo : c_char, ref n : c_int, ap : [] c_double, ipiv : [] c_int, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_csptri(ref uplo : c_char, ref n : c_int, ap : [] complex(64), ipiv : [] c_int, work : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_csptri(ref uplo : c_char, ref n : c_int, ap : [] complex(64), ipiv : [] c_int, work : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zsptri(ref uplo : c_char, ref n : c_int, ap : [] complex(128), ipiv : [] c_int, work : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zsptri(ref uplo : c_char, ref n : c_int, ap : [] complex(128), ipiv : [] c_int, work : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chptri(ref uplo : c_char, ref n : c_int, ap : [] complex(64), ipiv : [] c_int, work : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chptri(ref uplo : c_char, ref n : c_int, ap : [] complex(64), ipiv : [] c_int, work : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhptri(ref uplo : c_char, ref n : c_int, ap : [] complex(128), ipiv : [] c_int, work : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhptri(ref uplo : c_char, ref n : c_int, ap : [] complex(128), ipiv : [] c_int, work : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_strtri(ref uplo : c_char, ref diag : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_strtri(ref uplo : c_char, ref diag : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtrtri(ref uplo : c_char, ref diag : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtrtri(ref uplo : c_char, ref diag : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctrtri(ref uplo : c_char, ref diag : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctrtri(ref uplo : c_char, ref diag : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztrtri(ref uplo : c_char, ref diag : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztrtri(ref uplo : c_char, ref diag : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtftri(ref transr : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, a : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtftri(ref transr : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, a : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_stftri(ref transr : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, a : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_stftri(ref transr : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, a : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztftri(ref transr : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, a : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztftri(ref transr : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, a : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctftri(ref transr : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, a : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctftri(ref transr : c_char, ref uplo : c_char, ref diag : c_char, ref n : c_int, a : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_stptri(ref uplo : c_char, ref diag : c_char, ref n : c_int, ap : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_stptri(ref uplo : c_char, ref diag : c_char, ref n : c_int, ap : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtptri(ref uplo : c_char, ref diag : c_char, ref n : c_int, ap : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtptri(ref uplo : c_char, ref diag : c_char, ref n : c_int, ap : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctptri(ref uplo : c_char, ref diag : c_char, ref n : c_int, ap : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctptri(ref uplo : c_char, ref diag : c_char, ref n : c_int, ap : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztptri(ref uplo : c_char, ref diag : c_char, ref n : c_int, ap : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztptri(ref uplo : c_char, ref diag : c_char, ref n : c_int, ap : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgeequ(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, r : [] c_float, c : [] c_float, ref rowcnd : c_float, ref colcnd : c_float, ref amax : c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgeequ(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, r : [] c_float, c : [] c_float, ref rowcnd : c_float, ref colcnd : c_float, ref amax : c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgeequ(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, r : [] c_double, c : [] c_double, ref rowcnd : c_double, ref colcnd : c_double, ref amax : c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgeequ(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, r : [] c_double, c : [] c_double, ref rowcnd : c_double, ref colcnd : c_double, ref amax : c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgeequ(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, r : [] c_float, c : [] c_float, ref rowcnd : c_float, ref colcnd : c_float, ref amax : c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgeequ(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, r : [] c_float, c : [] c_float, ref rowcnd : c_float, ref colcnd : c_float, ref amax : c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgeequ(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, r : [] c_double, c : [] c_double, ref rowcnd : c_double, ref colcnd : c_double, ref amax : c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgeequ(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, r : [] c_double, c : [] c_double, ref rowcnd : c_double, ref colcnd : c_double, ref amax : c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgeequb(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, r : [] c_double, c : [] c_double, ref rowcnd : c_double, ref colcnd : c_double, ref amax : c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgeequb(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, r : [] c_double, c : [] c_double, ref rowcnd : c_double, ref colcnd : c_double, ref amax : c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgeequb(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, r : [] c_float, c : [] c_float, ref rowcnd : c_float, ref colcnd : c_float, ref amax : c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgeequb(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, r : [] c_float, c : [] c_float, ref rowcnd : c_float, ref colcnd : c_float, ref amax : c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgeequb(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, r : [] c_double, c : [] c_double, ref rowcnd : c_double, ref colcnd : c_double, ref amax : c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgeequb(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, r : [] c_double, c : [] c_double, ref rowcnd : c_double, ref colcnd : c_double, ref amax : c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgeequb(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, r : [] c_float, c : [] c_float, ref rowcnd : c_float, ref colcnd : c_float, ref amax : c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgeequb(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, r : [] c_float, c : [] c_float, ref rowcnd : c_float, ref colcnd : c_float, ref amax : c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgbequ(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] c_float, ref ldab : c_int, r : [] c_float, c : [] c_float, ref rowcnd : c_float, ref colcnd : c_float, ref amax : c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgbequ(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] c_float, ref ldab : c_int, r : [] c_float, c : [] c_float, ref rowcnd : c_float, ref colcnd : c_float, ref amax : c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgbequ(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] c_double, ref ldab : c_int, r : [] c_double, c : [] c_double, ref rowcnd : c_double, ref colcnd : c_double, ref amax : c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgbequ(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] c_double, ref ldab : c_int, r : [] c_double, c : [] c_double, ref rowcnd : c_double, ref colcnd : c_double, ref amax : c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgbequ(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] complex(64), ref ldab : c_int, r : [] c_float, c : [] c_float, ref rowcnd : c_float, ref colcnd : c_float, ref amax : c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgbequ(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] complex(64), ref ldab : c_int, r : [] c_float, c : [] c_float, ref rowcnd : c_float, ref colcnd : c_float, ref amax : c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgbequ(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] complex(128), ref ldab : c_int, r : [] c_double, c : [] c_double, ref rowcnd : c_double, ref colcnd : c_double, ref amax : c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgbequ(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] complex(128), ref ldab : c_int, r : [] c_double, c : [] c_double, ref rowcnd : c_double, ref colcnd : c_double, ref amax : c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgbequb(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] c_double, ref ldab : c_int, r : [] c_double, c : [] c_double, ref rowcnd : c_double, ref colcnd : c_double, ref amax : c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgbequb(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] c_double, ref ldab : c_int, r : [] c_double, c : [] c_double, ref rowcnd : c_double, ref colcnd : c_double, ref amax : c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgbequb(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] c_float, ref ldab : c_int, r : [] c_float, c : [] c_float, ref rowcnd : c_float, ref colcnd : c_float, ref amax : c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgbequb(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] c_float, ref ldab : c_int, r : [] c_float, c : [] c_float, ref rowcnd : c_float, ref colcnd : c_float, ref amax : c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgbequb(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] complex(128), ref ldab : c_int, r : [] c_double, c : [] c_double, ref rowcnd : c_double, ref colcnd : c_double, ref amax : c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgbequb(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] complex(128), ref ldab : c_int, r : [] c_double, c : [] c_double, ref rowcnd : c_double, ref colcnd : c_double, ref amax : c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgbequb(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] complex(64), ref ldab : c_int, r : [] c_float, c : [] c_float, ref rowcnd : c_float, ref colcnd : c_float, ref amax : c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgbequb(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, ab : [] complex(64), ref ldab : c_int, r : [] c_float, c : [] c_float, ref rowcnd : c_float, ref colcnd : c_float, ref amax : c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_spoequ(ref n : c_int, a : [] c_float, ref lda : c_int, s : [] c_float, ref scond : c_float, ref amax : c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_spoequ(ref n : c_int, a : [] c_float, ref lda : c_int, s : [] c_float, ref scond : c_float, ref amax : c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dpoequ(ref n : c_int, a : [] c_double, ref lda : c_int, s : [] c_double, ref scond : c_double, ref amax : c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dpoequ(ref n : c_int, a : [] c_double, ref lda : c_int, s : [] c_double, ref scond : c_double, ref amax : c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cpoequ(ref n : c_int, a : [] complex(64), ref lda : c_int, s : [] c_float, ref scond : c_float, ref amax : c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cpoequ(ref n : c_int, a : [] complex(64), ref lda : c_int, s : [] c_float, ref scond : c_float, ref amax : c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zpoequ(ref n : c_int, a : [] complex(128), ref lda : c_int, s : [] c_double, ref scond : c_double, ref amax : c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zpoequ(ref n : c_int, a : [] complex(128), ref lda : c_int, s : [] c_double, ref scond : c_double, ref amax : c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dpoequb(ref n : c_int, a : [] c_double, ref lda : c_int, s : [] c_double, ref scond : c_double, ref amax : c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dpoequb(ref n : c_int, a : [] c_double, ref lda : c_int, s : [] c_double, ref scond : c_double, ref amax : c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_spoequb(ref n : c_int, a : [] c_float, ref lda : c_int, s : [] c_float, ref scond : c_float, ref amax : c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_spoequb(ref n : c_int, a : [] c_float, ref lda : c_int, s : [] c_float, ref scond : c_float, ref amax : c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zpoequb(ref n : c_int, a : [] complex(128), ref lda : c_int, s : [] c_double, ref scond : c_double, ref amax : c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zpoequb(ref n : c_int, a : [] complex(128), ref lda : c_int, s : [] c_double, ref scond : c_double, ref amax : c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cpoequb(ref n : c_int, a : [] complex(64), ref lda : c_int, s : [] c_float, ref scond : c_float, ref amax : c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cpoequb(ref n : c_int, a : [] complex(64), ref lda : c_int, s : [] c_float, ref scond : c_float, ref amax : c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sppequ(ref uplo : c_char, ref n : c_int, ap : [] c_float, s : [] c_float, ref scond : c_float, ref amax : c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sppequ(ref uplo : c_char, ref n : c_int, ap : [] c_float, s : [] c_float, ref scond : c_float, ref amax : c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dppequ(ref uplo : c_char, ref n : c_int, ap : [] c_double, s : [] c_double, ref scond : c_double, ref amax : c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dppequ(ref uplo : c_char, ref n : c_int, ap : [] c_double, s : [] c_double, ref scond : c_double, ref amax : c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cppequ(ref uplo : c_char, ref n : c_int, ap : [] complex(64), s : [] c_float, ref scond : c_float, ref amax : c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cppequ(ref uplo : c_char, ref n : c_int, ap : [] complex(64), s : [] c_float, ref scond : c_float, ref amax : c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zppequ(ref uplo : c_char, ref n : c_int, ap : [] complex(128), s : [] c_double, ref scond : c_double, ref amax : c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zppequ(ref uplo : c_char, ref n : c_int, ap : [] complex(128), s : [] c_double, ref scond : c_double, ref amax : c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_spbequ(ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] c_float, ref ldab : c_int, s : [] c_float, ref scond : c_float, ref amax : c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_spbequ(ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] c_float, ref ldab : c_int, s : [] c_float, ref scond : c_float, ref amax : c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dpbequ(ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] c_double, ref ldab : c_int, s : [] c_double, ref scond : c_double, ref amax : c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dpbequ(ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] c_double, ref ldab : c_int, s : [] c_double, ref scond : c_double, ref amax : c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cpbequ(ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(64), ref ldab : c_int, s : [] c_float, ref scond : c_float, ref amax : c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cpbequ(ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(64), ref ldab : c_int, s : [] c_float, ref scond : c_float, ref amax : c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zpbequ(ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(128), ref ldab : c_int, s : [] c_double, ref scond : c_double, ref amax : c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zpbequ(ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(128), ref ldab : c_int, s : [] c_double, ref scond : c_double, ref amax : c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsyequb(ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, s : [] c_double, ref scond : c_double, ref amax : c_double, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsyequb(ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, s : [] c_double, ref scond : c_double, ref amax : c_double, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssyequb(ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, s : [] c_float, ref scond : c_float, ref amax : c_float, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssyequb(ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, s : [] c_float, ref scond : c_float, ref amax : c_float, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zsyequb(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, s : [] c_double, ref scond : c_double, ref amax : c_double, work : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zsyequb(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, s : [] c_double, ref scond : c_double, ref amax : c_double, work : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_csyequb(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, s : [] c_float, ref scond : c_float, ref amax : c_float, work : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_csyequb(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, s : [] c_float, ref scond : c_float, ref amax : c_float, work : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zheequb(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, s : [] c_double, ref scond : c_double, ref amax : c_double, work : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zheequb(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, s : [] c_double, ref scond : c_double, ref amax : c_double, work : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cheequb(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, s : [] c_float, ref scond : c_float, ref amax : c_float, work : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cheequb(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, s : [] c_float, ref scond : c_float, ref amax : c_float, work : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgesv(ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgesv(ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgesv(ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgesv(ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgesv(ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgesv(ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgesv(ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgesv(ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsgesv(ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, work : [] c_double, swork : [] c_float, ref chlapack_iter : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsgesv(ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, work : [] c_double, swork : [] c_float, ref chlapack_iter : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zcgesv(ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, work : [] complex(128), swork : [] complex(64), rwork : [] c_double, ref chlapack_iter : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zcgesv(ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, work : [] complex(128), swork : [] complex(64), rwork : [] c_double, ref chlapack_iter : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgesvx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, af : [] c_float, ref ldaf : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_float, c : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgesvx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, af : [] c_float, ref ldaf : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_float, c : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgesvx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, af : [] c_double, ref ldaf : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_double, c : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgesvx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, af : [] c_double, ref ldaf : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_double, c : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgesvx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_float, c : [] c_float, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgesvx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_float, c : [] c_float, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgesvx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_double, c : [] c_double, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgesvx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_double, c : [] c_double, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgesvxx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, af : [] c_double, ref ldaf : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_double, c : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, ref rpvgrw : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgesvxx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, af : [] c_double, ref ldaf : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_double, c : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, ref rpvgrw : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgesvxx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, af : [] c_float, ref ldaf : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_float, c : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, ref rpvgrw : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgesvxx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, af : [] c_float, ref ldaf : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_float, c : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, ref rpvgrw : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgesvxx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_double, c : [] c_double, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ref rpvgrw : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgesvxx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_double, c : [] c_double, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ref rpvgrw : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgesvxx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_float, c : [] c_float, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ref rpvgrw : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgesvxx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_float, c : [] c_float, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ref rpvgrw : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgbsv(ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] c_float, ref ldab : c_int, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgbsv(ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] c_float, ref ldab : c_int, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgbsv(ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] c_double, ref ldab : c_int, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgbsv(ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] c_double, ref ldab : c_int, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgbsv(ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] complex(64), ref ldab : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgbsv(ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] complex(64), ref ldab : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgbsv(ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] complex(128), ref ldab : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgbsv(ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] complex(128), ref ldab : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgbsvx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] c_float, ref ldab : c_int, afb : [] c_float, ref ldafb : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_float, c : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgbsvx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] c_float, ref ldab : c_int, afb : [] c_float, ref ldafb : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_float, c : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgbsvx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] c_double, ref ldab : c_int, afb : [] c_double, ref ldafb : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_double, c : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgbsvx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] c_double, ref ldab : c_int, afb : [] c_double, ref ldafb : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_double, c : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgbsvx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] complex(64), ref ldab : c_int, afb : [] complex(64), ref ldafb : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_float, c : [] c_float, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgbsvx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] complex(64), ref ldab : c_int, afb : [] complex(64), ref ldafb : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_float, c : [] c_float, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgbsvx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] complex(128), ref ldab : c_int, afb : [] complex(128), ref ldafb : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_double, c : [] c_double, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgbsvx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] complex(128), ref ldab : c_int, afb : [] complex(128), ref ldafb : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_double, c : [] c_double, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgbsvxx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] c_double, ref ldab : c_int, afb : [] c_double, ref ldafb : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_double, c : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, ref rpvgrw : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgbsvxx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] c_double, ref ldab : c_int, afb : [] c_double, ref ldafb : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_double, c : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, ref rpvgrw : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgbsvxx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] c_float, ref ldab : c_int, afb : [] c_float, ref ldafb : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_float, c : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, ref rpvgrw : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgbsvxx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] c_float, ref ldab : c_int, afb : [] c_float, ref ldafb : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_float, c : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, ref rpvgrw : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgbsvxx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] complex(128), ref ldab : c_int, afb : [] complex(128), ref ldafb : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_double, c : [] c_double, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ref rpvgrw : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgbsvxx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] complex(128), ref ldab : c_int, afb : [] complex(128), ref ldafb : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_double, c : [] c_double, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ref rpvgrw : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgbsvxx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] complex(64), ref ldab : c_int, afb : [] complex(64), ref ldafb : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_float, c : [] c_float, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ref rpvgrw : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgbsvxx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref kl : c_int, ref ku : c_int, ref nrhs : c_int, ab : [] complex(64), ref ldab : c_int, afb : [] complex(64), ref ldafb : c_int, ipiv : [] c_int, ref equed : c_char, r : [] c_float, c : [] c_float, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ref rpvgrw : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgtsv(ref n : c_int, ref nrhs : c_int, dl : [] c_float, d : [] c_float, du : [] c_float, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgtsv(ref n : c_int, ref nrhs : c_int, dl : [] c_float, d : [] c_float, du : [] c_float, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgtsv(ref n : c_int, ref nrhs : c_int, dl : [] c_double, d : [] c_double, du : [] c_double, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgtsv(ref n : c_int, ref nrhs : c_int, dl : [] c_double, d : [] c_double, du : [] c_double, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgtsv(ref n : c_int, ref nrhs : c_int, dl : [] complex(64), d : [] complex(64), du : [] complex(64), b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgtsv(ref n : c_int, ref nrhs : c_int, dl : [] complex(64), d : [] complex(64), du : [] complex(64), b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgtsv(ref n : c_int, ref nrhs : c_int, dl : [] complex(128), d : [] complex(128), du : [] complex(128), b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgtsv(ref n : c_int, ref nrhs : c_int, dl : [] complex(128), d : [] complex(128), du : [] complex(128), b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgtsvx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref nrhs : c_int, dl : [] c_float, d : [] c_float, du : [] c_float, dlf : [] c_float, df : [] c_float, duf : [] c_float, du2 : [] c_float, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgtsvx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref nrhs : c_int, dl : [] c_float, d : [] c_float, du : [] c_float, dlf : [] c_float, df : [] c_float, duf : [] c_float, du2 : [] c_float, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgtsvx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref nrhs : c_int, dl : [] c_double, d : [] c_double, du : [] c_double, dlf : [] c_double, df : [] c_double, duf : [] c_double, du2 : [] c_double, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgtsvx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref nrhs : c_int, dl : [] c_double, d : [] c_double, du : [] c_double, dlf : [] c_double, df : [] c_double, duf : [] c_double, du2 : [] c_double, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgtsvx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref nrhs : c_int, dl : [] complex(64), d : [] complex(64), du : [] complex(64), dlf : [] complex(64), df : [] complex(64), duf : [] complex(64), du2 : [] complex(64), ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgtsvx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref nrhs : c_int, dl : [] complex(64), d : [] complex(64), du : [] complex(64), dlf : [] complex(64), df : [] complex(64), duf : [] complex(64), du2 : [] complex(64), ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgtsvx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref nrhs : c_int, dl : [] complex(128), d : [] complex(128), du : [] complex(128), dlf : [] complex(128), df : [] complex(128), duf : [] complex(128), du2 : [] complex(128), ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgtsvx(ref fact : c_char, ref trans : c_char, ref n : c_int, ref nrhs : c_int, dl : [] complex(128), d : [] complex(128), du : [] complex(128), dlf : [] complex(128), df : [] complex(128), duf : [] complex(128), du2 : [] complex(128), ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sposv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sposv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dposv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dposv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cposv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cposv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zposv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zposv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsposv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, work : [] c_double, swork : [] c_float, ref chlapack_iter : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsposv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, work : [] c_double, swork : [] c_float, ref chlapack_iter : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zcposv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, work : [] complex(128), swork : [] complex(64), rwork : [] c_double, ref chlapack_iter : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zcposv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, work : [] complex(128), swork : [] complex(64), rwork : [] c_double, ref chlapack_iter : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sposvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, af : [] c_float, ref ldaf : c_int, ref equed : c_char, s : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sposvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, af : [] c_float, ref ldaf : c_int, ref equed : c_char, s : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dposvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, af : [] c_double, ref ldaf : c_int, ref equed : c_char, s : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dposvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, af : [] c_double, ref ldaf : c_int, ref equed : c_char, s : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cposvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, ref equed : c_char, s : [] c_float, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cposvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, ref equed : c_char, s : [] c_float, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zposvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, ref equed : c_char, s : [] c_double, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zposvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, ref equed : c_char, s : [] c_double, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dposvxx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, af : [] c_double, ref ldaf : c_int, ref equed : c_char, s : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, ref rpvgrw : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dposvxx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, af : [] c_double, ref ldaf : c_int, ref equed : c_char, s : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, ref rpvgrw : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sposvxx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, af : [] c_float, ref ldaf : c_int, ref equed : c_char, s : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, ref rpvgrw : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sposvxx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, af : [] c_float, ref ldaf : c_int, ref equed : c_char, s : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, ref rpvgrw : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zposvxx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, ref equed : c_char, s : [] c_double, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ref rpvgrw : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zposvxx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, ref equed : c_char, s : [] c_double, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ref rpvgrw : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cposvxx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, ref equed : c_char, s : [] c_float, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ref rpvgrw : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cposvxx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, ref equed : c_char, s : [] c_float, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ref rpvgrw : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sppsv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_float, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sppsv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_float, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dppsv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_double, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dppsv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_double, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cppsv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(64), b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cppsv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(64), b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zppsv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(128), b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zppsv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(128), b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sppsvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_float, afp : [] c_float, ref equed : c_char, s : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sppsvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_float, afp : [] c_float, ref equed : c_char, s : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dppsvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_double, afp : [] c_double, ref equed : c_char, s : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dppsvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_double, afp : [] c_double, ref equed : c_char, s : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cppsvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(64), afp : [] complex(64), ref equed : c_char, s : [] c_float, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cppsvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(64), afp : [] complex(64), ref equed : c_char, s : [] c_float, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zppsvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(128), afp : [] complex(128), ref equed : c_char, s : [] c_double, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zppsvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(128), afp : [] complex(128), ref equed : c_char, s : [] c_double, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_spbsv(ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] c_float, ref ldab : c_int, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_spbsv(ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] c_float, ref ldab : c_int, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dpbsv(ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] c_double, ref ldab : c_int, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dpbsv(ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] c_double, ref ldab : c_int, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cpbsv(ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] complex(64), ref ldab : c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cpbsv(ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] complex(64), ref ldab : c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zpbsv(ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] complex(128), ref ldab : c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zpbsv(ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] complex(128), ref ldab : c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_spbsvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] c_float, ref ldab : c_int, afb : [] c_float, ref ldafb : c_int, ref equed : c_char, s : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_spbsvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] c_float, ref ldab : c_int, afb : [] c_float, ref ldafb : c_int, ref equed : c_char, s : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dpbsvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] c_double, ref ldab : c_int, afb : [] c_double, ref ldafb : c_int, ref equed : c_char, s : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dpbsvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] c_double, ref ldab : c_int, afb : [] c_double, ref ldafb : c_int, ref equed : c_char, s : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cpbsvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] complex(64), ref ldab : c_int, afb : [] complex(64), ref ldafb : c_int, ref equed : c_char, s : [] c_float, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cpbsvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] complex(64), ref ldab : c_int, afb : [] complex(64), ref ldafb : c_int, ref equed : c_char, s : [] c_float, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zpbsvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] complex(128), ref ldab : c_int, afb : [] complex(128), ref ldafb : c_int, ref equed : c_char, s : [] c_double, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zpbsvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ref nrhs : c_int, ab : [] complex(128), ref ldab : c_int, afb : [] complex(128), ref ldafb : c_int, ref equed : c_char, s : [] c_double, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sptsv(ref n : c_int, ref nrhs : c_int, d : [] c_float, e : [] c_float, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sptsv(ref n : c_int, ref nrhs : c_int, d : [] c_float, e : [] c_float, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dptsv(ref n : c_int, ref nrhs : c_int, d : [] c_double, e : [] c_double, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dptsv(ref n : c_int, ref nrhs : c_int, d : [] c_double, e : [] c_double, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cptsv(ref n : c_int, ref nrhs : c_int, d : [] c_float, e : [] complex(64), b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cptsv(ref n : c_int, ref nrhs : c_int, d : [] c_float, e : [] complex(64), b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zptsv(ref n : c_int, ref nrhs : c_int, d : [] c_double, e : [] complex(128), b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zptsv(ref n : c_int, ref nrhs : c_int, d : [] c_double, e : [] complex(128), b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sptsvx(ref fact : c_char, ref n : c_int, ref nrhs : c_int, d : [] c_float, e : [] c_float, df : [] c_float, ef : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sptsvx(ref fact : c_char, ref n : c_int, ref nrhs : c_int, d : [] c_float, e : [] c_float, df : [] c_float, ef : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dptsvx(ref fact : c_char, ref n : c_int, ref nrhs : c_int, d : [] c_double, e : [] c_double, df : [] c_double, ef : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dptsvx(ref fact : c_char, ref n : c_int, ref nrhs : c_int, d : [] c_double, e : [] c_double, df : [] c_double, ef : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cptsvx(ref fact : c_char, ref n : c_int, ref nrhs : c_int, d : [] c_float, e : [] complex(64), df : [] c_float, ef : [] complex(64), b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cptsvx(ref fact : c_char, ref n : c_int, ref nrhs : c_int, d : [] c_float, e : [] complex(64), df : [] c_float, ef : [] complex(64), b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zptsvx(ref fact : c_char, ref n : c_int, ref nrhs : c_int, d : [] c_double, e : [] complex(128), df : [] c_double, ef : [] complex(128), b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zptsvx(ref fact : c_char, ref n : c_int, ref nrhs : c_int, d : [] c_double, e : [] complex(128), df : [] c_double, ef : [] complex(128), b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssysv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssysv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsysv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsysv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_csysv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_csysv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zsysv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zsysv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssysvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, af : [] c_float, ref ldaf : c_int, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssysvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, af : [] c_float, ref ldaf : c_int, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsysvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, af : [] c_double, ref ldaf : c_int, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsysvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, af : [] c_double, ref ldaf : c_int, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_csysvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_csysvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zsysvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zsysvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsysvxx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, af : [] c_double, ref ldaf : c_int, ipiv : [] c_int, ref equed : c_char, s : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, ref rpvgrw : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsysvxx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, af : [] c_double, ref ldaf : c_int, ipiv : [] c_int, ref equed : c_char, s : [] c_double, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, ref rpvgrw : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssysvxx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, af : [] c_float, ref ldaf : c_int, ipiv : [] c_int, ref equed : c_char, s : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, ref rpvgrw : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssysvxx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, af : [] c_float, ref ldaf : c_int, ipiv : [] c_int, ref equed : c_char, s : [] c_float, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, ref rpvgrw : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zsysvxx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, ipiv : [] c_int, ref equed : c_char, s : [] c_double, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ref rpvgrw : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zsysvxx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, ipiv : [] c_int, ref equed : c_char, s : [] c_double, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ref rpvgrw : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_csysvxx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, ipiv : [] c_int, ref equed : c_char, s : [] c_float, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ref rpvgrw : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_csysvxx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, ipiv : [] c_int, ref equed : c_char, s : [] c_float, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ref rpvgrw : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chesv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chesv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhesv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhesv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chesvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chesvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhesvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhesvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhesvxx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, ipiv : [] c_int, ref equed : c_char, s : [] c_double, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ref rpvgrw : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhesvxx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, af : [] complex(128), ref ldaf : c_int, ipiv : [] c_int, ref equed : c_char, s : [] c_double, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ref rpvgrw : c_double, berr : [] c_double, ref n_err_bnds : c_int, err_bnds_norm : [] c_double, err_bnds_comp : [] c_double, ref nparams : c_int, params : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chesvxx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, ipiv : [] c_int, ref equed : c_char, s : [] c_float, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ref rpvgrw : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chesvxx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, af : [] complex(64), ref ldaf : c_int, ipiv : [] c_int, ref equed : c_char, s : [] c_float, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ref rpvgrw : c_float, berr : [] c_float, ref n_err_bnds : c_int, err_bnds_norm : [] c_float, err_bnds_comp : [] c_float, ref nparams : c_int, params : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sspsv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_float, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sspsv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_float, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dspsv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_double, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dspsv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_double, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cspsv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(64), ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cspsv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(64), ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zspsv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(128), ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zspsv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(128), ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sspsvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_float, afp : [] c_float, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sspsvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_float, afp : [] c_float, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, x : [] c_float, ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dspsvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_double, afp : [] c_double, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dspsvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] c_double, afp : [] c_double, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, x : [] c_double, ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cspsvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(64), afp : [] complex(64), ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cspsvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(64), afp : [] complex(64), ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zspsvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(128), afp : [] complex(128), ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zspsvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(128), afp : [] complex(128), ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chpsv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(64), ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chpsv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(64), ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhpsv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(128), ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhpsv(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(128), ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chpsvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(64), afp : [] complex(64), ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chpsvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(64), afp : [] complex(64), ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, x : [] complex(64), ref ldx : c_int, ref rcond : c_float, ferr : [] c_float, berr : [] c_float, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhpsvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(128), afp : [] complex(128), ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhpsvx(ref fact : c_char, ref uplo : c_char, ref n : c_int, ref nrhs : c_int, ap : [] complex(128), afp : [] complex(128), ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, x : [] complex(128), ref ldx : c_int, ref rcond : c_double, ferr : [] c_double, berr : [] c_double, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgeqrf(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgeqrf(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgeqrf(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgeqrf(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgeqrf(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgeqrf(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgeqrf(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgeqrf(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgeqpf(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, jpvt : [] c_int, tau : [] c_float, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgeqpf(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, jpvt : [] c_int, tau : [] c_float, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgeqpf(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, jpvt : [] c_int, tau : [] c_double, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgeqpf(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, jpvt : [] c_int, tau : [] c_double, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgeqpf(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, jpvt : [] c_int, tau : [] complex(64), work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgeqpf(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, jpvt : [] c_int, tau : [] complex(64), work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgeqpf(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, jpvt : [] c_int, tau : [] complex(128), work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgeqpf(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, jpvt : [] c_int, tau : [] complex(128), work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgeqp3(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, jpvt : [] c_int, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgeqp3(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, jpvt : [] c_int, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgeqp3(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, jpvt : [] c_int, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgeqp3(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, jpvt : [] c_int, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgeqp3(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, jpvt : [] c_int, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgeqp3(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, jpvt : [] c_int, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgeqp3(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, jpvt : [] c_int, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgeqp3(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, jpvt : [] c_int, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sorgqr(ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sorgqr(ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dorgqr(ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dorgqr(ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sormqr(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, c : [] c_float, ref ldc : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sormqr(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, c : [] c_float, ref ldc : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dormqr(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, c : [] c_double, ref ldc : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dormqr(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, c : [] c_double, ref ldc : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cungqr(ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cungqr(ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zungqr(ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zungqr(ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cunmqr(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), c : [] complex(64), ref ldc : c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cunmqr(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), c : [] complex(64), ref ldc : c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zunmqr(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), c : [] complex(128), ref ldc : c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zunmqr(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), c : [] complex(128), ref ldc : c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgelqf(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgelqf(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgelqf(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgelqf(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgelqf(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgelqf(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgelqf(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgelqf(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sorglq(ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sorglq(ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dorglq(ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dorglq(ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sormlq(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, c : [] c_float, ref ldc : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sormlq(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, c : [] c_float, ref ldc : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dormlq(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, c : [] c_double, ref ldc : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dormlq(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, c : [] c_double, ref ldc : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cunglq(ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cunglq(ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zunglq(ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zunglq(ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cunmlq(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), c : [] complex(64), ref ldc : c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cunmlq(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), c : [] complex(64), ref ldc : c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zunmlq(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), c : [] complex(128), ref ldc : c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zunmlq(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), c : [] complex(128), ref ldc : c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgeqlf(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgeqlf(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgeqlf(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgeqlf(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgeqlf(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgeqlf(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgeqlf(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgeqlf(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sorgql(ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sorgql(ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dorgql(ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dorgql(ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cungql(ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cungql(ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zungql(ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zungql(ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sormql(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, c : [] c_float, ref ldc : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sormql(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, c : [] c_float, ref ldc : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dormql(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, c : [] c_double, ref ldc : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dormql(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, c : [] c_double, ref ldc : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cunmql(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), c : [] complex(64), ref ldc : c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cunmql(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), c : [] complex(64), ref ldc : c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zunmql(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), c : [] complex(128), ref ldc : c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zunmql(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), c : [] complex(128), ref ldc : c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgerqf(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgerqf(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgerqf(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgerqf(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgerqf(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgerqf(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgerqf(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgerqf(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sorgrq(ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sorgrq(ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dorgrq(ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dorgrq(ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cungrq(ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cungrq(ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zungrq(ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zungrq(ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sormrq(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, c : [] c_float, ref ldc : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sormrq(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, c : [] c_float, ref ldc : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dormrq(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, c : [] c_double, ref ldc : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dormrq(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, c : [] c_double, ref ldc : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cunmrq(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), c : [] complex(64), ref ldc : c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cunmrq(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), c : [] complex(64), ref ldc : c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zunmrq(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), c : [] complex(128), ref ldc : c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zunmrq(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), c : [] complex(128), ref ldc : c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_stzrzf(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_stzrzf(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtzrzf(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtzrzf(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctzrzf(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctzrzf(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztzrzf(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztzrzf(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sormrz(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref l : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, c : [] c_float, ref ldc : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sormrz(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref l : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, c : [] c_float, ref ldc : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dormrz(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref l : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, c : [] c_double, ref ldc : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dormrz(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref l : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, c : [] c_double, ref ldc : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cunmrz(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref l : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), c : [] complex(64), ref ldc : c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cunmrz(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref l : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), c : [] complex(64), ref ldc : c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zunmrz(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref l : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), c : [] complex(128), ref ldc : c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zunmrz(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref l : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), c : [] complex(128), ref ldc : c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sggqrf(ref n : c_int, ref m : c_int, ref p : c_int, a : [] c_float, ref lda : c_int, taua : [] c_float, b : [] c_float, ref ldb : c_int, taub : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sggqrf(ref n : c_int, ref m : c_int, ref p : c_int, a : [] c_float, ref lda : c_int, taua : [] c_float, b : [] c_float, ref ldb : c_int, taub : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dggqrf(ref n : c_int, ref m : c_int, ref p : c_int, a : [] c_double, ref lda : c_int, taua : [] c_double, b : [] c_double, ref ldb : c_int, taub : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dggqrf(ref n : c_int, ref m : c_int, ref p : c_int, a : [] c_double, ref lda : c_int, taua : [] c_double, b : [] c_double, ref ldb : c_int, taub : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cggqrf(ref n : c_int, ref m : c_int, ref p : c_int, a : [] complex(64), ref lda : c_int, taua : [] complex(64), b : [] complex(64), ref ldb : c_int, taub : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cggqrf(ref n : c_int, ref m : c_int, ref p : c_int, a : [] complex(64), ref lda : c_int, taua : [] complex(64), b : [] complex(64), ref ldb : c_int, taub : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zggqrf(ref n : c_int, ref m : c_int, ref p : c_int, a : [] complex(128), ref lda : c_int, taua : [] complex(128), b : [] complex(128), ref ldb : c_int, taub : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zggqrf(ref n : c_int, ref m : c_int, ref p : c_int, a : [] complex(128), ref lda : c_int, taua : [] complex(128), b : [] complex(128), ref ldb : c_int, taub : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sggrqf(ref m : c_int, ref p : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, taua : [] c_float, b : [] c_float, ref ldb : c_int, taub : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sggrqf(ref m : c_int, ref p : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, taua : [] c_float, b : [] c_float, ref ldb : c_int, taub : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dggrqf(ref m : c_int, ref p : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, taua : [] c_double, b : [] c_double, ref ldb : c_int, taub : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dggrqf(ref m : c_int, ref p : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, taua : [] c_double, b : [] c_double, ref ldb : c_int, taub : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cggrqf(ref m : c_int, ref p : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, taua : [] complex(64), b : [] complex(64), ref ldb : c_int, taub : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cggrqf(ref m : c_int, ref p : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, taua : [] complex(64), b : [] complex(64), ref ldb : c_int, taub : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zggrqf(ref m : c_int, ref p : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, taua : [] complex(128), b : [] complex(128), ref ldb : c_int, taub : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zggrqf(ref m : c_int, ref p : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, taua : [] complex(128), b : [] complex(128), ref ldb : c_int, taub : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgebrd(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, d : [] c_float, e : [] c_float, tauq : [] c_float, taup : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgebrd(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, d : [] c_float, e : [] c_float, tauq : [] c_float, taup : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgebrd(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, d : [] c_double, e : [] c_double, tauq : [] c_double, taup : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgebrd(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, d : [] c_double, e : [] c_double, tauq : [] c_double, taup : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgebrd(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, d : [] c_float, e : [] c_float, tauq : [] complex(64), taup : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgebrd(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, d : [] c_float, e : [] c_float, tauq : [] complex(64), taup : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgebrd(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, d : [] c_double, e : [] c_double, tauq : [] complex(128), taup : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgebrd(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, d : [] c_double, e : [] c_double, tauq : [] complex(128), taup : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgbbrd(ref vect : c_char, ref m : c_int, ref n : c_int, ref ncc : c_int, ref kl : c_int, ref ku : c_int, ab : [] c_float, ref ldab : c_int, d : [] c_float, e : [] c_float, q : [] c_float, ref ldq : c_int, pt : [] c_float, ref ldpt : c_int, c : [] c_float, ref ldc : c_int, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgbbrd(ref vect : c_char, ref m : c_int, ref n : c_int, ref ncc : c_int, ref kl : c_int, ref ku : c_int, ab : [] c_float, ref ldab : c_int, d : [] c_float, e : [] c_float, q : [] c_float, ref ldq : c_int, pt : [] c_float, ref ldpt : c_int, c : [] c_float, ref ldc : c_int, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgbbrd(ref vect : c_char, ref m : c_int, ref n : c_int, ref ncc : c_int, ref kl : c_int, ref ku : c_int, ab : [] c_double, ref ldab : c_int, d : [] c_double, e : [] c_double, q : [] c_double, ref ldq : c_int, pt : [] c_double, ref ldpt : c_int, c : [] c_double, ref ldc : c_int, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgbbrd(ref vect : c_char, ref m : c_int, ref n : c_int, ref ncc : c_int, ref kl : c_int, ref ku : c_int, ab : [] c_double, ref ldab : c_int, d : [] c_double, e : [] c_double, q : [] c_double, ref ldq : c_int, pt : [] c_double, ref ldpt : c_int, c : [] c_double, ref ldc : c_int, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgbbrd(ref vect : c_char, ref m : c_int, ref n : c_int, ref ncc : c_int, ref kl : c_int, ref ku : c_int, ab : [] complex(64), ref ldab : c_int, d : [] c_float, e : [] c_float, q : [] complex(64), ref ldq : c_int, pt : [] complex(64), ref ldpt : c_int, c : [] complex(64), ref ldc : c_int, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgbbrd(ref vect : c_char, ref m : c_int, ref n : c_int, ref ncc : c_int, ref kl : c_int, ref ku : c_int, ab : [] complex(64), ref ldab : c_int, d : [] c_float, e : [] c_float, q : [] complex(64), ref ldq : c_int, pt : [] complex(64), ref ldpt : c_int, c : [] complex(64), ref ldc : c_int, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgbbrd(ref vect : c_char, ref m : c_int, ref n : c_int, ref ncc : c_int, ref kl : c_int, ref ku : c_int, ab : [] complex(128), ref ldab : c_int, d : [] c_double, e : [] c_double, q : [] complex(128), ref ldq : c_int, pt : [] complex(128), ref ldpt : c_int, c : [] complex(128), ref ldc : c_int, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgbbrd(ref vect : c_char, ref m : c_int, ref n : c_int, ref ncc : c_int, ref kl : c_int, ref ku : c_int, ab : [] complex(128), ref ldab : c_int, d : [] c_double, e : [] c_double, q : [] complex(128), ref ldq : c_int, pt : [] complex(128), ref ldpt : c_int, c : [] complex(128), ref ldc : c_int, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sorgbr(ref vect : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sorgbr(ref vect : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dorgbr(ref vect : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dorgbr(ref vect : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sormbr(ref vect : c_char, ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, c : [] c_float, ref ldc : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sormbr(ref vect : c_char, ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, c : [] c_float, ref ldc : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dormbr(ref vect : c_char, ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, c : [] c_double, ref ldc : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dormbr(ref vect : c_char, ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, c : [] c_double, ref ldc : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cungbr(ref vect : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cungbr(ref vect : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zungbr(ref vect : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zungbr(ref vect : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cunmbr(ref vect : c_char, ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), c : [] complex(64), ref ldc : c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cunmbr(ref vect : c_char, ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), c : [] complex(64), ref ldc : c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zunmbr(ref vect : c_char, ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), c : [] complex(128), ref ldc : c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zunmbr(ref vect : c_char, ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), c : [] complex(128), ref ldc : c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sbdsqr(ref uplo : c_char, ref n : c_int, ref ncvt : c_int, ref nru : c_int, ref ncc : c_int, d : [] c_float, e : [] c_float, vt : [] c_float, ref ldvt : c_int, u : [] c_float, ref ldu : c_int, c : [] c_float, ref ldc : c_int, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sbdsqr(ref uplo : c_char, ref n : c_int, ref ncvt : c_int, ref nru : c_int, ref ncc : c_int, d : [] c_float, e : [] c_float, vt : [] c_float, ref ldvt : c_int, u : [] c_float, ref ldu : c_int, c : [] c_float, ref ldc : c_int, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dbdsqr(ref uplo : c_char, ref n : c_int, ref ncvt : c_int, ref nru : c_int, ref ncc : c_int, d : [] c_double, e : [] c_double, vt : [] c_double, ref ldvt : c_int, u : [] c_double, ref ldu : c_int, c : [] c_double, ref ldc : c_int, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dbdsqr(ref uplo : c_char, ref n : c_int, ref ncvt : c_int, ref nru : c_int, ref ncc : c_int, d : [] c_double, e : [] c_double, vt : [] c_double, ref ldvt : c_int, u : [] c_double, ref ldu : c_int, c : [] c_double, ref ldc : c_int, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cbdsqr(ref uplo : c_char, ref n : c_int, ref ncvt : c_int, ref nru : c_int, ref ncc : c_int, d : [] c_float, e : [] c_float, vt : [] complex(64), ref ldvt : c_int, u : [] complex(64), ref ldu : c_int, c : [] complex(64), ref ldc : c_int, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cbdsqr(ref uplo : c_char, ref n : c_int, ref ncvt : c_int, ref nru : c_int, ref ncc : c_int, d : [] c_float, e : [] c_float, vt : [] complex(64), ref ldvt : c_int, u : [] complex(64), ref ldu : c_int, c : [] complex(64), ref ldc : c_int, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zbdsqr(ref uplo : c_char, ref n : c_int, ref ncvt : c_int, ref nru : c_int, ref ncc : c_int, d : [] c_double, e : [] c_double, vt : [] complex(128), ref ldvt : c_int, u : [] complex(128), ref ldu : c_int, c : [] complex(128), ref ldc : c_int, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zbdsqr(ref uplo : c_char, ref n : c_int, ref ncvt : c_int, ref nru : c_int, ref ncc : c_int, d : [] c_double, e : [] c_double, vt : [] complex(128), ref ldvt : c_int, u : [] complex(128), ref ldu : c_int, c : [] complex(128), ref ldc : c_int, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sbdsdc(ref uplo : c_char, ref compq : c_char, ref n : c_int, d : [] c_float, e : [] c_float, u : [] c_float, ref ldu : c_int, vt : [] c_float, ref ldvt : c_int, q : [] c_float, iq : [] c_int, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sbdsdc(ref uplo : c_char, ref compq : c_char, ref n : c_int, d : [] c_float, e : [] c_float, u : [] c_float, ref ldu : c_int, vt : [] c_float, ref ldvt : c_int, q : [] c_float, iq : [] c_int, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dbdsdc(ref uplo : c_char, ref compq : c_char, ref n : c_int, d : [] c_double, e : [] c_double, u : [] c_double, ref ldu : c_int, vt : [] c_double, ref ldvt : c_int, q : [] c_double, iq : [] c_int, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dbdsdc(ref uplo : c_char, ref compq : c_char, ref n : c_int, d : [] c_double, e : [] c_double, u : [] c_double, ref ldu : c_int, vt : [] c_double, ref ldvt : c_int, q : [] c_double, iq : [] c_int, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssytrd(ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, d : [] c_float, e : [] c_float, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssytrd(ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, d : [] c_float, e : [] c_float, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsytrd(ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, d : [] c_double, e : [] c_double, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsytrd(ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, d : [] c_double, e : [] c_double, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sorgtr(ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sorgtr(ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dorgtr(ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dorgtr(ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sormtr(ref side : c_char, ref uplo : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, c : [] c_float, ref ldc : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sormtr(ref side : c_char, ref uplo : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, c : [] c_float, ref ldc : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dormtr(ref side : c_char, ref uplo : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, c : [] c_double, ref ldc : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dormtr(ref side : c_char, ref uplo : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, c : [] c_double, ref ldc : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chetrd(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, d : [] c_float, e : [] c_float, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chetrd(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, d : [] c_float, e : [] c_float, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhetrd(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, d : [] c_double, e : [] c_double, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhetrd(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, d : [] c_double, e : [] c_double, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cungtr(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cungtr(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zungtr(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zungtr(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cunmtr(ref side : c_char, ref uplo : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), c : [] complex(64), ref ldc : c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cunmtr(ref side : c_char, ref uplo : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), c : [] complex(64), ref ldc : c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zunmtr(ref side : c_char, ref uplo : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), c : [] complex(128), ref ldc : c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zunmtr(ref side : c_char, ref uplo : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), c : [] complex(128), ref ldc : c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssptrd(ref uplo : c_char, ref n : c_int, ap : [] c_float, d : [] c_float, e : [] c_float, tau : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssptrd(ref uplo : c_char, ref n : c_int, ap : [] c_float, d : [] c_float, e : [] c_float, tau : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsptrd(ref uplo : c_char, ref n : c_int, ap : [] c_double, d : [] c_double, e : [] c_double, tau : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsptrd(ref uplo : c_char, ref n : c_int, ap : [] c_double, d : [] c_double, e : [] c_double, tau : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sopgtr(ref uplo : c_char, ref n : c_int, ap : [] c_float, tau : [] c_float, q : [] c_float, ref ldq : c_int, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sopgtr(ref uplo : c_char, ref n : c_int, ap : [] c_float, tau : [] c_float, q : [] c_float, ref ldq : c_int, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dopgtr(ref uplo : c_char, ref n : c_int, ap : [] c_double, tau : [] c_double, q : [] c_double, ref ldq : c_int, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dopgtr(ref uplo : c_char, ref n : c_int, ap : [] c_double, tau : [] c_double, q : [] c_double, ref ldq : c_int, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sopmtr(ref side : c_char, ref uplo : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ap : [] c_float, tau : [] c_float, c : [] c_float, ref ldc : c_int, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sopmtr(ref side : c_char, ref uplo : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ap : [] c_float, tau : [] c_float, c : [] c_float, ref ldc : c_int, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dopmtr(ref side : c_char, ref uplo : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ap : [] c_double, tau : [] c_double, c : [] c_double, ref ldc : c_int, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dopmtr(ref side : c_char, ref uplo : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ap : [] c_double, tau : [] c_double, c : [] c_double, ref ldc : c_int, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chptrd(ref uplo : c_char, ref n : c_int, ap : [] complex(64), d : [] c_float, e : [] c_float, tau : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chptrd(ref uplo : c_char, ref n : c_int, ap : [] complex(64), d : [] c_float, e : [] c_float, tau : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhptrd(ref uplo : c_char, ref n : c_int, ap : [] complex(128), d : [] c_double, e : [] c_double, tau : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhptrd(ref uplo : c_char, ref n : c_int, ap : [] complex(128), d : [] c_double, e : [] c_double, tau : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cupgtr(ref uplo : c_char, ref n : c_int, ap : [] complex(64), tau : [] complex(64), q : [] complex(64), ref ldq : c_int, work : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cupgtr(ref uplo : c_char, ref n : c_int, ap : [] complex(64), tau : [] complex(64), q : [] complex(64), ref ldq : c_int, work : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zupgtr(ref uplo : c_char, ref n : c_int, ap : [] complex(128), tau : [] complex(128), q : [] complex(128), ref ldq : c_int, work : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zupgtr(ref uplo : c_char, ref n : c_int, ap : [] complex(128), tau : [] complex(128), q : [] complex(128), ref ldq : c_int, work : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cupmtr(ref side : c_char, ref uplo : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ap : [] complex(64), tau : [] complex(64), c : [] complex(64), ref ldc : c_int, work : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cupmtr(ref side : c_char, ref uplo : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ap : [] complex(64), tau : [] complex(64), c : [] complex(64), ref ldc : c_int, work : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zupmtr(ref side : c_char, ref uplo : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ap : [] complex(128), tau : [] complex(128), c : [] complex(128), ref ldc : c_int, work : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zupmtr(ref side : c_char, ref uplo : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ap : [] complex(128), tau : [] complex(128), c : [] complex(128), ref ldc : c_int, work : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssbtrd(ref vect : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] c_float, ref ldab : c_int, d : [] c_float, e : [] c_float, q : [] c_float, ref ldq : c_int, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssbtrd(ref vect : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] c_float, ref ldab : c_int, d : [] c_float, e : [] c_float, q : [] c_float, ref ldq : c_int, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsbtrd(ref vect : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] c_double, ref ldab : c_int, d : [] c_double, e : [] c_double, q : [] c_double, ref ldq : c_int, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsbtrd(ref vect : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] c_double, ref ldab : c_int, d : [] c_double, e : [] c_double, q : [] c_double, ref ldq : c_int, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chbtrd(ref vect : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(64), ref ldab : c_int, d : [] c_float, e : [] c_float, q : [] complex(64), ref ldq : c_int, work : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chbtrd(ref vect : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(64), ref ldab : c_int, d : [] c_float, e : [] c_float, q : [] complex(64), ref ldq : c_int, work : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhbtrd(ref vect : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(128), ref ldab : c_int, d : [] c_double, e : [] c_double, q : [] complex(128), ref ldq : c_int, work : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhbtrd(ref vect : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(128), ref ldab : c_int, d : [] c_double, e : [] c_double, q : [] complex(128), ref ldq : c_int, work : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssterf(ref n : c_int, d : [] c_float, e : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssterf(ref n : c_int, d : [] c_float, e : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsterf(ref n : c_int, d : [] c_double, e : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsterf(ref n : c_int, d : [] c_double, e : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssteqr(ref compz : c_char, ref n : c_int, d : [] c_float, e : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssteqr(ref compz : c_char, ref n : c_int, d : [] c_float, e : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsteqr(ref compz : c_char, ref n : c_int, d : [] c_double, e : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsteqr(ref compz : c_char, ref n : c_int, d : [] c_double, e : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_csteqr(ref compz : c_char, ref n : c_int, d : [] c_float, e : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_csteqr(ref compz : c_char, ref n : c_int, d : [] c_float, e : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zsteqr(ref compz : c_char, ref n : c_int, d : [] c_double, e : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zsteqr(ref compz : c_char, ref n : c_int, d : [] c_double, e : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sstemr(ref jobz : c_char, ref range : c_char, ref n : c_int, d : [] c_float, e : [] c_float, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref m : c_int, w : [] c_float, z : [] c_float, ref ldz : c_int, ref nzc : c_int, isuppz : [] c_int, ref tryrac : c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sstemr(ref jobz : c_char, ref range : c_char, ref n : c_int, d : [] c_float, e : [] c_float, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref m : c_int, w : [] c_float, z : [] c_float, ref ldz : c_int, ref nzc : c_int, isuppz : [] c_int, ref tryrac : c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dstemr(ref jobz : c_char, ref range : c_char, ref n : c_int, d : [] c_double, e : [] c_double, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref m : c_int, w : [] c_double, z : [] c_double, ref ldz : c_int, ref nzc : c_int, isuppz : [] c_int, ref tryrac : c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dstemr(ref jobz : c_char, ref range : c_char, ref n : c_int, d : [] c_double, e : [] c_double, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref m : c_int, w : [] c_double, z : [] c_double, ref ldz : c_int, ref nzc : c_int, isuppz : [] c_int, ref tryrac : c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cstemr(ref jobz : c_char, ref range : c_char, ref n : c_int, d : [] c_float, e : [] c_float, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref m : c_int, w : [] c_float, z : [] complex(64), ref ldz : c_int, ref nzc : c_int, isuppz : [] c_int, ref tryrac : c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cstemr(ref jobz : c_char, ref range : c_char, ref n : c_int, d : [] c_float, e : [] c_float, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref m : c_int, w : [] c_float, z : [] complex(64), ref ldz : c_int, ref nzc : c_int, isuppz : [] c_int, ref tryrac : c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zstemr(ref jobz : c_char, ref range : c_char, ref n : c_int, d : [] c_double, e : [] c_double, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref m : c_int, w : [] c_double, z : [] complex(128), ref ldz : c_int, ref nzc : c_int, isuppz : [] c_int, ref tryrac : c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zstemr(ref jobz : c_char, ref range : c_char, ref n : c_int, d : [] c_double, e : [] c_double, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref m : c_int, w : [] c_double, z : [] complex(128), ref ldz : c_int, ref nzc : c_int, isuppz : [] c_int, ref tryrac : c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sstedc(ref compz : c_char, ref n : c_int, d : [] c_float, e : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sstedc(ref compz : c_char, ref n : c_int, d : [] c_float, e : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dstedc(ref compz : c_char, ref n : c_int, d : [] c_double, e : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dstedc(ref compz : c_char, ref n : c_int, d : [] c_double, e : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cstedc(ref compz : c_char, ref n : c_int, d : [] c_float, e : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cstedc(ref compz : c_char, ref n : c_int, d : [] c_float, e : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zstedc(ref compz : c_char, ref n : c_int, d : [] c_double, e : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zstedc(ref compz : c_char, ref n : c_int, d : [] c_double, e : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sstegr(ref jobz : c_char, ref range : c_char, ref n : c_int, d : [] c_float, e : [] c_float, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] c_float, ref ldz : c_int, isuppz : [] c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sstegr(ref jobz : c_char, ref range : c_char, ref n : c_int, d : [] c_float, e : [] c_float, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] c_float, ref ldz : c_int, isuppz : [] c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dstegr(ref jobz : c_char, ref range : c_char, ref n : c_int, d : [] c_double, e : [] c_double, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] c_double, ref ldz : c_int, isuppz : [] c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dstegr(ref jobz : c_char, ref range : c_char, ref n : c_int, d : [] c_double, e : [] c_double, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] c_double, ref ldz : c_int, isuppz : [] c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cstegr(ref jobz : c_char, ref range : c_char, ref n : c_int, d : [] c_float, e : [] c_float, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] complex(64), ref ldz : c_int, isuppz : [] c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cstegr(ref jobz : c_char, ref range : c_char, ref n : c_int, d : [] c_float, e : [] c_float, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] complex(64), ref ldz : c_int, isuppz : [] c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zstegr(ref jobz : c_char, ref range : c_char, ref n : c_int, d : [] c_double, e : [] c_double, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] complex(128), ref ldz : c_int, isuppz : [] c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zstegr(ref jobz : c_char, ref range : c_char, ref n : c_int, d : [] c_double, e : [] c_double, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] complex(128), ref ldz : c_int, isuppz : [] c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_spteqr(ref compz : c_char, ref n : c_int, d : [] c_float, e : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_spteqr(ref compz : c_char, ref n : c_int, d : [] c_float, e : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dpteqr(ref compz : c_char, ref n : c_int, d : [] c_double, e : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dpteqr(ref compz : c_char, ref n : c_int, d : [] c_double, e : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cpteqr(ref compz : c_char, ref n : c_int, d : [] c_float, e : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cpteqr(ref compz : c_char, ref n : c_int, d : [] c_float, e : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zpteqr(ref compz : c_char, ref n : c_int, d : [] c_double, e : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zpteqr(ref compz : c_char, ref n : c_int, d : [] c_double, e : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sstebz(ref range : c_char, ref order : c_char, ref n : c_int, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, d : [] c_float, e : [] c_float, ref m : c_int, ref nsplit : c_int, w : [] c_float, iblock : [] c_int, isplit : [] c_int, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sstebz(ref range : c_char, ref order : c_char, ref n : c_int, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, d : [] c_float, e : [] c_float, ref m : c_int, ref nsplit : c_int, w : [] c_float, iblock : [] c_int, isplit : [] c_int, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dstebz(ref range : c_char, ref order : c_char, ref n : c_int, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, d : [] c_double, e : [] c_double, ref m : c_int, ref nsplit : c_int, w : [] c_double, iblock : [] c_int, isplit : [] c_int, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dstebz(ref range : c_char, ref order : c_char, ref n : c_int, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, d : [] c_double, e : [] c_double, ref m : c_int, ref nsplit : c_int, w : [] c_double, iblock : [] c_int, isplit : [] c_int, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sstein(ref n : c_int, d : [] c_float, e : [] c_float, ref m : c_int, w : [] c_float, iblock : [] c_int, isplit : [] c_int, z : [] c_float, ref ldz : c_int, work : [] c_float, iwork : [] c_int, ifailv : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sstein(ref n : c_int, d : [] c_float, e : [] c_float, ref m : c_int, w : [] c_float, iblock : [] c_int, isplit : [] c_int, z : [] c_float, ref ldz : c_int, work : [] c_float, iwork : [] c_int, ifailv : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dstein(ref n : c_int, d : [] c_double, e : [] c_double, ref m : c_int, w : [] c_double, iblock : [] c_int, isplit : [] c_int, z : [] c_double, ref ldz : c_int, work : [] c_double, iwork : [] c_int, ifailv : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dstein(ref n : c_int, d : [] c_double, e : [] c_double, ref m : c_int, w : [] c_double, iblock : [] c_int, isplit : [] c_int, z : [] c_double, ref ldz : c_int, work : [] c_double, iwork : [] c_int, ifailv : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cstein(ref n : c_int, d : [] c_float, e : [] c_float, ref m : c_int, w : [] c_float, iblock : [] c_int, isplit : [] c_int, z : [] complex(64), ref ldz : c_int, work : [] c_float, iwork : [] c_int, ifailv : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cstein(ref n : c_int, d : [] c_float, e : [] c_float, ref m : c_int, w : [] c_float, iblock : [] c_int, isplit : [] c_int, z : [] complex(64), ref ldz : c_int, work : [] c_float, iwork : [] c_int, ifailv : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zstein(ref n : c_int, d : [] c_double, e : [] c_double, ref m : c_int, w : [] c_double, iblock : [] c_int, isplit : [] c_int, z : [] complex(128), ref ldz : c_int, work : [] c_double, iwork : [] c_int, ifailv : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zstein(ref n : c_int, d : [] c_double, e : [] c_double, ref m : c_int, w : [] c_double, iblock : [] c_int, isplit : [] c_int, z : [] complex(128), ref ldz : c_int, work : [] c_double, iwork : [] c_int, ifailv : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sdisna(ref job : c_char, ref m : c_int, ref n : c_int, d : [] c_float, sep : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sdisna(ref job : c_char, ref m : c_int, ref n : c_int, d : [] c_float, sep : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ddisna(ref job : c_char, ref m : c_int, ref n : c_int, d : [] c_double, sep : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ddisna(ref job : c_char, ref m : c_int, ref n : c_int, d : [] c_double, sep : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssygst(ref itype : c_int, ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssygst(ref itype : c_int, ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsygst(ref itype : c_int, ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsygst(ref itype : c_int, ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chegst(ref itype : c_int, ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chegst(ref itype : c_int, ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhegst(ref itype : c_int, ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhegst(ref itype : c_int, ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sspgst(ref itype : c_int, ref uplo : c_char, ref n : c_int, ap : [] c_float, bp : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sspgst(ref itype : c_int, ref uplo : c_char, ref n : c_int, ap : [] c_float, bp : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dspgst(ref itype : c_int, ref uplo : c_char, ref n : c_int, ap : [] c_double, bp : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dspgst(ref itype : c_int, ref uplo : c_char, ref n : c_int, ap : [] c_double, bp : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chpgst(ref itype : c_int, ref uplo : c_char, ref n : c_int, ap : [] complex(64), bp : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chpgst(ref itype : c_int, ref uplo : c_char, ref n : c_int, ap : [] complex(64), bp : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhpgst(ref itype : c_int, ref uplo : c_char, ref n : c_int, ap : [] complex(128), bp : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhpgst(ref itype : c_int, ref uplo : c_char, ref n : c_int, ap : [] complex(128), bp : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssbgst(ref vect : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] c_float, ref ldab : c_int, bb : [] c_float, ref ldbb : c_int, x : [] c_float, ref ldx : c_int, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssbgst(ref vect : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] c_float, ref ldab : c_int, bb : [] c_float, ref ldbb : c_int, x : [] c_float, ref ldx : c_int, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsbgst(ref vect : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] c_double, ref ldab : c_int, bb : [] c_double, ref ldbb : c_int, x : [] c_double, ref ldx : c_int, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsbgst(ref vect : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] c_double, ref ldab : c_int, bb : [] c_double, ref ldbb : c_int, x : [] c_double, ref ldx : c_int, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chbgst(ref vect : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] complex(64), ref ldab : c_int, bb : [] complex(64), ref ldbb : c_int, x : [] complex(64), ref ldx : c_int, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chbgst(ref vect : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] complex(64), ref ldab : c_int, bb : [] complex(64), ref ldbb : c_int, x : [] complex(64), ref ldx : c_int, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhbgst(ref vect : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] complex(128), ref ldab : c_int, bb : [] complex(128), ref ldbb : c_int, x : [] complex(128), ref ldx : c_int, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhbgst(ref vect : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] complex(128), ref ldab : c_int, bb : [] complex(128), ref ldbb : c_int, x : [] complex(128), ref ldx : c_int, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_spbstf(ref uplo : c_char, ref n : c_int, ref kb : c_int, bb : [] c_float, ref ldbb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_spbstf(ref uplo : c_char, ref n : c_int, ref kb : c_int, bb : [] c_float, ref ldbb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dpbstf(ref uplo : c_char, ref n : c_int, ref kb : c_int, bb : [] c_double, ref ldbb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dpbstf(ref uplo : c_char, ref n : c_int, ref kb : c_int, bb : [] c_double, ref ldbb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cpbstf(ref uplo : c_char, ref n : c_int, ref kb : c_int, bb : [] complex(64), ref ldbb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cpbstf(ref uplo : c_char, ref n : c_int, ref kb : c_int, bb : [] complex(64), ref ldbb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zpbstf(ref uplo : c_char, ref n : c_int, ref kb : c_int, bb : [] complex(128), ref ldbb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zpbstf(ref uplo : c_char, ref n : c_int, ref kb : c_int, bb : [] complex(128), ref ldbb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgehrd(ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgehrd(ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgehrd(ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgehrd(ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgehrd(ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgehrd(ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgehrd(ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgehrd(ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sorghr(ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sorghr(ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dorghr(ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dorghr(ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sormhr(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, c : [] c_float, ref ldc : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sormhr(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, c : [] c_float, ref ldc : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dormhr(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, c : [] c_double, ref ldc : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dormhr(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, c : [] c_double, ref ldc : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cunghr(ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cunghr(ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zunghr(ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zunghr(ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cunmhr(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), c : [] complex(64), ref ldc : c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cunmhr(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), c : [] complex(64), ref ldc : c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zunmhr(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), c : [] complex(128), ref ldc : c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zunmhr(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), c : [] complex(128), ref ldc : c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgebal(ref job : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ref ilo : c_int, ref ihi : c_int, scale : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgebal(ref job : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ref ilo : c_int, ref ihi : c_int, scale : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgebal(ref job : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ref ilo : c_int, ref ihi : c_int, scale : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgebal(ref job : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ref ilo : c_int, ref ihi : c_int, scale : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgebal(ref job : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ref ilo : c_int, ref ihi : c_int, scale : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgebal(ref job : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ref ilo : c_int, ref ihi : c_int, scale : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgebal(ref job : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ref ilo : c_int, ref ihi : c_int, scale : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgebal(ref job : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ref ilo : c_int, ref ihi : c_int, scale : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgebak(ref job : c_char, ref side : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, scale : [] c_float, ref m : c_int, v : [] c_float, ref ldv : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgebak(ref job : c_char, ref side : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, scale : [] c_float, ref m : c_int, v : [] c_float, ref ldv : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgebak(ref job : c_char, ref side : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, scale : [] c_double, ref m : c_int, v : [] c_double, ref ldv : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgebak(ref job : c_char, ref side : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, scale : [] c_double, ref m : c_int, v : [] c_double, ref ldv : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgebak(ref job : c_char, ref side : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, scale : [] c_float, ref m : c_int, v : [] complex(64), ref ldv : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgebak(ref job : c_char, ref side : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, scale : [] c_float, ref m : c_int, v : [] complex(64), ref ldv : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgebak(ref job : c_char, ref side : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, scale : [] c_double, ref m : c_int, v : [] complex(128), ref ldv : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgebak(ref job : c_char, ref side : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, scale : [] c_double, ref m : c_int, v : [] complex(128), ref ldv : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_shseqr(ref job : c_char, ref compz : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, h : [] c_float, ref ldh : c_int, wr : [] c_float, wi : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_shseqr(ref job : c_char, ref compz : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, h : [] c_float, ref ldh : c_int, wr : [] c_float, wi : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dhseqr(ref job : c_char, ref compz : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, h : [] c_double, ref ldh : c_int, wr : [] c_double, wi : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dhseqr(ref job : c_char, ref compz : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, h : [] c_double, ref ldh : c_int, wr : [] c_double, wi : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chseqr(ref job : c_char, ref compz : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, h : [] complex(64), ref ldh : c_int, w : [] complex(64), z : [] complex(64), ref ldz : c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chseqr(ref job : c_char, ref compz : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, h : [] complex(64), ref ldh : c_int, w : [] complex(64), z : [] complex(64), ref ldz : c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhseqr(ref job : c_char, ref compz : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, h : [] complex(128), ref ldh : c_int, w : [] complex(128), z : [] complex(128), ref ldz : c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhseqr(ref job : c_char, ref compz : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, h : [] complex(128), ref ldh : c_int, w : [] complex(128), z : [] complex(128), ref ldz : c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_shsein(ref job : c_char, ref eigsrc : c_char, ref initv : c_char, chlapack_select : [] c_int, ref n : c_int, h : [] c_float, ref ldh : c_int, wr : [] c_float, wi : [] c_float, vl : [] c_float, ref ldvl : c_int, vr : [] c_float, ref ldvr : c_int, ref mm : c_int, ref m : c_int, work : [] c_float, ifaill : [] c_int, ifailr : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_shsein(ref job : c_char, ref eigsrc : c_char, ref initv : c_char, chlapack_select : [] c_int, ref n : c_int, h : [] c_float, ref ldh : c_int, wr : [] c_float, wi : [] c_float, vl : [] c_float, ref ldvl : c_int, vr : [] c_float, ref ldvr : c_int, ref mm : c_int, ref m : c_int, work : [] c_float, ifaill : [] c_int, ifailr : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dhsein(ref job : c_char, ref eigsrc : c_char, ref initv : c_char, chlapack_select : [] c_int, ref n : c_int, h : [] c_double, ref ldh : c_int, wr : [] c_double, wi : [] c_double, vl : [] c_double, ref ldvl : c_int, vr : [] c_double, ref ldvr : c_int, ref mm : c_int, ref m : c_int, work : [] c_double, ifaill : [] c_int, ifailr : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dhsein(ref job : c_char, ref eigsrc : c_char, ref initv : c_char, chlapack_select : [] c_int, ref n : c_int, h : [] c_double, ref ldh : c_int, wr : [] c_double, wi : [] c_double, vl : [] c_double, ref ldvl : c_int, vr : [] c_double, ref ldvr : c_int, ref mm : c_int, ref m : c_int, work : [] c_double, ifaill : [] c_int, ifailr : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chsein(ref job : c_char, ref eigsrc : c_char, ref initv : c_char, chlapack_select : [] c_int, ref n : c_int, h : [] complex(64), ref ldh : c_int, w : [] complex(64), vl : [] complex(64), ref ldvl : c_int, vr : [] complex(64), ref ldvr : c_int, ref mm : c_int, ref m : c_int, work : [] complex(64), rwork : [] c_float, ifaill : [] c_int, ifailr : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chsein(ref job : c_char, ref eigsrc : c_char, ref initv : c_char, chlapack_select : [] c_int, ref n : c_int, h : [] complex(64), ref ldh : c_int, w : [] complex(64), vl : [] complex(64), ref ldvl : c_int, vr : [] complex(64), ref ldvr : c_int, ref mm : c_int, ref m : c_int, work : [] complex(64), rwork : [] c_float, ifaill : [] c_int, ifailr : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhsein(ref job : c_char, ref eigsrc : c_char, ref initv : c_char, chlapack_select : [] c_int, ref n : c_int, h : [] complex(128), ref ldh : c_int, w : [] complex(128), vl : [] complex(128), ref ldvl : c_int, vr : [] complex(128), ref ldvr : c_int, ref mm : c_int, ref m : c_int, work : [] complex(128), rwork : [] c_double, ifaill : [] c_int, ifailr : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhsein(ref job : c_char, ref eigsrc : c_char, ref initv : c_char, chlapack_select : [] c_int, ref n : c_int, h : [] complex(128), ref ldh : c_int, w : [] complex(128), vl : [] complex(128), ref ldvl : c_int, vr : [] complex(128), ref ldvr : c_int, ref mm : c_int, ref m : c_int, work : [] complex(128), rwork : [] c_double, ifaill : [] c_int, ifailr : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_strevc(ref side : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, t : [] c_float, ref ldt : c_int, vl : [] c_float, ref ldvl : c_int, vr : [] c_float, ref ldvr : c_int, ref mm : c_int, ref m : c_int, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_strevc(ref side : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, t : [] c_float, ref ldt : c_int, vl : [] c_float, ref ldvl : c_int, vr : [] c_float, ref ldvr : c_int, ref mm : c_int, ref m : c_int, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtrevc(ref side : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, t : [] c_double, ref ldt : c_int, vl : [] c_double, ref ldvl : c_int, vr : [] c_double, ref ldvr : c_int, ref mm : c_int, ref m : c_int, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtrevc(ref side : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, t : [] c_double, ref ldt : c_int, vl : [] c_double, ref ldvl : c_int, vr : [] c_double, ref ldvr : c_int, ref mm : c_int, ref m : c_int, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctrevc(ref side : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, t : [] complex(64), ref ldt : c_int, vl : [] complex(64), ref ldvl : c_int, vr : [] complex(64), ref ldvr : c_int, ref mm : c_int, ref m : c_int, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctrevc(ref side : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, t : [] complex(64), ref ldt : c_int, vl : [] complex(64), ref ldvl : c_int, vr : [] complex(64), ref ldvr : c_int, ref mm : c_int, ref m : c_int, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztrevc(ref side : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, t : [] complex(128), ref ldt : c_int, vl : [] complex(128), ref ldvl : c_int, vr : [] complex(128), ref ldvr : c_int, ref mm : c_int, ref m : c_int, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztrevc(ref side : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, t : [] complex(128), ref ldt : c_int, vl : [] complex(128), ref ldvl : c_int, vr : [] complex(128), ref ldvr : c_int, ref mm : c_int, ref m : c_int, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_strsna(ref job : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, t : [] c_float, ref ldt : c_int, vl : [] c_float, ref ldvl : c_int, vr : [] c_float, ref ldvr : c_int, s : [] c_float, sep : [] c_float, ref mm : c_int, ref m : c_int, work : [] c_float, ref ldwork : c_int, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_strsna(ref job : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, t : [] c_float, ref ldt : c_int, vl : [] c_float, ref ldvl : c_int, vr : [] c_float, ref ldvr : c_int, s : [] c_float, sep : [] c_float, ref mm : c_int, ref m : c_int, work : [] c_float, ref ldwork : c_int, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtrsna(ref job : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, t : [] c_double, ref ldt : c_int, vl : [] c_double, ref ldvl : c_int, vr : [] c_double, ref ldvr : c_int, s : [] c_double, sep : [] c_double, ref mm : c_int, ref m : c_int, work : [] c_double, ref ldwork : c_int, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtrsna(ref job : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, t : [] c_double, ref ldt : c_int, vl : [] c_double, ref ldvl : c_int, vr : [] c_double, ref ldvr : c_int, s : [] c_double, sep : [] c_double, ref mm : c_int, ref m : c_int, work : [] c_double, ref ldwork : c_int, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctrsna(ref job : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, t : [] complex(64), ref ldt : c_int, vl : [] complex(64), ref ldvl : c_int, vr : [] complex(64), ref ldvr : c_int, s : [] c_float, sep : [] c_float, ref mm : c_int, ref m : c_int, work : [] complex(64), ref ldwork : c_int, rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctrsna(ref job : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, t : [] complex(64), ref ldt : c_int, vl : [] complex(64), ref ldvl : c_int, vr : [] complex(64), ref ldvr : c_int, s : [] c_float, sep : [] c_float, ref mm : c_int, ref m : c_int, work : [] complex(64), ref ldwork : c_int, rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztrsna(ref job : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, t : [] complex(128), ref ldt : c_int, vl : [] complex(128), ref ldvl : c_int, vr : [] complex(128), ref ldvr : c_int, s : [] c_double, sep : [] c_double, ref mm : c_int, ref m : c_int, work : [] complex(128), ref ldwork : c_int, rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztrsna(ref job : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, t : [] complex(128), ref ldt : c_int, vl : [] complex(128), ref ldvl : c_int, vr : [] complex(128), ref ldvr : c_int, s : [] c_double, sep : [] c_double, ref mm : c_int, ref m : c_int, work : [] complex(128), ref ldwork : c_int, rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_strexc(ref compq : c_char, ref n : c_int, t : [] c_float, ref ldt : c_int, q : [] c_float, ref ldq : c_int, ref ifst : c_int, ref ilst : c_int, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_strexc(ref compq : c_char, ref n : c_int, t : [] c_float, ref ldt : c_int, q : [] c_float, ref ldq : c_int, ref ifst : c_int, ref ilst : c_int, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtrexc(ref compq : c_char, ref n : c_int, t : [] c_double, ref ldt : c_int, q : [] c_double, ref ldq : c_int, ref ifst : c_int, ref ilst : c_int, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtrexc(ref compq : c_char, ref n : c_int, t : [] c_double, ref ldt : c_int, q : [] c_double, ref ldq : c_int, ref ifst : c_int, ref ilst : c_int, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctrexc(ref compq : c_char, ref n : c_int, t : [] complex(64), ref ldt : c_int, q : [] complex(64), ref ldq : c_int, ref ifst : c_int, ref ilst : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctrexc(ref compq : c_char, ref n : c_int, t : [] complex(64), ref ldt : c_int, q : [] complex(64), ref ldq : c_int, ref ifst : c_int, ref ilst : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztrexc(ref compq : c_char, ref n : c_int, t : [] complex(128), ref ldt : c_int, q : [] complex(128), ref ldq : c_int, ref ifst : c_int, ref ilst : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztrexc(ref compq : c_char, ref n : c_int, t : [] complex(128), ref ldt : c_int, q : [] complex(128), ref ldq : c_int, ref ifst : c_int, ref ilst : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_strsen(ref job : c_char, ref compq : c_char, chlapack_select : [] c_int, ref n : c_int, t : [] c_float, ref ldt : c_int, q : [] c_float, ref ldq : c_int, wr : [] c_float, wi : [] c_float, ref m : c_int, ref s : c_float, ref sep : c_float, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_strsen(ref job : c_char, ref compq : c_char, chlapack_select : [] c_int, ref n : c_int, t : [] c_float, ref ldt : c_int, q : [] c_float, ref ldq : c_int, wr : [] c_float, wi : [] c_float, ref m : c_int, ref s : c_float, ref sep : c_float, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtrsen(ref job : c_char, ref compq : c_char, chlapack_select : [] c_int, ref n : c_int, t : [] c_double, ref ldt : c_int, q : [] c_double, ref ldq : c_int, wr : [] c_double, wi : [] c_double, ref m : c_int, ref s : c_double, ref sep : c_double, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtrsen(ref job : c_char, ref compq : c_char, chlapack_select : [] c_int, ref n : c_int, t : [] c_double, ref ldt : c_int, q : [] c_double, ref ldq : c_int, wr : [] c_double, wi : [] c_double, ref m : c_int, ref s : c_double, ref sep : c_double, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctrsen(ref job : c_char, ref compq : c_char, chlapack_select : [] c_int, ref n : c_int, t : [] complex(64), ref ldt : c_int, q : [] complex(64), ref ldq : c_int, w : [] complex(64), ref m : c_int, ref s : c_float, ref sep : c_float, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctrsen(ref job : c_char, ref compq : c_char, chlapack_select : [] c_int, ref n : c_int, t : [] complex(64), ref ldt : c_int, q : [] complex(64), ref ldq : c_int, w : [] complex(64), ref m : c_int, ref s : c_float, ref sep : c_float, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztrsen(ref job : c_char, ref compq : c_char, chlapack_select : [] c_int, ref n : c_int, t : [] complex(128), ref ldt : c_int, q : [] complex(128), ref ldq : c_int, w : [] complex(128), ref m : c_int, ref s : c_double, ref sep : c_double, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztrsen(ref job : c_char, ref compq : c_char, chlapack_select : [] c_int, ref n : c_int, t : [] complex(128), ref ldt : c_int, q : [] complex(128), ref ldq : c_int, w : [] complex(128), ref m : c_int, ref s : c_double, ref sep : c_double, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_strsyl(ref trana : c_char, ref tranb : c_char, ref isgn : c_int, ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, c : [] c_float, ref ldc : c_int, ref scale : c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_strsyl(ref trana : c_char, ref tranb : c_char, ref isgn : c_int, ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, c : [] c_float, ref ldc : c_int, ref scale : c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtrsyl(ref trana : c_char, ref tranb : c_char, ref isgn : c_int, ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, c : [] c_double, ref ldc : c_int, ref scale : c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtrsyl(ref trana : c_char, ref tranb : c_char, ref isgn : c_int, ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, c : [] c_double, ref ldc : c_int, ref scale : c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctrsyl(ref trana : c_char, ref tranb : c_char, ref isgn : c_int, ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, c : [] complex(64), ref ldc : c_int, ref scale : c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctrsyl(ref trana : c_char, ref tranb : c_char, ref isgn : c_int, ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, c : [] complex(64), ref ldc : c_int, ref scale : c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztrsyl(ref trana : c_char, ref tranb : c_char, ref isgn : c_int, ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, c : [] complex(128), ref ldc : c_int, ref scale : c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztrsyl(ref trana : c_char, ref tranb : c_char, ref isgn : c_int, ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, c : [] complex(128), ref ldc : c_int, ref scale : c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgghrd(ref compq : c_char, ref compz : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, q : [] c_float, ref ldq : c_int, z : [] c_float, ref ldz : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgghrd(ref compq : c_char, ref compz : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, q : [] c_float, ref ldq : c_int, z : [] c_float, ref ldz : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgghrd(ref compq : c_char, ref compz : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, q : [] c_double, ref ldq : c_int, z : [] c_double, ref ldz : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgghrd(ref compq : c_char, ref compz : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, q : [] c_double, ref ldq : c_int, z : [] c_double, ref ldz : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgghrd(ref compq : c_char, ref compz : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, q : [] complex(64), ref ldq : c_int, z : [] complex(64), ref ldz : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgghrd(ref compq : c_char, ref compz : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, q : [] complex(64), ref ldq : c_int, z : [] complex(64), ref ldz : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgghrd(ref compq : c_char, ref compz : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, q : [] complex(128), ref ldq : c_int, z : [] complex(128), ref ldz : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgghrd(ref compq : c_char, ref compz : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, q : [] complex(128), ref ldq : c_int, z : [] complex(128), ref ldz : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sggbal(ref job : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, ref ilo : c_int, ref ihi : c_int, lscale : [] c_float, rscale : [] c_float, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sggbal(ref job : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, ref ilo : c_int, ref ihi : c_int, lscale : [] c_float, rscale : [] c_float, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dggbal(ref job : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, ref ilo : c_int, ref ihi : c_int, lscale : [] c_double, rscale : [] c_double, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dggbal(ref job : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, ref ilo : c_int, ref ihi : c_int, lscale : [] c_double, rscale : [] c_double, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cggbal(ref job : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, ref ilo : c_int, ref ihi : c_int, lscale : [] c_float, rscale : [] c_float, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cggbal(ref job : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, ref ilo : c_int, ref ihi : c_int, lscale : [] c_float, rscale : [] c_float, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zggbal(ref job : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, ref ilo : c_int, ref ihi : c_int, lscale : [] c_double, rscale : [] c_double, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zggbal(ref job : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, ref ilo : c_int, ref ihi : c_int, lscale : [] c_double, rscale : [] c_double, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sggbak(ref job : c_char, ref side : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, lscale : [] c_float, rscale : [] c_float, ref m : c_int, v : [] c_float, ref ldv : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sggbak(ref job : c_char, ref side : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, lscale : [] c_float, rscale : [] c_float, ref m : c_int, v : [] c_float, ref ldv : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dggbak(ref job : c_char, ref side : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, lscale : [] c_double, rscale : [] c_double, ref m : c_int, v : [] c_double, ref ldv : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dggbak(ref job : c_char, ref side : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, lscale : [] c_double, rscale : [] c_double, ref m : c_int, v : [] c_double, ref ldv : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cggbak(ref job : c_char, ref side : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, lscale : [] c_float, rscale : [] c_float, ref m : c_int, v : [] complex(64), ref ldv : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cggbak(ref job : c_char, ref side : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, lscale : [] c_float, rscale : [] c_float, ref m : c_int, v : [] complex(64), ref ldv : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zggbak(ref job : c_char, ref side : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, lscale : [] c_double, rscale : [] c_double, ref m : c_int, v : [] complex(128), ref ldv : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zggbak(ref job : c_char, ref side : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, lscale : [] c_double, rscale : [] c_double, ref m : c_int, v : [] complex(128), ref ldv : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_shgeqz(ref job : c_char, ref compq : c_char, ref compz : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, h : [] c_float, ref ldh : c_int, t : [] c_float, ref ldt : c_int, alphar : [] c_float, alphai : [] c_float, beta : [] c_float, q : [] c_float, ref ldq : c_int, z : [] c_float, ref ldz : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_shgeqz(ref job : c_char, ref compq : c_char, ref compz : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, h : [] c_float, ref ldh : c_int, t : [] c_float, ref ldt : c_int, alphar : [] c_float, alphai : [] c_float, beta : [] c_float, q : [] c_float, ref ldq : c_int, z : [] c_float, ref ldz : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dhgeqz(ref job : c_char, ref compq : c_char, ref compz : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, h : [] c_double, ref ldh : c_int, t : [] c_double, ref ldt : c_int, alphar : [] c_double, alphai : [] c_double, beta : [] c_double, q : [] c_double, ref ldq : c_int, z : [] c_double, ref ldz : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dhgeqz(ref job : c_char, ref compq : c_char, ref compz : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, h : [] c_double, ref ldh : c_int, t : [] c_double, ref ldt : c_int, alphar : [] c_double, alphai : [] c_double, beta : [] c_double, q : [] c_double, ref ldq : c_int, z : [] c_double, ref ldz : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chgeqz(ref job : c_char, ref compq : c_char, ref compz : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, h : [] complex(64), ref ldh : c_int, t : [] complex(64), ref ldt : c_int, alpha : [] complex(64), beta : [] complex(64), q : [] complex(64), ref ldq : c_int, z : [] complex(64), ref ldz : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chgeqz(ref job : c_char, ref compq : c_char, ref compz : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, h : [] complex(64), ref ldh : c_int, t : [] complex(64), ref ldt : c_int, alpha : [] complex(64), beta : [] complex(64), q : [] complex(64), ref ldq : c_int, z : [] complex(64), ref ldz : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhgeqz(ref job : c_char, ref compq : c_char, ref compz : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, h : [] complex(128), ref ldh : c_int, t : [] complex(128), ref ldt : c_int, alpha : [] complex(128), beta : [] complex(128), q : [] complex(128), ref ldq : c_int, z : [] complex(128), ref ldz : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhgeqz(ref job : c_char, ref compq : c_char, ref compz : c_char, ref n : c_int, ref ilo : c_int, ref ihi : c_int, h : [] complex(128), ref ldh : c_int, t : [] complex(128), ref ldt : c_int, alpha : [] complex(128), beta : [] complex(128), q : [] complex(128), ref ldq : c_int, z : [] complex(128), ref ldz : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_stgevc(ref side : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, s : [] c_float, ref lds : c_int, p : [] c_float, ref ldp : c_int, vl : [] c_float, ref ldvl : c_int, vr : [] c_float, ref ldvr : c_int, ref mm : c_int, ref m : c_int, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_stgevc(ref side : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, s : [] c_float, ref lds : c_int, p : [] c_float, ref ldp : c_int, vl : [] c_float, ref ldvl : c_int, vr : [] c_float, ref ldvr : c_int, ref mm : c_int, ref m : c_int, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtgevc(ref side : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, s : [] c_double, ref lds : c_int, p : [] c_double, ref ldp : c_int, vl : [] c_double, ref ldvl : c_int, vr : [] c_double, ref ldvr : c_int, ref mm : c_int, ref m : c_int, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtgevc(ref side : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, s : [] c_double, ref lds : c_int, p : [] c_double, ref ldp : c_int, vl : [] c_double, ref ldvl : c_int, vr : [] c_double, ref ldvr : c_int, ref mm : c_int, ref m : c_int, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctgevc(ref side : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, s : [] complex(64), ref lds : c_int, p : [] complex(64), ref ldp : c_int, vl : [] complex(64), ref ldvl : c_int, vr : [] complex(64), ref ldvr : c_int, ref mm : c_int, ref m : c_int, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctgevc(ref side : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, s : [] complex(64), ref lds : c_int, p : [] complex(64), ref ldp : c_int, vl : [] complex(64), ref ldvl : c_int, vr : [] complex(64), ref ldvr : c_int, ref mm : c_int, ref m : c_int, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztgevc(ref side : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, s : [] complex(128), ref lds : c_int, p : [] complex(128), ref ldp : c_int, vl : [] complex(128), ref ldvl : c_int, vr : [] complex(128), ref ldvr : c_int, ref mm : c_int, ref m : c_int, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztgevc(ref side : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, s : [] complex(128), ref lds : c_int, p : [] complex(128), ref ldp : c_int, vl : [] complex(128), ref ldvl : c_int, vr : [] complex(128), ref ldvr : c_int, ref mm : c_int, ref m : c_int, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_stgexc(ref wantq : c_int, ref wantz : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, q : [] c_float, ref ldq : c_int, z : [] c_float, ref ldz : c_int, ref ifst : c_int, ref ilst : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_stgexc(ref wantq : c_int, ref wantz : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, q : [] c_float, ref ldq : c_int, z : [] c_float, ref ldz : c_int, ref ifst : c_int, ref ilst : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtgexc(ref wantq : c_int, ref wantz : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, q : [] c_double, ref ldq : c_int, z : [] c_double, ref ldz : c_int, ref ifst : c_int, ref ilst : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtgexc(ref wantq : c_int, ref wantz : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, q : [] c_double, ref ldq : c_int, z : [] c_double, ref ldz : c_int, ref ifst : c_int, ref ilst : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctgexc(ref wantq : c_int, ref wantz : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, q : [] complex(64), ref ldq : c_int, z : [] complex(64), ref ldz : c_int, ref ifst : c_int, ref ilst : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctgexc(ref wantq : c_int, ref wantz : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, q : [] complex(64), ref ldq : c_int, z : [] complex(64), ref ldz : c_int, ref ifst : c_int, ref ilst : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztgexc(ref wantq : c_int, ref wantz : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, q : [] complex(128), ref ldq : c_int, z : [] complex(128), ref ldz : c_int, ref ifst : c_int, ref ilst : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztgexc(ref wantq : c_int, ref wantz : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, q : [] complex(128), ref ldq : c_int, z : [] complex(128), ref ldz : c_int, ref ifst : c_int, ref ilst : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_stgsen(ref ijob : c_int, ref wantq : c_int, ref wantz : c_int, chlapack_select : [] c_int, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, alphar : [] c_float, alphai : [] c_float, beta : [] c_float, q : [] c_float, ref ldq : c_int, z : [] c_float, ref ldz : c_int, ref m : c_int, ref pl : c_float, ref pr : c_float, dif : [] c_float, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_stgsen(ref ijob : c_int, ref wantq : c_int, ref wantz : c_int, chlapack_select : [] c_int, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, alphar : [] c_float, alphai : [] c_float, beta : [] c_float, q : [] c_float, ref ldq : c_int, z : [] c_float, ref ldz : c_int, ref m : c_int, ref pl : c_float, ref pr : c_float, dif : [] c_float, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtgsen(ref ijob : c_int, ref wantq : c_int, ref wantz : c_int, chlapack_select : [] c_int, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, alphar : [] c_double, alphai : [] c_double, beta : [] c_double, q : [] c_double, ref ldq : c_int, z : [] c_double, ref ldz : c_int, ref m : c_int, ref pl : c_double, ref pr : c_double, dif : [] c_double, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtgsen(ref ijob : c_int, ref wantq : c_int, ref wantz : c_int, chlapack_select : [] c_int, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, alphar : [] c_double, alphai : [] c_double, beta : [] c_double, q : [] c_double, ref ldq : c_int, z : [] c_double, ref ldz : c_int, ref m : c_int, ref pl : c_double, ref pr : c_double, dif : [] c_double, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctgsen(ref ijob : c_int, ref wantq : c_int, ref wantz : c_int, chlapack_select : [] c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, alpha : [] complex(64), beta : [] complex(64), q : [] complex(64), ref ldq : c_int, z : [] complex(64), ref ldz : c_int, ref m : c_int, ref pl : c_float, ref pr : c_float, dif : [] c_float, work : [] complex(64), ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctgsen(ref ijob : c_int, ref wantq : c_int, ref wantz : c_int, chlapack_select : [] c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, alpha : [] complex(64), beta : [] complex(64), q : [] complex(64), ref ldq : c_int, z : [] complex(64), ref ldz : c_int, ref m : c_int, ref pl : c_float, ref pr : c_float, dif : [] c_float, work : [] complex(64), ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztgsen(ref ijob : c_int, ref wantq : c_int, ref wantz : c_int, chlapack_select : [] c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, alpha : [] complex(128), beta : [] complex(128), q : [] complex(128), ref ldq : c_int, z : [] complex(128), ref ldz : c_int, ref m : c_int, ref pl : c_double, ref pr : c_double, dif : [] c_double, work : [] complex(128), ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztgsen(ref ijob : c_int, ref wantq : c_int, ref wantz : c_int, chlapack_select : [] c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, alpha : [] complex(128), beta : [] complex(128), q : [] complex(128), ref ldq : c_int, z : [] complex(128), ref ldz : c_int, ref m : c_int, ref pl : c_double, ref pr : c_double, dif : [] c_double, work : [] complex(128), ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_stgsyl(ref trans : c_char, ref ijob : c_int, ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, c : [] c_float, ref ldc : c_int, d : [] c_float, ref ldd : c_int, e : [] c_float, ref lde : c_int, f : [] c_float, ref ldf : c_int, ref scale : c_float, ref dif : c_float, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_stgsyl(ref trans : c_char, ref ijob : c_int, ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, c : [] c_float, ref ldc : c_int, d : [] c_float, ref ldd : c_int, e : [] c_float, ref lde : c_int, f : [] c_float, ref ldf : c_int, ref scale : c_float, ref dif : c_float, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtgsyl(ref trans : c_char, ref ijob : c_int, ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, c : [] c_double, ref ldc : c_int, d : [] c_double, ref ldd : c_int, e : [] c_double, ref lde : c_int, f : [] c_double, ref ldf : c_int, ref scale : c_double, ref dif : c_double, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtgsyl(ref trans : c_char, ref ijob : c_int, ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, c : [] c_double, ref ldc : c_int, d : [] c_double, ref ldd : c_int, e : [] c_double, ref lde : c_int, f : [] c_double, ref ldf : c_int, ref scale : c_double, ref dif : c_double, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctgsyl(ref trans : c_char, ref ijob : c_int, ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, c : [] complex(64), ref ldc : c_int, d : [] complex(64), ref ldd : c_int, e : [] complex(64), ref lde : c_int, f : [] complex(64), ref ldf : c_int, ref scale : c_float, ref dif : c_float, work : [] complex(64), ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctgsyl(ref trans : c_char, ref ijob : c_int, ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, c : [] complex(64), ref ldc : c_int, d : [] complex(64), ref ldd : c_int, e : [] complex(64), ref lde : c_int, f : [] complex(64), ref ldf : c_int, ref scale : c_float, ref dif : c_float, work : [] complex(64), ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztgsyl(ref trans : c_char, ref ijob : c_int, ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, c : [] complex(128), ref ldc : c_int, d : [] complex(128), ref ldd : c_int, e : [] complex(128), ref lde : c_int, f : [] complex(128), ref ldf : c_int, ref scale : c_double, ref dif : c_double, work : [] complex(128), ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztgsyl(ref trans : c_char, ref ijob : c_int, ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, c : [] complex(128), ref ldc : c_int, d : [] complex(128), ref ldd : c_int, e : [] complex(128), ref lde : c_int, f : [] complex(128), ref ldf : c_int, ref scale : c_double, ref dif : c_double, work : [] complex(128), ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_stgsna(ref job : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, vl : [] c_float, ref ldvl : c_int, vr : [] c_float, ref ldvr : c_int, s : [] c_float, dif : [] c_float, ref mm : c_int, ref m : c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_stgsna(ref job : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, vl : [] c_float, ref ldvl : c_int, vr : [] c_float, ref ldvr : c_int, s : [] c_float, dif : [] c_float, ref mm : c_int, ref m : c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtgsna(ref job : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, vl : [] c_double, ref ldvl : c_int, vr : [] c_double, ref ldvr : c_int, s : [] c_double, dif : [] c_double, ref mm : c_int, ref m : c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtgsna(ref job : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, vl : [] c_double, ref ldvl : c_int, vr : [] c_double, ref ldvr : c_int, s : [] c_double, dif : [] c_double, ref mm : c_int, ref m : c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctgsna(ref job : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, vl : [] complex(64), ref ldvl : c_int, vr : [] complex(64), ref ldvr : c_int, s : [] c_float, dif : [] c_float, ref mm : c_int, ref m : c_int, work : [] complex(64), ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctgsna(ref job : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, vl : [] complex(64), ref ldvl : c_int, vr : [] complex(64), ref ldvr : c_int, s : [] c_float, dif : [] c_float, ref mm : c_int, ref m : c_int, work : [] complex(64), ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztgsna(ref job : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, vl : [] complex(128), ref ldvl : c_int, vr : [] complex(128), ref ldvr : c_int, s : [] c_double, dif : [] c_double, ref mm : c_int, ref m : c_int, work : [] complex(128), ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztgsna(ref job : c_char, ref howmny : c_char, chlapack_select : [] c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, vl : [] complex(128), ref ldvl : c_int, vr : [] complex(128), ref ldvr : c_int, s : [] c_double, dif : [] c_double, ref mm : c_int, ref m : c_int, work : [] complex(128), ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sggsvp(ref jobu : c_char, ref jobv : c_char, ref jobq : c_char, ref m : c_int, ref p : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, ref tola : c_float, ref tolb : c_float, ref k : c_int, ref l : c_int, u : [] c_float, ref ldu : c_int, v : [] c_float, ref ldv : c_int, q : [] c_float, ref ldq : c_int, iwork : [] c_int, tau : [] c_float, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sggsvp(ref jobu : c_char, ref jobv : c_char, ref jobq : c_char, ref m : c_int, ref p : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, ref tola : c_float, ref tolb : c_float, ref k : c_int, ref l : c_int, u : [] c_float, ref ldu : c_int, v : [] c_float, ref ldv : c_int, q : [] c_float, ref ldq : c_int, iwork : [] c_int, tau : [] c_float, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dggsvp(ref jobu : c_char, ref jobv : c_char, ref jobq : c_char, ref m : c_int, ref p : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, ref tola : c_double, ref tolb : c_double, ref k : c_int, ref l : c_int, u : [] c_double, ref ldu : c_int, v : [] c_double, ref ldv : c_int, q : [] c_double, ref ldq : c_int, iwork : [] c_int, tau : [] c_double, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dggsvp(ref jobu : c_char, ref jobv : c_char, ref jobq : c_char, ref m : c_int, ref p : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, ref tola : c_double, ref tolb : c_double, ref k : c_int, ref l : c_int, u : [] c_double, ref ldu : c_int, v : [] c_double, ref ldv : c_int, q : [] c_double, ref ldq : c_int, iwork : [] c_int, tau : [] c_double, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cggsvp(ref jobu : c_char, ref jobv : c_char, ref jobq : c_char, ref m : c_int, ref p : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, ref tola : c_float, ref tolb : c_float, ref k : c_int, ref l : c_int, u : [] complex(64), ref ldu : c_int, v : [] complex(64), ref ldv : c_int, q : [] complex(64), ref ldq : c_int, iwork : [] c_int, rwork : [] c_float, tau : [] complex(64), work : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cggsvp(ref jobu : c_char, ref jobv : c_char, ref jobq : c_char, ref m : c_int, ref p : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, ref tola : c_float, ref tolb : c_float, ref k : c_int, ref l : c_int, u : [] complex(64), ref ldu : c_int, v : [] complex(64), ref ldv : c_int, q : [] complex(64), ref ldq : c_int, iwork : [] c_int, rwork : [] c_float, tau : [] complex(64), work : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zggsvp(ref jobu : c_char, ref jobv : c_char, ref jobq : c_char, ref m : c_int, ref p : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, ref tola : c_double, ref tolb : c_double, ref k : c_int, ref l : c_int, u : [] complex(128), ref ldu : c_int, v : [] complex(128), ref ldv : c_int, q : [] complex(128), ref ldq : c_int, iwork : [] c_int, rwork : [] c_double, tau : [] complex(128), work : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zggsvp(ref jobu : c_char, ref jobv : c_char, ref jobq : c_char, ref m : c_int, ref p : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, ref tola : c_double, ref tolb : c_double, ref k : c_int, ref l : c_int, u : [] complex(128), ref ldu : c_int, v : [] complex(128), ref ldv : c_int, q : [] complex(128), ref ldq : c_int, iwork : [] c_int, rwork : [] c_double, tau : [] complex(128), work : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_stgsja(ref jobu : c_char, ref jobv : c_char, ref jobq : c_char, ref m : c_int, ref p : c_int, ref n : c_int, ref k : c_int, ref l : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, ref tola : c_float, ref tolb : c_float, alpha : [] c_float, beta : [] c_float, u : [] c_float, ref ldu : c_int, v : [] c_float, ref ldv : c_int, q : [] c_float, ref ldq : c_int, work : [] c_float, ref ncycle : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_stgsja(ref jobu : c_char, ref jobv : c_char, ref jobq : c_char, ref m : c_int, ref p : c_int, ref n : c_int, ref k : c_int, ref l : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, ref tola : c_float, ref tolb : c_float, alpha : [] c_float, beta : [] c_float, u : [] c_float, ref ldu : c_int, v : [] c_float, ref ldv : c_int, q : [] c_float, ref ldq : c_int, work : [] c_float, ref ncycle : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtgsja(ref jobu : c_char, ref jobv : c_char, ref jobq : c_char, ref m : c_int, ref p : c_int, ref n : c_int, ref k : c_int, ref l : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, ref tola : c_double, ref tolb : c_double, alpha : [] c_double, beta : [] c_double, u : [] c_double, ref ldu : c_int, v : [] c_double, ref ldv : c_int, q : [] c_double, ref ldq : c_int, work : [] c_double, ref ncycle : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtgsja(ref jobu : c_char, ref jobv : c_char, ref jobq : c_char, ref m : c_int, ref p : c_int, ref n : c_int, ref k : c_int, ref l : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, ref tola : c_double, ref tolb : c_double, alpha : [] c_double, beta : [] c_double, u : [] c_double, ref ldu : c_int, v : [] c_double, ref ldv : c_int, q : [] c_double, ref ldq : c_int, work : [] c_double, ref ncycle : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctgsja(ref jobu : c_char, ref jobv : c_char, ref jobq : c_char, ref m : c_int, ref p : c_int, ref n : c_int, ref k : c_int, ref l : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, ref tola : c_float, ref tolb : c_float, alpha : [] c_float, beta : [] c_float, u : [] complex(64), ref ldu : c_int, v : [] complex(64), ref ldv : c_int, q : [] complex(64), ref ldq : c_int, work : [] complex(64), ref ncycle : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctgsja(ref jobu : c_char, ref jobv : c_char, ref jobq : c_char, ref m : c_int, ref p : c_int, ref n : c_int, ref k : c_int, ref l : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, ref tola : c_float, ref tolb : c_float, alpha : [] c_float, beta : [] c_float, u : [] complex(64), ref ldu : c_int, v : [] complex(64), ref ldv : c_int, q : [] complex(64), ref ldq : c_int, work : [] complex(64), ref ncycle : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztgsja(ref jobu : c_char, ref jobv : c_char, ref jobq : c_char, ref m : c_int, ref p : c_int, ref n : c_int, ref k : c_int, ref l : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, ref tola : c_double, ref tolb : c_double, alpha : [] c_double, beta : [] c_double, u : [] complex(128), ref ldu : c_int, v : [] complex(128), ref ldv : c_int, q : [] complex(128), ref ldq : c_int, work : [] complex(128), ref ncycle : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztgsja(ref jobu : c_char, ref jobv : c_char, ref jobq : c_char, ref m : c_int, ref p : c_int, ref n : c_int, ref k : c_int, ref l : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, ref tola : c_double, ref tolb : c_double, alpha : [] c_double, beta : [] c_double, u : [] complex(128), ref ldu : c_int, v : [] complex(128), ref ldv : c_int, q : [] complex(128), ref ldq : c_int, work : [] complex(128), ref ncycle : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgels(ref trans : c_char, ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgels(ref trans : c_char, ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgels(ref trans : c_char, ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgels(ref trans : c_char, ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgels(ref trans : c_char, ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgels(ref trans : c_char, ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgels(ref trans : c_char, ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgels(ref trans : c_char, ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgelsy(ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, jpvt : [] c_int, ref rcond : c_float, ref rank : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgelsy(ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, jpvt : [] c_int, ref rcond : c_float, ref rank : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgelsy(ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, jpvt : [] c_int, ref rcond : c_double, ref rank : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgelsy(ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, jpvt : [] c_int, ref rcond : c_double, ref rank : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgelsy(ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, jpvt : [] c_int, ref rcond : c_float, ref rank : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgelsy(ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, jpvt : [] c_int, ref rcond : c_float, ref rank : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgelsy(ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, jpvt : [] c_int, ref rcond : c_double, ref rank : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgelsy(ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, jpvt : [] c_int, ref rcond : c_double, ref rank : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgelss(ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, s : [] c_float, ref rcond : c_float, ref rank : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgelss(ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, s : [] c_float, ref rcond : c_float, ref rank : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgelss(ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, s : [] c_double, ref rcond : c_double, ref rank : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgelss(ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, s : [] c_double, ref rcond : c_double, ref rank : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgelss(ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, s : [] c_float, ref rcond : c_float, ref rank : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgelss(ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, s : [] c_float, ref rcond : c_float, ref rank : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgelss(ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, s : [] c_double, ref rcond : c_double, ref rank : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgelss(ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, s : [] c_double, ref rcond : c_double, ref rank : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgelsd(ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, s : [] c_float, ref rcond : c_float, ref rank : c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgelsd(ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, s : [] c_float, ref rcond : c_float, ref rank : c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgelsd(ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, s : [] c_double, ref rcond : c_double, ref rank : c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgelsd(ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, s : [] c_double, ref rcond : c_double, ref rank : c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgelsd(ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, s : [] c_float, ref rcond : c_float, ref rank : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgelsd(ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, s : [] c_float, ref rcond : c_float, ref rank : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgelsd(ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, s : [] c_double, ref rcond : c_double, ref rank : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgelsd(ref m : c_int, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, s : [] c_double, ref rcond : c_double, ref rank : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgglse(ref m : c_int, ref n : c_int, ref p : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, c : [] c_float, d : [] c_float, x : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgglse(ref m : c_int, ref n : c_int, ref p : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, c : [] c_float, d : [] c_float, x : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgglse(ref m : c_int, ref n : c_int, ref p : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, c : [] c_double, d : [] c_double, x : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgglse(ref m : c_int, ref n : c_int, ref p : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, c : [] c_double, d : [] c_double, x : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgglse(ref m : c_int, ref n : c_int, ref p : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, c : [] complex(64), d : [] complex(64), x : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgglse(ref m : c_int, ref n : c_int, ref p : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, c : [] complex(64), d : [] complex(64), x : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgglse(ref m : c_int, ref n : c_int, ref p : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, c : [] complex(128), d : [] complex(128), x : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgglse(ref m : c_int, ref n : c_int, ref p : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, c : [] complex(128), d : [] complex(128), x : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sggglm(ref n : c_int, ref m : c_int, ref p : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, d : [] c_float, x : [] c_float, y : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sggglm(ref n : c_int, ref m : c_int, ref p : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, d : [] c_float, x : [] c_float, y : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dggglm(ref n : c_int, ref m : c_int, ref p : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, d : [] c_double, x : [] c_double, y : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dggglm(ref n : c_int, ref m : c_int, ref p : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, d : [] c_double, x : [] c_double, y : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cggglm(ref n : c_int, ref m : c_int, ref p : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, d : [] complex(64), x : [] complex(64), y : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cggglm(ref n : c_int, ref m : c_int, ref p : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, d : [] complex(64), x : [] complex(64), y : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zggglm(ref n : c_int, ref m : c_int, ref p : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, d : [] complex(128), x : [] complex(128), y : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zggglm(ref n : c_int, ref m : c_int, ref p : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, d : [] complex(128), x : [] complex(128), y : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssyev(ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, w : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssyev(ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, w : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsyev(ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, w : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsyev(ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, w : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cheev(ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, w : [] c_float, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cheev(ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, w : [] c_float, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zheev(ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, w : [] c_double, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zheev(ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, w : [] c_double, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssyevd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, w : [] c_float, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssyevd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, w : [] c_float, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsyevd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, w : [] c_double, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsyevd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, w : [] c_double, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cheevd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, w : [] c_float, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cheevd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, w : [] c_float, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zheevd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, w : [] c_double, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zheevd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, w : [] c_double, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssyevx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssyevx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsyevx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsyevx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cheevx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cheevx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zheevx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zheevx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssyevr(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] c_float, ref ldz : c_int, isuppz : [] c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssyevr(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] c_float, ref ldz : c_int, isuppz : [] c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsyevr(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] c_double, ref ldz : c_int, isuppz : [] c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsyevr(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] c_double, ref ldz : c_int, isuppz : [] c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cheevr(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] complex(64), ref ldz : c_int, isuppz : [] c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cheevr(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] complex(64), ref ldz : c_int, isuppz : [] c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zheevr(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] complex(128), ref ldz : c_int, isuppz : [] c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zheevr(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] complex(128), ref ldz : c_int, isuppz : [] c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sspev(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] c_float, w : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sspev(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] c_float, w : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dspev(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] c_double, w : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dspev(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] c_double, w : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chpev(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] complex(64), w : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chpev(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] complex(64), w : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhpev(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] complex(128), w : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhpev(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] complex(128), w : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sspevd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] c_float, w : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sspevd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] c_float, w : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dspevd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] c_double, w : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dspevd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] c_double, w : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chpevd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] complex(64), w : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chpevd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] complex(64), w : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhpevd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] complex(128), w : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhpevd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] complex(128), w : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sspevx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ap : [] c_float, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sspevx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ap : [] c_float, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dspevx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ap : [] c_double, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dspevx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ap : [] c_double, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chpevx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ap : [] complex(64), ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] complex(64), rwork : [] c_float, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chpevx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ap : [] complex(64), ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] complex(64), rwork : [] c_float, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhpevx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ap : [] complex(128), ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] complex(128), rwork : [] c_double, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhpevx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ap : [] complex(128), ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] complex(128), rwork : [] c_double, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssbev(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] c_float, ref ldab : c_int, w : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssbev(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] c_float, ref ldab : c_int, w : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsbev(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] c_double, ref ldab : c_int, w : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsbev(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] c_double, ref ldab : c_int, w : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chbev(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(64), ref ldab : c_int, w : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chbev(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(64), ref ldab : c_int, w : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhbev(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(128), ref ldab : c_int, w : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhbev(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(128), ref ldab : c_int, w : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssbevd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] c_float, ref ldab : c_int, w : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssbevd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] c_float, ref ldab : c_int, w : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsbevd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] c_double, ref ldab : c_int, w : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsbevd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] c_double, ref ldab : c_int, w : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chbevd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(64), ref ldab : c_int, w : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chbevd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(64), ref ldab : c_int, w : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhbevd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(128), ref ldab : c_int, w : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhbevd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(128), ref ldab : c_int, w : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssbevx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] c_float, ref ldab : c_int, q : [] c_float, ref ldq : c_int, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssbevx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] c_float, ref ldab : c_int, q : [] c_float, ref ldq : c_int, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsbevx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] c_double, ref ldab : c_int, q : [] c_double, ref ldq : c_int, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsbevx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] c_double, ref ldab : c_int, q : [] c_double, ref ldq : c_int, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chbevx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(64), ref ldab : c_int, q : [] complex(64), ref ldq : c_int, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] complex(64), rwork : [] c_float, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chbevx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(64), ref ldab : c_int, q : [] complex(64), ref ldq : c_int, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] complex(64), rwork : [] c_float, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhbevx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(128), ref ldab : c_int, q : [] complex(128), ref ldq : c_int, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] complex(128), rwork : [] c_double, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhbevx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ref kd : c_int, ab : [] complex(128), ref ldab : c_int, q : [] complex(128), ref ldq : c_int, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] complex(128), rwork : [] c_double, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sstev(ref jobz : c_char, ref n : c_int, d : [] c_float, e : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sstev(ref jobz : c_char, ref n : c_int, d : [] c_float, e : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dstev(ref jobz : c_char, ref n : c_int, d : [] c_double, e : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dstev(ref jobz : c_char, ref n : c_int, d : [] c_double, e : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sstevd(ref jobz : c_char, ref n : c_int, d : [] c_float, e : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sstevd(ref jobz : c_char, ref n : c_int, d : [] c_float, e : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dstevd(ref jobz : c_char, ref n : c_int, d : [] c_double, e : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dstevd(ref jobz : c_char, ref n : c_int, d : [] c_double, e : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sstevx(ref jobz : c_char, ref range : c_char, ref n : c_int, d : [] c_float, e : [] c_float, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sstevx(ref jobz : c_char, ref range : c_char, ref n : c_int, d : [] c_float, e : [] c_float, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dstevx(ref jobz : c_char, ref range : c_char, ref n : c_int, d : [] c_double, e : [] c_double, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dstevx(ref jobz : c_char, ref range : c_char, ref n : c_int, d : [] c_double, e : [] c_double, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sstevr(ref jobz : c_char, ref range : c_char, ref n : c_int, d : [] c_float, e : [] c_float, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] c_float, ref ldz : c_int, isuppz : [] c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sstevr(ref jobz : c_char, ref range : c_char, ref n : c_int, d : [] c_float, e : [] c_float, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] c_float, ref ldz : c_int, isuppz : [] c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dstevr(ref jobz : c_char, ref range : c_char, ref n : c_int, d : [] c_double, e : [] c_double, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] c_double, ref ldz : c_int, isuppz : [] c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dstevr(ref jobz : c_char, ref range : c_char, ref n : c_int, d : [] c_double, e : [] c_double, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] c_double, ref ldz : c_int, isuppz : [] c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgees(ref jobvs : c_char, ref sort : c_char, chlapack_select : LAPACK_S_SELECT2, ref n : c_int, a : [] c_float, ref lda : c_int, ref sdim : c_int, wr : [] c_float, wi : [] c_float, vs : [] c_float, ref ldvs : c_int, work : [] c_float, ref lwork : c_int, bwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgees(ref jobvs : c_char, ref sort : c_char, chlapack_select : LAPACK_S_SELECT2, ref n : c_int, a : [] c_float, ref lda : c_int, ref sdim : c_int, wr : [] c_float, wi : [] c_float, vs : [] c_float, ref ldvs : c_int, work : [] c_float, ref lwork : c_int, bwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgees(ref jobvs : c_char, ref sort : c_char, chlapack_select : LAPACK_D_SELECT2, ref n : c_int, a : [] c_double, ref lda : c_int, ref sdim : c_int, wr : [] c_double, wi : [] c_double, vs : [] c_double, ref ldvs : c_int, work : [] c_double, ref lwork : c_int, bwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgees(ref jobvs : c_char, ref sort : c_char, chlapack_select : LAPACK_D_SELECT2, ref n : c_int, a : [] c_double, ref lda : c_int, ref sdim : c_int, wr : [] c_double, wi : [] c_double, vs : [] c_double, ref ldvs : c_int, work : [] c_double, ref lwork : c_int, bwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgees(ref jobvs : c_char, ref sort : c_char, chlapack_select : LAPACK_C_SELECT1, ref n : c_int, a : [] complex(64), ref lda : c_int, ref sdim : c_int, w : [] complex(64), vs : [] complex(64), ref ldvs : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, bwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgees(ref jobvs : c_char, ref sort : c_char, chlapack_select : LAPACK_C_SELECT1, ref n : c_int, a : [] complex(64), ref lda : c_int, ref sdim : c_int, w : [] complex(64), vs : [] complex(64), ref ldvs : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, bwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgees(ref jobvs : c_char, ref sort : c_char, chlapack_select : LAPACK_Z_SELECT1, ref n : c_int, a : [] complex(128), ref lda : c_int, ref sdim : c_int, w : [] complex(128), vs : [] complex(128), ref ldvs : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, bwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgees(ref jobvs : c_char, ref sort : c_char, chlapack_select : LAPACK_Z_SELECT1, ref n : c_int, a : [] complex(128), ref lda : c_int, ref sdim : c_int, w : [] complex(128), vs : [] complex(128), ref ldvs : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, bwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgeesx(ref jobvs : c_char, ref sort : c_char, chlapack_select : LAPACK_S_SELECT2, ref sense : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ref sdim : c_int, wr : [] c_float, wi : [] c_float, vs : [] c_float, ref ldvs : c_int, ref rconde : c_float, ref rcondv : c_float, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, bwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgeesx(ref jobvs : c_char, ref sort : c_char, chlapack_select : LAPACK_S_SELECT2, ref sense : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ref sdim : c_int, wr : [] c_float, wi : [] c_float, vs : [] c_float, ref ldvs : c_int, ref rconde : c_float, ref rcondv : c_float, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, bwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgeesx(ref jobvs : c_char, ref sort : c_char, chlapack_select : LAPACK_D_SELECT2, ref sense : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ref sdim : c_int, wr : [] c_double, wi : [] c_double, vs : [] c_double, ref ldvs : c_int, ref rconde : c_double, ref rcondv : c_double, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, bwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgeesx(ref jobvs : c_char, ref sort : c_char, chlapack_select : LAPACK_D_SELECT2, ref sense : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ref sdim : c_int, wr : [] c_double, wi : [] c_double, vs : [] c_double, ref ldvs : c_int, ref rconde : c_double, ref rcondv : c_double, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, bwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgeesx(ref jobvs : c_char, ref sort : c_char, chlapack_select : LAPACK_C_SELECT1, ref sense : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ref sdim : c_int, w : [] complex(64), vs : [] complex(64), ref ldvs : c_int, ref rconde : c_float, ref rcondv : c_float, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, bwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgeesx(ref jobvs : c_char, ref sort : c_char, chlapack_select : LAPACK_C_SELECT1, ref sense : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ref sdim : c_int, w : [] complex(64), vs : [] complex(64), ref ldvs : c_int, ref rconde : c_float, ref rcondv : c_float, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, bwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgeesx(ref jobvs : c_char, ref sort : c_char, chlapack_select : LAPACK_Z_SELECT1, ref sense : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ref sdim : c_int, w : [] complex(128), vs : [] complex(128), ref ldvs : c_int, ref rconde : c_double, ref rcondv : c_double, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, bwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgeesx(ref jobvs : c_char, ref sort : c_char, chlapack_select : LAPACK_Z_SELECT1, ref sense : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ref sdim : c_int, w : [] complex(128), vs : [] complex(128), ref ldvs : c_int, ref rconde : c_double, ref rcondv : c_double, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, bwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgeev(ref jobvl : c_char, ref jobvr : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, wr : [] c_float, wi : [] c_float, vl : [] c_float, ref ldvl : c_int, vr : [] c_float, ref ldvr : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgeev(ref jobvl : c_char, ref jobvr : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, wr : [] c_float, wi : [] c_float, vl : [] c_float, ref ldvl : c_int, vr : [] c_float, ref ldvr : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgeev(ref jobvl : c_char, ref jobvr : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, wr : [] c_double, wi : [] c_double, vl : [] c_double, ref ldvl : c_int, vr : [] c_double, ref ldvr : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgeev(ref jobvl : c_char, ref jobvr : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, wr : [] c_double, wi : [] c_double, vl : [] c_double, ref ldvl : c_int, vr : [] c_double, ref ldvr : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgeev(ref jobvl : c_char, ref jobvr : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, w : [] complex(64), vl : [] complex(64), ref ldvl : c_int, vr : [] complex(64), ref ldvr : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgeev(ref jobvl : c_char, ref jobvr : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, w : [] complex(64), vl : [] complex(64), ref ldvl : c_int, vr : [] complex(64), ref ldvr : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgeev(ref jobvl : c_char, ref jobvr : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, w : [] complex(128), vl : [] complex(128), ref ldvl : c_int, vr : [] complex(128), ref ldvr : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgeev(ref jobvl : c_char, ref jobvr : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, w : [] complex(128), vl : [] complex(128), ref ldvl : c_int, vr : [] complex(128), ref ldvr : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgeevx(ref balanc : c_char, ref jobvl : c_char, ref jobvr : c_char, ref sense : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, wr : [] c_float, wi : [] c_float, vl : [] c_float, ref ldvl : c_int, vr : [] c_float, ref ldvr : c_int, ref ilo : c_int, ref ihi : c_int, scale : [] c_float, ref abnrm : c_float, rconde : [] c_float, rcondv : [] c_float, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgeevx(ref balanc : c_char, ref jobvl : c_char, ref jobvr : c_char, ref sense : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, wr : [] c_float, wi : [] c_float, vl : [] c_float, ref ldvl : c_int, vr : [] c_float, ref ldvr : c_int, ref ilo : c_int, ref ihi : c_int, scale : [] c_float, ref abnrm : c_float, rconde : [] c_float, rcondv : [] c_float, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgeevx(ref balanc : c_char, ref jobvl : c_char, ref jobvr : c_char, ref sense : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, wr : [] c_double, wi : [] c_double, vl : [] c_double, ref ldvl : c_int, vr : [] c_double, ref ldvr : c_int, ref ilo : c_int, ref ihi : c_int, scale : [] c_double, ref abnrm : c_double, rconde : [] c_double, rcondv : [] c_double, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgeevx(ref balanc : c_char, ref jobvl : c_char, ref jobvr : c_char, ref sense : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, wr : [] c_double, wi : [] c_double, vl : [] c_double, ref ldvl : c_int, vr : [] c_double, ref ldvr : c_int, ref ilo : c_int, ref ihi : c_int, scale : [] c_double, ref abnrm : c_double, rconde : [] c_double, rcondv : [] c_double, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgeevx(ref balanc : c_char, ref jobvl : c_char, ref jobvr : c_char, ref sense : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, w : [] complex(64), vl : [] complex(64), ref ldvl : c_int, vr : [] complex(64), ref ldvr : c_int, ref ilo : c_int, ref ihi : c_int, scale : [] c_float, ref abnrm : c_float, rconde : [] c_float, rcondv : [] c_float, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgeevx(ref balanc : c_char, ref jobvl : c_char, ref jobvr : c_char, ref sense : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, w : [] complex(64), vl : [] complex(64), ref ldvl : c_int, vr : [] complex(64), ref ldvr : c_int, ref ilo : c_int, ref ihi : c_int, scale : [] c_float, ref abnrm : c_float, rconde : [] c_float, rcondv : [] c_float, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgeevx(ref balanc : c_char, ref jobvl : c_char, ref jobvr : c_char, ref sense : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, w : [] complex(128), vl : [] complex(128), ref ldvl : c_int, vr : [] complex(128), ref ldvr : c_int, ref ilo : c_int, ref ihi : c_int, scale : [] c_double, ref abnrm : c_double, rconde : [] c_double, rcondv : [] c_double, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgeevx(ref balanc : c_char, ref jobvl : c_char, ref jobvr : c_char, ref sense : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, w : [] complex(128), vl : [] complex(128), ref ldvl : c_int, vr : [] complex(128), ref ldvr : c_int, ref ilo : c_int, ref ihi : c_int, scale : [] c_double, ref abnrm : c_double, rconde : [] c_double, rcondv : [] c_double, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgesvd(ref jobu : c_char, ref jobvt : c_char, ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, s : [] c_float, u : [] c_float, ref ldu : c_int, vt : [] c_float, ref ldvt : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgesvd(ref jobu : c_char, ref jobvt : c_char, ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, s : [] c_float, u : [] c_float, ref ldu : c_int, vt : [] c_float, ref ldvt : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgesvd(ref jobu : c_char, ref jobvt : c_char, ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, s : [] c_double, u : [] c_double, ref ldu : c_int, vt : [] c_double, ref ldvt : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgesvd(ref jobu : c_char, ref jobvt : c_char, ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, s : [] c_double, u : [] c_double, ref ldu : c_int, vt : [] c_double, ref ldvt : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgesvd(ref jobu : c_char, ref jobvt : c_char, ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, s : [] c_float, u : [] complex(64), ref ldu : c_int, vt : [] complex(64), ref ldvt : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgesvd(ref jobu : c_char, ref jobvt : c_char, ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, s : [] c_float, u : [] complex(64), ref ldu : c_int, vt : [] complex(64), ref ldvt : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgesvd(ref jobu : c_char, ref jobvt : c_char, ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, s : [] c_double, u : [] complex(128), ref ldu : c_int, vt : [] complex(128), ref ldvt : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgesvd(ref jobu : c_char, ref jobvt : c_char, ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, s : [] c_double, u : [] complex(128), ref ldu : c_int, vt : [] complex(128), ref ldvt : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgesdd(ref jobz : c_char, ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, s : [] c_float, u : [] c_float, ref ldu : c_int, vt : [] c_float, ref ldvt : c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgesdd(ref jobz : c_char, ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, s : [] c_float, u : [] c_float, ref ldu : c_int, vt : [] c_float, ref ldvt : c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgesdd(ref jobz : c_char, ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, s : [] c_double, u : [] c_double, ref ldu : c_int, vt : [] c_double, ref ldvt : c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgesdd(ref jobz : c_char, ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, s : [] c_double, u : [] c_double, ref ldu : c_int, vt : [] c_double, ref ldvt : c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgesdd(ref jobz : c_char, ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, s : [] c_float, u : [] complex(64), ref ldu : c_int, vt : [] complex(64), ref ldvt : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgesdd(ref jobz : c_char, ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, s : [] c_float, u : [] complex(64), ref ldu : c_int, vt : [] complex(64), ref ldvt : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgesdd(ref jobz : c_char, ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, s : [] c_double, u : [] complex(128), ref ldu : c_int, vt : [] complex(128), ref ldvt : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgesdd(ref jobz : c_char, ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, s : [] c_double, u : [] complex(128), ref ldu : c_int, vt : [] complex(128), ref ldvt : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgejsv(ref joba : c_char, ref jobu : c_char, ref jobv : c_char, ref jobr : c_char, ref jobt : c_char, ref jobp : c_char, ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, sva : [] c_double, u : [] c_double, ref ldu : c_int, v : [] c_double, ref ldv : c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgejsv(ref joba : c_char, ref jobu : c_char, ref jobv : c_char, ref jobr : c_char, ref jobt : c_char, ref jobp : c_char, ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, sva : [] c_double, u : [] c_double, ref ldu : c_int, v : [] c_double, ref ldv : c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgejsv(ref joba : c_char, ref jobu : c_char, ref jobv : c_char, ref jobr : c_char, ref jobt : c_char, ref jobp : c_char, ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, sva : [] c_float, u : [] c_float, ref ldu : c_int, v : [] c_float, ref ldv : c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgejsv(ref joba : c_char, ref jobu : c_char, ref jobv : c_char, ref jobr : c_char, ref jobt : c_char, ref jobp : c_char, ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, sva : [] c_float, u : [] c_float, ref ldu : c_int, v : [] c_float, ref ldv : c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgesvj(ref joba : c_char, ref jobu : c_char, ref jobv : c_char, ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, sva : [] c_double, ref mv : c_int, v : [] c_double, ref ldv : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgesvj(ref joba : c_char, ref jobu : c_char, ref jobv : c_char, ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, sva : [] c_double, ref mv : c_int, v : [] c_double, ref ldv : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgesvj(ref joba : c_char, ref jobu : c_char, ref jobv : c_char, ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, sva : [] c_float, ref mv : c_int, v : [] c_float, ref ldv : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgesvj(ref joba : c_char, ref jobu : c_char, ref jobv : c_char, ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, sva : [] c_float, ref mv : c_int, v : [] c_float, ref ldv : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sggsvd(ref jobu : c_char, ref jobv : c_char, ref jobq : c_char, ref m : c_int, ref n : c_int, ref p : c_int, ref k : c_int, ref l : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, alpha : [] c_float, beta : [] c_float, u : [] c_float, ref ldu : c_int, v : [] c_float, ref ldv : c_int, q : [] c_float, ref ldq : c_int, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sggsvd(ref jobu : c_char, ref jobv : c_char, ref jobq : c_char, ref m : c_int, ref n : c_int, ref p : c_int, ref k : c_int, ref l : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, alpha : [] c_float, beta : [] c_float, u : [] c_float, ref ldu : c_int, v : [] c_float, ref ldv : c_int, q : [] c_float, ref ldq : c_int, work : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dggsvd(ref jobu : c_char, ref jobv : c_char, ref jobq : c_char, ref m : c_int, ref n : c_int, ref p : c_int, ref k : c_int, ref l : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, alpha : [] c_double, beta : [] c_double, u : [] c_double, ref ldu : c_int, v : [] c_double, ref ldv : c_int, q : [] c_double, ref ldq : c_int, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dggsvd(ref jobu : c_char, ref jobv : c_char, ref jobq : c_char, ref m : c_int, ref n : c_int, ref p : c_int, ref k : c_int, ref l : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, alpha : [] c_double, beta : [] c_double, u : [] c_double, ref ldu : c_int, v : [] c_double, ref ldv : c_int, q : [] c_double, ref ldq : c_int, work : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cggsvd(ref jobu : c_char, ref jobv : c_char, ref jobq : c_char, ref m : c_int, ref n : c_int, ref p : c_int, ref k : c_int, ref l : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, alpha : [] c_float, beta : [] c_float, u : [] complex(64), ref ldu : c_int, v : [] complex(64), ref ldv : c_int, q : [] complex(64), ref ldq : c_int, work : [] complex(64), rwork : [] c_float, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cggsvd(ref jobu : c_char, ref jobv : c_char, ref jobq : c_char, ref m : c_int, ref n : c_int, ref p : c_int, ref k : c_int, ref l : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, alpha : [] c_float, beta : [] c_float, u : [] complex(64), ref ldu : c_int, v : [] complex(64), ref ldv : c_int, q : [] complex(64), ref ldq : c_int, work : [] complex(64), rwork : [] c_float, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zggsvd(ref jobu : c_char, ref jobv : c_char, ref jobq : c_char, ref m : c_int, ref n : c_int, ref p : c_int, ref k : c_int, ref l : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, alpha : [] c_double, beta : [] c_double, u : [] complex(128), ref ldu : c_int, v : [] complex(128), ref ldv : c_int, q : [] complex(128), ref ldq : c_int, work : [] complex(128), rwork : [] c_double, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zggsvd(ref jobu : c_char, ref jobv : c_char, ref jobq : c_char, ref m : c_int, ref n : c_int, ref p : c_int, ref k : c_int, ref l : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, alpha : [] c_double, beta : [] c_double, u : [] complex(128), ref ldu : c_int, v : [] complex(128), ref ldv : c_int, q : [] complex(128), ref ldq : c_int, work : [] complex(128), rwork : [] c_double, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssygv(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, w : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssygv(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, w : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsygv(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, w : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsygv(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, w : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chegv(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, w : [] c_float, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chegv(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, w : [] c_float, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhegv(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, w : [] c_double, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhegv(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, w : [] c_double, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssygvd(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, w : [] c_float, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssygvd(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, w : [] c_float, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsygvd(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, w : [] c_double, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsygvd(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, w : [] c_double, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chegvd(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, w : [] c_float, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chegvd(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, w : [] c_float, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhegvd(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, w : [] c_double, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhegvd(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, w : [] c_double, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssygvx(ref itype : c_int, ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssygvx(ref itype : c_int, ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsygvx(ref itype : c_int, ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsygvx(ref itype : c_int, ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chegvx(ref itype : c_int, ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chegvx(ref itype : c_int, ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhegvx(ref itype : c_int, ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhegvx(ref itype : c_int, ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sspgv(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] c_float, bp : [] c_float, w : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sspgv(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] c_float, bp : [] c_float, w : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dspgv(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] c_double, bp : [] c_double, w : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dspgv(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] c_double, bp : [] c_double, w : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chpgv(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] complex(64), bp : [] complex(64), w : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chpgv(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] complex(64), bp : [] complex(64), w : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhpgv(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] complex(128), bp : [] complex(128), w : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhpgv(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] complex(128), bp : [] complex(128), w : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sspgvd(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] c_float, bp : [] c_float, w : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sspgvd(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] c_float, bp : [] c_float, w : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dspgvd(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] c_double, bp : [] c_double, w : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dspgvd(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] c_double, bp : [] c_double, w : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chpgvd(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] complex(64), bp : [] complex(64), w : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chpgvd(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] complex(64), bp : [] complex(64), w : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhpgvd(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] complex(128), bp : [] complex(128), w : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhpgvd(ref itype : c_int, ref jobz : c_char, ref uplo : c_char, ref n : c_int, ap : [] complex(128), bp : [] complex(128), w : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sspgvx(ref itype : c_int, ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ap : [] c_float, bp : [] c_float, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sspgvx(ref itype : c_int, ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ap : [] c_float, bp : [] c_float, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dspgvx(ref itype : c_int, ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ap : [] c_double, bp : [] c_double, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dspgvx(ref itype : c_int, ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ap : [] c_double, bp : [] c_double, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chpgvx(ref itype : c_int, ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ap : [] complex(64), bp : [] complex(64), ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] complex(64), rwork : [] c_float, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chpgvx(ref itype : c_int, ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ap : [] complex(64), bp : [] complex(64), ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] complex(64), rwork : [] c_float, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhpgvx(ref itype : c_int, ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ap : [] complex(128), bp : [] complex(128), ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] complex(128), rwork : [] c_double, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhpgvx(ref itype : c_int, ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ap : [] complex(128), bp : [] complex(128), ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] complex(128), rwork : [] c_double, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssbgv(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] c_float, ref ldab : c_int, bb : [] c_float, ref ldbb : c_int, w : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssbgv(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] c_float, ref ldab : c_int, bb : [] c_float, ref ldbb : c_int, w : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsbgv(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] c_double, ref ldab : c_int, bb : [] c_double, ref ldbb : c_int, w : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsbgv(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] c_double, ref ldab : c_int, bb : [] c_double, ref ldbb : c_int, w : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chbgv(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] complex(64), ref ldab : c_int, bb : [] complex(64), ref ldbb : c_int, w : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chbgv(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] complex(64), ref ldab : c_int, bb : [] complex(64), ref ldbb : c_int, w : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] complex(64), rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhbgv(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] complex(128), ref ldab : c_int, bb : [] complex(128), ref ldbb : c_int, w : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhbgv(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] complex(128), ref ldab : c_int, bb : [] complex(128), ref ldbb : c_int, w : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] complex(128), rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssbgvd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] c_float, ref ldab : c_int, bb : [] c_float, ref ldbb : c_int, w : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssbgvd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] c_float, ref ldab : c_int, bb : [] c_float, ref ldbb : c_int, w : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsbgvd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] c_double, ref ldab : c_int, bb : [] c_double, ref ldbb : c_int, w : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsbgvd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] c_double, ref ldab : c_int, bb : [] c_double, ref ldbb : c_int, w : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chbgvd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] complex(64), ref ldab : c_int, bb : [] complex(64), ref ldbb : c_int, w : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chbgvd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] complex(64), ref ldab : c_int, bb : [] complex(64), ref ldbb : c_int, w : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhbgvd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] complex(128), ref ldab : c_int, bb : [] complex(128), ref ldbb : c_int, w : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhbgvd(ref jobz : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] complex(128), ref ldab : c_int, bb : [] complex(128), ref ldbb : c_int, w : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref lrwork : c_int, iwork : [] c_int, ref liwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssbgvx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] c_float, ref ldab : c_int, bb : [] c_float, ref ldbb : c_int, q : [] c_float, ref ldq : c_int, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssbgvx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] c_float, ref ldab : c_int, bb : [] c_float, ref ldbb : c_int, q : [] c_float, ref ldq : c_int, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] c_float, ref ldz : c_int, work : [] c_float, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsbgvx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] c_double, ref ldab : c_int, bb : [] c_double, ref ldbb : c_int, q : [] c_double, ref ldq : c_int, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsbgvx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] c_double, ref ldab : c_int, bb : [] c_double, ref ldbb : c_int, q : [] c_double, ref ldq : c_int, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] c_double, ref ldz : c_int, work : [] c_double, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chbgvx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] complex(64), ref ldab : c_int, bb : [] complex(64), ref ldbb : c_int, q : [] complex(64), ref ldq : c_int, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] complex(64), rwork : [] c_float, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chbgvx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] complex(64), ref ldab : c_int, bb : [] complex(64), ref ldbb : c_int, q : [] complex(64), ref ldq : c_int, ref vl : c_float, ref vu : c_float, ref il : c_int, ref iu : c_int, ref abstol : c_float, ref m : c_int, w : [] c_float, z : [] complex(64), ref ldz : c_int, work : [] complex(64), rwork : [] c_float, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhbgvx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] complex(128), ref ldab : c_int, bb : [] complex(128), ref ldbb : c_int, q : [] complex(128), ref ldq : c_int, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] complex(128), rwork : [] c_double, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhbgvx(ref jobz : c_char, ref range : c_char, ref uplo : c_char, ref n : c_int, ref ka : c_int, ref kb : c_int, ab : [] complex(128), ref ldab : c_int, bb : [] complex(128), ref ldbb : c_int, q : [] complex(128), ref ldq : c_int, ref vl : c_double, ref vu : c_double, ref il : c_int, ref iu : c_int, ref abstol : c_double, ref m : c_int, w : [] c_double, z : [] complex(128), ref ldz : c_int, work : [] complex(128), rwork : [] c_double, iwork : [] c_int, ifail : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgges(ref jobvsl : c_char, ref jobvsr : c_char, ref sort : c_char, selctg : LAPACK_S_SELECT3, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, ref sdim : c_int, alphar : [] c_float, alphai : [] c_float, beta : [] c_float, vsl : [] c_float, ref ldvsl : c_int, vsr : [] c_float, ref ldvsr : c_int, work : [] c_float, ref lwork : c_int, bwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgges(ref jobvsl : c_char, ref jobvsr : c_char, ref sort : c_char, selctg : LAPACK_S_SELECT3, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, ref sdim : c_int, alphar : [] c_float, alphai : [] c_float, beta : [] c_float, vsl : [] c_float, ref ldvsl : c_int, vsr : [] c_float, ref ldvsr : c_int, work : [] c_float, ref lwork : c_int, bwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgges(ref jobvsl : c_char, ref jobvsr : c_char, ref sort : c_char, selctg : LAPACK_D_SELECT3, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, ref sdim : c_int, alphar : [] c_double, alphai : [] c_double, beta : [] c_double, vsl : [] c_double, ref ldvsl : c_int, vsr : [] c_double, ref ldvsr : c_int, work : [] c_double, ref lwork : c_int, bwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgges(ref jobvsl : c_char, ref jobvsr : c_char, ref sort : c_char, selctg : LAPACK_D_SELECT3, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, ref sdim : c_int, alphar : [] c_double, alphai : [] c_double, beta : [] c_double, vsl : [] c_double, ref ldvsl : c_int, vsr : [] c_double, ref ldvsr : c_int, work : [] c_double, ref lwork : c_int, bwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgges(ref jobvsl : c_char, ref jobvsr : c_char, ref sort : c_char, selctg : LAPACK_C_SELECT2, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, ref sdim : c_int, alpha : [] complex(64), beta : [] complex(64), vsl : [] complex(64), ref ldvsl : c_int, vsr : [] complex(64), ref ldvsr : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, bwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgges(ref jobvsl : c_char, ref jobvsr : c_char, ref sort : c_char, selctg : LAPACK_C_SELECT2, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, ref sdim : c_int, alpha : [] complex(64), beta : [] complex(64), vsl : [] complex(64), ref ldvsl : c_int, vsr : [] complex(64), ref ldvsr : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, bwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgges(ref jobvsl : c_char, ref jobvsr : c_char, ref sort : c_char, selctg : LAPACK_Z_SELECT2, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, ref sdim : c_int, alpha : [] complex(128), beta : [] complex(128), vsl : [] complex(128), ref ldvsl : c_int, vsr : [] complex(128), ref ldvsr : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, bwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgges(ref jobvsl : c_char, ref jobvsr : c_char, ref sort : c_char, selctg : LAPACK_Z_SELECT2, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, ref sdim : c_int, alpha : [] complex(128), beta : [] complex(128), vsl : [] complex(128), ref ldvsl : c_int, vsr : [] complex(128), ref ldvsr : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, bwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sggesx(ref jobvsl : c_char, ref jobvsr : c_char, ref sort : c_char, selctg : LAPACK_S_SELECT3, ref sense : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, ref sdim : c_int, alphar : [] c_float, alphai : [] c_float, beta : [] c_float, vsl : [] c_float, ref ldvsl : c_int, vsr : [] c_float, ref ldvsr : c_int, rconde : [] c_float, rcondv : [] c_float, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, bwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sggesx(ref jobvsl : c_char, ref jobvsr : c_char, ref sort : c_char, selctg : LAPACK_S_SELECT3, ref sense : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, ref sdim : c_int, alphar : [] c_float, alphai : [] c_float, beta : [] c_float, vsl : [] c_float, ref ldvsl : c_int, vsr : [] c_float, ref ldvsr : c_int, rconde : [] c_float, rcondv : [] c_float, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, bwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dggesx(ref jobvsl : c_char, ref jobvsr : c_char, ref sort : c_char, selctg : LAPACK_D_SELECT3, ref sense : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, ref sdim : c_int, alphar : [] c_double, alphai : [] c_double, beta : [] c_double, vsl : [] c_double, ref ldvsl : c_int, vsr : [] c_double, ref ldvsr : c_int, rconde : [] c_double, rcondv : [] c_double, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, bwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dggesx(ref jobvsl : c_char, ref jobvsr : c_char, ref sort : c_char, selctg : LAPACK_D_SELECT3, ref sense : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, ref sdim : c_int, alphar : [] c_double, alphai : [] c_double, beta : [] c_double, vsl : [] c_double, ref ldvsl : c_int, vsr : [] c_double, ref ldvsr : c_int, rconde : [] c_double, rcondv : [] c_double, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref liwork : c_int, bwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cggesx(ref jobvsl : c_char, ref jobvsr : c_char, ref sort : c_char, selctg : LAPACK_C_SELECT2, ref sense : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, ref sdim : c_int, alpha : [] complex(64), beta : [] complex(64), vsl : [] complex(64), ref ldvsl : c_int, vsr : [] complex(64), ref ldvsr : c_int, rconde : [] c_float, rcondv : [] c_float, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, iwork : [] c_int, ref liwork : c_int, bwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cggesx(ref jobvsl : c_char, ref jobvsr : c_char, ref sort : c_char, selctg : LAPACK_C_SELECT2, ref sense : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, ref sdim : c_int, alpha : [] complex(64), beta : [] complex(64), vsl : [] complex(64), ref ldvsl : c_int, vsr : [] complex(64), ref ldvsr : c_int, rconde : [] c_float, rcondv : [] c_float, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, iwork : [] c_int, ref liwork : c_int, bwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zggesx(ref jobvsl : c_char, ref jobvsr : c_char, ref sort : c_char, selctg : LAPACK_Z_SELECT2, ref sense : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, ref sdim : c_int, alpha : [] complex(128), beta : [] complex(128), vsl : [] complex(128), ref ldvsl : c_int, vsr : [] complex(128), ref ldvsr : c_int, rconde : [] c_double, rcondv : [] c_double, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, iwork : [] c_int, ref liwork : c_int, bwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zggesx(ref jobvsl : c_char, ref jobvsr : c_char, ref sort : c_char, selctg : LAPACK_Z_SELECT2, ref sense : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, ref sdim : c_int, alpha : [] complex(128), beta : [] complex(128), vsl : [] complex(128), ref ldvsl : c_int, vsr : [] complex(128), ref ldvsr : c_int, rconde : [] c_double, rcondv : [] c_double, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, iwork : [] c_int, ref liwork : c_int, bwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sggev(ref jobvl : c_char, ref jobvr : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, alphar : [] c_float, alphai : [] c_float, beta : [] c_float, vl : [] c_float, ref ldvl : c_int, vr : [] c_float, ref ldvr : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sggev(ref jobvl : c_char, ref jobvr : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, alphar : [] c_float, alphai : [] c_float, beta : [] c_float, vl : [] c_float, ref ldvl : c_int, vr : [] c_float, ref ldvr : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dggev(ref jobvl : c_char, ref jobvr : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, alphar : [] c_double, alphai : [] c_double, beta : [] c_double, vl : [] c_double, ref ldvl : c_int, vr : [] c_double, ref ldvr : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dggev(ref jobvl : c_char, ref jobvr : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, alphar : [] c_double, alphai : [] c_double, beta : [] c_double, vl : [] c_double, ref ldvl : c_int, vr : [] c_double, ref ldvr : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cggev(ref jobvl : c_char, ref jobvr : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, alpha : [] complex(64), beta : [] complex(64), vl : [] complex(64), ref ldvl : c_int, vr : [] complex(64), ref ldvr : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cggev(ref jobvl : c_char, ref jobvr : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, alpha : [] complex(64), beta : [] complex(64), vl : [] complex(64), ref ldvl : c_int, vr : [] complex(64), ref ldvr : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zggev(ref jobvl : c_char, ref jobvr : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, alpha : [] complex(128), beta : [] complex(128), vl : [] complex(128), ref ldvl : c_int, vr : [] complex(128), ref ldvr : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zggev(ref jobvl : c_char, ref jobvr : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, alpha : [] complex(128), beta : [] complex(128), vl : [] complex(128), ref ldvl : c_int, vr : [] complex(128), ref ldvr : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sggevx(ref balanc : c_char, ref jobvl : c_char, ref jobvr : c_char, ref sense : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, alphar : [] c_float, alphai : [] c_float, beta : [] c_float, vl : [] c_float, ref ldvl : c_int, vr : [] c_float, ref ldvr : c_int, ref ilo : c_int, ref ihi : c_int, lscale : [] c_float, rscale : [] c_float, ref abnrm : c_float, ref bbnrm : c_float, rconde : [] c_float, rcondv : [] c_float, work : [] c_float, ref lwork : c_int, iwork : [] c_int, bwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sggevx(ref balanc : c_char, ref jobvl : c_char, ref jobvr : c_char, ref sense : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, alphar : [] c_float, alphai : [] c_float, beta : [] c_float, vl : [] c_float, ref ldvl : c_int, vr : [] c_float, ref ldvr : c_int, ref ilo : c_int, ref ihi : c_int, lscale : [] c_float, rscale : [] c_float, ref abnrm : c_float, ref bbnrm : c_float, rconde : [] c_float, rcondv : [] c_float, work : [] c_float, ref lwork : c_int, iwork : [] c_int, bwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dggevx(ref balanc : c_char, ref jobvl : c_char, ref jobvr : c_char, ref sense : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, alphar : [] c_double, alphai : [] c_double, beta : [] c_double, vl : [] c_double, ref ldvl : c_int, vr : [] c_double, ref ldvr : c_int, ref ilo : c_int, ref ihi : c_int, lscale : [] c_double, rscale : [] c_double, ref abnrm : c_double, ref bbnrm : c_double, rconde : [] c_double, rcondv : [] c_double, work : [] c_double, ref lwork : c_int, iwork : [] c_int, bwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dggevx(ref balanc : c_char, ref jobvl : c_char, ref jobvr : c_char, ref sense : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, alphar : [] c_double, alphai : [] c_double, beta : [] c_double, vl : [] c_double, ref ldvl : c_int, vr : [] c_double, ref ldvr : c_int, ref ilo : c_int, ref ihi : c_int, lscale : [] c_double, rscale : [] c_double, ref abnrm : c_double, ref bbnrm : c_double, rconde : [] c_double, rcondv : [] c_double, work : [] c_double, ref lwork : c_int, iwork : [] c_int, bwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cggevx(ref balanc : c_char, ref jobvl : c_char, ref jobvr : c_char, ref sense : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, alpha : [] complex(64), beta : [] complex(64), vl : [] complex(64), ref ldvl : c_int, vr : [] complex(64), ref ldvr : c_int, ref ilo : c_int, ref ihi : c_int, lscale : [] c_float, rscale : [] c_float, ref abnrm : c_float, ref bbnrm : c_float, rconde : [] c_float, rcondv : [] c_float, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, iwork : [] c_int, bwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cggevx(ref balanc : c_char, ref jobvl : c_char, ref jobvr : c_char, ref sense : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, alpha : [] complex(64), beta : [] complex(64), vl : [] complex(64), ref ldvl : c_int, vr : [] complex(64), ref ldvr : c_int, ref ilo : c_int, ref ihi : c_int, lscale : [] c_float, rscale : [] c_float, ref abnrm : c_float, ref bbnrm : c_float, rconde : [] c_float, rcondv : [] c_float, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, iwork : [] c_int, bwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zggevx(ref balanc : c_char, ref jobvl : c_char, ref jobvr : c_char, ref sense : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, alpha : [] complex(128), beta : [] complex(128), vl : [] complex(128), ref ldvl : c_int, vr : [] complex(128), ref ldvr : c_int, ref ilo : c_int, ref ihi : c_int, lscale : [] c_double, rscale : [] c_double, ref abnrm : c_double, ref bbnrm : c_double, rconde : [] c_double, rcondv : [] c_double, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, iwork : [] c_int, bwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zggevx(ref balanc : c_char, ref jobvl : c_char, ref jobvr : c_char, ref sense : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, alpha : [] complex(128), beta : [] complex(128), vl : [] complex(128), ref ldvl : c_int, vr : [] complex(128), ref ldvr : c_int, ref ilo : c_int, ref ihi : c_int, lscale : [] c_double, rscale : [] c_double, ref abnrm : c_double, ref bbnrm : c_double, rconde : [] c_double, rcondv : [] c_double, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, iwork : [] c_int, bwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsfrk(ref transr : c_char, ref uplo : c_char, ref trans : c_char, ref n : c_int, ref k : c_int, ref alpha : c_double, a : [] c_double, ref lda : c_int, ref beta : c_double, c : [] c_double) : c_void_ptr;
+extern proc LAPACK_dsfrk(ref transr : c_char, ref uplo : c_char, ref trans : c_char, ref n : c_int, ref k : c_int, ref alpha : c_double, a : [] c_double, ref lda : c_int, ref beta : c_double, c : [] c_double) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssfrk(ref transr : c_char, ref uplo : c_char, ref trans : c_char, ref n : c_int, ref k : c_int, ref alpha : c_float, a : [] c_float, ref lda : c_int, ref beta : c_float, c : [] c_float) : c_void_ptr;
+extern proc LAPACK_ssfrk(ref transr : c_char, ref uplo : c_char, ref trans : c_char, ref n : c_int, ref k : c_int, ref alpha : c_float, a : [] c_float, ref lda : c_int, ref beta : c_float, c : [] c_float) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhfrk(ref transr : c_char, ref uplo : c_char, ref trans : c_char, ref n : c_int, ref k : c_int, ref alpha : c_double, a : [] complex(128), ref lda : c_int, ref beta : c_double, c : [] complex(128)) : c_void_ptr;
+extern proc LAPACK_zhfrk(ref transr : c_char, ref uplo : c_char, ref trans : c_char, ref n : c_int, ref k : c_int, ref alpha : c_double, a : [] complex(128), ref lda : c_int, ref beta : c_double, c : [] complex(128)) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chfrk(ref transr : c_char, ref uplo : c_char, ref trans : c_char, ref n : c_int, ref k : c_int, ref alpha : c_float, a : [] complex(64), ref lda : c_int, ref beta : c_float, c : [] complex(64)) : c_void_ptr;
+extern proc LAPACK_chfrk(ref transr : c_char, ref uplo : c_char, ref trans : c_char, ref n : c_int, ref k : c_int, ref alpha : c_float, a : [] complex(64), ref lda : c_int, ref beta : c_float, c : [] complex(64)) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtfsm(ref transr : c_char, ref side : c_char, ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref m : c_int, ref n : c_int, ref alpha : c_double, a : [] c_double, b : [] c_double, ref ldb : c_int) : c_void_ptr;
+extern proc LAPACK_dtfsm(ref transr : c_char, ref side : c_char, ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref m : c_int, ref n : c_int, ref alpha : c_double, a : [] c_double, b : [] c_double, ref ldb : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_stfsm(ref transr : c_char, ref side : c_char, ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref m : c_int, ref n : c_int, ref alpha : c_float, a : [] c_float, b : [] c_float, ref ldb : c_int) : c_void_ptr;
+extern proc LAPACK_stfsm(ref transr : c_char, ref side : c_char, ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref m : c_int, ref n : c_int, ref alpha : c_float, a : [] c_float, b : [] c_float, ref ldb : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztfsm(ref transr : c_char, ref side : c_char, ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref m : c_int, ref n : c_int, ref alpha : complex(128), a : [] complex(128), b : [] complex(128), ref ldb : c_int) : c_void_ptr;
+extern proc LAPACK_ztfsm(ref transr : c_char, ref side : c_char, ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref m : c_int, ref n : c_int, ref alpha : complex(128), a : [] complex(128), b : [] complex(128), ref ldb : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctfsm(ref transr : c_char, ref side : c_char, ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref m : c_int, ref n : c_int, ref alpha : complex(64), a : [] complex(64), b : [] complex(64), ref ldb : c_int) : c_void_ptr;
+extern proc LAPACK_ctfsm(ref transr : c_char, ref side : c_char, ref uplo : c_char, ref trans : c_char, ref diag : c_char, ref m : c_int, ref n : c_int, ref alpha : complex(64), a : [] complex(64), b : [] complex(64), ref ldb : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtfttp(ref transr : c_char, ref uplo : c_char, ref n : c_int, arf : [] c_double, ap : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtfttp(ref transr : c_char, ref uplo : c_char, ref n : c_int, arf : [] c_double, ap : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_stfttp(ref transr : c_char, ref uplo : c_char, ref n : c_int, arf : [] c_float, ap : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_stfttp(ref transr : c_char, ref uplo : c_char, ref n : c_int, arf : [] c_float, ap : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztfttp(ref transr : c_char, ref uplo : c_char, ref n : c_int, arf : [] complex(128), ap : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztfttp(ref transr : c_char, ref uplo : c_char, ref n : c_int, arf : [] complex(128), ap : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctfttp(ref transr : c_char, ref uplo : c_char, ref n : c_int, arf : [] complex(64), ap : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctfttp(ref transr : c_char, ref uplo : c_char, ref n : c_int, arf : [] complex(64), ap : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtfttr(ref transr : c_char, ref uplo : c_char, ref n : c_int, arf : [] c_double, a : [] c_double, ref lda : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtfttr(ref transr : c_char, ref uplo : c_char, ref n : c_int, arf : [] c_double, a : [] c_double, ref lda : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_stfttr(ref transr : c_char, ref uplo : c_char, ref n : c_int, arf : [] c_float, a : [] c_float, ref lda : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_stfttr(ref transr : c_char, ref uplo : c_char, ref n : c_int, arf : [] c_float, a : [] c_float, ref lda : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztfttr(ref transr : c_char, ref uplo : c_char, ref n : c_int, arf : [] complex(128), a : [] complex(128), ref lda : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztfttr(ref transr : c_char, ref uplo : c_char, ref n : c_int, arf : [] complex(128), a : [] complex(128), ref lda : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctfttr(ref transr : c_char, ref uplo : c_char, ref n : c_int, arf : [] complex(64), a : [] complex(64), ref lda : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctfttr(ref transr : c_char, ref uplo : c_char, ref n : c_int, arf : [] complex(64), a : [] complex(64), ref lda : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtpttf(ref transr : c_char, ref uplo : c_char, ref n : c_int, ap : [] c_double, arf : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtpttf(ref transr : c_char, ref uplo : c_char, ref n : c_int, ap : [] c_double, arf : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_stpttf(ref transr : c_char, ref uplo : c_char, ref n : c_int, ap : [] c_float, arf : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_stpttf(ref transr : c_char, ref uplo : c_char, ref n : c_int, ap : [] c_float, arf : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztpttf(ref transr : c_char, ref uplo : c_char, ref n : c_int, ap : [] complex(128), arf : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztpttf(ref transr : c_char, ref uplo : c_char, ref n : c_int, ap : [] complex(128), arf : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctpttf(ref transr : c_char, ref uplo : c_char, ref n : c_int, ap : [] complex(64), arf : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctpttf(ref transr : c_char, ref uplo : c_char, ref n : c_int, ap : [] complex(64), arf : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtpttr(ref uplo : c_char, ref n : c_int, ap : [] c_double, a : [] c_double, ref lda : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtpttr(ref uplo : c_char, ref n : c_int, ap : [] c_double, a : [] c_double, ref lda : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_stpttr(ref uplo : c_char, ref n : c_int, ap : [] c_float, a : [] c_float, ref lda : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_stpttr(ref uplo : c_char, ref n : c_int, ap : [] c_float, a : [] c_float, ref lda : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztpttr(ref uplo : c_char, ref n : c_int, ap : [] complex(128), a : [] complex(128), ref lda : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztpttr(ref uplo : c_char, ref n : c_int, ap : [] complex(128), a : [] complex(128), ref lda : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctpttr(ref uplo : c_char, ref n : c_int, ap : [] complex(64), a : [] complex(64), ref lda : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctpttr(ref uplo : c_char, ref n : c_int, ap : [] complex(64), a : [] complex(64), ref lda : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtrttf(ref transr : c_char, ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, arf : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtrttf(ref transr : c_char, ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, arf : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_strttf(ref transr : c_char, ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, arf : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_strttf(ref transr : c_char, ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, arf : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztrttf(ref transr : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, arf : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztrttf(ref transr : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, arf : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctrttf(ref transr : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, arf : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctrttf(ref transr : c_char, ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, arf : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtrttp(ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ap : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtrttp(ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ap : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_strttp(ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ap : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_strttp(ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ap : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztrttp(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ap : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztrttp(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ap : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctrttp(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ap : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctrttp(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ap : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgeqrfp(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgeqrfp(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgeqrfp(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgeqrfp(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgeqrfp(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgeqrfp(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgeqrfp(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgeqrfp(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_clacgv(ref n : c_int, x : [] complex(64), ref incx : c_int) : c_void_ptr;
+extern proc LAPACK_clacgv(ref n : c_int, x : [] complex(64), ref incx : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zlacgv(ref n : c_int, x : [] complex(128), ref incx : c_int) : c_void_ptr;
+extern proc LAPACK_zlacgv(ref n : c_int, x : [] complex(128), ref incx : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_slarnv(ref idist : c_int, iseed : [] c_int, ref n : c_int, x : [] c_float) : c_void_ptr;
+extern proc LAPACK_slarnv(ref idist : c_int, iseed : [] c_int, ref n : c_int, x : [] c_float) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dlarnv(ref idist : c_int, iseed : [] c_int, ref n : c_int, x : [] c_double) : c_void_ptr;
+extern proc LAPACK_dlarnv(ref idist : c_int, iseed : [] c_int, ref n : c_int, x : [] c_double) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_clarnv(ref idist : c_int, iseed : [] c_int, ref n : c_int, x : [] complex(64)) : c_void_ptr;
+extern proc LAPACK_clarnv(ref idist : c_int, iseed : [] c_int, ref n : c_int, x : [] complex(64)) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zlarnv(ref idist : c_int, iseed : [] c_int, ref n : c_int, x : [] complex(128)) : c_void_ptr;
+extern proc LAPACK_zlarnv(ref idist : c_int, iseed : [] c_int, ref n : c_int, x : [] complex(128)) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgeqr2(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgeqr2(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgeqr2(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgeqr2(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgeqr2(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgeqr2(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgeqr2(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgeqr2(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_slacn2(ref n : c_int, v : [] c_float, x : [] c_float, isgn : [] c_int, ref est : c_float, ref kase : c_int, isave : [] c_int) : c_void_ptr;
+extern proc LAPACK_slacn2(ref n : c_int, v : [] c_float, x : [] c_float, isgn : [] c_int, ref est : c_float, ref kase : c_int, isave : [] c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dlacn2(ref n : c_int, v : [] c_double, x : [] c_double, isgn : [] c_int, ref est : c_double, ref kase : c_int, isave : [] c_int) : c_void_ptr;
+extern proc LAPACK_dlacn2(ref n : c_int, v : [] c_double, x : [] c_double, isgn : [] c_int, ref est : c_double, ref kase : c_int, isave : [] c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_clacn2(ref n : c_int, v : [] complex(64), x : [] complex(64), ref est : c_float, ref kase : c_int, isave : [] c_int) : c_void_ptr;
+extern proc LAPACK_clacn2(ref n : c_int, v : [] complex(64), x : [] complex(64), ref est : c_float, ref kase : c_int, isave : [] c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zlacn2(ref n : c_int, v : [] complex(128), x : [] complex(128), ref est : c_double, ref kase : c_int, isave : [] c_int) : c_void_ptr;
+extern proc LAPACK_zlacn2(ref n : c_int, v : [] complex(128), x : [] complex(128), ref est : c_double, ref kase : c_int, isave : [] c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_slacpy(ref uplo : c_char, ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int) : c_void_ptr;
+extern proc LAPACK_slacpy(ref uplo : c_char, ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dlacpy(ref uplo : c_char, ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int) : c_void_ptr;
+extern proc LAPACK_dlacpy(ref uplo : c_char, ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_clacpy(ref uplo : c_char, ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int) : c_void_ptr;
+extern proc LAPACK_clacpy(ref uplo : c_char, ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zlacpy(ref uplo : c_char, ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int) : c_void_ptr;
+extern proc LAPACK_zlacpy(ref uplo : c_char, ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_clacp2(ref uplo : c_char, ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] complex(64), ref ldb : c_int) : c_void_ptr;
+extern proc LAPACK_clacp2(ref uplo : c_char, ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, b : [] complex(64), ref ldb : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zlacp2(ref uplo : c_char, ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] complex(128), ref ldb : c_int) : c_void_ptr;
+extern proc LAPACK_zlacp2(ref uplo : c_char, ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, b : [] complex(128), ref ldb : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgetf2(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, ipiv : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgetf2(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, ipiv : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgetf2(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgetf2(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgetf2(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgetf2(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgetf2(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgetf2(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_slaswp(ref n : c_int, a : [] c_float, ref lda : c_int, ref k1 : c_int, ref k2 : c_int, ipiv : [] c_int, ref incx : c_int) : c_void_ptr;
+extern proc LAPACK_slaswp(ref n : c_int, a : [] c_float, ref lda : c_int, ref k1 : c_int, ref k2 : c_int, ipiv : [] c_int, ref incx : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dlaswp(ref n : c_int, a : [] c_double, ref lda : c_int, ref k1 : c_int, ref k2 : c_int, ipiv : [] c_int, ref incx : c_int) : c_void_ptr;
+extern proc LAPACK_dlaswp(ref n : c_int, a : [] c_double, ref lda : c_int, ref k1 : c_int, ref k2 : c_int, ipiv : [] c_int, ref incx : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_claswp(ref n : c_int, a : [] complex(64), ref lda : c_int, ref k1 : c_int, ref k2 : c_int, ipiv : [] c_int, ref incx : c_int) : c_void_ptr;
+extern proc LAPACK_claswp(ref n : c_int, a : [] complex(64), ref lda : c_int, ref k1 : c_int, ref k2 : c_int, ipiv : [] c_int, ref incx : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zlaswp(ref n : c_int, a : [] complex(128), ref lda : c_int, ref k1 : c_int, ref k2 : c_int, ipiv : [] c_int, ref incx : c_int) : c_void_ptr;
+extern proc LAPACK_zlaswp(ref n : c_int, a : [] complex(128), ref lda : c_int, ref k1 : c_int, ref k2 : c_int, ipiv : [] c_int, ref incx : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
 extern proc LAPACK_slange(ref norm : c_char, ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, work : [] c_float) : c_float;
@@ -18679,160 +18679,160 @@ extern proc LAPACK_slamch(ref cmach : c_char) : c_float;
 extern proc LAPACK_dlamch(ref cmach : c_char) : c_double;
 
 @chpldoc.nodoc
-extern proc LAPACK_sgelq2(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgelq2(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, tau : [] c_float, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgelq2(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgelq2(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, tau : [] c_double, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgelq2(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgelq2(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, tau : [] complex(64), work : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgelq2(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgelq2(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, tau : [] complex(128), work : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_slarfb(ref side : c_char, ref trans : c_char, ref direct : c_char, ref storev : c_char, ref m : c_int, ref n : c_int, ref k : c_int, v : [] c_float, ref ldv : c_int, t : [] c_float, ref ldt : c_int, c : [] c_float, ref ldc : c_int, work : [] c_float, ref ldwork : c_int) : c_void_ptr;
+extern proc LAPACK_slarfb(ref side : c_char, ref trans : c_char, ref direct : c_char, ref storev : c_char, ref m : c_int, ref n : c_int, ref k : c_int, v : [] c_float, ref ldv : c_int, t : [] c_float, ref ldt : c_int, c : [] c_float, ref ldc : c_int, work : [] c_float, ref ldwork : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dlarfb(ref side : c_char, ref trans : c_char, ref direct : c_char, ref storev : c_char, ref m : c_int, ref n : c_int, ref k : c_int, v : [] c_double, ref ldv : c_int, t : [] c_double, ref ldt : c_int, c : [] c_double, ref ldc : c_int, work : [] c_double, ref ldwork : c_int) : c_void_ptr;
+extern proc LAPACK_dlarfb(ref side : c_char, ref trans : c_char, ref direct : c_char, ref storev : c_char, ref m : c_int, ref n : c_int, ref k : c_int, v : [] c_double, ref ldv : c_int, t : [] c_double, ref ldt : c_int, c : [] c_double, ref ldc : c_int, work : [] c_double, ref ldwork : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_clarfb(ref side : c_char, ref trans : c_char, ref direct : c_char, ref storev : c_char, ref m : c_int, ref n : c_int, ref k : c_int, v : [] complex(64), ref ldv : c_int, t : [] complex(64), ref ldt : c_int, c : [] complex(64), ref ldc : c_int, work : [] complex(64), ref ldwork : c_int) : c_void_ptr;
+extern proc LAPACK_clarfb(ref side : c_char, ref trans : c_char, ref direct : c_char, ref storev : c_char, ref m : c_int, ref n : c_int, ref k : c_int, v : [] complex(64), ref ldv : c_int, t : [] complex(64), ref ldt : c_int, c : [] complex(64), ref ldc : c_int, work : [] complex(64), ref ldwork : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zlarfb(ref side : c_char, ref trans : c_char, ref direct : c_char, ref storev : c_char, ref m : c_int, ref n : c_int, ref k : c_int, v : [] complex(128), ref ldv : c_int, t : [] complex(128), ref ldt : c_int, c : [] complex(128), ref ldc : c_int, work : [] complex(128), ref ldwork : c_int) : c_void_ptr;
+extern proc LAPACK_zlarfb(ref side : c_char, ref trans : c_char, ref direct : c_char, ref storev : c_char, ref m : c_int, ref n : c_int, ref k : c_int, v : [] complex(128), ref ldv : c_int, t : [] complex(128), ref ldt : c_int, c : [] complex(128), ref ldc : c_int, work : [] complex(128), ref ldwork : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_slarfg(ref n : c_int, ref alpha : c_float, x : [] c_float, ref incx : c_int, ref tau : c_float) : c_void_ptr;
+extern proc LAPACK_slarfg(ref n : c_int, ref alpha : c_float, x : [] c_float, ref incx : c_int, ref tau : c_float) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dlarfg(ref n : c_int, ref alpha : c_double, x : [] c_double, ref incx : c_int, ref tau : c_double) : c_void_ptr;
+extern proc LAPACK_dlarfg(ref n : c_int, ref alpha : c_double, x : [] c_double, ref incx : c_int, ref tau : c_double) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_clarfg(ref n : c_int, ref alpha : complex(64), x : [] complex(64), ref incx : c_int, ref tau : complex(64)) : c_void_ptr;
+extern proc LAPACK_clarfg(ref n : c_int, ref alpha : complex(64), x : [] complex(64), ref incx : c_int, ref tau : complex(64)) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zlarfg(ref n : c_int, ref alpha : complex(128), x : [] complex(128), ref incx : c_int, ref tau : complex(128)) : c_void_ptr;
+extern proc LAPACK_zlarfg(ref n : c_int, ref alpha : complex(128), x : [] complex(128), ref incx : c_int, ref tau : complex(128)) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_slarft(ref direct : c_char, ref storev : c_char, ref n : c_int, ref k : c_int, v : [] c_float, ref ldv : c_int, tau : [] c_float, t : [] c_float, ref ldt : c_int) : c_void_ptr;
+extern proc LAPACK_slarft(ref direct : c_char, ref storev : c_char, ref n : c_int, ref k : c_int, v : [] c_float, ref ldv : c_int, tau : [] c_float, t : [] c_float, ref ldt : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dlarft(ref direct : c_char, ref storev : c_char, ref n : c_int, ref k : c_int, v : [] c_double, ref ldv : c_int, tau : [] c_double, t : [] c_double, ref ldt : c_int) : c_void_ptr;
+extern proc LAPACK_dlarft(ref direct : c_char, ref storev : c_char, ref n : c_int, ref k : c_int, v : [] c_double, ref ldv : c_int, tau : [] c_double, t : [] c_double, ref ldt : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_clarft(ref direct : c_char, ref storev : c_char, ref n : c_int, ref k : c_int, v : [] complex(64), ref ldv : c_int, tau : [] complex(64), t : [] complex(64), ref ldt : c_int) : c_void_ptr;
+extern proc LAPACK_clarft(ref direct : c_char, ref storev : c_char, ref n : c_int, ref k : c_int, v : [] complex(64), ref ldv : c_int, tau : [] complex(64), t : [] complex(64), ref ldt : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zlarft(ref direct : c_char, ref storev : c_char, ref n : c_int, ref k : c_int, v : [] complex(128), ref ldv : c_int, tau : [] complex(128), t : [] complex(128), ref ldt : c_int) : c_void_ptr;
+extern proc LAPACK_zlarft(ref direct : c_char, ref storev : c_char, ref n : c_int, ref k : c_int, v : [] complex(128), ref ldv : c_int, tau : [] complex(128), t : [] complex(128), ref ldt : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_slarfx(ref side : c_char, ref m : c_int, ref n : c_int, v : [] c_float, ref tau : c_float, c : [] c_float, ref ldc : c_int, work : [] c_float) : c_void_ptr;
+extern proc LAPACK_slarfx(ref side : c_char, ref m : c_int, ref n : c_int, v : [] c_float, ref tau : c_float, c : [] c_float, ref ldc : c_int, work : [] c_float) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dlarfx(ref side : c_char, ref m : c_int, ref n : c_int, v : [] c_double, ref tau : c_double, c : [] c_double, ref ldc : c_int, work : [] c_double) : c_void_ptr;
+extern proc LAPACK_dlarfx(ref side : c_char, ref m : c_int, ref n : c_int, v : [] c_double, ref tau : c_double, c : [] c_double, ref ldc : c_int, work : [] c_double) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_clarfx(ref side : c_char, ref m : c_int, ref n : c_int, v : [] complex(64), ref tau : complex(64), c : [] complex(64), ref ldc : c_int, work : [] complex(64)) : c_void_ptr;
+extern proc LAPACK_clarfx(ref side : c_char, ref m : c_int, ref n : c_int, v : [] complex(64), ref tau : complex(64), c : [] complex(64), ref ldc : c_int, work : [] complex(64)) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zlarfx(ref side : c_char, ref m : c_int, ref n : c_int, v : [] complex(128), ref tau : complex(128), c : [] complex(128), ref ldc : c_int, work : [] complex(128)) : c_void_ptr;
+extern proc LAPACK_zlarfx(ref side : c_char, ref m : c_int, ref n : c_int, v : [] complex(128), ref tau : complex(128), c : [] complex(128), ref ldc : c_int, work : [] complex(128)) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_slatms(ref m : c_int, ref n : c_int, ref dist : c_char, iseed : [] c_int, ref sym : c_char, d : [] c_float, ref mode : c_int, ref cond : c_float, ref dmax : c_float, ref kl : c_int, ref ku : c_int, ref pack : c_char, a : [] c_float, ref lda : c_int, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_slatms(ref m : c_int, ref n : c_int, ref dist : c_char, iseed : [] c_int, ref sym : c_char, d : [] c_float, ref mode : c_int, ref cond : c_float, ref dmax : c_float, ref kl : c_int, ref ku : c_int, ref pack : c_char, a : [] c_float, ref lda : c_int, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dlatms(ref m : c_int, ref n : c_int, ref dist : c_char, iseed : [] c_int, ref sym : c_char, d : [] c_double, ref mode : c_int, ref cond : c_double, ref dmax : c_double, ref kl : c_int, ref ku : c_int, ref pack : c_char, a : [] c_double, ref lda : c_int, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dlatms(ref m : c_int, ref n : c_int, ref dist : c_char, iseed : [] c_int, ref sym : c_char, d : [] c_double, ref mode : c_int, ref cond : c_double, ref dmax : c_double, ref kl : c_int, ref ku : c_int, ref pack : c_char, a : [] c_double, ref lda : c_int, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_clatms(ref m : c_int, ref n : c_int, ref dist : c_char, iseed : [] c_int, ref sym : c_char, d : [] c_float, ref mode : c_int, ref cond : c_float, ref dmax : c_float, ref kl : c_int, ref ku : c_int, ref pack : c_char, a : [] complex(64), ref lda : c_int, work : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_clatms(ref m : c_int, ref n : c_int, ref dist : c_char, iseed : [] c_int, ref sym : c_char, d : [] c_float, ref mode : c_int, ref cond : c_float, ref dmax : c_float, ref kl : c_int, ref ku : c_int, ref pack : c_char, a : [] complex(64), ref lda : c_int, work : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zlatms(ref m : c_int, ref n : c_int, ref dist : c_char, iseed : [] c_int, ref sym : c_char, d : [] c_double, ref mode : c_int, ref cond : c_double, ref dmax : c_double, ref kl : c_int, ref ku : c_int, ref pack : c_char, a : [] complex(128), ref lda : c_int, work : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zlatms(ref m : c_int, ref n : c_int, ref dist : c_char, iseed : [] c_int, ref sym : c_char, d : [] c_double, ref mode : c_int, ref cond : c_double, ref dmax : c_double, ref kl : c_int, ref ku : c_int, ref pack : c_char, a : [] complex(128), ref lda : c_int, work : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_slag2d(ref m : c_int, ref n : c_int, sa : [] c_float, ref ldsa : c_int, a : [] c_double, ref lda : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_slag2d(ref m : c_int, ref n : c_int, sa : [] c_float, ref ldsa : c_int, a : [] c_double, ref lda : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dlag2s(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, sa : [] c_float, ref ldsa : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dlag2s(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, sa : [] c_float, ref ldsa : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_clag2z(ref m : c_int, ref n : c_int, sa : [] complex(64), ref ldsa : c_int, a : [] complex(128), ref lda : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_clag2z(ref m : c_int, ref n : c_int, sa : [] complex(64), ref ldsa : c_int, a : [] complex(128), ref lda : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zlag2c(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, sa : [] complex(64), ref ldsa : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zlag2c(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, sa : [] complex(64), ref ldsa : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_slauum(ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_slauum(ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dlauum(ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dlauum(ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_clauum(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_clauum(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zlauum(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zlauum(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_slagge(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, d : [] c_float, a : [] c_float, ref lda : c_int, iseed : [] c_int, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_slagge(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, d : [] c_float, a : [] c_float, ref lda : c_int, iseed : [] c_int, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dlagge(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, d : [] c_double, a : [] c_double, ref lda : c_int, iseed : [] c_int, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dlagge(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, d : [] c_double, a : [] c_double, ref lda : c_int, iseed : [] c_int, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_clagge(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, d : [] c_float, a : [] complex(64), ref lda : c_int, iseed : [] c_int, work : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_clagge(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, d : [] c_float, a : [] complex(64), ref lda : c_int, iseed : [] c_int, work : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zlagge(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, d : [] c_double, a : [] complex(128), ref lda : c_int, iseed : [] c_int, work : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zlagge(ref m : c_int, ref n : c_int, ref kl : c_int, ref ku : c_int, d : [] c_double, a : [] complex(128), ref lda : c_int, iseed : [] c_int, work : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_slaset(ref uplo : c_char, ref m : c_int, ref n : c_int, ref alpha : c_float, ref beta : c_float, a : [] c_float, ref lda : c_int) : c_void_ptr;
+extern proc LAPACK_slaset(ref uplo : c_char, ref m : c_int, ref n : c_int, ref alpha : c_float, ref beta : c_float, a : [] c_float, ref lda : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dlaset(ref uplo : c_char, ref m : c_int, ref n : c_int, ref alpha : c_double, ref beta : c_double, a : [] c_double, ref lda : c_int) : c_void_ptr;
+extern proc LAPACK_dlaset(ref uplo : c_char, ref m : c_int, ref n : c_int, ref alpha : c_double, ref beta : c_double, a : [] c_double, ref lda : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_claset(ref uplo : c_char, ref m : c_int, ref n : c_int, ref alpha : complex(64), ref beta : complex(64), a : [] complex(64), ref lda : c_int) : c_void_ptr;
+extern proc LAPACK_claset(ref uplo : c_char, ref m : c_int, ref n : c_int, ref alpha : complex(64), ref beta : complex(64), a : [] complex(64), ref lda : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zlaset(ref uplo : c_char, ref m : c_int, ref n : c_int, ref alpha : complex(128), ref beta : complex(128), a : [] complex(128), ref lda : c_int) : c_void_ptr;
+extern proc LAPACK_zlaset(ref uplo : c_char, ref m : c_int, ref n : c_int, ref alpha : complex(128), ref beta : complex(128), a : [] complex(128), ref lda : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_slasrt(ref id : c_char, ref n : c_int, d : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_slasrt(ref id : c_char, ref n : c_int, d : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dlasrt(ref id : c_char, ref n : c_int, d : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dlasrt(ref id : c_char, ref n : c_int, d : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_claghe(ref n : c_int, ref k : c_int, d : [] c_float, a : [] complex(64), ref lda : c_int, iseed : [] c_int, work : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_claghe(ref n : c_int, ref k : c_int, d : [] c_float, a : [] complex(64), ref lda : c_int, iseed : [] c_int, work : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zlaghe(ref n : c_int, ref k : c_int, d : [] c_double, a : [] complex(128), ref lda : c_int, iseed : [] c_int, work : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zlaghe(ref n : c_int, ref k : c_int, d : [] c_double, a : [] complex(128), ref lda : c_int, iseed : [] c_int, work : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_slagsy(ref n : c_int, ref k : c_int, d : [] c_float, a : [] c_float, ref lda : c_int, iseed : [] c_int, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_slagsy(ref n : c_int, ref k : c_int, d : [] c_float, a : [] c_float, ref lda : c_int, iseed : [] c_int, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dlagsy(ref n : c_int, ref k : c_int, d : [] c_double, a : [] c_double, ref lda : c_int, iseed : [] c_int, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dlagsy(ref n : c_int, ref k : c_int, d : [] c_double, a : [] c_double, ref lda : c_int, iseed : [] c_int, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_clagsy(ref n : c_int, ref k : c_int, d : [] c_float, a : [] complex(64), ref lda : c_int, iseed : [] c_int, work : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_clagsy(ref n : c_int, ref k : c_int, d : [] c_float, a : [] complex(64), ref lda : c_int, iseed : [] c_int, work : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zlagsy(ref n : c_int, ref k : c_int, d : [] c_double, a : [] complex(128), ref lda : c_int, iseed : [] c_int, work : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zlagsy(ref n : c_int, ref k : c_int, d : [] c_double, a : [] complex(128), ref lda : c_int, iseed : [] c_int, work : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_slapmr(ref forwrd : c_int, ref m : c_int, ref n : c_int, x : [] c_float, ref ldx : c_int, k : [] c_int) : c_void_ptr;
+extern proc LAPACK_slapmr(ref forwrd : c_int, ref m : c_int, ref n : c_int, x : [] c_float, ref ldx : c_int, k : [] c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dlapmr(ref forwrd : c_int, ref m : c_int, ref n : c_int, x : [] c_double, ref ldx : c_int, k : [] c_int) : c_void_ptr;
+extern proc LAPACK_dlapmr(ref forwrd : c_int, ref m : c_int, ref n : c_int, x : [] c_double, ref ldx : c_int, k : [] c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_clapmr(ref forwrd : c_int, ref m : c_int, ref n : c_int, x : [] complex(64), ref ldx : c_int, k : [] c_int) : c_void_ptr;
+extern proc LAPACK_clapmr(ref forwrd : c_int, ref m : c_int, ref n : c_int, x : [] complex(64), ref ldx : c_int, k : [] c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zlapmr(ref forwrd : c_int, ref m : c_int, ref n : c_int, x : [] complex(128), ref ldx : c_int, k : [] c_int) : c_void_ptr;
+extern proc LAPACK_zlapmr(ref forwrd : c_int, ref m : c_int, ref n : c_int, x : [] complex(128), ref ldx : c_int, k : [] c_int) : c_ptr(void);
 
 @chpldoc.nodoc
 extern proc LAPACK_slapy2(ref x : c_float, ref y : c_float) : c_float;
@@ -18847,250 +18847,250 @@ extern proc LAPACK_slapy3(ref x : c_float, ref y : c_float, ref z : c_float) : c
 extern proc LAPACK_dlapy3(ref x : c_double, ref y : c_double, ref z : c_double) : c_double;
 
 @chpldoc.nodoc
-extern proc LAPACK_slartgp(ref f : c_float, ref g : c_float, ref cs : c_float, ref sn : c_float, ref r : c_float) : c_void_ptr;
+extern proc LAPACK_slartgp(ref f : c_float, ref g : c_float, ref cs : c_float, ref sn : c_float, ref r : c_float) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dlartgp(ref f : c_double, ref g : c_double, ref cs : c_double, ref sn : c_double, ref r : c_double) : c_void_ptr;
+extern proc LAPACK_dlartgp(ref f : c_double, ref g : c_double, ref cs : c_double, ref sn : c_double, ref r : c_double) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_slartgs(ref x : c_float, ref y : c_float, ref sigma : c_float, ref cs : c_float, ref sn : c_float) : c_void_ptr;
+extern proc LAPACK_slartgs(ref x : c_float, ref y : c_float, ref sigma : c_float, ref cs : c_float, ref sn : c_float) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dlartgs(ref x : c_double, ref y : c_double, ref sigma : c_double, ref cs : c_double, ref sn : c_double) : c_void_ptr;
+extern proc LAPACK_dlartgs(ref x : c_double, ref y : c_double, ref sigma : c_double, ref cs : c_double, ref sn : c_double) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cbbcsd(ref jobu1 : c_char, ref jobu2 : c_char, ref jobv1t : c_char, ref jobv2t : c_char, ref trans : c_char, ref m : c_int, ref p : c_int, ref q : c_int, theta : [] c_float, phi : [] c_float, u1 : [] complex(64), ref ldu1 : c_int, u2 : [] complex(64), ref ldu2 : c_int, v1t : [] complex(64), ref ldv1t : c_int, v2t : [] complex(64), ref ldv2t : c_int, b11d : [] c_float, b11e : [] c_float, b12d : [] c_float, b12e : [] c_float, b21d : [] c_float, b21e : [] c_float, b22d : [] c_float, b22e : [] c_float, rwork : [] c_float, ref lrwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cbbcsd(ref jobu1 : c_char, ref jobu2 : c_char, ref jobv1t : c_char, ref jobv2t : c_char, ref trans : c_char, ref m : c_int, ref p : c_int, ref q : c_int, theta : [] c_float, phi : [] c_float, u1 : [] complex(64), ref ldu1 : c_int, u2 : [] complex(64), ref ldu2 : c_int, v1t : [] complex(64), ref ldv1t : c_int, v2t : [] complex(64), ref ldv2t : c_int, b11d : [] c_float, b11e : [] c_float, b12d : [] c_float, b12e : [] c_float, b21d : [] c_float, b21e : [] c_float, b22d : [] c_float, b22e : [] c_float, rwork : [] c_float, ref lrwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cheswapr(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref i1 : c_int, ref i2 : c_int) : c_void_ptr;
+extern proc LAPACK_cheswapr(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref i1 : c_int, ref i2 : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chetri2(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chetri2(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chetri2x(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, work : [] complex(64), ref nb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chetri2x(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, work : [] complex(64), ref nb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_chetrs2(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, work : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_chetrs2(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, work : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_csyconv(ref uplo : c_char, ref way : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, work : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_csyconv(ref uplo : c_char, ref way : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, work : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_csyswapr(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref i1 : c_int, ref i2 : c_int) : c_void_ptr;
+extern proc LAPACK_csyswapr(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref i1 : c_int, ref i2 : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_csytri2(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_csytri2(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_csytri2x(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, work : [] complex(64), ref nb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_csytri2x(ref uplo : c_char, ref n : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, work : [] complex(64), ref nb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_csytrs2(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, work : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_csytrs2(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, work : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cunbdb(ref trans : c_char, ref signs : c_char, ref m : c_int, ref p : c_int, ref q : c_int, x11 : [] complex(64), ref ldx11 : c_int, x12 : [] complex(64), ref ldx12 : c_int, x21 : [] complex(64), ref ldx21 : c_int, x22 : [] complex(64), ref ldx22 : c_int, theta : [] c_float, phi : [] c_float, taup1 : [] complex(64), taup2 : [] complex(64), tauq1 : [] complex(64), tauq2 : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cunbdb(ref trans : c_char, ref signs : c_char, ref m : c_int, ref p : c_int, ref q : c_int, x11 : [] complex(64), ref ldx11 : c_int, x12 : [] complex(64), ref ldx12 : c_int, x21 : [] complex(64), ref ldx21 : c_int, x22 : [] complex(64), ref ldx22 : c_int, theta : [] c_float, phi : [] c_float, taup1 : [] complex(64), taup2 : [] complex(64), tauq1 : [] complex(64), tauq2 : [] complex(64), work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cuncsd(ref jobu1 : c_char, ref jobu2 : c_char, ref jobv1t : c_char, ref jobv2t : c_char, ref trans : c_char, ref signs : c_char, ref m : c_int, ref p : c_int, ref q : c_int, x11 : [] complex(64), ref ldx11 : c_int, x12 : [] complex(64), ref ldx12 : c_int, x21 : [] complex(64), ref ldx21 : c_int, x22 : [] complex(64), ref ldx22 : c_int, theta : [] c_float, u1 : [] complex(64), ref ldu1 : c_int, u2 : [] complex(64), ref ldu2 : c_int, v1t : [] complex(64), ref ldv1t : c_int, v2t : [] complex(64), ref ldv2t : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref lrwork : c_int, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cuncsd(ref jobu1 : c_char, ref jobu2 : c_char, ref jobv1t : c_char, ref jobv2t : c_char, ref trans : c_char, ref signs : c_char, ref m : c_int, ref p : c_int, ref q : c_int, x11 : [] complex(64), ref ldx11 : c_int, x12 : [] complex(64), ref ldx12 : c_int, x21 : [] complex(64), ref ldx21 : c_int, x22 : [] complex(64), ref ldx22 : c_int, theta : [] c_float, u1 : [] complex(64), ref ldu1 : c_int, u2 : [] complex(64), ref ldu2 : c_int, v1t : [] complex(64), ref ldv1t : c_int, v2t : [] complex(64), ref ldv2t : c_int, work : [] complex(64), ref lwork : c_int, rwork : [] c_float, ref lrwork : c_int, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dbbcsd(ref jobu1 : c_char, ref jobu2 : c_char, ref jobv1t : c_char, ref jobv2t : c_char, ref trans : c_char, ref m : c_int, ref p : c_int, ref q : c_int, theta : [] c_double, phi : [] c_double, u1 : [] c_double, ref ldu1 : c_int, u2 : [] c_double, ref ldu2 : c_int, v1t : [] c_double, ref ldv1t : c_int, v2t : [] c_double, ref ldv2t : c_int, b11d : [] c_double, b11e : [] c_double, b12d : [] c_double, b12e : [] c_double, b21d : [] c_double, b21e : [] c_double, b22d : [] c_double, b22e : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dbbcsd(ref jobu1 : c_char, ref jobu2 : c_char, ref jobv1t : c_char, ref jobv2t : c_char, ref trans : c_char, ref m : c_int, ref p : c_int, ref q : c_int, theta : [] c_double, phi : [] c_double, u1 : [] c_double, ref ldu1 : c_int, u2 : [] c_double, ref ldu2 : c_int, v1t : [] c_double, ref ldv1t : c_int, v2t : [] c_double, ref ldv2t : c_int, b11d : [] c_double, b11e : [] c_double, b12d : [] c_double, b12e : [] c_double, b21d : [] c_double, b21e : [] c_double, b22d : [] c_double, b22e : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dorbdb(ref trans : c_char, ref signs : c_char, ref m : c_int, ref p : c_int, ref q : c_int, x11 : [] c_double, ref ldx11 : c_int, x12 : [] c_double, ref ldx12 : c_int, x21 : [] c_double, ref ldx21 : c_int, x22 : [] c_double, ref ldx22 : c_int, theta : [] c_double, phi : [] c_double, taup1 : [] c_double, taup2 : [] c_double, tauq1 : [] c_double, tauq2 : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dorbdb(ref trans : c_char, ref signs : c_char, ref m : c_int, ref p : c_int, ref q : c_int, x11 : [] c_double, ref ldx11 : c_int, x12 : [] c_double, ref ldx12 : c_int, x21 : [] c_double, ref ldx21 : c_int, x22 : [] c_double, ref ldx22 : c_int, theta : [] c_double, phi : [] c_double, taup1 : [] c_double, taup2 : [] c_double, tauq1 : [] c_double, tauq2 : [] c_double, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dorcsd(ref jobu1 : c_char, ref jobu2 : c_char, ref jobv1t : c_char, ref jobv2t : c_char, ref trans : c_char, ref signs : c_char, ref m : c_int, ref p : c_int, ref q : c_int, x11 : [] c_double, ref ldx11 : c_int, x12 : [] c_double, ref ldx12 : c_int, x21 : [] c_double, ref ldx21 : c_int, x22 : [] c_double, ref ldx22 : c_int, theta : [] c_double, u1 : [] c_double, ref ldu1 : c_int, u2 : [] c_double, ref ldu2 : c_int, v1t : [] c_double, ref ldv1t : c_int, v2t : [] c_double, ref ldv2t : c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dorcsd(ref jobu1 : c_char, ref jobu2 : c_char, ref jobv1t : c_char, ref jobv2t : c_char, ref trans : c_char, ref signs : c_char, ref m : c_int, ref p : c_int, ref q : c_int, x11 : [] c_double, ref ldx11 : c_int, x12 : [] c_double, ref ldx12 : c_int, x21 : [] c_double, ref ldx21 : c_int, x22 : [] c_double, ref ldx22 : c_int, theta : [] c_double, u1 : [] c_double, ref ldu1 : c_int, u2 : [] c_double, ref ldu2 : c_int, v1t : [] c_double, ref ldv1t : c_int, v2t : [] c_double, ref ldv2t : c_int, work : [] c_double, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsyconv(ref uplo : c_char, ref way : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsyconv(ref uplo : c_char, ref way : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsyswapr(ref uplo : c_char, ref n : c_int, a : [] c_double, ref i1 : c_int, ref i2 : c_int) : c_void_ptr;
+extern proc LAPACK_dsyswapr(ref uplo : c_char, ref n : c_int, a : [] c_double, ref i1 : c_int, ref i2 : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsytri2(ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsytri2(ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsytri2x(ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, work : [] c_double, ref nb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsytri2x(ref uplo : c_char, ref n : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, work : [] c_double, ref nb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsytrs2(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsytrs2(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sbbcsd(ref jobu1 : c_char, ref jobu2 : c_char, ref jobv1t : c_char, ref jobv2t : c_char, ref trans : c_char, ref m : c_int, ref p : c_int, ref q : c_int, theta : [] c_float, phi : [] c_float, u1 : [] c_float, ref ldu1 : c_int, u2 : [] c_float, ref ldu2 : c_int, v1t : [] c_float, ref ldv1t : c_int, v2t : [] c_float, ref ldv2t : c_int, b11d : [] c_float, b11e : [] c_float, b12d : [] c_float, b12e : [] c_float, b21d : [] c_float, b21e : [] c_float, b22d : [] c_float, b22e : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sbbcsd(ref jobu1 : c_char, ref jobu2 : c_char, ref jobv1t : c_char, ref jobv2t : c_char, ref trans : c_char, ref m : c_int, ref p : c_int, ref q : c_int, theta : [] c_float, phi : [] c_float, u1 : [] c_float, ref ldu1 : c_int, u2 : [] c_float, ref ldu2 : c_int, v1t : [] c_float, ref ldv1t : c_int, v2t : [] c_float, ref ldv2t : c_int, b11d : [] c_float, b11e : [] c_float, b12d : [] c_float, b12e : [] c_float, b21d : [] c_float, b21e : [] c_float, b22d : [] c_float, b22e : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sorbdb(ref trans : c_char, ref signs : c_char, ref m : c_int, ref p : c_int, ref q : c_int, x11 : [] c_float, ref ldx11 : c_int, x12 : [] c_float, ref ldx12 : c_int, x21 : [] c_float, ref ldx21 : c_int, x22 : [] c_float, ref ldx22 : c_int, theta : [] c_float, phi : [] c_float, taup1 : [] c_float, taup2 : [] c_float, tauq1 : [] c_float, tauq2 : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sorbdb(ref trans : c_char, ref signs : c_char, ref m : c_int, ref p : c_int, ref q : c_int, x11 : [] c_float, ref ldx11 : c_int, x12 : [] c_float, ref ldx12 : c_int, x21 : [] c_float, ref ldx21 : c_int, x22 : [] c_float, ref ldx22 : c_int, theta : [] c_float, phi : [] c_float, taup1 : [] c_float, taup2 : [] c_float, tauq1 : [] c_float, tauq2 : [] c_float, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sorcsd(ref jobu1 : c_char, ref jobu2 : c_char, ref jobv1t : c_char, ref jobv2t : c_char, ref trans : c_char, ref signs : c_char, ref m : c_int, ref p : c_int, ref q : c_int, x11 : [] c_float, ref ldx11 : c_int, x12 : [] c_float, ref ldx12 : c_int, x21 : [] c_float, ref ldx21 : c_int, x22 : [] c_float, ref ldx22 : c_int, theta : [] c_float, u1 : [] c_float, ref ldu1 : c_int, u2 : [] c_float, ref ldu2 : c_int, v1t : [] c_float, ref ldv1t : c_int, v2t : [] c_float, ref ldv2t : c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sorcsd(ref jobu1 : c_char, ref jobu2 : c_char, ref jobv1t : c_char, ref jobv2t : c_char, ref trans : c_char, ref signs : c_char, ref m : c_int, ref p : c_int, ref q : c_int, x11 : [] c_float, ref ldx11 : c_int, x12 : [] c_float, ref ldx12 : c_int, x21 : [] c_float, ref ldx21 : c_int, x22 : [] c_float, ref ldx22 : c_int, theta : [] c_float, u1 : [] c_float, ref ldu1 : c_int, u2 : [] c_float, ref ldu2 : c_int, v1t : [] c_float, ref ldv1t : c_int, v2t : [] c_float, ref ldv2t : c_int, work : [] c_float, ref lwork : c_int, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssyconv(ref uplo : c_char, ref way : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ipiv : [] c_int, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssyconv(ref uplo : c_char, ref way : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ipiv : [] c_int, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssyswapr(ref uplo : c_char, ref n : c_int, a : [] c_float, ref i1 : c_int, ref i2 : c_int) : c_void_ptr;
+extern proc LAPACK_ssyswapr(ref uplo : c_char, ref n : c_int, a : [] c_float, ref i1 : c_int, ref i2 : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssytri2(ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ipiv : [] c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssytri2(ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ipiv : [] c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssytri2x(ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ipiv : [] c_int, work : [] c_float, ref nb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssytri2x(ref uplo : c_char, ref n : c_int, a : [] c_float, ref lda : c_int, ipiv : [] c_int, work : [] c_float, ref nb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssytrs2(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssytrs2(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zbbcsd(ref jobu1 : c_char, ref jobu2 : c_char, ref jobv1t : c_char, ref jobv2t : c_char, ref trans : c_char, ref m : c_int, ref p : c_int, ref q : c_int, theta : [] c_double, phi : [] c_double, u1 : [] complex(128), ref ldu1 : c_int, u2 : [] complex(128), ref ldu2 : c_int, v1t : [] complex(128), ref ldv1t : c_int, v2t : [] complex(128), ref ldv2t : c_int, b11d : [] c_double, b11e : [] c_double, b12d : [] c_double, b12e : [] c_double, b21d : [] c_double, b21e : [] c_double, b22d : [] c_double, b22e : [] c_double, rwork : [] c_double, ref lrwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zbbcsd(ref jobu1 : c_char, ref jobu2 : c_char, ref jobv1t : c_char, ref jobv2t : c_char, ref trans : c_char, ref m : c_int, ref p : c_int, ref q : c_int, theta : [] c_double, phi : [] c_double, u1 : [] complex(128), ref ldu1 : c_int, u2 : [] complex(128), ref ldu2 : c_int, v1t : [] complex(128), ref ldv1t : c_int, v2t : [] complex(128), ref ldv2t : c_int, b11d : [] c_double, b11e : [] c_double, b12d : [] c_double, b12e : [] c_double, b21d : [] c_double, b21e : [] c_double, b22d : [] c_double, b22e : [] c_double, rwork : [] c_double, ref lrwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zheswapr(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref i1 : c_int, ref i2 : c_int) : c_void_ptr;
+extern proc LAPACK_zheswapr(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref i1 : c_int, ref i2 : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhetri2(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhetri2(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhetri2x(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, work : [] complex(128), ref nb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhetri2x(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, work : [] complex(128), ref nb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zhetrs2(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, work : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zhetrs2(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, work : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zsyconv(ref uplo : c_char, ref way : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, work : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zsyconv(ref uplo : c_char, ref way : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, work : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zsyswapr(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref i1 : c_int, ref i2 : c_int) : c_void_ptr;
+extern proc LAPACK_zsyswapr(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref i1 : c_int, ref i2 : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zsytri2(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zsytri2(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zsytri2x(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, work : [] complex(128), ref nb : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zsytri2x(ref uplo : c_char, ref n : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, work : [] complex(128), ref nb : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zsytrs2(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, work : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zsytrs2(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, work : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zunbdb(ref trans : c_char, ref signs : c_char, ref m : c_int, ref p : c_int, ref q : c_int, x11 : [] complex(128), ref ldx11 : c_int, x12 : [] complex(128), ref ldx12 : c_int, x21 : [] complex(128), ref ldx21 : c_int, x22 : [] complex(128), ref ldx22 : c_int, theta : [] c_double, phi : [] c_double, taup1 : [] complex(128), taup2 : [] complex(128), tauq1 : [] complex(128), tauq2 : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zunbdb(ref trans : c_char, ref signs : c_char, ref m : c_int, ref p : c_int, ref q : c_int, x11 : [] complex(128), ref ldx11 : c_int, x12 : [] complex(128), ref ldx12 : c_int, x21 : [] complex(128), ref ldx21 : c_int, x22 : [] complex(128), ref ldx22 : c_int, theta : [] c_double, phi : [] c_double, taup1 : [] complex(128), taup2 : [] complex(128), tauq1 : [] complex(128), tauq2 : [] complex(128), work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zuncsd(ref jobu1 : c_char, ref jobu2 : c_char, ref jobv1t : c_char, ref jobv2t : c_char, ref trans : c_char, ref signs : c_char, ref m : c_int, ref p : c_int, ref q : c_int, x11 : [] complex(128), ref ldx11 : c_int, x12 : [] complex(128), ref ldx12 : c_int, x21 : [] complex(128), ref ldx21 : c_int, x22 : [] complex(128), ref ldx22 : c_int, theta : [] c_double, u1 : [] complex(128), ref ldu1 : c_int, u2 : [] complex(128), ref ldu2 : c_int, v1t : [] complex(128), ref ldv1t : c_int, v2t : [] complex(128), ref ldv2t : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref lrwork : c_int, iwork : [] c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zuncsd(ref jobu1 : c_char, ref jobu2 : c_char, ref jobv1t : c_char, ref jobv2t : c_char, ref trans : c_char, ref signs : c_char, ref m : c_int, ref p : c_int, ref q : c_int, x11 : [] complex(128), ref ldx11 : c_int, x12 : [] complex(128), ref ldx12 : c_int, x21 : [] complex(128), ref ldx21 : c_int, x22 : [] complex(128), ref ldx22 : c_int, theta : [] c_double, u1 : [] complex(128), ref ldu1 : c_int, u2 : [] complex(128), ref ldu2 : c_int, v1t : [] complex(128), ref ldv1t : c_int, v2t : [] complex(128), ref ldv2t : c_int, work : [] complex(128), ref lwork : c_int, rwork : [] c_double, ref lrwork : c_int, iwork : [] c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgemqrt(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref nb : c_int, v : [] c_float, ref ldv : c_int, t : [] c_float, ref ldt : c_int, c : [] c_float, ref ldc : c_int, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgemqrt(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref nb : c_int, v : [] c_float, ref ldv : c_int, t : [] c_float, ref ldt : c_int, c : [] c_float, ref ldc : c_int, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgemqrt(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref nb : c_int, v : [] c_double, ref ldv : c_int, t : [] c_double, ref ldt : c_int, c : [] c_double, ref ldc : c_int, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgemqrt(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref nb : c_int, v : [] c_double, ref ldv : c_int, t : [] c_double, ref ldt : c_int, c : [] c_double, ref ldc : c_int, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgemqrt(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref nb : c_int, v : [] complex(64), ref ldv : c_int, t : [] complex(64), ref ldt : c_int, c : [] complex(64), ref ldc : c_int, work : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgemqrt(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref nb : c_int, v : [] complex(64), ref ldv : c_int, t : [] complex(64), ref ldt : c_int, c : [] complex(64), ref ldc : c_int, work : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgemqrt(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref nb : c_int, v : [] complex(128), ref ldv : c_int, t : [] complex(128), ref ldt : c_int, c : [] complex(128), ref ldc : c_int, work : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgemqrt(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref nb : c_int, v : [] complex(128), ref ldv : c_int, t : [] complex(128), ref ldt : c_int, c : [] complex(128), ref ldc : c_int, work : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgeqrt(ref m : c_int, ref n : c_int, ref nb : c_int, a : [] c_float, ref lda : c_int, t : [] c_float, ref ldt : c_int, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgeqrt(ref m : c_int, ref n : c_int, ref nb : c_int, a : [] c_float, ref lda : c_int, t : [] c_float, ref ldt : c_int, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgeqrt(ref m : c_int, ref n : c_int, ref nb : c_int, a : [] c_double, ref lda : c_int, t : [] c_double, ref ldt : c_int, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgeqrt(ref m : c_int, ref n : c_int, ref nb : c_int, a : [] c_double, ref lda : c_int, t : [] c_double, ref ldt : c_int, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgeqrt(ref m : c_int, ref n : c_int, ref nb : c_int, a : [] complex(64), ref lda : c_int, t : [] complex(64), ref ldt : c_int, work : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgeqrt(ref m : c_int, ref n : c_int, ref nb : c_int, a : [] complex(64), ref lda : c_int, t : [] complex(64), ref ldt : c_int, work : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgeqrt(ref m : c_int, ref n : c_int, ref nb : c_int, a : [] complex(128), ref lda : c_int, t : [] complex(128), ref ldt : c_int, work : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgeqrt(ref m : c_int, ref n : c_int, ref nb : c_int, a : [] complex(128), ref lda : c_int, t : [] complex(128), ref ldt : c_int, work : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgeqrt2(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, t : [] c_float, ref ldt : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgeqrt2(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, t : [] c_float, ref ldt : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgeqrt2(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, t : [] c_double, ref ldt : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgeqrt2(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, t : [] c_double, ref ldt : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgeqrt2(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, t : [] complex(64), ref ldt : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgeqrt2(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, t : [] complex(64), ref ldt : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgeqrt2(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, t : [] complex(128), ref ldt : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgeqrt2(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, t : [] complex(128), ref ldt : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_sgeqrt3(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, t : [] c_float, ref ldt : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_sgeqrt3(ref m : c_int, ref n : c_int, a : [] c_float, ref lda : c_int, t : [] c_float, ref ldt : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dgeqrt3(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, t : [] c_double, ref ldt : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dgeqrt3(ref m : c_int, ref n : c_int, a : [] c_double, ref lda : c_int, t : [] c_double, ref ldt : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_cgeqrt3(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, t : [] complex(64), ref ldt : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_cgeqrt3(ref m : c_int, ref n : c_int, a : [] complex(64), ref lda : c_int, t : [] complex(64), ref ldt : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zgeqrt3(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, t : [] complex(128), ref ldt : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zgeqrt3(ref m : c_int, ref n : c_int, a : [] complex(128), ref lda : c_int, t : [] complex(128), ref ldt : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_stpmqrt(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref l : c_int, ref nb : c_int, v : [] c_float, ref ldv : c_int, t : [] c_float, ref ldt : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, work : [] c_float, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_stpmqrt(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref l : c_int, ref nb : c_int, v : [] c_float, ref ldv : c_int, t : [] c_float, ref ldt : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, work : [] c_float, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtpmqrt(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref l : c_int, ref nb : c_int, v : [] c_double, ref ldv : c_int, t : [] c_double, ref ldt : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtpmqrt(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref l : c_int, ref nb : c_int, v : [] c_double, ref ldv : c_int, t : [] c_double, ref ldt : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctpmqrt(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref l : c_int, ref nb : c_int, v : [] complex(64), ref ldv : c_int, t : [] complex(64), ref ldt : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, work : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctpmqrt(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref l : c_int, ref nb : c_int, v : [] complex(64), ref ldv : c_int, t : [] complex(64), ref ldt : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, work : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztpmqrt(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref l : c_int, ref nb : c_int, v : [] complex(128), ref ldv : c_int, t : [] complex(128), ref ldt : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, work : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztpmqrt(ref side : c_char, ref trans : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref l : c_int, ref nb : c_int, v : [] complex(128), ref ldv : c_int, t : [] complex(128), ref ldt : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, work : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtpqrt(ref m : c_int, ref n : c_int, ref l : c_int, ref nb : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, t : [] c_double, ref ldt : c_int, work : [] c_double, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtpqrt(ref m : c_int, ref n : c_int, ref l : c_int, ref nb : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, t : [] c_double, ref ldt : c_int, work : [] c_double, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctpqrt(ref m : c_int, ref n : c_int, ref l : c_int, ref nb : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, t : [] complex(64), ref ldt : c_int, work : [] complex(64), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctpqrt(ref m : c_int, ref n : c_int, ref l : c_int, ref nb : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, t : [] complex(64), ref ldt : c_int, work : [] complex(64), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztpqrt(ref m : c_int, ref n : c_int, ref l : c_int, ref nb : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, t : [] complex(128), ref ldt : c_int, work : [] complex(128), ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztpqrt(ref m : c_int, ref n : c_int, ref l : c_int, ref nb : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, t : [] complex(128), ref ldt : c_int, work : [] complex(128), ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_stpqrt2(ref m : c_int, ref n : c_int, ref l : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, t : [] c_float, ref ldt : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_stpqrt2(ref m : c_int, ref n : c_int, ref l : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, t : [] c_float, ref ldt : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtpqrt2(ref m : c_int, ref n : c_int, ref l : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, t : [] c_double, ref ldt : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dtpqrt2(ref m : c_int, ref n : c_int, ref l : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, t : [] c_double, ref ldt : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctpqrt2(ref m : c_int, ref n : c_int, ref l : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, t : [] complex(64), ref ldt : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ctpqrt2(ref m : c_int, ref n : c_int, ref l : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, t : [] complex(64), ref ldt : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztpqrt2(ref m : c_int, ref n : c_int, ref l : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, t : [] complex(128), ref ldt : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ztpqrt2(ref m : c_int, ref n : c_int, ref l : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, t : [] complex(128), ref ldt : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_stprfb(ref side : c_char, ref trans : c_char, ref direct : c_char, ref storev : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref l : c_int, v : [] c_float, ref ldv : c_int, t : [] c_float, ref ldt : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, work : [] c_float, ref ldwork : c_int) : c_void_ptr;
+extern proc LAPACK_stprfb(ref side : c_char, ref trans : c_char, ref direct : c_char, ref storev : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref l : c_int, v : [] c_float, ref ldv : c_int, t : [] c_float, ref ldt : c_int, a : [] c_float, ref lda : c_int, b : [] c_float, ref ldb : c_int, work : [] c_float, ref ldwork : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dtprfb(ref side : c_char, ref trans : c_char, ref direct : c_char, ref storev : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref l : c_int, v : [] c_double, ref ldv : c_int, t : [] c_double, ref ldt : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, work : [] c_double, ref ldwork : c_int) : c_void_ptr;
+extern proc LAPACK_dtprfb(ref side : c_char, ref trans : c_char, ref direct : c_char, ref storev : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref l : c_int, v : [] c_double, ref ldv : c_int, t : [] c_double, ref ldt : c_int, a : [] c_double, ref lda : c_int, b : [] c_double, ref ldb : c_int, work : [] c_double, ref ldwork : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ctprfb(ref side : c_char, ref trans : c_char, ref direct : c_char, ref storev : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref l : c_int, v : [] complex(64), ref ldv : c_int, t : [] complex(64), ref ldt : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, work : [] c_float, ref ldwork : c_int) : c_void_ptr;
+extern proc LAPACK_ctprfb(ref side : c_char, ref trans : c_char, ref direct : c_char, ref storev : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref l : c_int, v : [] complex(64), ref ldv : c_int, t : [] complex(64), ref ldt : c_int, a : [] complex(64), ref lda : c_int, b : [] complex(64), ref ldb : c_int, work : [] c_float, ref ldwork : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ztprfb(ref side : c_char, ref trans : c_char, ref direct : c_char, ref storev : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref l : c_int, v : [] complex(128), ref ldv : c_int, t : [] complex(128), ref ldt : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, work : [] c_double, ref ldwork : c_int) : c_void_ptr;
+extern proc LAPACK_ztprfb(ref side : c_char, ref trans : c_char, ref direct : c_char, ref storev : c_char, ref m : c_int, ref n : c_int, ref k : c_int, ref l : c_int, v : [] complex(128), ref ldv : c_int, t : [] complex(128), ref ldt : c_int, a : [] complex(128), ref lda : c_int, b : [] complex(128), ref ldb : c_int, work : [] c_double, ref ldwork : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ssysv_rook(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_ssysv_rook(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_float, ref lda : c_int, ipiv : [] c_int, b : [] c_float, ref ldb : c_int, work : [] c_float, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_dsysv_rook(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_dsysv_rook(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] c_double, ref lda : c_int, ipiv : [] c_int, b : [] c_double, ref ldb : c_int, work : [] c_double, ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_csysv_rook(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_csysv_rook(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(64), ref lda : c_int, ipiv : [] c_int, b : [] complex(64), ref ldb : c_int, work : [] complex(64), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zsysv_rook(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_void_ptr;
+extern proc LAPACK_zsysv_rook(ref uplo : c_char, ref n : c_int, ref nrhs : c_int, a : [] complex(128), ref lda : c_int, ipiv : [] c_int, b : [] complex(128), ref ldb : c_int, work : [] complex(128), ref lwork : c_int, ref info : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_csyr(ref uplo : c_char, ref n : c_int, ref alpha : complex(64), x : [] complex(64), ref incx : c_int, a : [] complex(64), ref lda : c_int) : c_void_ptr;
+extern proc LAPACK_csyr(ref uplo : c_char, ref n : c_int, ref alpha : complex(64), x : [] complex(64), ref incx : c_int, a : [] complex(64), ref lda : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_zsyr(ref uplo : c_char, ref n : c_int, ref alpha : complex(128), x : [] complex(128), ref incx : c_int, a : [] complex(128), ref lda : c_int) : c_void_ptr;
+extern proc LAPACK_zsyr(ref uplo : c_char, ref n : c_int, ref alpha : complex(128), x : [] complex(128), ref incx : c_int, a : [] complex(128), ref lda : c_int) : c_ptr(void);
 
 @chpldoc.nodoc
-extern proc LAPACK_ilaver(ref vers_major : c_int, ref vers_minor : c_int, ref vers_patch : c_int) : c_void_ptr;
+extern proc LAPACK_ilaver(ref vers_major : c_int, ref vers_minor : c_int, ref vers_patch : c_int) : c_ptr(void);
 
 } // ClassicLAPACK
 /*

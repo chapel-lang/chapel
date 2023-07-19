@@ -3,6 +3,7 @@ use Time;
 
 class D {
   var s: single real;
+  proc init() {}
 }
 
 var d: unmanaged D = new unmanaged D();

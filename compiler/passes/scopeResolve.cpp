@@ -223,12 +223,15 @@ static void markGenerics() {
 
           bool anyGeneric = false;
           bool anyNonDefaultedGeneric = false;
+          bool anyDefaultedGeneric = false;
           for_fields(field, at) {
             bool hasDefault = false;
             if (at->fieldIsGeneric(field, hasDefault)) {
               anyGeneric = true;
               if (hasDefault == false)
                 anyNonDefaultedGeneric = true;
+              else
+                anyDefaultedGeneric = true;
             }
           }
 
@@ -236,6 +239,10 @@ static void markGenerics() {
             at->markAsGeneric();
             if (anyNonDefaultedGeneric == false)
               at->markAsGenericWithDefaults();
+            else if (anyDefaultedGeneric == true &&
+                     anyNonDefaultedGeneric == true)
+              at->markAsGenericWithSomeDefaults();
+
             changed = true;
           }
         }

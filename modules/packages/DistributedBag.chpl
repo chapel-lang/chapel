@@ -721,6 +721,17 @@ module DistributedBag {
 
     var nElems : atomic uint;
 
+    proc init(type eltType) {
+      this.eltType = eltType;
+    }
+    proc init=(other: BagSegment) {
+      this.eltType = other.eltType;
+      this.status = other.status.read();
+      this.headBlock = other.headBlock;
+      this.tailBlock = other.tailBlock;
+      this.nElems = other.nElems;
+    }
+
     inline proc isEmpty {
       return nElems.read() == 0;
     }

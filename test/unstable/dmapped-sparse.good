@@ -1,0 +1,3 @@
+dmapped-sparse.chpl:4: warning: sparse domains are unstable, their behavior is likely to change in the future
+dmapped-sparse.chpl:7: warning: 'dmapped' keyword is unstable, instead please use factory functions when available
+dmapped-sparse.chpl:10: error: done

@@ -340,7 +340,7 @@ module MemMove {
 
       if overlap {
         use IO;
-        throw new IllegalArgumentError("Arguments to 'moveArrayElements' alias the same data. Regions are '%t' and '%t'".format(dstRegion, srcRegion));
+        throw new IllegalArgumentError("Arguments to 'moveArrayElements' alias the same data. Regions are '%?' and '%?'".format(dstRegion, srcRegion));
       }
     }
   }
@@ -588,4 +588,3 @@ module MemMove {
 
 // MemMove;
 }
-

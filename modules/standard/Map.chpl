@@ -831,11 +831,16 @@ module Map {
     /* If the map doesn't contain a value at position `k` add one and
        set it to `v`. If the map already contains a value at position
        `k`, update it to the value `v`.
-     */
-    proc addOrSet(in k: keyType, in v: valType) {
+    */
+    proc addOrReplace(in k: keyType, in v: valType) {
       _enter(); defer _leave();
       var (found, slot) = table.findAvailableSlot(k);
       table.fillSlot(slot, k, v);
+    }
+
+    @deprecated(notes="'map.addOrSet' is deprecated. Please use 'map.addOrReplace' instead.")
+    proc addOrSet(in k: keyType, in v: valType) {
+      addOrReplace(k, v);
     }
 
     /*
