@@ -25,3 +25,5 @@ d4 = d1.exterior(0); // Overload 4
 d2 = d1.expand(0, 0);  // Testing Overload 2
 d3 = d1.expand( (0, 0)); // Overload 3
 d4 = d1.expand(0); // Overload 4
+
+var d5 = d1.orderToIndex(3);
