@@ -22,16 +22,16 @@ writeln(cstrc:complex(128));
 writeln(cstrE:string:E);
 writeln(cstrB:string:bool);
 
-for param i in 1..4 do writeln(vcstr:uint(4<<i));
-for param i in 1..4 do writeln(vcstr:int(4<<i));
+// for param i in 1..3 do writeln(vcstr:uint(4<<i)); // doesn't make sense for a ptr
+// for param i in 1..3 do writeln(vcstr:int(4<<i)); // doesn't make sense for a ptr
 writeln(vcstr:real(32));
 writeln(vcstr:real(64));
 writeln(vcstri:imag(32));
 writeln(vcstri:imag(64));
 writeln(vcstrc:complex(64));
 writeln(vcstrc:complex(128));
-writeln(vcstrE:string:E);
-writeln(vcstrB:string:bool);
+// writeln(vcstrE:string:E); // this cast doesn't make sense
+// writeln(vcstrB:string:bool); // this cast doesn't make sense
 
 for param i in 1..4 do writeln(str:uint(4<<i));
 for param i in 1..4 do writeln(str:int(4<<i));

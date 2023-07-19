@@ -52,14 +52,14 @@ module HTable {
     // This is defined in C_HDF5, but the definition there was causing isseus with
     // field_names, field_offset, field_types, so I define an overload there.
     // It's more than likely I was doing something silly
-    extern proc H5TBmake_table(table_title : c_string, file_id : hid_t, dset_name: c_string,
+    extern proc H5TBmake_table(table_title : c_ptrConst(c_char), file_id : hid_t, dset_name: c_ptrConst(c_char),
                                numFields : hsize_t, numRecords : hsize_t, type_size : hsize_t,
-                               field_names : c_array(c_string), field_offset : c_array(hsize_t),
+                               field_names : c_array(c_ptrConst(c_char)), field_offset : c_array(hsize_t),
                                field_types : c_array(hid_t),
                                chunk_size : hsize_t, fill_data : c_ptr(void), compress : c_int,
                                data : c_ptr(void));
     var meta = new H5MetaTable(R);
-    var cname = c_ptrToConst_helper(name):c_string;
+    var cname = name.c_str();
     var nfields = meta.nFields : hsize_t;
     var nrecords = arr.size: hsize_t;
     var type_size = meta.Rsize : hsize_t;
@@ -105,7 +105,7 @@ module HTable {
                                    field_sizes : c_array(c_size_t),
                                    data : c_ptr(void));
     var meta = new H5MetaTable(R);
-    var cname = c_ptrToConst_helper(name):c_string;
+    var cname = name.c_str();
     var type_size = meta.Rsize : hsize_t;
     var nrecords = arr.size: hsize_t;
     var data = if (nrecords==0) then nil else c_ptrTo(arr);
@@ -141,9 +141,9 @@ module HTable {
     extern proc H5TBget_table_info(loc_id : hid_t, table_name : c_string,
                                    nfields : c_ptr(hsize_t), nrecords : c_ptr(hsize_t));
     var meta = new H5MetaTable(R);
-    var cname = c_ptrToConst_helper(name):c_string;
+    var cname = name.c_str();
     var type_size = meta.Rsize : hsize_t;
-    var field_names = c_ptrToConst_helper(meta.nameList):c_string;
+    var field_names = meta.nameList.c_str();
     var nrecords, nfields : hsize_t;
     H5TBget_table_info(loc, cname, c_ptrTo(nfields), c_ptrTo(nrecords));
 
@@ -212,7 +212,7 @@ module HTable {
         } else {
           nameList += ","+fname;
         }
-        names[ii] = c_ptrToConst_helper(fname):c_string;
+        names[ii] = fname.c_str();
         offsets[ii] = c_offsetof(R, fname) : hsize_t;
         ref ifield = getField(r, ii);
         type fieldtype = ifield.type;

@@ -1,7 +1,7 @@
 use IO;
 use Sort;
 
-extern proc memcpy(x : [], b:c_string, len:int);
+extern proc memcpy(x : [], b:c_ptrConst(c_char), len:int);
 
 config const tableSize = 1 << 16;
 config const lineSize = 61;
@@ -134,7 +134,7 @@ proc write_count(data : [] uint(8), str : string) {
 
 proc string.toBytes() {
    var b : [1..this.numBytes] uint(8);
-   memcpy(b, c_ptrToConst_helper(this):c_string, this.numBytes);
+   memcpy(b, this.c_str(), this.numBytes);
    return b;
 }
 

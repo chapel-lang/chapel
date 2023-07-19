@@ -414,7 +414,7 @@ module Errors {
 
   proc chpl_error_type_name(err: borrowed Error) : string {
     var cid =  __primitive("getcid", err);
-    var nameC: c_string = __primitive("class name by id", cid);
+    var nameC = __primitive("class name by id", cid);
     var nameS: string;
     try! {
       nameS = string.createCopyingBuffer(nameC:c_ptrConst(c_char));
@@ -504,7 +504,7 @@ module Errors {
   proc chpl_uncaught_error(err: unmanaged Error) {
     extern proc chpl_error_preformatted(ptr:c_ptrConst(c_char));
 
-    const myFileC:c_string = __primitive("chpl_lookupFilename",
+    const myFileC = __primitive("chpl_lookupFilename",
                                          __primitive("_get_user_file"));
     var myFileS: string;
     try! {
@@ -512,7 +512,7 @@ module Errors {
     }
     const myLine = __primitive("_get_user_line");
 
-    const thrownFileC:c_string = __primitive("chpl_lookupFilename",
+    const thrownFileC = __primitive("chpl_lookupFilename",
                                              err.thrownFileId);
     var thrownFileS: string;
     try! {
@@ -523,7 +523,7 @@ module Errors {
     var s = "uncaught " + chpl_describe_error(err) +
             "\n  " + thrownFileS + ":" + thrownLine:string + ": thrown here" +
             "\n  " + myFileS + ":" + myLine:string + ": uncaught here";
-    chpl_error_preformatted(c_ptrToConst_helper(s));
+    chpl_error_preformatted(s.c_str());
   }
   // This is like the above, but it is only ever added by the
   // compiler. In case of iterator inlining (say), this call
@@ -597,7 +597,7 @@ module Errors {
   pragma "always propagate line file info"
   proc assert(test: bool) {
     if !test then
-      __primitive("chpl_error", c_ptrToConst_helper("assert failed"):c_string);
+      __primitive("chpl_error", "assert failed".c_str());
   }
 
 
@@ -619,7 +619,7 @@ module Errors {
   proc assert(test: bool, args...) {
     if !test {
       var tmpstring = "assert failed - " + chpl_stringify_wrapper((...args));
-      __primitive("chpl_error", c_ptrToConst_helper(tmpstring):c_string);
+      __primitive("chpl_error", tmpstring.c_str());
     }
   }
 
@@ -732,14 +732,14 @@ module Errors {
   pragma "function terminates program"
   pragma "always propagate line file info"
   proc halt() {
-    __primitive("chpl_error", c_ptrToConst_helper("halt reached"):c_string);
+    __primitive("chpl_error", "halt reached".c_str());
   }
 
   pragma "function terminates program"
   pragma "always propagate line file info"
   @chpldoc.nodoc  // documented in the varargs overload
   proc halt(msg:string) {
-    halt(c_ptrToConst_helper(msg.localize()):c_string);
+    halt(msg.localize().c_str());
   }
 
   /*
@@ -754,7 +754,7 @@ module Errors {
   pragma "always propagate line file info"
   proc halt(args...) {
     var tmpstring = "halt reached - " + chpl_stringify_wrapper((...args));
-    __primitive("chpl_error", c_ptrToConst_helper(tmpstring):c_string);
+    __primitive("chpl_error", tmpstring.c_str());
   }
 
   /*
@@ -763,7 +763,7 @@ module Errors {
   */
   pragma "always propagate line file info"
   proc warning(msg:string) {
-    __primitive("chpl_warning", c_ptrToConst_helper(msg.localize()):c_string);
+    __primitive("chpl_warning", msg.localize().c_str());
   }
 
   /*

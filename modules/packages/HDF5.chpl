@@ -3545,6 +3545,9 @@ module HDF5 {
         filenames.pushBack(f);
       }
     }
+    // TODO: this should check that it found any files and stop if none were
+    // found because the next operation (readAllNamedHDF5Files) gives a poor
+    // error message about an empty bounding box when no files are located.
     var fArray: [1..filenames.size] string;
     for (l, a) in zip(filenames, fArray) {
       a = l;
@@ -3565,16 +3568,16 @@ module HDF5 {
     var files: [BlockSpace] ArrayWrapper(eltType, rank);
     forall (f, name) in zip(files, filenames) {
       var locName = name; // copy this string to be local
-      var file_id = C_HDF5.H5Fopen(c_ptrToConst_helper(locName):c_ptrConst(c_char), C_HDF5.H5F_ACC_RDONLY, C_HDF5.H5P_DEFAULT);
+      var file_id = C_HDF5.H5Fopen(locName.c_str(), C_HDF5.H5F_ACC_RDONLY, C_HDF5.H5P_DEFAULT);
       var dims: [0..#rank] C_HDF5.hsize_t;
       var dsetRank: c_int;
 
-      C_HDF5.H5LTget_dataset_ndims(file_id, c_ptrToConst_helper(dsetName):c_ptrConst(c_char), dsetRank);
+      C_HDF5.H5LTget_dataset_ndims(file_id, dsetName.c_str(), dsetRank);
       if rank != dsetRank {
         halt("rank mismatch in file: " + name + " dataset: " + dsetName +
              rank:string + " != " + dsetRank:string);
       }
-      C_HDF5.HDF5_WAR.H5LTget_dataset_info_WAR(file_id, c_ptrToConst_helper(dsetName):c_ptrConst(c_char),
+      C_HDF5.HDF5_WAR.H5LTget_dataset_info_WAR(file_id, dsetName.c_str(),
                                                c_ptrTo(dims), nil, nil);
       var data: [0..# (* reduce dims)] eltType;
       readHDF5Dataset(file_id, dsetName, data);
@@ -3637,7 +3640,7 @@ module HDF5 {
     type eltType = data.eltType;
 
     const hdf5Type = getHDF5Type(eltType);
-    C_HDF5.H5LTread_dataset(file_id, c_ptrToConst_helper(dsetName):c_ptrConst(c_char),
+    C_HDF5.H5LTread_dataset(file_id, dsetName.c_str(),
                             hdf5Type, c_ptrTo(data));
   }
 
@@ -3655,11 +3658,6 @@ module HDF5 {
       when uint(64) do hdf5Type = C_HDF5.H5T_STD_U64LE;
       when real(32) do hdf5Type = C_HDF5.H5T_IEEE_F32LE;
       when real(64) do hdf5Type = C_HDF5.H5T_IEEE_F64LE;
-
-      when c_string {
-        hdf5Type = C_HDF5.H5Tcopy(C_HDF5.H5T_C_S1);
-        C_HDF5.H5Tset_size(hdf5Type, C_HDF5.H5T_VARIABLE);
-      }
 
       when c_ptrConst(c_char) {
         hdf5Type = C_HDF5.H5Tcopy(C_HDF5.H5T_C_S1);
@@ -3712,17 +3710,17 @@ module HDF5 {
       var fileExists: bool;
 
       if mode == Hdf5OpenMode.Truncate || !exists(filename) {
-        file_id = C_HDF5.H5Fcreate(c_ptrToConst_helper(filename):c_ptrConst(c_char), C_HDF5.H5F_ACC_TRUNC,
+        file_id = C_HDF5.H5Fcreate(filename.c_str(), C_HDF5.H5F_ACC_TRUNC,
                                    C_HDF5.H5P_DEFAULT, C_HDF5.H5P_DEFAULT);
       } else {
-        file_id = C_HDF5.H5Fopen(c_ptrToConst_helper(filename):c_ptrConst(c_char), C_HDF5.H5F_ACC_RDWR,
+        file_id = C_HDF5.H5Fopen(filename.c_str(), C_HDF5.H5F_ACC_RDWR,
                                  C_HDF5.H5P_DEFAULT);
       }
       var dims: [0..#rank] C_HDF5.hsize_t;
       for param i in 0..rank-1 {
         dims[i] = arr.D.dim(i).size: C_HDF5.hsize_t;
       }
-      C_HDF5.HDF5_WAR.H5LTmake_dataset_WAR(file_id, c_ptrToConst_helper(dsetName):c_ptrConst(c_char), rank,
+      C_HDF5.HDF5_WAR.H5LTmake_dataset_WAR(file_id, dsetName.c_str(), rank,
                                            c_ptrTo(dims),
                                            getHDF5Type(eltType),
                                            c_ptrTo(arr.A));
@@ -3751,19 +3749,19 @@ module HDF5 {
     where chunkShape.isRectangular() {
 
     param outRank = chunkShape.rank;
-    var file_id = C_HDF5.H5Fopen(c_ptrToConst_helper(filename):c_ptrConst(c_char),
+    var file_id = C_HDF5.H5Fopen(filename.c_str(),
                                  C_HDF5.H5F_ACC_RDONLY,
                                  C_HDF5.H5P_DEFAULT);
-    var dataset = C_HDF5.H5Dopen(file_id, c_ptrToConst_helper(dset):c_ptrConst(c_char),
+    var dataset = C_HDF5.H5Dopen(file_id, dset.c_str(),
                                  C_HDF5.H5P_DEFAULT);
     var dataspace = C_HDF5.H5Dget_space(dataset);
 
     var dsetRank: c_int;
 
-    C_HDF5.H5LTget_dataset_ndims(file_id, c_ptrToConst_helper(dset):c_ptrConst(c_char), dsetRank);
+    C_HDF5.H5LTget_dataset_ndims(file_id, dset.c_str(), dsetRank);
 
     var dims: [0..#dsetRank] C_HDF5.hsize_t;
-    C_HDF5.HDF5_WAR.H5LTget_dataset_info_WAR(file_id, c_ptrToConst_helper(dset):c_ptrConst(c_char),
+    C_HDF5.HDF5_WAR.H5LTget_dataset_info_WAR(file_id, dset.c_str(),
                                              c_ptrTo(dims), nil, nil);
 
     // Can't build a tuple with dsetRank because it isn't a param.
@@ -3964,7 +3962,7 @@ module HDF5 {
         if  ret == FAIL then
           halt("failed to store communicator information to property list");
 
-        var fid = H5Fcreate(c_ptrToConst_helper(locFilename):c_ptrConst(c_char), H5F_ACC_TRUNC,
+        var fid = H5Fcreate(locFilename.c_str(), H5F_ACC_TRUNC,
                             H5P_DEFAULT, accessTemplate);
         if fid == FAIL then
           halt("failed to create HDF5 file");
@@ -3984,7 +3982,7 @@ module HDF5 {
         if sid == FAIL then
           halt("failed to create dataspace");
 
-        var dataset = H5Dcreate1(fid, c_ptrToConst_helper(dsetName):c_ptrConst(c_char), hdf5Type,
+        var dataset = H5Dcreate1(fid, dsetName.c_str(), hdf5Type,
                                  sid, H5P_DEFAULT);
         if dataset == FAIL then
           halt("failed to create dataset");
@@ -4073,15 +4071,15 @@ module HDF5 {
       coforall loc in A.targetLocales() do on loc {
         // make sure the file name is local
         var filenameCopy = filename;
-        var file_id = C_HDF5.H5Fopen(c_ptrToConst_helper(filenameCopy):c_ptrConst(c_char),
+        var file_id = C_HDF5.H5Fopen(filenameCopy.c_str(),
                                      C_HDF5.H5F_ACC_RDONLY,
                                      C_HDF5.H5P_DEFAULT);
-        var dataset = C_HDF5.H5Dopen(file_id, c_ptrToConst_helper(dsetName):c_ptrConst(c_char),
+        var dataset = C_HDF5.H5Dopen(file_id, dsetName.c_str(),
                                      C_HDF5.H5P_DEFAULT);
         var dataspace = C_HDF5.H5Dget_space(dataset);
         var dsetRank: c_int;
 
-        C_HDF5.H5LTget_dataset_ndims(file_id, c_ptrToConst_helper(dsetName):c_ptrConst(c_char), dsetRank);
+        C_HDF5.H5LTget_dataset_ndims(file_id, dsetName.c_str(), dsetRank);
 
         var dims: [1..dsetRank] C_HDF5.hsize_t;
         {
@@ -4092,7 +4090,7 @@ module HDF5 {
                                                    c_ptrTo(dims), nil, nil);
           */
           use C_HDF5.HDF5_WAR;
-          H5LTget_dataset_info_WAR(file_id, c_ptrToConst_helper(dsetName):c_ptrConst(c_char),
+          H5LTget_dataset_info_WAR(file_id, dsetName.c_str(),
                                    c_ptrTo(dims), nil, nil);
         }
 

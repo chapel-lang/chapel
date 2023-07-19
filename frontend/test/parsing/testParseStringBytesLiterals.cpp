@@ -92,7 +92,7 @@ static void testCStringLiteral(Parser* parser,
   assert(strLit);
   assert(strLit->quoteStyle() == expectQuoteStyle);
   assert(strLit->value().str() == expectValue);
-  assert(guard.error(0)->message() == "the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst(\"string\")' or 'c_ptrTo(\"string\")' from the 'CTypes' module instead");
+  assert(guard.error(0)->message() == "the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst(\"string\")' or 'string.c_str()' from the 'CTypes' module instead");
   assert(guard.error(0)->kind() == ErrorBase::Kind::WARNING);
   assert(guard.realizeErrors()==1);
 }

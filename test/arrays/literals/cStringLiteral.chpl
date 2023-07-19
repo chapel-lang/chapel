@@ -1,6 +1,6 @@
 use CTypes;
 var A = [c"hi", c"there", c"everybody"];
-var B = [c_ptrToConst_helper("hi"), c_ptrToConst_helper("there"), c_ptrToConst_helper("everybody")];
+var B = ["hi".c_str(), "there".c_str(), "everybody".c_str()];
 
 writeln(A.type:string);
 

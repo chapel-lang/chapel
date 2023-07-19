@@ -5,10 +5,10 @@ use CTypes;
 extern proc foo(argc: int, argv: c_ptr(void));
 
 proc main(args: [] string) {
-  var c_args: [0..#args.size] c_string;
+  var c_args: [0..#args.size] c_ptrConst(c_char);
 
   for i in 0..#args.size do
-    c_args[i] = c_ptrToConst_helper(args[i]):c_string;
+    c_args[i] = args[i].c_str();
 
   foo(c_args.size, c_ptrTo(c_args));
 }

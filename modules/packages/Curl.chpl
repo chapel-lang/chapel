@@ -266,7 +266,7 @@ module Curl {
         err = curl_easy_setopt_ptr(curl, opt:CURLoption, tmp);
       } else if arg.type == string || arg.type == bytes {
         err = curl_easy_setopt_ptr(curl, opt:CURLoption,
-                                   c_ptrToConst_helper(arg.localize()):c_ptr(void));
+                                   arg.localize().c_str():c_ptr(void));
       }
     } else {
       // Must be CURLOPTTYPE_OFF_T or CURLOPTTYPE_BLOB
@@ -332,7 +332,7 @@ module Curl {
   proc slist.append(str:string) throws {
     var err: errorCode = 0;
     on this.home {
-      this.list = curl_slist_append(this.list, c_ptrToConst_helper(str.localize()));
+      this.list = curl_slist_append(this.list, str.localize().c_str());
       if this.list == nil then
         err = EINVAL;
     }
@@ -547,9 +547,9 @@ module Curl {
         length = this.length;
         return 0;
       }
-      override proc getpath(out path:c_ptrConst(int(8)), out len:int(64)):errorCode {
-        path = qio_strdup(this.url_c);
-        len = __primitive("string_length_bytes", url_c);
+      override proc getpath(out path:c_ptr(uint(8)), out len:int(64)):errorCode {
+        path = qio_strdup(this.url_c):c_ptr(uint(8));
+        len = strLen(url_c):int(64);
         return 0;
       }
 
@@ -711,8 +711,8 @@ module Curl {
 
     private proc startsWith(haystack:c_ptrConst(c_char), needle:c_ptrConst(c_char)) {
       extern proc strncmp(s1: c_ptrConst(c_char), s2: c_ptrConst(c_char), n:c_size_t):c_int;
-      var len = __primitive("string_length_bytes", needle);
-      return strncmp(haystack, needle, len:c_size_t) == 0;
+      const len = strLen(needle):uint(64);
+      return strncmp(haystack, needle, len) == 0;
     }
 
     private proc curl_write_string(contents: c_ptr(void), size:c_size_t, nmemb:c_size_t, userp: c_ptr(void)) {
@@ -745,7 +745,7 @@ module Curl {
       var buf:curl_str_buf;
       var ret = false;
 
-      if startsWith(fl.url_c, c_ptrToConst_helper("http://")) || startsWith(fl.url_c, c_ptrToConst_helper("https://")) {
+      if startsWith(fl.url_c, "http://") || startsWith(fl.url_c, "https://") {
         // We're on HTTP/HTTPS so we should look for byte ranges to see if we
         // can request them
 
@@ -771,7 +771,7 @@ module Curl {
 
         extern proc strstr(haystack:c_ptrConst(c_char), needle:c_ptrConst(c_char)):c_ptrConst(c_char);
         // Does this URL accept range requests?
-        if strstr(buf.mem:c_ptrConst(c_char), "Accept-Ranges: bytes".c_ptr_c_char()):c_ptr(void) == nil:c_ptr(void) {
+        if strstr(buf.mem:c_ptrConst(c_char), "Accept-Ranges: bytes"):c_ptr(void) == nil:c_ptr(void) {
           ret = false;
         } else {
           ret = true;
@@ -789,7 +789,7 @@ module Curl {
       }
 
       // FTP always supports CURLOPT_RESUME_FROM_LARGE
-      if startsWith(fl.url_c, c_ptrToConst_helper("ftp://")) || startsWith(fl.url_c, c_ptrToConst_helper("sftp://")) then
+      if startsWith(fl.url_c, "ftp://") || startsWith(fl.url_c, "sftp://") then
         ret = true;
 
       return ret;
@@ -1152,7 +1152,7 @@ module Curl {
 
       // Save the url requested
       var url_c = allocate(uint(8), url.size:c_size_t+1, clear=true);
-      memcpy(url_c:c_ptr(void), c_ptrToConst_helper(url.localize()):c_ptr(void), url.size.safeCast(c_size_t));
+      memcpy(url_c:c_ptr(void), url.localize().c_str():c_ptr(void), url.size.safeCast(c_size_t));
 
       fl.url_c = url_c:c_ptrConst(c_char);
 

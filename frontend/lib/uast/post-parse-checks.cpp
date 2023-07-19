@@ -1425,7 +1425,7 @@ void Visitor::checkExternBlockAtModuleScope(const ExternBlock* node) {
 }
 
 void Visitor::checkCStringLiteral(const CStringLiteral* node) {
-   warn(node, "the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst(\"string\")' or 'c_ptrTo(\"string\")' from the 'CTypes' module instead");
+   warn(node, "the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst(\"string\")' or 'string.c_str()' from the 'CTypes' module instead");
 }
 
 void Visitor::visit(const ExternBlock* node) {

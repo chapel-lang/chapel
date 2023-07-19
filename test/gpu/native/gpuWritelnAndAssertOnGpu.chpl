@@ -1,8 +1,8 @@
 use GPU;
 
 proc subFunc() {
-  gpuWriteln(c_ptrToConst_helper("hello from function called by GPU!"):c_string);
-  gpuWriteln(c_ptrToConst_helper("hello again from "):c_string, c_ptrToConst_helper(" function called by GPU!"):c_string);
+  gpuWriteln("hello from function called by GPU!".c_str());
+  gpuWriteln("hello again from ".c_str(), " function called by GPU!".c_str());
 }
 
 writeln("Writeln from CPU");
@@ -12,8 +12,8 @@ on here.gpus[0] {
     A[i] = i;
     assertOnGpu();
     if(i == 0) {
-      gpuWriteln(c_ptrToConst_helper("hello from the GPU!"):c_string);
-      gpuWriteln(c_ptrToConst_helper("hello from the GPU "):c_string, c_ptrToConst_helper("again!"):c_string);
+      gpuWriteln("hello from the GPU!".c_str());
+      gpuWriteln("hello from the GPU ".c_str(), "again!".c_str());
       subFunc();
     }
   }

@@ -23,8 +23,7 @@
 // Internal data structures module
 //
 module ChapelUtil {
-  private use ChapelStandard;
-  use CTypes;
+  private use ChapelStandard, CTypes;
 
   //
   // safeAdd: If a and b are of type t, return true iff no
@@ -127,10 +126,12 @@ module ChapelUtil {
 
   }
 
-  // TODO: How to get rid of this param c_string?
   // param s is used for error reporting
+  // TODO: we can't replace the param c_string here with a param ptr, so ideally
+  //  we'd use a chapel string type here instead, but that will require some
+  //  compiler changes to work.
   pragma "command line setting"
-  proc _command_line_cast(param s: c_string, type t, x:c_string) {
+  proc _command_line_cast(param s: chpl_c_string, type t, x:c_ptrConst(c_char)) {
     if isSyncType(t) then
       compilerError("config variables of sync type are not supported");
     if isSingleType(t) then
@@ -139,7 +140,7 @@ module ChapelUtil {
       compilerError("config variables of atomic type are not supported");
 
     try! {
-      var str = string.createCopyingBuffer(x:c_ptrConst(c_char));
+      var str = string.createCopyingBuffer(x);
       if t == string {
         return str;
       } else {
@@ -207,12 +208,9 @@ module ChapelUtil {
   // Support for module deinit functions.
   config param printModuleDeinitOrder = false;
 
-  // TODO: Removing c_string here requires changing some compiler generated
-  // code in resolution. Specifically we generate calls to this function
-  // in compiler/resolution/functionResolution.cpp:resolveSupportForModuleDeinits()
-  proc chpl_addModule(moduleName: c_string, deinitFun: c_fn_ptr) {
+  proc chpl_addModule(moduleName: chpl_c_string, deinitFun: c_fn_ptr) {
     chpl_moduleDeinitFuns =
-      new unmanaged chpl_ModuleDeinit(moduleName:c_ptrConst(c_char), deinitFun, chpl_moduleDeinitFuns);
+      new unmanaged chpl_ModuleDeinit(moduleName, deinitFun, chpl_moduleDeinitFuns);
   }
 
   export proc chpl_deinitModules() {
@@ -221,12 +219,12 @@ module ChapelUtil {
     extern proc chpl_execute_module_deinit(deinitFun:c_fn_ptr);
 
     if printModuleDeinitOrder then
-      printf(("Deinitializing Modules:\n").c_ptr_c_char());
+      printf("Deinitializing Modules:\n");
     var prev = chpl_moduleDeinitFuns;
     while prev {
       const curr = prev!;
       if printModuleDeinitOrder then
-        printf(("  %s\n").c_ptr_c_char(), curr.moduleName);
+        printf("  %s\n", curr.moduleName);
       chpl_execute_module_deinit(curr.deinitFun);
       prev = curr.prevModule;
       delete curr;

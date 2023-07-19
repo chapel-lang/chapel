@@ -24,8 +24,6 @@
  */
 module HaltWrappers {
 
-  use CTypes;
-
   //
   // Halt wrappers for cases where we want error-handling, but error-handling
   // isn't supported yet
@@ -97,7 +95,7 @@ module HaltWrappers {
   pragma "always propagate line file info"
   proc outOfMemoryHalt(s:string) {
     const err = "Out of memory allocating \"" + s + "\"";
-    __primitive("chpl_error", c_ptrToConst_helper(err.localize()):c_string);
+    __primitive("chpl_error", err.localize().c_str());
   }
 
 

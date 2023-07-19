@@ -647,7 +647,7 @@ static void externExportTypeError(FnSymbol* fn, Type* t) {
     }
 
     if (t == dtString)
-      USR_PRINT(fn, "use c_string instead");
+      USR_PRINT(fn, "use c_ptrConst(c_char) instead");
   }
 }
 

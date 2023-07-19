@@ -10,7 +10,7 @@ checkType("0123456789"[-1].type);
 checkType("0123456789"[5].type);
 checkType("0123456789"[6..9].type);
 
-const cs = c_ptrToConst_helper(s):c_string;
+const cs = s.c_str();
 
 checkType(c_string, cs[-1].type);
 checkType(c_string, cs[5].type);

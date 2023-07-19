@@ -9,7 +9,7 @@ var empty = "";
 s = empty;
 writeln(s.size);
 use CTypes;
-var cPtrString = c_ptrToConst_helper("");
+var cPtrString = "".c_str();
 var sFromPtr = string.createBorrowingBuffer(cPtrString);
 sFromPtr = empty;
 writeln(sFromPtr.size);

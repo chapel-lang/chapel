@@ -1,5 +1,4 @@
 module OuterModule {
-  use CTypes;
   // Tests basic external variables and inline functions
   // defined both within the extern "C" module and in an
   // included C header file. Also tests inclusion
@@ -17,7 +16,7 @@ module OuterModule {
   } }
 
   try {
-    writeln(string.createCopyingBuffer(C.greeting():c_ptrConst(c_char)));
+    writeln(string.createCopyingBuffer(C.greeting()));
   }
   catch e: DecodeError {
     writeln("Decode error creating string");
@@ -39,5 +38,5 @@ module OuterModule {
   //  at least one argument. I.e., printf must
   //  include at least one argument in addition
   //  to the format string.
-  C.printf(c_ptrToConst_helper("%s, world!\n"):c_string, C.greet_str);
+  C.printf("%s, world!\n", C.greet_str);
 }

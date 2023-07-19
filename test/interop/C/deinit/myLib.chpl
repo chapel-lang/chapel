@@ -2,8 +2,8 @@ use CTypes;
 
 var ItGoodFor = "absolutely nothing";
 
-export proc whatisItGoodFor(): c_string {
-  return c_ptrToConst_helper(ItGoodFor):c_string;
+export proc whatisItGoodFor(): c_ptrConst(c_char) {
+  return ItGoodFor.c_str();
 }
 
 proc deinit() {

@@ -67,7 +67,7 @@ proc test_ipaddr_sockaddr_ipv4(test: borrowed Test) throws {
   var host = "127.0.0.1";
   var port:uint(16) = 8000;
   var family = AF_INET;
-  socket_addr.set(c_ptrToConst_helper(host):c_string, port, family);
+  socket_addr.set(host.c_str(), port, family);
 
   var addr = new ipAddr(socket_addr);
   test.assertEqual(addr.family, IPFamily.IPv4);
@@ -80,7 +80,7 @@ proc test_ipaddr_sockaddr_ipv6(test: borrowed Test) throws {
   var host = "::1";
   var port:uint(16) = 8000;
   var family = AF_INET6;
-  socket_addr.set(c_ptrToConst_helper(host):c_string, port, family);
+  socket_addr.set(host.c_str(), port, family);
 
   var addr = new ipAddr(socket_addr);
   test.assertEqual(addr.family, IPFamily.IPv6);

@@ -47,7 +47,7 @@ module OuterModule {
   var space:c_ptr(c_int);
   setSpace(c_ptrTo(space));
 
-  var str:c_string;
+  var str:c_ptrConst(c_char);
   setString(c_ptrTo(str));
   try {
     writeln(string.createCopyingBuffer(str:c_ptrConst(c_char)));

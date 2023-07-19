@@ -5,6 +5,6 @@ proc my_type.doit() {
   writeln(string.createBorrowingBuffer(this));
 }
 
-var str = c_ptrToConst_helper("bla");
+var str = "bla".c_str();
 str.doit();
 

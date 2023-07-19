@@ -367,7 +367,7 @@ module NetCDF {
 
     extern proc nc_get_vlen_element(ncid : c_int, typeid1 : c_int, vlen_element : c_ptr(void), ref len : c_size_t, data : c_ptr(void)) : c_int;
 
-    extern proc nc_free_string(len : c_size_t, ref data : c_ptr(c_uchar)) : c_int;
+    extern proc nc_free_string(len : c_size_t, ref data : c_ptrConst(c_char)) : c_int;
 
     extern proc nc_inq_user_type(ncid : c_int, xtype : nc_type, name : c_ptrConst(c_char), ref size : c_size_t, ref base_nc_typep : nc_type, ref nfieldsp : c_size_t, ref classp : c_int) : c_int;
 
@@ -507,9 +507,9 @@ module NetCDF {
 
     extern proc nc_get_att_text(ncid : c_int, varid : c_int, name : c_ptrConst(c_char), ip : c_ptrConst(c_char)) : c_int;
 
-    extern proc nc_put_att_string(ncid : c_int, varid : c_int, name : c_ptrConst(c_char), len : c_size_t, ref op : c_ptr(c_uchar)) : c_int;
+    extern proc nc_put_att_string(ncid : c_int, varid : c_int, name : c_ptrConst(c_char), len : c_size_t, ref op : c_ptrConst(c_char)) : c_int;
 
-    extern proc nc_get_att_string(ncid : c_int, varid : c_int, name : c_ptrConst(c_char), ref ip : c_ptr(c_uchar)) : c_int;
+    extern proc nc_get_att_string(ncid : c_int, varid : c_int, name : c_ptrConst(c_char), ref ip : c_ptrConst(c_char)) : c_int;
 
     extern proc nc_put_att_uchar(ncid : c_int, varid : c_int, name : c_ptrConst(c_char), xtype : nc_type, len : c_size_t, ref op : c_uchar) : c_int;
 
@@ -623,9 +623,9 @@ module NetCDF {
 
     extern proc nc_get_var1_ulonglong(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref ip : c_ulonglong) : c_int;
 
-    extern proc nc_put_var1_string(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref op : c_ptr(c_uchar)) : c_int;
+    extern proc nc_put_var1_string(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref op : c_ptrConst(c_char)) : c_int;
 
-    extern proc nc_get_var1_string(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref ip : c_ptr(c_uchar)) : c_int;
+    extern proc nc_get_var1_string(ncid : c_int, varid : c_int, ref indexp : c_size_t, ref ip : c_ptrConst(c_char)) : c_int;
 
     extern proc nc_put_vara_text(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, op : c_ptrConst(c_char)) : c_int;
 
@@ -675,9 +675,9 @@ module NetCDF {
 
     extern proc nc_get_vara_ulonglong(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref ip : c_ulonglong) : c_int;
 
-    extern proc nc_put_vara_string(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref op : c_ptr(c_uchar)) : c_int;
+    extern proc nc_put_vara_string(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref op : c_ptrConst(c_char)) : c_int;
 
-    extern proc nc_get_vara_string(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref ip : c_ptr(c_uchar)) : c_int;
+    extern proc nc_get_vara_string(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref ip : c_ptrConst(c_char)) : c_int;
 
     extern proc nc_put_vars_text(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, op : c_ptrConst(c_char)) : c_int;
 
@@ -727,9 +727,9 @@ module NetCDF {
 
     extern proc nc_get_vars_ulonglong(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref ip : c_ulonglong) : c_int;
 
-    extern proc nc_put_vars_string(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref op : c_ptr(c_uchar)) : c_int;
+    extern proc nc_put_vars_string(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref op : c_ptrConst(c_char)) : c_int;
 
-    extern proc nc_get_vars_string(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref ip : c_ptr(c_uchar)) : c_int;
+    extern proc nc_get_vars_string(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref ip : c_ptrConst(c_char)) : c_int;
 
     extern proc nc_put_varm_text(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, op : c_ptrConst(c_char)) : c_int;
 
@@ -779,9 +779,9 @@ module NetCDF {
 
     extern proc nc_get_varm_ulonglong(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref ip : c_ulonglong) : c_int;
 
-    extern proc nc_put_varm_string(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref op : c_ptr(c_uchar)) : c_int;
+    extern proc nc_put_varm_string(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref op : c_ptrConst(c_char)) : c_int;
 
-    extern proc nc_get_varm_string(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref ip : c_ptr(c_uchar)) : c_int;
+    extern proc nc_get_varm_string(ncid : c_int, varid : c_int, ref startp : c_size_t, ref countp : c_size_t, ref stridep : c_ptrdiff, ref imapp : c_ptrdiff, ref ip : c_ptrConst(c_char)) : c_int;
 
     extern proc nc_put_var_text(ncid : c_int, varid : c_int, op : c_ptrConst(c_char)) : c_int;
 
@@ -831,9 +831,9 @@ module NetCDF {
 
     extern proc nc_get_var_ulonglong(ncid : c_int, varid : c_int, ref ip : c_ulonglong) : c_int;
 
-    extern proc nc_put_var_string(ncid : c_int, varid : c_int, ref op : c_ptr(c_uchar)) : c_int;
+    extern proc nc_put_var_string(ncid : c_int, varid : c_int, ref op : c_ptrConst(c_char)) : c_int;
 
-    extern proc nc_get_var_string(ncid : c_int, varid : c_int, ref ip : c_ptr(c_uchar)) : c_int;
+    extern proc nc_get_var_string(ncid : c_int, varid : c_int, ref ip : c_ptrConst(c_char)) : c_int;
 
     extern proc nc_put_att_ubyte(ncid : c_int, varid : c_int, name : c_ptrConst(c_char), xtype : nc_type, len : c_size_t, ref op : c_uchar) : c_int;
 

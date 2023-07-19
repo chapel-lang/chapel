@@ -50,7 +50,7 @@ module ChapelDebugPrint {
   proc chpl_debug_writeln(args...) {
     extern proc printf(fmt:c_ptrConst(c_char), f:c_ptrConst(c_char));
     var str = chpl_debug_stringify((...args));
-    printf(c_ptrToConst_helper("%s\n"), c_ptrToConst_helper(str));
+    printf("%s\n", str.c_str());
   }
 
   //
@@ -78,7 +78,7 @@ module ChapelDebugPrint {
       // from DefaultRectangular. This way of writing it works
       // around resolution ordering issues (such as stdout not
       // yet defined).
-      const file_cs : c_string = __primitive("chpl_lookupFilename",
+      const file_cs  = __primitive("chpl_lookupFilename",
                                         __primitive("_get_user_file"));
       var file: string;
       try! {
@@ -87,13 +87,13 @@ module ChapelDebugPrint {
       const line = __primitive("_get_user_line");
       var str = chpl_debug_stringify((...args));
       extern proc printf(fmt:c_ptrConst(c_char), f:c_ptrConst(c_char), ln:c_int, s:c_ptrConst(c_char));
-      printf(("CHPL TEST PAR (%s:%i): %s\n").c_ptr_c_char(), file_cs:c_ptrConst(c_char), line:c_int, str.c_ptr_c_char());
+      printf("CHPL TEST PAR (%s:%i): %s\n", file_cs, line:c_int, str.c_str());
     }
   }
   proc chpl__testParWriteln(args...) {
     if chpl__testParFlag && chpl__testParOn {
-      const file_cs : c_string = __primitive("chpl_lookupFilename",
-                                                 __primitive("_get_user_file"));
+      const file_cs  = __primitive("chpl_lookupFilename",
+                                        __primitive("_get_user_file"));
       var file: string;
       try! {
         file = string.createCopyingBuffer(file_cs:c_ptrConst(c_char));

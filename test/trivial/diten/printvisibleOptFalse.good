@@ -22,16 +22,15 @@ printvisibleOptFalse.chpl:3: Printing symbols visible from here:
   modules/minimal/internal/ChapelUtil.chpl:48: chpl_deinitModules
   modules/minimal/internal/IO.chpl:23: errorCode
   modules/minimal/internal/IO.chpl:24: qio_channel_ptr_t
-  modules/minimal/internal/IO.chpl:29: raw_c_void_ptr
   modules/minimal/internal/IO.chpl:31: chpl_qio_setup_plugin_channel
   modules/minimal/internal/IO.chpl:34: chpl_qio_read_atleast
   modules/minimal/internal/IO.chpl:37: chpl_qio_write
   modules/minimal/internal/IO.chpl:40: chpl_qio_channel_close
   modules/minimal/internal/IO.chpl:43: chpl_qio_filelength
-  modules/minimal/internal/IO.chpl:46: chpl_qio_getpath
-  modules/minimal/internal/IO.chpl:49: chpl_qio_fsync
-  modules/minimal/internal/IO.chpl:52: chpl_qio_get_chunk
-  modules/minimal/internal/IO.chpl:55: chpl_qio_get_locales_for_region
-  modules/minimal/internal/IO.chpl:58: chpl_qio_file_close
-  modules/minimal/internal/MemTracking.chpl:32: chpl_memTracking_returnConfigVals
+  modules/minimal/internal/IO.chpl:46: chpl_qio_fsync
+  modules/minimal/internal/IO.chpl:49: chpl_qio_get_chunk
+  modules/minimal/internal/IO.chpl:52: chpl_qio_get_locales_for_region
+  modules/minimal/internal/IO.chpl:55: chpl_qio_file_close
+  modules/minimal/internal/MemTracking.chpl:31: raw_c_void_ptr
+  modules/minimal/internal/MemTracking.chpl:33: chpl_memTracking_returnConfigVals
   printvisibleOptFalse.chpl:1: xyzSymbol

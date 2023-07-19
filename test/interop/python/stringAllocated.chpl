@@ -5,11 +5,11 @@ export proc g(size: int, ptr: c_ptr(uint(8))): int {
   if s.numBytes >= size {
     return -1;
   } else {
-    memcpy(ptr, c_ptrToConst_helper(s):c_string: c_ptr(void), s.numBytes);
+    memcpy(ptr, s.c_str(): c_ptr(void), s.numBytes);
     return s.numBytes;
   }
 }
 
-export proc writeStr(in x: c_string) {
+export proc writeStr(in x: c_ptrConst(c_char)) {
   writeln(string.createCopyingBuffer(x));
 }

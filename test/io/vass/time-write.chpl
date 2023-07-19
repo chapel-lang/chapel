@@ -74,28 +74,28 @@ extern proc cf_trial(n: int);
 extern proc cs_trial(n: int);
 
 proc lstr_trial() {
-  extern proc printf(format: c_string, arg...);
+  extern proc printf(format: c_ptrConst(c_char), arg...);
   for 1..n do
-    printf(c_ptrToConst_helper("%s"):c_string, "\n");
+    printf("%s", "\n");
 }
 
 proc lcs_trial() {
-  extern proc printf(format: c_string, arg...);
-  const c_newline_local: c_string = "\n";
+  extern proc printf(format: c_ptrConst(c_char), arg...);
+  const c_newline_local: c_ptrConst(c_char) = "\n";
   for 1..n do
     printf("%s", c_newline_local);
 }
 
 const str_newline_global = "\n";
 proc gstr_trial() {
-  extern proc printf(format: c_string, arg...);
+  extern proc printf(format: c_ptrConst(c_char), arg...);
   for 1..n do
-    printf("%s", c_ptrToConst_helper(str_newline_global):c_string);
+    printf("%s", str_newline_global.c_str());
 }
 
-const c_newline_global: c_string = "\n";
+const c_newline_global: c_ptrConst(c_char) = "\n";
 proc gcs_trial() {
-  extern proc printf(format: c_string, arg...);
+  extern proc printf(format: c_ptrConst(c_char), arg...);
   for 1..n do
     printf("%s", c_newline_global);
 }

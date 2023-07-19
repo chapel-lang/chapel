@@ -266,10 +266,6 @@ module GMP {
 
   extern proc mpz_set_d(ref rop: mpz_t, op: c_double);
 
-
-  @deprecated("the type 'c_string' is deprecated; use the variant of 'mpz_set_str' that takes a 'c_ptrConst(c_char)' instead")
-  extern proc mpz_set_str(ref rop: mpz_t, str: c_string, base: c_int);
-
   extern proc mpz_set_str(ref rop: mpz_t, str: c_ptrConst(c_char), base: c_int);
 
   extern proc mpz_swap(ref rop1: mpz_t, ref rop2: mpz_t);
@@ -287,11 +283,6 @@ module GMP {
 
   extern proc mpz_init_set_d(ref rop: mpz_t, op: c_double);
 
-  @deprecated("the type 'c_string' is deprecated; use the variant of 'mpz_init_set_str' that takes a 'c_ptrConst(c_char)' instead")
-  extern proc mpz_init_set_str(ref rop: mpz_t,
-                               str: c_string,
-                               base: c_int) : c_int;
-
   extern proc mpz_init_set_str(ref rop: mpz_t,
                                str: c_ptrConst(c_char),
                                base: c_int) : c_int;
@@ -308,11 +299,6 @@ module GMP {
 
   extern proc mpz_get_d_2exp(ref exp: c_long,
                              const ref op: mpz_t) : c_double;
-
-  @deprecated("the type 'c_string' is deprecated; use the variant of 'mpz_get_str' that takes and returns a 'c_ptrConst(c_char)' instead")
-  extern proc mpz_get_str(str: c_string,
-                          base: c_int,
-                          const ref op: mpz_t) : c_string;
 
   extern proc mpz_get_str(str: c_ptrConst(c_char),
                           base: c_int,
@@ -888,12 +874,6 @@ module GMP {
   extern proc mpf_set_q(ref rop: mpf_t,
                         const ref op: mpz_t);
 
-
-  @deprecated("the type 'c_string' is deprecated; use the variant of 'mpf_set_str' that takes a 'c_ptrConst(c_char)' instead")
-  extern proc mpf_set_str(ref rop: mpz_t,
-                          str: c_string,
-                          base: c_int);
-
   extern proc mpf_set_str(ref rop: mpz_t,
                           str: c_ptrConst(c_char),
                           base: c_int);
@@ -1138,22 +1118,13 @@ module GMP {
   //
   // printf/scanf
   //
-  @deprecated("the type 'c_string' is deprecated; use the variant of 'gmp_printf' that takes a 'c_ptrConst(c_char)' instead")
-  extern proc gmp_printf(fmt: c_string, arg...);
-
-  @deprecated("the type 'c_string' is deprecated; use the variant of 'gmp_fprintf' that takes a 'c_ptrConst(c_char)' instead")
-  extern proc gmp_fprintf(fp: c_FILE, fmt: c_string, arg...);
+  extern proc gmp_printf(fmt: c_ptrConst(c_char), arg...);
 
   extern proc gmp_fprintf(fp: c_FILE, fmt: c_ptrConst(c_char), arg...);
 
-  extern proc gmp_printf(fmt: c_ptrConst(c_char), arg...);
-
   pragma "last resort"
   @deprecated(notes="the '_file' type is deprecated; use the variant of 'gmp_fprintf' that takes a 'c_FILE'")
-  extern proc gmp_fprintf(fp: _file, fmt: c_string, arg...);
-
-  @deprecated("the type 'c_string' is deprecated; use the variant of 'gmp_asprintf' that takes a 'c_ptrConst(c_char)' instead")
-  extern proc gmp_asprintf(ref ret: c_string, fmt: c_string, arg...);
+  extern proc gmp_fprintf(fp: _file, fmt: c_ptrConst(c_char), arg...);
 
   extern proc gmp_asprintf(ref ret: c_ptr(c_uchar), fmt: c_ptrConst(c_char), arg...);
 
@@ -1237,10 +1208,8 @@ module GMP {
   private extern proc
   chpl_gmp_randstate_same_algorithm(a:gmp_randstate_t, b:gmp_randstate_t):c_int;
 
-  // TODO: How to deprecate this while adding the overload that returns a c_ptrConst(c_char)?
   /* Get an mpz_t as a string */
   pragma "chpldoc ignore chpl prefix"
-  // @deprecated("the type 'c_string' is deprecated; use the variant of 'chpl_gmp_mpz_get_str' that returns a 'c_ptrConst(c_char)' instead")
   extern proc chpl_gmp_mpz_get_str(base: c_int, const ref x: mpz_t) : c_ptrConst(c_char);
 
   class GMPRandom {

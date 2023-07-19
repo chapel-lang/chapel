@@ -92,7 +92,7 @@ module MemTracking
         var local_memLeaksByDesc = memLeaksByDesc;
         // Intentionally leak the string to persist the underlying buffer
         local_memLeaksByDesc.isOwned = false;
-        ret_memLeaksByDesc = c_ptrToConst_helper(local_memLeaksByDesc);
+        ret_memLeaksByDesc = local_memLeaksByDesc.c_str();
       } else {
         ret_memLeaksByDesc = nil;
       }
@@ -101,7 +101,7 @@ module MemTracking
         var local_memLog = memLog;
         // Intentionally leak the string to persist the underlying buffer
         local_memLog.isOwned = false;
-        ret_memLog = c_ptrToConst_helper(local_memLog);
+        ret_memLog = local_memLog.c_str();
       } else {
         ret_memLog = nil;
       }
@@ -110,16 +110,15 @@ module MemTracking
         var local_memLeaksLog = memLeaksLog;
         // Intentionally leak the string to persist the underlying buffer
         local_memLeaksLog.isOwned = false;
-        ret_memLeaksLog = c_ptrToConst_helper(local_memLeaksLog);
+        ret_memLeaksLog = local_memLeaksLog.c_str();
       } else {
         ret_memLeaksLog = nil;
       }
 
      } else {
-       ret_memLeaksByDesc = c_ptrToConst_helper(memLeaksByDesc);
-       ret_memLog = c_ptrToConst_helper(memLog);
-       ret_memLeaksLog = c_ptrToConst_helper(memLeaksLog);
-
+      ret_memLeaksByDesc = memLeaksByDesc.c_str();
+      ret_memLog = memLog.c_str();
+      ret_memLeaksLog = memLeaksLog.c_str();
     }
   }
 }

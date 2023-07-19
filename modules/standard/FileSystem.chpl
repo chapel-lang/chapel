@@ -184,7 +184,7 @@ proc locale.chdir(name: string) throws {
 
   var err: errorCode = 0;
   on this {
-    err = chpl_fs_chdir(c_ptrToConst_helper(unescape(name)));
+    err = chpl_fs_chdir(unescape(name).c_str());
   }
   if err then try ioerror(err, "in chdir", name);
 }
@@ -211,7 +211,7 @@ proc locale.chdir(name: string) throws {
 proc chmod(name: string, mode: int) throws {
   extern proc chpl_fs_chmod(name: c_ptrConst(c_char), mode: int): errorCode;
 
-  var err = chpl_fs_chmod(c_ptrToConst_helper(unescape(name)), mode);
+  var err = chpl_fs_chmod(unescape(name).c_str(), mode);
   if err then try ioerror(err, "in chmod", name);
 }
 
@@ -233,7 +233,7 @@ proc chmod(name: string, mode: int) throws {
 proc chown(name: string, uid: int, gid: int) throws {
   extern proc chpl_fs_chown(name: c_ptrConst(c_char), uid: c_int, gid: c_int):errorCode;
 
-  var err = chpl_fs_chown(c_ptrToConst_helper(unescape(name)), uid:c_int, gid:c_int);
+  var err = chpl_fs_chown(unescape(name).c_str(), uid:c_int, gid:c_int);
   if err then try ioerror(err, "in chown", name);
 }
 
@@ -275,7 +275,7 @@ proc copy(src: string, dest: string, metadata: bool = false, permissions: bool =
       extern proc chpl_fs_viewmode(ref result:c_int, name: c_ptrConst(c_char)): errorCode;
 
       var ret:c_int;
-      var err = chpl_fs_viewmode(ret, c_ptrToConst_helper(unescape(name)));
+      var err = chpl_fs_viewmode(ret, unescape(name).c_str());
       if err then try ioerror(err, "in getMode", name);
       return ret;
     }
@@ -283,7 +283,7 @@ proc copy(src: string, dest: string, metadata: bool = false, permissions: bool =
     proc chmod(name: string, mode: int) throws {
       extern proc chpl_fs_chmod(name: c_ptrConst(c_char), mode: int): errorCode;
 
-      var err = chpl_fs_chmod(c_ptrToConst_helper(unescape(name)), mode);
+      var err = chpl_fs_chmod(unescape(name).c_str(), mode);
       if err then try ioerror(err, "in chmod", name);
     }
 
@@ -333,8 +333,8 @@ proc copy(src: string, dest: string, metadata: bool = false, permissions: bool =
 
     // Copies the access time, and time of last modification.
     // Does not copy uid, gid, or mode
-    var err = chpl_fs_copy_metadata(c_ptrToConst_helper(unescape(src)),
-                                    c_ptrToConst_helper(unescape(dest)));
+    var err = chpl_fs_copy_metadata(unescape(src).c_str(),
+                                    unescape(dest).c_str());
     if err then try ioerror(err, "in copy(" + src + ", " + dest + ")");
 
     // Get uid and gid from src
@@ -535,7 +535,7 @@ private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=fa
 
   // Create dest
   var oldMode:c_int;
-  var err = chpl_fs_viewmode(oldMode, c_ptrToConst_helper(unescape(src)));
+  var err = chpl_fs_viewmode(oldMode, unescape(src).c_str());
   if err then try ioerror(err, "in copyTreeHelper", src);
 
   try mkdir(dest, mode=oldMode, parents=true);
@@ -593,12 +593,12 @@ private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=fa
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc locale.cwd(): string throws {
-  extern proc chpl_fs_cwd(ref working_dir:c_ptr(c_uchar)):errorCode;
+  extern proc chpl_fs_cwd(ref working_dir:c_ptrConst(c_char)):errorCode;
 
   var ret:string;
   var err: errorCode = 0;
   on this {
-    var tmp:c_ptr(c_uchar);
+    var tmp:c_ptrConst(c_char);
     // c_strings can't cross on statements.
     err = chpl_fs_cwd(tmp);
     try! {
@@ -635,7 +635,7 @@ proc exists(name: string): bool throws {
   }
 
   var ret:c_int;
-  var err = chpl_fs_exists(ret, c_ptrToConst_helper(unescape(name)));
+  var err = chpl_fs_exists(ret, unescape(name).c_str());
   if err then try ioerror(err, "in exists");
   return ret != 0;
 }
@@ -739,7 +739,7 @@ proc getGid(name: string): int throws {
   extern proc chpl_fs_get_gid(ref result: c_int, filename: c_ptrConst(c_char)): errorCode;
 
   var result: c_int;
-  var err = chpl_fs_get_gid(result, c_ptrToConst_helper(unescape(name)));
+  var err = chpl_fs_get_gid(result, unescape(name).c_str());
   if err then try ioerror(err, "in getGid");
   return result;
 }
@@ -762,7 +762,7 @@ proc getMode(name: string): int throws {
   extern proc chpl_fs_viewmode(ref result:c_int, name: c_ptrConst(c_char)): errorCode;
 
   var ret:c_int;
-  var err = chpl_fs_viewmode(ret, c_ptrToConst_helper(unescape(name)));
+  var err = chpl_fs_viewmode(ret, unescape(name).c_str());
   if err then try ioerror(err, "in getMode", name);
   return ret;
 }
@@ -781,7 +781,7 @@ proc getFileSize(name: string): int throws {
   extern proc chpl_fs_get_size(ref result: int, filename: c_ptrConst(c_char)):errorCode;
 
   var result: int;
-  var err = chpl_fs_get_size(result, c_ptrToConst_helper(unescape(name)));
+  var err = chpl_fs_get_size(result, unescape(name).c_str());
   if err then try ioerror(err, "in getFileSize", name);
   return result;
 }
@@ -806,7 +806,7 @@ proc getUid(name: string): int throws {
   extern proc chpl_fs_get_uid(ref result: c_int, filename: c_ptrConst(c_char)): errorCode;
 
   var result: c_int;
-  var err = chpl_fs_get_uid(result, c_ptrToConst_helper(unescape(name)));
+  var err = chpl_fs_get_uid(result, unescape(name).c_str());
   if err then try ioerror(err, "in getUid");
   return result;
 }
@@ -831,7 +831,7 @@ private module GlobWrappers {
                           ref ret_glob: glob_t): c_int;
 
     const GLOB_NOFLAGS = 0: c_int;
-    const err = chpl_glob(c_ptrToConst_helper(unescape(pattern)), GLOB_NOFLAGS, ret_glob);
+    const err = chpl_glob(unescape(pattern).c_str(), GLOB_NOFLAGS, ret_glob);
 
     // When no flags are being passed, glob can only fail with GLOB_NOMATCH or
     // GLOB_NOSPACE. GLOB_NOMATCH is fine and will just result in a 0 length
@@ -969,7 +969,7 @@ proc isDir(name:string):bool throws {
   var doesExist = try exists(name);
   if !doesExist then return false;
 
-  var err = chpl_fs_is_dir(ret, c_ptrToConst_helper(unescape(name)));
+  var err = chpl_fs_is_dir(ret, unescape(name).c_str());
   if err then try ioerror(err, "in isDir", name);
   return ret != 0;
 }
@@ -994,7 +994,7 @@ proc isFile(name:string):bool throws {
   var doesExist = try exists(name);
   if !doesExist then return false;
 
-  var err = chpl_fs_is_file(ret, c_ptrToConst_helper(unescape(name)));
+  var err = chpl_fs_is_file(ret, unescape(name).c_str());
   if err then try ioerror(err, "in isFile", name);
   return ret != 0;
 }
@@ -1024,7 +1024,7 @@ proc isSymlink(name: string): bool throws {
   }
 
   var ret:c_int;
-  var err = chpl_fs_is_link(ret, c_ptrToConst_helper(unescape(name)));
+  var err = chpl_fs_is_link(ret, unescape(name).c_str());
   if err then try ioerror(err, "in isSymlink", name);
   return ret != 0;
 }
@@ -1059,7 +1059,7 @@ proc isMount(name: string): bool throws {
   if doesExistFile then return false;
 
   var ret:c_int;
-  var err = chpl_fs_is_mount(ret, c_ptrToConst_helper(unescape(name)));
+  var err = chpl_fs_is_mount(ret, unescape(name).c_str());
   if err then try ioerror(err, "in isMount", name);
   return ret != 0;
 }
@@ -1112,7 +1112,7 @@ iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
     return chpl_rt_direntptr_getname(this);
   }
 
-  var dir: DIRptr = opendir(c_ptrToConst_helper(unescape(path)));
+  var dir: DIRptr = opendir(unescape(path).c_str());
   if (dir != nil) {
     var ent: direntptr = readdir(dir);
     while (ent != nil) {
@@ -1147,7 +1147,7 @@ iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
     closedir(dir);
   } else {
     extern proc perror(s: c_ptrConst(c_char));
-    perror(c_ptrToConst_helper("error in listDir(): " + path));
+    perror(("error in listDir(): " + path).c_str());
   }
 }
 
@@ -1188,7 +1188,7 @@ proc mkdir(name: string, mode: int = 0o777, parents: bool=false) throws {
   if name.isEmpty() then
     try ioerror(ENOENT:errorCode, "mkdir called with illegal path: '" + name + "'");
 
-  var err = chpl_fs_mkdir(c_ptrToConst_helper(unescape(name)), mode, parents);
+  var err = chpl_fs_mkdir(unescape(name).c_str(), mode, parents);
   if err then try ioerror(err, "in mkdir", name);
 }
 
@@ -1258,8 +1258,8 @@ proc moveDir(src: string, dest: string) throws {
 proc rename(oldname: string, newname: string) throws {
   extern proc chpl_fs_rename(oldname: c_ptrConst(c_char), newname: c_ptrConst(c_char)):errorCode;
 
-  var err = chpl_fs_rename(c_ptrToConst_helper(unescape(oldname)),
-                           c_ptrToConst_helper(unescape(newname)));
+  var err = chpl_fs_rename(unescape(oldname).c_str(),
+                           unescape(newname).c_str());
   if err then try ioerror(err, "in rename", oldname);
 }
 
@@ -1273,7 +1273,7 @@ proc rename(oldname: string, newname: string) throws {
 proc remove(name: string) throws {
   extern proc chpl_fs_remove(name: c_ptrConst(c_char)):errorCode;
 
-  var err = chpl_fs_remove(c_ptrToConst_helper(unescape(name)));
+  var err = chpl_fs_remove(unescape(name).c_str());
   if err then try ioerror(err, "in remove", name);
 }
 
@@ -1353,8 +1353,8 @@ proc sameFile(file1: string, file2: string): bool throws {
                                       file1: c_ptrConst(c_char), file2: c_ptrConst(c_char)): errorCode;
 
   var ret:c_int;
-  var err = chpl_fs_samefile_string(ret, c_ptrToConst_helper(unescape(file1)),
-                                         c_ptrToConst_helper(unescape(file2)));
+  var err = chpl_fs_samefile_string(ret, unescape(file1).c_str(),
+                                         unescape(file2).c_str());
   if err then try ioerror(err, "in sameFile(" + file1 + ", " + file2 + ")");
   return ret != 0;
 }
@@ -1407,8 +1407,8 @@ proc sameFile(file1: file, file2: file): bool throws {
 proc symlink(oldName: string, newName: string) throws {
   extern proc chpl_fs_symlink(orig: c_ptrConst(c_char), linkName: c_ptrConst(c_char)): errorCode;
 
-  var err = chpl_fs_symlink(unescape(oldName).c_ptr_c_char(),
-                            unescape(newName).c_ptr_c_char());
+  var err = chpl_fs_symlink(unescape(oldName).c_str(),
+                            unescape(newName).c_str());
   if err then try ioerror(err, "in symlink " + oldName, newName);
 }
 

@@ -35,7 +35,7 @@ use Regex;
 /* Gets environment variables for spawn commands */
 proc getEnv(name: string): string {
   extern proc getenv(name : c_ptrConst(c_char)) : c_ptrConst(c_char);
-  var cname = c_ptrToConst_helper(name);
+  var cname = name.c_str();
   var value = getenv(cname);
   return string.createCopyingBuffer(value);
 }
@@ -430,7 +430,7 @@ proc getLastModified(filename: string) : int {
   extern proc sys_stat(filename: c_ptrConst(c_char), ref chpl_stat): c_int;
 
   var file_buf: chpl_stat;
-  var file_path = c_ptrToConst_helper(filename);
+  var file_path = filename.c_str();
 
   if (sys_stat(file_path, file_buf) == 0) {
     return file_buf.st_mtim.tv_sec;

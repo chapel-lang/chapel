@@ -44,7 +44,7 @@ module OuterModule {
   use CTypes;
 
   var a: C.st;
-  a.c = c_ptrToConst_helper("a string"):c_string;
+  a.c = "a string".c_str();
   a.foo = 897234;
 
   var b: c_ptr(C.st) = get_struct_ref();

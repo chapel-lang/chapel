@@ -11,11 +11,11 @@ const x = f(256);
 
 startVerboseComm();
 
-extern proc printf(fmt: c_string, x...);
+extern proc printf(fmt: c_ptrConst(c_char), x...);
 
 on Locales(1) {
   for param i in 0..255 do
-    printf("%s\n", c_ptrToConst_helper(x(i):string):c_string);
+    printf("%s\n", (x(i):string).c_str());
 }
 
 stopVerboseComm();

@@ -107,19 +107,19 @@ proc WriteOutput(ref arr_in: [?D] real(rp), varName : string, units : string, i 
     var xName = "x";
 
   /* Create the file. */
-    extern proc nc_create(path : c_string, cmode : c_int, ncidp : c_ptr(c_int)) : c_int;
+    extern proc nc_create(path : c_ptrConst(c_char), cmode : c_int, ncidp : c_ptr(c_int)) : c_int;
     nc_create( filename.c_str(), NC_CLOBBER, c_ptrTo(ncid));
 
   /* Define the dimensions. The record dimension is defined to have
      unlimited length - it can grow as needed. In this example it is
      the time dimension.*/
-    extern proc nc_def_dim(ncid : c_int, name : c_string, len : c_size_t, idp : c_ptr(c_int)) : c_int;
+    extern proc nc_def_dim(ncid : c_int, name : c_ptrConst(c_char), len : c_size_t, idp : c_ptr(c_int)) : c_int;
     nc_def_dim(ncid, timeName.c_str(), 1 : c_size_t, time_dimid);
     nc_def_dim(ncid, yName.c_str(), shape[0] : c_size_t, y_dimid);
     nc_def_dim(ncid, xName.c_str(), shape[1] : c_size_t, x_dimid);
 
   /* Define the coordinate variables. */
-    extern proc nc_def_var(ncid : c_int, name : c_string, xtype : nc_type, ndims : c_int, dimidsp : c_ptr(c_int), varidp : c_ptr(c_int)) : c_int;
+    extern proc nc_def_var(ncid : c_int, name : c_ptrConst(c_char), xtype : nc_type, ndims : c_int, dimidsp : c_ptr(c_int), varidp : c_ptr(c_int)) : c_int;
     if (rp == 64) {
       nc_def_var(ncid, timeName.c_str(), NC_DOUBLE, 1 : c_int, c_ptrTo(time_dimid), c_ptrTo(time_varid));
       nc_def_var(ncid, yName.c_str(), NC_DOUBLE, 1 : c_int, c_ptrTo(y_dimid), c_ptrTo(y_varid));
@@ -131,7 +131,7 @@ proc WriteOutput(ref arr_in: [?D] real(rp), varName : string, units : string, i 
     }
 
   /* Assign units attributes to coordinate variables. */
-    extern proc nc_put_att_text(ncid : c_int, varid : c_int, name : c_string, len : c_size_t, op : c_string) : c_int;
+    extern proc nc_put_att_text(ncid : c_int, varid : c_int, name : c_ptrConst(c_char), len : c_size_t, op : c_ptrConst(c_char)) : c_int;
     att_text = "timesteps";
     nc_put_att_text(ncid, time_varid, "units".c_str(), att_text.numBytes : c_size_t, att_text.c_str());
     att_text = "meters";
@@ -175,7 +175,7 @@ proc WriteOutput(ref arr_in: [?D] real(rp), varName : string, units : string, i 
   varid = 3 : c_int;
 
   /* Declaration of nc_open */
-    extern proc nc_open(path : c_string, mode : c_int, ncidp : c_ptr(c_int)) : c_int;
+    extern proc nc_open(path : c_ptrConst(c_char), mode : c_int, ncidp : c_ptr(c_int)) : c_int;
   // Open the file
     nc_open( filename.c_str() , NC_WRITE, c_ptrTo(ncid));
 
@@ -231,13 +231,13 @@ proc read_initial_state(ref q_in : [?D] real(rp)) {
 
   // Open the file
   // (1)  int nc_open(const char* path, int mode,     int* ncidp)
-  extern proc nc_open(path : c_string, mode : c_int, ncidp : c_ptr(c_int)) : c_int;
+  extern proc nc_open(path : c_ptrConst(c_char), mode : c_int, ncidp : c_ptr(c_int)) : c_int;
   nc_open(filename.c_str(), NC_NOWRITE, c_ptrTo(ncid));
 
   // Get the variable ID
   //
   //      int nc_inq_varid(int ncid,    const char* name,      int* varidp)
-  extern proc nc_inq_varid(ncid: c_int, varName: c_string, varid: c_ptr(c_int));
+  extern proc nc_inq_varid(ncid: c_int, varName: c_ptrConst(c_char), varid: c_ptr(c_int));
   nc_inq_varid(ncid, varName.c_str(), c_ptrTo(varid));
 
   var dimids : [0..#ndims] c_int;
@@ -342,8 +342,8 @@ proc read_background_state(filename : string) {
   var varid : c_int;
 
   /* Declarations for the functions we will need */
-    extern proc nc_open(path : c_string, mode : c_int, ncidp : c_ptr(c_int)) : c_int;
-    extern proc nc_inq_varid(ncid: c_int, varName: c_string, varid: c_ptr(c_int));
+    extern proc nc_open(path : c_ptrConst(c_char), mode : c_int, ncidp : c_ptr(c_int)) : c_int;
+    extern proc nc_inq_varid(ncid: c_int, varName: c_ptrConst(c_char), varid: c_ptr(c_int));
     extern proc nc_get_vara_double(ncid : c_int, varid : c_int, startp : c_ptr(c_size_t), countp : c_ptr(c_size_t), ip : c_ptr(real(64))) : c_int;
     extern proc nc_get_vara_float(ncid : c_int, varid : c_int, startp : c_ptr(c_size_t), countp : c_ptr(c_size_t), ip : c_ptr(real(32))) : c_int;
 

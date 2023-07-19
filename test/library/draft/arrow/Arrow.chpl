@@ -7,7 +7,7 @@
 
   // Temporary Error caller for convenience.
   inline proc printGError(msg: string, error: GErrorPtr){
-    g_print(c_ptrToConst_helper("%s %s\n"):c_string: c_ptr(gchar), c_ptrToConst_helper(msg):c_string, error.deref().message);
+    g_print("%s %s\n".c_str(): c_ptr(gchar), msg.c_str(), error.deref().message);
     g_error_free(error);
   }
 
@@ -137,7 +137,7 @@
     var retval: c_ptr(GArrowStringArray);
     if (success) {
       var strArrLen: gint64 = arr.size: gint64;
-      var strValArr = [val in arr] c_ptrToConst_helper(val):c_string : c_ptr(gchar);
+      var strValArr = [val in arr] val.c_str() : c_ptr(gchar);
       var strValidityArrLen: gint64 = strArrLen;
       success = garrow_string_array_builder_append_strings(
           builder, c_ptrTo(strValArr), strArrLen, c_ptrTo(validity), strValidityArrLen, c_ptrTo(error));
@@ -218,7 +218,7 @@
     for param i in 1..n by 2{
       // Building the (column)
       var col: c_ptr(GArrowField) = garrow_field_new(
-                              c_ptrToConst_helper(args[i-1]):c_string: c_ptr(gchar),
+                              args[i-1].c_str(): c_ptr(gchar),
                               garrow_array_get_value_data_type(args[i].val: c_ptr(GArrowArray)));
 
       // Adding the column to the list
@@ -243,7 +243,7 @@
     var error: GErrorPtr;
     var record_batch: c_ptr(GArrowRecordBatch) = garrow_record_batch_new(schema, n_rows, arrays, c_ptrTo(error));
     if(isNull(record_batch)){
-      g_print(c_ptrToConst_helper("%s\n"):c_string: c_ptr(gchar), error.deref().message);
+      g_print("%s\n".c_str(): c_ptr(gchar), error.deref().message);
     }
     // And after a lot of lines of code we have created the record batch.
     // The last part can also be done using a record batch builder class.
@@ -301,7 +301,7 @@
     var writer_properties: c_ptr(GParquetWriterProperties) = gparquet_writer_properties_new();
     var writer: c_ptr(GParquetArrowFileWriter) = gparquet_arrow_file_writer_new_path(
                                                   garrow_table_get_schema(table.tbl),
-                                                  c_ptrToConst_helper(path):c_string: c_ptr(gchar),
+                                                  path.c_str(): c_ptr(gchar),
                                                   writer_properties,
                                                   c_ptrTo(error));
     if(isNull(writer)){
@@ -328,7 +328,7 @@
   proc readParquetFileToTable(path: string): ArrowTable {
     var error: GErrorPtr;
     var pqFileReader: c_ptr(GParquetArrowFileReader) = gparquet_arrow_file_reader_new_path(
-      c_ptrToConst_helper(path):c_string: c_ptr(gchar), c_ptrTo(error));
+      path.c_str(): c_ptr(gchar), c_ptrTo(error));
 
     if(isNull(pqFileReader)){
       printGError("failed to open the file:", error);
@@ -353,11 +353,11 @@
     var error: GErrorPtr;
     var str: c_ptr(gchar) = garrow_array_to_string(array, c_ptrTo(error));
     if(isNull(str)){
-      g_print(c_ptrToConst_helper("Failed to print: %s\n"):c_string: c_ptr(gchar), error.deref().message);
+      g_print("Failed to print: %s\n".c_str(): c_ptr(gchar), error.deref().message);
       g_error_free(error);
       return;
     }
-    g_print(c_ptrToConst_helper("%s\n"):c_string: c_ptr(gchar),str);
+    g_print("%s\n".c_str(): c_ptr(gchar),str);
   }
 
   proc printRecordBatch(recordBatch: ArrowRecordBatch){
@@ -367,11 +367,11 @@
     var error: GErrorPtr;
     var str: c_ptr(gchar) = garrow_record_batch_to_string(recordBatch, c_ptrTo(error));
     if(isNull(str)){
-      g_print(c_ptrToConst_helper("Failed to print: %s\n"):c_string: c_ptr(gchar), error.deref().message);
+      g_print("Failed to print: %s\n".c_str(): c_ptr(gchar), error.deref().message);
       g_error_free(error);
       return;
     }
-    g_print(c_ptrToConst_helper("%s\n"):c_string: c_ptr(gchar),str: c_ptr(gchar));
+    g_print("%s\n".c_str(): c_ptr(gchar),str: c_ptr(gchar));
   }
 
   proc printTable(table: ArrowTable) {
@@ -382,10 +382,10 @@
     var error: GErrorPtr;
     var str: c_ptr(gchar) = garrow_table_to_string(table, c_ptrTo(error));
     if(isNull(str)){
-      g_print(c_ptrToConst_helper("Failed to print: %s\n"):c_string: c_ptr(gchar), error.deref().message);
+      g_print("Failed to print: %s\n".c_str(): c_ptr(gchar), error.deref().message);
       g_error_free(error);
       return;
     }
-    g_print(c_ptrToConst_helper("%s\n"):c_string: c_ptr(gchar),str: c_ptr(gchar));
+    g_print("%s\n".c_str(): c_ptr(gchar),str: c_ptr(gchar));
   }
 }

@@ -7,8 +7,8 @@ checkType(blah.type);
 var blah1: string = "blah";
 checkType(blah1.type);
 
-var blah2: c_string = "blah";
-checkType(c_string, blah2.type);
+var blah2: c_ptrConst(c_char) = "blah";
+checkType(c_ptrConst(c_char), blah2.type);
 
 // domains
 var D = { "blah" };
@@ -32,11 +32,11 @@ checkType(A1.eltType);
   class C {
     var blah = "blah";
     var blah1: string = "blah";
-    var blah2: c_string = "blah";
+    var blah2: c_ptrConst(c_char) = "blah";
     proc checkMe() {
       checkType(blah.type);
       checkType(blah1.type);
-      checkType(c_string, blah2.type);
+      checkType(c_ptrConst(c_char), blah2.type);
     }
   }
 
@@ -44,10 +44,10 @@ checkType(A1.eltType);
  var ownC0 = new owned C();
  var c0: borrowed C = ownC0.borrow();
  c0.checkMe();
- var ownC1 = new owned C("hi", "hi", c_ptrToConst_helper(blah):c_string);
+ var ownC1 = new owned C("hi", "hi", blah.c_str());
  var c1 = ownC1.borrow();
  c1.checkMe();
- var ownC2 = new owned C(blah, blah, c_ptrToConst_helper(blah):c_string);
+ var ownC2 = new owned C(blah, blah, blah.c_str());
  var c2 = ownC2.borrow();
  c2.checkMe();
 }

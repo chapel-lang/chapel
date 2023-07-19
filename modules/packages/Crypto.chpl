@@ -400,7 +400,7 @@ module Crypto {
     var retHashLen: c_uint = 0;
 
     var md: CONST_EVP_MD_PTR;
-    md = EVP_get_digestbyname(c_ptrToConst_helper(digestName));
+    md = EVP_get_digestbyname(digestName.c_str());
 
     EVP_DigestInit_ex(CHPL_EVP_MD_CTX_ptr(ctx), md, nil: ENGINE_PTR);
     EVP_DigestUpdate(CHPL_EVP_MD_CTX_ptr(ctx), c_ptrTo(inputBuffer.buff): c_ptr(void), inputBuffer._len: c_size_t);
@@ -957,9 +957,9 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     var userKeyLen = userKey.numBytes;
 
     var md: CONST_EVP_MD_PTR;
-    md = EVP_get_digestbyname(c_ptrToConst_helper(digestName));
+    md = EVP_get_digestbyname(digestName.c_str());
 
-    PKCS5_PBKDF2_HMAC(c_ptrToConst_helper(userKey), userKeyLen: c_int,
+    PKCS5_PBKDF2_HMAC(userKey.c_str(), userKeyLen: c_int,
                       c_ptrTo(salt): c_ptr(c_uchar),
                       saltLen: c_int, iterCount: c_int, md,
                       byteLen: c_int, c_ptrTo(key): c_ptr(c_uchar));

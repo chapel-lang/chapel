@@ -18,7 +18,7 @@ proc mytest4(x: c_ptr(void)):c_ptr(void)
   return y;
 }
 
-extern proc printf(fmt:c_string, ptr:c_ptr(void));
+extern proc printf(fmt:c_ptrConst(c_char), ptr:c_ptr(void));
 {
   var x:c_ptr(void);
   x = mytest(x);

@@ -48,6 +48,9 @@ extern "C" {
 // threads.
 typedef const char* c_string;
 
+// Used in the process of deprecating 'c_string' by the compiler.
+typedef c_string c_string_rehook;
+
 static inline
 int8_t ascii(c_string s) {
   chpl_warning("calling ascii() on a c_string is deprecated", 0, 0);

@@ -452,7 +452,7 @@ module Subprocess {
              param kind=iokind.dynamic, param locking=true) throws
   {
     use ChplConfig;
-    extern proc sys_getenv(name:c_ptrConst(c_char), ref string_out:c_ptr(c_uchar)):c_int;
+    extern proc sys_getenv(name:c_ptrConst(c_char), ref string_out:c_ptrConst(c_char)):c_int;
 
     var stdin_fd:c_int = QIO_FD_FORWARD;
     var stdout_fd:c_int = QIO_FD_FORWARD;
@@ -488,9 +488,9 @@ module Subprocess {
     if CHPL_COMM == "ugni" {
       if stdin != pipeStyle.forward || stdout != pipeStyle.forward || stderr != pipeStyle.forward then
         if numLocales > 1 {
-          var env_c_str:c_ptr(c_uchar);
+          var env_c_str:c_ptrConst(c_char);
           var env_str:string;
-          if sys_getenv(c_ptrToConst_helper("PE_PRODUCT_LIST"), env_c_str)==1 {
+          if sys_getenv("PE_PRODUCT_LIST", env_c_str)==1 {
             env_str = string.createCopyingBuffer(env_c_str);
             if env_str.count("HUGETLB") > 0 then
               throw createSystemError(
@@ -513,20 +513,20 @@ module Subprocess {
     var nargs = args.size + 1;
     var use_args = qio_spawn_allocate_ptrvec( nargs.safeCast(c_size_t) );
     for (a,i) in zip(args, 0..) {
-      use_args[i] = qio_spawn_strdup(c_ptrToConst_helper(a));
+      use_args[i] = qio_spawn_strdup(a.c_str());
     }
     var use_env:c_ptr(c_ptrConst(c_char)) = nil;
     if env.size != 0 {
       var nenv = env.size + 1;
       use_env = qio_spawn_allocate_ptrvec( nenv.safeCast(c_size_t) );
       for (a,i) in zip(env, 0..) {
-        use_env[i] = qio_spawn_strdup(c_ptrToConst_helper(a));
+        use_env[i] = qio_spawn_strdup(a.c_str());
       }
     }
 
     pid = -1;
 
-    err = qio_openproc(use_args, use_env, c_ptrToConst_helper(executable),
+    err = qio_openproc(use_args, use_env, executable.c_str(),
                        stdin_fd, stdout_fd, stderr_fd, pid);
 
     // free the c structures we created.

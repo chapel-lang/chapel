@@ -1,5 +1,5 @@
 use CTypes;
-extern proc printf(fmt: c_string, x...);
+extern proc printf(fmt: c_ptrConst(c_char), x...);
 
 proc main {
   var s: sync int;
@@ -8,13 +8,13 @@ proc main {
 
   on Locales(1) {
     var i = s.readFE();
-    printf("%s\n", c_ptrToConst_helper(here.id:string + " " + i:string):c_string);
+    printf("%s\n", (here.id:string + " " + i:string).c_str());
   }
 
   s.writeEF(3);
 
   on Locales(1) {
     var i = s.readFE();
-    printf("%s\n", c_ptrToConst_helper(here.id:string + " " + i:string):c_string);
+    printf("%s\n", (here.id:string + " " + i:string).c_str());
   }
 }

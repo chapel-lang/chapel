@@ -1,6 +1,6 @@
 
 record myR {
-  var base: c_string;
+  var base: chpl_c_string;
 }
 
 pragma "init copy fn"
@@ -19,9 +19,9 @@ inline proc chpl__autoCopy(ref r: myR) {
 
 
 var s0: myR;
-s0.base = c"s0";
+s0.base = "s0";
 sync {
-  begin writeln(string.createCopyingBuffer(s0.base));
+  begin writeln(string.createCopyingBuffer(s0.base:c_ptrConst(c_char)));
 }
 
 use CTypes;
@@ -45,7 +45,7 @@ inline proc chpl__autoCopy(ref r: myRptr) {
 
 
 var s1: myRptr;
-s1.base = c_ptrToConst_helper("s1");
+s1.base = "s1".c_str();
 sync {
   begin writeln(string.createCopyingBuffer(s1.base));
 }

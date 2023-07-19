@@ -4354,7 +4354,8 @@ DEFINE_PRIM(REF_TO_STRING) {
 
 DEFINE_PRIM(CLASS_NAME_BY_ID) {
     GenRet cid = codegenValue(call->get(1));
-    ret = codegenGlobalArrayElement("chpl_classNames", "c_string", cid);
+    const char* eltType = dtStringC->symbol->cname;
+    ret = codegenGlobalArrayElement("chpl_classNames", eltType, cid);
 }
 
 DEFINE_PRIM(RETURN) {
@@ -5410,15 +5411,6 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
       if (curArg->typeInfo()->symbol->hasFlag(FLAG_REF)) {
         localAddr = codegenDeref(localAddr);
       }
-
-      // c_ptr/ddata are already addresses, so dereference one level.
-      if (dt->hasFlag(FLAG_DATA_CLASS)) {
-        USR_WARN(call,
-                "put/get primitive special behavior for "
-                "c_ptr/_ddata will be removed -- please pass a ref "
-                "to the primitive");
-        localAddr = codegenValue(localAddr);
-      }
     }
 
     localAddr = codegenCastToVoidStar(localAddr);
@@ -5459,18 +5451,10 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
                        curArg->getValType()->symbol->hasFlag(FLAG_DATA_CLASS));
 
     GenRet   remoteAddr = curArg;
-    TypeSymbol *t = curArg->typeInfo()->symbol;
 
 
     if        (curArg->isWideRef()   == true)  {
       remoteAddr = codegenRaddr(remoteAddr);
-
-    } else if (t->hasFlag(FLAG_DATA_CLASS) == true)  {
-      USR_WARN(call,
-                "put/get primitive special behavior for "
-                "c_ptr/_ddata will be removed -- please pass a ref "
-                "to the primitive");
-      remoteAddr = codegenValue(remoteAddr);
 
     } else if (curArg->isRef()        == false) {
       remoteAddr = codegenAddrOf(remoteAddr);

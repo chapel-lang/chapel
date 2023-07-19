@@ -1096,10 +1096,11 @@ class QioPluginFile {
   }
 
   /* Returns the path to an open file.
-     The caller has the responsibility to free the returned c_ptrConst(c_char).
+     The caller has the responsibility to free the returned c_ptr(uint(8)).
    */
   // TODO: use Chapel strings for this, one day
-  proc getpath(out path:c_ptrConst(c_char), out len:int(64)):errorCode {
+  // This is using c_ptr(uint(8)) to match the qio function definition for chpl_qio_getpath
+  proc getpath(out path:c_ptr(uint(8)), out len:int(64)):errorCode {
     return ENOSYS;
   }
 
@@ -1172,7 +1173,7 @@ export proc chpl_qio_filelength(file:c_ptr(void), ref length:int(64)):errorCode 
   var f=(file:unmanaged QioPluginFile?)!;
   return f.filelength(length);
 }
-export proc chpl_qio_getpath(file:c_ptr(void), ref str:c_ptrConst(int(8)), ref len:int(64)):errorCode {
+export proc chpl_qio_getpath(file:c_ptr(void), ref str:c_ptr(uint(8)), ref len:int(64)):errorCode {
   var f=(file:unmanaged QioPluginFile?)!;
   return f.getpath(str, len);
 }
@@ -2168,8 +2169,8 @@ private proc openHelper(path:string, mode:ioMode, hints=ioHintSet.empty,
     try ioerror(ENOENT:errorCode, "in open: path is the empty string");
 
   error = qio_file_open_access(ret._file_internal,
-                               c_ptrToConst_helper(path.encode(policy=encodePolicy.unescape)),
-                               c_ptrToConst_helper(_modestring(mode)), hints._internal, local_style);
+                               path.encode(policy=encodePolicy.unescape).c_str(),
+                               _modestring(mode).c_str(), hints._internal, local_style);
   if error then
     try ioerror(error, "in open", path);
 
@@ -2215,7 +2216,7 @@ proc openplugin(pluginFile: QioPluginFile, mode:ioMode,
   if err {
     var path:string = "unknown";
     if pluginFile {
-      var str:c_ptrConst(c_char) = nil;
+      var str:c_ptr(uint(8)) = nil;
       var len:int;
       var path_err = pluginFile.getpath(str, len);
       if path_err {
@@ -3308,7 +3309,7 @@ proc fileReader._getFp(): (bool, c_ptr(c_FILE)) {
     return (true, fp);
   } else {
     if qio_get_fd(f, fd) == 0 {
-      fp = fdopen(fd, c_ptrToConst_helper("r"));
+      fp = fdopen(fd, "r");
       return (true, fp);
     } else {
       return (false, fp);
@@ -5103,12 +5104,12 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
     var err:errorCode = 0;
     var got:bool = false;
 
-    err = qio_channel_scan_literal(false, _channel_internal, c_ptrToConst_helper("true"), "true".numBytes:c_ssize_t, 1);
+    err = qio_channel_scan_literal(false, _channel_internal, "true", "true".numBytes:c_ssize_t, 1);
     if !err {
       got = true;
     } else if err == EFORMAT {
       // try reading false instead.
-      err = qio_channel_scan_literal(false, _channel_internal, c_ptrToConst_helper("false"), "false".numBytes:c_ssize_t, 1);
+      err = qio_channel_scan_literal(false, _channel_internal, "false", "false".numBytes:c_ssize_t, 1);
       // got is already false, so we don't need to set it.
     }
     if !err then x = got;
@@ -5151,7 +5152,7 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
         var str = i:string;
         if st == QIO_AGGREGATE_FORMAT_JSON then str = '"'+str+'"';
         var slen:c_ssize_t = str.numBytes.safeCast(c_ssize_t);
-        err = qio_channel_scan_literal(false, _channel_internal, c_ptrToConst_helper(str), slen, 1);
+        err = qio_channel_scan_literal(false, _channel_internal, str.c_str(), slen, 1);
         if !err {
           x = i;
           break;
@@ -5162,7 +5163,7 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
         var str = t:string + "." + i:string;
         if st == QIO_AGGREGATE_FORMAT_JSON then str = '"'+str+'"';
         var slen:c_ssize_t = str.numBytes.safeCast(c_ssize_t);
-        err = qio_channel_scan_literal(false, _channel_internal, c_ptrToConst_helper(str), slen, 1);
+        err = qio_channel_scan_literal(false, _channel_internal, str.c_str(), slen, 1);
         if !err {
           x = i;
           break;
@@ -5179,9 +5180,9 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
 private proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):errorCode where _isIoPrimitiveType(t) {
   if isBoolType(t) {
     if x {
-      return qio_channel_print_literal(false, _channel_internal, c_ptrToConst_helper("true"), "true".numBytes:c_ssize_t);
+      return qio_channel_print_literal(false, _channel_internal, "true", "true".numBytes:c_ssize_t);
     } else {
-      return qio_channel_print_literal(false, _channel_internal, c_ptrToConst_helper("false"), "false".numBytes:c_ssize_t);
+      return qio_channel_print_literal(false, _channel_internal, "false", "false".numBytes:c_ssize_t);
     }
   } else if isIntegralType(t) {
     // handles int types
@@ -5204,16 +5205,16 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):err
     if local_x.hasEscapes {
       return EILSEQ;
     }
-    return qio_channel_print_string(false, _channel_internal, c_ptrToConst_helper(local_x), local_x.numBytes:c_ssize_t);
+    return qio_channel_print_string(false, _channel_internal, local_x.c_str(), local_x.numBytes:c_ssize_t);
   } else if t == bytes {
     // handle bytes
     const local_x = x.localize();
-    return qio_channel_print_bytes(false, _channel_internal, c_ptrToConst_helper(local_x), local_x.numBytes:c_ssize_t);
+    return qio_channel_print_bytes(false, _channel_internal, local_x.c_str(), local_x.numBytes:c_ssize_t);
   } else if isEnumType(t) {
     var st = qio_channel_style_element(_channel_internal, QIO_STYLE_ELEMENT_AGGREGATE);
     var s = x:string;
     if st == QIO_AGGREGATE_FORMAT_JSON then s = '"'+s+'"';
-    return qio_channel_print_literal(false, _channel_internal, c_ptrToConst_helper(s), s.numBytes:c_ssize_t);
+    return qio_channel_print_literal(false, _channel_internal, s.c_str(), s.numBytes:c_ssize_t);
   } else {
     compilerError("Unknown primitive type in _write_text_internal ", t:string);
   }
@@ -5381,10 +5382,10 @@ private proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param b
     if local_x.hasEscapes {
       return EILSEQ;
     }
-    return qio_channel_write_string(false, byteorder:c_int, qio_channel_str_style(_channel_internal), _channel_internal, c_ptrToConst_helper(local_x), local_x.numBytes: c_ssize_t);
+    return qio_channel_write_string(false, byteorder:c_int, qio_channel_str_style(_channel_internal), _channel_internal, local_x.c_str(), local_x.numBytes: c_ssize_t);
   } else if t == bytes {
     var local_x = x.localize();
-    return qio_channel_write_string(false, byteorder:c_int, qio_channel_str_style(_channel_internal), _channel_internal, c_ptrToConst_helper(local_x), local_x.numBytes: c_ssize_t);
+    return qio_channel_write_string(false, byteorder:c_int, qio_channel_str_style(_channel_internal), _channel_internal, local_x.c_str(), local_x.numBytes: c_ssize_t);
   } else if isEnumType(t) {
     var i = chpl__enumToOrder(x):chpl_enum_mintype(t);
     // call the integer version
@@ -5530,7 +5531,7 @@ private proc _read_io_type_internal(_channel_internal:qio_channel_ptr_t,
     return qio_channel_read_char(false, _channel_internal, x.ch);
   } else if t == ioLiteral {
     return qio_channel_scan_literal(false, _channel_internal,
-                                    c_ptrToConst_helper(x.val.localize()),
+                                    x.val.localize().c_str(),
                                     x.val.numBytes: c_ssize_t, x.ignoreWhiteSpace);
   } else if t == _internalIoBits {
     return qio_channel_read_bits(false, _channel_internal, x.x, x.numBits);
@@ -5585,7 +5586,7 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
   } else if t == _internalIoChar {
     return qio_channel_write_char(false, _channel_internal, x.ch);
   } else if t == ioLiteral {
-    return qio_channel_print_literal(false, _channel_internal, c_ptrToConst_helper(x.val.localize()), x.val.numBytes:c_ssize_t);
+    return qio_channel_print_literal(false, _channel_internal, x.val.localize().c_str(), x.val.numBytes:c_ssize_t);
   } else if t == _internalIoBits {
     return qio_channel_write_bits(false, _channel_internal, x.x, x.numBits);
   } else if kind == iokind.dynamic {
@@ -5817,7 +5818,7 @@ inline proc fileReader._readLiteralCommon(x:?t, ignore:bool,
 
   on this._home {
     try! this.lock(); defer { this.unlock(); }
-    const ref cstr = c_ptrToConst_helper(x.localize());
+    const ref cstr = x.localize().c_str();
     const err = qio_channel_scan_literal(false, _channel_internal,
                                          cstr, x.numBytes:c_ssize_t,
                                          ignore);
@@ -6031,7 +6032,7 @@ proc fileWriter._writeLiteralCommon(x:?t) : void throws {
 
   on this._home {
     try! this.lock(); defer { this.unlock(); }
-    const ref cstr = c_ptrToConst_helper(x.localize());
+    const ref cstr = x.localize().c_str();
     const err = qio_channel_print_literal(false, _channel_internal, cstr,
                                           x.numBytes:c_ssize_t);
     try _checkLiteralError(x, err, "writing", isLiteral=true);
@@ -7920,7 +7921,7 @@ proc fileWriter.writeBinary(s: string, size: int = s.size) throws {
       iokind.native: c_int,
       qio_channel_str_style(this._channel_internal),
       this._channel_internal,
-      c_ptrToConst_helper(sLocal),
+      sLocal.c_str(),
       bytesLen: c_ssize_t
     );
 
@@ -7955,7 +7956,7 @@ proc fileWriter.writeBinary(b: bytes, size: int = b.size) throws {
       iokind.native: c_int,
       qio_channel_str_style(this._channel_internal),
       this._channel_internal,
-      c_ptrToConst_helper(bLocal),
+      bLocal.c_str(),
       size: c_ssize_t
     );
 
@@ -9016,7 +9017,7 @@ proc file.fstype():int throws {
    :returns: a set of locales that are best for working with this region
    :rtype: domain(locale)
  */
- @deprecated(notes="file.localesForRegion is deprecated")
+@deprecated(notes="file.localesForRegion is deprecated")
 proc file.localesForRegion(start:int(64), end:int(64)) {
 
   proc findloc(loc:string, locs:c_ptr(c_ptrConst(c_char)), end:int) {
@@ -10142,7 +10143,7 @@ proc _toChar(x:?t) where t == string
   var chr:int(32);
   var nbytes:c_int;
   var local_x = x.localize();
-  qio_decode_char_buf(chr, nbytes, c_ptrToConst_helper(local_x), local_x.numBytes:c_ssize_t);
+  qio_decode_char_buf(chr, nbytes, local_x.c_str(), local_x.numBytes:c_ssize_t);
   return (chr, true);
 }
 private inline
@@ -10187,8 +10188,6 @@ proc _setIfPrimitive(ref lhs:?t, rhs:?t2, argi:int):errorCode where t!=bool&&_is
         lhs = rhs.decode(decodePolicy.strict);
       }
       else {
-        // writeln(t2:string);
-        // writeln(t:string);
         lhs = rhs:t;
       }
     }
@@ -10351,7 +10350,7 @@ proc fileReader._format_reader(
 {
   if r != nil then r!.hasRegex = false;
   if !error {
-    const ref fmt = c_ptrToConst_helper(fmtStr.localize());
+    const ref fmt = fmtStr.localize().c_str();
     while cur < len {
       gotConv = false;
       if error then break;
@@ -10444,7 +10443,7 @@ proc fileWriter._format_reader(
     ref conv:qio_conv_t, ref gotConv:bool, ref style:iostyleInternal)
 {
   if !error {
-    const ref fmt = c_ptrToConst_helper(fmtStr.localize());
+    const ref fmt = fmtStr.localize().c_str();
     while cur < len {
       gotConv = false;
       if error then break;

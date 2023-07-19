@@ -18,14 +18,9 @@ proc main() {
   intStruct_print(x);
 
   var y : stringStruct;
-  y.a = "Hello".c_ptr_c_char();
-  y.b = "World".c_ptr_c_char();
+  y.a = "Hello".c_str();
+  y.b = "World".c_str();
   stringStruct_print(y);
-
-  // var yy : stringStruct;
-  // yy.a = c_ptrToConst_helper("Hello");
-  // yy.b = c_ptrToConst_helper("World");
-  // stringStruct_print(yy);
 
   var z : fnStruct;
   z.fn = c_ptrTo(foo);

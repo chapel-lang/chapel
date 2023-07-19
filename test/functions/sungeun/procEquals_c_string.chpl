@@ -1,3 +1,4 @@
-operator =(ref a: c_string, b:string) {
-  __primitive("=", a, c_ptrToConst_helper(b):c_string);
+use CTypes;
+operator =(ref a: c_ptrConst(c_char), b:string) {
+  __primitive("=", a, b.c_str());
 }

@@ -3,10 +3,10 @@ use CTypes;
 writeln("Printing before modification");
 
 writeln("Hello World!");
-writeln(string.createBorrowingBuffer(c_ptrToConst_helper("Hello World!")));
+writeln(string.createBorrowingBuffer("Hello World!".c_str()));
 
 writeln(b"Hello World!");
-writeln(string.createBorrowingBuffer(c_ptrToConst_helper(b"Hello World!")));
+writeln(string.createBorrowingBuffer(b"Hello World!".c_str()));
 
 // Now modify a string literal
 // this is not an OK thing for code to do in general

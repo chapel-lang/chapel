@@ -87,7 +87,7 @@ writeln(b1.byte(2));
 
 // check casts
 param s1 = "some string";
-param c1 = c"some C string"; //TODO: We need a replacement for param c_string - param c_ptrConst(c_char) does not work
+param c1 = c"some C string";
 param i = 10;
 param r = 10.0;
 param b = true;

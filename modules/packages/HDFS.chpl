@@ -248,7 +248,7 @@ module HDFS {
 
       this.nameNode = nameNode;
       this.port = port;
-      this.hfs = hdfsConnect(c_ptrToConst_helper(this.nameNode), this.port.safeCast(uint(16)));
+      this.hfs = hdfsConnect(this.nameNode.c_str(), this.port.safeCast(uint(16)));
       this.complete();
       refCount.write(1);
     }
@@ -360,8 +360,7 @@ module HDFS {
 
       if verbose then
         writeln("hdfsOpenFile");
-
-      var hfile = hdfsOpenFile(this.hfs, c_ptrToConst_helper(path.localize()),
+      var hfile = hdfsOpenFile(this.hfs, path.localize().c_str(),
                                flags, bufferSize, replication, blockSize);
 
       if verbose then
@@ -422,7 +421,7 @@ module HDFS {
     override proc filelength(out length:int(64)):errorCode {
       if verbose then
         writeln("HDFSFile.filelength path=", path);
-      var fInfoPtr = hdfsGetPathInfo(fs.hfs, c_ptrToConst_helper(path));
+      var fInfoPtr = hdfsGetPathInfo(fs.hfs, path.c_str());
       if fInfoPtr == nil {
         return EINVAL;
       }
@@ -432,10 +431,10 @@ module HDFS {
         writeln("HDFSFile.filelength length=", length);
       return 0;
     }
-    override proc getpath(out path:c_ptrConst(int(8)), out len:int(64)):errorCode {
+    override proc getpath(out path:c_ptr(uint(8)), out len:int(64)):errorCode {
       if verbose then
         writeln("HDFSFile.getpath path=", this.path);
-      path = qio_strdup(c_ptrToConst_helper(this.path));
+      path = qio_strdup(this.path.c_str()):c_ptr(uint(8));
       len = this.path.size;
       if verbose then
         writeln("HDFSFile.getpath returning ", (path:string, len));
@@ -453,7 +452,7 @@ module HDFS {
     override proc getChunk(out length:int(64)):errorCode {
       if verbose then
         writeln("HDFSFile.getChunk");
-      var fInfoPtr = hdfsGetPathInfo(fs.hfs, c_ptrToConst_helper(path));
+      var fInfoPtr = hdfsGetPathInfo(fs.hfs, path.c_str());
       if fInfoPtr == nil then
         return EINVAL;
       length = fInfoPtr.deref().mBlockSize;

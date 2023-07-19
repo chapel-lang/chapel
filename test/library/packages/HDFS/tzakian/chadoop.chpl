@@ -94,13 +94,15 @@ sync coforall loc in Locales { // look at this more
     // 2) Find all the hosts/blocks for the file, from byte 0 to length
     // 3) On each locale, find the blocks you own and process them
     write("Connecting to HDFS on host " + here.name + "...");
-    var hdfsFS: c_ptr(void) = HDFS.hdfsConnect(c_ptrToConst_helper(namenode.localize()),
+    var localNamenode = namenode.localize();
+    var hdfsFS: c_ptr(void) = HDFS.hdfsConnect(localNamenode.c_str(),
                                               connectNumber);
     writeln("done");
-    var fileInfo = HDFS.chadoopGetFileInfo(hdfsFS, c_ptrToConst_helper(dataFile.localize()));
+    var localDataFile = dataFile.localize();
+    var fileInfo = HDFS.chadoopGetFileInfo(hdfsFS, localDataFile.c_str());
     //      writeln("Info for file " + dataFile + ":");
     //      writeln(fileInfo);
-    var blockHosts = HDFS.hdfsGetHosts(hdfsFS, c_ptrToConst_helper(dataFile.localize()), 0, fileInfo.mSize);
+    var blockHosts = HDFS.hdfsGetHosts(hdfsFS, localDataFile.c_str(), 0, fileInfo.mSize);
     // ==== Get the blocks
     var blockCount = HDFS.chadoopGetBlockCount(blockHosts);
     // END
@@ -108,7 +110,7 @@ sync coforall loc in Locales { // look at this more
     // ==== Connect to HDFS
     // ==== Open the file
     writeln("Opening file " + dataFile + " on " + here.name + "...");
-    var dataFileLocal = HDFS.hdfsOpenFile(hdfsFS, c_ptrToConst_helper(dataFile.localize()),
+    var dataFileLocal = HDFS.hdfsOpenFile(hdfsFS, localDataFile.c_str(),
                                           O_RDONLY, 0, 0, 0);
     assert(HDFS.IS_NULL(dataFileLocal) == HDFS.IS_NULL_FALSE, "Failed to open dataFileLocal");
     // assert that we opened the file successfully

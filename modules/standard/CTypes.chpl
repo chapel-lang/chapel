@@ -462,10 +462,10 @@ module CTypes {
         // if from and to are both pointer types themselves, recurse into their
         // respective pointee types (strip a layer of indirection)
         return pointeeCastStrictAliasingAllowed(from.eltType, to.eltType);
-      } else if (from == c_string) {
+      } else if (from == chpl_c_string) {
         // a c_string can be interpreted as a pointer to c_char for this purpose
         return pointeeCastStrictAliasingAllowed(c_char, to.eltType);
-      } else if (to == c_string) {
+      } else if (to == chpl_c_string) {
         return pointeeCastStrictAliasingAllowed(from.eltType, c_char);
       }
     }
@@ -548,7 +548,7 @@ module CTypes {
   @chpldoc.nodoc
   inline operator :(const ref x:c_array, type t:c_ptrConst(?e))
       where x.eltType == e {
-    return c_ptrTo(x[0]):c_ptrConst(e);
+    return c_ptrToConst(x[0]);
   }
   @chpldoc.nodoc
   inline operator :(ref x:c_array, type t:c_ptr(void)) {
@@ -559,7 +559,15 @@ module CTypes {
     return __primitive("cast", t, x);
   }
   @chpldoc.nodoc
+  inline operator :(x:c_ptr, type t:c_ptrConst(void)) {
+    return __primitive("cast", t, x);
+  }
+  @chpldoc.nodoc
   inline operator :(x:c_ptrConst, type t:c_ptr(void)) {
+    return __primitive("cast", t, x);
+  }
+  @chpldoc.nodoc
+  inline operator :(x:c_ptrConst, type t:c_ptrConst(void)) {
     return __primitive("cast", t, x);
   }
   @chpldoc.nodoc
@@ -571,15 +579,19 @@ module CTypes {
     return __primitive("cast", t, x);
   }
   @chpldoc.nodoc
+  inline operator :(x:c_ptrConst(void), type t:c_ptrConst) {
+    return __primitive("cast", t, x);
+  }
+  @chpldoc.nodoc
   inline operator c_ptr.:(x:c_ptr, type t:string) {
     try! {
-      return string.createAdoptingBuffer(__primitive("ref to string", x):c_ptr(c_uchar));
+      return string.createAdoptingBuffer(__primitive("ref to string", x):c_ptrConst(c_char));
     }
   }
   @chpldoc.nodoc
   inline operator c_ptrConst.:(x:c_ptrConst, type t:string) {
     try! {
-      return string.createAdoptingBuffer(__primitive("ref to string", x):c_ptr(c_uchar));
+      return string.createAdoptingBuffer(__primitive("ref to string", x):c_ptrConst(c_char));
     }
   }
   pragma "last resort"
@@ -905,7 +917,7 @@ module CTypes {
   }
 
   @chpldoc.nodoc
-  inline proc c_ptrToConst_helper(const ref s: string): c_ptrConst(c_char)
+  inline proc c_ptrToConst_helper(const ref s: string): c_ptrConst(c_uchar)
   {
     if _local == false && s.locale_id != chpl_nodeID then
       halt("Cannot call c_ptrToConst() on a remote string");
@@ -914,11 +926,11 @@ module CTypes {
         return nil;
       }
     }
-    return c_pointer_return_const(s.buff[0]):c_ptrConst(c_char);
+    return c_pointer_return_const(s.buff[0]);
   }
 
   @chpldoc.nodoc
-  inline proc c_ptrToConst_helper(const ref b: bytes): c_ptrConst(c_char)
+  inline proc c_ptrToConst_helper(const ref b: bytes): c_ptrConst(c_uchar)
   {
     if _local == false && b.locale_id != chpl_nodeID then
       halt("Cannot call c_ptrToConst() on a remote bytes");
@@ -927,7 +939,7 @@ module CTypes {
         return nil;
       }
     }
-    return c_pointer_return_const(b.buff[0]):c_ptrConst(c_char);
+    return c_pointer_return_const(b.buff[0]);
   }
 
   @chpldoc.nodoc
@@ -1461,14 +1473,30 @@ module CTypes {
     return s;
   }
 
-  inline proc string.c_ptr_c_char() : c_ptrConst(c_char) {
-    use BytesStringCommon;
-    return get_c_char_const_ptr_common(this);
+
+  /*
+    Get the number of bytes in a c_ptr(int(8)) or c_ptr(uint(8)), excluding the
+    terminating null.
+
+    :arg x: c_ptr(int(8)) or c_ptr(uint(8)) to get length of
+
+    :returns: the number of bytes in x, excluding the terminating null
+   */
+  @unstable("the strLen function is unstable and may change or go away in a future release")
+  inline proc strLen(x:c_ptr(?t)) : int {
+     return __primitive("string_length_bytes", x).safeCast(int);
   }
 
-  inline proc bytes.c_ptr_c_char() : c_ptrConst(c_char) {
-    use BytesStringCommon;
-    return get_c_char_const_ptr_common(this);
-  }
+  /*
+    Get the number of bytes in a c_ptrConst(int(8)) or c_ptrConst(uint(8)), excluding the
+    terminating null.
 
+    :arg x: c_ptrConst(int(8)) or c_ptrConst(uint(8)) to get length of
+
+    :returns: the number of bytes in x, excluding the terminating null
+   */
+  @unstable("the strLen function is unstable and may change or go away in a future release")
+  inline proc strLen(x:c_ptrConst(?t)): int {
+     return __primitive("string_length_bytes", x).safeCast(int);
+  }
 }

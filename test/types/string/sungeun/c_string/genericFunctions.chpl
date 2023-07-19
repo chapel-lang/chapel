@@ -58,16 +58,16 @@ var vs: string;
   f(real, s=vs);
 }
 
-// s should be c_string for these
+// s should be c_ptrConst(c_char) for these
 {
   proc g(s) {
     checkType(c_ptrConst(c_char), s.type);
   }
 
-  g(c_ptrToConst_helper(vs));
-  g(c_ptrToConst_helper(cs));
-  g(s=c_ptrToConst_helper(vs));
-  g(s=c_ptrToConst_helper(cs));
+  g(vs.c_str());
+  g(cs.c_str());
+  g(s=vs.c_str());
+  g(s=cs.c_str());
 }
 
 {
@@ -76,10 +76,10 @@ var vs: string;
     checkType(c_ptrConst(c_char), s.type);
   }
 
-  f(int, 3, c_ptrToConst_helper(vs));
-  f(int, 3, c_ptrToConst_helper(cs));
-  f(s=c_ptrToConst_helper(vs), int, 5);
-  f(s=c_ptrToConst_helper(cs), int, 5);
+  f(int, 3, vs.c_str());
+  f(int, 3, cs.c_str());
+  f(s=vs.c_str(), int, 5);
+  f(s=cs.c_str(), int, 5);
 }
 
 {
@@ -88,10 +88,10 @@ var vs: string;
     checkType(c_ptrConst(c_char), s.type);
   }
 
-  f(c_ptrToConst_helper(vs), real);
-  f(c_ptrToConst_helper(cs), real);
-  f(real, s=c_ptrToConst_helper(vs));
-  f(real, s=c_ptrToConst_helper(cs));
+  f(vs.c_str(), real);
+  f(cs.c_str(), real);
+  f(real, s=vs.c_str());
+  f(real, s=cs.c_str());
 }
 
 {

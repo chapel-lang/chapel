@@ -203,7 +203,7 @@ module ExternalArray {
   private proc isExternArrEltType(type t) param {
     if (isPrimitive(t)) {
       return true;
-    } else if (t == c_string) {
+    } else if (t == c_ptrConst(c_char)) {
       return true;
     } else if (__primitive("is extern type", t)) {
       return true;

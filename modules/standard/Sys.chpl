@@ -536,8 +536,8 @@ module Sys {
   extern proc sys_set_sys_sockaddr_in6_t(ref addr: sys_sockaddr_t, host:sys_in6_addr_t, port:c_uint);
   extern proc sys_host_sys_sockaddr_t(const ref addr: sys_sockaddr_t, host: c_ptr(c_char), hostlen: socklen_t, ref length: c_int) : c_int;
   extern proc sys_port_sys_sockaddr_t(const ref addr: sys_sockaddr_t, ref port: c_uint) : c_int;
-  extern proc sys_strerror(error:qio_err_t, ref string_out:c_ptr(c_uchar)):qio_err_t;
-  extern proc sys_readlink(path:c_ptrConst(c_char), ref string_out:c_ptr(c_uchar)):qio_err_t;
+  extern proc sys_strerror(error:qio_err_t, ref string_out:c_ptrConst(c_char)):qio_err_t;
+  extern proc sys_readlink(path:c_ptrConst(c_char), ref string_out:c_ptrConst(c_char)):qio_err_t;
 
   // --- deprecated and moved to Socket ---
   /*Check whether or not the environment variable ``name`` is defined.
@@ -555,7 +555,7 @@ module Sys {
     :rtype: `c_int`
    */
   @deprecated(notes="'Sys.sys_getenv' is deprecated")
-  extern proc sys_getenv(name:c_ptrConst(c_char), ref string_out:c_ptr(c_uchar)):c_int;
+  extern proc sys_getenv(name:c_ptrConst(c_char), ref string_out:c_ptrConst(c_char)):c_int;
 
   /* The type corresponding to C's mode_t */
   // --- has replacement in OS.POSIX ---
@@ -580,7 +580,7 @@ module Sys {
   extern proc sys_dup2(oldfd:c_int, newfd:c_int, ref fd_out:c_int):qio_err_t;
   extern proc sys_pipe(ref read_fd_out:c_int, ref write_fd_out:c_int):qio_err_t;
   extern proc sys_getaddrinfo_protocol(res:sys_addrinfo_ptr_t):c_int;
-  extern proc sys_getnameinfo(ref addr:sys_sockaddr_t, ref host_out:c_ptr(c_uchar), ref serv_outc_:c_ptr(c_uchar), flags:c_int):qio_err_t;
+  extern proc sys_getnameinfo(ref addr:sys_sockaddr_t, ref host_out:c_ptrConst(c_char), ref serv_outc_:c_ptrConst(c_char), flags:c_int):qio_err_t;
   extern proc sys_socketpair(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out_a:c_int, ref sockfd_out_b:c_int):qio_err_t;
   extern proc sys_shutdown(sockfd:c_int, how:c_int):qio_err_t;
 

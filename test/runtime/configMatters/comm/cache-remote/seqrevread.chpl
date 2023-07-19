@@ -2,7 +2,7 @@ use CTypes;
 
 config const n = 40000;
 extern proc chpl_cache_print();
-extern proc printf(fmt: c_string, vals...?numvals): int;
+extern proc printf(fmt: c_ptrConst(c_char), vals...?numvals): int;
 config const verbose=false;
 
 proc doit(memory:locale, running:locale) {
@@ -18,7 +18,7 @@ proc doit(memory:locale, running:locale) {
           printf("on %d, reading a[%d] got %d\n",
                  here.id:c_int, i:c_int, got:c_int);
           //chpl_cache_print();
-        } 
+        }
         assert(got == i);
       }
     }

@@ -140,7 +140,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   private proc tm_zoneType type {
     use ChplConfig;
     if CHPL_TARGET_PLATFORM == "darwin" then
-      return c_ptr(c_uchar); // char *
+      return c_ptr(c_char); // char *
     else
       return c_ptrConst(c_char); // const char *
   }
@@ -487,7 +487,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   proc date.strftime(fmt: string) {
     extern proc strftime(s: c_ptr(void), size: c_size_t, format: c_ptrConst(c_char), ref timeStruct: tm);
     const bufLen: c_size_t = 100;
-    var buf: [1..bufLen] c_uchar;
+    var buf: [1..bufLen] c_char;
     var timeStruct: tm;
 
     timeStruct.tm_sec = 0;
@@ -503,7 +503,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     timeStruct.tm_wday = (weekday(): int(32) + 1) % 7; // shift Sunday to 0
     timeStruct.tm_yday = (this - new date(year, 1, 1)).days: int(32);
 
-    strftime(c_ptrTo(buf), bufLen, c_ptrToConst_helper(fmt), timeStruct);
+    strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
     var str: string;
     try! {
       str = string.createCopyingBuffer(c_ptrTo(buf));
@@ -799,7 +799,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   proc time.strftime(fmt: string) {
     extern proc strftime(s: c_ptr(void), size: c_size_t, format: c_ptrConst(c_char), ref timeStruct: tm);
     const bufLen: c_size_t = 100;
-    var buf: [1..bufLen] c_uchar;
+    var buf: [1..bufLen] c_char;
     var timeStruct: tm;
 
     timeStruct.tm_sec = second: int(32);
@@ -814,15 +814,15 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
     if timezone.borrow() != nil {
       timeStruct.tm_gmtoff = abs(utcOffset()).seconds: c_long;
-      timeStruct.tm_zone = __primitive("cast", tm_zoneType, c_ptrToConst_helper(tzname()));
+      timeStruct.tm_zone = __primitive("cast", tm_zoneType, tzname().c_str());
       timeStruct.tm_isdst = dst().seconds: int(32);
     } else {
       timeStruct.tm_gmtoff = 0;
-      timeStruct.tm_zone = __primitive("cast", tm_zoneType, c_ptrToConst_helper(""));
+      timeStruct.tm_zone = __primitive("cast", tm_zoneType, "".c_str());
       timeStruct.tm_isdst = -1;
     }
 
-    strftime(c_ptrTo(buf), bufLen, c_ptrToConst_helper(fmt), timeStruct);
+    strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
     var str: string;
     try! {
       str = string.createCopyingBuffer(c_ptrTo(buf));
@@ -1409,7 +1409,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   proc type dateTime.strptime(date_string: string, format: string) {
     extern proc strptime(buf: c_ptrConst(c_char), format: c_ptrConst(c_char), ref ts: tm);
     var timeStruct: tm;
-    strptime(c_ptrToConst_helper(date_string), c_ptrToConst_helper(format), timeStruct);
+    strptime(date_string.c_str(), format.c_str(), timeStruct);
     return new dateTime(timeStruct.tm_year + 1900,
                         timeStruct.tm_mon + 1,
                         timeStruct.tm_mday,
@@ -1423,7 +1423,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   proc dateTime.strftime(fmt: string) {
     extern proc strftime(s: c_ptr(void), size: c_size_t, format: c_ptrConst(c_char), ref timeStruct: tm);
     const bufLen: c_size_t = 100;
-    var buf: [1..bufLen] c_uchar;
+    var buf: [1..bufLen] c_char;
     var timeStruct: tm;
 
     timeStruct.tm_hour = hour: int(32);
@@ -1479,7 +1479,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
       }
     }
 
-    strftime(c_ptrTo(buf), bufLen, c_ptrToConst_helper("".join(strftok(fmt))), timeStruct);
+    strftime(c_ptrTo(buf), bufLen, "".join(strftok(fmt)).c_str(), timeStruct);
 
     var str: string;
     try! {
