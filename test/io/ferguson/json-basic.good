@@ -40,18 +40,3 @@ Read: (a = 1, b = 2)
 Writing JSON: {"b":1, "record":{"a":-1, "b":-2, "c":[{"a":"-3", "b":"-4"},-5, "d"]}, "a":2}
 
 Read: (a = 2, b = 1)
-json-basic.chpl:9: warning: The '%t' format specifier is deprecated; please use '%?' to invoke the type's 'serialize' method instead
-json-basic.chpl:10: warning: The '%jt' format specifier is deprecated; please use '%?' with the JSON Serializer instead
-json-basic.chpl:27: warning: The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead
-json-basic.chpl:48: warning: The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead
-json-basic.chpl:72: warning: The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead
-json-basic.chpl:95: warning: The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead
-json-basic.chpl:115: warning: The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead
-json-basic.chpl:136: warning: The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead
-json-basic.chpl:157: warning: The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead
-json-basic.chpl:177: warning: The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead
-json-basic.chpl:199: warning: The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead
-json-basic.chpl:220: warning: The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead
-json-basic.chpl:240: warning: The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead
-json-basic.chpl:260: warning: The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead
-json-basic.chpl:280: warning: The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead

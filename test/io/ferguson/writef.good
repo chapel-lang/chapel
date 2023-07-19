@@ -26,8 +26,6 @@ Part 3
 1.43403B2ECD6DDP-90
 Part 4
 (1, 17)
-(0x1, 0x11)
-(0x1, 0x11)
 [1, 17]
 Part 5
                 1
@@ -69,5 +67,3 @@ test                                    |
 'a'...
 'a'
 ''...
-writef.chpl:41: warning: The '%t' format specifier is deprecated; please use '%?' to invoke the type's 'serialize' method instead
-writef.chpl:42: warning: The '%t' format specifier is deprecated; please use '%?' to invoke the type's 'serialize' method instead

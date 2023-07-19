@@ -1,3 +1,0 @@
-Testing default array
-true
-big-precision-t-lossless.chpl:17: warning: The '%t' format specifier is deprecated; please use '%?' to invoke the type's 'serialize' method instead

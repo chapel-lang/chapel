@@ -38,8 +38,6 @@ module test {
 
   writeln("Part 4");
   writef("%?\n":t, (1,17));
-  writef("%xt\n":t, (1,17));
-  writef("%@xt\n":t, (1,17));
   stdout.withSerializer(JsonSerializer).writef("%?\n":t, (1,17));
 
   writeln("Part 5");

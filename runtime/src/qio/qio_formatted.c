@@ -1739,9 +1739,11 @@ qioerr qio_channel_print_bytes(const int threadsafe, qio_channel_t* restrict ch,
     err = qio_channel_write_amt(false, ch, ptr, len);
     if( err ) goto rewind;
   } else {
-    // Write b.
-    err = qio_channel_write_byte(false, ch, style->bytes_prefix);
-    if( err ) goto rewind;
+    if ( style->string_format != QIO_STRING_FORMAT_JSON ) {
+      // Write b.
+      err = qio_channel_write_byte(false, ch, style->bytes_prefix);
+      if( err ) goto rewind;
+    }
     // Write string_start.
     err = qio_channel_write_byte(false, ch, style->string_start);
     if( err ) goto rewind;
