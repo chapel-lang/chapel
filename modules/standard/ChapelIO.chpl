@@ -943,7 +943,7 @@ module ChapelIO {
     compilerWarning(
       "universal 'x:string' is deprecated; please define a cast-to-string operator on the type '" +
       x.type:string +
-      "', or use 'try! \"%t\".format(x)' from IO.FormattedIO instead"
+      "', or use 'try! \"%?\".format(x)' from IO.FormattedIO instead"
     );
     return chpl_stringify_wrapper(x);
   }

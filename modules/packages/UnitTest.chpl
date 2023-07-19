@@ -397,22 +397,22 @@ module UnitTest {
         }
         var shorterLength = min(len1, len2);
         tmpString = seq_type_name+"s differ: ";
-        tmpString += "'%t' != '%t'".format(seq1, seq2);
+        tmpString += "'%?' != '%?'".format(seq1, seq2);
         for i in 0..#shorterLength {
           if seq1[i] != seq2[i] {
-            tmpString += "\nFirst differing element at index %t:\n'%t'\n'%t'\n".format(i, seq1[i], seq2[i]);
+            tmpString += "\nFirst differing element at index %?:\n'%?'\n'%?'\n".format(i, seq1[i], seq2[i]);
             break;
           }
         }
         if len1 > len2 {
           var size_diff = len1 - len2;
-          tmpString += "\nFirst %t contains %t additional elements.\n".format(seq_type_name, size_diff);
-          tmpString += "First extra element is at index %t\n'%t'\n".format(len2, seq1[len2]);
+          tmpString += "\nFirst %? contains %? additional elements.\n".format(seq_type_name, size_diff);
+          tmpString += "First extra element is at index %?\n'%?'\n".format(len2, seq1[len2]);
         }
         else if len1 < len2 {
           var size_diff = len2 - len1;
-          tmpString += "\nSecond %t contains %t additional elements.\n".format(seq_type_name, size_diff);
-          tmpString += "First extra element is at index %t\n'%t'\n".format(len1, seq2[len1]);
+          tmpString += "\nSecond %? contains %? additional elements.\n".format(seq_type_name, size_diff);
+          tmpString += "First extra element is at index %?\n'%?'\n".format(len1, seq2[len1]);
         }
       }
       throw new owned AssertionError(tmpString);
@@ -425,7 +425,7 @@ module UnitTest {
       array2: The second array to compare.
     */
     proc assertArrayEqual(array1: [], array2: []) throws {
-      const genericErrorMsg = "assert failed -\n'%t'\nand\n'%t'\n".format(array1, array2);
+      const genericErrorMsg = "assert failed -\n'%?'\nand\n'%?'\n".format(array1, array2);
 
       // Compare array types, size, and shape
       if array1.rank != array2.rank {
@@ -445,7 +445,7 @@ module UnitTest {
         // Compare array values
         const arraysEqual = && reduce (array1 == array2);
         if !arraysEqual {
-          const errorMsg = "assert failed -\n'%t'\n!=\n'%t'".format(array1, array2);
+          const errorMsg = "assert failed -\n'%?'\n!=\n'%?'".format(array1, array2);
           throw new owned AssertionError(errorMsg);
         }
       }
@@ -465,7 +465,7 @@ module UnitTest {
         assertSequenceEqual(tuple1,tuple2,"tuple("+firstType: string+")");
       }
       else {
-        const errorMsg = "assert failed - '%t' and '%t' are not of same type".format(tuple1, tuple2);
+        const errorMsg = "assert failed - '%?' and '%?' are not of same type".format(tuple1, tuple2);
         throw new owned AssertionError(errorMsg);
       }
     }
@@ -497,12 +497,12 @@ module UnitTest {
     proc __baseAssertEqual(first, second) throws {
       if canResolve("!=",first,second) {
         if (first != second) {
-          const errorMsg = "assert failed - '%t' != '%t'".format(first, second);
+          const errorMsg = "assert failed - '%?' != '%?'".format(first, second);
           throw new owned AssertionError(errorMsg);
         }
       }
       else {
-        const errorMsg = "assert failed - '%t' and '%t' are not of same type".format(first, second);
+        const errorMsg = "assert failed - '%?' and '%?' are not of same type".format(first, second);
         throw new owned AssertionError(errorMsg);
       }
     }
@@ -550,7 +550,7 @@ module UnitTest {
     proc assertNotEqual(first, second) throws {
       if canResolve("!=",first, second) {
         if !checkAssertInequality(first,second) {
-          const errorMsg = "assert failed -\n'%t'\n==\n'%t'".format(first, second);
+          const errorMsg = "assert failed -\n'%?'\n==\n'%?'".format(first, second);
           throw new owned AssertionError(errorMsg);
         }
       }
@@ -568,7 +568,7 @@ module UnitTest {
         checkGreater(first, second);
       }
       else {
-        const errorMsg = "assert failed - First element is of type %t and Second is of type %t".format(first.type:string, second.type:string);
+        const errorMsg = "assert failed - First element is of type %? and Second is of type %?".format(first.type:string, second.type:string);
         throw new owned AssertionError(errorMsg);
       }
     }
@@ -630,8 +630,8 @@ module UnitTest {
         for (item1, item2, i) in zip(seq1, seq2, 0..) {
           if item1 == item2 then checkequal = true;
           else if item1 < item2 {
-            tmpString += "First %t < Second %t :\n".format(seq_type_name, seq_type_name);
-            tmplarge += "\nFirst larger element in second %t is at index %t:\n'%t'\n'%t'\n".format(seq_type_name, i, item1, item2);
+            tmpString += "First %? < Second %? :\n".format(seq_type_name, seq_type_name);
+            tmplarge += "\nFirst larger element in second %? is at index %?:\n'%?'\n'%?'\n".format(seq_type_name, i, item1, item2);
             checkgreater = true;
             checkequal = false;
             symbol = "<";
@@ -651,17 +651,17 @@ module UnitTest {
           tmpString += "'[";
           for i in seq1.domain {
             tmpString += if i != seq1.size-1
-              then "%t, ".format(seq1[i])
-              else "%t]'%t'[".format(seq1[i], symbol);
+              then "%?, ".format(seq1[i])
+              else "%?]'%?'[".format(seq1[i], symbol);
           }
           for i in seq2.domain {
             tmpString += if i != seq2.size-1
-              then "%t, ".format(seq2[i])
-              else "%t]'".format(seq2[i]);
+              then "%?, ".format(seq2[i])
+              else "%?]'".format(seq2[i]);
           }
         }
         else {
-          tmpString += "'%t'%t'%t'".format(seq1, symbol, seq2);
+          tmpString += "'%?'%?'%?'".format(seq1, symbol, seq2);
         }
         tmpString+=tmplarge;
       }
@@ -682,18 +682,18 @@ module UnitTest {
           }
           else { // can be reimplemented using `reduce`
             if all(array1 <= array2) {
-              const errorMsg = "assert failed -\n'%t'\n<=\n'%t'".format(array1, array2);
+              const errorMsg = "assert failed -\n'%?'\n<=\n'%?'".format(array1, array2);
               throw new owned AssertionError(errorMsg);
             }
         }
         }
         else {
-          const errorMsg = "assert failed - First element is of shape %t and Second is of shape %t".format(array1.shape, array2.shape);
+          const errorMsg = "assert failed - First element is of shape %? and Second is of shape %?".format(array1.shape, array2.shape);
           throw new owned AssertionError(errorMsg);
         }
       }
       else {
-        const errorMsg = "assert failed - First element is of type %t and Second is of type %t".format(array1.type:string, array2.type:string);
+        const errorMsg = "assert failed - First element is of type %? and Second is of type %?".format(array1.type:string, array2.type:string);
         throw new owned AssertionError(errorMsg);
       }
     }
@@ -712,7 +712,7 @@ module UnitTest {
         assertSequenceGreater(tuple1,tuple2,"tuple("+firstType:string+")");
       }
       else {
-        const errorMsg = "assert failed - First element is of type %t and Second is of type %t".format(firstType:string, secondType:string);
+        const errorMsg = "assert failed - First element is of type %? and Second is of type %?".format(firstType:string, secondType:string);
         throw new owned AssertionError(errorMsg);
       }
     }
@@ -755,7 +755,7 @@ module UnitTest {
     /*The default assertGreater implementation, not type specific.*/
     proc __baseAssertGreater(first, second) throws {
       if all(first <= second) {
-        const errorMsg = "assert failed - '%t' <= '%t'".format(first, second);
+        const errorMsg = "assert failed - '%?' <= '%?'".format(first, second);
         throw new owned AssertionError(errorMsg);
       }
     }
@@ -772,7 +772,7 @@ module UnitTest {
         checkLessThan(first, second);
       }
       else {
-        const errorMsg = "assert failed - First element is of type %t and Second is of type %t".format(first.type:string, second.type:string);
+        const errorMsg = "assert failed - First element is of type %? and Second is of type %?".format(first.type:string, second.type:string);
         throw new owned AssertionError(errorMsg);
       }
     }
@@ -834,8 +834,8 @@ module UnitTest {
         for (item1, item2, i) in zip(seq1, seq2, 0..) {
           if item1 == item2 then checkequal = true;
           else if item1 > item2 {
-            tmpString += "First %t > Second %t :\n".format(seq_type_name, seq_type_name);
-            tmplarge += "\nFirst larger element in first %t is at index %t:\n'%t'\n'%t'\n".format(seq_type_name, i, item1, item2);
+            tmpString += "First %? > Second %? :\n".format(seq_type_name, seq_type_name);
+            tmplarge += "\nFirst larger element in first %? is at index %?:\n'%?'\n'%?'\n".format(seq_type_name, i, item1, item2);
             checkless = true;
             checkequal = false;
             symbol = ">";
@@ -855,17 +855,17 @@ module UnitTest {
           tmpString += "'[";
           for i in seq1.domain {
             tmpString += if i != seq1.size-1
-              then "%t, ".format(seq1[i])
-              else "%t]'%t'[".format(seq1[i], symbol);
+              then "%?, ".format(seq1[i])
+              else "%?]'%?'[".format(seq1[i], symbol);
           }
           for i in seq2.domain {
             tmpString += if i != seq2.size-1
-              then "%t, ".format(seq2[i])
-              else "%t]'".format(seq2[i]);
+              then "%?, ".format(seq2[i])
+              else "%?]'".format(seq2[i]);
           }
         }
         else {
-          tmpString += "'%t'%t'%t'".format(seq1, symbol, seq2);
+          tmpString += "'%?'%?'%?'".format(seq1, symbol, seq2);
         }
         tmpString+=tmplarge;
       }
@@ -886,18 +886,18 @@ module UnitTest {
           }
           else {
             if all(array1 >= array2) {
-              const errorMsg = "assert failed - \n'%t'\n>=\n'%t'".format(array1, array2);
+              const errorMsg = "assert failed - \n'%?'\n>=\n'%?'".format(array1, array2);
               throw new owned AssertionError(errorMsg);
             }
           }
         }
         else {
-          const errorMsg = "assert failed - First element is of shape %t and Second is of shape %t".format(array1.shape, array2.shape);
+          const errorMsg = "assert failed - First element is of shape %? and Second is of shape %?".format(array1.shape, array2.shape);
           throw new owned AssertionError(errorMsg);
         }
       }
       else {
-        const errorMsg = "assert failed - First element is of type %t and Second is of type %t".format(array1.type:string, array2.type:string);
+        const errorMsg = "assert failed - First element is of type %? and Second is of type %?".format(array1.type:string, array2.type:string);
         throw new owned AssertionError(errorMsg);
       }
     }
@@ -959,7 +959,7 @@ module UnitTest {
     /*The default assertGreater implementation, not type specific.*/
     proc __baseAssertLess(first, second) throws {
       if all(first >= second) {
-        const errorMsg = "assert failed - '%t'>='%t'".format(first, second);
+        const errorMsg = "assert failed - '%?'>='%?'".format(first, second);
         throw new owned AssertionError(errorMsg);
       }
     }
@@ -984,7 +984,7 @@ module UnitTest {
         throw new owned UnexpectedLocales("Max Locales is less than Min Locales");
       }
       if value < numLocales {
-        throw new owned TestIncorrectNumLocales("Required Locales = %t".format(value));
+        throw new owned TestIncorrectNumLocales("Required Locales = %?".format(value));
       }
     }
 
@@ -1001,7 +1001,7 @@ module UnitTest {
         throw new owned UnexpectedLocales("Max Locales is less than Min Locales");
       }
       if value > numLocales {
-        throw new owned TestIncorrectNumLocales("Required Locales = %t".format(value));
+        throw new owned TestIncorrectNumLocales("Required Locales = %?".format(value));
       }
     }
 
@@ -1034,7 +1034,7 @@ module UnitTest {
         }
       }
       if !canRun {
-        const errorMsg = "Required Locales = {%t}".format(", ".join([i in this.dictDomain] i:string));
+        const errorMsg = "Required Locales = {%?}".format(", ".join([i in this.dictDomain] i:string));
         throw new owned TestIncorrectNumLocales(errorMsg);
       }
     }
@@ -1207,7 +1207,7 @@ module UnitTest {
     }
 
     for test in testSuite {
-      if !testStatus["%t".format(test)] {
+      if !testStatus["%?".format(test)] {
         // Create a test object per test
         var checkCircle: list(string);
         var circleFound = false;
@@ -1233,7 +1233,7 @@ module UnitTest {
     }
     // A variety of catch statements will handle errors thrown
     catch e: AssertionError {
-      testResult.addFailure(testName, try! "%t".format(e));
+      testResult.addFailure(testName, try! "%?".format(e));
       testsFailed.replace(testName, true);
       // print info of the assertion error
     }

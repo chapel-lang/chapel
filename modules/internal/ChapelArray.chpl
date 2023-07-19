@@ -2155,7 +2155,7 @@ module ChapelArray {
   @chpldoc.nodoc
   operator :(x: [], type t:string) {
     import IO.FormattedIO.format;
-    return try! "%t".format(x);
+    return try! "%?".format(x);
   }
 
   pragma "fn returns aliasing array"

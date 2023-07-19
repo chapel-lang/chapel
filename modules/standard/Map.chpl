@@ -438,7 +438,7 @@ module Map {
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found then
-        boundsCheckHalt(try! "map index %t out of bounds".format(k));
+        boundsCheckHalt(try! "map index %? out of bounds".format(k));
       try! {
         var result = table.table[slot].val.borrow();
         if isNonNilableClass(valType) {
@@ -461,7 +461,7 @@ module Map {
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found then
-        boundsCheckHalt(try! "map index %t out of bounds".format(k));
+        boundsCheckHalt(try! "map index %? out of bounds".format(k));
       ref result = table.table[slot].val;
       return result;
     }
@@ -537,7 +537,7 @@ module Map {
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found then
-        boundsCheckHalt(try! "map index %t out of bounds".format(k));
+        boundsCheckHalt(try! "map index %? out of bounds".format(k));
       try! {
         var result: valType, key: keyType;
         table.clearSlot(slot, key, result);
@@ -1031,21 +1031,7 @@ module Map {
     proc init() {}
 
     proc init(k) {
-      // use Reflection;
-      // if isPrimitiveType(k.type) {
-      //   super.init("key '" + k:string + "' not found");
-      // } else {
-      //   super.init(try! "key '%t' not found".format(k));
-      // }
-
-      // use Reflection;
-      // if canResolveMethod(k, ":", k, string) {
-      //   super.init("key '" + k:string + "' not found");
-      // } else {
-      //   super.init(try! "key '%t' not found".format(k));
-      // }
-
-      super.init(try! "key '%t' not found".format(k));
+      super.init(try! "key '%?' not found".format(k));
     }
   }
 }
