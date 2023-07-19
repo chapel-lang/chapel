@@ -391,21 +391,6 @@ module Map {
       return table.table[slot].val;
     }
 
-    pragma "no doc"
-    proc const this(k: keyType) const throws
-      where shouldReturnRvalueByValue(valType) &&
-            !isNonNilableClass(valType) {
-      _warnForParSafeIndexing();
-
-      _enter(); defer _leave();
-      var (found, slot) = table.findFullSlot(k);
-      if !found then
-        throw new KeyNotFoundError(k);
-      const result = table.table[slot].val;
-      ref result = table.table[slot].val;
-      return result;
-    }
-
     proc ref this(k: keyType) ref throws {
       _warnForParSafeIndexing();
 
