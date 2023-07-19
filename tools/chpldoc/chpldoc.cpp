@@ -1411,7 +1411,7 @@ struct RstResultBuilder {
     RstSignatureVisitor ppv{os_};
 
     if (node->isEnumElement()) {
-      os_ << "enum element ";
+      os_ << "enum constant ";
     }
     
     node->traverse(ppv);
@@ -1528,7 +1528,7 @@ struct RstResultBuilder {
   owned<RstResult> visit(const EnumElement* e) {
     if (isNoDoc(e)) return {};
     indentDepth_++;
-    show("enumelement", e);
+    show("enumconstant", e);
     return getResult();
   }
 
