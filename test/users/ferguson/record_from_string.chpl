@@ -6,7 +6,7 @@ record Point {
 }
 
 var p = new Point(1,3);
-var s = "%t".format(p);
+var s = "%?".format(p);
 
 writeln(s);
 

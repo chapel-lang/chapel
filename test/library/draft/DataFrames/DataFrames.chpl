@@ -413,7 +413,7 @@ module DataFrames {
     pragma "no doc"
     operator :(val: Series, type t: string) {
       import IO.FormattedIO;
-      return try! "%t".format(val);
+      return try! "%?".format(val);
     }
   }
 

@@ -5,6 +5,6 @@ record Point {
 }
 
 var p = new Point(1,2);
-var s = "%t".format(p);
+var s = "%?".format(p);
 
 var q:Point = s;

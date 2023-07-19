@@ -7,5 +7,5 @@ union U {
 var u: U;
 u.s = "Cogito, ergo sum";
 
-var t = "%t".format(u);
+var t = "%?".format(u);
 writeln(t);

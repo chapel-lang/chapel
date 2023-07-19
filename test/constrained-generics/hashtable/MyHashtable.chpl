@@ -340,7 +340,7 @@ int implements StdOps;
 // The default implementation for toString().
 proc toString(arg): string {
   import IO.FormattedIO.format;
-  return try! "%t".format(arg);
+  return try! "%?".format(arg);
 }
 
 //
