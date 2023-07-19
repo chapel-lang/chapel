@@ -1,1 +1,2 @@
+singleValEnum-errors.chpl:21: warning: range.offset() is unstable and its behavior may change in the future
 singleValEnum-errors.chpl:21: error: can't apply '.offset()' to a range whose 'idxType' only has one value

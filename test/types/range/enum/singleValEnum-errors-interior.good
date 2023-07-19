@@ -1,3 +1,6 @@
+singleValEnum-errors.chpl:12: warning: range.interior() is unstable and its behavior may change in the future
+singleValEnum-errors.chpl:12: warning: range.interior() is unstable and its behavior may change in the future
+singleValEnum-errors.chpl:12: warning: range.interior() is unstable and its behavior may change in the future
 red..red
 red..red
 singleValEnum-errors.chpl:12: error: halt reached - can't compute the interior 2 elements of a range with size 1

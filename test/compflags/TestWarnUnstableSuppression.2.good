@@ -3,5 +3,13 @@ $CHPL_HOME/modules/internal/ChapelArray.chpl:nnnn: warning: 'dmapped' keyword is
 $CHPL_HOME/modules/internal/ChapelArray.chpl:nnnn: warning: 'dmapped' keyword is unstable, instead please use factory functions when available
 $CHPL_HOME/modules/internal/ChapelArray.chpl:nnnn: warning: 'dmapped' keyword is unstable, instead please use factory functions when available
 $CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: warning: chpl_unstableInternalSymbolForTesting is unstable
+$CHPL_HOME/modules/internal/BytesStringCommon.chpl:nnnn: warning: range.orderToIndex() is unstable and its behavior may change in the future
+$CHPL_HOME/modules/internal/BytesStringCommon.chpl:nnnn: warning: range.orderToIndex() is unstable and its behavior may change in the future
+  $CHPL_HOME/modules/internal/String.chpl:nnnn: called as doSearchNoEnc(x: string, needle: string, region: range(byteIndex,low,one), param count = false, param fromLeft = true)
+  within internal functions (use --print-callstack-on-error to see)
+$CHPL_HOME/modules/internal/String.chpl:nnnn: warning: range.orderToIndex() is unstable and its behavior may change in the future
+$CHPL_HOME/modules/internal/String.chpl:nnnn: warning: range.orderToIndex() is unstable and its behavior may change in the future
+  $CHPL_HOME/modules/internal/String.chpl:nnnn: called as string.doSearchUTF8(pattern: string, indices: range(byteIndex,low,one), param count = false, param fromLeft = true)
+  within internal functions (use --print-callstack-on-error to see)
 $CHPL_HOME/modules/internal/ChapelLocale.chpl:nnnn: warning: 'allocate' is unstable, and may be renamed or moved
 $CHPL_HOME/modules/internal/ChapelLocale.chpl:nnnn: warning: 'deallocate' is unstable, and may be renamed or moved

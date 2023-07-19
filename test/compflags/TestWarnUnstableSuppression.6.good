@@ -15,6 +15,14 @@ $CHPL_HOME/modules/standard/List.chpl:nnnn: warning: 'list.parSafe' is unstable 
 $CHPL_HOME/modules/standard/List.chpl:nnnn: warning: 'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future
 $CHPL_HOME/modules/standard/List.chpl:nnnn: warning: 'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future
 $CHPL_HOME/modules/standard/IO.chpl:nnnn: warning: append mode is unstable
+$CHPL_HOME/modules/internal/BytesStringCommon.chpl:nnnn: warning: range.orderToIndex() is unstable and its behavior may change in the future
+$CHPL_HOME/modules/internal/BytesStringCommon.chpl:nnnn: warning: range.orderToIndex() is unstable and its behavior may change in the future
+  $CHPL_HOME/modules/internal/String.chpl:nnnn: called as doSearchNoEnc(x: string, needle: string, region: range(byteIndex,low,one), param count = false, param fromLeft = true)
+  within internal functions (use --print-callstack-on-error to see)
+$CHPL_HOME/modules/internal/String.chpl:nnnn: warning: range.orderToIndex() is unstable and its behavior may change in the future
+$CHPL_HOME/modules/internal/String.chpl:nnnn: warning: range.orderToIndex() is unstable and its behavior may change in the future
+  $CHPL_HOME/modules/internal/String.chpl:nnnn: called as string.doSearchUTF8(pattern: string, indices: range(byteIndex,low,one), param count = false, param fromLeft = true)
+  within internal functions (use --print-callstack-on-error to see)
 $CHPL_HOME/modules/standard/Errors.chpl:nnnn: warning: 'deallocate' is unstable, and may be renamed or moved
 $CHPL_HOME/modules/standard/Errors.chpl:nnnn: In initializer:
 $CHPL_HOME/modules/standard/Errors.chpl:nnnn: warning: 'allocate' is unstable, and may be renamed or moved
