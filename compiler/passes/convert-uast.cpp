@@ -392,6 +392,29 @@ struct Converter {
     return new CallExpr(PRIM_ERROR);
   }
 
+  UnresolvedSymExpr* reservedWordToInternalName(UniqueString name) {
+    static std::unordered_map<UniqueString, const char*> map = {
+      { USTR("owned"), "_owned" },
+      { USTR("shared"), "_shared" },
+      { USTR("sync"), "_syncvar" },
+      { USTR("single"), "_singlevar" },
+      { USTR("domain"), "_domain" },
+      { USTR("align"), "chpl_align" },
+      { USTR("by"), "chpl_by" },
+
+      // if "index" becomes an actual type, rather than magic:
+      //
+      // { USTR("index"), "_index" },
+    };
+
+    auto it = map.find(name);
+    if (it != map.end()) {
+      return new UnresolvedSymExpr(it->second);
+    }
+
+    return nullptr;
+  }
+
   Expr* reservedWordRemapForIdent(UniqueString name) {
     if (name == USTR("?")) {
       return new SymExpr(gUninstantiated);
@@ -401,16 +424,6 @@ struct Converter {
       return new SymExpr(dtBytes->symbol);
     } else if (name == USTR("string")) {
       return new SymExpr(dtString->symbol);
-    } else if (name == USTR("owned")) {
-      return new UnresolvedSymExpr("_owned");
-    } else if (name == USTR("shared")) {
-      return new UnresolvedSymExpr("_shared");
-    } else if (name == USTR("sync")) {
-      return new UnresolvedSymExpr("_syncvar");
-    } else if (name == USTR("single")) {
-      return new UnresolvedSymExpr("_singlevar");
-    } else if (name == USTR("domain")) {
-      return new UnresolvedSymExpr("_domain");
     } else if (name == USTR("index")) {
       return new UnresolvedSymExpr("_index");
     } else if (name == USTR("nil")) {
@@ -427,17 +440,13 @@ struct Converter {
       return new SymExpr(dtReal[FLOAT_SIZE_DEFAULT]->symbol);
     } else if (name == USTR("complex")) {
       return new SymExpr(dtComplex[COMPLEX_SIZE_DEFAULT]->symbol);
-    } else if (name == USTR("align")) {
-      return new UnresolvedSymExpr("chpl_align");
-    } else if (name == USTR("by")) {
-      return new UnresolvedSymExpr("chpl_by");
     } else if (name == USTR("_")) {
       return new UnresolvedSymExpr("chpl__tuple_blank");
     } else if (name == USTR("void")) {
       return new SymExpr(dtVoid->symbol);
     }
 
-    return nullptr;
+    return reservedWordToInternalName(name);
   }
 
   Expr* resolvedIdentifier(const uast::Identifier* node) {
@@ -587,8 +596,14 @@ struct Converter {
 
     // check for a reserved word
     auto name = node->name();
-    if (auto remap = reservedWordRemapForIdent(name)) {
-      return remap;
+    if (inImportOrUse) {
+      if (auto remap = reservedWordToInternalName(name)) {
+        return remap;
+      }
+    } else {
+      if (auto remap = reservedWordRemapForIdent(name)) {
+        return remap;
+      }
     }
 
     // otherwise use an UnresolvedSymExpr
@@ -909,6 +924,13 @@ struct Converter {
     } else {
       if (auto ret = convertModuleDot(node)) {
         return ret;
+      }
+      if (inImportOrUse) {
+        // Skip "special" things like .locale handling if we're in
+        // something like `import M.locale`, which _should_ be valid for
+        // importing tertiary methods.
+
+        return new CallExpr(".", base, new_CStringSymbol(member.c_str()));
       }
       return buildDotExpr(base, member.c_str());
     }
