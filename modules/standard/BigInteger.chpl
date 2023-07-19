@@ -891,7 +891,6 @@ module BigInteger {
     return c;
   }
 
-  // reimplemnt using divR?
   // helper for % and %=, which is different from `mod`
   private inline proc modTrunc(ref result: bigint,
                                const ref x: bigint,
