@@ -4143,9 +4143,21 @@ module BigInteger {
      The result is always >= 0 if `b` > 0.
      It is an error if `b` == 0.
   */
-  proc mod(ref result: bigint, const ref a: bigint, const ref b: bigint) {
-    BigInteger.divR(result, a, b, rounding=round.down);
-  }
+  pragma "last resort"
+  @deprecated(notes=":proc:`~BigInteger.mod` with named formals `a` and `b` is deprecated, please use the version with `x` and `y` instead")
+  proc mod(ref result: bigint, const ref a: bigint, const ref b: bigint)
+    do BigInteger.mod(result, a, b);
+
+  /* Computes the mod operator on the two arguments, defined as
+     ``mod(a, b) = a - b * floor(a / b)``.
+
+     The result is stored in ``result``.
+
+     The result is always >= 0 if `b` > 0.
+     It is an error if `b` == 0.
+  */
+  proc mod(ref result: bigint, const ref x: bigint, const ref y: bigint)
+    do BigInteger.divR(result, x, y, rounding=round.down);
 
   /* Computes the mod operator on the two arguments, defined as
      ``mod(a, b) = a - b * floor(a / b)``.
@@ -4171,46 +4183,62 @@ module BigInteger {
      The result is always >= 0 if `b` > 0.
      It is an error if `b` == 0.
   */
-  proc mod(ref result: bigint, const ref a: bigint, b: integral) : int {
+  pragma "last resort"
+  @deprecated(notes=":proc:`~BigInteger.mod` with named formals `a` and `b` is deprecated, please use the version with `x` and `y` instead")
+  proc mod(ref result: bigint, const ref a: bigint, b: integral) : int
+    do return BigInteger.mod(result, a, b);
+
+  /* Computes the mod operator on the two arguments, defined as
+     ``mod(a, b) = a - b * floor(a / b)``.
+
+     If b is of an unsigned type, then
+     fewer conditionals will be evaluated at run time.
+
+     The result is stored in ``result`` and returned as an ``int``.
+
+     The result is always >= 0 if `b` > 0.
+     It is an error if `b` == 0.
+  */
+  proc mod(ref result: bigint, const ref x: bigint, y: integral) : int {
     if (chpl_checkDivByZero) then
-      if b == 0 then
+      if y == 0 then
         halt("Attempt to divide by zero");
 
-    inline proc helper(ref res, ref rem, const ref a, b) {
+    inline proc helper(ref res, ref rem, const ref x, y) {
       if _local {
-        rem = mpz_fdiv_r_ui(res.mpz, a.mpz, b);
+        rem = mpz_fdiv_r_ui(res.mpz, x.mpz, y);
       } else if res.localeId == chpl_nodeID {
-        const a_ = a;
-        rem = mpz_fdiv_r_ui(res.mpz, a_.mpz, b);
+        const x_ = x;
+        rem = mpz_fdiv_r_ui(res.mpz, x_.mpz, y);
       } else {
         const resLoc = chpl_buildLocaleID(res.localeId, c_sublocid_any);
         on __primitive("chpl_on_locale_num", resLoc) {
-          const a_ = a;
-          rem = mpz_fdiv_r_ui(res.mpz, a_.mpz, b);
+          const x_ = x;
+          rem = mpz_fdiv_r_ui(res.mpz, x_.mpz, y);
         }
       }
     }
 
-    var b_ : c_ulong;
+    var y_ : c_ulong;
     var rem: c_ulong;
 
-    if isNonnegative(b) {
-      b_ = b.safeCast(c_ulong);
-      helper(result, rem, a, b_);
+    if isNonnegative(y) {
+      y_ = y.safeCast(c_ulong);
+      helper(result, rem, x, y_);
       return rem.safeCast(int);
     } else {
-      if b >= 0 then
-        b_ = b.safeCast(c_ulong);
+      if y >= 0 then
+        y_ = y.safeCast(c_ulong);
       else
-        b_ = (0 - b).safeCast(c_ulong);
+        y_ = (0 - y).safeCast(c_ulong);
 
-      helper(result, rem, a, b_);
+      helper(result, rem, x, y_);
 
       if rem == 0
         then return 0;
-      else if b < 0 {
-        result += b;
-        return rem.safeCast(int) + b;
+      else if y < 0 {
+        result += y;
+        return rem.safeCast(int) + y;
       } else
         return rem.safeCast(int);
     }
