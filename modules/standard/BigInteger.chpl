@@ -891,6 +891,48 @@ module BigInteger {
     return c;
   }
 
+  // reimplemnt using divR?
+  // helper for % and %=, which is different from `mod`
+  private inline proc modTrunc(ref result: bigint,
+                               const ref x: bigint,
+                               const ref y: bigint)
+    do BigInteger.divR(result, x, y, rounding=round.zero);
+
+  // helper for % and %=, which is different from `mod`
+  private inline proc modTrunc(ref result: bigint, const ref x: bigint, y: integral) {
+    if (chpl_checkDivByZero) then
+      if y == 0 then
+        halt("Attempt to divide by zero");
+
+    inline proc helper(ref res, const ref x, y) {
+      if _local {
+        mpz_tdiv_r_ui(res.mpz, x.mpz, y);
+
+      } else if res.localeId == chpl_nodeID {
+        const x_ = x;
+        mpz_tdiv_r_ui(res.mpz, x_.mpz, y_);
+
+      } else {
+        const resLoc = chpl_buildLocaleID(res.localeId, c_sublocid_any);
+        on __primitive("chpl_on_locale_num", resLoc) {
+          const x_ = x;
+          mpz_tdiv_r_ui(res.mpz, x_.mpz, y_);
+        }
+      }
+    }
+
+    if y.type == uint {
+      helper(result, x, y);
+    }
+    else {
+      var y_ : c_ulong;
+      if y >= 0
+        then y_ = y.safeCast(c_ulong);
+        else y_ = (0 - y).safeCast(c_ulong);
+      helper(result, x, y_);
+    }
+
+  }
 
 
   /* Computes the mod operator on the two arguments, defined as
@@ -900,12 +942,8 @@ module BigInteger {
      It is an error if `b` == 0.
   */
   operator bigint.%(const ref a: bigint, const ref b: bigint): bigint {
-    const a_ = a.localize();
-    const b_ = b.localize();
     var c = new bigint();
-
-    mpz_tdiv_r(c.mpz, a_.mpz, b_.mpz);
-
+    BigInteger.modTrunc(c, a, b);
     return c;
   }
 
@@ -917,16 +955,7 @@ module BigInteger {
   */
   operator bigint.%(const ref a: bigint, b: int): bigint {
     var c = new bigint();
-    const a_ = a.localize();
-    var b_ : c_ulong;
-
-    if b >= 0 then
-      b_ = b.safeCast(c_ulong);
-    else
-      b_ = (0 - b).safeCast(c_ulong);
-
-    mpz_tdiv_r_ui(c.mpz, a_.mpz, b_);
-
+    BigInteger.modTrunc(c, a, b);
     return c;
   }
 
@@ -937,12 +966,8 @@ module BigInteger {
      It is an error if `b` == 0.
   */
   operator bigint.%(const ref a: bigint, b: uint): bigint {
-    const a_ = a.localize();
-    const b_ = b.safeCast(c_ulong);
-    var   c  = new bigint();
-
-    mpz_tdiv_r_ui(c.mpz, a_.mpz, b_);
-
+    var c = new bigint();
+    BigInteger.modTrunc(c, a, b);
     return c;
   }
 
@@ -1210,23 +1235,8 @@ module BigInteger {
      The result is always >= 0 if `a` > 0.
      It is an error if `b` == 0.
   */
-  operator bigint.%=(ref a: bigint, const ref b: bigint) {
-    if _local {
-      mpz_tdiv_r(a.mpz, a.mpz, b.mpz);
-
-    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      mpz_tdiv_r(a.mpz, a.mpz, b.mpz);
-
-    } else {
-      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", aLoc) {
-        const b_ = b;
-
-        mpz_tdiv_r(a.mpz, a.mpz, b_.mpz);
-      }
-    }
-  }
+  operator bigint.%=(ref a: bigint, const ref b: bigint)
+    do BigInteger.modTrunc(a, a, b);
 
   /* Mod ``a`` by ``b``, storing the result in ``a``.
 
@@ -1236,16 +1246,8 @@ module BigInteger {
      The result is always >= 0 if `a` > 0.
      It is an error if `b` == 0.
   */
-  operator bigint.%=(ref a: bigint, b: int) {
-    var b_ = 0 : uint;
-
-    if b >= 0 then
-      b_ = b       : uint;
-    else
-      b_ = (0 - b) : uint;
-
-    a %= b_;
-  }
+  operator bigint.%=(ref a: bigint, b: int)
+    do BigInteger.modTrunc(a, a, b);
 
   /* Mod ``a`` by ``b``, storing the result in ``a``.
 
@@ -1255,23 +1257,8 @@ module BigInteger {
      The result is always >= 0 if `a` > 0.
      It is an error if `b` == 0.
   */
-  operator bigint.%=(ref a: bigint, b: uint) {
-    var b_ = b.safeCast(c_ulong);
-
-    if _local {
-      mpz_tdiv_r_ui(a.mpz, a.mpz, b_);
-
-    } else if a.localeId == chpl_nodeID {
-      mpz_tdiv_r_ui(a.mpz, a.mpz, b_);
-
-    } else {
-      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", aLoc) {
-        mpz_tdiv_r_ui(a.mpz, a.mpz, b_);
-      }
-    }
-  }
+  operator bigint.%=(ref a: bigint, b: uint)
+    do BigInteger.modTrunc(a, a, b);
 
   operator bigint.&=(ref a: bigint, const ref b: bigint) {
     BigInteger.and(a, a, b);
