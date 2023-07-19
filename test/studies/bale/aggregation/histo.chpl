@@ -27,11 +27,11 @@ proc stopTimer(name) {
 }
 
 proc main() {
-  const D = if useBlockArr then newBlockDom(0..#tableSize)
-                           else newCyclicDom(0..#tableSize);
+  const D = if useBlockArr then Block.createDomain(0..#tableSize)
+                           else Cyclic.createDomain(0..#tableSize);
   var AggA: [D] AggregatedAtomic(int);
 
-  const D2 = newBlockDom(0..#numUpdates);
+  const D2 = Block.createDomain(0..#numUpdates);
   var Rindex: [D2] int;
 
   fillRandom(Rindex, 208);

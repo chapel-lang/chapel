@@ -42,7 +42,7 @@ void TupleType::stringify(std::ostream& ss,
   auto sorted = sortedSubstitutions();
   bool emittedField = false;
   ss << "(";
-  for (auto sub : sorted) {
+  for (const auto& sub : sorted) {
     if (emittedField) ss << ", ";
     if (sub.second.type()) {
       sub.second.type()->stringify(ss, stringKind);
@@ -161,11 +161,11 @@ TupleType::getGenericTupleType(Context* context) {
 }
 
 const TupleType*
-TupleType::getVarArgTuple(Context* context,
-                          std::vector<QualifiedType> eltTypes) {
+TupleType::getQualifiedTuple(Context* context,
+                             std::vector<QualifiedType> eltTypes) {
   SubstitutionsMap subs;
   int i = 0;
-  for (auto t : eltTypes) {
+  for (const auto& t : eltTypes) {
     subs.emplace(idForTupElt(i), t);
     i++;
   }
@@ -178,16 +178,16 @@ TupleType::getVarArgTuple(Context* context,
 }
 
 const TupleType*
-TupleType::getVarArgTuple(Context* context,
-                          QualifiedType paramSize,
-                          QualifiedType varArgEltType) {
+TupleType::getStarTuple(Context* context,
+                        QualifiedType paramSize,
+                        QualifiedType varArgEltType) {
   CHPL_ASSERT(!varArgEltType.isUnknownKindOrType());
 
   if (!paramSize.isUnknown()) {
     // Fixed size, we can at least create a star tuple of AnyType
     int64_t numElements = paramSize.param()->toIntParam()->value();
     std::vector<QualifiedType> eltTypes(numElements, varArgEltType);
-    return getVarArgTuple(context, eltTypes);
+    return getQualifiedTuple(context, eltTypes);
   } else {
     // Size unknown, store the expected element type
     auto name = UniqueString::get(context, "_tuple");

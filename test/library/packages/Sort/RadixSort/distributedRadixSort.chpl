@@ -14,7 +14,7 @@ proc simpletestcore(input:[]) {
   var localCopy = input;
   shuffle(localCopy, seed);
 
-  const blockDom = newBlockDom(input.domain);
+  const blockDom = Block.createDomain(input.domain);
   var A: [blockDom] uint = localCopy;
 
   if debug {
@@ -44,7 +44,7 @@ proc simpletest(input:[]) {
   simpletestcore(input.reindex(-1..#size));
 }
 
-simpletest([0:uint, ]);
+simpletest([0:uint]);
 simpletest([0:uint, 0:uint, 0:uint, 0:uint]);
 simpletest([0x0:uint,
             0xff00000000000000:uint,
@@ -65,7 +65,7 @@ simpletest([0x01:uint,
 
 
 proc randomtest(n:int) {
-  const blockDom = newBlockDom({0..#n});
+  const blockDom = Block.createDomain({0..#n});
   var A: [blockDom] uint;
   var seed = SeedGenerator.oddCurrentTime;
   fillRandom(A, seed);

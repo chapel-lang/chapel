@@ -39,8 +39,8 @@ module DefaultSparse {
     pragma "local field"
     var _indices: [nnzDom] index(rank, idxType);
 
-    override proc linksDistribution() param return false;
-    override proc dsiLinksDistribution() return false;
+    override proc linksDistribution() param do return false;
+    override proc dsiLinksDistribution() do return false;
 
     proc init(param rank, type idxType, dist: unmanaged DefaultDist,
         parentDom: domain) {
@@ -49,9 +49,9 @@ module DefaultSparse {
       this.dist = dist;
     }
 
-    proc stridable param {
-      return parentDom.stridable;
-    }
+    // deprecated by Vass in 1.31 to implement #17131
+    @deprecated("domain.stridable is deprecated; use domain.strides instead")
+    proc stridable param do return parentDom.strides.toStridable();
 
     override proc getNNZ(): int{
       return _nnz;
@@ -396,7 +396,7 @@ module DefaultSparse {
       return chpl_getSingletonLocaleArray(this.locale);
     }
 
-    proc dsiHasSingleLocalSubdomain() param return true;
+    proc dsiHasSingleLocalSubdomain() param do return true;
 
     proc dsiLocalSubdomain(loc: locale) {
       if this.locale == loc {
@@ -426,56 +426,20 @@ module DefaultSparse {
     // dsiDestroyArr is defined in BaseSparseArrImpl
 
     // ref version
-    proc dsiAccess(ind: idxType) ref where rank == 1 {
-      // make sure we're in the dense bounding box
-      if boundsChecking then
-        if !(dom.parentDom.contains(ind)) {
-          if debugDefaultSparse {
-            writeln("On locale ", here.id);
-            writeln("In dsiAccess, got index ", ind);
-            writeln("dom.parentDom = ", dom.parentDom);
-          }
-
-          halt("array index out of bounds: ", ind);
-        }
-
-
-      // lookup the index and return the data or IRV
-      const (found, loc) = dom.find(ind);
-      if found then
-        return data(loc);
-      else // ?fromMMS: is this error message correct? Not actually looking at value.
-        halt("attempting to assign a 'zero' value in a sparse array: ", ind);
-    }
-    // value version
-    proc dsiAccess(ind: idxType) const ref where rank == 1 {
-      // make sure we're in the dense bounding box
-      if boundsChecking then
-        if !(dom.parentDom.contains(ind)) then
-          halt("array index out of bounds: ", ind);
-
-      // lookup the index and return the data or IRV
-      const (found, loc) = dom.find(ind);
-      if found then
-        return data(loc);
-      else
-        return irv;
-    }
-
-
-    // ref version
     proc dsiAccess(ind: rank*idxType) ref {
       // make sure we're in the dense bounding box
       if boundsChecking then
         if !(dom.parentDom.contains(ind)) then
-          halt("array index out of bounds: ", ind);
+          halt("array index out of bounds: ", if rank==1 then ind(0) else ind);
 
       // lookup the index and return the data or IRV
       const (found, loc) = dom.find(ind);
       if found then
         return data(loc);
       else
-        halt("attempting to assign a 'zero' value in a sparse array: ", ind);
+        // MMS+Vass: we should reword this error message to "assign or access"
+        halt("attempting to assign a 'zero' value in a sparse array at index ",
+             if rank == 1 then ind(0) else ind);
     }
     // value version for POD types
     proc dsiAccess(ind: rank*idxType)
@@ -483,7 +447,7 @@ module DefaultSparse {
       // make sure we're in the dense bounding box
       if boundsChecking then
         if !(dom.parentDom.contains(ind)) then
-          halt("array index out of bounds: ", ind);
+          halt("array index out of bounds: ", if rank==1 then ind(0) else ind);
 
       // lookup the index and return the data or IRV
       const (found, loc) = dom.find(ind);
@@ -497,7 +461,7 @@ module DefaultSparse {
       // make sure we're in the dense bounding box
       if boundsChecking then
         if !(dom.parentDom.contains(ind)) then
-          halt("array index out of bounds: ", ind);
+          halt("array index out of bounds: ", if rank==1 then ind(0) else ind);
 
       // lookup the index and return the data or IRV
       const (found, loc) = dom.find(ind);
@@ -558,7 +522,7 @@ module DefaultSparse {
       return chpl_getSingletonLocaleArray(this.locale);
     }
 
-    proc dsiHasSingleLocalSubdomain() param return true;
+    proc dsiHasSingleLocalSubdomain() param do return true;
 
     proc dsiLocalSubdomain(loc: locale) {
       if this.locale == loc {

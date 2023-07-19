@@ -197,7 +197,8 @@ static void assertIsDeprecated(const ErrorGuard& guard,
                               isMentionInUseImport);
 }
 
-static void testDeprecationWarningsForTypes(void) {
+// Test deprecation warning coverage across different symbol types.
+static void test0(void) {
   Context context;
   Context* ctx = &context;
   ErrorGuard guard(ctx);
@@ -205,58 +206,58 @@ static void testDeprecationWarningsForTypes(void) {
   auto path = TEST_NAME(ctx);
   std::cout << path.c_str() << std::endl;
 
-  std::string contents = 
+  std::string contents =
     R""""(
     module testDeprecationWarningsForTypes {
 
-      deprecated
+      @deprecated
       record r1 { var x: int; }
-      deprecated "- The record r2 is deprecated"
+      @deprecated(notes="- The record r2 is deprecated")
       record r2 { var y: int; }
 
-      deprecated
+      @deprecated
       class c1 { var a: int; }
-      deprecated "- The class c2 is deprecated"
+      @deprecated(notes="- The class c2 is deprecated")
       class c2 { var b: int; }
 
-      deprecated
+      @deprecated
       union u1 { var f: int; }
-      deprecated "- The union u2 is deprecated"
+      @deprecated(notes="- The union u2 is deprecated")
       union u2 { var g: int; }
 
-      deprecated
+      @deprecated
       config const foo1 = 0;
-      deprecated "- The config const foo2 is deprecated"
+      @deprecated(notes="- The config const foo2 is deprecated")
       config const foo2 = 0;
 
-      deprecated
+      @deprecated
       config param bar1 = 0;
-      deprecated "- The config param bar2 is deprecated"
+      @deprecated(notes="- The config param bar2 is deprecated")
       config param bar2 = 0;
 
-      deprecated
+      @deprecated
       param baz1 = 0;
-      deprecated "- The param baz2 is deprecated"
+      @deprecated(notes="- The param baz2 is deprecated")
       param baz2 = 0;
 
-      deprecated
+      @deprecated
       module mod1 {}
-      deprecated "- The module mod2 is deprecated"
+      @deprecated(notes="- The module mod2 is deprecated")
       module mod2 {}
 
       enum e1 {
         e1k1,
-        deprecated
+        @deprecated
         e1k2,
-        deprecated "- The enum element e1k3 is deprecated"
+        @deprecated(notes="- The enum element e1k3 is deprecated")
         e1k3,
         e1k4
       }
 
-      deprecated
+      @deprecated
       enum e2 { e2k1 }
 
-      deprecated "- The enum e3 is deprecated"
+      @deprecated(notes="- The enum e3 is deprecated")
       enum e3 { e3k1 }
 
       var v1 = new r1();
@@ -336,7 +337,8 @@ static void testDeprecationWarningsForTypes(void) {
   std::cout << std::endl;
 }
 
-static void testDeprecationWarningsForUseImport(void) {
+// Test deprecation coverage within use/import statements.
+static void test1(void) {
   Context context;
   Context* ctx = &context;
   ErrorGuard guard(ctx);
@@ -344,35 +346,35 @@ static void testDeprecationWarningsForUseImport(void) {
   auto path = TEST_NAME(ctx);
   std::cout << path.c_str() << std::endl;
 
-  std::string contents = 
+  std::string contents =
     R""""(
-    deprecated "- The module foo is deprecated"
+    @deprecated(notes="- The module foo is deprecated")
     module foo {
-      deprecated
+      @deprecated
       var x: int;
-      deprecated "The variable y is deprecated"
+      @deprecated(notes="The variable y is deprecated")
       var y: int;
       var z: int;
     }
 
     module bar {
-      deprecated "The variable a is deprecated"
+      @deprecated(notes="The variable a is deprecated")
       var a: int;
     }
 
     module baz {
-      deprecated "The proc p is deprecated"
+      @deprecated(notes="The proc p is deprecated")
       proc p() {}
-      deprecated "The parenless proc f is deprecated"
+      @deprecated(notes="The parenless proc f is deprecated")
       proc f { return 0; }
     }
 
     module ding {
-      deprecated "The proc p(x: int) is deprecated"
+      @deprecated(notes="The proc p(x: int) is deprecated")
       proc p(x: int) {}
-      deprecated "The proc p(x: uint) is deprecated"
+      @deprecated(notes="The proc p(x: uint) is deprecated")
       proc p(x: uint) {}
-      deprecated "The proc p(x: real) is deprecated"
+      @deprecated(notes="The proc p(x: real) is deprecated")
       proc p(x: real) {}
     }
 
@@ -426,7 +428,8 @@ static void testDeprecationWarningsForUseImport(void) {
   std::cout << std::endl;
 }
 
-static void testNoUnstableWarningsForThisFormals(void) {
+// Warnings should not be emitted for method receivers.
+static void test2(void) {
   Context context;
   Context* ctx = turnOnWarnUnstable(&context);
   ErrorGuard guard(ctx);
@@ -437,13 +440,13 @@ static void testNoUnstableWarningsForThisFormals(void) {
   std::string contents =
     R""""(
     module M {
-      @unstable "The class 'C' is unstable"
+      @unstable("The class 'C' is unstable")
       class C {
         proc foo() {}   // Primary
       }
       proc C.bar() {}   // Secondary
 
-      @unstable "The record 'r' is unstable"
+      @unstable("The record 'r' is unstable")
       record r {
         proc foo() {}   // Primary
       }
@@ -477,7 +480,6 @@ static void testNoUnstableWarningsForThisFormals(void) {
   // Scope-resolve the module.
   std::ignore = resolveModule(ctx, mod->id());
 
-  // TODO: Helpers to make sure the errors are correct.
   assert(guard.numErrors() == 2);
   for (auto& err : guard.errors()) {
     assert(err->type() == ErrorType::Unstable);
@@ -488,7 +490,8 @@ static void testNoUnstableWarningsForThisFormals(void) {
   assert(guard.realizeErrors());
 }
 
-static void testNoWarningsForUnstableMentionsInUnstable(void) {
+// Nested unstable warnings should not occur.
+static void test3(void) {
   Context context;
   Context* ctx = turnOnWarnUnstable(&context);
   ErrorGuard guard(ctx);
@@ -500,13 +503,13 @@ static void testNoWarningsForUnstableMentionsInUnstable(void) {
     R""""(
 
     module testNoWarningsForUnstableMentionsInUnstable {
-      @unstable "this variable is unstable"
+      @unstable("this variable is unstable")
       var x: int = 0;
       var y: int = 1;
 
       proc foo(z) {}
 
-      @unstable "this module is unstable"
+      @unstable("this module is unstable")
       module TestUnstableModule2 {
         // checks deep uses
         module Deeper {
@@ -550,7 +553,6 @@ static void testNoWarningsForUnstableMentionsInUnstable(void) {
   const Function* mainFn = mod->stmt(4)->toFunction();
   std::ignore = resolveConcreteFunction(ctx, mainFn->id());
 
-  // TODO: Helpers to make sure the errors are correct.
   assert(guard.numErrors() == 2);
   for (auto& err : guard.errors()) {
     assert(err->type() == ErrorType::Unstable);
@@ -566,11 +568,133 @@ static void testNoWarningsForUnstableMentionsInUnstable(void) {
   assert(guard.realizeErrors());
 }
 
+// Make sure that formal types are covered as well.
+static void test4(ErrorType expectedError) {
+  assert(expectedError == ErrorType::Unstable ||
+         expectedError == ErrorType::Deprecation);
+
+  std::string warningLabel = expectedError == ErrorType::Unstable
+        ? "@unstable"
+        : "@deprecated";
+
+  Context context;
+  Context* ctx = turnOnWarnUnstable(&context);
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME(ctx);
+
+  std::cout << path.c_str() << std::endl;
+
+  std::string contents = "\n" + warningLabel +
+    R""""(("warning message")
+    class C {}
+
+    proc foo(x: C) {}
+
+    proc main() {
+      var x = new C();
+      foo(x);
+    }
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the top module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(!guard.realizeErrors());
+
+  assert(br.numTopLevelExpressions() == 1);
+  auto mod = br.topLevelExpression(0)->toModule();
+  assert(mod);
+
+  // Force resolve 'main' since we may not always do that yet.
+  assert(mod->numStmts() == 3);
+  const Function* mainFn = mod->stmt(2)->toFunction();
+  std::ignore = resolveConcreteFunction(ctx, mainFn->id());
+
+  assert(guard.numErrors() == 2);
+  for (auto& err : guard.errors()) {
+    assert(err->type() == expectedError);
+  }
+
+  assert(guard.realizeErrors());
+}
+
+// Unstable warnings are not emitted if the parent is compiler-generated,
+// deprecated, or unstable. Deprecation warnings are not emitted if the
+// parent is deprecated or compiler-generated (but are emitted in unstable
+// things, since those will stick around longer).
+static void test5(void) {
+  Context context;
+  Context* ctx = turnOnWarnUnstable(&context);
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME(ctx);
+  std::cout << path.c_str() << std::endl;
+
+  std::string contents =
+    R""""(
+    @deprecated
+    var x = 0;
+    @unstable
+    var y = 0;
+
+    proc foo(x) {}
+
+    // No mention for either.
+    pragma "compiler generated"
+    proc f1() {
+      foo(x);
+      foo(y);
+    }
+
+    // Unstable warning is not mentioned. Deprecation warning is.
+    @unstable
+    proc f2() {
+      foo(x);
+      foo(y);
+    }
+
+    // Neither unstable or deprecated is mentioned.
+    @deprecated
+    proc f3() {
+      foo(x);
+      foo(y);
+    }
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the top module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 1);
+  auto mod = br.topLevelExpression(0)->toModule();
+  assert(mod);
+
+  // Force resolve 'main' since we may not always do that yet.
+  assert(mod->numStmts() == 9);
+  const Function* f1 = mod->stmt(4)->toFunction();
+  std::ignore = resolveConcreteFunction(ctx, f1->id());
+  const Function* f2 = mod->stmt(6)->toFunction();
+  std::ignore = resolveConcreteFunction(ctx, f2->id());
+  const Function* f3 = mod->stmt(8)->toFunction();
+  std::ignore = resolveConcreteFunction(ctx, f3->id());
+
+
+  assert(guard.numErrors() == 2);
+  assert(guard.error(0)->kind() == ErrorBase::Kind::WARNING);
+  assert(guard.error(1)->type() == ErrorType::Deprecation);
+  assert(guard.realizeErrors());
+}
+
 int main() {
-  testDeprecationWarningsForTypes();
-  testDeprecationWarningsForUseImport();
-  testNoUnstableWarningsForThisFormals();
-  testNoWarningsForUnstableMentionsInUnstable();
+  test0();
+  test1();
+  test2();
+  test3();
+  test4(ErrorType::Unstable);
+  test4(ErrorType::Deprecation);
+  test5();
   return 0;
 }
 

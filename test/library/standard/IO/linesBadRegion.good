@@ -1,4 +1,4 @@
-linesBadRegion.chpl:6: warning: `file.lines` is deprecated; please use `fileReader.lines` instead
+linesBadRegion.chpl:6: warning: `file.lines` is deprecated; please use `file.reader().lines` instead
 uncaught SystemError: Invalid argument (while reading string with path "linesLimited.txt" offset -1)
   linesBadRegion.chpl:6: thrown here
   linesBadRegion.chpl:6: uncaught here

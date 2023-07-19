@@ -46,8 +46,11 @@ namespace clang {
   }
 }
 
+#include "llvm/Analysis/LoopAnalysisManager.h"
+#include "llvm/Analysis/CGSCCPassManager.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/MDBuilder.h"
+#include "llvm/IR/PassManager.h"
 #include "llvm/Target/TargetMachine.h"
 
 struct ClangInfo;
@@ -150,9 +153,19 @@ struct GenInfo {
   GlobalToWideInfo globalToWideInfo;
 
   // Optimizations to apply immediately after code-generating a fn
-  llvm::legacy::FunctionPassManager* FPM_postgen;
+  // (this one is only set for LLVM_USE_OLD_PASSES)
+  llvm::legacy::FunctionPassManager* FPM_postgen = nullptr;
 
-  ClangInfo* clangInfo;
+  // Managers to optimize immediately after code-generating a fn
+  // (these ones are used ifndef LLVM_USE_OLD_PASSES)
+  llvm::LoopAnalysisManager* LAM = nullptr;
+  llvm::FunctionAnalysisManager* FAM = nullptr;
+  llvm::CGSCCAnalysisManager* CGAM = nullptr;
+  llvm::ModuleAnalysisManager* MAM = nullptr;
+  llvm::FunctionPassManager* FunctionSimplificationPM = nullptr;
+
+  // pointer to clang support info
+  ClangInfo* clangInfo = nullptr;
 #endif
 
   GenInfo();
@@ -194,6 +207,7 @@ GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2);
 Type* getNamedTypeDuringCodegen(const char* name);
 void setupDefaultFilenames(void);
 void gatherTypesForCodegen(void);
+GenRet codegenTypeByName(const char* type_name);
 
 void registerPrimitiveCodegens();
 

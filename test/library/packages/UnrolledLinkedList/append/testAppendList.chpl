@@ -5,7 +5,7 @@ config const testIters = 8;
 
 var lst1: list(int, false);
 for i in 1..testIters do
-  lst1.append(i);
+  lst1.pushBack(i);
 
 var lst2: unrolledLinkedList(int, false);
 
@@ -20,5 +20,3 @@ assert(lst2.size > lst1.size);
 
 for i in 0..#testIters do
   assert(lst1[i] == lst2[testIters + i]);
-
-

@@ -49,7 +49,7 @@ std::string getColorFormat(TermColorName colorName);
 
 bool terminalSupportsColor(const char* term);
 
-std::string clearTerminalColor();
+std::string getClearColorFormat();
 
 } // end namespace chpl
 

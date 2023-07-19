@@ -1,0 +1,5 @@
+warnUnstableInt.chpl:1: In module 'M':
+warnUnstableInt.chpl:6: warning: testNumLocalsUnstableProc is unstable
+In personal NumLocales module
+inside M
+In my personal NumLocales - unstable proc

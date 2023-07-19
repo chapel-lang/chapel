@@ -1,7 +1,7 @@
 class C {
   var y: 3*int;
-  proc x return y;
-  proc x(i: int) return 4;
+  proc x do return y;
+  proc x(i: int) do return 4;
 }
 
 var c = new unmanaged C();

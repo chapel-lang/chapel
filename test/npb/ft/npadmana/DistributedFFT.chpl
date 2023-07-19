@@ -6,7 +6,7 @@
      * Currently only supports complex-complex and real-real transforms
      * Only out-of-place transforms are supported, and the output array
        has its first two indices transposed. The input array is unchanged.
-     * Requires FFTW for the local 1D transforms. 
+     * Requires FFTW for the local 1D transforms.
      * The data are slab-distributed along the first dimension.
 
 
@@ -60,7 +60,7 @@ prototype module DistributedFFT {
   */
   config param usePrimitiveComm=true;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc deinit() {
     cleanup();
   }
@@ -86,13 +86,13 @@ prototype module DistributedFFT {
   /*                              int ostride, int odist, */
   /*                              const fftw_r2r_kind *kind, unsigned flags); */
   // https://github.com/chapel-lang/chapel/issues/13319
-  pragma "no doc"
   pragma "default intent is ref"
+  @chpldoc.nodoc
   record FFTWplan {
     param ftType : FFTtype;
     var plan : fftw_plan;
 
-    // Mimic the advanced interface 
+    // Mimic the advanced interface
     proc init(param ftType : FFTtype, args ...?k) {
       this.ftType = ftType;
       this.complete();
@@ -102,6 +102,11 @@ prototype module DistributedFFT {
         when FFTtype.R2R do plan = fftw_plan_many_r2r((...args));
       }
       plannerLock.unlock();
+    }
+
+    proc init=(other) {
+      // to enable copying, we need to duplicate or borrow `other.plan`
+      compilerError("copying of a FFTWplan is not supported");
     }
 
     proc deinit() {
@@ -121,16 +126,16 @@ prototype module DistributedFFT {
       }
     }
 
-    inline proc execute(ref arr1 : ?T, ref arr2 : T) where (!isAnyCPtr(T)) {
+    inline proc execute(ref arr1 : ?T, ref arr2 : T) where (T != c_ptr(?)) {
       execute(c_ptrTo(arr1), c_ptrTo(arr2));
     }
 
-    inline proc execute(ref arr1 : ?T) where (!isAnyCPtr(T)) {
+    inline proc execute(ref arr1 : ?T) where (T != c_ptr(?)) {
       execute(arr1, arr1);
     }
 
     proc isValid : bool {
-      return !is_c_nil(plan);
+      return plan != nil;
     }
   }
 
@@ -197,7 +202,7 @@ prototype module DistributedFFT {
      This implementation closely follows a pencil-paper
      algorithm, but is not very performant.
    */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc doFFT_Transposed_Naive(param ftType : FFTtype,
                               Src: [?SrcDom] ?T,
                               Dst : [?DstDom] T,
@@ -258,7 +263,7 @@ prototype module DistributedFFT {
 
      Performant version of the algorithm.
    */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc doFFT_Transposed_Performant(param ftType : FFTtype,
                                    Src: [?SrcDom] ?T,
                                    Dst : [?DstDom] T,
@@ -337,7 +342,7 @@ prototype module DistributedFFT {
   */
   iter offset(r: range) { halt("Serial offset not implemented"); }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   iter offset(param tag: iterKind, r: range) where (tag==iterKind.standalone) {
     forall i in r + (r.size/numLocales * here.id) do {
       yield i % r.size + r.first;
@@ -363,8 +368,8 @@ prototype module DistributedFFT {
     }
   }
 
-  pragma "no doc"
   pragma "default intent is ref"
+  @chpldoc.nodoc
   record BatchedFFTWplan {
     param ftType : FFTtype;
     const parRange: range;
@@ -387,6 +392,11 @@ prototype module DistributedFFT {
       halt("Serial iterator not implemented");
     }
 
+    /* This pragma makes the iterator yield `planSm` and `planLg` by reference,
+       as they do not support copying. Alternatively, to yield by value,
+       we could implement FFTWplan.init=() to either duplicate or borrow
+       the fftw_plan object that FFTWplan points at. */
+    pragma "do not unref for yields"
     iter batch(param tag : iterKind) where (tag==iterKind.standalone) {
       coforall chunk in chunks(parRange, numTasks) {
         if chunk.size == batchSizeSm then yield (planSm, chunk);
@@ -395,14 +405,14 @@ prototype module DistributedFFT {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc setupBatchPlan(type arrType, param ftType : FFTtype, dom : domain(2), parDim : int, signOrKind, in flags : c_uint) {
     return new BatchedFFTWplan(arrType, ftType, dom, parDim, signOrKind, flags);
   }
 
 
   // Set up many 1D in place plans on a 2D array
-  pragma "no doc"
+  @chpldoc.nodoc
   proc setupPlan(type arrType, param ftType : FFTtype, dom : domain(2), parDim : int, numTransforms : int, signOrKind, in flags : c_uint) {
     // Pull signOrKind locally since this may be an array
     // we need to take a pointer to.
@@ -444,8 +454,8 @@ prototype module DistributedFFT {
     if plan.isValid {
       return plan;
     } else {
-      arr = c_malloc(arrType, dom.size);
-      defer { c_free(arr); }
+      arr = allocate(arrType, dom.size.safeCast(c_size_t));
+      defer { deallocate(arr); }
       return new FFTWplan(ftType, rank, nnp, howmany, arr,
                           nnp, stride, idist,
                           arr, nnp, stride, idist,
@@ -472,7 +482,7 @@ prototype module DistributedFFT {
     if zSrc != zDst then halt("Mismatched z ranges");
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   module FFT_Locks {
     // https://github.com/chapel-lang/chapel/issues/9881
     // https://github.com/chapel-lang/chapel/issues/12300
@@ -481,7 +491,7 @@ prototype module DistributedFFT {
     var plannerLock : chpl_LocalSpinlock;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   module FFT_Timers {
     use Time;
     // Time the various FFT steps.
@@ -511,7 +521,7 @@ prototype module DistributedFFT {
 
 
     record TimeTracker {
-      var tt : stopwatch();
+      var tt : stopwatch;
       var arr : [stageDomain] real;
 
       proc deinit() {

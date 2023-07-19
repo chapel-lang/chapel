@@ -45,18 +45,19 @@ UntypedFnSignature::getUntypedFnSignature(Context* context, ID id,
                                           bool isMethod,
                                           bool isTypeConstructor,
                                           bool isCompilerGenerated,
+                                          bool throws,
                                           asttags::AstTag idTag,
                                           uast::Function::Kind kind,
                                           std::vector<FormalDetail> formals,
                                           const AstNode* whereClause) {
   QUERY_BEGIN(getUntypedFnSignature, context,
               id, name, isMethod, isTypeConstructor, isCompilerGenerated,
-              idTag, kind, formals, whereClause);
+               throws, idTag, kind, formals, whereClause);
 
   owned<UntypedFnSignature> result =
     toOwned(new UntypedFnSignature(id, name,
                                    isMethod, isTypeConstructor,
-                                   isCompilerGenerated, idTag, kind,
+                                   isCompilerGenerated, throws, idTag, kind,
                                    std::move(formals), whereClause));
 
   return QUERY_END(result);
@@ -68,13 +69,14 @@ UntypedFnSignature::get(Context* context, ID id,
                         bool isMethod,
                         bool isTypeConstructor,
                         bool isCompilerGenerated,
+                        bool throws,
                         asttags::AstTag idTag,
                         uast::Function::Kind kind,
                         std::vector<FormalDetail> formals,
                         const uast::AstNode* whereClause) {
   return getUntypedFnSignature(context, id, name,
                                isMethod, isTypeConstructor,
-                               isCompilerGenerated, idTag, kind,
+                               isCompilerGenerated, throws, idTag, kind,
                                std::move(formals), whereClause).get();
 }
 
@@ -110,6 +112,7 @@ getUntypedFnSignatureForFn(Context* context, const uast::Function* fn) {
                                      fn->isMethod(),
                                      /* isTypeConstructor */ false,
                                      /* isCompilerGenerated */ false,
+                                     /* throws */ fn->throws(),
                                      /* idTag */ asttags::Function,
                                      fn->kind(),
                                      std::move(formals), fn->whereClause());
@@ -202,15 +205,26 @@ void CallInfo::prepareActuals(Context* context,
     auto actual = call->actual(i);
 
     if (isQuestionMark(actual)) {
-      if (questionArg == nullptr) {
+      if (call->isTuple()) {
+        // Expressions like (?,?,?)
+        UniqueString byName;
+        auto qt = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
+        actuals.push_back(CallInfoActual(qt, byName));
+        if (actualAsts != nullptr) {
+          actualAsts->push_back(actual);
+        }
+      } else if (questionArg == nullptr) {
         questionArg = actual;
       } else {
         CHPL_REPORT(context, MultipleQuestionArgs, fnCall, questionArg, actual);
         // Keep questionArg pointing at the first question argument we found
       }
     } else {
-      const ResolvedExpression& r = byPostorder.byAst(actual);
-      QualifiedType actualType = r.type();
+      QualifiedType actualType;
+      // replace default value with resolved if available
+      if (const ResolvedExpression* r = byPostorder.byAstOrNull(actual)) {
+        actualType = r->type();
+      }
       UniqueString byName;
       if (fnCall && fnCall->isNamedActual(i)) {
         byName = fnCall->actualName(i);
@@ -280,7 +294,8 @@ CallInfo CallInfo::create(Context* context,
                           const Call* call,
                           const ResolutionResultByPostorderID& byPostorder,
                           bool raiseErrors,
-                          std::vector<const uast::AstNode*>* actualAsts) {
+                          std::vector<const uast::AstNode*>* actualAsts,
+                          UniqueString rename) {
 
   // Pieces of the CallInfo we need to prepare.
   UniqueString name;
@@ -363,6 +378,13 @@ CallInfo CallInfo::create(Context* context,
     CHPL_ASSERT(actualAsts->size() == actuals.size());
   }
 
+  if (!rename.isEmpty()) {
+    // Whatever we were calling was a value, and is now and actual. Can't
+    // rename an argument to a function...
+    CHPL_ASSERT(name != "this");
+    name = rename;
+  }
+
   auto ret = CallInfo(name, calledType, isMethodCall,
                       /* hasQuestionArg */ questionArg != nullptr,
                       /* isParenless */ false, actuals);
@@ -371,13 +393,15 @@ CallInfo CallInfo::create(Context* context,
 }
 
 CallInfo CallInfo::createWithReceiver(const CallInfo& ci,
-                                      QualifiedType receiverType) {
+                                      QualifiedType receiverType,
+                                      UniqueString rename) {
   std::vector<CallInfoActual> newActuals;
   newActuals.push_back(CallInfoActual(receiverType, USTR("this")));
   // append the other actuals
   newActuals.insert(newActuals.end(), ci.actuals_.begin(), ci.actuals_.end());
 
-  return CallInfo(ci.name_, receiverType,
+  auto name = rename.isEmpty() ? ci.name_ : rename;
+  return CallInfo(name, receiverType,
                   /* isMethodCall */ true,
                   ci.hasQuestionArg_,
                   ci.isParenless_,
@@ -386,26 +410,14 @@ CallInfo CallInfo::createWithReceiver(const CallInfo& ci,
 
 void ResolutionResultByPostorderID::setupForSymbol(const AstNode* ast) {
   CHPL_ASSERT(Builder::astTagIndicatesNewIdScope(ast->tag()));
-  vec.resize(ast->id().numContainedChildren());
 
   symbolId = ast->id();
 }
 void ResolutionResultByPostorderID::setupForSignature(const Function* func) {
-  int maxPostorderId = 0;
-  if (func && func->numChildren() > 0)
-    maxPostorderId = func->child(func->numChildren() - 1)->id().postOrderId();
-  CHPL_ASSERT(0 <= maxPostorderId);
-  vec.resize(maxPostorderId + 1);
-
   symbolId = func->id();
 }
-void ResolutionResultByPostorderID::setupForParamLoop(const For* loop, ResolutionResultByPostorderID& parent) {
-  int bodyPostorder = 0;
-  if (loop && loop->body())
-    bodyPostorder = loop->body()->id().postOrderId();
-  CHPL_ASSERT(0 <= bodyPostorder);
-  vec.resize(bodyPostorder);
-
+void ResolutionResultByPostorderID::setupForParamLoop(
+    const For* loop, ResolutionResultByPostorderID& parent) {
   this->symbolId = parent.symbolId;
 }
 void ResolutionResultByPostorderID::setupForFunction(const Function* func) {
@@ -645,7 +657,7 @@ void ResolvedFields::finalizeFields(Context* context) {
   ignore.insert(type_);
 
   // look at the fields and compute the summary information
-  for (auto field : fields_) {
+  for (const auto& field : fields_) {
     auto g = getTypeGenericityIgnoring(context, field.type, ignore);
     if (g != Type::CONCRETE) {
       if (!field.hasDefaultValue) {
@@ -776,7 +788,7 @@ void CallInfo::stringify(std::ostream& ss,
   }
   ss << "(";
   bool first = true;
-  for (auto actual: actuals()) {
+  for (const auto& actual: actuals()) {
     if (first) {
       first = false;
     } else {
@@ -866,6 +878,10 @@ const char* AssociatedAction::kindToString(Action a) {
       return "new-init";
     case REDUCE_SCAN:
       return "reduce-scan";
+    case INFER_TYPE:
+      return "infer-type";
+    case COMPARE:
+      return "compare";
     // no default to get a warning if new Actions are added
   }
 

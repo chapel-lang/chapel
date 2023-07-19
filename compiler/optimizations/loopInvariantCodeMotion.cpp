@@ -1263,14 +1263,7 @@ static void licmFn(FnSymbol* fn) {
   }
 }
 
-void loopInvariantCodeMotion(void) {
-
-  // compute array element alias sets
-  computeNoAliasSets();
-
-  // optimize certain statements in foralls to unordered
-  optimizeForallUnorderedOps();
-
+static void loopInvariantCodeMotionImpl(void) {
   if(fNoLoopInvariantCodeMotion) {
     return;
   }
@@ -1326,5 +1319,27 @@ void loopInvariantCodeMotion(void) {
   fclose(timingFile);
   fclose(maxTimeFile);
 #endif
+}
 
+void loopInvariantCodeMotion(void) {
+  // optimize certain statements in foralls to unordered
+  optimizeForallUnorderedOps();
+
+  loopInvariantCodeMotionImpl();
+
+  // We run gpuTransforms after LICM since we can benefit from invariant
+  // computations being removed from GUP kernels (that prior to this point are
+  // normal foreach loops).  Currently, we have gpuTransforms called here
+  // rather than in its own pass in order to avoid disruption/overhead of
+  // adding a new pass (though we may wish to change this at some point in the
+  // future).
+  gpuTransforms();
+
+  // Compute array element alias sets.
+  //
+  // Any manipulations on the AST that removes a symbol within a function may
+  // invalidate the 'no alias set' primitives (that this transforms adds to the
+  // top of functions). GpuTransfroms is one such transform that does AST
+  // manipulations, so we run computeNoAliasSets after GPUTransforms.
+  computeNoAliasSets();
 }

@@ -15,7 +15,7 @@ proc main() {
   if exists("Mason.lock") {
     writeln("----- lock file -----");
 
-    const fr = openreader("Mason.lock");
+    const fr = openReader("Mason.lock");
     for line in fr.lines() {
       write(line);
     }

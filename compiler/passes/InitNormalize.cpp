@@ -94,6 +94,7 @@ InitNormalize::InitNormalize(CondStmt* cond, const InitNormalize& curr) {
   mPrevBlockType = curr.mPrevBlockType;
   mBlockType     = curr.mBlockType;
   mThisAsParent  = curr.mThisAsParent;
+  mImplicitFields = curr.mImplicitFields;
 }
 
 InitNormalize::InitNormalize(LoopStmt* loop, const InitNormalize& curr) {
@@ -987,7 +988,7 @@ void ProcessThisUses::visitSymExpr(SymExpr* node) {
         }
       }
 
-      if (isClass(state->type())) {
+      if (isClass(state->type()) && call->isPrimitive() == false) {
         node->setSymbol(state->getThisAsParent());
       }
     }

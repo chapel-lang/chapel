@@ -14,4 +14,8 @@ coforall loc in Locales do on loc {
   }
 }
 
-writeln(A);
+// Verify result
+for i in 0..<Locales.size {
+  if A[i] != i * 100 then
+    writeln("Compute wrong value for locale ", i);
+}

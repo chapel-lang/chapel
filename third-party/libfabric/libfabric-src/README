@@ -32,12 +32,14 @@ services.  Specifically, libfabric software interfaces have been
 co-designed with fabric hardware providers and application developers,
 with an initial focus on the needs of HPC users.  OFI supports multiple
 interface semantics, is fabric and hardware implementation agnostic,
-and leverages and expands the existing RDMA open source community. 
+and leverages and expands the existing RDMA open source community.
 
 For more information regarding the OFI project, please visit the OFIWG
 GitHub site:
 
 http://ofiwg.github.io/libfabric/
+or
+http://libfabric.org
 
 
 Support

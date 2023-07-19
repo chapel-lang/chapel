@@ -36,6 +36,7 @@
    by the enum ``RemElems``.
 */
 module RangeChunk {
+  private use Math;
 
   /*
      ``RemElems`` specifies the distribution of remainder elements:
@@ -54,21 +55,18 @@ module RangeChunk {
     Mod
   }
   private use RemElems;
-  private use BoundedRangeType;
-
 
   /*
      Iterates through chunks ``0`` to ``numChunks - 1`` of range ``r``, emitting each
      as a range. The remainders will be distributed according to ``remPol``.
   */
-  iter chunks(r: range(?RT, bounded, ?S), numChunks: integral,
-              remPol: RemElems = Thru): range(RT, bounded, S) {
+  iter chunks(r: range(?), numChunks: integral, remPol: RemElems = Thru) {
+    compilerAssert(r.bounds == boundKind.both,
+                   "chunks() requires a bounded range, got ", r.type:string);
     foreach (startOrder, endOrder) in chunksOrder(r, numChunks, remPol) {
       const start = r.orderToIndex(startOrder);
       const end = r.orderToIndex(endOrder);
-      yield if S
-        then start..end by r.stride
-        else start..end;
+      yield ( start..end by r.stride ): r.type;
     }
   }
 
@@ -76,14 +74,14 @@ module RangeChunk {
      Returns the ``idx`` chunk of range ``r`` as a range. The remainders will be
      distributed according to ``remPol``.
   */
-  proc chunk(r: range(?RT, bounded, ?S), numChunks: integral, idx: integral,
-             remPol: RemElems = Thru): range(RT, bounded, S) {
+  proc chunk(r: range(?),
+             numChunks: integral, idx: integral, remPol: RemElems = Thru) {
+    compilerAssert(r.bounds == boundKind.both,
+                   "chunk() requires a bounded range, got ", r.type:string);
     const (startOrder, endOrder) = chunkOrder(r, numChunks, idx, remPol);
     const start = r.orderToIndex(startOrder);
     const end = r.orderToIndex(endOrder);
-    return if S
-      then start..end by r.stride
-      else start..end;
+    return ( start..end by r.stride ): r.type;
   }
 
   /*
@@ -99,9 +97,11 @@ module RangeChunk {
   //       0    1    2    3    0      1      2     3
   //  4. For a desired tid 2, the following chunks are emitted
   //      (5,6) (13,14)
-  iter blockCyclicChunks(r: range(?t, boundedType=BoundedRangeType.bounded,
-                         ?strided), blockSize: integral, tid: integral,
+  iter blockCyclicChunks(r: range(?),
+                         blockSize: integral, tid: integral,
                          nTasks: integral) {
+    compilerAssert(r.bounds == boundKind.both,
+      "blockCyclicChunks() requires a bounded range, got ", r.type:string);
     if (tid >= nTasks) then
       halt("Parameter tid must be < nTasks " +
            "because blocks are indexed from 0..nTasks-1");
@@ -116,21 +116,21 @@ module RangeChunk {
     var blockStride = blockSize * rangeStride;
     var low = r.lowBound;
     var high = r.highBound;
-    var firstBlockStart = (if rangeStride > 0 then r.lowBound  else r.highBound) +
+    var firstBlockStart = (if r.hasPositiveStride() then r.lowBound  else r.highBound) +
                             blockStride * tid;
     if firstBlockStart > r.highBound || firstBlockStart < r.lowBound then return;
 
     var strideToNextBlock = blockStride * nTasks;
 
-    if rangeStride > 0 {
+    if r.hasPositiveStride() {
       for blockStart in firstBlockStart..high by strideToNextBlock {
         var blockEnd = min(high, blockStart + blockStride - 1);
-        yield blockStart..blockEnd by rangeStride;
+        yield ( blockStart..blockEnd by r.stride ): r.type;
       }
     } else {
       for blockEnd in low..firstBlockStart by strideToNextBlock {
         var blockStart = max(low, blockEnd + blockStride + 1);
-        yield blockStart..blockEnd by rangeStride;
+        yield ( blockStart..blockEnd by r.stride ): r.type;
       }
     }
   }
@@ -139,7 +139,7 @@ module RangeChunk {
      Iterates through chunks ``0`` to ``numChunks - 1`` of range ``r``, emitting each
      as a 0-based order tuple. The remainders will be distributed according to ``remPol``.
   */
-  iter chunksOrder(r: range(?RT, bounded, ?), numChunks: integral,
+  iter chunksOrder(r: range(?RT, boundKind.both, ?), numChunks: integral,
                    remPol: RemElems = Thru): 2*RT {
     if r.sizeAs(RT) == 0 || numChunks <= 0 then
       return;
@@ -177,7 +177,8 @@ module RangeChunk {
      Returns the ``idx`` chunk of range ``r`` as a 0-based order tuple. The remainders
      will be distributed according to ``remPol``.
   */
-  proc chunkOrder(r: range(?RT, bounded, ?), numChunks: integral, idx: integral,
+  proc chunkOrder(r: range(?RT, boundKind.both, ?),
+                  numChunks: integral, idx: integral,
                   remPol: RemElems = Thru): 2*RT {
     if r.sizeAs(RT) == 0 || numChunks <= 0 || idx < 0 || idx >= numChunks then
       return (1: RT, 0: RT);
@@ -212,7 +213,7 @@ module RangeChunk {
   // Private helpers for order pairs and thereby ranges.
   // Each corresponds with a remainder policy.
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   private proc chunkOrderThru(nElems: ?I, nChunks: I, i: I): (I, I) {
     const m = nElems * i;
     const start = if i == 0
@@ -224,7 +225,7 @@ module RangeChunk {
     return (start, end);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   private proc chunkOrderPack(chunkSize: ?I, nElems: I, i: I): (I, I) {
     const start = chunkSize * i;
     if start >= nElems then
@@ -236,7 +237,7 @@ module RangeChunk {
     return (start, end);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   private proc chunkOrderMod(chunkSize: ?I, rem: I, nElems: I, nChunks: I,
                              i: I): (I, I) {
     var start, end: I;

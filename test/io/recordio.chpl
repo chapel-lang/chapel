@@ -88,34 +88,24 @@ var B: [0..#3] MyRecord;
    - the compiler will generate readThis/writeThis for you if you don't
      provide one
  */
-proc MyRecord.readThis(f) throws {
-  readWriteHelper(f);
+proc MyRecord.readThis(fr: fileReader) throws {
+  i = fr.read(int);
+  fr.readLiteral("\t");
+  r = fr.read(real);
+  fr.readLiteral("\t");
+  s = fr.read(string);
+  fr.readLiteral("\n");
 }
 
-proc MyRecord.writeThis(f) throws {
-  readWriteHelper(f);
+proc MyRecord.writeThis(fw: fileWriter) throws {
+  fw.write(i);
+  fw.writeLiteral("\t");
+  fw.write(r);
+  fw.writeLiteral("\t");
+  fw.write(s);
+  fw.writeLiteral("\n");
 }
 
-proc MyRecord.readWriteHelper(f) throws {
-  proc rwLiteral(lit:string) {
-    if f.writing then f.writeLiteral(lit); else f.readLiteral(lit);
-  }
-
-  if f.writing then f.write(i); else i = f.read(int);
-  rwLiteral("\t");
-  if f.writing then f.write(r); else r = f.read(real);
-  rwLiteral("\t");
-
-  // When doing the string I/O, we need to specify that we'd like
-  // the string to be single-quoted. Unfortunately, readf is
-  // not currently available on a Reader, so we have to rely
-  // on the caller setting the string formatting with the channel's
-  // style.
-  // In the future, we hope to allow readf in this situation. 
-  if f.writing then f.write(s); else s = f.read(string);
-
-  rwLiteral("\n");
-}
 proc MyRecord.init(i: int = 0, r: real = 0.0, s: string = "") {
   this.i = i;
   this.r = r;
@@ -153,5 +143,3 @@ proc MyRecord.init(r: fileReader) throws {
 
   reader.close();
 }
-
-

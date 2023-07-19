@@ -1,3 +1,3 @@
 use CTypes;
 
-var ptr = c_aligned_alloc(uint(8), 3, 100);
+var ptr = allocate(uint(8), 100, alignment=3);

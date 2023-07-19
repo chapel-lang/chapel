@@ -1,0 +1,18 @@
+─── error in redefinition-def-with-public-import.chpl:6 [Redefinition] ───
+  'a' has multiple definitions.
+  It was first defined here:
+      |
+    6 |   var a: real;
+      |       ⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+  Redefined through the 'import' statement here:
+      |
+    5 |   public import Lib1.a;
+      |                 ⎺⎺⎺⎺⎺⎺
+      |
+  Leading to the definition here:
+      |
+    2 |   var a: int;
+      |       ⎺⎺⎺⎺⎺⎺⎺
+      |
+

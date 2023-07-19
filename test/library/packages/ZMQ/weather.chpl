@@ -27,11 +27,6 @@ proc main(args: [] string) {
   }
 }
 
-const env = [
-  "QTHREAD_NUM_SHEPHERDS=1",
-  "QTHREAD_NUM_WORKERS_PER_SHEPHERD=1"
-  ];
-
 iter zipcodes(num: int) {
   var zips: [0..4] int = [10001 /* New York         */,
                           90001 /* Los Angeles      */,
@@ -45,7 +40,7 @@ iter zipcodes(num: int) {
 proc Launcher(exec: string) {
   var master = spawn(["master", "--mode=Master",
                       "--memLeaks=" + memLeaks:string],
-                     env=env, executable=exec);
+                     executable=exec);
 
   var workers: [1..numWorkers] subprocess(kind=iokind.dynamic, locking=true);
   coforall (worker,i,zipc) in zip(workers, workers.domain,
@@ -53,7 +48,7 @@ proc Launcher(exec: string) {
     worker = spawn(["worker%i".format(i), "--mode=Worker",
                     "--memLeaks=" + memLeaks:string,
                     "--zipcode=%i".format(zipc)],
-                   env=env, executable=exec);
+                   executable=exec);
 
   for worker in workers do
     worker.communicate();
@@ -61,7 +56,7 @@ proc Launcher(exec: string) {
 }
 
 proc Master(exec: string) {
-  var rand = (new owned RandomStream(real,13)).borrow(); rand.getNext();
+  var rand = new RandomStream(real,13); rand.getNext();
   var ctxt: Context;
   var sock = ctxt.socket(ZMQ.PUB);
   sock.bind("tcp://*:5556");

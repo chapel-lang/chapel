@@ -16,7 +16,7 @@ module OuterModule {
   } }
 
   try {
-    writeln(createStringWithNewBuffer(C.greeting()));
+    writeln(string.createCopyingBuffer(C.greeting()));
   }
   catch e: DecodeError {
     writeln("Decode error creating string");

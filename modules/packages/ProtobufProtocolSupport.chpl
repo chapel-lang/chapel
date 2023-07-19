@@ -36,7 +36,7 @@ module ProtobufProtocolSupport {
   public use RepeatedFields;
   private use CTypes;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   module WireEncoding {
     /*
       This module contains the implementation of encoding/decoding algorithms
@@ -46,6 +46,7 @@ module ProtobufProtocolSupport {
 
     use IO;
     use CTypes;
+    use OS.POSIX;
 
     type writingChannel = fileWriter(iokind.little,false);
     type readingChannel = fileReader(iokind.little,false);
@@ -214,56 +215,56 @@ module ProtobufProtocolSupport {
     proc floatAppendBase(val: real(32), ch: writingChannel) throws {
       var a = val;
       var b: uint(32);
-      c_memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
+      memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
       fixed32AppendBase(b, ch);
     }
 
     proc floatConsumeBase(ch: readingChannel): real(32) throws {
       var a = fixed32ConsumeBase(ch);
       var b: real(32);
-      c_memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
+      memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
       return b;
     }
 
     proc doubleAppendBase(val: real(64), ch: writingChannel) throws {
       var a = val;
       var b: uint(64);
-      c_memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
+      memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
       fixed64AppendBase(b, ch);
     }
 
     proc doubleConsumeBase(ch: readingChannel): real(64) throws {
       var a = fixed64ConsumeBase(ch);
       var b: real(64);
-      c_memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
+      memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
       return b;
     }
 
     proc sfixed64AppendBase(val: int(64), ch: writingChannel) throws {
       var a = val;
       var b: uint(64);
-      c_memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
+      memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
       fixed64AppendBase(b, ch);
     }
 
     proc sfixed64ConsumeBase(ch: readingChannel): int(64) throws {
       var a = fixed64ConsumeBase(ch);
       var b: int(64);
-      c_memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
+      memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
       return b;
     }
 
     proc sfixed32AppendBase(val: int(32), ch: writingChannel) throws {
       var a = val;
       var b: uint(32);
-      c_memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
+      memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
       fixed32AppendBase(b, ch);
     }
 
     proc sfixed32ConsumeBase(ch: readingChannel): int(32) throws {
       var a = fixed32ConsumeBase(ch);
       var b: int(32);
-      c_memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
+      memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
       return b;
     }
 
@@ -312,7 +313,7 @@ module ProtobufProtocolSupport {
 
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   module Fields {
     /*
       This module contains functions for encoding/decoding simple non-repetitive protobuf
@@ -520,7 +521,7 @@ module ProtobufProtocolSupport {
 
     proc mapAppend(val, fieldNumber: int, param protoKeyType: string,
       param protoValueType: string, ch:writingChannel) throws {
-      for (key, value) in val.items() {
+      for (key, value) in zip(val.keys(), val.values()) {
         tagAppend(fieldNumber, lengthDelimited, ch);
         var initialOffset = ch.offset();
         ch.mark();
@@ -723,7 +724,7 @@ module ProtobufProtocolSupport {
 
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   module RepeatedFields {
     /*
       This module contains functions for encoding/decoding repetitive protobuf
@@ -759,7 +760,7 @@ module ProtobufProtocolSupport {
       while true {
         if (ch.offset() - initialOffset) >= payloadLength then break;
         var val = uint64ConsumeBase(ch);
-        returnList.append(val);
+        returnList.pushBack(val);
       }
       return returnList;
     }
@@ -789,7 +790,7 @@ module ProtobufProtocolSupport {
       while true {
         if (ch.offset() - initialOffset) >= payloadLength then break;
         var val = uint32ConsumeBase(ch);
-        returnList.append(val);
+        returnList.pushBack(val);
       }
       return returnList;
     }
@@ -819,7 +820,7 @@ module ProtobufProtocolSupport {
       while true {
         if (ch.offset() - initialOffset) >= payloadLength then break;
         var val = int64ConsumeBase(ch);
-        returnList.append(val);
+        returnList.pushBack(val);
       }
       return returnList;
     }
@@ -849,7 +850,7 @@ module ProtobufProtocolSupport {
       while true {
         if (ch.offset() - initialOffset) >= payloadLength then break;
         var val = int32ConsumeBase(ch);
-        returnList.append(val);
+        returnList.pushBack(val);
       }
       return returnList;
     }
@@ -873,7 +874,7 @@ module ProtobufProtocolSupport {
       while true {
         if (ch.offset() - initialOffset) >= payloadLength then break;
         var val = boolConsumeBase(ch);
-        returnList.append(val);
+        returnList.pushBack(val);
       }
       return returnList;
     }
@@ -903,7 +904,7 @@ module ProtobufProtocolSupport {
       while true {
         if (ch.offset() - initialOffset) >= payloadLength then break;
         var val = sint64ConsumeBase(ch);
-        returnList.append(val);
+        returnList.pushBack(val);
       }
       return returnList;
     }
@@ -933,7 +934,7 @@ module ProtobufProtocolSupport {
       while true {
         if (ch.offset() - initialOffset) >= payloadLength then break;
         var val = sint32ConsumeBase(ch);
-        returnList.append(val);
+        returnList.pushBack(val);
       }
       return returnList;
     }
@@ -949,7 +950,7 @@ module ProtobufProtocolSupport {
     proc bytesRepeatedConsume(ch: readingChannel) throws {
       var returnList: list(bytes);
       var val = bytesConsumeBase(ch);
-      returnList.append(val);
+      returnList.pushBack(val);
       return returnList;
     }
 
@@ -964,7 +965,7 @@ module ProtobufProtocolSupport {
     proc stringRepeatedConsume(ch: readingChannel) throws {
       var returnList: list(string);
       var val = stringConsumeBase(ch);
-      returnList.append(val);
+      returnList.pushBack(val);
       return returnList;
     }
 
@@ -987,7 +988,7 @@ module ProtobufProtocolSupport {
       while true {
         if (ch.offset() - initialOffset) >= payloadLength then break;
         var val = fixed32ConsumeBase(ch);
-        returnList.append(val);
+        returnList.pushBack(val);
       }
       return returnList;
     }
@@ -1011,7 +1012,7 @@ module ProtobufProtocolSupport {
       while true {
         if (ch.offset() - initialOffset) >= payloadLength then break;
         var val = fixed64ConsumeBase(ch);
-        returnList.append(val);
+        returnList.pushBack(val);
       }
       return returnList;
     }
@@ -1035,7 +1036,7 @@ module ProtobufProtocolSupport {
       while true {
         if (ch.offset() - initialOffset) >= payloadLength then break;
         var val = floatConsumeBase(ch);
-        returnList.append(val);
+        returnList.pushBack(val);
       }
       return returnList;
     }
@@ -1059,7 +1060,7 @@ module ProtobufProtocolSupport {
       while true {
         if (ch.offset() - initialOffset) >= payloadLength then break;
         var val = doubleConsumeBase(ch);
-        returnList.append(val);
+        returnList.pushBack(val);
       }
       return returnList;
     }
@@ -1083,7 +1084,7 @@ module ProtobufProtocolSupport {
       while true {
         if (ch.offset() - initialOffset) >= payloadLength then break;
         var val = sfixed64ConsumeBase(ch);
-        returnList.append(val);
+        returnList.pushBack(val);
       }
       return returnList;
     }
@@ -1107,7 +1108,7 @@ module ProtobufProtocolSupport {
       while true {
         if (ch.offset() - initialOffset) >= payloadLength then break;
         var val = sfixed32ConsumeBase(ch);
-        returnList.append(val);
+        returnList.pushBack(val);
       }
       return returnList;
     }
@@ -1137,7 +1138,7 @@ module ProtobufProtocolSupport {
       while true {
         if (ch.offset() - initialOffset) >= payloadLength then break;
         var val = enumConsumeBase(ch);
-        returnList.append(val:enumType);
+        returnList.pushBack(val:enumType);
       }
       return returnList;
     }
@@ -1158,7 +1159,7 @@ module ProtobufProtocolSupport {
 
       var tmpObj: messageType;
       messageConsumeBase(ch, tmpObj, memWriter, memReader);
-      returnList.append(tmpObj);
+      returnList.pushBack(tmpObj);
       tmpMem.close();
       return returnList;
     }

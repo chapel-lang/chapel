@@ -1,0 +1,13 @@
+─── error in parenless-and-parenful-fns.chpl:2 [Redefinition] ───
+  'foo' has multiple definitions.
+  It was first defined here:
+      |
+    2 |   proc foo { }
+      |        ⎺⎺⎺
+      |
+  Redefined here:
+      |
+    3 |   proc foo(x: int) { }
+      |        ⎺⎺⎺
+      |
+

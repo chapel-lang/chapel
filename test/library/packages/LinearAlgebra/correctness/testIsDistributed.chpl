@@ -4,7 +4,7 @@ use BlockDist;
 use LayoutCS;
 
 
-var distArr = newBlockArr({1..10}, int);
+var distArr = Block.createArray({1..10}, int);
 var sliceOfDist = distArr[1..8];
 var locArr: [1..8] int;
 

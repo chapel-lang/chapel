@@ -46,10 +46,10 @@ module Channel {
   use List;
   use Random;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   type _lockType = ChapelLocks.chpl_LocalSpinlock;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class _LockWrapper {
     var lock$ = new _lockType();
 
@@ -62,7 +62,7 @@ module Channel {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class Waiter {
     // Class used to maintain the properties of suspended tasks.
 
@@ -80,17 +80,17 @@ module Channel {
 
     proc init(ref value, ref process$ : single bool) {
       valueType = value.type;
-      val = c_ptrTo(value);
-      processPtr = c_ptrTo(process$);
+      val = c_addrOf(value);
+      processPtr = c_addrOf(process$);
       isSelect = false;
     }
 
     proc init(ref value : c_ptr, ref process$ : single bool, ref selectDone : atomic int, caseId : int) {
       valueType = value.eltType;
       val = value;
-      processPtr = c_ptrTo(process$);
+      processPtr = c_addrOf(process$);
       isSelect = true;
-      isSelectDone = c_ptrTo(selectDone);
+      isSelectDone = c_addrOf(selectDone);
       selectId = caseId;
     }
 
@@ -111,7 +111,7 @@ module Channel {
   Implementation of doubly-ended queue to keep track of suspended receiving
   and sending tasks.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   class WaiterQueue {
     type eltType;
     var front : unmanaged Waiter(eltType)?;
@@ -215,7 +215,7 @@ module Channel {
       return recv(val, true);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc recv(out val : eltType, blocking : bool) : bool {
       return this.channelObj.recv(val, blocking);
     }
@@ -235,7 +235,7 @@ module Channel {
       send(val, true);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc send(in val : eltType, blocking : bool) : bool throws {
       return this.channelObj.send(val, blocking);
     }
@@ -263,7 +263,7 @@ module Channel {
 
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class chan {
 
     /* The type of elements that can be sent to the channel. */
@@ -434,7 +434,7 @@ module Channel {
   }
 
   /* Error class for Channel */
-  pragma "no doc"
+  @chpldoc.nodoc
   class ChannelError : Error {
     var msg:string;
 
@@ -448,7 +448,7 @@ module Channel {
   }
 
   /* Base class used for aggregating different select-cases */
-  pragma "no doc"
+  @chpldoc.nodoc
   class SelectBaseClass {
     proc lockChannel() { }
     proc unlockChannel() { }
@@ -460,10 +460,10 @@ module Channel {
   }
 
   /* Enum to specify the operation in a select-case */
-  pragma "no doc"
+  @chpldoc.nodoc
   enum selectOperation { recv, send }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class SelectCase : SelectBaseClass {
     type eltType;
     var val : c_ptr(eltType);
@@ -474,7 +474,7 @@ module Channel {
 
     proc init(ref value, ref selectChannel : channel(?), op : selectOperation, caseId : int) {
       this.eltType = value.type;
-      this.val = c_ptrTo(value);
+      this.val = c_addrOf(value);
       this.selectChannel = selectChannel;
       this.operation = op;
       this.id = caseId;
@@ -502,7 +502,7 @@ module Channel {
 
     /* Retrieve the address of the involved channel */
     override proc getAddr() : c_uintptr {
-      return ((selectChannel.channelObj : c_void_ptr) : c_uintptr);
+      return ((selectChannel.channelObj : c_ptr(void)) : c_uintptr);
     }
 
     override proc enqueueWaiter(ref process$ : single bool, ref isDone : atomic int) {
@@ -527,7 +527,7 @@ module Channel {
   /* Comparator used for sorting the channels according to their memory
   addresses.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   record Comparator {
     proc compare(case1, case2) {
       return (case1.getAddr() - case2.getAddr()) : int;
@@ -535,19 +535,19 @@ module Channel {
   }
 
   /* Acquire the lock of all involved channels */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc lockSelect(lockOrder : list(shared SelectBaseClass)) {
     for channelWrapper in lockOrder do channelWrapper.lockChannel();
   }
 
   /* Release the lock all involved channels */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc unlockSelect(lockOrder : list(shared SelectBaseClass)) {
     for idx in lockOrder.indices by -1 do lockOrder[idx].unlockChannel();
   }
 
   /* Entry point for select statements */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc selectProcess(cases : [] shared SelectBaseClass, default : bool = false) : int{
     var numCases = cases.domain.size;
 
@@ -563,7 +563,7 @@ module Channel {
     var lockOrder = new list(shared SelectBaseClass);
     for idx in cases.domain {
       if idx == 0 || cases[idx].getAddr() != cases[idx - 1].getAddr() {
-        lockOrder.append(cases[idx]);
+        lockOrder.pushBack(cases[idx]);
       }
     }
     var done = -1;

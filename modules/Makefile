@@ -74,9 +74,10 @@ MODULES_TO_DOCUMENT = \
 	standard/BitOps.chpl \
 	standard/ChapelIO.chpl \
 	standard/ChplConfig.chpl \
+	standard/Collectives.chpl \
 	standard/CommDiagnostics.chpl \
 	standard/Communication.chpl \
-	standard/GPUDiagnostics.chpl \
+	standard/GpuDiagnostics.chpl \
 	standard/GPU.chpl \
 	standard/CTypes.chpl \
 	standard/DynamicIters.chpl \
@@ -91,6 +92,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Math.chpl \
 	standard/MemMove.chpl \
 	standard/Memory.chpl \
+	standard/MemDiagnostics.chpl \
 	standard/Memory/Diagnostics.chpl \
 	standard/Memory/Initialization.chpl \
 	standard/OS.chpl \
@@ -99,10 +101,8 @@ MODULES_TO_DOCUMENT = \
 	standard/Reflection.chpl \
 	standard/Regex.chpl \
 	standard/Set.chpl \
-	standard/Spawn.chpl \
 	standard/Subprocess.chpl \
 	standard/Sys.chpl \
-	standard/SysBasic.chpl \
 	standard/Time.chpl \
 	standard/Types.chpl \
 	standard/VectorizingIterator.chpl \
@@ -112,9 +112,11 @@ PACKAGES_TO_DOCUMENT = \
 	packages/AllLocalesBarriers.chpl \
 	packages/ArgumentParser.chpl \
 	packages/AtomicObjects.chpl \
+	packages/BinaryIO.chpl \
 	packages/BLAS.chpl \
 	packages/Buffers.chpl \
 	packages/Channel.chpl \
+	packages/ChplFormat.chpl \
 	packages/Collection.chpl \
 	packages/ConcurrentMap.chpl \
 	packages/CopyAggregation.chpl \
@@ -129,6 +131,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/Futures.chpl \
 	packages/HDF5.chpl \
 	packages/HDFS.chpl \
+	packages/JSON.chpl \
 	packages/LAPACK.chpl \
 	packages/LinearAlgebra.chpl \
 	packages/LinkedLists.chpl \
@@ -153,6 +156,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/UnorderedCopy.chpl \
 	packages/UnrolledLinkedList.chpl \
 	packages/VisualDebug.chpl \
+	packages/YAML.chpl \
 	packages/ZMQ.chpl \
 
 
@@ -209,7 +213,6 @@ documentation: $(SYS_CTYPES_MODULE_DOC)
 	@cp -rf ${MODULE_SPHINX}/source/modules/layouts    ${DOC_BUILD}/modules
 	@cp -rf ${DOC_RST}/meta/modules/* ${DOC_BUILD}/modules
 	@cp -rf ${MODULE_SPHINX}/source/modules/internal/* ${DOC_BUILD}/builtins
-	@cp -rf ${DOC_RST}/meta/builtins/* ${DOC_BUILD}/builtins
 	@echo "Updating generated module documentation in ${DOC_RST}"
 	@mkdir -p ${DOC_RST}/modules
 	@mkdir -p ${DOC_RST}/builtins

@@ -1,6 +1,6 @@
 use IO;
 
-var w = openwriter("sfile.txt");
+var w = openWriter("sfile.txt");
 var s = "negates itself when prepended to itself ⬅️ negates itself when prepended to itself";
 
 // default size:

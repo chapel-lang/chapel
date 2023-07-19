@@ -43,7 +43,7 @@ module StandardInterfaces {
     proc chpl__initCopy(arg: Val, definedConst: bool): Val;
     operator =(ref lhs: Val, rhs: Val): void;
     operator ==(lhs: Val, rhs: Val): bool;
-    operator !=(lhs: Val, rhs: Val): bool return !(lhs == rhs);
+    operator !=(lhs: Val, rhs: Val): bool do return !(lhs == rhs);
     proc write(arg: Val): void;
     proc stdTypeString(arg: Val): string;
   }
@@ -55,7 +55,7 @@ module StandardInterfaces {
 */
   numeric implements StdOps;
   string  implements StdOps;
-  private proc stdTypeString(arg) return arg.type :string;
+  private proc stdTypeString(arg) do return arg.type :string;
 
 /*// currently does not work because: == is implemented for args of the type
   // "borrowed object?"; need coercions to call it; coercions are not supported
@@ -182,7 +182,7 @@ module RandomInterface {
     return PCGstream.startCursor(D).type; // hopefully no runtime types
   }
 
-  proc PCGRandomStream.cursorType type
+  proc PCGRandomStream.cursorType type do
     return PCGcursorType;
 
 } // module RandomInterface
@@ -210,9 +210,12 @@ module User {
 
   proc main {
     import MyRandom.createRandomStream;
-    const rs1 = createRandomStream(int, 123).borrow(),
-          rs2 = createRandomStream(int, 123).borrow(),
-          rs3 = createRandomStream(int, 123).borrow();
+    const ownRs1 = createRandomStream(int, 123);
+    const ownRs2 = createRandomStream(int, 123);
+    const ownRs3 = createRandomStream(int, 123);
+    const rs1 = ownRs1.borrow(),
+          rs2 = ownRs2.borrow(),
+          rs3 = ownRs3.borrow();
     writeln("created three of ", rs1.type:string);
     testGetNth(rs1, rs2, rs3);
 

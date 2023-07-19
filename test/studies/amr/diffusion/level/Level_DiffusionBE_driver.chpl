@@ -10,7 +10,7 @@ use LevelBC_DiffusionBE;
 
 use IO;
 
-proc main {
+private proc main {
 
 
   //==== Output times ====

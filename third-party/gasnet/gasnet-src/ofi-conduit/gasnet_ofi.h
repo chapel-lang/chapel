@@ -58,7 +58,6 @@ typedef gasnetc_paratomic(t)         gasnetc_paratomic_t;
 
 extern struct fid_fabric*    gasnetc_ofi_fabricfd;
 extern struct fid_domain*    gasnetc_ofi_domainfd;
-extern struct fid_av*        gasnetc_ofi_avfd;
 extern struct fid_cq*        gasnetc_ofi_tx_cqfd; /* CQ for both AM and RDMA tx ops */
 
 extern struct fid_ep*        gasnetc_ofi_rdma_epfd;
@@ -68,15 +67,10 @@ extern struct fid_ep*        gasnetc_ofi_reply_epfd;
 extern struct fid_cq*        gasnetc_ofi_request_cqfd;
 extern struct fid_cq*        gasnetc_ofi_reply_cqfd;
 
+extern size_t                gasnetc_max_rma_size;
+
 /* The cut off of when to fully block for a non-blocking put*/
 extern size_t gasnetc_ofi_bbuf_threshold;
-/* Address table data */
-typedef void*                     conn_entry_t;
-typedef struct
-{
-  int                   size;
-  conn_entry_t          table[];
-}addr_table_t;
 
 typedef enum GASNETC_OFI_AM_TYPE {
   OFI_AM_SHORT = 0,

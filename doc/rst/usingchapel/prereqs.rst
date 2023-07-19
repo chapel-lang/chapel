@@ -37,8 +37,8 @@ for using Chapel:
   * CMake is available and ``cmake`` runs version 3.13.4 or later.
 
   * The LLVM backend is now the default and it is easiest to use it with a
-    system-wide installation of LLVM and clang. On Mac OS X, only LLVM 14 is
-    supported. On other platforms, LLVM and clang versions 11, 12, 13 and 14
+    system-wide installation of LLVM and clang. On Mac OS X, LLVM 14 and
+    15 are supported. On other platforms, LLVM and clang versions 11 through 15
     are currently supported. If a system-wide installation of
     LLVM and clang with one of those versions is not available, you can
     use the bundled LLVM or disable LLVM support (see
@@ -78,20 +78,40 @@ Installation
 
 We have used the following commands to install the above prerequisites:
 
-  * Alma Linux 8, 9.0::
+  * Alma Linux 8, 9.0, 9.1, 9.2::
 
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * Alpine 3.15::
+  * Alpine 3.15, 3.17::
 
       sudo apk add gcc g++ m4 perl python3 python3-dev bash make gawk git cmake
-      sudo apk add llvm-dev clang-dev
+      sudo apk add llvm-dev clang-dev clang-static llvm-static
 
 
-  * Amazon Linux 2022::
+  * Alpine 3.18::
+
+      sudo apk add gcc g++ m4 perl python3 python3-dev bash make gawk git cmake
+      sudo apk add llvm15-dev clang15-dev llvm15-static clang15-static
+
+
+  * Amazon Linux 2::
+
+      sudo yum install git gcc gcc-c++ m4 perl python tcsh bash gcc gcc-c++ perl python python-devel python-setuptools bash make gawk python3 which
+      sudo yum install wget tar openssl-devel
+      wget https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1.tar.gz
+      tar xvzf cmake-3.25.1.tar.gz
+      cd cmake-3.25.1
+      ./bootstrap
+      make
+      sudo make install
+      sudo update-alternatives --install /usr/bin/cmake cmake /usr/local/bin/cmake 1
+      sudo yum install llvm-devel clang clang-devel
+
+
+  * Amazon Linux 2023::
 
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils
@@ -103,7 +123,7 @@ We have used the following commands to install the above prerequisites:
       sudo pacman -Syu
       sudo pacman -S base-devel
       sudo pacman -S cmake git python
-      sudo pacman -S llvm clang
+      sudo pacman -S llvm14 clang14
 
 
   * CentOS 7 Devtoolset 11::
@@ -128,43 +148,49 @@ We have used the following commands to install the above prerequisites:
 
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils
-      sudo dnf install llvm-devel-14.0.6 clang-14.0.6 clang-devel-14.0.6
+      sudo dnf install llvm-devel-15.0.7 clang-15.0.7 clang-devel-15.0.7
 
 
   * Debian 10 "Buster"::
 
       sudo apt-get update
       sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake
-      sudo apt-get install llvm-11-dev llvm-11 llvm-11-tools clang-11 libclang-11-dev libclang-cpp11-dev libedit-dev
+      sudo apt-get install llvm-13-dev llvm-13 llvm-13-tools clang-13 libclang-13-dev libclang-cpp13-dev libedit-dev
 
 
-  * Debian 11 "Bullseye"::
+  * Debian 12 "Bookworm", 11 "Bullseye"::
 
       sudo apt-get update
       sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake
       sudo apt-get install llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
 
 
-  * Fedora 34, 35, 36::
+  * Fedora 34, 35, 36, 37::
 
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * FreeBSD 12.2, 12.3, 13.1::
+  * FreeBSD 12.2, 12.4, 13.1::
 
       sudo pkg install gcc m4 perl5 python3 bash gmake gawk git pkgconf cmake
       sudo pkg install llvm13
 
 
-  * OpenSuse Leap 15.3, 15.4::
+  * FreeBSD 13.2::
+
+      sudo pkg install gcc m4 perl5 python3 bash gmake gawk git pkgconf cmake
+      sudo pkg install llvm
+
+
+  * OpenSuse Leap 15.3, 15.4, 15.5::
 
       sudo zypper install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git pkg-config cmake
       sudo zypper install llvm-devel clang-devel clang
 
 
-  * Rocky Linux 8, 9.0::
+  * Rocky Linux 8, 9.0, 9.1, 9.2::
 
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils

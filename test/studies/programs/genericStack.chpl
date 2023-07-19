@@ -42,7 +42,7 @@ record ListStack {
   }
 
   // isEmpty method: true if the stack is empty; otherwise false
-  proc isEmpty return top == nil;
+  proc isEmpty do return top == nil;
 }
 
 
@@ -75,7 +75,7 @@ record ArrayStack {
   }
 
   // isEmpty method: true if the stack is empty; otherwise false
-  proc isEmpty return numItems == 0;
+  proc isEmpty do return numItems == 0;
 }
 
 

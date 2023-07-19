@@ -84,7 +84,7 @@ namespace {
   static const bool debugAllPassTwo = false;
   static const bool extraChecks = true;
   // Set a function name here to get lots of debugging output.
-  static const char* debugThisFn = "";//"deinit6";
+  static const char* debugThisFn = "";
 
   AllocaInst* makeAlloca(llvm::Type* type,
                          const char* name,
@@ -241,8 +241,13 @@ namespace {
                                           "", insertBefore);
 
     Constant* undef = UndefValue::get(widePtrType);
+#if HAVE_LLVM_VER >= 150
+    IRBuilder<> irBuilder(insertBefore);
+    Value* undefLocPtr = irBuilder.CreateExtractValue(undef, wideAddrGEP);
+#else
     Constant* undefLocPtr = ConstantExpr::getExtractValue(undef,
                                                           wideAddrGEP);
+#endif
     // get the local address space pointer.
     Value* cast = CastInst::CreatePointerCast(ptr, undefLocPtr->getType(),
                                               "", insertBefore);
@@ -291,45 +296,19 @@ namespace {
     return load;
   }
 
-  void checkFunctionExistAndHasArgs(Value* f, Type* t, unsigned nArgs)
+  void checkFunctionExistAndHasArgs(Value* f, FunctionType* ft, unsigned nArgs)
   {
     #ifndef NDEBUG
       assert(f);
       if( Function* ff = dyn_cast<Function>(f) ) {
         assert(ff->getParent());
       }
-      FunctionType* ft = NULL;
-      if( PointerType* pt = dyn_cast<PointerType>(t) ) {
-#if HAVE_LLVM_VER >= 130
-        t = pt->getPointerElementType();
-#else
-        t = pt->getElementType();
-#endif
-      }
-      ft = cast<FunctionType>(t);
       assert(ft);
       assert(ft->getNumParams() == nArgs);
     #endif
   }
 
-
-  struct TypeFixer : public ValueMapTypeRemapper {
-  public:
-    /// remapType - The client should implement this method if they want to
-    /// remap types while mapping values.
-    Type *remapType(Type *SrcTy) override = 0;
-
-    // When remapping things with remapped types, these functions
-    // provide an opportunity to do the remapping. They should return
-    // NULL if that specific thing does not need to be remapped. They
-    // do not need to handle remapping e.g. structure or arrays
-    //  if only elements need remapping.
-    virtual Constant* remapConstant(const Constant* C,
-                                    ValueToValueMapTy &VM,
-                                    RemapFlags Flags) = 0;
-  };
-
-  struct GlobalTypeFixer : TypeFixer {
+  struct GlobalTypeFixer : ValueMapTypeRemapper {
     Module & M;
     GlobalToWideInfo * info;
     bool debugPassTwo;
@@ -975,13 +954,20 @@ namespace {
       }
     }
 
+    /// remapType - The client should implement this method if they want to
+    /// remap types while mapping values.
     Type *remapType(Type *SrcTy) override {
       return convertTypeGlobalToWide(&M, info, SrcTy);
     }
 
-    Constant* remapConstant(const Constant* C,
-                          ValueToValueMapTy &VM,
-                          RemapFlags Flags) override {
+    // When remapping things with remapped types, these functions
+    // provide an opportunity to do the remapping. They should return
+    // NULL if that specific thing does not need to be remapped. They
+    // do not need to handle remapping e.g. structure or arrays
+    //  if only elements need remapping.
+    Constant* helpRemapConstant(const Constant* C,
+                                ValueToValueMapTy &VM,
+                                RemapFlags Flags) {
       Type* CT = C->getType();
       if( isa<PointerType>(CT) &&
           CT->getPointerAddressSpace() == info->globalSpace) {
@@ -1008,9 +994,10 @@ namespace {
           assert(0);
         }
       }
-      // Otherwise, return NULL to indicate we opted out
+
+      // Otherwise, return nullptr to indicate we opted out
       //  of modifying the constant directly.
-      return NULL;
+      return nullptr;
     }
   };
 
@@ -1018,7 +1005,7 @@ namespace {
   Constant* typeMapConstant(Constant* C,
                             ValueToValueMapTy &VM,
                             RemapFlags Flags,
-                            TypeFixer *TypeMapper) {
+                            GlobalTypeFixer *TypeMapper) {
     ValueToValueMapTy::iterator I = VM.find(C);
 
     // If the value already exists in the map, use it.
@@ -1039,9 +1026,45 @@ namespace {
       }
     }
 
+    if (GEPOperator *gepOp = dyn_cast<GEPOperator>(C)) {
+      // TODO: this should be handled by LLVM's ValueMapper.cpp
+
+      auto srcTy = gepOp->getSourceElementType();
+      auto resTy = gepOp->getResultElementType();
+
+      auto newSrcTy = TypeMapper->remapType(srcTy);
+      auto newResTy = TypeMapper->remapType(resTy);
+
+      if (newSrcTy != srcTy || newResTy != resTy) {
+        // gather the indices
+#if HAVE_LLVM_VER >= 130
+        SmallVector<Constant*> idxList;
+        for (const auto& v : gepOp->indices()) {
+          idxList.push_back(cast<Constant>(v));
+        }
+#else
+        SmallVector<Constant*, 8> idxList;
+        for (auto it = gepOp->idx_begin(); it != gepOp->idx_end(); ++it) {
+          idxList.push_back(cast<Constant>(*it));
+        }
+#endif
+        // Create a new GetElementPtrConstantExpr while changing the types
+        auto C1 = ConstantExpr::getGetElementPtr(
+                     newSrcTy,
+                     cast<Constant>(gepOp->getPointerOperand()),
+                     idxList,
+                     gepOp->isInBounds(),
+                     gepOp->getInRangeIndex());
+        // Use MapValue to change the operands
+        Constant* ret = MapValue(C1, VM, Flags, TypeMapper);
+        if( ! ret ) ret = C1;
+        return ret;
+      }
+    }
+
     // Check: are all of the elements the same?
     //        is the type the same?
-    if( ty == C->getType() && !newElement ) {
+    if (ty == C->getType() && !newElement) {
       // Nothing else to do. Just return the constant.
       VM[C] = C;
       return C;
@@ -1050,8 +1073,8 @@ namespace {
     // If the type needs to change, offer it up to fixConstant,
     // which returns NULL if MapValue will handle it (ie it's
     // just the arguments that change).
-    if( ty != C->getType() ) {
-      Constant* newC = TypeMapper->remapConstant(C, VM, Flags);
+    if (ty != C->getType()) {
+      Constant* newC = TypeMapper->helpRemapConstant(C, VM, Flags);
       if( newC ) {
         VM[C] = newC;
         return newC;
@@ -1072,7 +1095,7 @@ namespace {
   Value* typeMapValue(const Value* V,
                       ValueToValueMapTy &VM,
                       RemapFlags Flags,
-                      TypeFixer *TypeMapper) {
+                      GlobalTypeFixer *TypeMapper) {
     ValueToValueMapTy::iterator I = VM.find(V);
 
     // If the value already exists in the map, use it.
@@ -1095,7 +1118,7 @@ namespace {
   void typeRemapInstruction(Instruction *I,
                             ValueToValueMapTy &VM,
                             RemapFlags Flags,
-                            TypeFixer *TypeMapper) {
+                            GlobalTypeFixer *TypeMapper) {
     // Put any operands that need to change into the map.
     unsigned i = 0;
     for (User::op_iterator op = I->op_begin(), E = I->op_end();
@@ -1149,44 +1172,10 @@ namespace {
     //
     RemapInstruction(I, VM, RF_IgnoreMissingLocals, TypeMapper);
   }
+} // anon namespace
 
-
-
-
-  // GlobalToWide - The first implementation, without getAnalysisUsage.
-  struct GlobalToWide final : public ModulePass {
-    static char ID; // Pass identification, replacement for typeid
-
-    GlobalToWideInfo * info;
-    std::string layoutAfterwards;
-
-    bool debugPassOne;
-    bool debugPassTwo;
-
-    /* info->globalSpace is the address space storing global pointers that
-     *   need to be converted to wide pointers
-     * layout is the target layout we should set the module to
-     *   (could remove p record for address space 'space')
-     */
-    GlobalToWide(GlobalToWideInfo* _info, std::string layout)
-      : ModulePass(ID), info(_info), layoutAfterwards(layout),
-        debugPassOne(false),
-        debugPassTwo(false)
-    {
-    }
-
-    // Constructor for running within opt, for testing and
-    // bugpoint.
-    GlobalToWide()
-      : ModulePass(ID), info(NULL), layoutAfterwards(""),
-        debugPassOne(false),
-        debugPassTwo(false)
-    {
-    }
-
-
-
-    bool runOnModule(Module &M) override {
+// GlobalToWide implementation
+bool GlobalToWide::run(Module &M) {
       bool madeInfo = false;
 
       if( debugThisFn[0] || debugAllPassOne || debugAllPassTwo ) {
@@ -1232,30 +1221,18 @@ namespace {
         auto getFn = M.getOrInsertFunction("chpl_gen_comm_get_ctl_sym", voidTy,
                                            voidPtrTy, nodeTy, voidPtrTy,
                                            sizeTy, i64Ty);
-#if HAVE_LLVM_VER < 90
-        Type* getFnTy = getFn->getType();
-        info->getFn = getFn;
-        info->getFnType = NULL;
-#else
         FunctionType* getFnTy = getFn.getFunctionType();
         info->getFn = getFn.getCallee();
         info->getFnType = getFnTy;
-#endif
         checkFunctionExistAndHasArgs(info->getFn, getFnTy, 5);
 
 
         auto putFn = M.getOrInsertFunction("chpl_gen_comm_put_ctl_sym", voidTy,
                                            nodeTy, voidPtrTy, voidPtrTy,
                                            sizeTy, i64Ty);
-#if HAVE_LLVM_VER < 90
-        Type* putFnTy = putFn->getType();
-        info->putFn = putFn;
-        info->putFnType = NULL;
-#else
         FunctionType* putFnTy = putFn.getFunctionType();
         info->putFn = putFn.getCallee();
         info->putFnType = putFnTy;
-#endif
         checkFunctionExistAndHasArgs(info->putFn, putFnTy, 5);
 
 
@@ -1263,32 +1240,18 @@ namespace {
                                               nodeTy, voidPtrTy,
                                               nodeTy, voidPtrTy,
                                               sizeTy);
-
-#if HAVE_LLVM_VER < 90
-        Type* getPutFnTy = getPutFn->getType();
-        info->getPutFn = getPutFn;
-        info->getPutFnType = NULL;
-#else
         FunctionType* getPutFnTy = getPutFn.getFunctionType();
         info->getPutFn = getPutFn.getCallee();
         info->getPutFnType = getPutFnTy;
-#endif
         checkFunctionExistAndHasArgs(info->getPutFn, getPutFnTy, 5);
 
 
         auto memsetFn = M.getOrInsertFunction("chpl_gen_comm_memset_sym", voidTy,
                                               nodeTy, voidPtrTy,
                                               i8Ty, sizeTy);
-
-#if HAVE_LLVM_VER < 90
-        Type* memsetFnTy = memsetFn->getType();
-        info->memsetFn = memsetFn;
-        info->memsetFnType = NULL;
-#else
         FunctionType* memsetFnTy = memsetFn.getFunctionType();
         info->memsetFn = memsetFn.getCallee();
         info->memsetFnType = memsetFnTy;
-#endif
         checkFunctionExistAndHasArgs(info->memsetFn, memsetFnTy, 4);
 
 
@@ -1641,8 +1604,11 @@ namespace {
           // fix up functions that have bodies
           // also skip "special" functions like wideToGlobal
           // (since they have no body)
-
+#if HAVE_LLVM_VER >= 160
+          NF->splice(NF->begin(), F);
+#else
           NF->getBasicBlockList().splice(NF->begin(), F->getBasicBlockList());
+#endif
 
           // Loop over the argument list, transferring uses of the old arguments
           // over to the new arguments, also transferring over the names as
@@ -1683,7 +1649,11 @@ namespace {
                 Instruction *New;
                 New = fixer.callGlobalToWideFn(RI->getReturnValue(), RI);
                 New = ReturnInst::Create(M.getContext(), New, RI);
+#if HAVE_LLVM_VER >= 160
+                RI->eraseFromParent();
+#else
                 BB->getInstList().erase(RI);
+#endif
               }
             }
           }
@@ -1715,7 +1685,7 @@ namespace {
                 GI != GE; ++GI) {
           GlobalVariable *gv = &*GI;
 
-          Type *old_type = gv->getType()->getPointerElementType();
+          Type *old_type = gv->getValueType();
           Type *new_type = convertTypeGlobalToWide(&M, info, old_type);
           Constant *old_init = NULL;
           Constant *new_init = NULL;
@@ -1989,21 +1959,38 @@ namespace {
       }
 
       return true;
-    }
-  };
 }
 
-char GlobalToWide::ID = 0;
-static RegisterPass<GlobalToWide> X("global-to-wide", "GlobalToWide Pass");
+// LegacyGlobalToWidePass implementation
+bool LegacyGlobalToWidePass::runOnModule(Module &M) {
+  return pass.run(M);
+}
 
-ModulePass *createGlobalToWide(GlobalToWideInfo* info, std::string setLayout)
+char LegacyGlobalToWidePass::ID = 0;
+static RegisterPass<LegacyGlobalToWidePass> X("global-to-wide", "GlobalToWide Pass");
+
+ModulePass *createLegacyGlobalToWidePass(GlobalToWideInfo* info,
+                                         std::string setLayout)
 {
   assert(info->getFn);
   assert(info->putFn);
   assert(info->getPutFn);
   assert(info->memsetFn);
-  return new GlobalToWide(info, setLayout);
+  return new LegacyGlobalToWidePass(info, setLayout);
 }
+
+// GlobalToWidePass implementation
+llvm::PreservedAnalyses
+GlobalToWidePass::run(llvm::Module &M, llvm::ModuleAnalysisManager &AM) {
+  bool changed = pass.run(M);
+  if (!changed) {
+    return PreservedAnalyses::all();
+  }
+
+  // TODO: figure out which analyses can be preserved
+  return PreservedAnalyses::none();
+}
+
 
 static
 bool containsGlobalPointers(unsigned gSpace, SmallSet<Type*, 10> & set, Type* t)
@@ -2057,7 +2044,20 @@ void populateFunctionsForGlobalType(Module *module, GlobalToWideInfo* info, Type
 
   GlobalPointerInfo & r = info->gTypes[globalPtrTy];
 
-  ptrTy = llvm::PointerType::getUnqual(globalPtrTy->getPointerElementType());
+  if (isOpaquePointer(globalPtrTy)) {
+#if HAVE_LLVM_VER >= 140
+    ptrTy = llvm::PointerType::getUnqual(module->getContext());
+#else
+    assert(false && "Should not be reachable");
+#endif
+  } else {
+#ifdef HAVE_LLVM_TYPED_POINTERS
+    ptrTy = llvm::PointerType::getUnqual(globalPtrTy->getPointerElementType());
+#else
+    assert(false && "Should not be reachable");
+#endif
+  }
+
   locTy = info->localeIdType;
   nodeTy = info->nodeIdType;
 
@@ -2197,6 +2197,7 @@ llvm::Function* getWideToGlobalFn(llvm::Module *module, GlobalToWideInfo* info, 
   return r.wideToGlobalFn;
 }
 
+// Generates an opaque pointer if eltTy is nullptr, and typed pointer otherwise.
 static
 Type* createWidePointerToType(Module* module, GlobalToWideInfo* i, Type* eltTy)
 {
@@ -2204,7 +2205,22 @@ Type* createWidePointerToType(Module* module, GlobalToWideInfo* i, Type* eltTy)
   // Get the wide pointer struct containing {locale, address}
   Type* fields[2];
   fields[0] = i->localeIdType;
-  fields[1] = PointerType::get(eltTy, 0);
+  llvm::PointerType* ptrTy = nullptr;
+  if (eltTy) {
+#ifdef HAVE_LLVM_TYPED_POINTERS
+    ptrTy = llvm::PointerType::getUnqual(eltTy);
+#else
+    assert(false && "Should not be reachable");
+#endif
+  } else {
+#if HAVE_LLVM_VER >= 140
+    ptrTy = llvm::PointerType::getUnqual(context);
+#else
+    assert(false && "Should not be reachable");
+#endif
+  }
+  assert(ptrTy);
+  fields[1] = ptrTy;
 
   return StructType::get(context, fields, false);
 }
@@ -2287,17 +2303,34 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
     return FunctionType::get(wideRetType, wideArgTypes, fnType->isVarArg());
   }
 
-  if(t->isPointerTy()){
-    Type* eltType = t->getPointerElementType();
-    assert(t != t->getPointerElementType()); // detect simple recursion
-    Type* wideEltType = convertTypeGlobalToWide(module, info, eltType);
-
-    if( t->getPointerAddressSpace() == info->globalSpace ||
-        t->getPointerAddressSpace() == info->wideSpace ) {
-      // Replace the pointer with a struct containing {locale, address}
-      return createWidePointerToType(module, info, wideEltType);
+  if (t->isPointerTy()) {
+    if (isOpaquePointer(t)) {
+#if HAVE_LLVM_VER >= 140
+      if (t->getPointerAddressSpace() == info->globalSpace ||
+          t->getPointerAddressSpace() == info->wideSpace) {
+          // Replace the pointer with a struct containing {locale, address}
+          return createWidePointerToType(module, info, nullptr);
+      } else {
+          return PointerType::get(context, t->getPointerAddressSpace());
+      }
+#else
+      assert(false && "Should not be reachable");
+#endif
     } else {
-      return PointerType::get(wideEltType, t->getPointerAddressSpace());
+#ifdef HAVE_LLVM_TYPED_POINTERS
+      Type* eltType = t->getPointerElementType();
+      assert(t != t->getPointerElementType());  // detect simple recursion
+      Type* wideEltType = convertTypeGlobalToWide(module, info, eltType);
+      if (t->getPointerAddressSpace() == info->globalSpace ||
+          t->getPointerAddressSpace() == info->wideSpace) {
+          // Replace the pointer with a struct containing {locale, address}
+          return createWidePointerToType(module, info, wideEltType);
+      } else {
+          return PointerType::get(wideEltType, t->getPointerAddressSpace());
+      }
+#else
+      assert(false && "Should not be reachable");
+#endif
     }
   }
 

@@ -203,6 +203,12 @@ namespace {
   typedef std::map<Symbol*, DeinitOrderNode> DeinitOrderMap;
   typedef std::map<Stmt*, DeinitOrderNode> DeinitOrderBlockMap;
 
+  enum struct LifetimeComparisonResult {
+    UNKNOWN, // means it could be either/both (possible in a conditional)
+    SHORTER,
+    LONGER,
+  };
+
   struct LifetimeState {
     // this mapping allows the pass to ignore certain compiler temps
     SymbolToDetempGroupMap detemp;
@@ -257,7 +263,8 @@ namespace {
     bool shouldPropagateLifetimeTo(CallExpr* call, Symbol* sym);
 
     DeinitOrderNode* deinitOrderNodeFor(Symbol* sym);
-    bool helpIsLifetimeShorter(DeinitOrderNode* aNode, DeinitOrderNode* bNode);
+    LifetimeComparisonResult helpIsLifetimeShorter(DeinitOrderNode* aNode,
+                                                   DeinitOrderNode* bNode);
     bool isLifetimeShorter(Lifetime a, Lifetime b);
     Lifetime minimumLifetime(Lifetime a, Lifetime b);
     LifetimePair minimumLifetimePair(LifetimePair a, LifetimePair b);
@@ -3375,9 +3382,14 @@ bool LifetimeState::isLifetimeShorter(Lifetime a, Lifetime b) {
       bCur = bCur->nestedOrder;
     }
 
-    if (anyElse)
-      if (helpIsLifetimeShorter(aNode, bNode))
+    if (anyElse) {
+      auto r = helpIsLifetimeShorter(aNode, bNode);
+      if (r == LifetimeComparisonResult::SHORTER)
         return true;
+      else if (r == LifetimeComparisonResult::LONGER)
+        return false;
+      // otherwise, fall through to the tie-breaker below
+    }
 
     // Otherwise, the order was similar. Check for FLAG_DEAD_LAST_MENTION
     // differences.
@@ -3398,23 +3410,45 @@ bool LifetimeState::isLifetimeShorter(Lifetime a, Lifetime b) {
   return false;
 }
 
-bool LifetimeState::helpIsLifetimeShorter(DeinitOrderNode* aNode,
-                                          DeinitOrderNode* bNode) {
+static LifetimeComparisonResult
+combineLifetimeComparisonResult(LifetimeComparisonResult a,
+                                LifetimeComparisonResult b) {
+  // If they are the same, go with that
+  if (a == b)
+    return a;
+  // If one is unknown, use the other one
+  if (a == LifetimeComparisonResult::UNKNOWN)
+    return b;
+  if (b == LifetimeComparisonResult::UNKNOWN)
+    return a;
+
+  // they are not the same, and neither is UNKNOWN. That means
+  // it is SHORTER and LONGER. Return UNKNOWN in that case.
+  return LifetimeComparisonResult::UNKNOWN;
+}
+
+LifetimeComparisonResult
+LifetimeState::helpIsLifetimeShorter(DeinitOrderNode* aNode,
+                                     DeinitOrderNode* bNode) {
   DeinitOrderNode* aCur = aNode;
   DeinitOrderNode* bCur = bNode;
 
   if (aCur->order < bCur->order)
-    return true;
+    return LifetimeComparisonResult::SHORTER;
   if (aCur->order > bCur->order)
-    return false;
+    return LifetimeComparisonResult::LONGER;
 
-  bool shorter = false;
-  if (aCur->nestedOrder && bCur->nestedOrder)
-    shorter |= helpIsLifetimeShorter(aCur->nestedOrder, bCur->nestedOrder);
-  if (aCur->elseOrder && bCur->elseOrder)
-    shorter |= helpIsLifetimeShorter(aCur->elseOrder, bCur->elseOrder);
+  auto result = LifetimeComparisonResult::UNKNOWN;
+  if (aCur->nestedOrder && bCur->nestedOrder) {
+    auto g = helpIsLifetimeShorter(aCur->nestedOrder, bCur->nestedOrder);
+    result = combineLifetimeComparisonResult(result, g);
+  }
+  if (aCur->elseOrder && bCur->elseOrder) {
+    auto g = helpIsLifetimeShorter(aCur->elseOrder, bCur->elseOrder);
+    result = combineLifetimeComparisonResult(result, g);
+  }
 
-  return shorter;
+  return result;
 }
 
 DeinitOrderNode* LifetimeState::deinitOrderNodeFor(Symbol* sym) {

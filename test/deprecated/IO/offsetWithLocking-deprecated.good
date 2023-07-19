@@ -1,0 +1,10 @@
+offsetWithLocking.chpl:11: warning: The variant of fileWriter.offset that automatically acquires a lock before getting the offset is deprecated; please compile with `-sfileOffsetWithoutLocking=true` and wrap fileWriter.offset with the appropriate locking calls where necessary to opt in to the new behavior
+offsetWithLocking.chpl:14: warning: The variant of fileWriter.offset that automatically acquires a lock before getting the offset is deprecated; please compile with `-sfileOffsetWithoutLocking=true` and wrap fileWriter.offset with the appropriate locking calls where necessary to opt in to the new behavior
+offsetWithLocking.chpl:21: warning: The variant of fileReader.offset that automatically acquires a lock before getting the offset is deprecated; please compile with `-sfileOffsetWithoutLocking=true` and wrap fileReader.offset with the appropriate locking calls where necessary to opt in to the new behavior
+offsetWithLocking.chpl:25: warning: The variant of fileReader.offset that automatically acquires a lock before getting the offset is deprecated; please compile with `-sfileOffsetWithoutLocking=true` and wrap fileReader.offset with the appropriate locking calls where necessary to opt in to the new behavior
+writing
+0
+12
+reading
+0
+12

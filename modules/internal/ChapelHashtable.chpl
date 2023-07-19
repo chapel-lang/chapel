@@ -31,7 +31,7 @@ module ChapelHashtable {
 
   use ChapelBase, DSIUtil;
 
-  private use CTypes;
+  private use CTypes, Math, OS.POSIX;
 
   // empty needs to be 0 so memset 0 sets it
   enum chpl__hash_status { empty=0, full, deleted };
@@ -78,17 +78,29 @@ module ChapelHashtable {
       }
       when ArrayInit.serialInit {
         for slot in _allSlots(size) {
-          c_memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
+          memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement.safeCast(c_size_t));
         }
       }
       when ArrayInit.parallelInit {
         // This should match the 'these' iterator in terms of idx->task
         forall slot in _allSlots(size) {
-          c_memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
+          memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement.safeCast(c_size_t));
+        }
+      }
+      when ArrayInit.gpuInit {
+        use ChplConfig;
+        if CHPL_LOCALE_MODEL=="gpu" {
+          extern proc chpl_gpu_memset(addr, byte, numBytes);
+          foreach slot in _allSlots(size) {
+            chpl_gpu_memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
+          }
+        }
+        else {
+          halt("ArrayInit.gpuInit should not have been selected");
         }
       }
       otherwise {
-        halt("ArrayInit.heuristicInit should have been made concrete");
+        halt("ArrayInit.", initMethod, " should have been implemented");
       }
     }
 
@@ -263,8 +275,8 @@ module ChapelHashtable {
       // Go through the full slots in the current table and run
       // chpl__autoDestroy on the index
       if _typeNeedsDeinit(keyType) || _typeNeedsDeinit(valType) {
-        if _deinitElementsIsParallel(keyType) &&
-           _deinitElementsIsParallel(valType) {
+        if (!_typeNeedsDeinit(keyType) || _deinitElementsIsParallel(keyType, tableSize)) &&
+           (!_typeNeedsDeinit(valType) || _deinitElementsIsParallel(valType, tableSize)) {
           forall slot in _allSlots(tableSize) {
             ref aSlot = table[slot];
             if _isSlotFull(aSlot) {

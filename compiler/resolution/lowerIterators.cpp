@@ -2318,8 +2318,8 @@ isBoundedIterator(FnSymbol* fn) {
   if (fn->_this) {
     Type* type = fn->_this->getValType();
     if (type->symbol->hasFlag(FLAG_RANGE)) {
-      INT_ASSERT(0==strcmp(type->substitutionsPostResolve[1].name, "boundedType"));
-      if (!strcmp(type->substitutionsPostResolve[1].value->name, "bounded"))
+      INT_ASSERT(0==strcmp(type->substitutionsPostResolve[1].name, "bounds"));
+      if (!strcmp(type->substitutionsPostResolve[1].value->name, "both"))
         return true;
       else
         return false;
@@ -2526,13 +2526,6 @@ expandForLoop(ForLoop* forLoop) {
       // are in a zippered context, we'll set it up based on this
       // iterator which is presumably the first.
       if (testBlock == NULL) {
-        if (!isBoundedIterator(iterFn) && iterators.n > 1) {
-          USR_WARN(forLoop, "The behavior of zippered serial loops driven by "
-                   "unbounded ranges has been fixed in this release to act "
-                   "as though they were conceptually infinite; to maintain "
-                   "the previous behavior, swap a bounded iterand into the "
-                   "first expression of the 'zip(...)'.");
-        }
         if (isNotDynIter) {
           // note that we have found the first test
           testBlock = buildIteratorCall(NULL, HASMORE, iterators.v[i], children);

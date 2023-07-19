@@ -58,22 +58,7 @@ class RecordType final : public CompositeType {
   static const RecordType* get(Context* context, ID id, UniqueString name,
                                const RecordType* instantiatedFrom,
                                CompositeType::SubstitutionsMap subs);
-  /** Get the range type */
-  static const RecordType* getRangeType(Context* context);
 
-  /** Get the string type */
-  static const RecordType* getStringType(Context* context);
-
-  /** Get the bytes type */
-  static const RecordType* getBytesType(Context* context);
-
-  /** When compiling without a standard library (for testing purposes),
-      the compiler code needs to work around the fact that there
-      is no definition available for the record types needed
-      by the language but provided in the library (such as 'string').
-      This function allows code to easily detect that case.
-   */
-  static bool isMissingBundledRecordType(Context* context, ID id);
 
   ~RecordType() = default;
 

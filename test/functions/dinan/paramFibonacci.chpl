@@ -3,7 +3,7 @@
 
 config param x = 50;
 
-proc fib(param n: int(64)) param
+proc fib(param n: int(64)) param do
   return if (n <= 1) then n else fib(n-1) + fib(n-2);
 
 writeln("Fibonacci(", x, ")=", fib(x));

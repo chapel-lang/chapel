@@ -1,5 +1,5 @@
 //Data created on Locales[0], chunks copied to locales and then to GPUs
-use GPUDiagnostics;
+use GpuDiagnostics;
 
 config const n = 128;
 config const alpha = 5;
@@ -8,7 +8,7 @@ var A, B, C: [0..<n] int;
 B = 1;
 C = 2;
 
-startGPUDiagnostics();
+startGpuDiagnostics();
 coforall (l,lid) in zip(Locales, LocaleSpace) do on l {
   const perLocSize = n/numLocales;
   const locStart = lid*perLocSize;
@@ -32,10 +32,10 @@ coforall (l,lid) in zip(Locales, LocaleSpace) do on l {
 
   A[locChunk] = Al;
 }
-stopGPUDiagnostics();
+stopGpuDiagnostics();
 
 // validation
 param nLaunch=1;
 for l in Locales {
-  assert(getGPUDiagnostics()[l.id].kernel_launch == nLaunch*l.gpus.size);
+  assert(getGpuDiagnostics()[l.id].kernel_launch == nLaunch*l.gpus.size);
 }

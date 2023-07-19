@@ -217,7 +217,9 @@ def getIntentInfo(ty):
         ptrType = toChapelType(curType)
 
     if type(curType) == c_ast.PtrDecl and not (isPointerTo(curType, "char") or isPointerTo(curType, "void") or toChapelType(curType) == "c_fn_ptr"):
-        refIntent = "ref"
+        if ptrType and "const" in curType.type.quals:
+            refIntent = "const "
+        refIntent += "ref"
         curType = curType.type
     else:
         refIntent = ""
@@ -269,19 +271,25 @@ def isPointerTo(ty, text):
 def toChapelType(ty):
     if isPointerTo(ty, "char"):
         return "c_string"
-    elif isPointerTo(ty, "void"):
-        return "c_void_ptr"
     elif type(ty) in (c_ast.ArrayDecl, ext_c_parser.ArrayDeclExt):
         eltType = toChapelType(ty.type)
         if eltType is not None:
-            return "c_ptr(" + eltType + ")"
+            if "const" in ty.type.quals:
+                return "c_ptrConst(" + eltType + ")"
+            else:
+                return "c_ptr(" + eltType + ")"
         else:
             return None
     elif type(ty) == c_ast.PtrDecl:
         if type(ty.type) in (c_ast.FuncDecl, ext_c_parser.FuncDeclExt):
             return "c_fn_ptr"
         else:
-            return "c_ptr(" + toChapelType(ty.type) + ")"
+            eltType = ("void" if isPointerTo(ty, "void")
+                       else toChapelType(ty.type))
+            if "const" in ty.type.quals:
+                return "c_ptrConst(" + eltType + ")"
+            else:
+                return "c_ptr(" + eltType + ")"
     elif type(ty) in (c_ast.TypeDecl, ext_c_parser.TypeDeclExt):
         inner = ty.type
         name = ""

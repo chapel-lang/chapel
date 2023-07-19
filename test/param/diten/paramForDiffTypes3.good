@@ -1,5 +1,5 @@
-r 1..2 : range(int(32),bounded,false)
-t 1..2 : range(int(64),bounded,false)
+r 1..2 : range(int(32),both,one)
+t 1..2 : range(int(64),both,one)
 p (1, int(32))
 p (2, int(32))
 v (1, int(32))

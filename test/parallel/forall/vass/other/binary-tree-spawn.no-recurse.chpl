@@ -11,7 +11,7 @@ proc main {
   writef("%064bi\n", result);
 }
 
-inline proc ln return 2**here.id;
+inline proc ln do return 2**here.id;
 
 iter AAA() {
   halt("do not invoke me");

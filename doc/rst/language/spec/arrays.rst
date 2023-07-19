@@ -35,11 +35,16 @@ by the following syntax:
 .. code-block:: syntax
 
    array-type:
-     [ domain-expression ] type-expression
+     [ domain-expression[OPT] ] type-expression[OPT]
 
-The ``domain-expression`` must specify a domain that the array can be
+The ``domain-expression`` may specify a domain that the array can be
 declared over. If the ``domain-expression`` is a rectangular domain
 literal, the curly braces around the literal may be omitted.
+
+The ``domain-expression`` and ``type-expression`` are optional, but
+can currently only be omitted when the array type is specified as
+one of: a formal type expression, a procedure return type, or an
+iterator yield type.
 
    *Example (decls.chpl)*.
 
@@ -409,7 +414,7 @@ the array.
 
    .. code-block:: chapel
 
-      proc f(A: [], is...)
+      proc f(A: [], is...) do
         return A(is);
 
    
@@ -922,7 +927,7 @@ element type by assigning to a pseudo-field named ``IRV`` in the array.
 
    .. BLOCK-test-chapeloutput
 
-      sparse-error.chpl:9: error: halt reached - attempting to assign a 'zero' value in a sparse array: (1, 5)
+      sparse-error.chpl:9: error: halt reached - attempting to assign a 'zero' value in a sparse array at index (1, 5)
 
 .. _Association_of_Arrays_to_Domains:
 

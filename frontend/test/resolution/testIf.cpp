@@ -147,6 +147,8 @@ static void testIfVarErrorUseInElseBranch1() {
   assert(reIfUse.toId() == var->id());
   assert(reElseUse.toId().isEmpty());
   assert(reElseUse.type().isUnknown());
+
+  assert(guard.realizeErrors() > 0);
 }
 
 // In this variation the use is in a 'else-if'.
@@ -196,6 +198,9 @@ static void testIfVarErrorUseInElseBranch2() {
   assert(reUseY.toId() == elseIfVar->id());
   assert(reUseX.toId().isEmpty());
   assert(reUseX.type().isUnknown());
+
+  assert(guard.numErrors() > 0);
+  guard.realizeErrors();
 }
 
 // In this variation the use is in a deeply nested block.
@@ -238,6 +243,9 @@ static void testIfVarErrorUseInElseBranch3() {
   auto& reElseUse = rr.byAst(elseUse);
   assert(reElseUse.toId().isEmpty());
   assert(reElseUse.type().isUnknown());
+
+  assert(guard.numErrors() > 0);
+  guard.realizeErrors();
 }
 
 // Uses of two if-vars with the same name across multiple branches.
@@ -307,6 +315,9 @@ static void testIfVarErrorUseInElseBranch4() {
 
   assert(reElseUseX.toId().isEmpty());
   assert(reElseUseX.type().isUnknown());
+
+  assert(guard.numErrors() > 0);
+  guard.realizeErrors();
 }
 
 static void testIfVarErrorNonClassType() {

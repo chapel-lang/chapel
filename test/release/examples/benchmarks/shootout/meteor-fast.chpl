@@ -322,7 +322,7 @@ proc goodPiece(mask, pos) {
         a = (a | s1 | s2 | s3 | s4 | s5 | s6 | s7 | s8) & b;
       } while aOld != a;
 
-      if popcount(a) % 5 != 0 then
+      if popCount(a) % 5 != 0 then
         return false;
 
       b ^= a;
@@ -340,6 +340,13 @@ record BackoffSpinLock {
   var l: atomic bool,
       lockAttempts = 0,
       maxLockAttempts = (2**16-1);
+
+  proc init() {}
+  proc init=(other: BackoffSpinLock) {
+    this.l = other.l.read();
+    this.lockAttempts = other.lockAttempts;
+    this.maxLockAttempts = other.maxLockAttempts;
+  }
 
   inline proc lock() {
     while l.testAndSet() {

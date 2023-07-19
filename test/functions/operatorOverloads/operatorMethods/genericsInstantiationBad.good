@@ -5,5 +5,5 @@ genericsInstantiationBad.chpl:N: note: because actual argument #1 with type 'Foo
 $CHPL_HOME/modules/internal/ChapelBase.chpl:N: note: is passed to formal 'a: nil'
 genericsInstantiationBad.chpl:N: note: other candidates are:
 $CHPL_HOME/modules/internal/ChapelBase.chpl:N: note:   ==(a: bool, b: bool)
-$CHPL_HOME/modules/internal/ChapelBase.chpl:N: note:   ==(a: borrowed object?, b: borrowed object?)
+$CHPL_HOME/modules/internal/ChapelBase.chpl:N: note:   ==(a: int(8), b: int(8))
 note: and N other candidates, use --print-all-candidates to see them

@@ -9,7 +9,7 @@ use CTypes;
 extern "struct simpleStruct" record simpleStruct {
   var a : c_int;
   var b : c_char;
-  var c : c_void_ptr;
+  var c : c_ptr(void);
   var d : my_int;
   var e : my_string;
 }

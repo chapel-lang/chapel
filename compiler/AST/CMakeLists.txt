@@ -20,7 +20,6 @@ set(SRCS
     AstCount.cpp
     AstDump.cpp
     AstDumpToHtml.cpp
-    AstDumpToNode.cpp
     AstLogger.cpp
     AstToText.cpp
     astutil.cpp
@@ -56,6 +55,7 @@ set(SRCS
     primitive.cpp
     stmt.cpp
     symbol.cpp
+    TemporaryConversionThunk.cpp
     TransformLogicalShortCircuit.cpp
     TryStmt.cpp
     type.cpp

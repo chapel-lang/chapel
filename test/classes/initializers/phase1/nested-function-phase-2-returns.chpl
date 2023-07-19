@@ -16,6 +16,7 @@ class Foo {
 }
 
 proc main() {
-  var f = (new owned Foo(13)).borrow();
+  var ownF = new owned Foo(13);
+  var f = ownF.borrow();
   writeln(f);
 }

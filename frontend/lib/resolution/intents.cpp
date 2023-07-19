@@ -37,8 +37,8 @@ static QualifiedType::Kind constIntentForType(const Type* t) {
   if (t == nullptr || t->isUnknownType() || t->isErroneousType())
     return QualifiedType::UNKNOWN;
 
-  if (t->isPrimitiveType() || t->isEnumType() || t->isOpaqueType() ||
-      t->isTaskIdType()  || t->isNilType() ||
+  if (t->isPrimitiveType() || t->isEnumType() || t->isExternType() ||
+      t->isOpaqueType() || t->isTaskIdType()  || t->isNilType() ||
       t->isCStringType() || t->isCVoidPtrType() || t->isCFnPtrType() ||
       t->isNothingType() || t->isVoidType())
     return QualifiedType::CONST_IN;
@@ -70,10 +70,10 @@ static QualifiedType::Kind defaultIntentForType(const Type* t,
   if (t == nullptr || t->isUnknownType() || t->isErroneousType())
     return QualifiedType::UNKNOWN;
 
-  if (t->isPrimitiveType() || t->isEnumType() || t->isOpaqueType() ||
-      t->isTaskIdType() ||  t->isNilType() ||
-      t->isCStringType() || t->isCVoidPtrType() || t->isCFnPtrType() ||
-      t->isNothingType() || t->isVoidType())
+  if (t->isPrimitiveType() || t->isEnumType() || t->isExternType() ||
+      t->isOpaqueType() || t->isTaskIdType() ||  t->isNilType() ||
+      t->isCStringType() || t->isCVoidPtrType() || t->isCPtrType() ||
+      t->isCFnPtrType() || t->isNothingType() || t->isVoidType())
     return QualifiedType::CONST_IN;
 
   if (t->isStringType() || t->isBytesType() ||

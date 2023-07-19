@@ -35,6 +35,8 @@
 #include "qio_regex.h"
 #include "qbuffer.h" // qio_strdup, refcount functions, qio_ptr_diff, etc
 #include "qio.h" // for channel operations
+#include "chpltypes.h" // must be before "error.h" to prevent include errors
+#include "error.h"
 #undef printf
 
 #include "re2/re2.h"
@@ -297,15 +299,12 @@ qio_bool qio_regex_match(qio_regex_t* regex, const char* text, int64_t text_len,
       submatch[i].offset = -1;
       submatch[i].len = 0;
     } else {
-      intptr_t diff = 0;
-      int64_t  length = 0;
-      if( spPtr[i].empty() ) {
-        diff = startpos;
-      } else {
-        diff = qio_ptr_diff((void*) spPtr[i].data(), (void*) textp.data());
-        assert( diff >= startpos && diff <= endpos );
-        length = spPtr[i].length();
+      intptr_t diff = qio_ptr_diff((void*) spPtr[i].data(), (void*) textp.data());
+      if( !(diff == 0 || (diff >= startpos && diff <= endpos)) ) {
+        chpl_internal_error("Invalid offset from regex match");
       }
+      int64_t length = spPtr[i].length();
+
       submatch[i].offset = diff;
       submatch[i].len = length;
     }
@@ -381,7 +380,9 @@ void qio_regex_channel_discard(qio_channel_s* ch, int64_t cur, int64_t min)
   qio_channel_advance_unlocked(ch, off - min);
 
   // error checking.
-  assert( qio_channel_offset_unlocked(ch) == off );
+  if ( qio_channel_offset_unlocked(ch) != off ) {
+    chpl_internal_error("failed to advance to offset");
+  }
 }
 
 qioerr qio_regex_channel_match(const qio_regex_t* regex, const int threadsafe, struct qio_channel_s* ch, int64_t maxlen, int anchor, qio_bool can_discard, qio_bool keep_unmatched, qio_bool keep_whole_pattern, qio_regex_string_piece_t* captures, int64_t ncaptures)
@@ -404,6 +405,7 @@ qioerr qio_regex_channel_match(const qio_regex_t* regex, const int threadsafe, s
   int i;
   int use_captures = ncaptures;
   bool atEOF = false;
+  int old_gFileStringAllowBufferSearch;
   MAYBE_STACK_SPACE(FilePiece, caps_onstack);
 
   if( ncaptures > INT_MAX || ncaptures < 0 )
@@ -486,7 +488,14 @@ qioerr qio_regex_channel_match(const qio_regex_t* regex, const int threadsafe, s
   MAYBE_STACK_ALLOC(FilePiece, use_captures, locs, caps_onstack);
   memset((void*)locs, 0, sizeof(FilePiece) * use_captures);
 
+  // if we allow MatchFile to search the buffer, given the string "xy", it will
+  // incorrectly match "^y". This seems to be an issue with RE2 rather than our
+  // shim. As a TODO: we should either fix this (buffer would be faster) or
+  // remove the unneeded buffer setup code
+  old_gFileStringAllowBufferSearch = gFileStringAllowBufferSearch;
+  gFileStringAllowBufferSearch = 0;
   found = re->MatchFile(text, buffer, ranchor, locs, ncaptures);
+  gFileStringAllowBufferSearch = old_gFileStringAllowBufferSearch;
 
   // Copy capture groups if we found something
   if( found ) {

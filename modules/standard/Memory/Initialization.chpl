@@ -34,7 +34,7 @@
 
 
 */
-deprecated "The Memory.Initialization module has been deprecated; please use the 'MemMove' module instead"
+@deprecated(notes="The Memory.Initialization module has been deprecated; please use the 'MemMove' module instead")
 module Initialization {
 
   // Mark as "unsafe" to silence lifetime errors.
@@ -90,7 +90,7 @@ module Initialization {
     :arg rhs: A value to move-initialize from
   */
   pragma "last resort"
-  deprecated "The formals 'lhs' and 'rhs' are deprecated, please use 'dst' and 'src' instead"
+  @deprecated(notes="The formals 'lhs' and 'rhs' are deprecated, please use 'dst' and 'src' instead")
   proc moveInitialize(ref lhs,
                       pragma "no auto destroy"
                       pragma "error on copy" in rhs) {
@@ -155,7 +155,7 @@ module Initialization {
 
     :return: The contents of ``arg`` moved into a new value
   */
-  deprecated "'moveToValue' is deprecated; please use 'moveFrom' instead"
+  @deprecated(notes="'moveToValue' is deprecated; please use 'moveFrom' instead")
   proc moveToValue(const ref arg: ?t) {
     if t == nothing {
       return none;
@@ -206,7 +206,7 @@ module Initialization {
     :arg rhs: A variable to swap
   */
   pragma "last resort"
-  deprecated "the formals 'lhs' and 'rhs' are deprecated, please use 'x' and 'y' instead"
+  @deprecated(notes="the formals 'lhs' and 'rhs' are deprecated, please use 'x' and 'y' instead")
   proc moveSwap(ref lhs: ?t, ref rhs: t) {
     moveSwap(x=lhs, y=rhs);
   }

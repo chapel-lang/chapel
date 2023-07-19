@@ -1,9 +1,9 @@
 use BlockDist;
 use CyclicDist;
 
-var a = newBlockArr(0..10, int);
-var b = newBlockArr(0..10, int);
-var c = newCyclicArr(0..10, int);
+var a = Block.createArray(0..10, int);
+var b = Block.createArray(0..10, int);
+var c = Cyclic.createArray(0..10, int);
 
 for i in b.domain {
   b[i] = i;

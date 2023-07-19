@@ -1,6 +1,6 @@
 use Subprocess;
 
-var sub = spawn(["cat", ], stdin=pipeStyle.bufferAll, stdout=pipeStyle.pipe, stderr=pipeStyle.forward);
+var sub = spawn(["cat"], stdin=pipeStyle.bufferAll, stdout=pipeStyle.pipe, stderr=pipeStyle.forward);
 
 config const n = 10000;
 for i in 1..n {

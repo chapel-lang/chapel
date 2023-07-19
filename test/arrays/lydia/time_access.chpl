@@ -74,9 +74,9 @@ proc main {
 
   if compareTimes {
     writeln("chpl accessed [", arrsize, " ", arrsize, "] elements ", ntrials,
-            " times in ", t.elapsed(TimeUnits.milliseconds)/1000, " seconds");
+            " times in ", t.elapsed(), " seconds");
     writeln("chpl accessed [", arrsize, "][", arrsize, "] elements ", ntrials,
-            " times in ", t2.elapsed(TimeUnits.milliseconds)/1000, " seconds");
+            " times in ", t2.elapsed(), " seconds");
     c_trial();
   }
 }

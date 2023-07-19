@@ -1,24 +1,24 @@
-use CTypes;
+use CTypes, OS.POSIX;
 
-config const size = 256 * 1024 * 1024;
+config const size : c_size_t = 256 * 1024 * 1024;
 config const numTasks = max(here.maxTaskPar, max(int(8)));
 
 config const trials = 3;
 coforall i in 1..here.maxTaskPar {
   var taskid = i % max(int(8));
   for 1..trials {
-    var m = c_malloc(int(8), size);
-    c_memset(m, taskid, size);
+    var m = allocate(int(8), size);
+    memset(m, taskid, size.safeCast(c_size_t));
     assert(m[0] == taskid && m[size-1] == taskid);
-    c_free(m);
+    deallocate(m);
 
-    var a = c_aligned_alloc(int(8), 8, size);
-    c_memset(a, taskid, size);
+    var a = allocate(int(8), size, alignment=8);
+    memset(a, taskid, size.safeCast(c_size_t));
     assert(a[0] == taskid && a[size-1] == taskid);
-    c_free(a);
+    deallocate(a);
 
-    var c = c_calloc(int(8), size);
+    var c = allocate(int(8), size, clear=true);
     assert(c[0] == 0 && c[size-1] == 0);
-    c_free(c);
+    deallocate(c);
   }
 }

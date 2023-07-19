@@ -1,7 +1,7 @@
 mistakenIteratorShape.chpl:16: internal error: AST-ITE-TOR-0522 chpl version 1.30.0 pre-release (b'ae52de5bbc')
 Note: This source location is a guess.
 
-Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
+Internal errors indicate a bug in the Chapel compiler,
 and we're sorry for the hassle.  We would appreciate your reporting this bug --
 please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
 the filename + line number above may be useful in working around the issue.

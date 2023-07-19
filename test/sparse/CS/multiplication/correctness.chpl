@@ -152,7 +152,7 @@ proc multiply(A: [?ADom] ?eltType, B: [?BDom] eltType) where A.isSparse() && B.i
       for (i, j) in overlap(aRange, bRange) {
         // Add to index!
         if subtimers then subTimers['  push_back'].start();
-        indices.append((r, c));
+        indices.pushBack((r, c));
         if subtimers then subTimers['  push_back'].stop();
         break;
       }

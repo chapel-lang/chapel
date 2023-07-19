@@ -5,6 +5,7 @@ module DistributedMap {
     private use HaltWrappers;
     private use CyclicDist;
     private use IO;
+    private use Math;
     private use Reflection;
     private use ChapelLocks;
 
@@ -41,21 +42,21 @@ module DistributedMap {
         type keyType;
         type valType;
 
-        pragma "no doc"
+        @chpldoc.nodoc
         const targetLocales = Locales;
 
-        pragma "no doc"
+        @chpldoc.nodoc
         const locDom = {0..<targetLocales.size}
             dmapped Cyclic(startIdx=0, targetLocales=targetLocales);
 
-        pragma "no doc"
+        @chpldoc.nodoc
             var tables: [locDom] chainTable(keyType, valType);
 
-        pragma "no doc"
+        @chpldoc.nodoc
         var locks: [locDom] owned _LockWrapper =
             [i in locDom] new owned _LockWrapper();
 
-        pragma "no doc"
+        @chpldoc.nodoc
         var localeHasher;
 
         // -------------------------------------------
@@ -163,7 +164,7 @@ module DistributedMap {
             return ret;
         }
 
-        pragma "no doc"
+        @chpldoc.nodoc
         proc const this(k: keyType) const : valType
             where shouldReturnRvalueByValue(valType) && !isNonNilableClass(valType)
         {
@@ -179,7 +180,7 @@ module DistributedMap {
             return ret;
         }
 
-        pragma "no doc"
+        @chpldoc.nodoc
         proc const this(k: keyType) const ref : valType
             where !isNonNilableClass(valType)
         {
@@ -197,7 +198,7 @@ module DistributedMap {
             return ret;
         }
 
-        pragma "no doc"
+        @chpldoc.nodoc
         proc const this(k: keyType)
             where isNonNilableClass(valType)
         {
@@ -284,7 +285,7 @@ module DistributedMap {
             return ret;
         }
 
-        proc addOrSet(in k: keyType, in v: valType) {
+        proc addOrReplace(in k: keyType, in v: valType) {
             const loc = this._localeFor(k);
             on loc {
                 this.locks[loc.id].lock();

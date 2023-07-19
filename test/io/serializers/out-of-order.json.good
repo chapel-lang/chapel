@@ -1,0 +1,7 @@
+(z = hello, x = 5, y = 42.0)
+(x = 5, y = 42.0, z = hello)
+(y = 42.0, x = 5, z = hello)
+(x = 5, z = hello)
+uncaught IllegalArgumentError: field 'w' not found.
+  out-of-order.chpl:66: thrown here
+  out-of-order.chpl:66: uncaught here

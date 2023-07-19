@@ -515,7 +515,7 @@ iterator         0-based one-dimensional domain
 
    .. code-block:: chapel
    
-      proc square(x: int) return x**2;
+      proc square(x: int) do return x**2;
 
    then the call ``square(A)`` results in the promotion of the
    ``square`` function over the values in the array ``A``. The result is
@@ -658,6 +658,24 @@ is equivalent to
 
 The usual constraints of zippered iteration apply to zippered promotion, so
 the promoted actuals must have the same shape.
+
+Formal arguments that are not promoted are evaluated once and stored in a
+temporary variable. If formal ``a1`` is an expression, then the call 
+
+.. code-block:: chapel
+
+   f(s1, s2, ..., a1, a2, ...)
+
+is equivalent to 
+
+.. code-block:: chapel
+
+   var tmp = a1;
+   [(e1, e2, ...) in zip(s1, s2, ...)] f(e1, e2, ..., tmp, a2, ...)
+
+
+In this instance, if formal ``a1`` is an expression that has side effects
+(such as printing), those side effects will only occur once.
 
 A zippered promotion can be captured in a variable, such as
 ``var X = f(s1, s2, ..., a1, a2, ...);`` using the above example. If so,
@@ -818,7 +836,7 @@ the second argument component.
       config const n = 10;
       const D = {1..n};
       var A: [D] int = [i in D] i % 7;
-      proc foo(x) return x % 7;
+      proc foo(x) do return x % 7;
 
    
 

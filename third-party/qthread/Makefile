@@ -37,6 +37,8 @@ ifneq ($(CHPL_MAKE_HWLOC),none)
     ifdef CHPL_HWLOC_PREFIX
       CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc-symbol-prefix=$(CHPL_HWLOC_PREFIX)hwloc_
     endif
+    # don't bother checking if we can link against hwloc
+    CHPL_QTHREAD_CFG_OPTIONS += --disable-hwloc-configure-checks
   endif
 endif
 

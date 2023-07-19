@@ -6,5 +6,5 @@ const a: string = "a";
 
 strMap[a] = "123";
 
-for key in strMap do
+for key in strMap.keys() do
   writeln(key, " = ", strMap[key]);

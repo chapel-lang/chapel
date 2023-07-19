@@ -32,11 +32,11 @@ proc main() {
   assert(A.reindex({0..2,0..2}).domain.dist.dsiIsLayout());
 
   // check external array
-  var ptr:c_ptr(int) = c_calloc(int, 1);
+  var ptr:c_ptr(int) = allocate(int, 1, clear=true);
   var B = makeArrayFromPtr(ptr, 1);
   assert(B.domain.dist.dsiIsLayout());
 
   //make array from ptr creates an array that borrows the buffer. So, the
   //allocation needs to be cleaned up using the pointer.
-  c_free(ptr);
+  deallocate(ptr);
 }

@@ -1,9 +1,18 @@
-use GPUDiagnostics;
+use GpuDiagnostics;
+
+proc verifyLaunches() {
+  use ChplConfig;
+  param expected = if CHPL_GPU_MEM_STRATEGY == "unified_memory" then 4 else 6;
+  const actual = getGpuDiagnostics()[0].kernel_launch;
+  assert(actual == expected,
+         "observed ", actual, " launches instead of ", expected);
+}
+
 
 config const start = 1;
 config const end = 10;
 
-startGPUDiagnostics();
+startGpuDiagnostics();
 on here.gpus[0] {
   var a, b: [start..end] int;
 
@@ -15,5 +24,5 @@ on here.gpus[0] {
 
   foreach (aElem, bElem) in zip(a, b) { aElem += bElem + 10;    } writeln(a);
 }
-stopGPUDiagnostics();
-writeln(getGPUDiagnostics());
+stopGpuDiagnostics();
+verifyLaunches();

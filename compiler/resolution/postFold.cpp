@@ -144,51 +144,9 @@ Expr* postFold(Expr* expr) {
 *                                                                             *
 ************************************** | *************************************/
 
-// TODO: Is this "lie" by mismatching the types in the AST ok, or do I
-// need to create a sort of wrapper function to make the call instead?
-static Expr* postFoldCallToExternFnWithProcFormals(CallExpr* call) {
-  auto fn = call->resolvedFunction();
-  if (!fn || !fn->hasFlag(FLAG_EXTERN)) return nullptr;
-
-  bool didAdjustActual = false;
-  for_actuals(actual, call) {
-    if (auto se = toSymExpr(actual)) {
-      auto sym = se->symbol();
-
-      // Only transform actuals that are non-param values.
-      if (sym->hasFlag(FLAG_TYPE_VARIABLE) ||
-          sym->hasFlag(FLAG_PARAM)) continue;
-
-      if (sym->typeInfo()->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
-        auto tmp = newTemp("underlying_ptr", dtCFnPtr);
-        auto accessPtr = new CallExpr("chpl_fcfPtr", gMethodToken,
-                                      new SymExpr(sym));
-        auto move = new CallExpr(PRIM_MOVE, tmp, accessPtr);
-        call->insertBefore(new DefExpr(tmp));
-        call->insertBefore(move);
-
-        resolveCallAndCallee(accessPtr);
-        resolveExpr(move);
-
-        se->setSymbol(tmp);
-
-        didAdjustActual = true;
-      }
-    }
-  }
-
-  if (!didAdjustActual) return nullptr;
-
-  return call;
-}
-
 static Expr* postFoldNormal(CallExpr* call) {
   FnSymbol* fn     = call->resolvedFunction();
   Expr*     retval = call;
-
-  if (Expr* retval = postFoldCallToExternFnWithProcFormals(call)) {
-    return retval;
-  }
 
   if (fn->retTag == RET_PARAM || fn->hasFlag(FLAG_MAYBE_PARAM)) {
     VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
@@ -688,6 +646,42 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
     call->replace(retval);
 
+  } else if (call->isPrimitive(PRIM_REAL64_AS_UINT64)) {
+    Expr* realArg = call->get(1);
+    Immediate* realVal = getSymbolImmediate(toSymExpr(realArg)->symbol());
+    double f = realVal->v_float64;
+    uint64_t ui;
+    INT_ASSERT(sizeof(f) == sizeof(ui));
+    memcpy(&ui, &f, sizeof(f));
+    retval = new SymExpr(new_UIntSymbol(ui, INT_SIZE_64));
+    call->replace(retval);
+  } else if (call->isPrimitive(PRIM_REAL32_AS_UINT32)) {
+    Expr* realArg = call->get(1);
+    Immediate* realVal = getSymbolImmediate(toSymExpr(realArg)->symbol());
+    float f = realVal->v_float32;
+    uint32_t ui;
+    INT_ASSERT(sizeof(f) == sizeof(ui));
+    memcpy(&ui, &f, sizeof(f));
+    retval = new SymExpr(new_UIntSymbol(ui, INT_SIZE_32));
+    call->replace(retval);
+  } else if (call->isPrimitive(PRIM_UINT64_AS_REAL64)) {
+    Expr* uintArg = call->get(1);
+    Immediate* uintVal = getSymbolImmediate(toSymExpr(uintArg)->symbol());
+    uint64_t ui = uintVal->v_uint64;;
+    double f;
+    INT_ASSERT(sizeof(f) == sizeof(ui));
+    memcpy(&f, &ui, sizeof(f));
+    retval = new SymExpr(new_RealSymbol(f));
+    call->replace(retval);
+  } else if (call->isPrimitive(PRIM_UINT32_AS_REAL32)) {
+    Expr* uintArg = call->get(1);
+    Immediate* uintVal = getSymbolImmediate(toSymExpr(uintArg)->symbol());
+    uint32_t ui = uintVal->v_uint32;
+    float f;
+    INT_ASSERT(sizeof(f) == sizeof(ui));
+    memcpy(&f, &ui, sizeof(f));
+    retval = new SymExpr(new_RealSymbol(f));
+    call->replace(retval);
   }
 
   return retval;
@@ -807,7 +801,8 @@ static bool postFoldMoveUpdateForParam(CallExpr* call, Symbol* lhsSym) {
           rhsSym == gUninstantiated) {
         paramMap.put(lhsSym, rhsSym);
 
-        lhsSym->defPoint->remove();
+        // Do not remove the definition point or the param is pruned.
+        // lhsSym->defPoint->remove();
 
         call->convertToNoop();
 

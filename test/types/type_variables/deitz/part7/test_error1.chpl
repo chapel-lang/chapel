@@ -2,8 +2,8 @@ class C {
   type t;
   var x : t;
 }
-
-var c = (new owned C(int)).borrow();
+var cObj = new C(int);
+var c = cObj.borrow();
 
 writeln(c);
 

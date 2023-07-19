@@ -24,6 +24,7 @@
 
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include "chpl-env-gen.h"
 
 #include "cuda-utils.h"
 

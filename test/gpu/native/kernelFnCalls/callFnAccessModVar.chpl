@@ -1,4 +1,4 @@
-use GPUDiagnostics;
+use GpuDiagnostics;
 
 config const n = 100;
 
@@ -8,7 +8,7 @@ proc foo(i) {
   return i - x;
 }
 
-startGPUDiagnostics();
+startGpuDiagnostics();
 on here.gpus[0] {
   var A: [0..#n] real;
   forall i in 0..#n {
@@ -16,5 +16,5 @@ on here.gpus[0] {
   }
   writeln(A);
 }
-stopGPUDiagnostics();
-writeln(getGPUDiagnostics());
+stopGpuDiagnostics();
+writeln(getGpuDiagnostics());

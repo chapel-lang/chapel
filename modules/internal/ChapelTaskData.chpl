@@ -22,7 +22,7 @@
 //
 module ChapelTaskData {
 
-  private use ChapelStandard, CTypes;
+  private use ChapelStandard, CTypes, OS.POSIX;
 
   // Chapel task-local data format:
   // up to 16 bytes of wide pointer for _remoteEndCountType
@@ -38,7 +38,7 @@ module ChapelTaskData {
   // What is the size of a wide _EndCount pointer?
   private
   proc sizeof_endcount_ptr() {
-    return c_sizeof(chpl_localeID_t) + c_sizeof(c_void_ptr);
+    return c_sizeof(chpl_localeID_t) + c_sizeof(c_ptr(void));
   }
 
   // These functions get/set parts of the Chapel managed
@@ -53,11 +53,11 @@ module ChapelTaskData {
 
     // Copy the localeID
     i = chpl_offset_endCount;
-    c_memcpy(c_ptrTo(prv[i]), c_ptrTo(loc), c_sizeof(chpl_localeID_t));
+    memcpy(c_ptrTo(prv[i]), c_ptrTo(loc), c_sizeof(chpl_localeID_t));
 
     // Copy the address
     i += c_sizeof(chpl_localeID_t);
-    c_memcpy(c_ptrTo(prv[i]), c_ptrTo(adr), c_sizeof(c_void_ptr));
+    memcpy(c_ptrTo(prv[i]), c_ptrTo(adr), c_sizeof(c_ptr(void)));
   }
 
   proc chpl_task_data_getDynamicEndCount(tls:c_ptr(chpl_task_infoChapel_t)) {
@@ -65,15 +65,15 @@ module ChapelTaskData {
     var i:c_size_t;
 
     var loc:chpl_localeID_t;
-    var adr:c_void_ptr;
+    var adr:c_ptr(void);
 
     // Copy the localeID
     i = chpl_offset_endCount;
-    c_memcpy(c_ptrTo(loc), c_ptrTo(prv[i]), c_sizeof(chpl_localeID_t));
+    memcpy(c_ptrTo(loc), c_ptrTo(prv[i]), c_sizeof(chpl_localeID_t));
 
     // Copy the address
     i += c_sizeof(chpl_localeID_t);
-    c_memcpy(c_ptrTo(adr), c_ptrTo(prv[i]), c_sizeof(c_void_ptr));
+    memcpy(c_ptrTo(adr), c_ptrTo(prv[i]), c_sizeof(c_ptr(void)));
 
     // Construct a pointer to return.
     var ret = __primitive("_wide_make", _remoteEndCountType, loc, adr);
@@ -88,14 +88,14 @@ module ChapelTaskData {
     if makeSerial then
       v = 1;
     // Using memcpy to avoid pointer type punning
-    c_memcpy(c_ptrTo(prv[i]), c_ptrTo(v), c_sizeof(uint(8)));
+    memcpy(c_ptrTo(prv[i]), c_ptrTo(v), c_sizeof(uint(8)));
   }
   proc chpl_task_data_getSerial(tls:c_ptr(chpl_task_infoChapel_t)) : bool {
     var prv = tls:c_ptr(c_uchar);
     var i = chpl_offset_serial;
     var v:uint(8) = 0;
     // Using memcpy to avoid pointer type punning
-    c_memcpy(c_ptrTo(v), c_ptrTo(prv[i]), c_sizeof(uint(8)));
+    memcpy(c_ptrTo(v), c_ptrTo(prv[i]), c_sizeof(uint(8)));
     // check we got 1 or 0 if bounds checking is on
     // (to detect runtime implementation errors where this part of
     //  the argument bundle is stack trash)
@@ -110,14 +110,14 @@ module ChapelTaskData {
     var v:uint(8) = 0;
     if makeSerial then
       v = 1;
-    c_memcpy(c_ptrTo(prv[i]), c_ptrTo(v), c_sizeof(uint(8)));
+    memcpy(c_ptrTo(prv[i]), c_ptrTo(v), c_sizeof(uint(8)));
   }
 
   proc chpl_task_data_getNextCoStmtSerial(tls:c_ptr(chpl_task_infoChapel_t)) : bool {
     var prv = tls:c_ptr(c_uchar);
     var i = chpl_offset_nextCoStmtSerial;
     var v:uint(8) = 0;
-    c_memcpy(c_ptrTo(v), c_ptrTo(prv[i]), c_sizeof(uint(8)));
+    memcpy(c_ptrTo(v), c_ptrTo(prv[i]), c_sizeof(uint(8)));
     if boundsChecking then
       assert(v == 0 || v == 1);
     return v == 1;
@@ -130,7 +130,7 @@ module ChapelTaskData {
     var v:uint(8) = 0;
     if disabled then
       v = 1;
-    c_memcpy(c_ptrTo(prv[i]), c_ptrTo(v), c_sizeof(uint(8)));
+    memcpy(c_ptrTo(prv[i]), c_ptrTo(v), c_sizeof(uint(8)));
     return ret;
   }
 
@@ -138,7 +138,7 @@ module ChapelTaskData {
     var prv = tls:c_ptr(c_uchar);
     var i = chpl_offset_commDiagsTemporarilyDisabled;
     var v:uint(8) = 0;
-    c_memcpy(c_ptrTo(v), c_ptrTo(prv[i]), c_sizeof(uint(8)));
+    memcpy(c_ptrTo(v), c_ptrTo(prv[i]), c_sizeof(uint(8)));
     if boundsChecking then
       assert(v == 0 || v == 1);
     return v == 1;

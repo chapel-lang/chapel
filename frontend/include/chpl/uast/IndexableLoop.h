@@ -40,9 +40,10 @@ class IndexableLoop : public Loop {
                 int8_t withClauseChildNum,
                 BlockStyle blockStyle,
                 int loopBodyChildNum,
-                bool isExpressionLevel)
+                bool isExpressionLevel,
+                int attributeGroupChildNum)
     : Loop(tag, std::move(children), blockStyle,
-           loopBodyChildNum),
+           loopBodyChildNum, attributeGroupChildNum),
       indexChildNum_(indexChildNum),
       iterandChildNum_(iterandChildNum),
       withClauseChildNum_(withClauseChildNum),

@@ -1,10 +1,10 @@
 use IO;
 
 on Locales[0] {
-    var reader = openreader("./input.bin");
+    var reader = openReader("./input.bin");
 
     on Locales[1] {
-        var b: bytes = createBytesWithNewBuffer(b"");
+        var b = b"";
 
         on Locales[2] {
             reader.readBinary(b, 40);

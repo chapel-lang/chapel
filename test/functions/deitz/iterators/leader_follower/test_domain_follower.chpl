@@ -1,4 +1,4 @@
-proc bar(i: int) return {1..3};
+proc bar(i: int) do return {1..3};
 
 // This promoted assignment creates an array of domains
 // [ {1..3}, {1..3}, {1..3} ]

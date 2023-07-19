@@ -11,7 +11,7 @@ use LevelBC_AdvectionCTU;
 
 use IO;
 
-proc main {
+private proc main {
 
 
   //==== Initialize output ====

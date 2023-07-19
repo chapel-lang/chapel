@@ -3,6 +3,7 @@ class C {
   var b: int = a-1;
 }
 
-var c: borrowed C = (new owned C(1)).borrow();
+var obj = new C(1);
+var c: borrowed C = obj.borrow();
 
 writeln("a=", c.a, " b=", c.b);

@@ -30,19 +30,11 @@ sleep(1);
 t.stop();
 
 //
-// To report the time, use the ``elapsed()`` method.  By default, the
-// ``elapsed`` method reports time in seconds.
+// To report the time, use the ``elapsed()`` method. The ``elapsed``
+// method reports time in seconds.
 //
 if !quiet then
   writeln("A. ", t.elapsed(), " seconds");
-
-//
-// The elapsed time can also be checked in units other than
-// seconds. The supported units are: ``microseconds``, ``milliseconds``,
-// ``seconds``, ``minutes``, ``hours``.
-//
-if !quiet then
-  writeln("B. ", t.elapsed(TimeUnits.milliseconds), " milliseconds");
 
 //
 // The ``stopwatch`` can be started again to accumulate additional time.
@@ -51,7 +43,7 @@ t.start();
 sleep(1);
 t.stop();
 if !quiet then
-  writeln("C. ", t.elapsed(TimeUnits.microseconds), " microseconds");
+  writeln("C. ", t.elapsed()*1_000_000, " microseconds");
 
 //
 // To start the ``stopwatch`` over at zero, call the ``clear`` method.
@@ -68,11 +60,11 @@ config const n = 5;
 var iterationTimes: [1..n] real;
 t.start();
 for i in 1..n {
-  var startTime = t.elapsed(TimeUnits.microseconds);
+  var startTime = t.elapsed();
   //
   // This code will be timed n times.
   //
-  iterationTimes(i) = t.elapsed(TimeUnits.microseconds) - startTime;
+  iterationTimes(i) = t.elapsed() - startTime;
 }
 t.stop();
 

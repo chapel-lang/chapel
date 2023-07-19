@@ -1,10 +1,16 @@
-proc writeme(r:range(?)) where isBoundedRange(r) {
+proc writeme(r:range(?)) {
   write(r.lowBound, "..", r.highBound);
-  if r.stridable {
+  if !r.hasUnitStride() {
     write(" by ", r.stride);
-    if r.aligned then write(" align ", r.alignment);
-    else              write(" align ?");
+    if r.isAligned() then write(" align ", r.alignment);
+    else                  write(" align ?");
   }
+}
+
+proc myMod(x: int, y: int) {
+  var tmp = x%abs(y);
+  if tmp < 0 then tmp = tmp + abs(y);
+  return tmp;
 }
 
 proc test(r:range(?), offs:r.idxType) {
@@ -12,8 +18,9 @@ proc test(r:range(?), offs:r.idxType) {
   const res = r.offset(offs);
   write("  offs ", offs, "  ");
   writeme(res);
-  const offs2 = if r.stridable then offs else 0;
-  if !res.aligned || res.alignment != r.first + offs2 then
+  const offs2 = if r.hasUnitStride() then 0
+                else myMod((r.first + offs), r.stride);
+  if !res.isAligned() || res.alignment != offs2 then
     write(" ***ERROR***");
   writeln();
 }

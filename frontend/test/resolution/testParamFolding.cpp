@@ -124,6 +124,9 @@ static void test9() {
   QualifiedType qt = resolveTypeOfXInit(context,
                                       "var x = true && y;");
   assert(qt.isUnknown());
+
+  assert(guard.numErrors() > 0);
+  guard.realizeErrors();
 }
 
 static void test10() {
@@ -135,6 +138,33 @@ static void test10() {
   QualifiedType qt = resolveTypeOfXInit(context,
                                       "var x = false || y;");
   assert(qt.isUnknown());
+
+  assert(guard.numErrors() > 0);
+  guard.realizeErrors();
+}
+
+static void testUnary() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    param val = false;
+
+    record R {
+      proc type foo(x:int) {
+        return x;
+      }
+    }
+
+    if __primitive("u!", val) {
+      var x = R.foo(5);
+    } else {
+      var x = R.foo("hello");
+    })""";
+
+  auto m = parseModule(context, program);
+  std::ignore = resolveModule(context, m->id());
 }
 
 int main() {
@@ -148,6 +178,8 @@ int main() {
   test8();
   test9();
   test10();
+
+  testUnary();
 
   return 0;
 }

@@ -50,7 +50,7 @@ class While final : public Loop {
         BlockStyle blockStyle,
         int loopBodyChildNum)
     : Loop(asttags::While, std::move(children), blockStyle,
-           loopBodyChildNum),
+           loopBodyChildNum, NO_CHILD /*attributeGroup*/),
       conditionChildNum_(conditionChildNum) {
     CHPL_ASSERT(condition());
   }

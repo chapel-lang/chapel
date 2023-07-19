@@ -79,9 +79,9 @@ static void __domain_destruct(void *obj)
 	for (i = 0; i < GNIX_NUM_PTAGS; i++) {
 		info = &domain->mr_cache_info[i];
 
-		fastlock_acquire(&info->mr_cache_lock);
+		ofi_spin_lock(&info->mr_cache_lock);
 		ret = _gnix_close_cache(domain, info);
-		fastlock_release(&info->mr_cache_lock);
+		ofi_spin_unlock(&info->mr_cache_lock);
 
 		if (ret != FI_SUCCESS)
 			GNIX_FATAL(FI_LOG_MR,
@@ -233,27 +233,27 @@ static int gnix_domain_close(fid_t fid)
 		 * flush the memory registration cache
 		 */
 		if (info->mr_cache_ro) {
-			fastlock_acquire(&info->mr_cache_lock);
+			ofi_spin_lock(&info->mr_cache_lock);
 			ret = _gnix_mr_cache_flush(info->mr_cache_ro);
 			if (ret != FI_SUCCESS) {
 				GNIX_WARN(FI_LOG_DOMAIN,
 					  "failed to flush memory cache on domain close\n");
-				fastlock_release(&info->mr_cache_lock);
+				ofi_spin_unlock(&info->mr_cache_lock);
 				goto err;
 			}
-			fastlock_release(&info->mr_cache_lock);
+			ofi_spin_unlock(&info->mr_cache_lock);
 		}
 
 		if (info->mr_cache_rw) {
-			fastlock_acquire(&info->mr_cache_lock);
+			ofi_spin_lock(&info->mr_cache_lock);
 			ret = _gnix_mr_cache_flush(info->mr_cache_rw);
 			if (ret != FI_SUCCESS) {
 				GNIX_WARN(FI_LOG_DOMAIN,
 					  "failed to flush memory cache on domain close\n");
-				fastlock_release(&info->mr_cache_lock);
+				ofi_spin_unlock(&info->mr_cache_lock);
 				goto err;
 			}
-			fastlock_release(&info->mr_cache_lock);
+			ofi_spin_unlock(&info->mr_cache_lock);
 		}
 	}
 
@@ -630,11 +630,11 @@ DIRECT_FN int gnix_domain_open(struct fid_fabric *fabric, struct fi_info *info,
 	if (ret != FI_SUCCESS)
 		goto err;
 
-	fastlock_init(&domain->mr_cache_lock);
+	ofi_spin_init(&domain->mr_cache_lock);
 	for (i = 0; i < GNIX_NUM_PTAGS; i++) {
 		domain->mr_cache_info[i].inuse = 0;
 		domain->mr_cache_info[i].domain = domain;
-		fastlock_init(&domain->mr_cache_info[i].mr_cache_lock);
+		ofi_spin_init(&domain->mr_cache_info[i].mr_cache_lock);
 	}
 
 	/*
@@ -692,7 +692,7 @@ DIRECT_FN int gnix_domain_open(struct fid_fabric *fabric, struct fi_info *info,
 	domain->mr_is_init = 0;
 	domain->mr_iov_limit = info->domain_attr->mr_iov_limit;
 
-	fastlock_init(&domain->cm_nic_lock);
+	ofi_spin_init(&domain->cm_nic_lock);
 
 	domain->using_vmdh = requesting_vmdh;
 

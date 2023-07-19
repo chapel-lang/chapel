@@ -41,7 +41,8 @@ Diagnostics
    :maxdepth: 1
 
    CommDiagnostics <standard/CommDiagnostics>
-   GPUDiagnostics <standard/GPUDiagnostics>
+   GpuDiagnostics <standard/GpuDiagnostics>
+   MemDiagnostics <standard/MemDiagnostics>
    Memory <standard/Memory>
 
 
@@ -87,6 +88,7 @@ Parallelism/Distributed Computing
    :maxdepth: 1
 
    Barriers <standard/Barriers>
+   Collectives <standard/Collectives>
    Communication <standard/Communication>
    DynamicIters <standard/DynamicIters>
    GPU <standard/GPU>
@@ -100,10 +102,8 @@ System/Interoperability
 
    CTypes <standard/CTypes>
    OS <standard/OS>
-   Spawn <standard/Spawn>
    Subprocess <standard/Subprocess>
    Sys <standard/Sys>
-   SysBasic <standard/SysBasic>
 
 Utilities
 ---------
@@ -116,3 +116,4 @@ Utilities
    Regex <standard/Regex>
    Time <standard/Time>
    Version <standard/Version>
+   WeakPointer <../builtins/WeakPointer>

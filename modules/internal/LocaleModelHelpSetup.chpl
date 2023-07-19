@@ -54,6 +54,14 @@ module LocaleModelHelpSetup {
     // than 'int' formals)
     proc init() {
     }
+    proc init=(other: chpl_root_locale_accum) {
+      this.complete();
+      this.nPUsPhysAcc.write(other.nPUsPhysAcc.read());
+      this.nPUsPhysAll.write(other.nPUsPhysAll.read());
+      this.nPUsLogAcc.write(other.nPUsLogAcc.read());
+      this.nPUsLogAll.write(other.nPUsLogAll.read());
+      this.maxTaskPar.write(other.maxTaskPar.read());
+    }
 
     proc accum(loc:locale) {
       nPUsPhysAcc.add(loc.nPUsPhysAcc);
@@ -129,7 +137,7 @@ module LocaleModelHelpSetup {
     if CHPL_COMM == "gasnet" {
       if CHPL_COMM_SUBSTRATE == "udp" {
         const spawnfn = getenv(c"GASNET_SPAWNFN");
-        if spawnfn != c_nil && spawnfn:c_string == c"L" {
+        if spawnfn != nil && spawnfn:c_string == c"L" {
           return true;
         }
       } else if (CHPL_COMM_SUBSTRATE == "smp") {
@@ -148,7 +156,7 @@ module LocaleModelHelpSetup {
     extern proc chpl_nodeName(): c_string;
     var _node_name: string;
     try! {
-      _node_name = createStringWithNewBuffer(chpl_nodeName());
+      _node_name = string.createCopyingBuffer(chpl_nodeName());
     }
     const _node_id = (chpl_nodeID: int): string;
 
@@ -157,9 +165,6 @@ module LocaleModelHelpSetup {
 
   proc helpSetupLocaleFlat(dst:borrowed LocaleModel, out local_name:string) {
     local_name = getNodeName();
-
-    extern proc chpl_task_getCallStackSize(): c_size_t;
-    dst.callStackSize = chpl_task_getCallStackSize();
 
     extern proc chpl_topo_getNumCPUsPhysical(accessible_only: bool): c_int;
     dst.nPUsPhysAcc = chpl_topo_getNumCPUsPhysical(true);

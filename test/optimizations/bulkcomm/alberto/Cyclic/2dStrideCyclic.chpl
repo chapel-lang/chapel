@@ -38,8 +38,9 @@ proc main(){
   if printOutput {
     writeln();
   }
-  var DomA = Dom1[1..3 by 1,2..7 by 1];
-  var DomB = Dom2[3..5 by 1,5..10 by 1];
+  const dummyStep = 1:uint; // force DomA,DomB to have strideKind.positive
+  var DomA = Dom1[1..3, 2..7 by dummyStep];
+  var DomB = Dom2[3..5, 5..10 by dummyStep];
 
   if printOutput {
     writeln("A of DomA Distribution: ");
@@ -74,9 +75,14 @@ proc main(){
   
   for (a,i) in zip(A,{1..n*n}) do a=i;
   for (b,i) in zip(B,{1..2*2*n*n}) do b=i+100;
-  
+
+/* vass 2023-06: I am replacing the following to lines with setIndices() until
+   CyclicDist is adjusted for the transition range.stridable->strideKind:
    DomA = Dom1[1..5 by 2,1..3];
    DomB = Dom2[2..4,1..5 by 2];
+*/
+   DomA.setIndices( Dom1[1..5 by 2,1..3] );
+   DomB.setIndices( Dom2[2..4,1..5 by 2] );
     writeln("Example 2) A",DomA," <-- B",DomB);
   //DomA = Dom1[1..3,1..3];
   //DomB = Dom2[2..4,12..14];

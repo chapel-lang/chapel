@@ -29,7 +29,10 @@
 #include <unordered_map>
 #include <utility>
 
+#include "llvm/ADT/None.h"
 #include "llvm/ADT/Optional.h"
+#include "llvm/ADT/SmallPtrSet.h"
+#include "llvm/ADT/SmallSet.h"
 
 namespace chpl {
 namespace resolution {
@@ -37,41 +40,189 @@ namespace resolution {
 class BorrowedIdsWithName;
 
 /** Helper type to store an ID and visibility constraints. */
-class IdAndVis {
+class IdAndFlags {
+ public:
+  // helper types
+  enum {
+    /** Public */
+    PUBLIC = 1,
+    /** Not public (aka private) */
+    NOT_PUBLIC = 2,
+    /** A method or field declaration */
+    METHOD_FIELD = 4,
+    /** Something other than (a method or field declaration) */
+    NOT_METHOD_FIELD = 8,
+    // note: if adding something here, also update flagsToString
+    /** A function using parens (including iterators and methods) */
+    PARENFUL_FUNCTION = 16,
+    /** A non-function or a function without parentheses */
+    NOT_PARENFUL_FUNCTION = 32,
+    // note: if adding something here, also update flagsToString
+    /** A method declaration */
+    METHOD = 64,
+    /** Something other than a method declaration */
+    NOT_METHOD = 128,
+    // note: if adding something here, also update flagsToString
+  };
+  /**
+    A bit-set of the flags defined in the above enum.
+    Represents a conjunction / AND of all the set bit.
+    E.g.:
+      * just IdAndFlags::PUBLIC -- only public symbols
+      * just IdAndFlags::METHOD_FIELD -- only methods/fields
+      * IdAndFlags::PUBLIC | IdAndFlags::METHOD_FIELD --
+        only public symbols that are methods/fields
+      * Empty Flags -- match everything
+   */
+  using Flags = uint16_t;
+
+  /** A set of bit-sets / flag combinations. Logically, while Flags
+      represents a conjunction of all of its bitfields (see documentation
+      on Flags), this FlagSet represents a disjunction of each flag
+      combination. That is to say, if FlagSet contains:
+
+          IdAndFlags::PUBLIC, IdAndFlags::NOT_PUBLIC | IdAndFlags::METHOD_FIELD
+
+      This represents the following condition on variables:
+
+          IdAndFlags::PUBLIC ∨ (IdAndFlags::NOT_PUBLIC ∧ IdAndFlags::METHOD_FIELD)
+
+      That is, either any public symbol, or a private method or field.
+
+      Other examples:
+        * [] (empty FlagSet) -- matches nothing.
+        * [IdAndFlags::PUBLIC | IdAndFlags::METHOD_FIELD] --
+          only public symbols that are methods / fields.
+        * More generally, [f] (singleton set) --
+          equivalent to the single contained Flags value f.
+
+      Inserting into the FlagSet automatically tries to perform basic
+      simplification to avoid growing the size. */
+  class FlagSet {
+   private:
+     llvm::SmallVector<Flags, 4> flagVec;
+
+   public:
+    FlagSet() = default;
+    FlagSet(const FlagSet& other) = default;
+    FlagSet(FlagSet&& other) = default;
+    FlagSet& operator=(const FlagSet& other) = default;
+    FlagSet& operator=(FlagSet&& other) = default;
+
+    /** Create a FlagSet consisting of only one combination of Flags.
+        Flags represents a conjunction (AND) of properties; see the comment
+        on Flags for more info. */
+    static FlagSet singleton(Flags flags);
+
+    /** Create a FlagSet consisting of no flag combinations; such a set
+        matches nothing (the base case of OR is false). */
+    static FlagSet empty();
+
+    /** Add a new disjunct to the set of flag combinations. Automatically
+        performs some deduplication and packing to avoid growing the set
+        if possible. */
+    void addDisjunction(Flags excludeFlags);
+
+    /* Checks if any flag combinations in the set already subsume
+       the given flag combination. */
+    bool subsumes(Flags mightBeSubsumed) const;
+
+    /** Checks that none of the or'ed flag combinations match the given flags. */
+    bool noneMatch(Flags match) const;
+
+    bool operator==(const FlagSet& other) const;
+    bool operator!=(const FlagSet& other) const;
+    size_t hash() const;
+    void mark(Context* context) const;
+  };
+
+ private:
+  // friends
   friend class OwnedIdsWithName;
   friend class BorrowedIdsWithName;
 
+  // all fields
   ID id_;
-  uast::Decl::Visibility vis_ = uast::Decl::PUBLIC;
-  bool isMethodOrField_ = false;
+  Flags flags_ = 0;
 
  public:
-  IdAndVis(ID id, uast::Decl::Visibility vis, bool isMethodOrField)
-    : id_(std::move(id)), vis_(vis), isMethodOrField_(isMethodOrField)
-  {
+  IdAndFlags(ID id, uast::Decl::Visibility vis,
+             bool isField, bool isMethod, bool isParenfulFunction)
+    : id_(std::move(id)) {
+    // setup the flags
+    Flags flags = 0;
+    switch (vis) {
+      case uast::Decl::DEFAULT_VISIBILITY:
+      case uast::Decl::PUBLIC:
+        flags |= PUBLIC;
+        break;
+      case uast::Decl::PRIVATE:
+        flags |= NOT_PUBLIC;
+        break;
+      // no default for compilation error if more are added
+    }
+    if (isMethod || isField) {
+      flags |= METHOD_FIELD;
+    } else {
+      flags |= NOT_METHOD_FIELD;
+    }
+    if (isMethod) {
+      flags |= METHOD;
+    } else {
+      flags |= NOT_METHOD;
+    }
+    if (isParenfulFunction) {
+      flags |= PARENFUL_FUNCTION;
+    } else {
+      flags |= NOT_PARENFUL_FUNCTION;
+    }
+    flags_ = flags;
   }
 
-  bool operator==(const IdAndVis& other) const {
+  bool operator==(const IdAndFlags& other) const {
     return id_ == other.id_ &&
-           vis_ == other.vis_ &&
-           isMethodOrField_ == other.isMethodOrField_;
+           flags_ == other.flags_;
   }
-  bool operator!=(const IdAndVis& other) const {
+  bool operator!=(const IdAndFlags& other) const {
     return !(*this == other);
   }
 
   size_t hash() const {
     size_t ret = 0;
     ret = hash_combine(ret, chpl::hash(id_));
-    ret = hash_combine(ret, chpl::hash(vis_));
-    ret = hash_combine(ret, chpl::hash(isMethodOrField_));
+    ret = hash_combine(ret, chpl::hash(flags_));
     return ret;
   }
 
+  void mark(Context* context) const {
+    id_.mark(context);
+  }
+
   const ID& id() const { return id_; }
-  uast::Decl::Visibility vis() const { return vis_; }
-  bool isPrivate() const { return vis_ == uast::Decl::PRIVATE; }
-  bool isMethodOrField() const { return isMethodOrField_; }
+  bool isPublic() const {
+    return (flags_ & PUBLIC) != 0;
+  }
+  bool isMethodOrField() const {
+    return (flags_ & METHOD_FIELD) != 0;
+  }
+  bool isMethod() const {
+    return (flags_ & METHOD) != 0;
+  }
+  bool isParenfulFunction() const {
+    return (flags_ & PARENFUL_FUNCTION) != 0;
+  }
+
+  // return true if haveFlags matches filterFlags, and does not match
+  // the exclude flag set. See the comments on Flags adn FlagSet for
+  // how the matching works.
+  static bool matchFilter(Flags haveFlags,
+                          Flags filterFlags,
+                          const FlagSet& excludeFlagSet) {
+    return (haveFlags & filterFlags) == filterFlags &&
+           excludeFlagSet.noneMatch(haveFlags);
+  }
+
+  static std::string flagsToString(Flags flags);
 };
 
 /**
@@ -84,40 +235,66 @@ class OwnedIdsWithName {
  private:
   // If there is just one ID with this name, it is stored here,
   // and moreIds == nullptr.
-  IdAndVis idv_;
+  IdAndFlags idv_;
+  // the result of bitwise and (&) of flags of all of the symbols
+  IdAndFlags::Flags flagsAnd_;
+  // the result of bitwise or (|) of flags of all of the symbols
+  IdAndFlags::Flags flagsOr_;
   // If there is more than one, all are stored in here,
   // and id redundantly stores the first one.
   // This field is 'owned' in order to allow reuse of pointers to it.
-  owned<std::vector<IdAndVis>> moreIdvs_;
+  owned<std::vector<IdAndFlags>> moreIdvs_;
 
  public:
   /** Construct an OwnedIdsWithName containing one ID. */
-  OwnedIdsWithName(ID id, uast::Decl::Visibility vis, bool isMethodOrField)
-    : idv_(IdAndVis(std::move(id), vis, isMethodOrField)), moreIdvs_(nullptr)
+  OwnedIdsWithName(ID id, uast::Decl::Visibility vis,
+                   bool isField, bool isMethod, bool isParenfulFunction)
+    : idv_(IdAndFlags(std::move(id), vis, isField, isMethod, isParenfulFunction)),
+      flagsAnd_(idv_.flags_), flagsOr_(idv_.flags_),
+      moreIdvs_(nullptr)
   { }
 
   /** Append an ID to an OwnedIdsWithName. */
-  void appendIdAndVis(ID id, uast::Decl::Visibility vis, bool isMethodOrField) {
+  void appendIdAndFlags(ID id, uast::Decl::Visibility vis,
+                        bool isField, bool isMethod, bool isParenfulFunction) {
     if (moreIdvs_.get() == nullptr) {
       // create the vector and add the single existing id to it
-      moreIdvs_ = toOwned(new std::vector<IdAndVis>());
+      moreIdvs_ = toOwned(new std::vector<IdAndFlags>());
       moreIdvs_->push_back(idv_);
+      // flagsAnd_ and flagsOr_ will have already been set in constructor
+      // from idv_.
     }
+    auto idv = IdAndFlags(std::move(id), vis,
+                          isField, isMethod, isParenfulFunction);
     // add the id passed
-    moreIdvs_->push_back(IdAndVis(std::move(id), vis, isMethodOrField));
+    moreIdvs_->push_back(std::move(idv));
+    // update the flags
+    flagsAnd_ &= idv.flags_;
+    flagsOr_ |= idv.flags_;
+  }
+
+  int numIds() const {
+    if (moreIdvs_.get() == nullptr) {
+      return 1;
+    }
+
+    return moreIdvs_->size();
   }
 
   bool operator==(const OwnedIdsWithName& other) const {
-    if (idv_ != other.idv_)
+    // check the initial fields
+    if (idv_ != other.idv_ ||
+        flagsAnd_ != other.flagsAnd_ ||
+        flagsOr_ != other.flagsOr_)
       return false;
 
+    // check moreIdvs for null ptr vs not null ptr
     if ((moreIdvs_.get()==nullptr) != (other.moreIdvs_.get()==nullptr))
       return false;
-
     if (moreIdvs_.get()==nullptr && other.moreIdvs_.get()==nullptr)
       return true;
 
-    // otherwise, check the vector elements
+    // otherwise, check the vector elements, which cannot be nullptr here
     return *moreIdvs_.get() == *other.moreIdvs_.get();
   }
   bool operator!=(const OwnedIdsWithName& other) const {
@@ -134,8 +311,8 @@ class OwnedIdsWithName {
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
-  llvm::Optional<BorrowedIdsWithName> borrow(bool arePrivateIdsIgnored,
-                                             bool onlyMethodsFields) const;
+  optional<BorrowedIdsWithName>
+  borrow(IdAndFlags::Flags filterFlags, const IdAndFlags::FlagSet& excludeFlagSet) const;
 
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
@@ -152,52 +329,45 @@ class BorrowedIdsWithName {
 
  private:
   /**
-    Whether or not this list of IDs should include the private IDs
-    from the scope.
+    Filter to symbols that match these flags. See the comment on Flags
+    for how matching is performed.
    */
-  bool arePrivateIdsIgnored_ = false;
+  IdAndFlags::Flags filterFlags_ = 0;
   /**
-    Whether or not this list of IDs should filter to only include
-    methods and fields.
+    Exclude symbols whose flags are matched by this FlagSet; see
+    the comment on FlagSet for how the matching is performed.
    */
-  bool onlyMethodsFields_ = false;
+  IdAndFlags::FlagSet excludeFlagSet_;
+
   /** How many IDs are visible in this list. */
   int numVisibleIds_ = 0;
+
   // TODO: consider storing a variant of ID here
   // with symbolPath, postOrderId, and tag
-  IdAndVis idv_;
-  const std::vector<IdAndVis>* moreIdvs_ = nullptr;
+  IdAndFlags idv_;
+  const std::vector<IdAndFlags>* moreIdvs_ = nullptr;
 
-  static inline bool isIdVisible(const IdAndVis& idv,
-                                 bool arePrivateIdsIgnored,
-                                 bool onlyMethodsFields) {
-    // check privacy
-    if (arePrivateIdsIgnored && idv.isPrivate()) {
-      return false; // ignore this id
-    }
-
-    // check method/field-ness
-    if (onlyMethodsFields && !idv.isMethodOrField()) {
-      return false; // ignore a non-method non-field
-    }
-
-    return true;
+  static inline bool isIdVisible(const IdAndFlags& idv,
+                                 IdAndFlags::Flags filterFlags,
+                                 const IdAndFlags::FlagSet& excludeFlagSet) {
+    // check that all flags set in filterFlags are also set in idv.flags_
+    return IdAndFlags::matchFilter(idv.flags_, filterFlags, excludeFlagSet);
   }
 
-  bool isIdVisible(const IdAndVis& idv) const {
-    return isIdVisible(idv, arePrivateIdsIgnored_, onlyMethodsFields_);
+  bool isIdVisible(const IdAndFlags& idv) const {
+    return isIdVisible(idv, filterFlags_, excludeFlagSet_);
   }
 
   /** Returns an iterator referring to the first element stored. */
-  const IdAndVis* beginIdAndVis() const {
+  const IdAndFlags* beginIdAndFlags() const {
     if (moreIdvs_ == nullptr) {
       return &idv_;
     }
     return &(*moreIdvs_)[0];
   }
   /** Returns an iterator referring just past the last element stored. */
-  const IdAndVis* endIdAndVis() const {
-    const IdAndVis* last = nullptr;
+  const IdAndFlags* endIdAndFlags() const {
+    const IdAndFlags* last = nullptr;
     if (moreIdvs_ == nullptr) {
       last = &idv_;
     } else {
@@ -210,23 +380,24 @@ class BorrowedIdsWithName {
   /**
     Iterator that skips invisible entries from the list of borrowed IDs.
    */
-  class BorrowedIdsWithNameIter : public std::iterator<ID, std::forward_iterator_tag> {
+  class BorrowedIdsWithNameIter {
     // To allow use of isIdVisible
     friend class BorrowedIdsWithName;
    private:
     /** The borrowed IDs over which we are iterating. */
     const BorrowedIdsWithName* ids;
     /** The ID this iterator is pointing too. */
-    const IdAndVis* currentIdv;
+    const IdAndFlags* currentIdv;
 
-    BorrowedIdsWithNameIter(const BorrowedIdsWithName* ids, const IdAndVis* currentIdv)
+    BorrowedIdsWithNameIter(const BorrowedIdsWithName* ids,
+                            const IdAndFlags* currentIdv)
       : ids(ids), currentIdv(currentIdv) {
       fastForward();
     }
 
     /** Skip over symbols deemed invisible by the BorrowedIdsWithName. **/
     void fastForward() {
-      while (currentIdv != ids->endIdAndVis() &&
+      while (currentIdv != ids->endIdAndFlags() &&
              !ids->isIdVisible(*currentIdv)) {
         currentIdv++;
       }
@@ -242,66 +413,80 @@ class BorrowedIdsWithName {
       return *this;
     }
     inline const ID& operator*() const { return currentIdv->id_; }
+    inline const IdAndFlags& curIdAndFlags() const { return *currentIdv; }
+
+    // iterator traits
+    using difference_type = std::ptrdiff_t;
+    using value_type = ID;
+    using pointer = const ID*;
+    using reference = const ID&;
+    using iterator_category = std::forward_iterator_tag;
   };
 
  private:
 
-  int countVisibleIds();
+  int countVisibleIds(IdAndFlags::Flags flagsAnd, IdAndFlags::Flags flagsOr);
 
   /** Construct a BorrowedIdsWithName referring to the same IDs
       as the passed OwnedIdsWithName.
       This BorrowedIdsWithName assumes that the OwnedIdsWithName
       will continue to exist. */
-  BorrowedIdsWithName(IdAndVis idv, const std::vector<IdAndVis>* moreIdvs,
-                      bool arePrivateIdsIgnored, bool onlyMethodsFields)
-    : arePrivateIdsIgnored_(arePrivateIdsIgnored),
-      onlyMethodsFields_(onlyMethodsFields),
-      idv_(idv),
-      moreIdvs_(moreIdvs) {
-    numVisibleIds_ = countVisibleIds();
+  BorrowedIdsWithName(const OwnedIdsWithName& ownedIds,
+                      const IdAndFlags& firstMatch,
+                      IdAndFlags::Flags filterFlags,
+                      IdAndFlags::FlagSet excludeFlagSet)
+    : filterFlags_(filterFlags), excludeFlagSet_(std::move(excludeFlagSet)),
+      idv_(firstMatch), moreIdvs_(ownedIds.moreIdvs_.get()) {
+    numVisibleIds_ = countVisibleIds(ownedIds.flagsAnd_, ownedIds.flagsOr_);
+    CHPL_ASSERT(isIdVisible(idv_, filterFlags, excludeFlagSet));
   }
 
   /** Construct a BorrowedIdsWithName referring to one ID. Requires
       that the ID will not be filtered out according to the passed
       settings arePrivateIdsIgnored and onlyMethodsFields.
     */
-  BorrowedIdsWithName(IdAndVis idv,
-                      bool arePrivateIdsIgnored,
-                      bool onlyMethodsFields)
-    : arePrivateIdsIgnored_(arePrivateIdsIgnored),
-      onlyMethodsFields_(onlyMethodsFields),
+  BorrowedIdsWithName(IdAndFlags idv,
+                      IdAndFlags::Flags filterFlags,
+                      IdAndFlags::FlagSet excludeFlagSet)
+    : filterFlags_(filterFlags), excludeFlagSet_(std::move(excludeFlagSet)),
       numVisibleIds_(1), idv_(std::move(idv)) {
-    assert(isIdVisible(idv_, arePrivateIdsIgnored, onlyMethodsFields));
+    CHPL_ASSERT(isIdVisible(idv_, filterFlags, excludeFlagSet));
   }
  public:
 
-  static llvm::Optional<BorrowedIdsWithName>
+  static optional<BorrowedIdsWithName>
   createWithSingleId(ID id, uast::Decl::Visibility vis,
-                     bool isMethodOrField,
-                     bool arePrivateIdsIgnored,
-                     bool onlyMethodsFields) {
-    auto idAndVis = IdAndVis(id, vis, isMethodOrField);
-    if (isIdVisible(idAndVis, arePrivateIdsIgnored, onlyMethodsFields)) {
+                     bool isField, bool isMethod, bool isParenfulFunction,
+                     IdAndFlags::Flags filterFlags,
+                     IdAndFlags::FlagSet excludeFlagSet) {
+    auto idAndVis = IdAndFlags(id, vis, isField, isMethod, isParenfulFunction);
+    if (isIdVisible(idAndVis, filterFlags, excludeFlagSet)) {
       return BorrowedIdsWithName(std::move(idAndVis),
-                                 arePrivateIdsIgnored,
-                                 onlyMethodsFields);
+                                 filterFlags, std::move(excludeFlagSet));
     }
-    return llvm::None;
+    return chpl::empty;
   }
 
   static BorrowedIdsWithName
   createWithToplevelModuleId(ID id) {
     auto vis = uast::Decl::Visibility::PUBLIC;
-    bool isMethodOrField = false;
-    bool arePrivateIdsIgnored = true;
-    bool onlyMethodsFields = false;
-    auto maybeIds = createWithSingleId(std::move(id),
-                                       vis,
-                                       isMethodOrField,
-                                       arePrivateIdsIgnored,
-                                       onlyMethodsFields);
-    assert(maybeIds);
-    return maybeIds.getValue();
+    bool isField = false;
+    bool isMethod = false;
+    bool isParenfulFunction = false;
+    IdAndFlags::Flags filterFlags = 0;
+    IdAndFlags::FlagSet excludeFlagSet;
+    auto maybeIds = createWithSingleId(std::move(id), vis,
+                                       isField, isMethod, isParenfulFunction,
+                                       filterFlags, excludeFlagSet);
+    CHPL_ASSERT((bool) maybeIds);
+    return *maybeIds;
+  }
+
+  static BorrowedIdsWithName
+  createWithBuiltinId() {
+    // Implementation only happens to coincide; there is no philosophical
+    // relation between a top-level module ID and a builtin ID.
+    return createWithToplevelModuleId(ID());
   }
 
   /** Return the number of IDs stored here */
@@ -314,21 +499,26 @@ class BorrowedIdsWithName {
     return idv_.id_;
   }
 
+  /** Returns the first IdAndFlags in this list. */
+  const IdAndFlags& firstIdAndFlags() const {
+    return idv_;
+  }
+
   /** Returns 'true' if the list contains only IDs that represent
       methods or fields. */
   bool containsOnlyMethodsOrFields() const;
 
   BorrowedIdsWithNameIter begin() const {
-    return BorrowedIdsWithNameIter(this, beginIdAndVis());
+    return BorrowedIdsWithNameIter(this, beginIdAndFlags());
   }
 
   BorrowedIdsWithNameIter end() const {
-    return BorrowedIdsWithNameIter(this, endIdAndVis());
+    return BorrowedIdsWithNameIter(this, endIdAndFlags());
   }
 
   bool operator==(const BorrowedIdsWithName& other) const {
-    return arePrivateIdsIgnored_ == other.arePrivateIdsIgnored_ &&
-           onlyMethodsFields_ == other.onlyMethodsFields_ &&
+    return filterFlags_ == other.filterFlags_ &&
+           excludeFlagSet_ == other.excludeFlagSet_ &&
            numVisibleIds_ == other.numVisibleIds_ &&
            idv_ == other.idv_ &&
            moreIdvs_ == other.moreIdvs_;
@@ -339,8 +529,8 @@ class BorrowedIdsWithName {
 
   size_t hash() const {
     size_t ret = 0;
-    ret = hash_combine(ret, chpl::hash(arePrivateIdsIgnored_));
-    ret = hash_combine(ret, chpl::hash(onlyMethodsFields_));
+    ret = hash_combine(ret, chpl::hash(filterFlags_));
+    ret = hash_combine(ret, chpl::hash(excludeFlagSet_));
     ret = hash_combine(ret, chpl::hash(numVisibleIds_));
     ret = hash_combine(ret, chpl::hash(moreIdvs_));
     if (moreIdvs_ == nullptr) {
@@ -351,6 +541,14 @@ class BorrowedIdsWithName {
       }
     }
     return ret;
+  }
+
+  void mark(Context* context) const {
+    idv_.mark(context);
+    for (auto const& elt : *moreIdvs_) {
+      context->markPointer(&elt.id_);
+    }
+    excludeFlagSet_.mark(context);
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
@@ -380,13 +578,23 @@ using DeclMap = std::unordered_map<UniqueString, OwnedIdsWithName>;
   type.
  */
 class Scope {
+ public:
+  // supporting types/enums
+  enum {
+    CONTAINS_FUNCTION_DECLS = 1,
+    CONTAINS_USE_IMPORT = 2,
+    AUTO_USES_MODULES = 4,
+    METHOD_SCOPE = 8,
+    CONTAINS_EXTERN_BLOCK = 16,
+  };
+  /** A bit-set of the flags defined in the above enum */
+  using ScopeFlags = unsigned int;
+
  private:
+  // all fields
   const Scope* parentScope_ = nullptr;
   uast::asttags::AstTag tag_ = uast::asttags::AST_TAG_UNKNOWN;
-  bool containsUseImport_ = false;
-  bool containsFunctionDecls_ = false;
-  bool autoUsesModules_ = false;
-  bool methodScope_ = false;
+  ScopeFlags flags_ = 0;
   ID id_;
   UniqueString name_;
   DeclMap declared_;
@@ -431,20 +639,32 @@ class Scope {
   /** Returns 'true' if this Scope directly contains use or import statements
       including the automatic 'use' for the standard library. */
   bool containsUseImport() const {
-    return containsUseImport_ || autoUsesModules_;
+    return (flags_ & (CONTAINS_USE_IMPORT|AUTO_USES_MODULES)) != 0;
+  }
+
+  /** Returns 'true' if this Scope directly contains an 'extern' block
+      (with C code to supporting interoperability) */
+  bool containsExternBlock() const {
+    return (flags_ & CONTAINS_EXTERN_BLOCK) != 0;
   }
 
   /** Returns 'true' if the Scope includes the automatic 'use' for
       the standard library. */
-  bool autoUsesModules() const { return autoUsesModules_; }
+  bool autoUsesModules() const {
+    return (flags_ & AUTO_USES_MODULES) != 0;
+  }
 
   /** Returns 'true' if this Scope represents a method's scope.
       Methods have special scoping behavior to use other fields/methods
       without writing 'this.bla'. */
-  bool isMethodScope() const { return methodScope_; }
+  bool isMethodScope() const {
+    return (flags_ & METHOD_SCOPE) != 0;
+  }
 
   /** Returns 'true' if this Scope directly contains any Functions */
-  bool containsFunctionDecls() const { return containsFunctionDecls_; }
+  bool containsFunctionDecls() const {
+    return (flags_ & CONTAINS_FUNCTION_DECLS) != 0;
+  }
 
   int numDeclared() const { return declared_.size(); }
 
@@ -453,8 +673,8 @@ class Scope {
       Returns true if something was appended. */
   bool lookupInScope(UniqueString name,
                      std::vector<BorrowedIdsWithName>& result,
-                     bool arePrivateIdsIgnored,
-                     bool onlyMethodsFields) const;
+                     IdAndFlags::Flags filterFlags,
+                     const IdAndFlags::FlagSet& excludeFlagSet) const;
 
   /** Check to see if the scope contains IDs with the provided name. */
   bool contains(UniqueString name) const;
@@ -462,13 +682,15 @@ class Scope {
   /** Gathers all of the names of symbols declared directly within this scope */
   std::set<UniqueString> gatherNames() const;
 
+  /** Collect names that are declared directly within this scope
+      but separately collect names that have multiple definitions. */
+  void collectNames(std::set<UniqueString>& namesDefined,
+                    std::set<UniqueString>& namesDefinedMultiply) const;
+
   bool operator==(const Scope& other) const {
     return parentScope_ == other.parentScope_ &&
            tag_ == other.tag_ &&
-           containsUseImport_ == other.containsUseImport_ &&
-           containsFunctionDecls_ == other.containsFunctionDecls_ &&
-           autoUsesModules_ == other.autoUsesModules_ &&
-           methodScope_ == other.methodScope_ &&
+           flags_ == other.flags_ &&
            id_ == other.id_ &&
            declared_ == other.declared_ &&
            name_ == other.name_;
@@ -583,6 +805,7 @@ class VisibilitySymbols {
                        // anything we do with it needs a Scope* anyway.
   Kind kind_ = SYMBOL_ONLY;
   bool isPrivate_ = true;
+  bool isModulePrivate_ = false;
   int8_t shadowScopeLevel_ = REGULAR_SCOPE;
 
   ID visibilityClauseId_; // ID of the uAST that generated this
@@ -596,11 +819,13 @@ class VisibilitySymbols {
  public:
   VisibilitySymbols() { }
   VisibilitySymbols(const Scope* scope, Kind kind,
-                    bool isPrivate, ShadowScope shadowScopeLevel,
+                    bool isPrivate, bool isModulePrivate,
+                    ShadowScope shadowScopeLevel,
                     ID visibilityClauseId,
                     std::vector<std::pair<UniqueString,UniqueString>> names)
     : scope_(scope), kind_(kind),
-      isPrivate_(isPrivate), shadowScopeLevel_(shadowScopeLevel),
+      isPrivate_(isPrivate), isModulePrivate_(isModulePrivate),
+      shadowScopeLevel_(shadowScopeLevel),
       visibilityClauseId_(visibilityClauseId),
       names_(std::move(names))
   {
@@ -609,7 +834,7 @@ class VisibilitySymbols {
                 shadowScopeLevel == SHADOW_SCOPE_TWO);
   }
 
-  /** Return the imported scope */
+  /** Return the used/imported scope */
   const Scope* scope() const { return scope_; }
 
   /** Return the kind of the imported symbol */
@@ -617,6 +842,9 @@ class VisibilitySymbols {
 
   /** Return whether or not the imported symbol is private */
   bool isPrivate() const { return isPrivate_; }
+
+  /** Returns whether or not the used/imported module (or enum) is private */
+  bool isModulePrivate() const { return isModulePrivate_; }
 
   /** Returns the shadow scope level of the symbols here */
   ShadowScope shadowScopeLevel() const {
@@ -635,20 +863,17 @@ class VisibilitySymbols {
       stores the declared name in `declared`
       Returns false if `name` is not found
   */
-  bool lookupName(const UniqueString &name, UniqueString &declared) const {
-    for (const auto &p : names_) {
-      if (p.second == name) {
-        declared = p.first;
-        return true;
-      }
-    }
-    return false;
-  }
+  bool lookupName(const UniqueString &name, UniqueString &declared) const;
+
+  /** Return a vector of pairs of (original name, new name here)
+      for the names declared here. */
+  const std::vector<std::pair<UniqueString,UniqueString>>& names() const;
 
   bool operator==(const VisibilitySymbols &other) const {
     return scope_ == other.scope_ &&
            kind_ == other.kind_ &&
            isPrivate_ == other.isPrivate_ &&
+           isModulePrivate_ == other.isModulePrivate_ &&
            shadowScopeLevel_ == other.shadowScopeLevel_ &&
            visibilityClauseId_ == other.visibilityClauseId_ &&
            names_ == other.names_;
@@ -661,6 +886,7 @@ class VisibilitySymbols {
     std::swap(scope_, other.scope_);
     std::swap(kind_, other.kind_);
     std::swap(isPrivate_, other.isPrivate_);
+    std::swap(isModulePrivate_, other.isModulePrivate_);
     std::swap(shadowScopeLevel_, other.shadowScopeLevel_);
     names_.swap(other.names_);
     visibilityClauseId_.swap(other.visibilityClauseId_);
@@ -712,13 +938,13 @@ class ResolvedVisibilityScope {
 
   /** Add a visibility clause */
   void addVisibilityClause(const Scope* scope, VisibilitySymbols::Kind kind,
-                           bool isPrivate,
+                           bool isPrivate, bool isModulePrivate,
                            VisibilitySymbols::ShadowScope shadowScopeLevel,
                            ID visibilityClauseId,
                            std::vector<std::pair<UniqueString,UniqueString>> n)
   {
     auto elt = VisibilitySymbols(scope, kind,
-                                 isPrivate, shadowScopeLevel,
+                                 isPrivate, isModulePrivate, shadowScopeLevel,
                                  std::move(visibilityClauseId),
                                  std::move(n));
     visibilityClauses_.push_back(std::move(elt));
@@ -737,7 +963,7 @@ class ResolvedVisibilityScope {
   }
   void mark(Context* context) const {
     context->markPointer(scope_);
-    for (auto sym : visibilityClauses_) {
+    for (const auto& sym : visibilityClauses_) {
       sym.mark(context);
     }
   }
@@ -798,9 +1024,29 @@ enum {
 
   /**
     Lookup only methods, fields, and class/record/union declarations
-    directly nested within a class/record/union
+    directly nested within a class/record/union.
    */
   LOOKUP_ONLY_METHODS_FIELDS = 128,
+
+  /**
+    Lookup in extern blocks
+   */
+  LOOKUP_EXTERN_BLOCKS = 256,
+
+  /**
+    Skip private use/import
+   */
+  LOOKUP_SKIP_PRIVATE_USE_IMPORT = 512,
+
+  /**
+    Skip shadow scopes (for private use)
+   */
+  LOOKUP_SKIP_SHADOW_SCOPES = 1024,
+
+  /**
+    Include methods in the search results (they are excluded by default).
+   */
+  LOOKUP_METHODS = 2048,
 };
 
 /** LookupConfig is a bit-set of the LOOKUP_ flags defined above */
@@ -926,6 +1172,109 @@ class InnermostMatch {
 };
 
 
+/** ResultVisibilityTrace stores a tracing of the name lookup process
+    which can be useful for error messages. */
+struct ResultVisibilityTrace {
+  struct VisibilityTraceElt {
+    // these contain details for a use/import
+    VisibilitySymbols::ShadowScope shadowScope =
+       VisibilitySymbols::REGULAR_SCOPE;
+    const ResolvedVisibilityScope* resolvedVisibilityScope = nullptr;
+    ID visibilityClauseId;
+    VisibilityStmtKind visibilityStmtKind = VIS_USE;
+    UniqueString renameFrom;
+    bool fromUseImport = false;
+
+    // this indicates a method receiver scope
+    const Scope* methodReceiverScope = nullptr;
+
+    // this indicates a parent scope
+    const Scope* parentScope = nullptr;
+
+    // these cover other cases
+    bool automaticModule = false;
+    bool toplevelModule = false;
+    bool externBlock = false;
+    bool rootScope = false;
+
+    bool operator==(const VisibilityTraceElt& other) const {
+      return shadowScope == other.shadowScope &&
+             resolvedVisibilityScope == other.resolvedVisibilityScope &&
+             visibilityClauseId == other.visibilityClauseId &&
+             visibilityStmtKind == other.visibilityStmtKind &&
+             renameFrom == other.renameFrom &&
+             fromUseImport == other.fromUseImport &&
+             methodReceiverScope == other.methodReceiverScope &&
+             parentScope == other.parentScope &&
+             automaticModule == other.automaticModule &&
+             toplevelModule == other.toplevelModule &&
+             externBlock == other.externBlock &&
+             rootScope == other.rootScope;
+    }
+    bool operator!=(const VisibilityTraceElt& other) const {
+      return !(*this == other);
+    }
+    void mark(Context* context) const {
+      context->markPointer(resolvedVisibilityScope);
+      renameFrom.mark(context);
+      visibilityClauseId.mark(context);
+      context->markPointer(methodReceiverScope);
+      context->markPointer(parentScope);
+    }
+  };
+
+  // the scope where it is eventually found
+  const Scope* scope = nullptr;
+
+  // how did we get to 'scope' ? this is a vector because there might
+  // have been multiple public use / public imports traversed.
+  std::vector<VisibilityTraceElt> visibleThrough;
+
+  bool operator==(const ResultVisibilityTrace& other) const {
+    return scope == other.scope &&
+           visibleThrough == other.visibleThrough;
+  }
+  bool operator!=(const ResultVisibilityTrace& other) const {
+    return !(*this == other);
+  }
+  void mark(Context* context) const {
+    context->markPointer(scope);
+    for (const auto& elt : visibleThrough) {
+      elt.mark(context);
+    }
+  }
+};
+
+using ScopeSet = llvm::SmallPtrSet<const Scope*, 5>;
+
+/** The type to help maintain a checked scope */
+struct CheckedScope {
+  UniqueString forName;
+  const Scope* scope = nullptr;
+
+  CheckedScope(UniqueString forName,
+               const Scope* scope)
+    : forName(forName), scope(scope) {
+  }
+
+  bool operator==(const CheckedScope& other) const {
+    return forName == other.forName &&
+           scope == other.scope;
+  }
+  bool operator!=(const CheckedScope& other) const {
+    return !(*this == other);
+  }
+  size_t hash() const {
+    size_t ret = 0;
+    ret = hash_combine(ret, chpl::hash(forName));
+    ret = hash_combine(ret, chpl::hash(scope));
+    return ret;
+  }
+};
+
+using CheckedScopes = std::unordered_map<CheckedScope, IdAndFlags::FlagSet>;
+
+
 } // end namespace resolution
 
 /// \cond DO_NOT_DOCUMENT
@@ -963,9 +1312,16 @@ struct mark<resolution::VisibilityStmtKind> {
 namespace std {
 
 /// \cond DO_NOT_DOCUMENT
-template<> struct hash<chpl::resolution::IdAndVis>
+template<> struct hash<chpl::resolution::IdAndFlags>
 {
-  size_t operator()(const chpl::resolution::IdAndVis& key) const {
+  size_t operator()(const chpl::resolution::IdAndFlags& key) const {
+    return key.hash();
+  }
+};
+
+template<> struct hash<chpl::resolution::IdAndFlags::FlagSet>
+{
+  size_t operator()(const chpl::resolution::IdAndFlags::FlagSet& key) const {
     return key.hash();
   }
 };
@@ -983,6 +1339,14 @@ struct hash<chpl::resolution::VisibilityStmtKind> {
     return (size_t)key;
   }
 };
+
+template <>
+struct hash<chpl::resolution::CheckedScope> {
+  size_t operator()(const chpl::resolution::CheckedScope& key) const {
+    return key.hash();
+  }
+};
+
 
 /// \endcond
 

@@ -1,0 +1,8 @@
+ErrorOuterVariables.chpl:5: In function 'test':
+ErrorOuterVariables.chpl:12: error: cannot capture proc because it refers to outer variables
+ErrorOuterVariables.chpl:12: note: such as 'x', here
+ErrorOuterVariables.chpl:12: note: such as 'y', here
+ErrorOuterVariables.chpl:12: note: such as 'z', here
+ErrorOuterVariables.chpl:9: error: cannot capture proc because it refers to outer variables
+ErrorOuterVariables.chpl:10: note: such as 'x', here
+ErrorOuterVariables.chpl:10: note: such as 'y', here

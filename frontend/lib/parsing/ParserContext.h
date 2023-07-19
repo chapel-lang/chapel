@@ -31,10 +31,11 @@ struct ParserComment {
 
 // To store the different attributes of a symbol as they are built.
 struct AttributeGroupParts {
-  ParserExprList* attributeGroup; // this is where the attributes are accumulated
+  ParserExprList* attributeList; // this is where the attributes are accumulated
   std::set<PragmaTag>* pragmas;
   bool isDeprecated;
   bool isUnstable;
+  bool isStable;
   UniqueString deprecationMessage;
   UniqueString unstableMessage;
 };
@@ -101,7 +102,7 @@ struct ParserContext {
     this->varDeclKind             = Variable::VAR;
     this->isBuildingFormal        = false;
     this->isVarDeclConfig         = false;
-    this->attributeGroupParts     = {nullptr, nullptr, false, false, UniqueString(), UniqueString() };
+    this->attributeGroupParts     = {nullptr, nullptr, false, false, false, UniqueString(), UniqueString() };
     this->hasAttributeGroupParts  = false;
     this->numAttributesBuilt      = 0;
     YYLTYPE emptyLoc = {0};
@@ -129,11 +130,22 @@ struct ParserContext {
   void storeVarDeclLinkageName(AstNode* linkageName);
   owned<AstNode> consumeVarDeclLinkageName(void);
 
+  void noteAttribute(YYLTYPE loc, AstNode* firstIdent,
+                     bool usedParens,
+                     ParserExprList* toolspace,
+                     MaybeNamedActualList* actuals);
+
+  owned<Attribute> buildAttribute(YYLTYPE loc, AstNode* firstIdent,
+                                  bool usedParens,
+                                  ParserExprList* toolspace,
+                                  MaybeNamedActualList* actuals);
+
   // If attributes do not exist yet, returns nullptr.
   owned<AttributeGroup> buildAttributeGroup(YYLTYPE locationOfDecl);
   PODUniqueString notePragma(YYLTYPE loc, AstNode* pragmaStr);
-  void noteDeprecation(YYLTYPE loc, AstNode* messageStr);
-  void noteUnstable(YYLTYPE loc, AstNode* messageStr);
+  void noteDeprecation(YYLTYPE loc, MaybeNamedActualList* actuals);
+  void noteUnstable(YYLTYPE loc, MaybeNamedActualList* actuals);
+  void noteStable(YYLTYPE loc, MaybeNamedActualList* actuals);
   void resetAttributeGroupPartsState();
 
   CommentsAndStmt buildPragmaStmt(YYLTYPE loc, CommentsAndStmt stmt);
@@ -345,7 +357,7 @@ struct ParserContext {
   AstNode* sanitizeArrayType(YYLTYPE location, AstNode* ast);
 
   // These different overloads for building bracket loop expressions exist
-  // to maintain compatability between loops and array types. The
+  // to maintain compatibility between loops and array types. The
   // loop variants have a more normalized form e.g., '[i in 1..100] i',
   // while the array type variants may omit quite a few things in the case
   // that the type is generic, e.g., just '[]'.
@@ -668,4 +680,7 @@ struct ParserContext {
 
   CommentsAndStmt buildLabelStmt(YYLTYPE location, PODUniqueString name,
                                  CommentsAndStmt cs);
+
+  ParserExprList* buildSingleStmtRoutineBody(CommentsAndStmt cs,
+                                             YYLTYPE* warnLoc = NULL);
 };

@@ -182,7 +182,7 @@ module Subprocess {
        for any channels that are necessary. */
     param locking:bool;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var home:locale = here;
 
     /* The Process ID number of the spawned process */
@@ -192,19 +192,19 @@ module Subprocess {
        is the file descriptor for the write end of a pipe
        connected to the child's standard input.
      */
-    pragma "no doc"
+    @chpldoc.nodoc
     var inputfd:c_int;
     /* If the subprocess is configured to use pipes, outputfd
        is the file descriptor for the read end of a pipe
        connected to the child's standard output.
      */
-    pragma "no doc"
+    @chpldoc.nodoc
     var outputfd:c_int;
     /* If the subprocess is configured to use pipes, errorfd
        is the file descriptor for the read end of a pipe
        connected to the child's standard error.
      */
-    pragma "no doc"
+    @chpldoc.nodoc
     var errorfd:c_int;
 
 
@@ -216,43 +216,43 @@ module Subprocess {
 
     // the channels
     // TODO -- these could be private to this module
-    pragma "no doc"
+    @chpldoc.nodoc
     var stdin_pipe:bool;
     // true if we are currently buffering up stdin, meaning that
     // we need to 'commit' in order to actually send the data.
-    pragma "no doc"
+    @chpldoc.nodoc
     var stdin_buffering:bool;
-    pragma "no doc"
+    @chpldoc.nodoc
     var stdin_channel:fileWriter(kind=kind, locking=locking);
-    pragma "no doc"
+    @chpldoc.nodoc
     var stdout_pipe:bool;
-    pragma "no doc"
+    @chpldoc.nodoc
     var stdout_file:file;
-    pragma "no doc"
+    @chpldoc.nodoc
     var stdout_channel:fileReader(kind=kind, locking=locking);
-    pragma "no doc"
+    @chpldoc.nodoc
     var stderr_pipe:bool;
-    pragma "no doc"
+    @chpldoc.nodoc
     var stderr_file:file;
-    pragma "no doc"
+    @chpldoc.nodoc
     var stderr_channel:fileReader(kind=kind, locking=locking);
 
     // Ideally we don't have the _file versions, but they
     // are there now because of issues with when the reference counts
     // for the file are updated.
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var spawn_error:errorCode;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc _stop_stdin_buffering() {
       if this.stdin_buffering && this.stdin_pipe {
-        this.stdin_channel._commit();
+        this.stdin_channel.commit();
         this.stdin_buffering = false; // Don't commit again on close again
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc _throw_on_launch_error() throws {
       if !running {
         try ioerror(spawn_error,
@@ -357,21 +357,6 @@ module Subprocess {
     else if style == pipeStyle.bufferAll then return QIO_FD_BUFFERED_PIPE;
     else return -1;
   }
-
-  deprecated "'FORWARD' is deprecated, please use 'pipeStyle.forward' instead"
-  const FORWARD = QIO_FD_FORWARD;
-
-  deprecated "'CLOSE' is deprecated, please use 'pipeStyle.close' instead"
-  const CLOSE = QIO_FD_CLOSE;
-
-  deprecated "'PIPE' is deprecated, please use 'pipeStyle.pipe' instead"
-  const PIPE = QIO_FD_PIPE;
-
-  deprecated "'STDOUT' is deprecated, please use 'pipeStyle.stdout' instead"
-  const STDOUT = QIO_FD_TO_STDOUT;
-
-  deprecated "'BUFFERED_PIPE' is deprecated, please use 'pipeStyle.bufferAll' instead"
-  const BUFFERED_PIPE = QIO_FD_BUFFERED_PIPE;
 
   private const empty_env:[1..0] string;
 
@@ -506,7 +491,7 @@ module Subprocess {
           var env_c_str:c_string;
           var env_str:string;
           if sys_getenv(c"PE_PRODUCT_LIST", env_c_str)==1 {
-            env_str = createStringWithNewBuffer(env_c_str);
+            env_str = string.createCopyingBuffer(env_c_str);
             if env_str.count("HUGETLB") > 0 then
               throw createSystemError(
                   EINVAL,
@@ -581,7 +566,7 @@ module Subprocess {
       // goes out of scope, but the channel will still keep
       // the file alive by referring to it.
       try {
-        var stdin_file = new file(stdin_fd, hints=ioHintSet.fromFlag(QIO_HINT_OWNED));
+        var stdin_file = new file(stdin_fd, own=true);
         ret.stdin_channel = stdin_file.writer();
       } catch e: SystemError {
         ret.spawn_error = e.err;
@@ -595,7 +580,7 @@ module Subprocess {
         // mark stdin so that we don't actually send any data
         // until communicate() is called.
 
-        err = ret.stdin_channel._mark();
+        err = ret.stdin_channel.mark();
         if err {
           ret.spawn_error = err; return ret;
         }
@@ -606,7 +591,7 @@ module Subprocess {
     if stdout_pipe {
       ret.stdout_pipe = true;
       try {
-        var stdout_file = new file(stdout_fd, hints=ioHintSet.fromFlag(QIO_HINT_OWNED));
+        var stdout_file = new file(stdout_fd, own=true);
         ret.stdout_channel = stdout_file.reader();
       } catch e: SystemError {
         ret.spawn_error = e.err;
@@ -620,7 +605,7 @@ module Subprocess {
     if stderr_pipe {
       ret.stderr_pipe = true;
       try {
-        ret.stderr_file = new file(stderr_fd, hints=ioHintSet.fromFlag(QIO_HINT_OWNED));
+        ret.stderr_file = new file(stderr_fd, own=true);
         ret.stderr_channel = ret.stderr_file.reader();
       } catch e: SystemError {
         ret.spawn_error = e.err;
@@ -979,118 +964,8 @@ module Subprocess {
     if err then try ioerror(err, "in subprocess.close");
   }
 
-  // Signals as required by POSIX.1-2008, 2013 edition
-  // See note below about signals intentionally not included.
-  pragma "no doc"
-  pragma "last resort"
-  deprecated "'Subprocess.SIGABRT' is deprecated. Use 'OS.POSIX.SIGABRT' instead."
-  extern const SIGABRT: c_int;
-  pragma "no doc"
-  pragma "last resort"
-  deprecated "'Subprocess.SIGALRM' is deprecated. Use 'OS.POSIX.SIGALRM' instead."
-  extern const SIGALRM: c_int;
-  pragma "no doc"
-  pragma "last resort"
-  deprecated "'Subprocess.SIGBUS' is deprecated. Use 'OS.POSIX.SIGBUS' instead."
-  extern const SIGBUS: c_int;
-  pragma "no doc"
-  pragma "last resort"
-  deprecated "'Subprocess.SIGCHLD' is deprecated. Use 'SOS.POSIX.SIGCHLD' instead."
-  extern const SIGCHLD: c_int;
-  pragma "no doc"
-  pragma "last resort"
-  deprecated "'Subprocess.SIGCONT' is deprecated. Use 'OS.POSIX.SIGCONT' instead."
-  extern const SIGCONT: c_int;
-  pragma "no doc"
-  pragma "last resort"
-  deprecated "'Subprocess.SIGFPE' is deprecated. Use 'OS.POSIX.SIGFPE' instead."
-  extern const SIGFPE: c_int;
-  pragma "no doc"
-  deprecated "'Subprocess.SIGHUP' is deprecated. Use 'OS.POSIX.SIGHUP' instead."
-  extern const SIGHUP: c_int;
-  pragma "no doc"
-  pragma "last resort"
-  deprecated "'Subprocess.SIGILL' is deprecated. Use 'OS.POSIX.SIGILL' instead."
-  extern const SIGILL: c_int;
-  pragma "no doc"
-  pragma "last resort"
-  deprecated "'Subprocess.SIGINT' is deprecated. Use 'OS.POSIX.SIGINT' instead."
-  extern const SIGINT: c_int;
-  pragma "no doc"
-  pragma "last resort"
-  deprecated "'Subprocess.SIGKILL' is deprecated. Use 'OS.POSIX.SIGKILL' instead."
-  extern const SIGKILL: c_int;
-  pragma "no doc"
-  pragma "last resort"
-  deprecated "'Subprocess.SIGPIPE' is deprecated. Use 'OS.POSIX.SIGPIPE' instead."
-  extern const SIGPIPE: c_int;
-  pragma "no doc"
-  pragma "last resort"
-  deprecated "'Subprocess.SIGQUIT' is deprecated. Use 'OS.POSIX.SIGQUIT' instead."
-  extern const SIGQUIT: c_int;
-  pragma "no doc"
-  pragma "last resort"
-  deprecated "'Subprocess.SIGSEGV' is deprecated. Use 'OS.POSIX.SIGSEGV' instead."
-  extern const SIGSEGV: c_int;
-  pragma "no doc"
-  pragma "last resort"
-  deprecated "'Subprocess.SIGSTOP' is deprecated. Use 'OS.POSIX.SIGSTOP' instead."
-  extern const SIGSTOP: c_int;
-  pragma "no doc"
-  pragma "last resort"
-  deprecated "'Subprocess.SIGTERM' is deprecated. Use 'OS.POSIX.SIGTERM' instead."
-  extern const SIGTERM: c_int;
-  pragma "no doc"
-  pragma "last resort"
-  deprecated "'Subprocess.SIGTRAP' is deprecated. Use 'OS.POSIX.SIGTRAP' instead."
-  extern const SIGTRAP: c_int;
-  pragma "no doc"
-  pragma "last resort"
-  deprecated "'Subprocess.SIGTSTP' is deprecated. Use 'OS.POSIX.SIGTSTP' instead."
-  extern const SIGTSTP: c_int;
-  pragma "no doc"
-  pragma "last resort"
-  deprecated "'Subprocess.SIGTTIN' is deprecated. Use 'OS.POSIX.SIGTTIN' instead."
-  extern const SIGTTIN: c_int;
-  pragma "no doc"
-  pragma "last resort"
-  deprecated "'Subprocess.SIGTTOU' is deprecated. Use 'OS.POSIX.SIGTTOU' instead."
-  extern const SIGTTOU: c_int;
-  pragma "no doc"
-  pragma "last resort"
-  deprecated "'Subprocess.SIGURG' is deprecated. Use 'OS.POSIX.SIGURG' instead."
-  extern const SIGURG: c_int;
-  pragma "no doc"
-  pragma "last resort"
-  deprecated "'Subprocess.SIGUSR1' is deprecated. Use 'OS.POSIX.SIGUSR1' instead."
-  extern const SIGUSR1: c_int;
-  pragma "no doc"
-  pragma "last resort"
-  deprecated "'Subprocess.SIGUSR2' is deprecated. Use 'OS.POSIX.SIGUSR2' instead."
-  extern const SIGUSR2: c_int;
-  pragma "no doc"
-  pragma "last resort"
-  deprecated "'Subprocess.SIGXCPU' is deprecated. Use 'OS.POSIX.SIGXCPU' instead."
-  extern const SIGXCPU: c_int;
-  pragma "no doc"
-  pragma "last resort"
-  deprecated "'Subprocess.SIGXFSZ' is deprecated. Use 'OS.POSIX.SIGXFSZ' instead."
-  extern const SIGXFSZ: c_int;
-
-  // These signals are not strictly required by POSIX.1.2008 2013 edition
-  // and so should not be included here:
-
-  // SIGPOLL is Obsolescent and optional as part of XSI STREAMS
-  // SIGPROF is Obsolescent and optional as part of XSI STREAMS
-  // SIGSYS is optional as part of X/Open Systems Interface
-  // SIGVTALRM is optional as part of X/Open Systems Interface
-
   private extern proc qio_send_signal(pid: int(64), sig: c_int): errorCode;
 
-  deprecated "'send_signal' is deprecated, please use 'sendPosixSignal' instead"
-  proc subprocess.send_signal(signal:int) throws {
-    sendPosixSignal(signal);
-  }
   /*
     Send a signal to a child process.
 

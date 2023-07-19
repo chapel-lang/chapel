@@ -1,0 +1,2 @@
+bug: weird error for accessing tuple type field
+#22633

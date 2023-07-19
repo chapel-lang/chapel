@@ -22,7 +22,7 @@ d.div_q(c, a, zero); // same as UP   for negative integers
 b.div_r(c, a, zero); // same as DOWN for positive integers
 writeln(d, " ", b);
 
-c.neg(c);
+neg(c, c);
 d.div_qr(b, c, a, up);
 writeln(d, " ", b);
 
@@ -34,7 +34,7 @@ writeln(d, " ", b);
 
 writeln();
 
-c.neg(c);
+neg(c, c);
 d.div_q(c, 8, up);
 b.div_r(c, 8, up);
 writeln(d, " ", b);
@@ -47,7 +47,7 @@ d.div_q(c, 8, zero); // same as DOWN for positive integers
 b.div_r(c, 8, zero); // same as DOWN for positive integers
 writeln(d, " ", b);
 
-c.neg(c);
+neg(c, c);
 d.div_qr(b, c, 8, up);
 writeln(d, " ", b);
 
@@ -57,7 +57,7 @@ writeln(d, " ", b);
 d.div_qr(b, c, 8, zero); // same as DOWN for positive integers
 writeln(d, " ", b);
 
-c.neg(c);
+neg(c, c);
 writeln();
 
 
@@ -80,11 +80,11 @@ d.div_q(c, a); // same as UP   for negative integers
 b.div_r(c, a); // same as DOWN for positive integers
 writeln(d, " ", b);
 
-c.neg(c);
+neg(c, c);
 d.div_qr(b, c, a); // same as DOWN for positive integers
 writeln(d, " ", b);
 
-c.neg(c);
+neg(c, c);
 d.div_q_2exp(c, 3);
 b.div_r_2exp(c, 3);
 writeln(d, " ", b);

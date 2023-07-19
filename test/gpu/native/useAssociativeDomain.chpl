@@ -1,8 +1,8 @@
 // Test for #20053
 
-use GPUDiagnostics;
+use GpuDiagnostics;
 
-startGPUDiagnostics();
+startGpuDiagnostics();
 
 var Days : domain(int) = {0, 10, 20};
 on here.gpus[0] {
@@ -16,6 +16,6 @@ on here.gpus[0] {
   writeln(A);
 }
 
-stopGPUDiagnostics();
+stopGpuDiagnostics();
 writeln("GPU diagnostics:");
-writeln(getGPUDiagnostics());
+writeln(getGpuDiagnostics());

@@ -4,7 +4,7 @@ use CommDiagnostics;
 config const printTable = false;
 config const printArrays = false;
 
-var dom = newBlockDom(1..10);
+var dom = Block.createDomain(1..10);
 var innerDom = dom.expand(-1);
 
 var A: [dom] int;

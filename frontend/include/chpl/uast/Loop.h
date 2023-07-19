@@ -35,8 +35,8 @@ namespace uast {
 class Loop: public AstNode {
  protected:
   Loop(asttags::AstTag tag, AstList children, BlockStyle blockStyle,
-       int loopBodyChildNum)
-    : AstNode(tag, std::move(children)),
+       int loopBodyChildNum, int attributeGroupChildNum)
+    : AstNode(tag, std::move(children), attributeGroupChildNum),
       blockStyle_(blockStyle),
       loopBodyChildNum_(loopBodyChildNum) {
 

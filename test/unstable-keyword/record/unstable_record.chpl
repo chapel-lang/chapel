@@ -1,7 +1,7 @@
 //record + quadratic formula
 //shouldn't be unstable
 
-@unstable "The record 'UnstableRecordTest' is unstable"
+@unstable("The record 'UnstableRecordTest' is unstable")
 record UnstableRecordTest {
     var a, b, c: real;
 }

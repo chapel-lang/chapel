@@ -498,9 +498,6 @@ static void check_afterResolution()
     checkResolveRemovedPrims();
 // Disabled for now because user warnings should not be logged multiple times:
 //    checkResolved();
-// Disabled for now because it does not hold when named externs are present.
-// See test/extern/hilde/namedExtern.chpl.
-//    checkNoUnresolveds();
     checkFormalActualBaseTypesMatch();
     checkRetTypeMatchesRetVarType();
     checkAutoCopyMap();
@@ -566,9 +563,6 @@ static void check_afterCallDestructors()
   {
 // Disabled for now because user warnings should not be logged multiple times:
 //    checkResolved();
-// Disabled for now because it does not hold when named externs are present.
-// See test/extern/hilde/namedExtern.chpl.
-//    checkNoUnresolveds();
     checkFormalActualTypesMatch();
   }
 }

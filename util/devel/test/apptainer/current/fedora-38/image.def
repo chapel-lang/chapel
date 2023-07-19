@@ -1,0 +1,14 @@
+BootStrap: docker
+From: fedora:38
+
+%files
+    ../../provision-scripts/* /provision-scripts/
+
+%post
+    /provision-scripts/dnf-deps.sh
+    # installing llvm-devel installs LLVM 16
+    # and I dont see how to install clang 15
+    #/provision-scripts/dnf-llvm15.sh
+
+%runscript
+    ../../provision-scripts/run.sh "$@"

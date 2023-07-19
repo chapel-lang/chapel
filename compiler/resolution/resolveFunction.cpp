@@ -45,6 +45,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "TemporaryConversionThunk.h"
 #include "TryStmt.h"
 #include "view.h"
 #include "WhileStmt.h"
@@ -477,7 +478,9 @@ void resolveSpecifiedReturnType(FnSymbol* fn) {
       retType     = getReturnedTupleType(fn, tupleType);
       fn->retType = retType;
 
-    } else if (fn->returnsRefOrConstRef() == true) {
+    } else if (fn->returnsRefOrConstRef() &&
+               ! retType->symbol->hasFlag(FLAG_GENERIC)) {
+      // makeRefType is no-op if retType is generic?
       makeRefType(retType);
 
       retType     = retType->refType;
@@ -1018,8 +1021,14 @@ bool isParallelIterator(FnSymbol* fn) {
 
 static bool doNotUnaliasArray(FnSymbol* fn);
 static CallExpr* findSetShape(CallExpr* setRet, Symbol* ret);
+static void insertUnrefForTupleYields(FnSymbol* fn);
 
 static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
+  if (fn->isIterator()) {
+    insertUnrefForTupleYields(fn);
+    return;
+  }
+
   bool skipArray = doNotUnaliasArray(fn);
   bool skipTuple = doNotChangeTupleTypeRefLevel(fn, true);
 
@@ -1028,6 +1037,15 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_NO_FN_BODY)) return;
 
   Symbol* ret = fn->getReturnSymbol();
+
+  // surely returning neither tuple nor array, so return
+  // TODO: the addition of this early return resulted in a substantial reduction
+  // of compilation time in some cases. We should investigate how to speed up
+  // the remainder of this function.
+  if (ret->type != dtUnknown                   &&
+      ! ret->type->symbol->hasFlag(FLAG_TUPLE) &&
+      ! ret->type->symbol->hasFlag(FLAG_ARRAY) &&
+      ! ret->type->symbol->hasFlag(FLAG_DOMAIN) ) return;
 
   for_SymbolSymExprs(se, ret) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
@@ -1153,6 +1171,51 @@ static CallExpr* findSetShape(CallExpr* setRet, Symbol* ret) {
       }
   // not found
   return NULL;
+}
+
+static void insertUnrefForTupleYields(FnSymbol* fn) {
+  // do not unref:
+  if (fn->retTag == RET_TYPE       ||  // could iterators yield types?
+      fn->retTag == RET_REF        ||  // if yielding refs
+      fn->retTag == RET_CONST_REF  ||
+      fn->hasFlag(FLAG_DONT_UNREF_FOR_YIELDS) ) // if opted out
+    return;
+
+  // todo: return also if fn->retType or fn->iteratorInfo->yieldedType
+  // is meaningful, i.e., not dtUnknown and not an iterator record,
+  // and is not a tuple: not yielding tuples ==> no need to convert
+
+  std::vector<CallExpr*> callExprs;
+  collectCallExprs(fn->body, callExprs);
+  for_vector(CallExpr, call, callExprs) {
+    if (call->isPrimitive(PRIM_YIELD)) {
+      Symbol* yieldSym  = toSymExpr(call->get(1))->symbol();
+      Type*   yieldType = yieldSym->type;
+      if (! yieldType->symbol->hasFlag(FLAG_TUPLE)   ||
+          yieldSym->hasFlag(FLAG_NO_COPY)            ||
+          ! isTupleContainingAnyReferences(yieldType) )
+        continue;
+
+      // follow insertUnrefForArrayOrTupleReturn()
+      // yield rhs; --> move(tmp, initCopyFn(rhs)); yield tmp;
+      SET_LINENO(call);
+      Expr*     rhs        = call->get(1)->remove();
+      FnSymbol* initCopyFn = getInitCopyDuringResolution(yieldType);
+      VarSymbol* tmp       = newTemp("copy_yield_tmp", initCopyFn->retType);
+      Symbol* definedConst = gFalse;
+      CallExpr*  unrefCall = new CallExpr(initCopyFn, rhs, definedConst);
+      yieldSym->removeFlag(FLAG_YVV);
+      tmp->addFlag(FLAG_YVV);
+
+      call->insertBefore(new DefExpr(tmp));
+      call->insertBefore(new CallExpr(PRIM_MOVE, tmp, unrefCall));
+      call->insertAtHead(tmp); // yield this temp
+
+    } else if (FnSymbol* callee = call->resolvedFunction()) {
+      if (isTaskFun(callee))
+        insertUnrefForTupleYields(callee);
+    }
+  }
 }
 
 class SplitInitVisitor final : public AstVisitorTraverse {
@@ -1287,11 +1350,47 @@ bool FixPrimInitsVisitor::enterCallExpr(CallExpr* call) {
 
 class MarkTempsVisitor final : public AstVisitorTraverse {
  public:
-  bool inFunction;
-  MarkTempsVisitor() : inFunction(false) { }
+  bool inFunction = false;
+  std::vector<Expr*> stmtsForUserStmt;
+  std::vector<VarSymbol*> vars;
+  MarkTempsVisitor() { }
 
   bool enterFnSym(FnSymbol* node) override;
   bool enterDefExpr(DefExpr* node) override;
+  bool enterCallExpr(CallExpr* node) override;
+
+  bool enterStmt();
+  void exitStmt();
+
+  bool enterBlockStmt(BlockStmt* node) override { return enterStmt(); }
+  void exitBlockStmt(BlockStmt* node) override { exitStmt(); }
+  bool enterForallStmt(ForallStmt* node) override { return enterStmt(); }
+  void exitForallStmt(ForallStmt* node) override { exitStmt(); }
+  bool enterWhileDoStmt(WhileDoStmt* node) override { return enterStmt(); }
+  void exitWhileDoStmt(WhileDoStmt* node) override { exitStmt(); }
+  bool enterDoWhileStmt(DoWhileStmt* node) override { return enterStmt(); }
+  void exitDoWhileStmt(DoWhileStmt* node) override { exitStmt(); }
+  bool enterForLoop(ForLoop* node) override { return enterStmt(); }
+  void exitForLoop(ForLoop* node) override { exitStmt(); }
+  bool enterCForLoop(CForLoop* node) override { return enterStmt(); }
+  void exitCForLoop(CForLoop* node) override { exitStmt(); }
+  bool enterParamForLoop(ParamForLoop* node) override { return enterStmt(); }
+  void exitParamForLoop(ParamForLoop* node) override { exitStmt(); }
+  bool enterCondStmt(CondStmt* node) override { return enterStmt(); }
+  void exitCondStmt(CondStmt* node) override { exitStmt(); }
+  bool enterForwardingStmt(ForwardingStmt* node) override {return enterStmt();}
+  void exitForwardingStmt(ForwardingStmt* node) override { exitStmt(); }
+  bool enterGotoStmt(GotoStmt* node) override { return enterStmt(); }
+  void exitGotoStmt(GotoStmt* node) override { exitStmt(); }
+  bool enterDeferStmt(DeferStmt* node) override { return enterStmt(); }
+  void exitDeferStmt(DeferStmt* node) override { exitStmt(); }
+  bool enterTryStmt(TryStmt* node) override { return enterStmt(); }
+  void exitTryStmt(TryStmt* node) override { exitStmt(); }
+  bool enterCatchStmt(CatchStmt* node) override { return enterStmt(); }
+  void exitCatchStmt(CatchStmt* node) override { exitStmt(); }
+
+  bool isStmtGroupInLoopImplementation();
+  void handleStmtGroup();
 };
 
 bool MarkTempsVisitor::enterFnSym(FnSymbol* node) {
@@ -1301,193 +1400,219 @@ bool MarkTempsVisitor::enterFnSym(FnSymbol* node) {
   return true;
 }
 
-static void gatherTempsDeadLastMention(VarSymbol* v,
-                                       std::set<VarSymbol*>& temps) {
+bool MarkTempsVisitor::enterDefExpr(DefExpr* node) {
+  if (VarSymbol* var = toVarSymbol(node->sym)) {
+    vars.push_back(var);
+  }
+  return true;
+}
 
-  // store the temporary we are working on in the set
-  if (temps.insert(v).second == false)
-    return; // stop here if it was already in the set.
+bool MarkTempsVisitor::enterCallExpr(CallExpr* node) {
+  if (node->isStmtExpr()) {
+    if (node->isPrimitive(PRIM_END_OF_STATEMENT)) {
+      handleStmtGroup();
+    } else {
+      stmtsForUserStmt.push_back(node);
+    }
+  }
+  return true;
+}
 
-  for_SymbolSymExprs(se, v) {
-    if (CallExpr* call = toCallExpr(se->getStmtExpr())) {
-      SymExpr* lhsSe = NULL;
-      CallExpr* subCall = NULL;
-      if (isInitOrReturn(call, lhsSe, subCall)) {
-        // call above sets lhsSe and initOrCtor
-      } else if (call->resolvedOrVirtualFunction()) {
-        subCall = call;
+bool MarkTempsVisitor::enterStmt() {
+  handleStmtGroup();
+  return true;
+}
+void MarkTempsVisitor::exitStmt() {
+  handleStmtGroup();
+}
+
+static bool isPrimMoveEtc(CallExpr* call) {
+  return (call->isPrimitive(PRIM_MOVE) ||
+          call->isPrimitive(PRIM_ASSIGN) ||
+          call->isPrimitive(PRIM_ASSIGN_ELIDED_COPY));
+}
+
+
+// e.g. for loops consist of a block creating a bunch of
+// variables and then a Defer and then the ForLoop.
+// These variables need to be marked end-of-block.
+bool MarkTempsVisitor::isStmtGroupInLoopImplementation() {
+  if (vars[0]->hasFlag(FLAG_INDEX_OF_INTEREST)) {
+    return true;
+  }
+
+  return false;
+}
+
+void MarkTempsVisitor::handleStmtGroup() {
+  // nothing to do if no statements were gathered
+  if (vars.empty()) {
+    stmtsForUserStmt.clear();
+    return;
+  }
+
+  // What is going on in this user-level statement?
+  // Is it initializing a user-level ref/const ref?
+  // If so, make everything end-of-block.
+
+  bool allEndOfBlock = fNoEarlyDeinit;
+  bool allCanBeGlobal = true;
+
+  if (isStmtGroupInLoopImplementation()) {
+    // implementing the for loop -- use end of block
+    allEndOfBlock = true;
+  }
+
+  std::set<VarSymbol*> endOfBlockSet;
+  {
+    // compute endOfBlockSet
+
+    // note any variables already marked as end of block or used for array types
+    for_vector(VarSymbol, v, vars) {
+      if (v->hasFlag(FLAG_DEAD_END_OF_BLOCK) ||
+          v->hasFlag(FLAG_USED_IN_TYPE)) {
+        endOfBlockSet.insert(v);
       }
+    }
 
-      // handle a returned variable being inited here
-      if (lhsSe != NULL) {
-        VarSymbol* lhs = toVarSymbol(lhsSe->symbol());
-        if (lhs != NULL && lhs != v && lhs->hasFlag(FLAG_TEMP))
-          gatherTempsDeadLastMention(lhs, temps);
-      }
-
-      // also handle out intent variables being inited here
-      FnSymbol* fn = subCall ? subCall->resolvedOrVirtualFunction() : NULL;
-      if (fn != NULL) {
-        for_formals_actuals(formal, actual, subCall) {
-          bool outIntent = (formal->intent == INTENT_OUT ||
-                            formal->originalIntent == INTENT_OUT);
-
-          if (outIntent) {
-            SymExpr* se = toSymExpr(actual);
-            if (NamedExpr* ne = toNamedExpr(actual)) {
-              INT_ASSERT(ne->name == formal->name);
-              se = toSymExpr(ne->actual);
-            }
-            INT_ASSERT(se != NULL);
-
-            VarSymbol* tmpVar = toVarSymbol(se->symbol());
-            if (tmpVar != NULL && tmpVar != v && tmpVar->hasFlag(FLAG_TEMP)) {
-              if (outIntent) {
-                // initializing a temp with out intent
-                gatherTempsDeadLastMention(tmpVar, temps);
+    // add any variables that are just PRIM_MOVE/PRIM_ASSIGN to/from
+    // things in endOfBlockSet
+    bool changed = false;
+    do {
+      changed = false;
+      for_vector(Expr, stmt, stmtsForUserStmt) {
+        if (CallExpr* call = toCallExpr(stmt->getStmtExpr())) {
+          if (isPrimMoveEtc(call)) {
+            SymExpr* lhsSe = toSymExpr(call->get(1));
+            SymExpr* rhsSe = toSymExpr(call->get(2));
+            if (lhsSe && rhsSe) {
+              VarSymbol* lhs = toVarSymbol(lhsSe->symbol());
+              VarSymbol* rhs = toVarSymbol(rhsSe->symbol());
+              if (lhs && rhs) {
+                bool foundLhs = endOfBlockSet.count(lhs) != 0;
+                bool foundRhs = endOfBlockSet.count(rhs) != 0;
+                if ((foundLhs && foundRhs) || (!foundLhs && !foundRhs)) {
+                  // nothing to do
+                } else if (foundLhs && !foundRhs) {
+                  // add rhs to the set
+                  endOfBlockSet.insert(rhs);
+                  changed = true;
+                } else if (foundRhs && !foundLhs) {
+                  // add lhs to the set
+                  endOfBlockSet.insert(lhs);
+                  changed = true;
+                }
               }
             }
           }
         }
       }
-    }
+    } while (changed);
   }
-}
 
-static void markTempsDeadLastMention(std::set<VarSymbol*>& temps) {
-
-  bool makeThemEndOfBlock = false;
-  bool canMakeThemGlobal = true;
-
-  // Look at how the temps are used
-  for_set(VarSymbol, v, temps) {
-
-    if (v->hasFlag(FLAG_DEAD_END_OF_BLOCK) ||
-        v->hasFlag(FLAG_INDEX_VAR) ||
+  // consider the statements implementing this user-level statement.
+  // what user-level impact are they having?
+  for_vector(VarSymbol, v, vars) {
+    // initializing a user-level ref / const ref variable
+    // so make all of the temporaries end-of-block
+    // Also temps in 'manage' statements
+    if (v->isRef()) {
+      if (!v->hasFlag(FLAG_TEMP)) {
+        allEndOfBlock = true;
+      }
+      if (v->hasFlag(FLAG_MANAGER_HANDLE)) {
+        allEndOfBlock = true;
+      }
+    }
+    if (v->hasFlag(FLAG_INDEX_VAR) ||
         v->hasFlag(FLAG_CHPL__ITER) ||
         v->hasFlag(FLAG_CHPL__ITER_NEWSTYLE) ||
         v->hasFlag(FLAG_FORMAL_TEMP) ||
         v->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
       // index vars, iterator records are always end-of-block
       // but shouldn't be global variables.
-      makeThemEndOfBlock = true;
-      canMakeThemGlobal = false;
-      break;
-    }
-
-    for_SymbolSymExprs(se, v) {
-      if (CallExpr* call = toCallExpr(se->getStmtExpr())) {
-        SymExpr* lhsSe = NULL;
-        CallExpr* subCall = NULL;
-        if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
-          lhsSe = toSymExpr(call->get(1));
-        } else if (isInitOrReturn(call, lhsSe, subCall)) {
-          // call above sets lhsSe and initOrCtor
-        } else if (call->resolvedOrVirtualFunction()) {
-          subCall = call;
-        }
-
-        // returning into a user var?
-        if (lhsSe != NULL) {
-          VarSymbol* lhs = toVarSymbol(lhsSe->symbol());
-          if (lhs != NULL && lhs != v) {
-
-            // Used in initializing a user var, so mark end of block
-            if (!lhs->hasFlag(FLAG_TEMP)) {
-              makeThemEndOfBlock = true;
-              break;
-
-            // For e.g. 'manage new foo() do ...;'
-            // The manager handle is a temp that refers to 'new foo()', so
-            // what it refers to should live until the end of the block.
-            } else if (lhs->hasFlag(FLAG_MANAGER_HANDLE)) {
-              makeThemEndOfBlock = true;
-              break;
-            }
-          }
-        }
-        // out intent setting a user var?
-        if (subCall != NULL && subCall->resolvedOrVirtualFunction() != NULL) {
-          for_formals_actuals(formal, actual, subCall) {
-            bool outIntent = (formal->intent == INTENT_OUT ||
-                              formal->originalIntent == INTENT_OUT);
-            if (outIntent) {
-              SymExpr* se = toSymExpr(actual);
-              if (NamedExpr* ne = toNamedExpr(actual)) {
-                INT_ASSERT(ne->name == formal->name);
-                se = toSymExpr(ne->actual);
-              }
-              INT_ASSERT(se != NULL);
-
-              VarSymbol* outVar = toVarSymbol(se->symbol());
-
-              if (outVar != NULL && outVar != v &&
-                  !outVar->hasFlag(FLAG_TEMP)) {
-                // Used in initializing a user var, so mark end of block
-                makeThemEndOfBlock = true;
-                break;
-              }
-            }
-          }
-        }
-
-        if (makeThemEndOfBlock)
-          break;
-      }
+      allEndOfBlock = true;
+      allCanBeGlobal = false;
     }
   }
 
-  if (fNoEarlyDeinit)
-    makeThemEndOfBlock = true;
+  // are we in a module init function?
+  // or a shadow variable symbol?
+  ModuleSymbol* inModInitForMod = nullptr;
+  ShadowVarSymbol* inShadowVar = nullptr;
+  if (!vars.empty()) {
+    VarSymbol* v = vars[0];
+    Symbol* inSymbol = v->defPoint->parentSymbol;
+    FnSymbol* inFn = toFnSymbol(inSymbol);
+    if (inFn && inFn->hasFlag(FLAG_MODULE_INIT)) {
+      inModInitForMod = v->defPoint->getModule();
+      INT_ASSERT(inModInitForMod->initFn == inFn);
+    }
+    if (ShadowVarSymbol* s = toShadowVarSymbol(inSymbol)) {
+      inShadowVar = s;
+    }
+  }
 
-  if (makeThemEndOfBlock) {
-    for_set(VarSymbol, temp, temps) {
-      temp->addFlag(FLAG_DEAD_END_OF_BLOCK);
-      if (temp->defPoint != NULL) {
-        FnSymbol* initFn = toFnSymbol(temp->defPoint->parentSymbol);
-        if (initFn && initFn->hasFlag(FLAG_MODULE_INIT)) {
-          ModuleSymbol* mod = temp->defPoint->getModule();
-          if (mod && temp->defPoint->parentExpr == initFn->body &&
-              canMakeThemGlobal) {
-            // Move the temporary to global scope.
-            mod->block->insertAtTail(temp->defPoint->remove());
+  // also, when initializing a module-scope reference,
+  // the DefExpr is already hoisted to module scope, so look for that
+  // in the stmtsForUserStmt.
+  if (inModInitForMod) {
+    for_vector(Expr, e, stmtsForUserStmt) {
+      if (CallExpr* call = toCallExpr(e)) {
+        if (call->isPrimitive(PRIM_MOVE)) {
+          SymExpr* lhsSe = toSymExpr(call->get(1));
+          if (VarSymbol* lhs = toVarSymbol(lhsSe->symbol())) {
+            if (lhs->isRef() && !lhs->hasFlag(FLAG_TEMP) &&
+                lhs->defPoint->parentExpr == inModInitForMod->block) {
+              allEndOfBlock = true;
+            }
           }
         }
       }
     }
-  } else {
-    for_set(VarSymbol, temp, temps) {
-      temp->addFlag(FLAG_DEAD_LAST_MENTION);
+  }
+  // and, when working with a task-private variable / forall intent,
+  // (shadow variable) the reference being set can be in an outer scope,
+  // so look for that.
+  if (inShadowVar && inShadowVar->isRef()) {
+    allEndOfBlock = true;
+  }
+
+  // set the lifetime for variables
+  for_vector(VarSymbol, v, vars) {
+    if (v->hasFlag(FLAG_TEMP)) {
+      // user-variables should have this stuff handled elsewhere
+      bool endOfBlock = allEndOfBlock || endOfBlockSet.count(v) != 0;
+      bool canBeGlobal = allCanBeGlobal;
+
+      // nested calls used to create array type expressions
+      // need to be end-of-block
+      if (v->hasFlag(FLAG_USED_IN_TYPE)) {
+        endOfBlock = true;
+      }
+
+      if (v->hasEitherFlag(FLAG_DEAD_END_OF_BLOCK, FLAG_DEAD_LAST_MENTION)) {
+        // just keep whatever flag we had
+      } else if (endOfBlock) {
+        v->addFlag(FLAG_DEAD_END_OF_BLOCK);
+      } else {
+        v->addFlag(FLAG_DEAD_LAST_MENTION);
+      }
+
+      // now move any end-of-block variables in a module init to module scope
+      if (inModInitForMod != nullptr && canBeGlobal &&
+          v->hasFlag(FLAG_DEAD_END_OF_BLOCK)) {
+        if (v->defPoint->parentExpr == inModInitForMod->initFn->body) {
+          // Move the temporary to global scope.
+          inModInitForMod->block->insertAtTail(v->defPoint->remove());
+        }
+      }
     }
   }
-}
 
-void markTempDeadLastMention(VarSymbol* var) {
-  INT_ASSERT(var && var->hasFlag(FLAG_TEMP));
-
-  std::set<VarSymbol*> temps;
-  gatherTempsDeadLastMention(var, temps);
-  markTempsDeadLastMention(temps);
-  INT_ASSERT(var->hasFlag(FLAG_DEAD_LAST_MENTION) ||
-             var->hasFlag(FLAG_DEAD_END_OF_BLOCK));
-}
-
-bool MarkTempsVisitor::enterDefExpr(DefExpr* node) {
-  // Mark temps as dead either "last mention" or "end of block"
-  // and move temps marked "last mention" to global scope.
-  //
-  // This whole process depends on how split inits are handled
-  // and needs to happen before addAutoDestroyCalls makes decisions
-  // using the flags.
-  //
-  if (VarSymbol* var = toVarSymbol(node->sym)) {
-    if (var->hasFlag(FLAG_TEMP) &&
-        !(var->hasFlag(FLAG_DEAD_LAST_MENTION) ||
-          var->hasFlag(FLAG_DEAD_END_OF_BLOCK))) {
-      markTempDeadLastMention(var);
-    }
-  }
-  return true;
+  // clear the gathered variables and statements
+  stmtsForUserStmt.clear();
+  vars.clear();
 }
 
 void fixPrimInitsAndAddCasts(FnSymbol* fn) {

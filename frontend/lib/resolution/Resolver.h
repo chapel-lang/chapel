@@ -63,10 +63,12 @@ struct Resolver {
   bool signatureOnly = false;
   bool fieldOrFormalsComputed = false;
   bool scopeResolveOnly = false;
+  bool fieldTypesOnly = false;
   const uast::Block* fnBody = nullptr;
   std::set<ID> fieldOrFormals;
   std::set<ID> instantiatedFieldOrFormals;
   std::set<ID> splitInitTypeInferredVariables;
+  std::set<UniqueString> namesWithErrorsEmitted;
   const uast::Call* inLeafCall = nullptr;
   bool receiverScopesComputed = false;
   ReceiverScopesVec savedReceiverScopes;
@@ -225,6 +227,11 @@ struct Resolver {
                                        const types::Type* thisType);
 
 
+  /* Determine the method receiver,  which is a type under
+     full resolution, but only an ID under scope resolution.
+    */
+  bool getMethodReceiver(types::QualifiedType* outType = nullptr,
+                         ID* outId = nullptr);
   /* Compute the receiver scopes (when resolving a method)
      and return an empty vector if it is not applicable.
    */
@@ -234,6 +241,18 @@ struct Resolver {
      and return a type containing nullptr if it is not applicable.
    */
   types::QualifiedType methodReceiverType();
+
+  /* Given an identifier, check if this identifier could refer to a superclass,
+     as opposed to a variable of the name 'super'. If it can, sets
+     outType to the type of the parent class.
+   */
+  bool isPotentialSuper(const uast::Identifier* identifier,
+                        types::QualifiedType* outType = nullptr);
+  /* Given a type of a child / sub type, give type of the parent / super type.
+   */
+  types::QualifiedType getSuperType(Context* context,
+                                    const types::QualifiedType& sub,
+                                    const uast::Identifier* identForError);
 
   /* When resolving a generic record or a generic function,
      there might be generic types that we don't know yet.
@@ -285,6 +304,9 @@ struct Resolver {
                                                types::QualifiedType lhsType,
                                                types::QualifiedType rhsType);
 
+  const types::Type* computeCustomInferType(const uast::AstNode* initExpr,
+                                            const types::CompositeType* ct);
+
   // Helper to figure out what type to use for a declaration
   // that can have both a declared type and an init expression.
   // If both are provided, checks that they are compatible.
@@ -305,6 +327,11 @@ struct Resolver {
   void issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
                                          const CallInfo& ci,
                                          const CallResolutionResult& c);
+
+  // issue error for M.x where x is not found in a module M
+  void issueErrorForFailedModuleDot(const uast::Dot* dot,
+                                    ID moduleId,
+                                    LookupConfig failedConfig);
 
   // handle the result of one of the functions to resolve a call. Handles:
   //  * r.setMostSpecific
@@ -371,6 +398,9 @@ struct Resolver {
   // resolve a special op call such as tuple unpack assign
   bool resolveSpecialOpCall(const uast::Call* call);
 
+  // resolve a keyword call like index(D)
+  bool resolveSpecialKeywordCall(const uast::Call* call);
+
   // Resolve a || or && operation.
   types::QualifiedType typeForBooleanOp(const uast::OpCall* op);
 
@@ -418,11 +448,13 @@ struct Resolver {
   // prepare a CallInfo by inspecting the called expression and actuals
   CallInfo prepareCallInfoNormalCall(const uast::Call* call);
 
+  bool identHasMoreMentions(const uast::Identifier* ident);
+
   std::vector<BorrowedIdsWithName>
   lookupIdentifier(const uast::Identifier* ident,
                    llvm::ArrayRef<const Scope*> receiverScopes);
 
-  bool resolveIdentifier(const uast::Identifier* ident,
+  void resolveIdentifier(const uast::Identifier* ident,
                          llvm::ArrayRef<const Scope*> receiverScopes);
 
   /* Resolver keeps a stack of scopes and a stack of decls.
@@ -437,6 +469,9 @@ struct Resolver {
   // the visitor methods
   bool enter(const uast::Conditional* cond);
   void exit(const uast::Conditional* cond);
+
+  bool enter(const uast::Select* sel);
+  void exit(const uast::Select* sel);
 
   bool enter(const uast::Literal* literal);
   void exit(const uast::Literal* literal);
@@ -459,6 +494,9 @@ struct Resolver {
   bool enter(const uast::Range* decl);
   void exit(const uast::Range* decl);
 
+  bool enter(const uast::Domain* decl);
+  void exit(const uast::Domain* decl);
+
   // Note: Call cases here include Tuple
   bool enter(const uast::Call* call);
   void exit(const uast::Call* call);
@@ -471,6 +509,9 @@ struct Resolver {
 
   bool enter(const uast::IndexableLoop* loop);
   void exit(const uast::IndexableLoop* loop);
+
+  bool enter(const uast::DoWhile* loop);
+  void exit(const uast::DoWhile* loop);
 
   bool enter(const uast::ReduceIntent* reduce);
   void exit(const uast::ReduceIntent* reduce);
@@ -489,6 +530,9 @@ struct Resolver {
 
   bool enter(const uast::Try* ret);
   void exit(const uast::Try* ret);
+
+  bool enter(const uast::Catch* ret);
+  void exit(const uast::Catch* ret);
 
   bool enter(const uast::Use* node);
   void exit(const uast::Use* node);

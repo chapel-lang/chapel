@@ -917,6 +917,20 @@ static void addKnownWides() {
     //if (!typeCanBeWide(var)) continue;
     Symbol* defParent = var->defPoint->parentSymbol;
 
+    if (usingGpuLocaleModel()) {
+      if (var->type->symbol->hasFlag(FLAG_DATA_CLASS)) {
+        if (FnSymbol* fn = usedInOn(var)) {
+          debug(var, "GPU variable used in on-statement\n");
+          if (typeCanBeWide(var)) {
+            setWide(fn, var);
+          }
+          if (isRecord(var->type) && !canWidenRecord(var)) {
+            widenSubAggregateTypes(fn, var->type);
+          }
+        }
+      }
+    }
+
     //
     // FLAG_LOCALE_PRIVATE variables can be used within an on-statement without
     // needing to be wide.
@@ -1733,7 +1747,7 @@ static void localizeCall(CallExpr* call) {
           }
           break;
         } else if (rhs->isPrimitive(PRIM_GET_UNION_ID)) {
-          if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+          if (rhs->get(1)->isWideRef()) {
             insertLocalTemp(rhs->get(1));
           }
           break;
@@ -1750,7 +1764,7 @@ static void localizeCall(CallExpr* call) {
           !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         break;
       }
-      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) &&
+      if (call->get(1)->isWideRef() &&
           !call->get(2)->isRefOrWideRef()) {
         insertLocalTemp(call->get(1));
       }
@@ -1772,7 +1786,7 @@ static void localizeCall(CallExpr* call) {
       }
       break;
     case PRIM_SET_UNION_ID:
-      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+      if (call->get(1)->isWideRef()) {
         insertLocalTemp(call->get(1));
       }
       break;
@@ -1846,7 +1860,7 @@ static void handleLocalBlocks() {
             queue.push(local->body);
             cache.put(fn, local);
             cache.put(local, local); // to handle recursion
-            if (local->retType->symbol->hasFlag(FLAG_WIDE_REF)) {
+            if (local->isWideRef()) {
               CallExpr* ret = toCallExpr(local->body->body.tail);
               INT_ASSERT(ret && ret->isPrimitive(PRIM_RETURN));
               // Capture the return expression in a local temp.
@@ -2214,6 +2228,15 @@ static void fixAST() {
         SymExpr* rhs = toSymExpr(call->get(2));
         makeMatch(lhs, rhs);
         makeMatch(rhs, lhs);
+      }
+      else if (call->isPrimitive(PRIM_GPU_KERNEL_LAUNCH_FLAT)) {
+        // currently, we don't pass wide references to GPU kernels as we don't
+        // know how to handle them. This'll change
+        for_actuals (actual, call) {
+          if (hasSomeWideness(actual)) {
+            insertLocalTemp(actual);
+          }
+        }
       }
     }
   }

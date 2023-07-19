@@ -60,7 +60,7 @@
 #include "ips_proto_internal.h"
 
 psm2_error_t
-ips_scbctrl_init(const psmi_context_t *context,
+psm3_ips_scbctrl_init(psm2_ep_t ep,
 		 uint32_t numscb, uint32_t numbufs,
 		 uint32_t imm_size, uint32_t bufsize,
 		 ips_scbctrl_avail_callback_fn_t scb_avail_callback,
@@ -71,8 +71,6 @@ ips_scbctrl_init(const psmi_context_t *context,
 	size_t scb_size;
 	size_t alloc_sz;
 	uintptr_t base, imm_base;
-	psm2_ep_t ep = context->ep;
-	/* scbc->context = context; */
 	psm2_error_t err = PSM2_OK;
 
 	psmi_assert_always(numscb > 0);
@@ -179,11 +177,11 @@ ips_scbctrl_init(const psmi_context_t *context,
 		 */
 		scb->timer_ack = &scbc->timers[2*i];
 		psmi_timer_entry_init(scb->timer_ack,
-				ips_proto_timer_ack_callback, scb);
+				psm3_ips_proto_timer_ack_callback, scb);
 
 		scb->timer_send = &scbc->timers[2*i+1];
 		psmi_timer_entry_init(scb->timer_send,
-				ips_proto_timer_send_callback, scb);
+				psm3_ips_proto_timer_send_callback, scb);
 	}
 	scbc->scb_avail_callback = scb_avail_callback;
 	scbc->scb_avail_context = scb_avail_context;
@@ -193,7 +191,7 @@ fail:
 	return err;
 }
 
-psm2_error_t ips_scbctrl_fini(struct ips_scbctrl *scbc)
+psm2_error_t psm3_ips_scbctrl_fini(struct ips_scbctrl *scbc)
 {
 	if (scbc->scb_base != NULL) {
 		psmi_free(scbc->scb_base);
@@ -210,7 +208,7 @@ psm2_error_t ips_scbctrl_fini(struct ips_scbctrl *scbc)
 	return PSM2_OK;
 }
 
-int ips_scbctrl_bufalloc(ips_scb_t *scb)
+int psm3_ips_scbctrl_bufalloc(ips_scb_t *scb)
 {
 	struct ips_scbctrl *scbc = scb->scbc;
 
@@ -243,12 +241,12 @@ int ips_scbctrl_bufalloc(ips_scb_t *scb)
 	}
 }
 
-int ips_scbctrl_avail(struct ips_scbctrl *scbc)
+int psm3_ips_scbctrl_avail(struct ips_scbctrl *scbc)
 {
 	return (!SLIST_EMPTY(&scbc->scb_free) && scbc->sbuf_num_cur > 0);
 }
 
-ips_scb_t *MOCKABLE(ips_scbctrl_alloc)(struct ips_scbctrl *scbc, int scbnum, int len,
+ips_scb_t *MOCKABLE(psm3_ips_scbctrl_alloc)(struct ips_scbctrl *scbc, int scbnum, int len,
 				uint32_t flags)
 {
 	ips_scb_t *scb, *scb_head = NULL;
@@ -266,7 +264,7 @@ ips_scb_t *MOCKABLE(ips_scbctrl_alloc)(struct ips_scbctrl *scbc, int scbnum, int
 		scb->scb_flags = 0;
 		if (flags & IPS_SCB_FLAG_ADD_BUFFER) {
 			scb->payload_size = len;
-			if (!ips_scbctrl_bufalloc(scb))
+			if (!psm3_ips_scbctrl_bufalloc(scb))
 				break;
 		} else {
 			ips_scb_buffer(scb) = NULL;
@@ -275,13 +273,18 @@ ips_scb_t *MOCKABLE(ips_scbctrl_alloc)(struct ips_scbctrl *scbc, int scbnum, int
 
 		scb->tidsendc = NULL;
 		scb->callback = NULL;
-		scb->tidctrl = 0;
 		scb->nfrag = 1;
 		scb->frag_size = 0;
-#ifdef PSM_CUDA
+		scb->chunk_size = 0;
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 		scb->mq_req = NULL;
 #endif
+#ifdef PSM_HAVE_REG_MR
 		scb->mr = NULL;
+#endif
+#ifdef PSM_HAVE_SDMA
+		scb->sdma_outstanding = 0;
+#endif
 
 		scbc->scb_num_cur--;
 		if (scbc->scb_num_cur < (scbc->scb_num >> 1))
@@ -293,9 +296,9 @@ ips_scb_t *MOCKABLE(ips_scbctrl_alloc)(struct ips_scbctrl *scbc, int scbnum, int
 	}
 	return scb_head;
 }
-MOCK_DEF_EPILOGUE(ips_scbctrl_alloc);
+MOCK_DEF_EPILOGUE(psm3_ips_scbctrl_alloc);
 
-void ips_scbctrl_free(ips_scb_t *scb)
+void psm3_ips_scbctrl_free(ips_scb_t *scb)
 {
 	struct ips_scbctrl *scbc = scb->scbc;
 	if (scbc->sbuf_num && (ips_scb_buffer(scb) >= scbc->sbuf_buf_base) &&
@@ -306,7 +309,13 @@ void ips_scbctrl_free(ips_scb_t *scb)
 
 	ips_scb_buffer(scb) = NULL;
 	scb->tidsendc = NULL;
+#ifdef PSM_HAVE_REG_MR
 	scb->mr = NULL;
+#endif
+#ifdef PSM_HAVE_SDMA
+	psmi_assert(scb->sdma_outstanding == 0);
+	scb->sdma_outstanding = 0;
+#endif
 	scb->payload_size = 0;
 	scbc->scb_num_cur++;
 	if (SLIST_EMPTY(&scbc->scb_free)) {
@@ -319,7 +328,7 @@ void ips_scbctrl_free(ips_scb_t *scb)
 	return;
 }
 
-ips_scb_t *MOCKABLE(ips_scbctrl_alloc_tiny)(struct ips_scbctrl *scbc)
+ips_scb_t *MOCKABLE(psm3_ips_scbctrl_alloc_tiny)(struct ips_scbctrl *scbc)
 {
 	ips_scb_t *scb;
 	if (SLIST_EMPTY(&scbc->scb_free))
@@ -334,17 +343,22 @@ ips_scb_t *MOCKABLE(ips_scbctrl_alloc_tiny)(struct ips_scbctrl *scbc)
 	scb->scb_flags = 0;
 	scb->tidsendc = NULL;
 	scb->callback = NULL;
-	scb->tidctrl = 0;
 	scb->nfrag = 1;
 	scb->frag_size = 0;
-#ifdef PSM_CUDA
+	scb->chunk_size = 0;
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 	scb->mq_req = NULL;
 #endif
+#ifdef PSM_HAVE_REG_MR
 	scb->mr = NULL;
+#endif
+#ifdef PSM_HAVE_SDMA
+	scb->sdma_outstanding = 0;
+#endif
 
 	scbc->scb_num_cur--;
 	if (scbc->scb_num_cur < (scbc->scb_num >> 1))
 		scb->scb_flags |= IPS_SEND_FLAG_ACKREQ;
 	return scb;
 }
-MOCK_DEF_EPILOGUE(ips_scbctrl_alloc_tiny);
+MOCK_DEF_EPILOGUE(psm3_ips_scbctrl_alloc_tiny);

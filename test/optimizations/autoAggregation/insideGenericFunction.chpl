@@ -1,13 +1,13 @@
 use BlockDist;
 
-var myArr = newBlockArr({0..10}, int);
+var myArr = Block.createArray({0..10}, int);
 
 proc main() {
   foo(myArr);
 }
 
 proc foo(a) {
-  var b = newBlockArr({0..10}, int);
+  var b = Block.createArray({0..10}, int);
   for bb in b do bb = 1;
 
   writeln("Loop 1");

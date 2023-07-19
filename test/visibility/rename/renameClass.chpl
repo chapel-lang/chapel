@@ -12,7 +12,7 @@ module M {
   use Foo only bar as bleep;
 
   proc main() {
-    var instance = (new owned bleep()).borrow();
+    var instance = new bleep();
 
     instance.baz();
   }

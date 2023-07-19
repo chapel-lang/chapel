@@ -89,10 +89,10 @@ module UnorderedAtomics {
   inline proc AtomicT.unorderedAdd(value:T): void {
     this.add(value);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc RAtomicT.unorderedAdd(value:T): void {
     pragma "insert line file info" extern externFunc("add_unordered", T)
-      proc atomic_add_unordered(ref op:T, l:int(32), obj:c_void_ptr): void;
+      proc atomic_add_unordered(ref op:T, l:int(32), obj:c_ptr(void)): void;
 
     var v = value;
     atomic_add_unordered(v, _localeid(), _addr());
@@ -102,10 +102,10 @@ module UnorderedAtomics {
   inline proc AtomicT.unorderedSub(value:T): void {
     this.sub(value);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc RAtomicT.unorderedSub(value:T): void {
     pragma "insert line file info" extern externFunc("sub_unordered", T)
-      proc atomic_sub_unordered(ref op:T, l:int(32), obj:c_void_ptr): void;
+      proc atomic_sub_unordered(ref op:T, l:int(32), obj:c_ptr(void)): void;
 
     var v = value;
     atomic_sub_unordered(v, _localeid(), _addr());
@@ -115,11 +115,11 @@ module UnorderedAtomics {
   inline proc AtomicT.unorderedOr(value:T): void {
     this.or(value);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc RAtomicT.unorderedOr(value:T): void {
     if !isIntegral(T) then compilerError("or is only defined for integer atomic types");
     pragma "insert line file info" extern externFunc("or_unordered", T)
-      proc atomic_or_unordered(ref op:T, l:int(32), obj:c_void_ptr): void;
+      proc atomic_or_unordered(ref op:T, l:int(32), obj:c_ptr(void)): void;
 
     var v = value;
     atomic_or_unordered(v, _localeid(), _addr());
@@ -129,11 +129,11 @@ module UnorderedAtomics {
   inline proc AtomicT.unorderedAnd(value:T): void {
     this.and(value);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc RAtomicT.unorderedAnd(value:T): void {
     if !isIntegral(T) then compilerError("and is only defined for integer atomic types");
     pragma "insert line file info" extern externFunc("and_unordered", T)
-      proc atomic_and_unordered(ref op:T, l:int(32), obj:c_void_ptr): void;
+      proc atomic_and_unordered(ref op:T, l:int(32), obj:c_ptr(void)): void;
 
     var v = value;
     atomic_and_unordered(v, _localeid(), _addr());
@@ -143,11 +143,11 @@ module UnorderedAtomics {
   inline proc AtomicT.unorderedXor(value:T): void {
     this.xor(value);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc RAtomicT.unorderedXor(value:T): void {
     if !isIntegral(T) then compilerError("xor is only defined for integer atomic types");
     pragma "insert line file info" extern externFunc("xor_unordered", T)
-      proc atomic_xor_unordered(ref op:T, l:int(32), obj:c_void_ptr): void;
+      proc atomic_xor_unordered(ref op:T, l:int(32), obj:c_ptr(void)): void;
 
     var v = value;
     atomic_xor_unordered(v, _localeid(), _addr());

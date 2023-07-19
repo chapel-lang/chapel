@@ -22,17 +22,18 @@ module ChapelPrivatization {
 
   private use CTypes;
 
+  // see the note in LocaleModelHelpMem for the use of raw_c_void_ptr
+  extern type raw_c_void_ptr = chpl__c_void_ptr;
+
   // the type of elements in chpl_privateObjects.
-  pragma "no doc"
   extern record chpl_privateObject_t {
-    var obj:c_void_ptr;
+    var obj:raw_c_void_ptr;
   }
 
-  pragma "no doc"
   extern var chpl_privateObjects:c_ptr(chpl_privateObject_t);
 
-  pragma "no doc"
   pragma "fn returns infinite lifetime"
+  @chpldoc.nodoc
   // should this use pragma "local args"?
   // Why is the compiler making the objectType argument wide?
   inline

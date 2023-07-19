@@ -38,8 +38,8 @@ class Level {
   // the level.
   //--------------------------------------------------------------
   
-  var possible_cells:       domain(dimension, stridable=true);
-  var possible_ghost_cells: domain(dimension, stridable=true);
+  var possible_cells:       domain(dimension, strides=strideKind.any);
+  var possible_ghost_cells: domain(dimension, strides=strideKind.any);
 
 
   //==== Child grid info ====
@@ -55,8 +55,8 @@ class Level {
 
   var grids:                 domain(unmanaged Grid);
   var sibling_ghost_regions: [grids] unmanaged SiblingGhostRegion?;
-  var boundary:              [grids] unmanaged MultiDomain(dimension,stridable=true)?;
-
+  var boundary:              [grids] unmanaged MultiDomain(dimension,
+                                                           strideKind.any)?;
 
 
   //|\''''''''''''''''''''|\
@@ -79,7 +79,7 @@ class Level {
 
 
     //---- Possible cells ----
-    var ranges: dimension*range(stridable = true);
+    var ranges: dimension*range(strides = strideKind.any);
     for d in dimensions do ranges(d) = 1 .. 2*n_cells(d)-1 by 2;
     possible_cells = ranges;
 
@@ -226,7 +226,7 @@ proc Level.addGrid(
 // This version takes the full domain of grid cells.
 //---------------------------------------------------
 
-proc Level.addGrid (grid_cells: domain(dimension,stridable=true))
+proc Level.addGrid (grid_cells: domain(dimension,strides=strideKind.any))
 {
   addGrid(grid_cells.low-1, grid_cells.high+1);
 }
@@ -278,7 +278,7 @@ proc Level.complete ()
     sibling_ghost_regions(grid) = new unmanaged
       SiblingGhostRegion(_to_unmanaged(this),grid);
     
-    boundary(grid) = new unmanaged MultiDomain(dimension,stridable=true);
+    boundary(grid) = new unmanaged MultiDomain(dimension,strideKind.any);
 
     for D in grid.ghost_domains do boundary(grid)!.add( D );
 
@@ -316,7 +316,7 @@ proc Level.complete ()
 class SiblingGhostRegion {
 
   var neighbors: domain(unmanaged Grid);
-  var overlaps:  [neighbors] domain(dimension,stridable=true);
+  var overlaps:  [neighbors] domain(dimension,strides=strideKind.any);
   
   
   //|\''''''''''''''''''''|\
@@ -501,7 +501,7 @@ proc readLevel(file_name: string){
 
 
 
-// proc main {
+// private proc main {
 // 
 //   var level = readLevel("input_level.txt");
 // 

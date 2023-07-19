@@ -17,7 +17,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-deprecated "Compiling with 'CHPL_LOCALE_MODEL=numa' is deprecated; please use the 'flat' locale model instead"
+@deprecated(notes="Compiling with 'CHPL_LOCALE_MODEL=numa' is deprecated; please use the 'flat' locale model instead")
 module LocaleModelHelpNUMA {
   use CTypes;
 

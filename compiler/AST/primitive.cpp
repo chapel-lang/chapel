@@ -103,12 +103,10 @@ returnInfoInt64(CallExpr* call) {
   return QualifiedType(dtInt[INT_SIZE_64], QUAL_VAL);
 }
 
-/*
 static QualifiedType
 returnInfoUInt64(CallExpr* call) {
   return QualifiedType(dtUInt[INT_SIZE_64], QUAL_VAL);
 }
-*/
 
 static QualifiedType
 returnInfoSizeType(CallExpr* call) {
@@ -127,7 +125,6 @@ returnInfoDefaultInt(CallExpr* call) {
   return returnInfoInt64(call);
 }
 
-/*
 static QualifiedType
 returnInfoUInt32(CallExpr* call) { // unexecuted none/gasnet on 4/25/08
   return QualifiedType(dtUInt[INT_SIZE_32], QUAL_VAL);
@@ -142,7 +139,6 @@ static QualifiedType
 returnInfoReal64(CallExpr* call) {
   return QualifiedType(dtReal[FLOAT_SIZE_64], QUAL_VAL);
 }
-*/
 
 static QualifiedType
 returnInfoComplexField(CallExpr* call) {  // for get real/imag primitives
@@ -481,6 +477,21 @@ returnInfoToUnmanaged(CallExpr* call) {
   return QualifiedType(t, QUAL_VAL);
 }
 
+static QualifiedType returnInfoSecondActualTypeSymbol(CallExpr* call) {
+  auto ret = QualifiedType(dtUnknown, QUAL_VAL);
+
+  if (call->numActuals() >= 2) {
+    if (SymExpr* se = toSymExpr(call->get(2))) {
+      if (auto ts = toTypeSymbol(se->symbol())) {
+        Type* t = ts->type;
+        ret = QualifiedType(t, QUAL_VAL);
+      }
+    }
+  }
+
+  return ret;
+}
+
 static QualifiedType
 returnInfoToBorrowed(CallExpr* call) {
   Type* t = call->get(1)->getValType();
@@ -800,9 +811,9 @@ initPrimitive() {
 
   // new keyword
   prim_def(PRIM_NEW, "new", returnInfoFirst);
-  // get complex real component
+  // given a complex value, produce a reference to the real component
   prim_def(PRIM_GET_REAL, "complex_get_real", returnInfoComplexField);
-  // get complex imag component
+  // given a complex value, produce a reference to the imag component
   prim_def(PRIM_GET_IMAG, "complex_get_imag", returnInfoComplexField);
   // query expression primitive
   prim_def(PRIM_QUERY, "query", returnInfoUnknown);
@@ -865,7 +876,7 @@ initPrimitive() {
   prim_def(PRIM_GPU_GRIDDIM_Z, "gpu gridDim z", returnInfoInt32, true);
 
   // allocate data into shared memory (takes one parameter: number of bytes to allocate)
-  // and returns a c_void_ptr
+  // and returns a raw_c_void_ptr
   prim_def(PRIM_GPU_ALLOC_SHARED, "gpu allocShared", returnInfoCVoidPtr, true);
 
   // synchronize threads in a GPU kernel (equivalent to CUDA __syncThreads)
@@ -1057,8 +1068,8 @@ initPrimitive() {
 
   prim_def(PRIM_INT_ERROR, "_internal_error", returnInfoVoid, true);
 
-  prim_def(PRIM_CAPTURE_FN_FOR_CHPL, "capture fn for chpl", returnInfoVoid);
-  prim_def(PRIM_CAPTURE_FN_FOR_C, "capture fn for C", returnInfoVoid);
+  prim_def(PRIM_CAPTURE_FN, "capture fn", returnInfoVoid);
+  prim_def(PRIM_CAPTURE_FN_TO_CLASS, "capture fn to class", returnInfoVoid);
   prim_def(PRIM_CREATE_FN_TYPE, "create fn type", returnInfoVoid);
 
   prim_def(PRIM_STRING_COMPARE, "string_compare", returnInfoDefaultInt, true);
@@ -1073,6 +1084,8 @@ initPrimitive() {
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringC, false, true);
   // Cast the object argument to void*.
   prim_def(PRIM_CAST_TO_VOID_STAR, "cast_to_void_star", returnInfoCVoidPtr, true, false);
+  // Cast to the second argument at codegen time.
+  prim_def(PRIM_CAST_TO_TYPE, "cast_to_type", returnInfoSecondActualTypeSymbol, true, false);
   prim_def(PRIM_STRING_SELECT, "string_select", returnInfoStringC, true, true);
   prim_def(PRIM_SLEEP, "sleep", returnInfoVoid, true);
   prim_def(PRIM_REAL_TO_INT, "real2int", returnInfoDefaultInt);
@@ -1103,6 +1116,7 @@ initPrimitive() {
 
   prim_def(PRIM_VIRTUAL_METHOD_CALL, "virtual method call", returnInfoVirtualMethodCall, true);
 
+  prim_def(PRIM_SIMPLE_TYPE_NAME, "simple type name", returnInfoString);
   prim_def(PRIM_NUM_FIELDS, "num fields", returnInfoInt32);
   prim_def(PRIM_FIELD_NUM_TO_NAME, "field num to name", returnInfoString);
   prim_def(PRIM_FIELD_NAME_TO_NUM, "field name to num", returnInfoInt32);
@@ -1242,6 +1256,11 @@ initPrimitive() {
   prim_def(PRIM_VERSION_SHA, "version sha", returnInfoString);
 
   prim_def(PRIM_REF_DESERIALIZE, "deserialize for ref fields", returnInfoCVoidPtr);
+
+  prim_def(PRIM_UINT32_AS_REAL32, "uint32 as real32", returnInfoReal32);
+  prim_def(PRIM_UINT64_AS_REAL64, "uint64 as real64", returnInfoReal64);
+  prim_def(PRIM_REAL32_AS_UINT32, "real32 as uint32", returnInfoUInt32);
+  prim_def(PRIM_REAL64_AS_UINT64, "real64 as uint64", returnInfoUInt64);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;

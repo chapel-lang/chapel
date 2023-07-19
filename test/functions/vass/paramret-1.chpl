@@ -1,7 +1,7 @@
-proc a() param      return 5;
-proc b() param :int return 6;
-proc c   param      return 7;
-proc d   param :int return 8;
+proc a() param      do return 5;
+proc b() param :int do return 6;
+proc c   param      do return 7;
+proc d   param :int do return 8;
 
 writeln(a());
 writeln(b());

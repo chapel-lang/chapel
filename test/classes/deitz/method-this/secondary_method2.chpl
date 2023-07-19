@@ -10,16 +10,16 @@ class foo {
 }
 
 
-
-var f1 : borrowed foo = (new owned foo()).borrow();
+var ownF1 = new owned foo();
+var f1 : borrowed foo = ownF1.borrow();
 
 f1.primary();
 f1.secondary();
 
 
 
-
-var f2 : borrowed foo = (new owned foo()).borrow();
+var ownF2 = new owned foo();
+var f2 : borrowed foo = ownF2.borrow();
 f2.i = 4;
 
 f2.primary();

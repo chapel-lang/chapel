@@ -3,6 +3,7 @@ config const printOutput=false;
 
 
 config  const n: int=100;
+assert(n > 0); // relied upon in the cast 'n:uint'
 var Dist1 = new dmap(new Block({1..n}));
 var Dist2 = new dmap(new Block({1..n,1..n}));
 var Dist3 = new dmap(new Block({1..n,1..n,1..n}));
@@ -127,7 +128,7 @@ if printOutput then writeln("Block Dist. Example 2: A",D1, " Locales:",numLocale
 A[D1]=B[D1];
 for (a,b) in zip(A[D1],B[D1]) do if (a!=b) then writeln("ERROR!!!!");
 
-D1={1..n by n};
+D1={1..n by n:uint};
 A=1;
 
 if printOutput then writeln("Block Dist. Example 3: A",D1, " Locales:",numLocales);

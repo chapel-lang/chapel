@@ -13,6 +13,7 @@ Major Platforms
    cray
    cygwin
    aws
+   raspberrypi
 
 
 Networks

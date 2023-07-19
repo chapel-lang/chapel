@@ -123,6 +123,8 @@ PRIMITIVE_R(QUERY, "query")
 PRIMITIVE_R(QUERY_PARAM_FIELD, "query param field")
 PRIMITIVE_R(QUERY_TYPE_FIELD, "query type field")
 
+PRIMITIVE_R(STATIC_DOMAIN_TYPE, "static domain type")
+
 PRIMITIVE_G(ADDR_OF, "addr of")
 PRIMITIVE_G(DEREF, "deref")
 PRIMITIVE_G(SET_REFERENCE, "set reference")
@@ -250,8 +252,8 @@ PRIMITIVE_G(PRIVATE_BROADCAST, "_private_broadcast")
 
 PRIMITIVE_G(INT_ERROR, "_internal_error")
 
-PRIMITIVE_R(CAPTURE_FN_FOR_CHPL, "capture fn for chpl")
-PRIMITIVE_R(CAPTURE_FN_FOR_C, "capture fn for C")
+PRIMITIVE_R(CAPTURE_FN, "capture fn")
+PRIMITIVE_R(CAPTURE_FN_TO_CLASS, "capture fn to class")
 PRIMITIVE_R(CREATE_FN_TYPE, "create fn type")
 
 PRIMITIVE_G(STRING_COMPARE, "string_compare")
@@ -267,6 +269,7 @@ PRIMITIVE_G(STRING_COPY, "string_copy")
 PRIMITIVE_G(STRING_SELECT, "string_select")
 
 PRIMITIVE_G(CAST_TO_VOID_STAR, "cast_to_void_star")
+PRIMITIVE_G(CAST_TO_TYPE, "cast_to_type")
 
 PRIMITIVE_G(SLEEP, "sleep")
 PRIMITIVE_G(REAL_TO_INT, "real2int")
@@ -293,6 +296,7 @@ PRIMITIVE_G(GET_SVEC_MEMBER_VALUE, "get svec member value")
 
 PRIMITIVE_G(VIRTUAL_METHOD_CALL, "virtual method call")
 
+PRIMITIVE_R(SIMPLE_TYPE_NAME, "simple type name")
 PRIMITIVE_R(NUM_FIELDS, "num fields")
 PRIMITIVE_R(FIELD_NUM_TO_NAME, "field num to name")
 PRIMITIVE_R(FIELD_NAME_TO_NUM, "field name to num")
@@ -381,3 +385,8 @@ PRIMITIVE_R(VERSION_UPDATE, "version update")
 PRIMITIVE_R(VERSION_SHA, "version sha")
 
 PRIMITIVE_R(REF_DESERIALIZE, "deserialize for ref fields")
+
+PRIMITIVE_R(UINT32_AS_REAL32, "uint32 as real32")
+PRIMITIVE_R(UINT64_AS_REAL64, "uint64 as real64")
+PRIMITIVE_R(REAL32_AS_UINT32, "real32 as uint32")
+PRIMITIVE_R(REAL64_AS_UINT64, "real64 as uint64")

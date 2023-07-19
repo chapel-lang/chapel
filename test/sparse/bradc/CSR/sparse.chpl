@@ -125,7 +125,7 @@ writeln();
 // Or by assigning the array elements corresponding to the corners
 // and using our dense printing function:
 //
-proc computeVal(row, col) return row + col/10.0;
+proc computeVal(row, col) do return row + col/10.0;
 
 spsArr(1,1) = computeVal(1,1);
 spsArr(1,n) = computeVal(1,n);

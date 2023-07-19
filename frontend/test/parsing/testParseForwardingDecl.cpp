@@ -316,7 +316,7 @@ static void test8(Parser* parser) {
   ErrorGuard guard(parser->context());
   const std::string myCircle =
         "record MyCircle {\n"
-          "pragma \"no doc\"\n"
+          "@chpldoc.nodoc\n"
           "forwarding var impl: MyCircleImpl;\n"
         "}\n";
 
@@ -338,7 +338,10 @@ static void test8(Parser* parser) {
   auto attr = fwd->attributeGroup();
   assert(attr);
   assert(!attr->isDeprecated());
-  assert(attr->hasPragma(PRAGMA_NO_DOC));
+  auto noDoc = attr->getAttributeNamed(UniqueString::get(parser->context(),
+                                                         "chpldoc.nodoc"));
+  assert(noDoc);
+  // assert(attr->hasPragma(PRAGMA_NO_DOC));
   const Variable* var = fwd->expr()->toVariable();
   assert(var);
   assert(var->visibility() == Decl::DEFAULT_VISIBILITY);
@@ -348,7 +351,7 @@ static void test9(Parser* parser) {
   ErrorGuard guard(parser->context());
   const std::string myCircle =
         "record MyCircle {\n"
-          "deprecated \"don't use this anymore\"\n"
+          "@deprecated(\"don't use this anymore\")\n"
           "forwarding var impl: MyCircleImpl;\n"
         "}\n";
 

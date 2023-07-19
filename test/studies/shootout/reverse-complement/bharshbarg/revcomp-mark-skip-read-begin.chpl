@@ -13,7 +13,7 @@ config const readSize = 16 * 1024;
 proc main(args: [] string) {
   const stdin = new file(0);
   var input = stdin.reader(iokind.native, locking=false,
-                           hints=ioHintSet.mmap);
+                           hints=ioHintSet.mmap(true));
   var len = stdin.size;
   var data : [0..#len] uint(8);
   
@@ -29,12 +29,12 @@ proc main(args: [] string) {
       input.mark();
 
       // Scan forward until we get to the \n (end of description)
-      input.advancePastByte("\n".toByte());
+      input.advanceThrough("\n");
       seqOffset = input.offset();
 
       try {
         // Scan forward until we get to the > (end of sequence)
-        input.advancePastByte(">".toByte());
+        input.advanceThrough(">");
         nextDescOffset = input.offset();
       } catch e:EofError {
         eof = true;
@@ -47,7 +47,6 @@ proc main(args: [] string) {
       // Read until nextDescOffset into the data array.
       input.readBinary(c_ptrTo(data[descOffset]),
           (nextDescOffset-descOffset):c_ssize_t);
-      
 
       if !eof {
         // '-3' to skip over '\n>'
@@ -60,9 +59,8 @@ proc main(args: [] string) {
     }
   }
 
-  const stdoutBin = (new file(1)).writer(iokind.native, locking=false,
-                                         hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
-  stdoutBin.write(data);
+  const stdoutBin = (new file(1)).writer(iokind.native, locking=false);
+  stdoutBin.writeBinary(data);
 }
 
 proc process(data, in start, in end) {

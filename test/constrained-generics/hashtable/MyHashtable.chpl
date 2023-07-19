@@ -20,7 +20,7 @@ module MyHashtable {
 
   use ChapelBase, DSIUtil;
 
-  private use CTypes;
+  private use CTypes, OS.POSIX;
 
   // empty needs to be 0 so memset 0 sets it
   enum chpl__hash_status { empty=0, full, deleted };
@@ -34,7 +34,7 @@ module MyHashtable {
     }
   }
 
-  private inline proc chpl__primes return
+  private inline proc chpl__primes do return
     (0, 23, 53, 89, 191, 383, 761, 1531, 3067, 6143, 12281, 24571, 49139, 98299,
      196597, 393209, 786431, 1572853, 3145721, 6291449, 12582893, 25165813,
      50331599, 100663291, 201326557, 402653171, 805306357, 1610612711, 3221225461,
@@ -106,13 +106,13 @@ module MyHashtable {
       }
       when ArrayInit.serialInit {
         for slot in _allSlots(size) {
-          c_memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
+          memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
         }
       }
       when ArrayInit.parallelInit {
         // This should match the 'these' iterator in terms of idx->task
         forall slot in _allSlots(size) {
-          c_memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
+          memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
         }
       }
       otherwise {
@@ -283,8 +283,8 @@ module MyHashtable {
       // Go through the full slots in the current table and run
       // chpl__autoDestroy on the index
       if _typeNeedsDeinit(keyType) || _typeNeedsDeinit(valType) {
-        if _deinitElementsIsParallel(keyType) &&
-           _deinitElementsIsParallel(valType) {
+        if _deinitElementsIsParallel(keyType, tableSize) &&
+           _deinitElementsIsParallel(valType, tableSize) {
           forall slot in _allSlots(tableSize) {
             ref aSlot = table[slot];
             if _isSlotFull(aSlot) {
@@ -338,7 +338,7 @@ int implements Hashable;
 int implements StdOps;
 
 // The default implementation for toString().
-proc toString(arg): string return arg: string;
+proc toString(arg): string do return arg: string;
 
 //
 // chpl_Hashtable: intended to replace the uses of the type chpl__hashtable.
@@ -395,10 +395,10 @@ interface chpl_Hashtable(HT) {
 // It is instantiated on demand and checked "late", i.e., upon instantiation.
 chpl__hashtable implements chpl_Hashtable;
 
-proc chpl__hashtable.tableType type
+proc chpl__hashtable.tableType type do
   return _ddata(tableEntryType);
 
-proc chpl__hashtable.tableEntryType type
+proc chpl__hashtable.tableEntryType type do
   return chpl_TableEntry(keyType, valType);
 
 // This is a concrete implements statement.
@@ -452,8 +452,8 @@ implements chpl_Hashtable(chpl__hashtable(string, int));
     // If we call these _allSlots and allSlots, we will get errors because
     // the compiler will think that they are implemented with those iterators.
     // todo: rename back to _allSlots, allSlots
-    proc chpl_Hashtable._ifcAllSlots(size: int): range return 0..#size;
-    proc chpl_Hashtable.ifcAllSlots(): range return _ifcAllSlots(this.tableSize);
+    proc chpl_Hashtable._ifcAllSlots(size: int): range do return 0..#size;
+    proc chpl_Hashtable.ifcAllSlots(): range do return _ifcAllSlots(this.tableSize);
 
 
     // #### add & remove helpers ####

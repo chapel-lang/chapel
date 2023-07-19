@@ -16,7 +16,7 @@ writeln("block");  /////////////////////////////////
 a.write(0);
 
 use BlockDist;
-var A = newBlockArr({1..10000}, int);
+var A = Block.createArray({1..10000}, int);
 
 forall a in A with (var r = new R()) { }
 assert(a.read() == totalTasks);

@@ -3,41 +3,41 @@ record mycomplex {
   var im : real;
 }
 
-operator mycomplex.+(x : mycomplex, y : mycomplex)
+operator mycomplex.+(x : mycomplex, y : mycomplex) do
   return new mycomplex(x.re + y.re, x.im + y.im);
 
-operator +(x : mycomplex, y : real)
+operator +(x : mycomplex, y : real) do
   return new mycomplex(x.re + y, x.im);
 
-operator +(x : real, y : mycomplex)
+operator +(x : real, y : mycomplex) do
   return new mycomplex(x + y.re, y.im);
 
-operator mycomplex.-(x : mycomplex, y : mycomplex)
+operator mycomplex.-(x : mycomplex, y : mycomplex) do
   return new mycomplex(x.re - y.re, x.im - y.im);
 
-operator -(x : mycomplex, y : real)
+operator -(x : mycomplex, y : real) do
   return new mycomplex(x.re - y, x.im);
 
-operator -(x : real, y : mycomplex)
+operator -(x : real, y : mycomplex) do
   return new mycomplex(x - y.re, -y.im);
 
-operator mycomplex.*(x : mycomplex, y : mycomplex)
+operator mycomplex.*(x : mycomplex, y : mycomplex) do
   return new mycomplex(x.re*y.re - x.im*y.im, x.im*y.re + x.re*y.im);
 
-operator *(x : mycomplex, y : real)
+operator *(x : mycomplex, y : real) do
   return new mycomplex(x.re*y, x.im*y);
 
-operator *(x : real, y : mycomplex)
+operator *(x : real, y : mycomplex) do
   return new mycomplex(x*y.re, x*y.im);
 
-operator mycomplex./(x : mycomplex, y : mycomplex)
+operator mycomplex./(x : mycomplex, y : mycomplex) do
   return let d = y.re*y.re + y.im*y.im in
     new mycomplex((x.re*y.re + x.im*y.im)/d, (x.im*y.re - x.re*y.im)/d);
 
-operator /(x : mycomplex, y : real)
+operator /(x : mycomplex, y : real) do
   return new mycomplex(x.re/y, x.im/y);
 
-operator /(x : real, y : mycomplex)
+operator /(x : real, y : mycomplex) do
   return let d = y.re*y.re + y.im*y.im in
     new mycomplex(x*y.re/d, -x*y.im/d);
 

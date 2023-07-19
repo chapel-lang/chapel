@@ -3,7 +3,7 @@ use IO.FormattedIO;
 
 config const useRegex=false;
 
-var ff=openreader("bug-16891.txt");
+var ff=openReader("bug-16891.txt");
 var got=true;
 var ss : string;
 while (got) {

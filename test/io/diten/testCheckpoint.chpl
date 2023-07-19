@@ -5,7 +5,7 @@ config const filename = "myBlockArr.bin";
 
 config const m = 5, n = 4;
 
-var Dom = newBlockDom({1..m, 1..n});
+var Dom = Block.createDomain({1..m, 1..n});
 
 var A: [Dom] int;
 

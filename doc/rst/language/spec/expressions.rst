@@ -1122,7 +1122,7 @@ The function ``isTrue`` is predefined over bool type as follows:
 
 .. code-block:: chapel
 
-   proc isTrue(a:bool) return a; 
+   proc isTrue(a:bool) do return a;
 
 Overloading the logical and operator over other types is accomplished by
 overloading the ``isTrue`` function over other types.
@@ -1342,8 +1342,8 @@ follows:
 
 .. code-block:: chapel
 
-   operator ==(a: object, b: object): bool
-   operator !=(a: object, b: object): bool
+   operator ==(a: RootClass, b: RootClass): bool
+   operator !=(a: RootClass, b: RootClass): bool
 
 The result of ``a == b`` is true if ``a`` and ``b`` reference the same
 storage location; otherwise the result is false. The result of

@@ -39,7 +39,8 @@ owned<For> For::build(Builder* builder,
                       BlockStyle blockStyle,
                       owned<Block> body,
                       bool isExpressionLevel,
-                      bool isParam) {
+                      bool isParam,
+                      owned<AttributeGroup> attributeGroup) {
   CHPL_ASSERT(iterand.get() != nullptr);
   CHPL_ASSERT(body.get() != nullptr);
   if (isParam) CHPL_ASSERT(!isExpressionLevel);
@@ -47,6 +48,12 @@ owned<For> For::build(Builder* builder,
   AstList lst;
   int8_t indexChildNum = NO_CHILD;
   int8_t iterandChildNum = NO_CHILD;
+  int attributeGroupChildNum = NO_CHILD;
+
+  if (attributeGroup.get() != nullptr) {
+    attributeGroupChildNum = lst.size();
+    lst.push_back(std::move(attributeGroup));
+  }
 
   if (index.get() != nullptr) {
     indexChildNum = lst.size();
@@ -66,7 +73,8 @@ owned<For> For::build(Builder* builder,
                      blockStyle,
                      loopBodyChildNum,
                      isExpressionLevel,
-                     isParam);
+                     isParam,
+                     attributeGroupChildNum);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

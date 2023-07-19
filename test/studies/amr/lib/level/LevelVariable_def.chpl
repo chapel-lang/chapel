@@ -79,7 +79,7 @@ class LevelVariable {
   pragma "no copy return"
   proc this(
     grid: unmanaged Grid, 
-    D: domain(dimension, stridable=true)) 
+    D: domain(dimension, strides=strideKind.any)) 
   {
     return grid_variables(grid)!.value(D);
   }
@@ -254,7 +254,7 @@ proc LevelVariable.clawOutput (
 proc LevelVariable.writeData (
   AMR_level:        int,
   base_grid_number: int,
-  outfile:          channel)
+  outfile:          fileWriter)
 {
 
   var grid_number = base_grid_number;

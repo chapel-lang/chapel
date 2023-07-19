@@ -205,14 +205,9 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
 
         validateList();
 
-        if (!fDynoCompilerLibrary) {
-          if (modSym->hasFlag(FLAG_DEPRECATED)) {
-            modSym->generateDeprecationWarning(this);
-          }
-
-          if (modSym->hasFlag(FLAG_UNSTABLE) && (fWarnUnstable)) {
-            modSym->generateUnstableWarning(this);
-          }
+        if (!fDynoScopeResolve) {
+          modSym->maybeGenerateDeprecationWarning(this);
+          modSym->maybeGenerateUnstableWarning(this);
         }
 
       } else {
@@ -330,7 +325,7 @@ bool ImportStmt::checkValid(Expr* expr) const {
 ************************************** | *************************************/
 void ImportStmt::validateList() {
   // Dyno already issues these warnings and errors.
-  if (!fDynoCompilerLibrary) {
+  if (!fDynoScopeResolve) {
     noRepeats();
   }
 
@@ -399,14 +394,9 @@ void ImportStmt::validateUnqualified() {
                            name);
           }
 
-          if (!fDynoCompilerLibrary) {
-            if (sym->hasFlag(FLAG_DEPRECATED)) {
-              sym->generateDeprecationWarning(this);
-            }
-
-            if (sym->hasFlag(FLAG_UNSTABLE)) {
-              if (fWarnUnstable) sym->generateUnstableWarning(this);
-            }
+          if (!fDynoScopeResolve) {
+            sym->maybeGenerateDeprecationWarning(this);
+            sym->maybeGenerateUnstableWarning(this);
           }
         }
       }

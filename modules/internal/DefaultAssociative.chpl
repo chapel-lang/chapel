@@ -74,8 +74,8 @@ module DefaultAssociative {
       if parSafe then tableLock.unlock();
     }
 
-    override proc linksDistribution() param return false;
-    override proc dsiLinksDistribution() return false;
+    override proc linksDistribution() param do return false;
+    override proc dsiLinksDistribution() do return false;
 
     proc init(type idxType,
               param parSafe: bool,
@@ -88,7 +88,7 @@ module DefaultAssociative {
 
       // set the rehash helpers
       this.table.rehashHelpers =
-        new DefaultAssociativeDomRehashHelper(this:unmanaged class);
+        new DefaultAssociativeDomRehashHelper(_to_unmanaged(this));
     }
     proc deinit() {
       // chpl__hashtable.deinit does all we need here
@@ -414,7 +414,7 @@ module DefaultAssociative {
       return chpl_getSingletonLocaleArray(this.locale);
     }
 
-    proc dsiHasSingleLocalSubdomain() param return true;
+    proc dsiHasSingleLocalSubdomain() param do return true;
 
     proc dsiLocalSubdomain(loc: locale) {
       if this.locale == loc {
@@ -496,8 +496,14 @@ module DefaultAssociative {
               }
             }
           }
+          when ArrayInit.gpuInit {
+            // may not be too difficult, not a priority at the moment
+            halt("Associative arrays cannot be initialized on GPU locales with",
+                 " CHPL_MEM_STRATEGY=array_on_device yet.");
+          }
           otherwise {
-            halt("ArrayInit.heuristicInit should have been made concrete");
+            halt("ArrayInit.", initMethod,
+                 " heuristicInit should have been implemented");
           }
         }
       }
@@ -514,7 +520,7 @@ module DefaultAssociative {
 
     proc rank param { return 1; }
 
-    override proc dsiGetBaseDom() return dom;
+    override proc dsiGetBaseDom() do return dom;
 
 
     // ref version
@@ -572,14 +578,14 @@ module DefaultAssociative {
       return dsiAccess(idx(0));
     }
 
-    inline proc dsiLocalAccess(i) ref
+    inline proc dsiLocalAccess(i) ref do
       return dsiAccess(i);
 
     inline proc dsiLocalAccess(i)
-    where shouldReturnRvalueByValue(eltType)
+    where shouldReturnRvalueByValue(eltType) do
       return dsiAccess(i);
 
-    inline proc dsiLocalAccess(i) const ref
+    inline proc dsiLocalAccess(i) const ref do
       return dsiAccess(i);
 
 
@@ -635,6 +641,71 @@ module DefaultAssociative {
       }
     }
 
+    proc _usingSerializers(f) param : bool {
+      if f._writing then return f.serializerType != nothing;
+      else return f.deserializerType != nothing;
+    }
+
+    proc dsiSerialReadWrite(f, in printBraces=true, inout first = true) throws
+    where _usingSerializers(f) && !_isDefaultDeser(f) {
+      ref fmt = if f._writing then f.serializer else f.deserializer;
+
+      if f._writing then
+        fmt.startMap(f, dom.dsiNumIndices:uint);
+      else
+        fmt.startMap(f);
+
+      if f._writing {
+        for (key, val) in zip(this.dom, this) {
+          fmt.writeKey(f, key);
+          fmt.writeValue(f, val);
+        }
+      } else {
+        for 0..<dom.dsiNumIndices {
+          const k = fmt.readKey(f, idxType);
+
+          if !dom.dsiMember(k) {
+            // TODO: throw error
+          } else {
+            dsiAccess(k) = fmt.readValue(f, eltType);
+          }
+        }
+      }
+
+      fmt.endMap(f);
+    }
+
+    proc _isDefaultDeser(f) param : bool {
+      if f._writing then return f.serializerType == IO.DefaultSerializer;
+      else return f.deserializerType == IO.DefaultDeserializer;
+    }
+
+    proc dsiSerialReadWrite(f, in printBraces=true, inout first = true) throws
+    where _isDefaultDeser(f) {
+      ref fmt = if f._writing then f.serializer else f.deserializer;
+
+      if f._writing {
+        fmt.startArray(f, dom.dsiNumIndices:uint);
+        fmt.startArrayDim(f, dom.dsiNumIndices:uint);
+      } else {
+        fmt.startArray(f);
+        fmt.startArrayDim(f);
+      }
+
+      if f._writing {
+        for (key, val) in zip(this.dom, this) {
+          fmt.writeArrayElement(f, val);
+        }
+      } else {
+        for (key, val) in zip(this.dom, this) {
+          val = fmt.readArrayElement(f, val.type);
+        }
+      }
+
+      fmt.endArrayDim(f);
+      fmt.endArray(f);
+    }
+
     proc dsiSerialReadWrite(f /*: channel*/, in printBraces=true, inout first = true) throws {
       var binary = f.binary();
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
@@ -642,7 +713,7 @@ module DefaultAssociative {
       var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
       var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
 
-      if !f.writing && ischpl {
+      if !f._writing && ischpl {
         this.readChapelStyleAssocArray(f);
         return;
       }
@@ -650,7 +721,7 @@ module DefaultAssociative {
       printBraces &&= (isjson || ischpl);
 
       inline proc rwLiteral(lit:string) throws {
-        if f.writing then f._writeLiteral(lit); else f._readLiteral(lit);
+        if f._writing then f._writeLiteral(lit); else f._readLiteral(lit);
       }
 
       if printBraces then rwLiteral("[");
@@ -660,12 +731,12 @@ module DefaultAssociative {
         else if isspace then rwLiteral(" ");
         else if isjson || ischpl then rwLiteral(", ");
 
-        if f.writing && ischpl {
+        if f._writing && ischpl {
           f.write(key);
           f._writeLiteral(" => ");
         }
 
-        if f.writing then f.write(val);
+        if f._writing then f.write(val);
         else val = f.read(eltType);
       }
 
@@ -796,7 +867,7 @@ module DefaultAssociative {
       return chpl_getSingletonLocaleArray(this.locale);
     }
 
-    proc dsiHasSingleLocalSubdomain() param return true;
+    proc dsiHasSingleLocalSubdomain() param do return true;
 
     proc dsiLocalSubdomain(loc: locale) {
       if this.locale == loc {
@@ -823,7 +894,7 @@ module DefaultAssociative {
     override proc dsiDestroyArr(deinitElts:bool) {
       if deinitElts && this.eltsNeedDeinit {
         if _elementNeedsDeinit() {
-          if _deinitElementsIsParallel(eltType) {
+          if _deinitElementsIsParallel(eltType, dom.table.tableSize) {
             forall slot in dom.table.allSlots() {
               if dom._isSlotFull(slot) {
                 _deinitElement(data[slot]);
@@ -849,13 +920,13 @@ module DefaultAssociative {
     var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
     var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
 
-    if !f.writing && ischpl {
+    if !f._writing && ischpl {
       halt("This form of I/O on a default array slice is not yet supported");
       return;
     }
 
     inline proc rwLiteral(lit:string) throws {
-      if f.writing then f._writeLiteral(lit); else f._readLiteral(lit);
+      if f._writing then f._writeLiteral(lit); else f._readLiteral(lit);
     }
 
     if isjson || ischpl then rwLiteral("[");
@@ -867,12 +938,12 @@ module DefaultAssociative {
       else if isspace then rwLiteral(" ");
       else if isjson || ischpl then rwLiteral(", ");
 
-      if f.writing && ischpl {
+      if f._writing && ischpl {
         f.write(key);
         f._writeLiteral(" => ");
       }
 
-      if f.writing then f.write(arr.dsiAccess(key));
+      if f._writing then f.write(arr.dsiAccess(key));
       else arr.dsiAccess(key) = f.read(arr.eltType);
     }
 

@@ -2,6 +2,6 @@ Türkçe
 6
 ürkçe
 5
-uncaught CodepointSplittingError: Attempting to split a multi-byte codepoint. Byte-based string slice is not aligned to codepoint boundaries. The byte at low boundary 2 is not the first byte of a UTF-8 codepoint
+uncaught CodepointSplitError: Attempting to split a multi-byte codepoint. Byte-based string slice is not aligned to codepoint boundaries. The byte at low boundary 2 is not the first byte of a UTF-8 codepoint
   ilseqByteSlice.chpl:4: thrown here
   ilseqByteSlice.chpl:4: uncaught here

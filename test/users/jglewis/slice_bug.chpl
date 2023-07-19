@@ -21,7 +21,7 @@ module slice_bug
   }
     
   operator directed_vertex_pair.+(l: directed_vertex_pair,
-                                  r: directed_vertex_pair)
+                                  r: directed_vertex_pair) do
       return new directed_vertex_pair (l.start + r.start, l.end + r.end);
 
 

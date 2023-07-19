@@ -70,8 +70,6 @@ static bool        includesParameterizedPrimitive(FnSymbol* fn);
 static void        replaceFunctionWithInstantiationsOfPrimitive(FnSymbol* fn);
 static void        fixupQueryFormals(FnSymbol* fn);
 
-static bool        isConstructor(FnSymbol* fn);
-
 static void        updateInitMethod (FnSymbol* fn);
 
 static void        checkUseBeforeDefs();
@@ -119,8 +117,6 @@ static void        updateVariableAutoDestroy(DefExpr* defExpr);
 
 static TypeSymbol* expandTypeAlias(SymExpr* se);
 
-static bool        firstConstructorWarning = true;
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -165,15 +161,7 @@ void normalize() {
     } else {
       fixupQueryFormals(fn);
 
-      if (isConstructor(fn) == true) {
-        Type* ct = fn->_this->getValType();
-        if (firstConstructorWarning) {
-          USR_PRINT(fn, "Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.");
-          firstConstructorWarning = false;
-        }
-        USR_FATAL_CONT(fn, "Type '%s' defines a constructor here", ct->symbol->name);
-
-      } else if (fn->isInitializer() || fn->isCopyInit()) {
+      if (fn->isInitializer() || fn->isCopyInit()) {
         updateInitMethod(fn);
       }
     }
@@ -766,13 +754,18 @@ void checkUseBeforeDefs(FnSymbol* fn) {
 
       } else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(ast)) {
         CallExpr* call = toCallExpr(use->parentExpr);
+        if (call == nullptr && isNamedExpr(use->parentExpr))
+          call = toCallExpr(use->parentExpr->parentExpr);
 
         if (call == NULL ||
-            (call->baseExpr                              != use   &&
-             call->isPrimitive(PRIM_CAPTURE_FN_FOR_CHPL) == false &&
-             call->isPrimitive(PRIM_CAPTURE_FN_FOR_C)    == false)) {
+            (call->baseExpr != use &&
+             !call->isPrimitive(PRIM_CAPTURE_FN) &&
+             !call->isPrimitive(PRIM_CAPTURE_FN_TO_CLASS))) {
           if (isFnSymbol(fn->defPoint->parentSymbol) == false) {
             const char* name = use->unresolved;
+
+            if (tryReplaceStridable(call, name, use))
+              continue;
 
             // Only complain one time
             if (undeclared.find(name) == undeclared.end()) {
@@ -876,6 +869,48 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
   }
 
   return retval;
+}
+
+static bool replaceWithStridesField(Symbol* stridesField, Expr* use) {
+  SET_LINENO(use);
+  NamedExpr* ne = toNamedExpr(use->parentExpr);
+  if (ne != nullptr && !strcmp(ne->name, "stridable"))
+    ne->replace(new NamedExpr("strides", new SymExpr(stridesField)));
+  else
+    use->replace(new SymExpr(stridesField));
+  return true;
+}
+
+static bool replaceWithStridableCall(Symbol* stridesField, Expr* use) {
+  SET_LINENO(use);
+  use->replace(new CallExpr("chpl_stridable", stridesField));
+  return true;
+}
+
+// Supports deprecation by Vass in 1.31 to implement #17131.
+// chpl__buildDomainRuntimeType(..., stridable) -->
+// chpl__buildDomainRuntimeType(..., strides) if we are in a DSI class.
+bool tryReplaceStridable(CallExpr* parentCall, const char* name,
+                         UnresolvedSymExpr* use)
+{
+  if (strcmp(name, "stridable")) return false;
+
+  Symbol* stridesField = stridesFieldInDsiContext(use);
+  if (stridesField == nullptr) return false;
+
+  if (parentCall == nullptr)
+    return replaceWithStridableCall(stridesField, use);
+
+  if (UnresolvedSymExpr* callee = toUnresolvedSymExpr(parentCall->baseExpr)) {
+    if (!strcmp(callee->unresolved, "chpl__buildDomainRuntimeType"))
+      return replaceWithStridesField(stridesField, use);
+  }
+  else if (dsiTypeBeingConstructed(parentCall) != nullptr) {
+    return replaceWithStridesField(stridesField, use);
+  }
+
+  // cannot use 'strides' directly because the context may not take it
+  return replaceWithStridableCall(stridesField, use);
 }
 
 /************************************* | **************************************
@@ -1463,8 +1498,22 @@ void addMentionToEndOfStatement(Expr* node, CallExpr* existingEndOfStatement) {
             }
           }
         }
-        if (definedOutsideOfNode)
-          call->insertAtTail(new SymExpr(se->symbol()));
+        if (definedOutsideOfNode) {
+          bool alreadyThere = false;
+          // a cheap peephole optimization to avoid redundant variables
+          if (call->numActuals() > 0) {
+            if (SymExpr* haveSe = toSymExpr(call->get(1)))
+              if (haveSe->symbol() == se->symbol())
+                alreadyThere = true;
+            if (call->numActuals() > 1)
+              if (SymExpr* haveSe = toSymExpr(call->get(call->numActuals())))
+                if (haveSe->symbol() == se->symbol())
+                  alreadyThere = true;
+          }
+          if (!alreadyThere) {
+            call->insertAtTail(new SymExpr(se->symbol()));
+          }
+        }
       }
     }
   }
@@ -1563,8 +1612,9 @@ Expr* partOfNonNormalizableExpr(Expr* expr) {
   // Anything contained in a non-normalizable expr is non-normalizable.
   for (Expr* node = expr; node; node = node->parentExpr) {
     if (CallExpr* call = toCallExpr(node)) {
-      const bool isResolvePrim = call->isPrimitive(PRIM_RESOLVES);
-      if (isResolvePrim) return node;
+      Expr* root = nullptr;
+      if (call->isPrimitive(PRIM_RESOLVES)) root = call;
+      if (root) return root;
     }
   }
 
@@ -1867,11 +1917,14 @@ static void normalizeYields(FnSymbol* fn) {
       // the compiler.
       VarSymbol* retval = newTemp("yret", fn->retType);
       retval->addFlag(FLAG_YVV);
+      if (fn->retTag == RET_REF)
+        retval->qual = QUAL_REF;
+      else if (fn->retTag == RET_CONST_REF)
+        retval->qual = QUAL_CONST_REF;
 
       yield->insertBefore(new DefExpr(retval));
       insertRetMove(fn, retval, yield, false);
-      yield->insertBefore(new CallExpr(PRIM_YIELD, retval));
-      yield->remove();
+      yield->insertAtTail(retval);
     }
   }
 }
@@ -2401,6 +2454,7 @@ static void transformIfVar(CallExpr* primIfVar) {
 ************************************** | *************************************/
 
 static bool shouldInsertCallTemps(CallExpr* call);
+static bool containedInRuntimeTypeInit(CallExpr* call, bool ignorePosition);
 static void evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp);
 static bool moveMakesTypeAlias(CallExpr* call);
 static Expr* getCallTempInsertPoint(Expr* expr);
@@ -2441,6 +2495,10 @@ static Symbol *insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
 
   if (call->isPrimitive(PRIM_TYPEOF)) {
     tmp->addFlag(FLAG_TYPE_VARIABLE);
+  }
+
+  if (containedInRuntimeTypeInit(call, true)) {
+    tmp->addFlag(FLAG_USED_IN_TYPE);
   }
 
   evaluateAutoDestroy(call, tmp);
@@ -2510,6 +2568,37 @@ static Expr* getCallTempInsertPoint(Expr* expr) {
   return stmt;
 }
 
+static bool containedInRuntimeTypeInit(CallExpr* call,
+                                       bool ignorePosition) {
+  Expr*     parentExpr = call->parentExpr;
+  CallExpr* parentCall = toCallExpr(parentExpr);
+  CallExpr* cur = parentCall;
+  CallExpr* sub = call;
+
+  // Look for a parent call that is either:
+  //  making an array type alias, or
+  //  passing the result into the 2nd argument of buildArrayRuntimeType.
+  while (cur != NULL) {
+    if (moveMakesTypeAlias(cur) == true) {
+      break;
+
+    } else if (cur->isNamed("chpl__buildArrayRuntimeType") &&
+               (ignorePosition || cur->get(2) == sub)) {
+      break;
+
+    } else if (cur->isNamed("chpl__distributed") &&
+               (ignorePosition || cur->get(1) == sub)) {
+      break;
+
+    } else {
+      sub = cur;
+      cur = toCallExpr(cur->parentExpr);
+    }
+  }
+
+  return cur != nullptr;
+}
+
 static void evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp) {
   Expr*     parentExpr = call->parentExpr;
   CallExpr* parentCall = toCallExpr(parentExpr);
@@ -2542,27 +2631,7 @@ static void evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp) {
   // TODO: globalTemps needs updating only for isGlobalLoopExpr
   // once all temps are hoisted in this way.
   if (isGlobalLoopExpr || isCandidateGlobal) {
-    CallExpr* cur = parentCall;
-    CallExpr* sub = call;
-
-    // Look for a parent call that is either:
-    //  making an array type alias, or
-    //  passing the result into the 2nd argument of buildArrayRuntimeType.
-    while (cur != NULL) {
-      if (moveMakesTypeAlias(cur) == true) {
-        break;
-
-      } else if (cur->isNamed("chpl__buildArrayRuntimeType") == true &&
-                 cur->get(2)                                 == sub) {
-        break;
-
-      } else {
-        sub = cur;
-        cur = toCallExpr(cur->parentExpr);
-      }
-    }
-
-    if (cur) {
+    if (containedInRuntimeTypeInit(call, /* ignore position */ false)) {
       // Add to a set of temps to be hoisted into module scope, and later
       // auto-destroyed in the module deinit.
       globalTemps.insert(tmp);
@@ -2591,14 +2660,22 @@ static bool moveMakesTypeAlias(CallExpr* call) {
 ************************************** | *************************************/
 
 static void emitTypeAliasInit(Expr* after, Symbol* var, Expr* init) {
-
-  // Generate a type constructor call
+  // Generate a type constructor call for generic-with-defaults types
   // (Note, this does not work correctly during resolution).
-  if (SymExpr* se = toSymExpr(init))
-    if (isTypeSymbol(se->symbol()))
-      if (isAggregateType(se->typeInfo()) ||
-          isDecoratedClassType(se->typeInfo()))
+  // TODO: get it working in resolution
+  if (SymExpr* se = toSymExpr(init)) {
+    if (isTypeSymbol(se->symbol())) {
+      AggregateType* at = nullptr;
+      Type* t = se->typeInfo();
+      if (DecoratedClassType* dct = toDecoratedClassType(t))
+        at = dct->getCanonicalClass();
+      else
+        at = toAggregateType(t);
+
+      if (at != nullptr && at->isGenericWithDefaults())
         init = new CallExpr(se->symbol());
+    }
+  }
 
   CallExpr* move = new CallExpr(PRIM_MOVE, var, init->copy());
 
@@ -2903,6 +2980,9 @@ void normalizeVariableDefinition(DefExpr* defExpr) {
         //   move type_tmp, type-expr
         //   PRIM_INIT_VAR_SPLIT_DECL var type_tmp
         defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR_SPLIT_DECL, var, tt));
+
+        // but arrange for e.g. var x: range to use var x: range()
+        // TODO: why doesn't the resolver handle this?
         emitTypeAliasInit(defExpr, tt, defExpr->exprType->remove());
         defExpr->insertAfter(def);
 
@@ -4530,18 +4610,6 @@ static void addToWhereClause(FnSymbol*  fn,
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
-
-static bool isConstructor(FnSymbol* fn) {
-  bool retval = false;
-
-  if (fn->numFormals()       >= 2 &&
-      fn->getFormal(1)->type == dtMethodToken) {
-
-    retval = strcmp(fn->name, fn->getFormal(2)->type->symbol->name) == 0;
-  }
-
-  return retval;
-}
 
 static void updateInitMethod(FnSymbol* fn) {
   Type* thisType = fn->_this->type;

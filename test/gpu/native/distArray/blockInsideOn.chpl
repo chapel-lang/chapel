@@ -1,9 +1,17 @@
 use BlockDist;
-use GPUDiagnostics;
+use GpuDiagnostics;
+
+proc verifyLaunches() {
+  use ChplConfig;
+  param expected = if CHPL_GPU_MEM_STRATEGY == "unified_memory" then 4 else 6;
+  const actual = getGpuDiagnostics()[0].kernel_launch;
+  assert(actual == expected,
+         "observed ", actual, " launches instead of ", expected);
+}
 
 config const n = 10;
 
-startGPUDiagnostics();
+startGpuDiagnostics();
 on here.gpus[0] {
   var space = {1..n};
   var dom = space dmapped Block(space, targetLocales=[here,]);
@@ -22,6 +30,6 @@ on here.gpus[0] {
   writeln(arr);
 }
 
-stopGPUDiagnostics();
+stopGpuDiagnostics();
 
-writeln(getGPUDiagnostics());
+verifyLaunches();

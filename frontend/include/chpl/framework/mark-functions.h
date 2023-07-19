@@ -90,6 +90,17 @@ template<typename T> struct mark<std::vector<T>> {
   }
 };
 
+template<typename K, typename V> struct mark<std::map<K, V>> {
+  void operator()(Context* context, const std::map<K, V>& keep) const {
+    for (auto &p : keep) {
+      chpl::mark<K> kMarker;
+      chpl::mark<V> vMarker;
+      kMarker(context, p.first);
+      vMarker(context, p.second);
+    }
+  }
+};
+
 template<typename T> struct mark<std::set<T>> {
   void operator()(Context* context, const std::set<T>& keep) const {
     for (auto const &elt : keep) {

@@ -345,11 +345,11 @@ int main(int argc, char **argv)
         ++arg;
       } else if (!strcmp(argv[arg], "-minsz")) {
         ++arg;
-        if (argc > arg) { min_payload = atol(argv[arg]); arg++; }
+        if (argc > arg) { min_payload = gasnett_parse_int(argv[arg], 1); arg++; }
         else help = 1;
       } else if (!strcmp(argv[arg], "-max-step")) {
         ++arg;
-        if (argc > arg) { max_step = atoi(argv[arg]); arg++; }
+        if (argc > arg) { max_step = gasnett_parse_int(argv[arg], 1); arg++; }
         else help = 1;
 #if GASNET_HAVE_MK_CLASS_CUDA_UVA
       // UNDOCUMENTED

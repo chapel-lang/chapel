@@ -29,7 +29,7 @@ var expectfile = openMemFile();
 
 {
   writeln("Testing block array");
-  var A = newBlockArr({1..5}, int);
+  var A = Block.createArray({1..5}, int);
   A = 1..5;
 
   writef("%jt\n", A);
@@ -45,7 +45,7 @@ var expectfile = openMemFile();
 
 {
   writeln("Testing cyclic array");
-  var A = newCyclicArr({1..5}, int);
+  var A = Cyclic.createArray({1..5}, int);
   A = 1..5;
 
   writef("%jt\n", A);

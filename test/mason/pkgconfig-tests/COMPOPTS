@@ -1,1 +1,1 @@
--M ../../../tools/mason/ -sfilePathAbsolute=true -smapMethodsThrow=true
+-M ../../../tools/mason/ -sfilePathAbsolute=true

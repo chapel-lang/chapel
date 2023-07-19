@@ -149,15 +149,15 @@ proc SPAdot(A: [?Adom], B: [?Bdom]) where isCSArr(A) && isCSArr(B) {
   return C;
 
   /* Cleaner startIdx accessor */
-  proc _array.IR ref return this._value.dom.startIdx;
+  proc _array.IR ref do return this._value.dom.startIdx;
   /* Cleaner idx accessor */
-  proc _array.JC ref return this._value.dom.idx;
+  proc _array.JC ref do return this._value.dom.idx;
   /* Cleaner data accessor */
-  proc _array.NUM ref return this._value.data;
+  proc _array.NUM ref do return this._value.data;
 
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 /* Sparse-accumulator */
 record _SPA {
   var cols: domain(1);
@@ -178,7 +178,7 @@ record _SPA {
     if this.b[pos] == 0 {
       this.w[pos] = value;
       this.b[pos] = true;
-      this.ls.append(pos);
+      this.ls.pushBack(pos);
     } else {
       this.w[pos] += value;
     }

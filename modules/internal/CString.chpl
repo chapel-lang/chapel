@@ -83,7 +83,7 @@ module CString {
   }
 
   // let us set c_strings to NULL
-  inline operator c_string.=(ref a:c_string, b:_nilType) { a = c_nil:c_string; }
+  inline operator c_string.=(ref a:c_string, b:_nilType) { a = nil:c_string; }
 
   // for a to be a valid c_string after this function it must be on the same
   // locale as b
@@ -99,31 +99,47 @@ module CString {
   }
 
   //
-  // casts from c_string to c_void_ptr
+  // casts from c_string to c_ptr(void)
   //
-  inline operator :(x: c_string, type t:c_void_ptr) {
+  inline operator :(x: c_string, type t:c_ptr(void)) {
     return __primitive("cast", t, x);
   }
   //
-  // casts from c_void_ptr to c_string
+  // casts from c_ptr(void) to c_string
   //
-  inline operator :(x: c_void_ptr, type t:c_string) {
+  inline operator :(x: c_ptr(void), type t:c_string) {
     return __primitive("cast", t, x);
   }
 
   //
   // casts from c_string to c_ptr(c_char/int(8)/uint(8))
   //
-  inline operator :(x: c_string, type t:c_ptr)
-    where t.eltType == c_char || t.eltType == int(8) || t.eltType == uint(8)
+  inline operator :(x: c_string, type t:c_ptr(?eltType))
+    where eltType == c_char || eltType == int(8) || eltType == uint(8)
+  {
+    return __primitive("cast", t, x);
+  }
+  //
+  // casts from c_string to c_ptrConst(c_char/int(8)/uint(8))
+  //
+  inline operator :(x: c_string, type t:c_ptrConst(?eltType))
+    where eltType == c_char || eltType == int(8) || eltType == uint(8)
   {
     return __primitive("cast", t, x);
   }
   //
   // casts from c_ptr(c_char/int(8)/uint(8)) to c_string
   //
-  inline operator :(x: c_ptr, type t:c_string)
-    where x.eltType == c_char || x.eltType == int(8) || x.eltType == uint(8)
+  inline operator :(x: c_ptr(?eltType), type t:c_string)
+    where eltType == c_char || eltType == int(8) || eltType == uint(8)
+  {
+    return __primitive("cast", t, x);
+  }
+  //
+  // casts from c_ptrConst(c_char/int(8)/uint(8)) to c_string
+  //
+  inline operator :(x: c_ptrConst(?eltType), type t:c_string)
+    where eltType == c_char || eltType == int(8) || eltType == uint(8)
   {
     return __primitive("cast", t, x);
   }
@@ -134,7 +150,7 @@ module CString {
   inline operator :(x:c_string, type t:chpl_anybool) throws {
     var chplString: string;
     try! {
-      chplString = createStringWithNewBuffer(x);
+      chplString = string.createCopyingBuffer(x);
     }
     return try (chplString.strip()): t;
   }
@@ -145,7 +161,7 @@ module CString {
   inline operator :(x:c_string, type t:integral) throws {
     var chplString: string;
     try! {
-      chplString = createStringWithNewBuffer(x);
+      chplString = string.createCopyingBuffer(x);
     }
     return try (chplString.strip()): t;
   }
@@ -156,7 +172,7 @@ module CString {
   inline operator :(x:c_string, type t:chpl_anyreal)  throws {
     var chplString: string;
     try! {
-      chplString = createStringWithNewBuffer(x);
+      chplString = string.createCopyingBuffer(x);
     }
     return try (chplString.strip()): t;
   }
@@ -164,7 +180,7 @@ module CString {
   inline operator :(x:c_string, type t:chpl_anyimag) throws {
     var chplString: string;
     try! {
-      chplString = createStringWithNewBuffer(x);
+      chplString = string.createCopyingBuffer(x);
     }
     return try (chplString.strip()): t;
   }
@@ -175,7 +191,7 @@ module CString {
   inline operator :(x:c_string, type t:chpl_anycomplex)  throws {
     var chplString: string;
     try! {
-      chplString = createStringWithNewBuffer(x);
+      chplString = string.createCopyingBuffer(x);
     }
     return try (chplString.strip()): t;
   }
@@ -184,9 +200,9 @@ module CString {
   // primitive c_string functions and methods
   //
 
-  inline proc c_string.size return __primitive("string_length_bytes", this);
+  inline proc c_string.size do return __primitive("string_length_bytes", this);
 
-  inline proc c_string.substring(i: int)
+  inline proc c_string.substring(i: int) do
     return __primitive("string_index", this, i);
 
   inline proc c_string.substring(r: range(?)) {
@@ -200,13 +216,13 @@ module CString {
     return __primitive("string_length_bytes", this);
   }
   pragma "last resort" // avoids param string to c_string coercion
-  inline proc _string_contains(param a: c_string, param b: c_string) param
+  inline proc _string_contains(param a: c_string, param b: c_string) param do
     return __primitive("string_contains", a, b);
 
   /* Returns the index of the first occurrence of a substring within a string,
      or 0 if the substring is not in the string.
   */
-  inline proc c_string.indexOf(substring:c_string):int
+  inline proc c_string.indexOf(substring:c_string):int do
     return string_index_of(this, substring);
 
   pragma "fn synchronization free"
@@ -217,12 +233,15 @@ module CString {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc chpl_rt_free_c_string(ref cs: c_string);
-    if (cs != c_nil:c_string) then chpl_rt_free_c_string(cs);
-    // cs = c_nil;
+    if (cs != nil:c_string) then chpl_rt_free_c_string(cs);
+    // cs = nil;
   }
 
   proc c_string.writeThis(x) throws {
     compilerError("Cannot write a c_string, cast to a string first.");
+  }
+  proc c_string.serialize(writer, ref serializer) throws {
+    writeThis(writer);
   }
 
   proc c_string.readThis(x) throws {

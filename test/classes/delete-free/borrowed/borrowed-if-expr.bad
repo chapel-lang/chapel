@@ -1,2 +1,4 @@
 borrowed-if-expr.chpl:7: In function 'main':
+borrowed-if-expr.chpl:9: warning: Class created by nested 'new' will be deinitialized before the borrow can be used. Please update this code to use a separate variable to store the new class
+borrowed-if-expr.chpl:9: warning: Class created by nested 'new' will be deinitialized before the borrow can be used. Please update this code to use a separate variable to store the new class
 borrowed-if-expr.chpl:9: error: Scoped variable x would outlive the value it is set to

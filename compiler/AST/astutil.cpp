@@ -23,9 +23,9 @@
 #include "baseAST.h"
 #include "CatchStmt.h"
 #include "CForLoop.h"
+#include "fcf-support.h"
 #include "DecoratedClassType.h"
 #include "DeferStmt.h"
-#include "firstClassFunctions.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "IfExpr.h"
@@ -39,6 +39,7 @@
 #include "stlUtil.h"
 #include "stmt.h"
 #include "symbol.h"
+#include "TemporaryConversionThunk.h"
 #include "TryStmt.h"
 #include "type.h"
 #include "virtualDispatch.h"
@@ -99,6 +100,12 @@ void collectForallStmts(BaseAST* ast, std::vector<ForallStmt*>& forallStmts) {
   AST_CHILDREN_CALL(ast, collectForallStmts, forallStmts);
   if (ForallStmt* forall = toForallStmt(ast))
     forallStmts.push_back(forall);
+}
+
+void collectCForLoopStmts(BaseAST* ast, std::vector<CForLoop*>& cforloopStmts) {
+  AST_CHILDREN_CALL(ast, collectCForLoopStmts, cforloopStmts);
+  if (CForLoop* cforloop = toCForLoop(ast))
+    cforloopStmts.push_back(cforloop);
 }
 
 void collectCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs) {
@@ -533,7 +540,7 @@ int isDefAndOrUse(SymExpr* se) {
   const int USE = 2;
   const int DEF_USE = 3;
   if (CallExpr* call = toCallExpr(se->parentExpr)) {
-    bool isFirstActual = (call->get(1) == se);
+    bool isFirstActual = (call->numActuals() && call->get(1) == se);
 
     // TODO: PRIM_SET_MEMBER, PRIM_SET_SVEC_MEMBER
 
@@ -842,8 +849,7 @@ bool isExternType(Type* t) {
          ts->hasFlag(FLAG_C_PTR_CLASS) ||
          ts->hasFlag(FLAG_C_ARRAY) ||
          ts->hasFlag(FLAG_EXTERN) ||
-         ts->hasFlag(FLAG_EXPORT) || // these don't exist yet
-         fcfIsValidExternType(t);
+         ts->hasFlag(FLAG_EXPORT); // these don't exist yet
 }
 
 bool isExportableType(Type* t) {

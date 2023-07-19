@@ -1,0 +1,2 @@
+read-borrowed.chpl:9: In function 'main':
+read-borrowed.chpl:13: error: reading borrowed class types is not supported: 'borrowed C'

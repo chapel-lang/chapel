@@ -5,7 +5,7 @@ const NUMBYTES = 1032;
 
 // array is larger than necessary to fit the whole file...
 var a : [0..<1100] uint(8) = 0;
-var ch = openreader("./jab.txt");
+var ch = openReader("./jab.txt");
 const num_b = ch.readAll(a);
 ch.close();
 
@@ -16,4 +16,4 @@ writeln(num_b == NUMBYTES);
 writeln(&& reduce (a[(NUMBYTES+1)..] == 0));
 
 // the file can be reproduced from the bytes array:
-writeln(createStringWithBorrowedBuffer(c_ptrTo(a), length=num_b, size=num_b));
+writeln(string.createBorrowingBuffer(c_ptrTo(a), length=num_b, size=num_b));

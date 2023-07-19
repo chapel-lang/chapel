@@ -69,13 +69,13 @@ between locales.
 */
 class Private: BaseDist {
   override proc dsiNewRectangularDom(param rank: int, type idxType,
-                                     param stridable: bool, inds) {
+                                     param strides: strideKind, inds) {
     for i in inds do
       if i.size != 0 then
         halt("Tried to create a privateDom with a specific index set");
 
     return new unmanaged PrivateDom(rank=rank, idxType=idxType,
-                                    stridable=stridable,
+                                    strides=strides,
                                     dist=_to_unmanaged(this));
   }
 
@@ -84,13 +84,13 @@ class Private: BaseDist {
   }
 
   // acts like a singleton
-  proc dsiClone() return _to_unmanaged(this);
+  proc dsiClone() do return _to_unmanaged(this);
 
-  proc trackDomains() param return false;
+  proc trackDomains() param do return false;
 
-  override proc dsiTrackDomains()    return false;
+  override proc dsiTrackDomains() do    return false;
 
-  override proc singleton() param return true;
+  override proc singleton() param do return true;
 }
 
 class PrivateDom: BaseRectangularDom {
@@ -116,17 +116,17 @@ class PrivateDom: BaseRectangularDom {
   proc dsiBuildArray(type eltType, param initElts:bool) {
     return new unmanaged PrivateArr(eltType=eltType, rank=rank,
                                     idxType=idxType,
-                                    stridable=stridable,
+                                    strides=strides,
                                     dom=_to_unmanaged(this),
                                     initElts=initElts);
   }
 
-  proc dsiNumIndices return numLocales;
-  override proc dsiLow return 0;
-  override proc dsiAlignedLow return 0;
-  override proc dsiHigh return numLocales-1;
-  override proc dsiAlignedHigh return numLocales-1;
-  override proc dsiStride return 0;
+  proc dsiNumIndices do return numLocales;
+  override proc dsiLow do return 0;
+  override proc dsiAlignedLow do return 0;
+  override proc dsiHigh do return numLocales-1;
+  override proc dsiAlignedHigh do return numLocales-1;
+  override proc dsiStride do return 0;
   proc dsiSetIndices(x: domain) { halt("cannot reassign private domain"); }
   proc dsiGetIndices() { return {0..numLocales-1}; }
 
@@ -142,26 +142,26 @@ class PrivateDom: BaseRectangularDom {
     halt("cannot reassign private domain");
   }
 
-  override proc dsiRequiresPrivatization() param return true;
-  override proc linksDistribution() param return false;
+  override proc dsiRequiresPrivatization() param do return true;
+  override proc linksDistribution() param do return false;
 
-  override proc dsiLinksDistribution() return false;
+  override proc dsiLinksDistribution() do return false;
 
-  proc dsiGetPrivatizeData() return 0;
+  proc dsiGetPrivatizeData() do return 0;
 
   proc dsiPrivatize(privatizeData) {
     return new unmanaged PrivateDom(rank=rank, idxType=idxType,
-                                    stridable=stridable,
+                                    strides=strides,
                                     dist=dist);
   }
 
-  proc dsiGetReprivatizeData() return 0;
+  proc dsiGetReprivatizeData() do return 0;
 
   proc dsiReprivatize(other, reprivatizeData) { }
 
-  proc dsiMember(i) return (0 <= i && i <= numLocales-1);
+  proc dsiMember(i) do return (0 <= i && i <= numLocales-1);
 
-  override proc dsiMyDist() return dist;
+  override proc dsiMyDist() do return dist;
 }
 
 private proc checkCanMakeDefaultValue(type eltType) param {
@@ -170,7 +170,7 @@ private proc checkCanMakeDefaultValue(type eltType) param {
 
 class PrivateArr: BaseRectangularArr {
 
-  var dom: unmanaged PrivateDom(rank, idxType, stridable);
+  var dom: unmanaged PrivateDom(rank, idxType, strides);
 
   // may be initialized separately
   // always destroyed explicitly (to control deiniting elts)
@@ -183,11 +183,11 @@ class PrivateArr: BaseRectangularArr {
   proc init(type eltType,
             param rank,
             type idxType,
-            param stridable,
-            dom: unmanaged PrivateDom(rank, idxType, stridable),
+            param strides,
+            dom: unmanaged PrivateDom(rank, idxType, strides),
             param initElts: bool) {
     super.init(eltType=eltType, rank=rank, idxType=idxType,
-               stridable=stridable);
+               strides=strides);
     this.dom = dom;
     // this.data not initialized
     this.isPrivatizedCopy = false;
@@ -204,7 +204,7 @@ class PrivateArr: BaseRectangularArr {
     var privdom = chpl_getPrivatizedCopy(toPrivatize.dom.type,
                                          toPrivatize.dom.pid);
     super.init(eltType=toPrivatize.eltType, rank=toPrivatize.rank,
-               idxType=toPrivatize.idxType, stridable=toPrivatize.stridable);
+               idxType=toPrivatize.idxType, strides=toPrivatize.strides);
     this.dom = privdom;
     // this.data not initialized
     this.isPrivatizedCopy = true;
@@ -256,11 +256,11 @@ override proc PrivateArr.dsiDestroyArr(deinitElts:bool) {
   }
 }
 
-override proc PrivateArr.dsiGetBaseDom() return dom;
+override proc PrivateArr.dsiGetBaseDom() do return dom;
 
-override proc PrivateArr.dsiRequiresPrivatization() param return true;
+override proc PrivateArr.dsiRequiresPrivatization() param do return true;
 
-proc PrivateArr.dsiGetPrivatizeData() return 0;
+proc PrivateArr.dsiGetPrivatizeData() do return 0;
 
 proc PrivateArr.dsiPrivatize(privatizeData) {
   return new unmanaged PrivateArr(toPrivatize=this);
@@ -280,7 +280,7 @@ proc PrivateArr.dsiAccess(i: idxType) ref {
   }
 }
 
-proc PrivateArr.dsiAccess(i: 1*idxType) ref
+proc PrivateArr.dsiAccess(i: 1*idxType) ref do
   return dsiAccess(i(0));
 
 proc PrivateArr.dsiBoundsCheck(i: 1*idxType) {

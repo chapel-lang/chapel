@@ -8,7 +8,7 @@ use Subprocess;
 }
 
 {
-  var runit = spawn(["./mutate-args", "a", "bc", "def"], ["test=test", ]);
+  var runit = spawn(["./mutate-args", "a", "bc", "def"], ["test=test"]);
   runit.wait();
   assert(runit.exitCode == 0);
 }

@@ -54,11 +54,11 @@ module OS {
        also defined, to support usability.
     */
     extern type blkcnt_t;
-    pragma "no doc"
-    inline operator :(x:blkcnt_t, type t:c_int)
+    @chpldoc.nodoc
+    inline operator :(x:blkcnt_t, type t:c_int) do
       return __primitive("cast", t, x);
-    pragma "no doc"
-    inline operator :(x:c_int, type t:blkcnt_t)
+    @chpldoc.nodoc
+    inline operator :(x:c_int, type t:blkcnt_t) do
       return __primitive("cast", t, x);
 
     /*
@@ -66,11 +66,11 @@ module OS {
        also defined, to support usability.
     */
     extern type blksize_t;
-    pragma "no doc"
-    inline operator :(x:blksize_t, type t:c_int)
+    @chpldoc.nodoc
+    inline operator :(x:blksize_t, type t:c_int) do
       return __primitive("cast", t, x);
-    pragma "no doc"
-    inline operator :(x:c_int, type t:blksize_t)
+    @chpldoc.nodoc
+    inline operator :(x:c_int, type t:blksize_t) do
       return __primitive("cast", t, x);
 
     /*
@@ -78,11 +78,11 @@ module OS {
        also defined, to support usability.
     */
     extern type dev_t;
-    pragma "no doc"
-    inline operator :(x:dev_t, type t:c_int)
+    @chpldoc.nodoc
+    inline operator :(x:dev_t, type t:c_int) do
       return __primitive("cast", t, x);
-    pragma "no doc"
-    inline operator :(x:c_int, type t:dev_t)
+    @chpldoc.nodoc
+    inline operator :(x:c_int, type t:dev_t) do
       return __primitive("cast", t, x);
 
     /*
@@ -90,11 +90,11 @@ module OS {
        also defined, to support usability.
     */
     extern type gid_t;
-    pragma "no doc"
-    inline operator :(x:gid_t, type t:c_int)
+    @chpldoc.nodoc
+    inline operator :(x:gid_t, type t:c_int) do
       return __primitive("cast", t, x);
-    pragma "no doc"
-    inline operator :(x:c_int, type t:gid_t)
+    @chpldoc.nodoc
+    inline operator :(x:c_int, type t:gid_t) do
       return __primitive("cast", t, x);
 
     /*
@@ -102,11 +102,11 @@ module OS {
        also defined, to support usability.
     */
     extern type ino_t;
-    pragma "no doc"
-    inline operator :(x:ino_t, type t:c_uint)
+    @chpldoc.nodoc
+    inline operator :(x:ino_t, type t:c_uint) do
       return __primitive("cast", t, x);
-    pragma "no doc"
-    inline operator :(x:c_uint, type t:ino_t)
+    @chpldoc.nodoc
+    inline operator :(x:c_uint, type t:ino_t) do
       return __primitive("cast", t, x);
 
     /*
@@ -116,17 +116,17 @@ module OS {
        also defined, to support usability.
     */
     extern type mode_t;
-    pragma "no doc"
-    inline operator &(a: mode_t, b: mode_t)
+    @chpldoc.nodoc
+    inline operator &(a: mode_t, b: mode_t) do
       return (a:c_int & b:c_int):mode_t;
-    pragma "no doc"
-    inline operator |(a: mode_t, b: mode_t)
+    @chpldoc.nodoc
+    inline operator |(a: mode_t, b: mode_t) do
       return (a:c_int | b:c_int):mode_t;
-    pragma "no doc"
-    inline operator :(x:mode_t, type t:c_int)
+    @chpldoc.nodoc
+    inline operator :(x:mode_t, type t:c_int) do
       return __primitive("cast", t, x);
-    pragma "no doc"
-    inline operator :(x:c_int, type t:mode_t)
+    @chpldoc.nodoc
+    inline operator :(x:c_int, type t:mode_t) do
       return __primitive("cast", t, x);
 
     /*
@@ -134,11 +134,11 @@ module OS {
        also defined, to support usability.
     */
     extern type nlink_t;
-    pragma "no doc"
-    inline operator :(x:nlink_t, type t:c_int)
+    @chpldoc.nodoc
+    inline operator :(x:nlink_t, type t:c_int) do
       return __primitive("cast", t, x);
-    pragma "no doc"
-    inline operator :(x:c_int, type t:nlink_t)
+    @chpldoc.nodoc
+    inline operator :(x:c_int, type t:nlink_t) do
       return __primitive("cast", t, x);
 
     /*
@@ -146,17 +146,17 @@ module OS {
        ``off_t`` and integral types are also defined, to support usability.
     */
     extern type off_t;
-    pragma "no doc"
-    inline operator :(x:off_t, type t:c_int)
+    @chpldoc.nodoc
+    inline operator :(x:off_t, type t:c_int) do
       return __primitive("cast", t, x);
-    pragma "no doc"
-    inline operator :(x:c_int, type t:off_t)
+    @chpldoc.nodoc
+    inline operator :(x:c_int, type t:off_t) do
       return __primitive("cast", t, x);
-    pragma "no doc"
-    inline operator :(x:off_t, type t:integral)
+    @chpldoc.nodoc
+    inline operator :(x:off_t, type t:integral) do
       return __primitive("cast", t, x);
-    pragma "no doc"
-    inline operator :(x:integral, type t:off_t)
+    @chpldoc.nodoc
+    inline operator :(x:integral, type t:off_t) do
       return __primitive("cast", t, x);
 
 
@@ -165,11 +165,11 @@ module OS {
        also defined, to support usability.
     */
     extern type suseconds_t;
-    pragma "no doc"
-    inline operator :(x:integral, type t:suseconds_t)
+    @chpldoc.nodoc
+    inline operator :(x:integral, type t:suseconds_t) do
       return __primitive("cast", t, x);
-    pragma "no doc"
-    inline operator :(x:suseconds_t, type t:integral)
+    @chpldoc.nodoc
+    inline operator :(x:suseconds_t, type t:integral) do
       return __primitive("cast", t, x);
 
     /*
@@ -177,11 +177,11 @@ module OS {
        also defined, to support usability.
     */
     extern type time_t;
-    pragma "no doc"
-    inline operator :(x:integral, type t:time_t)
+    @chpldoc.nodoc
+    inline operator :(x:integral, type t:time_t) do
       return __primitive("cast", t, x);
-    pragma "no doc"
-    inline operator :(x:time_t, type t:integral)
+    @chpldoc.nodoc
+    inline operator :(x:time_t, type t:integral) do
       return __primitive("cast", t, x);
 
     /*
@@ -189,11 +189,11 @@ module OS {
        also defined, to support usability.
     */
     extern type uid_t;
-    pragma "no doc"
-    inline operator :(x:uid_t, type t:c_int)
+    @chpldoc.nodoc
+    inline operator :(x:uid_t, type t:c_int) do
       return __primitive("cast", t, x);
-    pragma "no doc"
-    inline operator :(x:c_int, type t:uid_t)
+    @chpldoc.nodoc
+    inline operator :(x:c_int, type t:uid_t) do
       return __primitive("cast", t, x);
 
     //
@@ -950,8 +950,77 @@ module OS {
     //
     extern proc close(fildes:c_int):c_int;
     extern proc pipe(fildes:c_ptr(c_array(c_int, 2))):c_int;
-    extern proc read(fildes:c_int, buf:c_void_ptr, size:c_size_t):c_ssize_t;
-    extern proc write(fildes:c_int, buf:c_void_ptr, size:c_size_t):c_ssize_t;
+    extern proc read(fildes:c_int, buf:c_ptr(void), size:c_size_t):c_ssize_t;
+    extern proc write(fildes:c_int, buf:c_ptr(void), size:c_size_t):c_ssize_t;
+
+    /*
+      Copies n potentially overlapping bytes from memory area src to memory
+      area dest.
+
+      This is a simple wrapper over the C ``memmove()`` function.
+
+      :arg dest: the destination memory area to copy to
+      :arg src: the source memory area to copy from
+      :arg n: the number of bytes from src to copy to dest
+    */
+    pragma "fn synchronization free"
+    inline proc memmove(dest:c_ptr(void), const src:c_ptr(void), n: c_size_t) {
+      pragma "fn synchronization free"
+      extern proc memmove(dest: c_ptr(void), const src: c_ptr(void), n: c_size_t);
+      memmove(dest, src, n);
+    }
+
+    /*
+      Copies n non-overlapping bytes from memory area src to memory
+      area dest. Use :proc:`memmove` if memory areas do overlap.
+
+      This is a simple wrapper over the C ``memcpy()`` function.
+
+      :arg dest: the destination memory area to copy to
+      :arg src: the source memory area to copy from
+      :arg n: the number of bytes from src to copy to dest
+    */
+    pragma "fn synchronization free"
+    inline proc memcpy(dest:c_ptr(void), const src:c_ptr(void), n: c_size_t) {
+      pragma "fn synchronization free"
+      extern proc memcpy(dest: c_ptr(void), const src: c_ptr(void), n: c_size_t);
+      memcpy(dest, src, n);
+    }
+
+    /*
+      Compares the first n bytes of memory areas s1 and s2
+
+      This is a simple wrapper over the C ``memcmp()`` function.
+
+      :returns: returns an integer less than, equal to, or greater than zero if
+                the first n bytes of s1 are found, respectively, to be less than,
+                to match, or be greater than the first n bytes of s2.
+    */
+    pragma "fn synchronization free"
+    inline proc memcmp(const s1:c_ptr(void), const s2:c_ptr(void), n: c_size_t): int {
+      pragma "fn synchronization free"
+      extern proc memcmp(const s1: c_ptr(void), const s2: c_ptr(void), n: c_size_t): c_int;
+      return memcmp(s1, s2, n).safeCast(int);
+    }
+
+    /*
+      Fill bytes of memory with a particular byte value.
+
+      This is a simple wrapper over the C ``memset()`` function.
+
+      :arg s: the destination memory area to fill
+      :arg c: the byte value to use
+      :arg n: the number of bytes of s to fill
+
+      :returns: s
+    */
+    pragma "fn synchronization free"
+    inline proc memset(s:c_ptr(void), c:integral, n: c_size_t) {
+      pragma "fn synchronization free"
+      extern proc memset(s: c_ptr(void), c: c_int, n: c_size_t): c_ptr(void);
+      memset(s, c.safeCast(c_int), n);
+      return s;
+    }
 
   } // end POSIX
 
@@ -981,53 +1050,52 @@ module OS {
   private extern proc qio_int_to_err(a:int(32)):errorCode;
   private extern proc qio_err_iserr(a:errorCode):c_int;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator errorCode.==(a: errorCode, b: errorCode) {
     return (qio_err_eq(a,b) != 0:c_int);
   }
-  pragma "no doc"
-  inline operator errorCode.==(a: errorCode, b: int(32))
+  @chpldoc.nodoc
+  inline operator errorCode.==(a: errorCode, b: int(32)) do
     return (qio_err_to_int(a) == b:int(32));
-  pragma "no doc"
-  inline operator errorCode.==(a: errorCode, b: int(64))
+  @chpldoc.nodoc
+  inline operator errorCode.==(a: errorCode, b: int(64)) do
     return (qio_err_to_int(a) == b:int(32));
-  pragma "no doc"
-  inline operator errorCode.==(a: int(32), b: errorCode)
+  @chpldoc.nodoc
+  inline operator errorCode.==(a: int(32), b: errorCode) do
     return (a:int(32) == qio_err_to_int(b));
-  pragma "no doc"
-  inline operator errorCode.==(a: int(64), b: errorCode)
+  @chpldoc.nodoc
+  inline operator errorCode.==(a: int(64), b: errorCode) do
     return (a:int(32) == qio_err_to_int(b));
-  pragma "no doc"
-  inline operator errorCode.!=(a: errorCode, b: errorCode) return !(a == b);
-  pragma "no doc"
-  inline operator errorCode.!=(a: errorCode, b: int(32)) return !(a == b);
-  pragma "no doc"
-  inline operator errorCode.!=(a: errorCode, b: int(64)) return !(a == b);
-  pragma "no doc"
-  inline operator errorCode.!=(a: int(32), b: errorCode) return !(a == b);
-  pragma "no doc"
-  inline operator errorCode.!=(a: int(64), b: errorCode) return !(a == b);
-  pragma "no doc"
-  inline operator errorCode.!(a: errorCode) return (qio_err_iserr(a) == 0:c_int);
-  pragma "no doc"
-  inline proc errorCode.chpl_cond_test_method() return (qio_err_iserr(this) != 0:c_int);
-  pragma "no doc"
-  inline operator :(x: errorCode, type t: int(32)) return qio_err_to_int(x);
-  pragma "no doc"
-  inline operator :(x: errorCode, type t: int(64)) return qio_err_to_int(x):int(64);
-  pragma "no doc"
-  inline operator :(x: int(32), type t: errorCode) return qio_int_to_err(x);
-  pragma "no doc"
-  inline operator :(x: int(64), type t: errorCode) return qio_int_to_err(x:int(32));
-  pragma "no doc"
+  @chpldoc.nodoc
+  inline operator errorCode.!=(a: errorCode, b: errorCode) do return !(a == b);
+  @chpldoc.nodoc
+  inline operator errorCode.!=(a: errorCode, b: int(32)) do return !(a == b);
+  @chpldoc.nodoc
+  inline operator errorCode.!=(a: errorCode, b: int(64)) do return !(a == b);
+  @chpldoc.nodoc
+  inline operator errorCode.!=(a: int(32), b: errorCode) do return !(a == b);
+  @chpldoc.nodoc
+  inline operator errorCode.!=(a: int(64), b: errorCode) do return !(a == b);
+  @chpldoc.nodoc
+  inline operator errorCode.!(a: errorCode) do return (qio_err_iserr(a) == 0:c_int);
+  inline proc errorCode.chpl_cond_test_method() do return (qio_err_iserr(this) != 0:c_int);
+  @chpldoc.nodoc
+  inline operator :(x: errorCode, type t: int(32)) do return qio_err_to_int(x);
+  @chpldoc.nodoc
+  inline operator :(x: errorCode, type t: int(64)) do return qio_err_to_int(x):int(64);
+  @chpldoc.nodoc
+  inline operator :(x: int(32), type t: errorCode) do return qio_int_to_err(x);
+  @chpldoc.nodoc
+  inline operator :(x: int(64), type t: errorCode) do return qio_int_to_err(x:int(32));
+  @chpldoc.nodoc
   inline operator errorCode.=(ref ret:errorCode, x:errorCode) { __primitive("=", ret, x); }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator errorCode.=(ref ret:errorCode, x:int(32))
   { __primitive("=", ret, qio_int_to_err(x)); }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator errorCode.=(ref ret:errorCode, x:int(64))
   { __primitive("=", ret, qio_int_to_err(x:int(32))); }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator errorCode.=(ref ret:c_int, x:errorCode)
   { __primitive("=", ret, qio_err_to_int(x):c_int); }
 
@@ -1043,9 +1111,9 @@ module OS {
   private extern proc chpl_macro_int_EEOF():c_int;
   private extern proc chpl_macro_int_ESHORT():c_int;
   private extern proc chpl_macro_int_EFORMAT():c_int;
-  private inline proc EEOF return chpl_macro_int_EEOF():c_int;
-  private inline proc ESHORT return chpl_macro_int_ESHORT():c_int;
-  private inline proc EFORMAT return chpl_macro_int_EFORMAT():c_int;
+  private inline proc EEOF do return chpl_macro_int_EEOF():c_int;
+  private inline proc ESHORT do return chpl_macro_int_ESHORT():c_int;
+  private inline proc EFORMAT do return chpl_macro_int_EFORMAT():c_int;
 
   /*
      :class:`SystemError` is a base class for :class:`Errors.Error` s
@@ -1071,7 +1139,7 @@ module OS {
       var errstr              = sys_strerror_syserr_str(err, strerror_err);
       var err_msg: string;
       try! {
-        err_msg = createStringWithOwnedBuffer(errstr);
+        err_msg = string.createAdoptingBuffer(errstr);
       }
 
       if !details.isEmpty() then
@@ -1086,16 +1154,16 @@ module OS {
     ``errorCode``, or simply the matching :class:`SystemError` subtype if this
     is not a Chapel-specific IO error.
   */
-  pragma "no doc"
   pragma "insert line file info"
   pragma "always propagate line file info"
+  @chpldoc.nodoc
   proc createSystemOrChplError(err: errorCode, details: string = ""): Error {
     // extract qioerr pointer error message, if present
     var strerror_err: c_int = 0;
     var errstr = sys_strerror_syserr_str(err, strerror_err);
     var err_msg: string;
     try! {
-      err_msg = createStringWithOwnedBuffer(errstr);
+      err_msg = string.createAdoptingBuffer(errstr);
     }
 
     // return appropriate error
@@ -1110,9 +1178,9 @@ module OS {
   /*
     Version of createSystemOrChplError accepting an integer error code.
   */
-  pragma "no doc"
   pragma "insert line file info"
   pragma "always propagate line file info"
+  @chpldoc.nodoc
   proc createSystemOrChplError(err: int, details: string = ""): Error {
     return createSystemOrChplError(err:errorCode, details);
   }
@@ -1361,7 +1429,7 @@ module OS {
         var errstr = sys_strerror_syserr_str(err, strerror_err_ignore);
         var errorcode_msg: string;
         try! {
-          errorcode_msg = createStringWithOwnedBuffer(errstr);
+          errorcode_msg = string.createAdoptingBuffer(errstr);
         }
         generatedMsg += errorcode_msg;
       }
@@ -1403,7 +1471,7 @@ module OS {
         var errstr = sys_strerror_syserr_str(err, strerror_err_ignore);
         var errorcode_msg: string;
         try! {
-          errorcode_msg = createStringWithOwnedBuffer(errstr);
+          errorcode_msg = string.createAdoptingBuffer(errstr);
         }
         generatedMsg += errorcode_msg;
       }
@@ -1440,7 +1508,7 @@ module OS {
         var errstr = sys_strerror_syserr_str(err, strerror_err_ignore);
         var errorcode_msg: string;
         try! {
-          errorcode_msg = createStringWithOwnedBuffer(errstr);
+          errorcode_msg = string.createAdoptingBuffer(errstr);
         }
         generatedMsg += errorcode_msg;
       }
@@ -1485,20 +1553,20 @@ module OS {
     extern const QIO_STRING_FORMAT_CHPL: uint(8);
     extern proc qio_quote_string(s:uint(8), e:uint(8), f:uint(8),
                                  ptr: c_string, len:c_ssize_t,
-                                 ref ret:c_string, ti: c_void_ptr): errorCode;
+                                 ref ret:c_string, ti: c_ptr(void)): errorCode;
     extern proc qio_strdup(s: c_string): c_string;
 
     var ret: c_string;
     // 34 is ASCII double quote
     var err: errorCode = qio_quote_string(34:uint(8), 34:uint(8),
                                       QIO_STRING_FORMAT_CHPL,
-                                      s.localize().c_str(), len, ret, c_nil);
+                                      s.localize().c_str(), len, ret, nil);
     // This doesn't handle the case where ret==NULL as did the previous
     // version in QIO, but I'm not sure how that was used.
 
     try! {
-      if err then return createStringWithOwnedBuffer(qio_strdup("<error>"));
-      return createStringWithOwnedBuffer(ret);
+      if err then return string.createAdoptingBuffer(qio_strdup("<error>"));
+      return string.createAdoptingBuffer(ret);
     }
 }
 
@@ -1526,9 +1594,9 @@ module OS {
     }
   }
 
-  pragma "no doc" // documented in the offset version
   pragma "insert line file info"
   pragma "always propagate line file info"
+  @chpldoc.nodoc // documented in the offset version
   proc ioerror(error:errorCode, msg:string, path:string) throws
   {
     if error {
@@ -1538,9 +1606,9 @@ module OS {
     }
   }
 
-  pragma "no doc" // documented in the offset version
   pragma "insert line file info"
   pragma "always propagate line file info"
+  @chpldoc.nodoc // documented in the offset version
   proc ioerror(error:errorCode, msg:string) throws
   {
     if error then throw createSystemOrChplError(error, msg);
@@ -1576,9 +1644,8 @@ module OS {
     var strerror_err:c_int = 0;
     const errstr = sys_strerror_syserr_str(error, strerror_err);
     try! {
-      return createStringWithOwnedBuffer(errstr);
+      return string.createAdoptingBuffer(errstr);
     }
   }
-
 
 }

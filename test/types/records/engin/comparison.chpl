@@ -44,12 +44,12 @@ writeln("success");
 write("Class field with operators overloaded... ");
 {
   class C { var x = 0; }
-  operator C.==(c1: borrowed C, c2: borrowed C) return c1.x == c2.x;
-  operator C.!=(c1: borrowed C, c2: borrowed C) return c1.x != c2.x;
-  operator C.<(c1: borrowed C, c2: borrowed C) return c1.x < c2.x;
-  operator C.<=(c1: borrowed C, c2: borrowed C) return c1.x <= c2.x;
-  operator C.>(c1: borrowed C, c2: borrowed C) return c1.x > c2.x;
-  operator C.>=(c1: borrowed C, c2: borrowed C) return c1.x >= c2.x;
+  operator C.==(c1: borrowed C, c2: borrowed C) do return c1.x == c2.x;
+  operator C.!=(c1: borrowed C, c2: borrowed C) do return c1.x != c2.x;
+  operator C.<(c1: borrowed C, c2: borrowed C) do return c1.x < c2.x;
+  operator C.<=(c1: borrowed C, c2: borrowed C) do return c1.x <= c2.x;
+  operator C.>(c1: borrowed C, c2: borrowed C) do return c1.x > c2.x;
+  operator C.>=(c1: borrowed C, c2: borrowed C) do return c1.x >= c2.x;
 
   record R {
     var c: owned C;

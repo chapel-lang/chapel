@@ -188,7 +188,6 @@ void beautify(fileinfo* origfile) {
   int zline;
   char zname[1024];
   int old_depth;
-  char* znptr;
   fileinfo* tmpfile;
 
   zline = -1;
@@ -212,15 +211,6 @@ void beautify(fileinfo* origfile) {
       /* record zpl/c source line map info */
       if (!strncmp(cp, ZLINEINPUT, ZLINEINPUTLEN)) {
         sscanf(cp, ZLINEINPUTFORMAT, &zline, zname);
-        znptr = strrchr(zname,'/');
-        if (znptr != NULL) {
-          // We can't use strcpy here because the source
-          // and destination strings can overlap.
-          char *src = znptr+1;
-          char *dst = zname;
-          size_t len = strlen(src) + 1; // also copy null
-          memmove(dst, src, len);
-        }
         continue;
       }
     }

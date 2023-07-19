@@ -1,2 +1,2 @@
-(r = 1..10): MyRecord(1,range(int(64),bounded,false))
-(r = 1..10 by 2): MyRecord(1,range(int(64),bounded,true))
+(r = 1..10): MyRecord(1,range(int(64),both,one))
+(r = 1..10 by 2): MyRecord(1,range(int(64),both,positive))

@@ -494,7 +494,7 @@
 /* if I can use the hwloc topology interface */
 #undef QTHREAD_HAVE_HWLOC
 
-/* Hwloc has distances */
+/* hwloc has distances */
 #undef QTHREAD_HAVE_HWLOC_DISTS
 
 /* if the machine has a Solaris-style liblgrp topology interface */

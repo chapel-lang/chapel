@@ -40,9 +40,9 @@ proc partRedCheckAndCreateResultDimensions(dist, resDimSpec, srcArr, srcDims)
         resDims(dim) = (specD..specD) : srcDims(1).type;
       }
       else if isRange(specD) {
-        if specD.boundedType == BoundedRangeType.bounded then
+        if specD.bounds == boundKind.both then
           resDims(dim) = specD;
-        else if specD.boundedType == BoundedRangeType.boundedNone then
+        else if specD.bounds == boundKind.neither then
           resDims(dim) = srcDims(dim);
         else
           compilerError("the range in the dimension " + dim + " of the shape of the partial reduction is neither fully bounded nor fully unbounded");
@@ -85,10 +85,10 @@ proc fullIdxToReducedIdx(const resDims, const srcDims, const srcIdx)
   return resIdx;
 }
 
-proc isReducedDim(const resDims, const srcDims, param dim)
+proc isReducedDim(const resDims, const srcDims, param dim) do
   return resDims(dim).size == 1;
 
-proc isPreservedDim(const resDims, const srcDims, param dim)
+proc isPreservedDim(const resDims, const srcDims, param dim) do
   return !isReducedDim(resDims, srcDims, dim);
 
 
@@ -143,7 +143,7 @@ class PartRedOp: ReduceScanOp {
   }
   // TODO (a): avoid this when not needed.
   // TODO (b): invoke perElemOp.generate() when needed.
-  proc generate() ref return value;
-  proc clone() return new unmanaged PartRedOp(eltType=eltType,
-                                              perElemOp = perElemOp);
+  proc generate() ref do return value;
+  proc clone() do return new unmanaged PartRedOp(eltType=eltType,
+                                                 perElemOp = perElemOp);
 }

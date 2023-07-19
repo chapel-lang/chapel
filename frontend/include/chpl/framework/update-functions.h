@@ -27,6 +27,7 @@
 
 #include <cstring>
 #include <functional>
+#include <map>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -61,9 +62,16 @@ static inline bool defaultUpdateBasic(T& keep, T& addin) {
     return true;
   }
 }
+
+template<typename K, typename V>
+static inline bool
+defaultUpdateMap(std::map<K, V>& keep, std::map<K, V>& addin) {
+  return defaultUpdate(keep, addin);
+}
+
 template<typename T>
-static inline bool defaultUpdateVec(std::vector<T>& keep, std::vector<T>& addin)
-{
+static inline bool
+defaultUpdateVec(std::vector<T>& keep, std::vector<T>& addin) {
   if (keep.size() == addin.size()) {
     bool anyUpdated = false;
     // try updating the elements individually
@@ -152,6 +160,12 @@ template<> struct update<bool> {
 template<typename T> struct update<std::vector<T>> {
   bool operator()(std::vector<T>& keep, std::vector<T>& addin) const {
     return defaultUpdateVec(keep, addin);
+  }
+};
+
+template<typename K, typename V> struct update<std::map<K, V>> {
+  bool operator()(std::map<K, V>& keep, std::map<K, V>& addin) const {
+    return defaultUpdateMap(keep, addin);
   }
 };
 

@@ -1,5 +1,12 @@
+revcomp8.chpl:29: warning: QIO_CH_ALWAYS_UNBUFFERED is deprecated
+revcomp8.chpl:31: warning: QIO_CH_ALWAYS_UNBUFFERED is deprecated
 revcomp8.chpl:28: warning: openfd is deprecated, please use the file initializer with a 'c_int' argument instead
 revcomp8.chpl:30: warning: openfd is deprecated, please use the file initializer with a 'c_int' argument instead
+revcomp8.chpl:146: In function 'revcomp':
+revcomp8.chpl:155: warning: This cast from 'c_ptr(uint(8))' to 'c_ptr(uint(16))' casts a c_ptr to a pointer of non-equivalent, non-char element type, which can cause undefined behavior.
+revcomp8.chpl:156: warning: This cast from 'c_ptr(uint(8))' to 'c_ptr(uint(16))' casts a c_ptr to a pointer of non-equivalent, non-char element type, which can cause undefined behavior.
+  revcomp8.chpl:113: called as revcomp(dstFront: int(64), charAfter: int(64), spanLen: int(64), buff: [domain(1,int(64),one)] uint(8), seq: [domain(1,int(64),one)] uint(8)) from function 'revcomp'
+  revcomp8.chpl:54: called as revcomp(seq: [domain(1,int(64),one)] uint(8), size: int(64)) from function 'main'
 >ONE Homo sapiens alu
 CGGAGTCTCGCTCTGTCGCCCAGGCTGGAGTGCAGTGGCGCGATCTCGGCTCACTGCAAC
 CTCCGCCTCCCGGGTTCAAGCGATTCTCCTGCCTCAGCCTCCCGAGTAGCTGGGATTACA

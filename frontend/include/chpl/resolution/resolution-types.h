@@ -114,6 +114,7 @@ class UntypedFnSignature {
   bool isMethod_; // in that case, formals[0] is the receiver
   bool isTypeConstructor_;
   bool isCompilerGenerated_;
+  bool throws_;
   uast::asttags::AstTag idTag_; // concrete tag for ID
   uast::Function::Kind kind_;
   std::vector<FormalDetail> formals_;
@@ -126,6 +127,7 @@ class UntypedFnSignature {
                      bool isMethod,
                      bool isTypeConstructor,
                      bool isCompilerGenerated,
+                     bool throws,
                      uast::asttags::AstTag idTag,
                      uast::Function::Kind kind,
                      std::vector<FormalDetail> formals,
@@ -135,6 +137,7 @@ class UntypedFnSignature {
       isMethod_(isMethod),
       isTypeConstructor_(isTypeConstructor),
       isCompilerGenerated_(isCompilerGenerated),
+      throws_(throws),
       idTag_(idTag),
       kind_(kind),
       formals_(std::move(formals)),
@@ -152,6 +155,7 @@ class UntypedFnSignature {
                         bool isMethod,
                         bool isTypeConstructor,
                         bool isCompilerGenerated,
+                        bool throws,
                         uast::asttags::AstTag idTag,
                         uast::Function::Kind kind,
                         std::vector<FormalDetail> formals,
@@ -164,6 +168,7 @@ class UntypedFnSignature {
                                        bool isMethod,
                                        bool isTypeConstructor,
                                        bool isCompilerGenerated,
+                                       bool throws,
                                        uast::asttags::AstTag idTag,
                                        uast::Function::Kind kind,
                                        std::vector<FormalDetail> formals,
@@ -184,6 +189,7 @@ class UntypedFnSignature {
            isMethod_ == other.isMethod_ &&
            isTypeConstructor_ == other.isTypeConstructor_ &&
            isCompilerGenerated_ == other.isCompilerGenerated_ &&
+           throws_ == other.throws_ &&
            idTag_ == other.idTag_ &&
            kind_ == other.kind_ &&
            formals_ == other.formals_ &&
@@ -261,6 +267,11 @@ class UntypedFnSignature {
   /** Returns true if this is a method */
   bool isMethod() const {
     return isMethod_;
+  }
+
+  /** Returns true if this function throws */
+  bool throws() const {
+    return throws_;
   }
 
   /** Returns the number of formals */
@@ -407,12 +418,14 @@ class CallInfo {
                          const uast::Call* call,
                          const ResolutionResultByPostorderID& byPostorder,
                          bool raiseErrors = true,
-                         std::vector<const uast::AstNode*>* actualAsts=nullptr);
+                         std::vector<const uast::AstNode*>* actualAsts=nullptr,
+                         UniqueString rename = UniqueString());
 
   /** Construct a CallInfo by adding a method receiver argument to
       the passed CallInfo. */
   static CallInfo createWithReceiver(const CallInfo& ci,
-                                     types::QualifiedType receiverType);
+                                     types::QualifiedType receiverType,
+                                     UniqueString rename=UniqueString());
 
   /** Prepare actuals for a call for later use in creating a CallInfo.
       This is a helper function for CallInfo::create that is sometimes
@@ -433,7 +446,7 @@ class CallInfo {
 
 
   /** return the name of the called thing */
-  UniqueString name() const { return name_; }
+  const UniqueString name() const { return name_; }
 
   /** return the type of the called thing */
   types::QualifiedType calledType() const { return calledType_; }
@@ -1056,6 +1069,8 @@ class CallResolutionResult {
   PoiInfo poiInfo_;
 
  public:
+  CallResolutionResult() {}
+
   // for simple cases where mostSpecific and poiInfo are irrelevant
   CallResolutionResult(types::QualifiedType exprType)
     : exprType_(std::move(exprType)) {
@@ -1119,6 +1134,8 @@ class AssociatedAction {
     ITERATE,      // aka "these"
     NEW_INIT,
     REDUCE_SCAN,  // resolution of "generate" for a reduce/scan operation.
+    INFER_TYPE,
+    COMPARE,      // == , e.g., for select-statements
   };
 
  private:
@@ -1167,6 +1184,8 @@ class ResolvedExpression {
   // For simple (non-function Identifier) cases,
   // the ID of a NamedDecl it refers to
   ID toId_;
+  // Is this a reference to a compiler-created primitive?
+  bool isBuiltin_ = false;
 
   // For a function call, what is the most specific candidate,
   // or when using return intent overloading, what are the most specific
@@ -1196,6 +1215,9 @@ class ResolvedExpression {
    * refers to */
   ID toId() const { return toId_; }
 
+  /** check whether this resolution result refers to a compiler builtin like `bool`. */
+  bool isBuiltin() const { return isBuiltin_; }
+
   /** For a function call, what is the most specific candidate, or when using
    * return intent overloading, what are the most specific candidates? The
    * choice between these needs to happen later than the main function
@@ -1212,6 +1234,9 @@ class ResolvedExpression {
   const ResolvedParamLoop* paramLoop() const {
     return paramLoop_;
   }
+
+  /** set the isPrimitive flag */
+  void setIsBuiltin(bool isBuiltin) { isBuiltin_ = isBuiltin; }
 
   /** set the toId */
   void setToId(ID toId) { toId_ = toId; }
@@ -1239,6 +1264,7 @@ class ResolvedExpression {
   bool operator==(const ResolvedExpression& other) const {
     return type_ == other.type_ &&
            toId_ == other.toId_ &&
+           isBuiltin_ == other.isBuiltin_ &&
            mostSpecific_ == other.mostSpecific_ &&
            poiScope_ == other.poiScope_ &&
            associatedActions_ == other.associatedActions_ &&
@@ -1250,6 +1276,7 @@ class ResolvedExpression {
   void swap(ResolvedExpression& other) {
     type_.swap(other.type_);
     toId_.swap(other.toId_);
+    std::swap(isBuiltin_, other.isBuiltin_);
     mostSpecific_.swap(other.mostSpecific_);
     std::swap(poiScope_, other.poiScope_);
     std::swap(associatedActions_, other.associatedActions_);
@@ -1263,7 +1290,7 @@ class ResolvedExpression {
     toId_.mark(context);
     mostSpecific_.mark(context);
     context->markPointer(poiScope_);
-    for (auto a : associatedActions_) {
+    for (const auto& a : associatedActions_) {
       a.mark(context);
     }
     context->markPointer(paramLoop_);
@@ -1285,9 +1312,10 @@ class ResolvedExpression {
 class ResolutionResultByPostorderID {
  private:
   ID symbolId;
-  // TODO: replace this with a hashtable or at least
-  // something that doesn't have to start at 0
-  std::vector<ResolvedExpression> vec;
+  // This map is generally accessed with operator[] to default-construct a new
+  // ResolvedExpression if none exists for an ID. at() is used instead only
+  // when const-ness is required.
+  std::unordered_map<int, ResolvedExpression> map;
 
  public:
   /** prepare to resolve the contents of the passed symbol */
@@ -1299,42 +1327,35 @@ class ResolutionResultByPostorderID {
   /** prepare to resolve the body of a For loop */
   void setupForParamLoop(const uast::For* loop, ResolutionResultByPostorderID& parent);
 
-  ResolvedExpression& byIdExpanding(const ID& id) {
-    auto postorder = id.postOrderId();
-    CHPL_ASSERT(id.symbolPath() == symbolId.symbolPath());
-    CHPL_ASSERT(0 <= postorder);
-    if ((size_t) postorder < vec.size()) {
-      // OK
-    } else {
-      vec.resize(postorder+1);
-    }
-    return vec[postorder];
-  }
-  ResolvedExpression& byAstExpanding(const uast::AstNode* ast) {
-    return byIdExpanding(ast->id());
-  }
-
+  /* ID query functions */
   bool hasId(const ID& id) const {
     auto postorder = id.postOrderId();
     if (id.symbolPath() == symbolId.symbolPath() &&
-        0 <= postorder && (size_t) postorder < vec.size())
+        0 <= postorder && (map.count(postorder) > 0))
       return true;
 
     return false;
   }
-  bool hasAst(const uast::AstNode* ast) const {
-    return ast != nullptr && hasId(ast->id());
-  }
-
   ResolvedExpression& byId(const ID& id) {
-    CHPL_ASSERT(hasId(id));
     auto postorder = id.postOrderId();
-    return vec[postorder];
+    return map[postorder];
   }
   const ResolvedExpression& byId(const ID& id) const {
     CHPL_ASSERT(hasId(id));
     auto postorder = id.postOrderId();
-    return vec[postorder];
+    return map.at(postorder);
+  }
+  const ResolvedExpression* byIdOrNull(const ID& id) const {
+    if (hasId(id)) {
+      auto postorder = id.postOrderId();
+      return &map.at(postorder);
+    }
+    return nullptr;
+  }
+
+  /* AST query functions */
+  bool hasAst(const uast::AstNode* ast) const {
+    return ast != nullptr && hasId(ast->id());
   }
   ResolvedExpression& byAst(const uast::AstNode* ast) {
     return byId(ast->id());
@@ -1342,44 +1363,28 @@ class ResolutionResultByPostorderID {
   const ResolvedExpression& byAst(const uast::AstNode* ast) const {
     return byId(ast->id());
   }
-  ResolvedExpression* byIdOrNull(const ID& id) {
-    if (hasId(id)) {
-      auto postorder = id.postOrderId();
-      return &vec[postorder];
-    }
-    return nullptr;
-  }
-  const ResolvedExpression* byIdOrNull(const ID& id) const {
-    if (hasId(id)) {
-      auto postorder = id.postOrderId();
-      return &vec[postorder];
-    }
-    return nullptr;
-  }
-  ResolvedExpression* byAstOrNull(const uast::AstNode* ast) {
-    return byIdOrNull(ast->id());
-  }
   const ResolvedExpression* byAstOrNull(const uast::AstNode* ast) const {
     return byIdOrNull(ast->id());
   }
 
   bool operator==(const ResolutionResultByPostorderID& other) const {
     return symbolId == other.symbolId &&
-           vec == other.vec;
+           map == other.map;
   }
   bool operator!=(const ResolutionResultByPostorderID& other) const {
     return !(*this == other);
   }
   void swap(ResolutionResultByPostorderID& other) {
     symbolId.swap(other.symbolId);
-    vec.swap(other.vec);
+    map.swap(other.map);
   }
   static bool update(ResolutionResultByPostorderID& keep,
                      ResolutionResultByPostorderID& addin);
   void mark(Context* context) const {
     symbolId.mark(context);
-    for (auto const &elt : vec) {
-      elt.mark(context);
+    for (auto const &elt : map) {
+      // mark ResolvedExpressions
+      elt.second.mark(context);
     }
   }
 };
@@ -1466,6 +1471,9 @@ class ResolvedFunction {
   }
   const ResolvedExpression& byAst(const uast::AstNode* ast) const {
     return resolutionById_.byAst(ast);
+  }
+  const ResolvedExpression* byAstOrNull(const uast::AstNode* ast) const {
+    return resolutionById_.byAstOrNull(ast);
   }
 
   const ID& id() const {
@@ -1639,6 +1647,12 @@ class ResolvedFields {
     forwarding_.push_back(ForwardingDetail(forwardingId, receiverType));
   }
 
+  void addForwarding(const ResolvedFields& other) {
+    for (int i = 0; i < other.numForwards(); i++) {
+      addForwarding(other.forwardingStmt(i), other.forwardingToType(i));
+    }
+  }
+
   void finalizeFields(Context* context);
 
   /** Returns true if this is a generic type */
@@ -1750,7 +1764,7 @@ class ResolvedParamLoop {
     }
 
     void mark(Context* context) const {
-      for (auto postorder : loopBodies_) {
+      for (const auto& postorder : loopBodies_) {
         postorder.mark(context);
       }
       context->markPointer(loop_);

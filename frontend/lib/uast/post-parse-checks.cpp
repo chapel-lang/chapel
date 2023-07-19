@@ -31,20 +31,20 @@ namespace {
 using namespace chpl;
 using namespace uast;
 
-/***
-  TODO: Run the visitor while assigning IDs to avoid a second pass.
-*/
+// This visitor runs in a 2nd pass after assigning IDs
+// (merging it with the traversal to assign IDs is interesting to consider
+//  for potential performance improvement, but it leads to too many challenges
+//  in error handling).
 struct Visitor {
   std::set<UniqueString> exportedFnNames_;
   std::vector<const AstNode*> parents_;
   Context* context_ = nullptr;
+  bool warnUnstable_ = false;
   bool isUserCode_ = false;
 
-  // Helper to determine if a file path is for user code.
-  static bool isUserFilePath(Context* context, UniqueString filepath);
-
-  Visitor(Context* context, bool isUserCode)
+  Visitor(Context* context, bool warnUnstable, bool isUserCode)
     : context_(context),
+      warnUnstable_(warnUnstable),
       isUserCode_(isUserCode) {
   }
 
@@ -101,15 +101,19 @@ struct Visitor {
 
   bool isNamedThisAndNotReceiverOrFunction(const NamedDecl* node);
   bool isNameReservedWord(const NamedDecl* node);
+  inline bool shouldEmitUnstableWarning(const AstNode* node);
 
   // Checks.
-  void checkForOneElementArraysWithoutComma(const Array* node);
+  void checkForArraysOfRanges(const Array* node);
   void checkDomainTypeQueryUsage(const TypeQuery* node);
   void checkNoDuplicateNamedArguments(const FnCall* node);
   bool handleNestedDecoratorsInNew(const FnCall* node);
   bool handleNestedDecoratorsInTypeConstructors(const FnCall* node);
   void checkForNestedClassDecorators(const FnCall* node);
   void checkExplicitDeinitCalls(const FnCall* node);
+  void checkBorrowFromNew(const FnCall* node);
+  void checkSparseKeyword(const FnCall* node);
+  void checkDmappedKeyword(const OpCall* node);
   void checkConstVarNoInit(const Variable* node);
   void checkConfigVar(const Variable* node);
   void checkExportVar(const Variable* node);
@@ -122,11 +126,17 @@ struct Visitor {
   void checkFormalsForTypeOrParamProcs(const Function* node);
   void checkNoReceiverClauseOnPrimaryMethod(const Function* node);
   void checkLambdaReturnIntent(const Function* node);
+  void checkConstReturnIntent(const Function* node);
   void checkProcTypeFormalsAreAnnotated(const FunctionSignature* node);
   void checkProcDefFormalsAreNamed(const Function* node);
-  void checkForUnadornedArrayType(const BracketLoop* node);
+  void checkGenericArrayTypeUsage(const BracketLoop* node);
   void checkVisibilityClauseValid(const AstNode* parentNode,
                                   const VisibilityClause* clause);
+  void checkAttributeNameRecognizedOrToolSpaced(const Attribute* node);
+  void checkAttributeUsedParens(const Attribute* node);
+  void checkUserModuleHasPragma(const AttributeGroup* node);
+  void checkExternBlockAtModuleScope(const ExternBlock* node);
+  void checkLambdaDeprecated(const Function* node);
 
   /*
   TODO
@@ -154,16 +164,137 @@ struct Visitor {
   inline void visit(const AstNode* node) {} // Do nothing by default.
 
   void visit(const Array* node);
+  void visit(const Attribute* node);
+  void visit(const AttributeGroup* node);
   void visit(const BracketLoop* node);
+  void visit(const Break* node);
+  void visit(const Continue* node);
+  void visit(const ExternBlock* node);
   void visit(const FnCall* node);
-  void visit(const Variable* node);
-  void visit(const TypeQuery* node);
   void visit(const Function* node);
   void visit(const FunctionSignature* node);
+  void visit(const Import* node);
+  void visit(const OpCall* node);
+  void visit(const Return* node);
+  void visit(const TypeQuery* node);
   void visit(const Union* node);
   void visit(const Use* node);
-  void visit(const Import* node);
+  void visit(const Variable* node);
+  void visit(const Yield* node);
 };
+
+/**
+  How a particular node modifies whether or not some control flow can be used.
+  For example:
+  * Functions allow returns: even if a return wasn't valid outside of the node,
+    a function node makes it allowed.
+  * Basic loops like do-while allow breaks: even if you couldn't break before,
+    within a loop, you can.
+  * Functions disallow breaks: if a break statement is encountered directly
+    within a function, and isn't otherwise located inside something that does
+    allow it, it's not valid.
+  * If-expressions neither allow nor disallow returns; whether or not a break
+    or return is valid does not change by moving it inside / outside of an
+    if-statement (so the control flow modifier would be NONE).
+  */
+enum class ControlFlowModifier {
+  NONE,
+  ALLOWS,
+  BLOCKS,
+};
+
+// The seven node types that most mess with control flow are:
+//   * "forall statement"
+//   * "foreach statement"
+//   * "coforall statement"
+//   * "on statement"
+//   * "begin statement"
+//   * "sync statement"
+//   * "cobegin statement"
+
+static ControlFlowModifier nodeAllowsReturn(const AstNode* node,
+                                            const Return* ctrl) {
+  if (auto fn = node->toFunction()) {
+    if (fn->kind() == Function::ITER && ctrl->value() != nullptr) {
+      // can't return a value from an iterator.
+      return ControlFlowModifier::BLOCKS;
+    }
+    return ControlFlowModifier::ALLOWS;
+  }
+  if (node->isForall() || node->isForeach() || node->isCoforall() ||
+      node->isOn() || node->isBegin() || node->isSync() || node->isCobegin()) {
+    return ControlFlowModifier::BLOCKS;
+  }
+  return ControlFlowModifier::NONE;
+}
+
+static ControlFlowModifier nodeAllowsYield(const AstNode* node,
+                                           const Yield* ctrl) {
+  if (auto fn = node->toFunction()) {
+    if (fn->kind() == Function::ITER) {
+      return ControlFlowModifier::ALLOWS;
+    } else {
+      // Can't yield from non-function.
+      return ControlFlowModifier::BLOCKS;
+    }
+  }
+  if (node->isBegin()) {
+    return ControlFlowModifier::BLOCKS;
+  }
+  return ControlFlowModifier::NONE;
+}
+
+static ControlFlowModifier nodeAllowsBreak(const AstNode* node,
+                                           const Break* ctrl) {
+  if (node->isFunction() || // functions block break
+      node->isForall() || node->isForeach() || node->isCoforall() ||
+      node->isOn() || node->isBegin() || node->isSync() || node->isCobegin()) {
+    return ControlFlowModifier::BLOCKS;
+  }
+  if (auto target = ctrl->target()) {
+    // A node with a target is looking for a particular loop to break out of.
+    // Is this it?
+    if (auto label = node->toLabel()) {
+      if (target->name() == label->name()) {
+        // Found the labeled node, so this control flow is allowed!
+        return ControlFlowModifier::ALLOWS;
+      }
+    }
+  } else {
+    // A node with no target is looking for any loop that can be broken out of.
+    if (node->isLoop()) {
+      return ControlFlowModifier::ALLOWS;
+    }
+  }
+  return ControlFlowModifier::NONE;
+}
+
+static ControlFlowModifier nodeAllowsContinue(const AstNode* node,
+                                              const Continue* ctrl) {
+  if (node->isFunction() || // functions block continue
+      (node->isForall() && ctrl->target() != nullptr) || // Label-less continue allowed.
+      node->isCoforall() || node->isOn() || node->isBegin() ||
+      node->isSync() ||node->isCobegin()) {
+    return ControlFlowModifier::BLOCKS;
+  }
+  if (auto target = ctrl->target()) {
+    // A node with a target is looking for a particular loop to break out of.
+    // Is this it?
+    if (auto label = node->toLabel()) {
+      if (target->name() == label->name()) {
+        // Found the labeled node, so this control flow is allowed!
+        return ControlFlowModifier::ALLOWS;
+      }
+    }
+  } else {
+    // A node with no target is looking for any loop that can be broken out of.
+    // Note: the forall case is also handled by this conditional.
+    if (node->isLoop()) {
+      return ControlFlowModifier::ALLOWS;
+    }
+  }
+  return ControlFlowModifier::NONE;
+}
 
 
 // Note that even though we pass in the IDs for error messages here, the
@@ -272,14 +403,18 @@ bool Visitor::isParentFalseBlock(int depth) const {
   return false;
 }
 
-void Visitor::checkForOneElementArraysWithoutComma(const Array* node) {
-  if (!node->hasTrailingComma() && node->numChildren() == 1) {
-    warn(node, "single-element array literals without a trailing comma are "
-         "deprecated; please rewrite as '%s'",
-         node->isAssociative() ? "[myKey => myElem, ]" : "[myElem, ]");
+void Visitor::checkForArraysOfRanges(const Array* node) {
+  if (isFlagSet(CompilerFlags::WARN_ARRAY_OF_RANGE) &&
+      node->numExprs() == 1 &&
+      !node->hasTrailingComma() &&
+      node->expr(0)->toRange()) {
+    warn(node, "please note that this is a 1-element array of ranges; if "
+         "that was your intention, add a trailing comma or recompile with "
+         "'--no-warn-array-of-range' to avoid this warning; if it wasn't, "
+         "you may want to use a range instead");
   }
 }
-  
+
 void Visitor::checkDomainTypeQueryUsage(const TypeQuery* node) {
   if (!parent(0)) return;
   if (!parent(0)->isBracketLoop() && !parent(0)->isDomain()) return;
@@ -471,6 +606,53 @@ void Visitor::checkExplicitDeinitCalls(const FnCall* node) {
     error(node, "direct calls to deinit() are not allowed.");
   }
 }
+
+void Visitor::checkBorrowFromNew(const FnCall* node) {
+  // look for patterns along these lines:
+  //   const x = (new C()).borrow()
+  //   var x = f((new owned C()).borrow())
+  // These worked in 1.31 but will no longer work in 1.32.
+  bool emitWarning = false;
+
+  if (auto c = node->toFnCall())
+    if (auto r = c->calledExpression())
+      if (auto dot = r->toDot())
+        if (dot->field() == USTR("borrow"))
+          if (auto receiver = dot->receiver())
+            if (auto call = receiver->toFnCall())
+              if (auto called = call->calledExpression())
+                if (called->isNew())
+                  if (const AstNode* decl = searchParentsForDecl(node, nullptr))
+                    if (auto v = decl->toVariable())
+                      if (auto ini = v->initExpression())
+                        if (ini->contains(node))
+                          if (v->kind() == Variable::VAR ||
+                              v->kind() == Variable::CONST)
+                            emitWarning = true;
+
+  if (emitWarning)
+    warn(node, "Class created by nested 'new' will be "
+               "deinitialized before the borrow can be used. "
+               "Please update this code to use a separate "
+               "variable to store the new class");
+}
+
+void Visitor::checkSparseKeyword(const FnCall* node) {
+  if (shouldEmitUnstableWarning(node)) // start with a cheap check
+    if (auto calledExpr = node->calledExpression())
+      if (auto ident = calledExpr->toIdentifier())
+        if (ident->name() == USTR("sparse"))
+          warn(node, "sparse domains are unstable,"
+               " their behavior is likely to change in the future.");
+}
+
+void Visitor::checkDmappedKeyword(const OpCall* node) {
+  if (node->op() == USTR("dmapped"))
+    if (shouldEmitUnstableWarning(node))
+      warn(node, "'dmapped' keyword is unstable,"
+           " instead please use factory functions when available");
+}
+
 
 // TODO: Extend to all 'VarLikeDecl' instead of just variables?
 void Visitor::checkConstVarNoInit(const Variable* node) {
@@ -664,6 +846,12 @@ void Visitor::checkNoReceiverClauseOnPrimaryMethod(const Function* node) {
   }
 }
 
+void Visitor::checkLambdaDeprecated(const Function* node) {
+  if (node->kind() != Function::LAMBDA) return;
+  warn(node, "'lambda' syntax is deprecated, please construct anonymous "
+             "procedures using the 'proc' keyword instead");
+}
+
 void Visitor::checkLambdaReturnIntent(const Function* node) {
   if (node->kind() != Function::LAMBDA) return;
 
@@ -671,7 +859,7 @@ void Visitor::checkLambdaReturnIntent(const Function* node) {
   switch (node->returnIntent()) {
     case Function::CONST_REF:
     case Function::REF:
-      disallowedReturnType = "ref";
+      disallowedReturnType = "[const] ref";
       break;
     case Function::PARAM:
       disallowedReturnType = "param";
@@ -683,9 +871,16 @@ void Visitor::checkLambdaReturnIntent(const Function* node) {
       break;
   }
   if (disallowedReturnType) {
-    error(node, "'%s' return types are not allowed in lambdas.",
+    error(node, "'%s' return intent is not allowed in lambdas.",
           disallowedReturnType);
   }
+}
+
+void Visitor::checkConstReturnIntent(const Function* node) {
+  if (node->returnIntent() != Function::CONST) return;
+  if (!shouldEmitUnstableWarning(node)) return;
+  warn(node, "'const' return intent is unstable and may work differently"
+             " in the future, please use 'out' intent instead");
 }
 
 void
@@ -709,28 +904,48 @@ void Visitor::checkProcDefFormalsAreNamed(const Function* node) {
   }
 }
 
-static bool isUnadornedArrayType(const BracketLoop* node) {
-  auto block = node->body();
-  if (block->numStmts() != 0) return false;
+// While normally, a particular bracket loop could be either a runnable
+// loop or an array type (and we won't know until we have type info), in
+// this particular case the expression '[]' can only appear in array types.
+static bool isBracketLoopDomainExpressionEmpty(const BracketLoop* node) {
   auto dom = node->iterand()->toDomain();
   if (!dom || dom->numExprs() != 0) return false;
   if (dom->usedCurlyBraces()) return false;
   return true;
 }
 
+static bool isBracketLoopBodyEmpty(const BracketLoop* node) {
+  auto block = node->body();
+  return block->numStmts() == 0;
+}
+
 // TODO: Might need to do some more fine-grained pattern matching.
-void Visitor::checkForUnadornedArrayType(const BracketLoop* node) {
+void Visitor::checkGenericArrayTypeUsage(const BracketLoop* node) {
   if (!parent(0)) return;
 
-  if (!isUnadornedArrayType(node)) return;
+  // TODO: These are treated the same right now, but in the future we might
+  // like to allow things like '[]' in type expressions, while
+  // default initialized variables such as 'var x: [] bytes;' would need
+  // a domain expression.
+  bool isDomainEmpty = isBracketLoopDomainExpressionEmpty(node);
+  bool isBodyEmpty = isBracketLoopBodyEmpty(node);
+
+  // Expression is fully adorned, so nothing to do.
+  if (!isDomainEmpty && !isBodyEmpty) return;
 
   bool doEmitError = true;
   const AstNode* last = nullptr;
   auto decl = searchParentsForDecl(node, &last);
+  bool isInTypeExpression = false;
+  bool isField = false;
 
   // Formal type expression is OK.
-  if (auto formal = decl->toFormal()) {
-    if (last == formal->typeExpression()) doEmitError = false;
+  if (auto varLike = decl->toVarLikeDecl()) {
+    if (auto var = varLike->toVariable()) isField = var->isField();
+    if (last == varLike->typeExpression()) {
+      isInTypeExpression = true;
+      doEmitError = !varLike->isFormal();
+    }
   }
 
   // Function return type is OK.
@@ -744,7 +959,12 @@ void Visitor::checkForUnadornedArrayType(const BracketLoop* node) {
   }
 
   if (doEmitError) {
-    error(node, "generic array types are unsupported in this context");
+    if (isInTypeExpression) {
+      auto str = isField ? "fields" : "variables";
+      error(node, "%s cannot specify generic array types", str);
+    } else {
+      error(node, "generic array types are unsupported in this context");
+    }
   }
 }
 
@@ -795,6 +1015,10 @@ void Visitor::checkPrivateDecl(const Decl* node) {
 // TODO: This is a global operation, where to store the state?
 void Visitor::checkExportedName(const NamedDecl* node) {
   (void) node;
+}
+
+bool Visitor::shouldEmitUnstableWarning(const AstNode* node) {
+  return warnUnstable_;
 }
 
 bool Visitor::isNamedThisAndNotReceiverOrFunction(const NamedDecl* node) {
@@ -879,6 +1103,21 @@ void Visitor::checkLinkageName(const NamedDecl* node) {
 
 void Visitor::checkVisibilityClauseValid(const AstNode* parentNode,
                                          const VisibilityClause* clause) {
+  // Check that the used/imported thing is valid
+  {
+    const AstNode* cur = clause->symbol();
+    while (cur != nullptr && !cur->isIdentifier()) {
+      if (cur == clause->symbol() && cur->isAs()) {
+        cur = cur->toAs()->symbol();
+      } else if (auto dot = cur->toDot()) {
+        cur = dot->receiver();
+      } else {
+        CHPL_REPORT(context_, IllegalUseImport, cur, parentNode);
+        break;
+      }
+    }
+  }
+
   if (clause->limitationKind() == VisibilityClause::EXCEPT) {
     // check that we do not have 'except A as B'
     for (const AstNode* e : clause->limitations()) {
@@ -912,16 +1151,14 @@ void Visitor::checkVisibilityClauseValid(const AstNode* parentNode,
   }
 }
 
-// TODO: This relies on the "warn unstable" flag that we do not have.
 void Visitor::warnUnstableUnions(const Union* node) {
-  if (!isFlagSet(CompilerFlags::WARN_UNSTABLE)) return;
-  warn(node,
-       "unions are currently unstable and are expected to change in ways that "
-       "will break their current uses.");
+  if (!shouldEmitUnstableWarning(node)) return;
+  warn(node, "unions are currently unstable and are expected to change "
+             "in ways that will break their current uses.");
 }
 
 void Visitor::warnUnstableSymbolNames(const NamedDecl* node) {
-  if (!isFlagSet(CompilerFlags::WARN_UNSTABLE)) return;
+  if (!shouldEmitUnstableWarning(node)) return;
   if (!isUserCode()) return;
 
   auto name = node->name();
@@ -939,17 +1176,117 @@ void Visitor::warnUnstableSymbolNames(const NamedDecl* node) {
 }
 
 void Visitor::visit(const Array* node) {
-  checkForOneElementArraysWithoutComma(node);
+  checkForArraysOfRanges(node);
 }
 
 void Visitor::visit(const BracketLoop* node) {
-  checkForUnadornedArrayType(node);
+  checkGenericArrayTypeUsage(node);
 }
-  
+
+void Visitor::checkUserModuleHasPragma(const AttributeGroup* node) {
+  // determine if the module is user code
+  if (!isUserCode()) return;
+
+  bool pragmaNoDocFound = false;
+  int pragmaCount = 0;
+  for (auto pragma : node->pragmas()) {
+    pragmaCount++;
+    if (pragma == pragmatags::PRAGMA_NO_DOC) {
+      // issue a deprecation warning about pragma 'no doc' and continue
+      warn(node, "pragma 'no doc' is deprecated, use '@chpldoc.nodoc' instead");
+      pragmaNoDocFound = true;
+      continue;
+    }
+  }
+  // don't check if warn_unstable isn't set
+  if (!shouldEmitUnstableWarning(node)) return;
+
+  // don't warn if the only pragma is 'no doc', which is deprecated
+  bool noDocIsOnlyPragma = (pragmaNoDocFound && pragmaCount == 1);
+  // issue a warning once for the symbol
+  if (node->pragmas().begin() != node->pragmas().end() && !noDocIsOnlyPragma) {
+    auto parentNode = parsing::parentAst(context_, node);
+    UniqueString parentName;
+    if (auto decl = parentNode->toNamedDecl()) {
+      parentName = decl->name();
+    } else if (auto label = parentNode->toLabel()) {
+      parentName = label->name();
+    } else if (auto include = parentNode->toInclude()) {
+      parentName = include->name();
+    } else if (auto function = parentNode->toFunction()) {
+      parentName = function->name();
+    } else if (auto ident = parentNode->toIdentifier()) {
+      parentName = ident->name();
+    } else if (auto formal = parentNode->toFormal()) {
+      parentName = formal->name();
+    }
+    // if the parent is not named, just produce a generic warning about pragmas
+    if (parentName.isEmpty()) {
+      warn(node, "all pragmas are considered unstable and may change in the future",
+           parentName.c_str());
+    } else {
+      warn(node, "'%s' uses pragmas, which are considered unstable and may change in the future",
+           parentName.c_str());
+    }
+  }
+}
+
+void Visitor::checkAttributeUsedParens(const Attribute* node) {
+  if (node->numActuals() > 0 && !node->usedParens()) {
+     CHPL_REPORT(context_, ParenlessAttributeArgDeprecated, node);
+  }
+}
+
+void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
+  // Store attributes we recognize in "all-global-strings.h"
+  // then a USTR() on the attribute name will work or not work
+  if (node->name() == USTR("deprecated") ||
+      node->name() == USTR("unstable") ||
+      node->name() == USTR("stable") ||
+      node->name().startsWith(USTR("chpldoc."))) {
+      // TODO: should we match chpldoc.nodoc or anything toolspaced with chpldoc.?
+      return;
+  } else if (node->fullyQualifiedAttributeName().find('.') == std::string::npos) {
+    // we don't recognize the top-level attribute that we found (no toolspace)
+    error(node, "Unknown top-level attribute '%s'", node->name().c_str());
+  } else {
+    // Check for other possible tool name given from command line
+    bool doWarn = isFlagSet(CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS);
+    auto toolNames = chpl::parsing::AttributeToolNames(this->context_);
+    for (auto toolName : toolNames) {
+      auto nameDot = UniqueString::getConcat(this->context_, toolName.c_str(), ".");
+      if (node->name().startsWith(nameDot)) {
+        // we found a tool name that matches the attribute's
+        return;
+      }
+    }
+    if (doWarn) {
+      auto pos = node->fullyQualifiedAttributeName().find_last_of('.');
+      auto toolName = node->fullyQualifiedAttributeName().substr(0, pos);
+      warn(node, "Unknown attribute tool name '%s'", toolName.c_str());
+    }
+  }
+}
+
+void Visitor::visit(const Attribute* node) {
+  checkAttributeNameRecognizedOrToolSpaced(node);
+  checkAttributeUsedParens(node);
+}
+
+void Visitor::visit(const AttributeGroup* node) {
+  checkUserModuleHasPragma(node);
+}
+
 void Visitor::visit(const FnCall* node) {
   checkNoDuplicateNamedArguments(node);
   checkForNestedClassDecorators(node);
   checkExplicitDeinitCalls(node);
+  checkBorrowFromNew(node);
+  checkSparseKeyword(node);
+}
+
+void Visitor::visit(const OpCall* node) {
+  checkDmappedKeyword(node);
 }
 
 void Visitor::visit(const Variable* node) {
@@ -971,7 +1308,9 @@ void Visitor::visit(const Function* node) {
   checkOverrideNonMethod(node);
   checkFormalsForTypeOrParamProcs(node);
   checkNoReceiverClauseOnPrimaryMethod(node);
+  checkLambdaDeprecated(node);
   checkLambdaReturnIntent(node);
+  checkConstReturnIntent(node);
   checkProcDefFormalsAreNamed(node);
 }
 
@@ -995,14 +1334,97 @@ void Visitor::visit(const Import* node) {
   }
 }
 
-// Duplicate the contents of 'idIsInBundledModule', while skipping the
-// call to 'filePathForId', because at this point the `setFilePathForId`
-// setter query may not have been run yet.
-bool Visitor::isUserFilePath(Context* context, UniqueString filepath) {
-  UniqueString modules = chpl::parsing::bundledModulePath(context);
-  if (modules.isEmpty()) return true;
-  bool ret = !filepath.startsWith(modules);
-  return ret;
+/**
+  This function takes a current stack of parents, and walks upwards (from the
+  innermost nodes to the outermost) looking for an AST node that either allows
+  or prevents the use of a particular control flow element (e.g., return).
+  If a node allows the control flow (e.g., we found a function, and we're
+  validating a return), this function returns true. If a node blocks the control
+  flow (e.g., we found a coforall, and we're validating a break), the function
+  returns false. If the parent stack is exhausted, and no node that allows the
+  control flow has been found (e.g., a return outside a function).
+
+  If the function returns false, outBlockingNode and outAllowingNode can be
+  used to determine why the control flow element is invalid.
+  * outAllowingNode is set to the inner most that the control flow could have
+    referred to, but was prevented from doing so by an intervening statement
+    (e.g., if a label with a particular name was found, but it lies outside
+     of a coforall, while the break lies inside).
+  * outBlockingNode is set to the node that disallowed the control flow (e.g.,
+    a coforall node that blocked a return). This node might be null -- this
+    indicates that no statement bans the use of the given control flow, but
+    that there is also no viable target for it (e.g., a break without a loop).
+ */
+template <typename F, typename NodeType>
+static bool checkParentsForControlFlow(const std::vector<const AstNode*>& stack,
+                                       F modifierPredicate,
+                                       const NodeType* checkFor,
+                                       const AstNode*& outBlockingNode,
+                                       const AstNode*& outAllowingNode) {
+  outBlockingNode = nullptr;
+  outAllowingNode = nullptr;
+  for (auto parentIt = stack.rbegin(); parentIt != stack.rend(); parentIt++) {
+    auto modifier = modifierPredicate(*parentIt, checkFor);
+    if (modifier == ControlFlowModifier::ALLOWS) {
+      if (outAllowingNode == nullptr) {
+        // Save only the innermost allowing node.
+        outAllowingNode = *parentIt;
+      }
+      // Only valid if we haven't encountered a blocking node before.
+      return outBlockingNode == nullptr;
+    } else if (modifier == ControlFlowModifier::BLOCKS) {
+      if (outBlockingNode == nullptr) {
+        // Save only the innermost blocking node
+        outBlockingNode = *parentIt;
+      }
+      // Continue search to see if we can find a node that allows the NodeType.
+    } else {
+      // Neither blocks nor allows; continue search.
+    }
+  }
+  // Didn't find a node that allows the control flow, so it's bad.
+  return false;
+}
+
+void Visitor::visit(const Return* node) {
+  const AstNode* blockingNode;
+  const AstNode* allowingNode;
+  if (!checkParentsForControlFlow(parents_, nodeAllowsReturn, node, blockingNode, allowingNode)) {
+    CHPL_REPORT(context_, DisallowedControlFlow, node, blockingNode, allowingNode);
+  }
+}
+
+void Visitor::visit(const Yield* node) {
+  const AstNode* blockingNode;
+  const AstNode* allowingNode;
+  if (!checkParentsForControlFlow(parents_, nodeAllowsYield, node, blockingNode, allowingNode)) {
+    CHPL_REPORT(context_, DisallowedControlFlow, node, blockingNode, allowingNode);
+  }
+}
+void Visitor::visit(const Break* node) {
+  const AstNode* blockingNode;
+  const AstNode* allowingNode;
+  if (!checkParentsForControlFlow(parents_, nodeAllowsBreak, node, blockingNode, allowingNode)) {
+    CHPL_REPORT(context_, DisallowedControlFlow, node, blockingNode, allowingNode);
+  }
+}
+void Visitor::visit(const Continue* node) {
+  const AstNode* blockingNode;
+  const AstNode* allowingNode;
+  if (!checkParentsForControlFlow(parents_, nodeAllowsContinue, node, blockingNode, allowingNode)) {
+    CHPL_REPORT(context_, DisallowedControlFlow, node, blockingNode, allowingNode);
+  }
+}
+
+void Visitor::checkExternBlockAtModuleScope(const ExternBlock* node) {
+  const AstNode* p = parent();
+  if (!p->isModule()) {
+    error(node, "extern blocks are currently only supported at module scope");
+  }
+}
+
+void Visitor::visit(const ExternBlock* node) {
+  checkExternBlockAtModuleScope(node);
 }
 
 } // end anonymous namespace
@@ -1013,8 +1435,9 @@ namespace uast {
 void
 checkBuilderResult(Context* context, UniqueString path,
                    const BuilderResult& result) {
-  bool isUserCode = Visitor::isUserFilePath(context, path);
-  auto v = Visitor(context, isUserCode);
+  bool warnUnstable = parsing::shouldWarnUnstableForPath(context, path);
+  bool isUserCode  = !parsing::filePathIsInBundledModule(context, path);
+  auto v = Visitor(context, warnUnstable, isUserCode);
 
   for (auto ast : result.topLevelExpressions()) {
     if (ast->isComment()) continue;

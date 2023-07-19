@@ -1,8 +1,8 @@
 use Time;
 use ResultDB;
 use IO.FormattedIO;
-use GPUDiagnostics;
-use Memory.Diagnostics;
+use GpuDiagnostics;
+use MemDiagnostics;
 
 config const passes = 10;
 config const alpha = 1.75: real(32);
@@ -23,13 +23,14 @@ proc main(){
     param halfNumFloats = numMaxFloats/2;
 
     var hos: [0..#numMaxFloats] real(32);
+    var flopsDB = new ResultDatabase("TriadFlops", "GFLOP/s");
+    var bdwthDB = new ResultDatabase("TriadBdwth", "GB/s");
+    var triadDB = new ResultDatabase("Triad Time", "sec");
+    var kernelDB = new ResultDatabase("Kernel Time", "sec");
+
     //startVerboseMem();
-    startGPUDiagnostics();
+    if !perftest then startGpuDiagnostics();
     on here.gpus[0] {
-        var flopsDB = new ResultDatabase("TriadFlops", "GFLOP/s");
-        var bdwthDB = new ResultDatabase("TriadBdwth", "GB/s");
-        var triadDB = new ResultDatabase("Triad Time", "sec");
-        var kernelDB = new ResultDatabase("Kernel Time", "sec");
         var kernelLaunches = 0;
 
         // Make A's
@@ -203,19 +204,21 @@ proc main(){
                 }
             }
         }
-        //stopVerboseMem();
-        if(output) {
-            flopsDB.printDatabaseStats();
-            bdwthDB.printDatabaseStats();
-            triadDB.printDatabaseStats();
-            kernelDB.printDatabaseStats();
-        }
-        if(perftest){
-            bdwthDB.printPerfStats();
-            triadDB.printPerfStats();
-            kernelDB.printPerfStats();
-        }
     }
-    stopGPUDiagnostics();
-    writeln(getGPUDiagnostics());
+    //stopVerboseMem();
+    if(output) {
+      flopsDB.printDatabaseStats();
+      bdwthDB.printDatabaseStats();
+      triadDB.printDatabaseStats();
+      kernelDB.printDatabaseStats();
+    }
+    if(perftest){
+      bdwthDB.printPerfStats();
+      triadDB.printPerfStats();
+      kernelDB.printPerfStats();
+    }
+    else {
+      stopGpuDiagnostics();
+      writeln(getGpuDiagnostics());
+    }
 }

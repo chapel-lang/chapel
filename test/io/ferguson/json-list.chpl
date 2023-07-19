@@ -3,9 +3,9 @@ use List, IO;
 {
   var mylist = new list(int);
 
-  mylist.append(1);
-  mylist.append(2);
-  mylist.append(3);
+  mylist.pushBack(1);
+  mylist.pushBack(2);
+  mylist.pushBack(3);
 
   writef("testing json write: %jt\n", mylist);
 }
@@ -115,4 +115,3 @@ var f = openTempFile();
 
   reader.close();
 }
-

@@ -1,4 +1,4 @@
-deprecated "'Dep' is deprecated, please use 'Undep' instead"
+@deprecated(notes="'Dep' is deprecated, please use 'Undep' instead")
 class Dep: Undep { }
 
 class Undep { }

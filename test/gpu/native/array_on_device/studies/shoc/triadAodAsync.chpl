@@ -1,8 +1,8 @@
 use Time;
 use ResultDB;
 use IO.FormattedIO;
-use GPUDiagnostics;
-use Memory.Diagnostics;
+use GpuDiagnostics;
+use MemDiagnostics;
 use GPU;
 
 config const passes = 1; //10;
@@ -26,7 +26,7 @@ proc main() {
 
     var hos: [0..#numMaxFloats] real(32);
     //startVerboseMem();
-    startGPUDiagnostics();
+    if !perftest then startGpuDiagnostics();
 
     var flopsDB = new ResultDatabase("TriadFlops", "GFLOP/s");
     var bdwthDB = new ResultDatabase("TriadBdwth", "GB/s");
@@ -203,7 +203,8 @@ proc main() {
       writeln("BW block size 64 = ", bwBlockSize64, " GB/s");
       writeln("BW block size 16384 = ", bwBlockSize16384, " GB/s");
     }
-
-    stopGPUDiagnostics();
-    writeln(getGPUDiagnostics());
+    else {
+      stopGpuDiagnostics();
+      writeln(getGpuDiagnostics());
+    }
 }

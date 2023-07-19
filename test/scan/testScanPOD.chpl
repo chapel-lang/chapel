@@ -24,4 +24,4 @@ proc test(dom) {
 }
 
 test({1..10});
-test(newBlockDom({1..10}));
+test(Block.createDomain({1..10}));

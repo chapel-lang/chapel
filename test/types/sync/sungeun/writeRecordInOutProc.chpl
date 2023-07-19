@@ -5,6 +5,8 @@ record myR {
   var x: myType;
   var sx: sync myType;
 
+  proc init() {}
+
   proc init=(other: myR) {
     this.x = other.x;
     this.complete();

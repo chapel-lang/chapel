@@ -41,8 +41,8 @@ proc examples() {
   // for a shared to point to.
   // After this line:
   //  shared1 will contain C(100)
-  shared1.retain(new unmanaged C(100));
-  writeln("after shared1.retain C(100)");
+  shared1 = shared.adopt(new unmanaged C(100));
+  writeln("after shared1 = shared.adopt C(100)");
   writeln("shared1 = ", shared1.borrow());
 
   // The clear method can be used to empty a shared immediately.
@@ -50,8 +50,8 @@ proc examples() {
   // it contains, that object will be deleted.
   // For shared, release does not return a value. That is because
   // it could still be managed by other shared record instances.
-  shared1.clear();
-  writeln("after shared1.clear()");
+  shared1 = nil;
+  writeln("after shared1 = nil");
   writeln("shared1 = ", shared1.borrow());
 
   writeln("declaring shared4 storing C(4)");

@@ -38,6 +38,11 @@ public:
   enum Name {
     UNKNOWN,
     WARN_UNSTABLE,
+    WARN_UNSTABLE_INTERNAL,
+    WARN_UNSTABLE_STANDARD,   // warn in all bundled modules except internal
+    WARN_ARRAY_OF_RANGE,
+    WARN_UNKNOWN_TOOL_SPACED_ATTRS,
+    PERMIT_UNHANDLED_MODULE_ERRORS,
     NUM_FLAGS
   };
 

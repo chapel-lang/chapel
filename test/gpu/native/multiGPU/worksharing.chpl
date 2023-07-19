@@ -1,6 +1,6 @@
 use Time;
-use GPUDiagnostics;
-use Memory.Diagnostics;
+use GpuDiagnostics;
+use MemDiagnostics;
 
 config const validate = true;
 config const printStats = false;
@@ -22,7 +22,7 @@ C = 2;
 
 var minTime = max(real);
 
-startGPUDiagnostics();
+startGpuDiagnostics();
 
 for i in 1..numIters {
   t.start();
@@ -59,8 +59,8 @@ for i in 1..numIters {
   if t.elapsed() < minTime then minTime = t.elapsed();
 }
 
-stopGPUDiagnostics();
-const nLaunch = getGPUDiagnostics().kernel_launch;
+stopGpuDiagnostics();
+const nLaunch = getGpuDiagnostics().kernel_launch;
 
 assert(nLaunch == here.gpus.size*numIters);
 

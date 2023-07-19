@@ -1,7 +1,7 @@
 use IO;
 
 on Locales[0] {
-    var reader = openreader("../input/tu8.bin");
+    var reader = openReader("../input/tu8.bin");
 
     on Locales[1] {
         const a_expected = [1, 2, 4, 8, 16, 32, 64, 128] : uint(8);

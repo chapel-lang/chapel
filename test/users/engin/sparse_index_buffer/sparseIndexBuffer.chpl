@@ -36,7 +36,7 @@ proc test(d) {
 proc printDomain(d) {
   var indexList: list(if d.rank==1 then d.idxType else d.rank*d.idxType);
   for i in d do
-    indexList.append(i);
+    indexList.pushBack(i);
   indexList.sort();
   writeln(indexList);
 }

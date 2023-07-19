@@ -16,8 +16,8 @@
 # limitations under the License.
 set(SRCS
     arg.cpp
+    arg-helpers.cpp
     checks.cpp
-    commonFlags.cpp
     config.cpp
     driver.cpp
     log.cpp

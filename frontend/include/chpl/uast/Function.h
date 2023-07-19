@@ -59,6 +59,7 @@ class Function final : public NamedDecl {
   enum ReturnIntent {
     // Use Qualifier here for consistent enum values.
     DEFAULT_RETURN_INTENT   = (int) Qualifier::DEFAULT_INTENT,
+    OUT                     = (int) Qualifier::OUT,
     CONST                   = (int) Qualifier::CONST_VAR,
     CONST_REF               = (int) Qualifier::CONST_REF,
     REF                     = (int) Qualifier::REF,
@@ -246,7 +247,7 @@ class Function final : public NamedDecl {
   bool isParenless() const { return parenless_; }
 
   bool isAnonymous() const {
-    auto ret = (kind() == LAMBDA || name() == "proc");
+    bool ret = name().isEmpty() || kind() == LAMBDA;
     return ret;
   }
 

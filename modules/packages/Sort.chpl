@@ -321,7 +321,6 @@ proc compareByPart(a:?t, b:t, comparator:?rec) {
      a > b : returns value > 0
      a == b: returns 0
 */
-pragma "no doc"
 inline proc chpl_compare(a:?t, b:t, comparator:?rec) {
   // TODO -- In cases where values are larger than keys, it may be faster to
   //         key data once and sort the keyed data, mirroring swaps in data.
@@ -340,7 +339,6 @@ inline proc chpl_compare(a:?t, b:t, comparator:?rec) {
 }
 
 
-pragma "no doc"
 pragma "unsafe" // due to 'data' default-initialized to nil for class types
 /*
     Check if a comparator was passed and confirm that it will work, otherwise
@@ -408,7 +406,7 @@ proc chpl_check_comparator(comparator, type eltType) param {
 pragma "unsafe" // due to 'tmp' default-initialized to nil for class types
 private
 proc radixSortOk(Data: [?Dom] ?eltType, comparator) param {
-  if !Dom.stridable {
+  if Dom.hasUnitStride(){
     var tmp:Data[Dom.low].type;
     if canResolveMethod(comparator, "keyPart", tmp, 0) {
       return true;
@@ -478,7 +476,7 @@ proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 /* Error message for multi-dimension arrays */
 proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
   where Dom.rank != 1 || !Data.isRectangular() {
@@ -499,7 +497,7 @@ proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
 proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator): bool {
   chpl_check_comparator(comparator, eltType);
 
-  const stride = if Dom.stridable then abs(Dom.stride) else 1:Dom.idxType;
+  const stride = abs(Dom.stride): Dom.idxType;
   var sorted = true;
   forall (element, i) in zip(Data, Dom) with (&& reduce sorted) {
     if i > Dom.low {
@@ -510,14 +508,14 @@ proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator): bool {
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 /* Error message for multi-dimension arrays */
 proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
   where Dom.rank != 1 {
     compilerError("isSorted() requires 1-D array");
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 iter sorted(x : domain, comparator:?rec=defaultComparator) {
   for i in x._value.dsiSorted(comparator) {
     yield i;
@@ -576,7 +574,7 @@ iter sorted(x, comparator:?rec=defaultComparator) {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module BubbleSort {
   import Sort.{defaultComparator, chpl_check_comparator, chpl_compare};
 
@@ -614,7 +612,7 @@ module BubbleSort {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module HeapSort {
   import Sort.{defaultComparator, chpl_check_comparator, chpl_compare};
   /*
@@ -680,7 +678,7 @@ module HeapSort {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module InsertionSort {
   private use Sort;
   /*
@@ -754,7 +752,7 @@ module InsertionSort {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module BinaryInsertionSort {
   private use Sort;
   /*
@@ -801,7 +799,7 @@ module BinaryInsertionSort {
     Does not check for a valid comparator.
   */
   private proc _binarySearchForLastOccurrence(Data: [?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.low, in hi=Dom.high) {
-    const stride = if Dom.stridable then abs(Dom.stride) else 1;
+    const stride = abs(Dom.stride): Dom.idxType;
 
     var loc = -1;                                        // index of the last occurrence of val in Data
 
@@ -824,7 +822,7 @@ module BinaryInsertionSort {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module TimSort {
   private use Sort;
 
@@ -858,7 +856,7 @@ module TimSort {
     /*Parallelly apply insertionSort on each block of size `blockSize`
      using forall loop*/
 
-    const stride = if Dom.stridable then abs(Dom.stride) else 1;
+    const stride = abs(Dom.stride): Dom.idxType;
     const size = (hi - lo) / stride + 1;
     const chunks = (size + blockSize - 1) / blockSize;
 
@@ -899,11 +897,13 @@ module TimSort {
     if mid >= hi {
       return;
     }
-    const stride = if Dom.stridable then abs(Dom.stride) else 1;
-    const a1range = if Dom.stridable then lo..mid by stride else lo..mid;
+    const stride = abs(Dom.stride): Dom.idxType;
+    const a1range = if Dom.hasPosNegUnitStride() then lo..mid
+                    else lo..mid by stride:uint;
     const a1max = mid;
 
-    const a2range = if Dom.stridable then (mid+stride)..hi by stride else (mid+1)..hi;
+    const a2range = if Dom.hasPosNegUnitStride() then (mid+1)..hi
+                    else (mid+stride)..hi by stride:uint;
     const a2max = hi;
 
     var A1 = Dst[a1range];
@@ -937,7 +937,7 @@ module TimSort {
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 module MergeSort {
   private use Sort;
   /*
@@ -981,7 +981,7 @@ module MergeSort {
     where Dom.rank == 1 {
     import Sort.InsertionSort;
 
-    const stride = if Dom.stridable then abs(Dom.stride) else 1,
+    const stride = abs(Dom.stride): Dom.idxType,
           size = (hi - lo) / stride,
           mid = lo + (size/2) * stride;
 
@@ -1003,7 +1003,7 @@ module MergeSort {
       if depth & 1 {
         // At odd depths, we need to return the results in Scratch.
         // But if the test above is correct, we'll never reach this point.
-        if Dom.stridable then
+        if ! Dom.strides.isPosNegOne() then
           Scratch[lo..hi by Dom.stride] = Data[lo..hi by Dom.stride];
         else
           Scratch[lo..hi] = Data[lo..hi];
@@ -1031,11 +1031,13 @@ module MergeSort {
   private proc _Merge(Dst: [?Dom] ?eltType, Src: [], lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
     /* Data[lo..mid by stride] is much slower than Data[lo..mid] when
      * Dom is unstrided.  So specify the latter explicitly when possible. */
-    const stride = if Dom.stridable then abs(Dom.stride) else 1;
-    const a1range = if Dom.stridable then lo..mid by stride else lo..mid;
+    const stride = abs(Dom.stride): Dom.idxType;
+    const a1range = if Dom.hasPosNegUnitStride() then lo..mid
+                    else lo..mid by stride;
     const a1max = mid;
 
-    const a2range = if Dom.stridable then (mid+stride)..hi by stride else (mid+1)..hi;
+    const a2range = if Dom.hasPosNegUnitStride() then (mid+1)..hi
+                    else (mid+stride)..hi by stride;
     const a2max = hi;
 
     ref A1 = Src[a1range];
@@ -1068,7 +1070,7 @@ module MergeSort {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module QuickSort {
   private use Sort;
   use Sort.ShallowCopy;
@@ -1236,7 +1238,7 @@ module QuickSort {
       compilerError("quickSort() requires 1-D array");
     }
 
-    if Dom.stridable && Dom.stride != 1 {
+    if Dom.stride != 1 {
       ref reindexed = Data.reindex(Dom.low..#Dom.size);
       assert(reindexed.domain.stride == 1);
       quickSortImpl(reindexed, minlen, comparator);
@@ -1317,7 +1319,7 @@ module QuickSort {
     }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module SelectionSort {
   private use Sort;
   /*
@@ -1352,7 +1354,7 @@ module SelectionSort {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module ShellSort {
   private use Sort;
   proc shellSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
@@ -1364,7 +1366,7 @@ module ShellSort {
 
     if Dom.rank != 1 then
       compilerError("shellSort() requires 1-D array");
-    if Dom.stridable then
+    if ! Dom.hasUnitStride() then
       compilerError("shellSort() requires an array over a non-stridable domain");
 
     // Based on Sedgewick's Shell Sort -- see
@@ -1397,10 +1399,11 @@ module ShellSort {
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 module SampleSortHelp {
   private use Sort;
   private use CTypes;
+  private use Math;
 
   param maxLogBuckets = 8; // not counting equality buckets.
   param classifyUnrollFactor = 7;
@@ -1475,7 +1478,7 @@ module SampleSortHelp {
       return numBuckets * (1 + equalBuckets:int);
     }
     proc getBinsToRecursivelySort() {
-      var r:range(stridable=true);
+      var r:range(strides = strideKind.positive);
       if equalBuckets {
         // odd bins will be equality buckets
         r = (0..(getNumBuckets()-1)) by 2;
@@ -1646,7 +1649,7 @@ module SampleSortHelp {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module RadixSortHelp {
   private use Sort;
   import Reflection.canResolveMethod;
@@ -1854,10 +1857,10 @@ module RadixSortHelp {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module ShallowCopy {
   private use CTypes;
-
+  private use OS.POSIX;
 
   // The shallowCopy / shallowSwap code needs to be able to copy/swap
   // _array records. But c_ptrTo on an _array will return a pointer to
@@ -1881,11 +1884,11 @@ module ShallowCopy {
       dst = src;
     } else {
       var size = c_sizeof(st);
-      c_memcpy(ptrTo(dst), ptrTo(src), size);
+      memcpy(ptrTo(dst), ptrTo(src), size);
       if boundsChecking {
         // The version moved from should never be used again,
         // but we clear it out just in case.
-        c_memset(ptrTo(src), 0, size);
+        memset(ptrTo(src), 0, size);
       }
     }
   }
@@ -1915,11 +1918,11 @@ module ShallowCopy {
     } else {
       var size = c_sizeof(st);
       // tmp = lhs
-      c_memcpy(ptrTo(tmp), ptrTo(lhs), size);
+      memcpy(ptrTo(tmp), ptrTo(lhs), size);
       // lhs = rhs
-      c_memcpy(ptrTo(lhs), ptrTo(rhs), size);
+      memcpy(ptrTo(lhs), ptrTo(rhs), size);
       // rhs = tmp
-      c_memcpy(ptrTo(rhs), ptrTo(tmp), size);
+      memcpy(ptrTo(rhs), ptrTo(tmp), size);
     }
   }
 
@@ -1938,7 +1941,7 @@ module ShallowCopy {
     if A._instance.isDefaultRectangular() {
       type st = __primitive("static field type", A._value, "eltType");
       var size = (nElts:c_size_t)*c_sizeof(st);
-      c_memcpy(ptrTo(A[dst]), ptrTo(A[src]), size);
+      memcpy(ptrTo(A[dst]), ptrTo(A[src]), size);
     } else {
       var ok = chpl__bulkTransferArray(/*dst*/ A, {dst..#nElts},
                                        /*src*/ A, {src..#nElts});
@@ -1965,7 +1968,7 @@ module ShallowCopy {
        SrcA._instance.isDefaultRectangular() {
       type st = __primitive("static field type", DstA._value, "eltType");
       var size = (nElts:c_size_t)*c_sizeof(st);
-      c_memcpy(ptrTo(DstA[dst]), ptrTo(SrcA[src]), size);
+      memcpy(ptrTo(DstA[dst]), ptrTo(SrcA[src]), size);
     } else {
       var ok = chpl__bulkTransferArray(/*dst*/ DstA, {dst..#nElts},
                                        /*src*/ SrcA, {src..#nElts});
@@ -1994,8 +1997,9 @@ module ShallowCopy {
     shallowCopyPutGetRefs(DstA[dst], SrcA[src], size);
   }
 }
-pragma "no doc"
+@chpldoc.nodoc
 module SequentialInPlacePartitioning {
+  private use Math;
   private param DISTRIBUTE_BUFFER = 5; // Number of temps during shuffle step
 
   // Returns the count for each bucket
@@ -2105,9 +2109,10 @@ module SequentialInPlacePartitioning {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module TwoArrayPartitioning {
   private use BlockDist;
+  private use Math;
   private use super.MSBRadixSort;
   public use List only list;
   import Sort.{ShellSort, RadixSortHelp, SampleSortHelp, ShallowCopy};
@@ -2213,7 +2218,7 @@ module TwoArrayPartitioning {
                                                 false);
       assert(!t.isEmpty());
       this.complete();
-      tasks.append(t);
+      tasks.pushBack(t);
     }
     proc writeThis(f) throws {
       f.write("TwoArrayDistSortTask");
@@ -2299,7 +2304,7 @@ module TwoArrayPartitioning {
     type bucketizerType;
 
     var numLocales:int;
-    var perLocale = newBlockArr(0..#numLocales,
+    var perLocale = Block.createArray(0..#numLocales,
         TwoArrayDistributedBucketizerStatePerLocale(bucketizerType));
 
     const baseCaseSize:int;
@@ -2530,12 +2535,12 @@ module TwoArrayPartitioning {
     const maxSequentialSize = max(n / state.nTasks,
                                   state.nTasks*state.sequentialSizePerTask);
 
-    state.bigTasks.append(new TwoArraySortTask(start_n, n, startbit, inA=true, doSort=true));
+    state.bigTasks.pushBack(new TwoArraySortTask(start_n, n, startbit, inA=true, doSort=true));
     assert(state.bigTasks.size == 1);
     assert(state.smallTasks.size == 0);
 
     while !state.bigTasks.isEmpty() {
-      const task = state.bigTasks.pop();
+      const task = state.bigTasks.popBack();
       const taskEnd = task.start + task.size - 1;
 
       assert(task.doSort);
@@ -2589,7 +2594,7 @@ module TwoArrayPartitioning {
         } else if !nowInA && !sortit {
           // Enqueue a small task to do the copy.
           // TODO: handle large copies in big tasks, or enqueue several tasks here
-          state.smallTasks.append(
+          state.smallTasks.pushBack(
             new TwoArraySortTask(binStart, binSize, binStartBit, nowInA, sortit));
 
         } else if binStartBit > state.endbit ||
@@ -2600,7 +2605,7 @@ module TwoArrayPartitioning {
           }
 
           // Enqueue a small task to sort and possibly copy.
-          state.smallTasks.append(
+          state.smallTasks.pushBack(
             new TwoArraySortTask(binStart, binSize, binStartBit, nowInA, sortit));
 
         } else {
@@ -2609,7 +2614,7 @@ module TwoArrayPartitioning {
           }
 
           // Enqueue a big task
-          state.bigTasks.append(
+          state.bigTasks.pushBack(
             new TwoArraySortTask(binStart, binSize, binStartBit, nowInA, sortit));
         }
       }
@@ -2797,7 +2802,7 @@ module TwoArrayPartitioning {
                                startbit,
                                0, state1.numLocales-1);
     var nextDistTaskElts: list(TwoArrayDistSortPerBucketTask, parSafe=true);
-    var smallTasksPerLocale = newBlockArr(0..#numLocales,
+    var smallTasksPerLocale = Block.createArray(0..#numLocales,
                                           list(TwoArraySortTask, parSafe=true));
 
     assert(!distTask.isEmpty());
@@ -3055,7 +3060,7 @@ module TwoArrayPartitioning {
               if debugDist then
                 writeln(bktLocId, " Adding small task ", small);
 
-              smallTasksPerLocale[theLocaleId].append(small);
+              smallTasksPerLocale[theLocaleId].pushBack(small);
             } else {
               // Create a distributed sorting task
               var firstLocId = firstLoc.id;
@@ -3080,7 +3085,7 @@ module TwoArrayPartitioning {
               if debugDist then
                 writeln(bktLocId, " Adding big subtask", t);
 
-              nextDistTaskElts.append(t);
+              nextDistTaskElts.pushBack(t);
             }
           }
         }
@@ -3123,7 +3128,7 @@ module TwoArrayPartitioning {
 
       while true {
         if smallTasksPerLocale[tid].isEmpty() then break;
-        const task = smallTasksPerLocale[tid].pop();
+        const task = smallTasksPerLocale[tid].popBack();
 
         if debugDist then
           writeln(tid, " Doing small task ", task);
@@ -3151,7 +3156,7 @@ module TwoArrayPartitioning {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module TwoArrayRadixSort {
   import Sort.defaultComparator;
   private use super.TwoArrayPartitioning;
@@ -3206,7 +3211,7 @@ module TwoArrayRadixSort {
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 module TwoArraySampleSort {
   import Sort.defaultComparator;
   private use super.TwoArrayPartitioning;
@@ -3253,16 +3258,17 @@ module TwoArraySampleSort {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module InPlacePartitioning {
   // TODO -- based on ips4o
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 module MSBRadixSort {
   import Sort.{defaultComparator, ShellSort};
   private use super.RadixSortHelp;
+  private use OS.POSIX;
 
   // This structure tracks configuration for the radix sorter.
   record MSBRadixSortSettings {
@@ -3563,13 +3569,14 @@ record DefaultComparator {
    */
   inline
   proc keyPart(x: chpl_anyreal, i:int):(int(8), uint(numBits(x.type))) {
+    import OS.POSIX.memcpy;
     var section:int(8) = if i > 0 then -1:int(8) else 0:int(8);
 
     param nbits = numBits(x.type);
     // Convert the real bits to a uint
     var src = x;
     var dst: uint(nbits);
-    c_memcpy(c_ptrTo(dst), c_ptrTo(src), c_sizeof(src.type));
+    memcpy(c_ptrTo(dst), c_ptrTo(src), c_sizeof(src.type));
 
     if (dst >> (nbits-1)) == 1 {
       // negative bit is set, flip all bits
@@ -3698,12 +3705,12 @@ record ReverseComparator {
 
    :arg revcomp: :ref:`ReverseComparator <reverse-comparator>` to copy.
    */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc init=(revcomp: ReverseComparator(?)) {
     this.comparator = revcomp.comparator;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc typeIsBitReversible(type t) param {
     if isHomogeneousTupleType(t) {
       var tmp:t;
@@ -3716,7 +3723,7 @@ record ReverseComparator {
 
     return false;
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   proc typeIsNegateReversible(type t) param {
     if isHomogeneousTupleType(t) {
       var tmp:t;
@@ -3733,11 +3740,11 @@ record ReverseComparator {
     return false;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc hasKeyPart(a) param {
     return canResolveMethod(this.comparator, "keyPart", a, 0);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   proc hasKeyPartFromKey(a) param {
     if canResolveMethod(this.comparator, "key", a) {
       var key:comparator.key(a).type;
@@ -3747,11 +3754,11 @@ record ReverseComparator {
     return false;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc hasCompare(a,b) param {
     return canResolveMethod(this.comparator, "compare", a, b);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   proc hasCompareFromKey(a) param {
     if canResolveMethod(this.comparator, "key", a) {
       var key:comparator.key(a).type;
@@ -3761,7 +3768,7 @@ record ReverseComparator {
     return false;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline
   proc getKeyPart(cmp, a, i) {
     var (section, part) = cmp.keyPart(a, i);
@@ -3789,7 +3796,7 @@ record ReverseComparator {
 
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline
   proc doCompare(cmp, a, b) {
     return cmp.compare(b, a);

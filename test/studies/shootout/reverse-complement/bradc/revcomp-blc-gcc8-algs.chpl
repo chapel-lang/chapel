@@ -61,10 +61,8 @@ param eol = '\n'.toByte(),  // end-of-line, as an integer
 var pairCmpl: [0..<join(maxChars, maxChars)] uint(16);
 
 // channels for doing efficient console I/O
-var stdinBin  = (new file(0)).reader(iokind.native, locking=false,
-                                     hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED)),
-  stdoutBin = (new file(1)).writer(iokind.native, locking=false,
-                                   hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
+var stdinBin  = (new file(0)).reader(iokind.native, locking=false),
+    stdoutBin = (new file(1)).writer(iokind.native, locking=false);
 
 proc main(args: [] string) {
   // set up the 'pairCmpl' map
@@ -216,8 +214,8 @@ proc revcomp(in dstFront, in charAfter, spanLen, buff, seq) {
 
   for 2..spanLen by -2 {
     charAfter -= 2;
-    const src = c_ptrTo(seq[charAfter]): c_ptr(uint(16)),
-          dst = c_ptrTo(buff[dstFront]): c_ptr(uint(16));
+    const src = c_ptrTo(seq[charAfter]):c_ptr(void):c_ptr(uint(16)),
+          dst = c_ptrTo(buff[dstFront]):c_ptr(void):c_ptr(uint(16));
     dst.deref() = pairCmpl[src.deref()];
     dstFront += 2;
   }
@@ -251,13 +249,15 @@ proc findSeqStart(buff, inds, ref ltLoc) {
     return ltLoc != max(int);
     
   } else if searchAlg == Foreach {
+    // this requires reduce intents. The solution here is potentially race-y.
+    // Making it use a `for` instead of `foreach` results in what looks like an
+    // infinite loop. This mode is commented out in the compopts
     foreach i in inds {
       if buff[i] == '>'.toByte() {
         ltLoc = i;
-        return true;
       }
     }
-    return false;
+    return ltLoc != max(int);
   } else if searchAlg == For {
     for i in inds {
       if buff[i] == '>'.toByte() {
@@ -267,14 +267,14 @@ proc findSeqStart(buff, inds, ref ltLoc) {
     }
     return false;
   } else if searchAlg == MemChr {
-    extern proc memchr(s, c, n): c_void_ptr;
+    extern proc memchr(s, c, n): c_ptr(void);
 
     const lowptr = c_ptrTo(buff[inds.low]),
           zeroptr = c_ptrTo(buff[0]),
           ltptr = memchr(lowptr, '>'.toByte(), inds.size): c_ptr(uint(8));
 
     ltLoc = ltptr - zeroptr;
-    return ltptr != c_nil;
+    return ltptr != nil;
   } else if searchAlg == Find {
     ltLoc = buff[inds].find('>'.toByte());
     return ltLoc != inds.low-1;

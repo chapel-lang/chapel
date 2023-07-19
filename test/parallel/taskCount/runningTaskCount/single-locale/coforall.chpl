@@ -1,31 +1,31 @@
-use Barriers;
+use Collectives;
 
 config const tasksPerLoc = 4;
 
 proc main() {
-  var barrier = new Barrier(tasksPerLoc);
+  var bar = new barrier(tasksPerLoc);
 
   // simple coforall
   coforall 1..tasksPerLoc {
-    barrier.barrier();
+    bar.barrier();
     writeln(here.runningTasks());
-    barrier.barrier();
+    bar.barrier();
   }
   writeln();
 
 
   // "unbounded" coforall
   coforall unknownTasksWrapperIter() {
-    barrier.barrier();
+    bar.barrier();
     // lame hack to ensure waitEndCount has been called by the main task
     while (here.runningTasks() != tasksPerLoc) { }
     writeln(here.runningTasks());
-    barrier.barrier();
+    bar.barrier();
   }
   writeln();
 
 
-  var nestedBarrier = new Barrier(tasksPerLoc*tasksPerLoc);
+  var nestedBarrier = new barrier(tasksPerLoc*tasksPerLoc);
   // nested coforall
   coforall 1..tasksPerLoc {
     coforall 1..tasksPerLoc {

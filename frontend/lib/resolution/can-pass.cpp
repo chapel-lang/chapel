@@ -352,6 +352,22 @@ bool CanPassResult::canConvertNumeric(Context* context,
 }
 
 bool
+CanPassResult::canConvertCPtr(Context* context,
+                              const Type* actualT,
+                              const Type* formalT) {
+  if (actualT->isCPtrType()) {
+    if (auto formalPtr = formalT->toCPtrType()) {
+      return formalPtr->isVoidPtr();
+    } else {
+      // Check for old c_void_ptr behavior.
+      return formalT->isCVoidPtrType();
+    }
+  }
+
+  return false;
+}
+
+bool
 CanPassResult::canConvertParamNarrowing(Context* context,
                                         const QualifiedType& actualQT,
                                         const QualifiedType& formalQT) {
@@ -524,7 +540,13 @@ CanPassResult CanPassResult::canPassClassTypes(Context* context,
   bool converts = decResult.conversionKind_ != NONE;
   bool instantiates = decResult.instantiates_;
 
-  if (actualBct->isSubtypeOf(formalBct, converts, instantiates)) {
+  if (formalCt->manageableType()->isAnyClassType()) {
+    // Formal is the generic `class`. This is an instantiation since
+    // that's always generic.
+    return instantiate();
+  } else if (actualCt->manageableType()->isAnyClassType()) {
+    CHPL_ASSERT(false && "probably shouldn't happen");
+  } else if (actualBct->isSubtypeOf(formalBct, converts, instantiates)) {
     // the basic class types are the same
     // or there was a subclass relationship
     // or there was instantiation
@@ -573,8 +595,8 @@ CanPassResult CanPassResult::canPassSubtype(Context* context,
     }
   }
 
-  // TODO: c_ptr -> c_void_ptr
-  // TODO: c_array -> c_void_ptr, c_array(t) -> c_ptr(t)
+  // TODO: c_ptr(t) -> c_ptr(void)
+  // TODO: c_array -> c_ptr(void), c_array(t) -> c_ptr(t)
 
   return fail();
 }
@@ -656,6 +678,10 @@ CanPassResult CanPassResult::canConvert(Context* context,
   if (canConvertParamNarrowing(context, actualQT, formalQT))
     return convert(PARAM_NARROWING);
 
+  if (canConvertCPtr(context, actualT, formalT)) {
+    return convert(OTHER);
+  }
+
   // can we convert tuples?
   if (actualQT.type()->isTupleType() && formalQT.type()->isTupleType()) {
     auto aT = actualQT.type()->toTupleType();
@@ -728,11 +754,6 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
       if (ct->decorator().isNilable())
         return true;
 
-  if (formalT->isAnyManagementNonNilableType())
-    if (auto ct = actualT->toClassType())
-      if (ct->decorator().isNonNilable())
-        return true;
-
   if (formalT->isAnyNumericType() && actualT->isNumericType())
     return true;
 
@@ -801,6 +822,11 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
   CHPL_ASSERT(actualT && formalT);
 
   // check for builtin generic types
+  //
+  // note: 'class' generic handling is down in canPassClassTypes, because it shares
+  // some logic for owned -> shared and nilable -> nonnilable conversions (etc.).
+  // It might need to be copied / moved up here, but for now, it's identical to
+  // regular parent / child logic, so leave it there.
   if (canInstantiateBuiltin(context, actualT, formalT)) {
     return instantiate();
   }
@@ -818,7 +844,24 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
   } else if (auto actualCt = actualT->toCompositeType()) {
     // check for instantiating records/unions/tuples
     if (auto formalCt = formalT->toCompositeType()) {
+      // Quick check to disallow passing tuples of mismatching sizes when the
+      // sizes are known.
+      if (actualCt->isTupleType() && formalCt->isTupleType()) {
+        auto at = actualCt->toTupleType();
+        auto ft = formalCt->toTupleType();
+        if (at->isKnownSize() && ft->isKnownSize() &&
+            at->numElements() != ft->numElements()) {
+          return fail();
+        }
+      }
+
       if (actualCt->isInstantiationOf(context, formalCt)) {
+        return instantiate();
+      }
+    }
+  } else if (auto actualPt = actualT->toCPtrType()) {
+    if (auto formalPt = formalT->toCPtrType()) {
+      if (actualPt->isInstantiationOf(context, formalPt)) {
         return instantiate();
       }
     }
@@ -876,10 +919,24 @@ CanPassResult CanPassResult::canPass(Context* context,
     return fail();
   }
 
-  if (actualT == formalT) {
+  // Type-query Kinds should always pass
+  if (actualT == formalT || typeQueryActual) {
     if (formalQT.kind() == QualifiedType::PARAM &&
         formalQT.param() == nullptr) {
       // if the formal parameter value is unknown, we need to instantiate
+      return instantiate();
+    }
+
+    // Passing in a type to another type requires instantiation.
+    // Note: we might encounter this situation for a type method on a
+    //   generic type. I.e., passing 'R(?)' to 'R(?)' for the 'this' formal.
+    //   This case should instantiate so that code looking for a substitution
+    //   will find one, rather than just seeing a generic type and guessing
+    //   that it wasn't instantiated.
+    //
+    // 'AnyType' has special meaning elsewhere, so it doesn't count as
+    // instantiation here.
+    if (formalQT.kind() == QualifiedType::TYPE && !formalT->isAnyType()) {
       return instantiate();
     }
 
@@ -1066,7 +1123,7 @@ class KindProperties {
   bool valid() const { return isValid; }
 };
 
-static llvm::Optional<QualifiedType>
+static optional<QualifiedType>
 findByPassing(Context* context,
               const std::vector<QualifiedType>& types) {
   for (auto& type : types) {
@@ -1081,10 +1138,10 @@ findByPassing(Context* context,
     }
     if (fitsOthers) return type;
   }
-  return llvm::Optional<QualifiedType>();
+  return chpl::empty;
 }
 
-llvm::Optional<QualifiedType>
+optional<QualifiedType>
 commonType(Context* context,
            const std::vector<QualifiedType>& types,
            KindRequirement requiredKind) {
@@ -1106,13 +1163,13 @@ commonType(Context* context,
   if (requiredKind) {
     // The caller enforces a particular kind on us. Make sure that the
     // computed properties line up with the kind.
-    auto requiredProperties = KindProperties::fromKind(requiredKind.getValue());
+    auto requiredProperties = KindProperties::fromKind(*requiredKind);
     requiredProperties.strictCombineWith(properties);
     properties = requiredProperties;
   }
 
   // We can't reconcile the intents. Return with error.
-  if (!properties.valid()) return llvm::Optional<QualifiedType>();
+  if (!properties.valid()) return chpl::empty;
   auto bestKind = properties.toKind();
 
   // Create a new list of types with their kinds adjusted.
@@ -1137,7 +1194,8 @@ commonType(Context* context,
   }
 
   bool paramRequired = requiredKind &&
-    requiredKind.getValue() == QualifiedType::PARAM;
+                       *requiredKind == QualifiedType::PARAM;
+
   if (bestKind == QualifiedType::PARAM && !paramRequired) {
     // We couldn't unify the types as params, but maybe if we downgrade
     // them to values, it'll work.
@@ -1153,7 +1211,7 @@ commonType(Context* context,
       return commonType;
     }
   }
-  return llvm::Optional<QualifiedType>();
+  return chpl::empty;
 }
 
 } // end namespace resolution

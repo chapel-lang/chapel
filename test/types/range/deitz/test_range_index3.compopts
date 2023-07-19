@@ -1,0 +1,2 @@
+--codegen         # test_range_index3.old.good
+-snewSliceRule    # test_range_index3.good

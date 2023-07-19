@@ -88,7 +88,7 @@ proc returnVar() {
   writeHeader("Concrete var field, default initializer");
 
   record R {
-    var d: domain(1, int, false);
+    var d: domain(1, int);
     var a: [d] int;
   }
 
@@ -99,7 +99,7 @@ proc returnVar() {
   writeHeader("Concrete const field, default initializer");
 
   record R {
-    const d: domain(1, int, false);
+    const d: domain(1, int);
     var a: [d] int;
   }
 
@@ -149,7 +149,7 @@ proc returnVar() {
   writeHeader("Concrete var field, generic user initializer with default intent");
 
   record R {
-    var d: domain(1, int, false);
+    var d: domain(1, int);
     var a: [d] int;
 
     proc init(d) { this.d = d; }
@@ -162,7 +162,7 @@ proc returnVar() {
   writeHeader("Concrete var field, generic user initializer with in intent");
 
   record R {
-    var d: domain(1, int, false);
+    var d: domain(1, int);
     var a: [d] int;
 
     proc init(in d) { this.d = d; }
@@ -175,7 +175,7 @@ proc returnVar() {
   writeHeader("Concrete var field, generic user initializer with const in intent");
 
   record R {
-    var d: domain(1, int, false);
+    var d: domain(1, int);
     var a: [d] int;
 
     proc init(const in d) { this.d = d; }
@@ -191,7 +191,7 @@ proc returnVar() {
     var d;
     var a: [d] int;
 
-    proc init(d: domain(1, int, false)) { this.d = d; }
+    proc init(d: domain(1, int)) { this.d = d; }
   }
 
   testAll(R);
@@ -204,7 +204,7 @@ proc returnVar() {
     var d;
     var a: [d] int;
 
-    proc init(in d: domain(1, int, false)) { this.d = d; }
+    proc init(in d: domain(1, int)) { this.d = d; }
   }
 
   testAll(R);
@@ -217,7 +217,7 @@ proc returnVar() {
     var d;
     var a: [d] int;
 
-    proc init(const in d: domain(1, int, false)) { this.d = d; }
+    proc init(const in d: domain(1, int)) { this.d = d; }
   }
 
   testAll(R);
@@ -227,10 +227,10 @@ proc returnVar() {
   writeHeader("Concrete var field, concrete user initializer with default intent");
 
   record R {
-    var d: domain(1, int, false);
+    var d: domain(1, int);
     var a: [d] int;
 
-    proc init(d: domain(1, int, false)) { this.d = d; }
+    proc init(d: domain(1, int)) { this.d = d; }
   }
 
   testAll(R);
@@ -240,10 +240,10 @@ proc returnVar() {
   writeHeader("Concrete var field, concrete user initializer with in intent");
 
   record R {
-    var d: domain(1, int, false);
+    var d: domain(1, int);
     var a: [d] int;
 
-    proc init(in d: domain(1, int, false)) { this.d = d; }
+    proc init(in d: domain(1, int)) { this.d = d; }
   }
 
   testAll(R);
@@ -253,10 +253,10 @@ proc returnVar() {
   writeHeader("Concrete var field, concrete user initializer with const in intent");
 
   record R {
-    var d: domain(1, int, false);
+    var d: domain(1, int);
     var a: [d] int;
 
-    proc init(const in d: domain(1, int, false)) { this.d = d; }
+    proc init(const in d: domain(1, int)) { this.d = d; }
   }
 
   testAll(R);
@@ -305,7 +305,7 @@ proc returnVar() {
   writeHeader("Concrete const field, generic user initializer with default intent");
 
   record R {
-    const d: domain(1, int, false);
+    const d: domain(1, int);
     var a: [d] int;
 
     proc init(d) { this.d = d; }
@@ -318,7 +318,7 @@ proc returnVar() {
   writeHeader("Concrete const field, generic user initializer with in intent");
 
   record R {
-    const d: domain(1, int, false);
+    const d: domain(1, int);
     var a: [d] int;
 
     proc init(in d) { this.d = d; }
@@ -331,7 +331,7 @@ proc returnVar() {
   writeHeader("Concrete const field, generic user initializer with const in intent");
 
   record R {
-    const d: domain(1, int, false);
+    const d: domain(1, int);
     var a: [d] int;
 
     proc init(const in d) { this.d = d; }
@@ -347,7 +347,7 @@ proc returnVar() {
     const d;
     var a: [d] int;
 
-    proc init(d: domain(1, int, false)) { this.d = d; }
+    proc init(d: domain(1, int)) { this.d = d; }
   }
 
   testAll(R);
@@ -360,7 +360,7 @@ proc returnVar() {
     const d;
     var a: [d] int;
 
-    proc init(in d: domain(1, int, false)) { this.d = d; }
+    proc init(in d: domain(1, int)) { this.d = d; }
   }
 
   testAll(R);
@@ -373,7 +373,7 @@ proc returnVar() {
     const d;
     var a: [d] int;
 
-    proc init(const in d: domain(1, int, false)) { this.d = d; }
+    proc init(const in d: domain(1, int)) { this.d = d; }
   }
 
   testAll(R);
@@ -383,10 +383,10 @@ proc returnVar() {
   writeHeader("Concrete const field, concrete user initializer with default intent");
 
   record R {
-    const d: domain(1, int, false);
+    const d: domain(1, int);
     var a: [d] int;
 
-    proc init(d: domain(1, int, false)) { this.d = d; }
+    proc init(d: domain(1, int)) { this.d = d; }
   }
 
   testAll(R);
@@ -396,10 +396,10 @@ proc returnVar() {
   writeHeader("Concrete const field, concrete user initializer with in intent");
 
   record R {
-    const d: domain(1, int, false);
+    const d: domain(1, int);
     var a: [d] int;
 
-    proc init(in d: domain(1, int, false)) { this.d = d; }
+    proc init(in d: domain(1, int)) { this.d = d; }
   }
 
   testAll(R);
@@ -409,10 +409,10 @@ proc returnVar() {
   writeHeader("Concrete const field, concrete user initializer with const in intent");
 
   record R {
-    const d: domain(1, int, false);
+    const d: domain(1, int);
     var a: [d] int;
 
-    proc init(const in d: domain(1, int, false)) { this.d = d; }
+    proc init(const in d: domain(1, int)) { this.d = d; }
   }
 
   testAll(R);

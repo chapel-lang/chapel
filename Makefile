@@ -111,6 +111,11 @@ third-party-chpldoc-venv: FORCE
 	cd third-party && $(MAKE) chpldoc-venv; \
 	fi
 
+third-party-chpldef-venv: FORCE
+	@if [ -z "$$CHPL_DONT_BUILD_CHPLDEF_VENV" ]; then \
+	cd third-party && $(MAKE) chpldef-venv; \
+	fi
+
 third-party-c2chapel-venv: FORCE
 	@if [ -z "$$CHPL_DONT_BUILD_C2CHAPEL_VENV" ]; then \
 	cd third-party && $(MAKE) c2chapel-venv; \
@@ -118,10 +123,17 @@ third-party-c2chapel-venv: FORCE
 
 test-venv: third-party-test-venv
 
-chpldoc: compiler third-party-chpldoc-venv
+chpldoc: third-party-chpldoc-venv
+	@cd third-party && $(MAKE) llvm
 	cd compiler && $(MAKE) chpldoc
 	@cd modules && $(MAKE)
 	@test -r Makefile.devel && $(MAKE) man-chpldoc || echo ""
+
+chpldef: compiler third-party-chpldef-venv
+	@echo "Making chpldef..."
+	@cd third-party && $(MAKE) llvm
+	@cd third-party && $(MAKE) CHPL_MAKE_HOST_TARGET=--host jemalloc
+	cd compiler && $(MAKE) chpldef
 
 always-build-test-venv: FORCE
 	-@if [ -n "$$CHPL_ALWAYS_BUILD_TEST_VENV" ]; then \
@@ -137,7 +149,7 @@ chplvis: compiler third-party-fltk FORCE
 	cd tools/chplvis && $(MAKE)
 	cd tools/chplvis && $(MAKE) install
 
-mason: chpldoc notcompiler FORCE
+mason: compiler chpldoc notcompiler FORCE
 	cd tools/mason && $(MAKE) && $(MAKE) install
 
 protoc-gen-chpl: chpldoc notcompiler FORCE
@@ -194,7 +206,7 @@ clobber: FORCE
 	cd tools/chplvis && $(MAKE) clobber
 	cd tools/c2chapel && $(MAKE) clobber
 	cd tools/mason && $(MAKE) clobber
-	cd tools/protoc-gen-chpl && $(MAKE) clobber
+	-cd tools/protoc-gen-chpl && $(MAKE) clobber
 	cd tools/chpldoc && $(MAKE) clobber
 	if [ -e doc/Makefile ]; then cd doc && $(MAKE) clobber; fi
 	rm -rf bin

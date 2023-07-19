@@ -190,8 +190,8 @@ class VarScopeVisitor {
   void enterAst(const uast::AstNode* ast);
   void exitAst(const uast::AstNode* ast);
 
-  bool enter(const VarLikeDecl* ast, RV& rv);
-  void exit(const VarLikeDecl* ast, RV& rv);
+  bool enter(const NamedDecl* ast, RV& rv);
+  void exit(const NamedDecl* ast, RV& rv);
 
   bool enter(const OpCall* ast, RV& rv);
   void exit(const OpCall* ast, RV& rv);

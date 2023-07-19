@@ -1,2 +1,2 @@
 -M ../must-init-record
--M ../tracking-record -M ../tracking -smapMethodsThrow=true
+-M ../tracking-record -M ../tracking

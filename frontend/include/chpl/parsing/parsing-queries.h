@@ -36,7 +36,7 @@ namespace chpl {
 namespace parsing {
 
 using ConfigSettingsList = std::vector<std::pair<std::string, std::string>>;
-
+using AttributeToolNamesList = std::vector<UniqueString>;
 /**
  This query returns the contents of a file as the string field in the
  FileContents.
@@ -74,6 +74,57 @@ void setFileText(Context* context, UniqueString path, std::string text);
  stored in the fileText query for the given path.
  */
 bool hasFileText(Context* context, const std::string& path);
+
+/**
+ This unstable, experimental type provides basic support for '.dyno' files.
+ */
+class LibraryFile {
+  private:
+    UniqueString path_;
+    std::map<UniqueString, std::streamoff> offsets_;
+    Deserializer::stringCacheType cache_;
+    bool isUser_;
+
+  public:
+  LibraryFile() {}
+
+  LibraryFile(Context*, UniqueString);
+
+  UniqueString path() const { return path_; }
+
+  const std::map<UniqueString, std::streamoff>& offsets() const {
+    return offsets_;
+  }
+
+  const Deserializer::stringCacheType& stringCache() const { return cache_; }
+
+  bool isUser() const { return isUser_; }
+
+  static void generate(Context* context,
+                       std::vector<UniqueString> paths,
+                       std::string outFileName,
+                       bool isUser);
+
+  void mark(Context* context) const { }
+
+  static bool update(LibraryFile& keep, LibraryFile& addin) {
+    bool changed = false;
+    changed |= defaultUpdate(keep.path_, addin.path_);
+    changed |= defaultUpdate(keep.offsets_, addin.offsets_);
+    changed |= defaultUpdate(keep.cache_, addin.cache_);
+    changed |= defaultUpdateBasic(keep.isUser_, addin.isUser_);
+    return changed;
+  }
+
+};
+
+/**
+  This query reads the file from the given path and produces a LibraryFile,
+  which contains useful information about the library's contents.
+ */
+const LibraryFile& loadLibraryFile(Context* context, UniqueString libPath);
+
+void registerFilePathsInLibrary(Context* context, UniqueString& libPath);
 
 /**
   This query reads a file (with the fileText query) and then parses it.
@@ -163,6 +214,35 @@ void setModuleSearchPath(Context* context,
                          std::vector<UniqueString> searchPath);
 
 /**
+  Return a list of paths to be prepended to the internal module path. This is
+  likely to be empty unless using --prepend-internal-module-dir when compiling
+*/
+const std::vector<UniqueString>& prependedInternalModulePath(Context* context);
+
+/**
+  Set a list of paths to be prepended to the internal module path. This is
+  typically set using the compiler flag --prepend-internal-module-dir and will
+  be called during setupModuleSearchPaths
+*/
+void setPrependedInternalModulePath(Context* context,
+                                    std::vector<UniqueString> paths);
+
+/**
+  Return a list of paths to be prepended to the standard module path. This is
+  likely to be empty unless using --prepend-standard-module-dir when compiling
+*/
+const std::vector<UniqueString>& prependedStandardModulePath(Context* context);
+
+
+/**
+  Set a list of paths to be prepended to the standard module path. This is
+  typically set using the compiler flag --prepend-standard-module-dir and will
+  be called during setupModuleSearchPaths
+*/
+void setPrependedStandardModulePath(Context* context,
+                                    std::vector<UniqueString> paths);
+
+/**
   Return the current internal module path, i.e. CHPL_HOME/modules/internal/
  */
 UniqueString internalModulePath(Context* context);
@@ -237,13 +317,42 @@ void setupModuleSearchPaths(Context* context,
 
 /**
  Returns true if the ID corresponds to something in an internal module.
+ If the internal module path is empty, this function returns false.
+
+ Also considers paths from --prepend-internal-module-dir, if any.
  */
 bool idIsInInternalModule(Context* context, ID id);
 
 /**
  Returns true if the ID corresponds to something in a bundled module.
+ If the bundled module path is empty, this function returns false.
+
+ Also considers paths, if any, from --prepend-internal-module-dir
+ and --prepend-standard-module-dir.
  */
 bool idIsInBundledModule(Context* context, ID id);
+
+/**
+ Returns true if the ID corresponds to something in a standard module.
+ A standard module is a bundled module, but it is not a package module
+ (which may be contributed by users and are not subject to the same
+ constraints as standard modules).
+
+ If the bundled module path is empty, this function returns false.
+
+ Also considers paths from --prepend-standard-module-dir, if any.
+ */
+bool idIsInStandardModule(Context* context, ID id);
+
+
+bool
+filePathIsInInternalModule(Context* context, UniqueString filePath);
+
+bool
+filePathIsInStandardModule(Context* context, UniqueString filePath);
+
+bool
+filePathIsInBundledModule(Context* context, UniqueString filePath);
 
 /**
  This query parses a toplevel module by name. Returns nullptr
@@ -272,6 +381,21 @@ uast::AstTag idToTag(Context* context, ID id);
  Returns true if the ID is a parenless function.
  */
 bool idIsParenlessFunction(Context* context, ID id);
+
+/**
+ Returns true if the ID refers to a private declaration.
+ */
+bool idIsPrivateDecl(Context* context, ID id);
+
+/**
+ Returns true if the ID is a function.
+ */
+bool idIsFunction(Context* context, ID id);
+
+/**
+ Returns true if the ID is a method.
+ */
+bool idIsMethod(Context* context, ID id);
 
 /**
  If the ID represents a field in a record/class/union, returns
@@ -350,11 +474,25 @@ void setConfigSettings(Context* context, ConfigSettingsList keys);
 const
 ConfigSettingsList& configSettings(Context* context);
 
+
+void setAttributeToolNames(Context* context, AttributeToolNamesList keys);
+
+const AttributeToolNamesList& AttributeToolNames(Context* context);
+
 /**
-  Given an ID, returns the attributes associated with the ID. Only
-  declarations can have associated attributes.
+  Given an ID, returns the attributes associated with the ID. This is important
+  to use or else attributes for children of MultiDecls or TupleDecls will not
+  be found.
  */
 const uast::AttributeGroup* idToAttributeGroup(Context* context, ID id);
+
+/**
+  Given an AstNode, returns the attributes associated with it. This is important
+  to use or else attributes for children of MultiDecls or TupleDecls will not
+  be found.
+ */
+const uast::AttributeGroup*
+astToAttributeGroup(Context* context, const uast::AstNode* node);
 
 /**
   Given an ID 'idMention' representing a mention of a symbol, and an
@@ -374,6 +512,12 @@ void reportDeprecationWarningForId(Context* context, ID idMention,
                                    ID idTarget);
 
 /**
+  Returns the state of --warn-unstable or -internal or -standard
+  depending on which of these applies to 'filepath'.
+*/
+bool shouldWarnUnstableForPath(Context* context, UniqueString filepath);
+
+/**
   Given an ID 'idMention' representing a mention of a symbol, and an
   ID 'idTarget' representing the symbol, determine if an unstable
   warning should be produced for 'idTarget' at 'idMention'. If so,
@@ -389,6 +533,11 @@ void reportDeprecationWarningForId(Context* context, ID idMention,
 */
 void reportUnstableWarningForId(Context* context, ID idMention,
                                 ID idTarget);
+
+/*
+  Given an ID, returns the module kind for the ID.
+*/
+uast::Module::Kind idToModuleKind(Context* context, ID id);
 
 } // end namespace parsing
 } // end namespace chpl

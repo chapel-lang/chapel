@@ -150,17 +150,17 @@ endpoint. ofi_rxAv refers to ofi_av if AVs can be shared, otherwise it
 refers to its own AV.
 */
 
-static struct fid_av*   ofi_av = NULL;   // shared address vector
-static fi_addr_t*       ofi_addrs;       // remote endpoint addresses
-
-static struct fid_ep*   ofi_rxEp;       // receive endpoint
-static struct fid_cq*   ofi_rxCQ;       // receive endpoint CQ
-static struct fid_cntr* ofi_rxCntr;     // receive endpoint counter
-static uint64_t         ofi_rxCount;    // # messages already received.
-static void*            ofi_rxBuffer;   // receive buffer for new messages
-static void*            ofi_rxEnd;      // first byte after buffer
-static struct fid_av*   ofi_rxAv;       // address vector
-static fi_addr_t*       ofi_rxAddrs;    // table of remote endpoint addresses
+static struct fid_av*   ofi_av = NULL;      // shared address vector
+static fi_addr_t*       ofi_addrs = NULL;   // remote endpoint addresses
+static struct fid_ep*   ofi_rxEp;           // receive endpoint
+static struct fid_cq*   ofi_rxCQ;           // receive endpoint CQ
+static struct fid_cntr* ofi_rxCntr;         // receive endpoint counter
+static uint64_t         ofi_rxCount;        // # messages already received.
+static void*            ofi_rxBuffer;       // receive buffer for new messages
+static void*            ofi_rxEnd;          // first byte after buffer
+static struct fid_av*   ofi_rxAv;           // address vector
+static fi_addr_t*       ofi_rxAddrs = NULL; // table of remote endpoint
+                                            // addresses
 
 #define rxAddr(tcip, n) (tcip->addrs[n])
 
@@ -1049,6 +1049,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   pthread_that_inited = pthread_self();
 }
 
+
 void chpl_comm_pre_mem_init(void) {
   //
   // Reserve cores for the AM handlers. This is done here because it has to
@@ -1061,7 +1062,6 @@ void chpl_comm_pre_mem_init(void) {
 
 void chpl_comm_post_mem_init(void) {
   DBG_PRINTF(DBG_IFACE_SETUP, "%s()", __func__);
-
   chpl_comm_init_prv_bcast_tab();
   init_broadcast_private();
 
@@ -1106,23 +1106,25 @@ void chpl_comm_post_task_init(void) {
 
 static
 void init_ofi(void) {
-  if (verbosity >= 2) {
-    if (chpl_nodeID == 0) {
+
+  init_ofiDoProviderChecks();
+  init_ofiEp();
+
+  if (verbosity >= 2 || DBG_TEST_MASK(DBG_PROV)) {
+    if ((chpl_nodeID == 0) || DBG_TEST_MASK(DBG_PROV)) {
       void* start;
       size_t size;
       chpl_comm_regMemHeapInfo(&start, &size);
       char buf[10];
-      printf("COMM=ofi: %s MCM mode, \"%s\" provider, \"%s\" device, %s fixed heap\n",
-             mcmModeNames[mcmMode], ofi_info->fabric_attr->prov_name,
-             ofi_info->domain_attr->name,
-             ((size == 0)
-              ? "no"
-              : chpl_snprintf_KMG_z(buf, sizeof(buf), size)));
+      printf("COMM=ofi: %s MCM mode, \"%s\" provider, \"%s\" device, "
+        "%s fixed heap, %s endpoints\n",
+        mcmModeNames[mcmMode], ofi_info->fabric_attr->prov_name,
+        ofi_info->domain_attr->name,
+        ((size == 0) ? "no": chpl_snprintf_KMG_z(buf, sizeof(buf), size)),
+        (tciTabBindTxCtxs ? "bound" : "unbound"));
     }
   }
 
-  init_ofiDoProviderChecks();
-  init_ofiEp();
   init_ofiExchangeAvInfo();
   init_ofiForMem();
   init_ofiForRma();
@@ -1420,6 +1422,10 @@ struct fi_info* findProvInList(struct fi_info* info,
                                chpl_bool accept_RxM_provs,
                                chpl_bool accept_sockets_provs) {
 
+  chpl_topo_pci_addr_t pciAddr;
+  chpl_topo_pci_addr_t *addr = NULL;
+  struct fi_info *best = NULL;
+
   for (; info != NULL; info = info->next) {
     // break out of the loop when we find one that meets all of our criteria
     if (!accept_ungood_provs && !isGoodCoreProvider(info)) {
@@ -1437,20 +1443,58 @@ struct fi_info* findProvInList(struct fi_info* info,
     if (!isUseableProvider(info)) {
       continue;
     }
+    // If we get here the provider is usable, but if the machine has multiple
+    // NICs there will be multiple instances of this type of provider. Ask
+    // the topology layer which NIC we should use, e.g., if we are running in
+    // a socket then we should use a NIC associated with that socket.
+    // If it returns NULL then the topology layer doesn't care and we
+    // can just use this provider, otherwise we have to look for the same type
+    // of provider for the specified NIC.
+
+    if (addr == NULL) {
+      if ((info->nic != NULL) && (info->nic->bus_attr != NULL)) {
+        chpl_topo_pci_addr_t inAddr;
+        struct fi_pci_attr *pci = &info->nic->bus_attr->attr.pci;
+        inAddr.domain = pci->domain_id;
+        inAddr.bus = pci->bus_id;
+        inAddr.device = pci->device_id;
+        inAddr.function = pci->function_id;
+        addr = chpl_topo_selectNicByType(&inAddr, &pciAddr);
+        // Remember this NIC in case the NIC suggested by the topology layer
+        // isn't in the list of infos, in which case we'll use this one.
+        best = info;
+      }
+    }
+    if (addr != NULL) {
+      // Only use this provider if the PCI address of its NIC matches that
+      // returned by the topology layer.
+      if ((info->nic != NULL) && (info->nic->bus_attr != NULL) &&
+          (info->nic->bus_attr->bus_type == FI_BUS_PCI)) {
+        struct fi_pci_attr *pci = &info->nic->bus_attr->attr.pci;
+        if ((pci->domain_id != addr->domain) ||
+            (pci->bus_id != addr->bus) ||
+            (pci->device_id != addr->device) ||
+            (pci->function_id != addr->function)) {
+          // don't use this one
+          continue;
+        }
+      }
+    }
     // got one
+    best = info;
     break;
   }
-  if (info && (isInProvider("sockets", info))) {
+  if (best && (isInProvider("sockets", best))) {
     chpl_warning("sockets provider is deprecated", 0, 0);
   }
 
   // some providers incorrectly report that they supports FI_ORDER_ATOMIC_RAW
   // and FI_ORDER_ATOMIC_WAR
-  if (info && (isInProvider("cxi", info))) {
-    info->tx_attr->msg_order &= ~(FI_ORDER_ATOMIC_RAW | FI_ORDER_ATOMIC_WAR);
-    info->rx_attr->msg_order &= ~(FI_ORDER_ATOMIC_RAW | FI_ORDER_ATOMIC_WAR);
+  if (best && (isInProvider("cxi", best))) {
+    best->tx_attr->msg_order &= ~(FI_ORDER_ATOMIC_RAW | FI_ORDER_ATOMIC_WAR);
+    best->rx_attr->msg_order &= ~(FI_ORDER_ATOMIC_RAW | FI_ORDER_ATOMIC_WAR);
   }
-  return (info == NULL) ? NULL : fi_dupinfo(info);
+  return (best == NULL) ? NULL : fi_dupinfo(best);
 }
 
 
@@ -1565,10 +1609,14 @@ chpl_bool canBindTxCtxs(struct fi_info* info) {
   // we'll use bound tx contexts with this provider.
   //
   const struct fi_domain_attr* dom_attr = info->domain_attr;
-  int numWorkerTxCtxs = ((envPreferScalableTxEp
+  // The cxi provider has a bug in which it reports a maximum of only 128
+  // endpoints. Until that is fixed, assume it can create as many endpoints
+  // as we need.
+  size_t epCount = isInProvider("cxi", info) ? SIZE_MAX : dom_attr->ep_cnt;
+  size_t numWorkerTxCtxs = ((envPreferScalableTxEp
                           && dom_attr->max_ep_tx_ctx > 1)
                          ? dom_attr->max_ep_tx_ctx
-                         : dom_attr->ep_cnt)
+                         : epCount)
                         - 1
                         - numAmHandlers;
   if (envCommConcurrency > 0 && envCommConcurrency < numWorkerTxCtxs) {
@@ -2022,7 +2070,7 @@ void init_ofiFabricDomain(void) {
 // Reserve cores for the AM handler(s).
 //
 static
-void init_ofiReserveCores() {
+void init_ofiReserveCores(void) {
   for (int i = 0; i < numAmHandlers; i++) {
     reservedCPUs[i] = envUseDedicatedAmhCores ?
       chpl_topo_reserveCPUPhysical() : -1;
@@ -3220,11 +3268,6 @@ void fini_ofi(void) {
     CHPL_FREE(memTabMap);
   }
 
-  CHPL_FREE(amLZs[1]);
-  CHPL_FREE(amLZs[0]);
-
-  CHPL_FREE(ofi_rxAddrs);
-
   if (ofi_amhPollSet != NULL) {
     OFI_CHK(fi_poll_del(ofi_amhPollSet, tciTab[tciTabLen - 1].txCmplFid, 0));
     OFI_CHK(fi_poll_del(ofi_amhPollSet, &ofi_rxCQ->fid, 0));
@@ -3262,14 +3305,18 @@ void fini_ofi(void) {
 
   if (ofi_rxAv != ofi_av) {
     OFI_CHK(fi_close(&ofi_rxAv->fid));
+  }
+
+  if (ofi_rxAddrs != NULL) {
     CHPL_FREE(ofi_rxAddrs);
   }
 
   if (ofi_av != NULL) {
     OFI_CHK(fi_close(&ofi_av->fid));
+  }
+  if (ofi_addrs != NULL) {
     CHPL_FREE(ofi_addrs);
   }
-
   if (ofi_amhPollSet != NULL) {
     OFI_CHK(fi_close(&ofi_amhWaitSet->fid));
     OFI_CHK(fi_close(&ofi_amhPollSet->fid));
@@ -3279,6 +3326,10 @@ void fini_ofi(void) {
   OFI_CHK(fi_close(&ofi_fabric->fid));
 
   fi_freeinfo(ofi_info);
+
+  CHPL_FREE(amLZs[1]);
+  CHPL_FREE(amLZs[0]);
+
 }
 
 

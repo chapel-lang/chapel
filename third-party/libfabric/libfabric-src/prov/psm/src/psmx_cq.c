@@ -34,10 +34,10 @@
 
 void psmx_cq_enqueue_event(struct psmx_fid_cq *cq, struct psmx_cq_event *event)
 {
-	fastlock_acquire(&cq->lock);
+	ofi_spin_lock(&cq->lock);
 	slist_insert_tail(&event->list_entry, &cq->event_queue);
 	cq->event_count++;
-	fastlock_release(&cq->lock);
+	ofi_spin_unlock(&cq->lock);
 
 	if (cq->wait)
 		cq->wait->signal(cq->wait);
@@ -47,14 +47,14 @@ static struct psmx_cq_event *psmx_cq_dequeue_event(struct psmx_fid_cq *cq)
 {
 	struct slist_entry *entry;
 
-	fastlock_acquire(&cq->lock);
+	ofi_spin_lock(&cq->lock);
 	if (slist_empty(&cq->event_queue)) {
-		fastlock_release(&cq->lock);
+		ofi_spin_unlock(&cq->lock);
 		return NULL;
 	}
 	entry = slist_remove_head(&cq->event_queue);
 	cq->event_count--;
-	fastlock_release(&cq->lock);
+	ofi_spin_unlock(&cq->lock);
 
 	return container_of(entry, struct psmx_cq_event, list_entry);
 }
@@ -63,15 +63,15 @@ static struct psmx_cq_event *psmx_cq_alloc_event(struct psmx_fid_cq *cq)
 {
 	struct psmx_cq_event *event;
 
-	fastlock_acquire(&cq->lock);
+	ofi_spin_lock(&cq->lock);
 	if (!slist_empty(&cq->free_list)) {
 		event = container_of(slist_remove_head(&cq->free_list),
 				     struct psmx_cq_event, list_entry);
-		fastlock_release(&cq->lock);
+		ofi_spin_unlock(&cq->lock);
 		return event;
 	}
 
-	fastlock_release(&cq->lock);
+	ofi_spin_unlock(&cq->lock);
 	event = calloc(1, sizeof(*event));
 	if (!event)
 		FI_WARN(&psmx_prov, FI_LOG_CQ, "out of memory.\n");
@@ -84,9 +84,9 @@ static void psmx_cq_free_event(struct psmx_fid_cq *cq,
 {
 	memset(event, 0, sizeof(*event));
 
-	fastlock_acquire(&cq->lock);
+	ofi_spin_lock(&cq->lock);
 	slist_insert_tail(&event->list_entry, &cq->free_list);
-	fastlock_release(&cq->lock);
+	ofi_spin_unlock(&cq->lock);
 }
 
 struct psmx_cq_event *psmx_cq_create_event(struct psmx_fid_cq *cq,
@@ -369,14 +369,14 @@ int psmx_cq_poll_mq(struct psmx_fid_cq *cq, struct psmx_fid_domain *domain,
 		 * freed because the two psm_mq_ipeek calls may return the
 		 * same request. Use a lock to ensure that won't happen.
 		 */
-		if (fastlock_tryacquire(&domain->poll_lock))
+		if (ofi_spin_trylock(&domain->poll_lock))
 			return read_count;
 
 		err = psm_mq_ipeek(domain->psm_mq, &psm_req, NULL);
 
 		if (err == PSM_OK) {
 			err = psm_mq_test(&psm_req, &psm_status);
-			fastlock_release(&domain->poll_lock);
+			ofi_spin_unlock(&domain->poll_lock);
 
 			fi_context = psm_status.context;
 
@@ -542,7 +542,7 @@ int psmx_cq_poll_mq(struct psmx_fid_cq *cq, struct psmx_fid_domain *domain,
 						len_remaining = PSMX_MAX_MSG_SIZE;
 					err = psm_mq_irecv(tmp_ep->domain->psm_mq,
 							   req->tag, req->tagsel, req->flag,
-							   req->buf + req->offset, 
+							   req->buf + req->offset,
 							   len_remaining,
 							   (void *)fi_context, &psm_req);
 					if (err != PSM_OK)
@@ -559,10 +559,10 @@ int psmx_cq_poll_mq(struct psmx_fid_cq *cq, struct psmx_fid_domain *domain,
 
 			return read_count;
 		} else if (err == PSM_MQ_NO_COMPLETIONS) {
-			fastlock_release(&domain->poll_lock);
+			ofi_spin_unlock(&domain->poll_lock);
 			return read_count;
 		} else {
-			fastlock_release(&domain->poll_lock);
+			ofi_spin_unlock(&domain->poll_lock);
 			return psmx_errno(err);
 		}
 	}
@@ -646,7 +646,7 @@ static ssize_t psmx_cq_readerr(struct fid_cq *cq, struct fi_cq_err_entry *buf,
 
 	cq_priv = container_of(cq, struct psmx_fid_cq, cq);
 
-	fastlock_acquire(&cq_priv->lock);
+	ofi_spin_lock(&cq_priv->lock);
 	if (cq_priv->pending_error) {
 		api_version = cq_priv->domain->fabric->util_fabric.
 			      fabric_fid.api_version;
@@ -656,10 +656,10 @@ static ssize_t psmx_cq_readerr(struct fid_cq *cq, struct fi_cq_err_entry *buf,
 		memcpy(buf, &cq_priv->pending_error->cqe, size);
 		free(cq_priv->pending_error);
 		cq_priv->pending_error = NULL;
-		fastlock_release(&cq_priv->lock);
+		ofi_spin_unlock(&cq_priv->lock);
 		return 1;
 	}
-	fastlock_release(&cq_priv->lock);
+	ofi_spin_unlock(&cq_priv->lock);
 
 	return -FI_EAGAIN;
 }
@@ -748,7 +748,7 @@ static int psmx_cq_close(fid_t fid)
 		free(item);
 	}
 
-	fastlock_destroy(&cq->lock);
+	ofi_spin_destroy(&cq->lock);
 
 	if (cq->wait) {
 		fi_poll_del(&cq->wait->pollset->poll_fid, &cq->cq.fid, 0);
@@ -918,7 +918,7 @@ int psmx_cq_open(struct fid_domain *domain, struct fi_cq_attr *attr,
 
 	slist_init(&cq_priv->event_queue);
 	slist_init(&cq_priv->free_list);
-	fastlock_init(&cq_priv->lock);
+	ofi_spin_init(&cq_priv->lock);
 
 #define PSMX_FREE_LIST_SIZE	64
 	for (i=0; i<PSMX_FREE_LIST_SIZE; i++) {

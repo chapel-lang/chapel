@@ -4,9 +4,12 @@ class C {
 
 class D : C {
   var y: real;
-  proc writeThis(ch) throws {
-    super.writeThis(ch);
-    ch.write("y is: ", y);
+  override proc writeThis(f) throws {
+    super.writeThis(f);
+    f.write("y is: ", y);
+  }
+  override proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
   }
 }
 

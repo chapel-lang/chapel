@@ -8,7 +8,7 @@ proc main() {
 }
 
 proc runTests(stream) {
-  test(stream, [1, ], trials=10);
+  test(stream, [1], trials=10);
   test(stream, [1, 2, 3]);
 
   var uints: [1..3] uint = [100:uint, 100:uint, 400:uint];

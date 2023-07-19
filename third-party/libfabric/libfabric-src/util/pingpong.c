@@ -65,6 +65,10 @@
 #define OFI_MR_BASIC_MAP (FI_MR_ALLOCATED | FI_MR_PROV_KEY | FI_MR_VIRT_ADDR)
 #endif
 
+#ifndef AI_NUMERICSERV
+#define AI_NUMERICSERV 0
+#endif
+
 static const uint64_t TAG = 1234;
 
 enum precision {
@@ -310,7 +314,7 @@ static int pp_getaddrinfo(char *name, uint16_t port, struct addrinfo **results)
 
 	ret = getaddrinfo(name, port_s, &hints, results);
 	if (ret != 0) {
-		err_msg = gai_strerror(ret);
+		err_msg = (const char *) gai_strerror(ret);
 		PP_ERR("getaddrinfo : %s", err_msg);
 		ret = -EXIT_FAILURE;
 		goto out;
@@ -390,7 +394,7 @@ static int pp_ctrl_init_client(struct ct_pingpong *ct)
 
 		pp_print_addrinfo(rp, "CLIENT: connecting to");
 
-		ret = connect(ct->ctrl_connfd, rp->ai_addr, rp->ai_addrlen);
+		ret = connect(ct->ctrl_connfd, rp->ai_addr, (socklen_t) rp->ai_addrlen);
 		if (ret != -1)
 			break;
 
@@ -606,7 +610,7 @@ static int pp_send_name(struct ct_pingpong *ct, struct fid *endpoint)
 	}
 
 	PP_DEBUG("Sending name length\n");
-	len = htonl(addrlen);
+	len = htonl((uint32_t) addrlen);
 	ret = pp_ctrl_send(ct, (char *) &len, sizeof(len));
 	if (ret < 0)
 		goto fn;
@@ -920,10 +924,10 @@ static int pp_check_buf(void *buf, int size)
 static void eq_readerr(struct fid_eq *eq)
 {
 	struct fi_eq_err_entry eq_err = { 0 };
-	int rd;
+	ssize_t rd;
 
 	rd = fi_eq_readerr(eq, &eq_err, 0);
-	if (rd != sizeof(eq_err)) {
+	if ((size_t) rd != sizeof(eq_err)) {
 		PP_PRINTERR("fi_eq_readerr", rd);
 	} else {
 		PP_ERR("eq_readerr: %s",
@@ -1194,7 +1198,7 @@ static int pp_get_tx_comp(struct ct_pingpong *ct, uint64_t total)
 		int ret, rc;                                                   \
 									       \
 		while (1) {                                                    \
-			ret = post_fn(__VA_ARGS__);                            \
+			ret = (int) post_fn(__VA_ARGS__);                      \
 			if (!ret)                                              \
 				break;                                         \
 									       \
@@ -1234,7 +1238,7 @@ static ssize_t pp_tx(struct ct_pingpong *ct, struct fid_ep *ep, size_t size)
 	ssize_t ret;
 
 	if (pp_check_opts(ct, PP_OPT_VERIFY_DATA | PP_OPT_ACTIVE))
-		pp_fill_buf((char *)ct->tx_buf + ct->tx_prefix_size, size);
+		pp_fill_buf((char *)ct->tx_buf + ct->tx_prefix_size, (int)size);
 
 	ret = pp_post_tx(ct, ep, size + ct->tx_prefix_size, ct->tx_ctx_ptr);
 	if (ret)
@@ -1263,7 +1267,7 @@ static ssize_t pp_inject(struct ct_pingpong *ct, struct fid_ep *ep, size_t size)
 	ssize_t ret;
 
 	if (pp_check_opts(ct, PP_OPT_VERIFY_DATA | PP_OPT_ACTIVE))
-		pp_fill_buf((char *)ct->tx_buf + ct->tx_prefix_size, size);
+		pp_fill_buf((char *)ct->tx_buf + ct->tx_prefix_size, (int)size);
 
 	ret = pp_post_inject(ct, ep, size + ct->tx_prefix_size);
 	if (ret)
@@ -1294,7 +1298,7 @@ static ssize_t pp_rx(struct ct_pingpong *ct, struct fid_ep *ep, size_t size)
 
 	if (pp_check_opts(ct, PP_OPT_VERIFY_DATA | PP_OPT_ACTIVE)) {
 		ret = pp_check_buf((char *)ct->rx_buf + ct->rx_prefix_size,
-				   size);
+				   (int)size);
 		if (ret)
 			return ret;
 	}
@@ -2074,12 +2078,12 @@ static void pp_parse_opts(struct ct_pingpong *ct, int op, char *optarg)
 
 	/* Source Port */
 	case 'B':
-		ct->opts.src_port = parse_ulong(optarg, UINT16_MAX);
+		ct->opts.src_port = (uint16_t) parse_ulong(optarg, UINT16_MAX);
 		break;
 
 	/* Destination Port */
 	case 'P':
-		ct->opts.dst_port = parse_ulong(optarg, UINT16_MAX);
+		ct->opts.dst_port = (uint16_t) parse_ulong(optarg, UINT16_MAX);
 		break;
 
 	case 'm':

@@ -1,7 +1,7 @@
 // This test came from issue #8449
 // At one point it failed to compile.
 
-var global:unmanaged object?;
+var global:unmanaged RootClass?;
 
 record ForwardingWrapper {
   type eltType;
@@ -21,6 +21,9 @@ record ForwardingWrapper {
 class C {
   type eltType;
   var lock$ : sync bool;
+  proc init(type eltType) {
+    this.eltType = eltType;
+  }
 }
 
 var wrapper : ForwardingWrapper(int);

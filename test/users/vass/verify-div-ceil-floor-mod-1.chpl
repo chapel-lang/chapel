@@ -1,3 +1,5 @@
+use Math;
+
 var vtestcount = 0;
 var ptestcount = 0;
 var errcount = 0;

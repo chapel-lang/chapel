@@ -23,49 +23,49 @@ module DataFrames {
   private use IO;
 
   class Index {
-    pragma "no doc"
+    @chpldoc.nodoc
     proc contains(lab) {
       halt("generic Index contains no elements");
       return false;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc uni(lhs: borrowed TypedSeries, rhs: borrowed TypedSeries, unifier:
         borrowed SeriesUnifier): owned Series {
       halt("generic Index cannot be unioned");
       return new owned Series();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc map(s: borrowed TypedSeries, mapper: borrowed SeriesMapper): owned Series {
       halt("generic Index cannot be mapped");
       return new owned Series();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc filter(s: borrowed TypedSeries, filterSeries: borrowed TypedSeries): owned Series {
       halt("generic Index cannot be filtered");
       return new owned Series();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc nrows(): int {
       halt("generic Index cannot be countd");
       return 0;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc writeThis(f, s: borrowed TypedSeries(?)) throws {
       halt("cannot writeThis on generic Index");
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc writeThis(f, d: borrowed DataFrame) throws {
       halt("cannot writeThis on generic Index");
     }
 
-    pragma "no doc"
-    proc writeThis(f) throws {
+    @chpldoc.nodoc
+    override proc writeThis(f) throws {
       halt("cannot writeThis on generic Index");
     }
 
@@ -218,12 +218,12 @@ module DataFrames {
       return ords.size;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc writeIdxWidth() {
       var idxWidth = 0;
       for idx in this {
         // TODO: clean up to simple cast after bugfix
-        var idxStr = createStringWithNewBuffer(idx: string);
+        var idxStr = idx: string;
         if idxStr.size > idxWidth then
           idxWidth = idxStr.size;
       }
@@ -235,7 +235,7 @@ module DataFrames {
       var idxWidth = writeIdxWidth() + 4;
       for (idx, (v, d)) in zip(this, s!._these()) {
         // TODO: clean up to simple cast after bugfix
-        var idxStr = createStringWithNewBuffer(idx: string);
+        var idxStr = idx: string;
         f.write(idx);
         for space in 1..idxWidth-idxStr.size do
           f.write(" ");
@@ -261,7 +261,7 @@ module DataFrames {
       for idx in this {
         f.write("\n");
         // TODO: clean up to simple cast after bugfix
-        var idxStr = createStringWithNewBuffer(idx: string);
+        var idxStr = idx: string;
         f.write(idxStr);
         for space in 1..idxWidth-idxStr.size do
           f.write(" ");
@@ -283,7 +283,7 @@ module DataFrames {
       for idx in this {
         f.write("\n");
         // TODO: clean up to simple cast after bugfix
-        var idxStr = createStringWithNewBuffer(idx: string);
+        var idxStr = idx: string;
         f.write(idxStr);
         for space in 1..idxWidth-idxStr.size do
           f.write(" ");
@@ -298,17 +298,17 @@ module DataFrames {
   }
 
   class Series {
-    pragma "no doc"
+    @chpldoc.nodoc
     proc copy() {
       return new owned Series();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc reindex(in idx : shared Index?) {
       halt("generic Series cannot be reindexed");
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc reindex(type eltType, in idx : shared Index?) {
       var _typed = this: TypedSeries(eltType)?;
       if _typed == nil then halt("Unable to cast generic index with type ", eltType:string);
@@ -316,96 +316,96 @@ module DataFrames {
       _typed!.reindex(idx);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc uni(lhs: borrowed TypedSeries, unifier: borrowed SeriesUnifier) {
       halt("generic Series cannot be unioned");
       return new owned Series();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc map(mapper: borrowed SeriesMapper) {
       halt("generic Series cannot be unioned");
       return new owned Series();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc add(rhs) {
       halt("generic Series cannot be added");
       return new owned Series();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc add_scalar(n) {
       halt("generic Series cannot be added");
       return new owned Series();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc subtr(rhs) {
       halt("generic Series cannot be subtracted");
       return new owned Series();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc subtr_scalar(n) {
       halt("generic Series cannot be subtracted");
       return new owned Series();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc mult(rhs) {
       halt("generic Series cannot be multiplied");
       return new owned Series();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc mult_scalar(n) {
       halt("generic Series cannot be multiplied");
       return new owned Series();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc lt_scalar(n) {
       halt("generic Series cannot be compared");
       return new owned Series();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc gt_scalar(n) {
       halt("generic Series cannot be compared");
       return new owned Series();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc eq_scalar(n) {
       halt("generic Series cannot be compared");
       return new owned Series();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc lteq_scalar(n) {
       halt("generic Series cannot be compared");
       return new owned Series();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc gteq_scalar(n) {
       halt("generic Series cannot be compared");
       return new owned Series();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc nrows(): int {
       halt("generic Series cannot be counted");
       return 0;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc writeElem(f, i, len: int) throws {
       halt("generic Series cannot be indexed");
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc writeElemNoIndex(f, i: int, len: int) throws {
       halt("generic Series cannot be accessed");
     }
@@ -509,18 +509,18 @@ module DataFrames {
     }
 
     // yields tuples where the first value is the valid bit
-    pragma "no doc" iter _these() {
+    @chpldoc.nodoc iter _these() {
       for (v,d) in zip(valid_bits, data) do
         yield (v,d);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     iter _items() {
       for (v,d) in zip(valid_bits, this.items_fast()) do
         yield (v,d);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     iter _items(type idxType) {
       for (v,d) in zip(valid_bits, this.items_fast(idxType)) do
         yield (v,d);
@@ -732,12 +732,12 @@ module DataFrames {
       f.write("dtype: " + eltType:string);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     override
     proc writeElem(f, i, len: int) throws {
       // TODO: clean up to simple cast after bugfix
       var output = if this.valid(i)
-                   then createStringWithNewBuffer(this[i]: string)
+                   then this[i]: string
                    else "None";
 
       for space in 1..len-output.size do
@@ -745,12 +745,12 @@ module DataFrames {
       f.write(output);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     override
     proc writeElemNoIndex(f, i: int, len: int) throws {
       // TODO: clean up to simple cast after bugfix
       var output = if this.valid_at(i)
-                   then createStringWithNewBuffer(this.at(i): string)
+                   then this.at(i): string
                    else "None";
 
       for space in 1..len-output.size do
@@ -780,17 +780,17 @@ module DataFrames {
       this.complete();
 
       for lab in labels do
-        this.columns[lab] = columns[lab].copy().release();
+        this.columns[lab] = owned.release(columns[lab].copy());
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(columns: [?D] ?E) where isSubtype(E, Series?) {
       this.labels = D;
       this.idx = nil;
       this.complete();
 
       for lab in labels do
-        this.columns[lab] = columns[lab]!.copy().release();
+        this.columns[lab] = owned.release(columns[lab]!.copy());
     }
 
     proc init(columns: [?D], in idx: shared Index) {
@@ -816,7 +816,7 @@ module DataFrames {
     }
 
     proc insert(lab: string, s: borrowed Series) {
-      var sCopy = s.copy().release();
+      var sCopy = owned.release(s.copy());
       sCopy.reindex(idx);
       labels += lab;
       columns[lab] = sCopy;
@@ -843,7 +843,7 @@ module DataFrames {
         idx!.writeThis(f, _to_unmanaged(this));
       } else {
         var n = nrows();
-        var nStr = createStringWithNewBuffer(n: string);
+        var nStr = n: string;
         var idxWidth = nStr.size + 1;
         const labelsSorted = labels.sorted();
 
@@ -855,7 +855,7 @@ module DataFrames {
 
         for i in 0..#n {
           f.write("\n");
-          var iStr = createStringWithNewBuffer(i: string);
+          var iStr = i: string;
           f.write(iStr);
           for space in 1..idxWidth-iStr.size do
             f.write(" ");

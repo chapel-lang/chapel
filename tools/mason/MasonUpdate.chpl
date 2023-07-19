@@ -74,7 +74,7 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
     const projectHome = getProjectHome(cwd, tf);
     const tomlPath = projectHome + "/" + Path.relPath(tf);
     const lockPath = projectHome + "/" + Path.relPath(lf);
-    const openFile = openreader(tomlPath);
+    const openFile = openReader(tomlPath);
     const TomlFile = parseToml(openFile);
     var updated = false;
     if isFile(tomlPath) {
@@ -207,7 +207,7 @@ proc chplVersionError(brick:borrowed Toml) {
     const hi   = info(2);
     const name = brick["name"]!.s + "-" + brick["version"]!.s;
     const msg  = name + " :  expecting " + prettyVersionRange(low, hi);
-    failedChapelVersion.append(msg);
+    failedChapelVersion.pushBack(msg);
   }
 }
 
@@ -239,7 +239,7 @@ private proc createDepTree(root: Toml) {
 
     // add dependencies found in TOML files of git deps
     for m in gitManifests do
-      manifests.append(m);
+      manifests.pushBack(m);
 
     depTree = createDepTrees(depTree, manifests, "root");
     depTree = addGitDeps(depTree, gitDeps);
@@ -301,7 +301,7 @@ private proc createDepTrees(depTree: Toml, ref deps: list(shared Toml), name: st
       chplVersion = verToUse["chplVersion"]!.s;
     }
 
-    depList.append(new shared Toml(package));
+    depList.pushBack(new shared Toml(package));
 
     if depTree.pathExists(package) == false {
       var dt: domain(string);
@@ -318,7 +318,7 @@ private proc createDepTrees(depTree: Toml, ref deps: list(shared Toml), name: st
       var manifests = getManifests(subDeps);
       var dependency = createDepTrees(depTree, manifests, package);
     }
-    deps.pop(0);
+    deps.getAndRemove(0);
   }
   // Use toArray here to avoid making Toml aware of `list`, for now.
   if depList.size > 0 then
@@ -410,7 +410,7 @@ private proc getManifests(deps: list((string, shared Toml?))) {
     var name = dep(0);
     var version: string = dep(1)!.s;
     var toAdd = retrieveDep(name, version);
-    manifests.append(toAdd);
+    manifests.pushBack(toAdd);
   }
   return manifests;
 }
@@ -437,7 +437,7 @@ private proc getGitManifests(deps: list((string, string, string, string))) {
   var manifests: list(shared Toml);
   for dep in deps {
     var toAdd = retrieveGitDep(dep(0), dep(2));
-    manifests.append(toAdd);
+    manifests.pushBack(toAdd);
   }
   return manifests;
 }
@@ -462,10 +462,10 @@ private proc retrieveGitDep(name: string, branch: string) {
 private proc getDependencies(tomlTbl: Toml) {
   var depsD: domain(1);
   var deps: list((string, shared Toml?));
-  for k in tomlTbl.A {
+  for k in tomlTbl.A.keys() {
     if k == "dependencies" {
       for (a,d) in allFields(tomlTbl[k]!) {
-        deps.append((a, d));
+        deps.pushBack((a, d));
       }
     }
   }
@@ -474,10 +474,10 @@ private proc getDependencies(tomlTbl: Toml) {
 
 private proc getGitDeps(tomlTbl: Toml) {
   var gitDeps: list((string, string, shared Toml?));
-  for k in tomlTbl["dependencies"]!.A {
+  for k in tomlTbl["dependencies"]!.A.keys() {
     for (a, d) in allFields(tomlTbl["dependencies"]![k]!) {
       // name, type of field (url, branch, etc.), toml that it is set to
-      gitDeps.append((k, a, d));
+      gitDeps.pushBack((k, a, d));
     }
   }
   return gitDeps;
@@ -505,7 +505,7 @@ private proc pullGitDeps(gitDeps, show=false) {
   // Pull git repositories so that we can have access to the
   // current revision and TOML file to get dependencies
   var baseDir = MASON_HOME +'/git/';
-  for val in gitDepMap {
+  for val in gitDepMap.keys() {
     var (srcURL, origBranch, revision) = gitDepMap[val];
 
     // Default to head if branch isn't specified
@@ -534,7 +534,7 @@ private proc pullGitDeps(gitDeps, show=false) {
         var revParse = "git rev-parse HEAD";
         revision = gitC(destination, revParse, true).strip();
       }
-      gitDepsWithRevision.append((val, srcURL, branch, revision));
+      gitDepsWithRevision.pushBack((val, srcURL, branch, revision));
     } else {
       if revision != "" {
         writeln("Fetching latest changes for: " + nameVers + "...");
@@ -567,7 +567,7 @@ private proc pullGitDeps(gitDeps, show=false) {
         var revParse = "git rev-parse HEAD";
         revision = gitC(destination, revParse, true).strip();
       }
-      gitDepsWithRevision.append((val, srcURL, branch, revision));
+      gitDepsWithRevision.pushBack((val, srcURL, branch, revision));
     }
   }
   return gitDepsWithRevision;

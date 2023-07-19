@@ -1,7 +1,7 @@
 //
-// Use standard modules for Block distributions and Timing routines
+// Use standard modules for Block distributions, Timing routines, and log2
 //
-use BlockDist, Time;
+use BlockDist, Time, Math;
 
 //
 // Use the user modules for computing HPCC problem sizes and for
@@ -253,6 +253,10 @@ proc verifyResults(T) {
 //
 record vlock {
   var l: atomic bool;
+  proc init() {}
+  proc init=(other: vlock) {
+    this.l = other.l.read();
+  }
   proc lock() {
     on this do while l.testAndSet() != false do chpl_task_yield();
   }

@@ -67,16 +67,16 @@
  */
 
 psm2_error_t
-ips_epstate_init(struct ips_epstate *eps, const psmi_context_t *context)
+psm3_ips_epstate_init(struct ips_epstate *eps, psm2_ep_t ep)
 {
 	memset(eps, 0, sizeof(*eps));
-	eps->context = context;
+	eps->ep = ep;
 	eps->eps_base_idx = ((ips_epstate_idx)get_cycles()) &
 				(IPS_EPSTATE_CONNIDX_MAX-1);
 	return PSM2_OK;
 }
 
-psm2_error_t ips_epstate_fini(struct ips_epstate *eps)
+psm2_error_t psm3_ips_epstate_fini(struct ips_epstate *eps)
 {
 	if (eps->eps_tab)
 		psmi_free(eps->eps_tab);
@@ -96,10 +96,11 @@ void ips_epstate_dump(struct ips_epstate *eps)
 			eps->eps_base_idx, eps->eps_tabsize,
 			eps->eps_tabsizeused, eps->eps_tab_nextidx);
 		for (i=0; i<eps->eps_tabsize; i++) {
-			_HFI_DBG_ALWAYS("%03d: ipsaddr = %p, cstate-o: %u, cstate-i: %u\n", i,
-				eps->eps_tab[i].ipsaddr,
-				eps->eps_tab[i].ipsaddr->cstate_outgoing,
-				eps->eps_tab[i].ipsaddr->cstate_incoming);
+			if (eps->eps_tab[i].ipsaddr)	// skip empty slots
+				_HFI_DBG_ALWAYS("%03d: ipsaddr = %p, cstate-o: %u, cstate-i: %u\n", i,
+					eps->eps_tab[i].ipsaddr,
+					eps->eps_tab[i].ipsaddr->cstate_outgoing,
+					eps->eps_tab[i].ipsaddr->cstate_incoming);
 		}
 	}
 }
@@ -109,7 +110,7 @@ void ips_epstate_dump(struct ips_epstate *eps)
  * 'connidx'.
  */
 psm2_error_t
-ips_epstate_add(struct ips_epstate *eps, struct ips_epaddr *ipsaddr,
+psm3_ips_epstate_add(struct ips_epstate *eps, struct ips_epaddr *ipsaddr,
 		ips_epstate_idx *connidx_o)
 {
 	int i, j;
@@ -119,7 +120,7 @@ ips_epstate_add(struct ips_epstate *eps, struct ips_epaddr *ipsaddr,
 		struct ips_epstate_entry *newtab;
 		eps->eps_tabsize += PTL_EPADDR_ALLOC_CHUNK;
 		newtab = (struct ips_epstate_entry *)
-		    psmi_calloc(eps->context->ep, PER_PEER_ENDPOINT,
+		    psmi_calloc(eps->ep, PER_PEER_ENDPOINT,
 				eps->eps_tabsize,
 				sizeof(struct ips_epstate_entry));
 		if (newtab == NULL)
@@ -147,11 +148,11 @@ ips_epstate_add(struct ips_epstate *eps, struct ips_epaddr *ipsaddr,
 	psmi_assert_always(i != eps->eps_tabsize);
 	connidx = (j - eps->eps_base_idx) & (IPS_EPSTATE_CONNIDX_MAX-1);
 	_HFI_VDBG("node %s gets connidx=%d (table idx %d)\n",
-		  psmi_epaddr_get_name(((psm2_epaddr_t) ipsaddr)->epid), connidx,
+		  psm3_epaddr_get_name(((psm2_epaddr_t) ipsaddr)->epid, 0), connidx,
 		  j);
 	eps->eps_tab[j].ipsaddr = ipsaddr;
 	if (j >= IPS_EPSTATE_CONNIDX_MAX) {
-		return psmi_handle_error(eps->context->ep,
+		return psm3_handle_error(eps->ep,
 					 PSM2_TOO_MANY_ENDPOINTS,
 					 "Can't connect to more than %d non-local endpoints",
 					 IPS_EPSTATE_CONNIDX_MAX);
@@ -160,7 +161,7 @@ ips_epstate_add(struct ips_epstate *eps, struct ips_epaddr *ipsaddr,
 	return PSM2_OK;
 }
 
-psm2_error_t ips_epstate_del(struct ips_epstate *eps, ips_epstate_idx connidx)
+psm2_error_t psm3_ips_epstate_del(struct ips_epstate *eps, ips_epstate_idx connidx)
 {
 	ips_epstate_idx idx;
 	/* actual table index */

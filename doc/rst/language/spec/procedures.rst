@@ -140,14 +140,12 @@ Procedures are defined with the following syntax:
 
    formal-type:
      : type-expression
-     : ? identifier[OPT]
 
    default-expression:
      = expression
 
    variable-argument-expression:
      ... expression
-     ... ? identifier[OPT]
      ...
 
    formal-intent:
@@ -162,7 +160,6 @@ Procedures are defined with the following syntax:
      'type'
 
    return-intent:
-     'const'
      'const ref'
      'ref'
      'param'
@@ -175,8 +172,8 @@ Procedures are defined with the following syntax:
      'where' expression
 
    function-body:
+     'do' statement
      block-statement
-     return-statement
 
 Functions do not require parentheses if they have no arguments. Such
 functions are described in :ref:`Functions_without_Parentheses`.
@@ -213,6 +210,10 @@ type.
 
 The ``where-clause`` is optional and is discussed
 in :ref:`Where_Clauses`.
+
+The ``function-body`` defines the function's behavior and is defined
+in :ref:`The_Function_Body`.  Function bodies may contain return
+statements (see :ref:`The_Return_Statement`).
 
 Function and operator overloading is supported in Chapel and is
 discussed in :ref:`Function_Overloading`. Operator overloading
@@ -441,9 +442,8 @@ The In Intent
 ^^^^^^^^^^^^^
 
 When ``in`` is specified as the intent, the formal argument represents a
-variable that is initialized from the value of the actual argument.
-This initialization will be copy-initialization or move-initialization
-according to :ref:`Copy_and_Move_Initialization`.
+variable that is copy-initialized from the value of the actual argument,
+see :ref:`Copy_and_Move_Initialization`.
 
 For example, for integer arguments, the formal argument will store a copy
 of the actual argument.
@@ -544,8 +544,8 @@ The Const Ref Intent
 
 The ``const ref`` intent is identical to the ``ref`` intent, except that
 modifications to the formal argument are prohibited within the dynamic
-scope of the function. Note that concurrent tasks may modify the actual
-argument while the function is executing and that these modifications
+scope of the function. Note that the same or concurrent tasks may modify the
+actual argument while the function is executing and that these modifications
 may be visible to reads of the formal argument within the function’s
 dynamic scope (subject to the memory consistency model).
 
@@ -605,8 +605,8 @@ by default.  Exceptions are made for types where modification is
 considered part of their nature, such as types used for synchronization
 (like ``atomic``) and arrays.
 
-Default argument passing for tuples generally matches the default
-argument passing strategy that would be applied if each tuple element
+Default argument passing for tuples applies the default
+argument passing strategy to each tuple component as if it
 was passed as a separate argument. See :ref:`Tuple_Argument_Intents`.
 
 The :ref:`Abstract_Intents_Table` that follows defines the default
@@ -777,7 +777,7 @@ homogeneous tuple, otherwise it will be a heterogeneous tuple.
 
    .. code-block:: chapel
 
-      proc sum(x: int...3) return x(0) + x(1) + x(2);
+      proc sum(x: int...3) do return x(0) + x(1) + x(2);
 
    
 
@@ -804,7 +804,7 @@ homogeneous tuple, otherwise it will be a heterogeneous tuple.
 
    .. code-block:: chapel
 
-      proc tuple(x ...) return x;
+      proc tuple(x ...) do return x;
 
    
 
@@ -831,10 +831,19 @@ homogeneous tuple, otherwise it will be a heterogeneous tuple.
 Return Intents
 --------------
 
-The ``return-intent`` specifies how the value is returned from a
-function, and in what contexts that function is allowed to be used. By
-default, or if the ``return-intent`` is ``const``, the function returns
-a value that cannot be used as an lvalue.
+The ``return-intent`` determines how the value is returned from a
+function and in what contexts that function is allowed to be used.
+The rules for returning tuples are specified in :ref:`Tuple_Return_Behavior`.
+
+.. _Default_Return_Intent:
+
+The Default Return Intent
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When no ``return-intent`` is specified explicitly, the function returns
+a value that cannot be used as an lvalue. This value is obtained
+by copy-initialization from the returned expression,
+see :ref:`Copy_and_Move_Initialization`.
 
 .. _Ref_Return_Intent:
 
@@ -846,7 +855,8 @@ When using a ``ref`` return intent, the function call is an lvalue
 variable for an iterator).
 
 The ``ref`` return intent is specified by following the argument list
-with the ``ref`` keyword. The function must return or yield an lvalue.
+with the ``ref`` keyword. The function must return an lvalue that
+exists outside of the function's scope.
 
    *Example (ref-return-intent.chpl)*.
 
@@ -976,7 +986,7 @@ during compilation and substituted for the call expression.
 
    .. code-block:: chapel
 
-      proc sumOfSquares(param a: int, param b: int) param
+      proc sumOfSquares(param a: int, param b: int) param do
         return a**2 + b**2;
 
       var x: sumOfSquares(2, 3)*int;
@@ -1055,14 +1065,29 @@ with a conditional expression that is not a parameter.
    ``numBits`` is a param procedure defined in the standard Types
    module.
 
+
+.. _The_Function_Body:
+
+Function Bodies
+---------------
+
+The body of a procedure or iterator is made up of one or more
+statements that are executed when a call to the function is made.
+Function bodies can always be specified using a compound or _block_
+statement (:ref:`Blocks`), set off by curly brackets.  When a
+function's body is just a single statement, the `do` keyword can be
+used as a shorthand for defining the body instead, similar to other
+forms of control flow.
+
+
 .. _The_Return_Statement:
 
 The Return Statement
---------------------
+~~~~~~~~~~~~~~~~~~~~
 
-The return statement can only appear in a function. It causes control to
-exit that function, returning it to the point at which that function was
-called.
+The return statement can only appear in a function body. It causes
+control to exit that function, returning it to the point at which that
+function was called.
 
 A procedure can return a value by executing a return statement that
 includes an expression. If it does, that expression’s value becomes the
@@ -1094,7 +1119,7 @@ The syntax of the return statement is given by
 
    .. code-block:: chapel
 
-      proc sum(i1: int, i2: int, i3: int)
+      proc sum(i1: int, i2: int, i3: int) do
         return i1 + i2 + i3;
 
    
@@ -1526,7 +1551,7 @@ the following rules in order:
    same kind is better. Each of the following bullets represents a
    different numeric kind for this rule:
 
-   * ``bool(?w)``, that is, a ``bool`` type of any width
+   * ``bool``
 
    * ``int(?w)`` or ``uint(?w)``, that is, a signed or unsigned integral
      type of any width
@@ -1544,11 +1569,10 @@ the following rules in order:
    formal with the same width is better. Each of the following bullets
    represents a different numeric width for this rule:
 
-   * All numeric types that match the default width as well as all
-     ``bool`` types. This includes ``bool``, ``bool(?w)``, ``int``
-     ``uint`` ``real`` ``imag`` ``complex`` as well as their more
-     specific names ``int(64)`` ``uint(64)`` ``real(64)`` ``imag(64)``
-     ``complex(128)``
+   * All numeric types that match the default width.  This includes
+     ``bool``, ``int``, ``uint``, ``real``, ``imag``, and ``complex``
+     as well as their more specific names ``int(64)``, ``uint(64)``,
+     ``real(64)``, ``imag(64)``, ``complex(128)``
 
    * All numeric types with 32-bit width: ``int(32)``, ``uint(32)``,
      ``real(32)``, ``imag(32)``, ``complex(64)``. ``complex(64)`` is in
@@ -1581,7 +1605,7 @@ The compiler can choose between overloads differing in return intent
 when:
 
 -  there are zero or one best functions for each of ``ref``,
-   ``const ref``, ``const``, or the default (blank) return intent
+   ``const ref``, or the default (blank) return intent
 
 -  at least two of the above return intents have a best function.
 

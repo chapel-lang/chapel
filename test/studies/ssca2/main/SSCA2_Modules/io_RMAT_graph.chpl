@@ -160,7 +160,7 @@ proc Readin_RMAT_graph(G, snapshot_prefix:string, dstyle = "-"): void {
   ref GRow = G.Row;
   const uxIDs = GRow.domain.dim(0);
   type VType = uxIDs.idxType;
-  compilerAssert(!uxIDs.stridable); // for efficiency
+  compilerAssert(uxIDs.hasUnitStride()); // for efficiency
 
   if IOserial {
     const sv = createGraphChannel(snapshot_prefix, SV2_FILENAME, rea);
@@ -283,7 +283,7 @@ iter graphReaderIterator(GRow, uxIDs, type VType, vCount, eCount, repfiles,
 {
   // ensure we got unstridable range with VType-typed indices
   compilerAssert(followThis.type ==
-                 1*range(VType, BoundedRangeType.bounded, false));
+                 1*range(VType, boundKind.both, strideKind.one));
 
   const myIDs = unDensify(followThis(0), uxIDs);
 
@@ -301,7 +301,7 @@ iter graphReaderReal(GRow, uxIDs, type VType, vCount, eCount, repfiles,
 {
   if IOgate then IOgate$.writeEF(true);
 
-  compilerAssert(!myIDs.stridable); // for efficiency, also for v1,v2
+  compilerAssert(myIDs.hasUnitStride()); // for efficiency, also for v1,v2
   // start/end IDs
   const v1 = myIDs.low, v2 = myIDs.high;
   //writeln("loc ", here.id, "  myIDs ", v1, "..", v2, "  of ", uxIDs);
@@ -310,10 +310,10 @@ iter graphReaderReal(GRow, uxIDs, type VType, vCount, eCount, repfiles,
   ref GRowLocal = GRow.localSlice(myIDs);
 
   // Returns the offset of edgeStart[v] in staf, 1 <= v <= numVertices+2.
-  proc staOffsetForVID(v: int) return (v-1) * numBytes(IONumType);
+  proc staOffsetForVID(v: int) do return (v-1) * numBytes(IONumType);
   // Returns the offset of startVertex/endVertex/weight[e] in
   //  svf, evf, wwf, resp; 1 <= e <= numEdges.
-  proc svOffsetForEID(e: int) return (e-1) * numBytes(IONumType);
+  proc svOffsetForEID(e: int) do return (e-1) * numBytes(IONumType);
 
   // We need to read edgeStart(v1) and edgeStart(v2) (in the terminology
   // of the commit message for r19646) - to determine the span of
@@ -451,6 +451,8 @@ proc myerror(args...) {
 }
 
 proc reportNumVerticesError(G, snapshot_prefix, vCount) {
+  use Math;
+
   const vcountLog2 =
     if vCount <= 0 then -1:int(64) else floor(log2(vCount)):int(64);
   const helpMessage =
@@ -482,8 +484,8 @@ proc reportProgress() {
 
 ///////// graph helpers /////////
 
-proc graphTotalEdges(G)  return + reduce [v in G.Row] v.numNeighbors();
-proc graphNumVertices(G) return G.vertices.size;
+proc graphTotalEdges(G) do  return + reduce [v in G.Row] v.numNeighbors();
+proc graphNumVertices(G) do return G.vertices.size;
 
 ///////// I/O helpers /////////
 
@@ -518,4 +520,4 @@ proc ensureEOFofDataFile(chan, snapshot_prefix, file_suffix): void {
 }
 
 proc writeNum(ch, num): void { ch.write(num:IONumType); }
-proc readNum(ch): IONumType  return ch.read(IONumType);
+proc readNum(ch): IONumType do  return ch.read(IONumType);

@@ -1,0 +1,36 @@
+─── error in use-shadows-formal2.chpl:2 [Redefinition] ───
+  'b' has multiple definitions.
+  It was first defined here:
+      |
+    2 |   var b: int;
+      |       ⎺⎺⎺⎺⎺⎺⎺
+      |
+  Redefined here:
+      |
+    3 |   var b: real;
+      |       ⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+
+─── warning in use-shadows-formal2.chpl:15 [HiddenFormal] ───
+  Module-level symbol is hiding function argument 'a'
+  The formal argument:
+       |
+    14 |   proc foo(a: real) {
+       |            ⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+  is shadowed by a symbol provided by the following 'use' statement:
+       |
+    15 |     use M1;
+       |         ⎺⎺
+       |
+  And then through the 'use' statement here:
+      |
+    7 |   public use M0 only b as a;
+      |              ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+  Found 'b' defined here:
+      |
+    2 |   var b: int;
+      |       ⎺⎺⎺⎺⎺⎺⎺
+      |
+

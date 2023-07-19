@@ -161,7 +161,7 @@ module FFTW {
     An opaque type used to store and reuse FFTW plans across multiple
     routines.
   */
-  extern type fftw_plan; // opaque type
+  extern type fftw_plan = c_ptr(void);
 
   /*
     Type alias for FFTW flags
@@ -332,14 +332,14 @@ module FFTW {
       dims(i) = realDom.dim(i).size: c_int;
 
     return C_FFTW.fftw_plan_dft_r2c(rank, dims,
-                                    c_ptrTo(arr) : c_ptr(real),
-                                    c_ptrTo(arr) : c_ptr(complex), flags);
+                                    c_ptrTo(arr) : c_ptr(void) : c_ptr(real),
+                                    c_ptrTo(arr) : c_ptr(void) : c_ptr(complex), flags);
   }
 
   //
   // Error overload
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   proc plan_dft_r2c(realDom : domain, arr: [] ?t, flags : FFTW_Flag) : fftw_plan {
     compilerError("plan_dft_r2c() is only supported for arrays of type real(64) and complex(128)");
   }
@@ -409,11 +409,11 @@ module FFTW {
       dims(i) = realDom.dim(i).size: c_int;
 
     return C_FFTW.fftw_plan_dft_c2r(rank, dims,
-                                    c_ptrTo(arr) : c_ptr(complex),
-                                    c_ptrTo(arr) : c_ptr(real), flags);
+                                    c_ptrTo(arr) : c_ptr(void) : c_ptr(complex),
+                                    c_ptrTo(arr) : c_ptr(void) : c_ptr(real), flags);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc plan_dft_c2r(realDom : domain, arr: [] ?t, flags : FFTW_Flag) : fftw_plan {
     compilerError("plan_dft_c2r() is only supported for arrays of type real(64) and complex(128)");
   }
@@ -802,7 +802,7 @@ module FFTW {
 
     extern proc fftw_export_wisdom_to_string() : c_string;
 
-    extern proc fftw_export_wisdom(write_char : fftw_write_char_func, data : c_void_ptr) : void;
+    extern proc fftw_export_wisdom(write_char : fftw_write_char_func, data : c_ptr(void)) : void;
 
     extern proc fftw_import_system_wisdom() : c_int;
 
@@ -810,23 +810,29 @@ module FFTW {
 
     extern proc fftw_import_wisdom_from_string(input_string : c_string) : c_int;
 
-    extern proc fftw_import_wisdom(read_char : fftw_read_char_func, data : c_void_ptr) : c_int;
+    extern proc fftw_import_wisdom(read_char : fftw_read_char_func, data : c_ptr(void)) : c_int;
 
-    extern proc fftw_fprint_plan(p : fftw_plan, ref output_file : c_FILE) : void;
+    // after c_FILE behavior deprecation, replace with:
+    // extern proc fftw_fprint_plan(p : fftw_plan, ref output_file : c_ptr(c_FILE)) : void;
+    extern proc fftw_fprint_plan(p : fftw_plan, ref output_file : c_ptr(chpl_cFile)) : void;
+    extern proc fftw_fprint_plan(p : fftw_plan, ref output_file : chpl_cFilePtr) : void;
 
-    extern proc fftw_fprint_plan(p : fftw_plan, output_file : c_ptr(c_FILE)) : void;
+    // after c_FILE behavior deprecation, replace with:
+    // extern proc fftw_fprint_plan(p : fftw_plan, output_file : c_ptr(c_ptr(c_FILE))) : void;
+    extern proc fftw_fprint_plan(p : fftw_plan, output_file : c_ptr(c_ptr(chpl_cFile))) : void;
+    extern proc fftw_fprint_plan(p : fftw_plan, output_file : c_ptr(chpl_cFilePtr)) : void;
 
     extern proc fftw_print_plan(p : fftw_plan) : void;
 
     extern proc fftw_sprint_plan(p : fftw_plan) : c_string;
 
-    extern proc fftw_malloc(n : c_size_t) : c_void_ptr;
+    extern proc fftw_malloc(n : c_size_t) : c_ptr(void);
 
     extern proc fftw_alloc_real(n : c_size_t) : c_ptr(c_double);
 
     extern proc fftw_alloc_complex(n : c_size_t) : c_ptr(fftw_complex);
 
-    extern proc fftw_free(p : c_void_ptr) : void;
+    extern proc fftw_free(p : c_ptr(void)) : void;
 
     extern proc fftw_flops(p : fftw_plan, ref add : c_double, ref mul : c_double, ref fmas : c_double) : void;
 

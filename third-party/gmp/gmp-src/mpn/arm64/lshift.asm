@@ -61,7 +61,7 @@ PROLOGUE(mpn_lshift)
 	add	rp, rp_arg, n, lsl #3
 	add	up, up, n, lsl #3
 	sub	tnc, xzr, cnt
-	lsr	x18, n, #2
+	lsr	x17, n, #2
 	tbz	n, #0, L(bx0)
 
 L(bx1):	ldr	x4, [up,#-8]
@@ -69,7 +69,7 @@ L(bx1):	ldr	x4, [up,#-8]
 
 L(b01):	NSHIFT	x0, x4, tnc
 	PSHIFT	x2, x4, cnt
-	cbnz	x18, L(gt1)
+	cbnz	x17, L(gt1)
 	str	x2, [rp,#-8]
 	ret
 L(gt1):	ldp	x4, x5, [up,#-24]
@@ -89,7 +89,7 @@ L(b10):	NSHIFT	x0, x5, tnc
 	PSHIFT	x13, x5, cnt
 	NSHIFT	x10, x4, tnc
 	PSHIFT	x2, x4, cnt
-	cbnz	x18, L(gt2)
+	cbnz	x17, L(gt2)
 	orr	x10, x10, x13
 	stp	x2, x10, [rp,#-16]
 	ret
@@ -123,11 +123,11 @@ L(lo2):	NSHIFT	x10, x4, tnc
 	orr	x11, x12, x2
 	stp	x10, x11, [rp,#-32]!
 	PSHIFT	x2, x4, cnt
-L(lo0):	sub	x18, x18, #1
+L(lo0):	sub	x17, x17, #1
 L(lo3):	NSHIFT	x10, x6, tnc
 	PSHIFT	x13, x7, cnt
 	NSHIFT	x12, x7, tnc
-	cbnz	x18, L(top)
+	cbnz	x17, L(top)
 
 L(end):	orr	x10, x10, x13
 	orr	x11, x12, x2

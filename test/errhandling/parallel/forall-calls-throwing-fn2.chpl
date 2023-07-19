@@ -1,6 +1,6 @@
 use BlockDist;
 
-var A = newBlockArr({1..10}, real);
+var A = Block.createArray({1..10}, real);
 
 proc throwingFunction() throws {
   throw new owned Error("die!");

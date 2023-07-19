@@ -27,22 +27,26 @@
 #include "astutil.h"
 #include "AstVisitor.h"
 #include "build.h"
+#include "fcf-support.h"
 #include "DecoratedClassType.h"
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
-#include "firstClassFunctions.h"
+#include "intents.h"
 #include "intlimits.h"
 #include "iterator.h"
 #include "misc.h"
 #include "passes.h"
 #include "resolution.h"
+#include "resolveIntents.h"
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "vec.h"
 
 #include "global-ast-vecs.h"
+
+#include "chpl/framework/compiler-configuration.h"
 
 #include <cmath>
 
@@ -186,14 +190,14 @@ const char* toString(Type* type, bool decorateAllClasses) {
     retval = "<type unknown>";
   } else if (type == dtAny) {
     retval = "<any type>";
+  } else if (auto fnType = toFunctionType(type)) {
+    retval = fnType->toString();
   } else {
     Type* vt = type->getValType();
 
     if (AggregateType* at = toAggregateType(vt)) {
       const char* drDomName = "DefaultRectangularDom";
       const int   drDomNameLen = strlen(drDomName);
-      const char* channelName = "_channel";
-      const int   channelNameLen = strlen(channelName);
 
       if (isArrayClass(at) && !at->symbol->hasFlag(FLAG_BASE_ARRAY)) {
         Symbol* domField = at->getField("dom", false);
@@ -212,7 +216,7 @@ const char* toString(Type* type, bool decorateAllClasses) {
         retval = astr("domain", at->symbol->name + drDomNameLen);
 
       } else if (at->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
-        retval = fcfWrapperTypeToString(at);
+        retval = fcfs::functionClassTypeToString(at);
 
       } else if (isRecordWrappedType(at) == true) {
         Symbol* instanceField = at->getField("_instance", false);
@@ -228,44 +232,6 @@ const char* toString(Type* type, bool decorateAllClasses) {
       } else if (vt->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
         if (developer == false)
           retval = "iterator";
-      } else if (at->symbol->getModule()->modTag == MOD_STANDARD &&
-                 strncmp(at->symbol->name, channelName, channelNameLen) == 0) {
-        // remove leading _ in _channel for error messages
-        // (for channel deprecation)
-        // TODO: remove this once the channel rename to fileReader/fileWriter
-        // is complete and channel is removed
-        const char* name = at->symbol->name;
-        const char* readerCh = "_channel(false";
-        const int   readerChLen = strlen(readerCh);
-        const char* writerCh = "_channel(true";
-        const int   writerChLen = strlen(writerCh);
-        if (0 == strncmp(name, readerCh, readerChLen)) {
-          // change _channel(false) -> fileReader
-          // change _channel(false, ... -> fileReader(...
-          int skip = readerChLen;
-          if (name[skip] == ')') {
-            retval = "fileReader";
-          } else {
-            // skip the comma after false
-            skip++;
-            retval = astr("fileReader(", name + skip);
-          }
-        } else if (0 == strncmp(name, writerCh, writerChLen)) {
-          // change _channel(true) -> fileWriter
-          // change _channel(true, ... -> fileWriter(...
-          int skip = writerChLen;
-          if (name[skip] == ')') {
-            retval = "fileWriter";
-          } else {
-            // skip the comma after true
-            skip++;
-            retval = astr("fileWriter(", name + skip);
-          }
-        } else {
-          // just change _channel into channel
-          retval = astr(vt->symbol->name + 1);
-        }
-
       } else if (at->symbol->hasFlag(FLAG_ATOMIC_TYPE) &&
                  (strcmp(at->symbol->name, "AtomicBool") == 0 ||
                   strcmp(at->symbol->name, "RAtomicBool") == 0)) {
@@ -306,8 +272,10 @@ const char* toString(Type* type, bool decorateAllClasses) {
           retval = useName;
         }
       }
-    } else if (vt == dtCVoidPtr) {  // de-sugar chpl__c_void_ptr
-      retval = "c_void_ptr";
+    } else if (vt == dtCVoidPtr) {
+      // de-sugar chpl__c_void_ptr, which is used internally and is a distinct
+      // type from c_ptr(void)
+      retval = "raw_c_void_ptr";
     }
 
     if (retval == NULL)
@@ -367,8 +335,14 @@ bool QualifiedType::isWideRefType() const {
 }
 
 const char* QualifiedType::qualStr() const {
-  if (isRefType())
-    return qualifierToStr(QUAL_REF);
+  if (isRefType()) {
+    if (_qual == QUAL_CONST_REF ||
+        _qual == QUAL_CONST) {
+      return qualifierToStr(QUAL_CONST_REF);
+    } else {
+      return qualifierToStr(QUAL_REF);
+    }
+  }
 
   if (isWideRefType())
     return qualifierToStr(QUAL_WIDE_REF);
@@ -619,6 +593,407 @@ void EnumType::accept(AstVisitor* visitor) {
 *                                                                             *
 ************************************** | *************************************/
 
+namespace {
+  using FormalVec = std::vector<FunctionType::Formal>;
+}
+
+FunctionType::FunctionType(Kind kind, FormalVec formals,
+                           RetTag returnIntent,
+                           Type* returnType,
+                           bool throws,
+                           bool isAnyFormalNamed,
+                           const char* userTypeString)
+    : Type(E_FunctionType, nullptr),
+      kind_(kind),
+      formals_(std::move(formals)),
+      returnIntent_(returnIntent),
+      returnType_(returnType),
+      throws_(throws),
+      isAnyFormalNamed_(isAnyFormalNamed),
+      userTypeString_(userTypeString) {
+}
+
+void FunctionType::verify() {
+  bool isAnyFormalNamed = false;
+
+  for (auto& formal : formals_) {
+    if (formal.name != nullptr) {
+      isAnyFormalNamed = true;
+      break;
+    }
+  }
+
+  INT_ASSERT(isAnyFormalNamed == this->isAnyFormalNamed_);
+}
+
+void FunctionType::accept(AstVisitor* visitor) {
+  visitor->visitFunctionType(this);
+}
+
+FunctionType* FunctionType::copyInner(SymbolMap* map) {
+  INT_FATAL(this, "attempt to copy function type");
+  return nullptr;
+}
+
+void
+FunctionType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  INT_FATAL(this, "unexpected case in 'FunctionType::%s'", __FUNCTION__);
+}
+
+const char*
+FunctionType::buildUserFacingTypeString(FunctionType::Kind kind,
+                                        const FormalVec& formals,
+                                        RetTag returnIntent,
+                                        Type* returnType,
+                                        bool throws) {
+  std::ostringstream oss;
+  oss << FunctionType::kindToString(kind) << "(";
+
+  for (size_t i = 0; i < formals.size(); i++) {
+    auto& info = formals[i];
+    bool skip = isIntentSameAsDefault(info.intent, info.type);
+    if (!skip) oss << intentToString(info.intent);
+    if (!skip && info.name) oss << " ";
+    if (info.name) oss << info.name;
+    if ((!skip || info.name) && info.type != dtAny) oss << ": ";
+    if (info.type != dtAny) oss << typeToString(info.type);
+    if ((i+1) != formals.size()) oss << ", ";
+  }
+
+  oss << ")";
+
+  if (returnIntent != RET_VALUE) {
+    oss << " " << returnIntentToString(returnIntent);
+  }
+
+  if (returnType != dtVoid) {
+    oss << ": " << typeToString(returnType);
+  }
+
+  auto str = oss.str();
+  auto ret = astr(str.c_str());
+  return ret;
+}
+
+const char* FunctionType::kindToString(FunctionType::Kind kind) {
+  switch (kind) {
+    case PROC: return "proc";
+    case ITER: return "iter";
+    case OPERATOR: return "operator";
+  }
+  return nullptr;
+}
+
+const char* FunctionType::intentToString(IntentTag intent) {
+  switch (intent) {
+    case INTENT_IN: return "in";
+    case INTENT_OUT: return "out";
+    case INTENT_INOUT: return "inout";
+    case INTENT_CONST: return "const";
+    case INTENT_CONST_IN: return "const in";
+    case INTENT_REF: return "ref";
+    case INTENT_CONST_REF: return "const ref";
+    case INTENT_REF_MAYBE_CONST: return nullptr;
+    case INTENT_PARAM: return "param";
+    case INTENT_TYPE: return "type";
+    case INTENT_BLANK: return nullptr;
+  }
+  return nullptr;
+}
+
+const char* FunctionType::typeToString(Type* t) {
+  auto vt = t->getValType();
+  if (vt == dtInt[INT_SIZE_DEFAULT]) return "int";
+  if (vt == dtUInt[INT_SIZE_DEFAULT]) return "uint";
+  if (vt == dtReal[COMPLEX_SIZE_DEFAULT]) return "real";
+  if (vt == dtBools[BOOL_SIZE_DEFAULT]) return "bool";
+  if (vt == dtComplex[COMPLEX_SIZE_DEFAULT]) return "complex";
+  if (vt == dtImag[FLOAT_SIZE_DEFAULT]) return "imag";
+  auto ret = vt->symbol->cname;
+  return ret;
+}
+
+const char* FunctionType::returnIntentToString(RetTag intent) {
+  return retTagDescrString(intent);
+}
+
+// For the 'any' type, arbitrarily choose that only the default intent
+// is the same as the default intent (what else makes sense?).
+bool FunctionType::isIntentSameAsDefault(IntentTag intent, Type* t) {
+  if (t == dtAny) return intent == INTENT_BLANK;
+  auto ret = concreteIntent(INTENT_BLANK, t) == concreteIntent(intent, t);
+  return ret;
+}
+
+FunctionType* FunctionType::create(FunctionType::Kind kind,
+                                   FormalVec formals,
+                                   RetTag returnIntent,
+                                   Type* returnType,
+                                   bool throws) {
+  bool isAnyFormalNamed = false;
+
+  for (auto& formal : formals) {
+    isAnyFormalNamed |= formal.name != nullptr;
+    formal.name = astr(formal.name);
+  }
+
+  auto cstr = FunctionType::buildUserFacingTypeString(kind, formals,
+                                                      returnIntent,
+                                                      returnType,
+                                                      throws);
+  auto ret = new FunctionType(kind, std::move(formals), returnIntent,
+                              returnType,
+                              throws,
+                              isAnyFormalNamed,
+                              cstr);
+  return ret;
+}
+
+namespace {
+
+  // Used to hash by value instead of doing pointer comparison.
+  struct FunctionTypePtrHash {
+    size_t operator()(const FunctionType* x) const {
+      return x->hash();
+    }
+  };
+
+  // Used to compare by value instead of doing pointer comparison.
+  struct FunctionTypePtrEq {
+    bool operator()(const FunctionType* lhs,
+                    const FunctionType* rhs) const {
+      return lhs->equals(rhs);
+    }
+  };
+
+  using FunctionTypeCache =
+    std::unordered_set<FunctionType*, FunctionTypePtrHash,
+                       FunctionTypePtrEq>;
+}
+
+// Cache to make sure that we don't produce duplicate function types.
+static FunctionTypeCache functionTypeCache;
+
+static FunctionType* cacheFunctionTypeOrReuse(FunctionType* fnType) {
+  auto it = functionTypeCache.find(fnType);
+  if (it != functionTypeCache.end()) return *it;
+
+  auto ts = new TypeSymbol(fnType->toString(), fnType);
+  ts->cname = fnType->toStringMangledForCodegen();
+  fnType->symbol = ts;
+
+  rootModule->block->insertAtTail(new DefExpr(ts));
+
+  std::ignore = functionTypeCache.emplace_hint(it, fnType);
+
+  return fnType;
+}
+
+FunctionType* FunctionType::get(FunctionType::Kind kind,
+                                FormalVec formals,
+                                RetTag returnIntent,
+                                Type* returnType,
+                                bool throws) {
+  auto fnType = FunctionType::create(kind, std::move(formals), returnIntent,
+                                     returnType,
+                                     throws);
+  auto ret = cacheFunctionTypeOrReuse(fnType);
+  return ret;
+}
+
+FunctionType::Kind FunctionType::determineKind(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_ITERATOR_FN)) return FunctionType::ITER;
+  if (fn->hasFlag(FLAG_OPERATOR)) return FunctionType::OPERATOR;
+  return FunctionType::PROC;
+}
+
+FunctionType* FunctionType::get(FnSymbol* fn) {
+  FunctionType::Kind kind = determineKind(fn);
+  std::vector<FunctionType::Formal> formals;
+  RetTag returnIntent = fn->retTag;
+  Type* returnType = fn->retType;
+  bool throws = fn->throwsError();
+
+  for_formals(f, fn) {
+    FunctionType::Formal info;
+    info.type = f->type;
+    info.intent = f->intent;
+    info.name = f->name;
+    formals.push_back(std::move(info));
+  }
+
+  auto fnType = FunctionType::create(kind, std::move(formals), returnIntent,
+                                     returnType,
+                                     throws);
+  auto ret = cacheFunctionTypeOrReuse(fnType);
+  return ret;
+}
+
+FunctionType::Kind FunctionType::kind() const {
+  return this->kind_;
+}
+
+int FunctionType::numFormals() const {
+  auto ret = (int) this->formals_.size();
+  return ret;
+}
+
+const FunctionType::Formal* FunctionType::formal(int idx) const {
+  INT_ASSERT(0 <= idx && idx < numFormals());
+  auto ret = &formals_[idx];
+  return ret;
+}
+
+RetTag FunctionType::returnIntent() const {
+  return this->returnIntent_;
+}
+
+Type* FunctionType::returnType() const {
+  return this->returnType_;
+}
+
+bool FunctionType::throws() const {
+  return this->throws_;
+}
+
+bool FunctionType::isAnyFormalNamed() const {
+  return this->isAnyFormalNamed_;
+}
+
+const char* FunctionType::toString() const {
+  return this->userTypeString_;
+}
+
+const char* FunctionType::intentTagMnemonicMangled(IntentTag tag) {
+  switch (tag) {
+    case INTENT_IN: return "I";
+    case INTENT_OUT: return "O";
+    case INTENT_INOUT: return "U";
+    case INTENT_CONST: return "C";
+    case INTENT_CONST_IN: return "CI";
+    case INTENT_REF: return "R";
+    case INTENT_CONST_REF: return "CR";
+    case INTENT_REF_MAYBE_CONST: return "RMC";
+    case INTENT_PARAM: return "P";
+    case INTENT_TYPE: return "T";
+    case INTENT_BLANK: return "";
+  }
+  return nullptr;
+}
+
+const char* FunctionType::retTagMnemonicMangled(RetTag tag) {
+  switch (tag) {
+    case RET_VALUE: return "";
+    case RET_REF: return "R";
+    case RET_CONST_REF: return "CR";
+    case RET_PARAM: return "P";
+    case RET_TYPE: return "T";
+  }
+  return nullptr;
+}
+
+const char* FunctionType::toStringMangledForCodegen() const {
+  std::ostringstream oss;
+
+  oss << "chpl_" << kindToString(kind_) << "_";
+
+  for (int i = 0; i < numFormals(); i++) {
+    auto f = this->formal(i);
+    bool skip = isIntentSameAsDefault(f->intent, f->type);
+    if (!skip) oss << intentTagMnemonicMangled(f->intent);
+    oss << typeToString(f->type) << "_";
+    if (f->name) oss << f->name;
+    oss << "_";
+  }
+
+  oss << "_";
+  if (returnIntent_ != RET_VALUE) {
+    oss << retTagMnemonicMangled(returnIntent_) << "_";
+  }
+
+  oss << typeToString(returnType_);
+  if (throws_) oss << "_throws";
+
+  auto ret = astr(oss.str());
+  return ret;
+}
+
+size_t FunctionType::hash() const {
+  std::hash<void*> hasherPtr;
+  std::hash<bool> hasherBool;
+
+  size_t ret = ((size_t) kind_);
+
+  // I think it's fine to hash the pointers here because types don't really
+  // have a meaningful way to distinguish on contents, and should be unique,
+  // while the formal names are all canonical using 'astr'.
+  for (auto& formal : formals_) {
+    ret = chpl::hash_combine(ret, formal.hash());
+  }
+
+  ret = chpl::hash_combine(ret, ((size_t) returnIntent_));
+  ret = chpl::hash_combine(ret, hasherPtr(returnType_));
+  ret = chpl::hash_combine(ret, hasherBool(throws_));
+  ret = chpl::hash_combine(ret, hasherBool(isAnyFormalNamed_));
+
+  return ret;
+}
+
+bool
+FunctionType::Formal::operator==(const FunctionType::Formal& rhs) const {
+  return this->type == rhs.type &&
+    this->intent == rhs.intent &&
+    this->name == rhs.name;
+}
+
+size_t FunctionType::Formal::hash() const {
+  std::hash<void*> hasherPtr;
+  std::hash<const char*> hasherConstCharPtr;
+
+  size_t ret = hasherPtr(this->type);
+  ret = chpl::hash_combine(ret, ((size_t) this->intent));
+  ret = chpl::hash_combine(ret, hasherConstCharPtr(this->name));
+  return ret;
+}
+
+bool FunctionType::Formal::isGeneric() const {
+  auto t = this->type;
+  if (t == dtUnknown || t == dtAny || t->symbol->hasFlag(FLAG_GENERIC)) {
+    return true;
+  }
+  return false;
+}
+
+bool FunctionType::equals(const FunctionType* rhs) const {
+  return this->kind_ == rhs->kind_ &&
+    this->formals_ == rhs->formals_ &&
+    this->returnIntent_ == rhs->returnIntent_ &&
+    this->returnType_ == rhs->returnType_ &&
+    this->throws_ == rhs->throws_ &&
+    this->isAnyFormalNamed_ == rhs->isAnyFormalNamed_ &&
+    this->userTypeString_ == rhs->userTypeString_;
+}
+
+bool FunctionType::isGeneric() const {
+  auto rt = returnType();
+
+  if (rt == dtUnknown || rt == dtAny || rt->symbol->hasFlag(FLAG_GENERIC)) {
+    return true;
+  }
+
+  for (auto& formal : formals_) {
+    if (formal.isGeneric()) return true;
+  }
+
+  return false;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 static PrimitiveType* createPrimitiveType(const char* name, const char* cname);
 static PrimitiveType* createInternalType (const char* name, const char* cname);
 
@@ -683,7 +1058,7 @@ void initPrimitiveTypes() {
   dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
 
   dtObject                             = new AggregateType(AGGREGATE_CLASS);
-  dtObject->symbol                     = new TypeSymbol("object", dtObject);
+  dtObject->symbol                     = new TypeSymbol("RootClass", dtObject);
 
   dtBytes                              = new AggregateType(AGGREGATE_RECORD);
   dtBytes->symbol                      = new TypeSymbol("bytes", dtBytes);
@@ -793,7 +1168,7 @@ void initPrimitiveTypes() {
 
   // Could be == c_ptr(int(8)) e.g.
   // used in some runtime interfaces
-  dtCVoidPtr   = createPrimitiveType("chpl__c_void_ptr", "c_void_ptr" );
+  dtCVoidPtr   = createPrimitiveType("chpl__c_void_ptr", "raw_c_void_ptr" );
   dtCVoidPtr->symbol->addFlag(FLAG_NO_CODEGEN);
   dtCVoidPtr->defaultValue = gNil;
 
@@ -962,65 +1337,41 @@ void initChplProgram() {
 
 // Appends a VarSymbol to the root module and gives it the bool immediate
 // matching 'value'. For use in initCompilerGlobals.
-static void setupBoolGlobal(VarSymbol* globalVar, bool value) {
+
+template <typename T>
+VarSymbol* createCompilerGlobalParam(const char* name, T value);
+
+template <>
+VarSymbol* createCompilerGlobalParam<bool>(const char* name, bool value) {
+  auto globalVar = new VarSymbol(name, dtBool);
+  globalVar->addFlag(FLAG_PARAM);
   rootModule->block->insertAtTail(new DefExpr(globalVar));
 
   if (value) {
      globalVar->immediate = new Immediate;
     *globalVar->immediate = *gTrue->immediate;
+    paramMap.put(globalVar, gTrue);
 
   } else {
      globalVar->immediate = new Immediate;
     *globalVar->immediate = *gFalse->immediate;
+    paramMap.put(globalVar, gFalse);
   }
+
+  return globalVar;
 }
 
 void initCompilerGlobals() {
-
-  gBoundsChecking = new VarSymbol("boundsChecking", dtBool);
-  gBoundsChecking->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gBoundsChecking, !fNoBoundsChecks);
-
-  gCastChecking = new VarSymbol("castChecking", dtBool);
-  gCastChecking->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gCastChecking, !fNoCastChecks);
-
-  gNilChecking = new VarSymbol("chpl_checkNilDereferences", dtBool);
-  gNilChecking->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gNilChecking, !fNoNilChecks);
-
-  gOverloadSetsChecks = new VarSymbol("chpl_overloadSetsChecks", dtBool);
-  gOverloadSetsChecks->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gOverloadSetsChecks, fOverloadSetsChecks);
-
-  gDivZeroChecking = new VarSymbol("chpl_checkDivByZero", dtBool);
-  gDivZeroChecking->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gDivZeroChecking, !fNoDivZeroChecks);
-
-  gCacheRemote = new VarSymbol("CHPL_CACHE_REMOTE", dtBool);
-  gCacheRemote->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gCacheRemote, fCacheRemote);
-
-  gPrivatization = new VarSymbol("_privatization", dtBool);
-  gPrivatization->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gPrivatization, !(fNoPrivatization || fLocal));
-
-  gLocal = new VarSymbol("_local", dtBool);
-  gLocal->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gLocal, fLocal);
-
-  gWarnUnstable = new VarSymbol("chpl_warnUnstable", dtBool);
-  gWarnUnstable->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gWarnUnstable, fWarnUnstable);
+  auto& compilerGlobals = chpl::compilerGlobals(gContext);
+  #define COMPILER_GLOBAL(TYPE__, NAME__, FIELD__) \
+    gCompilerGlobalParams.push_back(createCompilerGlobalParam<TYPE__>(NAME__, compilerGlobals.FIELD__));
+  #include "chpl/uast/compiler-globals-list.h"
+  #undef COMPILER_GLOBAL
 
   // defined and maintained by the runtime
   gNodeID = new VarSymbol("chpl_nodeID", dtInt[INT_SIZE_32]);
   gNodeID->addFlag(FLAG_EXTERN);
   rootModule->block->insertAtTail(new DefExpr(gNodeID));
-
-  gUseIOFormatters = new VarSymbol("chpl_useIOFormatters", dtBool);
-  gUseIOFormatters->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gUseIOFormatters, fUseIOFormatters);
 
   initForTaskIntents();
 }
@@ -1261,6 +1612,12 @@ bool isClassLikeOrPtr(Type* t) {
                             t == dtCFnPtr);
 }
 
+bool isCVoidPtr(Type* t) {
+  return (t->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
+          getDataClassType(t->symbol)->typeInfo() == dtVoid) ||
+         t == dtCVoidPtr;
+}
+
 bool isClassLikeOrNil(Type* t) {
   if (t == dtNil) return true;
   return isClassLike(t);
@@ -1443,6 +1800,73 @@ bool isSingleType(const Type* t) {
 bool isAtomicType(const Type* t) {
   return t->symbol->hasFlag(FLAG_ATOMIC_TYPE);
 }
+
+// Returns the element type, given an array type.
+static Type* arrayElementType(AggregateType* arrayType) {
+  Type* eltType = nullptr;
+  INT_ASSERT(arrayType->symbol->hasFlag(FLAG_ARRAY));
+  Type* instType = arrayType->getField("_instance")->type;
+  AggregateType* instClass = toAggregateType(canonicalClassType(instType));
+  TypeSymbol* ts = getDataClassType(instClass->symbol);
+  // if no eltType here, go to the super class
+  while (ts == nullptr) {
+    if (Symbol* super = instClass->getSubstitutionWithName(astr("super"))) {
+        instClass = toAggregateType(canonicalClassType(super->type));
+        ts = getDataClassType(instClass->symbol);
+    } else break;
+  }
+  if (ts != NULL) eltType = ts->type;
+
+  return eltType;
+}
+
+// Returns the element type, given an array type.
+// Recurse into it if it is still an array.
+static Type* finalArrayElementType(AggregateType* arrayType) {
+  Type* eltType = nullptr;
+  do {
+    eltType = arrayElementType(arrayType);
+    arrayType = toAggregateType(eltType);
+  } while (arrayType != nullptr && arrayType->symbol->hasFlag(FLAG_ARRAY));
+
+  return eltType;
+}
+
+static bool isOrContains(Type *type, Flag flag, bool canBeTypeVar = false) {
+  if (type == nullptr) {
+    return false;
+  } else if (type->symbol->hasFlag(flag)) {
+    return true;
+  } else if (canBeTypeVar && !type->symbol->hasFlag(FLAG_TYPE_VARIABLE)) {
+    // in the base case, this function should not return true for something like
+    // type T = sync int;
+    // But when searching tuples and arrays, this is needed
+    return true;
+  } else {
+    Type* vt = type->getValType();
+    if (isDecoratedClassType(vt)) {
+      vt = canonicalClassType(vt)->getValType();
+    }
+    if (AggregateType* at = toAggregateType(vt)) {
+      // get backing array instance and recurse
+      if (at->symbol->hasFlag(FLAG_ARRAY)) {
+        Type* eltType = finalArrayElementType(at);
+        if (isOrContains(eltType, flag, true /*can be type var*/)) return true;
+      } else if (at->symbol->hasFlag(FLAG_TUPLE)) {
+        // if its a tuple, search the tuple type substitutions
+        for (const auto& ns: at->substitutionsPostResolve) {
+          Type* eltType = ns.value->type;
+          if (isOrContains(eltType, flag, true /*can be type var*/)) return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+bool isOrContainsSyncType(Type* t) { return isOrContains(t, FLAG_SYNC); }
+bool isOrContainsSingleType(Type* t) { return isOrContains(t, FLAG_SINGLE); }
+bool isOrContainsAtomicType(Type* t) { return isOrContains(t, FLAG_ATOMIC_TYPE); }
+
 
 bool isRefIterType(Type* t) {
   Symbol* iteratorRecord = NULL;

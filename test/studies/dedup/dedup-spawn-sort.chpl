@@ -10,10 +10,10 @@ proc main(args:[] string)
 
   for arg in args[1..] {
     if isFile(arg) then
-      paths.append(arg);
+      paths.pushBack(arg);
     else if isDir(arg) then
       for path in findFiles(arg, recursive=true) do
-        paths.append(path);
+        paths.pushBack(path);
   }
 
   // Now create a distributed-memory version of paths.
@@ -45,7 +45,7 @@ proc main(args:[] string)
   for w in distributedWriters do
     w.close();
  
-  var sorter = spawn(["sort", ], stdin=pipeStyle.pipe, stdout=pipeStyle.pipe);
+  var sorter = spawn(["sort"], stdin=pipeStyle.pipe, stdout=pipeStyle.pipe);
   cobegin {
     {
       // Output all of the to the sort process

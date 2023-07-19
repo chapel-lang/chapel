@@ -1,3 +1,5 @@
+use Math;
+
 config var logN = 5;
 const N = 1 << logN;
 

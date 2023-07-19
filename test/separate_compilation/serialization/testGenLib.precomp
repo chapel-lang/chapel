@@ -1,0 +1,39 @@
+#!/usr/bin/env python3
+
+import subprocess, sys, os
+from pathlib import Path
+
+def genDyno(val):
+    dyno = ""
+    if val == "<standard>":
+        dyno = "chpl_standard.dyno"
+    else:
+        stem = Path(val).stem
+        dyno = stem + ".dyno"
+    if not os.path.exists(dyno):
+        subprocess.run([sys.argv[3], "testGenLib.chpl", "--dyno-gen-lib", val])
+
+def genAndMod(name):
+    dotChpl = name + ".chpl"
+    dotDyno = name + ".dyno"
+    genDyno(dotChpl)
+
+    f = open(dotDyno, "r+b")
+    data = f.read()
+
+    # Note: length of strings must match.
+    prefix = b'MYPREFIX: '
+    tmp = " ".join([name, name, name])
+    needle = bytes(tmp, 'utf-8')
+    rn = name[::-1]
+    reverse = bytes("-".join([rn, rn, rn]), 'utf-8')
+    updated = data.replace(prefix + needle, prefix + reverse)
+
+    f.seek(0)
+    f.write(updated)
+    f.flush()
+
+genAndMod("MyMod")
+genAndMod("OtherMod")
+genDyno("testGenLib.chpl")
+genDyno("<standard>")

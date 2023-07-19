@@ -21,6 +21,7 @@
 #define CHPL_UTIL_HASH_H
 
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <set>
 #include <string>

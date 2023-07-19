@@ -55,7 +55,7 @@ var error : real = 0;
 var counts: [1..k] int = 0;
 var c1:[1..k] m*int;
 
-proc AccumState type
+proc AccumState type do
     return (error, counts, c1).type;
 
 proc identity

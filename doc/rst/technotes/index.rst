@@ -23,7 +23,7 @@ Base Language Features
    Module Search Paths <module_search>
    Operator Methods <operatorMethods>
    The 'manage' Statement <manage>
-
+   Attributes <attributes>
 
 Initializers and Generic Programming
 ------------------------------------
@@ -35,6 +35,7 @@ Initializers and Generic Programming
    The ‘init=’ Method <initequals>
    Invoking Initializers with a Generic Instantiation <initTypeAlias>
    Partial Instantiations <partialInstantiations>
+   Throwing Initializers <throwingInit>
 
 Parallel Language Features
 --------------------------
@@ -60,6 +61,14 @@ Interoperability
    Calling Chapel Code from Other Languages <libraries>
    Fortran Interoperability <fortranInterop>
    Using the Chapel Allocator from C <allocators>
+
+IO
+-----
+
+.. toctree::
+   :maxdepth: 1
+
+   IO Serializers and Deserializers <ioSerializers>
 
 Compiler Features
 -----------------

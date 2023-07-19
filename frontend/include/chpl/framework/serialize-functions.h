@@ -40,6 +40,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "llvm/ADT/DenseMap.h"
+
 
 namespace chpl {
 class Context;
@@ -48,8 +50,16 @@ template<typename T> struct serialize;
 template<typename T> struct deserialize;
 
 class Serializer {
+public:
+  // Note: currently these char* entries are expected to support UniqueStrings,
+  // which are allocated from a Context and are null-terminated.
+  using stringCacheType = std::map<const char*, std::pair<int, size_t>>;
+
 private:
+  int counter_ = 0;
+
   std::ostream& os_;
+  stringCacheType stringCache_;
 
 public:
   Serializer(std::ostream& os): os_(os) {
@@ -59,20 +69,57 @@ public:
     return os_;
   }
 
+  stringCacheType stringCache() {
+    return stringCache_;
+  }
+
   template <typename T>
   void write(const T& data) {
     chpl::serialize<T>{}(*this, data);
   }
+
+  int cacheString(const char* str, size_t len) {
+    auto idx = stringCache_.find(str);
+    if (idx == stringCache_.end()) {
+      auto ret = counter_;
+      stringCache_.insert({str, {ret,len}});
+      counter_ += 1;
+      return ret;
+    } else {
+      return idx->second.first;
+    }
+  }
 };
 
 class Deserializer {
+  public:
+    // Note: currently these char* entries are expected to support
+    // UniqueStrings, which are allocated from a Context and are
+    // null-terminated.
+    using stringCacheType = std::vector<std::pair<size_t, const char*>>;
   private:
     Context* context_;
     std::istream& is_;
+    stringCacheType cache_;
 
   public:
     Deserializer(Context* context, std::istream& is)
       : context_(context), is_(is) { }
+
+    Deserializer(Context* context, std::istream& is, const stringCacheType& cache)
+      : context_(context), is_(is), cache_(cache) { }
+
+    //
+    // Convenience version to convert a Serializer's form of the string cache
+    //
+    Deserializer(Context* context, std::istream& is,
+                 Serializer::stringCacheType serCache)
+      : context_(context), is_(is) {
+      cache_.resize(serCache.size());
+      for (const auto& pair : serCache) {
+        cache_[pair.second.first] = {pair.second.second, pair.first};
+      }
+    }
 
     Context* context() const {
       return context_;
@@ -80,6 +127,10 @@ class Deserializer {
 
     std::istream& is() const {
       return is_;
+    }
+
+    std::pair<size_t, const char*>& getString(int id) {
+      return cache_[id];
     }
 
     template <typename T>
@@ -245,6 +296,30 @@ template<typename T> struct deserialize<std::set<T>> {
     auto len = des.read<uint64_t>();
     for (uint64_t i = 0; i < len; i++) {
       ret.insert(des.read<T>());
+    }
+    return ret;
+  }
+};
+
+template<typename K, typename V>
+struct serialize<llvm::DenseMap<K,V>> {
+  void operator()(Serializer& ser,
+                  const llvm::DenseMap<K,V>& val) const {
+    ser.write((uint64_t)val.size());
+    for (const auto& pair : val) {
+      ser.write(pair.first);
+      ser.write(pair.second);
+    }
+  }
+};
+
+template<typename K, typename V>
+struct deserialize<llvm::DenseMap<K,V>> {
+  llvm::DenseMap<K,V> operator()(Deserializer& des) const {
+    auto len = des.read<uint64_t>();
+    llvm::DenseMap<K,V> ret(len);
+    for (uint64_t i = 0; i < len; i++) {
+      ret.insert({des.read<K>(), des.read<V>()});
     }
     return ret;
   }

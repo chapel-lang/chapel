@@ -114,7 +114,7 @@ class Particle3D {
 
 
 proc countLines(fn : string) : int {
-  var fr = openreader(fn);
+  var fr = openReader(fn);
   var ipart = 0;
   for iff in fr.lines() do ipart +=1;
   fr.close();
@@ -125,7 +125,7 @@ proc readFile(fn : string) : owned Particle3D  {
   var npart = countLines(fn);
   var pp = new owned Particle3D(npart);
 
-  var ff = openreader(fn);
+  var ff = openReader(fn);
   var ipart = 0;
   var x,y,z,w,r2 : real;
   while (ff.read(x,y,z,w)) {
@@ -346,7 +346,7 @@ proc initialPP12() {
   if (!isTest) {
     writef("Time to tree paircount : %r \n", tt.elapsed());
     if !isPerf {
-      var ff = openwriter("%s.tree".format(pairfn));
+      var ff = openWriter("%s.tree".format(pairfn));
       writeHist(ff,hh);
       ff.close();
     }

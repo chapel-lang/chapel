@@ -58,7 +58,8 @@ class Forall final : public IndexableLoop {
                     withClauseChildNum,
                     blockStyle,
                     loopBodyChildNum,
-                    isExpressionLevel) {
+                    isExpressionLevel,
+                    NO_CHILD /*attributeGroup*/) {
   }
 
   Forall(Deserializer& des)

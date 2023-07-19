@@ -361,6 +361,103 @@ static void test6b() {
   assert(qt.type()->isErroneousType());
 }
 
+// Test forwarding to an expression's result
+static void testExpr() {
+  printf("testExpr\n");
+
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  const char* contents =
+    R""""(
+    record X {
+      proc foo() {
+        return 5;
+      }
+    }
+
+    record R {
+      var x : X;
+
+      proc _value const ref {
+        return x;
+      }
+
+      forwarding _value;
+    }
+
+    var r : R;
+    var x = r.foo();
+    )"""";
+
+  auto qt = resolveQualifiedTypeOfX(context, contents);
+  assert(qt.type()->isIntType());
+}
+
+static void forwardForwardHelper(std::string stmt, bool isVar = false) {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string contents =
+    R""""(
+    record A {
+      proc foo() {
+        return 5;
+      }
+    }
+
+    record B {
+      var a : A;
+
+      proc bar() {
+        return a;
+      }
+    }
+
+    proc ident(arg) { return arg; }
+
+    record R {
+      var b : B;
+
+      forwarding b;
+      )"""" + stmt + R""""(
+    }
+
+    var r : R;
+    var x = r.foo();
+    )"""";
+
+  auto qt = resolveQualifiedTypeOfX(context, contents);
+  assert(qt.type()->isErroneousType());
+
+  unsigned int numExpected = isVar ? 3 : 2;
+  assert(guard.numErrors() == numExpected);
+
+  auto first = "Cannot resolve call to 'bar': no matching candidates";
+  assert(guard.error(0)->message() == first);
+
+  if (isVar) {
+    // TODO: Why the extra message in the var case?
+    assert(guard.error(1)->message() == first);
+  }
+
+  auto second = "Cannot resolve call to 'foo': no matching candidates";
+  assert(guard.error(guard.numErrors()-1)->message() == second);
+
+  guard.realizeErrors();
+}
+
+// Test an attempt to forward to an expression that itself requires forwarding
+static void testForwardForwardExpr() {
+  printf("testForwardForwardExpr\n");
+
+  forwardForwardHelper("forwarding bar();");
+  forwardForwardHelper("forwarding ident(bar());");
+  forwardForwardHelper("forwarding var x = bar();", /*isVar=*/true);
+}
+
 // TODO: forwarding with only, except
 
 
@@ -373,6 +470,9 @@ int main() {
   test5b();
   test6a();
   test6b();
+
+  testExpr();
+  testForwardForwardExpr();
 
   return 0;
 }

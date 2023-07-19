@@ -1,5 +1,6 @@
 use Time;
 use BlockDist;
+use Math;
 
 use HPCCProblemSize, RARandomStream;
 

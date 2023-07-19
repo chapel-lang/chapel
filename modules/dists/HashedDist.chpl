@@ -26,14 +26,14 @@ config param debugUserMapAssoc = false;
 // Returns an integer index into targetLocales
 // b/c this matches best with the expected use and it is
 // easy to guarantee that the returned locale is in the target set.
-pragma "no doc"
+@chpldoc.nodoc
 record AbstractMapper {
   proc this(const ref ind, const ref targetLocales: [?D] locale) : D.idxType {
     return 0;
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 record DefaultMapper {
   proc this(ind, targetLocales: [?D] locale) : D.idxType {
     const hash = chpl__defaultHashWrapper(ind);
@@ -183,13 +183,13 @@ class Hashed : BaseDist {
   }
 
 
-  override proc dsiSupportsPrivatization() param return true;
-  proc dsiGetPrivatizeData() return this.mapper;
+  override proc dsiSupportsPrivatization() param do return true;
+  proc dsiGetPrivatizeData() do return this.mapper;
 
   proc dsiPrivatize(privatizeData) {
     return new unmanaged Hashed(idxType, privatizeData, _to_unmanaged(this));
   }
-  proc dsiGetReprivatizeData() return 0;
+  proc dsiGetReprivatizeData() do return 0;
 
   proc dsiReprivatize(other, reprivatizeData) {
     this.mapper = other.mapper;
@@ -528,7 +528,7 @@ class UserMapAssocDom: BaseAssociativeDom {
 
   }
 
-  proc dsiHasSingleLocalSubdomain() param return false;
+  proc dsiHasSingleLocalSubdomain() param do return false;
 
   iter dsiLocalSubdomains(loc: locale) {
     foreach (idx,l) in zip(dist.targetLocDom, dist.targetLocales) {
@@ -540,9 +540,9 @@ class UserMapAssocDom: BaseAssociativeDom {
 
   override proc dsiSupportsAutoLocalAccess() param { return true; }
 
-  override proc dsiSupportsPrivatization() param return true;
-  proc dsiGetPrivatizeData() return dist.pid;
-  proc dsiGetReprivatizeData() return 0;
+  override proc dsiSupportsPrivatization() param do return true;
+  proc dsiGetPrivatizeData() do return dist.pid;
+  proc dsiGetReprivatizeData() do return 0;
   proc dsiPrivatize(privatizeData) {
     var privateDist = chpl_getPrivatizedCopy(dist.type, privatizeData);
     var c = new unmanaged UserMapAssocDom(idxType=idxType, mapperType=mapperType, dist=privateDist);
@@ -693,7 +693,7 @@ class UserMapAssocArr: AbsBaseArr {
   //var locAssocDoms: domain(BaseAssociativeDom);
   //var locArrsByAssoc: [locAssocDoms] LocUserMapAssocArr(idxType, mapperType, eltType);
 
-  override proc dsiGetBaseDom() return dom;
+  override proc dsiGetBaseDom() do return dom;
 
   override proc dsiIteratorYieldsLocalElements() param {
     return true;
@@ -745,8 +745,8 @@ class UserMapAssocArr: AbsBaseArr {
     }
   }
 
-  override proc dsiSupportsPrivatization() param return true;
-  proc dsiGetPrivatizeData() return 0;
+  override proc dsiSupportsPrivatization() param do return true;
+  proc dsiGetPrivatizeData() do return 0;
   proc dsiPrivatize(privatizeData) {
     var privdom = chpl_getPrivatizedCopy(dom.type, dom.pid);
     var c = new unmanaged UserMapAssocArr(idxType=idxType, mapperType=mapperType, eltType=eltType, dom=privdom);
@@ -834,7 +834,7 @@ class UserMapAssocArr: AbsBaseArr {
     return dom.dist.targetLocales;
   }
 
-  proc dsiHasSingleLocalSubdomain() param return false;
+  proc dsiHasSingleLocalSubdomain() param do return false;
 
   iter dsiLocalSubdomains(loc: locale) {
     foreach locdom in dom.dsiLocalSubdomains(loc) do

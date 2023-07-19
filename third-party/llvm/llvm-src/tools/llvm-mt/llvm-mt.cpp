@@ -17,7 +17,6 @@
 #include "llvm/Support/Error.h"
 #include "llvm/Support/FileOutputBuffer.h"
 #include "llvm/Support/InitLLVM.h"
-#include "llvm/Support/ManagedStatic.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/PrettyStackTrace.h"
@@ -141,6 +140,29 @@ int main(int Argc, const char **Argv) {
   std::unique_ptr<MemoryBuffer> OutputBuffer = Merger.getMergedManifest();
   if (!OutputBuffer)
     reportError("empty manifest not written");
+
+  int ExitCode = 0;
+  if (InputArgs.hasArg(OPT_notify_update)) {
+    ErrorOr<std::unique_ptr<MemoryBuffer>> OutBuffOrErr =
+        MemoryBuffer::getFile(OutputFile);
+    // Assume if we couldn't open the output file then it doesn't exist meaning
+    // there was a change.
+    bool Same = false;
+    if (OutBuffOrErr) {
+      const std::unique_ptr<MemoryBuffer> &FileBuffer = *OutBuffOrErr;
+      Same = std::equal(OutputBuffer->getBufferStart(),
+                        OutputBuffer->getBufferEnd(),
+                        FileBuffer->getBufferStart());
+    }
+    if (!Same) {
+#if LLVM_ON_UNIX
+      ExitCode = 0xbb;
+#elif defined(_WIN32)
+      ExitCode = 0x41020001;
+#endif
+    }
+  }
+
   Expected<std::unique_ptr<FileOutputBuffer>> FileOrErr =
       FileOutputBuffer::create(OutputFile, OutputBuffer->getBufferSize());
   if (!FileOrErr)
@@ -149,5 +171,5 @@ int main(int Argc, const char **Argv) {
   std::copy(OutputBuffer->getBufferStart(), OutputBuffer->getBufferEnd(),
             FileBuffer->getBufferStart());
   error(FileBuffer->commit());
-  return 0;
+  return ExitCode;
 }

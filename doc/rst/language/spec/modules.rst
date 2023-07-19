@@ -885,7 +885,7 @@ be used to disambiguate the symbols in this case.
         }
       }
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -966,51 +966,17 @@ import, a strategy which will be referred to as `re-exporting`.
       module A {
         proc main() {
           use B;
-          writeln(B.C.cSymbol);
           writeln(B.cSymbol);
         }
       }
 
-   In this case, C will be visible to A as though it was a submodule of B, and
-   its symbols can also be treated as though they were defined within B.  This
-   means that A can contain mentions like ``B.C.cSymbol`` if cSymbol was a
-   symbol defined in C, regardless of if C was actually a submodule of B.
+   In this case, the symbols within ``C`` will be treated as though they
+   were defined within B.  As a result, ``A`` can contain mentions like
+   ``B.cSymbol`` which would access ``C``'s ``cSymbol``.
 
-   This also means that A can contain mentions like ``B.cSymbol`` which would
-   access C's cSymbol, assuming these symbols were not shadowed by symbols with
-   the same name in B.
-
-   .. BLOCK-test-chapeloutput
-
-      0
-      0
-
-   *Example (use-reexport2.chpl)*.
-
-   However, if the public use of C also disabled accesses to the module name
-   using the ``as`` keyword, e.g.
-
-   .. code-block:: chapel
-
-      module C {
-        var cSymbol: int;
-      }
-
-      module B {
-        public use C as _;
-      }
-
-      module A {
-        proc main() {
-          use B;
-          // writeln(B.C.cSymbol); // Would not work
-          writeln(B.cSymbol);
-        }
-      }
-
-   Then A could only contain mentions like ``B.cSymbol``, it could not access
-   ``cSymbol`` using ``B.C.cSymbol``.  This is because C is not present as a
-   public name in B's scope.
+   Note that something like ``B.C.cSymbol`` will not compile in this
+   specific example. Please see :ref:`Public_Use` for details, including
+   how to enable patterns like this.
 
    .. BLOCK-test-chapeloutput
 
@@ -1019,9 +985,8 @@ import, a strategy which will be referred to as `re-exporting`.
 Conversely, if B's use of C was ``private`` then A would not be able to see C's
 symbols at all due to that ``use``.
 
-The situation for ``import`` is similar.  Because import statements only
-enable either qualified or unqualified access to a symbol, it more closely
-resembles the second example instead of the first.
+The situation for ``import`` is similar.  However, import statements only
+enable either qualified or unqualified access to a symbol, but not both.
 
    *Example (import-reexport1.chpl)*.
 
@@ -1089,7 +1054,7 @@ symbols due to that ``import``.
 This notion of re-exporting extends to the case in which a scope uses multiple
 modules.
 
-   *Example (use-reexport3.chpl)*.
+   *Example (use-reexport2.chpl)*.
 
    Say we have a module A that uses a module B, and module B contains a
    public use of modules C1, C2, and C3.
@@ -1115,33 +1080,27 @@ modules.
       module A {
         proc main() {
           use B;
-          writeln(B.C1.c1Symbol);
-          writeln(B.C2.c2Symbol);
-          writeln(B.C3.c3Symbol);
-
           writeln(B.c1Symbol);
           writeln(B.c2Symbol);
           writeln(B.c3Symbol);
         }
       }
 
-   In this case all three of those modules will be accessible by A as though
-   they were submodules of B.  This also means that symbols in C1, C2, and C3
-   will be accessible as though they were defined in B, assuming these symbols
-   were not shadowed by symbols with the same name in B and that these symbols
-   do not conflict with each other.
+   In this case, symbols in C1, C2, and C3 will be accessible as though
+   they were defined in B, assuming these symbols were not shadowed by
+   symbols with the same name in B and that these symbols do not conflict
+   with each other.
+
+   Note that something like ``B.C1.c1Symbol`` will not compile in this
+   specific example. Please see :ref:`Public_Use` for details, including
+   how to enable patterns like this.
 
    .. BLOCK-test-chapeloutput
 
       0
       false
       3
-      0
-      false
-      3
 
-This similarly applies to import statements that contain multiple
-subexpressions.
 
 .. _Module_Initialization:
 

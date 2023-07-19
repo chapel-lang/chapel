@@ -135,27 +135,27 @@ module HDFS {
    */
   private extern proc chpl_macro_int_EEOF():c_int;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern "struct hdfs_internal" record hdfs_internal { }
-  pragma "no doc"
+  @chpldoc.nodoc
   extern "struct hdfsFile_internal" record hdfsFile_internal { }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type hdfsFS = c_ptr(hdfs_internal);
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type hdfsFile = c_ptr(hdfsFile_internal);
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern record hdfsFileInfo {
     var mSize:tOffset;
     var mBlockSize:tOffset;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type tSize = int(32);
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type tOffset = int(64);
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type tPort = uint(16);
 
   private extern proc hdfsConnect(nn:c_string, port:tPort):hdfsFS;
@@ -165,9 +165,9 @@ module HDFS {
                                    blockSize:tSize):hdfsFile;
   private extern proc hdfsCloseFile(fs:hdfsFS, file:hdfsFile):c_int;
   private extern proc hdfsPread(fs:hdfsFS, file:hdfsFile, position:tOffset,
-                                buffer:c_void_ptr, length:tSize):tSize;
+                                buffer:c_ptr(void), length:tSize):tSize;
   private extern proc hdfsWrite(fs:hdfsFS, file:hdfsFile,
-                                buffer:c_void_ptr, length:tSize):tSize;
+                                buffer:c_ptr(void), length:tSize):tSize;
   private extern proc hdfsFlush(fs:hdfsFS, file:hdfsFile):c_int;
   private extern proc hdfsGetPathInfo(fs:hdfsFS, path:c_string):c_ptr(hdfsFileInfo);
   private extern proc hdfsFreeFileInfo(info:c_ptr(hdfsFileInfo), numEntries:c_int);
@@ -175,9 +175,9 @@ module HDFS {
   // QIO extern stuff
   private extern proc qio_strdup(s: c_string): c_string;
   private extern proc qio_mkerror_errno():errorCode;
-  private extern proc qio_channel_get_allocated_ptr_unlocked(ch:qio_channel_ptr_t, amt_requested:int(64), ref ptr_out:c_void_ptr, ref len_out:c_ssize_t, ref offset_out:int(64)):errorCode;
+  private extern proc qio_channel_get_allocated_ptr_unlocked(ch:qio_channel_ptr_t, amt_requested:int(64), ref ptr_out:c_ptr(void), ref len_out:c_ssize_t, ref offset_out:int(64)):errorCode;
   private extern proc qio_channel_advance_available_end_unlocked(ch:qio_channel_ptr_t, len:c_ssize_t);
-  private extern proc qio_channel_get_write_behind_ptr_unlocked(ch:qio_channel_ptr_t, ref ptr_out:c_void_ptr, ref len_out:c_ssize_t, ref offset_out:int(64)):errorCode;
+  private extern proc qio_channel_get_write_behind_ptr_unlocked(ch:qio_channel_ptr_t, ref ptr_out:c_ptr(void), ref len_out:c_ssize_t, ref offset_out:int(64)):errorCode;
   private extern proc qio_channel_advance_write_behind_unlocked(ch:qio_channel_ptr_t, len:c_ssize_t);
 
   private param verbose = false;
@@ -194,7 +194,7 @@ module HDFS {
 
   proc connect(nameNode: string = "default", port:int=0) throws {
     var fs = new unmanaged HDFSFileSystem(nameNode, port);
-    if fs.hfs == c_nil {
+    if fs.hfs == nil {
       var err = qio_mkerror_errno();
       delete fs;
       throw createSystemError(err, "in hdfsConnect");
@@ -209,15 +209,15 @@ module HDFS {
 
   */
   record hdfs {
-    pragma "no doc"
+    @chpldoc.nodoc
     var instance:unmanaged HDFSFileSystem;
     forwarding instance;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(instance:unmanaged HDFSFileSystem) {
       this.instance = instance;
     }
-    pragma "no doc"
+    @chpldoc.nodoc
     proc deinit() {
       var count = instance.release();
       if count == 0 then
@@ -230,18 +230,18 @@ module HDFS {
    reference counted and shared by open files.
    */
   class HDFSFileSystem {
-    pragma "no doc"
+    @chpldoc.nodoc
     var nameNode: string;
-    pragma "no doc"
+    @chpldoc.nodoc
     var port: int;
-    pragma "no doc"
+    @chpldoc.nodoc
     var hfs:hdfsFS;
-    pragma "no doc"
+    @chpldoc.nodoc
     var refCount: atomic int;
 
     /* nameNode is the name node hostname, can be 'default'
        port is the port, can be '0' for default behavior */
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(nameNode: string="default", port:int=0) {
       if verbose then
         writeln("hdfsConnect");
@@ -252,26 +252,26 @@ module HDFS {
       this.complete();
       refCount.write(1);
     }
-    pragma "no doc"
+    @chpldoc.nodoc
     proc deinit() {
       if verbose then
         writeln("hdfsDisconnect");
-      if this.hfs != c_nil then
+      if this.hfs != nil then
         hdfsDisconnect(this.hfs);
     }
-    pragma "no doc"
+    @chpldoc.nodoc
     proc retain() {
       refCount.add(1);
     }
     // should deallocate if the returned count is 0
-    pragma "no doc"
+    @chpldoc.nodoc
     proc release() {
       var oldValue = refCount.fetchSub(1);
       return oldValue - 1;
     }
 
     pragma "last resort"
-    deprecated "open with an iomode argument is deprecated - please use :enum:`~IO.ioMode`"
+    @deprecated(notes="open with an iomode argument is deprecated - please use :enum:`~IO.ioMode`")
     proc open(path:string, mode:iomode,
               style:iostyle,
               in flags:c_int = 0, // default to based on mode
@@ -283,7 +283,7 @@ module HDFS {
                 replication, blockSize);
     }
 
-    @unstable "open with a style argument is unstable"
+    @unstable("open with a style argument is unstable")
     proc open(path:string, mode:ioMode,
               style:iostyle,
               in flags:c_int = 0, // default to based on mode
@@ -318,7 +318,7 @@ module HDFS {
     }
 
     pragma "last resort"
-    deprecated "open with an iomode argument is deprecated - please use :enum:`~IO.ioMode`"
+    @deprecated(notes="open with an iomode argument is deprecated - please use :enum:`~IO.ioMode`")
     proc open(path:string, mode:iomode,
               in flags:c_int = 0, // default to based on mode
               bufferSize:c_int = 0,    // 0 -> use hdfs default value
@@ -330,7 +330,7 @@ module HDFS {
     }
 
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc openHelper(path:string, mode:ioMode,
                     style:iostyleInternal = defaultIOStyleInternal(),
                     in flags:c_int = 0, // default to based on mode
@@ -366,13 +366,13 @@ module HDFS {
       if verbose then
         writeln("after hdfsOpenFile");
 
-      if hfile == c_nil {
+      if hfile == nil {
         throw createSystemError(qio_mkerror_errno(), "in hdfsOpenFile");
       }
 
       // Create an HDFSFile and return the QIO file containing it
       // this initializer bumps the reference count to this
-      var fl = new unmanaged HDFSFile(this:unmanaged, hfile, path);
+      var fl = new unmanaged HDFSFile(_to_unmanaged(this), hfile, path);
 
       var ret: file;
       try {
@@ -390,7 +390,7 @@ module HDFS {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class HDFSFile : QioPluginFile {
     var fs: unmanaged HDFSFileSystem;
     var hfile: hdfsFile;
@@ -413,7 +413,7 @@ module HDFS {
       if verbose then
         writeln("HDFSFile.setupChannel");
 
-      var hdfsch = new unmanaged HDFSChannel(this:unmanaged, qioChannelPtr);
+      var hdfsch = new unmanaged HDFSChannel(_to_unmanaged(this), qioChannelPtr);
       pluginChannel = hdfsch;
       return 0;
     }
@@ -483,7 +483,7 @@ module HDFS {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class HDFSChannel : QioPluginChannel {
     var file: unmanaged HDFSFile;
     var qio_ch:qio_channel_ptr_t;
@@ -507,7 +507,7 @@ module HDFS {
 
       var remaining = amt;
       while remaining > 0 {
-        var ptr:c_void_ptr = c_nil;
+        var ptr:c_ptr(void) = nil;
         var len = 0:c_ssize_t;
         var offset = 0;
         err = qio_channel_get_allocated_ptr_unlocked(qio_ch, amt, ptr, len, offset);
@@ -546,7 +546,7 @@ module HDFS {
       var err:errorCode = 0;
       var remaining = amt;
       while remaining > 0 {
-        var ptr:c_void_ptr = c_nil;
+        var ptr:c_ptr(void) = nil;
         var len = 0:c_ssize_t;
         var offset = 0;
         err = qio_channel_get_write_behind_ptr_unlocked(qio_ch, ptr, len, offset);

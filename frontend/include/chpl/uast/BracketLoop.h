@@ -55,7 +55,8 @@ class BracketLoop final : public IndexableLoop {
                     withClauseChildNum,
                     blockStyle,
                     loopBodyChildNum,
-                    isExpressionLevel) {
+                    isExpressionLevel,
+                    NO_CHILD /*attributeGroup*/) {
   }
 
   BracketLoop(Deserializer& des)

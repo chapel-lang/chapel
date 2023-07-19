@@ -2205,15 +2205,13 @@ extern void gasneti_nodemapInit(gasneti_bootstrapExchangefn_t exchangefn,
   #endif
   const char *dflt = ids ? "conduit" : GASNETI_HOST_DETECT_DEFAULT;
   const char *envval = gasneti_getenv_withdefault("GASNET_HOST_DETECT", dflt);
-  char *lowerval = gasneti_strdup(envval);
-  for (char *p = lowerval; *p; ++p) *p = tolower(*p);
-  if (! strcmp(lowerval, "conduit")) {
+  if (! gasneti_strcasecmp(envval, "conduit")) {
     gasneti_hostid_alg = gasneti_hostid_alg_conduit;
-  } else if (! strcmp(lowerval, "gethostid")) {
+  } else if (! gasneti_strcasecmp(envval, "gethostid")) {
     gasneti_hostid_alg = gasneti_hostid_alg_gethostid;
-  } else if (! strcmp(lowerval, "hostname")) {
+  } else if (! gasneti_strcasecmp(envval, "hostname")) {
     gasneti_hostid_alg = gasneti_hostid_alg_hostname;
-  } else if (! strcmp(lowerval, "trivial")) {
+  } else if (! gasneti_strcasecmp(envval, "trivial")) {
     // NOTE: this option is intentionally undocumented
     gasneti_hostid_alg = gasneti_hostid_alg_trivial;
   } else {
@@ -2267,8 +2265,7 @@ no_exchange:
 
 no_helper:
   // Perform "common" work w.r.t the nodemap
-  GASNETI_TRACE_PRINTF(I,("GASNET_HOST_DETECT=%s yields %s", lowerval, gasneti_format_host_detect()));
-  gasneti_free(lowerval);
+  GASNETI_TRACE_PRINTF(I,("GASNET_HOST_DETECT=%s yields %s", envval, gasneti_format_host_detect()));
   gasneti_nodemapParse();
   return;
 
@@ -2352,7 +2349,6 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
   gasneti_spawnerfn_t const *res = NULL;
   const char *not_set = "(not set)";
   const char *spawner;
-  char *tmp = NULL;
   int enabled = 0;  // non-zero if an enabled spawner is selected explicitly
   int disabled = 0; // non-zero if a known spawner is selected explicitly but is not enabled
   int match;
@@ -2364,13 +2360,7 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
     if (!spawner) spawner = not_set;
   }
 
-  if (spawner != not_set) { // upper-case
-    tmp = gasneti_strdup(spawner);
-    for (char *p = tmp; *p; p++) *p = toupper(*p);
-    spawner = tmp;
-  }
-
-  match = !strcmp(spawner, "MPI");
+  match = !gasneti_strcasecmp(spawner, "MPI");
 #if HAVE_MPI_SPAWNER
   /* bug 3406: Try MPI-based spawn first, EVEN if the var is not set.
    * This is a requirement for spawning using bare mpirun
@@ -2383,7 +2373,7 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
   disabled += match;
 #endif
 
-  match = !strcmp(spawner, "SSH");
+  match = !gasneti_strcasecmp(spawner, "SSH");
 #if HAVE_SSH_SPAWNER
   /* GASNET_SPAWN_CONTROL=ssh is set by gasnetrun for the ssh spawn master,
    * and by the ssh command line for other processes (ie all normal uses).
@@ -2398,7 +2388,7 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
   disabled += match;
 #endif
 
-  match = !strcmp(spawner, "PMI");
+  match = !gasneti_strcasecmp(spawner, "PMI");
 #if HAVE_PMI_SPAWNER
   /* GASNET_SPAWN_CONTROL=pmi is set by gasnetrun for the pmi spawn case.
    * We no longer claim to support direct launch with srun, yod, etc.
@@ -2424,8 +2414,6 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
       gasneti_fatalerror("No supported spawner was able to initialize the job");
     }
   }
-
-  gasneti_free(tmp);
 
   gasneti_spawn_verbose = gasneti_getenv_yesno_withdefault("GASNET_SPAWN_VERBOSE",0);
 
@@ -3090,6 +3078,40 @@ char *gasneti_sappendf(char *s, const char *fmt, ...) {
   va_end(args);
 
   return s;
+}
+
+// case-insensitive string comparison
+// same semantics as the POSIX-1.2001 equivalent except for NULL arguments,
+// which these functions treat as indistinguishable from a pointer to '\0'
+int gasneti_strcasecmp(const char *s1, const char *s2) {
+  static char zero = '\0';
+  if (!s1) s1 = &zero;
+  if (!s2) s2 = &zero;
+  size_t i = 0;
+  while (s1[i] && s2[i]) {
+    char a = tolower(s1[i]);
+    char b = tolower(s2[i]);
+    if (a != b) return ((a < b) ? -1 : 1);
+    ++i;
+  }
+  if (!s1[i] && !s2[i]) return 0; // ended together (identical)
+  else return (s2[i] ? -1 : 1); // shorter string is the lesser
+}
+
+int gasneti_strncasecmp(const char *s1, const char *s2, size_t n) {
+  static char zero = '\0';
+  if (!s1) s1 = &zero;
+  if (!s2) s2 = &zero;
+  size_t i = 0;
+  while ((i < n) && s1[i] && s2[i]) {
+    char a = tolower(s1[i]);
+    char b = tolower(s2[i]);
+    if (a != b) return ((a < b) ? -1 : 1);
+    ++i;
+  }
+  if (i == n) return 0; // first n chars were identical
+  if (!s1[i] && !s2[i]) return 0; // ended together (identical)
+  else return (s2[i] ? -1 : 1); // shorter string is the lesser
 }
 
 #if GASNET_DEBUGMALLOC

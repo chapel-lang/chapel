@@ -45,8 +45,8 @@ init= 1 1
 deinit 1 1
 done makeTuple
 init= 1 1
-(x = 1, ptr = {xx = 1})
 deinit 1 1
+(x = 1, ptr = {xx = 1})
 deinit 1 1
 -
 testr4
@@ -65,8 +65,8 @@ init= 1 1
 init= 1 1
 deinit 1 1
 deinit 1 1
-(x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1})
 deinit 1 1
+(x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1})
 deinit 1 1
 deinit 1 1
 deinit 1 1
@@ -158,6 +158,7 @@ init 1 1
 deinit 1 1
 -
 testC7
+{xx = 1}
 {xx = 1}
 -
 testR1

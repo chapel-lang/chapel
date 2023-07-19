@@ -20,7 +20,7 @@
 #ifndef CHPL_TYPES_BASIC_CLASS_TYPE_H
 #define CHPL_TYPES_BASIC_CLASS_TYPE_H
 
-#include "chpl/types/CompositeType.h"
+#include "chpl/types/ManageableType.h"
 #include "chpl/framework/global-strings.h"
 
 namespace chpl {
@@ -31,7 +31,7 @@ namespace types {
   This class represents an class type (e.g. `class C`)
   without considering decorators.
  */
-class BasicClassType final : public CompositeType {
+class BasicClassType final : public ManageableType {
  private:
   const BasicClassType* parentType_ = nullptr;
 
@@ -39,8 +39,8 @@ class BasicClassType final : public CompositeType {
                  const BasicClassType* parentType,
                  const BasicClassType* instantiatedFrom,
                  SubstitutionsMap subs)
-    : CompositeType(typetags::BasicClassType, id, name,
-                    instantiatedFrom, std::move(subs)),
+    : ManageableType(typetags::BasicClassType, id, name,
+                     instantiatedFrom, std::move(subs)),
       parentType_(parentType)
   {
     // all classes should have a parent type, except for object
@@ -77,14 +77,6 @@ class BasicClassType final : public CompositeType {
   static const BasicClassType* getObjectType(Context* context);
 
   static const BasicClassType* getReduceScanOpType(Context* context);
-
-  /** When compiling without a standard library (for testing purposes),
-      the compiler code needs to work around the fact that there
-      is no definition available for the class types needed
-      by the language but provided in the library (such as 'ReduceScanOp').
-      This function allows code to easily detect that case.
-   */
-  static bool isMissingBundledClassType(Context* context, ID id);
 
   /** Return the parent class type, or nullptr if this is the 'object' type. */
   const BasicClassType* parentClassType() const {

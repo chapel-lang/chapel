@@ -1,1 +1,2 @@
 cross_type_init.chpl:4: error: cannot initialize 'y' of type 'c_ptr(uint(64))' from a 'c_ptr(int(64))'
+cross_type_init.chpl:7: error: cannot initialize 'y_const' of type 'c_ptrConst(uint(64))' from a 'c_ptrConst(int(64))'

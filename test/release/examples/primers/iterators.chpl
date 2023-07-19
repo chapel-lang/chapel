@@ -213,7 +213,7 @@ Iterators in parallel
 // This code decorates each node in the tree in parallel, using a coforall.
 // Then it writes out the resulting tree data using a postorder traversal.
 //
-proc decorate(s:string) return "node_" + s;
+proc decorate(s:string) do return "node_" + s;
 
 writeln("Task parallel iteration");
 

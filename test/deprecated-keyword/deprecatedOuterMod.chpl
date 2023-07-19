@@ -1,5 +1,5 @@
 module Main {
-  deprecated "Outer is deprecated"
+  @deprecated(notes="Outer is deprecated")
   module Outer {
     var y: bool;
 

@@ -107,13 +107,6 @@ class AstNode {
                          const AstNode* parent,
                          int parentIdx);
 
- protected:
-
-
-
-  // Magic constant to indicate no such child exists.
-  static const int NO_CHILD = -1;
-
   AstNode(AstTag tag)
     : tag_(tag), attributeGroupChildNum_(NO_CHILD), id_(), children_() {
   }
@@ -163,6 +156,9 @@ class AstNode {
  public:
   virtual ~AstNode() = 0; // this is an abstract base class
 
+  // Magic constant to indicate no such child exists.
+  static constexpr int NO_CHILD = -1;
+
   /**
     Returns the tag indicating which AstNode subclass this is.
    */
@@ -173,7 +169,7 @@ class AstNode {
   /**
     Returns the ID of this AST node.
    */
-  ID id() const {
+  inline const ID& id() const {
     return id_;
   }
 
@@ -214,9 +210,27 @@ class AstNode {
     return attributeGroupChildNum_;
   }
 
+  /*
+    Attach an AttributeGroup to this AstNode after it was initially built
+    without an AttributeGroup. This is used by the ParserContextImpl to
+    handle parsing Variables and TupleDecls, and will result in the
+    AttributeGroup being attached as the last child of this AstNode.
+    TODO: We may want to consider moving the AttributeGroup to the front
+    of the children list, to maintain consistency with other AstNodes. But that
+    will require updating the indices of all the existing children.
+  */
+  void attachAttributeGroup(owned<AstNode> attributeGroup) {
+    CHPL_ASSERT(attributeGroupChildNum_ == NO_CHILD);
+    CHPL_ASSERT(attributeGroup->isAttributeGroup());
+    attributeGroupChildNum_ = children_.size();
+    children_.push_back(std::move(attributeGroup));
+  }
+
   /**
     Return the attributeGroup associated with this AstNode, or nullptr
-    if none exists.
+    if none exists. Note that it would be better to use the parsing query
+    idToAttributeGroup to ensure you get the AttributeGroup when the AstNode
+    is a child of a MultiDecl or TupleDecl.
    */
   const AttributeGroup* attributeGroup() const {
     if (attributeGroupChildNum_ < 0) return nullptr;

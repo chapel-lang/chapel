@@ -22,6 +22,16 @@
 
 #include "ImportStmt.h"
 
+bool AstVisitorTraverse::enterThunk(TemporaryConversionThunk* node)
+{
+  return true;
+}
+
+void AstVisitorTraverse::exitThunk(TemporaryConversionThunk* node)
+{
+
+}
+
 bool AstVisitorTraverse::enterAggrType(AggregateType* node)
 {
   return true;
@@ -53,6 +63,11 @@ void AstVisitorTraverse::exitEnumType(EnumType* node)
 }
 
 void AstVisitorTraverse::visitPrimType(PrimitiveType* node)
+{
+
+}
+
+void AstVisitorTraverse::visitFunctionType(FunctionType* node)
 {
 
 }

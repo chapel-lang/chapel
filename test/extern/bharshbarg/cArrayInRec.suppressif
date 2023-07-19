@@ -1,0 +1,9 @@
+COMPOPTS <= --baseline
+
+#At the time of this .suppressif's creation, this test fails under --baseline
+#due to a bug in codegen. The field-accessor for 'foo' is not inlined, and so
+#its body includes a GET_MEMBER call that is meant to fetch a reference to the
+#'foo' field. Currently an LLVM-specific branch recognizes this exact case and
+#replaces the GEN_PTR with a GEN_VAL, leading to a failure later when attempting
+#to generate an ADDR_OF. Using the C backend results in an "attempt to
+#dereference nil" failure at execution time.

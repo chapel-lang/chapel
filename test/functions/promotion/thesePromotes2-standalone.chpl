@@ -17,10 +17,11 @@ class C {
     yield z;
   }
 
-  proc chpl__promotionType() type return int;
+  proc chpl__promotionType() type do return int;
 }
 
-var myC = (new owned C()).borrow();
+var ownMyC = new owned C();
+var myC = ownMyC.borrow();
 
 for c in myC do
   writeln(c);

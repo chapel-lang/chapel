@@ -120,8 +120,7 @@ size_t ofi_ifaddr_get_speed(struct ifaddrs *ifa)
 	if (fd < 0)
 		return 0;
 
-	strncpy(ifr.ifr_name, ifa->ifa_name, IF_NAMESIZE);
-	ifr.ifr_name[IF_NAMESIZE - 1] = '\0';
+	strncpy(ifr.ifr_name, ifa->ifa_name, sizeof(ifr.ifr_name) - 1);
 
 	ret = ioctl(fd, SIOCETHTOOL, &ifr);
 	if (ret) {

@@ -34,8 +34,8 @@ proc printCommDiagnostics(id, s) {
   writeln(s, "(Locale", id, "): nb executeOns: ", diagnostics.execute_on_nb);
 }
 
-proc nextN() return (here.id+1)%numLocales;
-proc prevN() return (here.id+numLocales-1)%numLocales;
+proc nextN() do return (here.id+1)%numLocales;
+proc prevN() do return (here.id+numLocales-1)%numLocales;
 
 proc getIdx(loc) {
   if rank==1 {

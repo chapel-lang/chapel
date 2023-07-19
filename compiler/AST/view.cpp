@@ -25,7 +25,6 @@
 #include "view.h"
 
 #include "AstDump.h"
-#include "AstDumpToNode.h"
 #include "CForLoop.h"
 #include "CatchStmt.h"
 #include "DecoratedClassType.h"
@@ -42,6 +41,7 @@
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
+#include "TemporaryConversionThunk.h"
 #include "TryStmt.h"
 #include "virtualDispatch.h"
 #include "WhileStmt.h"
@@ -709,24 +709,6 @@ void astDump_view(BaseAST* ast) {
     printf("<NULL>");
   } else {
     AstDump logger(stdout);
-    ast->accept(&logger);
-  }
-  printf("\n\n");
-  fflush(stdout);
-}
-
-
-// feel free to propose a better name
-void astDumpToNode_view(int id) {
-  if (BaseAST* ast = aidWithError(id, "astDumpToNode_view"))
-    astDumpToNode_view(ast);
-}
-
-void astDumpToNode_view(BaseAST* ast) {
-  if (ast==NULL) {
-    printf("<NULL>");
-  } else {
-    AstDumpToNode logger(stdout);
     ast->accept(&logger);
   }
   printf("\n\n");

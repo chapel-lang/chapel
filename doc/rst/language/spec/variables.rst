@@ -274,7 +274,7 @@ as follows:
 =========== =======================================
 **Type**    **Default Value**
 =========== =======================================
-bool(*)     false
+bool        false
 int(*)      0
 uint(*)     0
 real(*)     0.0
@@ -409,9 +409,9 @@ follows:
 
    .. code-block:: chapel
 
-      proc readXX(x: sync) return x.readXX();
-      proc readXX(x: single) return x.readXX();
-      proc readXX(x) return x;
+      proc readXX(x: sync) do return x.readXX();
+      proc readXX(x: single) do return x.readXX();
+      proc readXX(x) do return x;
 
    Note that the use of the helper function ``readXX()`` in this code
    fragment is solely for the purposes of illustration. It is not
@@ -621,7 +621,7 @@ Parameter constants and expressions cannot be aliased.
       writeln("myInt = ", myInt);
 
       var myArr: [1..3] int = 51;
-      proc arrayElement(i) ref  return myArr[i];
+      proc arrayElement(i) ref do  return myArr[i];
       ref refToExpr = arrayElement(3);      // alias to lvalue returned by a function
       myArr[3] = 62;
       writeln("refToExpr = ", refToExpr);
@@ -714,9 +714,10 @@ Regular local variables are destroyed at the end of the containing block.
 Temporary local variables have a different rule as described below.
 
 The compiler adds temporary local variables to contain the result of
-nested call expressions. ``g()`` in the statement ``f(g());`` is an
-example of a nested call expression. If the containing statement is an
-initialization expression for some variable, such as ``var x = f(g());``,
+nested call expressions. For example, ``g()`` in the statement ``f(g());`` is
+a nested call expression. If the containing statement is an
+initialization expression for a ``ref`` or ``const ref``,
+such as ``const ref x = f(g());``,
 then the temporary local variables for that statement are deinitialized at
 the end of the containing block. Otherwise, the temporary local variables
 are deinitialized at the end of the containing statement.
@@ -762,8 +763,9 @@ are deinitialized at the end of the containing statement.
 
       proc temporaryInDeclaration() {
         const x = f(makeRecord());
+        // the temporary result of 'makeRecord()' is deinited here
         writeln("block ending");
-        // 'x' and the temporary result of 'makeRecord()' are deinited here
+        // 'x' is deinited here
       }
 
       proc temporaryInConstRefDeclaration() {
@@ -783,8 +785,8 @@ are deinitialized at the end of the containing statement.
 
       init (default)
       init (default)
-      block ending
       deinit 0
+      block ending
       deinit 0
       init (default)
       init (default)
@@ -806,24 +808,30 @@ Copy and Move Initialization
 
 This section uses the terminology *copy* and *move*. These terms
 describe how a Chapel program initializes a variable based upon an
-existing variable. Both *copy* and *move* create a new variable
+existing variable. Both *copy* and *move* initialize a new variable
 from an initial variable.
+The compiler may change *copy initialization* to *move initialization*
+with :ref:`Copy_Elision`.
 
 Since records can use ``init=`` and ``deinit`` methods to adjust the
 behavior of copy initialization, this section is particularly relevant
 for records. In is also relevant for non-nilable ``owned`` class types
-since copies of those types will not be allowed by the compiler.
+since copies of those types will not be allowed by the compiler,
+and to strings, arrays, and domains that have record-like behavior
+in this regard. For records and other types that behave like
+"plain old data", *copy* and *move* are indistinguishable.
 
 After a *copy*, both the new variable and the initial variable exist
-separately. Generally speaking, they can both be modified.  However, they
-should generally refer to different storage. In particular, changing a
+separately. Generally speaking, they refer to different storage and
+can be modified independently.  For example, changing a
 field in the new record variable should not change the corresponding
 field in the initial record variable.
 
-A *move* is when a variable changes storage location. It is similar to a
+A *move* is when the value changes its storage location from the initial
+to the new variable. It is similar to a
 *copy initialization* but it represents a transfer rather than
-duplication. In particular, the initial record is no longer available
-after the *move*.  A *move* can be thought of as an optimized form a
+duplication. In particular, the initial record variable is no longer available
+after the *move*.  A *move* can be thought of as an optimized form of a
 *copy* followed by destruction of the initial record.  After a *move*,
 there is only one record variable - where after a *copy* there are two.
 
@@ -893,7 +901,7 @@ local var last mention
   again - see :ref:`Copy_Elision` for further details
 
 local var mentioned again
-  means a use of a function-local variable which is mentioned again
+  means a use of a function-local variable which is mentioned again later
 
 outer/ref
   means a use of a module-scope variable, a variable in an outer

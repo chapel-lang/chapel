@@ -3,7 +3,7 @@ class trio {
   var x2;
   var x3;
 
-  proc sum()
+  proc sum() do
     return x1 + x2 + x3;
 }
 

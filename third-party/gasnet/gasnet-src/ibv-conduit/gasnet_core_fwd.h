@@ -219,6 +219,7 @@
 	TIME(C, GET_AMREQ_BUFFER_STALL, stalled time) \
 	CNT(C, GET_BBUF, cnt)                     \
 	TIME(C, GET_BBUF_STALL, stalled time)     \
+	CNT(C, SPARE_REPLY_BBUF, cnt)             \
 	VAL(C, ALLOC_SREQ, sreqs)                 \
 	VAL(C, POST_SR, segments)                 \
 	CNT(C, POST_INLINE_SR, cnt)               \

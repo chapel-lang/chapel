@@ -207,7 +207,7 @@ proc locale.chdir(name: string) throws {
    :throws PermissionError: Thrown when the current user does not have
                             permission to change the permissions
 */
-deprecated "'FileSystem.chmod()' is deprecated. Please use 'OS.POSIX.chmod()' instead"
+@deprecated(notes="'FileSystem.chmod()' is deprecated. Please use 'OS.POSIX.chmod()' instead")
 proc chmod(name: string, mode: int) throws {
   extern proc chpl_fs_chmod(name: c_string, mode: int): errorCode;
 
@@ -446,7 +446,7 @@ private proc copyFileImpl(src: string, dest: string) throws {
   try srcFile.close();
 }
 
-deprecated "'FileSystem.copyFile' is deprecated. Please use 'FileSystem.copy' instead"
+@deprecated(notes="'FileSystem.copyFile' is deprecated. Please use 'FileSystem.copy' instead")
 proc copyFile(src: string, dest: string) throws {
   copyFileImpl(src, dest);
 }
@@ -464,7 +464,7 @@ proc copyFile(src: string, dest: string) throws {
    :throws PermissionError: Thrown when the current user does not have
                             permission to change the permissions
 */
-deprecated "'FileSystem.copyMode()' is deprecated. Please use 'OS.POSIX.stat()' and 'OS.POSIX.chmod()' instead."
+@deprecated(notes="'FileSystem.copyMode()' is deprecated. Please use 'OS.POSIX.stat()' and 'OS.POSIX.chmod()' instead.")
 proc copyMode(src: string, dest: string) throws {
   try {
     // Gets the mode from the source file.
@@ -477,8 +477,8 @@ proc copyMode(src: string, dest: string) throws {
   }
 }
 
-pragma "no doc"
-deprecated "'FileSystem.copyMode()' is deprecated. Please use 'OS.POSIX.stat()' and 'OS.POSIX.chmod()' instead."
+@chpldoc.nodoc
+@deprecated(notes="'FileSystem.copyMode()' is deprecated. Please use 'OS.POSIX.stat()' and 'OS.POSIX.chmod()' instead.")
 proc copyMode(out error: errorCode, src: string, dest: string) {
   var err: errorCode = 0;
   try {
@@ -602,7 +602,7 @@ proc locale.cwd(): string throws {
     // c_strings can't cross on statements.
     err = chpl_fs_cwd(tmp);
     try! {
-      ret = createStringWithNewBuffer(tmp, policy=decodePolicy.escape);
+      ret = string.createCopyingBuffer(tmp, policy=decodePolicy.escape);
     }
     // tmp was qio_malloc'd by chpl_fs_cwd
     chpl_free_c_string(tmp);
@@ -670,7 +670,7 @@ iter findFiles(startdir: string = ".", recursive: bool = false,
 
 // When this deprecated iterator is removed remember to remove the standalone
 // parallel version below as well.
-deprecated "'findfiles' is deprecated, please use 'findFiles' instead"
+@deprecated(notes="'findfiles' is deprecated, please use 'findFiles' instead")
 iter findfiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false): string {
   if (recursive) then
@@ -682,7 +682,7 @@ iter findfiles(startdir: string = ".", recursive: bool = false,
       yield startdir+"/"+file;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 iter findFiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false, param tag: iterKind): string
        where tag == iterKind.standalone {
@@ -702,8 +702,8 @@ iter findFiles(startdir: string = ".", recursive: bool = false,
 // addition to the one that comes from the serial iterator for a forall loop
 // that calls this. (serial, leader, follower, standalone). Rely on just
 // the serial deprecation warning to reduce it to a single message.
-pragma "no doc"
-//deprecated "'findfiles' is deprecated, please use 'findFiles' instead"
+@chpldoc.nodoc
+//@deprecated(notes="'findfiles' is deprecated, please use 'findFiles' instead")
 iter findfiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false, param tag: iterKind): string
        where tag == iterKind.standalone {
@@ -719,7 +719,7 @@ iter findfiles(startdir: string = ".", recursive: bool = false,
       yield startdir+"/"+file;
 }
 
-deprecated "getGID is deprecated, please use getGid instead"
+@deprecated(notes="getGID is deprecated, please use getGid instead")
 proc getGID(name: string): int throws {
   return getGid(name);
 }
@@ -757,7 +757,7 @@ proc getGid(name: string): int throws {
 
    :throws SystemError: Thrown to describe an error if one occurs.
 */
-deprecated "'FileSystem.getMode()' is deprecated, please use 'OS.POSIX.stat()' instead"
+@deprecated(notes="'FileSystem.getMode()' is deprecated, please use 'OS.POSIX.stat()' instead")
 proc getMode(name: string): int throws {
   extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): errorCode;
 
@@ -786,7 +786,7 @@ proc getFileSize(name: string): int throws {
   return result;
 }
 
-deprecated "getUID is deprecated, please use getUid instead"
+@deprecated(notes="getUID is deprecated, please use getUid instead")
 proc getUID(name: string): int throws {
   return getUid(name);
 }
@@ -852,7 +852,7 @@ private module GlobWrappers {
   inline proc glob_index_w(glb: glob_t, idx: int): string {
     extern proc chpl_glob_index(glb: glob_t, idx: c_size_t): c_string;
     try! {
-      return createStringWithNewBuffer(chpl_glob_index(glb,
+      return string.createCopyingBuffer(chpl_glob_index(glb,
                                                        idx.safeCast(c_size_t)),
                                        policy=decodePolicy.escape);
     }
@@ -888,7 +888,7 @@ iter glob(pattern: string = "*"): string {
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 iter glob(pattern: string = "*", param tag: iterKind): string
        where tag == iterKind.standalone {
   use GlobWrappers;
@@ -912,7 +912,7 @@ iter glob(pattern: string = "*", param tag: iterKind): string
 // should be rewritten to do so (and would require freeing
 // the state at the end of the call).
 //
-pragma "no doc"
+@chpldoc.nodoc
 iter glob(pattern: string = "*", param tag: iterKind)
        where tag == iterKind.leader {
   use GlobWrappers;
@@ -929,7 +929,7 @@ iter glob(pattern: string = "*", param tag: iterKind)
     yield followThis;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 iter glob(pattern: string = "*", followThis, param tag: iterKind): string
        where tag == iterKind.follower {
   use GlobWrappers;
@@ -1029,7 +1029,7 @@ proc isSymlink(name: string): bool throws {
   return ret != 0;
 }
 
-deprecated "'isLink' is deprecated. Please use 'isSymlink' instead"
+@deprecated(notes="'isLink' is deprecated. Please use 'isSymlink' instead")
 proc isLink(name: string): bool throws {
   return isSymlink(name);
 }
@@ -1064,7 +1064,7 @@ proc isMount(name: string): bool throws {
   return ret != 0;
 }
 
-deprecated "listdir is deprecated, please use listDir instead"
+@deprecated(notes="listdir is deprecated, please use listDir instead")
 iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
              files: bool = true, listlinks: bool = true): string {
   for filename in listDir(path, hidden, dirs, files, listlinks) {
@@ -1098,8 +1098,10 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
 */
 iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
               files: bool = true, listlinks: bool = true): string {
-  extern type DIRptr;
-  extern type direntptr;
+  extern record DIR {}
+  extern type DIRptr = c_ptr(DIR);
+  extern "struct dirent" record chpl_dirent {}
+  extern type direntptr = c_ptr(chpl_dirent);
   extern proc opendir(name: c_string): DIRptr;
   extern proc readdir(dirp: DIRptr): direntptr;
   extern proc closedir(dirp: DIRptr): c_int;
@@ -1111,12 +1113,12 @@ iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
   }
 
   var dir: DIRptr = opendir(unescape(path).c_str());
-  if (!is_c_nil(dir)) {
+  if (dir != nil) {
     var ent: direntptr = readdir(dir);
-    while (!is_c_nil(ent)) {
+    while (ent != nil) {
       var filename: string;
       try! {
-        filename = createStringWithNewBuffer(ent.d_name(),
+        filename = string.createCopyingBuffer(ent.d_name(),
                                              policy=decodePolicy.escape);
       }
       if (hidden || filename[0] != '.') {
@@ -1275,7 +1277,7 @@ proc remove(name: string) throws {
   if err then try ioerror(err, "in remove", name);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc remove(out error: errorCode, name: string) {
   try {
     remove(name);
@@ -1374,7 +1376,7 @@ proc sameFile(file1: string, file2: string): bool throws {
 
    :throws SystemError: Thrown to describe an error if one occurs.
 */
-deprecated "'sameFile(file, file)' is deprecated. Please use 'sameFile(string, string)' instead"
+@deprecated(notes="'sameFile(file, file)' is deprecated. Please use 'sameFile(string, string)' instead")
 proc sameFile(file1: file, file2: file): bool throws {
   extern proc chpl_fs_samefile(ref ret: c_int, file1: qio_file_ptr_t,
                                file2: qio_file_ptr_t): errorCode;
@@ -1441,7 +1443,7 @@ proc locale.umask(mask: int): int {
 }
 
 
-deprecated "walkdirs is deprecated; please use walkDirs instead"
+@deprecated(notes="walkdirs is deprecated; please use walkDirs instead")
 iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
               hidden: bool = false, followlinks: bool = false,
               sort: bool = false): string {
@@ -1489,8 +1491,8 @@ iter walkDirs(path: string = ".", topdown: bool = true, depth: int = max(int),
   if (depth) {
     var subdirs = listDir(path, hidden=hidden, files=false, listlinks=followlinks);
     if (sort) {
-      use Sort /* only sort */;
-      sort(subdirs);
+      use Sort only sort as sortList;
+      sortList(subdirs);
     }
 
     for subdir in subdirs {
@@ -1505,7 +1507,7 @@ iter walkDirs(path: string = ".", topdown: bool = true, depth: int = max(int),
     yield path;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 iter walkdirs(path: string = ".", topdown: bool = true, depth: int =max(int),
               hidden: bool = false, followlinks: bool = false,
               sort: bool = false, param tag: iterKind): string
@@ -1518,7 +1520,7 @@ iter walkdirs(path: string = ".", topdown: bool = true, depth: int =max(int),
 //
 // Here's a parallel version
 //
-pragma "no doc"
+@chpldoc.nodoc
 iter walkDirs(path: string = ".", topdown: bool = true, depth: int =max(int),
               hidden: bool = false, followlinks: bool = false,
               sort: bool = false, param tag: iterKind): string

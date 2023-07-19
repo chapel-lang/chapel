@@ -9,6 +9,7 @@ my $utildir = defined($ENV{"CHPL_TEST_UTIL_DIR"}) ? $ENV{"CHPL_TEST_UTIL_DIR"} :
 #
 # Set standard CHPL_* environment variables, if they are not already set.
 #
+$ENV{"CHPLENV_SUPPRESS_WARNINGS"} = "1";
 my $env = `$utildir/printchplenv --all --internal --simple --no-tidy`;
 my @lines = split(/\n/, $env);
 for my $line (@lines) {

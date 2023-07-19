@@ -54,6 +54,13 @@
 #include "llvm/IR/Module.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/raw_ostream.h"
+
+#include "llvm/IR/DiagnosticInfo.h"
+#include "llvm/IR/DiagnosticPrinter.h"
+#include "llvm/IR/LLVMRemarkStreamer.h"
+#include "llvm/Remarks/RemarkSerializer.h"
+#include "llvm/Remarks/YAMLRemarkSerializer.h"
+#include "llvm/Remarks/RemarkStreamer.h"
 #endif
 
 #ifndef __STDC_FORMAT_MACROS
@@ -529,7 +536,6 @@ genSubclassArray(bool isHeader) {
 
 // Returns the type, in .c or .type field, for the passed name.
 // The type_name typically refers to something defined in the runtime.
-static
 GenRet codegenTypeByName(const char* type_name)
 {
   GenInfo* info = gGenInfo;
@@ -1416,7 +1422,7 @@ static void genGlobalSerializeTable(GenInfo* info) {
       }
     }
     fprintf(hdrfile, "\n};\n");
-  } else {
+  } else if (!gCodegenGPU) {
 #ifdef HAVE_LLVM
     llvm::Type *global_serializeTableEntryType =
       llvm::IntegerType::getInt8PtrTy(info->module->getContext());
@@ -1933,15 +1939,14 @@ static void codegen_header(std::set<const char*> & cnames,
           info->module->getNamedGlobal("chpl_globals_registry"))) {
       GVar->eraseFromParent();
     }
+    llvm::Type* globValType =
+      llvm::ArrayType::get(ptr_wide_ptr_t, globals_registry_static_size);
     llvm::GlobalVariable *chpl_globals_registryGVar =
       llvm::cast<llvm::GlobalVariable>(
           info->module->getOrInsertGlobal("chpl_globals_registry",
-            llvm::ArrayType::get(
-              ptr_wide_ptr_t,
-              globals_registry_static_size)));
+                                          globValType));
     chpl_globals_registryGVar->setInitializer(
-        llvm::Constant::getNullValue(
-          chpl_globals_registryGVar->getType()->getContainedType(0)));
+        llvm::Constant::getNullValue(globValType));
     info->lvt->addGlobalValue("chpl_globals_registry",
                               chpl_globals_registryGVar, GEN_PTR, true, /* chplType= */ nullptr);
 #endif
@@ -2128,11 +2133,9 @@ codegen_config() {
         std::vector<llvm::Value *> args (6);
         {
           GenRet gen = new_CStringSymbol(var->name)->codegen();
-#if HAVE_LLVM_VER >= 130
-          args[0] = info->irBuilder->CreateLoad(gen.val->getType()->getPointerElementType(), gen.val);
-#else
-          args[0] = info->irBuilder->CreateLoad(gen.val);
-#endif
+          llvm::Type* eltType = tryComputingPointerElementType(gen.val);
+          INT_ASSERT(eltType); // it should have been a global variable
+          args[0] = info->irBuilder->CreateLoad(eltType, gen.val);
         }
 
         Type* type = var->type;
@@ -2147,28 +2150,22 @@ codegen_config() {
         }
         {
           GenRet gen = new_CStringSymbol(type->symbol->name)->codegen();
-#if HAVE_LLVM_VER >= 130
-          args[1] = info->irBuilder->CreateLoad(gen.val->getType()->getPointerElementType(), gen.val);
-#else
-          args[1] = info->irBuilder->CreateLoad(gen.val);
-#endif
+          llvm::Type* eltType = tryComputingPointerElementType(gen.val);
+          INT_ASSERT(eltType); // it should have been a global variable
+          args[1] = info->irBuilder->CreateLoad(eltType, gen.val);
         }
 
         if (var->getModule()->modTag == MOD_INTERNAL) {
           GenRet gen = new_CStringSymbol("Built-in")->codegen();
-#if HAVE_LLVM_VER >= 130
-          args[2] = info->irBuilder->CreateLoad(gen.val->getType()->getPointerElementType(), gen.val);
-#else
-          args[2] = info->irBuilder->CreateLoad(gen.val);
-#endif
+          llvm::Type* eltType = tryComputingPointerElementType(gen.val);
+          INT_ASSERT(eltType); // it should have been a global variable
+          args[2] = info->irBuilder->CreateLoad(eltType, gen.val);
         }
         else {
           GenRet gen = new_CStringSymbol(var->getModule()->name)->codegen();
-#if HAVE_LLVM_VER >= 130
-          args[2] =info->irBuilder->CreateLoad(gen.val->getType()->getPointerElementType(), gen.val);
-#else
-          args[2] =info->irBuilder->CreateLoad(gen.val);
-#endif
+          llvm::Type* eltType = tryComputingPointerElementType(gen.val);
+          INT_ASSERT(eltType); // it should have been a global variable
+          args[2] = info->irBuilder->CreateLoad(eltType, gen.val);
         }
 
         args[3] = info->irBuilder->getInt32(var->hasFlag(FLAG_PRIVATE));
@@ -2176,11 +2173,9 @@ codegen_config() {
         args[4] = info->irBuilder->getInt32(var->hasFlag(FLAG_DEPRECATED));
         {
           GenRet gen = new_CStringSymbol(var->getDeprecationMsg())->codegen();
-#if HAVE_LLVM_VER >= 130
-          args[5] = info->irBuilder->CreateLoad(gen.val->getType()->getPointerElementType(), gen.val);
-#else
-          args[5] = info->irBuilder->CreateLoad(gen.val);
-#endif
+          llvm::Type* eltType = tryComputingPointerElementType(gen.val);
+          INT_ASSERT(eltType); // it should have been a global variable
+          args[5] = info->irBuilder->CreateLoad(eltType, gen.val);
         }
         info->irBuilder->CreateCall(installConfigFunc, args);
       }
@@ -2550,10 +2545,118 @@ static void embedGpuCode() {
   std::string err;
   chpl::readfile(fatbinFilename.c_str(), buffer, err);
   if (!err.empty()) {
-    USR_FATAL("%s", err.c_str());
+    USR_FATAL("Error while reading GPU binary: %s", err.c_str());
   }
 
   genGlobalRawString("chpl_gpuBinary", buffer, buffer.length());
+}
+
+static void codegenGpuGlobals() {
+  genGlobalInt("chpl_nodeID", 0, false);
+}
+#endif
+
+#ifdef HAVE_LLVM
+// Implements the RemarkSerializer interface for LLVM
+// For each remark to be outputted (after filtering for pass names), `emit()` is called
+// We can then do further filtering and  control how the remarks are printed
+struct ChapelRemarkSerializer : public llvm::remarks::RemarkSerializer {
+  ChapelRemarkSerializer(llvm::raw_ostream& OS)
+      : llvm::remarks::RemarkSerializer(
+            llvm::remarks::Format::Unknown, OS,
+            llvm::remarks::SerializerMode::Standalone) {}
+
+  void emit(const llvm::remarks::Remark& Remark) override {
+
+    llvm::StringRef funcCName = Remark.FunctionName;
+    const char* astr_funcCName = astr(funcCName.str());
+    auto funcIt = gGenInfo->functionCNameAstrToSymbol.find(astr_funcCName);
+    FnSymbol* fn = nullptr;
+    if (funcIt != gGenInfo->functionCNameAstrToSymbol.end()) {
+      fn = funcIt->second;
+    }
+
+    // TODO: if the function was not in `functionCNameAstrToSymbol`, then `fn`
+    // could still be a nullptr. In non-developer runs this will get filtered
+    // out, but in a developer run it would be nice to be able to get better
+    // source information for these functions
+
+    // if fn is still nullptr and not developer, skip it
+    if(fn == nullptr && !developer) return;
+
+    // if not developer, skip all non user functions
+    if (fn != nullptr && !developer) {
+        auto mod = fn->getModule();
+        if(mod == nullptr || mod->modTag != MOD_USER)
+        return;
+    }
+    // if we declared any filter functions, we need to filter based on them
+    if(fn != nullptr && !llvmRemarksFunctionsToShow.empty()) {
+      bool shouldSkip = true;
+      for (auto filterFuncName: llvmRemarksFunctionsToShow) {
+        if(filterFuncName == std::string(fn->name)) shouldSkip = false;
+      }
+      if(shouldSkip) return;
+    }
+
+    if (auto Loc = Remark.Loc) {
+      OS << Loc->SourceFilePath << ":" << Loc->SourceLine << ":" << Loc->SourceColumn;
+    } else {
+      // no file location available, deduce a best guess from FunctionName if possible
+      const char* filename = fn ? cleanFilename(fn->fname()) : nullptr;
+      int linenum = fn ? fn->linenum() : 0;
+      if(filename) OS << filename << ":" << linenum << ":0";
+      else OS << Remark.FunctionName;
+    }
+    OS << ": opt " << typeToString(Remark.RemarkType);
+    OS << " for '" << Remark.PassName << "'";
+    OS << " - " << Remark.getArgsAsMsg() << "\n";
+  }
+  // just use the YAML (default) meta serializer, which gets encoded in the asm
+  std::unique_ptr<llvm::remarks::MetaSerializer> metaSerializer(
+      llvm::raw_ostream& OS,
+      chpl::optional<llvm::StringRef> ExternalFilename = chpl::empty) override {
+    return std::make_unique<llvm::remarks::YAMLMetaSerializer>(
+        OS, ExternalFilename);
+  }
+  private:
+  std::string typeToString(llvm::remarks::Type t) {
+    switch (t) {
+      case llvm::remarks::Type::Passed:           return "passed";
+      case llvm::remarks::Type::Missed:           return "missed";
+      case llvm::remarks::Type::Analysis:
+      case llvm::remarks::Type::AnalysisFPCommute:
+      case llvm::remarks::Type::AnalysisAliasing: return "analysis";
+      case llvm::remarks::Type::Failure:          return "failure";
+      default:                                    return "unknown";
+    }
+  }
+};
+
+// based on `llvm::setupLLVMOptimizationRemarks`
+static llvm::Error setupRemarks(llvm::LLVMContext& Context,
+                                llvm::raw_ostream& OS,
+                                llvm::StringRef RemarksPasses) {
+  std::unique_ptr<llvm::remarks::RemarkSerializer> RemarkSerializer =
+      std::make_unique<ChapelRemarkSerializer>(OS);
+
+  // Create the main remark streamer.
+  Context.setMainRemarkStreamer(std::make_unique<llvm::remarks::RemarkStreamer>(
+      std::move(RemarkSerializer)));
+
+  // Create LLVM's optimization remarks streamer.
+  Context.setLLVMRemarkStreamer(std::make_unique<llvm::LLVMRemarkStreamer>(
+      *Context.getMainRemarkStreamer()));
+
+  if (!RemarksPasses.empty())
+    if (llvm::Error E = Context.getMainRemarkStreamer()->setFilter(RemarksPasses))
+      return llvm::make_error<llvm::LLVMRemarkSetupPatternError>(std::move(E));
+
+  return llvm::Error::success();
+}
+
+static bool shouldShowLLVMRemarks() {
+  return !llvmRemarksFilters.empty() || !llvmRemarksFunctionsToShow.empty();
 }
 #endif
 
@@ -2565,6 +2668,17 @@ static void codegenPartTwo() {
   if (fMultiLocaleInterop) {
     codegenMultiLocaleInteropWrappers();
   }
+
+#ifdef HAVE_LLVM
+  if (fLlvmCodegen) {
+    if(shouldShowLLVMRemarks()) {
+      auto err = setupRemarks(gGenInfo->llvmContext, llvm::outs(), llvmRemarksFilters);
+      if (err) {
+        USR_FATAL("failed to add optimization remarks reporting");
+      }
+    }
+  }
+#endif
 
   if (fLlvmCodegen) {
 #ifndef HAVE_LLVM
@@ -2629,7 +2743,7 @@ static void codegenPartTwo() {
     // processes. In one process gCodegenGPU is true and we generate a .fatbin file,
     // in the other gCodegenGpu is false and we'll consume the fatbin file
     // and embed its contents into the generated code.
-    if (usingGpuLocaleModel() && !gCodegenGPU) {
+    if (isFullGpuCodegen() && !gCodegenGPU) {
       embedGpuCode();
     }
 
@@ -2693,6 +2807,11 @@ static void codegenPartTwo() {
   if ( gCodegenGPU == false ) {
     codegen_config();
   }
+#ifdef HAVE_LLVM
+  else {
+    codegenGpuGlobals();
+  }
+#endif
 
   // Don't need to do most of the rest of the function for LLVM;
   // just codegen the modules.
@@ -2747,8 +2866,6 @@ static void codegenPartTwo() {
   {
     fprintf(stderr, "Statements emitted: %d\n", gStmtCount);
   }
-
-
 }
 
 void codegen() {
@@ -2757,22 +2874,42 @@ void codegen() {
 
   codegenPartOne();
 
-  if (usingGpuLocaleModel()) {
+  if (isFullGpuCodegen()) {
     // We use the temp dir to output a fatbin file and read it between the forked and main process.
     // We need to generate the name for the temp directory before we do the fork (since this
     // name uses the PID).
     ensureTmpDirExists();
 
+    // flush stdout before forking process so buffered output doesn't get copied over
+    fflush(stdout);
+
     pid_t pid = fork();
 
     if (pid == 0) {
       // child process
+
+      // Currently, gpu code generation is done in on forked process. This
+      // forked process produces some files in the tmp directory that are
+      // later read by the main process, so we want the main process
+      // to clean up the temp dir and not the forked process.
+
+      // set up the child to have a gContext with the same tmp dir
+      // that does not delete that tmp dir
+      auto oldContext = gContext;
+      auto config = oldContext->configuration();
+      config.tmpDir = oldContext->tmpDir();
+      config.keepTmpDir = true;
+      gContext = new chpl::Context(*oldContext, std::move(config));
+      delete oldContext;
+
+      // activate GPU code generation
       gCodegenGPU = true;
       codegenPartTwo();
       makeBinary();
       clean_exit(0);
     } else {
       // parent process
+
       INT_ASSERT(!gCodegenGPU);
       int status = 0;
       while (wait(&status) != pid) {
@@ -2840,11 +2977,14 @@ GenInfo::GenInfo()
              noAliasScopes(),
              noAliasScopeLists(),
              noAliasLists(),
-             globalToWideInfo(),
-             FPM_postgen(nullptr),
-             clangInfo(nullptr)
+             globalToWideInfo()
 #endif
 {
+#ifdef LLVM_NO_OPAQUE_POINTERS
+#if HAVE_LLVM_VER >= 150 && HAVE_LLVM_VER < 160
+  llvmContext.setOpaquePointers(false);
+#endif
+#endif
 }
 
 void setupLLVMCodegenFilenames(void) {
@@ -2873,11 +3013,12 @@ void setupLLVMCodegenFilenames(void) {
     // different file names.
     switch (getGpuCodegenType()) {
       case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
-        filenames->artifactFilename =
-            genIntermediateFilename("chpl__gpu_ptx.s");
+        filenames->artifactFilename = genIntermediateFilename("chpl__gpu_ptx.s");
         break;
       case GpuCodegenType::GPU_CG_AMD_HIP:
         filenames->artifactFilename = genIntermediateFilename("chpl__gpu.o");
+        break;
+      case GpuCodegenType::GPU_CG_CPU:
         break;
     }
   }
@@ -3001,9 +3142,6 @@ void nprint_view(GenRet& gen) {
     printf("\n");
   }
 #endif
-  printf("canBeMarkedAsConstAfterStore=%i\n",
-         (int) gen.canBeMarkedAsConstAfterStore);
-  printf("alreadyStored %i\n", (int) gen.alreadyStored);
   if (gen.chplType) {
     TypeSymbol* ts = gen.chplType->symbol;
     printf("chplType=%s (%i)\n", ts->name, ts->id);

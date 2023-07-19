@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Amazon.com, Inc. or its affiliates.
+ * Copyright (c) 2019-2022 Amazon.com, Inc. or its affiliates.
  * All rights reserved.
  *
  * This software is available to you under a choice of one of two
@@ -36,21 +36,16 @@
 
 #include "rxr.h"
 
-ssize_t rxr_pkt_post_data(struct rxr_ep *rxr_ep, struct rxr_tx_entry *tx_entry);
+ssize_t rxr_pkt_post(struct rxr_ep *ep, struct rxr_op_entry *op_entry,
+		     int pkt_type, bool inject, uint64_t flags);
 
-ssize_t rxr_pkt_post_ctrl(struct rxr_ep *ep, int entry_type, void *x_entry,
-			  int ctrl_type, bool inject);
+ssize_t rxr_pkt_post_or_queue(struct rxr_ep *ep, struct rxr_op_entry *op_entry,
+			      int req_type, bool inject);
 
-ssize_t rxr_pkt_post_ctrl_or_queue(struct rxr_ep *ep, int entry_type, void *x_entry,
-				   int ctrl_type, bool inject);
+ssize_t rxr_pkt_post_req(struct rxr_ep *ep, struct rxr_op_entry *tx_entry,
+			 int req_type, bool inject, uint64_t flags);
 
-size_t rxr_pkt_data_size(struct rxr_pkt_entry *pkt_entry);
-
-ssize_t rxr_pkt_copy_to_rx(struct rxr_ep *ep,
-			   struct rxr_rx_entry *rx_entry,
-			   size_t data_offset,
-			   struct rxr_pkt_entry *pkt_entry,
-			   char *data, size_t data_size);
+fi_addr_t rxr_pkt_determine_addr(struct rxr_ep *ep, struct rxr_pkt_entry *pkt_entry);
 
 void rxr_pkt_handle_data_copied(struct rxr_ep *ep,
 				struct rxr_pkt_entry *pkt_entry,
@@ -68,7 +63,8 @@ void rxr_pkt_handle_recv_error(struct rxr_ep *ep,
 			       int err, int prov_errno);
 
 void rxr_pkt_handle_recv_completion(struct rxr_ep *ep,
-				    struct rxr_pkt_entry *pkt_entry);
+				    struct rxr_pkt_entry *pkt_entry,
+				    enum rxr_lower_ep_type lower_ep_type);
 
 ssize_t rxr_pkt_wait_handshake(struct rxr_ep *ep, fi_addr_t addr, struct rdm_peer *peer);
 
@@ -78,7 +74,7 @@ ssize_t rxr_pkt_trigger_handshake(struct rxr_ep *ep,
 #if ENABLE_DEBUG
 void rxr_pkt_print(char *prefix,
 		   struct rxr_ep *ep,
-		   struct rxr_base_hdr *hdr);
+		   struct rxr_pkt_entry *pkt_entry);
 #endif
 
 #endif

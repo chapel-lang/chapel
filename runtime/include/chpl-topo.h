@@ -146,6 +146,15 @@ void chpl_topo_touchMemFromSubloc(void*, size_t, chpl_bool, c_sublocid_t);
 //
 c_sublocid_t chpl_topo_getMemLocality(void*);
 
+typedef struct chpl_topo_pci_addr {
+    uint16_t domain;
+    uint8_t bus;
+    uint8_t device;
+    uint8_t function;
+} chpl_topo_pci_addr_t;
+
+chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
+                                                chpl_topo_pci_addr_t *outAddr);
 //
 // Returns True if the node is oversubscribed (locales are sharing
 // cores).

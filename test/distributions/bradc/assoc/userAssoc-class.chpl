@@ -8,7 +8,7 @@ class MyMapper {
   }
 }
 
-var myMapper = lambda(ind:real, targetLocs: Locales.type) {
+var myMapper = proc(ind:real, targetLocs: Locales.type) {
                         const numlocs = targetLocs.domain.size;
                         const indAsInt = ind: int;
                         return indAsInt % numlocs;

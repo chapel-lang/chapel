@@ -1,6 +1,6 @@
 use BlockDist;
 
-var A = newBlockArr({1..10 by 2, 2..10 by 2}, real);
+var A = Block.createArray({1..10 by 2, 2..10 by 2}, real);
 var DS: sparse subdomain(A.domain);
 var AS: [DS] real;
 

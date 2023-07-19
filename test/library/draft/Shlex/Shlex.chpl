@@ -35,7 +35,7 @@ module Shlex {
     /* Parsing rules can be set as POSIX or non-POSIX. */
     var posix: bool;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var lineno: int;
 
     /* Make the program verbose. */
@@ -59,19 +59,19 @@ module Shlex {
     /* Characters that are considered as string quotes. */
     var quotes: string;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var escapse: string;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var escapsedquotes: string;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var state: string;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var token: string;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var tokindex: int;
 
     /* String of characters that will be considered as a punctuation.
@@ -79,10 +79,10 @@ module Shlex {
     */
     var punctuation_chars: string;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var pushback: list(string);
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var _pushback_chars: list(string);
 
     /*
@@ -155,7 +155,7 @@ module Shlex {
     */
     proc get_token(): string {
       if !this.pushback.isEmpty() {
-        var tok = this.pushback.pop(0);
+        var tok = this.pushback.getAndRemove(0);
         if this.debug >= 1 {
           writeln("shlex: popping token " + tok);
         }
@@ -190,7 +190,7 @@ module Shlex {
       while true {
         if this.tokindex == -1 then break;
         if (this.punctuation_chars != '' && !this._pushback_chars.isEmpty()) {
-          nextchar = this._pushback_chars.pop();
+          nextchar = this._pushback_chars.popBack();
         }
         else if(this.tokindex < this.instream.size) {
           nextchar = this.instream[this.tokindex];
@@ -318,7 +318,7 @@ module Shlex {
             }
             else {
               if(this.whitespace.find(nextchar) == -1) {
-                this._pushback_chars.append(nextchar);
+                this._pushback_chars.pushBack(nextchar);
               }
               this.state = ' ';
               break;
@@ -338,7 +338,7 @@ module Shlex {
           }
           else {
             if(this.punctuation_chars != '') {
-              this._pushback_chars.append(nextchar);
+              this._pushback_chars.pushBack(nextchar);
             }
             else {
               this.pushback.insert(0, nextchar);
@@ -406,14 +406,14 @@ module Shlex {
     while(lex.tokindex != -1 || !lex.pushback.isEmpty()) {
       pres = lex.get_token();
       if(posix || pres != '') {
-        lst.append(pres);
+        lst.pushBack(pres);
       }
     }
     return lst;
   }
 
-  pragma "no doc"
-  var _find_unsafe = try! compile("[^\\w@%+=:,./-]");
+  @chpldoc.nodoc
+  var _find_unsafe = try! new regex("[^\\w@%+=:,./-]");
 
   /*
     Return a shell-escaped version of the string s. The returned value is a

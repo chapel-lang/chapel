@@ -53,7 +53,7 @@ static int psmx3_fabric_close(fid_t fid)
 	if (psmx3_env.name_server)
 		ofi_ns_stop_server(&fabric->name_server);
 
-	fastlock_destroy(&fabric->domain_lock);
+	ofi_spin_destroy(&fabric->domain_lock);
 	assert(fabric == psmx3_active_fabric);
 	psmx3_active_fabric = NULL;
 	free(fabric);
@@ -77,7 +77,7 @@ static struct fi_ops_fabric psmx3_fabric_ops = {
 };
 
 static struct fi_fabric_attr psmx3_fabric_attr = {
-	.name = PSMX3_FABRIC_NAME,
+	.name = NULL,
 };
 
 int psmx3_fabric(struct fi_fabric_attr *attr,
@@ -87,9 +87,6 @@ int psmx3_fabric(struct fi_fabric_attr *attr,
 	int ret;
 
 	FI_INFO(&psmx3_prov, FI_LOG_CORE, "\n");
-
-	if (strcmp(attr->name, PSMX3_FABRIC_NAME))
-		return -FI_ENODATA;
 
 	if (psmx3_active_fabric) {
 		psmx3_fabric_acquire(psmx3_active_fabric);
@@ -101,7 +98,7 @@ int psmx3_fabric(struct fi_fabric_attr *attr,
 	if (!fabric_priv)
 		return -FI_ENOMEM;
 
-	fastlock_init(&fabric_priv->domain_lock);
+	ofi_spin_init(&fabric_priv->domain_lock);
 	dlist_init(&fabric_priv->domain_list);
 
 	psmx3_get_uuid(fabric_priv->uuid);

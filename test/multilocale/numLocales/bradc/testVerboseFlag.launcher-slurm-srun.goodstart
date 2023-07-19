@@ -6,9 +6,13 @@ elif [[ $CHPL_LAUNCHER_MEM == "unset" ]] ; then
     unset CHPL_LAUNCHER_MEM
 fi
 
+if [[ $CHPL_RT_LOCALES_PER_NODE > 1 ]] ; then
+    CPUBIND=" --cpu-bind=none"
+fi
+
 echo "EVARS=vals" \
      "srun --job-name=CHPL-testVerbos --quiet" \
-     "--nodes=1 --ntasks=1 --cpus-per-task=N --cpu-bind=none" \
+     "--nodes=1 --ntasks=1 --cpus-per-task=N${CPUBIND}" \
      "--exclusive${CHPL_LAUNCHER_MEM:+ --mem=M}" \
      "--kill-on-bad-exit${CHPL_LAUNCHER_PARTITION:+ --partition=P}${CHPL_LAUNCHER_EXCLUDE:+ --exclude=E} " \
      "./testVerboseFlag_real --verbose -nl 1${EXECOPTS:+ $EXECOPTS}"

@@ -1,5 +1,5 @@
 class C {
-  proc shortMethod return 3;
+  proc shortMethod do return 3;
 }
 
 class D {

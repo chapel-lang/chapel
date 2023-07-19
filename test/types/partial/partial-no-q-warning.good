@@ -1,6 +1,6 @@
 partial-no-q-warning.chpl:6: warning: partial instantiation without '?' argument
 partial-no-q-warning.chpl:6: note: opt in to partial instantiation explicitly with a trailing '?' argument
-partial-no-q-warning.chpl:6: note: or, add arguments to instantiate the following fields in generic type 'r(int(64))':
+partial-no-q-warning.chpl:6: note: or, add arguments to instantiate the following fields in generic type 'r1(int(64))':
 partial-no-q-warning.chpl:3: note:   generic type field 'tt'
 partial-no-q-warning.chpl:14: warning: partial instantiation without '?' argument
 partial-no-q-warning.chpl:14: note: opt in to partial instantiation explicitly with a trailing '?' argument
@@ -8,5 +8,17 @@ partial-no-q-warning.chpl:14: note: or, add arguments to instantiate the followi
 partial-no-q-warning.chpl:11: note:   generic param field 'p2'
 partial-no-q-warning.chpl:22: warning: partial instantiation without '?' argument
 partial-no-q-warning.chpl:22: note: opt in to partial instantiation explicitly with a trailing '?' argument
-partial-no-q-warning.chpl:22: note: or, add arguments to instantiate the following fields in generic type 'rr(real(64))':
+partial-no-q-warning.chpl:22: note: or, add arguments to instantiate the following fields in generic type 'r3(real(64))':
 partial-no-q-warning.chpl:19: note:   generic field 'y'
+partial-no-q-warning.chpl:37: warning: partial instantiation without '?' argument
+partial-no-q-warning.chpl:37: note: opt in to partial instantiation explicitly with a trailing '?' argument
+partial-no-q-warning.chpl:37: note: or, add arguments to instantiate the following fields in generic type 'r4(int(64))':
+partial-no-q-warning.chpl:28: note:   generic param field 'p'
+partial-no-q-warning.chpl:29: note:   generic type field 't'
+partial-no-q-warning.chpl:32: note:   generic field 'noType'
+partial-no-q-warning.chpl:33: note:   generic type field 't2'
+partial-no-q-warning.chpl:34: note:   generic param field 'p2'
+partial-no-q-warning.chpl:45: warning: partial instantiation without '?' argument
+partial-no-q-warning.chpl:45: note: opt in to partial instantiation explicitly with a trailing '?' argument
+partial-no-q-warning.chpl:45: note: or, add arguments to instantiate the following fields in generic type 'r5(int(64))':
+partial-no-q-warning.chpl:41: note:   generic field 'x'

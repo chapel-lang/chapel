@@ -33,9 +33,9 @@ module HaltWrappers {
      Halt wrapper for cases where we want error-handling in initializers. For
      more info see: https://github.com/chapel-lang/chapel/issues/8793
    */
-  pragma "no doc"
   pragma "function terminates program"
   pragma "always propagate line file info"
+  @chpldoc.nodoc
   proc initHalt(s:string) {
     halt(s);
   }
@@ -44,9 +44,9 @@ module HaltWrappers {
      Halt wrapper for cases where we want error-handling in iterators. For more
      info see: https://github.com/chapel-lang/chapel/issues/7134
    */
-  pragma "no doc"
   pragma "function terminates program"
   pragma "always propagate line file info"
+  @chpldoc.nodoc
   proc iterHalt(s:string) {
     halt(s);
   }
@@ -144,6 +144,15 @@ module HaltWrappers {
   pragma "always propagate line file info"
   proc divByZeroCheckHalt(s:string) {
     halt(s);
+  }
+
+  /* Halt wrapper for unimplemented features */
+  pragma "function terminates program"
+  pragma "always propagate line file info"
+  proc unimplementedFeatureHalt(feature: string) {
+    halt(feature, " is currently not supported\n"+
+         "  (please feel encouraged to file a GitHub issue requesting this:\n"+
+         "   https://github.com/chapel-lang/chapel/issues)");
   }
 
   /* Halt wrapper for unimplemented features */

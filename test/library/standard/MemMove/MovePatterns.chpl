@@ -19,11 +19,11 @@ proc test2() {
   for i in 0..<size do moveInitialize(buf[i], new r());
   writeln(buf);
   for i in 0..<size {
-    explicitDeinit(buf[i]);
+    MemMove.destroy(buf[i]);
     moveInitialize(buf[i], new r(i));
   }
   writeln(buf);
-  for slot in buf do explicitDeinit(slot);
+  for slot in buf do MemMove.destroy(slot);
 }
 test2();
 writeln();
@@ -35,7 +35,7 @@ proc test3() {
   writeln(buf);
   for i in 0..<(size/2) do moveSwap(buf[i], buf[size - i - 1]);
   writeln(buf);
-  for slot in buf do explicitDeinit(slot);
+  for slot in buf do MemMove.destroy(slot);
 }
 test3();
 writeln();

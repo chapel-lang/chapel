@@ -30,10 +30,10 @@ var D : domain(R);
 var A : [D] int;
 
 var recs = new list(R, false);
-recs.append(new R(1..10));
-recs.append(new R(0..#10));
-recs.append(new R(1..0));
-recs.append(new R(0..-1));
+recs.pushBack(new R(1..10));
+recs.pushBack(new R(0..#10));
+recs.pushBack(new R(1..0));
+recs.pushBack(new R(0..-1));
 
 for r in recs {
   D.add(r);

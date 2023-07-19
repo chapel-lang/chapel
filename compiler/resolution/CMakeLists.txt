@@ -23,7 +23,7 @@ set(SRCS
     cleanups.cpp
     cullOverReferences.cpp
     expandVarArgs.cpp
-    firstClassFunctions.cpp
+    fcf-support.cpp
     fixupExports.cpp
     functionResolution.cpp
     generics.cpp

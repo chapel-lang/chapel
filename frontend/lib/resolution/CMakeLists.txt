@@ -26,9 +26,11 @@ target_sources(ChplFrontend-obj
                copy-elision.cpp
                default-functions.cpp
                disambiguation.cpp
+               extern-blocks.cpp
                intents.cpp
                maybe-const.cpp
                prims.cpp
+               resolution-error-classes-list.cpp
                resolution-queries.cpp
                resolution-types.cpp
                return-type-inference.cpp
@@ -36,5 +38,5 @@ target_sources(ChplFrontend-obj
                scope-types.cpp
                signature-checks.cpp
                split-init.cpp
-
+               try-catch-analysis.cpp
               )

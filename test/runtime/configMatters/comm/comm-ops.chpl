@@ -38,11 +38,26 @@ record padded {
   type T;
   var val: T;
   var pad: 7*T;
+
+  proc init(type T) {
+    this.T = T;
+  }
+  proc init=(other: padded) {
+    this.T = other.T;
+    // I think `pad` does not need to be copied here
+    // it is an optimization to make the struct consume a whole cache line
+    if(isAtomicType(T)) {
+      this.val = other.val.read();
+    }
+    else {
+      this.val = other.val;
+    }
+  }
 }
 
 // Create arrays and warmup / init RAD cache
-var A = newBlockArr(1..numTasks*2, padded(atomic int));
-var B = newBlockArr(1..numTasks*2, padded(int));
+var A = Block.createArray(1..numTasks*2, padded(atomic int));
+var B = Block.createArray(1..numTasks*2, padded(int));
 for loc in Locales do on loc {
   coforall tid in 1..numTasks*2 {
     A[tid].val.write(0);

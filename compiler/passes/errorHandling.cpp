@@ -843,7 +843,7 @@ public:
   bool enterTryStmt  (TryStmt*   node) override;
   void exitTryStmt   (TryStmt*   node) override;
   bool enterCallExpr (CallExpr*  node) override;
-  bool enterForLoop  (ForLoop*  node) override;
+  bool enterForLoop  (ForLoop*   node) override;
 
   // Does this function throw?
   bool throws() { return canThrow; }
@@ -1446,7 +1446,7 @@ static void lowerErrorHandling(FnSymbol* fn)
 void lowerCheckErrorPrimitive()
 {
   forv_expanding_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIM_CHECK_ERROR)) {
+    if (call->isPrimitive(PRIM_CHECK_ERROR) && call->inTree()) {
       SET_LINENO(call);
 
       SymExpr* errSe   = toSymExpr(call->get(1));

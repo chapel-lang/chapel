@@ -577,10 +577,60 @@ void gasnetc_processPacket(gasnetc_cep_t *cep, gasnetc_rbuf_t *rbuf, uint32_t fl
 #endif
 }
 
+#if GASNETC_IBV_SRQ
+  // SRQ needs a secondary source of buffers reserved for construction of
+  // outbound AM Replies, to prevent starvation when outbound Request
+  // experience backpressure.
+  // However, we don't want to double resource usage via static partition.
+  // Actual use is rare and just a single buffer is sufficient to avoid deadlock.
+  // So *one* is all we provide, keeping the critical paths simple such that
+  // freeing buffers requires only a single pointer read of extra work in the
+  // common case that the spare buffer is not in-use.
+  static gasnetc_atomic_ptr_t gasnetc_spare_reply_bbuf = gasnetc_atomic_ptr_init(0xcafef00d);
+
+  // Allocates the spare outbound reply buffer, if enabled and available
+  GASNETI_INLINE(gasnetc_alloc_spare_reply_bbuf) GASNETI_MALLOC
+  gasnetc_buffer_t *gasnetc_alloc_spare_reply_bbuf(void) {
+   gasnetc_buffer_t *result = NULL;
+    if (gasnetc_use_srq && gasnetc_atomic_ptr_read(&gasnetc_spare_reply_bbuf, 0)) {
+      result = (gasnetc_buffer_t *)(uintptr_t)gasnetc_atomic_ptr_swap(&gasnetc_spare_reply_bbuf, 0, 0);
+      if (result) GASNETC_STAT_EVENT(SPARE_REPLY_BBUF);
+    }
+    return result;
+  }
+
+  // Makes the passed buffer the new spare if SRQ is enabled and there is not one already.
+  // Note that gasnetc_spare_reply_bbuf will be non-NULL when !gasnetc_use_srq.
+  // Returns zero if there was already a spare or !gasnetc_use_srq, non-zero otherwise.
+  GASNETI_INLINE(gasnetc_maybe_restore_spare_reply_bbuf)
+  int gasnetc_maybe_restore_spare_reply_bbuf(gasnetc_buffer_t *ptr) {
+    gasneti_assert(ptr);
+    if_pt (gasnetc_atomic_ptr_read(&gasnetc_spare_reply_bbuf, 0)) {
+      return 0;
+    } else {
+      gasneti_assert(gasnetc_use_srq);
+      return gasnetc_atomic_ptr_compare_and_swap(&gasnetc_spare_reply_bbuf, 0, (uintptr_t)ptr, 0);
+    }
+  }
+
+  // For SRQ-only we need to special-case Reply buffers
+  GASNETI_INLINE(gasnetc_bbuf_pop_helper)
+  gasnetc_buffer_t *gasnetc_bbuf_pop_helper(const int is_reply) {
+    gasnetc_buffer_t *result = gasnetc_lifo_pop(&gasnetc_bbuf_freelist);
+    if (result) return result;
+    return is_reply ? gasnetc_alloc_spare_reply_bbuf() : NULL;
+  }
+#else
+  #define gasnetc_alloc_spare_reply_bbuf() gasneti_unreachable_error(("logic error"));
+  #define gasnetc_maybe_restore_spare_reply_bbuf(x)  0
+  #define gasnetc_bbuf_pop_helper(is_reply) gasnetc_lifo_pop(&gasnetc_bbuf_freelist)
+#endif
+
+
 #if GASNETC_SND_REAP_COLLECT
   #define _GASNETC_COLLECT_BBUF(_test,_bbuf) do { \
       void *_tmp = (void*)(_bbuf);                \
-      _test((_tmp != NULL)) {                     \
+      _test((_tmp != NULL) && !gasnetc_maybe_restore_spare_reply_bbuf(_tmp)) { \
         gasnetc_lifo_link(bbuf_tail, _tmp);   \
         bbuf_tail = _tmp;                         \
       }                                           \
@@ -606,7 +656,7 @@ void gasnetc_processPacket(gasnetc_cep_t *cep, gasnetc_rbuf_t *rbuf, uint32_t fl
 #else
   #define _GASNETC_COLLECT_BBUF(_test,_bbuf) do {          \
       void *_tmp = (void*)(_bbuf);                         \
-      _test((_tmp != NULL)) {                              \
+      _test((_tmp != NULL) && !gasnetc_maybe_restore_spare_reply_bbuf(_tmp)) { \
         gasnetc_lifo_push(&gasnetc_bbuf_freelist,_tmp); \
       }                                                    \
     } while(0)
@@ -1034,15 +1084,15 @@ gasnetc_epid_t gasnetc_epid_select_qpi(gasnetc_cep_t *ceps, gasnetc_epid_t epid)
 }
 
 /* Take and sreq and bind it to a specific (not wildcard) qp */
-#if GASNETC_DYNAMIC_CONNECT
-gasnetc_cep_t *gasnetc_bind_cep_inner(gasnetc_EP_t ep, gasnetc_epid_t epid, gasnetc_sreq_t *sreq, int is_reply)
+#if GASNETC_DYNAMIC_CONNECT || GASNETC_IBV_SRQ
+gasnetc_cep_t *gasnetc_bind_cep_inner(gasnetc_EP_t ep, gasnetc_epid_t epid, gasnetc_sreq_t *sreq, int is_reply GASNETI_THREAD_FARG)
 #else
 gasnetc_cep_t *gasnetc_bind_cep_inner(gasnetc_EP_t ep, gasnetc_epid_t epid, gasnetc_sreq_t *sreq)
 #endif
 {
   gasnetc_cep_t *ceps = gasnetc_get_cep(ep, gasnetc_epid2node(epid));
   gasnetc_cep_t *cep;
-  int qpi;
+  gasnetc_epid_t qpi;
 
   /* Loop until space is available on the selected SQ for 1 new entry.
    * If we hold the last one then threads sending to the same node will stall. */
@@ -1064,6 +1114,48 @@ gasnetc_cep_t *gasnetc_bind_cep_inner(gasnetc_EP_t ep, gasnetc_epid_t epid, gasn
     }
   #endif
 
+#if GASNETC_IBV_SRQ
+  // When using SRQ, rcv buffers for AM Requests may be under-provisioned,
+  // leading to back-pressure on the injecting SQ.  When encountering this
+  // as an injector, we must not become inattentive to the rcv CQ or we
+  // risk deadlock (bug 4157).  So we may need to process inbound traffic
+  // as well.  This includes RDMA Put of a RequestLong payload, in addition
+  // to the send of the header.
+  //
+  // Note that the AM Request traffic is on a distinct channel (different
+  // injecting QP) from RMA traffic and AM Reply traffic; and that the receive
+  // buffer pool for Replies is always *fully* provisioned.  Thus there is no
+  // need to poll the rcv CQ for anything other than the injection of an AM
+  // Request header or a RequestLong payload.  In fact, doing so for Reply
+  // injection would risk recursion and deadlock due to resources already held.
+  //
+  // As defined below, `should_poll_rcv` fully identifies the conditions under
+  // which the poll is needed by checking for use of a bound (non-zero) qpi in
+  // the Request-specific "upper half" of the qpi space.  This implicitly
+  // checks for use of SRQ, since no operations are bound to those qpi values
+  // otherwise.
+  gasnetc_epid_t orig_qpi = gasnetc_epid2qpi(epid);
+  const int should_poll_rcv = orig_qpi && GASNETC_QPI_IS_REQ(orig_qpi - 1);
+  if (is_reply) gasneti_assert(!should_poll_rcv); // sanity check
+
+  // This mess is needed because one cannot use `#if` inside the arguments
+  // to a macro such as GASNETI_SPIN_DOUNTIL()
+  #if GASNET_PSHM
+    #define MAYBE_POLL_RCV_PSHM() gasneti_AMPSHMPoll(0 GASNETI_THREAD_PASS)
+  #else
+    #define MAYBE_POLL_RCV_PSHM() ((void)0)
+  #endif
+  #define MAYBE_POLL_RCV(_ep, _cep) do { \
+      if (should_poll_rcv && !gasnetc_sema_read(GASNETC_CEP_SQ_SEMA(_cep))) {  \
+        gasnetc_poll_rcv_all(_ep, GASNETC_RCV_REAP_LIMIT GASNETI_THREAD_PASS); \
+        MAYBE_POLL_RCV_PSHM();                                                 \
+        GASNETI_PROGRESSFNS_RUN();                                             \
+      }                                                                        \
+    } while (0)
+#else
+  #define MAYBE_POLL_RCV(_ep, _cep) ((void)0)
+#endif
+
     GASNETI_SPIN_DOUNTIL(
       gasnetc_sema_trydown(GASNETC_CEP_SQ_SEMA(cep)),
       {
@@ -1071,8 +1163,12 @@ gasnetc_cep_t *gasnetc_bind_cep_inner(gasnetc_EP_t ep, gasnetc_epid_t epid, gasn
         /* Redo load balancing choice */
         qpi = gasnetc_epid_select_qpi(ceps, epid);
         cep = &ceps[qpi];
+        MAYBE_POLL_RCV(ep, cep);
       });
     GASNETC_TRACE_WAIT_END(POST_SR_STALL_SQ);
+
+#undef MAYBE_POLL_RCV
+#undef MAYBE_POLL_RCV_PSHM
   }
   cep->used = 1;
 
@@ -1362,30 +1458,42 @@ gasnetc_sreq_t *gasnetc_get_sreq(gasnetc_sreq_opcode_t opcode GASNETI_THREAD_FAR
   return sreq;
 }
 
-/* allocate a pre-pinned bounce buffer */
-gasnetc_buffer_t *gasnetc_get_bbuf(int block GASNETI_THREAD_FARG) {
+GASNETI_INLINE(gasnetc_get_bbuf_inner)
+gasnetc_buffer_t *gasnetc_get_bbuf_inner(const int is_reply, const int block GASNETI_THREAD_FARG) {
   gasnetc_buffer_t *bbuf = NULL;
 
   GASNETC_TRACE_WAIT_BEGIN();
   GASNETC_STAT_EVENT(GET_BBUF);
 
-  bbuf = gasnetc_lifo_pop(&gasnetc_bbuf_freelist);
+  bbuf = gasnetc_bbuf_pop_helper(is_reply);
   if_pt (bbuf) {
     // done
   } else if (block) {
     GASNETI_SPIN_DOUNTIL(bbuf, {
         gasnetc_poll_snd();
-        bbuf = gasnetc_lifo_pop(&gasnetc_bbuf_freelist);
+        bbuf = gasnetc_bbuf_pop_helper(is_reply);
       });
     GASNETC_TRACE_WAIT_END(GET_BBUF_STALL);
   } else {
     gasnetc_poll_snd();
-    bbuf = gasnetc_lifo_pop(&gasnetc_bbuf_freelist);
+    bbuf = gasnetc_bbuf_pop_helper(is_reply);
   }
   gasneti_assert((bbuf != NULL) || !block);
 
   return bbuf;
 }
+
+// Allocate a pre-pinned bounce buffer using helpers above
+gasnetc_buffer_t *gasnetc_get_bbuf(int block GASNETI_THREAD_FARG) {
+  return gasnetc_get_bbuf_inner(0, block GASNETI_THREAD_PASS);
+}
+
+#if GASNETC_IBV_SRQ
+// Allocate a pre-pinned bounce buffer, with special case for reply
+gasnetc_buffer_t *gasnetc_get_bbuf_srq(int is_reply, int block GASNETI_THREAD_FARG) {
+  return gasnetc_get_bbuf_inner(is_reply, block GASNETI_THREAD_PASS);
+}
+#endif
 
 #if GASNET_TRACE || GASNET_DEBUG
 GASNETI_INLINE(gasnetc_snd_validate)
@@ -2881,7 +2989,8 @@ extern int gasnetc_sndrcv_init(gasnetc_EP_t ep) {
   /* Allocated pinned memory for AMs and bounce buffers
    * TODO: Can/should we *USE* any extra allocated due to rounding-up? */
  if (gasnetc_bbuf_limit) {
-  size = GASNETI_PAGE_ALIGNUP(gasnetc_bbuf_limit * sizeof(gasnetc_buffer_t));
+  gasneti_assert((gasnetc_use_srq == 0) || (gasnetc_use_srq == 1)); // SRQ requires one extra
+  size = GASNETI_PAGE_ALIGNUP((gasnetc_use_srq + gasnetc_bbuf_limit) * sizeof(gasnetc_buffer_t));
   buf = gasnetc_mmap(size);
   if_pf (buf == GASNETC_MMAP_FAILED) {
     buf = NULL;
@@ -2907,6 +3016,14 @@ extern int gasnetc_sndrcv_init(gasnetc_EP_t ep) {
     gasnetc_lifo_push(&gasnetc_bbuf_freelist, buf);
     ++buf;
   }
+#if GASNETC_IBV_SRQ
+  if (gasnetc_use_srq) {
+    gasnetc_atomic_ptr_set(&gasnetc_spare_reply_bbuf, (uintptr_t)buf, 0);
+  } else {
+    // Should (already) be initialized non-NULL to prevent buffer-freeing path from setting it
+    gasneti_assert(gasnetc_atomic_ptr_read(&gasnetc_spare_reply_bbuf, 0));
+  }
+#endif
  }
 
 #if GASNETC_PIN_SEGMENT

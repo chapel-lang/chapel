@@ -9,7 +9,7 @@ any type
 R
 Parent
 Parent
-object
+RootClass
 GenericParent
 GenericChild(int)
 GenericParent

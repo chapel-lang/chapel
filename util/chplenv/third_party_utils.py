@@ -4,7 +4,7 @@ import re
 import chpl_cpu, chpl_arch, chpl_compiler
 import chpl_lib_pic, chpl_locale_model, chpl_platform
 from chpl_home_utils import get_chpl_home, get_chpl_third_party, using_chapel_module
-from utils import error, memoize, run_command, warning
+from utils import error, memoize, run_command, warning, try_run_command
 
 #
 # This is the default unique configuration path which
@@ -256,6 +256,14 @@ def pkgconfig_get_system_version(pkg):
   # run pkg-config to get the version
   version = run_command(['pkg-config', '--modversion', pkg])
   return version.strip()
+
+@memoize
+def has_pkgconfig():
+    (exists, code, _stdout, _stderr) = try_run_command(['pkg-config',
+                                                       '--version'])
+    if exists and code == 0:
+        return True
+    return False
 
 #
 # This returns the default link args for the given third-party package

@@ -15,7 +15,7 @@ config const preCompiled = false;
 
 proc testRead(channel, pattern: ?t, ref capture, preCompiled:bool) throws {
   if preCompiled {
-    var re = compile(pattern);
+    var re = new regex(pattern);
     channel.readf("%/*/", re, capture);
   }
   else {

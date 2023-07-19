@@ -34,14 +34,17 @@
 #include "resolveIntents.h"
 #include "resolution.h"
 #include "stringutil.h"
+#include "type.h"
 #include "wellknown.h"
 #include "chpl/uast/OpCall.h"
+#include "chpl/util/filtering.h"
 
 #include "global-ast-vecs.h"
 
 #include <algorithm>
 #include <regex>
 #include <cstring>
+#include <map>
 
 //
 // The function that represents the compiler-generated entry point
@@ -53,6 +56,7 @@ Symbol *gDummyRef = NULL;
 Symbol *gFixupRequiredToken = NULL;
 Symbol *gTypeDefaultToken = NULL;
 Symbol *gLeaderTag = NULL, *gFollowerTag = NULL, *gStandaloneTag = NULL;
+Symbol *gStrideOne = NULL, *gStrideAny = NULL; // deprecated by Vass in 1.31
 Symbol *gModuleToken = NULL;
 Symbol *gNoInit = NULL;
 Symbol *gSplitInit = NULL;
@@ -69,22 +73,14 @@ Symbol *gSingleVarAuxFields = NULL;
 
 VarSymbol *gTrue = NULL;
 VarSymbol *gFalse = NULL;
-VarSymbol *gBoundsChecking = NULL;
-VarSymbol *gCastChecking = NULL;
-VarSymbol *gNilChecking = NULL;
-VarSymbol *gOverloadSetsChecks = NULL;
-VarSymbol *gDivZeroChecking = NULL;
-VarSymbol* gCacheRemote = NULL;
-VarSymbol* gPrivatization = NULL;
-VarSymbol* gLocal = NULL;
-VarSymbol* gWarnUnstable = NULL;
 VarSymbol* gIteratorBreakToken = NULL;
 VarSymbol* gNodeID = NULL;
 VarSymbol *gModuleInitIndentLevel = NULL;
 VarSymbol *gInfinity = NULL;
 VarSymbol *gNan = NULL;
 VarSymbol *gUninstantiated = NULL;
-VarSymbol *gUseIOFormatters = NULL;
+
+llvm::SmallVector<VarSymbol*, 10> gCompilerGlobalParams;
 
 void verifyInTree(BaseAST* ast, const char* msg) {
   if (ast != NULL && ast->inTree() == false) {
@@ -467,16 +463,12 @@ const char* Symbol::getUnstableMsg() const {
 // https://chapel-lang.org/docs/latest/tools/chpldoc/chpldoc.html#inline-markup-2
 // for information on the markup.
 const char* Symbol::getSanitizedMsg(std::string msg) const {
-  // TODO: Support explicit title and reference targets like in reST direct hyperlinks (and having only target
-  //       show up in sanitized message).
-  // TODO: Allow prefixing content with ! (and filtering it out in the sanitized message)
-  // TODO: Allow prefixing content with ~ (and having it only display last component of target)
-  static const auto reStr = R"(\B\:(mod|proc|iter|data|const|var|param|type|class|record|attr)\:`([!$\w\$\.]+)`\B)";
-  msg = std::regex_replace(msg, std::regex(reStr), "$2");
-  return astr(msg.c_str());
+  return astr(chpl::removeSphinxMarkup(msg));
 }
 
-void Symbol::generateDeprecationWarning(Expr* context) {
+void Symbol::maybeGenerateDeprecationWarning(Expr* context) {
+  if (!this->hasFlag(FLAG_DEPRECATED)) return;
+
   Symbol* contextParent = context->parentSymbol;
   bool parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
   bool compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
@@ -498,10 +490,36 @@ void Symbol::generateDeprecationWarning(Expr* context) {
   }
 }
 
-//based on generateDeprecationWarning
-void Symbol::generateUnstableWarning(Expr* context) {
+static bool isInvisibleModule(Symbol* sym) {
+  return sym == rootModule || sym == theProgram;
+}
+
+static bool isUnstableContext(Symbol* sym) {
+  if (sym->hasFlag(FLAG_UNSTABLE)) return true;
+  if (auto mod = toModuleSymbol(sym)) {
+    if (isInvisibleModule(mod)) return false;
+    if (mod->modTag == MOD_INTERNAL) return !fWarnUnstableInternal;
+    if (mod->modTag == MOD_STANDARD) return !fWarnUnstableStandard;
+  }
+  return false;
+}
+
+static bool isUnstableShouldWarn(Symbol* sym, Expr* initialContext) {
+  if (!sym->hasFlag(FLAG_UNSTABLE)) return false;
+  auto mod = initialContext->getModule();
+  INT_ASSERT(mod);
+  if (mod->modTag == MOD_INTERNAL) return fWarnUnstableInternal;
+  if (mod->modTag == MOD_STANDARD) return fWarnUnstableStandard;
+  INT_ASSERT(mod->modTag == MOD_USER);
+  return fWarnUnstable;
+}
+
+//based on maybeGenerateDeprecationWarning
+void Symbol::maybeGenerateUnstableWarning(Expr* context) {
+  if (!isUnstableShouldWarn(this, context)) return;
+
   Symbol* contextParent = context->parentSymbol;
-  bool parentUnstable = contextParent->hasFlag(FLAG_UNSTABLE);
+  bool parentUnstable = isUnstableContext(contextParent);
   bool parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
   bool compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
 
@@ -510,10 +528,11 @@ void Symbol::generateUnstableWarning(Expr* context) {
   // outer scope.
   while (contextParent != NULL && contextParent->defPoint != NULL &&
          contextParent->defPoint->parentSymbol != NULL &&
+         !isInvisibleModule(contextParent) &&
          parentUnstable != true && compilerGenerated != true &&
          parentDeprecated != true) {
     contextParent = contextParent->defPoint->parentSymbol;
-    parentUnstable = contextParent->hasFlag(FLAG_UNSTABLE);
+    parentUnstable = isUnstableContext(contextParent);
     parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
     compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
   }
@@ -1198,6 +1217,24 @@ bool isOuterVarOfShadowVar(Expr* expr) {
 *                                                                   *
 ********************************* | ********************************/
 
+#ifdef HAVE_LLVM
+static std::map<FunctionType*, llvm::FunctionType*>
+chapelFunctionTypeToLlvmFunctionType;
+
+bool llvmMapUnderlyingFunctionType(FunctionType* k, llvm::FunctionType* v) {
+  auto it = chapelFunctionTypeToLlvmFunctionType.find(k);
+  if (it != chapelFunctionTypeToLlvmFunctionType.end()) return false;
+  chapelFunctionTypeToLlvmFunctionType.emplace_hint(it, k, v);
+  return true;
+}
+
+llvm::FunctionType* llvmGetUnderlyingFunctionType(FunctionType* t) {
+  auto it = chapelFunctionTypeToLlvmFunctionType.find(t);
+  if (it != chapelFunctionTypeToLlvmFunctionType.end()) return it->second;
+  return nullptr;
+}
+#endif
+
 TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
   Symbol(E_TypeSymbol, init_name, init_type),
     llvmImplType(NULL),
@@ -1487,7 +1524,7 @@ void createInitStringLiterals() {
   INT_ASSERT(gChplCreateBytesWithLiteral != NULL);
 
   // initialize the strings
-  for (auto pair : literals) {
+  for (const auto& pair : literals) {
     VarSymbol* s = pair.second;
 
     // unescape the string and compute its length
@@ -1831,6 +1868,22 @@ static VarSymbol* new_FloatSymbol(const char* num,
 
 VarSymbol *new_RealSymbol(const char *n, IF1_float_type size) {
   return new_FloatSymbol(n, size, NUM_KIND_REAL, dtReal[size]);
+}
+
+VarSymbol *new_RealSymbol(float val) {
+  Immediate imm;
+  imm.v_float32 = val;
+  imm.const_kind = NUM_KIND_REAL;
+  imm.num_index = FLOAT_SIZE_32;
+  return new_ImmediateSymbol(&imm);
+}
+
+VarSymbol *new_RealSymbol(double val) {
+  Immediate imm;
+  imm.v_float64 = val;
+  imm.const_kind = NUM_KIND_REAL;
+  imm.num_index = FLOAT_SIZE_64;
+  return new_ImmediateSymbol(&imm);
 }
 
 VarSymbol *new_ImagSymbol(const char *n, IF1_float_type size) {
@@ -2247,7 +2300,7 @@ const char* toString(VarSymbol* var, bool withType) {
           SymExpr* dstSe = toSymExpr(c->get(1));
           SymExpr* srcSe = toSymExpr(c->get(2));
           if (dstSe && srcSe && dstSe->symbol() == sym) {
-            sym = singleDef->symbol();
+            sym = srcSe->symbol();
             continue;
           }
         }

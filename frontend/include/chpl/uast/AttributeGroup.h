@@ -24,6 +24,7 @@
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Pragma.h"
 #include "chpl/util/iteration.h"
+#include "chpl/uast/Attribute.h"
 #include <set>
 
 namespace chpl {
@@ -77,6 +78,28 @@ class AttributeGroup final : public AstNode {
       unstableMessage_ = des.read<UniqueString>();
     }
 
+  AttributeGroup(std::set<PragmaTag> pragmas,
+                 bool isDeprecated,
+                 bool isUnstable,
+                 UniqueString deprecationMessage,
+                 UniqueString unstableMessage,
+                 AstList attributes)
+    : AstNode(asttags::AttributeGroup, std::move(attributes)),
+      pragmas_(std::move(pragmas)),
+      isDeprecated_(isDeprecated),
+      isUnstable_(isUnstable),
+      deprecationMessage_(deprecationMessage),
+      unstableMessage_(unstableMessage) {
+    if (!deprecationMessage_.isEmpty()) {
+      CHPL_ASSERT(isDeprecated_);
+    }
+    if (!unstableMessage_.isEmpty()) {
+      CHPL_ASSERT(isUnstable_);
+    }
+
+    // This might already be a compile-time invariant? Not sure...
+    CHPL_ASSERT(pragmas_.size() <= NUM_KNOWN_PRAGMAS);
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const AttributeGroup* rhs = (const AttributeGroup*)other;
@@ -104,6 +127,14 @@ class AttributeGroup final : public AstNode {
                                      UniqueString deprecationMessage,
                                      UniqueString unstableMessage);
 
+  static owned<AttributeGroup> build(Builder* builder, Location loc,
+                                     std::set<PragmaTag> pragmas,
+                                     bool isDeprecated,
+                                     bool isUnstable,
+                                     UniqueString deprecationMessage,
+                                     UniqueString unstableMessage,
+                                     AstList attributes);
+
   /**
     Returns true if the given pragma is set for this attributeGroup.
   */
@@ -120,6 +151,24 @@ class AttributeGroup final : public AstNode {
   */
   PragmaIterable pragmas() const {
     return PragmaIterable(pragmas_);
+  }
+
+  /*
+    returns the attribute with the given name, or nullptr if it is not found.
+  */
+  // call as getAttributeNamed(USTR("deprecated"))
+  // or getAttributeNamed(UniqueString::get(<context>, "attrib.name")) etc.
+  const Attribute* getAttributeNamed(UniqueString attributeName) const {
+    const Attribute* ret = nullptr;
+    for (auto child : children()) {
+      if (auto attr = child->toAttribute()) {
+        if (attr->name() == attributeName) {
+          ret = attr;
+          break;
+        }
+      }
+    }
+    return ret;
   }
 
   /**
@@ -163,6 +212,13 @@ class AttributeGroup final : public AstNode {
   }
 
   DECLARE_STATIC_DESERIALIZE(AttributeGroup);
+
+  /**
+    Returns the number of attributes in this group.
+  */
+  int numAttributes() const {
+    return numChildren();
+  }
 
 };
 

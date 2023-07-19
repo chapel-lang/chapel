@@ -14,24 +14,24 @@ class mything {
     r.readNewline();
   }
 
-  proc readThis(r) throws {
-    readWriteHelper(r);
+  proc readThis(r: fileReader) throws {
+    x = r.read(int);
+    r.readLiteral(" ");
+    y = r.read(int);
+    r.readNewline();
   }
 
-  proc writeThis(w) throws {
-    readWriteHelper(w);
-  }
-
-  proc readWriteHelper(rw) throws {
-    if rw.writing then rw.write(x); else x = rw.read(int);
-    rw.readWriteLiteral(" ");
-    if rw.writing then rw.write(y); else y = rw.read(int);
-    rw.readWriteNewline();
+  proc writeThis(w: fileWriter) throws {
+    w.write(x);
+    w.writeLiteral(" ");
+    w.write(y);
+    w.writeNewline();
   }
 }
 
 {
-  var a = (new owned mything(1)).borrow();
+  var ownA = new owned mything(1);
+  var a = ownA.borrow();
 
   writeln("Writing ", a);
 
@@ -43,7 +43,8 @@ class mything {
 
   var r = f.reader();
 
-  var b = (new owned mything(2)).borrow();
+  var ownB = new owned mything(2);
+  var b = ownB.borrow();
   r.read(b);
 
   r.close();
@@ -52,4 +53,3 @@ class mything {
 
   assert(a.x == b.x);
 }
-

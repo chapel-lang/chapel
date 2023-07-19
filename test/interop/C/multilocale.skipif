@@ -2,25 +2,44 @@
 
 """
  Multilocale interoperability requires ZMQ
- Installation of the ZMQ library is detected with the find_library function,
- which looks for the appropriate dynamic library (e.g. libzmq.so).
- Note that if the dynamic library is found, this test assumes that the
- header and static library are available. Can be overridden with
- `CHPL_TEST_NO_ZMQ=True`
+ Initial installation probe of the ZMQ library is detected with the
+ find_library function, but that only checks for libzmq.so and not the headers
+ so do a configure-like compilation check for the headers.
+
+ Longer term want to just do pkg-config check, but that requires updating MLI
+ support: https://github.com/Cray/chapel-private/issues/4292
 """
 
 from ctypes.util import find_library
 import os
+import shlex
+import subprocess
+import tempfile
 
-# Is ZMQ available?
+# Is ZMQ shared object available?
 zmq_found = find_library('zmq') is not None
-user_no_zmq = os.getenv('CHPL_TEST_NO_ZMQ') is not None
+
+# Do a configure like check to ensure header is found too
+if zmq_found:
+    try:
+        chpl_home = os.getenv('CHPL_HOME')
+        compileline = os.path.join(chpl_home, 'util', 'config', 'compileline')
+        c_compiler = subprocess.check_output([compileline, '--compile']).decode()
+        c_compiler = shlex.split(c_compiler)
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            c_test = os.path.join(tmp_dir, 'zmq-test.c')
+            with open(c_test, 'w') as fp:
+                fp.write('#include "zmq.h"\nint main (void) { return 0; }')
+            subprocess.run(c_compiler + [c_test, '-lzmq'], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except:
+        zmq_found = False
 
 # Are we configured for multilocale?
 is_not_local = os.getenv('CHPL_COMM', 'none') != 'none'
 
 # OK contains the conditions that must be met to run the test
-OK = is_not_local and zmq_found and not user_no_zmq
+OK = is_not_local and zmq_found
 
 # Skip if not OK
 print(not OK)

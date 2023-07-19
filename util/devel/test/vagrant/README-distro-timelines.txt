@@ -7,18 +7,22 @@ Alpine Linux -- see https://www.alpinelinux.org/releases/
   3.15  EOL 2023-11-01
   3.16  EOL 2024-05-23
   3.17  EOL 2024-11-22
+  3.18  EOL 2025-05-09
 
 Alma Linux -- see https://en.wikipedia.org/wiki/AlmaLinux
+           -- EOL dates probably match Rocky linux
   8   - EOL May 2029
   9   - EOL 2032?
   9.0 - EOL May 2032
   9.1 - EOL ?
+  9.2 - EOL ?
 
 Amazon Linux
        -- see https://docs.aws.amazon.com/linux/al2022/ug/release-cadence.html
        -- which has 2 years of standard support, 3 of maintenance
-  2    EOL June 30, 2023
-  2022 to be released by fall 2022
+  2    EOL June 30, 2025
+  2022 was renamed to 2023 in March 2023
+  2023 released March 2023
 
 CentOS -- see https://wiki.centos.org/About/Product
 x 5 full updates until Jan 2014, maintenance until Mar 2017
@@ -50,7 +54,7 @@ x 8 "jessie"   long-term support until May 2020
 x 9 "stretch"  long-term support until Jun 2022
  10 "buster"   long-term support until Jun 2024
  11 "bullseye" long-term support until Jun 2026
- 12 "bookworm" expected release June 2023
+ 12 "bookworm" released June 2023
  13 "trixie"   expected release ?
  14 "forky"    expected release ?
 
@@ -70,9 +74,11 @@ x 31 EOL Nov 2020
 x 32 EOL May 2021
 x 33 EOL Nov 2021
 x 34 EOL Jun 2022
-  35 EOL Dec 2022
+x 35 EOL Dec 2022
   36 EOL May 2023
   37 EOL Nov 2023
+  38 EOL May 2024
+  39 to be released Oct 2023 -- EOL Nov 2024
 
 FreeBSD -- see https://www.freebsd.org/security/unsupported.html
         -- and https://app.vagrantup.com/freebsd
@@ -88,11 +94,12 @@ x 11.2 EOL Oct 2019
 x 11.4 EOL Sep 2021
 x 12.0 EOL Feb 2020
 x 12.1 EOL Jan 2021
-  12.2 EOL Mar 2022
-  12.3
-  12.4 not released yet
-  13.0 EOL Aug 2022
+x 12.2 EOL Mar 2022
+x 12.3 EOL Mar 2023
+  12.4 EOL Dec 2023
+x 13.0 EOL Aug 2022
   13.1
+  13.2
   14.0 not released yet
 
 OpenSuse -- see https://en.opensuse.org/Lifetime
@@ -105,13 +112,16 @@ x 42.3 EOL Jun 2019
 x 15.0 EOL Nov 2019
 x 15.1 EOL Nov 2020
 x 15.2 EOL Dec 2021
-  15.3 EOL Nov 2022
+x 15.3 EOL Nov 2022
   15.4 EOL Nov 2023
+  15.5 EOL Nov 2024
 
-Rocky Linux
+Rocky Linux -- see https://wiki.rockylinux.org/rocky/version/
   8   - EOL May 2029
-  9.0 - EOL May 2032
-  9.1 - EOL May 2032
+  9   - EOL May 2032
+  9.0 - EOL Nov 2022
+  9.1 - EOL May 2023
+  9.2 - EOL Nov 2023
 
 Ubuntu -- see https://wiki.ubuntu.com/Releases
        -- and https://app.vagrantup.com/ubuntu
@@ -134,7 +144,7 @@ x 18.10 "Cosmic Cuttlefish" EOL July 2019
 x 19.04 "Disco Dingo"       EOL Jan 2020
 x 19.10 "Eoan Ermine"       EOL July 2020
 x 20.10 "Groovy Gorilla"    EOL July 2021
-x 21.04 "Hirsute Hippo"     EOL January 2022
+x 21.04 "Hirsute Hippo"     EOL Jan 2022
 x 21.10 "Impish Indri"      EOL July 2022
   22.10 "Kinetic Kudu"      EOL July 2023
-  23.04 "Lunar Lobster"     expected release in April 2023
+  23.04 "Lunar Lobster"     EOL Jan 2024

@@ -1085,20 +1085,14 @@ uintptr_t gasnetc_init_messaging(void)
   #endif
 
   // Process GASNET_GNI_ROUTING_MODE
-  { char *env_val = gasneti_getenv_withdefault("GASNET_GNI_ROUTING_MODE", GASNETC_GNI_ROUTING_MODE_DEFAULT);
-    char dlvr_mode[64];
-    int i;
-    for (i = 0; env_val[i] && i < sizeof(dlvr_mode)-1; i++) {
-      dlvr_mode[i] = toupper(env_val[i]); // normalize to uppercase
-    }
-    dlvr_mode[i] = '\0';
-    if      (!strcmp(dlvr_mode, "IN_ORDER"  )) gasnetc_dlvr_mode = GNI_DLVMODE_IN_ORDER;
-    else if (!strcmp(dlvr_mode, "NMIN_HASH" )) gasnetc_dlvr_mode = GNI_DLVMODE_NMIN_HASH;
-    else if (!strcmp(dlvr_mode, "MIN_HASH"  )) gasnetc_dlvr_mode = GNI_DLVMODE_MIN_HASH;
-    else if (!strcmp(dlvr_mode, "ADAPTIVE_0")) gasnetc_dlvr_mode = GNI_DLVMODE_ADAPTIVE0;
-    else if (!strcmp(dlvr_mode, "ADAPTIVE_1")) gasnetc_dlvr_mode = GNI_DLVMODE_ADAPTIVE1;
-    else if (!strcmp(dlvr_mode, "ADAPTIVE_2")) gasnetc_dlvr_mode = GNI_DLVMODE_ADAPTIVE2;
-    else if (!strcmp(dlvr_mode, "ADAPTIVE_3")) gasnetc_dlvr_mode = GNI_DLVMODE_ADAPTIVE3;
+  { const char *env_val = gasneti_getenv_withdefault("GASNET_GNI_ROUTING_MODE", GASNETC_GNI_ROUTING_MODE_DEFAULT);
+    if      (!gasneti_strcasecmp(env_val, "IN_ORDER"  )) gasnetc_dlvr_mode = GNI_DLVMODE_IN_ORDER;
+    else if (!gasneti_strcasecmp(env_val, "NMIN_HASH" )) gasnetc_dlvr_mode = GNI_DLVMODE_NMIN_HASH;
+    else if (!gasneti_strcasecmp(env_val, "MIN_HASH"  )) gasnetc_dlvr_mode = GNI_DLVMODE_MIN_HASH;
+    else if (!gasneti_strcasecmp(env_val, "ADAPTIVE_0")) gasnetc_dlvr_mode = GNI_DLVMODE_ADAPTIVE0;
+    else if (!gasneti_strcasecmp(env_val, "ADAPTIVE_1")) gasnetc_dlvr_mode = GNI_DLVMODE_ADAPTIVE1;
+    else if (!gasneti_strcasecmp(env_val, "ADAPTIVE_2")) gasnetc_dlvr_mode = GNI_DLVMODE_ADAPTIVE2;
+    else if (!gasneti_strcasecmp(env_val, "ADAPTIVE_3")) gasnetc_dlvr_mode = GNI_DLVMODE_ADAPTIVE3;
     else if (! gasneti_mynode) {
       gasneti_console_message("WARNING", "Ignoring unknown GASNET_GNI_ROUTING_MODE='%s'", env_val);
     }
@@ -1304,7 +1298,7 @@ am_memory_report:
   }
 
 #if defined(GASNETI_USE_HUGETLBFS)
-  am_mmap_bytes = GASNETI_ALIGNUP(am_mmap_bytes, gethugepagesize());
+  am_mmap_bytes = GASNETI_ALIGNUP(am_mmap_bytes, gasneti_hugepagesize());
   am_mmap_ptr = gasneti_huge_mmap(NULL, am_mmap_bytes);
 #else
   am_mmap_bytes = GASNETI_PAGE_ALIGNUP(am_mmap_bytes);

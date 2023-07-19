@@ -1,6 +1,6 @@
 use BlockDist;
 
-var A = newBlockArr({1..numLocales}, int);
+var A = Block.createArray({1..numLocales}, int);
 
 on Locales[numLocales-1] {
   A.localAccess[numLocales] = numLocales;

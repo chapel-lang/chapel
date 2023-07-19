@@ -11,7 +11,7 @@ proc mapXor(a: map(?keyType, ?valueType, ?),
       if !b.contains(k) then newMap.add(k, a[k]);
   }
   try! {
-    for k in b do
+    for k in b.keys() do
       if !a.contains(k) then newMap.add(k, b[k]);
   }
   return newMap;
@@ -44,7 +44,7 @@ proc mapAnd(a: map(?keyType, ?valueType, ?),
   return newMap;
 }
 
-var ops: list((int, unmanaged object?, int, int, int));
+var ops: list((int, unmanaged RootClass?, int, int, int));
 var opsLock$: sync bool = true;
 
 var counter: atomic int;
@@ -52,9 +52,9 @@ var counter: atomic int;
 require "gdb.h";
 config const breakOnAllocateId = -1;
 
-proc trackAllocation(c: object, id:int, x:int) {
+proc trackAllocation(c: RootClass, id:int, x:int) {
   opsLock$.readFE();
-  ops.append( (1, c:unmanaged, id, x, 1+counter.fetchAdd(1)) );
+  ops.pushBack( (1, c:unmanaged, id, x, 1+counter.fetchAdd(1)) );
   if id == breakOnAllocateId {
     extern proc gdbShouldBreakHere();
     gdbShouldBreakHere();
@@ -62,9 +62,9 @@ proc trackAllocation(c: object, id:int, x:int) {
   opsLock$.writeEF(true);
 }
 
-proc trackFree(c: object, id:int, x:int) {
+proc trackFree(c: RootClass, id:int, x:int) {
   opsLock$.readFE();
-  ops.append( (-1, c:unmanaged, id, x, 1+counter.fetchAdd(1)) );
+  ops.pushBack( (-1, c:unmanaged, id, x, 1+counter.fetchAdd(1)) );
   opsLock$.writeEF(true);
 }
 
@@ -120,7 +120,7 @@ proc checkAllocations() {
   }
 
   // check order of each id. Each id should be freed after being allocated.
-  for id in allocated {
+  for id in allocated.keys() {
     // same as ids in freed_byid by this point.
     if allocated[id] < freed[id] {
       // OK

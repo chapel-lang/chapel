@@ -189,6 +189,7 @@ void CallInitDeinit::analyzeReturnedExpr(ResolvedExpression& re,
     if (auto inFn = resolver.symbol->toFunction()) {
       switch (inFn->returnIntent()) {
         case Function::DEFAULT_RETURN_INTENT:
+        case Function::OUT:
         case Function::CONST:
           fnReturnsRegularValue = true;
           break;
@@ -342,12 +343,12 @@ void CallInitDeinit::processDeinitsAndPropagate(VarFrame* frame,
   }
 
   if (parent != nullptr) {
-    for (auto id : frame->initedOuterVars) {
+    for (const auto& id : frame->initedOuterVars) {
       if (parent->addToInitedVars(id)) {
         recordInitializationOrder(parent, id);
       }
     }
-    for (auto id : frame->deinitedVars) {
+    for (const auto& id : frame->deinitedVars) {
       if (frame->declaredVars.count(id) == 0) {
         parent->deinitedVars.insert(id);
       }
@@ -453,6 +454,9 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
     if (classType != nullptr && classType->manager() != nullptr) {
       // when default-initializing a shared C? or owned C?,
       // call e.g. shared.init(chpl_t=borrowed C?).
+      //
+      // Safe to use basicClassType() here because the type would otherwise
+      // be generic, but we know it's concrete.
       auto dec = classType->decorator().toBorrowed();
       auto t = ClassType::get(context,
                               classType->basicClassType(),
@@ -465,15 +469,23 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
                compositeType->instantiatedFromCompositeType() != nullptr) {
       // pass generic type and param fields by the name
       auto subs = compositeType->sortedSubstitutions();
-      for (auto pair : subs) {
+      for (const auto& pair : subs) {
         const ID& id = pair.first;
         const QualifiedType& qt = pair.second;
         UniqueString fname = parsing::fieldIdToName(context, id);
         actuals.push_back(CallInfoActual(qt, fname));
       }
     }
+
+    // Get the 'root' instantiation
+    const CompositeType* calledCT = compositeType;
+    while (auto insn = calledCT->instantiatedFromCompositeType()) {
+      calledCT = insn;
+    }
+    auto calledType = QualifiedType(QualifiedType::VAR, calledCT);
+
     auto ci = CallInfo (/* name */ USTR("init"),
-                        /* calledType */ QualifiedType(),
+                        /* calledType */ calledType,
                         /* isMethodCall */ true,
                         /* hasQuestionArg */ false,
                         /* isParenless */ false,
@@ -739,6 +751,7 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
   bool splitInited = (splitInitedVars.count(ast->id()) > 0);
 
   bool handledFormal = false;
+  bool isCatchVariable = false;
 
   if (ast->isFormal() || ast->isVarArgFormal()) {
 
@@ -769,6 +782,15 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
     }
   }
 
+  // Errors in Catch statements will be instantiated by the throwing function
+  // in the Try block
+  auto parent = parsing::parentAst(context, ast);
+  if (parent && parent->isCatch()) {
+    auto catchNode = parent->toCatch();
+    CHPL_ASSERT(ast == catchNode->error());
+    isCatchVariable = true;
+  }
+
   if (handledFormal) {
     // already handled above
   } else if (splitInited) {
@@ -790,7 +812,11 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
     ID id = ast->id();
     frame->addToInitedVars(id);
     frame->localsAndDefers.push_back(id);
-
+  } else if (isCatchVariable) {
+    // initialized from the throw that activates this Catch
+    ID id = ast->id();
+    frame->addToInitedVars(id);
+    frame->localsAndDefers.push_back(id);
   } else {
     // default init it
     // not inited here and not split-inited, so default-initialize it

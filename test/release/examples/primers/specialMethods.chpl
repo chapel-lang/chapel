@@ -184,13 +184,13 @@ proc R.readThis(ch: fileReader) throws {
 }
 
 {
-  var chW = openwriter(filename);
+  var chW = openWriter(filename);
   chW.writeln(r);
   chW.flush();
 
   writeln(r);
   var r2 = new R();
-  var chR = openreader(filename);
+  var chR = openReader(filename);
   chR.readln(r2);
   assert(r == r2);
 }

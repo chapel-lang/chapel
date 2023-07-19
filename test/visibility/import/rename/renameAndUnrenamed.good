@@ -1,3 +1,4 @@
-renameAndUnrenamed.chpl:6: warning: identifier 'x' is repeated
+renameAndUnrenamed.chpl:5: In module 'User':
+renameAndUnrenamed.chpl:6: warning: 'x' is repeated
 0
 0

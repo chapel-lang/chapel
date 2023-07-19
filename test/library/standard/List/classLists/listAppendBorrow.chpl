@@ -14,11 +14,11 @@ var globalLst1: list(borrowed foo?) = globalArr1;
 
 // Should emit a lifetime error.
 proc error7(arg: borrowed foo) {
-  globalLst1.append(arg);
+  globalLst1.pushBack(arg);
 }
 
 proc ok() {
-  globalLst1.append(global);
+  globalLst1.pushBack(global);
 }
 
 proc main() {
