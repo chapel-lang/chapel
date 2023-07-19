@@ -2894,8 +2894,18 @@ module BigInteger {
 
 
   // Set/Clr bit
-  proc bigint.setbit(bit_index: integral) {
-    const bi_ = bit_index.safeCast(c_ulong);
+  @deprecated("bigint.setbit is deprecated - please use :proc:`bigint.setBit`")
+  proc bigint.setbit(bit_index: integral) do this.setBit(bit_index);
+
+  /*  Set the bit at ``idx`` of ``this``.
+
+      Utilizes the GMP function `mpz_setbit <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling>`_
+
+      :arg idx: the index of the bit to be set
+      :type idx: ``integral``
+  */
+  proc bigint.setBit(idx: integral) {
+    const bi_ = idx.safeCast(c_ulong);
 
     if _local {
       mpz_setbit(this.mpz, bi_);
@@ -2912,8 +2922,18 @@ module BigInteger {
     }
   }
 
-  proc bigint.clrbit(bit_index: integral) {
-    const bi_ = bit_index.safeCast(c_ulong);
+  @deprecated("bigint.clrbit is deprecated - please use :proc:`bigint.clearBit`")
+  proc bigint.clrbit(bit_index: integral) do this.clearBit(bit_index);
+
+  /*  Clear the bit at ``idx`` of ``this``.
+
+      Utilizes the GMP function `mpz_clrbit <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling>`_
+
+      :arg idx: the index of the bit to be cleared
+      :type idx: ``integral``
+  */
+  proc bigint.clearBit(idx: integral) {
+    const bi_ = idx.safeCast(c_ulong);
 
     if _local {
       mpz_clrbit(this.mpz, bi_);
@@ -2930,8 +2950,19 @@ module BigInteger {
     }
   }
 
-  proc bigint.combit(bit_index: integral) {
-    const bi_ = bit_index.safeCast(c_ulong);
+  @deprecated("bigint.combit is deprecated - please use :proc:`bigint.toggleBit`")
+  proc bigint.combit(bit_index: integral) do this.toggleBit(bit_index);
+
+  /*  Toggle the bit at ``idx`` of ``this``. If the bit was 1, set it to 0. If
+      the bit was 0, set it to 1.
+
+      Utilizes the GMP function `mpz_combit <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling>`_
+
+      :arg idx: the index of the bit to be toggled
+      :type idx: ``integral``
+  */
+  proc bigint.toggleBit(idx: integral) {
+    const bi_ = idx.safeCast(c_ulong);
 
     if _local {
       mpz_combit(this.mpz, bi_);
@@ -2948,9 +2979,22 @@ module BigInteger {
     }
   }
 
-  proc bigint.tstbit(bit_index: integral) : int {
+  @deprecated("bigint.tstbit is deprecated - please use :proc:`bigint.getBit`")
+  proc bigint.tstbit(bit_index: integral): int do return this.getBit(bit_index);
+
+  /*  Get the bit at ``idx`` of ``this``.
+
+      Utilizes the GMP function `mpz_tstbit <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling>`_
+
+      :arg idx: the index of the bit to be returned
+      :type idx: ``integral``
+
+      :returns: the bit at index ``idx``
+      :rtype: ``int``
+  */
+  proc bigint.getBit(idx: integral): int {
     var t_ = this.localize();
-    const bi_ = bit_index.safeCast(c_ulong);
+    const bi_ = idx.safeCast(c_ulong);
     var  ret: c_int;
 
     ret = mpz_tstbit(t_.mpz, bi_);
