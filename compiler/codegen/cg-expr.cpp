@@ -5410,24 +5410,33 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
     args.push_back(locale);
 
 
-    if (useGpuVersion) {
-      GenRet subloc;
+    if (hasSubloc) {
+      // if the call has subloc argument, first capture/consume it
+      curArg = call->get(curArgIdx++);
 
-      if (hasSubloc) {
-        curArg = call->get(curArgIdx++);
+      if (useGpuVersion) {
+        // we only create an argument if we're using the GPU version of the
+        // runtime call
+        GenRet subloc;
 
         if (curArg->isRefOrWideRef()) {
           subloc = codegenValue(codegenDeref(curArg));
         } else {
           subloc = codegenValue(curArg);
         }
-      }
-      else {
-        subloc = codegenUseGlobal("c_sublocid_any");
-      }
 
-      args.push_back(subloc);
+        args.push_back(subloc);
+      }
     }
+    else {
+      // the call doesn't have a subloc argument
+      if (useGpuVersion) {
+        // but we need to use the GPU version, pass `c_sublocid_any`
+        GenRet subloc = codegenUseGlobal("c_sublocid_any");
+        args.push_back(subloc);
+      }
+    }
+
 
     // source data array
     curArg = call->get(curArgIdx++);
