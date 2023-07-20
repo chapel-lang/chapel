@@ -891,6 +891,47 @@ module BigInteger {
     return c;
   }
 
+  // helper for % and %=, which is different from `mod`
+  private inline proc modTrunc(ref result: bigint,
+                               const ref x: bigint,
+                               const ref y: bigint)
+    do BigInteger.divR(result, x, y, rounding=round.zero);
+
+  // helper for % and %=, which is different from `mod`
+  private inline proc modTrunc(ref result: bigint, const ref x: bigint, y: integral) {
+    if (chpl_checkDivByZero) then
+      if y == 0 then
+        halt("Attempt to divide by zero");
+
+    inline proc helper(ref res, const ref x, y) {
+      if _local {
+        mpz_tdiv_r_ui(res.mpz, x.mpz, y);
+
+      } else if res.localeId == chpl_nodeID {
+        const x_ = x;
+        mpz_tdiv_r_ui(res.mpz, x_.mpz, y);
+
+      } else {
+        const resLoc = chpl_buildLocaleID(res.localeId, c_sublocid_any);
+        on __primitive("chpl_on_locale_num", resLoc) {
+          const x_ = x;
+          mpz_tdiv_r_ui(res.mpz, x_.mpz, y);
+        }
+      }
+    }
+
+    if y.type == uint {
+      helper(result, x, y);
+    }
+    else {
+      var y_ : c_ulong;
+      if y >= 0
+        then y_ = y.safeCast(c_ulong);
+        else y_ = (0 - y).safeCast(c_ulong);
+      helper(result, x, y_);
+    }
+
+  }
 
 
   /* Computes the mod operator on the two arguments, defined as
@@ -900,12 +941,8 @@ module BigInteger {
      It is an error if `b` == 0.
   */
   operator bigint.%(const ref a: bigint, const ref b: bigint): bigint {
-    const a_ = a.localize();
-    const b_ = b.localize();
     var c = new bigint();
-
-    mpz_tdiv_r(c.mpz, a_.mpz, b_.mpz);
-
+    BigInteger.modTrunc(c, a, b);
     return c;
   }
 
@@ -917,16 +954,7 @@ module BigInteger {
   */
   operator bigint.%(const ref a: bigint, b: int): bigint {
     var c = new bigint();
-    const a_ = a.localize();
-    var b_ : c_ulong;
-
-    if b >= 0 then
-      b_ = b.safeCast(c_ulong);
-    else
-      b_ = (0 - b).safeCast(c_ulong);
-
-    mpz_tdiv_r_ui(c.mpz, a_.mpz, b_);
-
+    BigInteger.modTrunc(c, a, b);
     return c;
   }
 
@@ -937,12 +965,8 @@ module BigInteger {
      It is an error if `b` == 0.
   */
   operator bigint.%(const ref a: bigint, b: uint): bigint {
-    const a_ = a.localize();
-    const b_ = b.safeCast(c_ulong);
-    var   c  = new bigint();
-
-    mpz_tdiv_r_ui(c.mpz, a_.mpz, b_);
-
+    var c = new bigint();
+    BigInteger.modTrunc(c, a, b);
     return c;
   }
 
@@ -1210,23 +1234,8 @@ module BigInteger {
      The result is always >= 0 if `a` > 0.
      It is an error if `b` == 0.
   */
-  operator bigint.%=(ref a: bigint, const ref b: bigint) {
-    if _local {
-      mpz_tdiv_r(a.mpz, a.mpz, b.mpz);
-
-    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      mpz_tdiv_r(a.mpz, a.mpz, b.mpz);
-
-    } else {
-      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", aLoc) {
-        const b_ = b;
-
-        mpz_tdiv_r(a.mpz, a.mpz, b_.mpz);
-      }
-    }
-  }
+  operator bigint.%=(ref a: bigint, const ref b: bigint)
+    do BigInteger.modTrunc(a, a, b);
 
   /* Mod ``a`` by ``b``, storing the result in ``a``.
 
@@ -1236,16 +1245,8 @@ module BigInteger {
      The result is always >= 0 if `a` > 0.
      It is an error if `b` == 0.
   */
-  operator bigint.%=(ref a: bigint, b: int) {
-    var b_ = 0 : uint;
-
-    if b >= 0 then
-      b_ = b       : uint;
-    else
-      b_ = (0 - b) : uint;
-
-    a %= b_;
-  }
+  operator bigint.%=(ref a: bigint, b: int)
+    do BigInteger.modTrunc(a, a, b);
 
   /* Mod ``a`` by ``b``, storing the result in ``a``.
 
@@ -1255,23 +1256,8 @@ module BigInteger {
      The result is always >= 0 if `a` > 0.
      It is an error if `b` == 0.
   */
-  operator bigint.%=(ref a: bigint, b: uint) {
-    var b_ = b.safeCast(c_ulong);
-
-    if _local {
-      mpz_tdiv_r_ui(a.mpz, a.mpz, b_);
-
-    } else if a.localeId == chpl_nodeID {
-      mpz_tdiv_r_ui(a.mpz, a.mpz, b_);
-
-    } else {
-      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", aLoc) {
-        mpz_tdiv_r_ui(a.mpz, a.mpz, b_);
-      }
-    }
-  }
+  operator bigint.%=(ref a: bigint, b: uint)
+    do BigInteger.modTrunc(a, a, b);
 
   operator bigint.&=(ref a: bigint, const ref b: bigint) {
     BigInteger.and(a, a, b);
@@ -4200,22 +4186,21 @@ module BigInteger {
      The result is always >= 0 if `b` > 0.
      It is an error if `b` == 0.
   */
-  proc mod(ref result: bigint, const ref a: bigint, const ref b: bigint) {
-    if _local {
-      mpz_fdiv_r(result.mpz, a.mpz, b.mpz);
-    } else if result.localeId == chpl_nodeID {
-      const a_ = a;
-      const b_ = b;
-      mpz_fdiv_r(result.mpz, a_.mpz, b_.mpz);
-    } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
-      on __primitive("chpl_on_locale_num", resultLoc) {
-        const a_ = a;
-        const b_ = b;
-        mpz_fdiv_r(result.mpz, a_.mpz, b_.mpz);
-      }
-    }
-  }
+  pragma "last resort"
+  @deprecated(notes=":proc:`~BigInteger.mod` with named formals `a` and `b` is deprecated, please use the version with `x` and `y` instead")
+  proc mod(ref result: bigint, const ref a: bigint, const ref b: bigint)
+    do BigInteger.mod(result, a, b);
+
+  /* Computes the mod operator on the two arguments, defined as
+     ``mod(a, b) = a - b * floor(a / b)``.
+
+     The result is stored in ``result``.
+
+     The result is always >= 0 if `b` > 0.
+     It is an error if `b` == 0.
+  */
+  proc mod(ref result: bigint, const ref x: bigint, const ref y: bigint)
+    do BigInteger.divR(result, x, y, rounding=round.down);
 
   /* Computes the mod operator on the two arguments, defined as
      ``mod(a, b) = a - b * floor(a / b)``.
@@ -4241,42 +4226,62 @@ module BigInteger {
      The result is always >= 0 if `b` > 0.
      It is an error if `b` == 0.
   */
-  proc mod(ref result: bigint, const ref a: bigint, b: integral) : int {
-    var b_ : c_ulong;
-    var rem: c_ulong;
+  pragma "last resort"
+  @deprecated(notes=":proc:`~BigInteger.mod` with named formals `a` and `b` is deprecated, please use the version with `x` and `y` instead")
+  proc mod(ref result: bigint, const ref a: bigint, b: integral) : int
+    do return BigInteger.mod(result, a, b);
 
-    inline proc helper(ref res, ref rem, const ref a, b) {
+  /* Computes the mod operator on the two arguments, defined as
+     ``mod(a, b) = a - b * floor(a / b)``.
+
+     If b is of an unsigned type, then
+     fewer conditionals will be evaluated at run time.
+
+     The result is stored in ``result`` and returned as an ``int``.
+
+     The result is always >= 0 if `b` > 0.
+     It is an error if `b` == 0.
+  */
+  proc mod(ref result: bigint, const ref x: bigint, y: integral) : int {
+    if (chpl_checkDivByZero) then
+      if y == 0 then
+        halt("Attempt to divide by zero");
+
+    inline proc helper(ref res, ref rem, const ref x, y) {
       if _local {
-        rem = mpz_fdiv_r_ui(res.mpz, a.mpz, b_);
+        rem = mpz_fdiv_r_ui(res.mpz, x.mpz, y);
       } else if res.localeId == chpl_nodeID {
-        const a_ = a;
-        rem = mpz_fdiv_r_ui(res.mpz, a_.mpz, b_);
+        const x_ = x;
+        rem = mpz_fdiv_r_ui(res.mpz, x_.mpz, y);
       } else {
         const resLoc = chpl_buildLocaleID(res.localeId, c_sublocid_any);
         on __primitive("chpl_on_locale_num", resLoc) {
-          const a_ = a;
-          rem = mpz_fdiv_r_ui(res.mpz, a_.mpz, b_);
+          const x_ = x;
+          rem = mpz_fdiv_r_ui(res.mpz, x_.mpz, y);
         }
       }
     }
 
-    if isNonnegative(b) {
-      b_ = b.safeCast(c_ulong);
-      helper(result, rem, a, b_);
+    var y_ : c_ulong;
+    var rem: c_ulong;
+
+    if isNonnegative(y) {
+      y_ = y.safeCast(c_ulong);
+      helper(result, rem, x, y_);
       return rem.safeCast(int);
     } else {
-      if b >= 0 then
-        b_ = b.safeCast(c_ulong);
+      if y >= 0 then
+        y_ = y.safeCast(c_ulong);
       else
-        b_ = (0 - b).safeCast(c_ulong);
+        y_ = (0 - y).safeCast(c_ulong);
 
-      helper(result, rem, a, b_);
+      helper(result, rem, x, y_);
 
       if rem == 0
         then return 0;
-      else if b < 0 {
-        result += b;
-        return rem.safeCast(int) + b;
+      else if y < 0 {
+        result += y;
+        return rem.safeCast(int) + y;
       } else
         return rem.safeCast(int);
     }

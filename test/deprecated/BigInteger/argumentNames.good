@@ -1,0 +1,10 @@
+argumentNames.chpl:7: warning: mod
+argumentNames.chpl:12: warning: mod with named formals `a` and `b` is deprecated, please use the version with `x` and `y` instead
+argumentNames.chpl:14: warning: mod with named formals `a` and `b` is deprecated, please use the version with `x` and `y` instead
+mod
+3
+0
+3
+-1
+3
+1
