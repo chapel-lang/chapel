@@ -9127,9 +9127,9 @@ C         Chapel       Meaning
 
 Unlike in C, a value of the wrong type will be cast appropriately - so for
 example printing 2 (an ``int``)  with ``%.2dr`` will result in ``2.00``.  Note
-that ``%n`` and ``%t`` are equivalent to ``%r`` for real conversions and ``%i``
+that ``%n`` and ``%?`` are equivalent to ``%r`` for real conversions and ``%i``
 for numeric conversions; so these are also equivalent to ``%i`` ``%d`` or
-``%g`` in C. Also note that Chapel format strings includes many capabilities
+``%g`` in C. Also note that Chapel format strings include many capabilities
 not available with C formatted I/O routines - including quoted strings,
 binary numbers, and complex numbers.
 
@@ -9420,16 +9420,72 @@ General Conversions
 
 ``%t``
  read or write the object according to its readThis/writeThis routine
+
+  .. warning::
+    ``%t`` is deprecated and should be replaced with ``%?`` which will invoke
+    the ``fileReader``/``fileWriter``'s serializer/deserializer to execute IO
+    operations for the associated argument.
+
 ``%jt``
  read or write an object in JSON format using readThis/writeThis
+
+  .. warning::
+    ``%jt`` is deprecated and should be replaced with ``%?`` on a ``fileWriter``
+    or ``fileReader`` configured with the JSON Serializer or Deserializer
+    respectively. Example:
+
+    .. code-block:: chapel
+
+      use IO, JSON;
+
+      record R {
+        // fields...
+      }
+
+      var f = open("data.json"),
+          r: R;
+
+      // write an 'R' in JSON format
+      f.writer(serializer = new JsonSerializer()).writef("%?", new R(/* ... */));
+
+      // read into an 'R' from JSON format
+      f.reader(deserializer = new JsonDeserializer()).readf("%?", r);
+
 ``%ht``
  read or write an object in Chapel syntax using readThis/writeThis
+
+  .. warning::
+    ``%ht`` is deprecated and should be replaced with ``%?`` on a ``fileWriter``
+    or ``fileReader`` configured with the Chapel-Format Serializer or
+    Deserializer respectively. Example:
+
+    .. code-block:: chapel
+
+      use IO, ChplFormat;
+
+      record R {
+        // fields...
+      }
+
+      var f = open("data.json"),
+          r: R;
+
+      // write an 'R' in Chapel Syntax format
+      f.writer(serializer = new ChplSerializer()).writef("%?", new R(/* ... */))
+
+      // read into an 'R' from Chapel Syntax format
+      f.reader(deserializer = new ChplDeserializer()).readf("%?", r);
+
 ``%|t``
  read or write an object in binary native-endian with readThis/writeThis *(deprecated)*
 ``%<t``
  read or write an object little-endian in binary with readThis/writeThis *(deprecated)*
 ``%>t``
  read or write an object big-endian in binary with readThis/writeThis *(deprecated)*
+
+``%?``
+ Use the ``fileReader``/``fileWriter``'s associated serializer/deserializer to write
+ or read a value.
 
 Note About Whitespace
 +++++++++++++++++++++
