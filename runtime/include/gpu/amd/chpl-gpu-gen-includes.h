@@ -208,6 +208,16 @@ GPU_3OP_ATOMIC(unsigned int,           chpl_gpu_atomic_CAS_uint,      atomicCAS)
 GPU_3OP_ATOMIC(unsigned long long int, chpl_gpu_atomic_CAS_ulonglong, atomicCAS);
 // [*] GPU_3OP_ATOMIC(unsigned short int,     chpl_gpu_atomic_CAS_ushort, atomicCAS);
 
+__device__ static inline
+void chpl_gen_comm_get_gpu(void *addr, c_nodeid_t src_node,
+                           c_sublocid_t src_subloc, void* raddr, size_t size,
+                           int32_t commID, int ln, int32_t fn) { }
+
+__device__ static inline
+void chpl_gen_comm_put_gpu(void* addr,
+                           c_nodeid_t dst_node, c_sublocid_t dst_subloc,
+                           void* raddr, size_t size, int32_t commID, int ln,
+                           int32_t fn) { }
 #endif // HAS_GPU_LOCALE
 
 #endif // _CHPL_GPU_GEN_INCLUDES_H
