@@ -1323,7 +1323,15 @@ module BigInteger {
   }
 
 
-  // Special Operations
+  /*  Returns the Jacobi symbol ``a/b``, which is definied only when ``b`` is odd.
+
+      Utilizes the GMP function `mpz_jacobi
+      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+
+      :return: the Jacobi symbol
+      :rtype: ``int``
+  */
+  @unstable("jacobi is unstable and may move in the future")
   proc jacobi(const ref a: bigint, const ref b: bigint) : int {
     const a_ = a.localize();
     const b_ = b.localize();
@@ -1336,6 +1344,15 @@ module BigInteger {
 
 
 
+  /*  Returns the Legendre symbol ``a/p``, which is definied only when ``p`` is an odd positive prime number.
+
+      Utilizes the GMP function `mpz_legendre
+      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+
+      :return: the Legendre symbol
+      :rtype: ``int``
+  */
+  @unstable("legendre is unstable and may move in the future")
   proc legendre(const ref a: bigint, const ref p: bigint) : int {
     const a_ = a.localize();
     const p_ = p.localize();
@@ -1348,7 +1365,18 @@ module BigInteger {
 
 
 
-  // kronecker
+  /*  Returns the Jacobi symbol ``a/b`` with the Kronecker extension. When
+      ``b`` is odd this is the same as the Jacobi symbol.
+
+      Utilizes the GMP function `mpz_kronecker
+      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+
+      There are overloads to make either ``a`` or ``b`` an ``int`` or ``uint`` which use the corresponding GMP functions.
+
+      :return: the Kronecker symbol
+      :rtype: ``int``
+  */
+  @unstable("kronecker is unstable and may move in the future")
   proc kronecker(const ref a: bigint, const ref b: bigint) : int {
     var ret : c_int;
 
@@ -1360,6 +1388,8 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
+  @chpldoc.nodoc
+  @unstable("kronecker is unstable and may move in the future")
   proc kronecker(const ref a: bigint, b: int) : int {
     const a_ = a.localize();
     const b_ = b.safeCast(c_long);
@@ -1370,6 +1400,8 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
+  @chpldoc.nodoc
+  @unstable("kronecker is unstable and may move in the future")
   proc kronecker(a: int, const ref b: bigint) : int {
     const a_ = a.safeCast(c_long);
     const b_ = b.localize();
@@ -1380,6 +1412,8 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
+  @chpldoc.nodoc
+  @unstable("kronecker is unstable and may move in the future")
   proc kronecker(const ref a: bigint, b: uint) : int {
     const a_ = a.localize();
     const b_ = b.safeCast(c_ulong);
@@ -1390,6 +1424,8 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
+  @chpldoc.nodoc
+  @unstable("kronecker is unstable and may move in the future")
   proc kronecker(a: uint, const ref b: bigint) : int {
     const a_ = a.safeCast(c_ulong);
     const b_ = b.localize();
@@ -2297,6 +2333,21 @@ module BigInteger {
     BigInteger.nextprime(this, a);
   }
 
+  /*  Set ``result`` to the greatest common divisor of ``a`` and ``b``
+
+      Utilizes the GMP function `mpz_gcd
+      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+
+      :arg result: Where the result is stored
+      :type result: :record:`bigint`
+
+      :arg a: One of the numbers to compute the greatest common divisor of
+      :type a: :record:`bigint`
+
+      :arg b: One of the numbers to compute the greatest common divisor of
+      :type b: :record:`bigint`, ``int``, ``uint``
+  */
+  @unstable("gcd is unstable and may move in the future")
   proc gcd(ref result: bigint, const ref a: bigint, const ref b: bigint) {
     if compiledForSingleLocale() {
       mpz_gcd(result.mpz, a.mpz, b.mpz);
@@ -2319,6 +2370,8 @@ module BigInteger {
     BigInteger.gcd(this, a, b);
   }
 
+  @chpldoc.nodoc
+  @unstable("gcd is unstable and may move in the future")
   proc gcd(ref result: bigint, const ref a: bigint, b: int) {
     if b >= 0 {
       BigInteger.gcd(result, a, b : uint);
@@ -2333,6 +2386,8 @@ module BigInteger {
     BigInteger.gcd(this, a, b);
   }
 
+  @chpldoc.nodoc
+  @unstable("gcd is unstable and may move in the future")
   proc gcd(ref result: bigint, const ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
     if compiledForSingleLocale() {
@@ -2361,7 +2416,8 @@ module BigInteger {
         The result stored in ``result`` is always positive, even if one or
         both of ``a`` and ``b`` are negative (or zero if both are zero).
 
-     This fulfills the same role as the GMP function ``mpz_gcdext``.
+     This fulfills the same role as the GMP function `mpz_gcdext
+     <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
 
      :arg result: Where the result is stored
      :type result: :record:`bigint`
@@ -2378,6 +2434,7 @@ module BigInteger {
      :arg t: The returned coefficient that can be multiplied by ``b``.
      :type t: :record:`bigint`
    */
+  @unstable("gcd is unstable and may move in the future")
   proc gcd(ref result: bigint, const ref a: bigint, const ref b: bigint,
                   ref s: bigint, ref t: bigint): void {
     if compiledForSingleLocale() {
@@ -2412,7 +2469,8 @@ module BigInteger {
         The result stored in ``this`` is always positive, even if one or
         both of ``a`` and ``b`` are negative (or zero if both are zero).
 
-     This fulfills the same role as the GMP function ``mpz_gcdext``.
+     This fulfills the same role as the GMP function `mpz_gcdext
+     <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
 
      :arg a: One of the numbers to compute the greatest common divisor of
      :type a: :record:`bigint`
@@ -2809,7 +2867,7 @@ module BigInteger {
     do BigInteger.lucNum2(result, fnsub1, n);
 
   /*  Set ``result`` to the ``n`` th Lucas number and set ``fnsub1`` to the
-      ``n-1``th Lucas number.
+      ``n-1`` th Lucas number.
 
       Utilizes the GMP function `mpz_lucnum2_ui
       <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
