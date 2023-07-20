@@ -1,4 +1,4 @@
-$CHPL_HOME/modules/standard/Set.chpl:nnnn: In method '_addElem':
-$CHPL_HOME/modules/standard/Set.chpl:nnnn: error: No hash function found for R
-  $CHPL_HOME/modules/standard/Set.chpl:nnnn: called as (set(R,false))._addElem(elem: R) from method 'add'
+$CHPL_HOME/modules/standard/Set.chpl:326: In method '_addElem':
+$CHPL_HOME/modules/standard/Set.chpl:339: error: No hash function found for R
+  $CHPL_HOME/modules/standard/Set.chpl:384: called as (set(R,false))._addElem(elem: R) from method 'add'
   noHashForRecordWithEq.chpl:28: called as (set(R,false)).add(element: R)
