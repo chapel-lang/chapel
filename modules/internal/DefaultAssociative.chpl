@@ -430,7 +430,7 @@ module DefaultAssociative {
     }
   }
 
-  class DefaultAssociativeArr: AbsBaseArr {
+  class DefaultAssociativeArr: AbsBaseArr(?) {
     type idxType;
     param parSafeDom: bool;
     var dom: unmanaged DefaultAssociativeDom(idxType, parSafe=parSafeDom);

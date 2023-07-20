@@ -295,7 +295,7 @@ private proc locDescTypeHelper(param rank : int, type idxType, dom1, dom2) type 
   return unmanaged LocDimensionalDom(domain(rank, idxType, str), d1type, d2type);
 }
 
-class DimensionalDom : BaseRectangularDom {
+class DimensionalDom : BaseRectangularDom(?) {
   // required
   const dist; // not reprivatized
 
@@ -351,7 +351,7 @@ class LocDimensionalDom {
   var doml1, doml2;
 }
 
-class DimensionalArr : BaseRectangularArr {
+class DimensionalArr : BaseRectangularArr(?) {
   // required
   const dom; // must be a DimensionalDom
 

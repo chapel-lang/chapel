@@ -179,7 +179,7 @@ proc Replicated.dsiPrivatize(privatizeData)
 //
 // global domain class
 //
-class ReplicatedDom : BaseRectangularDom {
+class ReplicatedDom : BaseRectangularDom(?) {
   // we need to be able to provide the domain map for our domain - to build its
   // runtime type (because the domain map is part of the type - for any domain)
   // (looks like it must be called exactly 'dist')
@@ -386,7 +386,7 @@ proc ReplicatedDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
 //
 // global array class
 //
-class ReplicatedArr : AbsBaseArr {
+class ReplicatedArr : AbsBaseArr(?) {
   // These two are hard-coded in the compiler - it computes the array's
   // type string as '[dom.type] eltType.type'
   const dom; // must be a ReplicatedDom

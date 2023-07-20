@@ -494,7 +494,7 @@ proc LocBlockCyclic.writeThis(x) throws {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Domain Class
 //
-class BlockCyclicDom: BaseRectangularDom {
+class BlockCyclicDom: BaseRectangularDom(?) {
   //
   // LEFT LINK: a pointer to the parent distribution
   //
@@ -845,7 +845,7 @@ proc LocBlockCyclicDom._sizes {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Array Class
 //
-class BlockCyclicArr: BaseRectangularArr {
+class BlockCyclicArr: BaseRectangularArr(?) {
 
   //
   // LEFT LINK: the global domain descriptor for this array

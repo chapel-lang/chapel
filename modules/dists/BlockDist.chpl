@@ -355,7 +355,7 @@ class LocBlock {
 // locDoms:   a non-distributed array of local domain classes
 // whole:     a non-distributed domain that defines the domain's indices
 //
-class BlockDom: BaseRectangularDom {
+class BlockDom: BaseRectangularDom(?) {
   type sparseLayoutType;
   const dist: unmanaged Block(rank, idxType, sparseLayoutType);
   var locDoms: [dist.targetLocDom] unmanaged LocBlockDom(rank, idxType, strides);
@@ -388,7 +388,7 @@ class LocBlockDom {
 // locArr: a non-distributed array of local array classes
 // myLocArr: optimized reference to here's local array class (or nil)
 //
-class BlockArr: BaseRectangularArr {
+class BlockArr: BaseRectangularArr(?) {
   type sparseLayoutType;
   var doRADOpt: bool = defaultDoRADOpt;
   var dom: unmanaged BlockDom(rank, idxType, strides, sparseLayoutType);
