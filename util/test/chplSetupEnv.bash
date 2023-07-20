@@ -7,6 +7,21 @@
 # $SPACK_ROOT/share/spack/setup-env.sh, which ends up inadvertedly exporting
 # the MODULEPATH variable if called from within a function.
 
+# From
+# <https://stackoverflow.com/questions/2683279/how-to-detect-if-a-script-is-being-sourced>.
+# This script only works if its been sourced so warn the user if it's been
+# invoked some other way.
+(
+  [[ -n $ZSH_VERSION && $ZSH_EVAL_CONTEXT =~ :file$ ]] ||
+  [[ -n $KSH_VERSION && "$(cd -- "$(dirname -- "$0")" && pwd -P)/$(basename -- "$0")" != "$(cd -- "$(dirname -- "${.sh.file}")" && pwd -P)/$(basename -- "${.sh.file}")" ]] ||
+  [[ -n $BASH_VERSION ]] && (return 0 2>/dev/null)
+) && _chplSetupEnv_sourced=1 || _chplSetupEnv_sourced=0
+
+if [[ "$_chplSetupEnv_sourced" == "0" ]]; then
+  >&2 echo "In order to work correctly, the chplSetupEnv must be sourced (invoked like '. chplSetupEnv' or 'source chplSetupEnv')."
+  exit 1
+fi
+
 _chplSetupEnv_suffix="bash"
 _chplSetupEnv_pathsToRun=("/data/cf/chapel/chplSetup/" "/chapel/data/chaptools/chplSetup" "/cray/css/users/chapelu/chplSetup" "$HOME/.chplSetup" "$(pwd)/chplSetup")
 _chplSetupEnv_shortHost=$(hostname -s)
@@ -29,6 +44,10 @@ for _chplSetupEnv_VAR in "$@"; do
     _chplSetupEnv_featureSet="$_chplSetupEnv_VAR"
   fi
 done
+
+# Fail to do this and the arguments will get propoagated to any scripts we
+# source:
+shift $#
 
 if [[ ! "$_chplSetupEnv_noBaseCfg" == "y" ]]; then
   _chplSetupEnv_featureSet="base:$_chplSetupEnv_featureSet"
@@ -53,7 +72,7 @@ for _chplSetupEnv_feature in ${_chplSetupEnv_featureSet//:/ }; do
         source "$_chplSetupEnv_p/$_chplSetupEnv_feature.$_chplSetupEnv_suffix"
       fi
     fi
-      
+
     # Run <feature>.<hostname>.bash
     if [ -f "$_chplSetupEnv_p/$_chplSetupEnv_feature.$_chplSetupEnv_shortHost.$_chplSetupEnv_suffix" ]; then
       if [[ "$_chplSetupEnv_dryRun" == "y" ]]; then
