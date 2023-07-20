@@ -1,0 +1,2 @@
+bug: transitive public uses don't seem to work.
+https://github.com/chapel-lang/chapel/issues/22749

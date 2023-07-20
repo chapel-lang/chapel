@@ -2214,6 +2214,7 @@ module ChapelDomain {
 
       :returns: Domain index for a given order in the domain.
     */
+    @unstable("domain.orderToIndex() is unstable and its behavior may change in the future")
     proc orderToIndex(order: int) where (this.isRectangular() && isNumericType(this.idxType)){
 
       if boundsChecking then
@@ -2283,6 +2284,7 @@ module ChapelDomain {
     }
 
     @chpldoc.nodoc
+    @unstable("domain.expand() is unstable and its behavior may change in the future")
     proc expand(off: integral ...rank) do return expand(off);
 
     /* Return a new domain that is the current domain expanded by
@@ -2294,6 +2296,7 @@ module ChapelDomain {
        it means to expand a range.
 
      */
+    @unstable("domain.expand() is unstable and its behavior may change in the future")
     proc expand(off: rank*integral) {
       var ranges = dims();
       for i in 0..rank-1 do {
@@ -2313,6 +2316,7 @@ module ChapelDomain {
        See :proc:`ChapelRange.range.expand` for further information about what
        it means to expand a range.
      */
+    @unstable("domain.expand() is unstable and its behavior may change in the future")
     proc expand(off: integral) where rank > 1 {
       var ranges = dims();
       for i in 0..rank-1 do
@@ -2331,6 +2335,7 @@ module ChapelDomain {
     }
 
     @chpldoc.nodoc
+    @unstable("domain.exterior() is unstable and its behavior may change in the future")
     proc exterior(off: integral ...rank) do return exterior(off);
 
     /* Return a new domain that is the exterior portion of the
@@ -2343,6 +2348,7 @@ module ChapelDomain {
        it means to compute the exterior of a range.
 
      */
+    @unstable("domain.exterior() is unstable and its behavior may change in the future")
     proc exterior(off: rank*integral) {
       var ranges = dims();
       for i in 0..rank-1 do
@@ -2360,6 +2366,7 @@ module ChapelDomain {
        it means to compute the exterior of a range.
 
      */
+    @unstable("domain.exterior() is unstable and its behavior may change in the future")
     proc exterior(off:integral) where rank != 1 {
       var offTup: rank*off.type;
       for i in 0..rank-1 do
@@ -2378,6 +2385,7 @@ module ChapelDomain {
     }
 
     @chpldoc.nodoc
+    @unstable("domain.interior() is unstable and its behavior may change in the future")
     proc interior(off: integral ...rank) do return interior(off);
 
     /* Return a new domain that is the interior portion of the
@@ -2390,6 +2398,7 @@ module ChapelDomain {
        it means to compute the exterior of a range.
 
      */
+    @unstable("domain.interior() is unstable and its behavior may change in the future")
     proc interior(off: rank*integral) {
       var ranges = dims();
       for i in 0..rank-1 do {
@@ -2412,6 +2421,7 @@ module ChapelDomain {
        it means to compute the exterior of a range.
 
      */
+    @unstable("domain.interior() is unstable and its behavior may change in the future")
     proc interior(off: integral) where rank != 1 {
       var offTup: rank*off.type;
       for i in 0..rank-1 do
@@ -2437,6 +2447,7 @@ module ChapelDomain {
     // index type.  This is handled in the range.translate().
     //
     @chpldoc.nodoc
+    @unstable("domain.translate() is unstable and its behavior may change in the future")
     proc translate(off: integral ...rank) do return translate(off);
 
     /* Return a new domain that is the current domain translated by
@@ -2446,6 +2457,7 @@ module ChapelDomain {
        what it means to translate a range.
 
      */
+    @unstable("domain.translate() is unstable and its behavior may change in the future")
     proc translate(off: rank*integral) {
       var ranges = dims();
       for i in 0..rank-1 do
@@ -2460,6 +2472,7 @@ module ChapelDomain {
        what it means to translate a range.
 
      */
+    @unstable("domain.translate() is unstable and its behavior may change in the future")
     proc translate(off: integral) where rank != 1 {
       var offTup: rank*off.type;
       for i in 0..rank-1 do
