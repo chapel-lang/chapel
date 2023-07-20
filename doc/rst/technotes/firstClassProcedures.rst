@@ -8,27 +8,27 @@ First-class Procedures in Chapel
 
   The ``lambda`` keyword (used to construct an anonymous procedure) has been
   deprecated as of the 1.31 release. The ``func()`` procedure type constructor
-  has also been deprecated. Users should make use of the ``proc()`` syntax
-  described in this document instead.
+  has also been deprecated. Instead, users should make use of the ``proc()``
+  syntax described in this document.
 
 .. note::
 
   First-class procedures are under active development and are provided
   in their prototype form as a preview and to gather user feedback.
 
-The 1.31 release of Chapel introduced new ``proc()`` syntax for constructing
+The 1.31 release of Chapel introduced ``proc()`` syntax for constructing
 anonymous procedures and procedure types. The next few sections provide 
 details about this syntax.
 
 The section :ref:`Capturing_First_Class_Procedures` describes when a
-procedure  may be used as a value. The restrictions in this section may
+procedure may be used as a value. The restrictions in this section may
 weaken as development of first-class procedures continues.
 
-New Syntax for Constructing Procedure Types
--------------------------------------------
+Procedure Types
+---------------
 
-Procedure types may now be constructed using new syntax which mirrors
-the syntax for procedure definition.
+Procedure types may be constructed using syntax which mirrors the
+syntax for named procedure definition.
 
 To construct the type of a procedure which takes two integers and
 returns an integer, users may write the following:
@@ -40,43 +40,40 @@ returns an integer, users may write the following:
 
 
 .. note::
-
-  The implementation currently expects a token with the text ``proc(`` when
-  defining an anonymous procedure or procedure type. Users have expressed
-  confusion about how writing ``proc (`` (the ``proc`` token, followed by
-  one or more spaces, followed by a ``(`` token) results in a syntax error.
-  This restriction is a parsing limitation and may be removed in the future.
+  Currently ``proc(`` must be written without any spaces occurring between
+  ``proc`` and the open parenthesis ``(``. Otherwise the compiler will
+  report a syntax error. This is an implementation restriction and may be
+  removed in the future.
 
 Notice that the formals of the procedure type have specified names,
-``x`` and ``y``. Currently, formal names participate in typing such
-that a procedure defined with formals named ``x`` and ``y`` cannot be
-assigned to a procedure defined with different formal names. In the
-below example, assignment of two procedure values will fail because
-the formal names are different:
+``x`` and ``y``. Currently, the intention is for formal names to participate
+in typing such that two procedures that vary only by their formal names
+have different types. In the below example, assignment of two procedure
+values will fail because the formal names are different:
 
 .. code-block:: chapel
 
   proc foo(x: int, y: int): int { return x + y; }
   proc bar(a: int, b: int): int { return a + b; }
   writeln(foo.type:string);   // 'proc(x: int, y: int): int'
-  var x = foo;                // ^ (same type) ^
+  var x = foo;                // 'x' is typed 'proc(x: int, y: int): int'
   writeln(bar.type:string);   // 'proc(a: int, b: int): int'
   x = bar;                    // Error!
 
-There are scenarios where a user may want to pass around procedures 
+There are scenarios where a user may want to pass around procedures
 without regard for their formal names. Anonymous ``_`` formals are a
-feature under active development that are intended to support this
+feature under active development that is intended to support this
 behavior.
 
-New Syntax for Constructing Anonymous Procedures 
-------------------------------------------------
+Anonymous Procedures
+--------------------
 
-A new syntax for constructing anonymous procedures has been introduced
-which more closely mirrors traditional procedure definition.
+The syntax for constructing anonymous procedures also mirrors named
+procedure definition.
 
 .. code-block:: chapel
 
-  // Define a procedure named 'foo'.
+  // The procedure named 'foo' is not an anonymous procedure.
   proc foo(x: int, y: int): int { return x + y; }
 
   // Define an anonymous procedure bound to the constant variable 'bar'.
@@ -87,15 +84,16 @@ The Formals of Procedure Types May Be Anonymous
 
 .. note::
 
-  This section describes unstable functionality that may not be implemented.
+  Currently, anonymous formals are not implemented for either procedure
+  types or procedure definitions. These features may be added in the
+  future.
 
-A formal in a procedure type may be anonymous. This may be done by
+A formal in a procedure type may be anonymous. This can be done by
 naming the formal ``_``, similar to what is written to discard
 tuple elements when de-tupling.
 
-An anonymous formal in a procedure type indicates that values of this
-type may have formals with any name. The formal name no longer plays
-a significant role in typing.
+If a procedure type `T` declares a formal at position `N` to be anonymous,
+then a value of type `T` may use any name for its formal at position `N`.
 
 .. code-block:: chapel
 
@@ -118,15 +116,18 @@ procedures `foo` and `bar` to be assigned freely to `x`.
 
 .. note::
 
-  Currently, it is not possible for procedure definitions to declare
-  anonymous formals. It has been indicated that such a feature might
-  be useful, so it may be added in the future.
-
-.. note::
-
-  It is undecided as to whether a procedure may mix anonymous formal
+  It is undecided as to whether a procedure type may mix anonymous formal
   names with named formals, or if all formals must be either named
   or anonymous.
+
+Procedure definitions may declare anonymous formals as well. When a formal
+is declared anonymous, it cannot be referenced within the body of the
+procedure.
+
+.. code-block:: chapel
+
+  // The second formal of 'baz' is anonymous and cannot be used.
+  proc baz(x: int, _: int): int { return x + 1; }
 
 .. _Capturing_First_Class_Procedures:
 
@@ -140,8 +141,8 @@ For example:
 .. code-block:: chapel
 
   proc myfunc(x:int) { return x + 1; }
-  var f = myfunc;
-  writeln(f(3));  // outputs: 4
+  const p = myfunc;
+  writeln(p(3));  // outputs: 4
 
 Anonymous procedures may be captured as though they are named procedures,
 by substituting them in places where a procedure name may also appear:
@@ -151,8 +152,8 @@ by substituting them in places where a procedure name may also appear:
   const p = proc(x: int) { return x + 1; };
   writeln(p(3));  // outputs: 4
 
-Only procedures (defined with the ``proc`` keyword) may be captured.
-Additionally, a captured procedure must not:
+Today, only procedures (defined with the ``proc`` keyword) may be
+captured. Additionally, a captured procedure must not:
 
 - Refer to any outer variable that is not at module scope
 - Have a `type` or `param` return type
@@ -174,10 +175,10 @@ Capturing a procedure that refers to outer scope variables necessitates the
 creation of a closure. Closure support will be added at a later date,
 at which point this restriction will be removed.
 
-Procedures with `type` or `param` return types cannot be captured because
-such procedures must be evaluatable at compile-time. The notion of a `param`
-first-class procedure has been considered as a way to circumvent this
-restriction, but has not been fully explored at this time.
+Procedures with `type` or `param` formals or return types cannot be captured
+because such procedures must be evaluatable at compile-time. The notion of a
+`param` first-class procedure has been considered as a way to circumvent
+this restriction, but has not been fully explored at this time.
 
 Overloaded procedures cannot be captured without further disambiguation.
 This is left as future work.
