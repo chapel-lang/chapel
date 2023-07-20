@@ -1730,6 +1730,9 @@ private inline proc rangeCastHelper(r, type t) throws {
   @chpldoc.nodoc
   @deprecated("range.boundsCheck() is deprecated, consider using range.contains() instead")
   inline proc range.boundsCheck(other: range(?e,?b,?s))
+    do return this.chpl_boundsCheck(other);
+
+  inline proc range.chpl_boundsCheck(other: range(?e,?b,?s))
   {
     if ! this.isAligned() || ! other.isAligned()
       then return false;
@@ -1746,6 +1749,11 @@ private inline proc rangeCastHelper(r, type t) throws {
      otherwise. */
   @deprecated("range.boundsCheck() is deprecated, please use range.contains() instead")
   inline proc range.boundsCheck(other: idxType) do
+    return contains(other);
+
+  // used in checkRankChange(args) where each args(i) can be
+  // either a range or an individual index
+  inline proc range.chpl_boundsCheck(other: idxType) do
     return contains(other);
 
 
