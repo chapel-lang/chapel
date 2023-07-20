@@ -2276,7 +2276,7 @@ module BigInteger {
       :arg x: the ``result`` will be a prime number bigger than this value
       :type x: ``bigint``
   */
-  @unstable("bigint.nextPrime is unstable and may move in the future")
+  @unstable("nextPrime is unstable and may move in the future")
   proc nextPrime(ref result: bigint, const ref x: bigint) {
     if compiledForSingleLocale() {
       mpz_nextprime(result.mpz, x.mpz);
