@@ -2270,6 +2270,9 @@ module BigInteger {
     probability of less than ``4^(-reps)``.  Reasonable values of ``reps`` are
     between 15 and 50.
 
+    Utilizes the GMP function `mpz_probab_prime_p
+    <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+
     :arg reps: number of attempts before returning ``primality.maybePrime`` if
                a definitive answer can't be found before then.
     :type reps: ``int``
@@ -2278,6 +2281,7 @@ module BigInteger {
               ``primality.notPrime``.
     :rtype: :enum:`primality`
    */
+  @unstable("bigint.probablyPrime is unstable and may move in the future")
   proc bigint.probablyPrime(reps: int) : primality {
     var t_ = this.localize();
     var reps_ = reps.safeCast(c_int);
@@ -2729,7 +2733,12 @@ module BigInteger {
   }
 
 
-  // Factorial
+  /*  Set ``result`` to the factorial of ``a``
+
+      Utilizes the GMP function `mpz_fac_ui
+      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+  */
+  @unstable("fac is unstable and may move in the future")
   proc fac(ref result: bigint, a: integral) {
     const a_ = a.safeCast(c_ulong);
     if compiledForSingleLocale() {
@@ -2751,7 +2760,14 @@ module BigInteger {
 
 
 
-  // Binomial
+  /*  Set ``result`` to the binomial coefficient of ``n`` over ``k``.
+
+      Utilizes the GMP function `mpz_fac_ui
+      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+
+      ``n`` can also be a ``uint``.
+  */
+  @unstable("bin is unstable and may move in the future")
   proc bin(ref result: bigint, const ref n: bigint, k: integral) {
     const k_ = k.safeCast(c_ulong);
     if compiledForSingleLocale() {
@@ -2773,6 +2789,8 @@ module BigInteger {
     BigInteger.bin(this, n, k);
   }
 
+  @chpldoc.nodoc
+  @unstable("bin is unstable and may move in the future")
   proc bin(ref result: bigint, n: uint, k: integral) {
     if n >= 0 {
       const n_ = n.safeCast(c_ulong);
@@ -2800,7 +2818,18 @@ module BigInteger {
 
 
 
-  // Fibonacci
+  /*  Set ``result`` to the ``n`` th Fibonacci number.
+
+      Utilizes the GMP function `mpz_fib_ui
+      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+
+      :arg result: return value that will contain the Fibonacci number
+      :type result: :record:`bigint`
+
+      :arg n: which Fibonacci number to compute for ``result``.
+      :type n: ``integral``
+  */
+  @unstable("fib2 is unstable and may move in the future")
   proc fib(ref result: bigint, n: integral) {
     const n_ = n.safeCast(c_ulong);
 
@@ -2821,6 +2850,23 @@ module BigInteger {
     BigInteger.fib(this, n);
   }
 
+  /*  Set ``result`` to the ``n`` th Fibonacci number and set ``fnsub1`` to the
+      ``n-1`` th Fibonacci number.
+
+      Utilizes the GMP function `mpz_fib2_ui
+      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+
+      :arg result: return value that will contain the Fibonacci number
+      :type result: :record:`bigint`
+
+      :arg fnsub1: return value that will contain the previous Fibonacci number
+      :type fnsub1: :record:`bigint`
+
+      :arg n: which Fibonacci number to compute for ``result``. ``fnsub1`` is set
+              to the ``n-1`` Fibonacci number.
+      :type n: ``integral``
+  */
+  @unstable("fib2 is unstable and may move in the future")
   proc fib2(ref result: bigint, ref fnsub1: bigint, n: integral) {
     const n_ = n.safeCast(c_ulong);
 
