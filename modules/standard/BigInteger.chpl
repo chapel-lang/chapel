@@ -1323,7 +1323,15 @@ module BigInteger {
   }
 
 
-  // Special Operations
+  /*  Returns the Jacobi symbol ``a/b``, which is definied only when ``b`` is odd.
+
+      Utilizes the GMP function `mpz_jacobi
+      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+
+      :return: the Jacobi symbol
+      :rtype: ``int``
+  */
+  @unstable("jacobi is unstable and may change in the future")
   proc jacobi(const ref a: bigint, const ref b: bigint) : int {
     const a_ = a.localize();
     const b_ = b.localize();
@@ -1336,6 +1344,15 @@ module BigInteger {
 
 
 
+  /*  Returns the Legendre symbol ``a/p``, which is definied only when ``p`` is an odd positive prime number.
+
+      Utilizes the GMP function `mpz_legendre
+      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+
+      :return: the Legendre symbol
+      :rtype: ``int``
+  */
+  @unstable("legendre is unstable and may change in the future")
   proc legendre(const ref a: bigint, const ref p: bigint) : int {
     const a_ = a.localize();
     const p_ = p.localize();
@@ -1348,7 +1365,18 @@ module BigInteger {
 
 
 
-  // kronecker
+  /*  Returns the Jacobi symbol ``a/b`` with the Kronecker extension. When
+      ``b`` is odd this is the same as the Jacobi symbol.
+
+      Utilizes the GMP function `mpz_kronecker
+      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+
+      There are overloads to make either ``a`` or ``b`` an ``int`` or ``uint`` which use the corresponding GMP functions.
+
+      :return: the Kronecker symbol
+      :rtype: ``int``
+  */
+  @unstable("kronecker is unstable and may change in the future")
   proc kronecker(const ref a: bigint, const ref b: bigint) : int {
     var ret : c_int;
 
@@ -1360,6 +1388,8 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
+  @chpldoc.nodoc
+  @unstable("kronecker is unstable and may change in the future")
   proc kronecker(const ref a: bigint, b: int) : int {
     const a_ = a.localize();
     const b_ = b.safeCast(c_long);
@@ -1370,6 +1400,8 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
+  @chpldoc.nodoc
+  @unstable("kronecker is unstable and may change in the future")
   proc kronecker(a: int, const ref b: bigint) : int {
     const a_ = a.safeCast(c_long);
     const b_ = b.localize();
@@ -1380,6 +1412,8 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
+  @chpldoc.nodoc
+  @unstable("kronecker is unstable and may change in the future")
   proc kronecker(const ref a: bigint, b: uint) : int {
     const a_ = a.localize();
     const b_ = b.safeCast(c_ulong);
@@ -1390,8 +1424,10 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
+  @chpldoc.nodoc
+  @unstable("kronecker is unstable and may change in the future")
   proc kronecker(a: uint, const ref b: bigint) : int {
-    const a_ = b.safeCast(c_ulong);
+    const a_ = a.safeCast(c_ulong);
     const b_ = b.localize();
     var  ret : c_int;
 
@@ -2197,18 +2233,6 @@ module BigInteger {
 
   // Number Theoretic Functions
 
-  /*
-    .. warning::
-
-       bigint.probab_prime_p is deprecated, use bigint.probablyPrime instead
-  */
-  @deprecated
-  ("bigint.probab_prime_p is deprecated, use bigint.probablyPrime instead")
-  proc bigint.probab_prime_p(reps: int) : int {
-    var ret = this.probablyPrime(reps):int;
-    return ret;
-  }
-
   /* An enumeration of the different possibilities of a number being prime, for use with e.g.
      :proc:`~bigint.probablyPrime` to determine if a number is prime or not.
 
@@ -2234,6 +2258,9 @@ module BigInteger {
     probability of less than ``4^(-reps)``.  Reasonable values of ``reps`` are
     between 15 and 50.
 
+    Utilizes the GMP function `mpz_probab_prime_p
+    <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+
     :arg reps: number of attempts before returning ``primality.maybePrime`` if
                a definitive answer can't be found before then.
     :type reps: ``int``
@@ -2242,6 +2269,7 @@ module BigInteger {
               ``primality.notPrime``.
     :rtype: :enum:`primality`
    */
+  @unstable("bigint.probablyPrime is unstable and may change in the future")
   proc bigint.probablyPrime(reps: int) : primality {
     var t_ = this.localize();
     var reps_ = reps.safeCast(c_int);
@@ -2258,26 +2286,60 @@ module BigInteger {
       return isPrime;
   }
 
-  proc nextprime(ref result: bigint, const ref a: bigint) {
+
+  @deprecated("nextprime is deprecated - please use :proc:`~BigInteger.nextPrime` instead")
+  proc nextprime(ref result: bigint, const ref a: bigint)
+    do BigInteger.nextPrime(result, a);
+
+  /*  Set ``result`` to the next prime number greater than ``x``.
+
+      Utilizes the GMP function `mpz_nextprime
+      <https://gmplib.org/manual/Number-Theoretic-Functions>`_. Note that this
+      is probablistic function and in an unlikely case may set ``result`` to a
+      compositie number.
+
+      :arg result: return value that will contain the next prime number
+      :type result: :record:`bigint`
+
+      :arg x: the ``result`` will be a prime number bigger than this value
+      :type x: :record:`bigint`
+  */
+  @unstable("nextPrime is unstable and may change in the future")
+  proc nextPrime(ref result: bigint, const ref x: bigint) {
     if compiledForSingleLocale() {
-      mpz_nextprime(result.mpz, a.mpz);
+      mpz_nextprime(result.mpz, x.mpz);
     } else if result.localeId == chpl_nodeID {
-      const a_ = a;
-      mpz_nextprime(result.mpz, a_.mpz);
+      const x_ = x;
+      mpz_nextprime(result.mpz, x_.mpz);
     } else {
       const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
       on __primitive("chpl_on_locale_num", resultLoc) {
-        const a_ = a;
-        mpz_nextprime(result.mpz, a_.mpz);
+        const x_ = x;
+        mpz_nextprime(result.mpz, x_.mpz);
       }
     }
   }
 
-  @deprecated(notes="bigint.nextprime method is deprecated - please use the standalone function :proc:`~BigInteger.nextprime`")
+  @deprecated(notes="bigint.nextprime method is deprecated - please use the standalone function :proc:`~BigInteger.nextPrime`")
   proc bigint.nextprime(const ref a: bigint) {
     BigInteger.nextprime(this, a);
   }
 
+  /*  Set ``result`` to the greatest common divisor of ``a`` and ``b``
+
+      Utilizes the GMP function `mpz_gcd
+      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+
+      :arg result: Where the result is stored
+      :type result: :record:`bigint`
+
+      :arg a: One of the numbers to compute the greatest common divisor of
+      :type a: :record:`bigint`
+
+      :arg b: One of the numbers to compute the greatest common divisor of
+      :type b: :record:`bigint`, ``int``, ``uint``
+  */
+  @unstable("gcd is unstable and may change in the future")
   proc gcd(ref result: bigint, const ref a: bigint, const ref b: bigint) {
     if compiledForSingleLocale() {
       mpz_gcd(result.mpz, a.mpz, b.mpz);
@@ -2300,6 +2362,8 @@ module BigInteger {
     BigInteger.gcd(this, a, b);
   }
 
+  @chpldoc.nodoc
+  @unstable("gcd is unstable and may change in the future")
   proc gcd(ref result: bigint, const ref a: bigint, b: int) {
     if b >= 0 {
       BigInteger.gcd(result, a, b : uint);
@@ -2314,6 +2378,8 @@ module BigInteger {
     BigInteger.gcd(this, a, b);
   }
 
+  @chpldoc.nodoc
+  @unstable("gcd is unstable and may change in the future")
   proc gcd(ref result: bigint, const ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
     if compiledForSingleLocale() {
@@ -2342,7 +2408,8 @@ module BigInteger {
         The result stored in ``result`` is always positive, even if one or
         both of ``a`` and ``b`` are negative (or zero if both are zero).
 
-     This fulfills the same role as the GMP function ``mpz_gcdext``.
+     This fulfills the same role as the GMP function `mpz_gcdext
+     <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
 
      :arg result: Where the result is stored
      :type result: :record:`bigint`
@@ -2359,6 +2426,7 @@ module BigInteger {
      :arg t: The returned coefficient that can be multiplied by ``b``.
      :type t: :record:`bigint`
    */
+  @unstable("gcd is unstable and may change in the future")
   proc gcd(ref result: bigint, const ref a: bigint, const ref b: bigint,
                   ref s: bigint, ref t: bigint): void {
     if compiledForSingleLocale() {
@@ -2393,7 +2461,8 @@ module BigInteger {
         The result stored in ``this`` is always positive, even if one or
         both of ``a`` and ``b`` are negative (or zero if both are zero).
 
-     This fulfills the same role as the GMP function ``mpz_gcdext``.
+     This fulfills the same role as the GMP function `mpz_gcdext
+     <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
 
      :arg a: One of the numbers to compute the greatest common divisor of
      :type a: :record:`bigint`
@@ -2413,16 +2482,21 @@ module BigInteger {
     BigInteger.gcd(this, a, b, s, t);
   }
 
-  // sets this to gcd(a,b)
-  // set s and t to to coefficients satisfying a*s + b*t == g
-  @deprecated(notes="gcdext is deprecated, please use the new overload of :proc:`bigint.gcd` with s and t arguments instead")
-  proc bigint.gcdext(ref s: bigint,
-                     ref t: bigint,
-                     const ref a: bigint,
-                     const ref b: bigint) {
-    BigInteger.gcd(this, a, b, s, t);
-  }
+  /*  Set ``result`` to the least common multiple of ``a`` and ``b``
 
+      Utilizes the GMP function `mpz_lcm
+      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+
+      :arg result: Where the result is stored
+      :type result: :record:`bigint`
+
+      :arg a: One of the numbers to compute the least common multiple of
+      :type a: :record:`bigint`
+
+      :arg b: One of the numbers to compute the least common multiple of
+      :type b: :record:`bigint`, ``int``, ``uint``
+  */
+  @unstable("lcm is unstable and may change in the future")
   proc lcm(ref result: bigint, const ref a: bigint, const ref b: bigint) {
     if compiledForSingleLocale() {
       mpz_lcm(result.mpz, a.mpz, b.mpz);
@@ -2445,6 +2519,8 @@ module BigInteger {
     BigInteger.lcm(this, a, b);
   }
 
+  @chpldoc.nodoc
+  @unstable("lcm is unstable and may change in the future")
   proc lcm(ref result: bigint, const ref a: bigint, b: int) {
     if b >= 0 then
       BigInteger.lcm(result, a, b:uint);
@@ -2457,6 +2533,8 @@ module BigInteger {
     BigInteger.lcm(this, a, b);
   }
 
+  @chpldoc.nodoc
+  @unstable("lcm is unstable and may change in the future")
   proc lcm(ref result: bigint, const ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
 
@@ -2633,7 +2711,12 @@ module BigInteger {
   }
 
 
-  // Factorial
+  /*  Set ``result`` to the factorial of ``a``
+
+      Utilizes the GMP function `mpz_fac_ui
+      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+  */
+  @unstable("fac is unstable and may change in the future")
   proc fac(ref result: bigint, a: integral) {
     const a_ = a.safeCast(c_ulong);
     if compiledForSingleLocale() {
@@ -2655,7 +2738,14 @@ module BigInteger {
 
 
 
-  // Binomial
+  /*  Set ``result`` to the binomial coefficient of ``n`` over ``k``.
+
+      Utilizes the GMP function `mpz_fac_ui
+      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+
+      ``n`` can also be a ``uint``.
+  */
+  @unstable("bin is unstable and may change in the future")
   proc bin(ref result: bigint, const ref n: bigint, k: integral) {
     const k_ = k.safeCast(c_ulong);
     if compiledForSingleLocale() {
@@ -2677,6 +2767,8 @@ module BigInteger {
     BigInteger.bin(this, n, k);
   }
 
+  @chpldoc.nodoc
+  @unstable("bin is unstable and may change in the future")
   proc bin(ref result: bigint, n: uint, k: integral) {
     if n >= 0 {
       const n_ = n.safeCast(c_ulong);
@@ -2704,7 +2796,18 @@ module BigInteger {
 
 
 
-  // Fibonacci
+  /*  Set ``result`` to the ``n`` th Fibonacci number.
+
+      Utilizes the GMP function `mpz_fib_ui
+      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+
+      :arg result: return value that will contain the Fibonacci number
+      :type result: :record:`bigint`
+
+      :arg n: which Fibonacci number to compute for ``result``.
+      :type n: ``integral``
+  */
+  @unstable("fib is unstable and may change in the future")
   proc fib(ref result: bigint, n: integral) {
     const n_ = n.safeCast(c_ulong);
 
@@ -2725,6 +2828,23 @@ module BigInteger {
     BigInteger.fib(this, n);
   }
 
+  /*  Set ``result`` to the ``n`` th Fibonacci number and set ``fnsub1`` to the
+      ``n-1`` th Fibonacci number.
+
+      Utilizes the GMP function `mpz_fib2_ui
+      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+
+      :arg result: return value that will contain the Fibonacci number
+      :type result: :record:`bigint`
+
+      :arg fnsub1: return value that will contain the previous Fibonacci number
+      :type fnsub1: :record:`bigint`
+
+      :arg n: which Fibonacci number to compute for ``result``. ``fnsub1`` is set
+              to the ``n-1`` Fibonacci number.
+      :type n: ``integral``
+  */
+  @unstable("fib2 is unstable and may change in the future")
   proc fib2(ref result: bigint, ref fnsub1: bigint, n: integral) {
     const n_ = n.safeCast(c_ulong);
 
@@ -2751,7 +2871,23 @@ module BigInteger {
   }
 
 
-  proc lucnum(ref result: bigint, n: integral) {
+  @deprecated("lucnum is deprecated - please use :proc:`~BigInteger.lucNum` instead")
+  proc lucnum(ref result: bigint, n: integral)
+    do BigInteger.lucNum(result, n);
+
+  /*  Set ``result`` to the ``n`` th Lucas number.
+
+      Utilizes the GMP function `mpz_lucnum_ui
+      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+
+      :arg result: return value that will contain the Lucas number
+      :type result: :record:`bigint`
+
+      :arg n: which Lucas number to compute
+      :type n: ``integral``
+  */
+  @unstable("lucNum is unstable and may change in the future")
+  proc lucNum(ref result: bigint, n: integral) {
     const n_ = n.safeCast(c_ulong);
     if compiledForSingleLocale() {
       mpz_lucnum_ui(result.mpz, n_);
@@ -2766,12 +2902,31 @@ module BigInteger {
   }
 
   // Lucas Number
-  @deprecated(notes="bigint.lucnum method is deprecated - please use the standalone function :proc:`~BigInteger.lucnum`")
-  proc bigint.lucnum(n: integral) {
-    BigInteger.lucnum(this, n);
-  }
+  @deprecated(notes="bigint.lucnum method is deprecated - please use the standalone function :proc:`~BigInteger.lucNum`")
+  proc bigint.lucnum(n: integral) do BigInteger.lucNum(this, n);
 
-  proc lucnum2(ref result: bigint, ref fnsub1: bigint, n: integral) {
+  @deprecated("lucnum2 is deprecated - please use :proc:`~BigInteger.lucNum2` instead")
+  proc lucnum2(ref result: bigint, ref fnsub1: bigint, n: integral)
+    do BigInteger.lucNum2(result, fnsub1, n);
+
+  /*  Set ``result`` to the ``n`` th Lucas number and set ``fnsub1`` to the
+      ``n-1`` th Lucas number.
+
+      Utilizes the GMP function `mpz_lucnum2_ui
+      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+
+      :arg result: return value that will contain the Lucas number
+      :type result: :record:`bigint`
+
+      :arg fnsub1: return value that will contain the previous Lucas number
+      :type fnsub1: :record:`bigint`
+
+      :arg n: which Lucas number to compute for ``result``. ``fnsub1`` is set
+              to the ``n-1`` Lucas number.
+      :type n: ``integral``
+  */
+  @unstable("lucNum2 is unstable and may change in the future")
+  proc lucNum2(ref result: bigint, ref fnsub1: bigint, n: integral) {
     const n_ = n.safeCast(c_ulong);
 
     if compiledForSingleLocale() {
@@ -2791,10 +2946,9 @@ module BigInteger {
     }
   }
 
-  @deprecated(notes="bigint.lucnum2 method is deprecated - please use the standalone function :proc:`~BigInteger.lucnum2`")
-  proc bigint.lucnum2(ref fnsub1: bigint, n: integral) {
-    BigInteger.lucnum2(this, fnsub1, n);
-  }
+  @deprecated(notes="bigint.lucnum2 method is deprecated - please use the standalone function :proc:`~BigInteger.lucNum2`")
+  proc bigint.lucnum2(ref fnsub1: bigint, n: integral)
+    do BigInteger.lucNum2(this, fnsub1, n);
 
 
 
@@ -2808,12 +2962,29 @@ module BigInteger {
     return ret.safeCast(uint);
   }
 
-  proc bigint.hamdist(const ref b: bigint) : uint {
+  @deprecated("bigint.hamdist is deprecated - please use :proc:`bigint.hammingDistance` instead")
+  proc bigint.hamdist(const ref b: bigint): uint do return this.hammingDistance(b);
+
+  /*  Returns the number of bit positions that differ between ``this`` and
+      ``x``. If ``this`` and ``x`` have different signs, the number of bits
+      that differ is infinite and the return value is the largest possible
+      :type:`~GMP.mp_bitcnt_t`.
+
+      Utilizes the GMP function `mpz_hamdist <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling>`_
+
+      :arg x: value to compare ``this`` against
+      :type x: :record:`bigint`
+
+      :returns: the number of bits that differ
+      :rtype: ``uint``
+  */
+  @unstable("bigint.hammingDistance is unstable and may change in the future")
+  proc bigint.hammingDistance(const ref x: bigint): uint {
     const t_ = this.localize();
-    const b_ = b.localize();
+    const x_ = x.localize();
     var ret: c_ulong;
 
-    ret = mpz_hamdist(t_.mpz, b_.mpz);
+    ret = mpz_hamdist(t_.mpz, x_.mpz);
 
     return ret.safeCast(uint);
   }

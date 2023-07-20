@@ -13,7 +13,7 @@ rootrem 2 1
 sqrt 3
 sqrtrem 3 1
 sqrtrem 3 1
-nextprime 17
+nextPrime 17
 gcd 4
 gcd 4
 gcd 4
