@@ -281,7 +281,7 @@ module DistributedBag {
     forwarding _value;
   }
 
-  class DistributedBagImpl : CollectionImpl {
+  class DistributedBagImpl : CollectionImpl(?) {
     @chpldoc.nodoc
     var targetLocDom : domain(1);
     /*

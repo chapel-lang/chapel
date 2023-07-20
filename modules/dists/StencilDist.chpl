@@ -284,7 +284,7 @@ class LocStencil {
 // locDoms:   a non-distributed array of local domain classes
 // whole:     a non-distributed domain that defines the domain's indices
 //
-class StencilDom: BaseRectangularDom {
+class StencilDom: BaseRectangularDom(?) {
   param ignoreFluff : bool;
   const dist: unmanaged Stencil(rank, idxType, ignoreFluff);
   var locDoms: [dist.targetLocDom] unmanaged LocStencilDom(rank, idxType,
@@ -329,7 +329,7 @@ class LocStencilDom {
 // locArr: a non-distributed array of local array classes
 // myLocArr: optimized reference to here's local array class (or nil)
 //
-class StencilArr: BaseRectangularArr {
+class StencilArr: BaseRectangularArr(?) {
   param ignoreFluff: bool;
   var doRADOpt: bool = defaultDoRADOpt;
   var dom: unmanaged StencilDom(rank, idxType, strides, ignoreFluff);
