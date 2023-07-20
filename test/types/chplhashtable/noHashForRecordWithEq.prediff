@@ -1,5 +1,10 @@
-#!/usr/bin/env bash
-# Ignore line numbers in modules.
+#!/bin/sh
 
-sed '\|CHPL_HOME/modules|s/:[0-9]*:/:nnnn:/' $2 > $2.tmp
-mv $2.tmp $2
+OUTFILE=$2
+TMPFILE=$OUTFILE.prediff.tmp
+
+# filter out line numbers
+sed -E 's/\.chpl:[0-9]*:/\.chpl:nnnn:/' < $OUTFILE > $TMPFILE
+cat $TMPFILE > $OUTFILE
+
+rm $TMPFILE
