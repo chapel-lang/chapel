@@ -255,14 +255,17 @@ static void checkClass(AggregateType* ct) {
     USR_FATAL_CONT(ct, "Extern classes are not supported.");
   }
   // Warn for superclass should be marked generic
-  if (isClass(ct) && !ct->symbol->hasFlag(FLAG_SUPERCLASS_MARKED_GENERIC)) {
-    // What is the superclass?
-    if (ct->dispatchParents.n == 1) {
-      if (AggregateType* parent = ct->dispatchParents.v[0]) {
-        if (parent != dtObject && isClass(parent)) {
-          if (parent->isGeneric() && !parent->isGenericWithDefaults()) {
-            USR_WARN(ct->symbol, "inherits expr should include (?)");
-          }
+  // Error for a concrete superclass that is marked generic
+  if (isClass(ct) && ct->dispatchParents.n == 1) {
+    if (AggregateType* parent = ct->dispatchParents.v[0]) {
+      if (isClass(parent)) {
+        if (!ct->symbol->hasFlag(FLAG_SUPERCLASS_MARKED_GENERIC) &&
+            parent->isGeneric() && !parent->isGenericWithDefaults()) {
+          USR_WARN(ct->symbol, "inherits expr should include (?) for a generic superclass");
+        }
+        if (ct->symbol->hasFlag(FLAG_SUPERCLASS_MARKED_GENERIC) &&
+            !parent->isGeneric()) {
+          USR_FATAL(ct->symbol, "inherits expr should not include (?) for a concrete class");
         }
       }
     }

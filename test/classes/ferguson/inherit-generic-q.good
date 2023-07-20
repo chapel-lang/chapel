@@ -1,0 +1,2 @@
+inherit-generic-q.chpl:4: warning: inherits expr should include (?)
+inherit-generic-q.chpl:8: error: inherits expr should not include (?) for a concrete class
