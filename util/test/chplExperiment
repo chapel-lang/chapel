@@ -222,7 +222,9 @@ for i in "${!experiment_name[@]}"; do
   printchplenv --all
   if [[ ! "$?" -eq "0" ]]; then
     if [[ "$CHPL_EXP_SKIP_IF_CONFIG_ERROR"=="y" ]]; then
-      echo "* * * * SKIPPING EXPERIMENT DUE TO PRINTCHPLENV FAILURE * * * * *"
+      echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
+      echo "* * * * * SKIPPING EXPERIMENT DUE TO PRINTCHPLENV FAILURE D ERRORING  * * * * *"
+      echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
       echo "> popd"; popd
       continue
     fi
