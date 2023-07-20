@@ -2807,7 +2807,7 @@ module BigInteger {
       :arg n: which Fibonacci number to compute for ``result``.
       :type n: ``integral``
   */
-  @unstable("fib2 is unstable and may move in the future")
+  @unstable("fib is unstable and may move in the future")
   proc fib(ref result: bigint, n: integral) {
     const n_ = n.safeCast(c_ulong);
 
