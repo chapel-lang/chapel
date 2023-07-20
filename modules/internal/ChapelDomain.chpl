@@ -1495,11 +1495,11 @@ module ChapelDomain {
 
     pragma "no copy return"
     @chpldoc.nodoc
-    proc buildArrayThrowing(type eltType) throws {
+    proc buildArrayOrThrow(type eltType) throws {
       chpl_checkEltType(eltType);
       chpl_checkNegativeStride();
 
-      var x = _value.dsiBuildArrayThrowing(eltType);
+      var x = _value.buildArrayOrThrow(eltType);
       pragma "dont disable remote value forwarding"
       proc help() {
         _value.add_arr(x);

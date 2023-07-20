@@ -967,7 +967,7 @@ proc BlockDom.dsiBuildArray(type eltType, param initElts:bool) {
   return arr;
 }
 
-proc BlockDom.dsiBuildArrayThrowing(type eltType) throws {
+proc BlockDom.buildArrayOrThrow(type eltType) throws {
   const dom = this;
   const creationLocale = here.id;
   const dummyLBD = new unmanaged LocBlockDom(rank, idxType, strides);
@@ -984,7 +984,7 @@ proc BlockDom.dsiBuildArrayThrowing(type eltType) throws {
     on loc {
       const locSize = locDomsElt.myBlock.size;
       var callPostAlloc = false;
-      var data = _ddata_allocate_noinit(eltType, locSize, callPostAlloc);
+      var data = _ddata_allocate_noinit_no_check(eltType, locSize, callPostAlloc);
       if data == nil then
         throw new Error("Could not allocate memory");
 

@@ -700,9 +700,10 @@ module DefaultRectangular {
                                                  initElts=initElts);
     }
 
-    proc dsiBuildArrayThrowing(type eltType) throws {
+    proc buildArrayOrThrow(type eltType) throws {
       var callPostAlloc:bool;
-      var data = _ddata_allocate_noinit(eltType, ranges(0).size, callPostAlloc);
+      // TODO: ranges(0) isn't covering all cases (but it is in Arkouda)
+      var data = _ddata_allocate_noinit_no_check(eltType, ranges(0).size, callPostAlloc);
       if data == nil then
         throw new Error("Could not allocate memory");
 
