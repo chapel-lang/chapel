@@ -2770,7 +2770,23 @@ module BigInteger {
   }
 
 
-  proc lucnum(ref result: bigint, n: integral) {
+  @deprecated("lucnum is deprecated - please use :proc:`~BigInteger.lucNum` instead")
+  proc lucnum(ref result: bigint, n: integral)
+    do BigInteger.lucNum(result, n);
+
+  /*  Set ``result`` to the ``n``th Lucas number.
+
+      Utilizes the GMP function `mpz_lucnum_ui
+      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+
+      :arg result: return value that will contain the Lucas number
+      :type result: ``bigint``
+
+      :arg n: which Lucas number to compute
+      :type n: ``integral``
+  */
+  @unstable("lucNum is unstable and may move in the future")
+  proc lucNum(ref result: bigint, n: integral) {
     const n_ = n.safeCast(c_ulong);
     if compiledForSingleLocale() {
       mpz_lucnum_ui(result.mpz, n_);
@@ -2785,12 +2801,31 @@ module BigInteger {
   }
 
   // Lucas Number
-  @deprecated(notes="bigint.lucnum method is deprecated - please use the standalone function :proc:`~BigInteger.lucnum`")
-  proc bigint.lucnum(n: integral) {
-    BigInteger.lucnum(this, n);
-  }
+  @deprecated(notes="bigint.lucnum method is deprecated - please use the standalone function :proc:`~BigInteger.lucNum`")
+  proc bigint.lucnum(n: integral) do BigInteger.lucNum(this, n);
 
-  proc lucnum2(ref result: bigint, ref fnsub1: bigint, n: integral) {
+  @deprecated("lucnum2 is deprecated - please use :proc:`~BigInteger.lucNum2` instead")
+  proc lucnum2(ref result: bigint, ref fnsub1: bigint, n: integral)
+    do BigInteger.lucNum2(result, fnsub1, n);
+
+  /*  Set ``result`` to the ``n``th Lucas number and set ``fnsub1`` to the
+      ``n-1``th Lucas number.
+
+      Utilizes the GMP function `mpz_lucnum2_ui
+      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+
+      :arg result: return value that will contain the Lucas number
+      :type result: ``bigint``
+
+      :arg fnsub1: return value that will contain the previous Lucas number
+      :type fnsub1: ``bigint``
+
+      :arg n: which Lucas number to compute for ``result``. ``fnsub1`` is set
+      to the ``n-1`` Lucas number.
+      :type n: ``integral``
+  */
+  @unstable("lucNum2 is unstable and may move in the future")
+  proc lucNum2(ref result: bigint, ref fnsub1: bigint, n: integral) {
     const n_ = n.safeCast(c_ulong);
 
     if compiledForSingleLocale() {
@@ -2810,10 +2845,9 @@ module BigInteger {
     }
   }
 
-  @deprecated(notes="bigint.lucnum2 method is deprecated - please use the standalone function :proc:`~BigInteger.lucnum2`")
-  proc bigint.lucnum2(ref fnsub1: bigint, n: integral) {
-    BigInteger.lucnum2(this, fnsub1, n);
-  }
+  @deprecated(notes="bigint.lucnum2 method is deprecated - please use the standalone function :proc:`~BigInteger.lucNum2`")
+  proc bigint.lucnum2(ref fnsub1: bigint, n: integral)
+    do BigInteger.lucNum2(this, fnsub1, n);
 
 
 

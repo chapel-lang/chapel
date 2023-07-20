@@ -1,2 +1,6 @@
 unstableNumberTheory.chpl:6: warning: nextPrime is unstable and may move in the future
+unstableNumberTheory.chpl:12: warning: lucNum is unstable and may move in the future
+unstableNumberTheory.chpl:19: warning: lucNum2 is unstable and may move in the future
 19
+11
+(29, 18)
