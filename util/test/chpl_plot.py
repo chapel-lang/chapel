@@ -1,4 +1,4 @@
-import os, re, codecs, shlex
+import os, re, codecs, shlex, copy
 
 import numpy as np
 import matplotlib as mpl
@@ -240,7 +240,14 @@ class Plot:
 
 # -----------------------------------------------------------------------------
 
-def _loadDat(filename):
+class ChplDat:
+  def __init__(self, filename=None, config_vars=None, results=None, kvPairs=None):
+    self.filename = filename
+    self.xData = config_vars
+    self.yData = results
+    self.kvPairs = kvPairs
+
+def loadDatFile(filename):
   with open(filename, 'r') as f:
     datanames = []
     config_vars = []
@@ -267,11 +274,13 @@ def _loadDat(filename):
         for dn, data in zip(datanames, l.split()[1:]):
           results[dn].append(float(data))
 
-  return config_vars, results, kvPairs
+  return ChplDat(filename, config_vars, results, kvPairs)
+
+
 
 
 def load(filename):
-  (xData, yData, kvPairs) = _loadDat(filename)
+  (xData, yData, kvPairs) = loadDat(filename)
 
   baseName = os.path.basename(filename)[:-4]
   title = _valOrDefault(kvPairs, 'title', baseName)
@@ -313,10 +322,50 @@ def _embedMetadata(datFilename, imgFilename):
 
   img.save(imgFilename, pnginfo=metadata)
 
-def paint(filename, plot):
-  plot.save("logs/" + plot.baseName, 'png')
-  _embedMetadata(filename, "logs/" + plot.baseName + '.png')
+def paint(name, chplDat):
+  baseName = os.path.basename(chplDat.filename)[:-4]
+  title = _valOrDefault(chplDat.kvPairs, 'title', name)
+  xlabel = _valOrDefault(chplDat.kvPairs, 'xlabel', '')
+  ylabel = _valOrDefault(chplDat.kvPairs, 'ylabel', '')
 
+  p = Plot(name=title, x_data=chplDat.xData)
+  p.set_title(title)
+  p.set_xlabel(xlabel)
+  p.set_ylabel(ylabel)
+  p.legend_font_size = 18
+
+  if 'better' in chplDat.kvPairs:
+    p.add_arrow(position='right', direction=kvPairs['better'], text='Better', color='green')
+
+  n = 0
+  for lines in chplDat.yData:
+    p.add_y_data(chplDat.yData[lines], linestyle=11+n, label=lines)
+    n += 1
+ 
+  p.save("logs/" + name)
+  #_embedMetadata(chplDat.filename, "logs/" + plot.baseName + '.png')
+
+def loadDat(path, filterFn=None):
+  res = {}
+  for filename in os.listdir(path):
+    fullPath = path + "/" + filename
+    if filename.endswith(".dat"):
+      if filterFn and not filterFn(fullPath):
+        continue
+      res[os.path.basename(fullPath)[0:-4]] = loadDatFile(fullPath)
+  return res
+
+def joinDat(dataList):
+  res = copy.deepcopy(dataList[0])
+
+  for data in dataList:
+    assert(res.xData == data.xData)
+    res.filename += ":" + data.filename
+    res.xData = data.xData
+    res.yData.update(data.yData)
+    res.kvPairs.update(data.kvPairs)
+
+  return res
 
 # Tips for using processFn (taking an argument p)
 #
@@ -328,15 +377,11 @@ def paint(filename, plot):
 #
 # How about the line style?
 #     p.set_linestyle(lineNum, styleNum)
-def paintDatFiles(processFn=None, filterFn=None, inDir="logs"):
-  for shortFilename in os.listdir(inDir):
-    if shortFilename.endswith(".dat"):
-      if filterFn and not filterFn(file):
-        continue
 
-      filename = f"{inDir}/{shortFilename}"
-        
-      plot = load(filename)
-      if processFn:
-        processFn(plot)
-      paint(filename, plot)
+#def paintDatFiles(processFn=None, filterFn=None, inDir="logs"):
+#      filename = f"{inDir}/{shortFilename}"
+#        
+#      plot = load(filename)
+#      if processFn:
+#        processFn(plot)
+#      paint(filename, plot)

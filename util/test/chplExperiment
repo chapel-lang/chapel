@@ -1,27 +1,8 @@
 #!/bin/bash
 
 # -----------------------------------------------------------------------------
-# Hack to work around cmake/ssl interference on test machine
+# Utilities for managing log directories
 # -----------------------------------------------------------------------------
-
-# We want to use the spack version of ssl before building chpl but we need it
-# to be unloaded to do any git operation that uses it.
-
-SPACK_ROOT="/cray/css/users/chapelu/spack"
-SSL_HASH="leoarhg"
-function unload_ssl() {
-  tempMODPATH=$MODULEPATH
-  export MODULEPATH=''
-  eval `$SPACK_ROOT/bin/spack unload --sh /$SSL_HASH`
-  export MODULEPATH=$tempMODPATH
-}
-
-function load_ssl() {
-  tempMODPATH=$MODULEPATH
-  export MODULEPATH=''
-  eval `$SPACK_ROOT/bin/spack load --sh /$SSL_HASH`
-  export MODULEPATH=$tempMODPATH
-}
 
 function next_backup_dir_num() {
   local maxSoFar=-1
@@ -196,12 +177,13 @@ for i in "${!experiment_name[@]}"; do
   echo "cmd=$cmd"
 
   echo -e "\n--------------------------------------------------------------------------------"
-  echo -e "Configure step"
+  echo -e "($name) Configure step"
   echo -e "--------------------------------------------------------------------------------"
+
   echo -e "> source $CHPL_HOME/util/test/chplSetupEnv.bash $feats"
-  source $CHPL_HOME/util/test/chplSetupEnv.bash $feats --dry-run
+  source "$CHPL_HOME/util/test/chplSetupEnv.bash" $feats --dry-run
   echo -e "\n># ----------------------------------------------------------------------------\n"
-  source $CHPL_HOME/util/test/chplSetupEnv.bash $feats
+  source "$CHPL_HOME/util/test/chplSetupEnv.bash" $feats
 
   # Because chplSetupEnv was sourced, it may have overwritten these variables
   # so we reassign them at this point
@@ -251,7 +233,7 @@ for i in "${!experiment_name[@]}"; do
   fi
 
   echo -e "\n--------------------------------------------------------------------------------"
-  echo -e "Build step"
+  echo -e "($name) Build step"
   echo -e "--------------------------------------------------------------------------------"
 
   if [[ "$shouldBuildChpl" == "y" ]]; then
@@ -264,7 +246,7 @@ for i in "${!experiment_name[@]}"; do
   echo "> popd"; popd
 
   echo -e "\n--------------------------------------------------------------------------------"
-  echo -e "Experiment step"
+  echo -e "($name) Experiment step"
   echo -e "--------------------------------------------------------------------------------"
 
   source $CHPL_HOME/util/test/chplSetupEnv.bash --no-base-cfg "preExperiment"
@@ -296,6 +278,9 @@ for i in "${!experiment_name[@]}"; do
     echo -e "$GATHER_GIT_STATUS" | sed 's/^/##    /' >> $datFile
   fi
 
+  echo -e "\n--------------------------------------------------------------------------------"
+  echo -e "($name) Resulting .dat file"
+  echo -e "--------------------------------------------------------------------------------"
   echo "> cat $datFile"
   cat "$datFile"
 done

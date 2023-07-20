@@ -2,15 +2,19 @@
 
 import sys, os
 sys.path.append(os.path.join(os.environ['CHPL_HOME'], 'util', 'test'))
-from chpl_plot import paintDatFiles
+from chpl_plot import loadDat, joinDat, paint
 
 def process(p):
   p.set_xticks(p.x_data[5:])
   p.set_xticklabels([str(int(l)) for l in p.x_data[5:]])
 
-paintDatFiles(process)
+data = loadDat("logs")
+nvidiaDat = joinDat([data['cuda_baseline'], data['nvidia'], data['nvidia_aod']])
+amdDat    = joinDat([data['hip_baseline'], data['amd'], data['amd_aod']])
 
-#data = loadDat("logs")
+paint("nvidiaDat", nvidiaDat)
+paint("amdDat", amdDat)
+
 
 #d.append(join( data['nvidia_base'], data['nvidia'], data['nvidia_aod'])
 

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # -- Command line arguments --
 datFile="${1:-`pwd`/logs/baseline_cuda.dat}"
@@ -7,7 +7,7 @@ experimentName="${3:-baseline_cuda}"
 
 # -- Testing parameters --
 runLog="$logDir/$experimentName.txt"
-sizes=( 1 2 4 8) # 16 32 64 128 256 512)
+sizes=( 1 2 4 8 16 32 64 128 256 512)
 
 # Log all subsequent output
 echoVar() { echo "$1 = ${!1}"; }

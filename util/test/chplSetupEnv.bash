@@ -1,67 +1,82 @@
-chplSetupWrapperFunc () {
-  local suffix="bash"
-  local pathsToRun=("/data/cf/chapel/chplSetup/" "/chapel/data/chaptools/chplSetup" "/cray/css/users/chapelu/chplSetup" "$HOME/.chplSetup" "$(pwd)/chplSetup")
-  local shortHost=$(hostname -s)
-  local featureSet=""
-  local dryRun=""
-  local noBaseCfg=""
+# TODO: I would like to wrap all this code into it's own function and 'local'
+# the variables it uses so as to not risk polluting the user's environment.
+# Unfortunatly, doing so runs into this issue
+# https://stackoverflow.com/questions/76726843/different-behavior-in-bash-with-export-in-a-script-depending-on-if-it-is-sourc
+# because in /cray/css/users/chapelu/setup_cmake_nightly.bash we end up doing
+# something like this: MODULEPATH='' source
+# $SPACK_ROOT/share/spack/setup-env.sh, which ends up inadvertedly exporting
+# the MODULEPATH variable if called from within a function.
 
-  # TODO: make this less hacky, use getopts
-  for VAR in "$@"; do
-    if [[ "$VAR" == --* ]]; then
-      if [[ "$VAR" == --dry-run ]]; then
-        dryRun=y
-      elif [[ "$VAR" == --no-base-cfg ]]; then
-        noBaseCfg=y
-      else
-        >&2 echo "Unknown argument $var"
-        return 1
-      fi
+_chplSetupEnv_suffix="bash"
+_chplSetupEnv_pathsToRun=("/data/cf/chapel/chplSetup/" "/chapel/data/chaptools/chplSetup" "/cray/css/users/chapelu/chplSetup" "$HOME/.chplSetup" "$(pwd)/chplSetup")
+_chplSetupEnv_shortHost=$(hostname -s)
+_chplSetupEnv_featureSet=""
+_chplSetupEnv_dryRun=""
+_chplSetupEnv_noBaseCfg=""
+
+# TODO: make this less hacky, use getopts
+for _chplSetupEnv_VAR in "$@"; do
+  if [[ "$_chplSetupEnv_VAR" == --* ]]; then
+    if [[ "$_chplSetupEnv_VAR" == --dry-run ]]; then
+      _chplSetupEnv_dryRun=y
+    elif [[ "$_chplSetupEnv_VAR" == --no-base-cfg ]]; then
+      _chplSetupEnv_noBaseCfg=y
     else
-      featureSet="$VAR"
+      >&2 echo "Unknown argument $var"
+      return 1
+    fi
+  else
+    _chplSetupEnv_featureSet="$_chplSetupEnv_VAR"
+  fi
+done
+
+if [[ ! "$_chplSetupEnv_noBaseCfg" == "y" ]]; then
+  _chplSetupEnv_featureSet="base:$_chplSetupEnv_featureSet"
+fi
+
+if [[ ! "$_chplSetupEnv_dryRun" == "y" ]]; then
+  OLD_CHPL_HOME="$CHPL_HOME"
+fi
+
+for _chplSetupEnv_feature in ${_chplSetupEnv_featureSet//:/ }; do
+  for _chplSetupEnv_p in ${_chplSetupEnv_pathsToRun[@]}; do
+    if [ ! -d "$_chplSetupEnv_p" ]; then
+      continue
+    fi
+
+    # Run <feature>.bash
+    if [ -f "$_chplSetupEnv_p/$_chplSetupEnv_feature.$_chplSetupEnv_suffix" ]; then
+      if [[ "$_chplSetupEnv_dryRun" == "y" ]]; then
+        echo -e "\n# --- RUN $_chplSetupEnv_p/$_chplSetupEnv_feature.$_chplSetupEnv_suffix ---"
+        cat  "$_chplSetupEnv_p/$_chplSetupEnv_feature.$_chplSetupEnv_suffix"
+      else
+        source "$_chplSetupEnv_p/$_chplSetupEnv_feature.$_chplSetupEnv_suffix"
+      fi
+    fi
+      
+    # Run <feature>.<hostname>.bash
+    if [ -f "$_chplSetupEnv_p/$_chplSetupEnv_feature.$_chplSetupEnv_shortHost.$_chplSetupEnv_suffix" ]; then
+      if [[ "$_chplSetupEnv_dryRun" == "y" ]]; then
+        echo -e "\n# --- RUN $_chplSetupEnv_p/$_chplSetupEnv_feature.$_chplSetupEnv_shortHost.$_chplSetupEnv_suffix ---"
+        cat  "$_chplSetupEnv_p/$_chplSetupEnv_feature.$_chplSetupEnv_shortHost.$_chplSetupEnv_suffix"
+      else
+        source  "$_chplSetupEnv_p/$_chplSetupEnv_feature.$_chplSetupEnv_shortHost.$_chplSetupEnv_suffix"
+      fi
     fi
   done
+done
 
-  if [[ ! "$noBaseCfg" == "y" ]]; then
-    featureSet="base:$featureSet"
-  fi
+if [[ ! "$_chplSetupEnv_dryRun" == "y" ]]; then
+  source "$OLD_CHPL_HOME/util/setchplenv.bash"
+fi
 
-  if [[ ! "$dryRun" == "y" ]]; then
-    OLD_CHPL_HOME="$CHPL_HOME"
-  fi
-
-  for feature in ${featureSet//:/ }; do
-    for p in ${pathsToRun[@]}; do
-      if [ ! -d "$p" ]; then
-        continue
-      fi
-
-      # Run <feature>.bash
-      if [ -f "$p/$feature.$suffix" ]; then
-        if [[ "$dryRun" == "y" ]]; then
-          echo -e "\n# --- RUN $p/$feature.$suffix ---"
-          cat  "$p/$feature.$suffix"
-        else
-          source "$p/$feature.$suffix"
-        fi
-      fi
-        
-      # Run <feature>.<hostname>.bash
-      if [ -f "$p/$feature.$shortHost.$suffix" ]; then
-        if [[ "$dryRun" == "y" ]]; then
-          echo -e "\n# --- RUN $p/$feature.$shortHost.$suffix ---"
-          cat  "$p/$feature.$shortHost.$suffix"
-        else
-          source  "$p/$feature.$shortHost.$suffix"
-        fi
-      fi
-    done
-  done
-
-  if [[ ! "$dryRun" == "y" ]]; then
-    source "$OLD_CHPL_HOME/util/setchplenv.bash"
-  fi
-}
-
-chplSetupWrapperFunc $@
-
+# clean up variables introduced in this script
+unset _chplSetupEnv_suffix
+unset _chplSetupEnv_pathsToRun
+unset _chplSetupEnv_shortHost
+unset _chplSetupEnv_featureSet
+unset _chplSetupEnv_dryRun
+unset _chplSetupEnv_noBaseCfg
+unset _chplSetupEnv_VAR
+unset _chplSetupEnv_feature
+unset _chplSetupEnv_p
