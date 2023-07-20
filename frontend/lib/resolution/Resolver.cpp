@@ -427,11 +427,13 @@ gatherParentClassScopesForScopeResolving(Context* context, ID classDeclId) {
           // Intended to avoid calling methodReceiverScopes() recursively.
           // Uses the empty 'savecReceiverScopes' because the class expression
           // can't be a method anyways.
-          visitor.resolveIdentifier(parentClassExpr->toIdentifier(),
-                                    visitor.savedReceiverScopes);
+          bool ignoredMarkedGeneric = false;
+          auto ident = Class::getInheritExprIdent(parentClassExpr,
+                                                  ignoredMarkedGeneric);
+          visitor.resolveIdentifier(ident, visitor.savedReceiverScopes);
 
 
-          ResolvedExpression& re = r.byAst(parentClassExpr);
+          ResolvedExpression& re = r.byAst(ident);
           if (re.toId().isEmpty()) {
             context->error(parentClassExpr, "invalid parent class expression");
           } else {
