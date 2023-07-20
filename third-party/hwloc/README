@@ -28,8 +28,7 @@ follows, assuming the CWD is $CHPL_HOME/third-party/hwloc/:
 8. commit, PR, merge, etc
 
 Note that these instructions are for simple 2.X API compatible updates.
-If the hwloc API changes, the runtime shim may need to be changed and
-incompatible versions need to be dropped from the whitelist.
+If the hwloc API changes, the runtime shim may need to be changed.
 
 Chapel modifications to hwloc
 ================================
