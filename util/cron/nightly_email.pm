@@ -8,16 +8,16 @@ sub writeFile{
 
 #num_args = $#ARGV + 1;
 $num_args = @_;
-print " ****** Number of arguments ******* length(@_) \n";
-print " ****** Number of arguments ******* $num_args \n ";
+print " \n ****** Number of arguments ******* length(@_) \n";
+print " \n ****** Number of arguments ******* $num_args \n ";
 
-# if ($num_args != 15) {
-#     print "usage: nightly_email.pl \$status \$rawsummary \$sortedsummary \n";
-#     print "         \$prevsummary \$mailer \$nochangerecipient \$recipient \n";
-#     print "         \$subjectid \$config_name \$revision \$rawlog \$starttime \n";
-#     print "         \$endtime \$crontab \$testdirs \$debug\n";
-#     exit 1;
-# }
+if ($num_args != 16) {
+    print "usage: nightly_email.pl \$status \$rawsummary \$sortedsummary \n";
+    print "         \$prevsummary \$mailer \$nochangerecipient \$recipient \n";
+    print "         \$subjectid \$config_name \$revision \$rawlog \$starttime \n";
+    print "         \$endtime \$crontab \$testdirs \$debug\n";
+    exit 1;
+}
 my ($status, $rawsummary, $sortedsummary, ,$prevsummary, $mailer, $nochangerecipient, $recipient, $subjectid, $config_name, $revision, $rawlog, $starttime, $endtime, $crontab, $testdirs, $debug)=@_;
 
 $status = $_[0];
@@ -53,11 +53,11 @@ ensureSummaryExists($prevsummary);
 $passed=0;
 if ($status == 2) {
   $status = 0;
-   print " status 2";
+   print " \n status 2 \n tests passed and there were some failures";
 }
 
 if ($status == 0) {
-     print " status 0";
+     print " \n status 0 \n";
     `cat $rawsummary | grep -v "^.END" | grep -v "^.Test Summary" | LC_ALL=C sort > $sortedsummary`;
 
     $oldsummary = `grep Summary: $prevsummary`; chomp($oldsummary);
@@ -77,8 +77,8 @@ if ($status == 0) {
 
     $summary = "Tests run: $cursucc Successes ($delsucc), $curfail Failures ($delfail)";
 } else {
-    print " status else ";
-    $summary = "Tests run: failed";
+    print " \n status else \n  ";
+    $summary = "Tests run: failed new failures";
     $passed = 1;
 }
 print " \n __________Summary __________ : \n $summary \n";
@@ -133,13 +133,13 @@ if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0 && $newpas
 # Summary.txt wull be used by Jenkins to send emails in case of a failure.
 
 
-$mailsubject = "$subjectid $config_name";
-$mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
+#$mailsubject = "$subjectid $config_name";
+#$mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
 
 if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
     # Send email only if there are new failures. Set the passed flag to 1
-    $passed = 1;
-
+    # $passed = 1;
+    
     writeSummary ($revision,
      $starttime,
      $endtime ,
