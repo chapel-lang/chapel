@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
 
-if [[ ! -d chplSetup ]]; then
-  git clone git@github.hpe.com:hpe/chplSetup.git
-fi
-
 set -x -e
 "$CHPL_HOME/util/test/chplExperiment" \
    --skip-if-config-error --paint-with ./stream.plot.paint.py \
