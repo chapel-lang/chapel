@@ -250,12 +250,30 @@ static void markGenerics() {
     } while (changed);
 }
 
+static void checkClass(AggregateType* ct) {
+  if (isClass(ct) && ct->symbol->hasFlag(FLAG_EXTERN)) {
+    USR_FATAL_CONT(ct, "Extern classes are not supported.");
+  }
+  // Warn for superclass should be marked generic
+  if (isClass(ct) && !ct->symbol->hasFlag(FLAG_SUPERCLASS_MARKED_GENERIC)) {
+    // What is the superclass?
+    if (ct->dispatchParents.n == 1) {
+      if (AggregateType* parent = ct->dispatchParents.v[0]) {
+        if (parent != dtObject && isClass(parent)) {
+          if (parent->isGeneric() && !parent->isGenericWithDefaults()) {
+            USR_WARN(ct->symbol, "inherits expr should include (?)");
+          }
+        }
+      }
+    }
+  }
+}
+
 static void processGenericFields() {
   forv_Vec(AggregateType, ct, gAggregateTypes) {
+    // Do some checks now that generic-ness is settled
+    checkClass(ct);
     // Build the type constructor now that we know which types are generic
-    if (isClass(ct) && ct->symbol->hasFlag(FLAG_EXTERN)) {
-      USR_FATAL_CONT(ct, "Extern classes are not supported.");
-    }
     ct->processGenericFields();
   }
 }

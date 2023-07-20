@@ -3806,9 +3806,13 @@ struct Converter {
     const char* name = astr(node->name());
     const char* cname = name;
     Expr* inherit = nullptr;
+    bool inheritMarkedGeneric = false;
 
     if (auto cls = node->toClass()) {
-      inherit = convertExprOrNull(cls->parentClass());
+      const uast::Identifier* ident =
+        uast::Class::getInheritExprIdent(cls->parentClass(),
+                                         inheritMarkedGeneric);
+      inherit = convertExprOrNull(ident);
     }
 
     if (node->linkageName()) {
@@ -3833,6 +3837,9 @@ struct Converter {
 
     attachSymbolAttributes(node, ret->sym);
     attachSymbolVisibility(node, ret->sym);
+    if (inheritMarkedGeneric) {
+      ret->sym->addFlag(FLAG_SUPERCLASS_MARKED_GENERIC);
+    }
 
     // Note the type is converted so we can wire up SymExprs later
     noteConvertedSym(node, ret->sym);

@@ -2498,7 +2498,7 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
 
   auto contentsList = consumeList(contents);
 
-  owned<Identifier> inheritIdentifier;
+  owned<AstNode> inheritExpr;
   if (optInherit != nullptr) {
     if (optInherit->size() > 0) {
       if (parts.tag == asttags::Record) {
@@ -2510,11 +2510,31 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
         if (optInherit->size() > 1)
           error(inheritLoc, "only single inheritance is supported.");
         AstNode* ast = (*optInherit)[0];
+        bool inheritOk = false;
         if (ast->isIdentifier()) {
-          inheritIdentifier = toOwned(ast->toIdentifier());
+          // inheriting from e.g. Parent is OK
+          inheritOk = true;
+        } else {
+          // inheriting from e.g. Parent(?) is OK
+          if (auto call = ast->toFnCall()) {
+            const AstNode* calledExpr = call->calledExpression();
+            if (calledExpr != nullptr && call->numActuals() == 1) {
+              if (const AstNode* actual = call->actual(0)) {
+                if (auto id = actual->toIdentifier()) {
+                  if (id->name() == USTR("?")) {
+                    inheritOk = true;
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        if (inheritOk) {
+          inheritExpr = toOwned(ast);
           (*optInherit)[0] = nullptr;
         } else {
-          syntax(inheritLoc, "non-Identifier expression cannot be inherited.");
+          syntax(inheritLoc, "unsupported non-Identifier inherits expression");
         }
       }
     }
@@ -2534,7 +2554,7 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
                         toOwned(parts.attributeGroup),
                         parts.visibility,
                         parts.name,
-                        std::move(inheritIdentifier),
+                        std::move(inheritExpr),
                         std::move(contentsList)).release();
   } else if (parts.tag == asttags::Record) {
     decl = Record::build(builder, convertLocation(location),
