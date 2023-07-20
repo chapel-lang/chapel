@@ -984,7 +984,7 @@ proc BlockDom.buildArrayOrThrow(type eltType) throws {
     on loc {
       const locSize = locDomsElt.myBlock.size;
       var callPostAlloc = false;
-      var data = _ddata_allocate_noinit_no_check(eltType, locSize, callPostAlloc);
+      var data = _ddata_allocate_noinit_nocheck(eltType, locSize, callPostAlloc);
       if data == nil then
         throw new Error("Could not allocate memory");
 

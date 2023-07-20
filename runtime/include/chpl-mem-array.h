@@ -103,8 +103,8 @@ void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize,
 
 static inline
 void* chpl_mem_array_alloc_no_check(size_t nmemb, size_t eltSize,
-                           c_sublocid_t subloc, chpl_bool* callPostAlloc,
-                           int32_t lineno, int32_t filename) {
+                                    c_sublocid_t subloc, chpl_bool* callPostAlloc,
+                                    int32_t lineno, int32_t filename) {
   void* p = NULL;
   const size_t size = nmemb * eltSize;
 #if defined(HAS_GPU_LOCALE) && !defined(GPU_RUNTIME_CPU)
