@@ -7,7 +7,7 @@ class C {
   }
 }
 
-class D : C {
+class D : C(?) {
   proc init(type t) {
     super.init(t);
     this.complete();
