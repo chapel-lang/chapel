@@ -93,6 +93,9 @@ void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize,
     p = chpl_malloc(size);
   }
 
+  if (CHPL_MEMHOOKS_ACTIVE)
+    chpl_track_malloc(p, nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
+                      lineno, filename);
   //chpl_memhook_malloc_post(p, nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
   //                         lineno, filename);
 #if defined(HAS_GPU_LOCALE) && !defined(GPU_RUNTIME_CPU)
