@@ -695,7 +695,7 @@ static const char* getLoopName(CForLoop* loop) {
 }
 
 void GpuKernel::buildStubOutlinedFunction(DefExpr* insertionPoint) {
-  fn_ = new FnSymbol(getLoopName(gpuLoop.loop()));
+  fn_ = new FnSymbol(getLoopName(gpuLoop.cpuLoop()));
 
   fn_->body->blockInfoSet(new CallExpr(PRIM_BLOCK_LOCAL));
 
