@@ -23,3 +23,4 @@ var v = new Values();
 
 var s7 = new set(int, v, parSafe=true);
 var s8 = new set(int, v, parSafe=false);
+writeln(s7.parSafe == true);

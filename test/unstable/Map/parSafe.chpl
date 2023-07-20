@@ -17,3 +17,4 @@ var m8 = new map(string,int,parSafe=false);
 
 m7.addOrReplace("a",1);
 m8["a"] = 1;
+writeln(m7.parSafe == true);
