@@ -202,9 +202,9 @@ for i in "${!experiment_name[@]}"; do
     echo "> $skipIfErrsCmd"
     eval "$skipIfErrsCmd"
     if [[ ! "$?" -eq "0" ]]; then
-      echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
-      echo "* * * * * * * * * * * * * * * *   SKIPPING EXPERIMENT DUE TO --skip-if-errs COMMAND ERRORING  * * * * * * * * * * * * * * * *"
-      echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
+      echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
+      echo "* * * *  SKIPPING EXPERIMENT DUE TO --skip-if-errs COMMAND ERRORING * * * * * *"
+      echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
       echo "> popd"; popd
       continue
     fi
