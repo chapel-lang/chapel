@@ -2494,16 +2494,6 @@ module BigInteger {
     BigInteger.gcd(this, a, b, s, t);
   }
 
-  // sets this to gcd(a,b)
-  // set s and t to to coefficients satisfying a*s + b*t == g
-  @deprecated(notes="gcdext is deprecated, please use the new overload of :proc:`bigint.gcd` with s and t arguments instead")
-  proc bigint.gcdext(ref s: bigint,
-                     ref t: bigint,
-                     const ref a: bigint,
-                     const ref b: bigint) {
-    BigInteger.gcd(this, a, b, s, t);
-  }
-
   /*  Set ``result`` to the least common multiple of ``a`` and ``b``
 
       Utilizes the GMP function `mpz_lcm
