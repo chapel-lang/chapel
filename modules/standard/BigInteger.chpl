@@ -2258,22 +2258,41 @@ module BigInteger {
       return isPrime;
   }
 
-  proc nextprime(ref result: bigint, const ref a: bigint) {
+
+  @deprecated("nextprime is deprecated - please use :proc:`~BigInteger.nextPrime` instead")
+  proc nextprime(ref result: bigint, const ref a: bigint)
+    do BigInteger.nextPrime(result, a);
+
+  /*  Set ``result`` to the next prime number greater than ``x``.
+
+      Utilizes the GMP function `mpz_nextprime
+      <https://gmplib.org/manual/Number-Theoretic-Functions>`_. Note that this
+      is probablistic function and in an unlikely case may set ``result`` to a
+      compositie number.
+
+      :arg result: return value that will contain the next prime number
+      :type result: ``bigint``
+
+      :arg x: the ``result`` will be a prime number bigger than this value
+      :type x: ``bigint``
+  */
+  @unstable("bigint.nextPrime is unstable and may move in the future")
+  proc nextPrime(ref result: bigint, const ref x: bigint) {
     if compiledForSingleLocale() {
-      mpz_nextprime(result.mpz, a.mpz);
+      mpz_nextprime(result.mpz, x.mpz);
     } else if result.localeId == chpl_nodeID {
-      const a_ = a;
-      mpz_nextprime(result.mpz, a_.mpz);
+      const x_ = x;
+      mpz_nextprime(result.mpz, x_.mpz);
     } else {
       const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
       on __primitive("chpl_on_locale_num", resultLoc) {
-        const a_ = a;
-        mpz_nextprime(result.mpz, a_.mpz);
+        const x_ = x;
+        mpz_nextprime(result.mpz, x_.mpz);
       }
     }
   }
 
-  @deprecated(notes="bigint.nextprime method is deprecated - please use the standalone function :proc:`~BigInteger.nextprime`")
+  @deprecated(notes="bigint.nextprime method is deprecated - please use the standalone function :proc:`~BigInteger.nextPrime`")
   proc bigint.nextprime(const ref a: bigint) {
     BigInteger.nextprime(this, a);
   }
