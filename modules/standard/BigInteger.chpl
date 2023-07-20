@@ -2500,6 +2500,21 @@ module BigInteger {
     BigInteger.gcd(this, a, b, s, t);
   }
 
+  /*  Set ``result`` to the least common multiple of ``a`` and ``b``
+
+      Utilizes the GMP function `mpz_lcm
+      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+
+      :arg result: Where the result is stored
+      :type result: :record:`bigint`
+
+      :arg a: One of the numbers to compute the least common multiple of
+      :type a: :record:`bigint`
+
+      :arg b: One of the numbers to compute the least common multiple of
+      :type b: :record:`bigint`, ``int``, ``uint``
+  */
+  @unstable("lcm is unstable and may move in the future")
   proc lcm(ref result: bigint, const ref a: bigint, const ref b: bigint) {
     if compiledForSingleLocale() {
       mpz_lcm(result.mpz, a.mpz, b.mpz);
@@ -2522,6 +2537,8 @@ module BigInteger {
     BigInteger.lcm(this, a, b);
   }
 
+  @chpldoc.nodoc
+  @unstable("lcm is unstable and may move in the future")
   proc lcm(ref result: bigint, const ref a: bigint, b: int) {
     if b >= 0 then
       BigInteger.lcm(result, a, b:uint);
@@ -2534,6 +2551,8 @@ module BigInteger {
     BigInteger.lcm(this, a, b);
   }
 
+  @chpldoc.nodoc
+  @unstable("lcm is unstable and may move in the future")
   proc lcm(ref result: bigint, const ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
 
