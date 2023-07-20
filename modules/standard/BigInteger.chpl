@@ -1331,7 +1331,7 @@ module BigInteger {
       :return: the Jacobi symbol
       :rtype: ``int``
   */
-  @unstable("jacobi is unstable and may move in the future")
+  @unstable("jacobi is unstable and may change in the future")
   proc jacobi(const ref a: bigint, const ref b: bigint) : int {
     const a_ = a.localize();
     const b_ = b.localize();
@@ -1352,7 +1352,7 @@ module BigInteger {
       :return: the Legendre symbol
       :rtype: ``int``
   */
-  @unstable("legendre is unstable and may move in the future")
+  @unstable("legendre is unstable and may change in the future")
   proc legendre(const ref a: bigint, const ref p: bigint) : int {
     const a_ = a.localize();
     const p_ = p.localize();
@@ -1376,7 +1376,7 @@ module BigInteger {
       :return: the Kronecker symbol
       :rtype: ``int``
   */
-  @unstable("kronecker is unstable and may move in the future")
+  @unstable("kronecker is unstable and may change in the future")
   proc kronecker(const ref a: bigint, const ref b: bigint) : int {
     var ret : c_int;
 
@@ -1389,7 +1389,7 @@ module BigInteger {
   }
 
   @chpldoc.nodoc
-  @unstable("kronecker is unstable and may move in the future")
+  @unstable("kronecker is unstable and may change in the future")
   proc kronecker(const ref a: bigint, b: int) : int {
     const a_ = a.localize();
     const b_ = b.safeCast(c_long);
@@ -1401,7 +1401,7 @@ module BigInteger {
   }
 
   @chpldoc.nodoc
-  @unstable("kronecker is unstable and may move in the future")
+  @unstable("kronecker is unstable and may change in the future")
   proc kronecker(a: int, const ref b: bigint) : int {
     const a_ = a.safeCast(c_long);
     const b_ = b.localize();
@@ -1413,7 +1413,7 @@ module BigInteger {
   }
 
   @chpldoc.nodoc
-  @unstable("kronecker is unstable and may move in the future")
+  @unstable("kronecker is unstable and may change in the future")
   proc kronecker(const ref a: bigint, b: uint) : int {
     const a_ = a.localize();
     const b_ = b.safeCast(c_ulong);
@@ -1425,7 +1425,7 @@ module BigInteger {
   }
 
   @chpldoc.nodoc
-  @unstable("kronecker is unstable and may move in the future")
+  @unstable("kronecker is unstable and may change in the future")
   proc kronecker(a: uint, const ref b: bigint) : int {
     const a_ = a.safeCast(c_ulong);
     const b_ = b.localize();
@@ -2269,7 +2269,7 @@ module BigInteger {
               ``primality.notPrime``.
     :rtype: :enum:`primality`
    */
-  @unstable("bigint.probablyPrime is unstable and may move in the future")
+  @unstable("bigint.probablyPrime is unstable and may change in the future")
   proc bigint.probablyPrime(reps: int) : primality {
     var t_ = this.localize();
     var reps_ = reps.safeCast(c_int);
@@ -2304,7 +2304,7 @@ module BigInteger {
       :arg x: the ``result`` will be a prime number bigger than this value
       :type x: :record:`bigint`
   */
-  @unstable("nextPrime is unstable and may move in the future")
+  @unstable("nextPrime is unstable and may change in the future")
   proc nextPrime(ref result: bigint, const ref x: bigint) {
     if compiledForSingleLocale() {
       mpz_nextprime(result.mpz, x.mpz);
@@ -2339,7 +2339,7 @@ module BigInteger {
       :arg b: One of the numbers to compute the greatest common divisor of
       :type b: :record:`bigint`, ``int``, ``uint``
   */
-  @unstable("gcd is unstable and may move in the future")
+  @unstable("gcd is unstable and may change in the future")
   proc gcd(ref result: bigint, const ref a: bigint, const ref b: bigint) {
     if compiledForSingleLocale() {
       mpz_gcd(result.mpz, a.mpz, b.mpz);
@@ -2363,7 +2363,7 @@ module BigInteger {
   }
 
   @chpldoc.nodoc
-  @unstable("gcd is unstable and may move in the future")
+  @unstable("gcd is unstable and may change in the future")
   proc gcd(ref result: bigint, const ref a: bigint, b: int) {
     if b >= 0 {
       BigInteger.gcd(result, a, b : uint);
@@ -2379,7 +2379,7 @@ module BigInteger {
   }
 
   @chpldoc.nodoc
-  @unstable("gcd is unstable and may move in the future")
+  @unstable("gcd is unstable and may change in the future")
   proc gcd(ref result: bigint, const ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
     if compiledForSingleLocale() {
@@ -2426,7 +2426,7 @@ module BigInteger {
      :arg t: The returned coefficient that can be multiplied by ``b``.
      :type t: :record:`bigint`
    */
-  @unstable("gcd is unstable and may move in the future")
+  @unstable("gcd is unstable and may change in the future")
   proc gcd(ref result: bigint, const ref a: bigint, const ref b: bigint,
                   ref s: bigint, ref t: bigint): void {
     if compiledForSingleLocale() {
@@ -2496,7 +2496,7 @@ module BigInteger {
       :arg b: One of the numbers to compute the least common multiple of
       :type b: :record:`bigint`, ``int``, ``uint``
   */
-  @unstable("lcm is unstable and may move in the future")
+  @unstable("lcm is unstable and may change in the future")
   proc lcm(ref result: bigint, const ref a: bigint, const ref b: bigint) {
     if compiledForSingleLocale() {
       mpz_lcm(result.mpz, a.mpz, b.mpz);
@@ -2520,7 +2520,7 @@ module BigInteger {
   }
 
   @chpldoc.nodoc
-  @unstable("lcm is unstable and may move in the future")
+  @unstable("lcm is unstable and may change in the future")
   proc lcm(ref result: bigint, const ref a: bigint, b: int) {
     if b >= 0 then
       BigInteger.lcm(result, a, b:uint);
@@ -2534,7 +2534,7 @@ module BigInteger {
   }
 
   @chpldoc.nodoc
-  @unstable("lcm is unstable and may move in the future")
+  @unstable("lcm is unstable and may change in the future")
   proc lcm(ref result: bigint, const ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
 
@@ -2716,7 +2716,7 @@ module BigInteger {
       Utilizes the GMP function `mpz_fac_ui
       <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
   */
-  @unstable("fac is unstable and may move in the future")
+  @unstable("fac is unstable and may change in the future")
   proc fac(ref result: bigint, a: integral) {
     const a_ = a.safeCast(c_ulong);
     if compiledForSingleLocale() {
@@ -2745,7 +2745,7 @@ module BigInteger {
 
       ``n`` can also be a ``uint``.
   */
-  @unstable("bin is unstable and may move in the future")
+  @unstable("bin is unstable and may change in the future")
   proc bin(ref result: bigint, const ref n: bigint, k: integral) {
     const k_ = k.safeCast(c_ulong);
     if compiledForSingleLocale() {
@@ -2768,7 +2768,7 @@ module BigInteger {
   }
 
   @chpldoc.nodoc
-  @unstable("bin is unstable and may move in the future")
+  @unstable("bin is unstable and may change in the future")
   proc bin(ref result: bigint, n: uint, k: integral) {
     if n >= 0 {
       const n_ = n.safeCast(c_ulong);
@@ -2807,7 +2807,7 @@ module BigInteger {
       :arg n: which Fibonacci number to compute for ``result``.
       :type n: ``integral``
   */
-  @unstable("fib is unstable and may move in the future")
+  @unstable("fib is unstable and may change in the future")
   proc fib(ref result: bigint, n: integral) {
     const n_ = n.safeCast(c_ulong);
 
@@ -2844,7 +2844,7 @@ module BigInteger {
               to the ``n-1`` Fibonacci number.
       :type n: ``integral``
   */
-  @unstable("fib2 is unstable and may move in the future")
+  @unstable("fib2 is unstable and may change in the future")
   proc fib2(ref result: bigint, ref fnsub1: bigint, n: integral) {
     const n_ = n.safeCast(c_ulong);
 
@@ -2886,7 +2886,7 @@ module BigInteger {
       :arg n: which Lucas number to compute
       :type n: ``integral``
   */
-  @unstable("lucNum is unstable and may move in the future")
+  @unstable("lucNum is unstable and may change in the future")
   proc lucNum(ref result: bigint, n: integral) {
     const n_ = n.safeCast(c_ulong);
     if compiledForSingleLocale() {
@@ -2925,7 +2925,7 @@ module BigInteger {
               to the ``n-1`` Lucas number.
       :type n: ``integral``
   */
-  @unstable("lucNum2 is unstable and may move in the future")
+  @unstable("lucNum2 is unstable and may change in the future")
   proc lucNum2(ref result: bigint, ref fnsub1: bigint, n: integral) {
     const n_ = n.safeCast(c_ulong);
 
