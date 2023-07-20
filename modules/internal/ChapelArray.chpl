@@ -33,6 +33,7 @@ module ChapelArray {
   use ChapelDebugPrint;
   use CTypes;
   use ChapelPrivatization;
+  use ChplConfig only compiledForSingleLocale;
   public use ChapelDomain;
 
   // Explicitly use a processor atomic, as most calls to this function are
@@ -80,9 +81,9 @@ module ChapelArray {
   config param logAllArrEltAccess = false;
 
   proc _isPrivatized(value) param do
-    return !_local && ((_privatization && value!.dsiSupportsPrivatization()) ||
-                       value!.dsiRequiresPrivatization());
-    // Note - _local=true means --local / single locale
+    return !compiledForSingleLocale() &&
+           ((_privatization && value!.dsiSupportsPrivatization()) ||
+            value!.dsiRequiresPrivatization());
     // _privatization is controlled by --[no-]privatization
     // privatization required, not optional, for PrivateDist
 

@@ -87,6 +87,9 @@ module ChplConfig {
   param CHPL_LOCALE_MODEL:string;
   CHPL_LOCALE_MODEL = __primitive("get compiler variable", "CHPL_LOCALE_MODEL");
 
+  /* Check if the Chapel program is being compiled for a single locale only. */
+  proc compiledForSingleLocale() param do return _local;
+
   /* See :ref:`readme-chplenv.CHPL_COMM` for more information. */
   @unstable("'ChplConfig.CHPL_COMM' is unstable and may be replaced with a different way to access this information in the future");
   param CHPL_COMM:string;
