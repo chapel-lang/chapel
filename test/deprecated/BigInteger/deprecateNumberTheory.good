@@ -1,0 +1,2 @@
+deprecateNumberTheory.chpl:6: warning: nextprime is deprecated - please use nextPrime instead
+7
