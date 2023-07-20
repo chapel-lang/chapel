@@ -3,7 +3,7 @@ class Parent {
   type idxType;
 }
 
-class HasGenericFields : Parent {
+class HasGenericFields : Parent(?) {
   param stridable : bool;
 
   proc chpl__promotionType() type do return idxType;
@@ -20,7 +20,7 @@ var h = ownH.borrow();
 writeln(h + 1);
 
 
-class NoGenericFields : Parent {
+class NoGenericFields : Parent(?) {
   proc chpl__promotionType() type do return idxType;
 
   iter these() {

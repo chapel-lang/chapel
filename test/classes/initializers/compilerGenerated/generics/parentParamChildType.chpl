@@ -12,7 +12,7 @@ class Parent {
   var x : int;
 }
 
-class Child : Parent {
+class Child : Parent(?) {
   var y : unmanaged Dummy(stridable)?;
 }
 
@@ -31,7 +31,7 @@ class A {
   param stridable : bool;
 }
 
-class Z : A {
+class Z : A(?) {
   var x : unmanaged Dummy(stridable)?;
 }
 
@@ -50,7 +50,7 @@ class DummyBaseDom {
   param stridable : bool;
 }
 
-class DummyMyDom : DummyBaseDom {
+class DummyMyDom : DummyBaseDom(?) {
   var locs : [1..4] unmanaged DummyLocMyDom(rank, idxType, stridable)?;
 }
 
