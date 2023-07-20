@@ -69,11 +69,13 @@ if ($status == 0) {
     $delfut  = &delta($oldfut, $curfut);
 
     $summary = "Tests run: $cursucc Successes ($delsucc), $curfail Failures ($delfail)";
+    
+
 } else {
     $summary = "Tests run: failed";
     $passed = 1;
 }
-
+print " \n __________Summary __________ : \n $summary \n";
 
 $knownumtests = 1;
 if ($status == 0) {
@@ -206,7 +208,7 @@ else{
     
 }
 
-print "Here ..";
+print "Here .. ";
 return $passed;
 
 }

@@ -20,7 +20,7 @@ print " ****** Number of arguments ******* $num_args \n ";
 # }
 my ($status, $rawsummary, $sortedsummary, ,$prevsummary, $mailer, $nochangerecipient, $recipient, $subjectid, $config_name, $revision, $rawlog, $starttime, $endtime, $crontab, $testdirs, $debug)=@_;
 
- $status = $_[0];
+$status = $_[0];
 $rawsummary = $_[1];
 $sortedsummary = $_[2];
 $prevsummary = $_[3];
