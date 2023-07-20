@@ -2271,10 +2271,10 @@ module BigInteger {
       compositie number.
 
       :arg result: return value that will contain the next prime number
-      :type result: ``bigint``
+      :type result: :record:`bigint`
 
       :arg x: the ``result`` will be a prime number bigger than this value
-      :type x: ``bigint``
+      :type x: :record:`bigint`
   */
   @unstable("nextPrime is unstable and may move in the future")
   proc nextPrime(ref result: bigint, const ref x: bigint) {
@@ -2774,13 +2774,13 @@ module BigInteger {
   proc lucnum(ref result: bigint, n: integral)
     do BigInteger.lucNum(result, n);
 
-  /*  Set ``result`` to the ``n``th Lucas number.
+  /*  Set ``result`` to the ``n`` th Lucas number.
 
       Utilizes the GMP function `mpz_lucnum_ui
       <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
 
       :arg result: return value that will contain the Lucas number
-      :type result: ``bigint``
+      :type result: :record:`bigint`
 
       :arg n: which Lucas number to compute
       :type n: ``integral``
@@ -2808,20 +2808,20 @@ module BigInteger {
   proc lucnum2(ref result: bigint, ref fnsub1: bigint, n: integral)
     do BigInteger.lucNum2(result, fnsub1, n);
 
-  /*  Set ``result`` to the ``n``th Lucas number and set ``fnsub1`` to the
+  /*  Set ``result`` to the ``n`` th Lucas number and set ``fnsub1`` to the
       ``n-1``th Lucas number.
 
       Utilizes the GMP function `mpz_lucnum2_ui
       <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
 
       :arg result: return value that will contain the Lucas number
-      :type result: ``bigint``
+      :type result: :record:`bigint`
 
       :arg fnsub1: return value that will contain the previous Lucas number
-      :type fnsub1: ``bigint``
+      :type fnsub1: :record:`bigint`
 
       :arg n: which Lucas number to compute for ``result``. ``fnsub1`` is set
-      to the ``n-1`` Lucas number.
+              to the ``n-1`` Lucas number.
       :type n: ``integral``
   */
   @unstable("lucNum2 is unstable and may move in the future")
@@ -2872,7 +2872,7 @@ module BigInteger {
       Utilizes the GMP function `mpz_hamdist <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling>`_
 
       :arg x: value to compare ``this`` against
-      :type x: ``bigint``
+      :type x: :record:`bigint`
 
       :returns: the number of bits that differ
       :rtype: ``uint``
