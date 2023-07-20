@@ -1021,7 +1021,7 @@ module ChapelArray {
             }
             var dimstr = "";
             for param i in 0..rank-1 {
-              if !value.dom.dsiDim(i).boundsCheck(indices(i)) {
+              if !value.dom.dsiDim(i).contains(indices(i)) {
                 if dimstr == "" {
                   dimstr = "out of bounds in dimension " + i:string +
                            " because index " + indices(i):string +
@@ -1061,7 +1061,7 @@ module ChapelArray {
       if this.isRectangular() {
         var ok = true;
         for param i in 0..rank-1 {
-          ok &&= value.dom.dsiDim(i).boundsCheck(ranges(i));
+          ok &&= value.dom.dsiDim(i).chpl_boundsCheck(ranges(i));
         }
         if ok == false {
           if rank == 1 {
@@ -1081,7 +1081,7 @@ module ChapelArray {
             }
             var dimstr = "";
             for param i in 0..rank-1 {
-              if !value.dom.dsiDim(i).boundsCheck(ranges(i)) {
+              if !value.dom.dsiDim(i).chpl_boundsCheck(ranges(i)) {
                 if dimstr == "" {
                   dimstr = "out of bounds in dimension " + i:string +
                            " because slice index " + ranges(i):string +
@@ -1394,7 +1394,7 @@ module ChapelArray {
     @chpldoc.nodoc
     proc checkRankChange(args) {
       for param i in 0..args.size-1 do
-        if !_value.dom.dsiDim(i).boundsCheck(args(i)) then
+        if !_value.dom.dsiDim(i).chpl_boundsCheck(args(i)) then
           halt("array slice out of bounds in dimension ", i, ": ", args(i));
     }
 
