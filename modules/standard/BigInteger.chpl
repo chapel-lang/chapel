@@ -1391,7 +1391,7 @@ module BigInteger {
   }
 
   proc kronecker(a: uint, const ref b: bigint) : int {
-    const a_ = b.safeCast(c_ulong);
+    const a_ = a.safeCast(c_ulong);
     const b_ = b.localize();
     var  ret : c_int;
 
