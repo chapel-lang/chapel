@@ -2808,12 +2808,29 @@ module BigInteger {
     return ret.safeCast(uint);
   }
 
-  proc bigint.hamdist(const ref b: bigint) : uint {
+  @deprecated("bigint.hamdist is deprecated - please use :proc:`bigint.hammingDistance` instead")
+  proc bigint.hamdist(const ref b: bigint): uint do return this.hammingDistance(b);
+
+  /*  Returns the number of bit positions that differ between ``this`` and
+      ``x``. If ``this`` and ``x`` have different signs, the number of bits
+      that differ is infinite and the return value is the largest possible
+      :type:`~GMP.mp_bitcnt_t`.
+
+      Utilizes the GMP function `mpz_hamdist <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling>`_
+
+      :arg x: value to compare ``this`` against
+      :type x: ``bigint``
+
+      :returns: the number of bits that differ
+      :rtype: ``uint``
+  */
+  @unstable("bigint.hammingDistance is unstable and may change in the future")
+  proc bigint.hammingDistance(const ref x: bigint): uint {
     const t_ = this.localize();
-    const b_ = b.localize();
+    const x_ = x.localize();
     var ret: c_ulong;
 
-    ret = mpz_hamdist(t_.mpz, b_.mpz);
+    ret = mpz_hamdist(t_.mpz, x_.mpz);
 
     return ret.safeCast(uint);
   }
