@@ -74,7 +74,7 @@ if ($status == 0) {
     
 
 } else {
-     print " status else ";
+    print " status else ";
     $summary = "Tests run: failed";
     $passed = 1;
 }
@@ -120,7 +120,7 @@ if ($status == 0) {
 if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0 && $newpassingsuppress == 0) {
     print "Mailing to minimal group\n";
     $recipient = $nochangerecipient;
-   $passed = 1;
+    $passed = 1;
 } else {
     $passed = 1;
     print "Mailing to everyone\n";
