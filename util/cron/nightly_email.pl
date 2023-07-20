@@ -48,9 +48,11 @@ ensureSummaryExists($prevsummary);
 # the cases here.
 if ($status == 2) {
   $status = 0;
+  print " status 2";
 }
 
 if ($status == 0) {
+     print " status 0";
     `cat $rawsummary | grep -v "^.END" | grep -v "^.Test Summary" | LC_ALL=C sort > $sortedsummary`;
 
     $oldsummary = `grep Summary: $prevsummary`; chomp($oldsummary);
@@ -72,6 +74,7 @@ if ($status == 0) {
     
 
 } else {
+     print " status else ";
     $summary = "Tests run: failed";
     $passed = 1;
 }
@@ -117,6 +120,7 @@ if ($status == 0) {
 if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0 && $newpassingsuppress == 0) {
     print "Mailing to minimal group\n";
     $recipient = $nochangerecipient;
+   $passed = 1;
 } else {
     $passed = 1;
     print "Mailing to everyone\n";
