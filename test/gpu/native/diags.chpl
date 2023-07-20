@@ -1,9 +1,14 @@
 use GpuDiagnostics;
 use MemDiagnostics;
 
+use GpuTestCommon;
+
+// verbose gpu diagnostics have different behavior based on mem strategy
+config const verboseDiags = false;
+
 writeln("Start");
 
-startVerboseGpu();
+if verboseDiags then startVerboseGpu();
 startGpuDiagnostics();
 startVerboseMem();
 
@@ -20,14 +25,11 @@ on here.gpus[0] {
 
 stopVerboseMem();
 stopGpuDiagnostics();
-stopVerboseGpu();
+if verboseDiags then stopVerboseGpu();
 
 writeln(A);
 writeln("End");
 
-writeln("GPU diagnostics:");
-writeln(getGpuDiagnostics());
-
+verifyDiags(um=1, aod=1, h2d=1, d2h=1, d2d=1);
 resetGpuDiagnostics();
-writeln("GPU diagnostics after reset:");
-writeln(getGpuDiagnostics());
+verifyDiags(um=0, aod=0, h2d=0, d2h=0, d2d=0);
