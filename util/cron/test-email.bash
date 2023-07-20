@@ -8,11 +8,12 @@ source $CWD/common.bash
 export CHPL_HOST_MEM="jemalloc"
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="test-email"
 
-$CWD/nightly -cron -hellos ${nightly_args}
-if [ $? -ne 0 ] 
-   then
-     log_error "Got errored out in the test" 
-     exit 1
-   else
-     log_info "Compiled pidigits.chpl"  
-   fi   
+status = $CWD/nightly -cron -hellos ${nightly_args}
+exit $status
+# if [ $? -ne 0 ] 
+#    then
+#      log_error "Got errored out in the test" 
+#      exit 1
+#    else
+#      log_info "Compiled pidigits.chpl"  
+#    fi   

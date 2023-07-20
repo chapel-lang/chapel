@@ -122,7 +122,7 @@ if ($status == 0) {
 
 if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0 && $newpassingsuppress == 0) {
     print "Mailing to minimal group\n";
-    $passed = 1;
+    $passed = 2;
     $recipient = $nochangerecipient;
 
 } else {
