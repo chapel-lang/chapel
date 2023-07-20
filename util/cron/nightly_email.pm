@@ -131,7 +131,16 @@ if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0 && $newpas
 
 # Persist the test summary to a (summary.txt) in the workspace.
 # Summary.txt wull be used by Jenkins to send emails in case of a failure.
-writeSummary ($revision,
+
+
+$mailsubject = "$subjectid $config_name";
+$mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
+
+if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
+    # Send email only if there are new failures. Set the passed flag to 1
+    $passed = 1;
+
+    writeSummary ($revision,
      $starttime,
      $endtime ,
      $crontab ,
@@ -140,57 +149,7 @@ writeSummary ($revision,
      $summary ,
      $prevsummary ,
      $sortedsummary );
-
-$mailsubject = "$subjectid $config_name";
-$mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
-
-if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
-    
-    $passed = 1;
-    # print "Trying... $mailcommand\n";
-    # open(MAIL, $mailcommand);
-
-    # print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab, $testdirs);
-    # print MAIL "$numtestssummary\n";
-    # print MAIL "$summary\n";
-    # print MAIL endMailHeader();
-
-    # if ($status == 0) {
-    #     print MAIL "--- New Errors -------------------------------\n";
-    #     print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
-    #     print MAIL "\n";
-
-    #     print MAIL "--- Resolved Errors --------------------------\n";
-    #     print MAIL `LC_ALL=C comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
-    #     print MAIL "\n";
-
-    #     print MAIL "--- New Passing Future tests------------------\n";
-    #     print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
-    #     print MAIL "\n";
-
-    #     print MAIL "--- Passing Future tests ---------------------\n";
-    #     print MAIL `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
-    #     print MAIL "\n";
-
-    #     print MAIL "--- New Passing Suppress tests------------------\n";
-    #     print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$suppressmarker" | grep "\\[Success"`;
-    #     print MAIL "\n";
-
-    #     print MAIL "--- Passing Suppress tests ---------------------\n";
-    #     print MAIL `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$suppressmarker" | grep "\\[Success"`;
-    #     print MAIL "\n";
-
-    #     print MAIL "--- Unresolved Errors ------------------------\n";
-    #     print MAIL `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
-    #     print MAIL "\n";
-
-    #     print MAIL "--- New Failing Future tests -----------------\n";
-    #     print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;
-    #     print MAIL "\n";
-    # }
-
-    # print MAIL endMailChplenv();
-    # close(MAIL);
+  
 } else {
     print "CHPL_TEST_NOMAIL: No $mailcommand\n";
 }
