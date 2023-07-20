@@ -1413,7 +1413,7 @@ struct RstResultBuilder {
     if (node->isEnumElement()) {
       os_ << "enum constant ";
     }
-    
+
     node->traverse(ppv);
     if (!textOnly_) os_ << "\n";
 
