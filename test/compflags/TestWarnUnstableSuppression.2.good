@@ -1,7 +1,34 @@
+$CHPL_HOME/modules/internal/ChapelArray.chpl:nnnn: In function 'chpl__distributed':
 $CHPL_HOME/modules/internal/ChapelArray.chpl:nnnn: warning: 'dmapped' keyword is unstable, instead please use factory functions when available
 $CHPL_HOME/modules/internal/ChapelArray.chpl:nnnn: warning: 'dmapped' keyword is unstable, instead please use factory functions when available
 $CHPL_HOME/modules/internal/ChapelArray.chpl:nnnn: warning: 'dmapped' keyword is unstable, instead please use factory functions when available
 $CHPL_HOME/modules/internal/ChapelArray.chpl:nnnn: warning: 'dmapped' keyword is unstable, instead please use factory functions when available
 $CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: warning: chpl_unstableInternalSymbolForTesting is unstable
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: warning: 'ChplConfig.CHPL_GPU_MEM_STRATEGY' is unstable and may be replaced with a different way to access this information in the future
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: warning: 'ChplConfig.CHPL_LOCALE_MODEL' is unstable and may be replaced with a different way to access this information in the future
+$CHPL_HOME/modules/internal/Atomics.chpl:nnnn: warning: 'ChplConfig.CHPL_NETWORK_ATOMICS' is unstable and may be replaced with a different way to access this information in the future
+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:nnnn: In function 'supportsNativeSyncVar':
+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:nnnn: warning: 'ChplConfig.CHPL_TASKS' is unstable and may be replaced with a different way to access this information in the future
+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:nnnn: warning: 'ChplConfig.CHPL_TARGET_ARCH' is unstable and may be replaced with a different way to access this information in the future
+$CHPL_HOME/modules/internal/DefaultRectangular.chpl:nnnn: warning: the type 'dmap' is unstable, instead please use distribution factory functions when available
+$CHPL_HOME/modules/internal/DefaultRectangular.chpl:nnnn: warning: the type 'dmap' is unstable, instead please use distribution factory functions when available
+$CHPL_HOME/modules/internal/ChapelGpuSupport.chpl:nnnn: warning: 'ChplConfig.CHPL_LOCALE_MODEL' is unstable and may be replaced with a different way to access this information in the future
+$CHPL_HOME/modules/internal/ChapelHashtable.chpl:nnnn: In function '_allocateData':
+$CHPL_HOME/modules/internal/ChapelHashtable.chpl:nnnn: warning: 'ChplConfig.CHPL_LOCALE_MODEL' is unstable and may be replaced with a different way to access this information in the future
+$CHPL_HOME/modules/internal/LocaleModelHelpSetup.chpl:nnnn: In function 'localSpawn':
+$CHPL_HOME/modules/internal/LocaleModelHelpSetup.chpl:nnnn: warning: 'ChplConfig.CHPL_COMM_SUBSTRATE' is unstable and may be replaced with a different way to access this information in the future
+$CHPL_HOME/modules/internal/LocaleModelHelpSetup.chpl:nnnn: warning: 'ChplConfig.CHPL_COMM_SUBSTRATE' is unstable and may be replaced with a different way to access this information in the future
+$CHPL_HOME/modules/internal/LocaleModelHelpSetup.chpl:nnnn: warning: 'ChplConfig.CHPL_COMM' is unstable and may be replaced with a different way to access this information in the future
+$CHPL_HOME/modules/internal/BytesStringCommon.chpl:nnnn: In function 'doSearchNoEnc':
+$CHPL_HOME/modules/internal/BytesStringCommon.chpl:nnnn: warning: range.orderToIndex() is unstable and its behavior may change in the future
+$CHPL_HOME/modules/internal/BytesStringCommon.chpl:nnnn: warning: range.orderToIndex() is unstable and its behavior may change in the future
+  $CHPL_HOME/modules/internal/String.chpl:nnnn: called as doSearchNoEnc(x: string, needle: string, region: range(byteIndex,low,one), param count = false, param fromLeft = true)
+  within internal functions (use --print-callstack-on-error to see)
+$CHPL_HOME/modules/internal/String.chpl:nnnn: In method 'doSearchUTF8':
+$CHPL_HOME/modules/internal/String.chpl:nnnn: warning: range.orderToIndex() is unstable and its behavior may change in the future
+$CHPL_HOME/modules/internal/String.chpl:nnnn: warning: range.orderToIndex() is unstable and its behavior may change in the future
+  $CHPL_HOME/modules/internal/String.chpl:nnnn: called as string.doSearchUTF8(pattern: string, indices: range(byteIndex,low,one), param count = false, param fromLeft = true)
+  within internal functions (use --print-callstack-on-error to see)
+$CHPL_HOME/modules/internal/ChapelLocale.chpl:nnnn: In function 'warmupRuntime':
 $CHPL_HOME/modules/internal/ChapelLocale.chpl:nnnn: warning: 'allocate' is unstable, and may be renamed or moved
 $CHPL_HOME/modules/internal/ChapelLocale.chpl:nnnn: warning: 'deallocate' is unstable, and may be renamed or moved

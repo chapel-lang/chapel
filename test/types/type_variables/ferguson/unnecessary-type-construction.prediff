@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# Strip internal string module line numbers
+
+#TESTNAME=$1
+OUTFILE=$2
+
+TMPFILE="$outfile.prediff.tmp"
+mv $OUTFILE $TMPFILE
+sed -e 's/String.chpl:[0-9]*:/String.chpl:nnnn:/g' $TMPFILE > $OUTFILE
+rm $TMPFILE

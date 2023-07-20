@@ -3,7 +3,7 @@ unnecessary-type-construction.chpl:1: note: 'R' has no generic fields
 unnecessary-type-construction.chpl:3: note: remove the '()'
 note: this warning will become an error in the future
 unnecessary-type-construction.chpl:6: warning: unnecessary type construction call
-$CHPL_HOME/modules/internal/String.chpl:846: note: 'string' has no generic fields
+$CHPL_HOME/modules/internal/String.chpl:nnnn: note: 'string' has no generic fields
 unnecessary-type-construction.chpl:6: note: remove the '()'
 note: this warning will become an error in the future
 unnecessary-type-construction.chpl:9: warning: unnecessary type construction call

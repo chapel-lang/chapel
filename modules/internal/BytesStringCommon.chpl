@@ -23,6 +23,7 @@ module BytesStringCommon {
   private use CTypes;
   private use ByteBufferHelpers;
   private use String.NVStringFactory;
+  private use ChplConfig only compiledForSingleLocale;
 
   extern const CHPL_SHORT_STRING_SIZE : c_int;
 
@@ -88,7 +89,7 @@ module BytesStringCommon {
   // issue (#448 chapel-private)
   inline proc getCStr(const ref x: ?t): c_string {
     assertArgType(t, "getCStr");
-    if _local == false && x.locale_id != chpl_nodeID then
+    if !compiledForSingleLocale() && x.locale_id != chpl_nodeID then
       halt("Cannot call .c_str() on a remote " + t:string);
 
     var buff: bufferType = x.buff;
@@ -323,7 +324,7 @@ module BytesStringCommon {
 
     if otherLen > 0 {
       x.buffLen = otherLen;
-      if !_local && otherRemote {
+      if !compiledForSingleLocale() && otherRemote {
         // if s is remote, copy and own the buffer
         x.buff = bufferCopyRemote(other.locale_id, other.buff, otherLen);
         x.buffSize = otherLen+1;
@@ -1137,7 +1138,7 @@ module BytesStringCommon {
     assertArgType(t, "doAssign");
 
     inline proc helpMe(ref lhs: t, rhs: t) {
-      if _local || rhs.locale_id == chpl_nodeID {
+      if compiledForSingleLocale() || rhs.locale_id == chpl_nodeID {
         if t == string {
           reinitWithNewBuffer(lhs, rhs.buff, rhs.buffLen, rhs.buffSize,
                               rhs.numCodepoints);
@@ -1160,7 +1161,7 @@ module BytesStringCommon {
       }
     }
 
-    if _local || lhs.locale_id == chpl_nodeID then {
+    if compiledForSingleLocale() || lhs.locale_id == chpl_nodeID then {
       helpMe(lhs, rhs);
     }
     else {
