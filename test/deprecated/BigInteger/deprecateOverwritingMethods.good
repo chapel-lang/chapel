@@ -11,7 +11,7 @@ deprecateOverwritingMethods.chpl:n: warning: bigint.root method is deprecated - 
 deprecateOverwritingMethods.chpl:n: warning: bigint.rootrem method is deprecated - please use the standalone function rootrem
 deprecateOverwritingMethods.chpl:n: warning: bigint.sqrt method is deprecated - please use the standalone function sqrt
 deprecateOverwritingMethods.chpl:n: warning: bigint.sqrtrem method is deprecated - please use the standalone function sqrtrem
-deprecateOverwritingMethods.chpl:n: warning: bigint.nextprime method is deprecated - please use the standalone function nextprime
+deprecateOverwritingMethods.chpl:n: warning: bigint.nextprime method is deprecated - please use the standalone function nextPrime
 deprecateOverwritingMethods.chpl:n: warning: bigint.gcd method is deprecated - please use the standalone function gcd
 deprecateOverwritingMethods.chpl:n: warning: bigint.gcd method is deprecated - please use the standalone function gcd
 deprecateOverwritingMethods.chpl:n: warning: bigint.gcd method is deprecated - please use the standalone function gcd
