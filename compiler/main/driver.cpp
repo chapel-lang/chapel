@@ -794,7 +794,7 @@ static int invokeChplWithArgs(int argc, char* argv[],
   }
 
   return mysystem(commandVec, description,
-                  /* ignoreStatus */ true, /* quiet */ true);
+                  /* ignoreStatus */ true, /* quiet */ false);
 }
 
 static int runCompilation(int argc, char* argv[]);
@@ -2074,6 +2074,19 @@ static chpl::CompilerGlobals dynoBuildCompilerGlobals() {
   };
 }
 
+static void bootstrapTmpDir() {
+  chpl::Context::Configuration config;
+  if (saveCDir[0]) {
+    ensureDirExists(saveCDir, "ensuring --savec directory exists");
+    config.tmpDir = saveCDir;
+    config.keepTmpDir = true;
+  }
+  auto oldContext = gContext;
+  gContext = new chpl::Context(*oldContext, std::move(config));
+  delete oldContext;
+  gContext->tmpDir();
+}
+
 static void dynoConfigureContext(std::string chpl_module_path) {
   INT_ASSERT(gContext != nullptr);
 
@@ -2082,11 +2095,6 @@ static void dynoConfigureContext(std::string chpl_module_path) {
   config.chplHome = CHPL_HOME;
   for (const auto& pair : envMapChplEnvInput) {
     config.chplEnvOverrides.insert(pair);
-  }
-  if (saveCDir[0]) {
-    ensureDirExists(saveCDir, "ensuring --savec directory exists");
-    config.tmpDir = saveCDir;
-    config.keepTmpDir = true;
   }
   config.toolName = "chpl";
 
@@ -2200,6 +2208,8 @@ int main(int argc, char* argv[]) {
     if (const char* envvarpath  = getenv("CHPL_MODULE_PATH")) {
       chpl_module_path = envvarpath;
     }
+
+    bootstrapTmpDir();
 
     addSourceFiles(sArgState.nfile_arguments, sArgState.file_argument);
 
