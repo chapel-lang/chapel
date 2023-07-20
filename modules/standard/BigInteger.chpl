@@ -2233,18 +2233,6 @@ module BigInteger {
 
   // Number Theoretic Functions
 
-  /*
-    .. warning::
-
-       bigint.probab_prime_p is deprecated, use bigint.probablyPrime instead
-  */
-  @deprecated
-  ("bigint.probab_prime_p is deprecated, use bigint.probablyPrime instead")
-  proc bigint.probab_prime_p(reps: int) : int {
-    var ret = this.probablyPrime(reps):int;
-    return ret;
-  }
-
   /* An enumeration of the different possibilities of a number being prime, for use with e.g.
      :proc:`~bigint.probablyPrime` to determine if a number is prime or not.
 
