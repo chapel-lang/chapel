@@ -1,1 +1,1 @@
-yaml deserializer isn't properly invoked by '%?' format specifier
+`mark`ing in `readf` conflicts with `seek`ing in Yaml Deserializer: #22787
