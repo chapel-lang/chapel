@@ -133,6 +133,8 @@ static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
 static bool fBaseline = false;
 
+static char driverTmpDir[FILENAME_MAX] = "";
+
 // Flags that were in commonFlags.h/cpp for awhile
 
 // TODO: Should --library automatically generate all supported
@@ -890,10 +892,6 @@ static void readConfig(const ArgumentDescription* desc, const char* arg_unused) 
   }
 }
 
-static void setTmpDir(const ArgumentDescription* desc, const char* arg) {
-  intDirName = astr(arg);
-}
-
 static void setSubInvocation(const ArgumentDescription* desc, const char* arg) {
   driverInSubInvocation = true;
 }
@@ -1361,7 +1359,7 @@ static ArgumentDescription arg_desc[] = {
  {"explain-call-id", ' ', "<call-id>", "Explain resolution of call by ID", "I", &explainCallID, NULL, NULL},
  {"break-on-resolve-id", ' ', NULL, "Break when function call with AST id is resolved", "I", &breakOnResolveID, "CHPL_BREAK_ON_RESOLVE_ID", NULL},
  {"denormalize", ' ', NULL, "Enable [disable] denormalization", "N", &fDenormalize, "CHPL_DENORMALIZE", NULL},
- {"driver-tmp-dir", ' ', "<tmpDir>", "Set temp dir to be used by compiler driver", "P", NULL, NULL, setTmpDir},
+ {"driver-tmp-dir", ' ', "<tmpDir>", "Set temp dir to be used by compiler driver", "P", &driverTmpDir, NULL, NULL},
  {"do-monolithic", ' ', NULL, "Run compiler as monolithic without driver", "F", &fDoMonolithic, NULL, NULL},
  {"do-compilation", ' ', NULL, "Run driver compilation step", "F", &fDoCompilation, NULL, setSubInvocation},
  {"do-make-binary", ' ', NULL, "Run driver make binary step", "F", &fDoMakeBinary, NULL, setSubInvocation},
@@ -1847,8 +1845,8 @@ static void checkCompilerDriverFlags() {
           "compiler-driver flags were set; they will be ignored and monolithic "
           "compilation will be performed.");
     }
-    if (intDirName != NULL) {
-      // user has specified a tmp dir
+    if (driverTmpDir[0]) {
+      // user has specified a driver tmp dir
       USR_WARN(
           "Driver temp dir set for monolithic compilation will be ignored");
     }
@@ -2090,7 +2088,9 @@ static void bootstrapTmpDir() {
     // We are in a sub-invocation and can assume that a tmp dir has been
     // established for us by the driver already, and will be deleted for us
     // later if necessary.
-    assert(intDirName);
+    assert(driverTmpDir[0] &&
+           "Driver sub-invocation was not supplied a tmp dir path");
+    intDirName = driverTmpDir;
     config.tmpDir = intDirName;
     config.keepTmpDir = true;
   } else {
