@@ -1441,30 +1441,8 @@ module BigInteger {
 
   // divexact
 
-  /*
-    .. warning::
-
-       n and d are deprecated - please use numer and denom respectively
-  */
-  pragma "last resort"
-  @deprecated
-  ("n and d are deprecated - please use numer and denom respectively")
-  proc bigint.divexact(const ref n: bigint, const ref d: bigint) {
-    BigInteger.divexact(this, numer=n, denom=d);
-  }
-  /*
-    .. warning::
-
-       n and d are deprecated - please use numer and denom respectively
-  */
-  pragma "last resort"
-  @deprecated
-  ("n and d are deprecated - please use numer and denom respectively")
-  proc bigint.divexact(const ref n: bigint, d: integral) {
-    BigInteger.divexact(this, numer=n,denom=new bigint(d));
-  }
-
   // documented in bigint, integral version
+  @chpldoc.nodoc
   proc divexact(ref result: bigint, const ref numer: bigint, const ref denom: bigint) {
     if (chpl_checkDivByZero) then
       if denom == 0 then
@@ -1488,6 +1466,7 @@ module BigInteger {
 
   // documented in bigint, integral version
   @deprecated(notes="bigint.divexact method is deprecated - please use the standalone function :proc:`~BigInteger.divexact`")
+  @chpldoc.nodoc
   proc bigint.divexact(const ref numer: bigint, const ref denom: bigint) {
     BigInteger.divexact(this, numer, denom);
   }
@@ -1501,6 +1480,9 @@ module BigInteger {
        ``divexact`` is optimized to handle cases where ``numer/denom`` results
        in an integer.  When ``numer/denom`` does not produce an integer, this
        method may produce incorrect results.
+
+    Utilizes the GMP function `mpz_divexact
+    <https://gmplib.org/manual/Integer-Division>`_.
 
     :arg result: Where the result is stored
     :type result: :record:`bigint`
@@ -1525,12 +1507,13 @@ module BigInteger {
        in an integer.  When ``numer/denom`` does not produce an integer, this
        method may produce incorrect results.
 
-    :arg numer: numerator
+    Utilizes the GMP function `mpz_divexact
+    <https://gmplib.org/manual/Integer-Division>`_.
 
+    :arg numer: numerator
     :type numer: :record:`bigint`
 
     :arg denom: denominator
-
     :type denom: :record:`bigint` or ``integral``
   */
   @deprecated(notes="bigint.divexact method is deprecated - please use the standalone function :proc:`~BigInteger.divexact`")
@@ -1538,40 +1521,10 @@ module BigInteger {
     BigInteger.divexact(this, numer, denom);
   }
 
-  // divisible_p
-  /*
-    .. warning::
-
-       bigint.divisible_p is deprecated, use bigint.isDivisible instead
-  */
-  @deprecated
-  ("bigint.divisible_p is deprecated, use bigint.isDivisible instead")
-  proc bigint.divisible_p(const ref d: bigint) : int {
-    return this.isDivisible(d);
-  }
-  /*
-    .. warning::
-
-       bigint.divisible_p is deprecated, use bigint.isDivisible instead
-  */
-  @deprecated
-  ("bigint.divisible_p is deprecated, use bigint.isDivisible instead")
-  proc bigint.divisible_p(d: int) : int {
-    return this.isDivisible(d);
-  }
-  /*
-    .. warning::
-
-       bigint.divisible_p is deprecated, use bigint.isDivisible instead
-  */
-  @deprecated
-  ("bigint.divisible_p is deprecated, use bigint.isDivisible instead")
-  proc bigint.divisible_p(d: uint) : int {
-    return this.isDivisible(d);
-  }
 
   // divisible_p
   // documented in uint version
+  @chpldoc.nodoc
   proc bigint.isDivisible(const ref div: bigint) : bool {
     const t_ = this.localize();
     const div_ = div.localize();
@@ -1586,6 +1539,7 @@ module BigInteger {
   }
 
   // documented in uint version
+  @chpldoc.nodoc
   proc bigint.isDivisible(div: int) : bool {
     const t_ = this.localize();
     var div_ = 0 : c_ulong;
@@ -1610,6 +1564,9 @@ module BigInteger {
     q*div``.  Unlike the other division functions, ``0`` is an acceptable value
     for ``div`` and only ``0`` is considered divisible by ``0``.
 
+    Utilizes the GMP function `mpz_divisible_p
+    <https://gmplib.org/manual/Integer-Division>`_.
+
     :arg div: number to check if ``this`` is divisible by
     :type div: :record:`bigint`, ``int`` or ``uint``
 
@@ -1631,20 +1588,12 @@ module BigInteger {
   }
 
   /*
-    .. warning::
-
-       bigint.divisible_2exp_p is deprecated, use bigint.isDivisibleBy2Pow instead
-  */
-  @deprecated
-  ("bigint.divisible_2exp_p is deprecated, use bigint.isDivisibleBy2Pow instead")
-  proc bigint.divisible_2exp_p(b: integral) : int {
-    return this.isDivisibleBy2Pow(b);
-  }
-
-  /*
     Return ``true`` if ``this`` is exactly divisible by ``2^exp``.  ``this`` is
     divisible by ``2^exp`` if there exists an integer ``q`` satisfying ``this =
     q*2^exp``.
+
+    Utilizes the GMP function `mpz_divisible_2exp_p
+    <https://gmplib.org/manual/Integer-Division>`_.
 
     :arg exp: power of 2 to check if ``this`` is divisible by
     :type exp: ``integral``
@@ -1667,29 +1616,7 @@ module BigInteger {
   }
 
   // congruent_p
-  /*
-    .. warning::
-
-       bigint.congruent_p is deprecated, use bigint.isCongruent instead
-  */
-  @deprecated
-  ("bigint.congruent_p is deprecated, use bigint.isCongruent instead")
-  proc bigint.congruent_p(const ref c: bigint, const ref d: bigint) : int {
-    return this.isCongruent(c,d);
-  }
-  /*
-    .. warning::
-
-       bigint.congruent_p is deprecated, use bigint.isCongruent instead
-  */
-  @deprecated
-  ("bigint.congruent_p is deprecated, use bigint.isCongruent instead")
-  proc bigint.congruent_p(c: integral, d: integral) : int {
-    return this.isCongruent(c,d);
-  }
-
-  // congruent_p
-  // documented in integral, integral version
+  @chpldoc.nodoc
   proc bigint.isCongruent(const ref con: bigint, const ref mod: bigint) : bool {
     const t_ = this.localize();
     const con_ = con.localize();
@@ -1710,6 +1637,9 @@ module BigInteger {
     ``this = con + q*mod``.  Unlike the other division functions, ``0`` is an
     acceptable value for ``mod``.  As a result ``this`` and ``con`` are
     considered congruent modulo ``0`` only when exactly equal.
+
+    Utilizes the GMP function `mpz_congruent_p
+    <https://gmplib.org/manual/Integer-Division>`_.
 
     :arg con: number to determine if ``this`` is congruent to, modulo ``mod``
     :type con: :record:`bigint` or ``integral``
@@ -1737,20 +1667,12 @@ module BigInteger {
   }
 
   /*
-    .. warning::
-
-       bigint.congruent_2exp_p is deprecated, use bigint.isCongruentBy2Pow instead
-  */
-  @deprecated
-  ("bigint.congruent_2exp_p is deprecated, use bigint.isCongruentBy2Pow instead")
-  proc bigint.congruent_2exp_p(const ref c: bigint, b: integral) : int {
-    return this.isCongruentBy2Pow(c,b);
-  }
-
-  /*
     Return ``true`` if ``this`` is congruent to ``con % 2^modExp``.  ``this`` is
     congruent to ``con % 2^modExp`` if there exists an integer ``q`` satisfying
     ``this = con + q*2^modExp``.
+
+    Utilizes the GMP function `mpz_congruent_2exp_p
+    <https://gmplib.org/manual/Integer-Division>`_.
 
     :arg con: number to determine if ``this`` is congruent to, modulo
               ``2^modExp``.
