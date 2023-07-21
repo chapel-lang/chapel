@@ -1611,6 +1611,17 @@ GenRet codegenValue(GenRet r)
   return ret;
 }
 
+// codegenValue r, but deref it first if necessary
+static GenRet codegenValueMaybeDeref(Expr* r) {
+  GenRet ret;
+  if (r->isRefOrWideRef()) {
+    ret = codegenValue(codegenDeref(r));
+  } else {
+    ret = codegenValue(r);
+  }
+  return ret;
+}
+
 // Create a temporary value holding r and return a pointer to it.
 // If r is already a pointer, do nothing.
 // Does not handle homogeneous tuples.
@@ -5407,14 +5418,7 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
     args.push_back(localAddr);
 
     curArg = call->get(curArgIdx++);
-    GenRet locale;
-
-    if (curArg->isRefOrWideRef()) {
-      locale = codegenValue(codegenDeref(curArg));
-    } else {
-      locale = codegenValue(curArg);
-    }
-
+    GenRet locale = codegenValueMaybeDeref(curArg);;
     args.push_back(locale);
 
 
@@ -5425,14 +5429,7 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
       if (useGpuVersion) {
         // we only create an argument if we're using the GPU version of the
         // runtime call
-        GenRet subloc;
-
-        if (curArg->isRefOrWideRef()) {
-          subloc = codegenValue(codegenDeref(curArg));
-        } else {
-          subloc = codegenValue(curArg);
-        }
-
+        GenRet subloc = codegenValueMaybeDeref(curArg);
         args.push_back(subloc);
       }
     }
@@ -5465,15 +5462,8 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
     args.push_back(remoteAddr);
 
     curArg = call->get(curArgIdx++);
-    GenRet len;
+    GenRet len = codegenValueMaybeDeref(curArg);
     GenRet size;
-
-    if (curArg->isRefOrWideRef()) {
-      len = codegenValue(codegenDeref(curArg));
-    } else {
-      len = codegenValue(curArg);
-    }
-
 
     if (call->primitive->tag == PRIM_CHPL_COMM_ARRAY_PUT ||
         call->primitive->tag == PRIM_CHPL_COMM_ARRAY_GET) {
@@ -5537,13 +5527,7 @@ DEFINE_PRIM(CHPL_COMM_REMOTE_PREFETCH) {
     //   locale, remote addr, get(3)==size, line, file
 
     // Get the locale
-    GenRet locale;
-
-    if (call->get(1)->isRefOrWideRef()) {
-      locale = codegenValue(codegenDeref(call->get(1)));
-    } else {
-      locale = codegenValue(call->get(1));
-    }
+    GenRet locale = codegenValueMaybeDeref(call->get(1));
 
     // source data array
     GenRet   remoteAddr = call->get(2);
@@ -5558,13 +5542,7 @@ DEFINE_PRIM(CHPL_COMM_REMOTE_PREFETCH) {
       remoteAddr = codegenAddrOf(remoteAddr);
     }
 
-    GenRet len;
-
-    if (call->get(3)->isRefOrWideRef()) {
-      len = codegenValue(codegenDeref(call->get(3)));
-    } else {
-      len = codegenValue(call->get(3));
-    }
+    GenRet len = codegenValueMaybeDeref(call->get(3));
 
     codegenCall("chpl_gen_comm_prefetch",
                 locale,
@@ -5619,13 +5597,7 @@ static void codegenPutGetStrd(CallExpr* call, GenRet &ret) {
     }
 
     // locale id
-    GenRet locale;
-
-    if (call->get(3)->isRefOrWideRef()) {
-      locale = codegenValue(codegenDeref(call->get(3)));
-    } else {
-      locale = codegenValue(call->get(3));
-    }
+    GenRet locale = codegenValueMaybeDeref(call->get(3));
 
     // source data array
     GenRet   remoteAddr = call->get(4);
@@ -5665,13 +5637,7 @@ static void codegenPutGetStrd(CallExpr* call, GenRet &ret) {
     }
 
     // stridelevels
-    GenRet stridelevels;
-
-    if (call->get(7)->isRefOrWideRef()) {
-      stridelevels = codegenValue(codegenDeref(call->get(7)));
-    } else {
-      stridelevels = codegenValue(call->get(7));
-    }
+    GenRet stridelevels = codegenValueMaybeDeref(call->get(7));
 
     // eltSize
     GenRet eltSize = codegenSizeof(dt->typeInfo());
