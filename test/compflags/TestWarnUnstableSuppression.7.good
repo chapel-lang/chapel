@@ -80,6 +80,17 @@ $CHPL_HOME/modules/standard/Time.chpl:nnnn: In function 'tm_zoneType':
 $CHPL_HOME/modules/standard/Time.chpl:nnnn: warning: 'ChplConfig.CHPL_TARGET_PLATFORM' is unstable and may be replaced with a different way to access this information in the future
 $CHPL_HOME/modules/dists/SparseBlockDist.chpl:nnnn: In function 'getDefaultSparseDist':
 $CHPL_HOME/modules/dists/SparseBlockDist.chpl:nnnn: warning: the type 'dmap' is unstable, instead please use distribution factory functions when available
+$CHPL_HOME/modules/standard/Map.chpl:nnnn: warning: 'map.parSafe' is unstable and is expected to be replaced by a separate map type in the future
+$CHPL_HOME/modules/standard/Map.chpl:nnnn: In method '_enter':
+$CHPL_HOME/modules/standard/Map.chpl:nnnn: warning: 'map.parSafe' is unstable and is expected to be replaced by a separate map type in the future
+$CHPL_HOME/modules/standard/Map.chpl:nnnn: In method '_leave':
+$CHPL_HOME/modules/standard/Map.chpl:nnnn: warning: 'map.parSafe' is unstable and is expected to be replaced by a separate map type in the future
+$CHPL_HOME/modules/standard/Map.chpl:nnnn: In method 'extend':
+$CHPL_HOME/modules/standard/Map.chpl:nnnn: warning: 'map.parSafe' is unstable and is expected to be replaced by a separate map type in the future
+$CHPL_HOME/modules/standard/Map.chpl:nnnn: In method '_warnForParSafeIndexing':
+$CHPL_HOME/modules/standard/Map.chpl:nnnn: warning: 'map.parSafe' is unstable and is expected to be replaced by a separate map type in the future
+$CHPL_HOME/modules/standard/Map.chpl:nnnn: In initializer:
+$CHPL_HOME/modules/standard/Map.chpl:nnnn: warning: 'map.parSafe' is unstable and is expected to be replaced by a separate map type in the future
 $CHPL_HOME/modules/standard/IO.chpl:nnnn: In function '_modestring':
 $CHPL_HOME/modules/standard/IO.chpl:nnnn: warning: append mode is unstable
 $CHPL_HOME/modules/internal/BytesStringCommon.chpl:nnnn: In function 'doSearchNoEnc':
