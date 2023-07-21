@@ -28,6 +28,7 @@ module Bytes {
   private use ByteBufferHelpers;
   private use BytesStringCommon;
   private use CTypes;
+  private use ChplConfig only compiledForSingleLocale;
 
   public use BytesCasts;
   public use BytesStringCommon only decodePolicy;  // expose decodePolicy
@@ -505,7 +506,7 @@ module Bytes {
                current locale, otherwise a deep copy is performed.
   */
   inline proc bytes.localize() : bytes {
-    if _local || this.locale_id == chpl_nodeID {
+    if compiledForSingleLocale() || this.locale_id == chpl_nodeID {
       return bytes.createBorrowingBuffer(this);
     } else {
       const x:bytes = this; // assignment makes it local

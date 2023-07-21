@@ -7,7 +7,7 @@ proc test() {
 
   for a in A {
     try! {
-      s += "num:%t\n".format(a);
+      s += "num:%i\n".format(a);
     }
   }
 

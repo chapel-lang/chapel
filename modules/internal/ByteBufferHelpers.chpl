@@ -22,6 +22,7 @@ module ByteBufferHelpers {
   private use ChapelStandard;
   private use CTypes;
   private use OS.POSIX;
+  private use ChplConfig only compiledForSingleLocale;
 
   @chpldoc.nodoc
   type byteType = uint(8);
@@ -106,7 +107,7 @@ module ByteBufferHelpers {
   }
 
   inline proc bufferCopy(buf: bufferType, off: int, len: int, loc: locIdType) {
-    if !_local && loc != chpl_nodeID {
+    if !compiledForSingleLocale() && loc != chpl_nodeID {
       var newBuf = bufferCopyRemote(loc, buf+off, len);
       return (newBuf, len);
     }
@@ -118,7 +119,7 @@ module ByteBufferHelpers {
   //dst must be local
   inline proc bufferMemcpy(dst: bufferType, src_loc: int(64), src: bufferType,
                            len: int, dst_off: int=0, src_off: int=0) {
-    if !_local && src_loc != chpl_nodeID {
+    if !compiledForSingleLocale() && src_loc != chpl_nodeID {
       chpl_string_comm_get(dst+dst_off, src_loc, src+src_off, len);
     }
     else {
@@ -137,7 +138,7 @@ module ByteBufferHelpers {
   }
 
   inline proc bufferGetByte(buf: bufferType, off: int, loc: locIdType) {
-    if !_local && loc != chpl_nodeID {
+    if !compiledForSingleLocale() && loc != chpl_nodeID {
       const newBuf = bufferCopyRemote(src_loc_id=loc, src_addr=buf+off, len=1);
       const ret = newBuf[0];
       bufferFree(newBuf);

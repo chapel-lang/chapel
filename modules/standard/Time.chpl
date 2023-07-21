@@ -538,9 +538,12 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Reads this `date` from ISO 8601 format: YYYY-MM-DD */
   proc date.readThis(f) throws {
+    import JSON.JsonDeserializer;
+
     const binary = f.binary(),
           arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
-          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+          isjson = (arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary) ||
+            isSubtype(f.deserializerType, JsonDeserializer);
 
     if isjson then
       f._readLiteral('"');
@@ -849,9 +852,12 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Reads this `time` from ISO format: hh:mm:ss.sss */
   proc time.readThis(f) throws {
+    import JSON.JsonDeserializer;
+
     const binary = f.binary(),
           arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
-          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary  ||
+            isSubtype(f.deserializerType, JsonDeserializer);
 
     if isjson then
       f._readLiteral('"');
@@ -1498,9 +1504,12 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Reads this `dateTime` from ISO format: YYYY-MM-DDThh:mm:ss.sss */
   proc dateTime.readThis(f) throws {
+    import JSON.JsonDeserializer;
+
     const binary = f.binary(),
           arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
-          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary ||
+            isSubtype(f.deserializerType, JsonDeserializer);
 
     if isjson then
       f._readLiteral('"');
