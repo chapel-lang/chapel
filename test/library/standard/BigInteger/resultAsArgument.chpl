@@ -334,9 +334,9 @@ use BigInteger;
   writeln(a);
 }
 {
-  write("mul_2exp ");
+  write("mul2Exp ");
   var a = new bigint(5);
-  mul_2exp(a, a, 2);
+  mul2Exp(a, a, 2);
   writeln(a);
 }
 {

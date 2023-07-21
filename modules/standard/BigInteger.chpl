@@ -3593,24 +3593,39 @@ module BigInteger {
     BigInteger.submul(this, a, b);
   }
 
-  proc mul_2exp(ref result: bigint, const ref a: bigint, b: integral) {
-    const b_ = b.safeCast(mp_bitcnt_t);
+  @deprecated(notes="mul_2exp is deprecated - please use :proc:`mul2Exp` instead")
+  proc mul_2exp(ref result: bigint, const ref a: bigint, b: integral)
+    do mul2Exp(result, a, b);
+
+
+  /*
+    Computes ``x*(2**exp)`` and stores the result in ``result``.
+
+    Utilizes the GMP function `mpz_mul_2exp
+    <https://gmplib.org/manual/Integer-Arithmetic>`_.
+
+    :arg result: Where the result is stored
+    :type result: :record:`bigint`
+  */
+  @unstable("mul2Exp is unstable and may change in the future")
+  proc mul2Exp(ref result: bigint, const ref x: bigint, exp: integral) {
+    const exp_ = exp.safeCast(mp_bitcnt_t);
 
     if compiledForSingleLocale() {
-      mpz_mul_2exp(result.mpz, a.mpz, b_);
+      mpz_mul_2exp(result.mpz, x.mpz, exp_);
     } else if result.localeId == chpl_nodeID {
-      const a_ = a;
-      mpz_mul_2exp(result.mpz, a_.mpz, b_);
+      const x_ = x;
+      mpz_mul_2exp(result.mpz, x_.mpz, exp_);
     } else {
       const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
       on __primitive("chpl_on_locale_num", resultLoc) {
-        const a_ = a;
-        mpz_mul_2exp(result.mpz, a_.mpz, b_);
+        const x_ = x;
+        mpz_mul_2exp(result.mpz, x_.mpz, exp_);
       }
     }
   }
 
-  @deprecated(notes="bigint.mul_2exp method is deprecated - please use the standalone function :proc:`~BigInteger.mul_2exp`")
+  @deprecated(notes="bigint.mul_2exp method is deprecated - please use the standalone function :proc:`~BigInteger.mul2Exp`")
   proc bigint.mul_2exp(const ref a: bigint, b: integral) {
     BigInteger.mul_2exp(this, a, b);
   }

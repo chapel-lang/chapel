@@ -47,7 +47,7 @@ addmul 35
 submul -25
 submul -24
 submul -25
-mul_2exp 20
+mul2Exp 20
 neg -5
 abs 5
 divQ 5
