@@ -24,7 +24,7 @@ a.set(13);
 writeln(a, " has ", a.popcount(), " bits set");
 
 b.set(7);
-writeln("hamming distance between ", a, " and ", b, " is ", a.hamdist(b));
+writeln("hamming distance between ", a, " and ", b, " is ", a.hammingDistance(b));
 
 a.set(79);
 writeln(a, "'s first 0 bit is in position ", a.scan0(0));

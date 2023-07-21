@@ -8,6 +8,8 @@ source $CWD/common-native-gpu.bash
 module load cudatoolkit
 
 export CHPL_GPU=nvidia
+export CHPL_LAUNCHER_PARTITION=stormP100
+
 export CHPL_COMM=none
 export CHPL_NIGHTLY_TEST_DIRS="gpu/native/array_on_device"
 export CHPL_GPU_MEM_STRATEGY=array_on_device

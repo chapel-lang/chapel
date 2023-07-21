@@ -48,6 +48,9 @@ $CHPL_HOME/modules/standard/List.chpl:nnnn: In method 'last':
 $CHPL_HOME/modules/standard/List.chpl:nnnn: warning: 'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future
 $CHPL_HOME/modules/standard/List.chpl:nnnn: In method '_warnForParSafeIndexing':
 $CHPL_HOME/modules/standard/List.chpl:nnnn: warning: 'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future
+$CHPL_HOME/modules/standard/Set.chpl:nnnn: warning: 'set.parSafe' is unstable and is expected to be replaced by a separate set type in the future
+$CHPL_HOME/modules/standard/Set.chpl:nnnn: warning: 'set.parSafe' is unstable and is expected to be replaced by a separate set type in the future
+$CHPL_HOME/modules/standard/Set.chpl:nnnn: warning: 'set.parSafe' is unstable and is expected to be replaced by a separate set type in the future
 $CHPL_HOME/modules/standard/Time.chpl:nnnn: In function 'tm_zoneType':
 $CHPL_HOME/modules/standard/Time.chpl:nnnn: warning: 'ChplConfig.CHPL_TARGET_PLATFORM' is unstable and may be replaced with a different way to access this information in the future
 $CHPL_HOME/modules/dists/SparseBlockDist.chpl:nnnn: In function 'getDefaultSparseDist':

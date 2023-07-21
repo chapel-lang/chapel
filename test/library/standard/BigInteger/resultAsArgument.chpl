@@ -104,9 +104,9 @@ use BigInteger;
   writeln(b, " ", a);
 }
 {
-  write("nextprime ");
+  write("nextPrime ");
   var a = new bigint(16);
-  nextprime(a, a);
+  nextPrime(a, a);
   writeln(a);
 }
 {
