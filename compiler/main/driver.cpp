@@ -802,6 +802,7 @@ static int runMakeBinary(int argc, char* argv[]);
 
 // Use 'chpl' executable as a compiler-driver, re-invoking itself with flags
 // that trigger components of the actual compilation work to be performed.
+// After all phases are complete, or upon failure, the driver exits.
 static void runAsCompilerDriver(int argc, char* argv[]) {
   int status = 0;
 
@@ -824,6 +825,9 @@ static void runAsCompilerDriver(int argc, char* argv[]) {
       clean_exit(status);
     }
   }
+
+  // Tmp dir will be deleted if necessary when the compiler-driver's Context is
+  // deleted.
 
   clean_exit(status);
 }
@@ -2074,13 +2078,34 @@ static chpl::CompilerGlobals dynoBuildCompilerGlobals() {
   };
 }
 
+// Ensure initialization of tmp dir, using savecdir if provided.
+// If invoked by the driver, creates the tmp dir; if invoked in a sub-process,
+// uses the one passed to us by the driver.
+// Also works in monolithic mode, in which case its only responsibility is to
+// respect savecdir.
 static void bootstrapTmpDir() {
   chpl::Context::Configuration config;
-  if (saveCDir[0]) {
-    ensureDirExists(saveCDir, "ensuring --savec directory exists");
-    config.tmpDir = saveCDir;
+
+  if (driverInSubInvocation) {
+    // We are in a sub-invocation and can assume that a tmp dir has been
+    // established for us by the driver already, and will be deleted for us
+    // later if necessary.
+    assert(intDirName);
+    config.tmpDir = intDirName;
     config.keepTmpDir = true;
+  } else {
+    // This is an initial invocation of the driver, or monolithic.
+    if (saveCDir[0]) {
+      // Bootstrap with specified savecdir.
+      ensureDirExists(saveCDir, "ensuring --savec directory exists");
+      config.tmpDir = saveCDir;
+      config.keepTmpDir = true;
+    } else {
+      // No specified savecdir, so we don't do anything for bootstrapping.
+      // Just let the Context create a default temp dir.
+    }
   }
+
   auto oldContext = gContext;
   gContext = new chpl::Context(*oldContext, std::move(config));
   delete oldContext;
@@ -2097,6 +2122,8 @@ static void dynoConfigureContext(std::string chpl_module_path) {
     config.chplEnvOverrides.insert(pair);
   }
   config.toolName = "chpl";
+  // keep tmp dir if previous config did
+  config.keepTmpDir = gContext->shouldSaveTmpDirFiles();
 
   // Replace the current gContext with one using the new configuration.
   auto oldContext = gContext;
