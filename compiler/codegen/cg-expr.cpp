@@ -3827,8 +3827,12 @@ void codegenAssign(GenRet to_ptr, GenRet from)
           codegenCopy(to_ptr, from, type);
         } else {
           std::vector<GenRet> args;
-          std::string fn = "chpl_gen_comm_get";
-          if (usingGpuLocaleModel()) fn += "_gpu";
+          std::string fn;
+          if (usingGpuLocaleModel()) {
+            fn = "chpl_gen_comm_get_gpu";
+          } else {
+            fn = "chpl_gen_comm_get";
+          }
 
           args.push_back(codegenCastToVoidStar(to_ptr));
           args.push_back(codegenRnode(from));
@@ -3856,8 +3860,12 @@ void codegenAssign(GenRet to_ptr, GenRet from)
           codegenCopy(to_ptr, from, type);
         } else {
           std::vector<GenRet> args;
-          std::string fn = "chpl_gen_comm_put";
-          if (usingGpuLocaleModel()) fn += "_gpu";
+          std::string fn;
+          if (usingGpuLocaleModel()) {
+            fn = "chpl_gen_comm_put_gpu";
+          } else {
+            fn = "chpl_gen_comm_put";
+          }
 
           args.push_back(codegenCastToVoidStar(codegenValuePtr(from)));
           args.push_back(codegenRnode(to_ptr));
