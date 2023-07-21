@@ -5013,7 +5013,7 @@ qioerr qio_conv_parse(c_string fmt,
     } else if( specifier == 't' ) {
       style_out->base = 10;
       style_out->pad_char = ' ';
-      style_out->realfmt = 2;
+      style_out->realfmt = 0;
       style_out->string_format = QIO_STRING_FORMAT_CHPL;
 
       // Handle precision
@@ -5069,18 +5069,13 @@ qioerr qio_conv_parse(c_string fmt,
     } else if ( specifier == '?' ) {
       style_out->base = 10;
       style_out->pad_char = ' ';
-      style_out->realfmt = 2;
+      style_out->realfmt = 0;
       style_out->string_format = QIO_STRING_FORMAT_WORD;
 
-      // Handle precision
-      if( precision != WIDTH_NOT_SET ) {
-        // These settings have no effect when scanning
-        if( precision == WIDTH_IN_ARG ) {
-          spec_out->preArg2 = QIO_CONV_SET_PRECISION;
-        } else {
-          style_out->precision = precision;
-        }
+      if ( precision == WIDTH_IN_ARG || width == WIDTH_IN_ARG ) {
+        QIO_GET_CONSTANT_ERROR(err, EINVAL, "'%?' does not support width or precision arguments");
       }
+
       spec_out->argType = QIO_CONV_ARG_TYPE_SERDE;
     } else {
       QIO_GET_CONSTANT_ERROR(err, EINVAL, "Unknown text conversion");
