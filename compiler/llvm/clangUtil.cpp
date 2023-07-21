@@ -4639,10 +4639,6 @@ void makeBinaryLLVM(void) {
   INT_ASSERT(clangInfo);
   LLVMGenFilenames* filenames = &info->llvmGenFilenames;
 
-  // the per-function optimization pipeline is no longer needed
-  cleanupFunctionOptManagers();
-  saveIrToBcFileIfNeeded(filenames->preOptFilename);
-
   // setup output file info
   std::error_code error;
 #if HAVE_LLVM_VER >= 120
