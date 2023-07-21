@@ -3840,7 +3840,7 @@ void codegenAssign(GenRet to_ptr, GenRet from)
           std::vector<GenRet> args;
           std::string fn;
           if (usingGpuLocaleModel()) {
-            fn = "chpl_gen_comm_get_gpu";
+            fn = "chpl_gen_comm_get_from_subloc";
           } else {
             fn = "chpl_gen_comm_get";
           }
@@ -3873,7 +3873,7 @@ void codegenAssign(GenRet to_ptr, GenRet from)
           std::vector<GenRet> args;
           std::string fn;
           if (usingGpuLocaleModel()) {
-            fn = "chpl_gen_comm_put_gpu";
+            fn = "chpl_gen_comm_put_to_subloc";
           } else {
             fn = "chpl_gen_comm_put";
           }
@@ -5373,14 +5373,14 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
     if (call->primitive->tag == PRIM_CHPL_COMM_GET ||
         call->primitive->tag == PRIM_CHPL_COMM_ARRAY_GET) {
       if (useGpuVersion) {
-        fn = "chpl_gen_comm_get_gpu";
+        fn = "chpl_gen_comm_get_from_subloc";
       }
       else {
         fn = "chpl_gen_comm_get";
       }
     } else {
       if (useGpuVersion) {
-        fn = "chpl_gen_comm_put_gpu";
+        fn = "chpl_gen_comm_put_to_subloc";
       }
       else {
         fn = "chpl_gen_comm_put";
