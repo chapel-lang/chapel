@@ -170,7 +170,7 @@ for i in "${!experiment_name[@]}"; do
   prebuildCmd="${experiment_prebuildCmd[i]}"
   cmd="${experiment_cmd[i]}"
 
-  echo -e "\n================================================================================\nEXPERIMENT: $name \n================================================================================"
+  echo -e "\n================================================================================\nEXPERIMENT [$(($i+1))/${#experiment_name[@]}]: $name \n================================================================================"
   echo "feats=$feats"
   echo "shouldBuildChpl=$shouldBuildChpl"
   echo "prebuildCmd=$prebuildCmd"
