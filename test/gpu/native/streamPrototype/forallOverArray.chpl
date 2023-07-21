@@ -18,4 +18,4 @@ on here.gpus[0] {
   foreach elem in a { elem += value;       } writeln(a);
 }
 stopGpuDiagnostics();
-verifyDiags(um=4, aod=5);
+verifyGpuDiags(umLaunch=4, aodLaunch=5);

@@ -27,4 +27,4 @@ on here.gpus[0] {
   // }
 }
 stopGpuDiagnostics();
-verifyDiags(um=2, aod=4);
+verifyGpuDiags(umLaunch=2, aodLaunch=4);

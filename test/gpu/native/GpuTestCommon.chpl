@@ -3,7 +3,7 @@ module GpuTestCommon {
 
   config const printGpuDiags = false;
 
-  proc verifyDiags(um, aod, h2d=-1, d2h=-1, d2d=-1) {
+  proc verifyGpuDiags(umLaunch, aodLaunch, h2dComm=-1, d2hComm=-1, d2dComm=-1) {
     use ChplConfig;
 
     if printGpuDiags {
@@ -12,7 +12,7 @@ module GpuTestCommon {
 
     param isUm = CHPL_GPU_MEM_STRATEGY == "unified_memory";
 
-    const expected = if isUm then um else aod;
+    const expected = if isUm then umLaunch else aodLaunch;
 
     const diags = getGpuDiagnostics()[0];
 
@@ -21,17 +21,17 @@ module GpuTestCommon {
            "observed ", actual, " launches instead of ", expected);
 
     if !isUm {
-      assert(h2d<0 || diags.host_to_device == h2d,
+      assert(h2dComm<0 || diags.host_to_device == h2dComm,
              "observed ", diags.host_to_device,
-             " host-to-device comm instead of ", h2d);
+             " host-to-device comm instead of ", h2dComm);
 
-      assert(d2h<0 || diags.device_to_host == d2h,
+      assert(d2hComm<0 || diags.device_to_host == d2hComm,
              "observed ", diags.device_to_host,
-             " device-to-host comm instead of ", d2h);
+             " device-to-host comm instead of ", d2hComm);
 
-      assert(d2d<0 || diags.device_to_device == d2d,
+      assert(d2dComm<0 || diags.device_to_device == d2dComm,
              "observed ", diags.device_to_device,
-             " device-to-device comm instead of ", d2d);
+             " device-to-device comm instead of ", d2dComm);
     }
 
   }

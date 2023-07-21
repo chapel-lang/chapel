@@ -19,4 +19,4 @@ on here.gpus[0] {
 }
 
 stopGpuDiagnostics();
-verifyDiags(um=0, aod=1); // we are currently skipping with aod
+verifyGpuDiags(umLaunch=0, aodLaunch=1); // we are currently skipping with aod

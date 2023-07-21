@@ -79,7 +79,7 @@ on here.gpus[0] {
 
 stopGpuDiagnostics();
 
-verifyDiags(um=5, aod=5);
+verifyGpuDiags(umLaunch=5, aodLaunch=5);
 
 proc writeArr(A) {
   write("Array: ");

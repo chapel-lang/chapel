@@ -207,6 +207,6 @@ proc main() {
     }
     else {
       stopGpuDiagnostics();
-      verifyDiags(um=275, aod=275, h2d=258, d2h=128, d2d=0);
+      verifyGpuDiags(umLaunch=275, aodLaunch=275, h2dComm=258, d2hComm=128, d2dComm=0);
     }
 }

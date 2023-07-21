@@ -19,4 +19,4 @@ on here.gpus[0] {
   stopGpuDiagnostics();
   writeln(A);
 }
-verifyDiags(um=1, aod=1);
+verifyGpuDiags(umLaunch=1, aodLaunch=1);

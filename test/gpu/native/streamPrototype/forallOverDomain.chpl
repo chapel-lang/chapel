@@ -23,4 +23,4 @@ on here.gpus[0] {
   foreach i in a.domain { b[i] += a[i]*value; } writeln(b);
 }
 stopGpuDiagnostics();
-verifyDiags(um=8, aod=10);
+verifyGpuDiags(umLaunch=8, aodLaunch=10);

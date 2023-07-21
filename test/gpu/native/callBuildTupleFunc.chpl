@@ -9,7 +9,7 @@ on here.gpus[0] {
     A[0] = createTuple();
   }
   stopGpuDiagnostics();
-  verifyDiags(um=1, aod=2);
+  verifyGpuDiags(umLaunch=1, aodLaunch=2);
   writeln("A = ", A);
 
   proc createTuple() {

@@ -34,5 +34,5 @@ on here.gpus[0] {
 if verboseGpu then stopVerboseGpu();
 if gpuDiags {
   stopGpuDiagnostics();
-  verifyDiags(um=2, aod=2, h2d=1, d2h=1, d2d=1);
+  verifyGpuDiags(umLaunch=2, aodLaunch=2, h2dComm=1, d2hComm=1, d2dComm=1);
 }
