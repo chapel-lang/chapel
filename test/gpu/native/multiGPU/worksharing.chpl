@@ -66,8 +66,14 @@ assert(nLaunch == here.gpus.size*numIters);
 
 writeln(A);
 
-if validate then
-  assert(n*(1+alpha*2) == + reduce A);
+if validate {
+  // Reduction done "manually" due to this bug:
+  // https://github.com/chapel-lang/chapel/issues/22736
+  var AReduce = 0;
+  for a in A do AReduce += a;
+
+  assert(n*(1+alpha*2) == AReduce);
+}
 
 if printStats {
   writeln("Performance (GB/s) = ", 3* numBytes(int) * n * 1e-9 / minTime );
