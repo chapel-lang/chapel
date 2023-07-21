@@ -5391,6 +5391,9 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
     int curArgIdx = 1;
 
     Expr* curArg = call->get(curArgIdx++);
+    INT_ASSERT(curArg, curArg->isRefOrWideRef() ||
+                       curArg->getValType()->symbol->hasFlag(FLAG_DATA_CLASS));
+
     GenRet localAddr = codegenValuePtr(curArg);
 
     // destination data array
@@ -5418,6 +5421,8 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
     args.push_back(localAddr);
 
     curArg = call->get(curArgIdx++);
+    INT_ASSERT(curArg, LOCALE_ID_TYPE);
+
     GenRet locale = codegenValueMaybeDeref(curArg);;
     args.push_back(locale);
 
@@ -5425,6 +5430,7 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
     if (hasSubloc) {
       // if the call has subloc argument, first capture/consume it
       curArg = call->get(curArgIdx++);
+      INT_ASSERT(curArg, SUBLOC_ID_TYPE);
 
       if (useGpuVersion) {
         // we only create an argument if we're using the GPU version of the
@@ -5445,6 +5451,9 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
 
     // source data array
     curArg = call->get(curArgIdx++);
+    INT_ASSERT(curArg, curArg->isRefOrWideRef() ||
+                       curArg->getValType()->symbol->hasFlag(FLAG_DATA_CLASS));
+
     GenRet   remoteAddr = curArg;
     TypeSymbol *t = curArg->typeInfo()->symbol;
 
@@ -5462,6 +5471,9 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
     args.push_back(remoteAddr);
 
     curArg = call->get(curArgIdx++);
+    INT_ASSERT(curArg, is_int_type(curArg->getValType()) ||
+               is_uint_type(curArg->getValType()));
+
     GenRet len = codegenValueMaybeDeref(curArg);
     GenRet size;
 
