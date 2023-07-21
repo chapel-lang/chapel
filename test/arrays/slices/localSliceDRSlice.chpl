@@ -10,12 +10,12 @@ module Spam {
             {
               // test domain-based slicing
               ref arrSlice = arr.localSlice(d);
-              writeln("%s,%i:%t".format(fn, line, arrSlice));
+              writeln("%s,%i:%?".format(fn, line, arrSlice));
             }
             {
               // test range-based slicing
               ref arrSlice = arr.localSlice((...d.dims()));
-              writeln("%s,%i:%t".format(fn, line, arrSlice));
+              writeln("%s,%i:%?".format(fn, line, arrSlice));
             }
           }
         }
@@ -55,4 +55,3 @@ module Spam {
         return 0;
     }
 }
-

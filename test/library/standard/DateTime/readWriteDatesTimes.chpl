@@ -1,13 +1,11 @@
-use Time, IO;
+use Time, IO, JSON;
 
 proc testReadWrite(dt) {
   var dt2: dt.type;
-  var mem = openMemFile();
-  var writer = mem.writer();
-  writer.writef("%jt", dt);
-  var reader = mem.reader();
-
-  reader.readf("%jt", dt2);
+  // var mem = openMemFile();
+  var mem = open("readwdt.tmp", ioMode.cwr);
+  mem.writer(serializer = new JsonSerializer()).write(dt);
+  mem.reader(deserializer = new JsonDeserializer()).read(dt2);
 
   writeln(dt.type:string, ": ", dt == dt2);
 }

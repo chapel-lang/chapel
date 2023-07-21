@@ -58,6 +58,7 @@ use Random;
 use HashedDist;
 use LinkedLists;
 use BlockDist;
+use JSON;
 
 // packing twitter user IDs to numbers
 var total_tweets_processed : atomic int;
@@ -217,7 +218,7 @@ proc process_json(logfile:fileReader, fname:string, ref Pairs) {
     } // halt on truly unknown error
 
     if got {
-      if verbose then writef("%jt\n", tweet);
+      if verbose then stdout.withSerializer(JsonSerializer).writef("%?\n", tweet);
       var id = tweet.user.id;
       if max_id < id then max_id = id;
       for mentions in tweet.entities.user_mentions {

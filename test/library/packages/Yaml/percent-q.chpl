@@ -13,12 +13,12 @@ proc test(val) {
   var f = openTempFile();
   {
     var w = f.writer(serializer=FormatWriter);
-    w.writef("%t\n", val);
+    w.writef("%?\n", val);
   }
   {
     var r = f.reader(deserializer=FormatReader);
     var x : val.type;
-    r.readf("%t\n", x);
+    r.readf("%?\n", x);
 
     if val == x then writeln("SUCCESS");
     else writeln("FAILURE");

@@ -129,7 +129,7 @@ class DistributedMapImpl {
   // assumes that everything is local
   proc applyAggregatedUpdates(buffer, updater) {
     if debugDistributedMap then
-      writef("applyAggregatedUpdates  %t  %t updates\n", here, buffer.size);
+      writef("applyAggregatedUpdates  %?  %? updates\n", here, buffer.size);
     coforall mapIdx in 0..#numLocalMaps {
       const numLocales = this.numLocales;
       localMaps[mapIdx].bulkUpdate(buffer, updater,

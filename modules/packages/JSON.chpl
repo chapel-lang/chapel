@@ -371,6 +371,7 @@ module JSON {
       var st = dc._styleInternal();
       var orig = st; defer { dc._set_styleInternal(orig); }
       st.realfmt = 2;
+      st.bytes_prefix = 0;
       st.string_format = iostringformat.json:uint(8);
       st.aggregate_style = QIO_AGGREGATE_FORMAT_JSON:uint(8);
       st.array_style = QIO_ARRAY_FORMAT_JSON:uint(8);
@@ -390,7 +391,7 @@ module JSON {
         var x : readType;
         reader._readOne(reader.kind, x, here);
         return x;
-      } else if isStringType(readType) {
+      } else if isStringType(readType) || isBytesType(readType) {
         // TODO: Ideally something like:
         //   reader.readf("%{\"S\"}", tmp);
         // But this doesn't work well with escape strings...
