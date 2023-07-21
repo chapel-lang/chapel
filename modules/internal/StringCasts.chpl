@@ -70,6 +70,7 @@ module StringCasts {
         ret += x[i]:string;
       }
     }
+    if k == 1 then ret += ",";
     ret += ")";
     return ret;
   }

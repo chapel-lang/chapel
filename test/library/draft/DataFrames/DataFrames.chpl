@@ -410,7 +410,7 @@ module DataFrames {
       halt("generic Series cannot be accessed");
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     operator :(val: Series, type t: string) {
       import IO.FormattedIO;
       return try! "%?".format(val);

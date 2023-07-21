@@ -1772,14 +1772,14 @@ module ChapelDomain {
                'the domain being resized');
 
         if !arr.domain.contains(idx) then
-          halt(try! 'Array index out of bounds: %t'.format(idx));
+          halt(try! 'Array index out of bounds: %?'.format(idx));
 
         // Get a reference to the array slot.
         ref elem = arr[idx];
 
         if _checks {
           if isElementInitialized(arr, idx) {
-            halt(try! "Element at array index '%t' is already initialized".format(idx));
+            halt(try! "Element at array index '%?' is already initialized".format(idx));
           }
         }
 
@@ -2720,7 +2720,7 @@ module ChapelDomain {
         return val._value.doiToString();
       } else {
         import IO.FormattedIO.format;
-        return try! "%t".format(val);
+        return try! "%?".format(val);
       }
     }
 
