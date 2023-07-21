@@ -3806,49 +3806,6 @@ module BigInteger {
     BigInteger.divQ(this, numer, denom, rounding);
   }
 
-  /*
-    .. warning::
-
-       bigint.div_r using Round is deprecated, use bigint.divR with round
-       instead
-  */
-  @deprecated
-  ("bigint.div_r using Round is deprecated, use bigint.divR with round instead")
-  proc bigint.div_r(const ref n: bigint,
-                    const ref d: bigint,
-                    param     rounding = Round.ZERO) {
-    use Round;
-    if (rounding == UP) {
-      BigInteger.divR(this, n, d, round.up);
-    } else if (rounding == ZERO) {
-      BigInteger.divR(this, n, d, round.zero);
-    } else {
-      BigInteger.divR(this, n, d, round.down);
-    }
-
-  }
-
-  /*
-    .. warning::
-
-       bigint.div_r using Round is deprecated, use bigint.divR with round
-       instead
-  */
-  @deprecated
-  ("bigint.div_r using Round is deprecated, use bigint.divR with round instead")
-  proc bigint.div_r(const ref n: bigint,
-                              d: integral,
-                    param     rounding = Round.ZERO) {
-    use Round;
-    if (rounding == UP) {
-      BigInteger.divR(this, n, d, round.up);
-    } else if (rounding == ZERO) {
-      BigInteger.divR(this, n, d, round.zero);
-    } else {
-      BigInteger.divR(this, n, d, round.down);
-    }
-  }
-
   // Note: documentation on `denom: integral` version
   proc divR(ref result: bigint,
             const ref numer: bigint,
@@ -3940,50 +3897,6 @@ module BigInteger {
                              denom: integral,
                    param     rounding = round.zero) {
     BigInteger.divR(this, numer, denom, rounding);
-  }
-
-  /*
-    .. warning::
-
-       bigint.div_qr using Round is deprecated, use bigint.divQR with round
-       instead
-  */
-  @deprecated
-  ("bigint.div_qr using Round is deprecated, use bigint.divQR with round instead")
-  proc bigint.div_qr(ref       r:        bigint,
-                     const ref n:        bigint,
-                     const ref d:        bigint,
-                     param     rounding = Round.ZERO) {
-    use Round;
-    if (rounding == UP) {
-      BigInteger.divQR(this, r, n, d, round.up);
-    } else if (rounding == ZERO) {
-      BigInteger.divQR(this, r, n, d, round.zero);
-    } else {
-      BigInteger.divQR(this, r, n, d, round.down);
-    }
-  }
-
-  /*
-    .. warning::
-
-       bigint.div_qr using Round is deprecated, use bigint.divQR with round
-       instead
-  */
-  @deprecated
-  ("bigint.div_qr using Round is deprecated, use bigint.divQR with round instead")
-  proc bigint.div_qr(ref       r: bigint,
-                     const ref n: bigint,
-                               d: integral,
-                     param     rounding = Round.ZERO) {
-    use Round;
-    if (rounding == UP) {
-      BigInteger.divQR(this, r, n, d, round.up);
-    } else if (rounding == ZERO) {
-      BigInteger.divQR(this, r, n, d, round.zero);
-    } else {
-      BigInteger.divQR(this, r, n, d, round.down);
-    }
   }
 
   proc divQR(ref       result: bigint,
@@ -4108,27 +4021,6 @@ module BigInteger {
     BigInteger.divQR(this, remain, numer, denom, rounding);
   }
 
-  /*
-    .. warning::
-
-       bigint.div_q_2exp using Round is deprecated, use bigint.divQ2Exp with
-       round instead
-  */
-  @deprecated
-  ("bigint.div_q_2exp using Round is deprecated, use bigint.divQ2Exp with round instead")
-  proc bigint.div_q_2exp(const ref n: bigint,
-                                   b: integral,
-                         param     rounding = Round.ZERO) {
-    use Round;
-    if (rounding == UP) {
-      BigInteger.divQ2Exp(this, n, b, round.up);
-    } else if (rounding == ZERO) {
-      BigInteger.divQ2Exp(this, n, b, round.zero);
-    } else {
-      BigInteger.divQ2Exp(this, n, b, round.down);
-    }
-  }
-
   /* Divide ``numer`` by ``2^exp``, forming a quotient and storing it in
      ``result``.
 
@@ -4195,27 +4087,6 @@ module BigInteger {
                                  exp: integral,
                        param     rounding = round.zero) {
     BigInteger.divQ2Exp(this, numer, exp, rounding);
-  }
-
-  /*
-    .. warning::
-
-       bigint.div_r_2exp using Round is deprecated, use bigint.divR2Exp with
-       round instead
-  */
-  @deprecated
-  ("bigint.div_r_2exp using Round is deprecated, use bigint.divR2Exp with round instead")
-  proc bigint.div_r_2exp(const ref n: bigint,
-                                   b: integral,
-                         param     rounding = Round.ZERO) {
-    use Round;
-    if (rounding == UP) {
-      BigInteger.divR2Exp(this, n, b, round.up);
-    } else if (rounding == ZERO) {
-      BigInteger.divR2Exp(this, n, b, round.zero);
-    } else {
-      BigInteger.divR2Exp(this, n, b, round.down);
-    }
   }
 
   /* Divide ``numer`` by ``2^exp``, forming a remainder and storing it in
