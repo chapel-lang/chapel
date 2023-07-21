@@ -1,3 +1,5 @@
+
+
 /*
  * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
@@ -57,12 +59,14 @@ __device__ static inline c_nodeid_t chpl_rt_sublocFromLocaleID(chpl_localeID_t l
 __device__ static inline void chpl_gen_comm_get(void *addr, c_nodeid_t node,
   void* raddr, size_t size, int32_t commID, int ln, int32_t fn)
 {
+  printf("Warning: chpl_gen_comm_get called inside a GPU kernel. This shouldn't have happened.\n");
   // TODO
 }
 
 __device__ static inline void chpl_gen_comm_put(void* addr, c_nodeid_t node,
   void* raddr, size_t size, int32_t commID, int ln, int32_t fn)
 {
+  printf("Warning: chpl_gen_comm_put called inside a GPU kernel. This shouldn't have happened.\n");
   // TODO
 }
 
@@ -91,15 +95,23 @@ __host__ static inline void chpl_gpu_force_sync() {
 }
 
 __device__ static inline
-void chpl_gen_comm_get_gpu(void *addr, c_nodeid_t src_node,
-                           c_sublocid_t src_subloc, void* raddr, size_t size,
-                           int32_t commID, int ln, int32_t fn) { }
+void chpl_gen_comm_get_from_subloc(void *addr, c_nodeid_t src_node,
+                                   c_sublocid_t src_subloc, void* raddr,
+                                   size_t size, int32_t commID, int ln,
+                                   int32_t fn) {
+  printf("Warning: chpl_gen_comm_get_from_subloc called inside a GPU kernel. This shouldn't have happened.\n");
+  // TODO 
+}
 
 __device__ static inline
-void chpl_gen_comm_put_gpu(void* addr,
-                           c_nodeid_t dst_node, c_sublocid_t dst_subloc,
-                           void* raddr, size_t size, int32_t commID, int ln,
-                           int32_t fn) { }
+void chpl_gen_comm_put_to_subloc(void* addr,
+                                 c_nodeid_t dst_node, c_sublocid_t dst_subloc,
+                                 void* raddr, size_t size, int32_t commID,
+                                 int ln, int32_t fn) {
+  printf("Warning: chpl_gen_comm_get_from_subloc called inside a GPU kernel. This shouldn't have happened.\n");
+  // TODO 
+
+}
 
 
 
