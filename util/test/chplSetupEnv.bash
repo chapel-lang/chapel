@@ -7,6 +7,9 @@
 # $SPACK_ROOT/share/spack/setup-env.sh, which ends up inadvertedly exporting
 # the MODULEPATH variable if called from within a function.
 
+# ALSO BE AWARE: This script has a .bash extension but ideally I'd like this to
+# work in zsh as well.
+
 # From
 # <https://stackoverflow.com/questions/2683279/how-to-detect-if-a-script-is-being-sourced>.
 # This script only works if its been sourced so warn the user if it's been
@@ -57,7 +60,7 @@ if [[ ! "$_chplSetupEnv_dryRun" == "y" ]]; then
   OLD_CHPL_HOME="$CHPL_HOME"
 fi
 
-for _chplSetupEnv_feature in ${_chplSetupEnv_featureSet//:/ }; do
+for _chplSetupEnv_feature in $(echo $_chplSetupEnv_featureSet | sed "s/:/ /g"); do
   for _chplSetupEnv_p in ${_chplSetupEnv_pathsToRun[@]}; do
     if [ ! -d "$_chplSetupEnv_p" ]; then
       continue
