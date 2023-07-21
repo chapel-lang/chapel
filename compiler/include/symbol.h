@@ -934,6 +934,8 @@ std::vector<std::string> gatherPrintLlvmIrCNames();
 void printLlvmIr(const char* name, llvm::Function *func, llvmStageNum_t numStage);
 #endif
 
+// Restore list of cnames to print, from tmp file on disk into memory.
+void restorePrintIrCNames();
 void preparePrintLlvmIrForCodegen();
 void completePrintLlvmIrStage(llvmStageNum_t numStage);
 

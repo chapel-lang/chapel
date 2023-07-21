@@ -66,6 +66,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <sstream>
+#include <cstring>
 
 #include <inttypes.h>
 #include <stdint.h>
@@ -87,6 +88,7 @@
 // these are sets of astrs
 static std::set<const char*> llvmPrintIrNames;
 static std::set<const char*> llvmPrintIrCNames;
+static const char* cnamesToPrintFilename = "cnamesToPrint.tmp";
 
 llvmStageNum_t llvmPrintIrStageNum = llvmStageNum::NOPRINT;
 
@@ -192,6 +194,40 @@ void completePrintLlvmIrStage(llvmStageNum_t numStage) {
 }
 
 
+// If running in compiler-driver mode, save cnames to print IR for to disk.
+// This is so that handlePrintAsm can access them later from makeBinary, when
+// we don't have a way to determine name->cname correspondence.
+static void savePrintIrCNamesIfNeeded() {
+  if (fDoCompilation) {
+    fileinfo* cnamesToPrintFile = openTmpFile(cnamesToPrintFilename, "w");
+    for (const auto& cname : llvmPrintIrCNames) {
+      fprintf(cnamesToPrintFile->fptr, "%s\n", cname);
+    }
+    closefile(cnamesToPrintFile);
+  }
+}
+
+void restorePrintIrCNames() {
+  assert(llvmPrintIrCNames.empty() &&
+         "tried to restore list of cnames to print from disk, but we already "
+         "have them in memory");
+
+  fileinfo* cnamesToPrintFile = openTmpFile(cnamesToPrintFilename, "r");
+
+  char cnameBuf[4096];
+  while (fgets(cnameBuf, sizeof(cnameBuf), cnamesToPrintFile->fptr)) {
+    // remove trailing newline from fgets
+    // using strlen here is fine because fgets guarantees null termination
+    size_t len = strlen(cnameBuf);
+    assert(cnameBuf[len-1] == '\n' && "stored cname exceeds maximum length");
+    cnameBuf[--len] = '\0';
+
+    addCNameToPrintLlvmIr(cnameBuf);
+  }
+
+  closefile(cnamesToPrintFile);
+}
+
 void preparePrintLlvmIrForCodegen() {
   if (llvmPrintIrNames.empty() && llvmPrintIrCNames.empty())
     return;
@@ -228,6 +264,8 @@ void preparePrintLlvmIrForCodegen() {
       }
     }
   } while (changed);
+
+  savePrintIrCNamesIfNeeded();
 }
 
 /******************************** | *********************************

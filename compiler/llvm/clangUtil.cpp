@@ -5081,6 +5081,8 @@ void llvmOptimizeAndCodegen(void) {
 }
 
 static void handlePrintAsm(std::string dotOFile) {
+  assert((fDoMakeBinary || fDoMonolithic) &&
+         "handlePrintAsm should only be called during makebinary phase");
   if (llvmPrintIrStageNum == llvmStageNum::ASM ||
       llvmPrintIrStageNum == llvmStageNum::EVERY) {
 
@@ -5117,20 +5119,29 @@ static void handlePrintAsm(std::string dotOFile) {
       disSymArg += "_";
     }
 
+    // restore names to print from disk if we are in make binary-only invocation
+    if (fDoMakeBinary) restorePrintIrCNames();
     std::vector<std::string> names = gatherPrintLlvmIrCNames();
-    for (const auto& name : names) {
-      printf("\n\n# Disassembling symbol %s\n\n", name.c_str());
-      fflush(stdout);
-      std::vector<std::string> cmd;
-      cmd.push_back(llvmObjDump);
-      std::string arg = disSymArg; // e.g. --disassemble=
-      arg += name;
-      cmd.push_back(arg);
-      cmd.push_back(dotOFile);
+    printf("%lu symbol names to disassemble\n", names.size());
+    if (names.empty()) {
+      USR_WARN(
+          "requested assembly dump, but no symbols to be disassembled were "
+          "specified");
+    } else {
+      for (const auto& name : names) {
+        printf("\n\n# Disassembling symbol %s\n\n", name.c_str());
+        fflush(stdout);
+        std::vector<std::string> cmd;
+        cmd.push_back(llvmObjDump);
+        std::string arg = disSymArg; // e.g. --disassemble=
+        arg += name;
+        cmd.push_back(arg);
+        cmd.push_back(dotOFile);
 
-      mysystem(cmd, "disassemble a symbol",
-               /* ignoreStatus */ true,
-               /* quiet */ false);
+        mysystem(cmd, "disassemble a symbol",
+                 /* ignoreStatus */ true,
+                 /* quiet */ false);
+      }
     }
   }
 }
