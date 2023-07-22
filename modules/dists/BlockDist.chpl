@@ -322,16 +322,6 @@ This example demonstrates a Block-distributed sparse domain and array:
 
 pragma "ignore noinit"
 record Block {
-  /* param rank: int; */
-  /* type idxType = int; */
-  /* type sparseLayoutType = unmanaged DefaultDist; */
-  /* var _pid:int;  // only used when privatized */
-  /* pragma "owned" */
-  /* var _instance: unmanaged BlockGuts(rank, idxType, _to_unmanaged(sparseLayoutType)); */
-  /* var _unowned:bool; // 'true' for the result of 'getDistribution', */
-  /*                    // in which case, the record destructor should */
-  /*                    // not attempt to delete the _instance. */
-
   forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(?);
 
   proc init(boundingBox: domain,
@@ -353,61 +343,33 @@ record Block {
                                                        value);
   }
 
-    proc init(_pid : int, _instance, _unowned : bool) {
-      this.chpl_distHelp = new chpl_PrivatizedDistHelper(_instance.rank,
-                                                         _instance.idxType,
-                                                         _instance.sparseLayoutType,
-                                                         _pid,
-                                                         _instance,
-                                                         _unowned);
-    }
+  proc init(_pid : int, _instance, _unowned : bool) {
+    this.chpl_distHelp = new chpl_PrivatizedDistHelper(_instance.rank,
+                                                       _instance.idxType,
+                                                       _instance.sparseLayoutType,
+                                                       _pid,
+                                                       _instance,
+                                                       _unowned);
+  }
 
-    proc init(value) {
-      this.chpl_distHelp = new chpl_PrivatizedDistHelper(value.rank,
-                                                         value.idxType,
-                                                         value.sparseLayoutType,
-                                                         if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid,
-                                                         _to_unmanaged(value));
-    }
+  proc init(value) {
+    this.chpl_distHelp = new chpl_PrivatizedDistHelper(value.rank,
+                                                       value.idxType,
+                                                       value.sparseLayoutType,
+                                                       if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid,
+                                                       _to_unmanaged(value));
+  }
 
-    // Note: This does not handle the case where the desired type of 'this'
-    // does not match the type of 'other'. That case is handled by the compiler
-    // via coercions.
-    proc init=(const ref other : Block(?)) {
-      /*
-      this.init(other.rank, other.idxType, other.sparseLayoutType, other_value.dsiClone()
-      this.rank = other.rank;
-      this.idxtype = other.idxType;
-      this.sparseLayoutType = other.sparseLayoutType;
-      */
-      var value = other._value.dsiClone();
-      this.init(value);
-    }
+  // Note: This does not handle the case where the desired type of 'this'
+  // does not match the type of 'other'. That case is handled by the compiler
+  // via coercions.
+  proc init=(const ref other : Block(?)) {
+    this.init(other._value.dsiClone());
+  }
 
-
-/*
-    inline proc _do_destroy() {
-      if ! _unowned && ! _instance.singleton() {
-        on _instance {
-          // Count the number of domains that refer to this distribution.
-          // and mark the distribution to be freed when that number reaches 0.
-          // If the number is 0, .remove() returns the distribution
-          // that should be freed.
-          var distToFree = _instance.remove();
-          if distToFree != nil {
-            _delete_dist(distToFree!, _isPrivatized(_instance));
-          }
-        }
-      }
-    }
-    proc deinit() {
-      _do_destroy();
-    }
-*/
-
-    proc clone() {
-      return new Block(this._value.dsiClone());
-    }
+  proc clone() {
+    return new Block(this._value.dsiClone());
+  }
 
   @chpldoc.nodoc
   inline operator ==(d1: Block(?), d2: Block(?)) {
@@ -421,7 +383,6 @@ record Block {
     return !(d1 == d2);
   }
 }
-
 
 
 @chpldoc.nodoc

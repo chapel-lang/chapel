@@ -210,40 +210,33 @@ record Cyclic {
                                                        value);
   }
 
-    proc init(_pid : int, _instance, _unowned : bool) {
-      this.chpl_distHelp = new chpl_PrivatizedDistHelper(_instance.rank,
-                                                         _instance.idxType,
-                                                         unmanaged DefaultDist,
-                                                         _pid,
-                                                         _instance,
-                                                         _unowned);
-    }
+  proc init(_pid : int, _instance, _unowned : bool) {
+    this.chpl_distHelp = new chpl_PrivatizedDistHelper(_instance.rank,
+                                                       _instance.idxType,
+                                                       unmanaged DefaultDist,
+                                                       _pid,
+                                                       _instance,
+                                                       _unowned);
+  }
 
-    proc init(value) {
-      this.chpl_distHelp = new chpl_PrivatizedDistHelper(value.rank,
-                                                         value.idxType,
-                                                         unmanaged DefaultDist,
-                                                         if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid,
-                                                         _to_unmanaged(value));
-    }
+  proc init(value) {
+    this.chpl_distHelp = new chpl_PrivatizedDistHelper(value.rank,
+                                                       value.idxType,
+                                                       unmanaged DefaultDist,
+                                                       if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid,
+                                                       _to_unmanaged(value));
+  }
 
-    // Note: This does not handle the case where the desired type of 'this'
-    // does not match the type of 'other'. That case is handled by the compiler
-    // via coercions.
-    proc init=(const ref other : Cyclic(?)) {
-      /*
-      this.init(other.rank, other.idxType, other.sparseLayoutType, other_value.dsiClone()
-      this.rank = other.rank;
-      this.idxtype = other.idxType;
-//      this.sparseLayoutType = other.sparseLayoutType;
-      */
-      var value = other._value.dsiClone();
-      this.init(value);
-    }
+  // Note: This does not handle the case where the desired type of 'this'
+  // does not match the type of 'other'. That case is handled by the compiler
+  // via coercions.
+  proc init=(const ref other : Cyclic(?)) {
+    this.init(other._value.dsiClone());
+  }
 
-    proc clone() {
-      return new Cyclic(this._value.dsiClone());
-    }
+  proc clone() {
+    return new Cyclic(this._value.dsiClone());
+  }
 
   @chpldoc.nodoc
   inline operator ==(d1: Cyclic(?), d2: Cyclic(?)) {
@@ -257,7 +250,6 @@ record Cyclic {
     return !(d1 == d2);
   }
 }
-
 
 
 @chpldoc.nodoc
