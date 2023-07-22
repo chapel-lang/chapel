@@ -186,7 +186,10 @@ This distribution has not been tuned for performance.
 
 pragma "ignore noinit"
 record Cyclic {
-  forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(?);
+  param rank: int;
+  type idxType = int;
+  type sparseLayoutType = unmanaged DefaultDist;
+  forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(rank, idxType, sparseLayoutType, ?);
 
   proc init(startIdx,
             targetLocales: [] locale = Locales,

@@ -322,7 +322,11 @@ This example demonstrates a Block-distributed sparse domain and array:
 
 pragma "ignore noinit"
 record Block {
-  forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(?);
+  param rank: int;
+  type idxType = int;
+  type sparseLayoutType = unmanaged DefaultDist;
+  forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(//rank, idxType,
+                                                            unmanaged BlockGuts(rank, idxType, _to_unmanaged(sparseLayoutType)));
 
   proc init(boundingBox: domain,
             targetLocales: [] locale = Locales,
@@ -337,25 +341,29 @@ record Block {
                                           dataParIgnoreRunningTasks,
                                           dataParMinGranularity,
                                           rank, idxType, _to_unmanaged(sparseLayoutType));
-    this.chpl_distHelp = new chpl_PrivatizedDistHelper(rank, idxType,
-                                                       _to_unmanaged(sparseLayoutType),
+    this.rank = rank;
+    this.idxType = idxType;
+    this.sparseLayoutType = sparseLayoutType;
+    this.chpl_distHelp = new chpl_PrivatizedDistHelper(//rank, idxType,
+                                                       value.type,
                                                        if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid,
                                                        value);
   }
 
   proc init(_pid : int, _instance, _unowned : bool) {
-    this.chpl_distHelp = new chpl_PrivatizedDistHelper(_instance.rank,
-                                                       _instance.idxType,
-                                                       _instance.sparseLayoutType,
+    compilerWarning("*** " + _instance.rank:string + " " + _instance.idxType:string);
+    this.chpl_distHelp = new chpl_PrivatizedDistHelper(//_instance.rank,
+                                                       //_instance.idxType,
+                                                       BlockGuts(_instance.rank, _instance.idxType, _to_unmanaged(sparseLayoutType)),
                                                        _pid,
                                                        _instance,
                                                        _unowned);
   }
 
   proc init(value) {
-    this.chpl_distHelp = new chpl_PrivatizedDistHelper(value.rank,
-                                                       value.idxType,
-                                                       value.sparseLayoutType,
+    this.chpl_distHelp = new chpl_PrivatizedDistHelper(//value.rank,
+                                                       //value.idxType,
+                                                       BlockGuts(value.rank, value.idxType, _to_unmanaged(sparseLayoutType)),
                                                        if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid,
                                                        _to_unmanaged(value));
   }
@@ -885,6 +893,7 @@ proc LocBlock.init(param rank, type idxType, param dummy: bool) where dummy {
 ////// BlockDom and LocBlockDom methods /////////////////////////////////////
 
 proc BlockDom.dsiGetDist() {
+  compilerWarning("*** " + dist.rank:string + " " + dist.idxType:string);
   if _isPrivatized(dist) then
     return new Block(dist.pid, dist, _unowned=true);
   else
