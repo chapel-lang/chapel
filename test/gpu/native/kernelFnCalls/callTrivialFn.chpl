@@ -1,4 +1,7 @@
 use GpuDiagnostics;
+
+use GpuTestCommon;
+
 config const n = 100;
 
 proc foo(a, b, i) {
@@ -14,4 +17,4 @@ on here.gpus[0] {
  }
   stopGpuDiagnostics();
 }
-writeln(getGpuDiagnostics());
+verifyGpuDiags(umLaunch=1, aodLaunch=1);
