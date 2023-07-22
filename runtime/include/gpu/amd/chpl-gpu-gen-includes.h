@@ -23,11 +23,12 @@
 
 #ifdef HAS_GPU_LOCALE
 
+#include <hip/hip_runtime.h>
+
 #include "../chpl-gpu-gen-common.h"
 
 #include "chpltypes.h"
 #include "chpl-comm.h"
-#include <hip/hip_runtime.h>
 
 // General TODO
 // This file is included in the application executable only. It mirrors
