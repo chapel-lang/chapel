@@ -5016,7 +5016,6 @@ qioerr qio_conv_parse(c_string fmt,
       style_out->realfmt = 2;
       style_out->string_format = QIO_STRING_FORMAT_CHPL;
       style_out->tuple_style = QIO_TUPLE_FORMAT_CHPL;
-      style_out->showpointzero = 1;
 
       // Handle precision
       if( precision != WIDTH_NOT_SET ) {
