@@ -285,6 +285,23 @@ static QualifiedType primIsTuple(Context* context,
                        BoolParam::get(context, isTupleType));
 }
 
+static QualifiedType primToNilableClass(Context* context,
+                                        const CallInfo& ci) {
+  if (ci.numActuals() != 1) return QualifiedType();
+  auto& actualType = ci.actual(0).type();
+  if (actualType.kind() != QualifiedType::TYPE) return QualifiedType();
+
+  auto typePtr = actualType.type();
+  if (typePtr) {
+    if (auto ct = typePtr->toClassType()) {
+      auto dec = ct->decorator().addNilable();
+      typePtr = ct->withDecorator(context, dec);
+    }
+  }
+
+  return QualifiedType(QualifiedType::TYPE, typePtr);
+}
+
 CallResolutionResult resolvePrimCall(Context* context,
                                      const PrimCall* call,
                                      const CallInfo& ci,
@@ -431,7 +448,13 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_TO_UNMANAGED_CLASS:
     case PRIM_TO_BORROWED_CLASS:
     case PRIM_TO_UNDECORATED_CLASS:
+      assert(false && "not implemented yet");
+      break;
+
     case PRIM_TO_NILABLE_CLASS:
+      type = primToNilableClass(context, ci);
+      break;
+
     case PRIM_TO_NON_NILABLE_CLASS:
     case PRIM_UINT32_AS_REAL32:
     case PRIM_UINT64_AS_REAL64:
