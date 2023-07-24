@@ -273,6 +273,18 @@ static QualifiedType computeDomainType(Context* context, const CallInfo& ci) {
   return QualifiedType();
 }
 
+static QualifiedType primIsTuple(Context* context,
+                                 const CallInfo& ci) {
+  if (ci.numActuals() != 1) return QualifiedType();
+  auto& actualType = ci.actual(0).type();
+  if (actualType.kind() != QualifiedType::TYPE) return QualifiedType();
+
+  bool isTupleType = actualType.type() && actualType.type()->isTupleType();
+  return QualifiedType(QualifiedType::PARAM,
+                       BoolType::get(context),
+                       BoolParam::get(context, isTupleType));
+}
+
 CallResolutionResult resolvePrimCall(Context* context,
                                      const PrimCall* call,
                                      const CallInfo& ci,
@@ -320,10 +332,11 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_IS_COERCIBLE:
     case PRIM_TYPE_TO_STRING:
     case PRIM_HAS_LEADER:
-    case PRIM_IS_TUPLE_TYPE:
       CHPL_ASSERT(false && "not implemented yet");
       break;
-
+    case PRIM_IS_TUPLE_TYPE:
+      type = primIsTuple(context, ci);
+      break;
     case PRIM_SIMPLE_TYPE_NAME:
       CHPL_ASSERT(false && "not implemented yet");
       break;
