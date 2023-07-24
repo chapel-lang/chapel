@@ -20,7 +20,7 @@ proc stopTest(name, bandwidth=false) {
   if reportTime {
     t.stop();
     if bandwidth then
-      writeln(name, " (GB/s): ", n*numBytes(int)/t.elapsed()/1e9);
+      writeln(name, " (GiB/s): ", n*numBytes(int)/t.elapsed()/1e9);
     else
       writeln(name, " (s): ", t.elapsed());
     t.clear();

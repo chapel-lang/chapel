@@ -28,6 +28,8 @@ config param blockSize = 16;
 config param blockPadding = 1;
 config type dataType = real(32);
 
+config const SI = true;
+
 inline proc transposeNaive(original, output) {
   foreach (x,y) in original.domain {
     assertOnGpu();
@@ -149,12 +151,20 @@ on here.gpus[0] {
 
 var elapsed = timer.elapsed() / numTrials;
 
-var sizeInBytes = originalHost.size * numBytes(dataType);
-var sizeInGb = sizeInBytes / (1000.0 * 1000.0 * 1000.0);
-var gbPerSec = sizeInGb / elapsed;
 if perftest {
+var sizeInBytes = originalHost.size * numBytes(dataType);
   writeln("Wall clock time (s): ", elapsed);
-  writeln("Performance (GB/s): ", gbPerSec);
+  if SI {
+    var sizeInGib = sizeInBytes / (1000.0 * 1000.0 * 1000.0);
+    var gibPerSec = sizeInGib / elapsed;
+    writeln("Performance (GiB/s): ", gibPerSec);
+  }
+  else {
+    var sizeInGb = sizeInBytes / (1<<30):real;
+    var gbPerSec = sizeInGb / elapsed;
+    writeln("Performance (GB/s): ", gbPerSec);
+
+  }
 }
 
 var passed = true;
