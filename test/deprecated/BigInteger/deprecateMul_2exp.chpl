@@ -1,3 +1,4 @@
+// deprecated in 1.32 by Jade
 use BigInteger;
 
 var x: bigint = 1;
