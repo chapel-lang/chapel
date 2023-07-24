@@ -1,6 +1,6 @@
 .\" -*- nroff -*-
-.\" Copyright © 2010-2018 Inria.  All rights reserved.
-.\" Copyright © 2009 Cisco Systems, Inc.  All rights reserved.
+.\" Copyright © 2010-2022 Inria.  All rights reserved.
+.\" Copyright © 2009-2020 Cisco Systems, Inc.  All rights reserved.
 .\" See COPYING in top-level directory.
 .TH HWLOC-CALC "1" "%HWLOC_DATE%" "%PACKAGE_VERSION%" "%PACKAGE_NAME%"
 .SH NAME
@@ -12,7 +12,7 @@ hwloc-calc \- Operate on cpu mask strings and objects
 .SH SYNOPSIS
 .
 .B hwloc-calc
-[\fIoptions\fR] \fI<location1> [<location2> [...] ]
+[\fItopology options\fR] [\fIoptions\fR] \fI<location1> [<location2> [...] ]
 .
 .PP
 Note that hwloc(7) provides a detailed explanation of the hwloc system
@@ -22,7 +22,73 @@ it should be read before reading this man page.
 .\" **************************
 .\"    Options Section
 .\" **************************
+.SH TOPOLOGY OPTIONS
+.
+All topology options must be given before all other options.
+.
+.TP 10
+\fB\-\-no\-smt\fR, \fB\-\-no\-smt=<N>\fR
+Only keep the first PU per core in the input locations.
+If \fI<N>\fR is specified, keep the <N>-th instead, if any.
+PUs are ordered by physical index during this filtering.
+.TP
+\fB\-\-cpukind\fR <n>
+\fB\-\-cpukind\fR <infoname>=<infovalue>
+Only keep PUs whose CPU kind match.
+Either a single CPU kind is specified as an index,
+or the info name/value keypair will select matching kinds.
+
+When specified by index, it corresponds to hwloc ranking of CPU kinds
+which returns energy-efficient cores first, and high-performance
+power-hungry cores last.
+The full list of CPU kinds may be seen with \fIlstopo --cpukinds\fR.
+.TP
+\fB\-\-restrict\fR <cpuset>
+Restrict the topology to the given cpuset.
+.TP
+\fB\-\-restrict\fR nodeset=<nodeset>
+Restrict the topology to the given nodeset, unless \fB\-\-restrict\-flags\fR specifies something different.
+.TP
+\fB\-\-restrict\-flags\fR <flags>
+Enforce flags when restricting the topology.
+Flags may be given as numeric values or as a comma-separated list of flag names
+that are passed to \fIhwloc_topology_restrict()\fR.
+Those names may be substrings of actual flag names as long as a single one matches,
+for instance \fBbynodeset,memless\fR.
+The default is \fB0\fR (or \fBnone\fR).
+.TP
+\fB\-\-disallowed\fR
+Include objects disallowed by administrative limitations.
+.TP
+\fB\-i\fR <path>, \fB\-\-input\fR <path>
+Read the topology from <path> instead of discovering the topology of the local machine.
+
+If <path> is a file and XML support has been compiled in hwloc,
+it may be a XML file exported by a previous hwloc program.
+If <path> is "\-", the standard input may be used as a XML file.
+
+On Linux, <path> may be a directory containing the topology files
+gathered from another machine topology with hwloc-gather-topology.
+
+On x86, <path> may be a directory containing a cpuid dump gathered
+with hwloc-gather-cpuid.
+
+When the archivemount program is available, <path> may also be a tarball
+containing such Linux or x86 topology files.
+.TP
+\fB\-i\fR <specification>, \fB\-\-input\fR <specification>
+Simulate a fake hierarchy (instead of discovering the topology on the
+local machine). If <specification> is "node:2 pu:3", the topology will
+contain two NUMA nodes with 3 processing units in each of them.
+The <specification> string must end with a number of PUs.
+.TP
+\fB\-\-if\fR <format>, \fB\-\-input\-format\fR <format>
+Enforce the input in the given format, among \fBxml\fR, \fBfsroot\fR,
+\fBcpuid\fR and \fBsynthetic\fR.
+.
 .SH OPTIONS
+.
+All these options must be given after all topology options above.
 .
 .TP 10
 \fB\-p\fR \fB\-\-physical\fR
@@ -43,20 +109,48 @@ Use OS/physical indexes instead of logical indexes for output.
 \fB\-\-lo\fR \fB\-\-logical\-output\fR
 Use logical indexes instead of physical/OS indexes for output (default, except for cpusets which are always physical).
 .TP
-\fB\-N \-\-number-of <type|depth>\fR
+\fB\-n\fR \fB\-\-nodeset\fR
+Interpret both input and output sets as nodesets instead of CPU sets.
+See \fB\-\-nodeset\-output\fR and \fB\-\-nodeset\-input\fR below for details.
+.TP
+\fB\-\-no\fR \fB\-\-nodeset\-output\fR
+Report nodesets instead of CPU sets.
+This output is more precise than the default CPU set output when memory
+locality matters because it properly describes CPU-less NUMA nodes,
+as well as NUMA-nodes that are local to multiple CPUs.
+.TP
+\fB\-\-ni\fR \fB\-\-nodeset\-input\fR
+Interpret input sets as nodesets instead of CPU sets.
+.TP
+\fB\-N \-\-number\-of <type|depth>\fR
 Report the number of objects of the given type or depth that intersect the CPU set.
 This is convenient for finding how many cores, NUMA nodes or PUs are available
 in a machine.
+
+When combined with \fB\-\-nodeset\fR or \fB\-\-nodeset-output\fR,
+the nodeset is considered instead of the CPU set for finding matching objects.
+This is useful when reporting the output as a number or set of NUMA nodes.
+
+If an OS device subtype such as \fIgpu\fR  is given instead of \fIosdev\fR,
+only the os devices of that subtype will be counted.
 .TP
 \fB\-I \-\-intersect <type|depth>\fR
 Find the list of objects of the given type or depth that intersect the CPU set and
 report the comma-separated list of their indexes instead of the cpu mask string.
 This may be used for determining the list of objects above or below the input
 objects.
+
 When combined with \fB\-\-physical\fR, the list is convenient to pass to external
 tools such as taskset or numactl \fB\-\-physcpubind\fR or \fB\-\-membind\fR.
 This is different from \-\-largest since the latter requires that all reported
 objects are strictly included inside the input objects.
+
+When combined with \fB\-\-nodeset\fR or \fB\-\-nodeset-output\fR,
+the nodeset is considered instead of the CPU set for finding matching objects.
+This is useful when reporting the output as a number or set of NUMA nodes.
+
+If an OS device subtype such as \fIgpu\fR is given instead of \fIosdev\fR,
+only the os devices of that subtype will be returned.
 .TP
 \fB\-H \-\-hierarchical <type1>.<type2>...\fR
 Find the list of objects of type <type2> that intersect the CPU set and
@@ -65,14 +159,59 @@ to <type1>, <type2>, etc.
 For instance, if \fIpackage.core\fR is given, the output would be
 \fIPackage:1.Core:2 Package:2.Core:3\fR if the input contains the third
 core of the second package and the fourth core of the third package.
+
+Only normal CPU-side object types should be used.
+
+NUMA nodes may be used but they may cause redundancy in the output
+on heterogeneous memory platform. For instance, on a platform with both
+DRAM and HBM memory on a package, the first core will be considered both
+as first core of first NUMA node (DRAM) and
+as first core of second NUMA node (HBM).
 .TP
 \fB\-\-largest\fR
 Report (in a human readable format) the list of largest objects which exactly
-include all input objects.
+include all input objects (by looking at their CPU sets).
 None of these output objects intersect each other, and the sum of them is
 exactly equivalent to the input. No largest object is included in the input
 This is different from \-\-intersect where reported objects may not be
 strictly included in the input.
+.TP
+\fB\-\-local\-memory\fR
+Report the list of NUMA nodes that are local to the input objects.
+
+This option is similar to \fB\-I numa\fR but the way nodes are selected
+is different:
+The selection performed by \fB\-\-local\-memory\fR may be precisely
+configured with \fB\-\-local\-memory\-flags\fR,
+while \fB\-I numa\fR just selects all nodes that are somehow local to
+any of the input objects.
+.TP
+\fB\-\-local\-memory\-flags\fR
+Change the flags used to select local NUMA nodes.
+Flags may be given as numeric values or as a comma-separated list of flag names
+that are passed to \fIhwloc_get_local_numanode_objs()\fR.
+Those names may be substrings of actual flag names as long as a single one matches.
+The default is \fB3\fR (or \fBsmaller,larger\fR)
+which means NUMA nodes are displayed
+if their locality either contains or is contained
+in the locality of the given object.
+
+This option enables \fB\-\-local\-memory\fR.
+.TP
+\fB\-\-best\-memattr\fR <name>
+Enable the listing of local memory nodes with \fB\-\-local\-memory\fR,
+but only display the local node that has the best value for the memory
+attribute given by \fI<name>\fR (or as an index).
+
+If the memory attribute values depend on the initiator, the hwloc-calc
+input objects are used as the initiator.
+
+Standard attribute names are \fICapacity\fR, \fILocality\fR,
+\fIBandwidth\fR, and \fILatency\fR.
+All existing attributes in the current topology may be listed with
+
+    $ lstopo --memattrs
+
 .TP
 \fB\-\-sep <sep>\fR
 Change the field separator in the output.
@@ -90,34 +229,6 @@ program instead of hwloc-specific CPU set string format.
 This option has no impact on the format of input CPU set strings,
 both formats are always accepted.
 .TP
-\fB\-\-restrict\fR <cpuset>
-Restrict the topology to the given cpuset.
-.TP
-\fB\-\-whole\-system\fR
-Do not consider administration limitations.
-.TP
-\fB\-i\fR <file>, \fB\-\-input\fR <file>
-Read topology from XML file <file> (instead of discovering the
-topology on the local machine).  If <file> is "\-", the standard input
-is used.  XML support must have been compiled in to hwloc for this
-option to be usable.
-.TP
-\fB\-i\fR <directory>, \fB\-\-input\fR <directory>
-Read topology from the chroot specified by <directory> (instead of
-discovering the topology on the local machine).  This option is
-generally only available on Linux.  The chroot was usually created
-by gathering another machine topology with hwloc-gather-topology.
-.TP
-\fB\-i\fR <specification>, \fB\-\-input\fR <specification>
-Simulate a fake hierarchy (instead of discovering the topology on the
-local machine). If <specification> is "node:2 pu:3", the topology will
-contain two NUMA nodes with 3 processing units in each of them.
-The <specification> string must end with a number of PUs.
-.TP
-\fB\-\-if\fR <format>, \fB\-\-input\-format\fR <format>
-Enforce the input in the given format, among \fBxml\fR, \fBfsroot\fR
-and \fBsynthetic\fR.
-.TP
 \fB\-q\fR \fB\-\-quiet\fR
 Hide non-fatal error messages.
 It mostly includes locations pointing to non-existing objects.
@@ -127,7 +238,9 @@ Verbose output.
 .TP
 \fB\-\-version\fR
 Report version and exit.
-.
+.TP
+\fB\-h\fR \fB\-\-help\fR
+Display help message and exit.
 .
 .\" **************************
 .\"    Description Section
@@ -138,6 +251,7 @@ hwloc-calc generates and manipulates CPU mask strings or objects.
 Both input and output may be either objects (with physical or logical
 indexes), CPU lists (with physical or logical indexes), or CPU mask strings
 (always physically indexed).
+Input location specification is described in hwloc(7).
 .
 .PP
 If objects or CPU mask strings are given on the command-line,
@@ -151,15 +265,10 @@ Different input lines will be processed separately.
 .
 .PP
 Command-line arguments and options are processed in order.
-For instance, it means that changing the type of input indexes
+First topology configuration options should be given.
+Then, for instance, changing the type of input indexes
 with \fB\-\-li\fR or changing the input topology with \fB\-i\fR
 only affects the processing the following arguments.
-.
-.PP
-.B NOTE:
-hwloc-calc cannot manipulate NUMA memory node sets.
-It only manipulates CPU sets, which means it cannot do much
-about CPU-less NUMA nodes.
 .
 .PP
 .B NOTE:
@@ -187,6 +296,18 @@ its even numbered logical processors:
     $ hwloc-calc package:2 ~PU:even
     0x00000c00
 
+To convert a cpu mask to human-readable output, the -H option can be
+used to emit a space-delimited list of locations:
+
+    $ echo 0x000000f0 | hwloc-calc -H package.core
+    Package:1.Core1 Package:1.Core:1 Package:1.Core:2 Package:1.Core:3
+
+To use some other character (e.g., a comma) instead of spaces in
+output, use the --sep option:
+
+    $ echo 0x000000f0 | hwloc-calc -H package.core --sep ,
+    Package:1.Core1,Package:1.Core:1,Package:1.Core:2,Package:1.Core:3
+
 To combine two (physical) CPU masks:
 
     $ hwloc-calc 0x0000ffff 0xff000000
@@ -201,7 +322,7 @@ package:
 To bind GNU OpenMP threads logically over the whole machine, we need to use
 physical number output instead:
 
-    $ export GOMP_CPU_AFFINITY=`hwloc-calc --physical-output --intersect PU machine:0`
+    $ export GOMP_CPU_AFFINITY=`hwloc-calc --physical-output --intersect PU all`
     $ echo $GOMP_CPU_AFFINITY
     0,4,1,5,2,6,3,7
 
@@ -210,10 +331,41 @@ To display the list of NUMA nodes, by physical indexes, that intersect a given (
     $ hwloc-calc --physical --intersect NUMAnode 0xf0f0f0f0
     0,2
 
-To display the physical index of a processor given by its logical index:
+To find how many cores are in the second CPU kind
+(those cores are likely higher-performance and more power-hungry than cores of the first kind):
 
-    $ hwloc-calc PU:2 --physical-output --intersect PU
+    $ hwloc-calc --cpukind 1 -N core all
+    4
+
+To display the list of NUMA nodes, by physical indexes,
+whose locality is exactly equal to a Package:
+
+    $ hwloc-calc --local-memory-flags 0 pack:1
+    4,7
+
+To display the best-capacity NUMA node, by physical indexe,
+whose locality is exactly equal to a Package:
+
+    $ hwloc-calc --local-memory-flags 0 --best-memattr capacity pack:1
+    4
+
+Converting object logical indexes (default) from/to physical/OS indexes
+may be performed with \fB--intersect\fR combined with either \fB--physical-output\fR
+(logical to physical conversion) or \fB--physical-input\fR (physical to logical):
+
+    $ hwloc-calc --physical-output PU:2 --intersect PU
     3
+    $ hwloc-calc --physical-input PU:3 --intersect PU
+    2
+
+One should add \fB--nodeset\fR when converting indexes of memory objects
+to make sure a single NUMA node index is returned on platforms
+with heterogeneous memory:
+
+    $ hwloc-calc --nodeset --physical-output node:2 --intersect node
+    3
+    $ hwloc-calc --nodeset --physical-input node:3 --intersect node
+    2
 
 To display the set of CPUs near network interface eth0:
 
@@ -258,16 +410,39 @@ To synthetize a set of cores into largest objects on a 2-node 2-package 2-core m
 To get the set of first threads of all cores:
 
     $ hwloc-calc core:all.pu:0
+    $ hwloc-calc --no-smt all
 
 This can also be very useful in order to make GNU OpenMP use exactly one thread
 per core, and in logical core order:
 
-    $ export OMP_NUM_THREADS=`hwloc-calc --number-of core machine:0`
+    $ export OMP_NUM_THREADS=`hwloc-calc --number-of core all`
     $ echo $OMP_NUM_THREADS
     4
-    $ export GOMP_CPU_AFFINITY=`hwloc-calc --physical-output --intersect PU core:all.pu:0`
+    $ export GOMP_CPU_AFFINITY=`hwloc-calc --physical-output --intersect PU --no-smt all`
     $ echo $GOMP_CPU_AFFINITY
     0,2,1,3
+
+To export bitmask in a format that is acceptable by the resctrl Linux subsystem
+(for configuring cache partitioning, etc), apply a sed regexp to the output of hwloc-calc:
+
+    $ hwloc-calc pack:all.core:7-9.pu:0
+    0x00000380,,0x00000380   <this format cannot be given to resctrl>
+    $ hwloc-calc pack:all.core:7-9.pu:0 | sed -e 's/0x//g' -e 's/,,/,0,/g' -e 's/,,/,0,/g'
+    00000380,0,00000380
+    # echo 00000380,0,00000380 > /sys/fs/resctrl/test/cpus
+    # cat /sys/fs/resctrl/test/cpus
+    00000000,00000380,00000000,00000380   <the modified bitmask was corrected parsed by resctrl>
+
+OS devices may also be filtered by subtype. In this example, there are
+8 OS devices in the system, 4 of them are near NUMA node #1, and only
+2 of these are CoProcessors:
+
+    $ utils/hwloc/hwloc-calc -I osdev all
+    0,1,2,3,4,5,6,7,8
+    $ utils/hwloc/hwloc-calc -I osdev node:1
+    5,6,7,8
+    $ utils/hwloc/hwloc-calc -I coproc node:1
+    7,8
 
 .
 .\" **************************
@@ -289,5 +464,5 @@ hwloc-calc will return nonzero if any kind of error occurs, such as
 .SH SEE ALSO
 .
 .ft R
-hwloc(7), lstopo(1), hwloc-info(1), hwloc-gather-topology(1)
+hwloc(7), lstopo(1), hwloc-info(1)
 .sp

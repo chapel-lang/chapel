@@ -46,10 +46,10 @@ def get_link_args():
                                           'hwloc', ucp=get_uniq_cfg_path())
     elif hwloc_val == 'system':
         # Check that hwloc version is OK
-        okversions = ('1.11.5', '1.11.6', '1.11.7', '1.11.8', '1.11.9', '1.11.10', '1.11.11', '1.11.12', '1.11.13')
-        vers = third_party_utils.pkgconfig_get_system_version('hwloc')
-        if not vers in okversions:
-          err = "CHPL_HWLOC=system but unsupported version {0} was found.\nPlease use one of the following versions {1}\n".format(vers, ' '.join(okversions))
+        exists, retcode, my_out, my_err = try_run_command(
+                            ['pkg-config', '--atleast-version=2.1', 'hwloc'])
+        if exists and retcode != 0:
+          err = "CHPL_HWLOC=system requires hwloc >= 2.1"
           error(err, ValueError)
 
         return ([ ], ['-lhwloc'])

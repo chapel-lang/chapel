@@ -6,12 +6,12 @@ def extend2(x, y):
     x[0].extend(y[0])
     x[1].extend(y[1])
 
-# Remove duplicates, keeping last occurrence and preserving order
+# Remove duplicate -l arguments, keeping last occurrence and preserving order
 # e.g. "-lhwloc -lqthread -lhwloc ..." -> "-lqthread -lhwloc ...
 def dedup(args):
     seen = set()
     ret = [arg for arg in reversed(args)
-           if not (arg in seen or seen.add(arg))]
+           if not arg.startswith("-l") or (not (arg in seen or seen.add(arg)))]
     return reversed(ret)
 
 # Returns the runtime includes and defines according

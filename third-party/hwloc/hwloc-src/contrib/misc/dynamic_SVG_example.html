@@ -1,0 +1,163 @@
+<!-- Copyright © 2018-2019 Inria.  All rights reserved. -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Dynamic SVG</title>
+</head>
+<body>
+  <p>
+    This page is an example of HTML/JS interacting with the lstopo SVG output.
+  </p>
+  <p>
+    Load a SVG that was exported with lstopo's <b>native</b> SVG backend
+    (e.g. with <tt>lstopo --of nativesvg foo.svg</tt>):
+  </p>
+  <input type="file" name="myFile" accept=".svg" onchange="openFile(event)">
+  <br>
+  <br>
+  <object id="img" type="image/svg+xml">
+  </object>
+  <br>
+  <p id='caption' style='display:none'>
+    Click on a box to change its background color
+    and replace its first text line (if any) with its SVG object id.
+  </p>
+  <p id='drag' style='display:none'>
+    <input type='checkbox' id='draggable' onclick='enableDrag()'>Make boxes draggable</input>
+  </p>
+</body>
+<footer>
+	<script type="text/javascript">
+	  function openFile(event) {
+	      let image = document.getElementById('img')
+	      image.data = null
+	      var input = event.target;
+	      var TextReader = new FileReader()
+	      TextReader.onload = async function(){
+		  var parser = new DOMParser()
+		  let blob = new Blob([TextReader.result], {type: 'image/svg+xml'})
+		  let url = URL.createObjectURL(blob)
+		  image.data = await url
+		  setTimeout(function(){
+		      document.getElementById('caption').style = ''
+		      document.getElementById('drag').style = ''
+		      document.getElementById("draggable").checked = false
+
+		      svgObject = document.getElementById('img').contentDocument
+		      let svgElement = svgObject.getElementById('Machine_0_rect')
+
+		      if(svgObject.getElementById('Machine_0_rect')){
+			  start(svgObject)
+		      }else{
+			  const h1 = document.createElement('h1')
+			  h1.innerHTML = "Your svg file doesn't have the good format to load javascript"
+			  document.body.appendChild(h1)
+		      }
+		  },200)
+	      }
+	      TextReader.readAsText(input.files[0], "UTF-8")
+	  }
+
+	  function enableDrag(){
+	      let svgObject = document.getElementById('img').contentDocument
+	      const elements = svgObject.getElementsByTagName('rect')
+	      for (let element of elements) {
+		  element.classList.toggle("draggable")
+	      }
+	  }
+
+	  function start(svgObject){
+	      makeDraggable(svgObject)
+	      const texts = svgObject.getElementsByTagName('text')
+	      for (let text of texts) {
+		  text.setAttribute("style", text.getAttribute("style") + ";pointer-events:none;")
+	      }
+
+	      const elements = svgObject.getElementsByTagName('rect')
+	      for (let element of elements) {
+		  if(!element.id.includes("Bridge")){
+		      element.addEventListener('click', function(e) {
+			  changeColor(svgObject, e.target)
+			  changeText(svgObject, e.target)
+		      })
+		  }
+	      }
+	  }
+
+	  function changeColor(svgObject, element){
+	      oldColor = element.getAttribute("saveColor")
+
+	      if(!oldColor){
+		  element.setAttribute("saveColor", element.getAttribute("fill"))
+		  element.setAttribute("fill", "red")
+	      }else{
+		  element.setAttribute("fill", oldColor)
+		  element.removeAttribute("saveColor")
+	      }
+	  }
+
+	  function changeText(svgObject, element){
+	      if(element.id == "")
+		  return
+	      const text = svgObject.getElementById(element.id.replace('rect', 'text'))
+
+	      let textContent = element.getAttribute("saveText")
+
+	      if(!textContent){
+		  element.setAttribute("saveText", text.innerHTML)
+		  textContent = element.id
+	      }else{
+		  element.removeAttribute("saveText")
+	      }
+
+	      let svg   = svgObject.documentElement;
+	      let svgNS = svg.namespaceURI;
+	      let newText = text.cloneNode(false)
+
+	      newText.appendChild(svgObject.createTextNode(textContent))
+	      svg.removeChild(text)
+	      svg.appendChild(newText)
+	  }
+
+	  function makeDraggable(svgObject) {
+	      let selectedElement = null
+	      let text = null
+	      let marginTextX = null
+	      let marginTextY = null
+	      svgObject.addEventListener('mousedown', startDrag)
+	      svgObject.addEventListener('mousemove', drag)
+	      svgObject.addEventListener('mouseup', endDrag)
+	      svgObject.addEventListener('mouseleave', endDrag)
+
+	      function startDrag(evt) {
+		  if (evt.target.classList.contains('draggable')) {
+		      selectedElement = evt.target;
+		      text = getText(svgObject, selectedElement.id)
+		      marginTextX = text.getAttribute("x") - selectedElement.getAttribute("x")
+		      marginTextY = text.getAttribute("y") - selectedElement.getAttribute("y")
+		  }
+	      }
+
+	      function drag(evt) {
+		  if (selectedElement) {
+		      evt.preventDefault();
+		      let textDragX = evt.clientX + marginTextX
+		      let textDragY = evt.clientY + marginTextY
+		      let dragX = evt.clientX;
+		      let dragY = evt.clientY;
+
+		      selectedElement.setAttribute("x", dragX);
+		      selectedElement.setAttribute("y", dragY);
+		      text.setAttribute("x", textDragX);
+		      text.setAttribute("y", textDragY);
+		  }
+	      }
+
+	      function endDrag(evt) {
+		  selectedElement = null
+	      }
+	  }
+    </script>
+</footer>
+</html>
