@@ -31,20 +31,25 @@ sub mysystem {
             $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
 
             if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
-                print "Trying to mail message... using $mailcommand\n";
-                open(MAIL, $mailcommand);
-                print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab, "");
-                print MAIL "ERROR $errorname: $status\n";
-                print MAIL "(workspace left at $tmpdir)\n";
-                print MAIL endMailHeader();
-                print MAIL endMailChplenv();
-                close(MAIL);
+                
+                writeSummary ($revision, $starttime,$endtime , $crontab , $testdirs , $numtestssummary , $summary , $prevsummary, $sortedsummary );
+                $fatal = 1;
+                #print "Trying to mail message... using $mailcommand\n";
+                # open(MAIL, $mailcommand);
+                
+                # print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab, "");
+                # print MAIL "ERROR $errorname: $status\n";
+                # print MAIL "(workspace left at $tmpdir)\n";
+                # print MAIL endMailHeader();
+                # print MAIL endMailChplenv();
+                # close(MAIL);
             } else {
                 print "CHPL_TEST_NOMAIL: No $mailcommand\n";
             }
         }
 
         if ($fatal != 0) {
+         print "Got here...$fatal != 0 ";
             exit 1;
         }
     }
@@ -139,5 +144,58 @@ sub endMailChplenv {
 
     $mystr;
 }
+sub writeSummary {
+    my $revision = $_[0];
+    my $starttime = $_[1];
+    my $endtime = $_[2];
+    my $crontab = $_[3];
+    my $testdirs = $_[4];
+    my $numtestssummary = $_[5];
+    my $summary = $_[6];
+    my $prevsummary = $_[7];
+    my $sortedsummary = $_[8];
+    print 
+    my $filename = "$chplhomedir/summary.log";
+    open(my $SF, '>', $filename) or die "Could not open file '$filename' $!";
+    print "Writing Testing summary... \n";
+    print "filename ... $filename \n";
+    print $SF startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab, $testdirs);
+    print $SF "$numtestssummary \n";
+    print $SF "$summary \n";
+    print $SF endMailHeader();
+        print $SF "--- New Errors -------------------------------\n";
+        print $SF `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
+        print $SF "\n";
 
+        print $SF "--- Resolved Errors --------------------------\n";
+        print $SF `LC_ALL=C comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
+        print $SF "\n";
+
+        print $SF "--- New Passing Future tests------------------\n";
+        print $SF `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
+        print $SF "\n";
+
+        print $SF "--- Passing Future tests ---------------------\n";
+        print $SF `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
+        print $SF "\n";
+
+        print $SF "--- New Passing Suppress tests------------------\n";
+        print $SF `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$suppressmarker" | grep "\\[Success"`;
+        print $SF "\n";
+
+        print $SF "--- Passing Suppress tests ---------------------\n";
+        print $SF `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$suppressmarker" | grep "\\[Success"`;
+        print $SF "\n";
+
+        print $SF "--- Unresolved Errors ------------------------\n";
+        print $SF `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
+        print $SF "\n";
+
+        print $SF "--- New Failing Future tests -----------------\n";
+        print $SF `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;
+        print $SF "\n";
+    print $SF      
+    print $SF endMailChplenv();
+    close($SF);
+}
 return(1);

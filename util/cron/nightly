@@ -21,7 +21,7 @@ use FindBin;
 use lib "$FindBin::Bin";
 
 use nightlysubs;
-
+use nightly_email;
 # Mailing lists.
 $failuremail = "chapel+tests\@discoursemail.com";
 $allmail = "chapel-test-results-all\@lists.sourceforge.net";
@@ -878,8 +878,13 @@ if ($runtests == 0) {
     }
 
 # FIXME: Pass correct args here!
-    `$chplhomedir/util/cron/nightly_email.pl $status "$rawsummary" "$sortedsummary" "$prevsummary" "$mailer" "$nochangerecipient" "$recipient" "$subjectid" "$config_name" "$revision" "$rawlog" "$starttime" "$endtime" "$crontab" "$testdirs" $debug`;
-
+     print "Got here .. calling nightly email \n";
+   
+  # my $passed = `$chplhomedir/util/cron/nightly_email.pl $status "$rawsummary" "$sortedsummary" "$prevsummary" "$mailer" "$nochangerecipient" "$recipient" "$subjectid" "$config_name" "$revision" "$rawlog" "$starttime" "$endtime" "$crontab" "$testdirs" $debug`;
+ #`$chplhomedir/util/cron/nightly_email.pl $status "$rawsummary" "$sortedsummary" "$prevsummary" "$mailer" "$nochangerecipient" "$recipient" "$subjectid" "$config_name" "$revision" "$rawlog" "$starttime" "$endtime" "$crontab" "$testdirs" $debug`;
+ # require "nightly_email.pl";
+ $passed=writeFile($status, "$rawsummary", "$sortedsummary", "$prevsummary", "$mailer", "$nochangerecipient", "$recipient", "$subjectid", "$config_name", "$revision", "$rawlog", "$starttime", "$endtime", "$crontab", "$testdirs", $debug);
+   print "\n \n   Did the test pass .. $passed \n\n";
 #
 # analyze memory leaks tests
 #
@@ -904,5 +909,5 @@ if ($runtests == 0) {
         mysystem("cd $testdir && cp $memleaksdir/$memleakslog ./$memleaksmode.exec.out.tmp && $chplhomedir/util/test/computePerfStats $memleaksmode $memleaksdir", "memLeak computePerfStats", 1, 0, 0);
     }
 }
+exit $passed
 
-exit 0;
