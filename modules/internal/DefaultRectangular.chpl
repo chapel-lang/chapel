@@ -708,7 +708,7 @@ module DefaultRectangular {
         throw new Error("Could not allocate memory");
 
       init_elts(data, ranges(0).size, eltType);
-      
+
       if callPostAlloc {
         _ddata_allocate_postalloc(data, ranges(0).size);
         callPostAlloc = false;

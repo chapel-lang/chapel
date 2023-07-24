@@ -989,12 +989,12 @@ proc BlockDom.buildArrayOrThrow(type eltType) throws {
         throw new Error("Could not allocate memory");
 
       init_elts(data, locSize, eltType);
-      
+
       if callPostAlloc {
         _ddata_allocate_postalloc(data, locSize);
         callPostAlloc = false;
       }
-      
+
       const LBA = new unmanaged LocBlockArr(eltType, rank, idxType, strides,
                                             locDomsElt, data=data, size=locSize);
       locArrTempElt = LBA;
@@ -1010,7 +1010,7 @@ proc BlockDom.buildArrayOrThrow(type eltType) throws {
 
   // formerly in BlockArr.setup()
   if arr.doRADOpt && disableBlockLazyRAD then arr.setupRADOpt();
-  
+
   return arr;
 }
 
