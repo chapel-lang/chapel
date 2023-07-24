@@ -5358,8 +5358,8 @@ DEFINE_PRIM(GET_REQUESTED_SUBLOC) { ret = codegenCallExpr("chpl_task_getRequeste
 
 static void codegenPutGet(CallExpr* call, GenRet &ret) {
     // args are:
-    //   localvar, locale, remote addr, get(4)==size, line, file
-    //                                  get(4)==len  for array_get/put
+    //  localvar, locale, sublocale, remote addr, get(5)==size, line, file
+    //                                            get(5)==len  for array_get/put
     const char* fn;
     std::vector<GenRet> args;
     TypeSymbol* dt;
