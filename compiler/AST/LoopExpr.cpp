@@ -427,6 +427,7 @@ static FnSymbol* buildSerialIteratorFn(const char* iteratorName,
   else {
     loop = ForLoop::buildForeachLoop(indices,
                                      new SymExpr(sifnIterator),
+                                     /* intents */ nullptr,
                                      new BlockStmt(stmt),
                                      zippered,
                                      /*isForExpr*/ true);

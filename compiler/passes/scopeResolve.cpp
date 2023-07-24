@@ -30,6 +30,7 @@
 #include "driver.h"
 #include "externCResolve.h"
 #include "ForallStmt.h"
+#include "ForLoop.h"
 #include "IfExpr.h"
 #include "ImportStmt.h"
 #include "initializerRules.h"
@@ -1414,7 +1415,7 @@ static bool isField(Symbol* sym) {
   return isTypeSymbol(sym->defPoint->parentSymbol);
 }
 
-static void setupOuterVar(ForallStmt* fs, ShadowVarSymbol* svar) {
+static void setupOuterVar(ShadowVarLoopInterface *fs, ShadowVarSymbol* svar) {
   // We pull in the relevant pieces of resolveUnresolvedSymExpr().
   // This is hopefully clearer than generating an UnresolvedSymExpr
   // and calling resolveUnresolvedSymExpr() on it.
@@ -1427,7 +1428,7 @@ static void setupOuterVar(ForallStmt* fs, ShadowVarSymbol* svar) {
     return;
   }
 
-  if (Symbol* ovar = lookup(svar->name, fs->parentExpr)) {
+  if (Symbol* ovar = lookup(svar->name, fs->asExpr()->parentExpr)) {
     if (isFnSymbol(ovar) || isField(ovar)) {
       // Create a stand-in to use pre-existing code.
       UnresolvedSymExpr* standIn = new UnresolvedSymExpr(svar->name);
@@ -1446,7 +1447,7 @@ static void setupOuterVar(ForallStmt* fs, ShadowVarSymbol* svar) {
 }
 
 // Issue an error if 'tpv' is one of fs's induction variables.
-static void checkRefsToIdxVars(ForallStmt* fs, DefExpr* def,
+static void checkRefsToIdxVars(ShadowVarLoopInterface* fs, DefExpr* def,
                                ShadowVarSymbol* tpv)
 {
   std::vector<SymExpr*> symExprs;
@@ -1458,7 +1459,7 @@ static void checkRefsToIdxVars(ForallStmt* fs, DefExpr* def,
   INT_ASSERT(tpv->deinitBlock()->body.empty());
 
   for_vector(SymExpr, se, symExprs)
-    if (se->symbol()->defPoint->list == &fs->inductionVariables())
+    if(fs->isInductionVar(se->symbol()))
       USR_FATAL_CONT(se, "the initialization or type expression"
                      " of the task-private variable '%s'"
                      " references the forall loop induction variable '%s'",
@@ -1474,7 +1475,17 @@ static void setupShadowVars() {
         checkRefsToIdxVars(fs, def, svar);
     }
 
-  // Instead of the two nested loops above, we could march through
+  forv_Vec(BlockStmt, bs, gBlockStmts)
+    if(ForLoop *fl = toForLoop(bs)) {
+      for_shadow_vars_and_defs(svar, def, temp, fl) {
+        if (hasOuterVariable(svar))
+          setupOuterVar(fl, svar);
+        if (svar->isTaskPrivate())
+          checkRefsToIdxVars(fl, def, svar);
+      }
+    }
+
+  // Instead of the nested loops above, we could march through
   // gShadowVarSymbols and invoke setupOuterVar(svar->parentExpr, svar).
   // The nested loops group together all shadow variables of a given
   // ForallStmt, so hopefully have better cache behavior.

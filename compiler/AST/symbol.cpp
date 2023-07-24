@@ -30,6 +30,7 @@
 #include "astutil.h"
 #include "driver.h"
 #include "ForallStmt.h"
+#include "ForLoop.h"
 #include "passes.h"
 #include "resolveIntents.h"
 #include "resolution.h"
@@ -1032,8 +1033,14 @@ void ShadowVarSymbol::verify() {
   if (!resolved) {
     // Verify that this symbol is on a ForallStmt::shadowVariables() list.
     ForallStmt* pfs = toForallStmt(defPoint->parentExpr);
-    INT_ASSERT(pfs);
-    INT_ASSERT(defPoint->list == &(pfs->shadowVariables()));
+    ForLoop *pfl = toForLoop(defPoint->parentExpr);
+    if(pfs) {
+      INT_ASSERT(defPoint->list == &(pfs->shadowVariables()));
+    } else {
+      INT_ASSERT(pfl);
+      INT_ASSERT(pfl->isOrderIndependent());
+      INT_ASSERT(defPoint->list == &(pfl->shadowVariables()));
+    }
   }
   if (specBlock != NULL)
     INT_ASSERT(intent == TFI_REDUCE || intent == TFI_REDUCE_OP);

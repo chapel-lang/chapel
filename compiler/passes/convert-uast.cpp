@@ -1401,6 +1401,10 @@ struct Converter {
       } else if (const uast::ReduceIntent* rd = expr->toReduceIntent()) {
         astlocMarker markAstLoc(rd->id());
 
+        if(fForeachIntents && parent->toForeach()) {
+          USR_FATAL(node->id(), "reduce intents can not be used in foreach loops");
+        }
+
         Expr* ovar = new UnresolvedSymExpr(rd->name().c_str());
         Expr* riExpr = convertScanReduceOp(rd->op());
         svs = ShadowVarSymbol::buildFromReduceIntent(ovar, riExpr);
@@ -1972,7 +1976,7 @@ struct Converter {
     // Does not appear possible right now, from reading the grammar.
     INT_ASSERT(!node->isExpressionLevel());
 
-    if (node->withClause()) {
+    if (!fForeachIntents && node->withClause()) {
       USR_FATAL_CONT(node->withClause()->id(), "foreach loops do not yet "
                                                "support task intents");
     }
@@ -1980,6 +1984,7 @@ struct Converter {
     // The pieces that we need for 'buildForallLoopExpr'.
     Expr* indices = convertLoopIndexDecl(node->index());
     Expr* iteratorExpr = toExpr(convertAST(node->iterand()));
+    CallExpr* intents = convertWithClause(node->withClause(), node);
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
     bool zippered = node->iterand()->isZip();
     bool isForExpr = node->isExpressionLevel();
@@ -1989,7 +1994,7 @@ struct Converter {
 
     auto loopAttributes = buildLoopAttributes(node);
     loopAttributes.insertGpuEligibilityAssertion(body);
-    auto ret = ForLoop::buildForeachLoop(indices, iteratorExpr, body,
+    auto ret = ForLoop::buildForeachLoop(indices, iteratorExpr, intents, body,
                                          zippered,
                                          isForExpr, std::move(loopAttributes.llvmMetadata));
 

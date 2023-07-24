@@ -24,6 +24,7 @@
 #include "baseAST.h"
 #include "symbol.h"
 #include "expr.h"
+#include "ForallStmt.h"
 
 #include <map>
 #include <vector>
@@ -169,7 +170,7 @@ void  resolveForallStmts2();
 Expr* replaceForWithForallIfNeeded(ForLoop* forLoop);
 void  setReduceSVars(ShadowVarSymbol*& PRP, ShadowVarSymbol*& PAS,
                      ShadowVarSymbol*& RP, ShadowVarSymbol* AS);
-void setupAndResolveShadowVars(ForallStmt* fs);
+void setupAndResolveShadowVars(ShadowVarLoopInterface *fs);
 bool preserveShadowVar(Symbol* var);
 void adjustNothingShadowVariables();
 Expr* lowerPrimReduce(CallExpr* call);

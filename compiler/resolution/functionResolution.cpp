@@ -7661,7 +7661,7 @@ void printTaskOrForallConstErrorNote(Symbol* aVar) {
     Expr* enclLoop = aVar->defPoint->parentExpr;
 
     USR_PRINT(enclLoop,
-              "The shadow variable '%s' is constant due to forall intents "
+              "The shadow variable '%s' is constant due to intents "
               "in this loop",
               varname);
   }
@@ -10596,9 +10596,23 @@ Expr* resolveExpr(Expr* expr) {
   } else if (SymExpr* se = toSymExpr(expr)) {
     makeRefType(se->symbol()->type);
 
-    if (ForallStmt* pfs = isForallIterExpr(se)) {
+    ForallStmt* pfs = isForallIterExpr(se);
+    ForLoop* pfl = toForLoop(se->parentExpr);
+    if (pfs) {
       CallExpr* call = resolveForallHeader(pfs, se);
       retval = resolveExprPhase2(expr, fn, preFold(call));
+    } 
+    else if(pfl && pfl->isOrderIndependent() && se == pfl->indexGet() &&
+        (pfl->shadowVariables().length > 0))
+    {
+      // The pfl->shadowVariables().length > 0 part of the above condition is a
+      // bit of a hack to ensure we don't apply implicit intents on a loop where
+      // we haven't added an explicit intent (via a 'with' clause). Getting
+      // intents to work for 'foreach' loops is a bit of a work in progress and
+      // for the time being I would like to keep the behavior of loops that
+      // don't have a 'with' clause unchanged.
+      setupAndResolveShadowVars(pfl);
+      retval = resolveExprPhase2(expr, fn, expr);
     } else if (isMentionOfFnTriggeringCapture(se)) {
       auto fn = toFnSymbol(se->symbol());
       INT_ASSERT(fn);

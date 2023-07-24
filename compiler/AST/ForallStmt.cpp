@@ -758,3 +758,7 @@ std::vector<BlockStmt*> ForallStmt::loopBodies() const {
   }
   return bodies;
 }
+
+bool ForallStmt::isInductionVar(Symbol* sym) {
+  return sym->defPoint->list == &inductionVariables();
+}
