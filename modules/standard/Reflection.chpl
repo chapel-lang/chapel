@@ -58,8 +58,14 @@ private proc checkQueryT(type t) type {
 /* Return the number of fields in a class or record as a param.
    The count of fields includes types and param fields.
  */
-proc numFields(type t) param : int do
+proc getNumFields(type t) param : int do
   return __primitive("num fields", checkQueryT(t));
+
+/* Return the number of fields in a class or record as a param.
+   The count of fields includes types and param fields.
+ */
+@deprecated(notes="'numFields' is deprecated - please use 'getNumFields' instead")
+proc numFields(type t) param : int do return getNumFields(t);
 
 /* Get the name of the field at `idx` in a class or record.
    Causes a compilation error if `idx` is not in 0..<numFields(t).
@@ -256,6 +262,7 @@ proc hasField(type t, param name:string) param : bool do
    :arg idx: which field to query
    :returns: ``true`` if the field is instantiated
 */
+@unstable(reason="'isFieldBound' is unstable - consider using 'T.fieldName != ?' syntax instead")
 proc isFieldBound(type t, param idx: int) param : bool {
   return __primitive("is bound", checkQueryT(t),
                      getFieldName(checkQueryT(t), idx));
@@ -268,6 +275,7 @@ proc isFieldBound(type t, param idx: int) param : bool {
    :arg name: the name of a field
    :returns: ``true`` if the field is instantiated
 */
+@unstable(reason="'isFieldBound' is unstable - consider using 'T.fieldName != ?' syntax instead")
 proc isFieldBound(type t, param name : string) param : bool {
   return __primitive("is bound", checkQueryT(t), name);
 }
@@ -275,12 +283,14 @@ proc isFieldBound(type t, param name : string) param : bool {
 /* Returns ``true`` if a function named `fname` taking no arguments
    could be called in the current scope.
    */
+@unstable(reason="The 'canResolve...' family of procedures are unstable'")
 proc canResolve(param fname : string) param : bool do
   return __primitive("call and fn resolves", fname);
 
 /* Returns ``true`` if a function named `fname` taking the arguments in
    `args` could be called in the current scope.
    */
+@unstable(reason="The 'canResolve...' family of procedures are unstable'")
 proc canResolve(param fname : string, args ...) param : bool do
   return __primitive("call and fn resolves", fname, (...args));
 
@@ -289,24 +299,28 @@ proc canResolve(param fname : string, args ...) param : bool do
 /* Returns ``true`` if a method named `fname` taking no arguments
    could be called on `obj` in the current scope.
    */
+@unstable(reason="The 'canResolve...' family of procedures are unstable'")
 proc canResolveMethod(obj, param fname : string) param : bool do
   return __primitive("method call and fn resolves", obj, fname);
 
 /* Returns ``true`` if a method named `fname` taking the arguments in
    `args` could be called on `obj` in the current scope.
    */
+@unstable(reason="The 'canResolve...' family of procedures are unstable'")
 proc canResolveMethod(obj, param fname : string, args ...) param : bool do
   return __primitive("method call and fn resolves", obj, fname, (...args));
 
 /* Returns ``true`` if a type method named `fname` taking no
    arguments could be called on type `t` in the current scope.
    */
+@unstable(reason="The 'canResolve...' family of procedures are unstable'")
 proc canResolveTypeMethod(type t, param fname : string) param : bool do
   return __primitive("method call and fn resolves", t, fname);
 
 /* Returns ``true`` if a type method named `fname` taking the
    arguments in `args` could be called on type `t` in the current scope.
    */
+@unstable(reason="The 'canResolve...' family of procedures are unstable'")
 proc canResolveTypeMethod(type t, param fname : string, args ...) param : bool do
   return __primitive("method call and fn resolves", t, fname, (...args));
 
