@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
   void* fooInstance; // class Foo in Chapel, but we only use a void* to it
   getInstance(&fooInstance, 4);
   printf("%i\n", useInstance(fooInstance));
-  deleteInstance(&fooInstance);
+  deleteInstance(fooInstance);
 
   chpl_library_finalize();
 }
