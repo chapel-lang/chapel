@@ -98,7 +98,7 @@ void chpl_gen_comm_get_from_subloc(void *addr, c_nodeid_t src_node,
                                    size_t size, int32_t commID, int ln,
                                    int32_t fn) {
   printf("Warning: chpl_gen_comm_get_from_subloc called inside a GPU kernel. This shouldn't have happened.\n");
-  // TODO 
+  // TODO
 }
 
 __device__ static inline
@@ -107,7 +107,7 @@ void chpl_gen_comm_put_to_subloc(void* addr,
                                  void* raddr, size_t size, int32_t commID,
                                  int ln, int32_t fn) {
   printf("Warning: chpl_gen_comm_get_from_subloc called inside a GPU kernel. This shouldn't have happened.\n");
-  // TODO 
+  // TODO
 
 }
 
