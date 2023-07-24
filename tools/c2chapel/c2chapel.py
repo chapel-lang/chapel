@@ -274,7 +274,9 @@ def toChapelType(ty):
     elif type(ty) in (c_ast.ArrayDecl, ext_c_parser.ArrayDeclExt):
         eltType = toChapelType(ty.type)
         if eltType is not None:
-            if "const" in ty.type.quals:
+            if type(ty.type) in (c_ast.ArrayDecl, ext_c_parser.ArrayDeclExt):
+                return eltType
+            elif "const" in ty.type.quals:
                 return "c_ptrConst(" + eltType + ")"
             else:
                 return "c_ptr(" + eltType + ")"
