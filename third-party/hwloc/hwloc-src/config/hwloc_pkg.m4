@@ -1,4 +1,4 @@
-# Copyright © 2010 Cisco Systems, Inc.  All rights reserved.
+# Copyright © 2010-2020 Cisco Systems, Inc.  All rights reserved.
 # Copyright © 2015 Inria.  All rights reserved.
 # See COPYING in top-level directory.
 #
@@ -180,7 +180,7 @@ To get pkg-config, see <http://pkg-config.freedesktop.org/>.])],
         # failure now.
         # There are also cases on Mac where pkg-config returns paths
         # that do not actually exists until some magic is applied.
-        # http://www.open-mpi.org/community/lists/hwloc-devel/2015/03/4402.php
+        # https://www.open-mpi.org/community/lists/hwloc-devel/2015/03/4402.php
         # So check whether we find the header as well.
         hwloc_cflags_save=$CFLAGS
         hwloc_cppflags_save=$CPPFLAGS

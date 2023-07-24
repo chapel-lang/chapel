@@ -1,0 +1,115 @@
+/* Copyright © 2019 Inria.  All rights reserved. */
+
+/*//////////////////////////////////////////////////////////////////
+[ Scroll bar ]*/
+.js-pscroll {
+  position: relative;
+  overflow: hidden;
+}
+
+.table100 .ps__rail-y {
+  width: 9px;
+  background-color: transparent;
+  opacity: 1 !important;
+  right: 5px;
+}
+
+.table100 .ps__rail-y::before {
+  content: "";
+  display: block;
+  position: absolute;
+  background-color: #ebebeb;
+  border-radius: 5px;
+  width: 50%;
+  height: calc(100% - 30px);
+  top: 15px;
+}
+
+.table100 .ps__rail-y .ps__thumb-y {
+  width: 50%;
+  background-color: transparent;
+  opacity: 1 !important;
+}
+
+.table100 .ps__rail-y .ps__thumb-y::before {
+  content: "";
+  display: block;
+  position: absolute;
+  background-color: #cccccc;
+  border-radius: 5px;
+  width: 50%;
+  height: calc(100% - 30px);
+  left: 0;
+  top: 15px;
+}
+
+/*//////////////////////////////////////////////////////////////////
+[ Table ]*/
+.table100 {
+  margin-top: 30px;
+  width: 22.5%;
+  background-color: #5d5e60;
+  min-width: 250px;
+  left: 38.8%;
+}
+
+.column1{
+  left:0;
+}
+
+th {
+  width: 33%;
+  font-weight: unset;
+}
+
+td {
+  width: 33%;
+}
+
+tr, table, thead {
+  width: 100%;
+}
+
+
+.table100-head th {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+/*==================================================================
+Table*/
+.table100 {
+  position: relative;
+  padding-top: 60px;
+}
+
+.table100-head {
+  position: absolute;
+  width: 100%;
+  top: 0;
+  left: 0;
+}
+
+.table100-body {
+  max-height: 585px;
+  overflow: auto;
+}
+
+.table100.ver2 th {
+  font-size: 13px;
+  color: white;
+  line-height: 1.4;
+  background-color: transparent;
+}
+
+.table100.ver2 td {
+  font-size: 11px;
+  color: white;
+  line-height: 1.4;
+  padding-left: 22px;
+  padding-right: 17px;
+}
+
+.table100.ver2 {
+  border-radius: 10px;
+}

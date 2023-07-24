@@ -1315,8 +1315,12 @@ class CCodeGenConsumer final : public ASTConsumer {
 
     bool shouldHandleDecl(Decl* d) {
       if (gCodegenGPU) {
-        //this decl must have __device__
-        return d->hasAttr<CUDADeviceAttr>();
+        // this decl must have __device__ and it must be explicit (for some
+        // reason odd reason, with AMD code generation we see am implicit use of
+        // __device__ on some math functions in the C stdlib that really aren't
+        // supposed to have them and this causes linker issues later on).
+        return d->hasAttr<CUDADeviceAttr>() &&
+          !d->getAttr<CUDADeviceAttr>()->isImplicit();
       }
       else {
         // this decl either doesn't have __device__, or if it has, it also has a
