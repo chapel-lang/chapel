@@ -5071,6 +5071,7 @@ qioerr qio_conv_parse(c_string fmt,
       style_out->pad_char = ' ';
       style_out->realfmt = 0;
       style_out->string_format = QIO_STRING_FORMAT_WORD;
+      style_out->showpointzero = 1;
 
       if (precision != WIDTH_NOT_SET || width != WIDTH_NOT_SET ) {
         QIO_GET_CONSTANT_ERROR(err, EINVAL, "'%?' does not support width or precision arguments");
