@@ -82,40 +82,28 @@ foreach i in r do  R[0] = abs(c128);   R[1] = abs(c128);  check(R,R);
 */
 
 foreach i in r do  R[0] = acos(r32)  ;   R[1] = acos(r32);  check(R,"acos(r32)");
-if(!excludeForRocm) {
-  foreach i in r do  R[0] = acos(r64)  ;   R[1] = acos(r64);  check(R,"acos(r64)");
-}
+foreach i in r do  R[0] = acos(r64)  ;   R[1] = acos(r64);  check(R,"acos(r64)");
+
 foreach i in r do  R[0] = acosh(r32b);   R[1] = acosh(r32b);  check(R,"acosh(r32b)");
-if(!excludeForRocm) {
-  foreach i in r do  R[0] = acosh(r64b);   R[1] = acosh(r64b);  check(R,"acosh(r64b)");
-}
+foreach i in r do  R[0] = acosh(r64b);   R[1] = acosh(r64b);  check(R,"acosh(r64b)");
 
 foreach i in r do  R[0] = asin(r32) ;   R[1] = asin(r32);  check(R,"asin(r32)");
-if(!excludeForRocm) {
-  foreach i in r do  R[0] = asin(r64) ;   R[1] = asin(r64);  check(R,"asin(r64)");
-}
+foreach i in r do  R[0] = asin(r64) ;   R[1] = asin(r64);  check(R,"asin(r64)");
+
 foreach i in r do  R[0] = asinh(r32);   R[1] = asinh(r32);  check(R,"asinh(r32)");
-if(!excludeForRocm) {
-  foreach i in r do  R[0] = asinh(r64);   R[1] = asinh(r64);  check(R,"asinh(r64)");
-}
+foreach i in r do  R[0] = asinh(r64);   R[1] = asinh(r64);  check(R,"asinh(r64)");
 
 foreach i in r do  R[0] = atan(r32)     ; R[1] = atan(r32);  check(R,"atan(r32)");
-if(!excludeForRocm) {
-  foreach i in r do  R[0] = atan(r64)     ; R[1] = atan(r64);  check(R,"atan(r64)");
-}
+foreach i in r do  R[0] = atan(r64)     ; R[1] = atan(r64);  check(R,"atan(r64)");
+
 foreach i in r do  R[0] = atan2(r32,r32); R[1] = atan2(r32,r32);  check(R,"atan2(r32,r32)");
-if(!excludeForRocm) {
-  foreach i in r do  R[0] = atan2(r64,r64); R[1] = atan2(r64,r64);  check(R,"atan2(r64,r64)");
-}
+foreach i in r do  R[0] = atan2(r64,r64); R[1] = atan2(r64,r64);  check(R,"atan2(r64,r64)");
+
 foreach i in r do  R[0] = atanh(r32)    ; R[1] = atanh(r32);  check(R,"atanh(r32)");
-if(!excludeForRocm) {
-  foreach i in r do  R[0] = atanh(r64)    ; R[1] = atanh(r64);  check(R,"atanh(r64)");
-}
+foreach i in r do  R[0] = atanh(r64)    ; R[1] = atanh(r64);  check(R,"atanh(r64)");
 
 foreach i in r do  R[0] = cbrt(r32);   R[1] = cbrt(r32);  check(R,"cbrt(r32)");
-if(!excludeForRocm) {
-  foreach i in r do  R[0] = cbrt(r64);   R[1] = cbrt(r64);  check(R,"cbrt(r64)");
-}
+foreach i in r do  R[0] = cbrt(r64);   R[1] = cbrt(r64);  check(R,"cbrt(r64)");
 
 foreach i in r do  R[0] = ceil(r32);   R[1] = ceil(r32);  check(R,"ceil(r32)");
 foreach i in r do  R[0] = ceil(r64);   R[1] = ceil(r64);  check(R,"ceil(r64)");
@@ -136,9 +124,7 @@ foreach i in r do  R[0] = conjg(r64 ); R[1] = conjg(r64);  check(R,"conjg(r64)")
 foreach i in r do  R[0] =  cos(r32) ; R[1] =  cos(r32);  check(R,"cos(r32)");
 foreach i in r do  R[0] =  cos(r64) ; R[1] =  cos(r64);  check(R,"cos(r64)");
 foreach i in r do  R[0] =  cosh(r32); R[1] =  cosh(r32);  check(R,"cosh(r32)");
-if(!excludeForRocm) {
-  foreach i in r do  R[0] =  cosh(r64); R[1] =  cosh(r64);  check(R,"cosh(r64)");
-}
+foreach i in r do  R[0] =  cosh(r64); R[1] =  cosh(r64);  check(R,"cosh(r64)");
 
 // the following are implemented in Chapel, but let's test them here for completeness
 foreach i in r do R[0] = divceil(i8 ,i8 );     R[1] = divceil(i8 ,i8 );     check(R,"divceil(i8,i8)");
@@ -167,13 +153,9 @@ foreach i in r do R[0] = divfloorpos(i32,i32); R[1] = divfloorpos(i32,i32); chec
 foreach i in r do R[0] = divfloorpos(i64,i64); R[1] = divfloorpos(i64,i64); check(R,"divfloorpos(i64,i64)");
 
 foreach i in r do  R[0] =  erf(r32) ;   R[1] =  erf(r32);  check(R,"erf(r32)");
-if(!excludeForRocm) {
-  foreach i in r do  R[0] =  erf(r64) ;   R[1] =  erf(r64);  check(R,"erf(r64)");
-}
+foreach i in r do  R[0] =  erf(r64) ;   R[1] =  erf(r64);  check(R,"erf(r64)");
 foreach i in r do  R[0] =  erfc(r32);   R[1] =  erfc(r32);  check(R,"erfc(r32)");
-if(!excludeForRocm) {
-  foreach i in r do  R[0] =  erfc(r64);   R[1] =  erfc(r64);  check(R,"erfc(r64)");
-}
+foreach i in r do  R[0] =  erfc(r64);   R[1] =  erfc(r64);  check(R,"erfc(r64)");
 foreach i in r do  R[0] =  exp(r32) ;   R[1] =  exp(r32);  check(R,"exp(r32)");
 foreach i in r do  R[0] =  exp(r64) ;   R[1] =  exp(r64);  check(R,"exp(r64)");
 foreach i in r do  R[0] =  exp2(r32);   R[1] =  exp2(r32);  check(R,"exp2(r32)");
@@ -197,14 +179,10 @@ foreach i in r do  B[0] =  isnan(r32);   B[1] =  isnan(r32);  check(B,"isnan(r32
 foreach i in r do  B[0] =  isnan(r64);   B[1] =  isnan(r64);  check(B,"isnan(r64)");
 
 foreach i in r do  R[0] = ldexp(r32,i32);   R[1] =  ldexp(r32,i32);  check(R,"ldexp(r32,i32)");
-if(!excludeForRocm) {
-  foreach i in r do  R[0] = ldexp(r64,i32);   R[1] =  ldexp(r64,i32);  check(R,"ldexp(r64,i32)");
-}
+foreach i in r do  R[0] = ldexp(r64,i32);   R[1] =  ldexp(r64,i32);  check(R,"ldexp(r64,i32)");
 
 foreach i in r do  R[0] = lgamma(r32);   R[1] =  lgamma(r32);  check(R,"lgamma(r32)");
-if(!excludeForRocm) {
-  foreach i in r do  R[0] = lgamma(r64);   R[1] =  lgamma(r64);  check(R,"lgamma(r64)");
-}
+foreach i in r do  R[0] = lgamma(r64);   R[1] =  lgamma(r64);  check(R,"lgamma(r64)");
 
 foreach i in r do  R[0] = log(r32);   R[1] =  log(r32);  check(R,"log(r32)");
 foreach i in r do  R[0] = log(r64);   R[1] =  log(r64);  check(R,"log(r64)");
@@ -213,9 +191,7 @@ foreach i in r do  R[0] = log10(r32);   R[1] =  log10(r32);  check(R,"log10(r32)
 foreach i in r do  R[0] = log10(r64);   R[1] =  log10(r64);  check(R,"log10(r64)");
 
 foreach i in r do  R[0] = log1p(r32);   R[1] =  log1p(r32);  check(R,"log1p(r32)");
-if(!excludeForRocm) {
-  foreach i in r do  R[0] = log1p(r64);   R[1] =  log1p(r64);  check(R,"log1p(r64)");
-}
+foreach i in r do  R[0] = log1p(r64);   R[1] =  log1p(r64);  check(R,"log1p(r64)");
 
 /* TODO runtime support
 foreach i in r do  R[0] = logBasePow2(i8 ,2);   R[1] = logBasePow2(i8 ,2);  check(R,"logBasePow2(i8 ,2)");
@@ -295,26 +271,18 @@ foreach i in r do  B[0] =  signbit(r64);   B[1] =  signbit(r64);  check(B,"signb
 foreach i in r do  R[0] =  sin(r32);   R[1] =  sin(r32);  check(R,"sin(r32)");
 foreach i in r do  R[0] =  sin(r64);   R[1] =  sin(r64);  check(R,"sin(r64)");
 foreach i in r do  R[0] =  sinh(r32);   R[1] =  sinh(r32);  check(R,"sinh(r32)");
-if(!excludeForRocm) {
-  foreach i in r do  R[0] =  sinh(r64);   R[1] =  sinh(r64);  check(R,"sinh(r64)");
-}
+foreach i in r do  R[0] =  sinh(r64);   R[1] =  sinh(r64);  check(R,"sinh(r64)");
 
 foreach i in r do  R[0] =  sqrt(r32);   R[1] =  sqrt(r32);  check(R,"sqrt(r32)");
 foreach i in r do  R[0] =  sqrt(r64);   R[1] =  sqrt(r64);  check(R,"sqrt(r64)");
 
 foreach i in r do  R[0] =  tan(r32);   R[1] =  tan(r32);  check(R,"tan(r32)");
-if(!excludeForRocm) {
-  foreach i in r do  R[0] =  tan(r64);   R[1] =  tan(r64);  check(R,"tan(r64)");
-}
+foreach i in r do  R[0] =  tan(r64);   R[1] =  tan(r64);  check(R,"tan(r64)");
 foreach i in r do  R[0] =  tanh(r32);   R[1] =  tanh(r32);  check(R,"tanh(r32)");
-if(!excludeForRocm) {
-  foreach i in r do  R[0] =  tanh(r64);   R[1] =  tanh(r64);  check(R,"tanh(r64)");
-}
+foreach i in r do  R[0] =  tanh(r64);   R[1] =  tanh(r64);  check(R,"tanh(r64)");
 
 foreach i in r do  R[0] =  tgamma(r32);   R[1] =  tgamma(r32);  check(R,"tgamma(r32)");
-if(!excludeForRocm) {
-  foreach i in r do  R[0] =  tgamma(r64);   R[1] =  tgamma(r64);  check(R,"tgamma(r64)");
-}
+foreach i in r do  R[0] =  tgamma(r64);   R[1] =  tgamma(r64);  check(R,"tgamma(r64)");
 
 foreach i in r do  R[0] =  trunc(r32);   R[1] =  trunc(r32);  check(R,"trunc(r32)");
 foreach i in r do  R[0] =  trunc(r64);   R[1] =  trunc(r64);  check(R,"trunc(r64)");
