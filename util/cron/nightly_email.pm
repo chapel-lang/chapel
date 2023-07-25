@@ -4,6 +4,7 @@ use FindBin;
 use lib "$FindBin::Bin";
 
 use nightlysubs;
+
 sub writeFile{
 $num_args = @_;
 print " \n  Number of arguments  $num_args \n ";
