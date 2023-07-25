@@ -996,18 +996,6 @@ module BigInteger {
     return c;
   }
 
-
-  private inline proc shiftLeft(ref result: bigint, const ref a: bigint, b: int) {
-    if b >= 0 {
-      shiftLeft(result, a, b:uint);
-    } else {
-      BigInteger.div2Exp(result, a, (0 - b):uint, roundingMode.down);
-    }
-  }
-  private inline proc shiftLeft(ref result: bigint, const ref a: bigint, b: uint) {
-    BigInteger.mul2Exp(result, a, b);
-  }
-
   // Bit-shift left
   operator bigint.<<(const ref a: bigint, b: int): bigint {
     var c = new bigint();
@@ -1019,19 +1007,6 @@ module BigInteger {
     BigInteger.shiftLeft(c, a, b);
     return c;
   }
-
-
-  private inline proc shiftRight(ref result: bigint, const ref a: bigint, b: int) {
-    if b >= 0 {
-      shiftRight(result, a, b:uint);
-    } else {
-      BigInteger.mul2Exp(result, a, (0 - b):uint);
-    }
-  }
-  private inline proc shiftRight(ref result: bigint, const ref a: bigint, b: uint) {
-    BigInteger.div2Exp(result, a, b, roundingMode.down);
-  }
-
 
   // Bit-shift right
   operator bigint.>>(const ref a: bigint, b: int): bigint {
@@ -3646,6 +3621,8 @@ module BigInteger {
   /*
     Computes ``x*(2**exp)`` and stores the result in ``result``.
 
+    This is the same as performing a left bit shift of ``x`` by ``exp`` bits.
+
     Utilizes the GMP function `mpz_mul_2exp
     <https://gmplib.org/manual/Integer-Arithmetic>`_.
 
@@ -4202,6 +4179,10 @@ module BigInteger {
   /* Divide ``numer`` by ``2^exp``, forming a quotient and storing it in
      ``result``.
 
+     This is the same as performing a right bit shift of ``numer`` by ``exp``
+     bits when ``rounding==roundingMode.down``.
+
+
      Utilizes the GMP functions `mpz_div_q_2exp
      <https://gmplib.org/manual/Integer-Division>`_.
 
@@ -4365,6 +4346,43 @@ module BigInteger {
                                  exp: integral,
                        param     rounding = round.zero)
     do BigInteger.rem2Exp(this, numer, exp, chpl_roundToRoundingMode(rounding));
+
+
+  /* Stores ``x`` shifted left by ``n`` bits in ``result``. Negative ``n`` will
+     result in a right shift.
+
+     :arg result: Where the result is stored
+     :type result: :record:`bigint`
+
+     :arg x: The number to be shifted
+     :type x: :record:`bigint`
+
+     :arg n: The number of bits to be shifted
+     :type n: ``integral``
+  */
+  inline proc shiftLeft(ref result: bigint, const ref x: bigint, n: integral) {
+    if n >= 0
+      then BigInteger.mul2Exp(result, x, n);
+      else BigInteger.div2Exp(result, x, (0 - n):uint, roundingMode.down);
+
+  }
+  /* Stores ``x`` shifted right by ``n`` bits in ``result``. Negative ``n`` will
+     result in a left shift.
+
+     :arg result: Where the result is stored
+     :type result: :record:`bigint`
+
+     :arg x: The number to be shifted
+     :type x: :record:`bigint`
+
+     :arg n: The number of bits to be shifted
+     :type n: ``integral``
+  */
+  inline proc shiftRight(ref result: bigint, const ref x: bigint, n: integral) {
+    if n >= 0
+      then BigInteger.div2Exp(result, x, n, roundingMode.down);
+      else BigInteger.mul2Exp(result, x, (0 - n):uint);
+  }
 
 
   /* Computes the mod operator on the two arguments, defined as
