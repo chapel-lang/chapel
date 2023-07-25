@@ -167,7 +167,7 @@ module BigInteger {
   }
 
   /* An enumeration of the different rounding strategies, for use with e.g.
-     :proc:`~bigint.divQ` to determine how to round the quotient when performing
+     :proc:`~BigInteger.divQ` to determine how to round the quotient when performing
      the computation.
 
      - ``round.down`` indicates that the quotient should be rounded down towards
@@ -187,7 +187,7 @@ module BigInteger {
 
 
   /* An enumeration of the different rounding strategies, for use with e.g.
-     :proc:`~bigint.div` to determine how to round the quotient when performing
+     :proc:`~BigInteger.div` to determine how to round the quotient when performing
      the computation.
 
      - ``roundingMode.down`` indicates that the quotient should be rounded down
