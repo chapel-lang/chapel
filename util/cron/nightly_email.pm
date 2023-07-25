@@ -74,7 +74,7 @@ if ($status == 0) {
 
     $summary = "Tests run: $cursucc Successes ($delsucc), $curfail Failures ($delfail)";
 } else {
-   
+    $summary = "Tests run: failed new failures";
     $passed = 1;
 }
 
@@ -118,7 +118,7 @@ if ($status == 0) {
 
 if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0 && $newpassingsuppress == 0) {
     print "Mailing to minimal group\n";
-    $passed = 2;
+    $passed = 0;
     $recipient = $nochangerecipient;
 
 } else {
