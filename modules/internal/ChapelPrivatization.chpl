@@ -27,7 +27,7 @@ module ChapelPrivatization {
 
   // the type of elements in chpl_privateObjects.
   extern record chpl_privateObject_t {
-    var obj:raw_c_void_ptr;
+    var obj:c_ptr(void);
   }
 
   extern var chpl_privateObjects:c_ptr(chpl_privateObject_t);
