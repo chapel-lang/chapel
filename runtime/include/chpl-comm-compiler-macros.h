@@ -47,6 +47,14 @@ extern "C" {
 
 #define CHPL_COMM_UNKNOWN_ID -1
 
+extern void chpl_gpu_comm_on_put(c_sublocid_t dst_subloc, void *addr,
+                                 c_nodeid_t src_node, c_sublocid_t src_subloc,
+                                 void* raddr, size_t size);
+
+extern void chpl_gpu_comm_on_get(c_sublocid_t src_subloc, void* addr,
+                                 c_nodeid_t dst_node, c_sublocid_t dst_subloc,
+                                 void* raddr, size_t size);
+
 
 static inline
 void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
@@ -75,7 +83,17 @@ void chpl_gen_comm_get_from_subloc(void *addr, c_nodeid_t src_node,
     chpl_gpu_memcpy(dst_subloc, addr, src_subloc, raddr, size, commID, ln, fn);
   } else if (dst_subloc >= 0 || src_subloc >= 0) {
     // actual remote comm, but to and/or from a GPU-based allocation
-    chpl_internal_error("Not ready to GET/PUT to/from GPU allocations, yet");
+    if (src_subloc >= 0) {
+      chpl_gpu_comm_on_put(dst_subloc, addr, src_node, src_subloc, raddr, size);
+    }
+    else {
+      // create a temporary buffer on the host to store the data before copying
+      // into GPU memory
+      void* tmp_addr = chpl_malloc(size);
+      chpl_gen_comm_get(tmp_addr, src_node, raddr, size, commID, ln, fn);
+      chpl_gpu_memcpy(dst_subloc, addr, c_sublocid_any, tmp_addr, size, commID, ln, fn);
+      chpl_free(tmp_addr);
+    }
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
     chpl_cache_comm_get(addr, src_node, raddr, size, commID, ln, fn);
@@ -140,7 +158,17 @@ void chpl_gen_comm_put_to_subloc(void* addr,
     chpl_gpu_memcpy(dst_subloc, raddr, src_subloc, addr, size, commID, ln, fn);
   } else if (dst_subloc >= 0 || src_subloc >= 0) {
     // actual remote comm, but to and/or from a GPU-based allocation
-    chpl_internal_error("Not ready to GET/PUT to/from GPU allocations, yet");
+    if (dst_subloc >= 0) {
+      chpl_gpu_comm_on_get(src_subloc, addr, dst_node, dst_subloc, raddr, size);
+      //chpl_internal_error("Not ready to PUT to remote GPU allocations, yet");
+    }
+    else {
+      void* tmp_addr = chpl_malloc(size);
+      chpl_gpu_memcpy(c_sublocid_any, tmp_addr, src_subloc, addr, size, commID, ln, fn);
+      chpl_gen_comm_put(tmp_addr, dst_node, raddr, size, commID, ln, fn);
+      chpl_free(tmp_addr);
+      //chpl_internal_error("I can actually PUT from a local GPU allocation");
+    }
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
       chpl_cache_comm_put(addr, dst_node, raddr, size, commID, ln, fn);
