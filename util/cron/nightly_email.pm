@@ -156,7 +156,7 @@ if ($debug == 0) {
     }
 }
 
-return $passed;
+return $status;
 
 }
 return(1);
