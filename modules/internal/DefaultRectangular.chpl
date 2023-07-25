@@ -2301,7 +2301,7 @@ module DefaultRectangular {
                     try! "\tStride levels = %?\n".format(stridelevels),
                     try! "\tdstStride     = %?\n".format(dstStride),
                     try! "\tsrcStride     = %?\n".format(srcStride),
-                    try! "\tcount         = %?\n".format(count));
+                    try! "\tcount         = %?".format(count));
     }
 
     const AO = A.getDataIndex(AFirst, getShifted = false);

@@ -562,6 +562,7 @@ module DefaultSparse {
     }
   }
 
+
   proc DefaultSparseArr.dsiSerialWrite(f) throws {
     if (rank == 1) {
       if (dom._nnz >= 1) {
