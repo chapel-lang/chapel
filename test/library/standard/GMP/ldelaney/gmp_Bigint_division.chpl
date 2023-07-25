@@ -58,15 +58,15 @@ writeln();
 
 
 // q = (n / 2^d)
-divExp(d, c, 3, roundingMode.up);
+div2Exp(d, c, 3, roundingMode.up);
 rem2Exp(b, c, 3, roundingMode.up);
 writeln(d, " ", b);
 
-divExp(d, c, 3, roundingMode.down);
+div2Exp(d, c, 3, roundingMode.down);
 rem2Exp(b, c, 3, roundingMode.down);
 writeln(d, " ", b);
 
-divExp(d, c, 3, roundingMode.zero);
+div2Exp(d, c, 3, roundingMode.zero);
 rem2Exp(b, c, 3, roundingMode.zero);
 writeln(d, " ", b);
 

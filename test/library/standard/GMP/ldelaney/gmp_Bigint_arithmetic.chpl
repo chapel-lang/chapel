@@ -32,7 +32,7 @@ writeln(a);
 mul2Exp(a, c, 3);                    // a = -1600
 writeln(a);
 
-divQ2Exp(a, a, 3);                    //a =   -200
+div2Exp(a, a, 3);                    //a =   -200
 writeln(a);
 
 neg(a, b);                            // a =    -2
