@@ -6226,7 +6226,7 @@ proc stringify(const args ...?k):string {
   return chpl_stringify((...args));
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc chpl_stringify(const args ...?k):string {
   if _can_stringify_direct(args) {
     return stringify_simple((...args));
