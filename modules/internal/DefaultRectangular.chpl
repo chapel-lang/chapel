@@ -2296,12 +2296,12 @@ module DefaultRectangular {
   //
   private proc complexTransferComm(A, B, stridelevels:int(32), dstStride, srcStride, count, AFirst, BFirst) {
     if debugDefaultDistBulkTransfer {
-      chpl_debug_writeln(try! """BulkTransferStride with values:\n
-                         \tLocale        = %?\n
-                         \tStride levels = %?\n
-                         \tdstStride     = %?\n
-                         \tsrcStride     = %?\n
-                         \tcount         = %?\n""".format(here.id, stridelevels, dstStride, srcStride, count));
+      chpl_debug_writeln("BulkTransferStride with values:\n",
+                         "\tLocale        = %?\n".format(here.id),
+                         "\tStride levels = %?\n".format(stridelevels),
+                         "\tdstStride     = %?\n".format(dstStride),
+                         "\tsrcStride     = %?\n".format(srcStride),
+                         "\tcount         = %?\n".format(count));
     }
 
     const AO = A.getDataIndex(AFirst, getShifted = false);
