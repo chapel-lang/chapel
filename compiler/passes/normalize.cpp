@@ -4066,6 +4066,7 @@ static void cloneParameterizedPrimitive(FnSymbol* fn,
                                         int       width) {
   SymbolMap map;
   FnSymbol* newFn = fn->copy(&map);
+  ArgSymbol* newFormal = toArgSymbol(map.get(formal));
 
   if (DefExpr* def = toDefExpr(query)) {
     Symbol* newSym = map.get(def->sym);
@@ -4079,10 +4080,13 @@ static void cloneParameterizedPrimitive(FnSymbol* fn,
         se->setSymbol(new_IntSymbol(width));
     }
   } else {
-    ArgSymbol* newFormal = toArgSymbol(map.get(formal));
     CallExpr* typeSpecifier = toCallExpr(newFormal->typeExpr->body.tail);
     typeSpecifier->get(1)->replace(new SymExpr(new_IntSymbol(width)));
   }
+
+  // add a flag to the new formal created to cause a warning
+  // if implicit conversions are used when passing to it
+  newFormal->addFlag(FLAG_DEPRECATED_IMPLICIT_CONVERSION);
 
   fn->defPoint->insertAfter(new DefExpr(newFn));
 }

@@ -193,6 +193,9 @@ PRAGMA(DESTRUCTOR, npr,
 PRAGMA(DEPRECATED, npr,
        "deprecated",
        "applied to symbols that are deprecated")
+PRAGMA(DEPRECATED_IMPLICIT_CONVERSION, npr,
+       "deprecated impliict conversions",
+       "implicit conversions when passing to this formal are deprecated")
 PRAGMA(DISTRIBUTION, ypr, "distribution", ncm)
 PRAGMA(DOCS_ONLY, ypr,
        "docs only",

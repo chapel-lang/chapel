@@ -1,14 +1,42 @@
-proc plus(x: int(?w), y: int(w)) {
+proc plus(x: int(8), y: int(8)) {
+  writeln("In int version");
+  writeln(x+y);
+}
+proc plus(x: int(16), y: int(16)) {
+  writeln("In int version");
+  writeln(x+y);
+}
+proc plus(x: int(32), y: int(32)) {
+  writeln("In int version");
+  writeln(x+y);
+}
+proc plus(x: int(64), y: int(64)) {
   writeln("In int version");
   writeln(x+y);
 }
 
-proc plus(x: uint(?w), y: uint(w)) {
+proc plus(x: uint(8), y: uint(8)) {
+  writeln("In uint version");
+  writeln(x+y);
+}
+proc plus(x: uint(16), y: uint(16)) {
+  writeln("In uint version");
+  writeln(x+y);
+}
+proc plus(x: uint(32), y: uint(32)) {
+  writeln("In uint version");
+  writeln(x+y);
+}
+proc plus(x: uint(64), y: uint(64)) {
   writeln("In uint version");
   writeln(x+y);
 }
 
-proc plus(x: real(?w), y: real(w)) {
+proc plus(x: real(32), y: real(32)) {
+  writeln("In real version");
+  writeln(x+y);
+}
+proc plus(x: real(32), y: real(32)) {
   writeln("In real version");
   writeln(x+y);
 }
