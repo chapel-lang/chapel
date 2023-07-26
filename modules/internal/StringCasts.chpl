@@ -61,14 +61,7 @@ module StringCasts {
     var ret = "(";
     for param i in 0..#k {
       if i != 0 then ret += ", ";
-      if (x[i].type == c_string) {
-        try! {
-          ret += createStringWithNewBuffer(x[i]);
-        }
-      }
-      else {
-        ret += x[i]:string;
-      }
+      ret += x[i]:string;
     }
     if k == 1 then ret += ",";
     ret += ")";
