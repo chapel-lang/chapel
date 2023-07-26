@@ -4,6 +4,8 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+from pprint import pprint
+from enum import Enum
 
 mpl.rcParams['text.usetex'] = False
 mpl.rcParams['font.family'] = 'sans-serif'
@@ -92,10 +94,16 @@ class Arrow:
                 size=basefontsize-4,
                 bbox=bbox_args)
 
+PlotKind = Enum('PlotKind', ['PLOT', 'BAR'])
+
 class Plot:
   def __init__(self, name, x_data):
     self.x_data = x_data
     self.name = name
+    self.plotKind = PlotKind.PLOT
+
+    if len(x_data) > 0 and not x_data[0].isnumeric():
+      self.plotKind = PlotKind.BAR
 
     # set figure size and margins
     self.fig = plt.figure(figsize=(10,6))
@@ -109,10 +117,6 @@ class Plot:
     self.ax.spines['top'].set_linewidth(0)
     self.ax.spines['right'].set_linewidth(0)
 
-    #grid
-    self.ax.grid(axis='y', linestyle='dashed',
-                 linewidth=width(1), zorder=1)
-
     # ticks
     self.ax.tick_params(axis='both',which='major',direction='in',bottom=True,
                         length=10, colors='#808080', labelsize=20,
@@ -121,14 +125,7 @@ class Plot:
     self.create_legend = False
     self.y_datas = []
     self.y_lines = []
-
-    # adjustments based on x_data
-    self.ax.set_xlim((self.x_data[0], self.x_data[-1]))
-    self.ax.set_xticklabels([str(x) for x in self.x_data])
-    self.ax.xaxis.set_major_locator(ticker.FixedLocator(self.x_data))
     self.explicit_ylim = False
-
-    # list of annotation arrows
     self.arrows = []
 
     self.legend_font_size = basefontsize-2
@@ -136,7 +133,21 @@ class Plot:
     self.legend_ncol = 1
     self.legend_alphabetical = False
 
-  def add_y_data(self, data, label='', linestyle=0, zorder=100):
+    if self.plotKind is PlotKind.PLOT:
+      #grid
+      self.ax.grid(axis='y', linestyle='dashed',
+                   linewidth=width(1), zorder=1)
+
+      # adjustments based on x_data
+      self.ax.set_xlim((self.x_data[0], self.x_data[-1]))
+      self.ax.set_xticklabels([str(x) for x in self.x_data])
+      self.ax.xaxis.set_major_locator(ticker.FixedLocator(self.x_data))
+    if self.plotKind is PlotKind.BAR:
+      plt.setp(self.ax.get_xticklabels(), rotation=45, horizontalalignment='right')
+    else:
+      assert("Unknown PlotKind")
+
+  def add_y_data(self, data, label='', linestyle=0, zorder=1):
     if label != '':
       self.create_legend = True
 
@@ -145,13 +156,38 @@ class Plot:
           data[i] = np.nan
 
     self.y_datas.append(data)
-    self.y_lines.append(
-      self.ax.plot(self.x_data,
-                   data,
-                   label=label,
-                   zorder=zorder,
-                   clip_on=False,
-                   **chpl_plot_linestyles[linestyle]))
+
+    if self.plotKind == PlotKind.PLOT:
+      self.y_lines.append(
+        self.ax.plot(self.x_data,
+                     data,
+                     label=label,
+                     zorder=zorder,
+                     clip_on=False,
+                     **chpl_plot_linestyles[linestyle]))
+
+    elif self.plotKind == PlotKind.BAR:
+      barNum = len(self.y_datas)-1
+      print("plot", barNum)
+      x = np.arange(len(self.x_data)) + (0.25*barNum)
+      #rects = ax.bar(x + (width*i), data[i], width, label=barLabels[i])
+
+      kwargs = chpl_plot_linestyles[linestyle]
+      del(kwargs['linestyle'])
+      del(kwargs['marker'])
+      del(kwargs['markersize'])
+      del(kwargs['markeredgewidth'])
+      self.y_lines.append(
+        self.ax.bar(x,
+                    data,
+                    width=0.25,
+                    label=label,
+                    zorder=zorder,
+                    clip_on=False,
+                    **kwargs))
+      self.ax.set_xticks(x, self.x_data)
+    else:
+      assert("Unknown plot kind")
 
   def add_dummy(self, label=''):
     self.ax.plot(self.x_data,
@@ -192,8 +228,11 @@ class Plot:
     self.__finalize()
     plt.show()
 
-  def save(self, basename, *extensions, **mpl_args):
+  def save(self, filename=None, *extensions, **mpl_args):
     self.__finalize()
+
+    if filename is None:
+      filename = "logs/" + self.name
 
     if len(extensions) == 0:
       _extensions = ('png',)
@@ -201,11 +240,10 @@ class Plot:
       _extensions = extensions
 
     for ext in _extensions:
-      plt.savefig('{}.{}'.format(basename, ext), **mpl_args)
+      plt.savefig('{}.{}'.format(filename, ext), **mpl_args)
 
   def __finalize(self):
     # assume that we have at least one y_data
-    print(self.y_datas)
     if not self.explicit_ylim:
       self.ax.set_ylim((0, max(np.nanmax(d) for d in self.y_datas)))
 
@@ -247,7 +285,23 @@ class ChplDat:
     self.yData = results
     self.kvPairs = kvPairs
 
+  def __getitem__(self, key):
+    newDat = ChplDat(self.filename, self.xData, {key: self.yData[key]}, self.kvPairs)
+    return newDat
+
+  def __str__(self):
+    return "<ChplDat object %s with columns %s>" % (self.filename, list(self.yData.keys()))
+
+  def relabel(self, labels):
+    newYData = {}
+    i = 0
+    for key in self.yData:
+      newYData[labels[i]] = self.yData[key]
+      i += 1
+    self.yData = newYData
+
 def loadDatFile(filename):
+  areYValuesNumbers = True
   with open(filename, 'r') as f:
     datanames = []
     config_vars = []
@@ -270,14 +324,18 @@ def loadDatFile(filename):
           results[dn] = []
       else:
         # read one config var and the rest are data
-        config_vars.append(float(l.split()[0]))
+        if not l.split()[0].isnumeric():
+            areYValuesNumbers = False
+        
+        if areYValuesNumbers:
+            config_vars.append(float(l.split()[0]))
+        else:
+            config_vars.append(l.split()[0])
+
         for dn, data in zip(datanames, l.split()[1:]):
           results[dn].append(float(data))
 
   return ChplDat(filename, config_vars, results, kvPairs)
-
-
-
 
 def load(filename):
   (xData, yData, kvPairs) = loadDat(filename)
@@ -322,7 +380,7 @@ def _embedMetadata(datFilename, imgFilename):
 
   img.save(imgFilename, pnginfo=metadata)
 
-def paint(name, chplDat):
+def plot(name, chplDat):
   baseName = os.path.basename(chplDat.filename)[:-4]
   title = _valOrDefault(chplDat.kvPairs, 'title', name)
   xlabel = _valOrDefault(chplDat.kvPairs, 'xlabel', '')
@@ -341,8 +399,12 @@ def paint(name, chplDat):
   for lines in chplDat.yData:
     p.add_y_data(chplDat.yData[lines], linestyle=11+n, label=lines)
     n += 1
- 
-  p.save("logs/" + name)
+
+  return p
+  
+def paint(name, chplDat):
+  p = plot(name, chplDat)
+  p.save()
   #_embedMetadata(chplDat.filename, "logs/" + plot.baseName + '.png')
 
 def loadDat(path, filterFn=None):
@@ -355,14 +417,23 @@ def loadDat(path, filterFn=None):
       res[os.path.basename(fullPath)[0:-4]] = loadDatFile(fullPath)
   return res
 
+def computeUniqColName(existingCols, newCol):
+  proposedNewCol = newCol
+  num = 0
+  while proposedNewCol in existingCols:
+    num += 1
+    proposedNewCol = newCol + "_" + str(num)
+  return proposedNewCol
+
 def joinDat(dataList):
   res = copy.deepcopy(dataList[0])
 
-  for data in dataList:
+  for data in dataList[1:]:
     assert(res.xData == data.xData)
     res.filename += ":" + data.filename
-    res.xData = data.xData
-    res.yData.update(data.yData)
+    for col in data.yData:
+      colName = computeUniqColName(res.yData.keys(), col)
+      res.yData[colName] = data.yData[col]
     res.kvPairs.update(data.kvPairs)
 
   return res
