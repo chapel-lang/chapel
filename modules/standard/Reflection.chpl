@@ -204,8 +204,8 @@ proc getImplementationField(const ref x:?t, param i:int) const ref {
    :returns: an rvalue referring to that field.
  */
 pragma "unsafe"
-inline
-proc getFieldRef(ref x:?t, param i:int) ref do
+@unstable(reason="'getFieldRef' is unstable")
+inline proc getFieldRef(ref x:?t, param i:int) ref do
   return __primitive("field by num", x, i+1);
 
 /* Get a mutable ref to a field in a class or record by name.
@@ -217,6 +217,7 @@ proc getFieldRef(ref x:?t, param i:int) ref do
    :returns: an rvalue referring to that field.
  */
 pragma "unsafe"
+@unstable(reason="'getFieldRef' is unstable")
 proc getFieldRef(ref x:?t, param s:string) ref {
   param i = __primitive("field name to num", t, s);
   if i == 0 then
