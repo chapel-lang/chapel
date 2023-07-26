@@ -1,12 +1,6 @@
 use GpuDiagnostics;
 
-proc verifyLaunches() {
-  use ChplConfig;
-  param expected = if CHPL_GPU_MEM_STRATEGY == "unified_memory" then 1 else 2;
-  const actual = getGpuDiagnostics()[0].kernel_launch;
-  assert(actual == expected,
-         "observed ", actual, " launches instead of ", expected);
-}
+use GpuTestCommon;
 
 on here.gpus[0] {
   startGpuDiagnostics();
@@ -15,7 +9,7 @@ on here.gpus[0] {
     A[0] = createTuple();
   }
   stopGpuDiagnostics();
-  verifyLaunches();
+  verifyGpuDiags(umLaunch=1, aodLaunch=2);
   writeln("A = ", A);
 
   proc createTuple() {

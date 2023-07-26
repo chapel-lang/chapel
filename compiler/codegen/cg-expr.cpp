@@ -1023,6 +1023,23 @@ static GenRet codegenRlocale(GenRet wide)
   return ret;
 }
 
+static GenRet codegenRsubloc(GenRet wide){
+  GenRet ret;
+  Type* type = SUBLOC_ID_TYPE;
+
+  if( !fLLVMWideOpt ) {
+    ret = codegenCallExpr("chpl_sublocFromLocaleID",
+                          codegenValue(
+                              codegenWideThingField(wide, WIDE_GEP_LOC)),
+                          /*ln*/codegenZero(), /*fn*/codegenZero32());
+  } else {
+    USR_FATAL("--llvm-wide-opt can't be used with the GPU locale model");
+  }
+
+  ret.chplType = type;
+  return ret;
+}
+
 static GenRet codegenRnode(GenRet wide){
   GenRet ret;
   Type* type = NODE_ID_TYPE;
@@ -1590,6 +1607,17 @@ GenRet codegenValue(GenRet r)
       ret.val = r.val;
     }
 #endif
+  }
+  return ret;
+}
+
+// codegenValue r, but deref it first if necessary
+static GenRet codegenValueMaybeDeref(Expr* r) {
+  GenRet ret;
+  if (r->isRefOrWideRef()) {
+    ret = codegenValue(codegenDeref(r));
+  } else {
+    ret = codegenValue(r);
   }
   return ret;
 }
@@ -3809,13 +3837,24 @@ void codegenAssign(GenRet to_ptr, GenRet from)
           // Make sure that from is a pointer
           codegenCopy(to_ptr, from, type);
         } else {
-          codegenCall("chpl_gen_comm_get",
-                      codegenCastToVoidStar(to_ptr),
-                      codegenRnode(from),
-                      codegenRaddr(from),
-                      codegenSizeof(type),
-                      genCommID(info),
-                      info->lineno, gFilenameLookupCache[info->filename]);
+          std::vector<GenRet> args;
+          std::string fn;
+          if (usingGpuLocaleModel()) {
+            fn = "chpl_gen_comm_get_from_subloc";
+          } else {
+            fn = "chpl_gen_comm_get";
+          }
+
+          args.push_back(codegenCastToVoidStar(to_ptr));
+          args.push_back(codegenRnode(from));
+          if (usingGpuLocaleModel()) args.push_back(codegenRsubloc(from));
+          args.push_back(codegenRaddr(from));
+          args.push_back(codegenSizeof(type));
+          args.push_back(genCommID(info));
+          args.push_back(info->lineno);
+          args.push_back(gFilenameLookupCache[info->filename]);
+
+          codegenCallWithArgs(fn.c_str(), args);
         }
       }
     } else { // PUT
@@ -3831,13 +3870,24 @@ void codegenAssign(GenRet to_ptr, GenRet from)
           // Make sure that from is a pointer
           codegenCopy(to_ptr, from, type);
         } else {
-          codegenCall("chpl_gen_comm_put",
-                      codegenCastToVoidStar(codegenValuePtr(from)),
-                      codegenRnode(to_ptr),
-                      codegenRaddr(to_ptr),
-                      codegenSizeof(type),
-                      genCommID(info),
-                      info->lineno, gFilenameLookupCache[info->filename]);
+          std::vector<GenRet> args;
+          std::string fn;
+          if (usingGpuLocaleModel()) {
+            fn = "chpl_gen_comm_put_to_subloc";
+          } else {
+            fn = "chpl_gen_comm_put";
+          }
+
+          args.push_back(codegenCastToVoidStar(codegenValuePtr(from)));
+          args.push_back(codegenRnode(to_ptr));
+          if (usingGpuLocaleModel()) args.push_back(codegenRsubloc(to_ptr));
+          args.push_back(codegenRaddr(to_ptr));
+          args.push_back(codegenSizeof(type));
+          args.push_back(genCommID(info));
+          args.push_back(info->lineno);
+          args.push_back(gFilenameLookupCache[info->filename]);
+
+          codegenCallWithArgs(fn.c_str(), args);
         }
       }
     }
@@ -5308,34 +5358,56 @@ DEFINE_PRIM(GET_REQUESTED_SUBLOC) { ret = codegenCallExpr("chpl_task_getRequeste
 
 static void codegenPutGet(CallExpr* call, GenRet &ret) {
     // args are:
-    //   localvar, locale, remote addr, get(4)==size, line, file
-    //                                  get(4)==len  for array_get/put
+    //  localvar, locale, sublocale(opt), remote addr, get(4|5)==size, line, file
+    //                                                 get(4|5)==len  for array_get/put
     const char* fn;
+    std::vector<GenRet> args;
     TypeSymbol* dt;
     bool isget = true;
 
+    // we actually have 5 arguments with sublocale, but than line and file info
+    // are added.
+    bool hasSubloc = (call->numActuals() == 7);
+    bool useGpuVersion = usingGpuLocaleModel() && hasSubloc;
+
     if (call->primitive->tag == PRIM_CHPL_COMM_GET ||
         call->primitive->tag == PRIM_CHPL_COMM_ARRAY_GET) {
-      fn = "chpl_gen_comm_get";
+      if (useGpuVersion) {
+        fn = "chpl_gen_comm_get_from_subloc";
+      }
+      else {
+        fn = "chpl_gen_comm_get";
+      }
     } else {
-      fn = "chpl_gen_comm_put";
+      if (useGpuVersion) {
+        fn = "chpl_gen_comm_put_to_subloc";
+      }
+      else {
+        fn = "chpl_gen_comm_put";
+      }
       isget = false;
     }
 
-    GenRet localAddr = codegenValuePtr(call->get(1));
+    int curArgIdx = 1;
+
+    Expr* curArg = call->get(curArgIdx++);
+    INT_ASSERT(curArg, curArg->isRefOrWideRef() ||
+                       curArg->getValType()->symbol->hasFlag(FLAG_DATA_CLASS));
+
+    GenRet localAddr = codegenValuePtr(curArg);
 
     // destination data array
-    if (call->get(1)->isWideRef()) {
-      Symbol* sym = call->get(1)->typeInfo()->getField("addr", true);
+    if (curArg->isWideRef()) {
+      Symbol* sym = curArg->typeInfo()->getField("addr", true);
 
       INT_ASSERT(sym);
       dt        = sym->typeInfo()->getValType()->symbol;
       localAddr = codegenRaddr(localAddr);
 
     } else {
-      dt = call->get(1)->typeInfo()->getValType()->symbol;
+      dt = curArg->typeInfo()->getValType()->symbol;
 
-      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+      if (curArg->typeInfo()->symbol->hasFlag(FLAG_REF)) {
         localAddr = codegenDeref(localAddr);
       }
 
@@ -5345,37 +5417,65 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
       }
     }
 
-    GenRet locale;
+    localAddr = codegenCastToVoidStar(localAddr);
+    args.push_back(localAddr);
 
-    if (call->get(2)->isRefOrWideRef()) {
-      locale = codegenValue(codegenDeref(call->get(2)));
-    } else {
-      locale = codegenValue(call->get(2));
+    curArg = call->get(curArgIdx++);
+    INT_ASSERT(curArg, LOCALE_ID_TYPE);
+
+    GenRet locale = codegenValueMaybeDeref(curArg);;
+    args.push_back(locale);
+
+
+    if (hasSubloc) {
+      // if the call has subloc argument, first capture/consume it
+      curArg = call->get(curArgIdx++);
+      INT_ASSERT(curArg, SUBLOC_ID_TYPE);
+
+      if (useGpuVersion) {
+        // we only create an argument if we're using the GPU version of the
+        // runtime call
+        GenRet subloc = codegenValueMaybeDeref(curArg);
+        args.push_back(subloc);
+      }
+    }
+    else {
+      // the call doesn't have a subloc argument
+      if (useGpuVersion) {
+        // but we need to use the GPU version, pass `c_sublocid_any`
+        GenRet subloc = codegenUseGlobal("c_sublocid_any");
+        args.push_back(subloc);
+      }
     }
 
+
     // source data array
-    GenRet   remoteAddr = call->get(3);
-    TypeSymbol *t = call->get(3)->typeInfo()->symbol;
+    curArg = call->get(curArgIdx++);
+    INT_ASSERT(curArg, curArg->isRefOrWideRef() ||
+                       curArg->getValType()->symbol->hasFlag(FLAG_DATA_CLASS));
+
+    GenRet   remoteAddr = curArg;
+    TypeSymbol *t = curArg->typeInfo()->symbol;
 
 
-    if        (call->get(3)->isWideRef()   == true)  {
+    if        (curArg->isWideRef()   == true)  {
       remoteAddr = codegenRaddr(remoteAddr);
 
     } else if (t->hasFlag(FLAG_DATA_CLASS) == true)  {
       remoteAddr = codegenValue(remoteAddr);
 
-    } else if (call->get(3)->isRef()        == false) {
+    } else if (curArg->isRef()        == false) {
       remoteAddr = codegenAddrOf(remoteAddr);
     }
 
-    GenRet len;
-    GenRet size;
+    args.push_back(remoteAddr);
 
-    if (call->get(4)->isRefOrWideRef()) {
-      len = codegenValue(codegenDeref(call->get(4)));
-    } else {
-      len = codegenValue(call->get(4));
-    }
+    curArg = call->get(curArgIdx++);
+    INT_ASSERT(curArg, is_int_type(curArg->getValType()) ||
+               is_uint_type(curArg->getValType()));
+
+    GenRet len = codegenValueMaybeDeref(curArg);
+    GenRet size;
 
     if (call->primitive->tag == PRIM_CHPL_COMM_ARRAY_PUT ||
         call->primitive->tag == PRIM_CHPL_COMM_ARRAY_GET) {
@@ -5386,16 +5486,13 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
       size = len;
     }
 
-    if (!fLLVMWideOpt) {
-      codegenCall(fn,
-                  codegenCastToVoidStar(localAddr),
-                  locale,
-                  remoteAddr,
-                  size,
-                  genCommID(gGenInfo),
-                  call->get(5),
-                  call->get(6));
+    args.push_back(size);
+    args.push_back(genCommID(gGenInfo));
+    args.push_back(call->get(curArgIdx++));
+    args.push_back(call->get(curArgIdx++));
 
+    if (!fLLVMWideOpt) {
+      codegenCallWithArgs(fn, args);
     } else {
       // Figure out the locale-struct value to put into the wide address
       // (instead of just using the node number)
@@ -5442,13 +5539,7 @@ DEFINE_PRIM(CHPL_COMM_REMOTE_PREFETCH) {
     //   locale, remote addr, get(3)==size, line, file
 
     // Get the locale
-    GenRet locale;
-
-    if (call->get(1)->isRefOrWideRef()) {
-      locale = codegenValue(codegenDeref(call->get(1)));
-    } else {
-      locale = codegenValue(call->get(1));
-    }
+    GenRet locale = codegenValueMaybeDeref(call->get(1));
 
     // source data array
     GenRet   remoteAddr = call->get(2);
@@ -5463,13 +5554,7 @@ DEFINE_PRIM(CHPL_COMM_REMOTE_PREFETCH) {
       remoteAddr = codegenAddrOf(remoteAddr);
     }
 
-    GenRet len;
-
-    if (call->get(3)->isRefOrWideRef()) {
-      len = codegenValue(codegenDeref(call->get(3)));
-    } else {
-      len = codegenValue(call->get(3));
-    }
+    GenRet len = codegenValueMaybeDeref(call->get(3));
 
     codegenCall("chpl_gen_comm_prefetch",
                 locale,
@@ -5524,13 +5609,7 @@ static void codegenPutGetStrd(CallExpr* call, GenRet &ret) {
     }
 
     // locale id
-    GenRet locale;
-
-    if (call->get(3)->isRefOrWideRef()) {
-      locale = codegenValue(codegenDeref(call->get(3)));
-    } else {
-      locale = codegenValue(call->get(3));
-    }
+    GenRet locale = codegenValueMaybeDeref(call->get(3));
 
     // source data array
     GenRet   remoteAddr = call->get(4);
@@ -5570,13 +5649,7 @@ static void codegenPutGetStrd(CallExpr* call, GenRet &ret) {
     }
 
     // stridelevels
-    GenRet stridelevels;
-
-    if (call->get(7)->isRefOrWideRef()) {
-      stridelevels = codegenValue(codegenDeref(call->get(7)));
-    } else {
-      stridelevels = codegenValue(call->get(7));
-    }
+    GenRet stridelevels = codegenValueMaybeDeref(call->get(7));
 
     // eltSize
     GenRet eltSize = codegenSizeof(dt->typeInfo());

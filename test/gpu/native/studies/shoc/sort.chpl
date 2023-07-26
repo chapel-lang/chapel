@@ -12,12 +12,16 @@ use ResultDB;
 use GpuDiagnostics;
 use GPU only syncThreads, createSharedArray, setBlockSize;
 
+use GpuTestCommon;
+
 config const noisy = false;
 config const gpuDiags = false;
+config const verboseGpu = false;
 config const output = true;
 config const perftest = false;
 config const sz = 4;
 config const passes = 5;
+config const verify = true;
 param SORT_BLOCK_SIZE = 128;
 param SCAN_BLOCK_SIZE = 256;
 param SORT_BITS = 32;
@@ -37,7 +41,28 @@ var sortDb = new ResultDatabase("Sort Rate", "GB/s", atts="", attsSuffix=" items
 var pciDb = new ResultDatabase("Sort Rate PCIe", "GB/s", atts="", attsSuffix=" items");
 var parityDb = new ResultDatabase("Sort Parity", "N", atts="", attsSuffix=" items");
 
-on here.gpus[0] {
+proc main() {
+  if gpuDiags then startGpuDiagnostics();
+  if verboseGpu then startVerboseGpu();
+  runSort();
+  if gpuDiags {
+    stopGpuDiagnostics();
+    verifyGpuDiags(umLaunch=55, aodLaunch=58);
+  }
+  if verboseGpu then stopVerboseGpu();
+
+  if(output) {
+    sortDb.printDatabaseStats();
+    pciDb.printDatabaseStats();
+    parityDb.printDatabaseStats();
+  }
+  if(perftest){
+    sortDb.printPerfStats();
+    pciDb.printPerfStats();
+    parityDb.printPerfStats();
+  }
+}
+
 
 proc runSort(){
     // Number of key value pairs to sort scaled down by 2^20
@@ -54,136 +79,128 @@ proc runSort(){
     var hKeys : [0..<size] uint(32);
     var hVals : [0..<size] uint(32);
 
-    // Space for Block Sums in scan kernel
-    var numLevelsAllocated = 0;
-    var maxNumScanElements = size;
-    var numScanElts = maxNumScanElements;
-    var level : uint (32)= 0;
-    do{
-        var numBlocks : uint(32) = max (1 , ceil (
-                    numScanElts : real / (4 * SCAN_BLOCK_SIZE)) : int) : uint(32);
-        if(numBlocks > 1) then level+=1;
-        numScanElts = numBlocks;
-    } while numScanElts > 1;
+    const host = here;
 
-    var scanBlockSums : [0..#level+1] innerArray(uint(32));
-    numLevelsAllocated = level + 1;
-    numScanElts = maxNumScanElements;
-    level = 0;
-    do {
-        var numBlocks : uint(32) = max (1 , ceil (
-                    numScanElts : real / (4 * SCAN_BLOCK_SIZE)) : int) : uint(32);
-        if(numBlocks > 1) {
-            // Malloc device mem for block sums
-            scanBlockSums[level].resize(numBlocks);
-            level+=1;
+    on here.gpus[0] {
+
+        // Space for Block Sums in scan kernel
+        var numLevelsAllocated = 0;
+        var maxNumScanElements = size;
+        var numScanElts = maxNumScanElements;
+        var level : uint (32)= 0;
+        do{
+            var numBlocks : uint(32) = max (1 , ceil (
+                        numScanElts : real / (4 * SCAN_BLOCK_SIZE)) : int) : uint(32);
+            if(numBlocks > 1) then level+=1;
+            numScanElts = numBlocks;
+        } while numScanElts > 1;
+
+        var scanBlockSums : [0..#level+1] innerArray(uint(32));
+        numLevelsAllocated = level + 1;
+        numScanElts = maxNumScanElements;
+        level = 0;
+        do {
+            var numBlocks : uint(32) = max (1 , ceil (
+                        numScanElts : real / (4 * SCAN_BLOCK_SIZE)) : int) : uint(32);
+            if(numBlocks > 1) {
+                // Malloc device mem for block sums
+                scanBlockSums[level].resize(numBlocks);
+                level+=1;
+            }
+            numScanElts = numBlocks;
+        } while (numScanElts > 1);
+        // Print the above vars to see if they match the expected values
+
+        scanBlockSums[level].resize(1);
+
+        // Allcoate device mem for sorting kernels
+        var dKeys, dVals, dTempKeys, dTempVals : [0..<size] uint(32);
+
+        // Each thread in the sort kernel handles 4 elements
+
+        const numSortGroups = size / (4 * SORT_BLOCK_SIZE);
+        var dCounters, dCounterSums, dBlockOffsets : [0..<WARP_SIZE*numSortGroups] uint(32);
+
+        const iterations = passes;
+        // They do timing using cudaEvent, ig we will just use our timer.
+        for it in 0..#iterations:uint(32){
+            // Initialize the host memory to some pattern
+            on host {
+              for i in 0..<size:uint(32) {
+                  hVals[i] = (i%1024):uint(32);
+                  hKeys[i] = hVals[i];
+              }
+            }
+
+            // Copy inputs to GPU
+            var transferTime = 0.0;
+            // CudaEvent Record use replaced with timer
+            timer.start();
+            dKeys = hKeys;
+            dVals = hVals;
+            timer.stop();
+            transferTime += timer.elapsed();
+            timer.clear();
+
+            // The CUDA version uses the uint4 type
+            // It is a struct containing 4 uints.
+            // In order to mimic that we calculate the appropriate
+            // offsets into our array instead.
+            // var outerArraySize = dKeys.size / 4; // Always a multiple of 4
+            //                                 // So we don't need to round up
+            // var dKeys4 = reshape(dKeys, {0..#outerArraySize, 0..3});
+            // var dVals4 = reshape(dVals, {0..#outerArraySize, 0..3});
+            // var dTempKeys4 = reshape(dTempKeys, {0..#outerArraySize, 0..3});
+            // var dTempVals4 = reshape(dTempVals, {0..#outerArraySize, 0..3});
+
+            // Perform Radix Sort 4 bits at a time
+            timer.start();
+            for i in 0..#SORT_BITS by 4{
+                radixSortStep(4, i:uint(32), dKeys, dVals, dTempKeys, dTempVals,
+                dCounters, dCounterSums, dBlockOffsets, scanBlockSums, size);
+            }
+            timer.stop();
+            var kernelTime = timer.elapsed();
+            timer.clear();
+
+            // Readback Data from Device
+            // dKeys = reshape(dKeys4, {0..#size});
+            // dVals = reshape(dVals4, {0..#size});
+            // dTempKeys = reshape(dTempKeys4, {0..#size});
+            // dTempVals = reshape(dTempVals4, {0..#size});
+            timer.start();
+            hKeys = dKeys;
+            hVals = dVals;
+            timer.stop();
+            transferTime += timer.elapsed();
+            timer.clear();
+
+            if(verify) {
+              on host {
+                if (!verifySort(hKeys, hVals, size)){
+                  writeln("Verification failed");
+                }
+              }
+            }
+
+            // Print out results
+            const gb = sizeInBytes * 2.0 / (1000.0 * 1000.0 * 1000.0);
+            const sortRate = gb / kernelTime;
+            const pciRate = gb / (kernelTime + transferTime);
+            const parity = transferTime / kernelTime;
+            if (noisy){
+                writeln("Pass: ", it, "\nKernel Time: ", kernelTime, "\nTransfer Time: ", transferTime);
+                writeln("Items: ", size);
+                writeln("Sort Rate ", sortRate, " GB/s");
+                writeln("Sort Rate PCIe ", pciRate, " GB/s");
+                writeln("Sort Parity ",parity, " N\n");
+            }
+            sortDb.addToDatabase("%{#####}".format(size), sortRate);
+            pciDb.addToDatabase("%{#####}".format(size), pciRate);
+            parityDb.addToDatabase("%{#####}".format(size), parity);
         }
-        numScanElts = numBlocks;
-    } while (numScanElts > 1);
-    // Print the above vars to see if they match the expected values
-
-    scanBlockSums[level].resize(1);
-
-    // Allcoate device mem for sorting kernels
-    var dKeys, dVals, dTempKeys, dTempVals : [0..<size] uint(32);
-
-    // Each thread in the sort kernel handles 4 elements
-
-    const numSortGroups = size / (4 * SORT_BLOCK_SIZE);
-    var dCounters, dCounterSums, dBlockOffsets : [0..<WARP_SIZE*numSortGroups] uint(32);
-
-    const iterations = passes;
-    // They do timing using cudaEvent, ig we will just use our timer.
-    for it in 0..#iterations:uint(32){
-        // Initialize the host memory to some pattern
-        for i in 0..<size:uint(32) {
-            hVals[i] = (i%1024):uint(32);
-            hKeys[i] = hVals[i];
-        }
-
-        // Copy inputs to GPU
-        var transferTime = 0.0;
-        // CudaEvent Record use replaced with timer
-        timer.start();
-        dKeys = hKeys;
-        dVals = hVals;
-        timer.stop();
-        transferTime += timer.elapsed();
-        timer.clear();
-
-        // The CUDA version uses the uint4 type
-        // It is a struct containing 4 uints.
-        // In order to mimic that we calculate the appropriate
-        // offsets into our array instead.
-        // var outerArraySize = dKeys.size / 4; // Always a multiple of 4
-        //                                 // So we don't need to round up
-        // var dKeys4 = reshape(dKeys, {0..#outerArraySize, 0..3});
-        // var dVals4 = reshape(dVals, {0..#outerArraySize, 0..3});
-        // var dTempKeys4 = reshape(dTempKeys, {0..#outerArraySize, 0..3});
-        // var dTempVals4 = reshape(dTempVals, {0..#outerArraySize, 0..3});
-
-        // Perform Radix Sort 4 bits at a time
-        timer.start();
-        for i in 0..#SORT_BITS by 4{
-            radixSortStep(4, i:uint(32), dKeys, dVals, dTempKeys, dTempVals,
-            dCounters, dCounterSums, dBlockOffsets, scanBlockSums, size);
-        }
-        timer.stop();
-        var kernelTime = timer.elapsed();
-        timer.clear();
-
-        // Readback Data from Device
-        // dKeys = reshape(dKeys4, {0..#size});
-        // dVals = reshape(dVals4, {0..#size});
-        // dTempKeys = reshape(dTempKeys4, {0..#size});
-        // dTempVals = reshape(dTempVals4, {0..#size});
-        timer.start();
-        hKeys = dKeys;
-        hVals = dVals;
-        timer.stop();
-        transferTime += timer.elapsed();
-        timer.clear();
-
-        if(!verifySort(hKeys, hVals, size)){
-            return;
-        }
-
-        // Print out results
-        const gb = sizeInBytes * 2.0 / (1000.0 * 1000.0 * 1000.0);
-        const sortRate = gb / kernelTime;
-        const pciRate = gb / (kernelTime + transferTime);
-        const parity = transferTime / kernelTime;
-        if (noisy){
-            writeln("Pass: ", it, "\nKernel Time: ", kernelTime, "\nTransfer Time: ", transferTime);
-            writeln("Items: ", size);
-            writeln("Sort Rate ", sortRate, " GB/s");
-            writeln("Sort Rate PCIe ", pciRate, " GB/s");
-            writeln("Sort Parity ",parity, " N\n");
-        }
-        sortDb.addToDatabase("%{#####}".format(size), sortRate);
-        pciDb.addToDatabase("%{#####}".format(size), pciRate);
-        parityDb.addToDatabase("%{#####}".format(size), parity);
     }
 }
-
-if gpuDiags then startGpuDiagnostics();
-runSort();
-if gpuDiags {
-  stopGpuDiagnostics();
-  writeln(getGpuDiagnostics());
-}
-
-if(output) {
-  sortDb.printDatabaseStats();
-  pciDb.printDatabaseStats();
-  parityDb.printDatabaseStats();
-}
-if(perftest){
-  sortDb.printPerfStats();
-  pciDb.printPerfStats();
-  parityDb.printPerfStats();
-}
-
 
 proc radixSortStep(nbits: uint(32), startbit: uint(32),
                     ref keys : [] uint(32), ref values : [] uint(32),
@@ -678,4 +695,4 @@ proc vectorAddUniform4(ref d_vector: [] uint(32), const ref d_uniforms : [] uint
         }
     }
 }
-} // end on here.gpus[0]
+
