@@ -2922,27 +2922,52 @@ module BigInteger {
     return ret.safeCast(uint);
   }
 
-  pragma "last resort"
-  @deprecated(notes="The 'starting_bit' argument is deprecated, please use 'startBitIdx' instead")
-  proc bigint.scan0(starting_bit: integral) : uint {
-    return this.scan0(startBitIdx = starting_bit);
-  }
+  /*Scan ``this``, starting from ``startBitIdx``, towards more significant
+    bits until the first ``0`` bit is found.  Return the index of the found
+    bit.
 
-  /*  Scan ``this``, starting from ``startBitIdx``, towards more significant
-      bits until the first ``0`` bit is found.  Return the index of the found
-      bit.
+    If the bit at ``startBitIdx`` is ``0``, will return ``startBitIdx``.
 
-      If the bit at ``startBitIdx`` is ``0``, will return ``startBitIdx``.
+    :arg startBitIdx: the index of the first bit to start searching for a ``0``
+    :type startBitIdx: ``integral``
+    :returns: the index of the first ``0`` bit after ``startBitIdx``, inclusive
+    :rtype: ``uint``
+  */
+  @deprecated("scan0 is deprecated - please use :proc:`findNext0` instead")
+  proc bigint.scan0(startBitIdx: integral): uint
+    do return this.findNext0(startBitIdx);
 
-      :arg startBitIdx: the index of the first bit to start searching for a
-                        ``0``
-      :type startBitIdx: ``integral``
+  /*Scan ``this``, starting from ``startBitIdx``, towards more significant
+    bits until the first ``1`` bit is found.  Return the index of the found
+    bit.
 
-      :returns: the index of the first ``0`` bit after ``startBitIdx``,
-                inclusive
-      :rtype: ``uint``
-   */
-  proc bigint.scan0(startBitIdx: integral): uint {
+    If the bit at ``startBitIdx`` is ``1``, will return ``startBitIdx``.
+
+    :arg startBitIdx: the index of the first bit to start searching for a ``1``
+    :type startBitIdx: ``integral``
+    :returns: the index of the first ``1`` bit after ``startBitIdx``, inclusive
+    :rtype: ``uint``
+  */
+  @deprecated("scan1 is deprecated - please use :proc:`findNext1` instead")
+  proc bigint.scan1(startBitIdx: integral): uint
+    do return this.findNext1(startBitIdx);
+
+  /*
+    Returns the index of the first ``0`` bit found, starting from
+    ``startBitIdx`` and searching towards the more significant bits.
+
+    If the bit at ``startBitIdx`` is ``1``, will return ``startBitIdx``.
+
+    :arg startBitIdx: the index of the first bit to start searching for a ``0``
+    :type startBitIdx: ``integral``
+    :returns: the index of the first ``0`` bit after ``startBitIdx``, inclusive
+    :rtype: ``uint``
+
+    .. seealso::
+       :proc:`GMP.mpz_scan0` and
+       `mpz_scan0 <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling>`_.
+  */
+  proc bigint.findNext0(startBitIdx: integral): uint {
     const t_ = this.localize();
     const sb_ = startBitIdx.safeCast(c_ulong);
     var   ret: c_ulong;
@@ -2952,27 +2977,22 @@ module BigInteger {
     return ret.safeCast(uint);
   }
 
-  pragma "last resort"
-  @deprecated(notes="The 'starting_bit' argument is deprecated, please use 'startBitIdx' instead")
-  proc bigint.scan1(starting_bit: integral) : uint {
-    return this.scan1(startBitIdx = starting_bit);
-  }
+  /*
+    Returns the index of the first ``1`` bit found, starting from
+    ``startBitIdx`` and searching towards the more significant bits.
 
-  /*  Scan ``this``, starting from ``startBitIdx``, towards more significant
-      bits until the first ``1`` bit is found.  Return the index of the found
-      bit.
+    If the bit at ``startBitIdx`` is ``1``, will return ``startBitIdx``.
 
-      If the bit at ``startBitIdx`` is ``1``, will return ``startBitIdx``.
+    :arg startBitIdx: the index of the first bit to start searching for a ``1``
+    :type startBitIdx: ``integral``
+    :returns: the index of the first ``1`` bit after ``startBitIdx``, inclusive
+    :rtype: ``uint``
 
-      :arg startBitIdx: the index of the first bit to start searching for a
-                        ``1``
-      :type startBitIdx: ``integral``
-
-      :returns: the index of the first ``1`` bit after ``startBitIdx``,
-                inclusive
-      :rtype: ``uint``
-   */
-  proc bigint.scan1(startBitIdx: integral): uint {
+    .. seealso::
+       :proc:`GMP.mpz_scan1` and
+       `mpz_scan1 <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling>`_.
+  */
+  proc bigint.findNext1(startBitIdx: integral): uint {
     const t_ = this.localize();
     const sb_ = startBitIdx.safeCast(c_ulong);
     var   ret: c_ulong;
