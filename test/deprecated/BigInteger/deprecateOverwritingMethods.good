@@ -1,5 +1,5 @@
-deprecateOverwritingMethods.chpl:n: warning: bigint.divexact method is deprecated - please use the standalone function divexact
-deprecateOverwritingMethods.chpl:n: warning: bigint.divexact method is deprecated - please use the standalone function divexact
+deprecateOverwritingMethods.chpl:n: warning: bigint.divexact method is deprecated - please use the standalone function divExact
+deprecateOverwritingMethods.chpl:n: warning: bigint.divexact method is deprecated - please use the standalone function divExact
 deprecateOverwritingMethods.chpl:n: warning: bigint.powMod method is deprecated - please use the standalone function powMod
 deprecateOverwritingMethods.chpl:n: warning: bigint.powMod method is deprecated - please use the standalone function powMod
 deprecateOverwritingMethods.chpl:n: warning: bigint.powMod method is deprecated - please use the standalone function powMod
