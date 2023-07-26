@@ -2885,8 +2885,22 @@ module BigInteger {
   proc bigint.lucnum2(ref fnsub1: bigint, n: integral)
     do BigInteger.lucNum2(this, fnsub1, n);
 
-  // Bit operations
-  proc bigint.popcount() : uint {
+  @deprecated("popcount is deprecated - please use :proc:`bigint.popCount` instead")
+  proc bigint.popcount() : uint do return this.popCount();
+
+  /*
+    Returns the number of ``1`` bits in ``this``. If ``this`` is negative, the
+    number of ``1`` bits is infinite and the return value is the largest
+    possible :type:`~GMP.mp_bitcnt_t`.
+
+    :returns: The number of ``1`` bits in ``this``
+    :rtype: ``uint``
+
+    .. seealso::
+       :proc:`GMP.mpz_popcount` and
+       `mpz_popcount <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling>`_.
+  */
+  proc bigint.popCount() : uint {
     const t_ = this.localize();
     var ret: c_ulong;
 
