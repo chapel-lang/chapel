@@ -1081,7 +1081,7 @@ module ChapelRange {
   }
 
   inline proc range.chpl_alignedLowAsIntForIter {
-    if !hasUnitStride() && !hasLowBound() && isFiniteIndexType() {
+    if !hasUnitStride() && !hasLowBound() && isFiniteIdxType(idxType) {
       return helpAlignLow(chpl__idxToInt(lowBoundForIter(this)), _alignment, stride);
     } else {
       return alignedLowAsInt;
@@ -1715,6 +1715,9 @@ private inline proc rangeCastHelper(r, type t) throws {
    */
   @deprecated("range.boundsCheck() is deprecated, consider using range.contains() instead")
   inline proc range.boundsCheck(other: range(?e,?b,?s))
+    do return this.chpl_boundsCheck(other);
+
+  inline proc range.chpl_boundsCheck(other: range(?e,?b,?s))
     where b == boundKind.neither
   {
     if chpl__singleValIdxType(idxType) {
@@ -1726,11 +1729,6 @@ private inline proc rangeCastHelper(r, type t) throws {
 
     return true;
   }
-
-  @chpldoc.nodoc
-  @deprecated("range.boundsCheck() is deprecated, consider using range.contains() instead")
-  inline proc range.boundsCheck(other: range(?e,?b,?s))
-    do return this.chpl_boundsCheck(other);
 
   inline proc range.chpl_boundsCheck(other: range(?e,?b,?s))
   {
