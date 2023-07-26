@@ -4722,27 +4722,45 @@ module BigInteger {
     BigInteger.and(this, a, b);
   }
 
-  proc ior(ref result: bigint, const ref a: bigint, const ref b: bigint) {
+  /*
+    Compute the bitwise inclusive or of ``x`` and ``y`` and store it in
+    ``result``.
+
+    :arg result: Where the result is stored
+    :type result: :record:`bigint`
+    :arg x: First number
+    :type x: :record:`bigint`
+    :arg y: Second number
+    :type y: :record:`bigint`
+
+    .. seealso::
+       :proc:`GMP.mpz_ior` and
+       `mpz_ior <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling>`_.
+  */
+  proc or(ref result: bigint, const ref x: bigint, const ref y: bigint) {
     if compiledForSingleLocale() {
-      mpz_ior(result.mpz, a.mpz, b.mpz);
+      mpz_ior(result.mpz, x.mpz, y.mpz);
     } else if result.localeId == chpl_nodeID {
-      const a_ = a;
-      const b_ = b;
-      mpz_ior(result.mpz, a_.mpz, b_.mpz);
+      const x_ = x;
+      const y_ = y;
+      mpz_ior(result.mpz, x_.mpz, y_.mpz);
     } else {
       const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
       on __primitive("chpl_on_locale_num", resultLoc) {
-        const a_ = a;
-        const b_ = b;
-        mpz_ior(result.mpz, a_.mpz, b_.mpz);
+        const x_ = x;
+        const y_ = y;
+        mpz_ior(result.mpz, x_.mpz, y_.mpz);
       }
     }
   }
 
-  @deprecated(notes="bigint.ior method is deprecated - please use the standalone function :proc:`~BigInteger.ior`")
-  proc bigint.ior(const ref a: bigint, const ref b: bigint) {
-    BigInteger.ior(this, a, b);
-  }
+  @deprecated(notes="ior is deprecated - please use :proc:`or` instead")
+  proc ior(ref result: bigint, const ref a: bigint, const ref b: bigint)
+    do BigInteger.or(result, a, b);
+
+  @deprecated(notes="bigint.ior method is deprecated - please use the standalone function :proc:`.or` instead")
+  proc bigint.ior(const ref a: bigint, const ref b: bigint)
+    do BigInteger.or(this, a, b);
 
   proc xor(ref result: bigint, const ref a: bigint, const ref b: bigint) {
     if compiledForSingleLocale() {
