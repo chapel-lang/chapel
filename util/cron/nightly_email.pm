@@ -133,6 +133,7 @@ if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0 && $newpas
 if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
     # Send email only if there are new failures. Set the passed flag to 1
     $passed = 1;
+    print "\n passed:$passed \n status:$status \n";
     writeSummary ($revision,
      $starttime,
      $endtime ,
@@ -156,7 +157,7 @@ if ($debug == 0) {
     }
 }
 
-return $status;
+return $passed;
 
 }
 return(1);
