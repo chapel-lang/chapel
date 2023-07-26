@@ -1446,21 +1446,17 @@ module BigInteger {
        in an integer.  When ``numer/denom`` does not produce an integer, this
        method may produce incorrect results.
 
-    Utilizes the GMP function `mpz_divexact
-    <https://gmplib.org/manual/Integer-Division>`_.
-
     :arg result: Where the result is stored
     :type result: :record:`bigint`
-
     :arg numer: numerator
     :type numer: :record:`bigint`
-
     :arg denom: denominator
     :type denom: :record:`bigint` or ``integral``
+
+    .. seealso::
+       :proc:`GMP.mpz_divexact` and
+       `mpz_divexact <https://gmplib.org/manual/Integer-Division>`_.
   */
-  proc divExact(ref result: bigint, const ref numer: bigint, denom: integral)
-    do BigInteger.divExact(result, numer, new bigint(denom));
-  @chpldoc.nodoc
   proc divExact(ref result: bigint, const ref numer: bigint, const ref denom: bigint) {
     if (chpl_checkDivByZero) then
       if denom == 0 then
@@ -1481,6 +1477,9 @@ module BigInteger {
       }
     }
   }
+  /*See :proc:`~BigInteger.divExact`*/
+  proc divExact(ref result: bigint, const ref numer: bigint, denom: integral)
+    do BigInteger.divExact(result, numer, new bigint(denom));
 
 
   /*
@@ -1509,13 +1508,11 @@ module BigInteger {
   proc divexact(ref result: bigint, const ref numer: bigint, denom: integral)
     do BigInteger.divExact(result, numer, denom);
 
-  @chpldoc.nodoc
   @deprecated("divexact is deprecated - please use :proc:`divExact` instead")
   proc divexact(ref result: bigint, const ref numer: bigint, const ref denom: bigint)
     do BigInteger.divExact(result, numer, denom);
 
   @deprecated(notes="bigint.divexact method is deprecated - please use the standalone function :proc:`~BigInteger.divExact`")
-  @chpldoc.nodoc
   proc bigint.divexact(const ref numer: bigint, const ref denom: bigint)
     do BigInteger.divExact(this, numer, denom);
   /*
@@ -3623,11 +3620,16 @@ module BigInteger {
 
     This is the same as performing a left bit shift of ``x`` by ``exp`` bits.
 
-    Utilizes the GMP function `mpz_mul_2exp
-    <https://gmplib.org/manual/Integer-Arithmetic>`_.
-
     :arg result: Where the result is stored
     :type result: :record:`bigint`
+    :arg x: The number to be multiplied
+    :type x: :record:`bigint`
+    :arg exp: The exponent that 2 should be raised to before being used
+    :type exp: ``integral``
+
+    .. seealso::
+       :proc:`GMP.mpz_mul_2exp` and
+       `mpz_mul_2exp <https://gmplib.org/manual/Integer-Arithmetic>`_.
   */
   @unstable("mul2Exp is unstable and may change in the future")
   proc mul2Exp(ref result: bigint, const ref x: bigint, exp: integral) {
@@ -3693,7 +3695,6 @@ module BigInteger {
   }
 
   @deprecated("bigint.div_q using Round is deprecated, use the standalone function :proc:`~BigInteger.div` with :enum:`roundingMode` instead")
-  @chpldoc.nodoc
   proc bigint.div_q(const ref n: bigint,
                     const ref d: bigint,
                     param     rounding = Round.ZERO) {
@@ -3722,7 +3723,6 @@ module BigInteger {
     }
   }
 
-  @chpldoc.nodoc
   @deprecated("divQ is deprecated - please use :proc:`div` with :enum:`roundingMode` instead")
   proc divQ(ref result: bigint,
             const ref numer: bigint,
@@ -3758,7 +3758,6 @@ module BigInteger {
               do BigInteger.div(result, numer, denom, chpl_roundToRoundingMode(rounding));
 
   @deprecated(notes="bigint.divQ method is deprecated - please use the standalone function :proc:`~BigInteger.div` with :enum:`roundingMode` instead")
-  @chpldoc.nodoc
   proc bigint.divQ(const ref numer: bigint,
                    const ref denom: bigint,
                    param rounding = round.zero) {
@@ -3782,17 +3781,38 @@ module BigInteger {
         If the denominator is zero, the program behavior is undefined.
   */
   @deprecated(notes="bigint.divQ method is deprecated - please use the standalone function :proc:`~BigInteger.div` with :enum:`roundingMode` instead")
-  @chpldoc.nodoc
   proc bigint.divQ(const ref numer: bigint,
                              denom: integral,
                    param     rounding = round.zero)
     do BigInteger.div(this, numer, denom, chpl_roundToRoundingMode(rounding));
 
-  @chpldoc.nodoc
-  proc div(ref result: bigint,
-            const ref numer: bigint,
-            const ref denom: bigint,
-            param rounding = roundingMode.zero) {
+  /* Divide ``numer`` by ``denom``, forming a quotient and storing it in
+     ``result``.
+
+     :arg result: Where the result is stored
+     :type result: :record:`bigint`
+     :arg numer: The numerator of the division operation to be performed
+     :type numer: :record:`bigint`
+     :arg denom: The denominator of the division operation to be performed
+     :type denom: :record:`bigint`, ``integral``
+     :arg rounding: The rounding style to use, see :enum:`roundingMode` for a
+                    description of what the rounding styles entail.  Defaults to
+                    ``zero`` if unspecified
+     :type rounding: :enum:`roundingMode`
+
+     .. warning::
+        If the denominator is zero, the program behavior is undefined.
+
+     .. seealso::
+        :proc:`GMP.mpz_cdiv_q`,
+        :proc:`GMP.mpz_fdiv_q`,
+        :proc:`GMP.mpz_tdiv_q`, and
+        `mpz_div_q <https://gmplib.org/manual/Integer-Division>`_.
+  */
+  proc div(ref       result: bigint,
+           const ref numer: bigint,
+           const ref denom: bigint,
+           param     rounding = roundingMode.zero) {
     if (chpl_checkDivByZero) then
       if denom == 0 then
         halt("Attempt to divide by zero");
@@ -3821,33 +3841,11 @@ module BigInteger {
     }
   }
 
-  /* Divide ``numer`` by ``denom``, forming a quotient and storing it in
-     ``result``.
-
-     Utilizes the GMP functions `mpz_div_q
-     <https://gmplib.org/manual/Integer-Division>`_.
-
-     :arg result: Where the result is stored
-     :type result: :record:`bigint`
-
-     :arg numer: The numerator of the division operation to be performed
-     :type numer: :record:`bigint`
-
-     :arg denom: The denominator of the division operation to be performed
-     :type denom: :record:`bigint`, ``integral``
-
-     :arg rounding: The rounding style to use, see :enum:`roundingMode` for a
-                    description of what the rounding styles entail.  Defaults to
-                    ``zero`` if unspecified
-     :type rounding: :enum:`roundingMode`
-
-     .. warning::
-        If the denominator is zero, the program behavior is undefined.
-  */
-  proc div(ref result: bigint,
-            const ref numer: bigint,
-            denom: integral,
-            param rounding = roundingMode.zero)
+  /* See :proc:`~BigInteger.div` */
+  proc div(ref       result: bigint,
+           const ref numer: bigint,
+                     denom: integral,
+           param     rounding = roundingMode.zero)
     do BigInteger.div(result, numer, new bigint(denom), rounding);
 
   /* Divide ``numer`` by ``denom``, forming a remainder and storing it in
@@ -3874,7 +3872,6 @@ module BigInteger {
                    param     rounding = round.zero)
     do BigInteger.rem(this, numer, denom, chpl_roundToRoundingMode(rounding));
   @deprecated(notes="bigint.divR method is deprecated - please use the standalone function :proc:`~BigInteger.rem` with :enum:`roundingMode` instead")
-  @chpldoc.nodoc
   proc bigint.divR(const ref numer: bigint,
                    const ref denom: bigint,
                    param     rounding = round.zero)
@@ -3908,7 +3905,6 @@ module BigInteger {
             param rounding = round.zero)
     do BigInteger.rem(result, numer, denom, chpl_roundToRoundingMode(rounding));
   @deprecated("divR is deprecated - please use :proc:`rem` with :enum:`roundingMode` instead")
-  @chpldoc.nodoc
   proc divR(ref result: bigint,
             const ref numer: bigint,
             const ref denom: bigint,
@@ -3919,18 +3915,12 @@ module BigInteger {
      ``result``.  The absolute value of the remainder will always be less than the
      absolute value of the denominator (i.e. ``abs(result) < abs(denom)``).
 
-     Utilizes the GMP functions `mpz_div_r
-     <https://gmplib.org/manual/Integer-Division>`_.
-
      :arg result: Where the result is stored
      :type result: :record:`bigint`
-
      :arg numer: The numerator of the division operation to be performed
      :type numer: :record:`bigint`
-
      :arg denom: The denominator of the division operation to be performed
      :type denom: :record:`bigint`, ``integral``
-
      :arg rounding: The rounding style to use, see :enum:`roundingMode` for a
                     description of what the rounding styles entail.  Defaults to
                     ``zero`` if unspecified
@@ -3942,18 +3932,17 @@ module BigInteger {
      .. note::
         When ``rounding == roundingMode.down``, this procedure is equivalent to
         :proc:`~BigInteger.mod`.
-  */
-  proc rem(ref result: bigint,
-            const ref numer: bigint,
-            denom: integral,
-            param rounding = roundingMode.zero)
-    do BigInteger.rem(result, numer, new bigint(denom), rounding);
 
-  @chpldoc.nodoc
-  proc rem(ref result: bigint,
-            const ref numer: bigint,
-            const ref denom: bigint,
-            param rounding = roundingMode.zero) {
+     .. seealso::
+        :proc:`GMP.mpz_cdiv_r`,
+        :proc:`GMP.mpz_fdiv_r`,
+        :proc:`GMP.mpz_tdiv_r`, and
+        `mpz_div_r <https://gmplib.org/manual/Integer-Division>`_.
+  */
+  proc rem(ref       result: bigint,
+           const ref numer: bigint,
+           const ref denom: bigint,
+           param     rounding = roundingMode.zero) {
     if (chpl_checkDivByZero) then
       if denom == 0 then
         halt("Attempt to divide by zero");
@@ -3982,6 +3971,13 @@ module BigInteger {
     }
   }
 
+  /* See :proc:`~BigInteger.rem` */
+  proc rem(ref       result: bigint,
+           const ref numer: bigint,
+                     denom: integral,
+           param     rounding = roundingMode.zero)
+    do BigInteger.rem(result, numer, new bigint(denom), rounding);
+
   /* Divide ``numer`` by ``denom``, forming a quotient and storing it in
      ``result``, and a remainder and storing it in ``remain``.  The quotient and
      remainder will always satisfy ``numer = result*denom + remain`` after the
@@ -3989,25 +3985,18 @@ module BigInteger {
      less than the absolute value of the denominator (i.e. ``abs(result) <
      abs(denom)``).
 
-     Utilizes the GMP functions `mpz_div_qr
-     <https://gmplib.org/manual/Integer-Division>`_.
-
      .. warning::
         If ``result`` is also passed as the ``remain`` argument, the program
         behavior is undefined.
 
      :arg result: Where the result is stored
      :type result: :record:`bigint`
-
      :arg remain: Stores the remainder of the division
      :type remain: :record:`bigint`
-
      :arg numer: The numerator of the division operation to be performed
      :type numer: :record:`bigint`
-
      :arg denom: The denominator of the division operation to be performed
      :type denom: :record:`bigint`, ``integral``
-
      :arg rounding: The rounding style to use, see :enum:`roundingMode` for a
                     description of what the rounding styles entail.  Defaults to
                     ``zero`` if unspecified
@@ -4015,14 +4004,13 @@ module BigInteger {
 
      .. warning::
         If the denominator is zero, the program behavior is undefined.
-  */
-  proc divRem(ref result: bigint,
-              ref remain: bigint,
-              const ref numer: bigint,
-              denom: integral,
-              param rounding = roundingMode.zero)
-    do BigInteger.divRem(result, remain, numer, new bigint(denom), rounding);
 
+     .. seealso::
+        :proc:`GMP.mpz_cdiv_qr`,
+        :proc:`GMP.mpz_fdiv_qr`,
+        :proc:`GMP.mpz_tdiv_qr`, and
+        `mpz_div_qr <https://gmplib.org/manual/Integer-Division>`_.
+  */
   proc divRem(ref       result: bigint,
               ref       remain: bigint,
               const ref numer: bigint,
@@ -4060,6 +4048,13 @@ module BigInteger {
       }
     }
   }
+  /* See :proc:`~BigInteger.divRem` */
+  proc divRem(ref       result: bigint,
+              ref       remain: bigint,
+              const ref numer: bigint,
+                        denom: integral,
+              param     rounding = roundingMode.zero)
+    do BigInteger.divRem(result, remain, numer, new bigint(denom), rounding);
 
   /* Divide ``numer`` by ``denom``, forming a quotient and storing it in
      ``result``, and a remainder and storing it in ``remain``.  The quotient and
@@ -4101,7 +4096,6 @@ module BigInteger {
     do BigInteger.divRem(result, remain, numer, denom, chpl_roundToRoundingMode(rounding));
 
   @deprecated("divQR is deprecated - please use :proc:`divRem` with :enum:`roundingMode` instead")
-  @chpldoc.nodoc
   proc divQR(ref       result: bigint,
              ref       remain: bigint,
              const ref numer: bigint,
@@ -4181,30 +4175,29 @@ module BigInteger {
      This is the same as performing a right bit shift of ``numer`` by ``exp``
      bits when ``rounding==roundingMode.down``.
 
-
-     Utilizes the GMP functions `mpz_div_q_2exp
-     <https://gmplib.org/manual/Integer-Division>`_.
-
      :arg result: Where the result is stored
      :type result: :record:`bigint`
-
      :arg numer: The numerator of the division operation to be performed
      :type numer: :record:`bigint`
-
      :arg exp: The exponent that 2 should be raised to before being used as the
                denominator of the division operation to be performed
      :type exp: ``integral``
-
      :arg rounding: The rounding style to use, see :enum:`roundingMode` for a
                     description of what the rounding styles entail.  Defaults to
                     ``zero`` if unspecified
      :type rounding: :enum:`roundingMode`
+
+     .. seealso::
+        :proc:`GMP.mpz_cdiv_q_2exp`,
+        :proc:`GMP.mpz_fdiv_q_2exp`,
+        :proc:`GMP.mpz_tdiv_q_2exp`, and
+        `mpz_div_q_2exp <https://gmplib.org/manual/Integer-Division>`_.
   */
   @unstable("div2Exp is unstable and may change in the future")
-  proc div2Exp(ref result: bigint,
-                const ref numer: bigint,
-                exp: integral,
-                param rounding = roundingMode.zero) {
+  proc div2Exp(ref       result: bigint,
+               const ref numer: bigint,
+                         exp: integral,
+               param     rounding = roundingMode.zero) {
     const exp_ = exp.safeCast(mp_bitcnt_t);
 
     inline proc helper(ref res, const ref n, e, param rnd) {
@@ -4278,29 +4271,29 @@ module BigInteger {
   /* Divide ``numer`` by ``2^exp``, forming a remainder and storing it in
      ``result``.
 
-     Utilizes the GMP functions `mpz_div_r_2exp
-     <https://gmplib.org/manual/Integer-Division>`_.
-
      :arg result: Where the result is stored
      :type result: :record:`bigint`
-
      :arg numer: The numerator of the division operation to be performed
      :type numer: :record:`bigint`
-
      :arg exp: The exponent that 2 should be raised to before being used as the
                denominator of the division operation to be performed
      :type exp: ``integral``
-
      :arg rounding: The rounding style to use, see :enum:`roundingMode` for a
                     description of what the rounding styles entail.  Defaults to
                     ``zero`` if unspecified
      :type rounding: :enum:`roundingMode`
+
+     .. seealso::
+        :proc:`GMP.mpz_cdiv_r_2exp`,
+        :proc:`GMP.mpz_fdiv_r_2exp`,
+        :proc:`GMP.mpz_tdiv_r_2exp`, and
+        `mpz_div_r_2exp <https://gmplib.org/manual/Integer-Division>`_.
   */
   @unstable("rem2Exp is unstable and may change in the future")
-  proc rem2Exp(ref result: bigint,
-                const ref numer: bigint,
-                exp: integral,
-                param     rounding = roundingMode.zero) {
+  proc rem2Exp(ref       result: bigint,
+               const ref numer: bigint,
+                         exp: integral,
+               param     rounding = roundingMode.zero) {
     const exp_ = exp.safeCast(mp_bitcnt_t);
 
     inline proc helper(ref res, const ref n, e, param rnd) {
@@ -4352,12 +4345,13 @@ module BigInteger {
 
      :arg result: Where the result is stored
      :type result: :record:`bigint`
-
      :arg x: The number to be shifted
      :type x: :record:`bigint`
-
      :arg n: The number of bits to be shifted
      :type n: ``integral``
+
+     .. seealso::
+        :proc:`BigInteger.mul2Exp` and :proc:`BigInteger.div2Exp`
   */
   inline proc shiftLeft(ref result: bigint, const ref x: bigint, n: integral) {
     if n >= 0
@@ -4370,12 +4364,13 @@ module BigInteger {
 
      :arg result: Where the result is stored
      :type result: :record:`bigint`
-
      :arg x: The number to be shifted
      :type x: :record:`bigint`
-
      :arg n: The number of bits to be shifted
      :type n: ``integral``
+
+     .. seealso::
+        :proc:`BigInteger.div2Exp` and :proc:`BigInteger.mul2Exp`
   */
   inline proc shiftRight(ref result: bigint, const ref x: bigint, n: integral) {
     if n >= 0
