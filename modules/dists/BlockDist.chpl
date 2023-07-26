@@ -1208,7 +1208,7 @@ proc BlockArr.dsiDynamicFastFollowCheck(lead: []) do
 
 proc BlockArr.dsiDynamicFastFollowCheck(lead: domain) {
   // TODO: Should this return true for domains with the same shape?
-  return lead.dist.dsiEqualDMaps(this.dom.dist) && lead._value.whole == this.dom.whole;
+  return lead.distribution.dsiEqualDMaps(this.dom.distribution) && lead._value.whole == this.dom.whole;
 }
 
 iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {

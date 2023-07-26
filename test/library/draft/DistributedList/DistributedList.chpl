@@ -79,7 +79,7 @@ module DistributedList {
         }
 
         proc init(arr: [?d] ?t, param blockSize=DefaultBlockSize)
-            where d.rank == 1 && d.hasUnitStride() && d.dist._value.dsiIsLayout()
+            where d.rank == 1 && d.hasUnitStride() && d.distribution._value.dsiIsLayout()
         {
             this.eltType = t;
             this.blockSize = blockSize;
@@ -151,7 +151,7 @@ module DistributedList {
 
         // append a group of elements to the end of the list
         proc ref append(x: [?d] eltType): range(d.idxType)
-            where d.rank == 1 && d.hasUnitStride() && d.dist._value.dsiIsLayout()
+            where d.rank == 1 && d.hasUnitStride() && d.distribution._value.dsiIsLayout()
         {
             this.lockAll(); defer this.unlockAll();
 
@@ -264,7 +264,7 @@ module DistributedList {
 
         // insert an array of elements. shift all subsequent elements 'd.size' slots to the right
         proc ref insert(idx: int, arr: [?d] eltType): bool
-            where d.rank == 1 && d.hasUnitStride() && d.dist._value.dsiIsLayout()
+            where d.rank == 1 && d.hasUnitStride() && d.distribution._value.dsiIsLayout()
         {
             this.lockAll(); defer this.unlockAll();
             if this.boundsCheck(idx) {

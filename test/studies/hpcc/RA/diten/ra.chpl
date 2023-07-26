@@ -120,7 +120,7 @@ proc main() {
   // pending for that locale.
   //
   forall (_, r) in zip(Updates, RAStream()) {
-    var loc = T.domain.dist.idxToLocale(r&indexMask);
+    var loc = T.domain.distribution.idxToLocale(r&indexMask);
     if loc == here {
       T(r&indexMask) ^= r;
     } else {
@@ -182,7 +182,7 @@ proc verifyResults() {
   // Reverse the updates by recomputing them
   //
   forall (_, r) in zip(Updates, RAStream()) do
-    on T.domain.dist.idxToLocale(r & indexMask) do
+    on T.domain.distribution.idxToLocale(r & indexMask) do
       T(r & indexMask) ^= r;
 
   //
