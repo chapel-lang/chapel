@@ -4,7 +4,7 @@ use color;
 var rgb = red..blue;
 var rdd = red..;
 var ddb = ..blue;
-var dd: range(color, boundKind.neither) = ..;
+var dd: range(color, boundKind.neither);
 
 writeln(rgb == rdd);
 writeln(rgb == ddb);
