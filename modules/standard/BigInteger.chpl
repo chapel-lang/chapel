@@ -1264,7 +1264,7 @@ module BigInteger {
   }
 
   operator bigint.|=(ref a: bigint, const ref b: bigint) {
-    BigInteger.ior(a, a, b);
+    BigInteger.or(a, a, b);
   }
 
   operator bigint.^=(ref a: bigint, const ref b: bigint) {
@@ -4790,7 +4790,7 @@ module BigInteger {
   proc ior(ref result: bigint, const ref a: bigint, const ref b: bigint)
     do BigInteger.or(result, a, b);
 
-  @deprecated(notes="bigint.ior method is deprecated - please use the standalone function :proc:`.or` instead")
+  @deprecated(notes="bigint.ior method is deprecated - please use the standalone function :proc:`or` instead")
   proc bigint.ior(const ref a: bigint, const ref b: bigint)
     do BigInteger.or(this, a, b);
 
