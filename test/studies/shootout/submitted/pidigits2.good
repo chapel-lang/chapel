@@ -8,7 +8,7 @@ pidigits2.chpl:30: In iterator 'genDigits':
 pidigits2.chpl:59: warning: bigint.add method is deprecated - please use the standalone function add
   pidigits2.chpl:18: called as genDigits(numDigits: int(64))
 pidigits2.chpl:30: In iterator 'genDigits':
-pidigits2.chpl:60: warning: bigint.div_q using Round is deprecated, use bigint.divQ with round instead
+pidigits2.chpl:60: warning: bigint.div_q using Round is deprecated, use the standalone function div with roundingMode instead
   pidigits2.chpl:18: called as genDigits(numDigits: int(64))
 pidigits2.chpl:30: In iterator 'genDigits':
 pidigits2.chpl:66: warning: bigint.submul method is deprecated - please use the standalone function submul

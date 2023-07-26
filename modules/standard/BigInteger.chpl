@@ -3692,7 +3692,7 @@ module BigInteger {
     BigInteger.abs(this, a);
   }
 
-  @deprecated("bigint.div_q using Round is deprecated, use :proc:`~BigInteger.div` with :enum:`roundingMode` instead")
+  @deprecated("bigint.div_q using Round is deprecated, use the standalone function :proc:`~BigInteger.div` with :enum:`roundingMode` instead")
   @chpldoc.nodoc
   proc bigint.div_q(const ref n: bigint,
                     const ref d: bigint,
@@ -3708,7 +3708,7 @@ module BigInteger {
   }
 
   @deprecated
-  ("bigint.div_q using Round is deprecated, use :proc:`~BigInteger.div` with :enum:`roundingMode` instead")
+  ("bigint.div_q using Round is deprecated, use the standalone function :proc:`~BigInteger.div` with :enum:`roundingMode` instead")
   proc bigint.div_q(const ref n: bigint,
                               d: integral,
                     param     rounding = Round.ZERO) {
