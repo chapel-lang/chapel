@@ -2933,7 +2933,7 @@ module BigInteger {
     :returns: the index of the first ``0`` bit after ``startBitIdx``, inclusive
     :rtype: ``uint``
   */
-  @deprecated("scan0 is deprecated - please use :proc:`findNext0` instead")
+  @deprecated("scan0 is deprecated - please use :proc:`bigint.findNext0` instead")
   proc bigint.scan0(startBitIdx: integral): uint
     do return this.findNext0(startBitIdx);
 
@@ -2948,7 +2948,7 @@ module BigInteger {
     :returns: the index of the first ``1`` bit after ``startBitIdx``, inclusive
     :rtype: ``uint``
   */
-  @deprecated("scan1 is deprecated - please use :proc:`findNext1` instead")
+  @deprecated("scan1 is deprecated - please use :proc:`bigint.findNext1` instead")
   proc bigint.scan1(startBitIdx: integral): uint
     do return this.findNext1(startBitIdx);
 
