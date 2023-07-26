@@ -1477,6 +1477,7 @@ module BigInteger {
       }
     }
   }
+
   /*See :proc:`~BigInteger.divExact`*/
   proc divExact(ref result: bigint, const ref numer: bigint, denom: integral)
     do BigInteger.divExact(result, numer, new bigint(denom));
@@ -1515,6 +1516,7 @@ module BigInteger {
   @deprecated(notes="bigint.divexact method is deprecated - please use the standalone function :proc:`~BigInteger.divExact`")
   proc bigint.divexact(const ref numer: bigint, const ref denom: bigint)
     do BigInteger.divExact(this, numer, denom);
+
   /*
     Computes ``numer/denom`` and stores the result in ``this``, which is a
     :record:`bigint` instance.
@@ -1537,7 +1539,6 @@ module BigInteger {
   @deprecated(notes="bigint.divexact method is deprecated - please use the standalone function :proc:`~BigInteger.divExact`")
   proc bigint.divexact(const ref numer: bigint, denom: integral)
     do BigInteger.divExact(this, numer, denom);
-
 
   // divisible_p
   // documented in uint version
@@ -1882,6 +1883,7 @@ module BigInteger {
       result = 0;
     }
   }
+
   @chpldoc.nodoc
   proc powNegativeExpHelper(ref result: bigint, const ref base: bigintWrapper, exp: int) {
     const base1 = mpz_cmp_ui(base.mpz, 1) == 0;
@@ -2221,7 +2223,6 @@ module BigInteger {
     else
       return isPrime;
   }
-
 
   @deprecated("nextprime is deprecated - please use :proc:`~BigInteger.nextPrime` instead")
   proc nextprime(ref result: bigint, const ref a: bigint)
@@ -2627,7 +2628,6 @@ module BigInteger {
     }
   }
 
-
   /*
     Remove all occurrences of the factor ``fac`` from ``x`` and store the result
     in ``this``.  Return the number of occurrences removed.
@@ -2645,7 +2645,6 @@ module BigInteger {
   proc bigint.removeFactor(const ref x: bigint, const ref fac: bigint) : uint {
     return BigInteger.removeFactor(this, x, fac);
   }
-
 
   /*  Set ``result`` to the factorial of ``a``
 
@@ -2671,8 +2670,6 @@ module BigInteger {
   proc bigint.fac(a: integral) {
     BigInteger.fac(this, a);
   }
-
-
 
   /*  Set ``result`` to the binomial coefficient of ``n`` over ``k``.
 
@@ -2729,8 +2726,6 @@ module BigInteger {
   proc bigint.bin(n: uint, k: integral) {
     BigInteger.bin(this, n, k);
   }
-
-
 
   /*  Set ``result`` to the ``n`` th Fibonacci number.
 
@@ -2805,7 +2800,6 @@ module BigInteger {
   proc bigint.fib2(ref fnsub1: bigint, n: integral) {
     BigInteger.fib2(this, fnsub1, n);
   }
-
 
   @deprecated("lucnum is deprecated - please use :proc:`~BigInteger.lucNum` instead")
   proc lucnum(ref result: bigint, n: integral)
@@ -2885,8 +2879,6 @@ module BigInteger {
   @deprecated(notes="bigint.lucnum2 method is deprecated - please use the standalone function :proc:`~BigInteger.lucNum2`")
   proc bigint.lucnum2(ref fnsub1: bigint, n: integral)
     do BigInteger.lucNum2(this, fnsub1, n);
-
-
 
   // Bit operations
   proc bigint.popcount() : uint {
@@ -2984,8 +2976,6 @@ module BigInteger {
 
     return ret.safeCast(uint);
   }
-
-
 
   // Set/Clr bit
   @deprecated("bigint.setbit is deprecated - please use :proc:`bigint.setBit`")
@@ -3236,8 +3226,6 @@ module BigInteger {
     else
       return false;
   }
-
-
 
   //
   // 5.5 Arithmetic functions
@@ -3509,7 +3497,6 @@ module BigInteger {
     }
   }
 
-
   @deprecated(notes="bigint.addmul method is deprecated - please use the standalone function :proc:`~BigInteger.addmul`")
   proc bigint.addmul(const ref a: bigint, const ref b: bigint) {
     BigInteger.addmul(this, a, b);
@@ -3610,7 +3597,6 @@ module BigInteger {
   @deprecated(notes="mul_2exp is deprecated - please use :proc:`mul2Exp` instead")
   proc mul_2exp(ref result: bigint, const ref a: bigint, b: integral)
     do mul2Exp(result, a, b);
-
 
   /*
     Computes ``x*(2**exp)`` and stores the result in ``result``.
@@ -4047,6 +4033,7 @@ module BigInteger {
       }
     }
   }
+
   /* See :proc:`~BigInteger.divRem` */
   proc divRem(ref       result: bigint,
               ref       remain: bigint,
@@ -4589,8 +4576,6 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-
-
   proc bigint.cmpabs(const ref b: bigint) : int {
     var ret: c_int;
 
@@ -4655,8 +4640,6 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-
-
   proc bigint.sgn() : int {
     var ret: c_int;
 
@@ -4676,7 +4659,6 @@ module BigInteger {
 
     return ret.safeCast(int);
   }
-
 
   // Logical and Bit Manipulation Functions
   proc and(ref result: bigint, const ref a: bigint, const ref b: bigint) {
@@ -4745,7 +4727,6 @@ module BigInteger {
     BigInteger.xor(this, a, b);
   }
 
-
   proc com(ref result: bigint, const ref a: bigint) {
     if compiledForSingleLocale() {
       mpz_com(result.mpz, a.mpz);
@@ -4765,8 +4746,6 @@ module BigInteger {
   proc bigint.com(const ref a: bigint) {
     BigInteger.com(this, a);
   }
-
-
 
   // Assignment functions
   proc bigint.set(const ref a: bigint) {
