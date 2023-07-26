@@ -123,12 +123,13 @@ module Errors {
 
     // This won't actually produce a deprecation message. It's here for documentation purposes only.
     pragma "last resort"
-    @deprecated(notes="`new IllegalArgumentError(info=)` is deprecated; please use the initializer that takes a formal `msg` instead.")
     proc init(info: string) {
+      compilerWarning("`new IllegalArgumentError(info=)` is deprecated; please use the initializer that takes a formal `msg` instead.");
       super.init(info);
     }
 
     proc init(formal: string, info: string) {
+      compilerWarning("IllegalArgumentError's two-argument initializer is deprecated; please use the single-arg initializer instead.");
       var msg = "illegal argument '" + formal + "': " + info;
       super.init(msg);
     }
