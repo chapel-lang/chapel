@@ -163,18 +163,18 @@ module ChapelDomain {
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
    where isSubtype(dom._value.type, BaseRectangularDom) {
-    return chpl__buildDomainRuntimeType(dom.dist, dom._value.rank,
+    return chpl__buildDomainRuntimeType(dom.distribution, dom._value.rank,
                                       dom._value.idxType, dom._value.strides);
   }
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
    where isSubtype(dom._value.type, BaseAssociativeDom) {
-    return chpl__buildDomainRuntimeType(dom.dist, dom._value.idxType, dom._value.parSafe);
+    return chpl__buildDomainRuntimeType(dom.distribution, dom._value.idxType, dom._value.parSafe);
   }
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
    where isSubtype(dom._value.type, BaseSparseDom) {
-    return chpl__buildSparseDomainRuntimeType(dom.dist, dom._value.parentDom);
+    return chpl__buildSparseDomainRuntimeType(dom.distribution, dom._value.parentDom);
   }
 
   proc chpl__convertValueToRuntimeType(dom: domain) type {
@@ -349,7 +349,7 @@ module ChapelDomain {
     for param i in 0..dom.rank-1 do
       ranges(i) = ranges(i) # counts(i);
 
-    return new _domain(dom.dist, dom.rank, dom.idxType, dom.strides, ranges);
+    return new _domain(dom.distribution, dom.rank, dom.idxType, dom.strides, ranges);
   }
 
   @chpldoc.nodoc
@@ -808,7 +808,7 @@ module ChapelDomain {
     var t = _makeIndexTuple(a.rank, b, "step", expand=true);
     for param i in 0..a.rank-1 do
       r(i) = a.dim(i) by t(i);
-    return new _domain(a.dist, a.rank, a._value.idxType, newStrides, r);
+    return new _domain(a.distribution, a.rank, a._value.idxType, newStrides, r);
   }
 
   @chpldoc.nodoc
@@ -818,7 +818,7 @@ module ChapelDomain {
     var r: a.rank*range(a._value.idxType, boundKind.both, newStrides);
     for param i in 0..a.rank-1 do
       r(i) = a.dim(i) by b;
-    return new _domain(a.dist, a.rank, a._value.idxType, newStrides, r);
+    return new _domain(a.distribution, a.rank, a._value.idxType, newStrides, r);
   }
 
   // This is the definition of the 'align' operator for domains.
@@ -831,13 +831,13 @@ module ChapelDomain {
     var t = _makeIndexTuple(a.rank, b, "alignment", expand=true);
     for param i in 0..a.rank-1 do
       r(i) = a.dim(i) align t(i);
-    return new _domain(a.dist, a.rank, a._value.idxType, a.strides, r);
+    return new _domain(a.distribution, a.rank, a._value.idxType, a.strides, r);
   }
 
   // This function exists to avoid communication from computing _value when
   // the result is param.
   proc domainDistIsLayout(d: domain) param {
-    return d.dist._value.dsiIsLayout();
+    return d.distribution._value.dsiIsLayout();
   }
 
   pragma "find user line"
@@ -1084,15 +1084,15 @@ module ChapelDomain {
     // handle the type of 'other'. That case is currently managed by the
     // compiler and various helper functions involving runtime types.
     proc init=(const ref other : domain) where other.isRectangular() {
-      this.init(other.dist, other.rank, other.idxType, other.strides,
+      this.init(other.distribution, other.rank, other.idxType, other.strides,
                 other.dims());
     }
 
     proc init=(const ref other : domain) {
       if other.isAssociative() {
-        this.init(other.dist, other.idxType, other.parSafe);
+        this.init(other.distribution, other.idxType, other.parSafe);
       } else if other.isSparse() {
-        this.init(other.dist, other.parentDom);
+        this.init(other.distribution, other.parentDom);
       } else {
         compilerError("cannot initialize '", this.type:string, "' from '", other.type:string, "'");
         this.init(nil);
@@ -1302,7 +1302,7 @@ module ChapelDomain {
       for param i in 0..rank-1 {
         r(i) = myDims(i)[ranges(i)];
       }
-      return new _domain(dist, rank, _value.idxType, r(0).strides, r);
+      return new _domain(distribution, rank, _value.idxType, r(0).strides, r);
     }
 
     // domain rank change
@@ -1346,8 +1346,8 @@ module ChapelDomain {
           upranges(d) = emptyrange;
       }
 
-      const rcdist = new unmanaged ArrayViewRankChangeDist(downDistPid=dist._pid,
-                                                 downDistInst=dist._instance,
+      const rcdist = new unmanaged ArrayViewRankChangeDist(downDistPid=distribution._pid,
+                                                 downDistInst=distribution._instance,
                                                  collapsedDim=collapsedDim,
                                                  idx = idx);
       // TODO: Should this be set?
@@ -2311,7 +2311,7 @@ module ChapelDomain {
         }
       }
 
-      return new _domain(dist, rank, _value.idxType, strides, ranges);
+      return new _domain(distribution, rank, _value.idxType, strides, ranges);
     }
 
     /* Return a new domain that is the current domain expanded by
@@ -2326,7 +2326,7 @@ module ChapelDomain {
       var ranges = dims();
       for i in 0..rank-1 do
         ranges(i) = dim(i).expand(off);
-      return new _domain(dist, rank, _value.idxType, strides, ranges);
+      return new _domain(distribution, rank, _value.idxType, strides, ranges);
     }
 
     @chpldoc.nodoc
@@ -2358,7 +2358,7 @@ module ChapelDomain {
       var ranges = dims();
       for i in 0..rank-1 do
         ranges(i) = dim(i).exterior(off(i));
-      return new _domain(dist, rank, _value.idxType, strides, ranges);
+      return new _domain(distribution, rank, _value.idxType, strides, ranges);
     }
 
     /* Return a new domain that is the exterior portion of the
@@ -2413,7 +2413,7 @@ module ChapelDomain {
         }
         ranges(i) = _value.dsiDim(i).interior(off(i));
       }
-      return new _domain(dist, rank, _value.idxType, strides, ranges);
+      return new _domain(distribution, rank, _value.idxType, strides, ranges);
     }
 
     /* Return a new domain that is the interior portion of the
@@ -2467,7 +2467,7 @@ module ChapelDomain {
       var ranges = dims();
       for i in 0..rank-1 do
         ranges(i) = _value.dsiDim(i).translate(off(i));
-      return new _domain(dist, rank, _value.idxType, strides, ranges);
+      return new _domain(distribution, rank, _value.idxType, strides, ranges);
     }
 
     /* Return a new domain that is the current domain translated by
@@ -2498,7 +2498,7 @@ module ChapelDomain {
       var ranges = dims();
       for i in 0..rank-1 do
         ranges(i) = dim(i).chpl__unTranslate(off(i));
-      return new _domain(dist, rank, _value.idxType, strides, ranges);
+      return new _domain(distribution, rank, _value.idxType, strides, ranges);
     }
 
     @chpldoc.nodoc

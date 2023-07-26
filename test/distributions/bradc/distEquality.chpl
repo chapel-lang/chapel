@@ -80,7 +80,7 @@ writeln(BC3.distribution == BC4.distribution);
 writeln(BC4.distribution == BC4.distribution);
 
 writeln(BC1.distribution == (Space dmapped BlockCyclic(startIdx=Space.low,
-                                          blocksize=(2,3))).dist);
+                                          blocksize=(2,3))).distribution);
 
 writeln();
 
