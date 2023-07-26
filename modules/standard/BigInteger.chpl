@@ -1541,7 +1541,6 @@ module BigInteger {
 
   // divisible_p
   // documented in uint version
-  @chpldoc.nodoc
   proc bigint.isDivisible(const ref div: bigint) : bool {
     const t_ = this.localize();
     const div_ = div.localize();
@@ -1556,7 +1555,6 @@ module BigInteger {
   }
 
   // documented in uint version
-  @chpldoc.nodoc
   proc bigint.isDivisible(div: int) : bool {
     const t_ = this.localize();
     var div_ = 0 : c_ulong;
@@ -1633,7 +1631,6 @@ module BigInteger {
   }
 
   // congruent_p
-  @chpldoc.nodoc
   proc bigint.isCongruent(const ref con: bigint, const ref mod: bigint) : bool {
     const t_ = this.localize();
     const con_ = con.localize();
@@ -3871,6 +3868,7 @@ module BigInteger {
                              denom: integral,
                    param     rounding = round.zero)
     do BigInteger.rem(this, numer, denom, chpl_roundToRoundingMode(rounding));
+
   @deprecated(notes="bigint.divR method is deprecated - please use the standalone function :proc:`~BigInteger.rem` with :enum:`roundingMode` instead")
   proc bigint.divR(const ref numer: bigint,
                    const ref denom: bigint,
@@ -3904,6 +3902,7 @@ module BigInteger {
             denom: integral,
             param rounding = round.zero)
     do BigInteger.rem(result, numer, denom, chpl_roundToRoundingMode(rounding));
+
   @deprecated("divR is deprecated - please use :proc:`rem` with :enum:`roundingMode` instead")
   proc divR(ref result: bigint,
             const ref numer: bigint,
@@ -4137,6 +4136,7 @@ module BigInteger {
                               denom: integral,
                     param     rounding = round.zero)
     do BigInteger.divRem(this, remain, numer, denom, chpl_roundToRoundingMode(rounding));
+
   @deprecated(notes="bigint.divQR method is deprecated - please use the standalone function :proc:`~BigInteger.divRem` with :enum:`roundingMode` instead")
   proc bigint.divQR(ref       remain: bigint,
                     const ref numer: bigint,
@@ -4339,7 +4339,6 @@ module BigInteger {
                        param     rounding = round.zero)
     do BigInteger.rem2Exp(this, numer, exp, chpl_roundToRoundingMode(rounding));
 
-
   /* Stores ``x`` shifted left by ``n`` bits in ``result``. Negative ``n`` will
      result in a right shift.
 
@@ -4359,6 +4358,7 @@ module BigInteger {
       else BigInteger.div2Exp(result, x, (0 - n):uint, roundingMode.down);
 
   }
+
   /* Stores ``x`` shifted right by ``n`` bits in ``result``. Negative ``n`` will
      result in a left shift.
 
@@ -4377,7 +4377,6 @@ module BigInteger {
       then BigInteger.div2Exp(result, x, n, roundingMode.down);
       else BigInteger.mul2Exp(result, x, (0 - n):uint);
   }
-
 
   /* Computes the mod operator on the two arguments, defined as
      ``mod(a, b) = a - b * floor(a / b)``.
