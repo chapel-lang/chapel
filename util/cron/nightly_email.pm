@@ -51,6 +51,7 @@ ensureSummaryExists($prevsummary);
 $passed=0;
 if ($status == 2) {
   $status = 0;
+  $passed = 0;
 }
 
 if ($status == 0) {
@@ -118,11 +119,11 @@ if ($status == 0) {
 
 if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0 && $newpassingsuppress == 0) {
     print "Mailing to minimal group\n";
-    $passed = 0;
+    #$passed = 0;
     $recipient = $nochangerecipient;
 
 } else {
-    $passed = 1;
+    #$passed = 1;
     print "Mailing to everyone\n";
 }
 
