@@ -29,10 +29,10 @@ submul(a, b, c);                      // a =   668
 submul(a, b, 4);                      // a =   660
 writeln(a);
 
-mul_2exp(a, c, 3);                    // a = -1600
+mul2Exp(a, c, 3);                    // a = -1600
 writeln(a);
 
-divQ2Exp(a, a, 3);                    //a =   -200
+div2Exp(a, a, 3);                    //a =   -200
 writeln(a);
 
 neg(a, b);                            // a =    -2
