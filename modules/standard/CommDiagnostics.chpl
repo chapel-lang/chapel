@@ -319,7 +319,7 @@ module CommDiagnostics
 
       var first = true;
       c.write("(");
-      for param i in 0..<numFields(chpl_commDiagnostics) {
+      for param i in 0..<getNumFields(chpl_commDiagnostics) {
         param name = getFieldName(chpl_commDiagnostics, i);
         const val = getField(this, i);
         if val != 0 {

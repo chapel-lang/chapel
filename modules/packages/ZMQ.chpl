@@ -942,7 +942,7 @@ module ZMQ {
                                                      (!isBytes(T))) {
       on classRef.home {
         var copy = data;
-        param N = numFields(T);
+        param N = getNumFields(T);
         for param i in 0..<(N-1) do
           try send(getField(copy,i), ZMQ_SNDMORE | flags);
 
@@ -1045,7 +1045,7 @@ module ZMQ {
       var ret: T;
       on classRef.home {
         var data: T;
-        for param i in 0..<numFields(T) do
+        for param i in 0..<getNumFields(T) do
           getFieldRef(data,i) = try recv(getField(data,i).type);
         ret = data;
       }

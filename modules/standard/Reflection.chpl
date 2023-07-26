@@ -23,18 +23,8 @@
    Functions for reflecting about language elements, such as fields,
    functions, and methods.
 
-   .. note ::
-
-     There are several ways in which this module could be improved:
-
-       * the methods here might be better as type methods,
-         so you could use `R.numFields()` instead of `numFields(R)`.
-       * :proc:`getField` does not yet return a mutable value.
-
-   .. note ::
-
-     For reflecting about aspects of the compilation process, see
-     :mod:`ChplConfig`.
+   For reflecting about aspects of the compilation process, see
+   :mod:`ChplConfig`.
 */
 module Reflection {
 
@@ -68,7 +58,7 @@ proc getNumFields(type t) param : int do
 proc numFields(type t) param : int do return getNumFields(t);
 
 /* Get the name of the field at `idx` in a class or record.
-   Causes a compilation error if `idx` is not in 0..<numFields(t).
+   Causes a compilation error if `idx` is not in 0..<getNumFields(t).
 
    :arg t: a class or record type
    :arg idx: which field to get the name of
@@ -81,14 +71,14 @@ proc getFieldName(type t, param idx:int) param : string do
 // over the const ref one.
 /* Get the field at `idx` in a class or record. When the field at `idx`
    is a `param`, this overload will be chosen to return a `param`.
-   Causes a compilation error if `idx` is not in 0..<numFields(t).
+   Causes a compilation error if `idx` is not in 0..<getNumFields(t).
 
    :arg obj: a class or record
    :arg idx: which field to get
    :returns: the `param` that field represents
 */
 proc getField(const ref obj:?t, param idx: int) param
-  where idx >= 0 && idx < numFields(t) &&
+  where idx >= 0 && idx < getNumFields(t) &&
         isParam(__primitive("field by num", obj, idx+1)) {
 
   return __primitive("field by num", obj, idx+1);
@@ -98,20 +88,20 @@ proc getField(const ref obj:?t, param idx: int) param
 // over the const ref one.
 /* Get the field at `idx` in a class or record. When the field at `idx`
    is a `type` variable, this overload will be chosen to return a type.
-   Causes a compilation error if `idx` is not in 0..<numFields(t).
+   Causes a compilation error if `idx` is not in 0..<getNumFields(t).
 
    :arg obj: a class or record
    :arg idx: which field to get
    :returns: the type that field represents
 */
 proc getField(const ref obj:?t, param idx: int) type
-  where idx >= 0 && idx < numFields(t) &&
+  where idx >= 0 && idx < getNumFields(t) &&
         isType(__primitive("field by num", obj, idx+1)) {
   return __primitive("field by num", obj, idx+1);
 }
 
 /* Get the field at `idx` in a class or record.
-   Causes a compilation error if `idx` is not in 0..<numFields(t).
+   Causes a compilation error if `idx` is not in 0..<getNumFields(t).
 
    :arg obj: a class or record
    :arg idx: which field to get
@@ -206,7 +196,7 @@ proc getImplementationField(const ref x:?t, param i:int) const ref {
 }
 
 /* Get a mutable ref to the ith field in a class or record.
-   Causes a compilation error if `i` is not in 0..<numFields(t)
+   Causes a compilation error if `i` is not in 0..<getNumFields(t)
    or if the argument is not mutable.
 
    :arg x: a class or record
