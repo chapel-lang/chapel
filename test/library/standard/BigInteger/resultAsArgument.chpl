@@ -441,25 +441,25 @@ use BigInteger;
   writeln(b);
 }
 {
-  write("ior ");
+  write("or ");
   var a = new bigint(5);
   var b = new bigint(6);
-  ior(a, a, b);
+  or(a, a, b);
   writeln(a);
 }
 {
-  write("ior ");
+  write("or ");
   var a = new bigint(5);
   var b = new bigint(6);
-  ior(b, a, b);
+  or(b, a, b);
   writeln(b);
 }
 {
   // test the swap behavior where op2 has more limbs than op1
-  write("ior ");
+  write("or ");
   var a = new bigint(10);
   var b = new bigint("1267650600228229401496703205376"); // 2**100
-  ior(a, a, b);
+  or(a, a, b);
   writeln(a);
 }
 {

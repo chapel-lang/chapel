@@ -9,7 +9,7 @@ and(a, a, b); // 8 & 40 = 8
 writeln(a);
 
 b.set(2);
-ior(b, a, b);  // 8 | 2 = 10
+or(b, a, b);  // 8 | 2 = 10
 writeln(b);
 
 a.set(6);
@@ -21,16 +21,16 @@ com(a, a); // one's complement of 129, aka bitwise negation
 writeln(a);
 
 a.set(13);
-writeln(a, " has ", a.popcount(), " bits set");
+writeln(a, " has ", a.popCount(), " bits set");
 
 b.set(7);
 writeln("hamming distance between ", a, " and ", b, " is ", a.hammingDistance(b));
 
 a.set(79);
-writeln(a, "'s first 0 bit is in position ", a.scan0(0));
+writeln(a, "'s first 0 bit is in position ", a.findNext0(0));
 
 a.set(96);
-writeln(a, "'s first 1 bit is in position ", a.scan1(0));
+writeln(a, "'s first 1 bit is in position ", a.findNext1(0));
 
 a.setBit(2);  // set bit 2 (if not set, adds 2^2)
 writeln(a);

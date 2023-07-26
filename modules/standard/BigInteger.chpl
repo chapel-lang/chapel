@@ -1032,16 +1032,12 @@ module BigInteger {
     return c;
   }
 
-
-
-  // Bitwise ior
+  // Bitwise or
   operator bigint.|(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
-    BigInteger.ior(c, a, b);
+    BigInteger.or(c, a, b);
     return c;
   }
-
-
 
   // Bitwise xor
   operator bigint.^(const ref a: bigint, const ref b: bigint): bigint {
@@ -1049,8 +1045,6 @@ module BigInteger {
     BigInteger.xor(c, a, b);
     return c;
   }
-
-
 
   //
   // Comparison Operations

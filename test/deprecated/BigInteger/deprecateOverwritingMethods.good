@@ -59,7 +59,7 @@ deprecateOverwritingMethods.chpl:n: warning: bigint.divR2Exp method is deprecate
 deprecateOverwritingMethods.chpl:n: warning: bigint.mod method is deprecated - please use the standalone function mod
 deprecateOverwritingMethods.chpl:n: warning: bigint.mod method is deprecated - please use the standalone function mod
 deprecateOverwritingMethods.chpl:n: warning: bigint.and method is deprecated - please use the standalone function and
-deprecateOverwritingMethods.chpl:n: warning: bigint.ior method is deprecated - please use the standalone function ior
+deprecateOverwritingMethods.chpl:n: warning: bigint.ior method is deprecated - please use the standalone function or
 deprecateOverwritingMethods.chpl:n: warning: bigint.xor method is deprecated - please use the standalone function xor
 deprecateOverwritingMethods.chpl:n: warning: bigint.com method is deprecated - please use the standalone function com
 
