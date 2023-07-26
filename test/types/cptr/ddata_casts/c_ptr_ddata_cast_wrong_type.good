@@ -1,1 +1,0 @@
-c_ptr_ddata_cast_wrong_type.chpl:7: error: illegal cast from c_ptr(int) to _ddata(real)
