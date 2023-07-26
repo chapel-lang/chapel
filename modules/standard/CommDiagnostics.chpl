@@ -474,7 +474,7 @@ module CommDiagnostics
     var CommDiags = getCommDiagnostics();
 
     // cache number of fields and store vector of whether field is active
-    param nFields = numFields(chpl_commDiagnostics);
+    param nFields = getNumFields(chpl_commDiagnostics);
 
     // How wide should the column be for this field?  A negative value
     // indicates an unstable field.  0 indicates that the field should
