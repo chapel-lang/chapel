@@ -1,5 +1,5 @@
 .\" -*- nroff -*-
-.\" Copyright © 2010-2018 Inria.  All rights reserved.
+.\" Copyright © 2010-2020 Inria.  All rights reserved.
 .\" Copyright © 2010 Université of Bordeaux
 .\" Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
 .\" See COPYING in top-level directory.
@@ -29,8 +29,8 @@ man page and other hwloc documentation.
 A set of processors included in an hwloc object, expressed as a bitmask
 indexed by the physical numbers of the CPUs (as announced by the OS).
 The hwloc definition
-of "CPU set" does not carry any the same connotations as Linux's "CPU
-set" (e.g., process affinity, etc.).
+of "CPU set" does not carry any of the same connotations as Linux's "CPU
+set" (e.g., process affinity, cgroup, etc.).
 .
 .TP
 .B hwloc node set:
@@ -122,6 +122,12 @@ For example, "\fBpci=02:03.1\fR" is the PCI device with bus ID "02:03.1".
 .
 "\fBos=eth0\fR" is the network interface whose software name is "eth0".
 .
+PCI devices may also be filtered based on their vendor and/or device IDs,
+for instance "\fBpci[15b3:]:2\fR" for the third Mellanox PCI device (vendor ID 0x15b3).
+.
+OS devices may also be filtered based on their subtype,
+for instance "\fBos[gpu]:all\fR" for all GPU OS devices.
+.
 .TP
 .B Hex:
 For tools that manipulate object as sets (e.g. hwloc-calc and hwloc-bind),
@@ -160,9 +166,9 @@ these tools will operation on each location individually and consecutively.
 .PP
 Some other tools internally manipulate objects as sets (e.g. hwloc-calc and hwloc-bind).
 They translate each input location into a hexidecimal location.
-When I/O objects are used, they are translated into the set
+When I/O or Misc objects are used, they are translated into the set
 of processors (or NUMA nodes) that are close to the given object
-(because I/O objects do not contain processors or NUMA nodes).
+(because I/O or Misc objects do not contain processors or NUMA nodes).
 .
 .PP
 If multiple locations are specified on the command-line (delimited by whitespace),
@@ -204,10 +210,12 @@ Typically a physical package or chip, that goes into a package,
 it is a grouping of one or more processors.
 .
 .TP
-.B cache
-A cache memory. If several kinds of caches exist in the system,
-a specific one may be identified by its level (e.g. \fBl1cache\fR)
-and optionally by its type (e.g. \fBl1icache\fR).
+.B l1cache ... l5cache
+A data (or unified) cache.
+.
+.TP
+.B l1icache ... l3icache
+An instruction cache.
 .
 .TP
 .B core
@@ -224,12 +232,7 @@ The smallest physical execution unit that hwloc recognizes.  For
 example, there may be multiple PUs on a core (e.g.,
 hardware threads).
 .PP
-The additional
-.B system
-type can be used when several machines form an overall single system image
-(SSI), such as Kerrighed.
-.PP
-\fBosdev\fR, \fBpcidev\fR, and \fBbridge\fR may also be used
+\fBosdev\fR, \fBpcidev\fR, \fBbridge\fR, and \fBmisc\fR may also be used
 to specify special devices although some of them have dedicated identification
 ways as explained in \fBLocation Specification\fR.
 .

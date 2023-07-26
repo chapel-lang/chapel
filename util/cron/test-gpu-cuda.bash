@@ -9,6 +9,7 @@ module load cudatoolkit
 
 export CHPL_GPU=nvidia
 export CHPL_COMM=none
+export CHPL_LAUNCHER_PARTITION=stormP100
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-cuda"
 $CWD/nightly -cron ${nightly_args}

@@ -1,14 +1,13 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2019 Inria.  All rights reserved.
+ * Copyright © 2009-2021 Inria.  All rights reserved.
  * Copyright © 2009-2010 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
-#include <private/private.h>
-#include <hwloc.h>
-
+#include "private/autogen/config.h"
+#include "hwloc.h"
 #include "misc.h"
 
 #ifdef HAVE_UNISTD_H
@@ -25,8 +24,10 @@ void usage(const char *callname __hwloc_attribute_unused, FILE *where)
   fprintf(where, "  --at <type>      Distribute among objects of the given type\n");
   fprintf(where, "  --reverse        Distribute by starting from last objects\n");
   fprintf(where, "Input topology options:\n");
-  fprintf(where, "  --restrict <set> Restrict the topology to processors listed in <set>\n");
-  fprintf(where, "  --whole-system   Do not consider administration limitations\n");
+  fprintf(where, "  --restrict [nodeset=]<bitmap>\n");
+  fprintf(where, "                   Restrict the topology to some processors or NUMA nodes.\n");
+  fprintf(where, "  --restrict-flags <n>  Set the flags to be used during restrict\n");
+  fprintf(where, "  --disallowed     Include objects disallowed by administrative limitations\n");
   hwloc_utils_input_format_usage(where, 0);
   fprintf(where, "Formatting options:\n");
   fprintf(where, "  --single         Singlify each output to a single CPU\n");
@@ -34,6 +35,7 @@ void usage(const char *callname __hwloc_attribute_unused, FILE *where)
   fprintf(where, "Miscellaneous options:\n");
   fprintf(where, "  -v --verbose     Show verbose messages\n");
   fprintf(where, "  --version        Report version and exit\n");
+  fprintf(where, "  -h --help        Show this usage\n");
 }
 
 int main(int argc, char *argv[])
@@ -46,23 +48,33 @@ int main(int argc, char *argv[])
   int singlify = 0;
   int verbose = 0;
   char *restrictstring = NULL;
-  hwloc_obj_type_t from_type = (hwloc_obj_type_t) -1, to_type = (hwloc_obj_type_t) -1;
+  const char *from_type = NULL, *to_type = NULL;
   hwloc_topology_t topology;
-  unsigned long flags = 0;
+  unsigned long flags = HWLOC_TOPOLOGY_FLAG_IMPORT_SUPPORT;
+  unsigned long restrict_flags = 0;
   unsigned long dflags = 0;
   int opt;
   int err;
 
-  /* enable verbose backends */
-  putenv((char *) "HWLOC_XML_VERBOSE=1");
-  putenv((char *) "HWLOC_SYNTHETIC_VERBOSE=1");
+  callname = strrchr(argv[0], '/');
+  if (!callname)
+    callname = argv[0];
+  else
+    callname++;
 
-  hwloc_topology_init(&topology);
-
-  callname = argv[0];
   /* skip argv[0], handle options */
   argv++;
   argc--;
+
+  hwloc_utils_check_api_version(callname);
+
+  /* enable verbose backends */
+  if (!getenv("HWLOC_XML_VERBOSE"))
+    putenv((char *) "HWLOC_XML_VERBOSE=1");
+  if (!getenv("HWLOC_SYNTHETIC_VERBOSE"))
+    putenv((char *) "HWLOC_SYNTHETIC_VERBOSE=1");
+
+  hwloc_topology_init(&topology);
 
   while (argc >= 1) {
     if (!strcmp(argv[0], "--")) {
@@ -70,6 +82,8 @@ int main(int argc, char *argv[])
       argv++;
       break;
     }
+
+    opt = 0;
 
     if (*argv[0] == '-') {
       if (!strcmp(argv[0], "--single")) {
@@ -84,67 +98,58 @@ int main(int argc, char *argv[])
 	verbose = 1;
 	goto next;
       }
-      if (!strcmp (argv[0], "--whole-system")) {
-	flags |= HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM;
+      if (!strcmp (argv[0], "--disallowed") || !strcmp (argv[0], "--whole-system")) {
+	flags |= HWLOC_TOPOLOGY_FLAG_INCLUDE_DISALLOWED;
 	goto next;
       }
-      if (!strcmp(argv[0], "--help")) {
+      if (!strcmp(argv[0], "-h") || !strcmp(argv[0], "--help")) {
 	usage(callname, stdout);
 	return EXIT_SUCCESS;
       }
       if (hwloc_utils_lookup_input_option(argv, argc, &opt,
 					  &input, &input_format,
 					  callname)) {
-	argv += opt;
-	argc -= opt;
+	opt = 1;
 	goto next;
       }
       else if (!strcmp (argv[0], "--ignore")) {
 	hwloc_obj_type_t type;
 	if (argc < 2) {
-	  usage(callname, stdout);
+	  usage(callname, stderr);
 	  exit(EXIT_FAILURE);
 	}
-	if (hwloc_obj_type_sscanf(argv[1], &type, NULL, NULL, 0) < 0)
+	if (hwloc_type_sscanf(argv[1], &type, NULL, 0) < 0)
 	  fprintf(stderr, "Unsupported type `%s' passed to --ignore, ignoring.\n", argv[1]);
 	else
-	  hwloc_topology_ignore_type(topology, type);
-	argc--;
-	argv++;
+	  hwloc_topology_set_type_filter(topology, type, HWLOC_TYPE_FILTER_KEEP_NONE);
+	opt = 1;
 	goto next;
       }
       else if (!strcmp (argv[0], "--from")) {
 	if (argc < 2) {
-	  usage(callname, stdout);
+	  usage(callname, stderr);
 	  exit(EXIT_FAILURE);
 	}
-	if (hwloc_obj_type_sscanf(argv[1], &from_type, NULL, NULL, 0) < 0)
-	  fprintf(stderr, "Unsupported type `%s' passed to --from, ignoring.\n", argv[1]);
-	argc--;
-	argv++;
+	from_type = argv[1];
+	opt = 1;
 	goto next;
       }
       else if (!strcmp (argv[0], "--to")) {
 	if (argc < 2) {
-	  usage(callname, stdout);
+	  usage(callname, stderr);
 	  exit(EXIT_FAILURE);
 	}
-	if (hwloc_obj_type_sscanf(argv[1], &to_type, NULL, NULL, 0) < 0)
-	  fprintf(stderr, "Unsupported type `%s' passed to --to, ignoring.\n", argv[1]);
-	argc--;
-	argv++;
+	to_type = argv[1];
+	opt = 1;
 	goto next;
       }
       else if (!strcmp (argv[0], "--at")) {
 	if (argc < 2) {
-	  usage(callname, stdout);
+	  usage(callname, stderr);
 	  exit(EXIT_FAILURE);
 	}
-	if (hwloc_obj_type_sscanf(argv[1], &to_type, NULL, NULL, 0) < 0)
-	  fprintf(stderr, "Unsupported type `%s' passed to --at, ignoring.\n", argv[1]);
-	from_type = to_type;
-	argc--;
-	argv++;
+	from_type = to_type = argv[1];
+	opt = 1;
 	goto next;
       }
       else if (!strcmp (argv[0], "--reverse")) {
@@ -153,12 +158,25 @@ int main(int argc, char *argv[])
       }
       else if (!strcmp (argv[0], "--restrict")) {
 	if (argc < 2) {
-	  usage (callname, stdout);
+	  usage (callname, stderr);
 	  exit(EXIT_FAILURE);
 	}
-	restrictstring = strdup(argv[1]);
-	argc--;
-	argv++;
+        if(strncmp(argv[1], "nodeset=", 8)) {
+          restrictstring = strdup(argv[1]);
+        } else {
+          restrictstring = strdup(argv[1]+8);
+          restrict_flags |= HWLOC_RESTRICT_FLAG_BYNODESET;
+        }
+	opt = 1;
+	goto next;
+      }
+      else if (!strcmp (argv[0], "--restrict-flags")) {
+	if (argc < 2) {
+	  usage (callname, stderr);
+	  exit(EXIT_FAILURE);
+        }
+	restrict_flags = hwloc_utils_parse_restrict_flags(argv[1]);
+        opt = 1;
 	goto next;
       }
       else if (!strcmp (argv[0], "--version")) {
@@ -179,8 +197,8 @@ int main(int argc, char *argv[])
     n = atol(argv[0]);
 
   next:
-    argc--;
-    argv++;
+    argc -= opt+1;
+    argv += opt+1;
   }
 
   if (n == -1) {
@@ -201,10 +219,10 @@ int main(int argc, char *argv[])
     cpuset = malloc(n * sizeof(hwloc_bitmap_t));
 
     if (input) {
-      err = hwloc_utils_enable_input_format(topology, input, &input_format, verbose, callname);
+      err = hwloc_utils_enable_input_format(topology, flags, input, &input_format, verbose, callname);
       if (err) {
 	free(cpuset);
-	return err;
+	return EXIT_FAILURE;
       }
     }
     hwloc_topology_set_flags(topology, flags);
@@ -217,7 +235,7 @@ int main(int argc, char *argv[])
     if (restrictstring) {
       hwloc_bitmap_t restrictset = hwloc_bitmap_alloc();
       hwloc_bitmap_sscanf(restrictset, restrictstring);
-      err = hwloc_topology_restrict (topology, restrictset, 0);
+      err = hwloc_topology_restrict (topology, restrictset, restrict_flags);
       if (err) {
 	perror("Restricting the topology");
 	/* FALLTHRU */
@@ -226,29 +244,19 @@ int main(int argc, char *argv[])
       free(restrictstring);
     }
 
-    if (from_type == (hwloc_obj_type_t) -1) {
-      from_depth = 0;
-    } else {
-      from_depth = hwloc_get_type_depth(topology, from_type);
-      if (from_depth == HWLOC_TYPE_DEPTH_UNKNOWN) {
-	fprintf(stderr, "unavailable type %s to distribute among, ignoring\n", hwloc_obj_type_string(from_type));
-	from_depth = 0;
-      } else if (from_depth == HWLOC_TYPE_DEPTH_MULTIPLE) {
-	fprintf(stderr, "multiple depth for type %s to distribute among, ignoring\n", hwloc_obj_type_string(from_type));
-	from_depth = 0;
+    from_depth = 0;
+    if (from_type) {
+      if (hwloc_type_sscanf_as_depth(from_type, NULL, topology, &from_depth) < 0 || from_depth < 0) {
+	fprintf(stderr, "Unsupported or unavailable type `%s' passed to --from, ignoring.\n", from_type);
+	return EXIT_FAILURE;
       }
     }
 
-    if (to_type == (hwloc_obj_type_t) -1) {
-      to_depth = INT_MAX;
-    } else {
-      to_depth = hwloc_get_type_depth(topology, to_type);
-      if (to_depth == HWLOC_TYPE_DEPTH_UNKNOWN) {
-	fprintf(stderr, "unavailable type %s to distribute among, ignoring\n", hwloc_obj_type_string(to_type));
-	to_depth = INT_MAX;
-      } else if (to_depth == HWLOC_TYPE_DEPTH_MULTIPLE) {
-	fprintf(stderr, "multiple depth for type %s to distribute among, ignoring\n", hwloc_obj_type_string(to_type));
-	to_depth = INT_MAX;
+    to_depth = INT_MAX;
+    if (to_type) {
+      if (hwloc_type_sscanf_as_depth(to_type, NULL, topology, &to_depth) < 0 || to_depth < 0) {
+	fprintf(stderr, "Unsupported or unavailable type `%s' passed to --to, ignoring.\n", to_type);
+	return EXIT_FAILURE;
       }
     }
 

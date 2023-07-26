@@ -3,14 +3,7 @@ use ResultDB;
 use IO.FormattedIO;
 use GpuDiagnostics;
 
-proc verifyLaunches() {
-  use ChplConfig;
-  param expected = if CHPL_GPU_MEM_STRATEGY == "unified_memory"
-                      then 527 else 1049;
-  const actual = getGpuDiagnostics()[0].kernel_launch;
-  assert(actual == expected,
-         "observed ", actual, " launches instead of ", expected);
-}
+use GpuTestCommon;
 
 config const passes = 10;
 config const alpha = 1.75: real(32);
@@ -171,7 +164,7 @@ proc main(){
     }
     else {
       stopGpuDiagnostics();
-      verifyLaunches();
+      verifyGpuDiags(umLaunch=527, aodLaunch=1049);
     }
 }
 

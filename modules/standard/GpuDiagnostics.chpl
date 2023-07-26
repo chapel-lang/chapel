@@ -51,6 +51,9 @@ module GpuDiagnostics
   pragma "chpldoc ignore chpl prefix"
   extern record chpl_gpuDiagnostics {
     var kernel_launch: uint(64);
+    var host_to_device: uint(64);
+    var device_to_host: uint(64);
+    var device_to_device: uint(64);
   };
 
   /*

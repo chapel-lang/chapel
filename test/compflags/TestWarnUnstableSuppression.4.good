@@ -14,6 +14,9 @@ $CHPL_HOME/modules/internal/ChapelSyncvar.chpl:nnnn: warning: 'ChplConfig.CHPL_T
 $CHPL_HOME/modules/internal/ChapelSyncvar.chpl:nnnn: warning: 'ChplConfig.CHPL_TARGET_ARCH' is unstable and may be replaced with a different way to access this information in the future
 $CHPL_HOME/modules/internal/DefaultRectangular.chpl:nnnn: warning: the type 'dmap' is unstable, instead please use distribution factory functions when available
 $CHPL_HOME/modules/internal/DefaultRectangular.chpl:nnnn: warning: the type 'dmap' is unstable, instead please use distribution factory functions when available
+$CHPL_HOME/modules/internal/DefaultRectangular.chpl:nnnn: In function '_simpleTransfer':
+$CHPL_HOME/modules/internal/DefaultRectangular.chpl:nnnn: warning: 'ChplConfig.CHPL_LOCALE_MODEL' is unstable and may be replaced with a different way to access this information in the future
+$CHPL_HOME/modules/internal/DefaultRectangular.chpl:nnnn: warning: 'ChplConfig.CHPL_LOCALE_MODEL' is unstable and may be replaced with a different way to access this information in the future
 $CHPL_HOME/modules/internal/ChapelGpuSupport.chpl:nnnn: warning: 'ChplConfig.CHPL_LOCALE_MODEL' is unstable and may be replaced with a different way to access this information in the future
 $CHPL_HOME/modules/internal/ChapelHashtable.chpl:nnnn: In function '_allocateData':
 $CHPL_HOME/modules/internal/ChapelHashtable.chpl:nnnn: warning: 'ChplConfig.CHPL_LOCALE_MODEL' is unstable and may be replaced with a different way to access this information in the future

@@ -32,4 +32,8 @@ writeln(A);
 const nLaunch = getGpuDiagnostics().kernel_launch;
 
 assert(nLaunch == here.gpus.size);
-assert((+ reduce A) == n);
+// Reduction done "manually" due to this bug:
+// https://github.com/chapel-lang/chapel/issues/22736
+var AReduce = 0;
+for a in A do AReduce += a;
+assert(AReduce == n);
