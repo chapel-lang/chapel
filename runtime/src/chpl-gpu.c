@@ -37,6 +37,7 @@ int chpl_gpu_num_devices = -1;
 #include "chpl-linefile-support.h"
 #include "chpl-env-gen.h"
 #include "chpl-env.h"
+#include "chpl-comm-compiler-macros.h"
 
 void chpl_gpu_init(void) {
   chpl_gpu_impl_init(&chpl_gpu_num_devices);
@@ -167,6 +168,77 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
                  chpl_task_getRequestedSubloc(),
                  name);
 }
+
+extern void chpl_gpu_comm_on_put(c_sublocid_t dst_subloc, void *addr,
+                                 c_nodeid_t src_node, c_sublocid_t src_subloc,
+                                 void* raddr, size_t size);
+
+extern void chpl_gpu_comm_on_get(c_sublocid_t src_subloc, void* addr,
+                                 c_nodeid_t dst_node, c_sublocid_t dst_subloc,
+                                 void* raddr, size_t size);
+
+
+void chpl_gpu_comm_put(c_nodeid_t dst_node, c_sublocid_t dst_subloc, void *dst,
+                       c_sublocid_t src_subloc, void *src,
+                       size_t size, int32_t commID, int ln, int32_t fn)
+{
+  void* src_data = src;
+  c_sublocid_t src_data_subloc = src_subloc;
+  if (src_subloc >= 0) {
+    // source is on device, we can't pass device pointers to comm layer. We'll
+    // create a copy of the source on the local host.
+    src_data = chpl_malloc(size);
+    chpl_gpu_memcpy(c_sublocid_any, src_data, src_subloc, src, size, commID, ln, fn);
+    src_data_subloc = c_sublocid_any;
+  }
+
+  if (dst_subloc >= 0) {
+    // destination is on device, we can't write to remote GPU memory yet. So,
+    // we'll use on+get instead
+    chpl_gpu_comm_on_get(src_data_subloc, src_data, dst_node, dst_subloc, dst,
+                         size);
+  }
+  else {
+    // destination is on the host, we can do a direct put
+    chpl_gen_comm_put(src_data, dst_node, dst, size, commID, ln, fn);
+  }
+
+  if (src_subloc >= 0) {
+    chpl_free(src_data);
+  }
+}
+
+void chpl_gpu_comm_get(c_sublocid_t dst_subloc, void *dst,
+                       c_nodeid_t src_node, c_sublocid_t src_subloc, void *src,
+                       size_t size, int32_t commID, int ln, int32_t fn)
+{
+  void* dst_buff = dst;
+  c_sublocid_t dst_buff_subloc = dst_subloc;
+  if (dst_subloc >= 0) {
+    // destination is on device, we can't pass device pointers to comm layer.
+    // We'll create a buffer on the local host.
+    dst_buff = chpl_malloc(size);
+    dst_buff_subloc = c_sublocid_any;
+  }
+
+  if (src_subloc >= 0) {
+    // source is on device, we can't read from remote GPU memory yet. So,
+    // we'll use on+put instead
+    chpl_gpu_comm_on_put(dst_subloc, dst_buff, src_node, src_subloc, src,
+                         size);
+  }
+  else {
+    // source is on the host, we can do a direct put
+    chpl_gen_comm_get(dst_buff, src_node, src, size, commID, ln, fn);
+  }
+
+  if (dst_subloc >= 0) {
+    chpl_gpu_memcpy(dst_subloc, dst, c_sublocid_any, dst_buff, size,
+                    commID, ln, fn);
+    chpl_free(dst_buff);
+  }
+}
+
 
 void chpl_gpu_memcpy(c_sublocid_t dst_subloc, void* dst,
                      c_sublocid_t src_subloc, const void* src, size_t n,
