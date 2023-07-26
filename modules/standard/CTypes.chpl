@@ -601,6 +601,11 @@ module CTypes {
       where t.eltType == x.eltType || x.eltType == void {
     return __primitive("cast", t, x);
   }
+  // c_ptr(void) specific overload need for types that implicitly convert to it
+  @chpldoc.nodoc
+  inline operator :(x:c_ptr(void), type t:_ddata) {
+    return __primitive("cast", t, x);
+  }
   @chpldoc.nodoc
   inline operator :(x:_ddata, type t:c_ptr(void)) {
     return __primitive("cast", t, x);
