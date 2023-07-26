@@ -2031,32 +2031,50 @@ module BigInteger {
     return BigInteger.root(this, a, n);
   }
 
-  // root gets root, rem gets remainder.
-  proc rootrem(ref root: bigint, ref rem: bigint, const ref u: bigint, n: uint) {
+  /* Sets ``result`` to the truncated integer ``n`` th root of ``x``. Stores
+     the remainder in ``remain``.
+
+     :arg result: Where the result is stored
+     :type result: :record:`bigint`
+     :arg remain: Where the remainder is stored
+     :type remain: :record:`bigint`
+     :arg x: Number to take the root of
+     :type x: :record:`bigint`
+     :arg n: Which root to take
+     :type n: :type:`uint`
+
+     .. seealso::
+        :proc:`GMP.mpz_rootrem` and
+        `mpz_rootrem <https://gmplib.org/manual/Integer-Roots>`_.
+  */
+  proc rootRem(ref result: bigint, ref remain: bigint, const ref x: bigint, n: uint) {
     const n_  = n.safeCast(c_ulong);
 
     if compiledForSingleLocale() {
-      mpz_rootrem(root.mpz, rem.mpz, u.mpz, n_);
-    } else if root.localeId == chpl_nodeID {
-      var rem_: bigint;
-      const u_ = u;
-      mpz_rootrem(root.mpz, rem_.mpz, u_.mpz, n_);
-      rem = rem_;
+      mpz_rootrem(result.mpz, remain.mpz, x.mpz, n_);
+    } else if result.localeId == chpl_nodeID {
+      var remain_: bigint;
+      const x_ = x;
+      mpz_rootrem(result.mpz, remain_.mpz, x_.mpz, n_);
+      remain = remain_;
     } else {
-      const rootLoc = chpl_buildLocaleID(root.localeId, c_sublocid_any);
-      on __primitive("chpl_on_locale_num", rootLoc) {
-        var rem_: bigint;
-        const u_ = u;
-        mpz_rootrem(root.mpz, rem_.mpz, u_.mpz, n_);
-        rem = rem_;
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
+        var remain_: bigint;
+        const x_ = x;
+        mpz_rootrem(result.mpz, remain_.mpz, x_.mpz, n_);
+        remain = remain_;
       }
     }
   }
 
-  @deprecated(notes="bigint.rootrem method is deprecated - please use the standalone function :proc:`~BigInteger.rootrem`")
-  proc bigint.rootrem(ref rem: bigint, const ref u: bigint, n: uint) {
-    BigInteger.rootrem(this, rem, u, n);
-  }
+  @deprecated("rootrem is deprecated - please use :proc:`rootRem` instead")
+  proc rootrem(ref root: bigint, ref rem: bigint, const ref u: bigint, n: uint)
+    do BigInteger.rootRem(root, rem, u, n);
+
+  @deprecated(notes="bigint.rootrem method is deprecated - please use the standalone function :proc:`rootRem` instead")
+  proc bigint.rootrem(ref rem: bigint, const ref u: bigint, n: uint)
+    do BigInteger.rootRem(this, rem, u, n);
 
   proc sqrt(ref result: bigint, const ref a: bigint) {
     if compiledForSingleLocale() {
@@ -2078,30 +2096,50 @@ module BigInteger {
     BigInteger.sqrt(this, a);
   }
 
-  // this gets root, rem gets remainder of a-root*root.
-  proc sqrtrem(ref root: bigint, ref rem: bigint, const ref a: bigint) {
+  /* Sets ``result`` to the truncated integer square root of ``x``. Stores
+     the remainder in ``remain``.
+
+     .. warning::
+        If ``result`` is also passed as the ``remain`` argument, the program
+        behavior is undefined.
+
+     :arg result: Where the result is stored
+     :type result: :record:`bigint`
+     :arg remain: Where the remainder is stored
+     :type remain: :record:`bigint`
+     :arg x: Number to take the root of
+     :type x: :record:`bigint`
+
+     .. seealso::
+        :proc:`GMP.mpz_sqrtrem` and
+        `mpz_sqrtrem <https://gmplib.org/manual/Integer-Roots>`_.
+  */
+  proc sqrtRem(ref result: bigint, ref remain: bigint, const ref x: bigint) {
     if compiledForSingleLocale() {
-      mpz_sqrtrem(root.mpz, rem.mpz, a.mpz);
-    } else if root.localeId == chpl_nodeID {
-      var rem_ : bigint;
-      const a_ = a;
-      mpz_sqrtrem(root.mpz, rem_.mpz, a_.mpz);
-      rem = rem_;
+      mpz_sqrtrem(result.mpz, remain.mpz, x.mpz);
+    } else if result.localeId == chpl_nodeID {
+      var remain_ : bigint;
+      const x_ = x;
+      mpz_sqrtrem(result.mpz, remain_.mpz, x_.mpz);
+      remain = remain_;
     } else {
-      const rootLoc = chpl_buildLocaleID(root.localeId, c_sublocid_any);
-      on __primitive("chpl_on_locale_num", rootLoc) {
-        var rem_ : bigint;
-        const a_ = a;
-        mpz_sqrtrem(root.mpz, rem_.mpz, a_.mpz);
-        rem = rem_;
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
+        var remain_ : bigint;
+        const x_ = x;
+        mpz_sqrtrem(result.mpz, remain_.mpz, x_.mpz);
+        remain = remain_;
       }
     }
   }
 
-  @deprecated(notes="bigint.sqrtrem method is deprecated - please use the standalone function :proc:`~BigInteger.sqrtrem`")
-  proc bigint.sqrtrem(ref rem: bigint, const ref a: bigint) {
-    BigInteger.sqrtrem(this, rem, a);
-  }
+  @deprecated("sqrtrem is deprecated - please use :proc:`sqrtRem` instead")
+  proc sqrtrem(ref root: bigint, ref rem: bigint, const ref a: bigint)
+    do BigInteger.sqrtRem(root, rem, a);
+
+  @deprecated(notes="bigint.sqrtrem method is deprecated - please use the standalone function :proc:`sqrtRem` instead")
+  proc bigint.sqrtrem(ref rem: bigint, const ref a: bigint)
+    do BigInteger.sqrtRem(this, rem, a);
 
   /*
     .. warning::
