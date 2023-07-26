@@ -41,6 +41,7 @@ pragma "unsafe"
 module ChapelIteratorSupport {
   private use ChapelStandard;
   private use Reflection;
+  private use CTypes only c_ptr;
 
   //
   // module support for iterators
@@ -433,7 +434,7 @@ module ChapelIteratorSupport {
   }
 
   inline proc _freeIterator(ic: _iteratorClass) {
-    chpl_here_free(__primitive("cast_to_void_star", ic));
+    chpl_here_free(__primitive("cast", c_ptr(void), ic));
   }
 
   inline proc _freeIterator(x: _tuple) {
