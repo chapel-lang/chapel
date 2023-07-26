@@ -53,15 +53,43 @@ proc check(msg:c_string, type expect, type t) {
   printf(c"%s expect %s, found %s\n", msg, typeToCString(expect), typeToCString(t));
 }
 
-proc foo(x:int(?w), y:int(w)) {
-  return 0:int(w);
+proc foo(x:int(8), y:int(8)) {
+  return 0:int(8);
 }
-proc foo(param x:int(?w), param y:int(w)) param {
-  return 0:int(w);
+proc foo(x:int(16), y:int(16)) {
+  return 0:int(16);
+}
+proc foo(x:int(32), y:int(32)) {
+  return 0:int(32);
+}
+proc foo(x:int(64), y:int(64)) {
+  return 0:int(64);
 }
 
-proc bar(x:int(?w), y:int(w)) {
-  return 0:int(w);
+proc foo(param x:int(8), param y:int(8)) param {
+  return 0:int(8);
+}
+proc foo(param x:int(16), param y:int(16)) param {
+  return 0:int(16);
+}
+proc foo(param x:int(32), param y:int(32)) param {
+  return 0:int(32);
+}
+proc foo(param x:int(64), param y:int(64)) param {
+  return 0:int(64);
+}
+
+proc bar(x:int(8), y:int(8)) {
+  return 0:int(8);
+}
+proc bar(x:int(16), y:int(16)) {
+  return 0:int(16);
+}
+proc bar(x:int(32), y:int(32)) {
+  return 0:int(32);
+}
+proc bar(x:int(64), y:int(64)) {
+  return 0:int(64);
 }
 
 proc baz(x:uint, y:int) {
@@ -79,13 +107,31 @@ proc boo(x:int(32)) {
   return 0:int(32);
 }
 
-proc bok(x:int(?w), y:int(w)) {
-  return 0:int(w);
+proc bok(x:int(8), y:int(8)) {
+  return 0:int(8);
 }
-proc bok(x:uint(?w), y:uint(w)) {
-  return 0:uint(w);
+proc bok(x:int(16), y:int(16)) {
+  return 0:int(16);
+}
+proc bok(x:int(32), y:int(32)) {
+  return 0:int(32);
+}
+proc bok(x:int(64), y:int(64)) {
+  return 0:int(64);
 }
 
+proc bok(x:uint(8), y:uint(8)) {
+  return 0:uint(8);
+}
+proc bok(x:uint(16), y:uint(16)) {
+  return 0:uint(16);
+}
+proc bok(x:uint(32), y:uint(32)) {
+  return 0:uint(32);
+}
+proc bok(x:uint(64), y:uint(64)) {
+  return 0:uint(64);
+}
 
 proc asSigned(type t) type where t == int(8) do return int(8);
 proc asSigned(type t) type where t == int(16) do return int(16);
