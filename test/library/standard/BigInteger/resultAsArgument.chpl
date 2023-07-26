@@ -70,17 +70,17 @@ use BigInteger;
   writeln(a);
 }
 {
-  write("rootrem ");
+  write("rootRem ");
   var a = new bigint(5);
   var b: bigint;
-  rootrem(a, b, a, 2:uint);
+  rootRem(a, b, a, 2:uint);
   writeln(a, " ", b);
 }
 {
-  write("rootrem ");
+  write("rootRem ");
   var a = new bigint(5);
   var b: bigint;
-  rootrem(b, a, a, 2:uint);
+  rootRem(b, a, a, 2:uint);
   writeln(b, " ", a);
 }
 {
@@ -90,17 +90,17 @@ use BigInteger;
   writeln(a);
 }
 {
-  write("sqrtrem ");
+  write("sqrtRem ");
   var a = new bigint(10);
   var b: bigint;
-  sqrtrem(a, b, a);
+  sqrtRem(a, b, a);
   writeln(a, " ", b);
 }
 {
-  write("sqrtrem ");
+  write("sqrtRem ");
   var a = new bigint(10);
   var b: bigint;
-  sqrtrem(b, a, a);
+  sqrtRem(b, a, a);
   writeln(b, " ", a);
 }
 {

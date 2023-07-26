@@ -8,11 +8,11 @@ powMod 1
 pow 0
 pow 16
 root 2
-rootrem 2 1
-rootrem 2 1
+rootRem 2 1
+rootRem 2 1
 sqrt 3
-sqrtrem 3 1
-sqrtrem 3 1
+sqrtRem 3 1
+sqrtRem 3 1
 nextPrime 17
 gcd 4
 gcd 4
