@@ -11,8 +11,8 @@ proc DefaultAssociativeDom.printTableSize() {
 proc main() {
   var DR = {1..20};
   var BD = DR dmapped Block(DR);
-  writeln(BD.dist.type:string, ".printBB()");
-  BD.dist.printBB();
+  writeln(BD.distribution.type:string, ".printBB()");
+  BD.distribution.printBB();
   writeln();
 
   var DA = {1, 3, 5, 6, 7, 42};

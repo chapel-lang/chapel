@@ -20,9 +20,9 @@ var A4 = reshape(A3, {1..24});
 
 writeln(A4);
 
-writeln(dist_eq(A1.domain.dist, D1.dist));
-writeln(dist_eq(A2.domain.dist, D2.dist));
-writeln(dist_eq(A3.domain.dist, D3.dist));
+writeln(dist_eq(A1.domain.distribution, D1.distribution));
+writeln(dist_eq(A2.domain.distribution, D2.distribution));
+writeln(dist_eq(A3.domain.distribution, D3.distribution));
 
 // since DefaultDist is a singleton, neq would return false
 if distType == DistType.default then

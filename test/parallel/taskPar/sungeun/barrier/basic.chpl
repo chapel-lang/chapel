@@ -18,7 +18,7 @@ proc remoteTest(b: barrier, numRemoteTasks) {
   const barSpace = 0..#numRemoteTasks;
   var A: [{barSpace} dmapped new dmap(new Block({barSpace}))] int = barSpace;
   var B: [{barSpace} dmapped new dmap(new Block({barSpace}))] int = -1;
-  coforall t in barSpace do on A.domain.dist.idxToLocale(t) {
+  coforall t in barSpace do on A.domain.distribution.idxToLocale(t) {
     B[t] = A[t];
     b.barrier();
     if t==0 then writeln(B);

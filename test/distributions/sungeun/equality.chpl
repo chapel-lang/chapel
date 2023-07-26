@@ -13,6 +13,6 @@ writeln(d3==d4);
 writeln(d3!=d4);
 
 var dom = {1..1} dmapped Block({1..10});
-writeln(d3==dom.dist);
-writeln(d3!=dom.dist);
+writeln(d3==dom.distribution);
+writeln(d3!=dom.distribution);
 

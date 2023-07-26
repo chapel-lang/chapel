@@ -135,7 +135,7 @@ proc dfft(A: [?ADom], W, phase) {
       //       lo.. by str #num == lo, lo+str, lo+2*str, ... lo+(num-1)*str
       //
       forall lo in bankStart..#str {
-        on ADom.dist.idxToLocale(lo) {
+        on ADom.distribution.idxToLocale(lo) {
           local {
             butterfly(wk1, wk2, wk3, A.localSlice(lo..by str #radix));
           }
@@ -153,7 +153,7 @@ proc dfft(A: [?ADom], W, phase) {
       // loop in parallel over the high bank, computing butterflies
       //
       forall lo in bankStart+span..#str {
-        on ADom.dist.idxToLocale(lo) {
+        on ADom.distribution.idxToLocale(lo) {
           local {
             butterfly(wk1, wk2, wk3, A.localSlice(lo.. by str #radix));
           }
