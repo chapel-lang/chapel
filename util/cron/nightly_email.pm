@@ -122,7 +122,7 @@ if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0 && $newpas
     $recipient = $nochangerecipient;
 
 } else {
-    $passed = 1;
+    $passed = $status;
     print "Mailing to everyone\n";
 }
 

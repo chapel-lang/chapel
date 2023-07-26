@@ -9,7 +9,5 @@ export CHPL_HOST_MEM="jemalloc"
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="test-email"
 
 $CWD/nightly -cron -hellos ${nightly_args}
-PASSED = $?
-echo "$PASSED"
 
-exit $PASSED  
+exit $?
