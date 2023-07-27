@@ -5,10 +5,8 @@
 
 config param param_useA = true;
 
-proc update(ref x)
+proc passArray(const ref x)
 {
-  writeln(x);
-  x[3] = 3;
   writeln(x);
 }
 
@@ -26,7 +24,7 @@ proc makeB() {
 }
 
 proc run() {
-  update( if param_useA then makeA() else makeB() );
+  passArray( if param_useA then makeA() else makeB() );
 
   writeln(A);
   writeln(B);

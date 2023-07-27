@@ -4,10 +4,8 @@
 
 config const useA = true;
 
-proc update(ref x)
+proc passArray(const ref x)
 {
-  writeln(x);
-  x[3] = 3;
   writeln(x);
 }
 
@@ -25,7 +23,7 @@ proc makeB() {
 }
 
 proc run() {
-  update( if useA then makeA() else makeB() );
+  passArray( if useA then makeA() else makeB() );
 
   writeln(A);
   writeln(B);
