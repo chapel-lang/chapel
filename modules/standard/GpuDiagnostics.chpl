@@ -95,14 +95,8 @@ module GpuDiagnostics
 
     const expectedLaunch;
     if kernel_launch >= 0 {
-      if kernel_launch_um >= 0 {
-        writeln("Warning: kernel_launch_um argument is ignored because ",
-                "kernel_launch is non-negative.");
-      }
-      if kernel_launch_aod >= 0 {
-        writeln("Warning: kernel_launch_aod argument is ignored because ",
-                "kernel_launch is non-negative.");
-      }
+      assert(kernel_launch_um < 0 && kernel_launch_aod < 0,
+             "when kernel_launch is set, kernel_launch* shouldn't be set");
 
       expectedLaunch = kernel_launch;
     }
