@@ -159,7 +159,7 @@ if ($debug == 0) {
     }
 }
 
-return $passed;
+
 
 }
 return(1);

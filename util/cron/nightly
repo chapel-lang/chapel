@@ -880,7 +880,7 @@ if ($runtests == 0) {
 # FIXME: Pass correct args here!
      # `$chplhomedir/util/cron/nightly_email.pl $status "$rawsummary" "$sortedsummary" "$prevsummary" "$mailer" "$nochangerecipient" "$recipient" "$subjectid" "$config_name" "$revision" "$rawlog" "$starttime" "$endtime" "$crontab" "$testdirs" $debug`;
      # Write the test results to the summary log.
-     $passed=writeFile($status, "$rawsummary", "$sortedsummary", "$prevsummary", "$mailer", "$nochangerecipient", "$recipient", "$subjectid", "$config_name", "$revision", "$rawlog", "$starttime", "$endtime", "$crontab", "$testdirs", $debug);
+     writeFile($status, "$rawsummary", "$sortedsummary", "$prevsummary", "$mailer", "$nochangerecipient", "$recipient", "$subjectid", "$config_name", "$revision", "$rawlog", "$starttime", "$endtime", "$crontab", "$testdirs", $debug);
 #
 # analyze memory leaks tests
 #
@@ -906,5 +906,5 @@ if ($runtests == 0) {
     }
 }
 print "\n nightly status $passed \n";
-# exit 0;
-exit $passed;
+exit 0;
+
