@@ -121,19 +121,27 @@ module Errors {
       super.init(msg);
     }
 
-    // This won't actually produce a deprecation message. It's here for documentation purposes only.
+    /*
+      .. warning::
+        ``new IllegalArgumentError(info=)`` is deprecated; please use the initializer that takes a formal ``msg`` instead.
+    */
     pragma "last resort"
     proc init(info: string) {
       compilerWarning("`new IllegalArgumentError(info=)` is deprecated; please use the initializer that takes a formal `msg` instead.");
       super.init(info);
     }
 
+    /*
+      .. warning::
+        IllegalArgumentError's two-argument initializer is deprecated; please use the single-arg initializer instead.
+    */
     proc init(formal: string, info: string) {
       compilerWarning("IllegalArgumentError's two-argument initializer is deprecated; please use the single-arg initializer instead.");
       var msg = "illegal argument '" + formal + "': " + info;
       super.init(msg);
     }
   }
+
 
   /*
     A ``CodepointSplitError`` is thrown when slicing a string with
@@ -550,7 +558,7 @@ module Errors {
   pragma "insert line file info"
   pragma "always propagate line file info"
   proc chpl_enum_cast_error(casted: integral, enumName: string) throws {
-    throw new owned IllegalArgumentError("bad cast from int '" + casted:string + "' to enum '" + enumName, "'");
+    throw new owned IllegalArgumentError("bad cast from int '" + casted:string + "' to enum '" + enumName + "'");
   }
 
   pragma "insert line file info"
