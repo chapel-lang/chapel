@@ -157,8 +157,10 @@ if ($debug == 0) {
     if ($status == 0) {
         system("cp -pv $sortedsummary $prevsummary");
     }
+ }
+
+return(0);
+
 }
 
-
-
-}
+return(1);
