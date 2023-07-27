@@ -1,1 +1,1 @@
-generic-inherit6.chpl:13: syntax error: unsupported non-Identifier inherits expression
+generic-inherit6.chpl:13: syntax error: invalid parent class; please specify a single class name

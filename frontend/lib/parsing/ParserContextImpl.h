@@ -2534,7 +2534,8 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
           inheritExpr = toOwned(ast);
           (*optInherit)[0] = nullptr;
         } else {
-          syntax(inheritLoc, "unsupported non-Identifier inherits expression");
+          syntax(inheritLoc,
+                 "invalid parent class; please specify a single class name");
         }
       }
     }

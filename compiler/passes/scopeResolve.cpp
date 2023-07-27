@@ -261,11 +261,11 @@ static void checkClass(AggregateType* ct) {
       if (isClass(parent)) {
         if (!ct->symbol->hasFlag(FLAG_SUPERCLASS_MARKED_GENERIC) &&
             parent->isGeneric() && !parent->isGenericWithDefaults()) {
-          USR_WARN(ct->symbol, "inherits expr should include (?) for a generic superclass");
+          USR_WARN(ct->symbol, "missing '(?)' after a generic parent class");
         }
         if (ct->symbol->hasFlag(FLAG_SUPERCLASS_MARKED_GENERIC) &&
             !parent->isGeneric()) {
-          USR_FATAL(ct->symbol, "inherits expr should not include (?) for a concrete class");
+          USR_FATAL(ct->symbol, "'(?)' after a concrete parent class");
         }
       }
     }
