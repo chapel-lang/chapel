@@ -51,7 +51,6 @@ ensureSummaryExists($prevsummary);
 $passed=0;
 if ($status == 2) {
   $status = 0;
-  $passed=1;
 }
 
 if ($status == 0) {
