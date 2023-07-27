@@ -1,5 +1,5 @@
-perfkeys: Performance (GB/s):, Performance (GB/s):, Performance (GB/s):
+perfkeys: Performance (GiB/s):, Performance (GiB/s):, Performance (GiB/s):
 files: transpose-lowlevel.dat, transpose-naive.dat, transpose-clever.dat
 graphkeys: Low Level, Naive, Clever
-ylabel: Throughput (GB/s)
+ylabel: Throughput (GiB/s)
 graphtitle: Matrix Transpose Throughput
