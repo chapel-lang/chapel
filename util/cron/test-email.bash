@@ -10,4 +10,3 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="test-email"
 
 $CWD/nightly -cron -hellos ${nightly_args}
 
-exit $?
