@@ -274,14 +274,14 @@ proc isFieldBound(type t, param name : string) param : bool {
 /* Returns ``true`` if a function named `fname` taking no arguments
    could be called in the current scope.
    */
-@unstable(reason="The 'canResolve...' family of procedures are unstable'")
+@unstable(reason="The 'canResolve...' family of procedures are unstable")
 proc canResolve(param fname : string) param : bool do
   return __primitive("call and fn resolves", fname);
 
 /* Returns ``true`` if a function named `fname` taking the arguments in
    `args` could be called in the current scope.
    */
-@unstable(reason="The 'canResolve...' family of procedures are unstable'")
+@unstable(reason="The 'canResolve...' family of procedures are unstable")
 proc canResolve(param fname : string, args ...) param : bool do
   return __primitive("call and fn resolves", fname, (...args));
 
@@ -290,28 +290,28 @@ proc canResolve(param fname : string, args ...) param : bool do
 /* Returns ``true`` if a method named `fname` taking no arguments
    could be called on `obj` in the current scope.
    */
-@unstable(reason="The 'canResolve...' family of procedures are unstable'")
+@unstable(reason="The 'canResolve...' family of procedures are unstable")
 proc canResolveMethod(obj, param fname : string) param : bool do
   return __primitive("method call and fn resolves", obj, fname);
 
 /* Returns ``true`` if a method named `fname` taking the arguments in
    `args` could be called on `obj` in the current scope.
    */
-@unstable(reason="The 'canResolve...' family of procedures are unstable'")
+@unstable(reason="The 'canResolve...' family of procedures are unstable")
 proc canResolveMethod(obj, param fname : string, args ...) param : bool do
   return __primitive("method call and fn resolves", obj, fname, (...args));
 
 /* Returns ``true`` if a type method named `fname` taking no
    arguments could be called on type `t` in the current scope.
    */
-@unstable(reason="The 'canResolve...' family of procedures are unstable'")
+@unstable(reason="The 'canResolve...' family of procedures are unstable")
 proc canResolveTypeMethod(type t, param fname : string) param : bool do
   return __primitive("method call and fn resolves", t, fname);
 
 /* Returns ``true`` if a type method named `fname` taking the
    arguments in `args` could be called on type `t` in the current scope.
    */
-@unstable(reason="The 'canResolve...' family of procedures are unstable'")
+@unstable(reason="The 'canResolve...' family of procedures are unstable")
 proc canResolveTypeMethod(type t, param fname : string, args ...) param : bool do
   return __primitive("method call and fn resolves", t, fname, (...args));
 
