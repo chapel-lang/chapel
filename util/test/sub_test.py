@@ -173,6 +173,13 @@ def elapsed_sub_test_time():
 import atexit
 atexit.register(elapsed_sub_test_time)
 
+def run_process(*args, **kwargs):
+    p = subprocess.Popen(*args, **kwargs)
+    (stdout, stderr) = p.communicate()
+    stdout_str = str(stdout, encoding='utf-8', errors='surrogateescape')
+    stderr_str = str(stderr, encoding='utf-8', errors='surrogateescape')
+    return (p.returncode, stdout_str, stderr_str)
+
 #
 # Time out class:  Read from a stream until time out
 #  A little ugly but sending SIGALRM (or any other signal) to Python
@@ -344,12 +351,12 @@ def ReadFileWithComments(f, ignoreLeadingSpace=True, args=None):
 # diff 2 files
 def DiffFiles(f1, f2):
     sys.stdout.write('[Executing diff %s %s]\n'%(f1, f2))
-    p = py3_compat.Popen(['diff',f1,f2],
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    myoutput = p.communicate()[0] # grab stdout to avoid potential deadlock
-    if p.returncode != 0:
+    (returncode, myoutput, _) = run_process(['diff',f1,f2],
+                                            stdout=subprocess.PIPE,
+                                            stderr=subprocess.PIPE)
+    if returncode != 0:
         sys.stdout.write(trim_output(myoutput))
-    return p.returncode
+    return returncode
 
 def DiffBinaryFiles(f1, f2):
     sys.stdout.write('[Executing binary diff %s %s]\n'%(f1, f2))
