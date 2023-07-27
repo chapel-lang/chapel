@@ -2041,7 +2041,7 @@ module BigInteger {
      :arg x: Number to take the root of
      :type x: :record:`bigint`
      :arg n: Which root to take
-     :type n: :type:`uint`
+     :type n: ``uint``
 
      .. seealso::
         :proc:`GMP.mpz_rootrem` and
