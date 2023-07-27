@@ -516,56 +516,32 @@ module BigInteger {
       return (dbl: real, exp.safeCast(uint(32)));
     }
 
-    proc get_str(base: int = 10) : string {
+    // private method
+    @chpldoc.nodoc
+    proc getStr(base: int = 10): string {
       const base_ = base.safeCast(c_int);
       var   ret: string;
 
-      if compiledForSingleLocale() {
+      if compiledForSingleLocale() ||  this.localeId == chpl_nodeID {
         var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
-
-        try! {
-          ret = string.createAdoptingBuffer(tmpvar);
-        }
-
-      } else if this.localeId == chpl_nodeID {
-        var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
-
-        try! {
-          ret = string.createAdoptingBuffer(tmpvar);
-        }
-
+        try! ret = string.createAdoptingBuffer(tmpvar);
       } else {
         const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
         on __primitive("chpl_on_locale_num", thisLoc) {
           var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
-
-          try! {
-            ret = string.createAdoptingBuffer(tmpvar);
-          }
+           try! ret = string.createAdoptingBuffer(tmpvar);
         }
       }
 
       return ret;
     }
 
+    @deprecated("get_str is deprecated - please use a cast to a string or IO methods to get the string representation")
+    proc get_str(base: int = 10): string do return this.getStr(base);
+
     proc writeThis(writer) throws {
       var s: string;
-
-      if compiledForSingleLocale() {
-        s = this.get_str();
-
-      } else if this.localeId == chpl_nodeID {
-        s = this.get_str();
-
-      } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          s = this.get_str();
-        }
-      }
-
+      s = this.getStr();
       writer.write(s);
     }
   }
@@ -653,7 +629,7 @@ module BigInteger {
 
   @chpldoc.nodoc
   inline operator :(const ref x: bigint, type t: string) {
-    return x.get_str();
+    return x.getStr();
   }
 
   //

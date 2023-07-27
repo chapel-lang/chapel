@@ -39,6 +39,6 @@ if isReal(z) then writeln("real ", z);
 
 a.set(101);
 
-var str = a.get_str();
+var str = a:string;
 
 if isString(str) then writeln("string ", str);
