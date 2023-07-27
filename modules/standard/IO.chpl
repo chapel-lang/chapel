@@ -10440,10 +10440,8 @@ proc fileReader._format_reader(
 @chpldoc.nodoc
 proc fileWriter._format_reader(
     fmtStr:?fmtType, ref cur:c_size_t, len:c_size_t, ref error:errorCode,
-    ref conv:qio_conv_t, ref gotConv:bool, ref style:iostyleInternal,
-    ref r:unmanaged _channel_regex_info?)
+    ref conv:qio_conv_t, ref gotConv:bool, ref style:iostyleInternal)
 {
-  if r != nil then r!.hasRegex = false;
   if !error {
     const ref fmt = fmtStr.localize().c_str();
     while cur < len {
@@ -10815,7 +10813,6 @@ proc fileReader._read_complex(width:uint(32), out t:complex, i:int)
 @chpldoc.nodoc
 proc fileWriter._writefOne(fmtStr, ref arg, i: int,
                            ref cur: c_size_t, ref j: int,
-                           ref r: unmanaged _channel_regex_info?,
                            argType: c_ptr(c_int), argTypeLen: int,
                            ref conv: qio_conv_t, ref gotConv: bool,
                            ref style: iostyleInternal, ref err: errorCode,
@@ -10828,8 +10825,8 @@ proc fileWriter._writefOne(fmtStr, ref arg, i: int,
   gotConv = false;
 
   if j <= i {
-    _format_reader(fmtStr, cur, len, err,
-                   conv, gotConv, style, r);
+    this._format_reader(fmtStr, cur, len, err,
+                        conv, gotConv, style);
   }
 
   _conv_helper(err, conv, gotConv, j, argType, argTypeLen);
@@ -10972,11 +10969,6 @@ proc fileWriter.writef(fmtStr: ?t, const args ...?k) throws
     // c_ptr. This should reduce number of instantiations of writefOne
     var argType: c_array(c_int, argTypeLen);
 
-    var r:unmanaged _channel_regex_info?;
-    defer {
-      if r then delete r;
-    }
-
     for i in 0..argType.size-1 {
       argType(i) = QIO_CONV_UNK;
     }
@@ -10984,15 +10976,15 @@ proc fileWriter.writef(fmtStr: ?t, const args ...?k) throws
     var j = 0;
 
     for param i in 0..k-1 {
-      _writefOne(fmtStr, args(i), i, cur, j, r, c_ptrTo(argType[0]), argTypeLen,
+      _writefOne(fmtStr, args(i), i, cur, j, c_ptrTo(argType[0]), argTypeLen,
                  conv, gotConv, style, err, origLocale, len);
     }
 
     if ! err {
       if cur < len {
         var dummy:c_int;
-        _format_reader(fmtStr, cur, len, err,
-                       conv, gotConv, style, r);
+        this._format_reader(fmtStr, cur, len, err,
+                            conv, gotConv, style);
       }
 
       if cur < len {
@@ -11024,13 +11016,8 @@ proc fileWriter.writef(fmtStr:?t) throws
     var end:c_size_t;
     var dummy:c_int;
 
-    var r:unmanaged _channel_regex_info?;
-    defer {
-      if r then delete r;
-    }
-
     _format_reader(fmtStr, cur, len, err,
-                   conv, gotConv, style, r);
+                   conv, gotConv, style);
 
     if ! err {
       if gotConv {
