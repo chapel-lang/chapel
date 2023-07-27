@@ -2637,10 +2637,19 @@ module ChapelDomain {
       return _getDistribution(_value.dist);
     }
 
+    // returns a default rectangular domain
+    @chpldoc.nodoc proc boundingBox() where this.isRectangular() {
+      var dst: rank*range(this.idxType, boundKind.both, strideKind.one);
+      const src = this.dims();
+      for param dim in 0..rank-1 do dst[dim] = src[dim].boundingBox();
+      return {(...dst)};
+    }
+
     /* Cast a rectangular domain to another rectangular domain type.
        If the old type is stridable and the new type is not stridable,
        ensure that the stride was 1.
      */
+    @deprecated("domain.safeCast() is deprecated; instead consider using a cast ':'")
     proc safeCast(type t:_domain)
       where chpl__isRectangularDomType(t) && this.isRectangular() {
       var tmpD: t;
@@ -2723,39 +2732,49 @@ module ChapelDomain {
       return _value.dsiIteratorYieldsLocalElements();
     }
 
-    /* Cast a rectangular domain to a new rectangular domain type.  If the old
-       type was stridable and the new type is not stridable then assume the
-       stride was 1 without checking.
-
-       For example:
-       {1..10 by 2}:domain(stridable=false)
-
-       results in the domain '{1..10}'
+    /* Cast a rectangular domain to a new rectangular domain type.
+       The overload below throws when the original bounds and/or stride
+       do not fit in the new type or 'strides'.
+       TODO: should we allow 't' to be generic?
      */
     @chpldoc.nodoc
-    operator :(d: _domain, type t:_domain) where chpl__isRectangularDomType(t) && d.isRectangular() {
+    operator :(d: _domain, type t:_domain)
+      where chpl__isRectangularDomType(t) && d.isRectangular()
+        &&  d.chpl_domainCastIsSafe(t)
+    do
+      return try! d.chpl_domainCastHelper(t);
+
+    // This overload catches unsupported cases.
+    @chpldoc.nodoc
+    operator :(d: _domain, type t: domain) throws
+    do
+      if ! chpl__isRectangularDomType(t) || ! d.isRectangular() then
+        compilerError("cast from ", d.type:string, " to ",
+                      t:string, " is not available");
+      else
+        return d.chpl_domainCastHelper(t);
+
+    inline proc chpl_domainCastHelper(type t:_domain) throws {
       var tmpD: t;
+      const ref d = this;
       if tmpD.rank != d.rank then
         compilerError("rank mismatch in cast");
-      if tmpD.idxType != d.idxType then
-        // todo: relax this restriction
-        compilerError("idxType mismatch in cast");
-
-      if tmpD.strides == d.strides then
-        return d;
-      else if ! chpl_assignStrideIsSafe(tmpD.strides, d.strides) {
+      else {
         var inds = d.getIndices();
         var newInds: tmpD.getIndices().type;
-
         for param i in 0..tmpD.rank-1 {
           newInds(i) = inds(i): newInds(i).type;
         }
         tmpD.setIndices(newInds);
         return tmpD;
-      } else { // cast is always safe
-        tmpD = d;
-        return tmpD;
       }
+    }
+
+    proc chpl_domainCastIsSafe(type t: domain) param {
+      var dst: t;
+      // this is implemented only for rectangular domains
+      compilerAssert(this.isRectangular() && dst.isRectangular());
+      return chpl_castIsSafe(this.dim(0), dst.dim(0).type);
     }
 
     @chpldoc.nodoc

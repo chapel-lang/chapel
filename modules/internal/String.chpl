@@ -159,12 +159,6 @@ module String {
   inline proc chpl__intToIdx(type idxType: codepointIndex, i: int) do
     return i: codepointIndex;
 
-  proc chpl__idxTypeToIntIdxType(type idxType: byteIndex) type do
-    return int;
-
-  proc chpl__idxTypeToIntIdxType(type idxType: codepointIndex) type do
-    return int;
-
   @chpldoc.nodoc inline operator byteIndex.>(x: byteIndex, y: byteIndex) {
     return x: int > y: int;
   }

@@ -15,20 +15,40 @@ tryCasts(ru0);
 tryCasts(ru1);
 tryCasts(rup);
 
+/* abstract enums are not castable to/from anything other than strings
+enum absEnum { a0, a1 }
+var rabs = absEnum.a0..absEnum.a1;
+tryCasts(rabs);
+*/
+
+enum concEnum {c2m=-2, c2p=2 }
+var rconc = concEnum.c2m..concEnum.c2p;
+tryCasts(rconc);
+
 proc tryCasts(r) {
-  type types = (bool, int, uint, int(8), uint(8));
+  type types = (bool, int, uint, int(8), uint(8), /*absEnum,*/ concEnum);
   for param i in 0..<types.size do
     tryCast(r, types(i));
 }
   
 proc tryCast(r, type t) {
+  if isBool(r.idxType) && isEnum(t) then return; // not castable
+
   writeln("casting ", r, " to range of ", t:string);
+ try {
   var res = r: range(t);
   printRange(res);
+ } catch e {
+  writeln("  ", e); writeln();
+ }
 
-  writeln("casting ", r, " to stridable range of ", t:string, ":");
-  var resStr = r: range(t, strides=strideKind.any);
-  printRange(resStr);
+  var sa   = r: range(r.idxType, strides=strideKind.any);   // always succeeds
+ try {
+  var sneg = sa: range(r.idxType, strides=strideKind.negative); // alw. throws
+  printRange(sneg);
+ } catch e {
+  assert(e.message() == "bad cast from stride 1 to strideKind.negative");
+ }
 }
 
 proc printRange(r) {
