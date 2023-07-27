@@ -32,7 +32,7 @@ module DefaultSparse {
 
   config param defaultSparseSupportsAutoLocalAccess = true;
 
-  class DefaultSparseDom: BaseSparseDomImpl {
+  class DefaultSparseDom: BaseSparseDomImpl(?) {
     var dist: unmanaged DefaultDist;
     var _nnz = 0;
 
@@ -413,7 +413,7 @@ module DefaultSparse {
   }
 
 
-  class DefaultSparseArr: BaseSparseArrImpl {
+  class DefaultSparseArr: BaseSparseArrImpl(?) {
 
     proc init(type eltType,
               param rank : int,

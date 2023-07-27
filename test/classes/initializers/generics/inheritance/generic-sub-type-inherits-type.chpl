@@ -10,7 +10,7 @@ class Parent {
   }
 }
 
-class Child : Parent {
+class Child : Parent(?) {
   type t2;
   var y: t2;
 

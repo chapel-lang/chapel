@@ -152,7 +152,7 @@ module DefaultRectangular {
     }
   }
 
-  class DefaultRectangularDom: BaseRectangularDom {
+  class DefaultRectangularDom: BaseRectangularDom(?) {
     var dist: unmanaged DefaultDist;
     var ranges : rank*range(idxType,boundKind.both,strides);
 
@@ -1021,7 +1021,7 @@ module DefaultRectangular {
     }
   }
 
-  class DefaultRectangularArr: BaseRectangularArr {
+  class DefaultRectangularArr: BaseRectangularArr(?) {
     // inherits rank, idxType, strides, eltType
 
     type idxSignedType = chpl__signedType(chpl__idxTypeToIntIdxType(idxType));

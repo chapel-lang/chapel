@@ -22,7 +22,7 @@ proc foobar(p : borrowed Parent) {
   writeln("foobar(Parent(other))");
 }
 
-class Child : Parent {
+class Child : Parent(?) {
   var y : real;
 
   proc init(type t) {

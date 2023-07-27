@@ -103,7 +103,7 @@ module ArrayViewReindex {
   // for rectangular domains so this is a subclass of
   // BaseRectangularDom.
   //
- class ArrayViewReindexDom: BaseRectangularDom {
+ class ArrayViewReindexDom: BaseRectangularDom(?) {
     // the new reindexed index set that we represent upwards
     var updomInst: unmanaged DefaultRectangularDom(rank, idxType, strides)?;
     forwarding updom except these, chpl__serialize, chpl__deserialize;
@@ -374,7 +374,7 @@ module ArrayViewReindex {
   // class implementations, it supports the standard dsi interface.
   //
   pragma "aliasing array"
-  class ArrayViewReindexArr: AbsBaseArr {
+  class ArrayViewReindexArr: AbsBaseArr(?) {
     // the representation of the slicing domain
     //
     // TODO: Can we privatize upon creation of the array-view slice and cache

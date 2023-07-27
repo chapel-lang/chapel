@@ -95,7 +95,7 @@ class Private: BaseDist {
   override proc singleton() param do return true;
 }
 
-class PrivateDom: BaseRectangularDom {
+class PrivateDom: BaseRectangularDom(?) {
   var dist: unmanaged Private;
 
   iter these() { for i in 0..numLocales-1 do yield i; }
@@ -170,7 +170,8 @@ private proc checkCanMakeDefaultValue(type eltType) param {
   var default: eltType;
 }
 
-class PrivateArr: BaseRectangularArr {
+class PrivateArr: BaseRectangularArr(?) {
+
   var dom: unmanaged PrivateDom(rank, idxType, strides);
 
   // may be initialized separately

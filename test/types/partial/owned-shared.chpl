@@ -8,7 +8,7 @@ class Parent {
   var x : n*T;
 }
 
-class Child : Parent {
+class Child : Parent(?) {
   type U;
   var y : U;
 }

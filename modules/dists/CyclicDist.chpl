@@ -487,7 +487,7 @@ class LocCyclic {
 }
 
 
-class CyclicDom : BaseRectangularDom {
+class CyclicDom : BaseRectangularDom(?) {
   const dist: unmanaged Cyclic(rank, idxType);
 
   var locDoms: [dist.targetLocDom] unmanaged LocCyclicDom(rank, idxType);
@@ -736,7 +736,7 @@ private proc myBlockType(param rank, type idxType) type do
 proc LocCyclicDom.contains(i) do return myBlock.contains(i);
 
 
-class CyclicArr: BaseRectangularArr {
+class CyclicArr: BaseRectangularArr(?) {
   var doRADOpt: bool = defaultDoRADOpt;
   var dom: unmanaged CyclicDom(rank, idxType, strides);
 

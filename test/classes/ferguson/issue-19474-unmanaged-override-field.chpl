@@ -2,7 +2,7 @@ class Parent {
   param rank : int;
 }
 
-class Child : Parent {
+class Child : Parent(?) {
   override proc rank param do return 2;
 }
 

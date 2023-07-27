@@ -2,7 +2,7 @@ class C {
   var x;
 }
 
-class Child : C {
+class Child : C(?) {
   var y:int;
 }
 

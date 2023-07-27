@@ -460,7 +460,7 @@ module ChapelDistribution {
     }
   }
 
-  class BaseSparseDomImpl : BaseSparseDom {
+  class BaseSparseDomImpl : BaseSparseDom(?) {
 
     var nnzDom = {1..0};
 
@@ -1003,7 +1003,7 @@ module ChapelDistribution {
   }
 
   pragma "base array"
-  class BaseRectangularArr: BaseArrOverRectangularDom {
+  class BaseRectangularArr: BaseArrOverRectangularDom(?) {
     /* rank, idxType, strides are from BaseArrOverRectangularDom */
     type eltType;
 
@@ -1040,7 +1040,7 @@ module ChapelDistribution {
    * implementing sparse array classes.
    */
   pragma "base array"
-  class BaseSparseArr: AbsBaseArr {
+  class BaseSparseArr: AbsBaseArr(?) {
     param rank : int;
     type idxType;
 
@@ -1058,7 +1058,7 @@ module ChapelDistribution {
    * go here.
    */
   pragma "base array"
-  class BaseSparseArrImpl: BaseSparseArr {
+  class BaseSparseArrImpl: BaseSparseArr(?) {
 
     pragma "local field" pragma "unsafe"
     // may be initialized separately
