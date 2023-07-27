@@ -9,8 +9,8 @@ use Sys::Hostname;
 
 $cwd = abs_path(dirname(__FILE__));
 $chplhomedir = abs_path("$cwd/../..");
-
-
+$file = "$chplhomedir/email.txt";
+unlink($file);
 sub mysystem {
     $command = $_[0];
     $errorname = $_[1];
