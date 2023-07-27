@@ -294,43 +294,43 @@ use BigInteger;
   writeln(a);
 }
 {
-  write("addmul ");
+  write("addMul ");
   var a = new bigint(5);
   var b = new bigint(6);
-  addmul(a, a, b);
+  addMul(a, a, b);
   writeln(a);
 }
 {
-  write("addmul ");
+  write("addMul ");
   var a = new bigint(5);
   var b = new bigint(6);
-  addmul(b, a, b);
+  addMul(b, a, b);
   writeln(b);
 }
 {
-  write("addmul ");
+  write("addMul ");
   var a = new bigint(5);
-  addmul(a, a, 6:uint);
+  addMul(a, a, 6:uint);
   writeln(a);
 }
 {
-  write("submul ");
+  write("subMul ");
   var a = new bigint(5);
   var b = new bigint(6);
-  submul(a, a, b);
+  subMul(a, a, b);
   writeln(a);
 }
 {
-  write("submul ");
+  write("subMul ");
   var a = new bigint(5);
   var b = new bigint(6);
-  submul(b, a, b);
+  subMul(b, a, b);
   writeln(b);
 }
 {
-  write("submul ");
+  write("subMul ");
   var a = new bigint(5);
-  submul(a, a, 6:uint);
+  subMul(a, a, 6:uint);
   writeln(a);
 }
 {

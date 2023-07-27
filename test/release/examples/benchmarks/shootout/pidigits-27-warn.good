@@ -1,6 +1,0 @@
-pidigits-fast.chpl:30: In iterator 'genDigits':
-pidigits-fast.chpl:60: warning: divQ is deprecated - please use div with roundingMode instead
-  pidigits-fast.chpl:18: called as genDigits(numDigits: int(64))
-3141592653	:10
-5897932384	:20
-6264338   	:27

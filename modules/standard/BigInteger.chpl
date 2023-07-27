@@ -3665,7 +3665,7 @@ module BigInteger {
      :type x: :record:`bigint`
      :arg y: The second operand of the product
      :type y: :record:`bigint`, ``uint``, ``int``
-     
+
      .. seealso::
         :proc:`GMP.mpz_submul`,
         :proc:`GMP.mpz_submul_ui`, and

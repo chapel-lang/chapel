@@ -39,12 +39,12 @@ deprecateOverwritingMethods.chpl:n: warning: bigint.sub method is deprecated - p
 deprecateOverwritingMethods.chpl:n: warning: bigint.mul method is deprecated - please use the standalone function mul
 deprecateOverwritingMethods.chpl:n: warning: bigint.mul method is deprecated - please use the standalone function mul
 deprecateOverwritingMethods.chpl:n: warning: bigint.mul method is deprecated - please use the standalone function mul
-deprecateOverwritingMethods.chpl:n: warning: bigint.addmul method is deprecated - please use the standalone function addmul
-deprecateOverwritingMethods.chpl:n: warning: bigint.addmul method is deprecated - please use the standalone function addmul
-deprecateOverwritingMethods.chpl:n: warning: bigint.addmul method is deprecated - please use the standalone function addmul
-deprecateOverwritingMethods.chpl:n: warning: bigint.submul method is deprecated - please use the standalone function submul
-deprecateOverwritingMethods.chpl:n: warning: bigint.submul method is deprecated - please use the standalone function submul
-deprecateOverwritingMethods.chpl:n: warning: bigint.submul method is deprecated - please use the standalone function submul
+deprecateOverwritingMethods.chpl:n: warning: bigint.addmul method is deprecated - please use the standalone function addMul instead
+deprecateOverwritingMethods.chpl:n: warning: bigint.addmul method is deprecated - please use the standalone function addMul instead
+deprecateOverwritingMethods.chpl:n: warning: bigint.addmul method is deprecated - please use the standalone function addMul instead
+deprecateOverwritingMethods.chpl:n: warning: bigint.submul method is deprecated - please use the standalone function subMul instead
+deprecateOverwritingMethods.chpl:n: warning: bigint.submul method is deprecated - please use the standalone function subMul instead
+deprecateOverwritingMethods.chpl:n: warning: bigint.submul method is deprecated - please use the standalone function subMul instead
 deprecateOverwritingMethods.chpl:n: warning: bigint.mul_2exp method is deprecated - please use the standalone function mul2Exp
 deprecateOverwritingMethods.chpl:n: warning: bigint.neg method is deprecated - please use the standalone function neg
 deprecateOverwritingMethods.chpl:n: warning: bigint.abs method is deprecated - please use the standalone function abs

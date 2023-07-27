@@ -12,7 +12,7 @@ FILENAME.chpl:n: warning: bigint.add method is deprecated - please use the stand
   FILENAME.chpl:n: called as genDigits(numDigits: int(64))
 FILENAME.chpl:n: In iterator 'genDigits':
 FILENAME.chpl:n: warning: bigint.divQ method is deprecated - please use the standalone function div with roundingMode instead
-FILENAME.chpl:n: warning: bigint.submul method is deprecated - please use the standalone function submul
+FILENAME.chpl:n: warning: bigint.submul method is deprecated - please use the standalone function subMul instead
 FILENAME.chpl:n: warning: bigint.mul method is deprecated - please use the standalone function mul
 FILENAME.chpl:n: warning: bigint.mul method is deprecated - please use the standalone function mul
   FILENAME.chpl:n: called as genDigits(numDigits: int(64))
