@@ -51,7 +51,6 @@ ensureSummaryExists($prevsummary);
 $passed=0;
 if ($status == 2) {
   $status = 0;
-  
 }
 
 if ($status == 0) {
@@ -119,7 +118,7 @@ if ($status == 0) {
 
 if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0 && $newpassingsuppress == 0) {
     print "Mailing to minimal group\n";
-    #$passed = 1;
+    $passed = 2;
     $recipient = $nochangerecipient;
 
 } else {
@@ -133,7 +132,6 @@ if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0 && $newpas
 
 if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
     # Send email only if there are new failures. Set the passed flag to 1
-    #$passed = 1;
     print "\n passed:$passed \n status:$status \n";
     writeSummary ($revision,
      $starttime,
