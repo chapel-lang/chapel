@@ -18,4 +18,4 @@ on here.gpus[0] {
   foreach (aElem, bElem) in zip(a, b) { aElem += bElem + 10;    } writeln(a);
 }
 stopGpuDiagnostics();
-verifyGpuDiags(umLaunch=4, aodLaunch=6);
+assertGpuDiags(kernel_launch_um=4, kernel_launch_aod=6);

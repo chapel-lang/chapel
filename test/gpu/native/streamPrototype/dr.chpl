@@ -22,4 +22,4 @@ on here.gpus[0] {
   foreach i in 0..n { b[i] += a[i]*value; } writeln(b);
 }
 stopGpuDiagnostics();
-verifyGpuDiags(umLaunch=8, aodLaunch=10);
+assertGpuDiags(kernel_launch_um=8, kernel_launch_aod=10);

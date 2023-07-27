@@ -30,6 +30,8 @@ if verboseDiags then stopVerboseGpu();
 writeln(A);
 writeln("End");
 
-verifyGpuDiags(umLaunch=1, aodLaunch=1, h2dComm=1, d2hComm=1, d2dComm=0);
+assertGpuDiags(kernel_launch=1, host_to_device=1,device_to_host=1,
+               device_to_device=0);
 resetGpuDiagnostics();
-verifyGpuDiags(umLaunch=0, aodLaunch=0, h2dComm=0, d2hComm=0, d2dComm=0);
+assertGpuDiags(kernel_launch=0, host_to_device=0, device_to_host=0,
+               device_to_device=0);

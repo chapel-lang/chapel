@@ -3,7 +3,7 @@ module GpuTestCommon {
 
   config const printGpuDiags = false;
 
-  proc verifyGpuDiags(umLaunch, aodLaunch, h2dComm=-1, d2hComm=-1, d2dComm=-1) {
+  proc assertGpuDiags(umLaunch, aodLaunch, host_to_device=-1, device_to_host=-1, device_to_device=-1) {
     use ChplConfig;
 
     if printGpuDiags {
