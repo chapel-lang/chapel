@@ -4,6 +4,6 @@
 # think the cost of waiting for it to complete outweighs the marginal benefit
 # of having it covered by nightly-testing and it seems unlikely that it would
 # show up as an issue in cpu-as-device mode and not elsewhere so I'm going to
-# skipif it for nightly testing purposes.  Hopefuly, you're not looking at this
+# skipif it for nightly testing purposes.  Hopefully, you're not looking at this
 # .skipif file because I was just proven wrong :-).
 CHPL_GPU==cpu
