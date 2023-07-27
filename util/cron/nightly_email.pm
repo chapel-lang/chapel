@@ -74,6 +74,10 @@ if ($status == 0) {
     $delfut  = &delta($oldfut, $curfut);
 
     $summary = "Tests run: $cursucc Successes ($delsucc), $curfail Failures ($delfail)";
+
+    if ($curfail ==0) {
+    $passed=0;    
+    }
 } else {
     $summary = "Tests run: failed new failures";
     $passed = 1;
