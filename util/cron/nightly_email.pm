@@ -78,7 +78,9 @@ if ($status == 0) {
     $passed=0;    
     }
     else{
-    $passed=1;    
+    if ($delfail > 0){
+        $passed=1;  } 
+         
     }
 } else {
     $summary = "Tests run: failed new failures";
