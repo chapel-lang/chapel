@@ -111,6 +111,7 @@ void checkPrimitives()
      case PRIM_FIELD_NAME_TO_NUM:
      case PRIM_FIELD_BY_NUM:
      case PRIM_IS_RECORD_TYPE:
+     case PRIM_IS_FCF_TYPE:
      case PRIM_IS_UNION_TYPE:
      case PRIM_IS_EXTERN_UNION_TYPE:
      case PRIM_IS_ATOMIC_TYPE:

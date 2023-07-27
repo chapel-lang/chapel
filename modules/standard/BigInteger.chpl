@@ -651,6 +651,11 @@ module BigInteger {
     return ret:t;
   }
 
+  @chpldoc.nodoc
+  inline operator :(const ref x: bigint, type t: string) {
+    return x.get_str();
+  }
+
   //
   // Locale-aware assignment
   //

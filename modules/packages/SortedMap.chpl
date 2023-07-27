@@ -343,7 +343,7 @@ module SortedMap {
       var found: bool;
       (found, result) = _set.lowerBound((k, nil));
       if !found || comparator.compare(result[0], k) != 0 then
-        boundsCheckHalt("sortedMap index " + k:string + " out of bounds");
+        boundsCheckHalt(try! "sortedMap index %? out of bounds".format(k));
       return result[1]!.val;
     }
     /*
@@ -356,7 +356,7 @@ module SortedMap {
       var found: bool;
       (found, result) = _set.lowerBound((k, nil));
       if !found || comparator.compare(result[0], k) != 0 then
-        boundsCheckHalt("sortedMap index " + k:string + " out of bounds");
+        boundsCheckHalt(try! "sortedMap index %? out of bounds".format(k));
 
       _set.remove((k, nil));
 

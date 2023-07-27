@@ -34,7 +34,7 @@ module Map {
   import ChapelLocks;
   private use ChapelHashtable;
   private use HaltWrappers;
-  private use IO;
+  private use IO, IO.FormattedIO;
 
   // Lock code lifted from modules/standard/List.chpl.
   // Maybe they should be combined into a Locks module.
@@ -339,7 +339,7 @@ module Map {
       var (isFull, slot) = table.findFullSlot(k);
 
       if !isFull then
-        throw new KeyNotFoundError(k:string);
+        throw new KeyNotFoundError(k);
 
       // TODO: Use table key or argument key?
       const ref key = table.table[slot].key;
@@ -391,8 +391,7 @@ module Map {
         var val: valType;
         table.fillSlot(slot, k, val);
       }
-      ref result = table.table[slot].val;
-      return result;
+      return table.table[slot].val;
     }
 
     proc ref this(k: keyType) ref throws {
@@ -415,7 +414,7 @@ module Map {
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found then
-        throw new KeyNotFoundError(k:string);
+        throw new KeyNotFoundError(k);
       const ref result = table.table[slot].val;
       return result;
     }
@@ -427,7 +426,7 @@ module Map {
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found then
-        boundsCheckHalt("map index " + k:string + " out of bounds");
+        boundsCheckHalt(try! "map index %? out of bounds".format(k));
       try! {
         var result = table.table[slot].val.borrow();
         if isNonNilableClass(valType) {
@@ -450,7 +449,7 @@ module Map {
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found then
-        boundsCheckHalt("map index " + k:string + " out of bounds");
+        boundsCheckHalt(try! "map index %? out of bounds".format(k));
       ref result = table.table[slot].val;
       return result;
     }
@@ -472,7 +471,7 @@ module Map {
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found then
-        throw new KeyNotFoundError(k: string);
+        throw new KeyNotFoundError(k);
       try! {
         const result = table.table[slot].val: valType;
         return result;
@@ -526,7 +525,7 @@ module Map {
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found then
-        boundsCheckHalt("map index " + k:string + " out of bounds");
+        boundsCheckHalt(try! "map index %? out of bounds".format(k));
       try! {
         var result: valType, key: keyType;
         table.clearSlot(slot, key, result);
@@ -1019,9 +1018,8 @@ module Map {
   class KeyNotFoundError : Error {
     proc init() {}
 
-    proc init(k: string) {
-      var msg = "key '" + k + "' not found";
-      super.init(msg);
+    proc init(k) {
+      super.init(try! "key '%?' not found".format(k));
     }
   }
 }

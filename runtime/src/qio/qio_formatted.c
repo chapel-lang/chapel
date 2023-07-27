@@ -5015,6 +5015,7 @@ qioerr qio_conv_parse(c_string fmt,
       style_out->pad_char = ' ';
       style_out->realfmt = 2;
       style_out->string_format = QIO_STRING_FORMAT_CHPL;
+      style_out->tuple_style = QIO_TUPLE_FORMAT_CHPL;
 
       // Handle precision
       if( precision != WIDTH_NOT_SET ) {
@@ -5036,12 +5037,14 @@ qioerr qio_conv_parse(c_string fmt,
         style_out->array_style = QIO_ARRAY_FORMAT_JSON;
         style_out->aggregate_style = QIO_AGGREGATE_FORMAT_JSON;
         style_out->tuple_style = QIO_TUPLE_FORMAT_JSON;
+        style_out->showpointzero = 0;
       } else if( base_flag == 'h' ) {
         style_out->realfmt = 2;
         style_out->string_format = QIO_STRING_FORMAT_CHPL;
         style_out->array_style = QIO_ARRAY_FORMAT_CHPL;
         style_out->aggregate_style = QIO_AGGREGATE_FORMAT_CHPL;
         style_out->tuple_style = QIO_TUPLE_FORMAT_CHPL;
+        style_out->showpointzero = 0;
         style_out->pad_char = ' ';
       } else if( base_flag == 'x' ) {
         style_out->prefix_base = 1;
@@ -5071,6 +5074,7 @@ qioerr qio_conv_parse(c_string fmt,
       style_out->pad_char = ' ';
       style_out->realfmt = 0;
       style_out->string_format = QIO_STRING_FORMAT_WORD;
+      style_out->tuple_style = QIO_TUPLE_FORMAT_CHPL;
       style_out->showpointzero = 1;
 
       if (precision != WIDTH_NOT_SET || width != WIDTH_NOT_SET ) {

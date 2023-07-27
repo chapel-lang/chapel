@@ -2156,8 +2156,8 @@ module ChapelArray {
   // How to cast arrays to strings
   @chpldoc.nodoc
   operator :(x: [], type t:string) {
-    use IO;
-    return stringify(x);
+    import IO.FormattedIO.string;
+    return try! "%?".format(x);
   }
 
   pragma "fn returns aliasing array"
