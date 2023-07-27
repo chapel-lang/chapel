@@ -4045,7 +4045,7 @@ proc fileReader.seek(region: range(?)) throws where (!region.hasHighBound() ||
     compilerError("Cannot seek on a locking fileReader");
 
   if (!region.hasLowBound()) {
-    throw new IllegalArgumentError("region", "must have a lower bound");
+    throw new IllegalArgumentError("illegal argument 'region': must have a lower bound");
 
   } else {
     if (region.hasHighBound()) {
@@ -4096,7 +4096,7 @@ proc fileWriter.seek(region: range(?)) throws where (!region.hasHighBound() ||
     compilerError("Cannot seek on a locking fileWriter");
 
   if (!region.hasLowBound()) {
-    throw new IllegalArgumentError("region", "must have a lower bound");
+    throw new IllegalArgumentError("illegal argument 'region': must have a lower bound");
 
   } else {
     if (region.hasHighBound()) {
@@ -4119,7 +4119,7 @@ proc fileWriter.seek(region: range(?)) throws where (!region.hasHighBound() ||
 proc fileReader.seek(region: range(?)) throws where (region.hasHighBound() &&
                                                      !useNewSeekRegionBounds) {
   if (!region.hasLowBound()) {
-    throw new IllegalArgumentError("region", "must have a lower bound");
+    throw new IllegalArgumentError("illegal argument 'region': must have a lower bound");
 
   } else {
     const err = qio_channel_seek(_channel_internal, region.low, region.high);
@@ -4133,7 +4133,7 @@ proc fileReader.seek(region: range(?)) throws where (region.hasHighBound() &&
 proc fileWriter.seek(region: range(?)) throws where (region.hasHighBound() &&
                                                      !useNewSeekRegionBounds) {
   if (!region.hasLowBound()) {
-    throw new IllegalArgumentError("region", "must have a lower bound");
+    throw new IllegalArgumentError("illegal argument 'region': must have a lower bound");
 
   } else {
     const err = qio_channel_seek(_channel_internal, region.low, region.high);
@@ -4792,7 +4792,7 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
                        in deserializer: ?dt = defaultSerializeVal(false))
   : fileReader(kind, locking, dt) throws {
   if (region.hasLowBound() && region.low < 0) {
-    throw new IllegalArgumentError("region", "file region's lowest accepted bound is 0");
+    throw new IllegalArgumentError("illegal argument 'region': file region's lowest accepted bound is 0");
   }
 
   // It is the responsibility of the caller to release the returned fileReader
@@ -5034,7 +5034,7 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
   fileWriter(kind,locking,st) throws {
 
   if (region.hasLowBound() && region.low < 0) {
-    throw new IllegalArgumentError("region", "file region's lowest accepted bound is 0");
+    throw new IllegalArgumentError("illegal argument 'region': file region's lowest accepted bound is 0");
   }
 
   // It is the responsibility of the caller to retain and release the returned
@@ -7528,11 +7528,11 @@ proc fileReader.readBits(ref x:integral, numBits:int):bool throws {
   if castChecking {
     // Error if reading more bits than fit into x
     if Types.numBits(x.type) < numBits then
-      throw new owned IllegalArgumentError("x, numBits", "readBits numBits=" + numBits:string +
+      throw new owned IllegalArgumentError("readBits numBits=" + numBits:string +
                                                  " > bits in x:" + x.type:string);
     // Error if reading negative number of bits
     if isIntType(numBits.type) && numBits < 0 then
-      throw new owned IllegalArgumentError("numBits", "readBits numBits=" + numBits:string + " < 0");
+      throw new owned IllegalArgumentError("readBits numBits=" + numBits:string + " < 0");
   }
 
   var tmp:_internalIoBits;
@@ -7586,13 +7586,12 @@ proc fileWriter.writeBits(x: integral, numBits: int) : void throws {
   if castChecking {
     // Error if writing more bits than fit into x
     if Types.numBits(x.type) < numBits then
-      throw new owned IllegalArgumentError("x, numBits",
-              "writeBits numBits=" + numBits:string +
-               " > bits in x:" + x.type:string);
+      throw new owned IllegalArgumentError("writeBits numBits=" +
+        numBits:string + " > bits in x:" + x.type:string);
     // Error if writing negative number of bits
     if isIntType(numBits.type) && numBits < 0 then
-      throw new owned IllegalArgumentError("numBits",
-              "writeBits numBits=" + numBits:string + " < 0");
+      throw new owned IllegalArgumentError("writeBits numBits=" +
+        numBits:string + " < 0");
   }
 
   try this.write(new _internalIoBits(x:uint(64), numBits:int(8)));
@@ -7898,7 +7897,7 @@ proc fileWriter.writeBinary(arg:numeric, endian:ioendian) throws {
 proc fileWriter.writeBinary(s: string, size: int = s.size) throws {
   // handle bad arguments
   if size > s.size then
-    throw new owned IllegalArgumentError("size", "cannot exceed length of provided string");
+    throw new owned IllegalArgumentError("illegal argument 'size': cannot exceed length of provided string");
   if s.hasEscapes then
     throw createSystemOrChplError(EILSEQ, "illegal use of escaped string characters in 'writeBinary'");
 
@@ -7946,7 +7945,7 @@ proc fileWriter.writeBinary(s: string, size: int = s.size) throws {
 proc fileWriter.writeBinary(b: bytes, size: int = b.size) throws {
   // handle bad arguments
   if size > b.size then
-    throw new owned IllegalArgumentError("size", "cannot exceed length of provided bytes");
+    throw new owned IllegalArgumentError("illegal argument 'size': cannot exceed length of provided bytes");
 
   on this._home {
     // write the first size bytes to the fileWriter
@@ -10927,8 +10926,9 @@ proc fileWriter._writefOne(fmtStr, ref arg, i: int,
         }
       } otherwise {
         // Unhandled argument type!
-        throw new owned IllegalArgumentError("args(" + i:string + ")",
-                                       "writef internal error " + argType(i):string);
+        throw new owned IllegalArgumentError(
+          "illegal argument 'args(" + i:string + ")': writef internal error " + argType(i):string
+        );
       }
     }
   }
@@ -11303,8 +11303,9 @@ proc fileReader.readf(fmtStr:?t, ref args ...?k): bool throws
                 }
               }
             } otherwise {
-              throw new owned IllegalArgumentError("args(" + i:string + ")",
-                                             "readf internal error " + argType(i):string);
+              throw new owned IllegalArgumentError(
+                "illegal argument 'args(" + i:string + ")': readf internal error " + argType(i):string
+              );
             }
           }
         }

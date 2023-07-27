@@ -789,22 +789,22 @@ proc replaceExt(path: string, newExt: string): string throws {
 
     // Check for empty basename as extension can't be appended
     if  basename.isEmpty() {
-      throw new owned IllegalArgumentError(path, "has an empty basename");
+      throw new owned IllegalArgumentError("'" + path + "' has an empty basename");
     }
     // check if extension contains separator.
     else if newExt.find(pathSep) != -1 {
-      throw new owned IllegalArgumentError(newExt, "extension can't contain path separators");
+      throw new owned IllegalArgumentError("extension can't contain path separators");
     }
     // if extension is not blank then check it shouldn't end with ''.' and isn't just '.'
     else if newExt == "." || newExt.endsWith(".") {
-      throw new owned IllegalArgumentError(newExt, "extension can't end with '.'");
+      throw new owned IllegalArgumentError("extension can't end with '.'");
     }
     // remove leading '.' if any for uniform support to both
     const strippedExt = newExt.strip(".", leading=true);
     // check for presence of spaces in strippedExt
     for c in strippedExt {
       if c.isSpace() {
-        throw new owned IllegalArgumentError(newExt, "extension can't contain spaces");
+        throw new owned IllegalArgumentError("extension can't contain spaces");
       }
     }
     var updatedExt = strippedExt;
