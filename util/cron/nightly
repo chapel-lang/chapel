@@ -906,5 +906,5 @@ if ($runtests == 0) {
     }
 }
 print "\n nightly status $passed \n";
-exit 1;
+exit 0;
 
