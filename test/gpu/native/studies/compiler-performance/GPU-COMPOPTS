@@ -1,1 +1,1 @@
--M../.. --report-gpu-transform-time --print-passes
+--report-gpu-transform-time --print-passes
