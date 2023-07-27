@@ -163,7 +163,7 @@ proc main(){
     }
     else {
       stopGpuDiagnostics();
-      verifyGpuDiags(umLaunch=527, aodLaunch=1049);
+      assertGpuDiags(kernel_launch_um=527, kernel_launch_aod=1049);
     }
 }
 
