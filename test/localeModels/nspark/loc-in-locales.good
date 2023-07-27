@@ -1,2 +1,4 @@
+loc-in-locales.chpl:5: warning: please use '?' when declaring a variable with generic type
+loc-in-locales.chpl:5: note: for example with 'fileReader(?)'
 loc-in-locales.chpl:5: error: Cannot default-initialize a variable with generic type
 loc-in-locales.chpl:5: note: 'c' has generic type 'fileReader'

@@ -273,7 +273,7 @@ defaultComparator = new DefaultComparator();
    default sort order.
 
  */
-const reverseComparator: ReverseComparator;
+const reverseComparator: ReverseComparator(DefaultComparator);
 reverseComparator = new ReverseComparator();
 
 /* Private methods */

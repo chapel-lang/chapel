@@ -4,7 +4,7 @@ class C {
 
 class D {
   var cc = new owned C(2);
-  var c: borrowed C = cc.borrow();
+  var c: borrowed C(?) = cc.borrow();
   param y: int = c.x;
 }
 
