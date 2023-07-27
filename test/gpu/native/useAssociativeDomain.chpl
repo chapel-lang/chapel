@@ -2,7 +2,6 @@
 
 use GpuDiagnostics;
 
-use GpuTestCommon;
 
 startGpuDiagnostics();
 

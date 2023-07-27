@@ -12,7 +12,6 @@ use ResultDB;
 use GpuDiagnostics;
 use GPU only syncThreads, createSharedArray, setBlockSize;
 
-use GpuTestCommon;
 
 config const noisy = false;
 config const gpuDiags = false;

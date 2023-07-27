@@ -3,7 +3,6 @@ use ResultDB;
 use IO.FormattedIO;
 use GpuDiagnostics;
 
-use GpuTestCommon;
 
 config const passes = 10;
 config const alpha = 1.75: real(32);

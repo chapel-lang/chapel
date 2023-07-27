@@ -92,11 +92,11 @@ module GpuDiagnostics
     if kernel_launch >= 0 {
       if kernel_launch_um >= 0 {
         writeln("Warning: kernel_launch_um argument is ignored because ",
-                "kernel_launch is non-negative."
+                "kernel_launch is non-negative.");
       }
       if kernel_launch_aod >= 0 {
         writeln("Warning: kernel_launch_aod argument is ignored because ",
-                "kernel_launch is non-negative."
+                "kernel_launch is non-negative.");
       }
 
       expectedLaunch = kernel_launch;
@@ -106,7 +106,7 @@ module GpuDiagnostics
     }
 
     const diags = getGpuDiagnostics()[0];
-    bool success = compare(expectedLaunch, diags.kernel_launch, "launches");
+    var success = compare(expectedLaunch, diags.kernel_launch, "launches");
 
     if !isUm {
       success &= compare(host_to_device, diags.host_to_device,
