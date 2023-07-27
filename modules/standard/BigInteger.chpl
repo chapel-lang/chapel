@@ -3551,118 +3551,166 @@ module BigInteger {
     BigInteger.mul(this, a, b);
   }
 
-  proc addmul(ref result: bigint, const ref a: bigint, const ref b: bigint) {
+  @deprecated(notes="bigint.addmul method is deprecated - please use the standalone function :proc:`addMul` instead")
+  proc bigint.addmul(const ref a: bigint, const ref b: bigint)
+    do addMul(this, a, b);
+
+  @deprecated(notes="bigint.addmul method is deprecated - please use the standalone function :proc:`addMul` instead")
+  proc bigint.addmul(const ref a: bigint, b: int)
+    do addMul(this, a, b);
+
+  @deprecated(notes="bigint.addmul method is deprecated - please use the standalone function :proc:`addMul` instead")
+  proc bigint.addmul(const ref a: bigint, b: uint)
+    do addMul(this, a, b);
+
+  @deprecated(notes="addmul is deprecated - please use :proc:`addMul` instead")
+  proc addmul(ref result: bigint, const ref a: bigint, const ref b: bigint)
+    do addMul(result, a, b);
+
+  @deprecated(notes="addmul is deprecated - please use :proc:`addMul` instead")
+  proc addmul(ref result: bigint, const ref a: bigint, b: int)
+    do addMul(result, a, b);
+
+  @deprecated(notes="addmul is deprecated - please use :proc:`addMul` instead")
+  proc addmul(ref result: bigint, const ref a: bigint, b: uint)
+    do addMul(result, a, b);
+
+  /* Adds the product of ``x`` and ``y`` to ``result``
+     (``result = result + (x * y)``).
+
+     :arg result: Where the result is stored
+     :type result: :record:`bigint`
+     :arg x: The first operand of the product
+     :type x: :record:`bigint`
+     :arg y: The second operand of the product
+     :type y: :record:`bigint`, ``uint``, ``int``
+
+     .. seealso::
+        :proc:`GMP.mpz_addmul`,
+        :proc:`GMP.mpz_addmul_ui`, and
+        `mpz_addmul <https://gmplib.org/manual/Integer-Arithmetic>`_.
+  */
+  proc addMul(ref result: bigint, const ref x: bigint, const ref y: bigint) {
     if compiledForSingleLocale() {
-      mpz_addmul(result.mpz, a.mpz, b.mpz);
+      mpz_addmul(result.mpz, x.mpz, y.mpz);
     } else if result.localeId == chpl_nodeID {
-      const a_ = a;
-      const b_ = b;
-      mpz_addmul(result.mpz, a_.mpz, b_.mpz);
+      const x_ = x;
+      const y_ = y;
+      mpz_addmul(result.mpz, x_.mpz, y_.mpz);
     } else {
       const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
       on __primitive("chpl_on_locale_num", resultLoc) {
-        const a_ = a;
-        const b_ = b;
-        mpz_addmul(result.mpz, a_.mpz, b_.mpz);
+        const x_ = x;
+        const y_ = y;
+        mpz_addmul(result.mpz, x_.mpz, y_.mpz);
       }
     }
   }
 
-  @deprecated(notes="bigint.addmul method is deprecated - please use the standalone function :proc:`~BigInteger.addmul`")
-  proc bigint.addmul(const ref a: bigint, const ref b: bigint) {
-    BigInteger.addmul(this, a, b);
+  /* See :proc:`addMul` */
+  proc addMul(ref result: bigint, const ref x: bigint, y: int) {
+    if y >= 0
+      then addMul(result, x, y:uint);
+      else subMul(result, x, (0 - y):uint);
   }
 
-  proc addmul(ref result: bigint, const ref a: bigint, b: int) {
-    if b >= 0 {
-      BigInteger.addmul(result, a, b:uint);
-    } else {
-      BigInteger.submul(result, a, (0 - b):uint);
-    }
-  }
-
-  @deprecated(notes="bigint.addmul method is deprecated - please use the standalone function :proc:`~BigInteger.addmul`")
-  proc bigint.addmul(const ref a: bigint, b: int) {
-    BigInteger.addmul(this, a, b);
-  }
-
-  proc addmul(ref result: bigint, const ref a: bigint, b: uint) {
-    const b_ = b.safeCast(c_ulong);
+  /* See :proc:`addMul` */
+  proc addMul(ref result: bigint, const ref x: bigint, y: uint) {
+    const y_ = y.safeCast(c_ulong);
 
     if compiledForSingleLocale() {
-      mpz_addmul_ui(result.mpz, a.mpz, b_);
+      mpz_addmul_ui(result.mpz, x.mpz, y_);
     } else if result.localeId == chpl_nodeID {
-      const a_ = a;
-      mpz_addmul_ui(result.mpz, a_.mpz, b_);
+      const x_ = x;
+      mpz_addmul_ui(result.mpz, x_.mpz, y_);
     } else {
       const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
       on __primitive("chpl_on_locale_num", resultLoc) {
-        const a_ = a;
-        mpz_addmul_ui(result.mpz, a_.mpz, b_);
+        const x_ = x;
+        mpz_addmul_ui(result.mpz, x_.mpz, y_);
       }
     }
   }
 
-  @deprecated(notes="bigint.addmul method is deprecated - please use the standalone function :proc:`~BigInteger.addmul`")
-  proc bigint.addmul(const ref a: bigint, b: uint) {
-    BigInteger.addmul(this, a, b);
-  }
+  @deprecated(notes="bigint.submul method is deprecated - please use the standalone function :proc:`subMul` instead")
+  proc bigint.submul(const ref a: bigint, const ref b: bigint)
+    do subMul(this, a, b);
 
-  proc submul(ref result: bigint, const ref a: bigint, const ref b: bigint) {
+  @deprecated(notes="bigint.submul method is deprecated - please use the standalone function :proc:`subMul` instead")
+  proc bigint.submul(const ref a: bigint, b: int)
+    do subMul(this, a, b);
+
+  @deprecated(notes="bigint.submul method is deprecated - please use the standalone function :proc:`subMul` instead")
+  proc bigint.submul(const ref a: bigint, b: uint)
+    do subMul(this, a, b);
+
+  @deprecated(notes="submul is deprecated - please use :proc:`subMul` instead")
+  proc submul(ref result: bigint, const ref a: bigint, const ref b: bigint)
+    do subMul(result, a, b);
+
+  @deprecated(notes="submul is deprecated - please use :proc:`subMul` instead")
+  proc submul(ref result: bigint, const ref a: bigint, b: int)
+    do subMul(result, a, b);
+
+  @deprecated(notes="submul is deprecated - please use :proc:`subMul` instead")
+  proc submul(ref result: bigint, const ref a: bigint, b: uint)
+    do subMul(result, a, b);
+
+  /* Subtracts the product of ``x`` and ``y`` from ``result``
+     (``result = result - (x * y)``).
+
+     :arg result: Where the result is stored
+     :type result: :record:`bigint`
+     :arg x: The first operand of the product
+     :type x: :record:`bigint`
+     :arg y: The second operand of the product
+     :type y: :record:`bigint`, ``uint``, ``int``
+     
+     .. seealso::
+        :proc:`GMP.mpz_submul`,
+        :proc:`GMP.mpz_submul_ui`, and
+        `mpz_submul <https://gmplib.org/manual/Integer-Arithmetic>`_.
+  */
+  proc subMul(ref result: bigint, const ref x: bigint, const ref y: bigint) {
     if compiledForSingleLocale() {
-      mpz_submul(result.mpz, a.mpz, b.mpz);
+      mpz_submul(result.mpz, x.mpz, y.mpz);
     } else if result.localeId == chpl_nodeID {
-      const a_ = a;
-      const b_ = b;
-      mpz_submul(result.mpz, a_.mpz, b_.mpz);
+      const x_ = x;
+      const y_ = y;
+      mpz_submul(result.mpz, x_.mpz, y_.mpz);
     } else {
       const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
       on __primitive("chpl_on_locale_num", resultLoc) {
-        const a_ = a;
-        const b_ = b;
-        mpz_submul(result.mpz, a_.mpz, b_.mpz);
+        const x_ = x;
+        const y_ = y;
+        mpz_submul(result.mpz, x_.mpz, y_.mpz);
       }
     }
   }
 
-  @deprecated(notes="bigint.submul method is deprecated - please use the standalone function :proc:`~BigInteger.submul`")
-  proc bigint.submul(const ref a: bigint, const ref b: bigint) {
-    BigInteger.submul(this, a, b);
+  /* See :proc:`addMul` */
+  proc subMul(ref result: bigint, const ref x: bigint, y: int) {
+    if y >= 0
+      then subMul(result, x, y:uint);
+      else addMul(result, x, (0 - y):uint);
   }
 
-  proc submul(ref result: bigint, const ref a: bigint, b: int) {
-    if b >= 0 {
-      BigInteger.submul(result, a, b:uint);
-    } else {
-      BigInteger.addmul(result, a, (0 - b):uint);
-    }
-  }
-
-  @deprecated(notes="bigint.submul method is deprecated - please use the standalone function :proc:`~BigInteger.submul`")
-  proc bigint.submul(const ref a: bigint, b: int) {
-    BigInteger.submul(this, a, b);
-  }
-
-  proc submul(ref result: bigint, const ref a: bigint, b: uint) {
-    const b_ = b.safeCast(c_ulong);
+  /* See :proc:`addMul` */
+  proc subMul(ref result: bigint, const ref x: bigint, y: uint) {
+    const y_ = y.safeCast(c_ulong);
 
     if compiledForSingleLocale() {
-      mpz_submul_ui(result.mpz, a.mpz, b_);
+      mpz_submul_ui(result.mpz, x.mpz, y_);
     } else if result.localeId == chpl_nodeID {
-      const a_ = a;
-      mpz_submul_ui(result.mpz, a_.mpz, b_);
+      const x_ = x;
+      mpz_submul_ui(result.mpz, x_.mpz, y_);
     } else {
       const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
       on __primitive("chpl_on_locale_num", resultLoc) {
-        const a_ = a;
-        mpz_submul_ui(result.mpz, a_.mpz, b_);
+        const x_ = x;
+        mpz_submul_ui(result.mpz, x_.mpz, y_);
       }
     }
-  }
-
-  @deprecated(notes="bigint.submul method is deprecated - please use the standalone function :proc:`~BigInteger.submul`")
-  proc bigint.submul(const ref a: bigint, b: uint) {
-    BigInteger.submul(this, a, b);
   }
 
   @deprecated(notes="mul_2exp is deprecated - please use :proc:`mul2Exp` instead")
@@ -4760,9 +4808,9 @@ module BigInteger {
 
     :arg result: Where the result is stored
     :type result: :record:`bigint`
-    :arg x: First number
+    :arg x: First operand
     :type x: :record:`bigint`
-    :arg y: Second number
+    :arg y: Second operand
     :type y: :record:`bigint`
 
     .. seealso::
