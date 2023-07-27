@@ -77,6 +77,9 @@ if ($status == 0) {
     if ($curfail ==0) {
     $passed=0;    
     }
+    else{
+    $passed=1;    
+    }
 } else {
     $summary = "Tests run: failed new failures";
     $passed = 1;
@@ -125,7 +128,7 @@ if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0 && $newpas
     $recipient = $nochangerecipient;
 
 } else {
-    $passed = 1;
+    #$passed=1;
     print "Mailing to everyone\n";
 }
 
