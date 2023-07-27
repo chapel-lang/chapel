@@ -61,6 +61,11 @@ module GpuDiagnostics
    * same names as the fields in chpl_gpuDiagnostics type. `_um` and `_aod`
    * versions of `kernel_launch` are for convenience where we expect different
    * number of launches in different memory modes
+   *  - -1 (and really any other negative value) signals that a given diagnostic
+   *    should be ignored.
+   *  - kernel_launch overrides _um and _aod variants if it is set to something
+   *    non-negative.
+   *  - For the time being, this is only considering locale 0s GPUs.
    */
   @chpldoc.nodoc
   proc assertGpuDiags(kernel_launch=-1,
