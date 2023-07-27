@@ -141,7 +141,7 @@ sub endMailChplenv {
 
     $mystr;
 }
-sub writeSummary {
+sub writeEmail {
     my $revision = $_[0];
     my $starttime = $_[1];
     my $endtime = $_[2];
@@ -152,8 +152,8 @@ sub writeSummary {
     my $prevsummary = $_[7];
     my $sortedsummary = $_[8];
     print 
-    #Create a file "summary.log" in the chapel homedir. This file will be used by Jenkins to attach the test results in the email body
-    my $filename = "$chplhomedir/summary.log";
+    #Create a file "email.txt" in the chapel homedir. This file will be used by Jenkins to attach the test results in the email body
+    my $filename = "$chplhomedir/email.txt";
     open(my $SF, '>', $filename) or die "Could not open file '$filename' $!";
     print "Writing Test results summary... \n";
     print "filename ... $filename \n";
