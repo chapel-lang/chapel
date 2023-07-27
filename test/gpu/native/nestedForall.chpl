@@ -1,7 +1,6 @@
 use GpuDiagnostics;
 use GPU;
 
-use GpuTestCommon;
 
 config const low = 0, high = -1;
 

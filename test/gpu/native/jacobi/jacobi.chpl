@@ -2,7 +2,6 @@ use GpuDiagnostics;
 use CTypes;
 use GPU; // just to check the unstability warning
 
-use GpuTestCommon;
 
 config const nSteps = 10;
 config const n = 10;

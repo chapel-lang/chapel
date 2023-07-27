@@ -1,7 +1,6 @@
 use BlockDist;
 use GpuDiagnostics;
 
-use GpuTestCommon;
 
 config const n = here.maxTaskPar*2;
 

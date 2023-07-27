@@ -1,6 +1,5 @@
 use GpuDiagnostics;
 
-use GpuTestCommon;
 
 config const start = 1;
 config const end = 10;

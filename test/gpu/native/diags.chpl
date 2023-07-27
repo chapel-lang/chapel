@@ -1,7 +1,6 @@
 use GpuDiagnostics;
 use MemDiagnostics;
 
-use GpuTestCommon;
 
 // verbose gpu diagnostics have different behavior based on mem strategy
 config const verboseDiags = false;

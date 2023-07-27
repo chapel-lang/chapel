@@ -1,6 +1,5 @@
 use GpuDiagnostics;
 
-use GpuTestCommon;
 
 on here.gpus[0] {
   startGpuDiagnostics();

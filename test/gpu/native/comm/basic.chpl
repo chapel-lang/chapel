@@ -1,6 +1,5 @@
 use GpuDiagnostics;
 
-use GpuTestCommon;
 
 config const printArrs = false;
 config const verboseGpu = false;

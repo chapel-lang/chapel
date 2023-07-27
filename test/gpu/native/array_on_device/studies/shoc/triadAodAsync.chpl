@@ -5,7 +5,6 @@ use GpuDiagnostics;
 use MemDiagnostics;
 use GPU;
 
-use GpuTestCommon;
 
 config const passes = 1; //10;
 config const alpha = 1.75: real(32);

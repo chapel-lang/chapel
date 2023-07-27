@@ -11,7 +11,6 @@ use GpuDiagnostics;
 //
 use HPCCProblemSize;
 
-use GpuTestCommon;
 
 config param useForeach = true;
 config const useGpuDiags = true;
