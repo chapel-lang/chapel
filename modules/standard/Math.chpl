@@ -194,6 +194,16 @@ module Math {
     return chpl_acos(x);
   }
 
+  /* Returns the arc cosine of the argument `x`. */
+  inline proc acos(x: complex(64)): complex(64) {
+    return chpl_acos(x);
+  }
+
+  /* Returns the arc cosine of the argument `x`. */
+  inline proc acos(x: complex(128)): complex(128) {
+    return chpl_acos(x);
+  }
+
   /* Returns the arc cosine of the argument `z`. */
   inline proc acos(z: complex(64)): complex(64) {
     return chpl_acos(z);
