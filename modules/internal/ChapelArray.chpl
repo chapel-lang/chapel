@@ -2156,7 +2156,7 @@ module ChapelArray {
   // How to cast arrays to strings
   @chpldoc.nodoc
   operator :(x: [], type t:string) {
-    import IO.FormattedIO.format;
+    import IO.FormattedIO.string;
     return try! "%?".format(x);
   }
 
