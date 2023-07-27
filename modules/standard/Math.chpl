@@ -204,16 +204,6 @@ module Math {
     return chpl_acos(x);
   }
 
-  /* Returns the arc cosine of the argument `z`. */
-  inline proc acos(z: complex(64)): complex(64) {
-    return chpl_acos(z);
-  }
-
-  /* Returns the arc cosine of the argument `z`. */
-  inline proc acos(z: complex(128)): complex(128) {
-    return chpl_acos(z);
-  }
-
   /* Returns the inverse hyperbolic cosine of the argument `x`.
 
      It is an error if `x` is less than 1.
