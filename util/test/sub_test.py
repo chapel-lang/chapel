@@ -238,6 +238,11 @@ def trim_output(output):
         new_output = output[:max_size//2]
         new_output += output[-max_size//2:]
         output = new_output
+
+    # Popen returns bytes if an invalid utf-8 character was present.
+    if isinstance(output, bytes):
+        output = str(output, encoding='utf-8', errors='surrogateescape')
+
     return ''.join(s if s in string.printable else "~" for s in output)
 
 
