@@ -1,0 +1,26 @@
+bang-vs-new-etc-warn.chpl:15: In function 'main':
+bang-vs-new-etc-warn.chpl:17: warning: unnecessary type construction call
+bang-vs-new-etc-warn.chpl:3: note: 'C' has no generic fields
+bang-vs-new-etc-warn.chpl:17: note: remove the '()'
+note: this warning will become an error in the future
+bang-vs-new-etc-warn.chpl:20: warning: unnecessary type construction call
+bang-vs-new-etc-warn.chpl:3: note: 'C' has no generic fields
+bang-vs-new-etc-warn.chpl:20: note: remove the '()'
+note: this warning will become an error in the future
+bang-vs-new-etc-warn.chpl:23: warning: unnecessary type construction call
+bang-vs-new-etc-warn.chpl:3: note: 'C' has no generic fields
+bang-vs-new-etc-warn.chpl:23: note: remove the '()'
+note: this warning will become an error in the future
+bang-vs-new-etc-warn.chpl:27: warning: unnecessary type construction call
+bang-vs-new-etc-warn.chpl:3: note: 'C' has no generic fields
+bang-vs-new-etc-warn.chpl:27: note: remove the '()'
+note: this warning will become an error in the future
+bang-vs-new-etc-warn.chpl:30: warning: unnecessary type construction call
+bang-vs-new-etc-warn.chpl:3: note: 'C' has no generic fields
+bang-vs-new-etc-warn.chpl:30: note: remove the '()'
+note: this warning will become an error in the future
+bang-vs-new-etc-warn.chpl:33: warning: unnecessary type construction call
+bang-vs-new-etc-warn.chpl:3: note: 'C' has no generic fields
+bang-vs-new-etc-warn.chpl:33: note: remove the '()'
+note: this warning will become an error in the future
+bang-vs-new-etc-warn.chpl:36: error: done

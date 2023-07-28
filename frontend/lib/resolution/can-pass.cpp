@@ -595,8 +595,8 @@ CanPassResult CanPassResult::canPassSubtype(Context* context,
     }
   }
 
-  // TODO: c_ptr -> c_void_ptr
-  // TODO: c_array -> c_void_ptr, c_array(t) -> c_ptr(t)
+  // TODO: c_ptr(t) -> c_ptr(void)
+  // TODO: c_array -> c_ptr(void), c_array(t) -> c_ptr(t)
 
   return fail();
 }

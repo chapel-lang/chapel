@@ -573,9 +573,9 @@ module Sys {
   extern type off_t = int(64);
 
   // --- deprecated with no replacement ---
-  extern proc sys_mmap(addr:c_void_ptr, length:c_size_t, prot:c_int, flags:c_int, fd:c_int, offset:off_t, ref ret_out:c_void_ptr):qio_err_t;
-  extern proc sys_munmap(addr:c_void_ptr, length:c_size_t):qio_err_t;
-  extern proc sys_fcntl_ptr(fd:c_int, cmd:c_int, arg:c_void_ptr, ref ret_out:c_int):qio_err_t;
+  extern proc sys_mmap(addr:c_ptr(void), length:c_size_t, prot:c_int, flags:c_int, fd:c_int, offset:off_t, ref ret_out:c_ptr(void)):qio_err_t;
+  extern proc sys_munmap(addr:c_ptr(void), length:c_size_t):qio_err_t;
+  extern proc sys_fcntl_ptr(fd:c_int, cmd:c_int, arg:c_ptr(void), ref ret_out:c_int):qio_err_t;
   extern proc sys_dup(oldfd:c_int, ref fd_out:c_int):qio_err_t;
   extern proc sys_dup2(oldfd:c_int, newfd:c_int, ref fd_out:c_int):qio_err_t;
   extern proc sys_pipe(ref read_fd_out:c_int, ref write_fd_out:c_int):qio_err_t;
@@ -596,8 +596,8 @@ module Sys {
   extern proc sys_getsockname(sockfd:c_int, ref addr:sys_sockaddr_t):qio_err_t;
   // TODO -- these should be generic, assuming caller knows what they
   // are doing.
-  extern proc sys_getsockopt(sockfd:c_int, level:c_int, optname:c_int, optval:c_void_ptr, ref optlen:socklen_t):qio_err_t;
-  extern proc sys_setsockopt(sockfd:c_int, level:c_int, optname:c_int, optval:c_void_ptr, optlen:socklen_t):qio_err_t;
+  extern proc sys_getsockopt(sockfd:c_int, level:c_int, optname:c_int, optval:c_ptr(void), ref optlen:socklen_t):qio_err_t;
+  extern proc sys_setsockopt(sockfd:c_int, level:c_int, optname:c_int, optval:c_ptr(void), optlen:socklen_t):qio_err_t;
   extern proc sys_listen(sockfd:c_int, backlog:c_int):qio_err_t;
   extern proc sys_socket(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out:c_int):qio_err_t;
   extern proc sys_getaddrinfo_addr(res:sys_addrinfo_ptr_t):sys_sockaddr_t;

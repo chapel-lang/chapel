@@ -490,7 +490,7 @@ module SortedMap {
        set it to `v`. If the sortedMap already contains a value at position
        `k`, update it to the value `v`.
      */
-    proc addOrSet(in k: keyType, in v: valType) {
+    proc addOrReplace(in k: keyType, in v: valType) {
       _enter(); defer _leave();
       _set.remove((k, nil));
       _set.add((k, new shared _valueWrapper(v)?));

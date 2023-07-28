@@ -241,6 +241,17 @@ void Context::setDetailedErrorOutput(bool detailedErrors) {
   this->detailedErrors = detailedErrors;
 }
 
+UniqueString Context::adjustPathForErrorMsg(UniqueString path) {
+  const std::string& chpl_home = this->chplHome();
+  size_t chpl_home_len = chpl_home.length();
+  if (chpl_home_len > 0 && path.startsWith(chpl_home)) {
+    // replace a prefix of the value of CHPL_HOME with $CHPL_HOME
+    return UniqueString::getConcat(this, "$CHPL_HOME",
+                                   path.c_str()+chpl_home_len);
+  }
+  return path;
+}
+
 llvm::ErrorOr<const ChplEnvMap&> Context::getChplEnv() {
   if (config_.chplHome.empty() || computedChplEnv) return chplEnv;
   auto chplEnvResult = ::chpl::getChplEnv(config_.chplEnvOverrides,

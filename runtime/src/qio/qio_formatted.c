@@ -1739,9 +1739,11 @@ qioerr qio_channel_print_bytes(const int threadsafe, qio_channel_t* restrict ch,
     err = qio_channel_write_amt(false, ch, ptr, len);
     if( err ) goto rewind;
   } else {
-    // Write b.
-    err = qio_channel_write_byte(false, ch, style->bytes_prefix);
-    if( err ) goto rewind;
+    if ( style->string_format != QIO_STRING_FORMAT_JSON ) {
+      // Write b.
+      err = qio_channel_write_byte(false, ch, style->bytes_prefix);
+      if( err ) goto rewind;
+    }
     // Write string_start.
     err = qio_channel_write_byte(false, ch, style->string_start);
     if( err ) goto rewind;
@@ -4684,7 +4686,7 @@ qioerr qio_conv_parse(c_string fmt,
     }
 
     // Read a specifier character
-    if( istype(fmt[i], "ntiurmzs/cS") ) {
+    if( istype(fmt[i], "ntiurmzs?/cS") ) {
       specifier = fmt[i];
       if( fmt[i] == 'S' ) {
         // handle numbers parsed as width for e.g. %|0S
@@ -4724,6 +4726,8 @@ qioerr qio_conv_parse(c_string fmt,
       if( specifier == 't' ) {
         // Does nothing at all with width.
         spec_out->argType = QIO_CONV_ARG_TYPE_REPR;
+      } else if ( specifier == '?' ) {
+        spec_out->argType = QIO_CONV_ARG_TYPE_SERDE;
       } else if( specifier == 'n' ) {
         spec_out->argType = QIO_CONV_ARG_TYPE_NUMERIC;
       } else if( specifier == 'i' || specifier == 'u' ||
@@ -5062,6 +5066,18 @@ qioerr qio_conv_parse(c_string fmt,
         style_out->string_end = '"';
       }
       spec_out->argType = QIO_CONV_ARG_TYPE_REPR;
+    } else if ( specifier == '?' ) {
+      style_out->base = 10;
+      style_out->pad_char = ' ';
+      style_out->realfmt = 0;
+      style_out->string_format = QIO_STRING_FORMAT_WORD;
+      style_out->showpointzero = 1;
+
+      if (precision != WIDTH_NOT_SET || width != WIDTH_NOT_SET ) {
+        QIO_GET_CONSTANT_ERROR(err, EINVAL, "'%?' does not support width or precision arguments");
+      }
+
+      spec_out->argType = QIO_CONV_ARG_TYPE_SERDE;
     } else {
       QIO_GET_CONSTANT_ERROR(err, EINVAL, "Unknown text conversion");
     }

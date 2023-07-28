@@ -22,7 +22,8 @@ CHPL_HWLOC_CFG_OPTIONS += --enable-static \
                           --disable-cuda \
                           --disable-nvml \
                           --disable-opencl \
-                          --disable-gl
+                          --disable-gl \
+                          --disable-rsmi
 
 # PCI support is needed for NIC selection, which currently is only supported
 # with the ofi comm layer

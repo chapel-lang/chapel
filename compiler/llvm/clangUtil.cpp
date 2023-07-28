@@ -1315,8 +1315,12 @@ class CCodeGenConsumer final : public ASTConsumer {
 
     bool shouldHandleDecl(Decl* d) {
       if (gCodegenGPU) {
-        //this decl must have __device__
-        return d->hasAttr<CUDADeviceAttr>();
+        // this decl must have __device__ and it must be explicit (for some
+        // reason odd reason, with AMD code generation we see am implicit use of
+        // __device__ on some math functions in the C stdlib that really aren't
+        // supposed to have them and this causes linker issues later on).
+        return d->hasAttr<CUDADeviceAttr>() &&
+          !d->getAttr<CUDADeviceAttr>()->isImplicit();
       }
       else {
         // this decl either doesn't have __device__, or if it has, it also has a
@@ -2458,9 +2462,7 @@ void prepareCodegenLLVM()
     // --ieee-float
     FM.setAllowContract(true);
   }
-  if (gCodegenGPU == false) {
-    info->irBuilder->setFastMathFlags(FM);
-  }
+  info->irBuilder->setFastMathFlags(FM);
 
   checkAdjustedDataLayout();
 
@@ -3669,7 +3671,7 @@ static clang::CanQualType getClangType(::Type* t, bool makeRef) {
 
   if (t == dtVoid || t == dtNothing)
     return Ctx->VoidTy;
-  // could match other builtin types like c_void_ptr or c_int here
+  // could match other builtin types like c_int here
 
   clang::TypeDecl* cTypeDecl = NULL;
   clang::ValueDecl* cValueDecl = NULL;

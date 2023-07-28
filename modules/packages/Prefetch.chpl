@@ -26,15 +26,15 @@ module Prefetch {
 
   import Prefetch_internal;
   inline proc prefetch(addr:c_ptr) {
-    Prefetch_internal.chpl_prefetch(addr:c_void_ptr);
+    Prefetch_internal.chpl_prefetch(addr:c_ptr(void));
   }
 
-  inline proc prefetch(addr:c_void_ptr) {
+  inline proc prefetch(addr:c_ptr(void)) {
     Prefetch_internal.chpl_prefetch(addr);
   }
 }
 
 module Prefetch_internal {
   use CTypes;
-  extern proc chpl_prefetch(addr: c_void_ptr);
+  extern proc chpl_prefetch(addr: c_ptr(void));
 }

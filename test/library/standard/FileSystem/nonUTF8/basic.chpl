@@ -3,6 +3,7 @@ use IO;
 use Sort;
 use List;
 use OS.POSIX;
+use ChplFormat;
 
 proc getMode(filename: string) throws {
 
@@ -126,8 +127,9 @@ var l: list(string);
 for f in listDir(dirname1) {
   l.pushBack(f);
 }
+var chplout = stdout.withSerializer(ChplSerializer);
 for f in sorted(l.toArray()) {
-  writef("%ht\n", f.encode(policy=encodePolicy.unescape));
+  chplout.writeln(f.encode(policy=encodePolicy.unescape));
 }
 writeln();
 

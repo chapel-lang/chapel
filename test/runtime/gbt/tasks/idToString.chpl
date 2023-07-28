@@ -3,7 +3,7 @@ use CTypes;
 
 type buf_t = c_char;
 
-extern proc chpl_task_idToString(buf: c_void_ptr,
+extern proc chpl_task_idToString(buf: c_ptr(void),
                                  size: c_size_t,
                                  id: chpl_taskID_t): c_string;
 extern proc chpl_task_getId(): chpl_taskID_t;

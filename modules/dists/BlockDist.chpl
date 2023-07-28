@@ -1253,7 +1253,7 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
       arrSection = _to_nonnil(myLocArr);
 
     local {
-      use CTypes; // Needed to cast from c_void_ptr in the next line
+      use CTypes; // Needed to cast from c_ptr(void) in the next line
       const narrowArrSection =
         __primitive("_wide_get_addr", arrSection):arrSection.type?;
       ref myElems = _to_nonnil(narrowArrSection).myElems;

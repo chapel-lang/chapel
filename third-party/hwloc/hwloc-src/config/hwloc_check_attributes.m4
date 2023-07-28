@@ -10,7 +10,7 @@
 # Copyright © 2004-2005 The Regents of the University of California.
 #                         All rights reserved.
 # and renamed for hwloc:
-# Copyright © 2009 Inria.  All rights reserved.
+# Copyright © 2009-2021 Inria.  All rights reserved.
 # Copyright © 2009 Université Bordeaux
 # Copyright © 2010 Cisco Systems, Inc.  All rights reserved.
 # See COPYING in top-level directory.
@@ -96,7 +96,8 @@ AC_DEFUN([_HWLOC_CHECK_SPECIFIC_ATTRIBUTE], [
         #
         # Try to compile using the C compiler
         #
-        AC_TRY_COMPILE([$2],[],
+        AC_COMPILE_IFELSE(
+	               [AC_LANG_PROGRAM([$2], [])],
                        [
                         #
                         # In case we did succeed: Fine, but was this due to the
@@ -118,11 +119,14 @@ AC_DEFUN([_HWLOC_CHECK_SPECIFIC_ATTRIBUTE], [
             CFLAGS_safe=$CFLAGS
             CFLAGS="$CFLAGS [$4]"
 
-            AC_TRY_COMPILE([$3],
-                [
-                 int i=4711;
-                 i=usage(&i);
-                ],
+            AC_COMPILE_IFELSE(
+	        [AC_LANG_PROGRAM(
+		  [$3],
+                  [
+                   int i=4711;
+                   i=usage(&i);
+                  ])
+		],
                 [hwloc_cv___attribute__[$1]=0],
                 [
                  #
@@ -175,28 +179,34 @@ AC_DEFUN([_HWLOC_CHECK_ATTRIBUTES], [
   AC_MSG_CHECKING(for __attribute__)
 
   AC_CACHE_VAL(hwloc_cv___attribute__, [
-    AC_TRY_COMPILE(
-      [#include <stdlib.h>
-       /* Check for the longest available __attribute__ (since gcc-2.3) */
-       struct foo {
+    AC_COMPILE_IFELSE(
+      [AC_LANG_PROGRAM(
+        [
+	 #include <stdlib.h>
+	], [
+         /* Check for the longest available __attribute__ (since gcc-2.3) */
+         struct foo {
            char a;
            int x[2] __attribute__ ((__packed__));
-        };
-      ],
+         };
+        ])],
       [],
       [hwloc_cv___attribute__=1],
       [hwloc_cv___attribute__=0],
     )
 
     if test "$hwloc_cv___attribute__" = "1" ; then
-        AC_TRY_COMPILE(
-          [#include <stdlib.h>
-           /* Check for the longest available __attribute__ (since gcc-2.3) */
-           struct foo {
+        AC_COMPILE_IFELSE(
+	  [AC_LANG_PROGRAM(
+            [
+	     #include <stdlib.h>
+	    ], [
+             /* Check for the longest available __attribute__ (since gcc-2.3) */
+             struct foo {
                char a;
                int x[2] __attribute__ ((__packed__));
-            };
-          ],
+              };
+            ])],
           [],
           [hwloc_cv___attribute__=1],
           [hwloc_cv___attribute__=0],
@@ -217,6 +227,7 @@ AC_DEFUN([_HWLOC_CHECK_ATTRIBUTES], [
     hwloc_cv___attribute__cold=0
     hwloc_cv___attribute__const=0
     hwloc_cv___attribute__deprecated=0
+    hwloc_cv___attribute__constructor=0
     hwloc_cv___attribute__format=0
     hwloc_cv___attribute__hot=0
     hwloc_cv___attribute__malloc=0
@@ -267,6 +278,14 @@ AC_DEFUN([_HWLOC_CHECK_ATTRIBUTES], [
         [
          int foo(int arg1, int arg2) __attribute__ ((__deprecated__));
          int foo(int arg1, int arg2) { return arg1 * arg2 + arg1; }
+        ],
+        [],
+        [])
+
+    _HWLOC_CHECK_SPECIFIC_ATTRIBUTE([constructor],
+        [
+         void foo(void) __attribute__ ((__constructor__));
+         void foo(void) { return; }
         ],
         [],
         [])
@@ -504,6 +523,8 @@ AC_DEFUN([_HWLOC_CHECK_ATTRIBUTES], [
                      [Whether your compiler has __attribute__ const or not])
   AC_DEFINE_UNQUOTED(HWLOC_HAVE_ATTRIBUTE_DEPRECATED, [$hwloc_cv___attribute__deprecated],
                      [Whether your compiler has __attribute__ deprecated or not])
+  AC_DEFINE_UNQUOTED(HWLOC_HAVE_ATTRIBUTE_CONSTRUCTOR, [$hwloc_cv___attribute__constructor],
+                     [Whether your compiler has __attribute__ constructor or not])
   AC_DEFINE_UNQUOTED(HWLOC_HAVE_ATTRIBUTE_FORMAT, [$hwloc_cv___attribute__format],
                      [Whether your compiler has __attribute__ format or not])
   AC_DEFINE_UNQUOTED(HWLOC_HAVE_ATTRIBUTE_HOT, [$hwloc_cv___attribute__hot],

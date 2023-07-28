@@ -28,6 +28,7 @@ module Bytes {
   private use ByteBufferHelpers;
   private use BytesStringCommon;
   private use CTypes;
+  private use ChplConfig only compiledForSingleLocale;
 
   public use BytesCasts;
   public use BytesStringCommon only decodePolicy;  // expose decodePolicy
@@ -108,10 +109,10 @@ module Bytes {
                                    x: c_string,
                                    length: int) {
     // copy the string to the combined buffer
-    var buf = buffer:c_void_ptr:c_ptr(uint(8));
+    var buf = buffer:c_ptr(void):c_ptr(uint(8));
     buf = buf + offset;
     import OS.POSIX.memcpy;
-    memcpy(buf:c_void_ptr, x:c_void_ptr, length.safeCast(c_size_t));
+    memcpy(buf:c_ptr(void), x:c_ptr(void), length.safeCast(c_size_t));
     // add null byte
     buf[length] = 0;
 
@@ -505,7 +506,7 @@ module Bytes {
                current locale, otherwise a deep copy is performed.
   */
   inline proc bytes.localize() : bytes {
-    if _local || this.locale_id == chpl_nodeID {
+    if compiledForSingleLocale() || this.locale_id == chpl_nodeID {
       return bytes.createBorrowingBuffer(this);
     } else {
       const x:bytes = this; // assignment makes it local

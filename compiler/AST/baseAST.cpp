@@ -276,7 +276,7 @@ void cleanAst() {
 
       //
       // If an internal aggregate type is being deleted, set its global
-      // handle to NULL. See #15169.
+      // handle to NULL. See #15619.
       //
       if (!isAlive(at)) {
         if (at == dtBytes) dtBytes = NULL;

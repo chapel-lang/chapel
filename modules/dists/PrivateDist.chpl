@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+use ChplConfig only compiledForSingleLocale;
+
 //
 // Private Distribution, Domain, and Array
 //  Defines PrivateSpace, an instance of PrivateDom
@@ -169,7 +171,6 @@ private proc checkCanMakeDefaultValue(type eltType) param {
 }
 
 class PrivateArr: BaseRectangularArr {
-
   var dom: unmanaged PrivateDom(rank, idxType, strides);
 
   // may be initialized separately
@@ -241,7 +242,7 @@ override proc PrivateArr.dsiDestroyArr(deinitElts:bool) {
     param needsDestroy = __primitive("needs auto destroy", eltType);
 
     if needsDestroy {
-      if _local {
+      if compiledForSingleLocale() {
         chpl__autoDestroy(data);
       } else {
         const pid = this.pid;
@@ -267,7 +268,7 @@ proc PrivateArr.dsiPrivatize(privatizeData) {
 }
 
 proc PrivateArr.dsiAccess(i: idxType) ref {
-  if _local then
+  if compiledForSingleLocale() then
     return data;
   else if i == here.id then
     return data;

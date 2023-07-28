@@ -46,7 +46,7 @@ class PassiveCache {
     proc buildAndSave(key: int) : shared dataType {
         const item = new shared dataType(key);
         const weak_ptr = new weak(item);
-        this.items.addOrSet(key, weak_ptr);
+        this.items.addOrReplace(key, weak_ptr);
         return item;
     }
 }

@@ -1,4 +1,4 @@
-.TH "hwloc_topology_support" 3 "Mon Jun 3 2019" "Version 1.11.13" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwloc_topology_support" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -20,6 +20,9 @@ hwloc_topology_support
 .ti -1c
 .RI "struct \fBhwloc_topology_membind_support\fP * \fBmembind\fP"
 .br
+.ti -1c
+.RI "struct \fBhwloc_topology_misc_support\fP * \fBmisc\fP"
+.br
 .in -1c
 .SH "Detailed Description"
 .PP 
@@ -33,6 +36,8 @@ This is retrieved with \fBhwloc_topology_get_support()\fP and will be valid unti
 .SS "struct \fBhwloc_topology_discovery_support\fP* hwloc_topology_support::discovery"
 
 .SS "struct \fBhwloc_topology_membind_support\fP* hwloc_topology_support::membind"
+
+.SS "struct \fBhwloc_topology_misc_support\fP* hwloc_topology_support::misc"
 
 
 .SH "Author"

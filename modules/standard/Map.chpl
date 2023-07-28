@@ -26,7 +26,9 @@
   Maps are not parallel safe by default, but can be made parallel safe by
   setting the param formal `parSafe` to true in any map constructor. When
   constructed from another map, the new map will inherit the parallel safety
-  mode of its originating map.
+  mode of its originating map. Note that the ``parSafe`` mode is currently
+  unstable and will eventually be replaced by a standalone parallel-safe map
+  type.
 */
 module Map {
   import ChapelLocks;
@@ -78,6 +80,7 @@ module Map {
     type valType;
 
     /* If `true`, this map will perform parallel safe operations. */
+    @unstable("'map.parSafe' is unstable and is expected to be replaced by a separate map type in the future");
     param parSafe = false;
 
     /*
@@ -156,7 +159,7 @@ module Map {
                             map can hold at least this many values before
                             attempting to resize.
     */
-    @unstable("'map.parSafe' is unstable")
+    @unstable("'map.parSafe' is unstable and is expected to be replaced by a separate map type in the future")
     proc init(type keyType, type valType, param parSafe,
               resizeThreshold=defaultHashTableResizeThreshold,
               initialCapacity=16) {
@@ -817,11 +820,16 @@ module Map {
     /* If the map doesn't contain a value at position `k` add one and
        set it to `v`. If the map already contains a value at position
        `k`, update it to the value `v`.
-     */
-    proc addOrSet(in k: keyType, in v: valType) {
+    */
+    proc addOrReplace(in k: keyType, in v: valType) {
       _enter(); defer _leave();
       var (found, slot) = table.findAvailableSlot(k);
       table.fillSlot(slot, k, v);
+    }
+
+    @deprecated(notes="'map.addOrSet' is deprecated. Please use 'map.addOrReplace' instead.")
+    proc addOrSet(in k: keyType, in v: valType) {
+      addOrReplace(k, v);
     }
 
     /*

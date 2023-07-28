@@ -1,4 +1,4 @@
-.TH "hwloc_topology_membind_support" 3 "Mon Jun 3 2019" "Version 1.11.13" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwloc_topology_membind_support" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -48,9 +48,6 @@ hwloc_topology_membind_support
 .RI "unsigned char \fBinterleave_membind\fP"
 .br
 .ti -1c
-.RI "unsigned char \fBreplicate_membind\fP"
-.br
-.ti -1c
 .RI "unsigned char \fBnexttouch_membind\fP"
 .br
 .ti -1c
@@ -89,8 +86,6 @@ Interleave policy is supported\&.
 Migration flags is supported\&. 
 .SS "unsigned char hwloc_topology_membind_support::nexttouch_membind"
 Next-touch migration policy is supported\&. 
-.SS "unsigned char hwloc_topology_membind_support::replicate_membind"
-Replication policy is supported\&. 
 .SS "unsigned char hwloc_topology_membind_support::set_area_membind"
 Binding a given memory area is supported\&. 
 .SS "unsigned char hwloc_topology_membind_support::set_proc_membind"

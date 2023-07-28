@@ -33,6 +33,7 @@ module ChapelArray {
   use ChapelDebugPrint;
   use CTypes;
   use ChapelPrivatization;
+  use ChplConfig only compiledForSingleLocale;
   public use ChapelDomain;
 
   // Explicitly use a processor atomic, as most calls to this function are
@@ -80,9 +81,9 @@ module ChapelArray {
   config param logAllArrEltAccess = false;
 
   proc _isPrivatized(value) param do
-    return !_local && ((_privatization && value!.dsiSupportsPrivatization()) ||
-                       value!.dsiRequiresPrivatization());
-    // Note - _local=true means --local / single locale
+    return !compiledForSingleLocale() &&
+           ((_privatization && value!.dsiSupportsPrivatization()) ||
+            value!.dsiRequiresPrivatization());
     // _privatization is controlled by --[no-]privatization
     // privatization required, not optional, for PrivateDist
 
@@ -666,6 +667,7 @@ module ChapelArray {
   //
   pragma "syntactic distribution"
   @chpldoc.nodoc
+  @unstable("the type 'dmap' is unstable, instead please use distribution factory functions when available")
   record dmap { }
 
   proc chpl__buildDistType(type t) type where isSubtype(_to_borrowed(t), BaseDist) {
@@ -3853,7 +3855,7 @@ module ChapelArray {
   //   extern proc foo(X: []);
   //   var A: [1..3] real;
   //   foo(A);
-  // 'castToVoidStar' says whether we should cast the result to c_void_ptr
+  // 'castToVoidStar' says whether we should cast the result to c_ptr(void)
   proc chpl_arrayToPtr(arr: [], param castToVoidStar: bool = false) {
     if (!arr.isRectangular() || !domainDistIsLayout(arr.domain)) then
       compilerError("Only single-locale rectangular arrays can be passed to an external routine argument with array type", errorDepth=2);
@@ -3864,7 +3866,7 @@ module ChapelArray {
     use CTypes;
     const ptr = c_pointer_return(arr[arr.domain.low]);
     if castToVoidStar then
-      return ptr: c_void_ptr;
+      return ptr: c_ptr(void);
     else
       return ptr;
   }

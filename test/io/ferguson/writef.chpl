@@ -1,5 +1,7 @@
 pragma "error mode fatal"
 module test {
+  private use IO, JSON;
+
   config type t = string;
   writeln("Part 1");
 
@@ -35,10 +37,8 @@ module test {
   writef("%Xr\n":t, 1.02e-27);
 
   writeln("Part 4");
-  writef("%t\n":t, (1,17));
-  writef("%xt\n":t, (1,17));
-  writef("%@xt\n":t, (1,17));
-  writef("%jt\n":t, (1,17));
+  writef("%?\n":t, (1,17));
+  stdout.withSerializer(JsonSerializer).writef("%?\n":t, (1,17));
 
   writeln("Part 5");
   writef("%*i\n":t, 17, 1);

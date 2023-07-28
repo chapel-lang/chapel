@@ -58,10 +58,10 @@ Task Arguments
 --------------
 
 The task argument in a call to :proc:`async()` or :proc:`Future.andThen()`
-may be a :ref:`first-class function <readme-firstClassFns>`, a
-:ref:`lambda function <readme-lambdaFns>`, or a specially-constructed
-class or record.  Such a record must have both a `proc this()` method for the
-desired computation and a `proc retType type` method that returns the return
+may be a :ref:`first-class function <readme-firstClassProcedures>`, or a
+specially-constructed class or record.
+Such a record must have both a `proc this()` method for the desired
+computation and a `proc retType type` method that returns the return
 type of the `this()` method.  (The requirement for the `retType` method is
 a currently limitation that is intended to be resolved in the future.)
 For example:

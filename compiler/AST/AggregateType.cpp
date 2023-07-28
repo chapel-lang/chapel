@@ -72,6 +72,7 @@ AggregateType::AggregateType(AggregateTag initTag) :
   genericField        = 0;
   mIsGeneric          = false;
   mIsGenericWithDefaults = false;
+  mIsGenericWithSomeDefaults = false;
   foundGenericFields = false;
   typeSignature      = NULL;
 
@@ -176,8 +177,16 @@ bool AggregateType::isGenericWithDefaults() const {
   return mIsGenericWithDefaults;
 }
 
+bool AggregateType::isGenericWithSomeDefaults() const {
+  return mIsGenericWithSomeDefaults;
+}
+
 void AggregateType::markAsGenericWithDefaults() {
   mIsGenericWithDefaults = true;
+}
+
+void AggregateType::markAsGenericWithSomeDefaults() {
+  mIsGenericWithSomeDefaults = true;
 }
 
 void AggregateType::verify() {
@@ -1012,13 +1021,23 @@ static Expr* resolveFieldExpr(Expr* expr, bool addCopy) {
   if (isBlockStmt(expr) == false) {
     BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
     expr->replace(block);
+    bool callTypeCtor = false;
+
     if (isSymExpr(expr) && toSymExpr(expr)->symbol()->hasFlag(FLAG_TYPE_VARIABLE) &&
         expr->typeInfo()->symbol->hasFlag(FLAG_GENERIC) &&
         isPrimitiveType(expr->typeInfo()) == false) {
+
+      AggregateType* at = toAggregateType(canonicalClassType(expr->typeInfo()));
+      if (at != nullptr)
+        callTypeCtor = at->isGenericWithDefaults();
+    }
+
+    if (callTypeCtor) {
       block->insertAtTail(new CallExpr(expr->typeInfo()->symbol));
     } else {
       block->insertAtTail(expr);
     }
+
     normalize(block);
     expr = block;
     if (CallExpr* last = toCallExpr(block->body.tail)) {
@@ -2168,7 +2187,8 @@ void AggregateType::processGenericFields() {
   std::set<AggregateType*> visited;
 
   foundGenericFields = true;
-  bool isGenericWithDefaults = mIsGeneric;
+  bool anyDefaultedGenericFields = false;
+  bool allDefaultedGenericFields = true;
 
   if (isClass() == true && dispatchParents.n > 0) {
     AggregateType* parent = dispatchParents.v[0];
@@ -2176,7 +2196,9 @@ void AggregateType::processGenericFields() {
       parent->processGenericFields();
 
       if (parent->mIsGeneric) {
-        isGenericWithDefaults = parent->mIsGenericWithDefaults;
+        anyDefaultedGenericFields = parent->mIsGenericWithSomeDefaults ||
+                                    parent->mIsGenericWithDefaults;
+        allDefaultedGenericFields = parent->mIsGenericWithDefaults;
       }
 
       for_vector(Symbol, field, parent->genericFields) {
@@ -2194,23 +2216,29 @@ void AggregateType::processGenericFields() {
       if (isTypeSymbol(field) == false) {
         genericFields.push_back(field);
         if (field->defPoint->init == NULL) {
-          isGenericWithDefaults = false;
+          allDefaultedGenericFields = false;
+        } else {
+          anyDefaultedGenericFields = true;
         }
       }
     } else if (field->defPoint->init == NULL) {
       if (field->defPoint->exprType == NULL) {
         genericFields.push_back(field); // "var x;"
-        isGenericWithDefaults = false;
+        allDefaultedGenericFields = false;
       } else if (isFieldTypeExprGeneric(field->defPoint->exprType, visited)) {
         genericFields.push_back(field); // "var x : integral;"
-        isGenericWithDefaults = false;
+        allDefaultedGenericFields = false;
       }
     }
   }
 
   typeSignature = buildTypeSignature(this);
 
-  this->mIsGenericWithDefaults = isGenericWithDefaults;
+  this->mIsGenericWithDefaults = genericFields.size() > 0 &&
+                                 allDefaultedGenericFields;
+  this->mIsGenericWithSomeDefaults = genericFields.size() > 0 &&
+                                     anyDefaultedGenericFields &&
+                                     !allDefaultedGenericFields;
 }
 
 bool AggregateType::isFieldInThisClass(const char* name) const {

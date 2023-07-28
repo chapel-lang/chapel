@@ -1,4 +1,4 @@
-use List, IO;
+use List, IO, JSON;
 
 {
   var mylist = new list(int);
@@ -7,7 +7,7 @@ use List, IO;
   mylist.pushBack(2);
   mylist.pushBack(3);
 
-  writef("testing json write: %jt\n", mylist);
+  stdout.withSerializer(JsonSerializer).writef("testing json write: %?\n", mylist);
 }
 
 var f = openTempFile();
@@ -20,11 +20,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var mylist:list(int);
 
-  reader.readf("%jt", mylist);
+  reader.readf("%?", mylist);
 
   writeln("Read: ", mylist);
 
@@ -41,11 +41,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var mylist:list(int);
 
-  reader.readf("%jt", mylist);
+  reader.readf("%?", mylist);
 
   writeln("Read: ", mylist);
 
@@ -63,11 +63,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var mylist:list(int);
 
-  reader.readf("%jt", mylist);
+  reader.readf("%?", mylist);
 
   writeln("Read: ", mylist);
 
@@ -84,11 +84,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var mylist:list(int);
 
-  reader.readf("%jt", mylist);
+  reader.readf("%?", mylist);
 
   writeln("Read: ", mylist);
 
@@ -105,11 +105,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var mylist:list(int);
 
-  reader.readf("%jt", mylist);
+  reader.readf("%?", mylist);
 
   writeln("Read: ", mylist);
 

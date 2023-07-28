@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE topology SYSTEM "hwloc2.dtd">
+<topology version="2.0">
+  <object type="Machine" os_index="0" cpuset="0x00000303,0x03030000,,0x03030303" complete_cpuset="0x00000303,0x03030000,,0x03030303" allowed_cpuset="0x00000303,0x03030000,,0x03030303" nodeset="0x00000003" complete_nodeset="0x00000003" allowed_nodeset="0x00000003" gp_index="1">
+    <info name="PlatformName" value="PowerNV"/>
+    <info name="PlatformModel" value="PowerNV 8335-GTB"/>
+    <info name="Backend" value="Linux"/>
+    <info name="LinuxCgroup" value="/oar/bgoglin_1984938"/>
+    <info name="OSName" value="Linux"/>
+    <info name="OSRelease" value="4.19.0-14-powerpc64le"/>
+    <info name="OSVersion" value="#1 SMP Debian 4.19.171-2 (2021-01-30)"/>
+    <info name="HostName" value="drac-12.grenoble.grid5000.fr"/>
+    <info name="Architecture" value="ppc64le"/>
+    <info name="hwlocVersion" value="2.5.0a1-git"/>
+    <info name="ProcessName" value="lstopo-no-graphics"/>
+    <object type="Package" os_index="0" cpuset="0x03030303" complete_cpuset="0x03030303" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="3">
+      <info name="CPUModel" value="POWER8NVL, altivec supported"/>
+      <info name="CPURevision" value="1.0 (pvr 004c 0100)"/>
+      <object type="NUMANode" os_index="0" cpuset="0x03030303" complete_cpuset="0x03030303" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="264" local_memory="68556816384"/>
+      <object type="L3Cache" cpuset="0x00000003" complete_cpuset="0x00000003" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="8" cache_size="8388608" depth="3" cache_linesize="0" cache_associativity="0" cache_type="0">
+        <object type="Core" os_index="8" cpuset="0x00000003" complete_cpuset="0x00000003" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="2">
+          <object type="PU" os_index="0" cpuset="0x00000001" complete_cpuset="0x00000001" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="4"/>
+          <object type="PU" os_index="1" cpuset="0x00000002" complete_cpuset="0x00000002" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="9"/>
+        </object>
+      </object>
+      <object type="L3Cache" cpuset="0x00000300" complete_cpuset="0x00000300" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="21" cache_size="8388608" depth="3" cache_linesize="0" cache_associativity="0" cache_type="0">
+        <object type="Core" os_index="16" cpuset="0x00000300" complete_cpuset="0x00000300" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="16">
+          <object type="PU" os_index="8" cpuset="0x00000100" complete_cpuset="0x00000100" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="17"/>
+          <object type="PU" os_index="9" cpuset="0x00000200" complete_cpuset="0x00000200" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="22"/>
+        </object>
+      </object>
+      <object type="L3Cache" cpuset="0x00030000" complete_cpuset="0x00030000" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="34" cache_size="8388608" depth="3" cache_linesize="0" cache_associativity="0" cache_type="0">
+        <object type="Core" os_index="32" cpuset="0x00030000" complete_cpuset="0x00030000" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="29">
+          <object type="PU" os_index="16" cpuset="0x00010000" complete_cpuset="0x00010000" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="30"/>
+          <object type="PU" os_index="17" cpuset="0x00020000" complete_cpuset="0x00020000" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="35"/>
+        </object>
+      </object>
+      <object type="L3Cache" cpuset="0x03000000" complete_cpuset="0x03000000" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="47" cache_size="8388608" depth="3" cache_linesize="0" cache_associativity="0" cache_type="0">
+        <object type="Core" os_index="40" cpuset="0x03000000" complete_cpuset="0x03000000" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="42">
+          <object type="PU" os_index="24" cpuset="0x01000000" complete_cpuset="0x01000000" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="43"/>
+          <object type="PU" os_index="25" cpuset="0x02000000" complete_cpuset="0x02000000" nodeset="0x00000001" complete_nodeset="0x00000001" gp_index="48"/>
+        </object>
+      </object>
+      <object type="Bridge" gp_index="304" bridge_type="0-1" depth="0" bridge_pci="0002:[00-01]">
+        <object type="Bridge" gp_index="287" bridge_type="1-1" depth="1" bridge_pci="0002:[01-01]" pci_busid="0002:00:00.0" pci_type="0604 [1014:03dc] [0000:0000] 00" pci_link_speed="7.876923">
+          <object type="PCIDev" gp_index="282" pci_busid="0002:01:00.0" pci_type="0302 [10de:15f9] [10de:116b] a1" pci_link_speed="15.753846">
+            <object type="OSDev" gp_index="328" name="cuda0" subtype="CUDA" osdev_type="5">
+              <info name="Backend" value="CUDA"/>
+              <info name="GPUVendor" value="NVIDIA Corporation"/>
+              <info name="GPUModel" value="Tesla P100-SXM2-16GB"/>
+              <info name="CUDAGlobalMemorySize" value="16671616"/>
+              <info name="CUDAL2CacheSize" value="4096"/>
+              <info name="CUDAMultiProcessors" value="56"/>
+              <info name="CUDACoresPerMP" value="64"/>
+              <info name="CUDASharedMemorySizePerMP" value="48"/>
+            </object>
+            <object type="OSDev" gp_index="324" name="opencl0d0" subtype="OpenCL" osdev_type="5">
+              <info name="Backend" value="OpenCL"/>
+              <info name="OpenCLDeviceType" value="GPU"/>
+              <info name="GPUVendor" value="NVIDIA Corporation"/>
+              <info name="GPUModel" value="Tesla P100-SXM2-16GB"/>
+              <info name="OpenCLPlatformIndex" value="0"/>
+              <info name="OpenCLPlatformName" value="NVIDIA CUDA"/>
+              <info name="OpenCLPlatformDeviceIndex" value="0"/>
+              <info name="OpenCLComputeUnits" value="56"/>
+              <info name="OpenCLGlobalMemorySize" value="16671616"/>
+            </object>
+            <object type="OSDev" gp_index="332" name="nvml0" subtype="NVML" osdev_type="1">
+              <info name="Backend" value="NVML"/>
+              <info name="GPUVendor" value="NVIDIA Corporation"/>
+              <info name="GPUModel" value="Tesla P100-SXM2-16GB"/>
+              <info name="NVIDIASerial" value="0322716104625"/>
+              <info name="NVIDIAUUID" value="GPU-77bf6b9a-6906-5a93-d28b-b77d2c23d1d2"/>
+            </object>
+          </object>
+        </object>
+      </object>
+      <object type="Bridge" gp_index="305" bridge_type="0-1" depth="0" bridge_pci="0003:[00-01]">
+        <object type="Bridge" gp_index="271" bridge_type="1-1" depth="1" bridge_pci="0003:[01-01]" pci_busid="0003:00:00.0" pci_type="0604 [1014:03dc] [0000:0000] 00" pci_link_speed="7.876923">
+          <object type="PCIDev" gp_index="268" pci_busid="0003:01:00.0" pci_type="0302 [10de:15f9] [10de:116b] a1" pci_link_speed="15.753846">
+            <object type="OSDev" gp_index="329" name="cuda1" subtype="CUDA" osdev_type="5">
+              <info name="Backend" value="CUDA"/>
+              <info name="GPUVendor" value="NVIDIA Corporation"/>
+              <info name="GPUModel" value="Tesla P100-SXM2-16GB"/>
+              <info name="CUDAGlobalMemorySize" value="16671616"/>
+              <info name="CUDAL2CacheSize" value="4096"/>
+              <info name="CUDAMultiProcessors" value="56"/>
+              <info name="CUDACoresPerMP" value="64"/>
+              <info name="CUDASharedMemorySizePerMP" value="48"/>
+            </object>
+            <object type="OSDev" gp_index="325" name="opencl0d1" subtype="OpenCL" osdev_type="5">
+              <info name="Backend" value="OpenCL"/>
+              <info name="OpenCLDeviceType" value="GPU"/>
+              <info name="GPUVendor" value="NVIDIA Corporation"/>
+              <info name="GPUModel" value="Tesla P100-SXM2-16GB"/>
+              <info name="OpenCLPlatformIndex" value="0"/>
+              <info name="OpenCLPlatformName" value="NVIDIA CUDA"/>
+              <info name="OpenCLPlatformDeviceIndex" value="1"/>
+              <info name="OpenCLComputeUnits" value="56"/>
+              <info name="OpenCLGlobalMemorySize" value="16671616"/>
+            </object>
+            <object type="OSDev" gp_index="333" name="nvml1" subtype="NVML" osdev_type="1">
+              <info name="Backend" value="NVML"/>
+              <info name="GPUVendor" value="NVIDIA Corporation"/>
+              <info name="GPUModel" value="Tesla P100-SXM2-16GB"/>
+              <info name="NVIDIASerial" value="0322716103693"/>
+              <info name="NVIDIAUUID" value="GPU-00fc8f7f-8206-b5f8-1d34-e600a300e314"/>
+            </object>
+          </object>
+        </object>
+      </object>
+    </object>
+    <object type="Package" os_index="1" cpuset="0x00000303,0x03030000,,0x0" complete_cpuset="0x00000303,0x03030000,,0x0" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="134">
+      <info name="CPUModel" value="POWER8NVL, altivec supported"/>
+      <info name="CPURevision" value="1.0 (pvr 004c 0100)"/>
+      <object type="NUMANode" os_index="1" cpuset="0x00000303,0x03030000,,0x0" complete_cpuset="0x00000303,0x03030000,,0x0" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="265" local_memory="68450713600"/>
+      <object type="L3Cache" cpuset="0x00030000,,0x0" complete_cpuset="0x00030000,,0x0" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="139" cache_size="8388608" depth="3" cache_linesize="0" cache_associativity="0" cache_type="0">
+        <object type="Core" os_index="136" cpuset="0x00030000,,0x0" complete_cpuset="0x00030000,,0x0" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="133">
+          <object type="PU" os_index="80" cpuset="0x00010000,,0x0" complete_cpuset="0x00010000,,0x0" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="135"/>
+          <object type="PU" os_index="81" cpuset="0x00020000,,0x0" complete_cpuset="0x00020000,,0x0" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="140"/>
+        </object>
+      </object>
+      <object type="L3Cache" cpuset="0x03000000,,0x0" complete_cpuset="0x03000000,,0x0" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="152" cache_size="8388608" depth="3" cache_linesize="0" cache_associativity="0" cache_type="0">
+        <object type="Core" os_index="144" cpuset="0x03000000,,0x0" complete_cpuset="0x03000000,,0x0" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="147">
+          <object type="PU" os_index="88" cpuset="0x01000000,,0x0" complete_cpuset="0x01000000,,0x0" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="148"/>
+          <object type="PU" os_index="89" cpuset="0x02000000,,0x0" complete_cpuset="0x02000000,,0x0" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="153"/>
+        </object>
+      </object>
+      <object type="L3Cache" cpuset="0x00000003,,,0x0" complete_cpuset="0x00000003,,,0x0" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="165" cache_size="8388608" depth="3" cache_linesize="0" cache_associativity="0" cache_type="0">
+        <object type="Core" os_index="152" cpuset="0x00000003,,,0x0" complete_cpuset="0x00000003,,,0x0" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="160">
+          <object type="PU" os_index="96" cpuset="0x00000001,,,0x0" complete_cpuset="0x00000001,,,0x0" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="161"/>
+          <object type="PU" os_index="97" cpuset="0x00000002,,,0x0" complete_cpuset="0x00000002,,,0x0" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="166"/>
+        </object>
+      </object>
+      <object type="L3Cache" cpuset="0x00000300,,,0x0" complete_cpuset="0x00000300,,,0x0" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="178" cache_size="8388608" depth="3" cache_linesize="0" cache_associativity="0" cache_type="0">
+        <object type="Core" os_index="168" cpuset="0x00000300,,,0x0" complete_cpuset="0x00000300,,,0x0" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="173">
+          <object type="PU" os_index="104" cpuset="0x00000100,,,0x0" complete_cpuset="0x00000100,,,0x0" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="174"/>
+          <object type="PU" os_index="105" cpuset="0x00000200,,,0x0" complete_cpuset="0x00000200,,,0x0" nodeset="0x00000002" complete_nodeset="0x00000002" gp_index="179"/>
+        </object>
+      </object>
+      <object type="Bridge" gp_index="310" bridge_type="0-1" depth="0" bridge_pci="000a:[00-01]">
+        <object type="Bridge" gp_index="294" bridge_type="1-1" depth="1" bridge_pci="000a:[01-01]" pci_busid="000a:00:00.0" pci_type="0604 [1014:03dc] [0000:0000] 00" pci_link_speed="7.876923">
+          <object type="PCIDev" gp_index="289" pci_busid="000a:01:00.0" pci_type="0302 [10de:15f9] [10de:116b] a1" pci_link_speed="15.753846">
+            <object type="OSDev" gp_index="330" name="cuda2" subtype="CUDA" osdev_type="5">
+              <info name="Backend" value="CUDA"/>
+              <info name="GPUVendor" value="NVIDIA Corporation"/>
+              <info name="GPUModel" value="Tesla P100-SXM2-16GB"/>
+              <info name="CUDAGlobalMemorySize" value="16671616"/>
+              <info name="CUDAL2CacheSize" value="4096"/>
+              <info name="CUDAMultiProcessors" value="56"/>
+              <info name="CUDACoresPerMP" value="64"/>
+              <info name="CUDASharedMemorySizePerMP" value="48"/>
+            </object>
+            <object type="OSDev" gp_index="326" name="opencl0d2" subtype="OpenCL" osdev_type="5">
+              <info name="Backend" value="OpenCL"/>
+              <info name="OpenCLDeviceType" value="GPU"/>
+              <info name="GPUVendor" value="NVIDIA Corporation"/>
+              <info name="GPUModel" value="Tesla P100-SXM2-16GB"/>
+              <info name="OpenCLPlatformIndex" value="0"/>
+              <info name="OpenCLPlatformName" value="NVIDIA CUDA"/>
+              <info name="OpenCLPlatformDeviceIndex" value="2"/>
+              <info name="OpenCLComputeUnits" value="56"/>
+              <info name="OpenCLGlobalMemorySize" value="16671616"/>
+            </object>
+            <object type="OSDev" gp_index="334" name="nvml2" subtype="NVML" osdev_type="1">
+              <info name="Backend" value="NVML"/>
+              <info name="GPUVendor" value="NVIDIA Corporation"/>
+              <info name="GPUModel" value="Tesla P100-SXM2-16GB"/>
+              <info name="NVIDIASerial" value="0322716104229"/>
+              <info name="NVIDIAUUID" value="GPU-ea919830-8251-6a30-e379-daeb01448779"/>
+            </object>
+          </object>
+        </object>
+      </object>
+      <object type="Bridge" gp_index="311" bridge_type="0-1" depth="0" bridge_pci="000b:[00-01]">
+        <object type="Bridge" gp_index="279" bridge_type="1-1" depth="1" bridge_pci="000b:[01-01]" pci_busid="000b:00:00.0" pci_type="0604 [1014:03dc] [0000:0000] 00" pci_link_speed="7.876923">
+          <object type="PCIDev" gp_index="273" pci_busid="000b:01:00.0" pci_type="0302 [10de:15f9] [10de:116b] a1" pci_link_speed="15.753846">
+            <object type="OSDev" gp_index="331" name="cuda3" subtype="CUDA" osdev_type="5">
+              <info name="Backend" value="CUDA"/>
+              <info name="GPUVendor" value="NVIDIA Corporation"/>
+              <info name="GPUModel" value="Tesla P100-SXM2-16GB"/>
+              <info name="CUDAGlobalMemorySize" value="16671616"/>
+              <info name="CUDAL2CacheSize" value="4096"/>
+              <info name="CUDAMultiProcessors" value="56"/>
+              <info name="CUDACoresPerMP" value="64"/>
+              <info name="CUDASharedMemorySizePerMP" value="48"/>
+            </object>
+            <object type="OSDev" gp_index="327" name="opencl0d3" subtype="OpenCL" osdev_type="5">
+              <info name="Backend" value="OpenCL"/>
+              <info name="OpenCLDeviceType" value="GPU"/>
+              <info name="GPUVendor" value="NVIDIA Corporation"/>
+              <info name="GPUModel" value="Tesla P100-SXM2-16GB"/>
+              <info name="OpenCLPlatformIndex" value="0"/>
+              <info name="OpenCLPlatformName" value="NVIDIA CUDA"/>
+              <info name="OpenCLPlatformDeviceIndex" value="3"/>
+              <info name="OpenCLComputeUnits" value="56"/>
+              <info name="OpenCLGlobalMemorySize" value="16671616"/>
+            </object>
+            <object type="OSDev" gp_index="335" name="nvml3" subtype="NVML" osdev_type="1">
+              <info name="Backend" value="NVML"/>
+              <info name="GPUVendor" value="NVIDIA Corporation"/>
+              <info name="GPUModel" value="Tesla P100-SXM2-16GB"/>
+              <info name="NVIDIASerial" value="0322816173796"/>
+              <info name="NVIDIAUUID" value="GPU-93f5db36-624e-1453-40ab-85cc675aa903"/>
+            </object>
+          </object>
+        </object>
+      </object>
+    </object>
+  </object>
+  <distances2 type="NUMANode" nbobjs="2" kind="5" name="NUMALatency" indexing="os">
+    <indexes length="4">0 1 </indexes>
+    <u64values length="12">10 40 40 10 </u64values>
+  </distances2>
+  <distances2hetero nbobjs="6" kind="25" name="NVLinkBandwidth">
+    <indexes length="62">OSDev:332 OSDev:333 OSDev:334 OSDev:335 Package:3 Package:134 </indexes>
+    <u64values length="44">1000000 40000 0 0 40000 0 40000 1000000 0 0 </u64values>
+    <u64values length="38">40000 0 0 0 1000000 40000 0 40000 0 0 </u64values>
+    <u64values length="48">40000 1000000 0 40000 40000 40000 0 0 1000000 0 </u64values>
+    <u64values length="26">0 0 40000 40000 0 1000000 </u64values>
+  </distances2hetero>
+  <support name="discovery.pu"/>
+  <support name="discovery.numa"/>
+  <support name="discovery.numa_memory"/>
+  <support name="discovery.disallowed_pu"/>
+  <support name="discovery.disallowed_numa"/>
+  <support name="cpubind.set_thisproc_cpubind"/>
+  <support name="cpubind.get_thisproc_cpubind"/>
+  <support name="cpubind.set_proc_cpubind"/>
+  <support name="cpubind.get_proc_cpubind"/>
+  <support name="cpubind.set_thisthread_cpubind"/>
+  <support name="cpubind.get_thisthread_cpubind"/>
+  <support name="cpubind.set_thread_cpubind"/>
+  <support name="cpubind.get_thread_cpubind"/>
+  <support name="cpubind.get_thisproc_last_cpu_location"/>
+  <support name="cpubind.get_proc_last_cpu_location"/>
+  <support name="cpubind.get_thisthread_last_cpu_location"/>
+  <support name="membind.set_thisthread_membind"/>
+  <support name="membind.get_thisthread_membind"/>
+  <support name="membind.set_area_membind"/>
+  <support name="membind.get_area_membind"/>
+  <support name="membind.alloc_membind"/>
+  <support name="membind.firsttouch_membind"/>
+  <support name="membind.bind_membind"/>
+  <support name="membind.interleave_membind"/>
+  <support name="membind.migrate_membind"/>
+  <support name="membind.get_area_memlocation"/>
+  <support name="custom.exported_support"/>
+  <cpukind cpuset="0x00000303,0x03030000,,0x03030303">
+    <info name="FrequencyMaxMHz" value="4023"/>
+  </cpukind>
+</topology>
