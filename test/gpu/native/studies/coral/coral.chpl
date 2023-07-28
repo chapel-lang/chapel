@@ -57,7 +57,7 @@ proc convolve_and_calculate(Array: [] real(32), centerPoints : ?, locL : ?, locC
     calc_distance(Array, locC, locR, tmpCR, bs, be, i, first_point);
     calc_distance(Array, locR, locR, tmpRR, bs, be, i, first_point);
 
-    Output.localAccess[i,first_point] = (tmpLL + tmpCC + tmpRR + 2*(tmpLC + tmpLR + tmpCR)); // / (Mask_Size**2);
+    Output.localAccess[first_point,i] = (tmpLL + tmpCC + tmpRR + 2*(tmpLC + tmpLR + tmpCR)); // / (Mask_Size**2);
 
     //var Output = (tmpLL + tmpCC + tmpRR + 2*(tmpLC + tmpLR + tmpCR));
     var prev = tmpCC + tmpRR + 2*tmpCR;
@@ -78,7 +78,7 @@ proc convolve_and_calculate(Array: [] real(32), centerPoints : ?, locL : ?, locC
 
       /* Global GPU memory access causing ~20% slowdown? */
       var current = tmpRR + 2*(tmpLR + tmpCR);
-      Output.localAccess[i,j] = (prev + current); // / (Mask_Size**2);
+      Output.localAccess[j,i] = (prev + current); // / (Mask_Size**2);
 
       //Output = prev + current;
       prev = prev + current - tmpLL - 2*(tmpLC + tmpLR);
@@ -128,7 +128,7 @@ proc main(args: [] string) {
         x = 1000;
         y = 1000;
       }
-      const ImageSpace = {0..#x, 0..#y};
+      const ImageSpace = {0..#y, 0..#x};
 
 
       var Array : [1..5,1..y,1..x] real(32);
