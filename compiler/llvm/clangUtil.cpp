@@ -4619,6 +4619,7 @@ void makeBinaryLLVM(void) {
     setupLLVMCodegenFilenames();
     setupDefaultFilenames();
     restoreAdditionalSourceFiles();
+    restoreLibraryAndIncludeInfo();
 
     // regenerate ClangInfo
     assert(!gGenInfo->clangInfo);
@@ -4795,6 +4796,7 @@ void makeBinaryLLVM(void) {
     cargs += " ";
     cargs += clangInfo->clangCCArgs[i];
   }
+  gdbShouldBreakHere();
 
   std::string gpuArgs = "";
   if (usingGpuLocaleModel()) {
@@ -5327,6 +5329,7 @@ static void runLLVMLinking(std::string useLinkCXX, std::string options,
                                              tmpbinname,
                                              dotOFiles,
                                              clangLDArgs);
+
 
   mysystem(command.c_str(), "Make Binary - Linking");
 }

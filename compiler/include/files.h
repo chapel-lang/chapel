@@ -95,6 +95,9 @@ void addLibPath(const char* filename);
 void addLibFile(const char* filename);
 void addIncInfo(const char* incDir);
 
+// Restore lib dir, lib name, and inc dir info that was saved to disk, for
+// compiler-driver use.
+void restoreLibraryAndIncludeInfo();
 // Restore source file names that were saved to disk, for compiler-driver use.
 void restoreAdditionalSourceFiles();
 

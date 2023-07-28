@@ -71,6 +71,9 @@ bool ccwarnings = false;
 std::vector<const char*>   incDirs;
 std::vector<const char*>   libDirs;
 std::vector<const char*>   libFiles;
+static const char* incDirsFilename = "incDirs.tmp";
+static const char* libDirsFilename = "libDirs.tmp";
+static const char* libFilesFilename = "libFiles.tmp";
 
 const char* intDirName = NULL;
 
@@ -92,20 +95,78 @@ static void addPath(const char* pathVar, std::vector<const char*>* pathvec) {
   } while (colon != NULL);
 }
 
+static void appendLineToTmpFile(const char* str, const char* filename) {
+  fileinfo* file = openTmpFile(filename, "a");
+  fprintf(file->fptr, "%s\n", str);
+  closefile(file);
+}
+
 //
 // Convert a libString of the form "foo:bar:baz" to entries in libDirs
 //
 void addLibPath(const char* libString) {
   addPath(libString, &libDirs);
+
+  if (fDoCompilation) {
+    appendLineToTmpFile(libString, libDirsFilename);
+  }
 }
 
 void addLibFile(const char* libFile) {
   // use astr() to get a copy of the string that this vector can own
   libFiles.push_back(astr(libFile));
+
+  if (fDoCompilation) {
+    appendLineToTmpFile(libFile, libFilesFilename);
+  }
 }
 
 void addIncInfo(const char* incDir) {
   addPath(incDir, &incDirs);
+
+  if (fDoCompilation) {
+    appendLineToTmpFile(incDir, incDirsFilename);
+  }
+}
+
+// Helper function to feed tmp file lines into a storage/processing function.
+// Used for deserializing library dir, library name, and include dir info for
+// driver.
+static void restoreLinesFromTmp(const char* tmpFileName,
+                               void (*restoreFunc)(const char*)) {
+  // Create file iff it did not already exist, for simpler reading logic in the
+  // rest of the function.
+  fileinfo* tmpFileDummy = openTmpFile(tmpFileName, "a");
+  closefile(tmpFileDummy);
+
+  fileinfo* tmpFile = openTmpFile(tmpFileName, "r");
+
+  char strBuf[4096];
+  while (fgets(strBuf, sizeof(strBuf), tmpFile->fptr)) {
+    // remove trailing newline from fgets
+    // using strlen here is fine because fgets guarantees null termination
+    size_t len = strlen(strBuf);
+    assert(strBuf[len-1] == '\n' && "stored line exceeds maximum length");
+    strBuf[--len] = '\0';
+
+    // invoke restoring function
+    (*restoreFunc)(strBuf);
+  }
+
+  closefile(tmpFile);
+}
+
+void restoreLibraryAndIncludeInfo() {
+  INT_ASSERT(
+      fDoMakeBinary &&
+      "should only be restoring library and include info in makeBinary stage");
+  assert(libDirs.empty() && libFiles.empty() && incDirs.empty() &&
+         "tried to restore library and include info from disk, but it was "
+         "already present in memory");
+
+  restoreLinesFromTmp(libDirsFilename, &addLibPath);
+  restoreLinesFromTmp(libFilesFilename, &addLibFile);
+  restoreLinesFromTmp(incDirsFilename, &addIncInfo);
 }
 
 void restoreAdditionalSourceFiles() {
