@@ -2257,7 +2257,8 @@ module TwoArrayPartitioning {
                       else here.maxTaskPar;
     var countsSize:int = nTasks*maxBuckets;
 
-    var bucketizer; // contains e.g. sample
+    type bucketizerType;
+    var bucketizer: bucketizerType; // contains e.g. sample
 
     // globalCounts stores counts like this:
     //   count for bin 0, task 0
@@ -3183,6 +3184,7 @@ module TwoArrayRadixSort {
 
     if Data._instance.isDefaultRectangular() {
       var state = new TwoArrayBucketizerSharedState(
+        bucketizerType=RadixBucketizer,
         bucketizer=new RadixBucketizer(),
         baseCaseSize=baseCaseSize,
         sequentialSizePerTask=sequentialSizePerTask,
