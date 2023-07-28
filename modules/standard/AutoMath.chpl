@@ -215,25 +215,23 @@ module AutoMath {
   // (The entries below are alphabetized (case-insensitively) because chpldocs
   // presents them in declaration order.)
   //
-
-
   /* Returns the absolute value of the integer argument.
 
-     :rtype: The type of `i`.
+     :rtype: The type of `x`.
   */
-  inline proc abs(i : int(?w)) do return if i < 0 then -i else i;
+  inline proc abs(x : int(?w)) do return if x < 0 then -x else x;
 
   /* Returns the absolute value of the unsigned integer argument.
 
-     :rtype: The type of `i`.
+     :rtype: The type of `x`.
   */
-  inline proc abs(i : uint(?w)) do return i;
+  inline proc abs(x : uint(?w)) do return x;
 
-  /* Returns the absolute value of the integer param argument `i`. */
-  proc abs(param i : integral) param do return if i < 0 then -i else i;
+  /* Returns the absolute value of the integer param argument `x`. */
+  proc abs(param x : integral) param do return if x < 0 then -x else x;
 
-  /* Returns the magnitude of the real argument `r`. */
-  inline proc abs(r : real(64)):real(64) do return fabs(r);
+  /* Returns the magnitude of the real argument `x`. */
+  inline proc abs(x : real(64)):real(64) do return fabs(x);
 
   /* Returns the magnitude of the real argument `x`. */
   inline proc abs(x : real(32)): real(32) {
@@ -243,10 +241,72 @@ module AutoMath {
     return fabsf(x);
   }
 
+  /* Returns the real magnitude of the imaginary argument `x`. */
+  inline proc abs(x : imag(64)): real(64) do return fabs(_i2r(x));
+
+  /* Returns the real magnitude of the imaginary argument `x`. */
+  inline proc abs(x: imag(32)): real(32) {
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc fabsf(x: real(32)): real(32);
+    return fabsf(_i2r(x));
+  }
+
+  /* Returns the magnitude (often called modulus) of complex `x`.
+
+     In concert with the related :proc:`carg`, the phase (a.k.a. argument)
+     of `x`, it can be used to recompute `x`.
+
+     :rtype: ``real(w/2)`` when `x` has a type of ``complex(w)``.
+  */
+  inline proc abs(x : complex(?w)): real(w/2) {
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc cabsf(x: complex(64)): real(32);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc cabs(x: complex(128)): real(64);
+    if w == 64 then
+      return cabsf(x);
+    else
+      return cabs(x);
+  }
+
+
+  /* Returns the absolute value of the integer argument.
+
+     :rtype: The type of `i`.
+  */
+  pragma "last resort"
+  @deprecated("The argument name 'i' is deprecated for 'abs', please use 'x' instead")
+  inline proc abs(i : int(?w)) do return if i < 0 then -i else i;
+
+  /* Returns the absolute value of the unsigned integer argument.
+
+     :rtype: The type of `i`.
+  */
+  pragma "last resort"
+  @deprecated("The argument name 'i' is deprecated for 'abs', please use 'x' instead")
+  inline proc abs(i : uint(?w)) do return i;
+
+  /* Returns the absolute value of the integer param argument `i`. */
+  pragma "last resort"
+  @deprecated("The argument name 'i' is deprecated for param function 'abs', please use 'x' instead")
+  proc abs(param i : integral) param do return if i < 0 then -i else i;
+
+  /* Returns the magnitude of the real argument `r`. */
+  pragma "last resort"
+  @deprecated("The argument name 'r' is deprecated for 'abs', please use 'x' instead")
+  inline proc abs(r : real(64)):real(64) do return fabs(r);
+
   /* Returns the real magnitude of the imaginary argument `im`. */
+  pragma "last resort"
+  @deprecated("The argument name 'im' is deprecated for 'abs', please use 'x' instead")
   inline proc abs(im : imag(64)): real(64) do return fabs(_i2r(im));
 
   /* Returns the real magnitude of the imaginary argument `im`. */
+  pragma "last resort"
+  @deprecated("The argument name 'im' is deprecated for 'abs', please use 'x' instead")
   inline proc abs(im: imag(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -261,6 +321,8 @@ module AutoMath {
 
      :rtype: ``real(w/2)`` when `z` has a type of ``complex(w)``.
   */
+  pragma "last resort"
+  @deprecated("The argument name 'z' is deprecated for 'abs', please use 'x' instead")
   inline proc abs(z : complex(?w)): real(w/2) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
