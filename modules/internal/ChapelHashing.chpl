@@ -25,10 +25,11 @@ module ChapelHashing {
 
   use ChapelBase;
 
-  proc chpl__defaultHashWrapper(x): int {
-    use Reflection;
-    if !canResolveMethod(x, "hash") then
-      compilerError("No hash function found for " + x.type:string);
+  interface Hashable {
+    proc Self.hash(): uint;
+  }
+
+  proc chpl__defaultHashWrapper(x: Hashable): int {
     const hash = x.hash();
     return (hash & max(int)): int;
   }
@@ -69,34 +70,42 @@ module ChapelHashing {
     else
       return 1;
   }
+  bool implements Hashable;
 
   inline proc int.hash(): uint {
     return _gen_key(this);
   }
+  int implements Hashable;
 
   inline proc uint.hash(): uint {
     return _gen_key(this);
   }
+  uint implements Hashable;
 
   inline proc enum.hash(): uint {
     return _gen_key(chpl__enumToOrder(this));
   }
+  /* ? enum implements Hashable; ? */
 
   inline proc real.hash(): uint {
     return _gen_key(__primitive( "real2int", this));
   }
+  real implements Hashable;
 
   inline proc complex.hash(): uint {
     return _gen_key(__primitive("real2int", this.re) ^ __primitive("real2int", this.im));
   }
+  complex implements Hashable;
 
   inline proc imag.hash(): uint {
     return _gen_key(__primitive( "real2int", _i2r(this)));
   }
+  imag implements Hashable;
 
   inline proc chpl_taskID_t.hash(): uint {
     return _gen_key(this:int);
   }
+  chpl_taskID_t implements Hashable;
 
   inline proc _array.hash(): uint {
     var hash : uint = 0;
@@ -107,15 +116,18 @@ module ChapelHashing {
     }
     return hash;
   }
+  _array implements Hashable;
 
   // Nilable and non-nilable classes will coerce to this.
   inline proc (borrowed RootClass?).hash(): uint {
     return _gen_key(__primitive( "object2int", this));
   }
+  RootClass implements Hashable;
 
   inline proc locale.hash(): uint {
     return _gen_key(__primitive( "object2int", this._value));
   }
+  locale implements Hashable;
 
   //
   // Implementation of hash for ranges, in case the 'keyType'
@@ -138,4 +150,5 @@ module ChapelHashing {
     }
     return ret;
   }
+  range implements Hashable;
 }
