@@ -585,6 +585,28 @@ module Math {
     return chpl_log1p(x);
   }
 
+  /* Returns the log to the base `2**exp` of the given `x` value.
+     If `exp` is `1`, then returns the log to the base `2`;
+     if `exp` is `2`, then returns the log to the base `4`, etc.
+     Any fractional part is discarded.
+
+     :rtype: `int`
+  */
+  inline proc logBasePow2(x: int(?w), exp) {
+    return chpl_logBasePow2(x, exp);
+  }
+
+  /* Returns the log to the base `2**exp` of the given `x` value.
+     If `exp` is `1`, then returns the log to the base `2`;
+     if `exp` is `2`, then returns the log to the base `4`, etc.
+     Any fractional part is discarded.
+
+     :rtype: `int`
+  */
+  inline proc logBasePow2(x: uint(?w), exp) {
+    return chpl_logBasePow2(x, exp);
+  }
+
   /* Returns the log to the base `2**baseLog2` of the given `in` value.
      If `baseLog2` is `1`, then returns the log to the base `2`;
      if `baseLog2` is `2`, then returns the log to the base `4`, etc.
@@ -592,6 +614,8 @@ module Math {
 
      :rtype: `int`
   */
+  pragma "last resort"
+  @deprecated("The 'val' and 'baseLog2' argument names are now deprecated, please use 'x' and 'exp' respectively")
   inline proc logBasePow2(val: int(?w), baseLog2) {
     return chpl_logBasePow2(val, baseLog2);
   }
@@ -603,6 +627,8 @@ module Math {
 
      :rtype: `int`
   */
+  pragma "last resort"
+  @deprecated("The 'val' and 'baseLog2' argument names are now deprecated, please use 'x' and 'exp' respectively")
   inline proc logBasePow2(val: uint(?w), baseLog2) {
     return chpl_logBasePow2(val, baseLog2);
   }
