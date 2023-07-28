@@ -910,11 +910,53 @@ module AutoMath {
     return ceilf(x);
   }
 
+  /* Returns the complex conjugate of the complex argument `x`.
+
+     :rtype: A complex number of the same type as `x`.
+  */
+  inline proc conjg(x: complex(?w)) {
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc conjf(x: complex(64)): complex(64);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc conj(x: complex(128)): complex(128);
+    if w == 64 then
+      return conjf(x);
+    else
+      return conj(x);
+  }
+
+  /* Returns the complex conjugate of the imaginary argument `x`.
+
+     :rtype: An imaginary number of the same type as `x`.
+  */
+  inline proc conjg(x: imag(?w)) {
+    return -x;
+  }
+
+  /* Returns the argument `x`.
+
+     :rtype: A number that is not complex or imaginary of the same type as `x`.
+  */
+  inline proc conjg(x: int(?w)) {
+    return x;
+  }
+
+  inline proc conjg(x: uint(?w)) {
+    return x;
+  }
+
+  inline proc conjg(x: real(?w)) {
+    return x;
+  }
 
   /* Returns the complex conjugate of the complex argument `z`.
 
      :rtype: A complex number of the same type as `z`.
   */
+  pragma "last resort"
+  @deprecated("The argument name 'z' is deprecated for 'conjg', please use 'x' instead")
   inline proc conjg(z: complex(?w)) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -932,6 +974,8 @@ module AutoMath {
 
      :rtype: An imaginary number of the same type as `z`.
   */
+  pragma "last resort"
+  @deprecated("The argument name 'z' is deprecated for 'conjg', please use 'x' instead")
   inline proc conjg(z: imag(?w)) {
     return -z;
   }
@@ -940,14 +984,20 @@ module AutoMath {
 
      :rtype: A number that is not complex or imaginary of the same type as `z`.
   */
+  pragma "last resort"
+  @deprecated("The argument name 'z' is deprecated for 'conjg', please use 'x' instead")
   inline proc conjg(z: int(?w)) {
     return z;
   }
 
+  pragma "last resort"
+  @deprecated("The argument name 'z' is deprecated for 'conjg', please use 'x' instead")
   inline proc conjg(z: uint(?w)) {
     return z;
   }
 
+  pragma "last resort"
+  @deprecated("The argument name 'z' is deprecated for 'conjg', please use 'x' instead")
   inline proc conjg(z: real(?w)) {
     return z;
   }
