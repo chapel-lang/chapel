@@ -1,5 +1,7 @@
-const size = 10000000000;
+use MemDiagnostics;
+
+const size = here.physicalMemory()*2;
 
 const dom = {0..#size};
 
-var myArr = dom.buildArrayOrThrow(int);
+var myArr = dom.tryBuildArray(int);
