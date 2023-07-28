@@ -28,8 +28,6 @@ config param blockSize = 16;
 config param blockPadding = 1;
 config type dataType = real(32);
 
-config const SI = true;
-
 inline proc transposeNaive(original, output) {
   foreach (x,y) in original.domain {
     assertOnGpu();
@@ -154,17 +152,12 @@ var elapsed = timer.elapsed() / numTrials;
 if perftest {
 var sizeInBytes = originalHost.size * numBytes(dataType);
   writeln("Wall clock time (s): ", elapsed);
-  if SI {
-    var sizeInGib = sizeInBytes / (1000.0 * 1000.0 * 1000.0);
-    var gibPerSec = sizeInGib / elapsed;
-    writeln("Performance (GiB/s): ", gibPerSec);
-  }
-  else {
-    var sizeInGb = sizeInBytes / (1<<30):real;
-    var gbPerSec = sizeInGb / elapsed;
-    writeln("Performance (GB/s): ", gbPerSec);
-
-  }
+  var sizeInGb = sizeInBytes / (1000.0 * 1000.0 * 1000.0);
+  var gibPerSec = sizeInGb / elapsed;
+  // GiB/s is the precise metric here. However, GB/s can be used interchangably
+  // and that's how we started testing. Changing it confuses the test system.
+  // Note that we report this as GiB/s in the relevant plot.
+  writeln("Performance (GB/s): ", gibPerSec);
 }
 
 var passed = true;

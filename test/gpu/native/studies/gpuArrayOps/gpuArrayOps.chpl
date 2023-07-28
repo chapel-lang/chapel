@@ -20,7 +20,11 @@ proc stopTest(name, bandwidth=false) {
   if reportTime {
     t.stop();
     if bandwidth then
-      writeln(name, " (GiB/s): ", n*numBytes(int)/t.elapsed()/1e9);
+      // GiB/s is the precise metric here. However, GB/s can be used
+      // interchangably and that's how we started testing. Changing it confuses
+      // the test system.  Note that we report this as GiB/s in the relevant
+      // plot.
+      writeln(name, " (GB/s): ", n*numBytes(int)/t.elapsed()/1e9);
     else
       writeln(name, " (s): ", t.elapsed());
     t.clear();

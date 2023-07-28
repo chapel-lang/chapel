@@ -5,7 +5,7 @@ ylabel: Time (s)
 graphtitle: Array Initialization (100M ints)
 
 
-perfkeys: host to device copy (GiB/s):, device to host copy (GiB/s):, device to host copy (GiB/s):
+perfkeys: host to device copy (GB/s):, device to host copy (GB/s):, device to host copy (GB/s):
 files: gpuArrayOps-d2h-from-h, gpuArrayOps-d2h-from-h, gpuArrayOps-d2h-from-d
 graphkeys: Host-to-Device, Device-to-Host (host touch last), Device-to-Host (device touch last),
 ylabel: Bandwidth (GiB/s)
