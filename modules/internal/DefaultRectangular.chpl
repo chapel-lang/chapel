@@ -700,7 +700,7 @@ module DefaultRectangular {
                                                  initElts=initElts);
     }
 
-    proc buildArrayOrThrow(type eltType) throws {
+    proc doiTryBuildArray(type eltType, param initElts=false) throws {
       var callPostAlloc:bool;
       // TODO: ranges(0) isn't covering all cases (but it is in Arkouda)
       var data = _ddata_allocate_noinit_nocheck(eltType, ranges(0).size, callPostAlloc);
@@ -718,7 +718,7 @@ module DefaultRectangular {
                                                  strides=strides,
                                                  dom=_to_unmanaged(this),
                                                  data=data,
-                                                 initElts=true);
+                                                 initElts=initElts);
     }
 
     proc dsiBuildArrayWith(type eltType, data:_ddata(eltType), allocSize:int) {

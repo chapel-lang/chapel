@@ -967,7 +967,7 @@ proc BlockDom.dsiBuildArray(type eltType, param initElts:bool) {
   return arr;
 }
 
-proc BlockDom.buildArrayOrThrow(type eltType) throws {
+proc BlockDom.doiTryBuildArray(type eltType, param initElts=true) throws {
   const dom = this;
   const creationLocale = here.id;
   const dummyLBD = new unmanaged LocBlockDom(rank, idxType, strides);
@@ -996,7 +996,8 @@ proc BlockDom.buildArrayOrThrow(type eltType) throws {
       }
 
       const LBA = new unmanaged LocBlockArr(eltType, rank, idxType, strides,
-                                            locDomsElt, data=data, size=locSize);
+                                            locDomsElt, data=data, size=locSize,
+                                            initElts=initElts);
       locArrTempElt = LBA;
       if here.id == creationLocale then
         myLocArrTemp = LBA;
