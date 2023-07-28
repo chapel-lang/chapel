@@ -2288,6 +2288,10 @@ module TwoArrayPartitioning {
     var sequentialSizePerTask:int = 4096;
     var endbit:int = max(int);
 
+    proc init(type bucketizerType) {
+      this.bucketizerType = bucketizerType;
+    }
+
     proc init(in bucketizer,
               baseCaseSize: int = 16,
               sequentialSizePerTask: int = 4096,
