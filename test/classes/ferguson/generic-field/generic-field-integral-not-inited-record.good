@@ -1,1 +1,4 @@
-R(int(64)) (i = 0)
+generic-field-integral-not-inited-record.chpl:5: In function 'test':
+generic-field-integral-not-inited-record.chpl:6: error: default initialization with type 'R(int(64))' is not yet supported
+generic-field-integral-not-inited-record.chpl:2: note: field 'i' is a generic value
+generic-field-integral-not-inited-record.chpl:2: note: consider separately declaring a type field for it or using a 'new' call

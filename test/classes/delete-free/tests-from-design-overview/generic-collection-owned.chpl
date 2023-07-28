@@ -1,7 +1,15 @@
 class MyClass { var x:int; }
 
 record Collection {
-  var element: owned;
+  type eltType;
+  var element: eltType;
+  proc init(type eltType: owned) {
+    this.eltType = eltType;
+  }
+  proc init(in arg: owned) {
+    this.eltType = arg.type;
+    this.element = arg;
+  }
 }
 
 proc Collection.addElement(in arg: owned) {
