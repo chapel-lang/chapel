@@ -1,5 +1,5 @@
 FILENAME.chpl:n: In iterator 'genDigits':
-FILENAME.chpl:n: warning: bigint.addmul method is deprecated - please use the standalone function addmul
+FILENAME.chpl:n: warning: bigint.addmul method is deprecated - please use the standalone function addMul instead
 FILENAME.chpl:n: warning: bigint.mul method is deprecated - please use the standalone function mul
 FILENAME.chpl:n: warning: bigint.mul method is deprecated - please use the standalone function mul
 FILENAME.chpl:n: warning: bigint.mul method is deprecated - please use the standalone function mul

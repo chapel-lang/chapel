@@ -26,7 +26,7 @@ writeln(a);
 
 // a = a - (b * c)
 subMul(a, b, c);                      // a =   668
-submul(a, b, 4);                      // a =   660
+subMul(a, b, 4);                      // a =   660
 writeln(a);
 
 mul2Exp(a, c, 3);                    // a = -1600
