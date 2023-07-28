@@ -2148,20 +2148,44 @@ module AutoMath {
   /* Returns the signum function of the integer argument `i`:
      1 if positive, -1 if negative, 0 if zero.
   */
+  pragma "last resort"
+  @deprecated("The argument name 'i' is deprecated for 'sgn', please use 'x' instead")
   inline proc sgn(i : int(?w)): int(8) do
     return ((i > 0) : int(8) - (i < 0) : int(8)) : int(8);
 
   /* Returns the signum function of the unsigned integer argument `i`:
      1 if positive, -1 if negative, 0 if zero.
   */
+  pragma "last resort"
+  @deprecated("The argument name 'i' is deprecated for 'sgn', please use 'x' instead")
   inline proc sgn(i : uint(?w)): uint(8) do
     return (i > 0) : uint(8);
 
   /* Returns the signum function of the integer param argument `i`:
      1 if positive, -1 if negative, 0 if zero.
   */
+  pragma "last resort"
+  @deprecated("The argument name 'i' is deprecated for param 'sgn', please use 'x' instead")
   proc sgn(param i : integral) param do
     return if i > 0 then 1 else if i == 0 then 0 else -1;
+
+  /* Returns the signum function of the integer argument `x`:
+     1 if positive, -1 if negative, 0 if zero.
+  */
+  inline proc sgn(x : int(?w)): int(8) do
+    return ((x > 0) : int(8) - (x < 0) : int(8)) : int(8);
+
+  /* Returns the signum function of the unsigned integer argument `x`:
+     1 if positive, -1 if negative, 0 if zero.
+  */
+  inline proc sgn(x : uint(?w)): uint(8) do
+    return (x > 0) : uint(8);
+
+  /* Returns the signum function of the integer param argument `x`:
+     1 if positive, -1 if negative, 0 if zero.
+  */
+  proc sgn(param x : integral) param do
+    return if x > 0 then 1 else if x == 0 then 0 else -1;
 
   /* Returns the signum function of the real argument `x`:
      1 if positive, -1 if negative, 0 if zero.
