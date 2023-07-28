@@ -6,7 +6,7 @@ record R {
 }
 
 
-assert(numFields(R) == 2);
+assert(getNumFields(R) == 2);
 assert(getFieldName(R, 0) == "x");
 
 assert(getFieldIndex(R, "x") == 0);
