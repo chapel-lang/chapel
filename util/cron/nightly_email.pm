@@ -48,7 +48,7 @@ ensureSummaryExists($prevsummary);
 # status 2 means tests passed and there were some failures.
 # that shouldn't change the format of the email, so we collapse
 # the cases here.
-$passed=0;
+$email=1;
 if ($status == 2) {
   $status = 0;
 }
@@ -75,7 +75,7 @@ if ($status == 0) {
     $summary = "Tests run: $cursucc Successes ($delsucc), $curfail Failures ($delfail)";
 } else {
     $summary = "Tests run: failed new failures";
-    $passed = 1;
+    
 }
 
 
@@ -89,15 +89,6 @@ if ($status == 0) {
     $numtestssummary = "unknown number of Tests";
     $knownumtests = 0;
 }
-writeSummary ($revision,
-     $starttime,
-     $endtime ,
-     $crontab ,
-     $testdirs ,
-     $numtestssummary ,
-     $summary ,
-     $prevsummary ,
-     $sortedsummary );
 
 #
 # send mail
@@ -118,22 +109,21 @@ if ($status == 0) {
 
 if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0 && $newpassingsuppress == 0) {
     print "Mailing to minimal group\n";
-    $passed = 0;
+    $email=0;
     $recipient = $nochangerecipient;
 
 } else {
-    $passed = 1;
     print "Mailing to everyone\n";
 }
 
-# Persist the test summary to a (summary.txt) in the jenkins workspace.
-# Summary.txt will be used by Jenkins to send emails in case of a failure.
+# Persist the test summary to a (email.txt) in the jenkins workspace.
+# email.txt will be used by Jenkins to send emails in case of a failure.
 
 
 if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
-    # Send email only if there are new failures. Set the passed flag to 1
-    $passed = 1;
-    writeSummary ($revision,
+  print "\n Email:$email \n status:$status \n";
+    if ($email == 1){
+    writeEmail ($revision,
      $starttime,
      $endtime ,
      $crontab ,
@@ -142,7 +132,7 @@ if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$
      $summary ,
      $prevsummary ,
      $sortedsummary );
-  
+    }
 } else {
     print "CHPL_TEST_NOMAIL: No $mailcommand\n";
 }
@@ -156,7 +146,7 @@ if ($debug == 0) {
     }
 }
 
-return $status;
+return(0);
 
 }
 return(1);
