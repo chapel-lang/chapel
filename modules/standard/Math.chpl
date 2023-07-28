@@ -630,8 +630,8 @@ module Math {
 
      It is an error if `x` is less than or equal to zero.
   */
-  inline proc log2(val: int(?w)) {
-    return chpl_log2(val);
+  inline proc log2(x: int(?w)) {
+    return chpl_log2(x);
   }
 
   /* Returns the base 2 logarithm of the argument `x`,
@@ -641,8 +641,8 @@ module Math {
 
      It is an error if `x` is less than or equal to zero.
   */
-  inline proc log2(val: uint(?w)) {
-    return chpl_log2(val);
+  inline proc log2(x: uint(?w)) {
+    return chpl_log2(x);
   }
 
   /* Returns the rounded integral value of the argument `x` determined by the
