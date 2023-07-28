@@ -336,6 +336,28 @@ module AutoMath {
       return cabs(z);
   }
 
+  /* Returns the phase (often called `argument`) of complex `x`, an angle (in
+     radians).
+
+     In concert with the related :proc:`abs`, the magnitude (a.k.a.
+     modulus) of `x`, it can be used to recompute `x`.
+
+     :rtype: ``real(w/2)`` when `x` has a type of ``complex(w)``.
+  */
+
+  inline proc carg(x: complex(?w)): real(w/2) {
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc cargf(x: complex(64)): real(32);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc carg(x: complex(128)): real(64);
+    if w == 64 then
+      return cargf(x);
+    else
+      return carg(x);
+  }
+
   /* Returns the phase (often called `argument`) of complex `z`, an angle (in
      radians).
 
@@ -344,7 +366,8 @@ module AutoMath {
 
      :rtype: ``real(w/2)`` when `z` has a type of ``complex(w)``.
   */
-
+  pragma "last resort"
+  @deprecated("The argument name 'z' is deprecated for 'carg', please use 'x' instead")
   inline proc carg(z: complex(?w)): real(w/2) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
