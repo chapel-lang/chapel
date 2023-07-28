@@ -29,8 +29,8 @@ config const verbose_gpu = false;
 
 proc convolve_and_calculate(Array: [] real(32), centerPoints : ?, locL : ?, locC : ?, locR : ?, Output: [] real(64), t: stopwatch) : [] {
 
-  var bs = 1;
-  var be = 5;
+  param bs = 1;
+  param be = 5;
 
   var first_point = centerPoints.first[1];
   var last_point = centerPoints.last[1];
