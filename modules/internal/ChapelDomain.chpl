@@ -1512,6 +1512,7 @@ module ChapelDomain {
       and block domains.
     */
     pragma "no copy return"
+    @unstable("tryBuildArray() is subject to change in the future.")
     proc tryBuildArray(type eltType, param initElts=true) throws {
       chpl_checkEltType(eltType);
       chpl_checkNegativeStride();
