@@ -97,7 +97,12 @@ extern c_nodeid_t chpl_nodeID;
 static void chpl_gpu_impl_set_globals(c_sublocid_t dev_id, hipModule_t module) {
   hipDeviceptr_t ptr;
   size_t glob_size;
-  ROCM_CALL(hipModuleGetGlobal(&ptr, &glob_size, module, "chpl_nodeID"));
+  int err = hipModuleGetGlobal(&ptr, &glob_size, module, "chpl_nodeID");
+  if (err == hipErrorNotFound) {
+    return;
+  }
+  ROCM_CALL(err);
+
   assert(glob_size == sizeof(c_nodeid_t));
   chpl_gpu_impl_copy_host_to_device((void*)ptr, &chpl_nodeID, glob_size);
 }
