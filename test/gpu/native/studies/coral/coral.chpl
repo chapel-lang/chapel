@@ -96,7 +96,7 @@ proc main(args: [] string) {
   t.start();
 
   const radius = (sqrt(window_size) / 2) : int;
-  const nx = (radius / dx) : int;
+  const nx = (radius / dx) : int(16);
   writeln("Distance circle has a radius of ", nx, " points.");
   writeln("inputSize = ", inputSize);
 
@@ -112,7 +112,7 @@ proc main(args: [] string) {
     on here.gpus[0] {
 
       const radius = (sqrt(window_size) / 2) : int;
-      const nx = (radius / dx) : int;
+      const nx = (radius / dx) : int(16);
       writeln("Distance circle has a radius of ", nx, " points.");
 
       var x, y: int;
