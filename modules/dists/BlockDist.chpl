@@ -967,7 +967,7 @@ proc BlockDom.dsiBuildArray(type eltType, param initElts:bool) {
   return arr;
 }
 
-proc BlockDom.doiTryBuildArray(type eltType, param initElts=true) throws {
+proc BlockDom.doiTryBuildArray(type eltType) throws {
   const dom = this;
   const creationLocale = here.id;
   const dummyLBD = new unmanaged LocBlockDom(rank, idxType, strides);
@@ -998,8 +998,7 @@ proc BlockDom.doiTryBuildArray(type eltType, param initElts=true) throws {
       }
 
       const LBA = new unmanaged LocBlockArr(eltType, rank, idxType, strides,
-                                            locDomsElt, data=data, size=locSize,
-                                            initElts=initElts);
+                                            locDomsElt, data=data, size=locSize);
       locArrTempElt = LBA;
       if here.id == creationLocale then
         myLocArrTemp = LBA;
@@ -1040,6 +1039,7 @@ proc BlockDom.dsiSerialWrite(x) { x.write(whole); }
 proc BlockDom.dsiLocalSlice(param strides, ranges) do return whole((...ranges));
 override proc BlockDom.dsiIndexOrder(i) do              return whole.indexOrder(i);
 override proc BlockDom.dsiMyDist() do                   return dist;
+override proc BlockDom.isBlock() param do return true;
 
 //
 // INTERFACE NOTES: Could we make dsiSetIndices() for a rectangular

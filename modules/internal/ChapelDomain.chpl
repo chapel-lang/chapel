@@ -1512,12 +1512,16 @@ module ChapelDomain {
       and block domains.
     */
     pragma "no copy return"
-    @unstable("tryBuildArray() is subject to change in the future.")
-    proc tryBuildArray(type eltType, param initElts=true) throws {
+    @unstable("tryCreateArray() is subject to change in the future.")
+    proc tryCreateArray(type eltType) throws {
+      if !this.isDefaultRectangular() && !this.isBlock() then
+        compilerError("'tryCreateArray' is only supported on " +
+                      "default rectangular and block domains");
+
       chpl_checkEltType(eltType);
       chpl_checkNegativeStride();
 
-      var x = _value.doiTryBuildArray(eltType,initElts);
+      var x = _value.doiTryBuildArray(eltType);
       pragma "dont disable remote value forwarding"
       proc help() {
         _value.add_arr(x);

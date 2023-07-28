@@ -700,7 +700,7 @@ module DefaultRectangular {
                                                  initElts=initElts);
     }
 
-    proc doiTryBuildArray(type eltType, param initElts=false) throws {
+    proc doiTryBuildArray(type eltType) throws {
       // TODO: Update to support higher dimension (not needed in Arkouda)
       if rank != 1 then
         throw new Error("'tryBuildArray' is only supported on domains of rank 1");
@@ -722,8 +722,7 @@ module DefaultRectangular {
                                                  idxType=idxType,
                                                  strides=strides,
                                                  dom=_to_unmanaged(this),
-                                                 data=data,
-                                                 initElts=initElts);
+                                                 data=data);
     }
 
     proc dsiBuildArrayWith(type eltType, data:_ddata(eltType), allocSize:int) {
