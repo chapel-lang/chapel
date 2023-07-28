@@ -2511,7 +2511,17 @@ static void embedGpuCode() {
 }
 
 static void codegenGpuGlobals() {
-  genGlobalInt("chpl_nodeID", 0, false);
+  GenInfo* info = gGenInfo;
+
+  // codegen chpl_nodeID
+  const char* cname = "chpl_nodeID";
+  llvm::GlobalVariable *globalInt =
+      llvm::cast<llvm::GlobalVariable>(
+          info->module->getOrInsertGlobal(cname,
+                                          llvm::IntegerType::getInt32Ty(
+                                              info->module->getContext())));
+  globalInt->setInitializer(info->irBuilder->getInt32(-1));
+  info->lvt->addGlobalValue(cname, globalInt, GEN_PTR, false, dtInt[INT_SIZE_32]);
 }
 #endif
 
