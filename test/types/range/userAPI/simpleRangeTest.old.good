@@ -1,12 +1,12 @@
 rangeAPItest.chpl:3: In function 'testRangeAPI':
-rangeAPItest.chpl:46: warning: invoking 'offset' on an unstrided range has no effect.
+rangeAPItest.chpl:42: warning: invoking 'offset' on an unstrided range has no effect.
   simpleRangeTest.chpl:4: called as testRangeAPI(lbl: string, r: range(int(64),both,one), idx: int(64), subr: range(int(64),both,one), offset: int(64), count: int(64))
 rangeAPItest.chpl:3: In function 'testRangeAPI':
-rangeAPItest.chpl:89: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning
+rangeAPItest.chpl:85: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning
   simpleRangeTest.chpl:6: called as testRangeAPI(lbl: string, r: range(int(64),both,negative), idx: int(64), subr: range(int(64),both,negative), offset: int(64), count: int(64))
 rangeAPItest.chpl:3: In function 'testRangeAPI':
-rangeAPItest.chpl:89: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning
-rangeAPItest.chpl:90: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning
+rangeAPItest.chpl:85: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning
+rangeAPItest.chpl:86: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning
   simpleRangeTest.chpl:9: called as testRangeAPI(lbl: string, r: range(int(64),high,negOne), idx: int(64), subr: range(int(64),both,negOne), offset: int(64), count: int(64))
 basic range
 ------------
@@ -35,8 +35,6 @@ isNat.Algned()   = true
 isAmbiguous      = false
 contains(4) = true
 contains(3..6) = true
-boundsCheck(4) = true
-boundsCheck(3..6) = true
 indexOrder(4) = 3
 orderToIndex(3)  = 4
 expand(2)        = -1..12
@@ -85,8 +83,6 @@ isNat.Algned()   = true
 isAmbiguous      = false
 contains(7) = true
 contains(5..13 by 2) = true
-boundsCheck(7) = true
-boundsCheck(5..13 by 2) = true
 indexOrder(7) = 3
 orderToIndex(3)  = 7
 expand(2)        = -1..22 by 2
@@ -135,8 +131,6 @@ isNat.Algned()   = true
 isAmbiguous      = false
 contains(14) = true
 contains(16..8 by -2) = true
-boundsCheck(14) = true
-boundsCheck(16..8 by -2) = true
 indexOrder(14) = 3
 orderToIndex(3)  = 14
 expand(2)        = -1..22 by -2
@@ -183,8 +177,6 @@ isNat.Algned()   = true
 isAmbiguous      = false
 contains(4) = true
 contains(3..6) = true
-boundsCheck(4) = true
-boundsCheck(3..6) = true
 indexOrder(4) = 3
 orderToIndex(3)  = 4
 translate(2)     = 3..
@@ -228,8 +220,6 @@ isNat.Algned()   = true
 isAmbiguous      = false
 contains(4) = true
 contains(3..6) = true
-boundsCheck(4) = true
-boundsCheck(3..6) = true
 indexOrder(4) = -1
 translate(2)     = ..12
 translate(-2)    = ..8
@@ -269,8 +259,6 @@ isNat.Algned()   = true
 isAmbiguous      = false
 contains(4) = true
 contains(3..6 by -1) = true
-boundsCheck(4) = true
-boundsCheck(3..6 by -1) = true
 indexOrder(4) = 6
 orderToIndex(3)  = 7
 translate(2)     = ..12 by -1
@@ -314,8 +302,6 @@ isNat.Algned()   = true
 isAmbiguous      = false
 contains(4) = true
 contains(3..6) = true
-boundsCheck(4) = true
-boundsCheck(3..6) = true
 indexOrder(4) = -1
 translate(2)     = ..
 translate(-2)    = ..
@@ -329,9 +315,9 @@ r[subr] == subr[r]= true
 r:string          = ..
 Copying...        = ..
 
-rangeAPItest.chpl:89: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning; while slicing 1..20 by -2 with 16..8 by -2
-rangeAPItest.chpl:90: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning; while slicing 1..20 by -2 with 16..8 by -2
-rangeAPItest.chpl:90: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning; while slicing 16..8 by -2 with 1..20 by -2
-rangeAPItest.chpl:89: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning; while slicing ..10 by -1 with 3..6 by -1
-rangeAPItest.chpl:90: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning; while slicing ..10 by -1 with 3..6 by -1
-rangeAPItest.chpl:90: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning; while slicing 3..6 by -1 with ..10 by -1
+rangeAPItest.chpl:85: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning; while slicing 1..20 by -2 with 16..8 by -2
+rangeAPItest.chpl:86: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning; while slicing 1..20 by -2 with 16..8 by -2
+rangeAPItest.chpl:86: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning; while slicing 16..8 by -2 with 1..20 by -2
+rangeAPItest.chpl:85: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning; while slicing ..10 by -1 with 3..6 by -1
+rangeAPItest.chpl:86: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning; while slicing ..10 by -1 with 3..6 by -1
+rangeAPItest.chpl:86: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning; while slicing 3..6 by -1 with ..10 by -1

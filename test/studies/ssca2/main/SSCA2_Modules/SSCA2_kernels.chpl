@@ -273,7 +273,7 @@ module SSCA2_kernels
 
       if PRINT_TIMING_STATISTICS then sw.start ();
 
-      forall s in starting_vertices do on vertex_domain.dist.idxToLocale(s) {
+      forall s in starting_vertices do on vertex_domain.distribution.idxToLocale(s) {
 
         const shere = here.id;
 
@@ -329,7 +329,7 @@ module SSCA2_kernels
           const AL = Active_Level[here.id]!;
           AL.Members.clear();
           AL.next!.Members.clear();
-          if vertex_domain.dist.idxToLocale(s) == here {
+          if vertex_domain.distribution.idxToLocale(s) == here {
             // Establish the initial level sets for the breadth-first
             // traversal from s
             AL.Members.add(s);
@@ -387,7 +387,7 @@ module SSCA2_kernels
             const AL = Active_Level[here.id]!;
 
             forall u in AL.Members do {
-              forall v in G.FilteredNeighbors(u) do on vertex_domain.dist.idxToLocale(v) {
+              forall v in G.FilteredNeighbors(u) do on vertex_domain.distribution.idxToLocale(v) {
                       var dist_temp: real;
                       f3(BCaux, v, u, current_distance_c, Active_Level, dist_temp);
                       if VALIDATE_BC && dist_temp != 0 then
@@ -456,7 +456,7 @@ module SSCA2_kernels
           for current_distance in 2 .. graph_diameter by -1 {
             curr_Level = curr_Level.previous!;
 
-            for u in curr_Level.Members do on vertex_domain.dist.idxToLocale(u) {
+            for u in curr_Level.Members do on vertex_domain.distribution.idxToLocale(u) {
                 f4(BCaux, Between_Cent$, u);
             }
 

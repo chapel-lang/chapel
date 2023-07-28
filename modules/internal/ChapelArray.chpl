@@ -1021,7 +1021,7 @@ module ChapelArray {
             }
             var dimstr = "";
             for param i in 0..rank-1 {
-              if !value.dom.dsiDim(i).boundsCheck(indices(i)) {
+              if !value.dom.dsiDim(i).contains(indices(i)) {
                 if dimstr == "" {
                   dimstr = "out of bounds in dimension " + i:string +
                            " because index " + indices(i):string +
@@ -1061,7 +1061,7 @@ module ChapelArray {
       if this.isRectangular() {
         var ok = true;
         for param i in 0..rank-1 {
-          ok &&= value.dom.dsiDim(i).boundsCheck(ranges(i));
+          ok &&= value.dom.dsiDim(i).chpl_boundsCheck(ranges(i));
         }
         if ok == false {
           if rank == 1 {
@@ -1081,7 +1081,7 @@ module ChapelArray {
             }
             var dimstr = "";
             for param i in 0..rank-1 {
-              if !value.dom.dsiDim(i).boundsCheck(ranges(i)) {
+              if !value.dom.dsiDim(i).chpl_boundsCheck(ranges(i)) {
                 if dimstr == "" {
                   dimstr = "out of bounds in dimension " + i:string +
                            " because slice index " + ranges(i):string +
@@ -1394,7 +1394,7 @@ module ChapelArray {
     @chpldoc.nodoc
     proc checkRankChange(args) {
       for param i in 0..args.size-1 do
-        if !_value.dom.dsiDim(i).boundsCheck(args(i)) then
+        if !_value.dom.dsiDim(i).chpl_boundsCheck(args(i)) then
           halt("array slice out of bounds in dimension ", i, ": ", args(i));
     }
 
@@ -1516,7 +1516,7 @@ module ChapelArray {
       // change this in the future when we have better syntax for
       // indicating a generic domain map)..
       //
-      if (formalDom.dist._value.type != unmanaged DefaultDist) {
+      if (formalDom.distribution._value.type != unmanaged DefaultDist) {
         //
         // First, at compile-time, check that the domain's types are
         // the same:
@@ -1528,10 +1528,10 @@ module ChapelArray {
         // Then, at run-time, check that the domain map's values are
         // the same (do this only if the runtime checks argument is true).
         //
-        if (runtimeChecks && formalDom.dist != this.domain.dist) then
+        if (runtimeChecks && formalDom.distribution != this.domain.distribution) then
           halt("Domain map mismatch passing array argument:\n",
-               "  Formal domain map is: ", formalDom.dist, "\n",
-               "  Actual domain map is: ", this.domain.dist);
+               "  Formal domain map is: ", formalDom.distribution, "\n",
+               "  Actual domain map is: ", this.domain.distribution);
       }
 
       //
@@ -1608,8 +1608,8 @@ module ChapelArray {
       pragma "no auto destroy"
       const updom = {(...newDims)};
 
-      const redist = new unmanaged ArrayViewReindexDist(downDistPid = this.domain.dist._pid,
-                                              downDistInst=this.domain.dist._instance,
+      const redist = new unmanaged ArrayViewReindexDist(downDistPid = this.domain.distribution._pid,
+                                              downDistInst=this.domain.distribution._instance,
                                               updom = updom._value,
                                               downdomPid = dom.pid,
                                               downdomInst = dom);
@@ -2453,7 +2453,7 @@ module ChapelArray {
       }
       if isSubtype(eltType, _domain) {
         const ref lhsDist = chpl__distributionFromDomainRuntimeType(eltType);
-        const ref rhsDist = elt.dist;
+        const ref rhsDist = elt.distribution;
         if lhsDist._instance != rhsDist._instance {
           runtimeTypesDiffer = true;
         }
@@ -3165,7 +3165,7 @@ module ChapelArray {
   proc chpl__initCopy(const ref rhs: domain, definedConst: bool)
       where rhs.isRectangular() {
 
-    var lhs = new _domain(rhs.dist, rhs.rank, rhs.idxType, rhs.strides,
+    var lhs = new _domain(rhs.distribution, rhs.rank, rhs.idxType, rhs.strides,
                           rhs.dims(), definedConst=definedConst);
     return lhs;
   }
@@ -3174,7 +3174,7 @@ module ChapelArray {
   proc chpl__initCopy(const ref rhs: domain, definedConst: bool)
       where rhs.isAssociative() {
 
-    var lhs = new _domain(rhs.dist, rhs.idxType, rhs.parSafe,
+    var lhs = new _domain(rhs.distribution, rhs.idxType, rhs.parSafe,
                           definedConst=definedConst);
     // No need to lock this domain since it's not exposed anywhere yet.
     // No need to handle arrays over this domain either for the same reason.
@@ -3186,7 +3186,7 @@ module ChapelArray {
   proc chpl__initCopy(const ref rhs: domain, definedConst: bool)
       where rhs.isSparse() {
 
-    var lhs = new _domain(rhs.dist, rhs.parentDom, definedConst=definedConst);
+    var lhs = new _domain(rhs.distribution, rhs.parentDom, definedConst=definedConst);
     // No need to lock this domain since it's not exposed anywhere yet.
     // No need to handle arrays over this domain either for the same reason.
     lhs._instance.dsiAssignDomain(rhs, lhsPrivate=true);

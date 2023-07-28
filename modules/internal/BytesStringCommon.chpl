@@ -375,7 +375,7 @@ module BytesStringCommon {
       // byteIndex
       const intR = r:range(int, r.bounds, r.strides);
       if boundsChecking {
-        if !x.byteIndices.boundsCheck(intR) {
+        if !x.byteIndices.chpl_boundsCheck(intR) {
           halt("range ", r, " out of bounds for " + t:string + " with length ",
                x.numBytes);
         }
@@ -394,7 +394,7 @@ module BytesStringCommon {
         // if the low bound of the range is within the byteIndices of the
         // string, it must be the initial byte of a codepoint
         if r.hasLowBound() &&
-           x.byteIndices.boundsCheck(r.lowBound:int) &&
+           x.byteIndices.contains(r.lowBound:int) &&
            !isInitialByte(x.byte[r.lowBound:int]) {
           throw new CodepointSplitError(
             "Byte-based string slice is not aligned to codepoint boundaries. " +
@@ -403,7 +403,7 @@ module BytesStringCommon {
         // if the "high bound of the range plus one" is within the byteIndices
         // of the string, that index must be the initial byte of a codepoint
         if r.hasHighBound() &&
-           x.byteIndices.boundsCheck(r.highBound:int+1) &&
+           x.byteIndices.contains(r.highBound:int+1) &&
            !isInitialByte(x.byte[r.highBound:int+1]) {
           throw new CodepointSplitError(
             "Byte-based string slice is not aligned to codepoint boundaries. " +
@@ -431,7 +431,7 @@ module BytesStringCommon {
       // codepointIdx
       const intR = r:range(int, r.bounds, r.strides);
       if boundsChecking {
-        if !x.indices.boundsCheck(intR) {
+        if !x.indices.chpl_boundsCheck(intR) {
           halt("range ", r, " out of bounds for string with length ", x.size);
         }
       }

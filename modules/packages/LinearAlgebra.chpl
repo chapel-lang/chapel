@@ -961,10 +961,10 @@ proc isDistributed(a) param {
   else if a.domain.isSparse() {
     // TODO: is there a better way to check for distributed sparse domains?
     use BlockDist;
-    return isSubtype(a.domain.dist.type, Block);
+    return isSubtype(a.domain.distribution.type, Block);
   }
   else {
-    return !isSubtype(a.domain.dist.type, DefaultDist);
+    return !isSubtype(a.domain.distribution.type, DefaultDist);
   }
 }
 
@@ -2607,7 +2607,7 @@ proc isLocalArr(A: [?D]) param : bool {
 @chpldoc.nodoc
 /* Returns ``true`` if the domain is dense N-dimensional non-distributed domain. */
 proc isLocalDom(D: domain) param : bool {
-  return D.dist.type == defaultDist.type;
+  return D.distribution.type == defaultDist.type;
 }
 
 // TODO: Add this to public interface eventually
@@ -2631,7 +2631,7 @@ proc type _array.rank param {
 @chpldoc.nodoc
 /* Returns ``true`` if the domain is ``DefaultSparse`` */
 private proc isDefaultSparseDom(D: domain) param {
-  return isSubtype(_to_borrowed(D.dist.type), DefaultDist) && D.isSparse();
+  return isSubtype(_to_borrowed(D.distribution.type), DefaultDist) && D.isSparse();
 }
 
 @chpldoc.nodoc
@@ -3481,11 +3481,11 @@ module Sparse {
 
   @chpldoc.nodoc
   /* Returns ``true`` if the array is dmapped to ``CS`` layout. */
-  proc isCSArr(A: []) param { return isCSType(A.domain.dist.type); }
+  proc isCSArr(A: []) param { return isCSType(A.domain.distribution.type); }
 
   @chpldoc.nodoc
   /* Returns ``true`` if the domain is dmapped to ``CS`` layout. */
-  proc isCSDom(D: domain) param { return isCSType(D.dist.type); }
+  proc isCSDom(D: domain) param { return isCSType(D.distribution.type); }
 
 
 } // submodule LinearAlgebra.Sparse

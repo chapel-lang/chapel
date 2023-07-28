@@ -32,10 +32,6 @@ proc testRangeAPI(lbl, r: range(?), idx, subr, offset=3, count=2) {
   writeln("isAmbiguous      = ", ! r.isAligned());
   writeln("contains(", idx, ") = ", r.contains(idx));
   writeln("contains(", subr, ") = ", r.contains(subr));
-
-
-  writeln("boundsCheck(", idx, ") = ", r.boundsCheck(idx));
-  writeln("boundsCheck(", subr, ") = ", r.boundsCheck(subr));
   writeln("indexOrder(", idx, ") = ", r.indexOrder(idx));
   if (r.hasFirst()) then
     writeln("orderToIndex(", offset, ")  = ", r.orderToIndex(offset));
