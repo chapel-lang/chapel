@@ -8,7 +8,7 @@ inline proc calc_distance(Array : [] real(32), Mask1 : ?, Mask2 : ?,
 
       var tmp : real(32) = 0;
       for p in bs..be {
-        tmp += (Array[p,i+k,j+l]-Array[p,i+m,j+n])**2;
+        tmp += (Array[p,j+l,i+k]-Array[p,j+n,i+m])**2;
       }
 
       Output_tmp += sqrt(tmp);
