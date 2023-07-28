@@ -1521,7 +1521,7 @@ module ChapelDomain {
       chpl_checkEltType(eltType);
       chpl_checkNegativeStride();
 
-      var x = _value.doiTryBuildArray(eltType);
+      var x = _value.doiTryCreateArray(eltType);
       pragma "dont disable remote value forwarding"
       proc help() {
         _value.add_arr(x);

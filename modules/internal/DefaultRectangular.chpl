@@ -700,7 +700,7 @@ module DefaultRectangular {
                                                  initElts=initElts);
     }
 
-    proc doiTryBuildArray(type eltType) throws {
+    proc doiTryCreateArray(type eltType) throws {
       // TODO: Update to support higher dimension (not needed in Arkouda)
       if rank != 1 then
         throw new Error("'tryBuildArray' is only supported on domains of rank 1");
