@@ -220,14 +220,14 @@ module Math {
     return chpl_acosh(x);
   }
 
-  /* Returns the inverse hyperbolic cosine of the argument `z`. */
-  inline proc acosh(z: complex(64)): complex(64) {
-    return chpl_acosh(z);
+  /* Returns the inverse hyperbolic cosine of the argument `x`. */
+  inline proc acosh(x: complex(64)): complex(64) {
+    return chpl_acosh(x);
   }
 
-  /* Returns the inverse hyperbolic cosine of the argument `z`. */
-  inline proc acosh(z: complex(128)): complex(128) {
-    return chpl_acosh(z);
+  /* Returns the inverse hyperbolic cosine of the argument `x`. */
+  inline proc acosh(x: complex(128)): complex(128) {
+    return chpl_acosh(x);
   }
 
   /* Returns the arc sine of the argument `x`.
@@ -246,14 +246,14 @@ module Math {
     return chpl_asin(x);
   }
 
-  /* Returns the arc sine of the argument `z`. */
-  inline proc asin(z: complex(64)): complex(64) {
-    return chpl_asin(z);
+  /* Returns the arc sine of the argument `x`. */
+  inline proc asin(x: complex(64)): complex(64) {
+    return chpl_asin(x);
   }
 
-  /* Returns the arc sine of the argument `z`. */
-  inline proc asin(z: complex(128)): complex(128) {
-    return chpl_asin(z);
+  /* Returns the arc sine of the argument `x`. */
+  inline proc asin(x: complex(128)): complex(128) {
+    return chpl_asin(x);
   }
 
   /* Returns the inverse hyperbolic sine of the argument `x`. */
@@ -266,14 +266,14 @@ module Math {
     return chpl_asinh(x);
   }
 
-  /* Returns the inverse hyperbolic sine of the argument `z`. */
-  inline proc asinh(z: complex(64)): complex(64) {
-    return chpl_asinh(z);
+  /* Returns the inverse hyperbolic sine of the argument `x`. */
+  inline proc asinh(x: complex(64)): complex(64) {
+    return chpl_asinh(x);
   }
 
-  /* Returns the inverse hyperbolic sine of the argument `z`. */
-  inline proc asinh(z: complex(128)): complex(128) {
-    return chpl_asinh(z);
+  /* Returns the inverse hyperbolic sine of the argument `x`. */
+  inline proc asinh(x: complex(128)): complex(128) {
+    return chpl_asinh(x);
   }
 
   /* Returns the arc tangent of the argument `x`. */
@@ -286,14 +286,14 @@ module Math {
     return chpl_atan(x);
   }
 
-  /* Returns the arc tangent of the argument `z`. */
-  inline proc atan(z: complex(64)): complex(64) {
-    return chpl_atan(z);
+  /* Returns the arc tangent of the argument `x`. */
+  inline proc atan(x: complex(64)): complex(64) {
+    return chpl_atan(x);
   }
 
-  /* Returns the arc tangent of the argument `z`. */
-  inline proc atan(z: complex(128)): complex(128) {
-    return chpl_atan(z);
+  /* Returns the arc tangent of the argument `x`. */
+  inline proc atan(x: complex(128)): complex(128) {
+    return chpl_atan(x);
   }
 
   /* Returns the arc tangent of the ratio of the two arguments.
@@ -328,14 +328,14 @@ module Math {
     return chpl_atanh(x);
   }
 
-  /* Returns the inverse hyperbolic tangent of the argument `z`. */
-  inline proc atanh(z: complex(64)): complex(64) {
-    return chpl_atanh(z);
+  /* Returns the inverse hyperbolic tangent of the argument `x`. */
+  inline proc atanh(x: complex(64)): complex(64) {
+    return chpl_atanh(x);
   }
 
-  /* Returns the inverse hyperbolic tangent of the argument `z`. */
-  inline proc atanh(z: complex(128)): complex(128) {
-    return chpl_atanh(z);
+  /* Returns the inverse hyperbolic tangent of the argument `x`. */
+  inline proc atanh(x: complex(128)): complex(128) {
+    return chpl_atanh(x);
   }
 
   /* Returns the cosine of the argument `x`. */
@@ -348,14 +348,14 @@ module Math {
     return chpl_cos(x);
   }
 
-  /* Returns the cosine of the argument `z`. */
-  inline proc cos(z : complex(64)): complex(64) {
-    return chpl_cos(z);
+  /* Returns the cosine of the argument `x`. */
+  inline proc cos(x : complex(64)): complex(64) {
+    return chpl_cos(x);
   }
 
-  /* Returns the cosine of the argument `z`. */
-  inline proc cos(z : complex(128)): complex(128) {
-    return chpl_cos(z);
+  /* Returns the cosine of the argument `x`. */
+  inline proc cos(x : complex(128)): complex(128) {
+    return chpl_cos(x);
   }
 
   /* Returns the hyperbolic cosine of the argument `x`. */
@@ -368,14 +368,14 @@ module Math {
     return chpl_cosh(x);
   }
 
-  /* Returns the hyperbolic cosine of the argument `z`. */
-  inline proc cosh(z: complex(64)): complex(64) {
-    return chpl_cosh(z);
+  /* Returns the hyperbolic cosine of the argument `x`. */
+  inline proc cosh(x: complex(64)): complex(64) {
+    return chpl_cosh(x);
   }
 
-  /* Returns the hyperbolic cosine of the argument `z`. */
-  inline proc cosh(z: complex(128)): complex(128) {
-    return chpl_cosh(z);
+  /* Returns the hyperbolic cosine of the argument `x`. */
+  inline proc cosh(x: complex(128)): complex(128) {
+    return chpl_cosh(x);
   }
 
   /* Returns :proc:`~AutoMath.ceil`\(`m`/`n`),
@@ -470,14 +470,14 @@ module Math {
 
   /* Returns the value of the Napierian `e` raised to the power of the
      argument. */
-  inline proc exp(z: complex(64)): complex(64) {
-    return chpl_exp(z);
+  inline proc exp(x: complex(64)): complex(64) {
+    return chpl_exp(x);
   }
 
   /* Returns the value of the Napierian `e` raised to the power of the
      argument. */
-  inline proc exp(z: complex(128)): complex(128) {
-    return chpl_exp(z);
+  inline proc exp(x: complex(128)): complex(128) {
+    return chpl_exp(x);
   }
 
   /* Returns the value of `2` raised to the power of the argument `x`. */
@@ -543,14 +543,14 @@ module Math {
     return chpl_log(x);
   }
 
-  /* Returns the natural logarithm of the argument `z`. */
-  inline proc log(z: complex(64)): complex(64) {
-    return chpl_log(z);
+  /* Returns the natural logarithm of the argument `x`. */
+  inline proc log(x: complex(64)): complex(64) {
+    return chpl_log(x);
   }
 
-  /* Returns the natural logarithm of the argument `z`. */
-  inline proc log(z: complex(128)): complex(128) {
-    return chpl_log(z);
+  /* Returns the natural logarithm of the argument `x`. */
+  inline proc log(x: complex(128)): complex(128) {
+    return chpl_log(x);
   }
 
   /* Returns the base 10 logarithm of the argument `x`.
@@ -691,14 +691,14 @@ module Math {
     return chpl_sin(x);
   }
 
-  /* Returns the sine of the argument `z`. */
-  inline proc sin(z: complex(64)): complex(64) {
-    return chpl_sin(z);
+  /* Returns the sine of the argument `x`. */
+  inline proc sin(x: complex(64)): complex(64) {
+    return chpl_sin(x);
   }
 
-  /* Returns the sine of the argument `z`. */
-  inline proc sin(z: complex(128)): complex(128) {
-    return chpl_sin(z);
+  /* Returns the sine of the argument `x`. */
+  inline proc sin(x: complex(128)): complex(128) {
+    return chpl_sin(x);
   }
 
   /* Returns the hyperbolic sine of the argument `x`. */
@@ -711,14 +711,14 @@ module Math {
     return chpl_sinh(x);
   }
 
-  /* Returns the hyperbolic sine of the argument `z`. */
-  inline proc sinh(z: complex(64)): complex(64) {
-    return chpl_sinh(z);
+  /* Returns the hyperbolic sine of the argument `x`. */
+  inline proc sinh(x: complex(64)): complex(64) {
+    return chpl_sinh(x);
   }
 
-  /* Returns the hyperbolic sine of the argument `z`. */
-  inline proc sinh(z: complex(128)): complex(128) {
-    return chpl_sinh(z);
+  /* Returns the hyperbolic sine of the argument `x`. */
+  inline proc sinh(x: complex(128)): complex(128) {
+    return chpl_sinh(x);
   }
 
   /* Returns the tangent of the argument `x`. */
@@ -731,14 +731,14 @@ module Math {
     return chpl_tan(x);
   }
 
-  /* Returns the tangent of the argument `z`. */
-  inline proc tan(z: complex(64)): complex(64) {
-    return chpl_tan(z);
+  /* Returns the tangent of the argument `x`. */
+  inline proc tan(x: complex(64)): complex(64) {
+    return chpl_tan(x);
   }
 
-  /* Returns the tangent of the argument `z`. */
-  inline proc tan(z: complex(128)): complex(128) {
-    return chpl_tan(z);
+  /* Returns the tangent of the argument `x`. */
+  inline proc tan(x: complex(128)): complex(128) {
+    return chpl_tan(x);
   }
 
   /* Returns the hyperbolic tangent of the argument `x`. */
@@ -751,14 +751,14 @@ module Math {
     return chpl_tanh(x);
   }
 
-  /* Returns the hyperbolic tangent of the argument `z`. */
-  inline proc tanh(z: complex(64)): complex(64) {
-    return chpl_tanh(z);
+  /* Returns the hyperbolic tangent of the argument `x`. */
+  inline proc tanh(x: complex(64)): complex(64) {
+    return chpl_tanh(x);
   }
 
-  /* Returns the hyperbolic tangent of the argument `z`. */
-  inline proc tanh(z: complex(128)): complex(128) {
-    return chpl_tanh(z);
+  /* Returns the hyperbolic tangent of the argument `x`. */
+  inline proc tanh(x: complex(128)): complex(128) {
+    return chpl_tanh(x);
   }
 
   /* Returns the absolute value of the gamma function of the argument `x`. */
