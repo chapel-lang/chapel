@@ -701,8 +701,11 @@ module DefaultRectangular {
     }
 
     proc doiTryBuildArray(type eltType, param initElts=false) throws {
+      // TODO: Update to support higher dimension (not needed in Arkouda)
+      if rank != 1 then
+        throw new Error("'tryBuildArray' is only supported on domains of rank 1");
+
       var callPostAlloc:bool;
-      // TODO: ranges(0) isn't covering all cases (but it is in Arkouda)
       var data = _ddata_allocate_noinit_nocheck(eltType, ranges(0).size, callPostAlloc);
       if data == nil then
         throw new Error("Could not allocate memory");
