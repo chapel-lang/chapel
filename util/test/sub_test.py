@@ -2291,8 +2291,15 @@ for testname in testsrc:
                                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
                     output += cat_output
 
+                # It's got surrogates, so encode it as bytes and write it as binary
+                mode = "w"
+                if re.search(r'[\uD800-\uDFFF]', output) or re.search(r'[\uD800-\uDFFF]', pre_exec_output):
+                    output = output.encode(errors="surrogateescape")
+                    pre_exec_output = pre_exec_output.encode(errors="surrogateescape")
+                    mode = "wb"
+
                 # Sadly the scripts used below require an actual file
-                with open(execlog, "w", errors='surrogatepass') as execlogfile:
+                with open(execlog, mode) as execlogfile:
                     execlogfile.write(pre_exec_output)
                     execlogfile.write(output)
 
