@@ -2010,6 +2010,13 @@ static void checkNotLibraryAndMinimalModules(void) {
 // or CHPL_ settings
 //
 static void postprocess_args() {
+  bool ignore_warnings_previous = ignore_warnings;
+  // To avoid redundant warnings in driver sub-invocations, disable them unless
+  // we are in a top-level invocation.
+  if (driverInSubInvocation) {
+    ignore_warnings = false;
+  }
+
   setMaxCIndentLen();
 
   postLocal();
@@ -2029,6 +2036,9 @@ static void postprocess_args() {
   setPrintCppLineno();
 
   setGPUFlags();
+
+  // restore warnings to previous state
+  ignore_warnings = ignore_warnings_previous;
 }
 
 
