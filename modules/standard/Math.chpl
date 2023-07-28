@@ -797,10 +797,10 @@ module Math {
     return chpl_tgamma(x);
   }
 
-  /* Returns the greatest common divisor of the integer argument `a` and
-     `b`. */
-  proc gcd(in a: int,in b: int): int {
-    return chpl_gcd(a, b);
+  /* Returns the greatest common divisor of the integer argument `x` and
+     `y`. */
+  proc gcd(in x: int,in y: int): int {
+    return chpl_gcd(x, y);
   }
 
   /* Returns the Bessel function of the first kind of order `0` of `x`. */
