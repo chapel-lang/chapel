@@ -1,13 +1,13 @@
 warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly
 Start
-0 (cpu): diags.chpl:15: allocate xxB of domain(1,int(64),one) at 0xPREDIFFED
-0 (cpu): diags.chpl:15: allocate xxB of [domain(1,int(64),one)] int(64) at 0xPREDIFFED
-0 (cpu): diags.chpl:15: allocate xxB of array elements at 0xPREDIFFED
-0 (cpu): diags.chpl:15: allocate xxB of _EndCount(atomic int(64),int(64)) at 0xPREDIFFED
-0 (cpu): diags.chpl:15: free xxB of _EndCount(atomic int(64),int(64)) at 0xPREDIFFED
-0 (gpu 0): diags.chpl:18: allocate xxB of [domain(1,int(64),one)] int(64) at 0xPREDIFFED
-0 (gpu 0): diags.chpl:18: allocate xxB of array elements at 0xPREDIFFED
-0 (gpu 0): diags.chpl:23: free xxB of array elements at 0xPREDIFFED
-0 (gpu 0): diags.chpl:23: free xxB of [domain(1,int(64),one)] int(64) at 0xPREDIFFED
+0 (cpu): diags.chpl:nn: allocate xxB of domain(1,int(64),one) at 0xPREDIFFED
+0 (cpu): diags.chpl:nn: allocate xxB of [domain(1,int(64),one)] int(64) at 0xPREDIFFED
+0 (cpu): diags.chpl:nn: allocate xxB of array elements at 0xPREDIFFED
+0 (cpu): diags.chpl:nn: allocate xxB of _EndCount(atomic int(64),int(64)) at 0xPREDIFFED
+0 (cpu): diags.chpl:nn: free xxB of _EndCount(atomic int(64),int(64)) at 0xPREDIFFED
+0 (gpu 0): diags.chpl:nn: allocate xxB of [domain(1,int(64),one)] int(64) at 0xPREDIFFED
+0 (gpu 0): diags.chpl:nn: allocate xxB of array elements at 0xPREDIFFED
+0 (gpu 0): diags.chpl:nn: free xxB of array elements at 0xPREDIFFED
+0 (gpu 0): diags.chpl:nn: free xxB of [domain(1,int(64),one)] int(64) at 0xPREDIFFED
 2 2 2 2 2 2 2 2 2 2
 End

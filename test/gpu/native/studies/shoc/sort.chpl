@@ -12,7 +12,6 @@ use ResultDB;
 use GpuDiagnostics;
 use GPU only syncThreads, createSharedArray, setBlockSize;
 
-use GpuTestCommon;
 
 config const noisy = false;
 config const gpuDiags = false;
@@ -47,7 +46,7 @@ proc main() {
   runSort();
   if gpuDiags {
     stopGpuDiagnostics();
-    verifyGpuDiags(umLaunch=55, aodLaunch=58);
+    assertGpuDiags(kernel_launch_um=55, kernel_launch_aod=58);
   }
   if verboseGpu then stopVerboseGpu();
 

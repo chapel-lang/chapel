@@ -1,6 +1,5 @@
 use GpuDiagnostics;
 
-use GpuTestCommon;
 
 startGpuDiagnostics();
 on here.gpus[0] {
@@ -79,7 +78,7 @@ on here.gpus[0] {
 
 stopGpuDiagnostics();
 
-verifyGpuDiags(umLaunch=5, aodLaunch=5);
+assertGpuDiags(kernel_launch_um=5, kernel_launch_aod=5);
 
 proc writeArr(A) {
   write("Array: ");

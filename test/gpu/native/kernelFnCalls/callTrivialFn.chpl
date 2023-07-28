@@ -1,6 +1,5 @@
 use GpuDiagnostics;
 
-use GpuTestCommon;
 
 config const n = 100;
 
@@ -17,4 +16,4 @@ on here.gpus[0] {
  }
   stopGpuDiagnostics();
 }
-verifyGpuDiags(umLaunch=1, aodLaunch=1);
+assertGpuDiags(kernel_launch=1);

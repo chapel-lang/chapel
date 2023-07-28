@@ -3,7 +3,6 @@ use ResultDB;
 use IO.FormattedIO;
 use GpuDiagnostics;
 
-use GpuTestCommon;
 
 config const passes = 10;
 config const alpha = 1.75: real(32);
@@ -135,6 +134,6 @@ proc main(){
     }
     else {
       stopGpuDiagnostics();
-      verifyGpuDiags(umLaunch=4, aodLaunch=4);
+      assertGpuDiags(kernel_launch_um=4, kernel_launch_aod=4);
     }
 }

@@ -2,7 +2,6 @@ use GpuDiagnostics;
 use CTypes;
 use GPU; // just to check the unstability warning
 
-use GpuTestCommon;
 
 config const nSteps = 10;
 config const n = 10;
@@ -21,7 +20,7 @@ stopGpuDiagnostics();
                                  10 for nSteps)
    With array_on_device, you'll get 2 more for array inits.
 */
-verifyGpuDiags(umLaunch=21, aodLaunch=23);
+assertGpuDiags(kernel_launch_um=21, kernel_launch_aod=23);
 
 proc jacobi(loc) {
   on loc {

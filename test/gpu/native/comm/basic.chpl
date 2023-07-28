@@ -1,6 +1,5 @@
 use GpuDiagnostics;
 
-use GpuTestCommon;
 
 config const printArrs = false;
 config const verboseGpu = false;
@@ -34,5 +33,6 @@ on here.gpus[0] {
 if verboseGpu then stopVerboseGpu();
 if gpuDiags {
   stopGpuDiagnostics();
-  verifyGpuDiags(umLaunch=2, aodLaunch=2, h2dComm=1, d2hComm=1, d2dComm=1);
+  assertGpuDiags(kernel_launch=2, host_to_device=1, device_to_host=1,
+                 device_to_device=1);
 }

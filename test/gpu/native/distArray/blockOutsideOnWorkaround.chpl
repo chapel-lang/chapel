@@ -1,7 +1,6 @@
 use BlockDist;
 use GpuDiagnostics;
 
-use GpuTestCommon;
 
 config const n = here.maxTaskPar*2;
 
@@ -21,4 +20,5 @@ stopGpuDiagnostics();
 var sum = 0;
 for a in arr do sum += a;
 assert(sum == n);
-verifyGpuDiags(umLaunch=here.maxTaskPar, aodLaunch=here.maxTaskPar+1);
+assertGpuDiags(kernel_launch_um=here.maxTaskPar,
+               kernel_launch_aod=here.maxTaskPar+1);

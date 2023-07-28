@@ -4,7 +4,6 @@ use IO.FormattedIO;
 use GpuDiagnostics;
 use MemDiagnostics;
 
-use GpuTestCommon;
 
 config const passes = 10;
 config const alpha = 1.75: real(32);
@@ -221,6 +220,6 @@ proc main(){
     }
     else {
       stopGpuDiagnostics();
-      verifyGpuDiags(umLaunch=517, aodLaunch=517);
+      assertGpuDiags(kernel_launch_um=517, kernel_launch_aod=517);
     }
 }

@@ -5,7 +5,6 @@ use GpuDiagnostics;
 use MemDiagnostics;
 use GPU;
 
-use GpuTestCommon;
 
 config const passes = 1; //10;
 config const alpha = 1.75: real(32);
@@ -207,6 +206,7 @@ proc main() {
     }
     else {
       stopGpuDiagnostics();
-      verifyGpuDiags(umLaunch=275, aodLaunch=275, h2dComm=258, d2hComm=128, d2dComm=0);
+      assertGpuDiags(kernel_launch=275, host_to_device=258, device_to_host=128,
+                     device_to_device=0);
     }
 }

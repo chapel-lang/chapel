@@ -1,6 +1,5 @@
 use GpuDiagnostics;
 
-use GpuTestCommon;
 
 config const start = 1;
 config const end = 10;
@@ -23,4 +22,4 @@ on here.gpus[0] {
   foreach i in a.domain { b[i] += a[i]*value; } writeln(b);
 }
 stopGpuDiagnostics();
-verifyGpuDiags(umLaunch=8, aodLaunch=10);
+assertGpuDiags(kernel_launch_um=8, kernel_launch_aod=10);
