@@ -1753,7 +1753,7 @@ module YAML {
       } else if (isClassType(t) && val == nil) || isNothingType(t) {
         return b"~";
       } else {
-        return stringify(val);
+        return try! "%?".format(val);
       }
     }
 
