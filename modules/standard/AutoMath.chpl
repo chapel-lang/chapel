@@ -2515,7 +2515,12 @@ module AutoMath {
     return a;
   }
 
-  /* Returns true if `x` and `y` are approximately equal, else returns false. */
+  /* Returns true if `x` and `y` are approximately equal, else returns false.
+
+     `relTol` specifies the relative tolerance for differences between `x` and
+     `y`, while `absTol` specifies the absolute tolerance.  Both must be
+     positive when specified.
+   */
   inline proc isClose(x, y, relTol = 1e-5, absTol = 0.0): bool {
     if boundsChecking && (relTol < 0) then
       HaltWrappers.boundsCheckHalt("Input value for relTol must be positive");
