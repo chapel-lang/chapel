@@ -2446,6 +2446,24 @@ module AutoMath {
   }
 
   /* Returns the square root of the argument `z`. */
+  inline proc sqrt(x: complex(64)): complex(64) {
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc csqrtf(x: complex(64)): complex(64);
+    return csqrtf(x);
+  }
+
+  /* Returns the square root of the argument `z`. */
+  inline proc sqrt(x: complex(128)): complex(128) {
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc csqrt(x: complex(128)): complex(128);
+    return csqrt(x);
+  }
+
+  /* Returns the square root of the argument `z`. */
+  pragma "last resort"
+  @deprecated("The argument name 'z' is deprecated for 'sqrt', please use 'x' instead")
   inline proc sqrt(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -2454,6 +2472,8 @@ module AutoMath {
   }
 
   /* Returns the square root of the argument `z`. */
+  pragma "last resort"
+  @deprecated("The argument name 'z' is deprecated for 'sqrt', please use 'x' instead")
   inline proc sqrt(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
