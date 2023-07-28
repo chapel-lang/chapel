@@ -2287,6 +2287,17 @@ module TwoArrayPartitioning {
     var baseCaseSize:int = 16;
     var sequentialSizePerTask:int = 4096;
     var endbit:int = max(int);
+
+    proc init(in bucketizer,
+              baseCaseSize: int = 16,
+              sequentialSizePerTask: int = 4096,
+              endbit: int = max(int)) {
+      this.bucketizerType = bucketizer.type;
+      this.bucketizer = bucketizer;
+      this.baseCaseSize = baseCaseSize;
+      this.sequentialSizePerTask = sequentialSizePerTask;
+      this.endbit = endbit;
+    }
   }
 
   record TwoArrayDistributedBucketizerStatePerLocale {
@@ -3184,7 +3195,6 @@ module TwoArrayRadixSort {
 
     if Data._instance.isDefaultRectangular() {
       var state = new TwoArrayBucketizerSharedState(
-        bucketizerType=RadixBucketizer,
         bucketizer=new RadixBucketizer(),
         baseCaseSize=baseCaseSize,
         sequentialSizePerTask=sequentialSizePerTask,
