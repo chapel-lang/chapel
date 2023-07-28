@@ -1648,20 +1648,6 @@ module AutoMath {
     return chpl_log1p(x);
   }
 
-  pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="logBasePow2 is no longer included by default, please 'use' or 'import' the 'Math' module to call it")
-  inline proc logBasePow2(val: int(?w), baseLog2) {
-    return chpl_logBasePow2(val, baseLog2);
-  }
-
-  pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="logBasePow2 is no longer included by default, please 'use' or 'import' the 'Math' module to call it")
-  inline proc logBasePow2(val: uint(?w), baseLog2) {
-    return chpl_logBasePow2(val, baseLog2);
-  }
-
   // When removing this deprecated function, be sure to remove chpl_log2 and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
@@ -1757,6 +1743,8 @@ module AutoMath {
   }
 
   inline proc chpl_log2(val: int(?w)) {
+    // Note: move chpl_logBasePow2's contents when moving this function's
+    // contents to Math
     return chpl_logBasePow2(val, 1);
   }
 
@@ -1777,6 +1765,8 @@ module AutoMath {
   }
 
   inline proc chpl_log2(val: uint(?w)) {
+    // Note: move chpl_logBasePow2's contents when moving this function's
+    // contents to Math
     return chpl_logBasePow2(val, 1);
   }
 
