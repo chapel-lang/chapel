@@ -1507,7 +1507,7 @@ module ChapelDomain {
       allocation to succeed, even if there is not enough physical
       memory to satisfy the allocation, which will then fail with a bus
       error when attempting to access the array.
-      
+
       This method is currently supported on both default rectangular
       and block domains.
     */
