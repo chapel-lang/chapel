@@ -3,20 +3,25 @@
 # sets 'datFile', 'logDir', 'experimentName', and 'runLog'
 source $CHPL_HOME/util/test/chplExperimentGatherUtils/boilerplate.bash $@
 
+sizes=( 15 16 17)
+
 # -----------------------------------------------------------------------------
 # Build and run tests
 # -----------------------------------------------------------------------------
-cd "$CHPL_HOME/test/release/examples/benchmarks/shootout"
+cd ChOp/other_codes/cudaOnly
+nvcc -O3 singleGPUQueens.cu -o cudaOnly
 
-# we currently exclude the threadring test from the results
-touch $CHPL_HOME/test/release/examples/benchmarks/shootout/threadring.notest
-
-start_test . | tee -a "$runLog"
-
-rm $CHPL_HOME/test/release/examples/benchmarks/shootout/threadring.notest
+for x in "${sizes[@]}"; do
+  ./cudaOnly $x 5 128 | tee -a "$runLog"
+done
 
 # -----------------------------------------------------------------------------
 # Gather compile and execution data, store in results.dat
 # -----------------------------------------------------------------------------
-"$CHPL_HOME/util/test/chplExperimentGatherUtils/extractCompileAndExecTimeFromStartTest.py" "$runLog" > "$datFile"
+data=$(cat $runLog | sed -r -n 's/Elapsed total: //p' | tr -s ' ' | cut -d ' ' -f 2)
+
 set +x
+echo -e "\t$experimentName" > $datFile
+paste \
+  <(printf "%s\n" "${sizes[@]}") \
+  <(printf "%s\n" "${data[@]}") >> "$datFile"
