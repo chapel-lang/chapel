@@ -2070,6 +2070,8 @@ module AutoMath {
      The result is always >= 0 if `n` > 0.
      It is an error if `n` == 0.
   */
+  pragma "last resort"
+  @deprecated("The argument names 'm' and 'n' are deprecated for param 'mod', please use 'x' and 'y' instead")
   proc mod(param m: integral, param n: integral) param {
     param temp = m % n;
 
@@ -2093,6 +2095,8 @@ module AutoMath {
      The result is always >= 0 if `n` > 0.
      It is an error if `n` == 0.
   */
+  pragma "last resort"
+  @deprecated("The argument names 'm' and 'n' are deprecated for 'mod', please use 'x' and 'y' instead")
   proc mod(m: integral, n: integral) {
     const temp = m % n;
 
@@ -2105,6 +2109,49 @@ module AutoMath {
       else
         // n < 0
         ( if temp <= 0 then temp else temp + n );
+  }
+
+  /* Computes the mod operator on the two arguments, defined as
+     ``mod(x,y) = x - y * floor(x / y)``.
+
+     The result is always >= 0 if `y` > 0.
+     It is an error if `y` == 0.
+  */
+  proc mod(param x: integral, param y: integral) param {
+    param temp = x % y;
+
+    // verbatim copy from the other 'mod', to simplify maintenance
+    return
+      if isNonnegative(y) then
+        if isUintType(x.type)
+        then temp
+        else ( if temp >= 0 then temp else temp + y )
+      else
+        // y < 0
+        ( if temp <= 0 then temp else temp + y );
+  }
+
+  /* Computes the mod operator on the two arguments, defined as
+     ``mod(x,y) = x - y * floor(x / y)``.
+
+     If the arguments are of unsigned type, then
+     fewer conditionals will be evaluated at run time.
+
+     The result is always >= 0 if `y` > 0.
+     It is an error if `y` == 0.
+  */
+  proc mod(x: integral, y: integral) {
+    const temp = x % y;
+
+    // eliminate some run-time tests if input(s) is(are) unsigned
+    return
+      if isNonnegative(y) then
+        if isUintType(x.type)
+        then temp
+        else ( if temp >= 0 then temp else temp + y )
+      else
+        // y < 0
+        ( if temp <= 0 then temp else temp + y );
   }
 
   /* Computes the mod operator on the two numbers, defined as
