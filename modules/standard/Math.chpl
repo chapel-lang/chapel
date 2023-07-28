@@ -378,22 +378,22 @@ module Math {
     return chpl_cosh(x);
   }
 
-  /* Returns :proc:`~AutoMath.ceil`\(`m`/`n`),
-     i.e., the fraction `m`/`n` rounded up to the nearest integer.
+  /* Returns :proc:`~AutoMath.ceil`\(`x`/`y`),
+     i.e., the fraction `x`/`y` rounded up to the nearest integer.
 
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divceil(param m: integral, param n: integral) param do
-    return chpl_divceil(m, n);
+  proc divceil(param x: integral, param y: integral) param do
+    return chpl_divceil(x, y);
 
-  /* Returns :proc:`~AutoMath.ceil`\(`m`/`n`),
-     i.e., the fraction `m`/`n` rounded up to the nearest integer.
+  /* Returns :proc:`~AutoMath.ceil`\(`x`/`y`),
+     i.e., the fraction `x`/`y` rounded up to the nearest integer.
 
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divceil(m: integral, n: integral) do return chpl_divceil(m, n);
+  proc divceil(x: integral, y: integral) do return chpl_divceil(x, y);
 
   /*
     A variant of :proc:`divceil` that performs no runtime checks.
@@ -401,26 +401,26 @@ module Math {
     (not 0) and are of a signed integer type (not `uint`).
   */
   @unstable("divceilpos is unstable due to questions about its utility.  If you find this function valuable, please let us know!")
-  proc divceilpos(m: integral, n: integral) {
-    return chpl_divceilpos(m, n);
+  proc divceilpos(x: integral, y: integral) {
+    return chpl_divceilpos(x, y);
   }
 
-  /* Returns :proc:`~AutoMath.floor`\(`m`/`n`),
-     i.e., the fraction `m`/`n` rounded down to the nearest integer.
+  /* Returns :proc:`~AutoMath.floor`\(`x`/`y`),
+     i.e., the fraction `x`/`y` rounded down to the nearest integer.
 
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divfloor(param m: integral, param n: integral) param do return
-    chpl_divfloor(m, n);
+  proc divfloor(param x: integral, param y: integral) param do return
+    chpl_divfloor(x, y);
 
-  /* Returns :proc:`~AutoMath.floor`\(`m`/`n`),
-     i.e., the fraction `m`/`n` rounded down to the nearest integer.
+  /* Returns :proc:`~AutoMath.floor`\(`x`/`y`),
+     i.e., the fraction `x`/`y` rounded down to the nearest integer.
 
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divfloor(m: integral, n: integral) do return chpl_divfloor(m, n);
+  proc divfloor(x: integral, y: integral) do return chpl_divfloor(x, y);
 
   /*
     A variant of :proc:`divfloor` that performs no runtime checks.
@@ -428,8 +428,8 @@ module Math {
     (not 0) and are of a signed integer type (not `uint`).
   */
   @unstable("divfloorpos is unstable due to questions about its utility.  If you find this function valuable, please let us know!")
-  proc divfloorpos(m: integral, n: integral) {
-    return chpl_divfloorpos(m, n);
+  proc divfloorpos(x: integral, y: integral) {
+    return chpl_divfloorpos(x, y);
   }
 
   /* Returns the error function of the argument `x`. */
