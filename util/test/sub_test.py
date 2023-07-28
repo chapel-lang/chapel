@@ -2293,15 +2293,16 @@ for testname in testsrc:
 
                 # It's got surrogates, so encode it as bytes and write it as binary
                 mode = "w"
+                output_to_write, pre_exec_to_write = output, pre_exec_output
                 if re.search(r'[\uD800-\uDFFF]', output) or re.search(r'[\uD800-\uDFFF]', pre_exec_output):
-                    output = output.encode(errors="surrogateescape")
-                    pre_exec_output = pre_exec_output.encode(errors="surrogateescape")
+                    output_to_write = output.encode(errors="surrogateescape")
+                    pre_exec_to_write = pre_exec_output.encode(errors="surrogateescape")
                     mode = "wb"
 
                 # Sadly the scripts used below require an actual file
                 with open(execlog, mode) as execlogfile:
-                    execlogfile.write(pre_exec_output)
-                    execlogfile.write(output)
+                    execlogfile.write(pre_exec_to_write)
+                    execlogfile.write(output_to_write)
 
                 if not exectimeout and not launcher_error:
                     if systemPrediffs:
