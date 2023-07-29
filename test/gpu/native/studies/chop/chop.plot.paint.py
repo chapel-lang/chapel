@@ -8,11 +8,18 @@ tbls = load_tables()
 jointTbl = tbls.join()
 normalizedTbl = jointTbl.normalize_to('cuda_only')
 
-print(normalizedTbl.md())
+plotArgs = { 'kind': PlotKind.BAR, 'xlabel': 'size' }
 
+plot(jointTbl,
+     title="cuda vs. chpl execution time",
+     filename="logs/chop_cuda_vs_chpl_perf.png",
+     ylabel="time (s)",
+     **plotArgs)
 
-plotArgs = { 'kind': PlotKind.BAR, 'xlabel': 'size', 'ylabel': 'time (s)' }
-plot(jointTbl, **plotArgs)
-p = plot(jointTbl.normalize_to('cuda_only'), **plotArgs, save=False)
+p = plot(jointTbl.normalize_to('cuda_only'),
+         title="chpl execution time over cuda time",
+         ylabel="ratio",
+         **plotArgs,
+         save=False)
 p.set_ylim(1.0, 1.3)
-p.save()
+p.save("logs/normalized.png")

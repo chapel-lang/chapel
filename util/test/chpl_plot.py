@@ -693,11 +693,13 @@ def _embedMetadata(datFilename, imgFilename):
 
   img.save(imgFilename, pnginfo=metadata)
 
-def _plotImpl(table, save, **plotArgs):
+def _plotImpl(table, save, filename=None, **plotArgs):
   p = Plot(table, **plotArgs)
   if save:
-      #_embedMetadata(chplDat.filename, "logs/" + plot.baseName + '.png')
-      p.save(p._png_file_name)
+    if filename is None:
+      filename = p._png_file_name
+    #_embedMetadata(chplDat.filename, "logs/" + plot.baseName + '.png')
+    p.save(filename)
   return p
 
 def computeUniqColName(existingCols, newCol):
@@ -727,7 +729,7 @@ def join(*tables):
   return res
 
 
-def plot(tables, save=True, **plotArgs):
+def plot(tables, save=True, filename=None, **plotArgs):
   """ This function is polymorphic (including its return type). If it is passed
   a single table it returns the plot for that single table. If it is passed a
   TableCollection then it returns a list of plots for those tables. """
@@ -738,7 +740,7 @@ def plot(tables, save=True, **plotArgs):
     for name in tables.tables:
       res.append(plot(tables.tables[name], save, **plotArgs))
   else:
-    res = _plotImpl(tables, save, **plotArgs)
+    res = _plotImpl(tables, save, filename=None, **plotArgs)
   return res
 
 
