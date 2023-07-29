@@ -4623,6 +4623,7 @@ void makeBinaryLLVM(void) {
       case GpuCodegenType::GPU_CG_CPU:
         break;
     }
+    linkGpuDeviceLibraries();
   }
 
   saveIrToBcFileIfNeeded(preOptFilename);
@@ -4836,8 +4837,6 @@ void makeBinaryLLVM(void) {
     } else {
 
       auto artifactFileType = getCodeGenFileType();
-
-      linkGpuDeviceLibraries();
 
       llvm::raw_fd_ostream outputArtifactFile(artifactFilename, error, flags);
 
