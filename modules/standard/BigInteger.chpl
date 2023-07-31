@@ -522,7 +522,11 @@ module BigInteger {
       const base_ = base.safeCast(c_int);
       var   ret: string;
 
-      if compiledForSingleLocale() || this.localeId == chpl_nodeID {
+      if compiledForSingleLocale() {
+        var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
+        try! ret = string.createAdoptingBuffer(tmpvar);
+      }
+      else if this.localeId == chpl_nodeID {
         var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
         try! ret = string.createAdoptingBuffer(tmpvar);
       } else {
