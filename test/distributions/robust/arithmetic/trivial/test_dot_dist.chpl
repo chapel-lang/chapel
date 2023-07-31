@@ -10,4 +10,4 @@ writeln(dist_eq(Dom2D32.distribution, Dist2D32));
 if distType == DistType.default then
   writeln(true);
 else
-  writeln(dist_neq(Dom2D32.dist, Dist2D));
+  writeln(dist_neq(Dom2D32.distribution, Dist2D));

@@ -15,4 +15,4 @@ writeln(dist_eq(A2D32.domain.distribution, Dist2D32));
 if distType == DistType.default then
   writeln(true);
 else
-  writeln(dist_neq(A1D.domain.dist, {1..n1}.dist));
+  writeln(dist_neq(A1D.domain.distribution, {1..n1}.distribution));

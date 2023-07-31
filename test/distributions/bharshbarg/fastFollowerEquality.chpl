@@ -28,9 +28,9 @@ proc test(DA : domain, DB : domain) {
 
 proc test(A : [?DA], B : [?DB]) {
   writeln("--- ", A.type:string, " vs. ", B.type:string, " ---");
-  DA.dist.displayRepresentation();
+  DA.distribution.displayRepresentation();
   writeln();
-  DB.dist.displayRepresentation();
+  DB.distribution.displayRepresentation();
   writeln();
 
   if !zipRange {
