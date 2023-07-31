@@ -522,14 +522,14 @@ module BigInteger {
       const base_ = base.safeCast(c_int);
       var   ret: string;
 
-      if compiledForSingleLocale() ||  this.localeId == chpl_nodeID {
+      if compiledForSingleLocale() || this.localeId == chpl_nodeID {
         var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
         try! ret = string.createAdoptingBuffer(tmpvar);
       } else {
         const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
         on __primitive("chpl_on_locale_num", thisLoc) {
           var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
-           try! ret = string.createAdoptingBuffer(tmpvar);
+          try! ret = string.createAdoptingBuffer(tmpvar);
         }
       }
 
@@ -1453,7 +1453,7 @@ module BigInteger {
     }
   }
 
-  /*See :proc:`~BigInteger.divExact`*/
+  /* See :proc:`~BigInteger.divExact` */
   proc divExact(ref result: bigint, const ref numer: bigint, denom: integral)
     do BigInteger.divExact(result, numer, new bigint(denom));
 
@@ -2944,7 +2944,8 @@ module BigInteger {
     return ret.safeCast(uint);
   }
 
-  /*Scan ``this``, starting from ``startBitIdx``, towards more significant
+  /*
+    Scan ``this``, starting from ``startBitIdx``, towards more significant
     bits until the first ``0`` bit is found.  Return the index of the found
     bit.
 
@@ -2959,7 +2960,8 @@ module BigInteger {
   proc bigint.scan0(startBitIdx: integral): uint
     do return this.findNext0(startBitIdx);
 
-  /*Scan ``this``, starting from ``startBitIdx``, towards more significant
+  /*
+    Scan ``this``, starting from ``startBitIdx``, towards more significant
     bits until the first ``1`` bit is found.  Return the index of the found
     bit.
 
@@ -3551,7 +3553,8 @@ module BigInteger {
   proc addmul(ref result: bigint, const ref a: bigint, b: uint)
     do addMul(result, a, b);
 
-  /* Adds the product of ``x`` and ``y`` to ``result``
+  /*
+     Adds the product of ``x`` and ``y`` to ``result``
      (``result = result + (x * y)``).
 
      :arg result: Where the result is stored
@@ -3632,7 +3635,8 @@ module BigInteger {
   proc submul(ref result: bigint, const ref a: bigint, b: uint)
     do subMul(result, a, b);
 
-  /* Subtracts the product of ``x`` and ``y`` from ``result``
+  /*
+     Subtracts the product of ``x`` and ``y`` from ``result``
      (``result = result - (x * y)``).
 
      :arg result: Where the result is stored
