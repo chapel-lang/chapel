@@ -313,17 +313,17 @@ module MyHashtable {
 //
 // Hashable: user-facing requirements on the hashtable key type.
 //
-interface Hashable(Key) {
+interface MyHashable(Key) {
   //  proc hash(arg: Key): uint;
-  proc chpl__defaultHashWrapper(arg: Key): int;
+  Key implements Hashable;
   operator ==(lhs: Key, rhs: Key): bool;
 }
 
 //
 // StdOps: various common operations we expect.
 //
-// Todo: include == and resolve the ambiguity with Hashable.==
-// possibly by requiring Hashable to implement StdOps.
+// Todo: include == and resolve the ambiguity with MyHashable.==
+// possibly by requiring MyHashable to implement StdOps.
 //
 interface StdOps(Val) {
   proc chpl__initCopy(arg: Val, definedConst: bool): Val;
@@ -332,9 +332,9 @@ interface StdOps(Val) {
 }
 
 // These use built-in implementations and proc toString below.
-string implements Hashable;
+string implements MyHashable;
 string implements StdOps;
-int implements Hashable;
+int implements MyHashable;
 int implements StdOps;
 
 // The default implementation for toString().
@@ -351,7 +351,7 @@ proc toString(arg): string {
 interface chpl_Hashtable(HT) {
   type keyType;
   type valType;
-  keyType implements Hashable;
+  keyType implements MyHashable;
   keyType implements StdOps;
   valType implements StdOps;
   // can't have == in StdOps because then == on keys would be ambiguous
