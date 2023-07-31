@@ -2076,6 +2076,9 @@ codegen_config() {
         fprintf(outfile,", /* deprecated = */ %d",
                 var->hasFlag(FLAG_DEPRECATED));
         fprintf(outfile,", \"%s\");\n", var->getDeprecationMsg());
+        fprintf(outfile,", /* unstable = */ %d",
+                var->hasFlag(FLAG_UNSTABLE));
+        fprintf(outfile,", \"%s\");\n", var->getUnstableMsg());
 
       }
     }
@@ -2117,7 +2120,7 @@ codegen_config() {
 
     forv_expanding_Vec(VarSymbol, var, gVarSymbols) {
       if (var->hasFlag(FLAG_CONFIG) && !var->isType()) {
-        std::vector<llvm::Value *> args (6);
+        std::vector<llvm::Value *> args (8);
         {
           GenRet gen = new_CStringSymbol(var->name)->codegen();
           llvm::Type* eltType = tryComputingPointerElementType(gen.val);
@@ -2163,6 +2166,14 @@ codegen_config() {
           llvm::Type* eltType = tryComputingPointerElementType(gen.val);
           INT_ASSERT(eltType); // it should have been a global variable
           args[5] = info->irBuilder->CreateLoad(eltType, gen.val);
+        }
+
+        args[6] = info->irBuilder->getInt32(var->hasFlag(FLAG_UNSTABLE));
+        {
+          GenRet gen = new_CStringSymbol(var->getUnstableMsg())->codegen();
+          llvm::Type* eltType = tryComputingPointerElementType(gen.val);
+          INT_ASSERT(eltType); // it should have been a global variable
+          args[7] = info->irBuilder->CreateLoad(eltType, gen.val);
         }
         info->irBuilder->CreateCall(installConfigFunc, args);
       }

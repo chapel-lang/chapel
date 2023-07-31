@@ -33,9 +33,10 @@ void printConfigVarTable(void);
 void initSetValue(const char* varName, const char* value,
                   const char* moduleName, int32_t lineno, int32_t filename);
 const char* lookupSetValue(const char* varName, const char* moduleName);
-void installConfigVar(const char* varName, const char* value,
+void installConfigVar(const char* varName, const char* type,
                       const char* moduleName, int isPrivate, int deprecated,
-                      const char* deprecationMsg);
+                      const char* deprecationMsg, int unstable,
+                      const char* unstableMsg);
 
 int handlePossibleConfigVar(int* argc, char* argv[], int argnum,
                             int32_t lineno, int32_t filename);
