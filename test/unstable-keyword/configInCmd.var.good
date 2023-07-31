@@ -1,0 +1,8 @@
+configInCmd.chpl:14: warning: configVar is unstable.
+configInCmd.chpl:15: warning: configConst is unstable.
+configInCmd.chpl:16: warning: configParam is unstable.
+configInCmd.chpl:21: warning: privateConfigVar is unstable.
+
+configInCmd config vars:
+                            dummy: string
+<command-line arg>:1: warning: configVar is unstable.

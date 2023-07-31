@@ -1,0 +1,7 @@
+#!/bin/sh
+
+awk 'BEGIN {write=1;} \
+     /FLAGS:/ {write=0}\
+     /configInCmd config vars/ {write=1} \
+     /.*/ {if(write) print($0)}' <$2 >$2.awked
+mv $2.awked $2
