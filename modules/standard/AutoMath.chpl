@@ -2520,8 +2520,13 @@ module AutoMath {
      `relTol` specifies the relative tolerance for differences between `x` and
      `y`, while `absTol` specifies the absolute tolerance.  Both must be
      positive when specified.
+
+     `x` and `y` must be either `real`, `imag`, or `complex`.
    */
-  inline proc isClose(x, y, relTol = 1e-5, absTol = 0.0): bool {
+  inline proc isClose(x, y, relTol = 1e-5, absTol = 0.0): bool where
+  (isRealValue(x) || isImagValue(x) || isComplexValue(x)) && (isRealValue(y) ||
+    isImagValue(y) || isComplexValue(y)) {
+
     if boundsChecking && (relTol < 0) then
       HaltWrappers.boundsCheckHalt("Input value for relTol must be positive");
     if boundsChecking && (absTol < 0) then
