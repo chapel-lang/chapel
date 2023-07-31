@@ -655,8 +655,14 @@ isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual,
         sym->isParameter())
       actualConst = true;
 
-    bool actualExprTmp = sym->hasFlag(FLAG_EXPR_TEMP) &&
-                         !sym->type->symbol->hasFlag(FLAG_ARRAY);
+    bool actualExprTmp = sym->hasFlag(FLAG_EXPR_TEMP);
+
+    // don't emit lvalue errors for array slices
+    // (we can think of these as a special kind of reference)
+    if (isAliasingArrayType(sym->type)) {
+      actualExprTmp = false;
+    }
+
     TypeSymbol* formalTS = NULL;
     bool formalCopyMutates = false;
     if (formal) {

@@ -2710,10 +2710,6 @@ static void initPromotionWrapper(PromotionInfo& promotion,
   retval->addFlag(FLAG_PROMOTION_WRAPPER);
   retval->addFlag(FLAG_FN_RETURNS_ITERATOR);
 
-  if (fn->hasFlag(FLAG_OPERATOR)) {
-    retval->addFlag(FLAG_OPERATOR);
-  }
-
   int i = 0;
   for_formals(formal, fn) {
 
@@ -3207,7 +3203,10 @@ static FnSymbol* buildEmptyWrapper(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_METHOD_PRIMARY)) wrapper->addFlag(FLAG_METHOD_PRIMARY);
   if (fn->hasFlag(FLAG_ASSIGNOP))       wrapper->addFlag(FLAG_ASSIGNOP);
   if (fn->hasFlag(FLAG_LAST_RESORT))    wrapper->addFlag(FLAG_LAST_RESORT);
+  if (fn->hasFlag(FLAG_OPERATOR))       wrapper->addFlag(FLAG_OPERATOR);
 
+  if (   fn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS))
+    wrapper->addFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
   if (   fn->hasFlag(FLAG_VOID_NO_RETURN_VALUE))
     wrapper->addFlag(FLAG_VOID_NO_RETURN_VALUE);
   if (   fn->hasFlag(FLAG_FN_RETURNS_ITERATOR))
