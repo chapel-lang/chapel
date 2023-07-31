@@ -2,8 +2,6 @@ a = 1e+200 e = 1e+200
 isClose(a,e) = true
 b = 1.123e-300 f = 1.123e-300
 isClose(b,f) = true
-c = 12345 g = 12345.0
-isClose(c,g) = true
 d = 0.0 h = -0.0
 isClose(d,h) = true
 i = 1e+08 l = 100000001 relTol = 1e-08

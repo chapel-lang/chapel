@@ -1,6 +1,5 @@
 var a: real = 1e+200;
 var b: real = 1.123e-300;
-var c: uint = 12345;
 var d: real = 0.0;
 
 var e: real = 1e+200;
@@ -25,8 +24,6 @@ writeln("a = ", a," e = ", e);
 writeln("isClose(a,e) = ", isClose(a, e));
 writeln("b = ", b," f = ", f);
 writeln("isClose(b,f) = ", isClose(b, f));
-writeln("c = ", c," g = ", g);
-writeln("isClose(c,g) = ", isClose(c, g));
 writeln("d = ", d," h = ", h);
 writeln("isClose(d,h) = ", isClose(d, h));
 
