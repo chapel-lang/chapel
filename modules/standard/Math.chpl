@@ -194,14 +194,14 @@ module Math {
     return chpl_acos(x);
   }
 
-  /* Returns the arc cosine of the argument `z`. */
-  inline proc acos(z: complex(64)): complex(64) {
-    return chpl_acos(z);
+  /* Returns the arc cosine of the argument `x`. */
+  inline proc acos(x: complex(64)): complex(64) {
+    return chpl_acos(x);
   }
 
-  /* Returns the arc cosine of the argument `z`. */
-  inline proc acos(z: complex(128)): complex(128) {
-    return chpl_acos(z);
+  /* Returns the arc cosine of the argument `x`. */
+  inline proc acos(x: complex(128)): complex(128) {
+    return chpl_acos(x);
   }
 
   /* Returns the inverse hyperbolic cosine of the argument `x`.
@@ -220,14 +220,14 @@ module Math {
     return chpl_acosh(x);
   }
 
-  /* Returns the inverse hyperbolic cosine of the argument `z`. */
-  inline proc acosh(z: complex(64)): complex(64) {
-    return chpl_acosh(z);
+  /* Returns the inverse hyperbolic cosine of the argument `x`. */
+  inline proc acosh(x: complex(64)): complex(64) {
+    return chpl_acosh(x);
   }
 
-  /* Returns the inverse hyperbolic cosine of the argument `z`. */
-  inline proc acosh(z: complex(128)): complex(128) {
-    return chpl_acosh(z);
+  /* Returns the inverse hyperbolic cosine of the argument `x`. */
+  inline proc acosh(x: complex(128)): complex(128) {
+    return chpl_acosh(x);
   }
 
   /* Returns the arc sine of the argument `x`.
@@ -246,14 +246,14 @@ module Math {
     return chpl_asin(x);
   }
 
-  /* Returns the arc sine of the argument `z`. */
-  inline proc asin(z: complex(64)): complex(64) {
-    return chpl_asin(z);
+  /* Returns the arc sine of the argument `x`. */
+  inline proc asin(x: complex(64)): complex(64) {
+    return chpl_asin(x);
   }
 
-  /* Returns the arc sine of the argument `z`. */
-  inline proc asin(z: complex(128)): complex(128) {
-    return chpl_asin(z);
+  /* Returns the arc sine of the argument `x`. */
+  inline proc asin(x: complex(128)): complex(128) {
+    return chpl_asin(x);
   }
 
   /* Returns the inverse hyperbolic sine of the argument `x`. */
@@ -266,14 +266,14 @@ module Math {
     return chpl_asinh(x);
   }
 
-  /* Returns the inverse hyperbolic sine of the argument `z`. */
-  inline proc asinh(z: complex(64)): complex(64) {
-    return chpl_asinh(z);
+  /* Returns the inverse hyperbolic sine of the argument `x`. */
+  inline proc asinh(x: complex(64)): complex(64) {
+    return chpl_asinh(x);
   }
 
-  /* Returns the inverse hyperbolic sine of the argument `z`. */
-  inline proc asinh(z: complex(128)): complex(128) {
-    return chpl_asinh(z);
+  /* Returns the inverse hyperbolic sine of the argument `x`. */
+  inline proc asinh(x: complex(128)): complex(128) {
+    return chpl_asinh(x);
   }
 
   /* Returns the arc tangent of the argument `x`. */
@@ -286,14 +286,14 @@ module Math {
     return chpl_atan(x);
   }
 
-  /* Returns the arc tangent of the argument `z`. */
-  inline proc atan(z: complex(64)): complex(64) {
-    return chpl_atan(z);
+  /* Returns the arc tangent of the argument `x`. */
+  inline proc atan(x: complex(64)): complex(64) {
+    return chpl_atan(x);
   }
 
-  /* Returns the arc tangent of the argument `z`. */
-  inline proc atan(z: complex(128)): complex(128) {
-    return chpl_atan(z);
+  /* Returns the arc tangent of the argument `x`. */
+  inline proc atan(x: complex(128)): complex(128) {
+    return chpl_atan(x);
   }
 
   /* Returns the arc tangent of the ratio of the two arguments.
@@ -328,14 +328,14 @@ module Math {
     return chpl_atanh(x);
   }
 
-  /* Returns the inverse hyperbolic tangent of the argument `z`. */
-  inline proc atanh(z: complex(64)): complex(64) {
-    return chpl_atanh(z);
+  /* Returns the inverse hyperbolic tangent of the argument `x`. */
+  inline proc atanh(x: complex(64)): complex(64) {
+    return chpl_atanh(x);
   }
 
-  /* Returns the inverse hyperbolic tangent of the argument `z`. */
-  inline proc atanh(z: complex(128)): complex(128) {
-    return chpl_atanh(z);
+  /* Returns the inverse hyperbolic tangent of the argument `x`. */
+  inline proc atanh(x: complex(128)): complex(128) {
+    return chpl_atanh(x);
   }
 
   /* Returns the cosine of the argument `x`. */
@@ -348,14 +348,14 @@ module Math {
     return chpl_cos(x);
   }
 
-  /* Returns the cosine of the argument `z`. */
-  inline proc cos(z : complex(64)): complex(64) {
-    return chpl_cos(z);
+  /* Returns the cosine of the argument `x`. */
+  inline proc cos(x : complex(64)): complex(64) {
+    return chpl_cos(x);
   }
 
-  /* Returns the cosine of the argument `z`. */
-  inline proc cos(z : complex(128)): complex(128) {
-    return chpl_cos(z);
+  /* Returns the cosine of the argument `x`. */
+  inline proc cos(x : complex(128)): complex(128) {
+    return chpl_cos(x);
   }
 
   /* Returns the hyperbolic cosine of the argument `x`. */
@@ -368,32 +368,32 @@ module Math {
     return chpl_cosh(x);
   }
 
-  /* Returns the hyperbolic cosine of the argument `z`. */
-  inline proc cosh(z: complex(64)): complex(64) {
-    return chpl_cosh(z);
+  /* Returns the hyperbolic cosine of the argument `x`. */
+  inline proc cosh(x: complex(64)): complex(64) {
+    return chpl_cosh(x);
   }
 
-  /* Returns the hyperbolic cosine of the argument `z`. */
-  inline proc cosh(z: complex(128)): complex(128) {
-    return chpl_cosh(z);
+  /* Returns the hyperbolic cosine of the argument `x`. */
+  inline proc cosh(x: complex(128)): complex(128) {
+    return chpl_cosh(x);
   }
 
-  /* Returns :proc:`~AutoMath.ceil`\(`m`/`n`),
-     i.e., the fraction `m`/`n` rounded up to the nearest integer.
+  /* Returns :proc:`~AutoMath.ceil`\(`x`/`y`),
+     i.e., the fraction `x`/`y` rounded up to the nearest integer.
 
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divceil(param m: integral, param n: integral) param do
-    return chpl_divceil(m, n);
+  proc divceil(param x: integral, param y: integral) param do
+    return chpl_divceil(x, y);
 
-  /* Returns :proc:`~AutoMath.ceil`\(`m`/`n`),
-     i.e., the fraction `m`/`n` rounded up to the nearest integer.
+  /* Returns :proc:`~AutoMath.ceil`\(`x`/`y`),
+     i.e., the fraction `x`/`y` rounded up to the nearest integer.
 
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divceil(m: integral, n: integral) do return chpl_divceil(m, n);
+  proc divceil(x: integral, y: integral) do return chpl_divceil(x, y);
 
   /*
     A variant of :proc:`divceil` that performs no runtime checks.
@@ -401,26 +401,26 @@ module Math {
     (not 0) and are of a signed integer type (not `uint`).
   */
   @unstable("divceilpos is unstable due to questions about its utility.  If you find this function valuable, please let us know!")
-  proc divceilpos(m: integral, n: integral) {
-    return chpl_divceilpos(m, n);
+  proc divceilpos(x: integral, y: integral) {
+    return chpl_divceilpos(x, y);
   }
 
-  /* Returns :proc:`~AutoMath.floor`\(`m`/`n`),
-     i.e., the fraction `m`/`n` rounded down to the nearest integer.
+  /* Returns :proc:`~AutoMath.floor`\(`x`/`y`),
+     i.e., the fraction `x`/`y` rounded down to the nearest integer.
 
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divfloor(param m: integral, param n: integral) param do return
-    chpl_divfloor(m, n);
+  proc divfloor(param x: integral, param y: integral) param do return
+    chpl_divfloor(x, y);
 
-  /* Returns :proc:`~AutoMath.floor`\(`m`/`n`),
-     i.e., the fraction `m`/`n` rounded down to the nearest integer.
+  /* Returns :proc:`~AutoMath.floor`\(`x`/`y`),
+     i.e., the fraction `x`/`y` rounded down to the nearest integer.
 
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divfloor(m: integral, n: integral) do return chpl_divfloor(m, n);
+  proc divfloor(x: integral, y: integral) do return chpl_divfloor(x, y);
 
   /*
     A variant of :proc:`divfloor` that performs no runtime checks.
@@ -428,8 +428,8 @@ module Math {
     (not 0) and are of a signed integer type (not `uint`).
   */
   @unstable("divfloorpos is unstable due to questions about its utility.  If you find this function valuable, please let us know!")
-  proc divfloorpos(m: integral, n: integral) {
-    return chpl_divfloorpos(m, n);
+  proc divfloorpos(x: integral, y: integral) {
+    return chpl_divfloorpos(x, y);
   }
 
   /* Returns the error function of the argument `x`. */
@@ -470,14 +470,14 @@ module Math {
 
   /* Returns the value of the Napierian `e` raised to the power of the
      argument. */
-  inline proc exp(z: complex(64)): complex(64) {
-    return chpl_exp(z);
+  inline proc exp(x: complex(64)): complex(64) {
+    return chpl_exp(x);
   }
 
   /* Returns the value of the Napierian `e` raised to the power of the
      argument. */
-  inline proc exp(z: complex(128)): complex(128) {
-    return chpl_exp(z);
+  inline proc exp(x: complex(128)): complex(128) {
+    return chpl_exp(x);
   }
 
   /* Returns the value of `2` raised to the power of the argument `x`. */
@@ -543,14 +543,14 @@ module Math {
     return chpl_log(x);
   }
 
-  /* Returns the natural logarithm of the argument `z`. */
-  inline proc log(z: complex(64)): complex(64) {
-    return chpl_log(z);
+  /* Returns the natural logarithm of the argument `x`. */
+  inline proc log(x: complex(64)): complex(64) {
+    return chpl_log(x);
   }
 
-  /* Returns the natural logarithm of the argument `z`. */
-  inline proc log(z: complex(128)): complex(128) {
-    return chpl_log(z);
+  /* Returns the natural logarithm of the argument `x`. */
+  inline proc log(x: complex(128)): complex(128) {
+    return chpl_log(x);
   }
 
   /* Returns the base 10 logarithm of the argument `x`.
@@ -585,6 +585,28 @@ module Math {
     return chpl_log1p(x);
   }
 
+  /* Returns the log to the base `2**exp` of the given `x` value.
+     If `exp` is `1`, then returns the log to the base `2`;
+     if `exp` is `2`, then returns the log to the base `4`, etc.
+     Any fractional part is discarded.
+
+     :rtype: `int`
+  */
+  inline proc logBasePow2(x: int(?w), exp) {
+    return chpl_logBasePow2(x, exp);
+  }
+
+  /* Returns the log to the base `2**exp` of the given `x` value.
+     If `exp` is `1`, then returns the log to the base `2`;
+     if `exp` is `2`, then returns the log to the base `4`, etc.
+     Any fractional part is discarded.
+
+     :rtype: `int`
+  */
+  inline proc logBasePow2(x: uint(?w), exp) {
+    return chpl_logBasePow2(x, exp);
+  }
+
   /* Returns the log to the base `2**baseLog2` of the given `in` value.
      If `baseLog2` is `1`, then returns the log to the base `2`;
      if `baseLog2` is `2`, then returns the log to the base `4`, etc.
@@ -592,6 +614,8 @@ module Math {
 
      :rtype: `int`
   */
+  pragma "last resort"
+  @deprecated("The 'val' and 'baseLog2' argument names are now deprecated, please use 'x' and 'exp' respectively")
   inline proc logBasePow2(val: int(?w), baseLog2) {
     return chpl_logBasePow2(val, baseLog2);
   }
@@ -603,6 +627,8 @@ module Math {
 
      :rtype: `int`
   */
+  pragma "last resort"
+  @deprecated("The 'val' and 'baseLog2' argument names are now deprecated, please use 'x' and 'exp' respectively")
   inline proc logBasePow2(val: uint(?w), baseLog2) {
     return chpl_logBasePow2(val, baseLog2);
   }
@@ -630,8 +656,8 @@ module Math {
 
      It is an error if `x` is less than or equal to zero.
   */
-  inline proc log2(val: int(?w)) {
-    return chpl_log2(val);
+  inline proc log2(x: int(?w)) {
+    return chpl_log2(x);
   }
 
   /* Returns the base 2 logarithm of the argument `x`,
@@ -641,8 +667,8 @@ module Math {
 
      It is an error if `x` is less than or equal to zero.
   */
-  inline proc log2(val: uint(?w)) {
-    return chpl_log2(val);
+  inline proc log2(x: uint(?w)) {
+    return chpl_log2(x);
   }
 
   /* Returns the rounded integral value of the argument `x` determined by the
@@ -691,14 +717,14 @@ module Math {
     return chpl_sin(x);
   }
 
-  /* Returns the sine of the argument `z`. */
-  inline proc sin(z: complex(64)): complex(64) {
-    return chpl_sin(z);
+  /* Returns the sine of the argument `x`. */
+  inline proc sin(x: complex(64)): complex(64) {
+    return chpl_sin(x);
   }
 
-  /* Returns the sine of the argument `z`. */
-  inline proc sin(z: complex(128)): complex(128) {
-    return chpl_sin(z);
+  /* Returns the sine of the argument `x`. */
+  inline proc sin(x: complex(128)): complex(128) {
+    return chpl_sin(x);
   }
 
   /* Returns the hyperbolic sine of the argument `x`. */
@@ -711,14 +737,14 @@ module Math {
     return chpl_sinh(x);
   }
 
-  /* Returns the hyperbolic sine of the argument `z`. */
-  inline proc sinh(z: complex(64)): complex(64) {
-    return chpl_sinh(z);
+  /* Returns the hyperbolic sine of the argument `x`. */
+  inline proc sinh(x: complex(64)): complex(64) {
+    return chpl_sinh(x);
   }
 
-  /* Returns the hyperbolic sine of the argument `z`. */
-  inline proc sinh(z: complex(128)): complex(128) {
-    return chpl_sinh(z);
+  /* Returns the hyperbolic sine of the argument `x`. */
+  inline proc sinh(x: complex(128)): complex(128) {
+    return chpl_sinh(x);
   }
 
   /* Returns the tangent of the argument `x`. */
@@ -731,14 +757,14 @@ module Math {
     return chpl_tan(x);
   }
 
-  /* Returns the tangent of the argument `z`. */
-  inline proc tan(z: complex(64)): complex(64) {
-    return chpl_tan(z);
+  /* Returns the tangent of the argument `x`. */
+  inline proc tan(x: complex(64)): complex(64) {
+    return chpl_tan(x);
   }
 
-  /* Returns the tangent of the argument `z`. */
-  inline proc tan(z: complex(128)): complex(128) {
-    return chpl_tan(z);
+  /* Returns the tangent of the argument `x`. */
+  inline proc tan(x: complex(128)): complex(128) {
+    return chpl_tan(x);
   }
 
   /* Returns the hyperbolic tangent of the argument `x`. */
@@ -751,14 +777,14 @@ module Math {
     return chpl_tanh(x);
   }
 
-  /* Returns the hyperbolic tangent of the argument `z`. */
-  inline proc tanh(z: complex(64)): complex(64) {
-    return chpl_tanh(z);
+  /* Returns the hyperbolic tangent of the argument `x`. */
+  inline proc tanh(x: complex(64)): complex(64) {
+    return chpl_tanh(x);
   }
 
-  /* Returns the hyperbolic tangent of the argument `z`. */
-  inline proc tanh(z: complex(128)): complex(128) {
-    return chpl_tanh(z);
+  /* Returns the hyperbolic tangent of the argument `x`. */
+  inline proc tanh(x: complex(128)): complex(128) {
+    return chpl_tanh(x);
   }
 
   /* Returns the absolute value of the gamma function of the argument `x`. */
@@ -771,10 +797,10 @@ module Math {
     return chpl_tgamma(x);
   }
 
-  /* Returns the greatest common divisor of the integer argument `a` and
-     `b`. */
-  proc gcd(in a: int,in b: int): int {
-    return chpl_gcd(a, b);
+  /* Returns the greatest common divisor of the integer argument `x` and
+     `y`. */
+  proc gcd(in x: int,in y: int): int {
+    return chpl_gcd(x, y);
   }
 
   /* Returns the Bessel function of the first kind of order `0` of `x`. */

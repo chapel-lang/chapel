@@ -1,6 +1,6 @@
-depLogBasePow2.chpl:5: In function 'log4':
-depLogBasePow2.chpl:5: warning: logBasePow2 is no longer included by default, please 'use' or 'import' the 'Math' module to call it
-  depLogBasePow2.chpl:2: called as log4(x: int(64))
+logBasePow2-ValBaseLog2.chpl:7: In function 'log4':
+logBasePow2-ValBaseLog2.chpl:7: warning: The 'val' and 'baseLog2' argument names are now deprecated, please use 'x' and 'exp' respectively
+  logBasePow2-ValBaseLog2.chpl:4: called as log4(x: int(64))
 i = 1; log4(i) = 0
 i = 2; log4(i) = 0
 i = 3; log4(i) = 0
