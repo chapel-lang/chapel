@@ -75,32 +75,41 @@ module ChapelHashing {
   inline proc int.hash(): uint {
     return _gen_key(this);
   }
-  int implements Hashable;
+  implements Hashable(int(8));
+  implements Hashable(int(16));
+  implements Hashable(int(32));
+  implements Hashable(int(64));
 
   inline proc uint.hash(): uint {
     return _gen_key(this);
   }
-  uint implements Hashable;
+  implements Hashable(uint(8));
+  implements Hashable(uint(16));
+  implements Hashable(uint(32));
+  implements Hashable(uint(64));
 
   inline proc enum.hash(): uint {
     return _gen_key(chpl__enumToOrder(this));
   }
-  /* ? enum implements Hashable; ? */
+  implements Hashable(enum);
 
   inline proc real.hash(): uint {
     return _gen_key(__primitive( "real2int", this));
   }
-  real implements Hashable;
+  implements Hashable(real(32));
+  implements Hashable(real(64));
 
   inline proc complex.hash(): uint {
     return _gen_key(__primitive("real2int", this.re) ^ __primitive("real2int", this.im));
   }
-  complex implements Hashable;
+  implements Hashable(complex(64));
+  implements Hashable(complex(128));
 
   inline proc imag.hash(): uint {
     return _gen_key(__primitive( "real2int", _i2r(this)));
   }
-  imag implements Hashable;
+  implements Hashable(imag(32));
+  implements Hashable(imag(64));
 
   inline proc chpl_taskID_t.hash(): uint {
     return _gen_key(this:int);
