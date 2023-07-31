@@ -28,4 +28,4 @@ writeln(dist_eq(A3.domain.distribution, D3.distribution));
 if distType == DistType.default then
   writeln(true);
 else
-  writeln(dist_neq(A4.domain.dist, D1.dist));
+  writeln(dist_neq(A4.domain.distribution, D1.distribution));
