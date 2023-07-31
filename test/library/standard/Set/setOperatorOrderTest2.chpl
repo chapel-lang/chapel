@@ -15,6 +15,7 @@ record R {
     return 0;
   }
 }
+R implements Hashable;
 
 var s1 = new set(R);
 var s2 = new set(R);

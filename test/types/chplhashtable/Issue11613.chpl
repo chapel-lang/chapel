@@ -14,6 +14,7 @@ operator R.!=(a: R, b: R) {
 proc R.hash() {
   return a.hash();
 }
+R implements Hashable;
 
 var d : domain(R(int));
 d += new R(int);

@@ -5,9 +5,10 @@ record MyRecord {
 
   proc hash() {
     writeln("called user hash");
-    return i;
+    return i : uint;
   }
 }
+MyRecord implements Hashable;
 
 var m = new map(MyRecord, int);
 

@@ -12,9 +12,10 @@ record intWrapper {
     val = i;
   }
   proc hash() {
-    return val;
+    return val : uint;
   }
 }
+intWrapper implements Hashable;
 
 proc main(args: [] string) {
   // Open stdin and a binary reader channel

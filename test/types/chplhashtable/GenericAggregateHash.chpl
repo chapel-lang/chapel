@@ -33,6 +33,8 @@ proc r1.hash() {
   return x.hash();
 }
 
+r1 implements Hashable;
+
 operator r2.==(lhs: r2, rhs: r2) {
   return && reduce (lhs.a == rhs.a);
 }
@@ -40,6 +42,8 @@ operator r2.==(lhs: r2, rhs: r2) {
 proc r2.hash() {
   return a.hash();
 }
+
+r2 implements Hashable;
 
 class C { var x = 0; }
 

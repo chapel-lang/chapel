@@ -19,6 +19,7 @@ record R {
       return chpl__defaultHashWrapper(a): uint;
   }
 }
+R implements Hashable;
 
 var s1 = new set(R);
 var s2 = new set(R);

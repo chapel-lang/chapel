@@ -91,6 +91,7 @@ proc R.hash() {
                                   this.ptr.xx.hash(),
                                   1);
 }
+R implements Hashable;
 
 
 printInitDeinit = false;
