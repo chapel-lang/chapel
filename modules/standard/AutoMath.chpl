@@ -83,7 +83,7 @@ Comparison Functions
 --------------------
 :proc:`max`
 :proc:`min`
-:proc:`isclose`
+:proc:`isClose`
 
 .. _automath-sign:
 
