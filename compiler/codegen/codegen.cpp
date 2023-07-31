@@ -2034,6 +2034,15 @@ static void codegen_header_addons() {
   }
 }
 
+static llvm::Value* genStringArg(const char* str) {
+  GenInfo* info = gGenInfo;
+  GenRet gen = new_CStringSymbol(str)->codegen();
+  llvm::Type* eltType = tryComputingPointerElementType(gen.val);
+  INT_ASSERT(eltType); // it should have been a global variable
+  return info->irBuilder->CreateLoad(eltType, gen.val);
+}
+
+
 static void
 codegen_config() {
   GenInfo* info = gGenInfo;
@@ -2140,43 +2149,20 @@ codegen_config() {
         if (type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
           type = type->getField("addr")->type;
         }
-        {
-          GenRet gen = new_CStringSymbol(type->symbol->name)->codegen();
-          llvm::Type* eltType = tryComputingPointerElementType(gen.val);
-          INT_ASSERT(eltType); // it should have been a global variable
-          args[1] = info->irBuilder->CreateLoad(eltType, gen.val);
-        }
+        args[1] = genStringArg(type->symbol->name);
 
         if (var->getModule()->modTag == MOD_INTERNAL) {
-          GenRet gen = new_CStringSymbol("Built-in")->codegen();
-          llvm::Type* eltType = tryComputingPointerElementType(gen.val);
-          INT_ASSERT(eltType); // it should have been a global variable
-          args[2] = info->irBuilder->CreateLoad(eltType, gen.val);
+          args[2] = genStringArg("Built-in");
         }
         else {
-          GenRet gen = new_CStringSymbol(var->getModule()->name)->codegen();
-          llvm::Type* eltType = tryComputingPointerElementType(gen.val);
-          INT_ASSERT(eltType); // it should have been a global variable
-          args[2] = info->irBuilder->CreateLoad(eltType, gen.val);
+          args[2] = genStringArg(var->getModule()->name);
         }
-
         args[3] = info->irBuilder->getInt32(var->hasFlag(FLAG_PRIVATE));
-
         args[4] = info->irBuilder->getInt32(var->hasFlag(FLAG_DEPRECATED));
-        {
-          GenRet gen = new_CStringSymbol(var->getDeprecationMsg())->codegen();
-          llvm::Type* eltType = tryComputingPointerElementType(gen.val);
-          INT_ASSERT(eltType); // it should have been a global variable
-          args[5] = info->irBuilder->CreateLoad(eltType, gen.val);
-        }
-
+        args[5] = genStringArg(var->getDeprecationMsg());
         args[6] = info->irBuilder->getInt32(var->hasFlag(FLAG_UNSTABLE));
-        {
-          GenRet gen = new_CStringSymbol(var->getUnstableMsg())->codegen();
-          llvm::Type* eltType = tryComputingPointerElementType(gen.val);
-          INT_ASSERT(eltType); // it should have been a global variable
-          args[7] = info->irBuilder->CreateLoad(eltType, gen.val);
-        }
+        args[7] = genStringArg(var->getUnstableMsg());
+
         info->irBuilder->CreateCall(installConfigFunc, args);
       }
     }
