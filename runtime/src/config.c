@@ -171,20 +171,35 @@ static unsigned hash(const char* varName) {
   return hashValue % HASHSIZE;
 }
 
+static int generateDetailsHelp(int flag, int nItems, FILE* stream,
+                                const char* fmt, ...) {
+  if (!flag) return 0;
+
+  va_list args;
+  va_start(args, fmt);
+
+  if (nItems != 0) fprintf(stream, ", ");
+  vfprintf(stream, fmt, args);
+
+  va_end(args);
+
+  return 1;
+}
+
 static void generateDetails(configVarType* configVar, FILE* stream) {
-  if (configVar->setValue || configVar->isPrivate) {
-    fprintf(stream, " (");
-    if (configVar->isPrivate) {
-      fprintf(stream, "private");
-      if (configVar->setValue) {
-        fprintf(stream, ", ");
-      }
-    }
-    if (configVar->setValue) {
-      fprintf(stream, "configured to %s", configVar->setValue);
-    }
-    fprintf(stream, ")");
-  }
+  fprintf(stream, " (");
+
+  int nItems = 0;
+  nItems += generateDetailsHelp(configVar->isPrivate, nItems, stream,
+                                "private");
+  nItems += generateDetailsHelp(configVar->setValue!=NULL, nItems, stream,
+                                "configured to %s", configVar->setValue);
+  nItems += generateDetailsHelp(configVar->deprecated, nItems, stream,
+                                "deprecated");
+  nItems += generateDetailsHelp(configVar->unstable, nItems, stream,
+                                "unstable");
+
+  fprintf(stream, ")");
 }
 
 
@@ -237,7 +252,10 @@ void printConfigVarTable(void) {
         fprintf(stdout, "  %*s: ", longestName, configVar->varName);
         fprintf(stdout, "%s", configVar->defaultType);
 
-        generateDetails(configVar, stdout);
+        if (configVar->setValue || configVar->isPrivate ||
+            configVar->deprecated || configVar->unstable) {
+          generateDetails(configVar, stdout);
+        }
 
         fprintf(stdout, "\n");
       }
