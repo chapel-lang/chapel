@@ -279,7 +279,7 @@ module AutoMath {
   */
   pragma "last resort"
   @deprecated("The argument name 'i' is deprecated for 'abs', please use 'x' instead")
-  inline proc abs(i : int(?w)) do return if i < 0 then -i else i;
+  inline proc abs(i : int(?w)) do return abs(i);
 
   /* Returns the absolute value of the unsigned integer argument.
 
@@ -287,31 +287,28 @@ module AutoMath {
   */
   pragma "last resort"
   @deprecated("The argument name 'i' is deprecated for 'abs', please use 'x' instead")
-  inline proc abs(i : uint(?w)) do return i;
+  inline proc abs(i : uint(?w)) do return abs(i);
 
   /* Returns the absolute value of the integer param argument `i`. */
   pragma "last resort"
   @deprecated("The argument name 'i' is deprecated for param function 'abs', please use 'x' instead")
-  proc abs(param i : integral) param do return if i < 0 then -i else i;
+  proc abs(param i : integral) param do return abs(i);
 
   /* Returns the magnitude of the real argument `r`. */
   pragma "last resort"
   @deprecated("The argument name 'r' is deprecated for 'abs', please use 'x' instead")
-  inline proc abs(r : real(64)):real(64) do return fabs(r);
+  inline proc abs(r : real(64)):real(64) do return abs(r);
 
   /* Returns the real magnitude of the imaginary argument `im`. */
   pragma "last resort"
   @deprecated("The argument name 'im' is deprecated for 'abs', please use 'x' instead")
-  inline proc abs(im : imag(64)): real(64) do return fabs(_i2r(im));
+  inline proc abs(im : imag(64)): real(64) do return abs(im);
 
   /* Returns the real magnitude of the imaginary argument `im`. */
   pragma "last resort"
   @deprecated("The argument name 'im' is deprecated for 'abs', please use 'x' instead")
   inline proc abs(im: imag(32)): real(32) {
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc fabsf(x: real(32)): real(32);
-    return fabsf(_i2r(im));
+    return abs(im);
   }
 
   /* Returns the magnitude (often called modulus) of complex `z`.
@@ -324,16 +321,7 @@ module AutoMath {
   pragma "last resort"
   @deprecated("The argument name 'z' is deprecated for 'abs', please use 'x' instead")
   inline proc abs(z : complex(?w)): real(w/2) {
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc cabsf(z: complex(64)): real(32);
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc cabs(z: complex(128)): real(64);
-    if w == 64 then
-      return cabsf(z);
-    else
-      return cabs(z);
+    return abs(z);
   }
 
   /* Returns the phase (often called `argument`) of complex `x`, an angle (in
@@ -369,16 +357,7 @@ module AutoMath {
   pragma "last resort"
   @deprecated("The argument name 'z' is deprecated for 'carg', please use 'x' instead")
   inline proc carg(z: complex(?w)): real(w/2) {
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc cargf(z: complex(64)): real(32);
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc carg(z: complex(128)): real(64);
-    if w == 64 then
-      return cargf(z);
-    else
-      return carg(z);
+    return carg(z);
   }
 
 
@@ -958,16 +937,7 @@ module AutoMath {
   pragma "last resort"
   @deprecated("The argument name 'z' is deprecated for 'conjg', please use 'x' instead")
   inline proc conjg(z: complex(?w)) {
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc conjf(z: complex(64)): complex(64);
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc conj(z: complex(128)): complex(128);
-    if w == 64 then
-      return conjf(z);
-    else
-      return conj(z);
+    return conjg(z);
   }
 
   /* Returns the complex conjugate of the imaginary argument `z`.
@@ -977,7 +947,7 @@ module AutoMath {
   pragma "last resort"
   @deprecated("The argument name 'z' is deprecated for 'conjg', please use 'x' instead")
   inline proc conjg(z: imag(?w)) {
-    return -z;
+    return conjg(z);
   }
 
   /* Returns the argument `z`.
@@ -987,19 +957,19 @@ module AutoMath {
   pragma "last resort"
   @deprecated("The argument name 'z' is deprecated for 'conjg', please use 'x' instead")
   inline proc conjg(z: int(?w)) {
-    return z;
+    return conjg(z);
   }
 
   pragma "last resort"
   @deprecated("The argument name 'z' is deprecated for 'conjg', please use 'x' instead")
   inline proc conjg(z: uint(?w)) {
-    return z;
+    return conjg(z);
   }
 
   pragma "last resort"
   @deprecated("The argument name 'z' is deprecated for 'conjg', please use 'x' instead")
   inline proc conjg(z: real(?w)) {
-    return z;
+    return conjg(z);
   }
 
   /* Returns the projection of `x` on a Riemann sphere. */
@@ -1020,16 +990,7 @@ module AutoMath {
   pragma "last resort"
   @deprecated("The argument name 'z' is deprecated for 'cproj', please use 'x' instead")
   inline proc cproj(z: complex(?w)): complex(w) {
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc cprojf(z: complex(64)): complex(64);
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc cproj(z: complex(128)): complex(128);
-    if w == 64 then
-      return cprojf(z);
-    else
-      return cproj(z);
+    return cproj(z);
   }
 
   // When removing this deprecated function, be sure to remove chpl_cos and
@@ -2073,17 +2034,7 @@ module AutoMath {
   pragma "last resort"
   @deprecated("The argument names 'm' and 'n' are deprecated for param 'mod', please use 'x' and 'y' instead")
   proc mod(param m: integral, param n: integral) param {
-    param temp = m % n;
-
-    // verbatim copy from the other 'mod', to simplify maintenance
-    return
-      if isNonnegative(n) then
-        if isUintType(m.type)
-        then temp
-        else ( if temp >= 0 then temp else temp + n )
-      else
-        // n < 0
-        ( if temp <= 0 then temp else temp + n );
+    return mod(m, n);
   }
 
   /* Computes the mod operator on the two arguments, defined as
@@ -2098,17 +2049,7 @@ module AutoMath {
   pragma "last resort"
   @deprecated("The argument names 'm' and 'n' are deprecated for 'mod', please use 'x' and 'y' instead")
   proc mod(m: integral, n: integral) {
-    const temp = m % n;
-
-    // eliminate some run-time tests if input(s) is(are) unsigned
-    return
-      if isNonnegative(n) then
-        if isUintType(m.type)
-        then temp
-        else ( if temp >= 0 then temp else temp + n )
-      else
-        // n < 0
-        ( if temp <= 0 then temp else temp + n );
+    return mod(m, n);
   }
 
   /* Computes the mod operator on the two arguments, defined as
@@ -2286,7 +2227,7 @@ module AutoMath {
   pragma "last resort"
   @deprecated("The argument name 'i' is deprecated for 'sgn', please use 'x' instead")
   inline proc sgn(i : int(?w)): int(8) do
-    return ((i > 0) : int(8) - (i < 0) : int(8)) : int(8);
+    return sgn(i);
 
   /* Returns the signum function of the unsigned integer argument `i`:
      1 if positive, -1 if negative, 0 if zero.
@@ -2294,7 +2235,7 @@ module AutoMath {
   pragma "last resort"
   @deprecated("The argument name 'i' is deprecated for 'sgn', please use 'x' instead")
   inline proc sgn(i : uint(?w)): uint(8) do
-    return (i > 0) : uint(8);
+    return sgn(i);
 
   /* Returns the signum function of the integer param argument `i`:
      1 if positive, -1 if negative, 0 if zero.
@@ -2302,7 +2243,7 @@ module AutoMath {
   pragma "last resort"
   @deprecated("The argument name 'i' is deprecated for param 'sgn', please use 'x' instead")
   proc sgn(param i : integral) param do
-    return if i > 0 then 1 else if i == 0 then 0 else -1;
+    return sgn(i);
 
   /* Returns the signum function of the integer argument `x`:
      1 if positive, -1 if negative, 0 if zero.
@@ -2512,20 +2453,14 @@ module AutoMath {
   pragma "last resort"
   @deprecated("The argument name 'z' is deprecated for 'sqrt', please use 'x' instead")
   inline proc sqrt(z: complex(64)): complex(64) {
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc csqrtf(z: complex(64)): complex(64);
-    return csqrtf(z);
+    return sqrt(z);
   }
 
   /* Returns the square root of the argument `z`. */
   pragma "last resort"
   @deprecated("The argument name 'z' is deprecated for 'sqrt', please use 'x' instead")
   inline proc sqrt(z: complex(128)): complex(128) {
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc csqrt(z: complex(128)): complex(128);
-    return csqrt(z);
+    return sqrt(z);
   }
 
 
