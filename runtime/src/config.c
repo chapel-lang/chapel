@@ -176,14 +176,18 @@ static unsigned hash(const char* varName) {
   return hashValue % HASHSIZE;
 }
 
-static int generateDetailsHelp(int flag, int nItems, FILE* stream,
-                                const char* fmt, ...) {
-  if (!flag) return 0;
+static int genDetailsHelp(int flag, int nItems, FILE* stream,
+                          const char* fmt, ...) {
+  if (!flag) return 0;  // nothing to generate
 
   va_list args;
   va_start(args, fmt);
 
-  if (nItems != 0) fprintf(stream, ", ");
+  if (nItems == 0)
+    fprintf(stream, " (");
+  else
+    fprintf(stream, ", ");
+
   vfprintf(stream, fmt, args);
 
   va_end(args);
@@ -191,20 +195,16 @@ static int generateDetailsHelp(int flag, int nItems, FILE* stream,
   return 1;
 }
 
-static void generateDetails(configVarType* configVar, FILE* stream) {
-  fprintf(stream, " (");
-
+static void genDetails(configVarType* configVar, FILE* stream) {
   int nItems = 0;
-  nItems += generateDetailsHelp(configVar->isPrivate, nItems, stream,
-                                "private");
-  nItems += generateDetailsHelp(configVar->setValue!=NULL, nItems, stream,
-                                "configured to %s", configVar->setValue);
-  nItems += generateDetailsHelp(configVar->deprecated, nItems, stream,
-                                "deprecated");
-  nItems += generateDetailsHelp(configVar->unstable, nItems, stream,
-                                "unstable");
+  nItems += genDetailsHelp(configVar->isPrivate, nItems, stream, "private");
+  nItems += genDetailsHelp(configVar->setValue!=NULL, nItems, stream,
+                           "configured to %s", configVar->setValue);
+  nItems += genDetailsHelp(configVar->deprecated, nItems, stream, "deprecated");
+  nItems += genDetailsHelp(configVar->unstable, nItems, stream, "unstable");
 
-  fprintf(stream, ")");
+  if (nItems>0)  // we must have generated a "(" and some info, add ")"
+    fprintf(stream, ")");
 }
 
 
@@ -260,10 +260,7 @@ void printConfigVarTable(void) {
         fprintf(stdout, "  %*s: ", longestName, configVar->varName);
         fprintf(stdout, "%s", configVar->defaultType);
 
-        if (configVar->setValue || configVar->isPrivate ||
-            configVar->deprecated || configVar->unstable) {
-          generateDetails(configVar, stdout);
-        }
+        genDetails(configVar, stdout);
 
         fprintf(stdout, "\n");
       }
