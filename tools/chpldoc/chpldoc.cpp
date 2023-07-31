@@ -74,6 +74,7 @@ bool fPrintSettingsHelp = false;
 bool fPrintChplHome = false;
 bool fPrintVersion = false;
 bool fWarnUnknownAttributeToolname = true;
+bool fDocsReport = false;
 
 std::vector<UniqueString> usingAttributeToolNames;
 std::vector<std::string> usingAttributeToolNamesStr;
@@ -184,6 +185,7 @@ ArgumentDescription docs_arg_desc[] = {
  {"text-only", ' ', NULL, "Generate text documentation only", "F", &fDocsTextOnly, NULL, NULL},
  {"html", ' ', NULL, "[Don't] generate html documentation (on by default)", "N", &fDocsHTML, NULL, NULL},
  {"project-version", ' ', "<projectversion>", "Sets the documentation version to <projectversion>", "S256", fDocsProjectVersion, "CHPLDOC_PROJECT_VERSION", NULL},
+ {"report", ' ', NULL, "Highlight undocumented procedures", "F", &fDocsReport, NULL, NULL},
 
  {"print-commands", ' ', NULL, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
  {"warn-unknown-attribute-toolname", ' ', NULL, "Enable warnings when an unknown tool name is found in an attribute", "N", &fWarnUnknownAttributeToolname, "CHPL_WARN_UNKNOWN_ATTRIBUTE_TOOLNAME", NULL},
@@ -2089,6 +2091,7 @@ struct Args {
   std::string commentStyle =  "/*";
   std::string projectVersion = "0.0.1";
   std::vector<std::string> files;
+  bool docreport = false;
   bool printSystemCommands = false;
   bool noHTML = false;
 };
@@ -2110,6 +2113,7 @@ static Args parseArgs(int argc, char **argv, void* mainAddr) {
   ret.saveSphinx = std::string(fDocsSphinxDir);
   ret.printSystemCommands = printSystemCommands;
   ret.projectVersion = checkProjectVersion(fDocsProjectVersion);
+  ret.docreport = fDocsReport;
   ret.noHTML = !fDocsHTML;
   // add source files
   // TODO: Check for proper file type, duplicate file names, was file found, etc.
@@ -2354,6 +2358,11 @@ int main(int argc, char** argv) {
       */
       ast->traverse(gather);
     }
+  }
+
+  if (args.docreport) {
+    std::cout << "Found " << gather.modules.size() << " modules" << std::endl;
+    std::cout << std::endl;
   }
 
   for (auto id : gather.modules) {
