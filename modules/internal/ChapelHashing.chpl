@@ -131,7 +131,8 @@ module ChapelHashing {
   inline proc (borrowed RootClass?).hash(): uint {
     return _gen_key(__primitive( "object2int", this));
   }
-  RootClass implements Hashable;
+  implements Hashable(class);
+  implements Hashable(class?);
 
   inline proc locale.hash(): uint {
     return _gen_key(__primitive( "object2int", this._value));
