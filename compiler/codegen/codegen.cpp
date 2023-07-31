@@ -2085,10 +2085,11 @@ codegen_config() {
         fprintf(outfile,", /* private = */ %d", var->hasFlag(FLAG_PRIVATE));
         fprintf(outfile,", /* deprecated = */ %d",
                 var->hasFlag(FLAG_DEPRECATED));
-        fprintf(outfile,", \"%s\");\n", var->getDeprecationMsg());
+        fprintf(outfile,", \"%s\"\n", var->getDeprecationMsg());
         fprintf(outfile,", /* unstable = */ %d",
                 var->hasFlag(FLAG_UNSTABLE));
-        fprintf(outfile,", \"%s\");\n", var->getUnstableMsg());
+        fprintf(outfile,", \"%s\"\n", var->getUnstableMsg());
+        fprintf(outfile,");\n");
 
       }
     }
