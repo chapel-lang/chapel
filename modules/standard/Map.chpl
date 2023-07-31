@@ -401,7 +401,7 @@ module Map {
 
       var (_, slot) = table.findAvailableSlot(k);
       if !table.isSlotFull(slot) {
-        throw new KeyNotFoundError(k:string);
+        throw new KeyNotFoundError(k);
       }
       ref result = table.table[slot].val;
       return result;
