@@ -36,6 +36,11 @@
 
 #define HASHSIZE 101
 
+// if we decide on a flag to enable printing out deprecated and/or unstable
+// configs, they should be wired into these
+static int showDeprecatedConfigsWithHelp = 0;
+static int showUnstableConfigsWithHelp = 0;
+
 typedef struct _configVarType { /* table entry */
   char* varName;
   const char* moduleName;
@@ -238,6 +243,9 @@ void printConfigVarTable(void) {
          configVar != NULL;
          configVar = configVar->nextInstalled) {
 
+      if ( (!configVar->deprecated || showDeprecatedConfigsWithHelp) &&
+           (!configVar->unstable || showUnstableConfigsWithHelp) ) {
+
         if (foundMultipleModules) {
           if (moduleName == NULL) {
             moduleName = configVar->moduleName;
@@ -259,6 +267,7 @@ void printConfigVarTable(void) {
 
         fprintf(stdout, "\n");
       }
+    }
   }
 
 }
@@ -332,7 +341,7 @@ void initSetValue(const char* varName, const char* value,
       chpl_warning(configVar->deprecationMsg, lineno, filename);
     }
     #endif
-  } else if (configVar->unstable) {
+  } else if (warnUnstable && configVar->unstable) {
     #ifndef LAUNCHER
     if (chpl_nodeID == 0) {
       chpl_warning(configVar->unstableMsg, lineno, filename);

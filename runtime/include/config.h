@@ -48,6 +48,7 @@ c_string chpl_config_get_value(c_string v, c_string m);
 
 extern const int mainHasArgs;
 extern const int mainPreserveDelimiter;
+extern const int warnUnstable;
 extern chpl_main_argument chpl_gen_main_arg;
 
 #ifdef __cplusplus
