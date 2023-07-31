@@ -29,8 +29,8 @@ config const verbose_gpu = false;
 
 proc convolve_and_calculate(Array: [] real(32), centerPoints : ?, locL : ?, locC : ?, locR : ?, Output: [] real(64), t: stopwatch) : [] {
 
-  var bs = 1;
-  var be = 5;
+  param bs = 1;
+  param be = 5;
 
   var first_point = centerPoints.first[1];
   var last_point = centerPoints.last[1];
@@ -57,7 +57,7 @@ proc convolve_and_calculate(Array: [] real(32), centerPoints : ?, locL : ?, locC
     calc_distance(Array, locC, locR, tmpCR, bs, be, i, first_point);
     calc_distance(Array, locR, locR, tmpRR, bs, be, i, first_point);
 
-    Output.localAccess[i,first_point] = (tmpLL + tmpCC + tmpRR + 2*(tmpLC + tmpLR + tmpCR)); // / (Mask_Size**2);
+    Output.localAccess[first_point,i] = (tmpLL + tmpCC + tmpRR + 2*(tmpLC + tmpLR + tmpCR)); // / (Mask_Size**2);
 
     //var Output = (tmpLL + tmpCC + tmpRR + 2*(tmpLC + tmpLR + tmpCR));
     var prev = tmpCC + tmpRR + 2*tmpCR;
@@ -78,7 +78,7 @@ proc convolve_and_calculate(Array: [] real(32), centerPoints : ?, locL : ?, locC
 
       /* Global GPU memory access causing ~20% slowdown? */
       var current = tmpRR + 2*(tmpLR + tmpCR);
-      Output.localAccess[i,j] = (prev + current); // / (Mask_Size**2);
+      Output.localAccess[j,i] = (prev + current); // / (Mask_Size**2);
 
       //Output = prev + current;
       prev = prev + current - tmpLL - 2*(tmpLC + tmpLR);
@@ -96,7 +96,7 @@ proc main(args: [] string) {
   t.start();
 
   const radius = (sqrt(window_size) / 2) : int;
-  const nx = (radius / dx) : int;
+  const nx = (radius / dx) : int(16);
   writeln("Distance circle has a radius of ", nx, " points.");
   writeln("inputSize = ", inputSize);
 
@@ -112,7 +112,7 @@ proc main(args: [] string) {
     on here.gpus[0] {
 
       const radius = (sqrt(window_size) / 2) : int;
-      const nx = (radius / dx) : int;
+      const nx = (radius / dx) : int(16);
       writeln("Distance circle has a radius of ", nx, " points.");
 
       var x, y: int;
@@ -128,7 +128,7 @@ proc main(args: [] string) {
         x = 1000;
         y = 1000;
       }
-      const ImageSpace = {0..#x, 0..#y};
+      const ImageSpace = {0..#y, 0..#x};
 
 
       var Array : [1..5,1..y,1..x] real(32);
