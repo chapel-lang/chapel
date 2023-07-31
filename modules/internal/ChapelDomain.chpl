@@ -1498,6 +1498,46 @@ module ChapelDomain {
       return _newArray(x);
     }
 
+    /*
+      Invoking this method will attempt to create and return an array
+      declared over the domain instance. If there is not enough memory
+      to satisfy the allocation, an error will be thrown, allowing
+      the program to continue if handled, as opposed to halting and
+      thus stopping program execution.
+
+      This method will be most reliable in configurations that use a
+      fixed heap (e.g., when using ``CHPL_GASNET_SEGMENT=large``), but
+      can be called in all configurations. In the case of a dynamic
+      heap, it is possible that overcommit will cause the array
+      allocation to succeed, even if there is not enough physical
+      memory to satisfy the allocation, which will then fail with a bus
+      error when attempting to access the array.
+
+      This method is currently supported on both default rectangular
+      and block domains.
+    */
+    pragma "no copy return"
+    @unstable("tryCreateArray() is subject to change in the future.")
+    proc tryCreateArray(type eltType) throws {
+      if !this.isDefaultRectangular() && !this.isBlock() then
+        compilerError("'tryCreateArray' is only supported on " +
+                      "default rectangular and block domains");
+
+      chpl_checkEltType(eltType);
+      chpl_checkNegativeStride();
+
+      var x = _value.doiTryCreateArray(eltType);
+      pragma "dont disable remote value forwarding"
+      proc help() {
+        _value.add_arr(x);
+      }
+      help();
+
+      chpl_incRefCountsForDomainsInArrayEltTypes(x, x.eltType);
+
+      return _newArray(x);
+    }
+
     // assumes that data is already initialized
     pragma "no copy return"
     @chpldoc.nodoc
