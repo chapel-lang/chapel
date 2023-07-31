@@ -27,7 +27,7 @@ config const verbose_gpu = false;
 //var bs = 1;
 //var be = 5;
 
-proc convolve_and_calculate(Array: [] real(32), centerPoints : ?, locL : ?, locC : ?, locR : ?, Output: [] real(64), t: stopwatch) : [] {
+proc convolve_and_calculate(Array: [] real(32), const in centerPoints : ?, locL : ?, locC : ?, locR : ?, Output: [] real(64), t: stopwatch) : [] {
 
   param bs = 1;
   param be = 5;
@@ -109,67 +109,69 @@ proc main(args: [] string) {
 
   coforall loc in Locales do on loc {
 
-    on here.gpus[0] {
 
-      const radius = (sqrt(window_size) / 2) : int;
-      const nx = (radius / dx) : int(16);
-      writeln("Distance circle has a radius of ", nx, " points.");
+    const radius = (sqrt(window_size) / 2) : int;
+    const nx = (radius / dx) : int(16);
+    writeln("Distance circle has a radius of ", nx, " points.");
 
-      var x, y: int;
-      if inputSize != -1 {
-        x = inputSize;
-        y = inputSize;
-      }
-      else if bigInput {
-        x = 15243;
-        y = 10073;
-      }
-      else {
-        x = 1000;
-        y = 1000;
-      }
-      const ImageSpace = {0..#y, 0..#x};
+    var x, y: int;
+    if inputSize != -1 {
+      x = inputSize;
+      y = inputSize;
+    }
+    else if bigInput {
+      x = 15243;
+      y = 10073;
+    }
+    else {
+      x = 1000;
+      y = 1000;
+    }
+    const ImageSpace = {0..#y, 0..#x};
 
 
-      var Array : [1..5,1..y,1..x] real(32);
+    var Array : [1..5,1..y,1..x] real(32);
 
-      // Read in array
-      if inputSize == -1 {
-        var f = open(in_array, ioMode.r);
-        var r = f.reader(kind=ionative);
-        for i in 1..5 {
-          for j in 1..x {
-            for k in 1..y {
-              var tmp : real;
-              r.readBinary(tmp);
-              Array[i,k,j] = tmp : real(32);
-            }
+    // Read in array
+    if inputSize == -1 {
+      var f = open(in_array, ioMode.r);
+      var r = f.reader(kind=ionative);
+      for i in 1..5 {
+        for j in 1..x {
+          for k in 1..y {
+            var tmp : real;
+            r.readBinary(tmp);
+            Array[i,k,j] = tmp : real(32);
           }
         }
-        r.close();
       }
-      else {
-        use Random;
-        fillRandom(Array, seed=13);
-        if write_data then writeln(Array);
-      }
+      r.close();
+    }
+    else {
+      use Random;
+      fillRandom(Array, seed=13);
+      if write_data then writeln(Array);
+    }
 
-      // Create Block distribution of interior of PNG
-      const offset = nx+1; // maybe needs to be +1 to account for truncation?
-      const Inner = ImageSpace.expand(-offset);
+    // Create Block distribution of interior of PNG
+    const offset = nx+1; // maybe needs to be +1 to account for truncation?
 
-      /*
+    /*
 
-      The code below can be used to use multiple locales. It is something
-      that existed in the original implementation, so we are keeping it for
-      now.
-       
-      const myTargetLocales = reshape(Locales, {1..Locales.size, 1..1});
-      const D = Inner dmapped Block(Inner, targetLocales=myTargetLocales);
+    The code below can be used to use multiple locales. It is something
+    that existed in the original implementation, so we are keeping it for
+    now.
+     
+    const myTargetLocales = reshape(Locales, {1..Locales.size, 1..1});
+    const D = Inner dmapped Block(Inner, targetLocales=myTargetLocales);
 
-      */
-      var OutputArray : [Inner] real(64); // D
+    */
+    const Inner = ImageSpace.expand(-offset);
+    var OutputHost : [Inner] real(64); // D
 
+    on here.gpus[0] {
+
+      var Output: [Inner] real(64); // D
       const locArrayDomain = Array.domain;
       const locArray : [locArrayDomain] Array.eltType = Array;
 
@@ -183,22 +185,19 @@ proc main(args: [] string) {
 
       var t2 : stopwatch;
       t2.start();
-      convolve_and_calculate(locArray, Inner, locLeftMaskDomain, locCenterMaskDomain, locRightMaskDomain, OutputArray, t);
+      convolve_and_calculate(locArray, Inner, locLeftMaskDomain, locCenterMaskDomain, locRightMaskDomain, Output, t);
       t2.stop();
 
       if report_times then writeln("Convolve time: ", t2.elapsed());
 
       if report_checksum {
         on loc {
-          var OutputArrayCpu = OutputArray;
-          writeln("Checksum: ", + reduce OutputArrayCpu);
+          OutputHost = Output;
+          writeln("Checksum: ", + reduce OutputHost);
+          if write_data then writeln(OutputHost);
         }
       }
-
-      if write_data then writeln(OutputArray);
-
     }
-
   }
 
   if report_times then
