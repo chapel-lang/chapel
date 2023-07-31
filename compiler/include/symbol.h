@@ -567,6 +567,8 @@ public:
   SymbolMap  requiredFns;
 };
 
+extern InterfaceSymbol* diHashable;
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
