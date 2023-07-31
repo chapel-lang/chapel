@@ -16,6 +16,7 @@ record r {
 proc r.hash() {
   return this.c.x.hash();
 }
+r implements Hashable;
 
 operator r.==(lhs: r, rhs: r) {
   writeln('r==');
