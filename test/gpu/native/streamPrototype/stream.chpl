@@ -16,6 +16,8 @@ config param useForeach = true;
 config const useGpuDiags = true;
 config const SI = true;
 
+const host = here;
+
 //
 // The number of vectors and element type of those vectors
 //
@@ -102,8 +104,11 @@ proc main() {
       execTime(trial) = timeSinceEpoch().totalSeconds() - startTime;  // store the elapsed time
     }
 
-    const validAnswer = verifyResults(A, B, C);        // verify...
-    printResults(validAnswer, execTime);               // ...and print the results
+    on host {
+      var AHost = A, BHost = B, CHost = C;
+      const validAnswer = verifyResults(AHost, BHost, CHost);  // verify...
+      printResults(validAnswer, execTime);      // ...and print the results
+    }
   }
   if useGpuDiags {
     stopGpuDiagnostics();
