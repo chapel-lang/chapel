@@ -3476,50 +3476,63 @@ void init_fixedHeap(void) {
   // them.  But if you're on such a system and don't, we'll emit the
   // message later.
   //
+  void *start;
   size_t page_size;
   chpl_bool have_hugepages;
 
   if ((page_size = get_hugepageSize()) == 0) {
-    page_size = chpl_getSysPageSize();
     have_hugepages = false;
   } else {
     have_hugepages = true;
   }
+  if (!have_hugepages) {
+    page_size = chpl_getSysPageSize();
+    //
+    // We'll make a fixed heap, on whole pages.
+    //
+    size = ALIGN_UP(size, page_size);
 
-  //
-  // We'll make a fixed heap, on whole (huge)pages.
-  //
-  size = ALIGN_UP(size, page_size);
+    //
+    // Work our way down from the starting size in (roughly) 5% steps
+    // until we can actually allocate a heap that size.
+    //
+    size_t decrement;
+    if ((decrement = ALIGN_DN((size_t) (0.05 * size), page_size)) < page_size) {
+      decrement = page_size;
+    }
 
-  //
-  // Work our way down from the starting size in (roughly) 5% steps
-  // until we can actually allocate a heap that size.
-  //
-  size_t decrement;
-  if ((decrement = ALIGN_DN((size_t) (0.05 * size), page_size)) < page_size) {
-    decrement = page_size;
-  }
-
-  void* start;
-  size += decrement;
-  do {
-    size -= decrement;
+    size += decrement;
+    do {
+      size -= decrement;
 #ifdef CHPL_COMM_DEBUG
-    if (DBG_TEST_MASK(DBG_HEAP)) {
-      char buf[10];
-      DBG_PRINTF(DBG_HEAP, "try allocating fixed heap, size %s (%#zx)",
-                 chpl_snprintf_KMG_z(buf, sizeof(buf), size), size);
-    }
+      if (DBG_TEST_MASK(DBG_HEAP)) {
+        char buf[10];
+        DBG_PRINTF(DBG_HEAP, "try allocating fixed heap, size %s (%#zx)",
+                   chpl_snprintf_KMG_z(buf, sizeof(buf), size), size);
+      }
 #endif
-    if (have_hugepages) {
-      start = chpl_comm_ofi_hp_get_huge_pages(size);
-    } else {
       CHK_SYS_MEMALIGN(start, page_size, size);
-    }
-  } while (start == NULL && size > decrement);
+    } while (start == NULL && size > decrement);
 
-  if (start == NULL)
-    chpl_error("cannot create fixed heap: cannot get memory", 0, 0);
+    if (start == NULL)
+      chpl_error("cannot create fixed heap: cannot get memory", 0, 0);
+  } else {
+    //
+    // We'll make a fixed heap on whole hugepages.
+    //
+    size = ALIGN_UP(size, page_size);
+#ifdef CHPL_COMM_DEBUG
+      if (DBG_TEST_MASK(DBG_HEAP)) {
+        char buf[10];
+        DBG_PRINTF(DBG_HEAP, "try allocating fixed hugepage heap, size %s (%#zx)",
+                   chpl_snprintf_KMG_z(buf, sizeof(buf), size), size);
+      }
+#endif
+    start = chpl_comm_ofi_hp_get_huge_pages(size);
+    if (start == NULL) {
+      chpl_error("cannot create fixed heap: cannot get huge pages", 0, 0);
+    }
+  }
 
   chpl_comm_regMemHeapTouch(start, size);
 
@@ -3555,10 +3568,21 @@ size_t get_hugepageSize(void) {
 
 static
 void init_hugepageSize(void) {
-  if (chpl_numNodes > 1
-      && getenv("HUGETLB_DEFAULT_PAGE_SIZE") != NULL) {
+  chpl_bool use_hugepages = chpl_env_rt_get_bool("COMM_OFI_USE_HUGEPAGES",
+                                                 false);
+  if ((chpl_numNodes > 1) && use_hugepages &&
+      (getenv("HUGETLB_DEFAULT_PAGE_SIZE") != NULL)) {
     hugepageSize = chpl_comm_ofi_hp_gethugepagesize();
   }
+
+  if (use_hugepages && (hugepageSize == 0)) {
+    if (chpl_comm_ofi_hp_supported()) {
+      chpl_error("Unable to get hugepage size. "
+                 "Ensure that a hugepage module is loaded.", 0, 0);
+    } else {
+      chpl_error("Chapel was not built with hugepage support.", 0, 0);
+    }
+ }
 
   DBG_PRINTF(DBG_HUGEPAGES,
              "setting hugepage info: use hugepages %s, sz %#zx",
