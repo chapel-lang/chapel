@@ -21,11 +21,11 @@
           "name": "keyword.control.ast"
         },
         {
-          "match": "'\\b((move)|(end of statement))\\b'",
+          "match": "'\\b((move)|(end of statement)|(new))\\b'",
           "name": "keyword.control.ast"
         },
         {
-          "match": "\\b((arg)|(const)|(in)|(_?ref)|(_?array)|(_?domain)|(range)|(unmanaged)|(unknown)|(val)|(type)|(_?void)|(int)|(real)|(bool)|(range)|(locale))\\b",
+          "match": "\\b((arg)|(const)|(in)|(_?ref)|(_?array)|(_?domain)|(range)|(unmanaged)|(_?shared)|(_?owned)|(borrowed)|(record)|(class)|(_?unknown)|(val)|(type)|(param)|(_?void)|(int)|(real)|(bool)|(range)|(locale))\\b",
           "name": "storage.type.ast"
         },
         {
@@ -45,7 +45,7 @@
           "name": "constant.numeric.ast"
         },
         {
-          "match": "\\(\\b([0-9]+)\\b ",
+          "match": "\\(\\b([0-9]+)\\b",
           "captures": {
             "1": { "name": "constant.numeric.ast" }
           }
