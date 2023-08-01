@@ -2523,9 +2523,15 @@ module AutoMath {
 
      `x` and `y` must be either `real`, `imag`, or `complex`.
    */
-  inline proc isClose(x, y, relTol = 1e-5, absTol = 0.0): bool where
-  (isRealValue(x) || isImagValue(x) || isComplexValue(x)) && (isRealValue(y) ||
-    isImagValue(y) || isComplexValue(y)) {
+  inline proc isClose(x, y, relTol = 1e-5, absTol = 0.0): bool {
+    if !((isRealValue(x) || isImagValue(x) || isComplexValue(x)) &&
+         (isRealValue(y) || isImagValue(y) || isComplexValue(y))) {
+      if (isArrayValue(x) || isArrayValue(y)) {
+        compilerError("'isClose' does not support promotion, please call it with the individual values");
+      } else {
+        compilerError("x and y must be either 'real', 'imag', or 'complex', x was '" + x.type: string + "' and y was '" + y.type: string + "'");
+      }
+    }
 
     if boundsChecking && (relTol < 0) then
       HaltWrappers.boundsCheckHalt("Input value for relTol must be positive");
