@@ -36,7 +36,12 @@ module ChapelHashing {
 
   pragma "last resort"
   proc chpl__defaultHashWrapper(x: ?T): int {
-    compilerError("No hash function found for " + x.type:string);
+    use Reflection;
+    if canResolveMethod(x, "hash") {
+        compilerError(x.type:string + " has a hash function, but does not implement Hashable");
+    } else {
+        compilerError("No hash function found for " + x.type:string);
+    }
   }
 
   // Mix the bits, so that e.g. numbers in 0..N generate
