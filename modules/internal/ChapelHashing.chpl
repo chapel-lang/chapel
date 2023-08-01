@@ -29,9 +29,14 @@ module ChapelHashing {
     proc Self.hash(): uint;
   }
 
-  proc chpl__defaultHashWrapper(x: Hashable): int {
+  proc chpl__defaultHashWrapper(x: ?T): int where T implements Hashable {
     const hash = x.hash();
     return (hash & max(int)): int;
+  }
+
+  pragma "last resort"
+  proc chpl__defaultHashWrapper(x: ?T): int {
+    compilerError("No hash function found for " + x.type:string);
   }
 
   // Mix the bits, so that e.g. numbers in 0..N generate
