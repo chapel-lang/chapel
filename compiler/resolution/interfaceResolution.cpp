@@ -2001,6 +2001,18 @@ static Expr* closestInterestingScopeAnchor(Expr*   callsite,
   }
 }
 
+static bool isAutoImplementInternalInterface(InterfaceSymbol* isym) {
+  return isym == diHashable;
+}
+
+static Expr* anchorPointForAutoImplementInterface(InterfaceSymbol* isym,
+                                                  CallExpr* call2wf) {
+  auto firstArg = call2wf->get(1);
+  auto defPoint = firstArg->typeInfo()->symbol->defPoint;
+  INT_ASSERT(defPoint);
+  return defPoint;
+}
+
 // 'failureWrapFn' is the wrapFn for a negative outcome of an earlier attempt
 // to infer this constraint, if found, otherwise NULL.
 static ImplementsStmt* checkInferredImplStmt(Expr*         callsite,
@@ -2015,7 +2027,12 @@ static ImplementsStmt* checkInferredImplStmt(Expr*         callsite,
     // Do not infer for an empty interface.
     return NULL;
 
-  Expr* anchor = closestInterestingScopeAnchor(callsite, failureWrapFn);
+  Expr* anchor;
+  if (isAutoImplementInternalInterface(isym)) {
+    anchor = anchorPointForAutoImplementInterface(isym, call2wf);
+  } else {
+    anchor = closestInterestingScopeAnchor(callsite, failureWrapFn);
+  }
 
   if (anchor == NULL)
     // Closer scopes do not define any functions, so the inference outcome,
@@ -2134,8 +2151,7 @@ static ImplementsStmt* findSatisfyingIstm(InterfaceSymbol* isym,
     // instantiate a generic istm
     bestIstm = useGenericImplementsStmt(callsite, isym, call2wf, genSuccess);
   } else {
-    bool isAutoImplementInternalInterface = isym == diHashable;
-    if (fInferImplementsStmts || isAutoImplementInternalInterface) {
+    if (fInferImplementsStmts || isAutoImplementInternalInterface(isym)) {
       // If we're trying to infer a compiler-generated interface, we only
       // want to use compiler-generated procedures, since the whole point
       // of interfaces for library procedures is to avoid user-defined methods
