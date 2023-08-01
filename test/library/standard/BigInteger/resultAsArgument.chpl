@@ -70,17 +70,17 @@ use BigInteger;
   writeln(a);
 }
 {
-  write("rootrem ");
+  write("rootRem ");
   var a = new bigint(5);
   var b: bigint;
-  rootrem(a, b, a, 2:uint);
+  rootRem(a, b, a, 2:uint);
   writeln(a, " ", b);
 }
 {
-  write("rootrem ");
+  write("rootRem ");
   var a = new bigint(5);
   var b: bigint;
-  rootrem(b, a, a, 2:uint);
+  rootRem(b, a, a, 2:uint);
   writeln(b, " ", a);
 }
 {
@@ -90,17 +90,17 @@ use BigInteger;
   writeln(a);
 }
 {
-  write("sqrtrem ");
+  write("sqrtRem ");
   var a = new bigint(10);
   var b: bigint;
-  sqrtrem(a, b, a);
+  sqrtRem(a, b, a);
   writeln(a, " ", b);
 }
 {
-  write("sqrtrem ");
+  write("sqrtRem ");
   var a = new bigint(10);
   var b: bigint;
-  sqrtrem(b, a, a);
+  sqrtRem(b, a, a);
   writeln(b, " ", a);
 }
 {
@@ -294,43 +294,43 @@ use BigInteger;
   writeln(a);
 }
 {
-  write("addmul ");
+  write("addMul ");
   var a = new bigint(5);
   var b = new bigint(6);
-  addmul(a, a, b);
+  addMul(a, a, b);
   writeln(a);
 }
 {
-  write("addmul ");
+  write("addMul ");
   var a = new bigint(5);
   var b = new bigint(6);
-  addmul(b, a, b);
+  addMul(b, a, b);
   writeln(b);
 }
 {
-  write("addmul ");
+  write("addMul ");
   var a = new bigint(5);
-  addmul(a, a, 6:uint);
+  addMul(a, a, 6:uint);
   writeln(a);
 }
 {
-  write("submul ");
+  write("subMul ");
   var a = new bigint(5);
   var b = new bigint(6);
-  submul(a, a, b);
+  subMul(a, a, b);
   writeln(a);
 }
 {
-  write("submul ");
+  write("subMul ");
   var a = new bigint(5);
   var b = new bigint(6);
-  submul(b, a, b);
+  subMul(b, a, b);
   writeln(b);
 }
 {
-  write("submul ");
+  write("subMul ");
   var a = new bigint(5);
-  submul(a, a, 6:uint);
+  subMul(a, a, 6:uint);
   writeln(a);
 }
 {
@@ -441,25 +441,25 @@ use BigInteger;
   writeln(b);
 }
 {
-  write("ior ");
+  write("or ");
   var a = new bigint(5);
   var b = new bigint(6);
-  ior(a, a, b);
+  or(a, a, b);
   writeln(a);
 }
 {
-  write("ior ");
+  write("or ");
   var a = new bigint(5);
   var b = new bigint(6);
-  ior(b, a, b);
+  or(b, a, b);
   writeln(b);
 }
 {
   // test the swap behavior where op2 has more limbs than op1
-  write("ior ");
+  write("or ");
   var a = new bigint(10);
   var b = new bigint("1267650600228229401496703205376"); // 2**100
-  ior(a, a, b);
+  or(a, a, b);
   writeln(a);
 }
 {
