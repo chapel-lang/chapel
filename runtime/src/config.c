@@ -176,6 +176,7 @@ static unsigned hash(const char* varName) {
   return hashValue % HASHSIZE;
 }
 
+__attribute__ ((format (printf, 4, 5)))
 static int genDetailsHelp(int flag, int nItems, FILE* stream,
                           const char* fmt, ...) {
   if (!flag) return 0;  // nothing to generate
