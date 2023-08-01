@@ -2034,6 +2034,10 @@ static void codegen_header_addons() {
   }
 }
 
+#ifdef HAVE_LLVM
+// this is used in passing string arguments to config variable handlers in the
+// runtime. We can expand/copy it to C backend, but that doesn't seem to be too
+// repetitive as of today.
 static llvm::Value* genStringArg(const char* str) {
   GenInfo* info = gGenInfo;
   GenRet gen = new_CStringSymbol(str)->codegen();
@@ -2041,6 +2045,7 @@ static llvm::Value* genStringArg(const char* str) {
   INT_ASSERT(eltType); // it should have been a global variable
   return info->irBuilder->CreateLoad(eltType, gen.val);
 }
+#endif
 
 
 static void
