@@ -311,30 +311,17 @@ module MyHashtable {
 // interface definitions and implements statements
 
 //
-// Hashable: user-facing requirements on the hashtable key type.
-//
-interface MyHashable(Key) {
-  //  proc hash(arg: Key): uint;
-  Key implements Hashable;
-  operator ==(lhs: Key, rhs: Key): bool;
-}
-
-//
 // StdOps: various common operations we expect.
-//
-// Todo: include == and resolve the ambiguity with MyHashable.==
-// possibly by requiring MyHashable to implement StdOps.
 //
 interface StdOps(Val) {
   proc chpl__initCopy(arg: Val, definedConst: bool): Val;
   operator =(ref lhs: Val, rhs: Val);
+  operator ==(lhs: Val, rhs: Val): bool;
   proc toString(arg: Val): string; // so we can write it out
 }
 
 // These use built-in implementations and proc toString below.
-string implements MyHashable;
 string implements StdOps;
-int implements MyHashable;
 int implements StdOps;
 
 // The default implementation for toString().
@@ -351,11 +338,9 @@ proc toString(arg): string {
 interface chpl_Hashtable(HT) {
   type keyType;
   type valType;
-  keyType implements MyHashable;
+  keyType implements Hashable;
   keyType implements StdOps;
   valType implements StdOps;
-  // can't have == in StdOps because then == on keys would be ambiguous
-  operator ==(lhs: valType, rhs: valType): bool;
   // todo: change these to the ones from a standard Memory module
   // and move them to StdOps
   proc _moveInit(ref lhs: keyType, in rhs: keyType);
@@ -474,7 +459,7 @@ implements chpl_Hashtable(chpl__hashtable(string, int));
     proc chpl_Hashtable._findSlot(key: this.keyType) : (bool, int) {
       var firstOpen = -1;
       // inlining the iterator for: for slotNum in _lookForSlots(key)
-      const baseSlot = chpl__defaultHashWrapper(key):uint;
+      const baseSlot = key.hash();
       const numSlots = tableSize;
       if numSlots > 0 then {
         for probe in 0..numSlots/2 {
