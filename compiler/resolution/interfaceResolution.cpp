@@ -1382,7 +1382,8 @@ static bool checkOnePairOfFormals(ArgSymbol* tgtFml, ArgSymbol* reqFml) {
   // intent, so reqTag is 'const ref'. If tgtFml is a non-record, tgtTag
   // will be 'const in'. Allow that.
   if ((reqTag & INTENT_FLAG_REF) && (tgtTag & INTENT_FLAG_IN))
-    if (! isAggregateType(tgtFml->type) || isClass(tgtFml->type))
+    if (! isAggregateType(tgtFml->type) || isClass(tgtFml->type) ||
+        ! propagateNotPOD(tgtFml->type))
       return true;
 
   return false;
