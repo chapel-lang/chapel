@@ -656,7 +656,8 @@ indices of an associative domain, the elements of a set, or the keys
 of a map.  The user can override this default hash method (or provide
 one in cases that the compiler does not) by defining their own method
 named ``hash`` on the record which takes no arguments and returns a
-``uint`` or ``int``.
+``uint``. To make the compiler aware of the ``hash`` method, the record
+must be made to implement the ``Hashable`` interface.
 
    *Example (userhash.chpl)*.
 
@@ -671,6 +672,7 @@ named ``hash`` on the record which takes no arguments and returns a
           return i;
         }
       }
+      R implements Hashable;
 
       // Creating an associative domain with an 'idxType' of 'R'
       // invokes R.hash() as part of its implementation
