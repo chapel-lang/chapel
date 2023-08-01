@@ -1,0 +1,2 @@
+interface constraints inside interfaces can't be used to call constrained generic procs.
+https://github.com/chapel-lang/chapel/issues/22852
