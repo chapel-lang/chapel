@@ -83,7 +83,7 @@ Comparison Functions
 --------------------
 :proc:`max`
 :proc:`min`
-:proc:`isclose`
+:proc:`isClose`
 
 .. _automath-sign:
 
@@ -2681,7 +2681,34 @@ module AutoMath {
     return a;
   }
 
+  /* Returns true if `x` and `y` are approximately equal, else returns false.
+
+     `relTol` specifies the relative tolerance for differences between `x` and
+     `y`, while `absTol` specifies the absolute tolerance.  Both must be
+     positive when specified.
+
+     `x` and `y` must be either `real`, `imag`, or `complex`.
+   */
+  inline proc isClose(x, y, relTol = 1e-5, absTol = 0.0): bool {
+    if !((isRealValue(x) || isImagValue(x) || isComplexValue(x)) &&
+         (isRealValue(y) || isImagValue(y) || isComplexValue(y))) {
+      if (isArrayValue(x) || isArrayValue(y)) {
+        compilerError("'isClose' does not support promotion, please call it with the individual values");
+      } else {
+        compilerError("x and y must be either 'real', 'imag', or 'complex', x was '" + x.type: string + "' and y was '" + y.type: string + "'");
+      }
+    }
+
+    if boundsChecking && (relTol < 0) then
+      HaltWrappers.boundsCheckHalt("Input value for relTol must be positive");
+    if boundsChecking && (absTol < 0) then
+      HaltWrappers.boundsCheckHalt("Input value for absTol must be positive");
+    var diff: real = abs(x-y);
+    return ( (diff<=abs(relTol*y)) || (diff<=abs(relTol*x)) || (diff<=absTol) );
+  }
+
   /* Returns true if `x` and `y` are approximately equal, else returns false. */
+  @deprecated("isclose with 'rtol' and 'atol' arguments is now deprecated, please use :proc:`isClose` with 'relTol' and 'absTol' arguments instead")
   inline proc isclose(x, y, rtol = 1e-5, atol = 0.0): bool {
     if boundsChecking && (rtol < 0) then
       HaltWrappers.boundsCheckHalt("Input value for rtol must be positive");
