@@ -1,0 +1,6 @@
+$CHPL_HOME/modules/standard/Set.chpl:326: In method '_addElem':
+$CHPL_HOME/modules/standard/Set.chpl:339: error: unresolved call 'chpl__defaultHashWrapperCG(R)'
+$CHPL_HOME/modules/internal/ChapelHashing.chpl:32: note: this candidate did not match: chpl__defaultHashWrapperCG(x: Hashable)
+$CHPL_HOME/modules/internal/ChapelHashing.chpl:32: note: because interface constraint(s) were not satisfied
+  $CHPL_HOME/modules/standard/Set.chpl:300: called as (set(R,false))._addElem(elem: R) from method 'init='
+  user-hash-no-implements-weird.chpl:1: called as (set(R,false)).init=(other: set(R,false))

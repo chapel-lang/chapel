@@ -1,0 +1,1 @@
+user-hash-no-implements.chpl:14: error: R has a hash function, but does not implement Hashable
