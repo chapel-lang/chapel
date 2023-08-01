@@ -678,7 +678,7 @@ attachChildWriteMethod(const SharedFcfSuperInfo info,
   ret->body->useListAdd(new UseStmt(ioModule, "", false));
   ret->getModule()->moduleUseAdd(ioModule);
   auto str = new_StringSymbol(astr(payload->name, "()"));
-  auto writeCall = new CallExpr(".", fileArg, new_StringSymbol("writeIt"),
+  auto writeCall = new CallExpr(".", fileArg, new_StringSymbol("write"),
                                 str);
   ret->insertAtTail(new CallExpr(writeCall));
   normalize(ret);
