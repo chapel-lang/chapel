@@ -18,20 +18,20 @@
  * limitations under the License.
  */
 
-#include "./Message.h"
-#include "./Server.h"
+#include "Message.h"
+#include "Server.h"
 #include "chpl/parsing/parsing-queries.h"
 
 namespace chpldef {
 
-DidOpen::ComputedResult
-DidOpen::compute(Server* ctx, const Params& p) {
+template<>
+DidOpen::ComputeResult DidOpen::compute(Server* ctx, ComputeParams p) {
   auto& tdi = p.textDocument;
-  auto& e = ctx->textRegistry()[tdi.uri];
+  auto& e = ctx->mutableTextRegistry()[tdi.uri];
 
   if (e.isOpen) {
     CHPLDEF_TODO();
-    return fail();
+    return {};
   }
 
   CHPL_ASSERT(tdi.version > e.version);
@@ -56,20 +56,21 @@ DidOpen::compute(Server* ctx, const Params& p) {
   return {};
 }
 
-DidChange::ComputedResult
-DidChange::compute(Server* ctx, const Params& p) {
+template<>
+DidChange::ComputeResult DidChange::compute(Server* ctx, ComputeParams p) {
   CHPLDEF_TODO();
   return {};
 }
 
-DidSave::ComputedResult
-DidSave::compute(Server* ctx, const Params& p) {
+
+template<>
+DidSave::ComputeResult DidSave::compute(Server* ctx, ComputeParams p) {
   CHPLDEF_TODO();
   return {};
 }
 
-DidClose::ComputedResult
-DidClose::compute(Server* ctx, const Params& p) {
+template<>
+DidClose::ComputeResult DidClose::compute(Server* ctx, ComputeParams p) {
   CHPLDEF_TODO();
   return {};
 }

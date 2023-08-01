@@ -236,10 +236,18 @@ JsonValue Position::toJson() const {
   return ret;
 }
 
+bool Position::operator==(const Position& rhs) const {
+  return line == rhs.line && character == rhs.character;
+}
+
 bool TextDocumentPositionParams::fromJson(const JsonValue& j, JsonPath p) {
   JsonMapper m(j, p);
   return m && MAP_(m, textDocument) && MAP_(m, position);
 }
+
+Location::Location(const chpl::Location& loc)
+    : uri(loc.path().c_str()),
+      range(Range(loc)) {}
 
 bool Location::fromJson(const JsonValue& j, JsonPath p) {
   JsonMapper m(j, p);
@@ -251,6 +259,10 @@ JsonValue Location::toJson() const {
   FIELD_(ret, uri);
   FIELD_(ret, range);
   return ret;
+}
+
+bool Location::operator==(const Location& rhs) const {
+  return uri == rhs.uri && range == rhs.range;
 }
 
 bool LocationLink::fromJson(const JsonValue& j, JsonPath p) {
@@ -270,6 +282,25 @@ JsonValue LocationLink::toJson() const {
   return ret;
 }
 
+static Position constructPosition(int chapelLine, int chapelColumn) {
+  int line = chapelLine - 1;
+  int character = chapelColumn - 1;
+  CHPL_ASSERT(line >= 0 && character >= 0);
+  return Position(line, character);
+}
+
+static Position constructPositionAtStart(const chpl::Location& loc) {
+  return constructPosition(loc.firstLine(), loc.firstColumn());
+}
+
+static Position constructPositionAtEnd(const chpl::Location& loc) {
+  return constructPosition(loc.lastLine(), loc.lastColumn());
+}
+
+Range::Range(const chpl::Location& loc)
+  : start(constructPositionAtStart(loc)),
+    end(constructPositionAtEnd(loc)) {}
+
 bool Range::fromJson(const JsonValue& j, JsonPath p) {
   JsonMapper m(j, p);
   return m && MAP_(m, start) && MAP_(m, end);
@@ -280,6 +311,10 @@ JsonValue Range::toJson() const {
   FIELD_(ret, start);
   FIELD_(ret, end);
   return ret;
+}
+
+bool Range::operator==(const Range& rhs) const {
+  return start == rhs.start && end == rhs.end;
 }
 
 JsonValue DeclarationResult::toJson() const {

@@ -77,8 +77,9 @@ static ServerInfo configureServerInfo(Server* ctx) {
   return ret;
 }
 
-Initialize::ComputedResult
-Initialize::compute(Server* ctx, const Params& p) {
+template <>
+Initialize::ComputeResult
+Initialize::compute(Server* ctx, ComputeParams p) {
 
   // Set the log verbosity level if it was requested.
   if (auto trace = p.trace) {
@@ -94,8 +95,8 @@ Initialize::compute(Server* ctx, const Params& p) {
   }
 
   // Set the server to the 'INIT' state.
-  CHPL_ASSERT(ctx->state() == Server::UNINIT);
-  ctx->setState(Server::INIT);
+  CHPL_ASSERT(ctx->state() == Server::UNINITIALIZED);
+  ctx->setState(Server::SETUP);
 
   Result ret;
 
@@ -106,22 +107,25 @@ Initialize::compute(Server* ctx, const Params& p) {
   return ret;
 }
 
-Initialized::ComputedResult
-Initialized::compute(Server* ctx, const Params& p) {
-  CHPL_ASSERT(ctx->state() == Server::INIT);
+template <>
+Initialized::ComputeResult
+Initialized::compute(Server* ctx, ComputeParams p) {
+  CHPL_ASSERT(ctx->state() == Server::SETUP);
   ctx->setState(Server::READY);
   return {};
 }
 
-Shutdown::ComputedResult
-Shutdown::compute(Server* ctx, const Params& p) {
+template <>
+Shutdown::ComputeResult
+Shutdown::compute(Server* ctx, ComputeParams p) {
   CHPL_ASSERT(ctx->state() == Server::READY);
   ctx->setState(Server::SHUTDOWN);
   return {};
 }
 
-Exit::ComputedResult
-Exit::compute(Server* ctx, const Params& p) {
+template <>
+Exit::ComputeResult
+Exit::compute(Server* ctx, ComputeParams p) {
   CHPL_ASSERT(ctx->state() == Server::SHUTDOWN);
   return {};
 }

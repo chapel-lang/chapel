@@ -46,17 +46,16 @@ static Server::Configuration prepareServerConfig(int argc, char** argv) {
   ret.enableStandardLibrary = cmd::enableStandardLibrary;
   ret.compilerDebugTrace = cmd::compilerDebugTrace;
 
-  return ret;
-}
+  // TODO: Configure transport with a flag.
+  ret.transport = chpl::toOwned(new TransportStdio());
 
-static chpl::owned<BaseRequest> maybePublishDiagnostics(Server* ctx) {
-  return nullptr;
+  return ret;
 }
 
 int main(int argc, char** argv) {
   auto config = prepareServerConfig(argc, argv);
-  Server context(std::move(config));
-  Server* ctx = &context;
+  Server server(std::move(config));
+  Server* ctx = &server;
 
   // Flush every log message immediately to avoid losing info on crash.
   auto& log = ctx->logger();
@@ -66,83 +65,7 @@ int main(int argc, char** argv) {
                log.filePath().c_str(),
                log.levelToString());
 
-  int run = 1;
-  int ret = 0;
-
-  while (run) {
-    ctx->message("Server awaiting message...\n");
-
-    JsonValue json(nullptr);
-
-    // TODO: This operation blocks. We'd like non-blocking IO. There are a
-    // few ways to accomplish this. Ideally we find some sort of high-level,
-    // non-blocking "transport" abstraction that we can use.
-    //
-    //    -- LLVM might offer transport layer APIs
-    //    -- LLVM might offer non-blocking IO
-    //    -- C++ futures might be useful here, but we need to be able to
-    //       control which thread runs the future and its lifetime (to
-    //       make sure that the thread reading e.g., stdin is reliably
-    //       closed...).
-    //    -- We can do it ourselves using C++ threads, CVs, and locks, and
-    //       wrap it up in a neat little function that populates a queue
-    //       of messages for the context.
-    bool ok = Transport::readJsonBlocking(ctx, std::cin, json);
-    CHPL_ASSERT(ok);
-
-    if (log.level() == Logger::TRACE) {
-      ctx->trace("Incoming JSON is %s\n", jsonToString(json).c_str());
-    }
-
-    // Create a message from the incoming JSON...
-    auto msg = Message::request(ctx, std::move(json));
-    CHPL_ASSERT(msg.get());
-
-    // Parsing the JSON could have failed.
-    if (msg->status() == Message::FAILED || msg->isResponse()) {
-      CHPLDEF_TODO();
-    }
-
-    CHPL_ASSERT(msg->status() == Message::PENDING);
-    CHPL_ASSERT(!msg->isOutbound());
-
-    // Prepare to exit if we received the 'Exit' message.
-    if (msg->tag() == Message::Exit) {
-      CHPL_ASSERT(ctx->state() == Server::SHUTDOWN);
-      run = 0;
-    }
-
-    // Handle the request that was read.
-    auto rsp = Message::handle(ctx, msg.get());
-
-    // Maybe send a response.
-    if (rsp) {
-      auto pack = rsp->pack();
-      if (log.level() == Logger::TRACE) {
-        auto str = jsonToString(pack);
-        ctx->trace("Outgoing JSON is %s\n", str.c_str());
-      }
-
-      ok = Transport::sendJsonBlocking(ctx, std::cout, std::move(pack));
-      CHPL_ASSERT(ok);
-
-    // Response was delayed.
-    } else if (!msg->isNotification()) {
-      CHPLDEF_FATAL(ctx, "Handler response should not be delayed!");
-    }
-
-    // TODO: Enqueue all messages onto an event queue instead.
-    if (auto notify = maybePublishDiagnostics(ctx)) {
-      CHPL_ASSERT(notify->isNotification());
-      CHPL_ASSERT(notify->isOutbound());
-      auto pack = notify->pack();
-      ok = Transport::sendJsonBlocking(ctx, std::cout, std::move(pack));
-      CHPL_ASSERT(ok);
-    }
-
-    // Flush the log in case something goes wrong.
-    log.flush();
-  }
+  int ret = ctx->run();
 
   ctx->message("Server exiting with code '%d'\n", ret);
   log.flush();

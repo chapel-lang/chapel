@@ -218,10 +218,10 @@ chpldef-fast: FORCE
 test-chpldef: FORCE $(CHPLDEF)
 	@echo "Making and running the chpldef tests..."
 	@cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS_NO_NDEBUG) && $(MAKE) chpldef-tests
-	JOBSFLAG=`echo "$$MAKEFLAGS" | sed -n 's/.*\(-j\|--jobs=\) *\([0-9][0-9]*\).*/-j\2/p'` ; \
-	  cd $(COMPILER_BUILD)/tools/chpldef/test && ctest $$JOBSFLAG . ;
 	@echo "Making symbolic link to chpldef tests in build/chpldef-test"
 	@cd ../build && rm -f chpldef-test && ln -s $(COMPILER_BUILD)/tools/chpldef/test chpldef-test
+	JOBSFLAG=`echo "$$MAKEFLAGS" | sed -n 's/.*\(-j\|--jobs=\) *\([0-9][0-9]*\).*/-j\2/p'` ; \
+	  cd $(COMPILER_BUILD)/tools/chpldef/test && ctest $$JOBSFLAG . ;
 
 $(COMPILER_BUILD):
 	mkdir -p $@

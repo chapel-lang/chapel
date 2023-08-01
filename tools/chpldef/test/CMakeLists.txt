@@ -16,21 +16,28 @@
 # limitations under the License.
 
 add_library(chpldef-test-utility OBJECT EXCLUDE_FROM_ALL
-            utility.cpp)
+            TestClient.cpp)
 target_link_libraries(chpldef-test-utility chpldef-objects)
+set_property(TARGET chpldef-test-utility PROPERTY CXX_STANDARD 17)
+target_include_directories(chpldef-test-utility PRIVATE
+                           ${CHPLDEF_INCLUDE_DIR})
 
 add_custom_target(chpldef-tests)
-set(CHPLDEF_TEST_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR})
 
 function(chpldef_compile_test target)
   add_executable(${target} EXCLUDE_FROM_ALL ${target}.cpp)
   set_target_properties(${target} PROPERTIES LINK_DEPENDS_NO_SHARED true
                         RUNTIME_OUTPUT_DIRECTORY . )
   target_link_libraries(${target} chpldef-objects chpldef-test-utility)
+  target_link_libraries(${target} chpldef-objects)
+  target_include_directories(${target} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+                             ${CHPLDEF_INCLUDE_DIR})
   add_test(NAME ${target} COMMAND ${target})
   set_tests_properties(${target} PROPERTIES ENVIRONMENT
                        "CHPL_HOME=${CHPL_HOME}")
   add_dependencies(chpldef-tests ${target})
+  set_property(TARGET ${target} PROPERTY CXX_STANDARD 17)
 endfunction(chpldef_compile_test)
 
 chpldef_compile_test(test-lifecycle)
+chpldef_compile_test(test-declaration)

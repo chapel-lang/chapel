@@ -88,6 +88,9 @@ inline opt<T> option(const T& t) { return opt<T>(t); }
 /** Cast a string to an integer, return 'false' if there was an error. */
 bool cast(std::string str, int& out) noexcept;
 
+/** Cast a string to an integer, return 'false' if there was an error. */
+bool cast(std::string str, int64_t& out) noexcept;
+
 /** Print a JSON value's kind as a string. */
 const char* jsonKindToString(const JsonValue& json);
 
