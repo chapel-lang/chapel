@@ -40,7 +40,7 @@ module ChapelHashing {
     if !canResolve("chpl__defaultHashWrapperCG", x) {
       if canResolveMethod(x, "hash") then
         compilerError(x.type:string + " has a hash function, but does not implement Hashable");
-      compilerError("the type '" + x.type:string + "is not Hashable");
+      compilerError("the type '" + x.type:string + "' is not Hashable");
     }
     return chpl__defaultHashWrapperCG(x);
   }
