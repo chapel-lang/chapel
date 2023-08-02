@@ -97,6 +97,12 @@ extern c_nodeid_t chpl_nodeID;
 static void chpl_gpu_impl_set_globals(c_sublocid_t dev_id, hipModule_t module) {
   hipDeviceptr_t ptr;
   size_t glob_size;
+
+  // Engin: The AMDGPU backend seems to optimize chpl_nodeID away when it is not
+  // used.  So, we should not error out if we can't find its definition. We can
+  // look into making sure that it remains in the module, which feels a bit
+  // safer, admittedly. Note also that this is the only diff between nvidia and
+  // amd implementations in terms of adjusting chpl_nodeID.
   int err = hipModuleGetGlobal(&ptr, &glob_size, module, "chpl_nodeID");
   if (err == hipErrorNotFound) {
     return;
