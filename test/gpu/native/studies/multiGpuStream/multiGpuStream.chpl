@@ -91,7 +91,7 @@ if validate {
   }
   const expected = numElems*(1+alpha*2);
 
-  assert(isclose(result, expected));
+  assert(isClose(result, expected));
 }
 
 const tputFactor = if SI then 1e9 else 1<<30;
