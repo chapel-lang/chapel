@@ -177,13 +177,13 @@ proc main() {
                 for i in 0..#halfNumFloats {
                     var expected:real(32) = (i:int(32)%16:int(32) + 0.12:real(32)) * alpha + (i:int(32)%16:int(32) + 0.12:real(32));
                     var actual = hos[i];
-                    if(noisy && !isclose(actual, expected)) {
+                    if(noisy && !isClose(actual, expected)) {
                         writeln("Pass: ", pass,
                         "\nBlock Size:", blkSize,
                         "\nIndex: ", i,
                         "\nExpected: ", expected, "\nActual: ", actual);
                     }
-                    assert(isclose(actual , expected));
+                    assert(isClose(actual , expected));
                       assert(hos[halfNumFloats+i] == hos[i]);
                     }
             }

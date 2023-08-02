@@ -163,7 +163,7 @@ var sizeInBytes = originalHost.size * numBytes(dataType);
 var passed = true;
 for (x,y) in originalHost.domain {
   // -1 because we incremented the input once as a warmup
-  if !isclose(originalHost[x,y], outputHost[y,x]-1) {
+  if !isClose(originalHost[x,y], outputHost[y,x]-1) {
     writeln("Incorrect output at ", (x,y),
             ". Expected ", originalHost[x,y],
             ", got ", outputHost[y,x]);
