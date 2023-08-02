@@ -1603,6 +1603,29 @@ static bool resolveRequiredFns(InterfaceSymbol* isym,  ImplementsStmt* istm,
 }
 
 
+static void warnForImproperAutomaticImplements(InterfaceSymbol* isym,
+                                               ImplementsStmt* istm,
+                                               Expr* addlSite) {
+  if (istm->iConstraint->shouldBeGeneratedOnly) {
+    // Issue temporary warning if using non-generated methods to satisfy
+    // a generated interface.
+    for (auto& sym : istm->witnesses.symWits) {
+      if (auto fnWitness = toFnSymbol(sym.value)) {
+        if (!fnWitness->hasFlag(FLAG_COMPILER_GENERATED)) {
+          debuggerBreakHere();
+          USR_WARN(fnWitness, "automatically implementing interface %s for"
+                              " type %s using user-provided procedure %s",
+                              isym->name,
+                              istm->iConstraint->consActuals.get(1)->typeInfo()->name(),
+                              fnWitness->name);
+          USR_PRINT("in future releases, user-provided procedures will not"
+                    " cause %s to be automatically implemented", isym->name);
+        }
+      }
+    }
+  }
+}
+
 //
 // Ensures this ImplementsStmt indeed implements the interface, ex.
 // * determine each associated type
@@ -1630,6 +1653,8 @@ static bool resolveImplementsStmt(FnSymbol* wrapFn, ImplementsStmt* istm,
     // because wrapFn gets marked resolved before checkAssocConstraints().
     // If so, we return successful implementation, i.e. we break recursion
     // by assuming success.
+
+    if (reportErrors) warnForImproperAutomaticImplements(isym, istm, addlSite);
 
     IstmAndSuccess iss = implementsStmtForWrapperFn(wrapFn);
     // if isSuccess can legitimately be false, return it and remove the assert
@@ -1697,22 +1722,8 @@ static bool resolveImplementsStmt(FnSymbol* wrapFn, ImplementsStmt* istm,
     if (reportErrors) USR_STOP();
     markImplStmtWrapFnAsFailure(wrapFn);
   } else {
-
-    if (generatedOnly) {
-      // Issue temporary warning if using non-generated methods to satisfy
-      // a generated interface.
-      for (auto& sym : istm->witnesses.symWits) {
-        if (auto fnWitness = toFnSymbol(sym.value)) {
-          if (!fnWitness->hasFlag(FLAG_COMPILER_GENERATED)) {
-            USR_WARN(fnWitness, "automatically implementing interface %s using"
-                                " user-provided procedure %s",
-                                isym->name, fnWitness->name);
-            USR_PRINT("in future releases, user-provided procedures will not"
-                      " cause %s to be automatically implemented", isym->name);
-          }
-        }
-      }
-    }
+    istm->iConstraint->shouldBeGeneratedOnly = generatedOnly;
+    if (reportErrors) warnForImproperAutomaticImplements(isym, istm, addlSite);
   }
 
   return success;

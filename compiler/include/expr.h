@@ -247,6 +247,11 @@ public:
   InterfaceSymbol* ifcSymbol()  const;
   int              numActuals() const { return consActuals.length; }
 
+  // true for constraints that are satisfied automatically from existing
+  // procedures, such as Hashable. Long-term, these should only use
+  // compiler-generated procedures, and not allow user-supplied ones.
+  bool shouldBeGeneratedOnly = false;
+
   Expr* interfaceExpr;  // UnresolvedSymExpr -> SymExpr(InterfaceSymbol)
   AList consActuals;    // Exprs -> SymExprs of the constraint's actuals
 };
