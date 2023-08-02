@@ -4444,7 +4444,6 @@ static void moveResultFromTmp(const char* resultName, const char* tmpbinname);
 static llvm::CodeGenFileType getCodeGenFileType() {
   switch (getGpuCodegenType()) {
     case GpuCodegenType::GPU_CG_AMD_HIP:
-      return llvm::CodeGenFileType::CGFT_ObjectFile;
     case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
     default:
       return llvm::CodeGenFileType::CGFT_AssemblyFile;
@@ -4476,7 +4475,7 @@ static void stripPtxDebugDirective(const std::string& artifactFilename) {
 }
 
 static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
-                                  const std::string& ptxObjectFilename,
+                                  const std::string& gpuObjectFilename,
                                   const std::string& fatbinFilename) {
   if (myshell("which ptxas > /dev/null 2>&1", "Check to see if ptxas command can be found", true)) {
     USR_FATAL("Command 'ptxas' not found\n");
@@ -4514,7 +4513,7 @@ static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
   std::string ptxCmd = std::string("ptxas -m64 --gpu-name ") + gpuArch +
                        " " + ptxasFlags + " " +
                        std::string(" --output-file ") +
-                       ptxObjectFilename.c_str() +
+                       gpuObjectFilename.c_str() +
                        " " + artifactFilename.c_str();
 
   mysystem(ptxCmd.c_str(), "PTX to  object file");
@@ -4529,15 +4528,26 @@ static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
                              std::string("--create ") +
                              fatbinFilename.c_str() +
                              std::string(" --image=profile=") + gpuArch +
-                             ",file=" + ptxObjectFilename.c_str() +
+                             ",file=" + gpuObjectFilename.c_str() +
                              std::string(" --image=profile=") + computeCap +
                              ",file=" + artifactFilename.c_str();
   mysystem(fatbinaryCmd.c_str(), "object file to fatbinary");
 }
 
 static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
+                                 const std::string& gpuObjFilename,
                                  const std::string& outFilename,
                                  const std::string& fatbinFilename) {
+
+  // This is a total hack, I need to get the 'bin' path for LLVM:
+  std::string llvmBinPath = std::string(CHPL_LLVM_CLANG_CXX);
+  llvmBinPath = llvmBinPath.substr(0, llvmBinPath.rfind('/'));
+
+  std::string asmCmd = std::string(llvmBinPath) +
+                       "/llvm-mc --filetype=obj " +
+                       "--triple=amdgcn-amd-amdhsa --mcpu=gfx908 " +
+                       artifactFilename + " " +
+                       "-o " + gpuObjFilename;
   std::string lldCmd = std::string(gGpuSdkPath) +
                       "/llvm/bin/lld -flavor gnu" +
                        " --no-undefined -shared" +
@@ -4546,7 +4556,7 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
                        " -plugin-opt=O3" +
                        " -plugin-opt=-amdgpu-early-inline-all=true" +
                        " -plugin-opt=-amdgpu-function-calls=false -o " +
-                       outFilename + " " + artifactFilename;
+                       outFilename + " " + gpuObjFilename;
   std::string bundlerCmd = std::string(gGpuSdkPath) +
                           "/llvm/bin/clang-offload-bundler" +
                            " -type=o -bundle-align=4096" +
@@ -4555,6 +4565,7 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
                            " -inputs=/dev/null," + outFilename +
                            " -outputs=" + fatbinFilename;
 
+  mysystem(asmCmd.c_str(), "Assembly to .o file");
   mysystem(lldCmd.c_str(), "Device .o file to .out file");
   mysystem(bundlerCmd.c_str(), ".out file to fatbin file");
 }
@@ -4592,7 +4603,7 @@ void makeBinaryLLVM(void) {
   std::string opt1Filename;
   std::string opt2Filename;
   std::string artifactFilename;
-  std::string ptxObjectFilename;
+  std::string gpuObjectFilename;
   std::string outFilename;
   std::string fatbinFilename;
 
@@ -4606,19 +4617,16 @@ void makeBinaryLLVM(void) {
     preOptFilename = genIntermediateFilename("chpl__gpu_module-nopt.bc");
     opt1Filename = genIntermediateFilename("chpl__gpu_module-opt1.bc");
     opt2Filename = genIntermediateFilename("chpl__gpu_module-opt2.bc");
-    ptxObjectFilename = genIntermediateFilename("chpl__gpu_ptx.o");
+    gpuObjectFilename = genIntermediateFilename("chpl__gpu.o");
     fatbinFilename = genIntermediateFilename("chpl__gpu.fatbin");
     outFilename = genIntermediateFilename("chpl__gpu.out");
 
-    // In CUDA, we generate assembly and then assemble it. For
-    // AMD, we generate an object file. Thus, we need to use
-    // different file names.
     switch (getGpuCodegenType()) {
       case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
         artifactFilename = genIntermediateFilename("chpl__gpu_ptx.s");
         break;
       case GpuCodegenType::GPU_CG_AMD_HIP:
-        artifactFilename = genIntermediateFilename("chpl__gpu.o");
+        artifactFilename = genIntermediateFilename("chpl__gpu.s");
         break;
       case GpuCodegenType::GPU_CG_CPU:
         break;
@@ -4854,16 +4862,15 @@ void makeBinaryLLVM(void) {
                                                  disableVerify);
 
         emitPM.run(*info->module);
-
       }
 
       outputArtifactFile.close();
       switch (getGpuCodegenType()) {
         case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
-          makeBinaryLLVMForCUDA(artifactFilename, ptxObjectFilename, fatbinFilename);
+          makeBinaryLLVMForCUDA(artifactFilename, gpuObjectFilename, fatbinFilename);
           break;
         case GpuCodegenType::GPU_CG_AMD_HIP:
-          makeBinaryLLVMForHIP(artifactFilename, outFilename, fatbinFilename);
+          makeBinaryLLVMForHIP(artifactFilename, gpuObjectFilename, outFilename, fatbinFilename);
           break;
         case GpuCodegenType::GPU_CG_CPU:
           break;
