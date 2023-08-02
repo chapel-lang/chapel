@@ -707,7 +707,7 @@ via the ``str_style`` field in :record:`iostyle`.
   bytes should be read or written.
 
 */
-@unstable("iostringstyle is unstable and will eventually be replaced")
+@deprecated("iostringstyle is deprecated, please use Serializers or Deserializers instead")
 enum iostringstyle {
   len1b_data = -1,
   len2b_data = -2,
@@ -749,8 +749,8 @@ via the ``string_format`` field in :record:`iostyle`.
   * ``iostringformat.toeof`` means string is as-is; reading reads until
     end of file
 */
-@unstable
-(reason="iostringformat is unstable and will eventually be replaced")
+@deprecated
+("iostringformat is deprecated, please use Serializers or Deserializers instead")
 enum iostringformat {
   word = 0,
   basic = 1,
@@ -783,8 +783,8 @@ enum iostringformatInternal {
             are terminated by the terminator byte. This value is appropriate
             to store in iostyle.str_style.
  */
-@unstable
-(reason="stringStyleTerminated is unstable because it supports the unstable type 'iostyle'")
+@deprecated
+("stringStyleTerminated is deprecated following the deprecation of 'iostyle', please use Serializers or Deserializers instead")
 proc stringStyleTerminated(terminator:uint(8)) {
   return -(terminator - iostringstyleInternal.data_null:int(64));
 }
@@ -795,8 +795,8 @@ proc stringStyleTerminated(terminator:uint(8)) {
   zero byte.
  */
 
-@unstable
-(reason="stringStyleNullTerminated is unstable because it supports the unstable type 'iostyle'")
+@deprecated
+("stringStyleNullTerminated is deprecated following the deprecation of 'iostyle', please use Serializers or Deserializers instead")
 proc stringStyleNullTerminated() {
   return iostringstyleInternal.data_null;
 }
@@ -806,8 +806,8 @@ proc stringStyleNullTerminated() {
   to indicate a string format where strings have an exact length.
  */
 @chpldoc.nodoc
-@unstable
-(reason="stringStyleExactLen is unstable because it supports the unstable type 'iostyle'")
+@deprecated
+("stringStyleExactLen is deprecated following the deprecation of 'iostyle', please use Serializers or Deserializers instead")
 proc stringStyleExactLen(len:int(64)) {
   return len;
 }
@@ -818,8 +818,8 @@ proc stringStyleExactLen(len:int(64)) {
   length as described in :type:`iostringstyle`.
  */
 @chpldoc.nodoc
-@unstable
-(reason="stringStyleWithVariableLength is unstable because it supports the unstable type 'iostyle'")
+@deprecated
+("stringStyleWithVariableLength is deprecated following the deprecation of 'iostyle', please use Serializers or Deserializers instead")
 proc stringStyleWithVariableLength() {
   return iostringstyleInternal.lenVb_data: int(64);
 }
@@ -832,8 +832,8 @@ proc stringStyleWithVariableLength() {
 
   :throws SystemError: Thrown for an unsupported value of `lengthBytes`.
  */
-@unstable
-(reason="stringStyleWithLength is unstable because it supports the unstable type 'iostyle'")
+@deprecated
+("stringStyleWithLength is deprecated following the deprecation of 'iostyle', please use Serializers or Deserializers instead")
 proc stringStyleWithLength(lengthBytes:int) throws {
   return stringStyleWithLengthInternal(lengthBytes);
 }
@@ -1066,7 +1066,7 @@ extern record iostyleInternal { // aka qio_style_t
   var tuple_style:uint(8) = 0;
 }
 
-@unstable("iostyle is unstable, a new way of controlling fileReader and fileWriter output is planned")
+@deprecated("iostyle is deprecated; please use Serializers or Deserializers instead")
 type iostyle = iostyleInternal;
 
 // This class helps in implementing runtime calls.
@@ -1455,8 +1455,8 @@ private extern proc qio_format_error_write_regex():errorCode;
              and :ref:`about-io-styles`
 
  */
-@unstable
-(reason="defaultIOStyle is unstable due to returning an unstable type")
+@deprecated
+("defaultIOStyle is deprecated due to returning the deprecated type 'iostyle'")
 proc defaultIOStyle():iostyle {
   return defaultIOStyleInternal() : iostyle;
 }
@@ -1719,9 +1719,9 @@ private proc initHelper(ref f: file, fp, hints=ioHintSet.empty,
   }
 }
 
-@unstable("initializing a file with a style argument is unstable")
-  proc file.init(fp: ?t, hints=ioHintSet.empty, style:iostyle,
-                 own=false) throws where t == chpl_cFilePtr || t == c_ptr(chpl_cFile) {
+@deprecated("initializing a file with a 'style' argument is deprecated. Please use Serializers or Deserializers when creating fileReaders or fileWriters instead.")
+proc file.init(fp: ?t, hints=ioHintSet.empty, style:iostyle,
+               own=false) throws where t == chpl_cFilePtr || t == c_ptr(chpl_cFile) {
   // TODO: when the c_FILE behavior-change deprecation is complete,
   // a ':c_ptr(c_FILE)' type annotation should be added to the 'fp' argument.
   // and the where clause should be removed.
@@ -1795,7 +1795,7 @@ private proc initHelper2(ref f: file, fd: c_int, hints = ioHintSet.empty,
   }
 }
 
-@unstable("initializing a file with a style argument is unstable")
+@deprecated("initializing a file with a 'style' argument is deprecated")
 proc file.init(fileDescriptor: int, hints=ioHintSet.empty,
                style:iostyle, own=false) throws {
   this.init();
@@ -2119,7 +2119,7 @@ proc open(path:string, mode:iomode, hints=ioHintSet.empty,
   return open(path, convertIoMode(mode), hints, style);
 }
 
-@unstable("open with a style argument is unstable")
+@deprecated("open with a 'style' argument is deprecated")
 proc open(path:string, mode:ioMode, hints=ioHintSet.empty,
           style:iostyle): file throws {
   return openHelper(path, mode, hints, style:iostyleInternal);
@@ -2360,7 +2360,7 @@ private proc openfpHelper(fp: ?t, hints=ioHintSet.empty,
   return ret;
 }
 
-@unstable("openTempFile with a style argument is unstable")
+@deprecated("openTempFile with a 'style' argument is deprecated")
 proc openTempFile(hints=ioHintSet.empty, style:iostyle):file throws {
   return opentmpHelper(hints, style: iostyleInternal);
 }
@@ -2422,7 +2422,7 @@ proc openmem():file throws {
   return openMemFile();
 }
 
-@unstable("openMemFile with a style argument is unstable")
+@deprecated("openMemFile with a 'style' argument is deprecated")
 proc openMemFile(style:iostyle):file throws {
   return openMemFileHelper(style: iostyleInternal);
 }
@@ -4258,7 +4258,7 @@ inline proc fileWriter._commit() {
    called on a locked fileReader.
 
  */
-@unstable("fileReader._style is unstable because it returns a type that is unstable")
+@deprecated("fileReader._style is deprecated because it returns a type that is deprecated")
 proc fileReader._style():iostyle {
   var ret:iostyle;
   on this._home {
@@ -4275,7 +4275,7 @@ proc fileReader._style():iostyle {
    called on a locked fileWriter.
 
  */
-@unstable("fileWriter._style is unstable because it returns a type that is unstable")
+@deprecated("fileWriter._style is deprecated because it returns a type that is deprecated")
 proc fileWriter._style():iostyle {
   var ret:iostyle;
   on this._home {
@@ -4318,7 +4318,7 @@ proc fileWriter._styleInternal(): iostyleInternal {
    be called on a locked fileReader.
 
  */
-@unstable("fileReader._set_style is unstable because its purpose involves an unstable type")
+@deprecated("fileReader._set_style is deprecated because its purpose involves a deprecated type")
 proc fileReader._set_style(style:iostyle) {
   on this._home {
     var local_style:iostyle = style;
@@ -4332,7 +4332,7 @@ proc fileReader._set_style(style:iostyle) {
    be called on a locked fileWriter.
 
  */
-@unstable("fileWriter._set_style is unstable because its purpose involves an unstable type")
+@deprecated("fileWriter._set_style is deprecated because its purpose involves a deprecated type")
 proc fileWriter._set_style(style:iostyle) {
   on this._home {
     var local_style:iostyle = style;
@@ -4452,7 +4452,7 @@ proc openreader(path:string,
 }
 
 
-@unstable("openReader with a style argument is unstable")
+@deprecated("openReader with a 'style' argument is deprecated, please use Deserializers instead")
 proc openReader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
@@ -4610,7 +4610,7 @@ proc openwriter(path:string,
   return openWriter(path, kind, locking, start, end, hints, style);
 }
 
-@unstable("openWriter with a style argument is unstable")
+@deprecated("openWriter with a 'style' argument is deprecated, please use Serializers instead")
 proc openWriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
@@ -4708,7 +4708,7 @@ private proc openWriterHelper(path:string,
   return try fl.writerHelper(kind, locking, start..end, hints, style, serializer=serializer);
 }
 
-@unstable("reader with a style argument is unstable")
+@deprecated("reader with a 'style' argument is deprecated, please use Deserializers instead")
 proc file.reader(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  hints=ioHintSet.empty,
@@ -4859,7 +4859,7 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
   return ret;
 }
 
-@unstable("lines with a local_style argument is unstable")
+@deprecated("lines with a local_'style' argument is deprecated")
 proc file.lines(param locking:bool = true, start:int(64) = 0,
                 end:int(64) = max(int(64)), hints=ioHintSet.empty,
                 in local_style:iostyle) throws {
@@ -4946,7 +4946,7 @@ proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
   return ret;
 }
 
-@unstable("writer with a style argument is unstable")
+@deprecated("writer with a 'style' argument is deprecated, please use Serializers instead")
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  hints=ioHintSet.empty, style:iostyle):
@@ -6320,7 +6320,7 @@ inline proc fileReader.read(ref args ...?k):bool throws {
   return true;
 }
 
-@unstable("read with a style argument is unstable")
+@deprecated("read with a 'style' argument is deprecated")
 proc fileReader.read(ref args ...?k, style:iostyle):bool throws {
   return this.readHelper((...args), style: iostyleInternal);
 }
@@ -8517,7 +8517,7 @@ proc fileReader.readln(ref args ...?k):bool throws {
   return try this.read((...args), nl);
 }
 
-@unstable("readln with a style argument is unstable")
+@deprecated("readln with a 'style' argument is deprecated")
 proc fileReader.readln(ref args ...?k,
                        style:iostyle):bool throws {
   return this.readlnHelper((...args), style: iostyleInternal);
@@ -8673,7 +8673,7 @@ inline proc fileWriter.write(const args ...?k) throws {
   }
 }
 
-@unstable("write with a style argument is unstable")
+@deprecated("write with a 'style' argument is deprecated")
 proc fileWriter.write(const args ...?k, style:iostyle) throws {
   this.writeHelper((...args), style: iostyleInternal);
 }
@@ -8730,7 +8730,7 @@ proc fileWriter.writeln(const args ...?k) throws {
   try this.write((...args), new ioNewline());
 }
 
-@unstable("writeln with a style argument is unstable")
+@deprecated("writeln with a 'style' argument is deprecated")
 proc fileWriter.writeln(const args ...?k, style:iostyle) throws {
   try this.writeHelper((...args), new ioNewline(), style=style);
 }
