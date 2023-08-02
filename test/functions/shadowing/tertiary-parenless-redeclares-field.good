@@ -1,0 +1,2 @@
+tertiary-parenless-redeclares-field.chpl:2: In module 'Main':
+tertiary-parenless-redeclares-field.chpl:4: error: parenless proc redeclares the field 'field'
