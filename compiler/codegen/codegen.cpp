@@ -286,7 +286,8 @@ static void genGlobalRawString(const char *cname, std::string &value, size_t len
 #endif
 
 static void
-genGlobalInt(const char* cname, int value, bool isHeader) {
+genGlobalInt(const char* cname, int value, bool isHeader,
+             bool isConstant=true) {
   GenInfo* info = gGenInfo;
   if( info->cfile ) {
     if(isHeader)
@@ -299,7 +300,7 @@ genGlobalInt(const char* cname, int value, bool isHeader) {
         info->module->getOrInsertGlobal(
           cname, llvm::IntegerType::getInt32Ty(info->module->getContext())));
     globalInt->setInitializer(info->irBuilder->getInt32(value));
-    globalInt->setConstant(true);
+    globalInt->setConstant(isConstant);
     info->lvt->addGlobalValue(cname, globalInt, GEN_PTR, false, dtInt[INT_SIZE_32]);
 #endif
   }
@@ -2516,7 +2517,7 @@ static void embedGpuCode() {
 }
 
 static void codegenGpuGlobals() {
-  genGlobalInt("chpl_nodeID", 0, false);
+  genGlobalInt("chpl_nodeID", -1, false, false);
 }
 #endif
 
