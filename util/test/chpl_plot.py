@@ -379,7 +379,7 @@ class Plot:
                    data,
                    label=label,
                    zorder=zorder,
-                   clip_on=True,
+                   clip_on=False,
                    **line_style(linestyle))
 
     elif self.plotKind == PlotKind.BAR:
@@ -425,7 +425,7 @@ class Plot:
     self.arrows.append(Arrow(position, direction, color, text))
 
   def set_title(self, title):
-    self.ax.set_title(title, pad=10, size=basefontsize)
+    self.ax.set_title(title, pad=titlepadding, size=basefontsize)
 
   def set_xlabel(self, label):
     self.ax.set_xlabel(label, size=basefontsize)
@@ -678,9 +678,9 @@ class TableCollection():
     """ Print all tables in .md """
     return "\n\n".join(map(lambda tbl: tbl.md(*args), self.tables.values()))
 
-  def plot(self):
+  def plot(self, **kwArgs):
     """ Join all tables and plot them """
-    return self.join().plot()
+    return self.join().plot(**kwArgs)
 
   def join(self):
     """ Join all tables and return the resulting table """
