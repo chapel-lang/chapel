@@ -4442,6 +4442,11 @@ static void moveGeneratedLibraryFile(const char* tmpbinname);
 static void moveResultFromTmp(const char* resultName, const char* tmpbinname);
 
 static llvm::CodeGenFileType getCodeGenFileType() {
+  // At one point, we returned CGFT_AssemblyFGile for NVIDIA and
+  // CGFT_ObjectFile for AMD (we since figured out how to assemble for AMD so
+  // no longer go directly to .o). Given that, this function may seem a little
+  // crufty, but we may want to return to doing different things for future
+  // GPUs.
   switch (getGpuCodegenType()) {
     case GpuCodegenType::GPU_CG_AMD_HIP:
     case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
@@ -4643,6 +4648,10 @@ void makeBinaryLLVM(void) {
     fatbinFilename = genIntermediateFilename("chpl__gpu.fatbin");
     outFilename = genIntermediateFilename("chpl__gpu.out");
 
+    // This switch may seem unnecessary, but in the past we wanted to use a
+    // different "type" of intermedaite file for different GPUs and we may want
+    // to do that again in the future. See the comment in getGpuCodegenType()
+    // for more details about this history.
     switch (getGpuCodegenType()) {
       case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
       case GpuCodegenType::GPU_CG_AMD_HIP:
