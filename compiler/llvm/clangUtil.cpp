@@ -4567,7 +4567,7 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
 {
   std::string asmCmd = findSiblingClangToolPath("llvm-mc") + " " +
                        "--filetype=obj " +
-                       "--triple=amdgcn-amd-amdhsa --mcpu=gfx908 " +
+                       "--triple=amdgcn-amd-amdhsa --mcpu=" + gpuArch + " " +
                        artifactFilename + " " +
                        "-o " + gpuObjFilename;
   std::string lldCmd = std::string(gGpuSdkPath) +
