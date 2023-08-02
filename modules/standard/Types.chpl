@@ -885,22 +885,25 @@ no checks at all will be done.
 */
 inline proc integral.safeCast(type T: integral) : T {
   if castChecking then
-    checkValue();
+    if const error = this.chpl_checkValue(T) then
+      HaltWrappers.safeCastCheckHalt(error.message());
   return this:T;
+}
 
-  proc checkValue() {
+/* Return 'nil' if 'this' fits into 'T', an IllegalArgumentError otherwise. */
+proc integral.chpl_checkValue(type T: integral): owned IllegalArgumentError? {
     if isUintType(T) {
       if isIntType(this.type) {
         // int(?) -> uint(?)
         if this < 0 then // runtime check
-          HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+          return new IllegalArgumentError("bad cast from "+this.type:string+
                                          " less than 0 to "+T:string);
       }
 
       if max(this.type):uint > max(T):uint {
         // [u]int(?) -> uint(?)
         if (this:uint > max(T):uint) then // runtime check
-          HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+          return new IllegalArgumentError("bad cast from "+this.type:string+
                                          " with a value greater than the maximum of "+ T:string+" to "+T:string);
       }
     }
@@ -911,13 +914,13 @@ inline proc integral.safeCast(type T: integral) : T {
         if isUintType(this.type) {
           // uint(?) -> int(?)
           if this:uint > max(T):uint then // runtime check
-            HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+            return new IllegalArgumentError("bad cast from "+this.type:string+
                                            " with a value greater than the maximum of "+ T:string+" to "+T:string);
         } else {
           // int(?) -> int(?)
           // max(T) <= max(int), so cast to int is safe
           if this:int > max(T):int then // runtime check
-            HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+            return new IllegalArgumentError("bad cast from "+this.type:string+
                                            " with a value greater than the maximum of "+ T:string+" to "+T:string);
         }
       }
@@ -925,12 +928,13 @@ inline proc integral.safeCast(type T: integral) : T {
         if min(this.type):int < min(T):int {
           // int(?) -> int(?)
           if this:int < min(T):int then // runtime check
-            HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+            return new IllegalArgumentError("bad cast from "+this.type:string+
                                            " with a value less than the minimum of "+ T:string+" to "+T:string);
         }
       }
     }
-  }
+
+  return nil;
 }
 
 proc integral.safeCast(type T: bool) {

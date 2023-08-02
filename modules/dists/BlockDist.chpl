@@ -491,7 +491,7 @@ proc Block.init(boundingBox: domain,
   if boundingBox.sizeAs(uint) == 0 then
     halt("Block() requires a non-empty boundingBox");
 
-  this.boundingBox = boundingBox : domain(rank, idxType);
+  this.boundingBox = boundsBox(boundingBox);
 
   if !allowDuplicateTargetLocales {
     var checkArr: [LocaleSpace] bool;
@@ -543,6 +543,17 @@ proc Block.init(boundingBox: domain,
     writeln("Creating new Block distribution:");
     dsiDisplayRepresentation();
   }
+}
+
+// Returns a DR domain with (lowBound..highBound) of each of src's dimensions.
+// If we used domain.boundingBox() instead, this test would fail under gasnet:
+//   test/optimizations/bulkcomm/block/blockToBlock.chpl
+proc boundsBox(srcDom: domain) {
+  var dst: srcDom.rank*range(srcDom.idxType, boundKind.both, strideKind.one);
+  const src = srcDom.dims();
+  for param dim in 0..src.size-1 do
+    dst[dim] = src[dim].lowBound .. src[dim].highBound;
+  return {(...dst)};
 }
 
 @unstable(category="experimental", reason="'Block.redistribute()' is currently unstable due to lack of design review and is being made available as a prototype")
@@ -921,8 +932,7 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
     var low  = wholeDim.orderToIndex(followDim.low);
     var high = wholeDim.orderToIndex(followDim.high);
     if wholeDim.hasNegativeStride() then low <=> high;
-    t(i) = ( low..high by (wholeDim.stride*followDim.stride)
-           ).safeCast(t(i).type);
+    t(i) = try! (low..high by (wholeDim.stride*followDim.stride)) : t(i).type;
   }
   for i in {(...t)} {
     yield i;
@@ -1296,7 +1306,7 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
     // NOTE: Not bothering to check to see if these can fit into idxType
     var low = followThis(i).lowBound * abs(stride):idxType;
     var high = followThis(i).highBound * abs(stride):idxType;
-    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).low by followThis(i).stride).safeCast(myFollowThis(i).type);
+    myFollowThis(i) = try! ((low..high by stride) + dom.whole.dim(i).low by followThis(i).stride) : myFollowThis(i).type;
     lowIdx(i) = myFollowThis(i).lowBound;
   }
 

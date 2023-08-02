@@ -1202,7 +1202,7 @@ module ChapelDistribution {
 
     var result: rank * resultType;
     for param i in 0..rank-1 do
-      result(i) = from(i).safeCast(resultType);
+      result(i) = from(i) : resultType;
 
     return result;
   }

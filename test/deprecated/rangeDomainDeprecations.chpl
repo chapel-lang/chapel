@@ -1,4 +1,4 @@
-const r1 = 1..4;
+const r1 = 1..4;        // deprecated by Shreyas for 1.32
 const r2 = 1..4;
 const r3 = ..;
 const idx = 3;

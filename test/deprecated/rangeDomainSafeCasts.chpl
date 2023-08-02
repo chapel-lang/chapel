@@ -1,3 +1,7 @@
+// deprecated by Vass in 1.32
+
+/////////// ranges ///////////
+
 var rb = false..true;
 tryCasts(rb);
 
@@ -47,3 +51,22 @@ proc printRange(r) {
   writeln("  ", r, ": ", (r.low, r.high, r.stride, r.alignment));
   writeln();
 }
+
+/////////// domains ///////////
+
+// from test/domains/diten/castAwayStridableDomain.chpl
+
+var stridableDom = {1..20 by 2};
+var stridableDomUnit = {1..20 by 1}: domain(1, strides=strideKind.any);
+var unstridableDom = {1..10};
+
+writeln("before cast/assign unstridableDom=", unstridableDom);        // {1..10}
+writeln("before cast/assign stridableDom=", stridableDom);            // {1..20 by 2}
+
+unstridableDom = stridableDomUnit.safeCast(domain(1, strides=strideKind.one));
+
+writeln("after safeCast/assign unstridableDom=", unstridableDom);     // {1..20}
+writeln("after safeCast/assign stridableDomUnit=", stridableDomUnit); // {1..20}
+
+// halt reached - non-stridable range assigned non-unit stride
+unstridableDom = stridableDom.safeCast(domain(1, strides=strideKind.one));
