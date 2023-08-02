@@ -4450,6 +4450,32 @@ static llvm::CodeGenFileType getCodeGenFileType() {
   }
 }
 
+static std::string findSiblingClangToolPath(const std::string &toolName) {
+  // Find path to a tool that is a sibling to clang
+  // note that if we have /path/to/clang-14, this logic
+  // will loop for /path/to/${toolName}-14.
+  //
+  // If such suffixes do not turn out to matter in practice, it would
+  // be nice to update this code to use sys::path::parent_path().
+  std::vector<std::string> split;
+  std::string result = toolName;
+
+  splitStringWhitespace(CHPL_LLVM_CLANG_C, split);
+  if (split.size() > 0) {
+    std::string tmp = split[0];
+    const char* clang = "clang";
+    auto pos = tmp.find(clang);
+    if (pos != std::string::npos) {
+      tmp.replace(pos, strlen(clang), toolName);
+      if (pathExists(tmp.c_str())) {
+        result = tmp;
+      }
+    }
+  }
+
+  return result;
+}
+
 static void stripPtxDebugDirective(const std::string& artifactFilename) {
   std::string line;
   std::vector<std::string> lines;
@@ -4537,14 +4563,10 @@ static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
 static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
                                  const std::string& gpuObjFilename,
                                  const std::string& outFilename,
-                                 const std::string& fatbinFilename) {
-
-  // This is a total hack, I need to get the 'bin' path for LLVM:
-  std::string llvmBinPath = std::string(CHPL_LLVM_CLANG_CXX);
-  llvmBinPath = llvmBinPath.substr(0, llvmBinPath.rfind('/'));
-
-  std::string asmCmd = std::string(llvmBinPath) +
-                       "/llvm-mc --filetype=obj " +
+                                 const std::string& fatbinFilename)
+{
+  std::string asmCmd = findSiblingClangToolPath("llvm-mc") + " " +
+                       "--filetype=obj " +
                        "--triple=amdgcn-amd-amdhsa --mcpu=gfx908 " +
                        artifactFilename + " " +
                        "-o " + gpuObjFilename;
@@ -5047,27 +5069,7 @@ static void handlePrintAsm(std::string dotOFile) {
   if (llvmPrintIrStageNum == llvmStageNum::ASM ||
       llvmPrintIrStageNum == llvmStageNum::EVERY) {
 
-    // Find llvm-objdump as a sibling to clang
-    // note that if we have /path/to/clang-14, this logic
-    // will loop for /path/to/llvm-objdump-14.
-    //
-    // If such suffixes do not turn out to matter in practice, it would
-    // be nice to update this code to use sys::path::parent_path().
-    std::vector<std::string> split;
-    std::string llvmObjDump = "llvm-objdump";
-
-    splitStringWhitespace(CHPL_LLVM_CLANG_C, split);
-    if (split.size() > 0) {
-      std::string tmp = split[0];
-      const char* clang = "clang";
-      auto pos = tmp.find(clang);
-      if (pos != std::string::npos) {
-        tmp.replace(pos, strlen(clang), "llvm-objdump");
-        if (pathExists(tmp.c_str())) {
-          llvmObjDump = tmp;
-        }
-      }
-    }
+    std::string llvmObjDump = findSiblingClangToolPath("llvm-objdump");
 
     // Note: if we want to support GNU objdump, just need to use
     // --disassemble= instead of the LLVM flag --disassemble-symbols=
