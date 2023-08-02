@@ -1458,7 +1458,12 @@ static bool resolveOneRequiredFn(InterfaceSymbol* isym,  ImplementsStmt*  istm,
 
   auto targetValid = [&](FnSymbol* tg) {
     return tg != NULL &&
-           (!generatedOnly || target->hasFlag(FLAG_COMPILER_GENERATED)) &&
+
+           // After we switch the "implicit implements" warning to an error,
+           // uncomment the following line:
+           //
+           // (!generatedOnly || target->hasFlag(FLAG_COMPILER_GENERATED)) &&
+
            // do not allow representatives to help satisfy a constraint
            !target->hasFlag(FLAG_CG_REPRESENTATIVE);
   };
@@ -1691,6 +1696,23 @@ static bool resolveImplementsStmt(FnSymbol* wrapFn, ImplementsStmt* istm,
   if (!success) {
     if (reportErrors) USR_STOP();
     markImplStmtWrapFnAsFailure(wrapFn);
+  } else {
+
+    if (generatedOnly) {
+      // Issue temporary warning if using non-generated methods to satisfy
+      // a generated interface.
+      for (auto& sym : istm->witnesses.symWits) {
+        if (auto fnWitness = toFnSymbol(sym.value)) {
+          if (!fnWitness->hasFlag(FLAG_COMPILER_GENERATED)) {
+            USR_WARN(fnWitness, "automatically implementing interface %s using"
+                                " user-provided procedure %s",
+                                isym->name, fnWitness->name);
+            USR_PRINT("in future releases, user-provided procedures will not"
+                      " cause %s to be automatically implemented", isym->name);
+          }
+        }
+      }
+    }
   }
 
   return success;
