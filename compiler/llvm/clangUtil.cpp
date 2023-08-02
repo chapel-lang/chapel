@@ -4649,7 +4649,7 @@ void makeBinaryLLVM(void) {
     outFilename = genIntermediateFilename("chpl__gpu.out");
 
     // This switch may seem unnecessary, but in the past we wanted to use a
-    // different "type" of intermedaite file for different GPUs and we may want
+    // different "type" of intermediate file for different GPUs and we may want
     // to do that again in the future. See the comment in getGpuCodegenType()
     // for more details about this history.
     switch (getGpuCodegenType()) {
