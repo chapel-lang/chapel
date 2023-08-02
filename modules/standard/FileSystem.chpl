@@ -95,6 +95,7 @@ module FileSystem {
   use CTypes;
   use IO;
   use OS.POSIX;
+  use ChplConfig;
 
 /* S_IRUSR and the following constants are values of the form
    S_I[R | W | X][USR | GRP | OTH], S_IRWX[U | G | O], S_ISUID, S_ISGID, or
@@ -1427,14 +1428,17 @@ proc symlink(oldName: string, newName: string) throws {
       This is not safe within a parallel context.  A umask call in one task
       will affect the umask of all tasks for that locale.
 
+   .. warning::
 
-   :arg mask: The file creation mask to use now.
+      'umask' is unstable on locale models other than the flat locale model.
+
+   :arg mask: The file creation mask to use now. Octal literals may be specified, e.g., ``0o777``
    :type mask: `int`
 
    :return: The previous file creation mask
    :rtype: `int`
 */
-proc locale.umask(mask: int): int {
+proc locale.umask(mask: int): int where (CHPL_LOCALE_MODEL == "flat") {
   import OS.POSIX.mode_t;
   extern proc chpl_fs_umask(mask: mode_t): mode_t;
   extern proc chpl_int_to_mode(mode: c_int): mode_t;
@@ -1448,6 +1452,11 @@ proc locale.umask(mask: int): int {
   return result.safeCast(int);
 }
 
+@chpldoc.nodoc
+@unstable("'umask' is unstable on locale models other than 'flat'")
+proc locale.umask(mask: int): int where (CHPL_LOCALE_MODEL != "flat") {
+  return this.umask(mask);
+}
 
 @deprecated(notes="walkdirs is deprecated; please use walkDirs instead")
 iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
