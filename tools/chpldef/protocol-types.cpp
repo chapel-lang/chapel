@@ -185,12 +185,8 @@ JsonValue TextDocumentSyncOptions::toJson() const {
 
 bool TextDocumentItem::fromJson(const JsonValue& j, JsonPath p) {
   JsonMapper m(j, p);
-  bool ret = m;
-  ret &= MAP_(m, uri);
-  ret &= MAP_(m, languageId);
-  ret &= MAP_(m, version);
-  ret &= MAP_(m, text);
-  return ret;
+  return MAP_(m, uri) && MAP_(m, languageId) && MAP_(m, version) &&
+         MAP_(m, text);
 }
 
 bool DidOpenParams::fromJson(const JsonValue& j, JsonPath p) {

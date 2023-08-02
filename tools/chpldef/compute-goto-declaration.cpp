@@ -33,6 +33,7 @@ chooseAstClosestToLocation(chpl::Context* chapel,
   CHPL_ASSERT(astNew);
   CHPL_ASSERT(astOld != astNew);
 
+  // TODO: This can run 'locateAst' on the same AST node O(n) times.
   auto locOld = astOld ? locateAst(chapel, astOld) : chpl::Location();
   auto locNew = locateAst(chapel, astNew);
 
@@ -182,10 +183,7 @@ computeDeclarationPoints(Server* ctx, const TextDocumentPositionParams& p) {
                          static_cast<uint64_t>(loc.firstColumn()-1) };
       Position end = { static_cast<uint64_t>(loc.lastLine()-1),
                        static_cast<uint64_t>(loc.lastColumn()-1) };
-      Location out;
-      out.range = { start, end };
-      out.uri = loc.path().str();
-
+      Location out(loc.path().str(), { start, end });
       ret.push_back(std::move(out));
     }
   }

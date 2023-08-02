@@ -121,10 +121,13 @@ public:
     virtual void run(Server* ctx, const Message* msg, When when) = 0;
   };
 
+  /** Note that below we list the compiler instance before the server
+      configuration so that the server initializer can use the config
+      to help initialize the compiler. */
 private:
   State state_ = UNINITIALIZED;
   Logger logger_;
-  chpl::owned<chpl::Context> chapel_ = nullptr;
+  chpl::Context chapel_;
   Configuration config_;
   TextRegistry textRegistry_;
   int64_t revision_ = 0;
@@ -137,7 +140,7 @@ private:
   inline bool
   isLogLevel(Logger::Level level) const { return logger_.level() == level; }
 
-  chpl::owned<chpl::Context> createCompilerContext() const;
+  chpl::Context createCompilerContext(const Configuration& config) const;
   bool shouldGarbageCollect() const;
   bool shouldPrepareToGarbageCollect() const;
   void doRegisterEssentialEvents();
@@ -211,9 +214,13 @@ public:
 
   inline int64_t revision() const { return revision_; }
 
-  inline const chpl::Context* chapel() const { return chapel_.get(); }
+  inline const chpl::Context* chapel() const { return &chapel_; }
 
   inline const TextRegistry& textRegistry() const { return textRegistry_; }
+
+  inline int garbageCollectionFrequency() const {
+    return config_.garbageCollectionFrequency;
+  }
 
   void setLogger(Logger&& logger);
   inline Logger& logger() { return logger_; }
@@ -234,21 +241,21 @@ public:
 
   /** Execute code with controlled access to the Chapel context. */
   template <typename F, typename ...Ns>
-  auto withChapel(WithChapelConfig c, F&& f, Ns... ns)
-  -> decltype(f(chapel_.get(), ns...)) {
-    if (shouldGarbageCollect()) chapel_->collectGarbage();
+  auto withChapel(WithChapelConfig c, F&& f, Ns&&... ns)
+  -> decltype(f(&chapel_, std::forward<Ns>(ns)...)) {
+    if (shouldGarbageCollect()) chapel_.collectGarbage();
     if (c & CHPL_BUMP_REVISION) {
-      chapel_->advanceToNextRevision(shouldPrepareToGarbageCollect());
+      chapel_.advanceToNextRevision(shouldPrepareToGarbageCollect());
       ++revision_;
     }
-    return f(chapel_.get(), ns...);
+    return f(&chapel_, std::forward<Ns>(ns)...);
   }
 
   /** Execute code with controlled access to the Chapel context. */
   template <typename F, typename ...Ns>
-  auto withChapel(F&& f, Ns... ns)
-  -> decltype(withChapel(CHPL_NO_MASK, f, ns...)) {
-    return withChapel(CHPL_NO_MASK, f, ns...);
+  auto withChapel(F&& f, Ns&&... ns)
+  -> decltype(withChapel(CHPL_NO_MASK, f, std::forward<Ns>(ns)...)) {
+    return withChapel(CHPL_NO_MASK, f, std::forward<Ns>(ns)...);
   }
 
   template <typename T>

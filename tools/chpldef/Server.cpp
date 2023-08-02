@@ -74,13 +74,14 @@ bool Server::Event::canRun(Server* ctx) const {
   return ctx->state() == Server::READY;
 }
 
-Server::Server(Server::Configuration config) : config_(std::move(config)) {
-  chapel_ = createCompilerContext();
+Server::Server(Server::Configuration config)
+    : chapel_(createCompilerContext(config)),
+      config_(std::move(config)) {
 
   // Install the server error handler.
   auto handler = toOwned(new ErrorHandler(this));
   errorHandler_ = handler.get();
-  chapel_->installErrorHandler(std::move(handler));
+  chapel_.installErrorHandler(std::move(handler));
 
   // Open the server log.
   Logger logger;
@@ -104,15 +105,16 @@ Server::Server(Server::Configuration config) : config_(std::move(config)) {
   doRegisterEssentialEvents();
 }
 
-chpl::owned<chpl::Context> Server::createCompilerContext() const {
+chpl::Context
+Server::createCompilerContext(const Server::Configuration& config) const {
   chpl::Context::Configuration chplConfig;
-  chplConfig.chplHome = config_.chplHome;
-  auto ret = chpl::toOwned(new chpl::Context(std::move(chplConfig)));
-  return ret;
+  chplConfig.chplHome = config.chplHome;
+  return chpl::Context(std::move(chplConfig));
 }
 
 bool Server::shouldGarbageCollect() const {
   auto f = config_.garbageCollectionFrequency;
+  if (f == 1) return true;
   if (f == 0) return false;
   return (revision_ % f) == 0;
 }
@@ -120,7 +122,7 @@ bool Server::shouldGarbageCollect() const {
 bool Server::shouldPrepareToGarbageCollect() const {
   auto f = config_.garbageCollectionFrequency;
   if (f == 0) return false;
-  return (revision_ % f) == 1;
+  return (revision_ % f) == (f - 1);
 }
 
 void Server::doRegisterEssentialEvents() {

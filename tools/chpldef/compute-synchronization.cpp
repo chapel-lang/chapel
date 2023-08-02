@@ -42,8 +42,7 @@ DidOpen::ComputeResult DidOpen::compute(Server* ctx, ComputeParams p) {
   // to have changed and the "truth of the file's contents" are determined
   // by the client as long as it has the file open. Cannot implicitly
   // read from disk, so have to bump the revision to ensure correctness.
-  ctx->withChapel(Server::CHPL_BUMP_REVISION,
-  [&](auto chapel) {
+  ctx->withChapel(Server::CHPL_BUMP_REVISION, [&](auto chapel) {
     chpl::parsing::setFileText(chapel, tdi.uri, tdi.text);
     auto& fc = chpl::parsing::fileText(chapel, tdi.uri);
     CHPL_ASSERT(!fc.error());

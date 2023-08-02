@@ -70,14 +70,8 @@ using JsonObject = llvm::json::Object;
 using JsonPath = llvm::json::Path;
 using JsonMapper = llvm::json::ObjectMapper;
 
-/** Wrapper around LLVM's optional type. */
-#if LLVM_VERSION_MAJOR >= 16
-  #include <optional>
-  static_assert(std::is_same<std::optional<T>, llvm::Optional<T>>::value);
-  template <typename T> using opt = std::optional<T>;
-#else
-  template <typename T> using opt = llvm::Optional<T>;
-#endif
+/** Wrapper around Chapel's optional type. */
+template <typename T> using opt = chpl::optional<T>;
 
 template <typename T>
 inline opt<T> option(T&& t) { return opt<T>(std::move(t)); }
