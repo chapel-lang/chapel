@@ -1,25 +1,9 @@
 #!/usr/bin/env bash
 
-# -- Command line arguments --
-datFile="${1:-`pwd`/logs/baseline_cuda.dat}"
-logDir="${2:-`pwd`/logs/}"
-experimentName="${3:-baseline_cuda}"
+# sets 'datFile', 'logDir', 'experimentName', and 'runLog'
+source $CHPL_HOME/util/test/chplExperimentGatherUtils/boilerplate.bash $@
 
-# -- Testing parameters --
-runLog="$logDir/$experimentName.txt"
-sizes=( 1 2 4 8 16 32 64 128 256 512)
-
-# Log all subsequent output
-echoVar() { echo "$1 = ${!1}"; }
-echoVar datFile
-echoVar logDir
-echoVar experimentName
-echoVar runLog
-echoVar sizes
-echo "------------------"
-
-mkdir -p $logDir
-set -e -x
+sizes=( 1 2 4 8 16 32 64 128)
 
 # -----------------------------------------------------------------------------
 # Checkout and build CUDA code

@@ -2,18 +2,18 @@
 
 import sys, os
 sys.path.append(os.path.join(os.environ['CHPL_HOME'], 'util', 'test'))
-from chpl_plot import loadDat, joinDat, paint
+from chpl_plot import *
 
-#def process(p):
-#  p.set_xticks(p.x_data[5:])
-#  p.set_xticklabels([str(int(l)) for l in p.x_data[5:]])
+tbls = load_tables()
+p = tbls.plot(save=False)
+p.set_xticks(p._x_data[5:])
+p.set_xticklabels([str(int(l)) for l in p._x_data[5:]])
+p.save('logs/stream.png')
 
-data = loadDat("logs")
-
-if 'cuda_baseline' in data:
-  nvidiaDat = joinDat([data['cuda_baseline'], data['nvidia'], data['nvidia_aod']])
-  paint("nvidiaDat", nvidiaDat)
-
-if 'hip_baseline' in data:
-  amdDat    = joinDat([data['hip_baseline'], data['amd'], data['amd_aod']])
-  paint("amdDat", amdDat)
+#if 'cuda_baseline' in tbls:
+#  nvidiaDat = joinDat([data['cuda_baseline'], data['nvidia'], data['nvidia_aod']])
+#  paint("nvidiaDat", nvidiaDat)
+#
+#if 'hip_baseline' in tbls:
+#  amdDat    = joinDat([data['hip_baseline'], data['amd'], data['amd_aod']])
+#  paint("amdDat", amdDat)
