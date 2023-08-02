@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+find savec_dir -type f -name "*.o" -o -name "*.s" >> $2
