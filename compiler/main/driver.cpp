@@ -366,7 +366,7 @@ char fGpuArch[gpuArchNameLen+1] = "";
 bool fGpuPtxasEnforceOpt;
 bool fGpuSpecialization = false;
 const char* gGpuSdkPath = NULL;
-char gpuArch[gpuArchNameLen+1] = "";
+std::unordered_set<std::string> gpuArches;
 
 chpl::Context* gContext = nullptr;
 std::vector<std::pair<std::string, std::string>> gDynoParams;
@@ -1695,6 +1695,20 @@ static void setPrintCppLineno() {
   if (developer && !userSetCppLineno) printCppLineno = false;
 }
 
+static void populateGpuArches(const char* from) {
+  // using memcpy and setting the null byte to avoid errors from older
+  // GCCs
+  char buffer[gpuArchNameLen+1];
+  memcpy(buffer, from, gpuArchNameLen);
+  buffer[gpuArchNameLen] = '\0';
+
+  std::vector<std::string> into;
+  splitString(std::string(from), into, ",");
+  for (auto& str : into ){
+    gpuArches.insert(str);
+  }
+}
+
 static void setGPUFlags() {
   if(usingGpuLocaleModel()) {
     if (fWarnUnstable) {
@@ -1719,9 +1733,7 @@ static void setGPUFlags() {
     //
     // set up gpuArch
     if (strlen(fGpuArch) > 0) {
-      // using memcpy and setting the null byte to avoid errors from older GCCs
-      memcpy(gpuArch, fGpuArch, gpuArchNameLen);
-      gpuArch[gpuArchNameLen] = 0;
+      populateGpuArches(fGpuArch);
     }
     else {
       if (CHPL_GPU_ARCH != nullptr && strlen(CHPL_GPU_ARCH) == 0) {
@@ -1730,10 +1742,7 @@ static void setGPUFlags() {
                   "for more information");
       }
       else {
-        // using memcpy and setting the null byte to avoid errors from older
-        // GCCs
-        memcpy(gpuArch, CHPL_GPU_ARCH, gpuArchNameLen);
-        gpuArch[gpuArchNameLen] = 0;
+        populateGpuArches(fGpuArch);
       }
     }
   }

@@ -2831,9 +2831,6 @@ void runClang(const char* just_parse_filename) {
     // Need to select CUDA/AMD mode in embedded clang to
     // activate the GPU target
     splitStringWhitespace(generateClangGpuLangArgs(), clangOtherArgs);
-
-    std::string archFlag = std::string("--offload-arch=") + gpuArch;
-    clangOtherArgs.push_back(archFlag);
   }
 
   // Always include sys_basic because it might change the
@@ -4213,14 +4210,14 @@ static void linkBitCodeFile(const char *bitCodeFilePath) {
                             llvm::Linker::Flags::LinkOnlyNeeded);
 }
 
-static std::string determineOclcVersionLib(std::string libPath) {
+static std::string determineOclcVersionLib(std::string libPath, const std::string& gpuArch) {
   std::string result;
 
   // Extract version number from gpuArch string (e.g. extract
   // the 908 from "gfx908")
   std::regex pattern("[[:alpha:]]+([[:digit:]]+[[:alpha:]]?)");
   std::cmatch match;
-  if (std::regex_search(gpuArch, match, pattern)) {
+  if (std::regex_search(gpuArch.c_str(), match, pattern)) {
     result = libPath + "/oclc_isa_version_" + std::string(match[1]) + ".bc";
   } else {
     USR_FATAL("Unable to determine oclc version from gpuArch");
@@ -4266,7 +4263,9 @@ static void linkGpuDeviceLibraries() {
     linkBitCodeFile((libPath + "/oclc_finite_only_off.bc").c_str());
     linkBitCodeFile((libPath + "/oclc_correctly_rounded_sqrt_on.bc").c_str());
     linkBitCodeFile((libPath + "/oclc_wavefrontsize64_on.bc").c_str());
-    linkBitCodeFile(determineOclcVersionLib(libPath).c_str());
+    for (auto gpuArch : gpuArches) {
+      linkBitCodeFile(determineOclcVersionLib(libPath, gpuArch).c_str());
+    }
   }
 
   // internalize all functions that are not in `externals`
@@ -4546,27 +4545,36 @@ static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
   // avoid warning about not statically knowing the stack size when recursive
   // functions are called from the kernel
   ptxasFlags += " --suppress-stack-size-warning ";
-  std::string ptxCmd = std::string("ptxas -m64 --gpu-name ") + gpuArch +
-                       " " + ptxasFlags + " " +
-                       std::string(" --output-file ") +
-                       gpuObjectFilename.c_str() +
-                       " " + artifactFilename.c_str();
 
-  mysystem(ptxCmd.c_str(), "PTX to  object file");
+  // Run ptxas for each architecture
+  std::string profiles;
+  for (auto& gpuArch : gpuArches) {
+    // Figure out the corresponding compute capability and object name
+    if (strncmp(gpuArch.c_str(), "sm_", 3) != 0 || gpuArch.size() != 5) {
+      USR_FATAL("Unrecognized CUDA arch");
+    }
+    std::string computeCap = std::string("compute_") + gpuArch[3] + gpuArch[4];
+    std::string gpuObject = gpuObjectFilename + "_" + gpuArch + ".o";
 
-  if (strncmp(gpuArch, "sm_", 3) != 0 || strlen(gpuArch) != 5) {
-    USR_FATAL("Unrecognized CUDA arch");
+    // Execute the assembler for this architecture
+    std::string ptxCmd = std::string("ptxas -m64 --gpu-name ") + gpuArch +
+                         " " + ptxasFlags + " " +
+                         std::string(" --output-file ") +
+                         gpuObjectFilename.c_str() +
+                         " " + artifactFilename.c_str();
+    mysystem(ptxCmd.c_str(), "PTX to object file");
+
+    // Track the new object we created and the CC we enabled.
+    profiles += std::string(" --image=profile=") + computeCap +
+                ",file=" + artifactFilename;
+    profiles += std::string(" --image=profile=") + gpuArch +
+                ",file=" + gpuObject;
   }
 
-  std::string computeCap = std::string("compute_") + gpuArch[3] +
-                                                     gpuArch[4];
   std::string fatbinaryCmd = std::string("fatbinary -64 ") +
                              std::string("--create ") +
                              fatbinFilename.c_str() +
-                             std::string(" --image=profile=") + gpuArch +
-                             ",file=" + gpuObjectFilename.c_str() +
-                             std::string(" --image=profile=") + computeCap +
-                             ",file=" + artifactFilename.c_str();
+                             profiles;
   mysystem(fatbinaryCmd.c_str(), "object file to fatbinary");
 }
 
@@ -4575,30 +4583,42 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
                                  const std::string& outFilename,
                                  const std::string& fatbinFilename)
 {
-  std::string asmCmd = findSiblingClangToolPath("llvm-mc") + " " +
-                       "--filetype=obj " +
-                       "--triple=amdgcn-amd-amdhsa --mcpu=" + gpuArch + " " +
-                       artifactFilename + " " +
-                       "-o " + gpuObjFilename;
-  std::string lldCmd = std::string(gGpuSdkPath) +
-                      "/llvm/bin/lld -flavor gnu" +
-                       " --no-undefined -shared" +
-                       " -plugin-opt=-amdgpu-internalize-symbols" +
-                       " -plugin-opt=mcpu=" + gpuArch +
-                       " -plugin-opt=O3" +
-                       " -plugin-opt=-amdgpu-early-inline-all=true" +
-                       " -plugin-opt=-amdgpu-function-calls=false -o " +
-                       outFilename + " " + gpuObjFilename;
+  std::string targets;
+  std::string inputs;
+  for (auto& gpuArch : gpuArches) {
+    std::string gpuObject = gpuObjFilename + "_" + gpuArch + ".o";
+    std::string gpuOut = outFilename + "_" + gpuArch + ".out";
+
+    std::string asmCmd = findSiblingClangToolPath("llvm-mc") + " " +
+                         "--filetype=obj " +
+                         "--triple=amdgcn-amd-amdhsa --mcpu=" + gpuArch + " " +
+                         artifactFilename + " " +
+                         "-o " + gpuObject;
+    std::string lldCmd = std::string(gGpuSdkPath) +
+                        "/llvm/bin/lld -flavor gnu" +
+                         " --no-undefined -shared" +
+                         " -plugin-opt=-amdgpu-internalize-symbols" +
+                         " -plugin-opt=mcpu=" + gpuArch +
+                         " -plugin-opt=O3" +
+                         " -plugin-opt=-amdgpu-early-inline-all=true" +
+                         " -plugin-opt=-amdgpu-function-calls=false -o " +
+                         gpuOut + " " + gpuObject;
+    mysystem(asmCmd.c_str(), "Assembly to .o file");
+    mysystem(lldCmd.c_str(), "Device .o file to .out file");
+
+    targets += std::string(",hipv4-amdgcn-amd-amdhsa--") + gpuArch;
+    inputs += std::string(",") + gpuOut;
+
+  }
   std::string bundlerCmd = std::string(gGpuSdkPath) +
                           "/llvm/bin/clang-offload-bundler" +
                            " -type=o -bundle-align=4096" +
-                           " -targets=host-x86_64-unknown-linux," +
-                           "hipv4-amdgcn-amd-amdhsa--" + gpuArch +
-                           " -inputs=/dev/null," + outFilename +
+                           " -targets=host-x86_64-unknown-linux" +
+                           targets +
+                           " -inputs=/dev/null" +
+                           inputs +
                            " -outputs=" + fatbinFilename;
 
-  mysystem(asmCmd.c_str(), "Assembly to .o file");
-  mysystem(lldCmd.c_str(), "Device .o file to .out file");
   mysystem(bundlerCmd.c_str(), ".out file to fatbin file");
 }
 
@@ -4712,9 +4732,11 @@ void makeBinaryLLVM(void) {
     preOptFilename = genIntermediateFilename("chpl__gpu_module-nopt.bc");
     opt1Filename = genIntermediateFilename("chpl__gpu_module-opt1.bc");
     opt2Filename = genIntermediateFilename("chpl__gpu_module-opt2.bc");
-    gpuObjectFilename = genIntermediateFilename("chpl__gpu.o");
     fatbinFilename = genIntermediateFilename("chpl__gpu.fatbin");
-    outFilename = genIntermediateFilename("chpl__gpu.out");
+
+    outFilename = genIntermediateFilename("chpl__gpu");
+    gpuObjectFilename = genIntermediateFilename("chpl__gpu");
+    // no .o suffix on that last two because we might generate multiple
 
     // This switch may seem unnecessary, but in the past we wanted to use a
     // different "type" of intermediate file for different GPUs and we may want
