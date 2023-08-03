@@ -258,7 +258,7 @@ const std::string templateUsage = R"RAW(**Usage**
    use $MODULE;
 
 
-or
+o
 
 .. code-block:: chapel
 
@@ -1909,6 +1909,45 @@ struct CommentVisitor {
 };
 
 /**
+ Visitor that BLAH BLAH BLAH
+*/
+struct ReportVisitor {
+  std::vector<const Function*> undocProcs;
+  Context* context_;
+
+  ReportVisitor(Context* context) : context_(context) {}
+
+  bool enter(const Function* node) {
+    auto comment = previousComment(context_, node->id());
+    if ((!isNoDoc(node)) && (node->visibility() != chpl::uast::Decl::PRIVATE) && (comment == nullptr)) {
+      undocProcs.push_back(node);
+    }
+    return false;
+  }
+
+  bool enter(const AstNode* node) {
+    return true;
+  }
+
+  void exit(const AstNode* node) {}
+};
+
+void printUndocProc(Context* context, ID id) {
+  int count = 0;
+  if (!id.isEmpty()) {
+    const AstNode* node = idToAst(context, id);
+    ReportVisitor visitor{context};
+    node->traverse(visitor);
+
+    for (auto proc : visitor.undocProcs) {
+        count++;
+        std::cout << "warning: undocumented public procedure " << count << " : '" << proc->name().c_str() << "'" << std::endl;
+    }
+  }
+  std::cout << count << " undocumented procedures." << std::endl;
+}
+
+/**
  Get a mapping from ID -> doc comment for an entire file. This mapping is only
  populated for IDs that can have a doc comment. We work at a file level here
  because the doc comment for a Module is its previous sibling
@@ -2361,10 +2400,13 @@ int main(int argc, char** argv) {
   }
 
   if (args.docreport) {
-    std::cout << "Found " << gather.modules.size() << " modules" << std::endl;
-    std::cout << std::endl;
+    args.noHTML = true;
+    for (auto id: gather.modules) {
+      printUndocProc(gContext, id);
+    }
   }
 
+//put this in new func so it doesn't run generateRST
   for (auto id : gather.modules) {
     if (auto& r = rstDoc(gContext, id)) {
         // given a module ID we can get the path to the file that we parsed
