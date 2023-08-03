@@ -2418,13 +2418,12 @@ for testname in testsrc:
                     if exec_status == 0:
                         sys.stdout.write('[Executing %s/test/computePerfStats %s %s %s %s %s %s]\n'%(utildir, perfexecname, perfdir, keyfile, execlog, str(exectimeout), perfdate))
                         sys.stdout.flush()
-                        stdout = run_process([utildir+'/test/computePerfStats',
-                                            perfexecname, perfdir, keyfile, execlog, str(exectimeout), perfdate],
-                                            stdout=subprocess.PIPE)[1]
+                        (status, stdout, _) = run_process([utildir+'/test/computePerfStats',
+                                                          perfexecname, perfdir, keyfile, execlog, str(exectimeout), perfdate],
+                                                          stdout=subprocess.PIPE)
                         sys.stdout.write('%s'%(stdout))
                         sys.stdout.flush()
 
-                        status = p.returncode
                         if not exectimeout and not launcher_error:
                             if status == 0:
                                 os.unlink(execlog)
