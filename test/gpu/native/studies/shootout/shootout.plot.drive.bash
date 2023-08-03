@@ -6,16 +6,17 @@ set -x -e
    \
   `#name           features  options          command`                         \
   `#-------------------------------------------------------------------------` \
-   01_flat            ""                      ./shootout.plot.gather.bash      \
-                                                                               \
-   02_flat_gasnet     gasnet  --prebuild "export CHPL_NO_CHECKS=n"             \
+   01_flat            ""      --prebuild "export CHPL_FAST=y"                  \
                                               ./shootout.plot.gather.bash      \
                                                                                \
-   03_gpu_cpu         nvidia  --prebuild "export CHPL_GPU=cpu; export CHPL_NO_CHECKS=n" \
+   02_flat_gasnet     gasnet  --prebuild "export CHPL_NO_CHECKS=n; export CHPL_FAST=y" \
+                                              ./shootout.plot.gather.bash      \
+                                                                               \
+   03_gpu_cpu         nvidia  --prebuild "export CHPL_GPU=cpu; export CHPL_NO_CHECKS=n; export CHPL_FAST=y" \
                                               ./shootout.plot.gather.bash      \
                                                                                \
    04_gpu             nvidia  --prebuild "export CHPL_NO_CHECKS=n; export CHPL_FAST=y" \
                                               ./shootout.plot.gather.bash      \
                                                                                \
-   05_gpu_w_spec      nvidia  --prebuild "export CHPL_NO_CHECKS=n; export CHPL_GPU_SPECIALIZATION=y" \
+   05_gpu_w_spec      nvidia  --prebuild "export CHPL_NO_CHECKS=n; export CHPL_GPU_SPECIALIZATION=y; export CHPL_FAST=y" \
                                               ./shootout.plot.gather.bash

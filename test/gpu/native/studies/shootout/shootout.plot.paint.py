@@ -45,5 +45,5 @@ def report(tbl, filename, ylim=None, shiftLineStyles=0):
 
 report(tbl_compile_times, '01__compile_time.png', ylim=(0,20))
 report(tbl_exec_times,    '02__exec_time.png', ylim=(0,7))
-report(tbl_nrm_compile_times, '03__nrm_compile_time.png', ylim=(1,3), shiftLineStyles=1)
-report(tbl_nrm_exec_times,    '04__nrm_exec_time.png', ylim=(1,20), shiftLineStyles=1)
+report(tbl_nrm_compile_times, '03__nrm_compile_time.png', ylim=(1,5), shiftLineStyles=1)
+report(tbl_nrm_exec_times,    '04__nrm_exec_time.png', ylim=(1,40), shiftLineStyles=1)
