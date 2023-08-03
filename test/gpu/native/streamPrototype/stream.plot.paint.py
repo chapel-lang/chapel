@@ -6,6 +6,8 @@ from chpl_plot import *
 
 tbls = load_tables()
 
+tbl_amd = None
+tbl_nvidia = None
 if 'amd' in tbls:
   tbl_amd = join(tbls['hip_baseline'], tbls['amd'], tbls['amd_aod']).with_title(
     'Stream on %s AMD GPU' % os.getenv('CHPL_GPU_ARCH'))
