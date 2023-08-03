@@ -322,7 +322,7 @@ This example demonstrates a Block-distributed sparse domain and array:
 
 pragma "ignore noinit"
 record Block {
-  param rank: int = 1;
+  param rank: int;
   type idxType = int;
   type sparseLayoutType = unmanaged DefaultDist;
   forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(
