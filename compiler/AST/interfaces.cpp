@@ -192,6 +192,14 @@ void InterfaceSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 // IfcConstraint
 //
 
+IfcConstraint* IfcConstraint::build(InterfaceSymbol* isym,
+                                    CallExpr* actuals) {
+  IfcConstraint* icon = new IfcConstraint(new SymExpr(isym));
+  for_alist(actual, actuals->argList)
+    icon->consActuals.insertAtTail(actual->remove());
+  return icon;
+}
+
 IfcConstraint* IfcConstraint::build(const char* name,
                                     CallExpr* actuals) {
   IfcConstraint* icon = new IfcConstraint(new UnresolvedSymExpr(name));

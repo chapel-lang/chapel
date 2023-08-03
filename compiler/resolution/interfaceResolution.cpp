@@ -1605,14 +1605,18 @@ static bool resolveRequiredFns(InterfaceSymbol* isym,  ImplementsStmt* istm,
 
 static void warnForImproperAutomaticImplements(InterfaceSymbol* isym,
                                                ImplementsStmt* istm,
-                                               Expr* addlSite) {
+                                               Expr* addlSite,
+                                               bool reportErrors) {
   if (istm->iConstraint->shouldBeGeneratedOnly) {
     // Issue temporary warning if using non-generated methods to satisfy
     // a generated interface.
     for (auto& sym : istm->witnesses.symWits) {
       if (auto fnWitness = toFnSymbol(sym.value)) {
         if (!fnWitness->hasFlag(FLAG_COMPILER_GENERATED)) {
-          debuggerBreakHere();
+          istm->iConstraint->entirelyGenerated = false;
+
+          if (!reportErrors) continue;
+
           USR_WARN(fnWitness, "automatically implementing interface %s for"
                               " type %s using user-provided procedure %s",
                               isym->name,
@@ -1654,7 +1658,7 @@ static bool resolveImplementsStmt(FnSymbol* wrapFn, ImplementsStmt* istm,
     // If so, we return successful implementation, i.e. we break recursion
     // by assuming success.
 
-    if (reportErrors) warnForImproperAutomaticImplements(isym, istm, addlSite);
+    warnForImproperAutomaticImplements(isym, istm, addlSite, reportErrors);
 
     IstmAndSuccess iss = implementsStmtForWrapperFn(wrapFn);
     // if isSuccess can legitimately be false, return it and remove the assert
@@ -1723,7 +1727,7 @@ static bool resolveImplementsStmt(FnSymbol* wrapFn, ImplementsStmt* istm,
     markImplStmtWrapFnAsFailure(wrapFn);
   } else {
     istm->iConstraint->shouldBeGeneratedOnly = generatedOnly;
-    if (reportErrors) warnForImproperAutomaticImplements(isym, istm, addlSite);
+    warnForImproperAutomaticImplements(isym, istm, addlSite, reportErrors);
   }
 
   return success;

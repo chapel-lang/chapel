@@ -29,20 +29,21 @@ module ChapelHashing {
     proc Self.hash(): uint;
   }
 
-  proc chpl__defaultHashWrapperCG(x: Hashable): int {
-    const hash = x.hash();
-    return (hash & max(int)): int;
-  }
-
   pragma "last resort"
   proc chpl__defaultHashWrapper(x): int {
     use Reflection;
-    if !canResolve("chpl__defaultHashWrapperCG", x) {
-      if canResolveMethod(x, "hash") then
-        compilerError(x.type:string + " has a hash function, but does not implement Hashable");
-      compilerError("the type '" + x.type:string + "' is not Hashable");
-    }
-    return chpl__defaultHashWrapperCG(x);
+
+    if !canResolveMethod(x, "hash") then
+      compilerError("No hash function found for " + x.type:string);
+
+    if __primitive("implements interface", x, Hashable) == 2 then
+        compilerWarning(x.type:string + " has a hash function that is being ",
+                        "used by the standard library. However, " + x.type:string +
+                        " does not implement Hashable. ",
+                        "In the future, this will result in an error.");
+
+    const hash = x.hash();
+    return (hash & max(int)): int;
   }
 
   // Mix the bits, so that e.g. numbers in 0..N generate

@@ -1,2 +1,1 @@
-user-hash-no-implements.chpl:6: warning: automatically implementing interface Hashable for type R using user-provided procedure hash
-note: in future releases, user-provided procedures will not cause Hashable to be automatically implemented
+user-hash-no-implements.chpl:14: warning: R has a hash function that is being used by the standard library. However, R does not implement Hashable. In the future, this will result in an error.

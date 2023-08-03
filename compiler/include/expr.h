@@ -227,6 +227,8 @@ class NamedExpr final : public Expr {
 //
 class IfcConstraint final : public Expr {
 public:
+  static IfcConstraint* build(InterfaceSymbol*,
+                              CallExpr* actuals);
   static IfcConstraint* build(const char* name,
                               CallExpr* actuals);
   IfcConstraint(Expr* iifc);
@@ -251,6 +253,9 @@ public:
   // procedures, such as Hashable. Long-term, these should only use
   // compiler-generated procedures, and not allow user-supplied ones.
   bool shouldBeGeneratedOnly = false;
+  // false if this interface should be generated only AND it has a non-generated
+  // witness.
+  bool entirelyGenerated = true;
 
   Expr* interfaceExpr;  // UnresolvedSymExpr -> SymExpr(InterfaceSymbol)
   AList consActuals;    // Exprs -> SymExprs of the constraint's actuals
