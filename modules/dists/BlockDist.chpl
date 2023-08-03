@@ -350,7 +350,7 @@ record Block {
   }
 
   proc init(_pid : int, _instance, _unowned : bool) {
-    compilerWarning("*** " + _instance.rank:string + " " + _instance.idxType:string);
+//    compilerWarning("*** " + _instance.rank:string + " " + _instance.idxType:string);
     this.rank = _instance.rank;
     this.idxType = _instance.idxType;
     this.sparseLayoutType = _instance.sparseLayoutType;
@@ -390,6 +390,10 @@ record Block {
   @chpldoc.nodoc
   inline operator !=(d1: Block(?), d2: Block(?)) {
     return !(d1 == d2);
+  }
+
+  proc writeThis(x) {
+    chpl_distHelp.writeThis(x);
   }
 }
 
@@ -894,7 +898,7 @@ proc LocBlock.init(param rank, type idxType, param dummy: bool) where dummy {
 ////// BlockDom and LocBlockDom methods /////////////////////////////////////
 
 proc BlockDom.dsiGetDist() {
-  compilerWarning("*** " + dist.rank:string + " " + dist.idxType:string);
+//  compilerWarning("*** " + dist.rank:string + " " + dist.idxType:string);
   if _isPrivatized(dist) then
     return new Block(dist.pid, dist, _unowned=true);
   else

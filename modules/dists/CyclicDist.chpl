@@ -251,6 +251,10 @@ record Cyclic {
   inline operator !=(d1: Cyclic(?), d2: Cyclic(?)) {
     return !(d1 == d2);
   }
+
+  proc writeThis(x) {
+    chpl_distHelp.writeThis(x);
+  }
 }
 
 
