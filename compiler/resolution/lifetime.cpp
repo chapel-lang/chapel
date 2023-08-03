@@ -656,7 +656,7 @@ static constraint_t mergeConstraints(constraint_t a, constraint_t b, bool& inval
 static constraint_t orderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b)
 {
   if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isNamed(",")) {
+    if (call->isNamedAstr(astrScomma)) {
       constraint_t v1, v2, res;
       bool invalid = false;
       res = CONSTRAINT_UNKNOWN;
@@ -694,15 +694,15 @@ static constraint_t orderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b)
         if (a == rhs && b == lhs)
           invert = true;
 
-        if (call->isNamed("=="))
+        if (call->isNamedAstr(astrSeq))
           return CONSTRAINT_EQUAL;
-        else if (call->isNamed("<"))
+        else if (call->isNamedAstr(astrSlt))
           return invert?CONSTRAINT_GREATER:CONSTRAINT_LESS;
-        else if (call->isNamed("<=") || call->isNamed("="))
+        else if (call->isNamedAstr(astrSlte) || call->isNamedAstr(astrSassign))
           return invert?CONSTRAINT_GREATER_EQ:CONSTRAINT_LESS_EQ;
-        else if (call->isNamed(">"))
+        else if (call->isNamedAstr(astrSgt))
           return invert?CONSTRAINT_LESS:CONSTRAINT_GREATER;
-        else if (call->isNamed(">="))
+        else if (call->isNamedAstr(astrSgte))
           return invert?CONSTRAINT_LESS_EQ:CONSTRAINT_GREATER_EQ;
         else
           INT_FATAL("Unhandled case");
@@ -730,7 +730,7 @@ static constraint_t orderConstraintFromClause(FnSymbol* fn, Symbol* a, Symbol* b
 static Symbol* returnLifetimeFromClause(Expr* expr) {
 
   if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isNamed(",")) {
+    if (call->isNamedAstr(astrScomma)) {
       Symbol* v1 = NULL;
       Symbol* v2 = NULL;
       v1 = returnLifetimeFromClause(call->get(1));
@@ -776,7 +776,7 @@ static bool isOuterVariable(FnSymbol* fn, Symbol* var) {
 
 static bool isOuterLifetimeFromClause(LifetimeState& lifetimes, ArgSymbol* arg, Expr* clausePart) {
   if (CallExpr* call = toCallExpr(clausePart)) {
-    if (call->isNamed(",")) {
+    if (call->isNamedAstr(astrScomma)) {
       bool partOne = isOuterLifetimeFromClause(lifetimes, arg, call->get(1));
       bool partTwo = isOuterLifetimeFromClause(lifetimes, arg, call->get(2));
       if (partOne || partTwo)
@@ -802,16 +802,16 @@ static bool isOuterLifetimeFromClause(LifetimeState& lifetimes, ArgSymbol* arg, 
 
       // arg > outerVariable
       if (lhs == arg && rhsOuter &&
-          (call->isNamed("==") ||
-           call->isNamed(">") ||
-           call->isNamed(">=")))
+          (call->isNamedAstr(astrSeq) ||
+           call->isNamedAstr(astrSgt) ||
+           call->isNamedAstr(astrSgte)))
         return true;
 
       // outerVariable > arg
       if (rhs == arg && lhsOuter &&
-          (call->isNamed("==") ||
-           call->isNamed("<") ||
-           call->isNamed("<=") || call->isNamed("=")))
+          (call->isNamedAstr(astrSeq) ||
+           call->isNamedAstr(astrSlt) ||
+           call->isNamedAstr(astrSlte) || call->isNamedAstr(astrSassign)))
         return true;
     }
   }
@@ -831,7 +831,7 @@ static bool isOuterLifetimeFromClause(LifetimeState& lifetimes, ArgSymbol* arg)
 static void printOrderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b)
 {
   if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isNamed(",")) {
+    if (call->isNamedAstr(astrScomma)) {
       printOrderConstraintFromClause(call->get(1), a, b);
       printOrderConstraintFromClause(call->get(2), a, b);
     } else {
@@ -2435,10 +2435,10 @@ void InferLifetimesVisitor::inferLifetimesForConstraint(CallExpr* forCall) {
 
 void InferLifetimesVisitor::inferLifetimesForConstraint(CallExpr* forCall, Expr* constraintExpr) {
   if (CallExpr* constraint = toCallExpr(constraintExpr)) {
-    if (constraint->isNamed(",")) {
+    if (constraint->isNamedAstr(astrScomma)) {
       inferLifetimesForConstraint(forCall, constraint->get(1));
       inferLifetimesForConstraint(forCall, constraint->get(2));
-    } else if (constraint->isNamed("=")) {
+    } else if (constraint->isNamedAstr(astrSassign)) {
       Expr* a = constraint->get(1);
       Expr* b = constraint->get(2);
       ArgSymbol* constraintLhs = NULL;

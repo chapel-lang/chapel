@@ -549,7 +549,7 @@ static void fsDestructureIndices(ForallStmt* fs, Expr* indices) {
   }
 
   if (CallExpr* indicesCall = toCallExpr(indices)) {
-    INT_ASSERT(indicesCall->isNamed("_build_tuple")); // ensured by checkIndices()
+    INT_ASSERT(indicesCall->isNamedAstr(astrBuildTuple)); // ensured by checkIndices()
 
     if (numIterables == 0)
       ; // If overTupleExpand(), we will check this later during resolution.
@@ -622,7 +622,7 @@ ForallStmt* ForallStmt::buildHelper(Expr* indices, Expr* iterator,
 // and just use checkIndices
 static void checkIndicesForall(BaseAST* indices) {
   if (CallExpr* call = toCallExpr(indices)) {
-    if (!call->isNamed("_build_tuple"))
+    if (!call->isNamedAstr(astrBuildTuple))
       USR_FATAL(indices, "invalid index expression");
     for_actuals(actual, call)
       checkIndicesForall(actual);
