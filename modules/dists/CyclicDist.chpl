@@ -188,7 +188,6 @@ pragma "ignore noinit"
 record Cyclic {
   param rank: int;
   type idxType = int;
-  type sparseLayoutType = unmanaged DefaultDist;
   forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(unmanaged CyclicImpl(rank, idxType));
 
   proc init(startIdx,
@@ -197,8 +196,7 @@ record Cyclic {
             dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
             dataParMinGranularity=getDataParMinGranularity(),
             param rank = _determineRankFromStartIdx(startIdx),
-            type idxType = _determineIdxTypeFromStartIdx(startIdx)
-            , type sparseLayoutType = unmanaged DefaultDist)
+            type idxType = _determineIdxTypeFromStartIdx(startIdx))
     where isTuple(startIdx) || isIntegral(startIdx)
   {
     const value = new unmanaged CyclicImpl(startIdx, targetLocales,
@@ -206,11 +204,9 @@ record Cyclic {
                                           dataParIgnoreRunningTasks,
                                           dataParMinGranularity,
                                           rank, idxType
-                                          /*,_to_unmanaged(sparseLayoutType)*/
                                           );
     this.rank = rank;
     this.idxType = idxType;
-    this.sparseLayoutType = sparseLayoutType;
     this.chpl_distHelp = new chpl_PrivatizedDistHelper(
                           if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid,
                                                        value);
