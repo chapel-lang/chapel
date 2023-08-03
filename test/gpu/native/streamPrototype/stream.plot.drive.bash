@@ -16,10 +16,10 @@ set -x -e
                                                                                \
    nvidia          nvidia                    ./stream.plot.gather.chpl.bash    \
                                                                                \
-   amd             amd                       ./stream.plot.gather.chpl.bash    \
-                                                                               \
    nvidia_aod      nvidia:aod                ./stream.plot.gather.chpl.bash    \
                                                                                \
-   amd_aod         amd      --prebuild "export CHPL_GPU_MEM_STRATEGY=array_on_device" \
+   amd             amd                       ./stream.plot.gather.chpl.bash    \
+                                                                               \
+   amd_aod         amd:aod  --prebuild "export CHPL_GPU_MEM_STRATEGY=array_on_device" \
                                              ./stream.plot.gather.chpl.bash    \
 
