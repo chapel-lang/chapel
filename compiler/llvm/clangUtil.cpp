@@ -4560,7 +4560,7 @@ static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
     std::string ptxCmd = std::string("ptxas -m64 --gpu-name ") + gpuArch +
                          " " + ptxasFlags + " " +
                          std::string(" --output-file ") +
-                         gpuObjectFilename.c_str() +
+                         gpuObject.c_str() +
                          " " + artifactFilename.c_str();
     mysystem(ptxCmd.c_str(), "PTX to object file");
 
