@@ -325,8 +325,8 @@ record Block {
   param rank: int;
   type idxType = int;
   type sparseLayoutType = unmanaged DefaultDist;
-  forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(
-                                                            unmanaged BlockGuts(rank, idxType, _to_unmanaged(sparseLayoutType)));
+
+  forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(unmanaged BlockGuts(rank, idxType, _to_unmanaged(sparseLayoutType)));
 
   proc init(boundingBox: domain,
             targetLocales: [] locale = Locales,
@@ -336,6 +336,7 @@ record Block {
             param rank = boundingBox.rank,
             type idxType = boundingBox.idxType,
             type sparseLayoutType = unmanaged DefaultDist) {
+
     const value = new unmanaged BlockGuts(boundingBox, targetLocales,
                                           dataParTasksPerLocale,
                                           dataParIgnoreRunningTasks,
@@ -343,42 +344,40 @@ record Block {
                                           rank, idxType, _to_unmanaged(sparseLayoutType));
     this.rank = rank;
     this.idxType = idxType;
-    this.sparseLayoutType = sparseLayoutType;
+    this.sparseLayoutType = _to_unmanaged(sparseLayoutType);
     this.chpl_distHelp = new chpl_PrivatizedDistHelper(
-                                                       if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid,
+                          if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid,
                                                        value);
   }
 
-  proc init(_pid : int, _instance, _unowned : bool) {
-//    compilerWarning("*** " + _instance.rank:string + " " + _instance.idxType:string);
-    this.rank = _instance.rank;
-    this.idxType = _instance.idxType;
-    this.sparseLayoutType = _instance.sparseLayoutType;
-    this.chpl_distHelp = new chpl_PrivatizedDistHelper(
-                                                       _pid,
-                                                       _instance,
-                                                       _unowned);
-  }
+    proc init(_pid : int, _instance, _unowned : bool) {
+      this.rank = _instance.rank;
+      this.idxType = _instance.idxType;
+      this.sparseLayoutType = _instance.sparseLayoutType;
+      this.chpl_distHelp = new chpl_PrivatizedDistHelper(_pid,
+                                                         _instance,
+                                                         _unowned);
+    }
 
-  proc init(value) {
-    this.rank = value.rank;
-    this.idxType = value.idxType;
-    this.sparseLayoutType = value.sparseLayoutType;
-    this.chpl_distHelp = new chpl_PrivatizedDistHelper(
-                                                       if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid,
-                                                       _to_unmanaged(value));
-  }
+    proc init(value) {
+      this.rank = value.rank;
+      this.idxType = value.idxType;
+      this.sparseLayoutType = value.sparseLayoutType;
+      this.chpl_distHelp = new chpl_PrivatizedDistHelper(
+                                                         if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid,
+                                                         _to_unmanaged(value));
+    }
 
-  // Note: This does not handle the case where the desired type of 'this'
-  // does not match the type of 'other'. That case is handled by the compiler
-  // via coercions.
-  proc init=(const ref other : Block(?)) {
-    this.init(other._value.dsiClone());
-  }
+    // Note: This does not handle the case where the desired type of 'this'
+    // does not match the type of 'other'. That case is handled by the compiler
+    // via coercions.
+    proc init=(const ref other : Block(?)) {
+      this.init(other._value.dsiClone());
+    }
 
-  proc clone() {
-    return new Block(this._value.dsiClone());
-  }
+    proc clone() {
+      return new Block(this._value.dsiClone());
+    }
 
   @chpldoc.nodoc
   inline operator ==(d1: Block(?), d2: Block(?)) {

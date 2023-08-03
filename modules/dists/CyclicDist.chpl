@@ -188,6 +188,8 @@ pragma "ignore noinit"
 record Cyclic {
   param rank: int;
   type idxType = int;
+
+
   forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(unmanaged CyclicImpl(rank, idxType));
 
   proc init(startIdx,
@@ -200,45 +202,47 @@ record Cyclic {
     where isTuple(startIdx) || isIntegral(startIdx)
   {
     const value = new unmanaged CyclicImpl(startIdx, targetLocales,
-                                          dataParTasksPerLocale,
-                                          dataParIgnoreRunningTasks,
-                                          dataParMinGranularity,
-                                          rank, idxType
+                                           dataParTasksPerLocale,
+                                           dataParIgnoreRunningTasks,
+                                           dataParMinGranularity,
+                                           rank, idxType
                                           );
     this.rank = rank;
     this.idxType = idxType;
+
     this.chpl_distHelp = new chpl_PrivatizedDistHelper(
                           if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid,
                                                        value);
   }
 
-  proc init(_pid : int, _instance, _unowned : bool) {
-    this.rank = _instance.rank;
-    this.idxType = _instance.idxType;
-    this.chpl_distHelp = new chpl_PrivatizedDistHelper(
-                                                       _pid,
-                                                       _instance,
-                                                       _unowned);
-  }
+    proc init(_pid : int, _instance, _unowned : bool) {
+      this.rank = _instance.rank;
+      this.idxType = _instance.idxType;
 
-  proc init(value) {
-    this.rank = value.rank;
-    this.idxType = value.idxType;
-    this.chpl_distHelp = new chpl_PrivatizedDistHelper(
-                                                       if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid,
-                                                       _to_unmanaged(value));
-  }
+      this.chpl_distHelp = new chpl_PrivatizedDistHelper(_pid,
+                                                         _instance,
+                                                         _unowned);
+    }
 
-  // Note: This does not handle the case where the desired type of 'this'
-  // does not match the type of 'other'. That case is handled by the compiler
-  // via coercions.
-  proc init=(const ref other : Cyclic(?)) {
-    this.init(other._value.dsiClone());
-  }
+    proc init(value) {
+      this.rank = value.rank;
+      this.idxType = value.idxType;
 
-  proc clone() {
-    return new Cyclic(this._value.dsiClone());
-  }
+      this.chpl_distHelp = new chpl_PrivatizedDistHelper(
+                                                         if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid,
+                                                         _to_unmanaged(value));
+    }
+
+    // Note: This does not handle the case where the desired type of 'this'
+    // does not match the type of 'other'. That case is handled by the compiler
+    // via coercions.
+    proc init=(const ref other : Cyclic(?)) {
+      this.init(other._value.dsiClone());
+    }
+
+    proc clone() {
+      return new Cyclic(this._value.dsiClone());
+    }
 
   @chpldoc.nodoc
   inline operator ==(d1: Cyclic(?), d2: Cyclic(?)) {
