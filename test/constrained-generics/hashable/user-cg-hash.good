@@ -1,0 +1,2 @@
+user-cg-hash.chpl:4: warning: automatically implementing interface Hashable for type R using user-provided procedure hash
+note: in future releases, user-provided procedures will not cause Hashable to be automatically implemented

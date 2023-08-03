@@ -66,6 +66,8 @@ bool       isTupleContainingAnyReferences(Type* t);
 
 void       ensureEnumTypeResolved(EnumType* etype);
 
+bool       tryingToResolve();
+
 void       resolveFnForCall(FnSymbol* fn, CallExpr* call);
 FnSymbol*  tryResolveFunction(FnSymbol* fn);
 
@@ -184,6 +186,11 @@ Expr* resolveCallToAssociatedType(CallExpr* call, ConstrainedType* recv);
 struct ConstraintSat { ImplementsStmt* istm; IfcConstraint* icon; int indx;
   ConstraintSat(ImplementsStmt* s): istm(s), icon(0), indx(0) { }
   ConstraintSat(IfcConstraint* c, int i): istm(0), icon(c), indx(i) { } };
+ConstraintSat trySatisfyConstraintAtCallsite(CallExpr*      callsite,
+                                             Expr*          addlSite,
+                                             IfcConstraint* constraint,
+                                             SymbolMap&     substitutions);
+bool tryingToImplementInterface();
 ConstraintSat constraintIsSatisfiedAtCallSite(CallExpr* call, Expr* addlSite,
                                               IfcConstraint* constraint,
                                               SymbolMap& substitutions);

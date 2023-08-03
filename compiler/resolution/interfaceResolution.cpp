@@ -79,6 +79,8 @@ static void cgprintAssocConstraint(IfcConstraint* icon) {
 #define cgprintAssocConstraint(...)
 #endif
 
+static int inImplementsInterface = 0;
+
 static void cleanupHolder(BlockStmt* holder) {
   do { holder->body.tail->remove(); } while (holder->body.tail != NULL);
 }
@@ -1605,8 +1607,7 @@ static bool resolveRequiredFns(InterfaceSymbol* isym,  ImplementsStmt* istm,
 
 static void warnForImproperAutomaticImplements(InterfaceSymbol* isym,
                                                ImplementsStmt* istm,
-                                               Expr* addlSite,
-                                               bool reportErrors) {
+                                               Expr* addlSite) {
   if (istm->iConstraint->shouldBeGeneratedOnly) {
     // Issue temporary warning if using non-generated methods to satisfy
     // a generated interface.
@@ -1615,7 +1616,8 @@ static void warnForImproperAutomaticImplements(InterfaceSymbol* isym,
         if (!fnWitness->hasFlag(FLAG_COMPILER_GENERATED)) {
           istm->iConstraint->entirelyGenerated = false;
 
-          if (!reportErrors) continue;
+          // If we're speciulating, don't issue the warning.
+          if (tryingToResolve() || tryingToImplementInterface()) continue;
 
           USR_WARN(fnWitness, "automatically implementing interface %s for"
                               " type %s using user-provided procedure %s",
@@ -1658,7 +1660,7 @@ static bool resolveImplementsStmt(FnSymbol* wrapFn, ImplementsStmt* istm,
     // If so, we return successful implementation, i.e. we break recursion
     // by assuming success.
 
-    warnForImproperAutomaticImplements(isym, istm, addlSite, reportErrors);
+    warnForImproperAutomaticImplements(isym, istm, addlSite);
 
     IstmAndSuccess iss = implementsStmtForWrapperFn(wrapFn);
     // if isSuccess can legitimately be false, return it and remove the assert
@@ -1727,7 +1729,7 @@ static bool resolveImplementsStmt(FnSymbol* wrapFn, ImplementsStmt* istm,
     markImplStmtWrapFnAsFailure(wrapFn);
   } else {
     istm->iConstraint->shouldBeGeneratedOnly = generatedOnly;
-    warnForImproperAutomaticImplements(isym, istm, addlSite, reportErrors);
+    warnForImproperAutomaticImplements(isym, istm, addlSite);
   }
 
   return success;
@@ -2159,6 +2161,20 @@ ConstraintSat constraintIsSatisfiedAtCallSite(CallExpr*      callsite,
 
   // It is resolved, if non-null.
   return ConstraintSat(bestIstm);;
+}
+
+ConstraintSat trySatisfyConstraintAtCallsite(CallExpr*      callsite,
+                                             Expr*          addlSite,
+                                             IfcConstraint* constraint,
+                                             SymbolMap&     substitutions) {
+  inImplementsInterface++;
+  auto result = constraintIsSatisfiedAtCallSite(callsite, addlSite, constraint, substitutions);
+  inImplementsInterface--;
+  return result;
+}
+
+bool tryingToImplementInterface() {
+  return inImplementsInterface > 0;
 }
 
 static ImplementsStmt* findSatisfyingIstm(InterfaceSymbol* isym,

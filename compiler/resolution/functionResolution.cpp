@@ -239,6 +239,9 @@ static bool useLegacyNilability(Symbol* at) {
   return false;
 }
 
+bool tryingToResolve() {
+  return inTryResolve > 0;
+}
 
 //
 // Invoke resolveFunction(fn) with 'call' on top of 'callStack'.

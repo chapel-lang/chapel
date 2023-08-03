@@ -990,8 +990,8 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     auto newConstraint =
       IfcConstraint::build(interface, new CallExpr(PRIM_ACTUALS_LIST, type));
     SymbolMap substitutions;
-    auto cs = constraintIsSatisfiedAtCallSite(call, nullptr, newConstraint,
-                                              substitutions);
+    auto cs = trySatisfyConstraintAtCallsite(call, nullptr, newConstraint,
+                                             substitutions);
 
     // return one of three values:
     // 0 - found a user-specified interface
