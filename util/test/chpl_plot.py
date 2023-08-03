@@ -674,6 +674,12 @@ class TableCollection():
   def __getitem__(self, name):
     return self.tables[name]
 
+  def __contains__(self, key):
+    return key in self.tables
+
+  def keys(self):
+    return self.tables.keys()
+
   def md(self, *args):
     """ Print all tables in .md """
     return "\n\n".join(map(lambda tbl: tbl.md(*args), self.tables.values()))
