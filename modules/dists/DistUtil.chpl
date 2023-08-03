@@ -19,10 +19,10 @@
  */
 
 record chpl_PrivatizedDistHelper {
-  type instanceType;
+//  type instanceType;
   var _pid:int;  // only used when privatized
   pragma "owned"
-  var _instance: instanceType;
+  var _instance;
   var _unowned:bool; // 'true' for the result of 'getDistribution',
                      // in which case, the record destructor should
                      // not attempt to delete the _instance.

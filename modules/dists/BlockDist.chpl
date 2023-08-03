@@ -322,10 +322,10 @@ This example demonstrates a Block-distributed sparse domain and array:
 
 pragma "ignore noinit"
 record Block {
-  param rank: int;
+  param rank: int = 1;
   type idxType = int;
   type sparseLayoutType = unmanaged DefaultDist;
-  forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(//rank, idxType,
+  forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(
                                                             unmanaged BlockGuts(rank, idxType, _to_unmanaged(sparseLayoutType)));
 
   proc init(boundingBox: domain,
@@ -344,26 +344,27 @@ record Block {
     this.rank = rank;
     this.idxType = idxType;
     this.sparseLayoutType = sparseLayoutType;
-    this.chpl_distHelp = new chpl_PrivatizedDistHelper(//rank, idxType,
-                                                       value.type,
+    this.chpl_distHelp = new chpl_PrivatizedDistHelper(
                                                        if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid,
                                                        value);
   }
 
   proc init(_pid : int, _instance, _unowned : bool) {
     compilerWarning("*** " + _instance.rank:string + " " + _instance.idxType:string);
-    this.chpl_distHelp = new chpl_PrivatizedDistHelper(//_instance.rank,
-                                                       //_instance.idxType,
-                                                       BlockGuts(_instance.rank, _instance.idxType, _to_unmanaged(sparseLayoutType)),
+    this.rank = _instance.rank;
+    this.idxType = _instance.idxType;
+    this.sparseLayoutType = _instance.sparseLayoutType;
+    this.chpl_distHelp = new chpl_PrivatizedDistHelper(
                                                        _pid,
                                                        _instance,
                                                        _unowned);
   }
 
   proc init(value) {
-    this.chpl_distHelp = new chpl_PrivatizedDistHelper(//value.rank,
-                                                       //value.idxType,
-                                                       BlockGuts(value.rank, value.idxType, _to_unmanaged(sparseLayoutType)),
+    this.rank = value.rank;
+    this.idxType = value.idxType;
+    this.sparseLayoutType = value.sparseLayoutType;
+    this.chpl_distHelp = new chpl_PrivatizedDistHelper(
                                                        if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid,
                                                        _to_unmanaged(value));
   }

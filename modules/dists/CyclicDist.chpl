@@ -189,7 +189,7 @@ record Cyclic {
   param rank: int;
   type idxType = int;
   type sparseLayoutType = unmanaged DefaultDist;
-  forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(rank, idxType, sparseLayoutType, ?);
+  forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(unmanaged CyclicImpl(rank, idxType));
 
   proc init(startIdx,
             targetLocales: [] locale = Locales,
@@ -198,7 +198,7 @@ record Cyclic {
             dataParMinGranularity=getDataParMinGranularity(),
             param rank = _determineRankFromStartIdx(startIdx),
             type idxType = _determineIdxTypeFromStartIdx(startIdx)
-            /*, type sparseLayoutType = unmanaged DefaultDist*/)
+            , type sparseLayoutType = unmanaged DefaultDist)
     where isTuple(startIdx) || isIntegral(startIdx)
   {
     const value = new unmanaged CyclicImpl(startIdx, targetLocales,
@@ -208,24 +208,27 @@ record Cyclic {
                                           rank, idxType
                                           /*,_to_unmanaged(sparseLayoutType)*/
                                           );
-    this.chpl_distHelp = new chpl_PrivatizedDistHelper(rank, idxType, unmanaged DefaultDist,
-                                                       if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid,
+    this.rank = rank;
+    this.idxType = idxType;
+    this.sparseLayoutType = sparseLayoutType;
+    this.chpl_distHelp = new chpl_PrivatizedDistHelper(
+                          if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid,
                                                        value);
   }
 
   proc init(_pid : int, _instance, _unowned : bool) {
-    this.chpl_distHelp = new chpl_PrivatizedDistHelper(_instance.rank,
-                                                       _instance.idxType,
-                                                       unmanaged DefaultDist,
+    this.rank = _instance.rank;
+    this.idxType = _instance.idxType;
+    this.chpl_distHelp = new chpl_PrivatizedDistHelper(
                                                        _pid,
                                                        _instance,
                                                        _unowned);
   }
 
   proc init(value) {
-    this.chpl_distHelp = new chpl_PrivatizedDistHelper(value.rank,
-                                                       value.idxType,
-                                                       unmanaged DefaultDist,
+    this.rank = value.rank;
+    this.idxType = value.idxType;
+    this.chpl_distHelp = new chpl_PrivatizedDistHelper(
                                                        if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid,
                                                        _to_unmanaged(value));
   }
