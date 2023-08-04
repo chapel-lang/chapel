@@ -561,6 +561,21 @@ proc testDirectory(dir, ref result, show: bool) throws {
   }
 }
 
+private proc testNameFromProcedureString(line: string): string {
+  var split = line.strip().split("{ ... }");
+  var sig = split[0].strip();
+
+  if !sig.startsWith("proc") then return "";
+  assert(sig.size > 4);
+
+  // E.g., in 'proc foo(...)', get 'foo'.
+  var str1 = sig.split("proc");
+  var str2 = str1[1].split("(");
+  var ret = str2[0].strip();
+
+  return ret;
+}
+
 @chpldoc.nodoc
 /*Docs: Todo*/
 proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales,
@@ -621,8 +636,8 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
     }
     else if sep1Found then testExecMsg += line;
     else {
-      if line.strip().endsWith("()") {
-        var testName = line.strip();
+      var testName = testNameFromProcedureString(line);
+      if !testName.isEmpty() {
         if currentRunningTests.count(testName) == 0 {
           currentRunningTests.pushBack(testName);
           if testNames.count(testName) == 0 then
@@ -649,9 +664,10 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
   }
   exec.wait();//wait till the subprocess is complete
   exitCode = exec.exitCode;
-  if haltOccured then
+  if haltOccured {
     exitCode = runAndLog(executable, fileName, result, reqNumLocales, testsPassed,
               testNames, localesCountMap, failedTestNames, erroredTestNames, skippedTestNames, show);
+  }
   if testNames.size != 0 {
     var maxCount = -1;
     for key in localesCountMap.keys() {
