@@ -965,7 +965,7 @@ void chpl_comm_rollcall(void) {
   // Initialize diags
   chpl_comm_diags_init();
 
-  chpl_msg(2, "executing on node %d of %d node(s): %s\n", chpl_nodeID,
+  chpl_msg(2, "executing locale %d of %d on node '%s'\n", chpl_nodeID,
            chpl_numNodes, chpl_nodeName());
 }
 

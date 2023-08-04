@@ -19,7 +19,7 @@ class MyClass0 {
   }
 }
 
-class MyClass1 : MyClass0 {
+class MyClass1 : MyClass0(?) {
   var a1;
   var b1;
 

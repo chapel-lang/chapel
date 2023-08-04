@@ -286,7 +286,8 @@ static void genGlobalRawString(const char *cname, std::string &value, size_t len
 #endif
 
 static void
-genGlobalInt(const char* cname, int value, bool isHeader) {
+genGlobalInt(const char* cname, int value, bool isHeader,
+             bool isConstant=true) {
   GenInfo* info = gGenInfo;
   if( info->cfile ) {
     if(isHeader)
@@ -299,7 +300,7 @@ genGlobalInt(const char* cname, int value, bool isHeader) {
         info->module->getOrInsertGlobal(
           cname, llvm::IntegerType::getInt32Ty(info->module->getContext())));
     globalInt->setInitializer(info->irBuilder->getInt32(value));
-    globalInt->setConstant(true);
+    globalInt->setConstant(isConstant);
     info->lvt->addGlobalValue(cname, globalInt, GEN_PTR, false, dtInt[INT_SIZE_32]);
 #endif
   }
@@ -2047,6 +2048,20 @@ static void codegen_header_addons() {
   }
 }
 
+#ifdef HAVE_LLVM
+// this is used in passing string arguments to config variable handlers in the
+// runtime. We can expand/copy it to C backend, but that doesn't seem to be too
+// repetitive as of today.
+static llvm::Value* genStringArg(const char* str) {
+  GenInfo* info = gGenInfo;
+  GenRet gen = new_CStringSymbol(str)->codegen();
+  llvm::Type* eltType = tryComputingPointerElementType(gen.val);
+  INT_ASSERT(eltType); // it should have been a global variable
+  return info->irBuilder->CreateLoad(eltType, gen.val);
+}
+#endif
+
+
 static void
 codegen_config() {
   GenInfo* info = gGenInfo;
@@ -2065,6 +2080,7 @@ codegen_config() {
 
     genGlobalInt("mainHasArgs", mainHasArgs, false);
     genGlobalInt("mainPreserveDelimiter", mainPreserveDelimiter, false);
+    genGlobalInt("warnUnstable", fWarnUnstable, false);
 
     fprintf(outfile, "void CreateConfigVarTable(void) {\n");
     fprintf(outfile, "initConfigVarTable();\n");
@@ -2088,7 +2104,11 @@ codegen_config() {
         fprintf(outfile,", /* private = */ %d", var->hasFlag(FLAG_PRIVATE));
         fprintf(outfile,", /* deprecated = */ %d",
                 var->hasFlag(FLAG_DEPRECATED));
-        fprintf(outfile,", \"%s\");\n", var->getDeprecationMsg());
+        fprintf(outfile,", \"%s\"\n", var->getDeprecationMsg());
+        fprintf(outfile,", /* unstable = */ %d",
+                var->hasFlag(FLAG_UNSTABLE));
+        fprintf(outfile,", \"%s\"\n", var->getUnstableMsg());
+        fprintf(outfile,");\n");
 
       }
     }
@@ -2106,6 +2126,7 @@ codegen_config() {
     llvm::Function *createConfigFunc;
     genGlobalInt("mainHasArgs", mainHasArgs, false);
     genGlobalInt("mainPreserveDelimiter", mainPreserveDelimiter, false);
+    genGlobalInt("warnUnstable", fWarnUnstable, false);
     if((createConfigFunc = getFunctionLLVM("CreateConfigVarTable"))) {
       createConfigType = createConfigFunc->getFunctionType();
     }
@@ -2130,7 +2151,7 @@ codegen_config() {
 
     forv_expanding_Vec(VarSymbol, var, gVarSymbols) {
       if (var->hasFlag(FLAG_CONFIG) && !var->isType()) {
-        std::vector<llvm::Value *> args (6);
+        std::vector<llvm::Value *> args (8);
         {
           GenRet gen = new_CStringSymbol(var->name)->codegen();
           llvm::Type* eltType = tryComputingPointerElementType(gen.val);
@@ -2148,35 +2169,20 @@ codegen_config() {
         if (type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
           type = type->getField("addr")->type;
         }
-        {
-          GenRet gen = new_CStringSymbol(type->symbol->name)->codegen();
-          llvm::Type* eltType = tryComputingPointerElementType(gen.val);
-          INT_ASSERT(eltType); // it should have been a global variable
-          args[1] = info->irBuilder->CreateLoad(eltType, gen.val);
-        }
+        args[1] = genStringArg(type->symbol->name);
 
         if (var->getModule()->modTag == MOD_INTERNAL) {
-          GenRet gen = new_CStringSymbol("Built-in")->codegen();
-          llvm::Type* eltType = tryComputingPointerElementType(gen.val);
-          INT_ASSERT(eltType); // it should have been a global variable
-          args[2] = info->irBuilder->CreateLoad(eltType, gen.val);
+          args[2] = genStringArg("Built-in");
         }
         else {
-          GenRet gen = new_CStringSymbol(var->getModule()->name)->codegen();
-          llvm::Type* eltType = tryComputingPointerElementType(gen.val);
-          INT_ASSERT(eltType); // it should have been a global variable
-          args[2] = info->irBuilder->CreateLoad(eltType, gen.val);
+          args[2] = genStringArg(var->getModule()->name);
         }
-
         args[3] = info->irBuilder->getInt32(var->hasFlag(FLAG_PRIVATE));
-
         args[4] = info->irBuilder->getInt32(var->hasFlag(FLAG_DEPRECATED));
-        {
-          GenRet gen = new_CStringSymbol(var->getDeprecationMsg())->codegen();
-          llvm::Type* eltType = tryComputingPointerElementType(gen.val);
-          INT_ASSERT(eltType); // it should have been a global variable
-          args[5] = info->irBuilder->CreateLoad(eltType, gen.val);
-        }
+        args[5] = genStringArg(var->getDeprecationMsg());
+        args[6] = info->irBuilder->getInt32(var->hasFlag(FLAG_UNSTABLE));
+        args[7] = genStringArg(var->getUnstableMsg());
+
         info->irBuilder->CreateCall(installConfigFunc, args);
       }
     }
@@ -2552,7 +2558,7 @@ static void embedGpuCode() {
 }
 
 static void codegenGpuGlobals() {
-  genGlobalInt("chpl_nodeID", 0, false);
+  genGlobalInt("chpl_nodeID", -1, false, false);
 }
 #endif
 

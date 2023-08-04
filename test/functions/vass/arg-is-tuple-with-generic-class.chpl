@@ -1,4 +1,4 @@
-class TestDom: BaseSparseDom {
+class TestDom: BaseSparseDom(?) {
   param rank_ : int;
   type idxType_;
   var parentDom_;

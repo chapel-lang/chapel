@@ -269,7 +269,7 @@ proc testArray(truth : [?Dom] ?t, check : [Dom] t, src : string) {
       otherwise {atol=0.0; rtol=1.0e-5;} // Use some random defaults
   }
   for (ndx, t1, c1) in zip(Dom, truth, check) {
-    if !isclose(t1, c1, atol=atol, rtol=rtol) then
+    if !isClose(t1, c1, absTol=atol, relTol=rtol) then
       writeln("Expected ", t1, " != obtained ", c1, " at index ", ndx, " in ",src);
   }
 }

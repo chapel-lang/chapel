@@ -290,6 +290,7 @@ int  chpl_comm_ofi_oob_locales_on_node(int *localRank);
 
 void* chpl_comm_ofi_hp_get_huge_pages(size_t);
 size_t chpl_comm_ofi_hp_gethugepagesize(void);
+chpl_bool chpl_comm_ofi_hp_supported(void);
 
 
 //

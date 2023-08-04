@@ -251,7 +251,7 @@ module DistributedDeque {
     forwarding _value;
   }
 
-  class DistributedDequeImpl : CollectionImpl {
+  class DistributedDequeImpl : CollectionImpl(?) {
     /*
       Capacity, the maximum number of elements a Deque can hold. A `cap` of -1 is
       considered unbounded.

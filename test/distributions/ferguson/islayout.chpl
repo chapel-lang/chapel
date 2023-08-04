@@ -22,19 +22,19 @@ proc main() {
   var A:[1..3, 1..3] int;
 
   // check DR
-  assert(A.domain.dist.dsiIsLayout());
+  assert(A.domain.distribution.dsiIsLayout());
   // check slice
-  assert(A[1..3,1..2].domain.dist.dsiIsLayout());
+  assert(A[1..3,1..2].domain.distribution.dsiIsLayout());
   // check rank-change
-  assert(A[..,1].domain.dist.dsiIsLayout());
-  assert(A[1..3,1].domain.dist.dsiIsLayout());
+  assert(A[..,1].domain.distribution.dsiIsLayout());
+  assert(A[1..3,1].domain.distribution.dsiIsLayout());
   // check reindex
-  assert(A.reindex({0..2,0..2}).domain.dist.dsiIsLayout());
+  assert(A.reindex({0..2,0..2}).domain.distribution.dsiIsLayout());
 
   // check external array
   var ptr:c_ptr(int) = allocate(int, 1, clear=true);
   var B = makeArrayFromPtr(ptr, 1);
-  assert(B.domain.dist.dsiIsLayout());
+  assert(B.domain.distribution.dsiIsLayout());
 
   //make array from ptr creates an array that borrows the buffer. So, the
   //allocation needs to be cleaned up using the pointer.

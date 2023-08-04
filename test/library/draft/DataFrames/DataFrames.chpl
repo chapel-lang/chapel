@@ -409,6 +409,12 @@ module DataFrames {
     proc writeElemNoIndex(f, i: int, len: int) throws {
       halt("generic Series cannot be accessed");
     }
+
+    @chpldoc.nodoc
+    operator :(val: Series, type t: string) {
+      import IO.FormattedIO;
+      return try! "%?".format(val);
+    }
   }
 
   class TypedSeries : Series {
@@ -895,7 +901,7 @@ module DataFrames {
 
   // TODO: isNumericType prevents instantiation with bools
   // would prefer "is summable" type here
-  class SeriesAdd : SeriesUnifier {
+  class SeriesAdd : SeriesUnifier(?) {
     override
     proc f(lhs: eltType, rhs: eltType): eltType {
       if (isNumericType(eltType) || isStringType(eltType)) {
@@ -907,7 +913,7 @@ module DataFrames {
     }
   }
 
-  class SeriesSubtr : SeriesUnifier {
+  class SeriesSubtr : SeriesUnifier(?) {
     override
     proc f(lhs: eltType, rhs: eltType): eltType {
       if isNumericType(eltType) {
@@ -928,7 +934,7 @@ module DataFrames {
     }
   }
 
-  class SeriesMult : SeriesUnifier {
+  class SeriesMult : SeriesUnifier(?) {
     override
     proc f(lhs: eltType, rhs: eltType): eltType {
       if isNumericType(eltType) {
@@ -967,7 +973,7 @@ module DataFrames {
     }
   }
 
-  class SeriesCompareScalar : SeriesMapper {
+  class SeriesCompareScalar : SeriesMapper(?) {
     var x: eltType;
 
     proc init(x) {
@@ -976,7 +982,7 @@ module DataFrames {
     }
   }
 
-  class SeriesLessThan : SeriesCompareScalar {
+  class SeriesLessThan : SeriesCompareScalar(?) {
     proc init(x) {
       super.init(x);
     }
@@ -987,7 +993,7 @@ module DataFrames {
     }
   }
 
-  class SeriesGreaterThan : SeriesCompareScalar {
+  class SeriesGreaterThan : SeriesCompareScalar(?) {
     proc init(x) {
       super.init(x);
     }
@@ -998,7 +1004,7 @@ module DataFrames {
     }
   }
 
-  class SeriesEqualTo : SeriesCompareScalar {
+  class SeriesEqualTo : SeriesCompareScalar(?) {
     proc init(x) {
       super.init(x);
     }
@@ -1009,7 +1015,7 @@ module DataFrames {
     }
   }
 
-  class SeriesLessThanEqualTo : SeriesCompareScalar {
+  class SeriesLessThanEqualTo : SeriesCompareScalar(?) {
     proc init(x) {
       super.init(x);
     }
@@ -1020,7 +1026,7 @@ module DataFrames {
     }
   }
 
-  class SeriesGreaterThanEqualTo : SeriesCompareScalar {
+  class SeriesGreaterThanEqualTo : SeriesCompareScalar(?) {
     proc init(x) {
       super.init(x);
     }

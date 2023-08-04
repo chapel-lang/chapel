@@ -1575,6 +1575,21 @@ module ChapelBase {
     return ret;
   }
 
+  pragma "llvm return noalias"
+  proc _ddata_allocate_noinit_nocheck(type eltType, size: integral,
+                                     out callPostAlloc: bool,
+                                     subloc = c_sublocid_none) {
+    pragma "fn synchronization free"
+    pragma "insert line file info"
+    extern proc chpl_mem_array_alloc_no_check(nmemb: c_size_t, eltSize: c_size_t,
+                                              subloc: chpl_sublocID_t,
+                                              ref callPostAlloc: bool): c_ptr(void);
+    var ret: _ddata(eltType);
+    ret = chpl_mem_array_alloc_no_check(size:c_size_t, _ddata_sizeof_element(ret),
+                               subloc, callPostAlloc):ret.type;
+    return ret;
+  }
+
   inline proc _ddata_allocate_postalloc(data:_ddata, size: integral) {
     pragma "fn synchronization free"
     pragma "insert line file info"

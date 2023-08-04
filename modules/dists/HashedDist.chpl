@@ -671,7 +671,7 @@ class LocUserMapAssocDom {
 //
 // the global array class
 //
-class UserMapAssocArr: AbsBaseArr {
+class UserMapAssocArr: AbsBaseArr(?) {
   // GENERICS:
 
   //

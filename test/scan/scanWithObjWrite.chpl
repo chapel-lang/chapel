@@ -10,5 +10,5 @@ proc foo() {
 }
 
 var o: RootClass = new RootClass();
-writeln("o is: " + o:string);
+writeln("o is: ", o);
 writeln("B is: ", B);

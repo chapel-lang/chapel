@@ -64,8 +64,8 @@ static bool chpl_gpu_has_context(void) {
   }
 }
 
-static void chpl_gpu_switch_context(int deviceId) {
-  CUcontext next_context = chpl_gpu_primary_ctx[deviceId];
+static void switch_context(int dev_id) {
+  CUcontext next_context = chpl_gpu_primary_ctx[dev_id];
 
   if (!chpl_gpu_has_context()) {
     CUDA_CALL(cuCtxPushCurrent(next_context));
@@ -89,7 +89,7 @@ extern c_nodeid_t chpl_nodeID;
 
 // we can put this logic in chpl-gpu.c. However, it needs to execute
 // per-context/module. That's currently too low level for that layer.
-static void chpl_gpu_impl_set_globals(CUmodule module) {
+static void chpl_gpu_impl_set_globals(c_sublocid_t dev_id, CUmodule module) {
   CUdeviceptr ptr;
   size_t glob_size;
   CUDA_CALL(cuModuleGetGlobal(&ptr, &glob_size, module, "chpl_nodeID"));
@@ -97,8 +97,8 @@ static void chpl_gpu_impl_set_globals(CUmodule module) {
   chpl_gpu_impl_copy_host_to_device((void*)ptr, &chpl_nodeID, glob_size);
 }
 
-static void chpl_gpu_ensure_context(void) {
-  chpl_gpu_switch_context(chpl_task_getRequestedSubloc());
+void chpl_gpu_impl_use_device(c_sublocid_t dev_id) {
+  switch_context(dev_id);
 }
 
 void chpl_gpu_impl_init(int* num_devices) {
@@ -121,12 +121,10 @@ void chpl_gpu_impl_init(int* num_devices) {
     CUDA_CALL(cuDevicePrimaryCtxSetFlags(device, CU_CTX_SCHED_BLOCKING_SYNC));
     CUDA_CALL(cuDevicePrimaryCtxRetain(&context, device));
 
-    CUDA_CALL(cuCtxPushCurrent(context));
+    CUDA_CALL(cuCtxSetCurrent(context));
     // load the module and setup globals within
     CUmodule module = chpl_gpu_load_module(chpl_gpuBinary);
-    chpl_gpu_impl_set_globals(module);
     chpl_gpu_cuda_modules[i] = module;
-    CUDA_CALL(cuCtxPopCurrent(&context));
 
     cuDeviceGetAttribute(&deviceClockRates[i], CU_DEVICE_ATTRIBUTE_CLOCK_RATE, device);
 
@@ -135,20 +133,8 @@ void chpl_gpu_impl_init(int* num_devices) {
 
     // TODO can we refactor some of this to chpl-gpu to avoid duplication
     // between runtime layers?
-    CUDA_CALL(cuCtxSetCurrent(context));
-    CUdeviceptr ptr;
-    size_t glob_size;
-    CUDA_CALL(cuModuleGetGlobal(&ptr, &glob_size, chpl_gpu_cuda_modules[i],
-                                "chpl_nodeID"));
-    assert(glob_size == sizeof(c_nodeid_t));
-    chpl_gpu_impl_copy_host_to_device((void*)ptr, &chpl_nodeID, glob_size);
+    chpl_gpu_impl_set_globals(i, module);
   }
-}
-
-static bool chpl_gpu_device_alloc = false;
-
-void chpl_gpu_impl_support_module_finished_initializing(void) {
-  chpl_gpu_device_alloc = true;
 }
 
 bool chpl_gpu_impl_is_device_ptr(const void* ptr) {
@@ -189,14 +175,10 @@ static void chpl_gpu_launch_kernel_help(int ln,
                                         int blk_dim_z,
                                         int nargs,
                                         va_list args) {
-  CHPL_GPU_START_TIMER(context_time);
-
-  chpl_gpu_ensure_context();
-
-  CHPL_GPU_STOP_TIMER(context_time);
   CHPL_GPU_START_TIMER(load_time);
 
-  CUmodule cuda_module = chpl_gpu_cuda_modules[chpl_task_getRequestedSubloc()];
+  c_sublocid_t dev_id = chpl_task_getRequestedSubloc();
+  CUmodule cuda_module = chpl_gpu_cuda_modules[dev_id];
   void* function = chpl_gpu_load_function(cuda_module, name);
 
   CHPL_GPU_STOP_TIMER(load_time);
@@ -232,7 +214,8 @@ static void chpl_gpu_launch_kernel_help(int ln,
                                              CHPL_RT_MD_GPU_KERNEL_ARG,
                                              ln, fn);
 
-      chpl_gpu_copy_host_to_device(*kernel_params[i], cur_arg, cur_arg_size);
+      chpl_gpu_impl_copy_host_to_device(*kernel_params[i], cur_arg,
+                                        cur_arg_size);
 
       CHPL_GPU_DEBUG("\tKernel parameter %d: %p (device ptr)\n",
                    i, *kernel_params[i]);
@@ -275,12 +258,11 @@ static void chpl_gpu_launch_kernel_help(int ln,
   chpl_free(kernel_params);
 
   CHPL_GPU_STOP_TIMER(teardown_time);
-  CHPL_GPU_PRINT_TIMERS("<%20s> Context: %Lf, "
-                               "Load: %Lf, "
+  CHPL_GPU_PRINT_TIMERS("<%20s> Load: %Lf, "
                                "Prep: %Lf, "
                                "Kernel: %Lf, "
                                "Teardown: %Lf\n",
-         name, context_time, load_time, prep_time, kernel_time, teardown_time);
+         name, load_time, prep_time, kernel_time, teardown_time);
 }
 
 inline void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
@@ -312,35 +294,6 @@ inline void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
                               grd_dim, 1, 1,
                               blk_dim, 1, 1,
                               nargs, args);
-}
-
-void* chpl_gpu_impl_memmove(void* dst, const void* src, size_t n) {
-  #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
-  bool dst_on_host = chpl_gpu_impl_is_host_ptr(dst);
-  bool src_on_host = chpl_gpu_impl_is_host_ptr(src);
-
-  if (!dst_on_host && !src_on_host) {
-    chpl_gpu_impl_copy_device_to_device(dst, src, n);
-    return dst;
-  }
-  else if (!dst_on_host) {
-    chpl_gpu_impl_copy_host_to_device(dst, src, n);
-    return dst;
-  }
-  else if (!src_on_host) {
-    chpl_gpu_impl_copy_device_to_host(dst, src, n);
-    return dst;
-  }
-  else {
-    assert(dst_on_host && src_on_host);
-    return memmove(dst, src, n);
-  }
-  #else
-
-  // for unified memory strategy we don't want to generate calls to copy
-  // data from the device to host (since it can just be accessed directly)
-  return memmove(dst, src, n);
-  #endif
 }
 
 void* chpl_gpu_impl_memset(void* addr, const uint8_t val, size_t n) {
@@ -382,44 +335,22 @@ void chpl_gpu_impl_comm_wait(void *stream) {
   cuStreamDestroy((CUstream)stream);
 }
 
-void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
-                               int32_t lineno, int32_t filename) {
-  chpl_gpu_ensure_context();
-
-  CHPL_GPU_DEBUG("chpl_gpu_mem_array_alloc called. Size:%zu file:%s line:%d\n", size,
-               chpl_lookupFilename(filename), lineno);
+void* chpl_gpu_impl_mem_array_alloc(size_t size) {
+  assert(size>0);
 
   CUdeviceptr ptr = 0;
-  if (size > 0) {
-    chpl_memhook_malloc_pre(1, size, description, lineno, filename);
+
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
-    if (chpl_gpu_device_alloc) {
-      CUDA_CALL(cuMemAlloc(&ptr, size));
-    }
-    else {
-      void* mem = chpl_mem_alloc(size, description, lineno, filename);
-      CHPL_GPU_DEBUG("\tregistering %p\n", mem);
-      CUDA_CALL(cuMemHostRegister(mem, size, CU_MEMHOSTREGISTER_PORTABLE));
-      CUDA_CALL(cuMemHostGetDevicePointer(&ptr, mem, 0));
-    }
+    CUDA_CALL(cuMemAlloc(&ptr, size));
 #else
     CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));
 #endif
-    chpl_memhook_malloc_post((void*)ptr, 1, size, description, lineno, filename);
-
-    CHPL_GPU_DEBUG("chpl_gpu_mem_array_alloc returning %p\n", (void*)ptr);
-  }
-  else {
-    CHPL_GPU_DEBUG("chpl_gpu_mem_array_alloc returning NULL (size was 0)\n");
-  }
 
   return (void*)ptr;
 }
 
 
 void* chpl_gpu_impl_mem_alloc(size_t size) {
-  chpl_gpu_ensure_context();
-
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
   void* ptr = 0;
   CUDA_CALL(cuMemAllocHost(&ptr, size));
@@ -433,8 +364,6 @@ void* chpl_gpu_impl_mem_alloc(size_t size) {
 }
 
 void chpl_gpu_impl_mem_free(void* memAlloc) {
-  chpl_gpu_ensure_context();
-
   if (memAlloc != NULL) {
     assert(chpl_gpu_is_device_ptr(memAlloc));
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
@@ -477,7 +406,7 @@ bool chpl_gpu_impl_can_access_peer(int dev1, int dev2) {
 }
 
 void chpl_gpu_impl_set_peer_access(int dev1, int dev2, bool enable) {
-  chpl_gpu_switch_context(dev1);
+  switch_context(dev1);
   if(enable) {
     CUDA_CALL(cuCtxEnablePeerAccess(chpl_gpu_primary_ctx[dev2], 0));
   } else {

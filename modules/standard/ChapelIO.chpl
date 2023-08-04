@@ -910,10 +910,22 @@ module ChapelIO {
     try! { stdout.writef(fmt); }
   }
 
+  @chpldoc.nodoc
   proc chpl_stringify_wrapper(const args ...):string {
-    use IO only stringify;
-    return stringify((...args));
+    use IO only chpl_stringify;
+    return chpl_stringify((...args));
   }
+
+  //
+  // handle casting FCF types to string
+  //
+  @chpldoc.nodoc
+  proc isFcfType(type t) param do
+    return __primitive("is fcf type", t);
+
+  @chpldoc.nodoc
+  operator :(x, type t:string) where isFcfType(x.type) do
+    return chpl_stringify_wrapper(x);
 
   //
   // Catch all
@@ -928,6 +940,11 @@ module ChapelIO {
   pragma "last resort"
   @chpldoc.nodoc
   operator :(x, type t:string) where !isPrimitiveType(x.type) {
-    return stringify(x);
+    compilerWarning(
+      "universal 'x:string' is deprecated; please define a cast-to-string operator on the type '" +
+      x.type:string +
+      "', or use 'try! \"%?\".format(x)' from IO.FormattedIO instead"
+    );
+    return chpl_stringify_wrapper(x);
   }
 }

@@ -5,7 +5,7 @@ class C {
   var dom = {1..n};
 }
 
-class D: C {
+class D: C(?) {
   var A: [dom] real;
 }
 

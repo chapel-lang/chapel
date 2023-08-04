@@ -319,18 +319,11 @@ static bool isFieldTypeExprGeneric(Expr* typeExpr,
   }
 
   // Partial generic expressions with '?'
-  if (CallExpr* call = toCallExpr(typeExpr)) {
-    if (SymExpr* se = toSymExpr(call->baseExpr)) {
-      if (se->symbol()->type->symbol->hasFlag(FLAG_GENERIC)) {
-        for_actuals(actual, call) {
-          if (SymExpr* act = toSymExpr(actual)) {
-            if (act->symbol() == gUninstantiated) {
-              return true;
-            }
-          }
-        }
-      }
-    }
+  if (findSymExprFor(typeExpr, gUninstantiated)) {
+    // Note: this assumes that ? used in a nested call makes the type generic.
+    // That's not strictly true, but is close enough until
+    // we can use the dyno resolver to handle this in a more principled way.
+    return true;
   }
 
   if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(typeExpr)) {
@@ -536,7 +529,7 @@ DefExpr* AggregateType::toLocalField(SymExpr* expr) const {
 DefExpr* AggregateType::toLocalField(CallExpr* expr) const {
   DefExpr* retval = NULL;
 
-  if (expr->isNamed(".") == true) {
+  if (expr->isNamedAstr(astrSdot)) {
     SymExpr* base = toSymExpr(expr->get(1));
     SymExpr* name = toSymExpr(expr->get(2));
 
@@ -1888,7 +1881,7 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
 
   instantiations.push_back(retval);
 
-  checkSurprisingGenericDecls(field->defPoint, /* isField */ true);
+  checkSurprisingGenericDecls(field, field->defPoint->exprType, this);
 
   return retval;
 }

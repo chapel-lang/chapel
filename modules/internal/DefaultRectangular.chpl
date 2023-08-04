@@ -152,7 +152,7 @@ module DefaultRectangular {
     }
   }
 
-  class DefaultRectangularDom: BaseRectangularDom {
+  class DefaultRectangularDom: BaseRectangularDom(?) {
     var dist: unmanaged DefaultDist;
     var ranges : rank*range(idxType,boundKind.both,strides);
 
@@ -700,6 +700,31 @@ module DefaultRectangular {
                                                  initElts=initElts);
     }
 
+    proc doiTryCreateArray(type eltType) throws {
+      // TODO: Update to support higher dimension (not needed in Arkouda)
+      if rank != 1 then
+        throw new Error("'tryBuildArray' is only supported on domains of rank 1");
+
+      var callPostAlloc:bool;
+      var data = _ddata_allocate_noinit_nocheck(eltType, ranges(0).size, callPostAlloc);
+
+      // TODO: Add a more distinguishable error type
+      if data == nil then
+        throw new Error("Could not allocate memory");
+
+      init_elts(data, ranges(0).size, eltType);
+
+      if callPostAlloc {
+        _ddata_allocate_postalloc(data, ranges(0).size);
+        callPostAlloc = false;
+      }
+      return new unmanaged DefaultRectangularArr(eltType=eltType, rank=rank,
+                                                 idxType=idxType,
+                                                 strides=strides,
+                                                 dom=_to_unmanaged(this),
+                                                 data=data);
+    }
+
     proc dsiBuildArrayWith(type eltType, data:_ddata(eltType), allocSize:int) {
 
       var allocRange:range(idxType) = (ranges(0).lowBound)..#allocSize;
@@ -1021,7 +1046,7 @@ module DefaultRectangular {
     }
   }
 
-  class DefaultRectangularArr: BaseRectangularArr {
+  class DefaultRectangularArr: BaseRectangularArr(?) {
     // inherits rank, idxType, strides, eltType
 
     type idxSignedType = chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
@@ -2026,6 +2051,8 @@ module DefaultRectangular {
   }
 
   private proc _simpleTransfer(A, aView, B, bView) {
+    use ChplConfig;
+
     param rank     = A.rank;
     type idxType   = A.idxType;
 
@@ -2055,9 +2082,13 @@ module DefaultRectangular {
     const Aidx = A.getDataIndex(Alo);
     const Adata = _ddata_shift(A.eltType, A.theData, Aidx);
     const Alocid = Adata.locale.id;
+    const Asublocid = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_any else
+                          chpl_sublocFromLocaleID(Adata.locale.chpl_localeid());
     const Bidx = B.getDataIndex(Blo);
     const Bdata = _ddata_shift(B.eltType, B.theData, Bidx);
     const Blocid = Bdata.locale.id;
+    const Bsublocid = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_any else
+                          chpl_sublocFromLocaleID(Bdata.locale.chpl_localeid());
 
     type t = A.eltType;
     const elemsizeInBytes = if isNumericType(t) then numBytes(t)
@@ -2083,14 +2114,18 @@ module DefaultRectangular {
     }
 
     if doParallelAssign {
-      _simpleParallelTransferHelper(A, B, Adata, Bdata, Alocid, Blocid, len);
+      _simpleParallelTransferHelper(A, B, Adata, Bdata, Alocid, Asublocid,
+                                    Blocid, Bsublocid, len);
     }
     else{
-      _simpleTransferHelper(A, B, Adata, Bdata, Alocid, Blocid, len);
+      _simpleTransferHelper(A, B, Adata, Bdata, Alocid, Asublocid, Blocid,
+                            Bsublocid, len);
     }
   }
 
-  private proc _simpleParallelTransferHelper(A, B, Adata, Bdata, Alocid, Blocid, len) {
+  private proc _simpleParallelTransferHelper(A, B, Adata, Bdata, Alocid,
+                                             Asublocid, Blocid, Bsublocid,
+                                             len) {
     const numTasks = if __primitive("task_get_serial") then 1
                         else _computeNumChunks(len);
     const lenPerTask = len:int/numTasks;
@@ -2102,11 +2137,13 @@ module DefaultRectangular {
       const myOffset = tid*lenPerTask;
       const myLen = if tid == numTasks-1 then len:int-myOffset else lenPerTask;
 
-      _simpleTransferHelper(A, B, Adata, Bdata, Alocid, Blocid, myLen, myOffset);
+      _simpleTransferHelper(A, B, Adata, Bdata, Alocid, Asublocid, Blocid,
+                            Bsublocid, myLen, myOffset);
     }
   }
 
-  private proc _simpleTransferHelper(A, B, Adata, Bdata, Alocid, Blocid, len, offset=0) {
+  private proc _simpleTransferHelper(A, B, Adata, Bdata, Alocid, Asublocid,
+                                     Blocid, Bsublocid, len, offset=0) {
     if Adata == Bdata then return;
 
     // NOTE: This does not work with --heterogeneous, but heterogeneous
@@ -2115,17 +2152,17 @@ module DefaultRectangular {
     if Alocid==here.id {
       if debugDefaultDistBulkTransfer then
         chpl_debug_writeln("\tlocal get() from ", Blocid);
-      __primitive("chpl_comm_array_get", Adata[offset], Blocid,
+      __primitive("chpl_comm_array_get", Adata[offset], Blocid, Bsublocid,
                   Bdata[offset], len);
     } else if Blocid==here.id {
       if debugDefaultDistBulkTransfer then
         chpl_debug_writeln("\tlocal put() to ", Alocid);
-      __primitive("chpl_comm_array_put", Bdata[offset], Alocid,
+      __primitive("chpl_comm_array_put", Bdata[offset], Alocid, Asublocid,
                   Adata[offset], len);
     } else on Adata.locale {
       if debugDefaultDistBulkTransfer then
         chpl_debug_writeln("\tremote get() on ", here.id, " from ", Blocid);
-      __primitive("chpl_comm_array_get", Adata[offset], Blocid,
+      __primitive("chpl_comm_array_get", Adata[offset], Blocid, Bsublocid,
                   Bdata[offset], len);
     }
   }
@@ -2297,11 +2334,11 @@ module DefaultRectangular {
   private proc complexTransferComm(A, B, stridelevels:int(32), dstStride, srcStride, count, AFirst, BFirst) {
     if debugDefaultDistBulkTransfer {
       chpl_debug_writeln("BulkTransferStride with values:\n",
-                         "\tLocale        = ", stringify(here.id), "\n",
-                         "\tStride levels = ", stringify(stridelevels), "\n",
-                         "\tdstStride     = ", stringify(dstStride), "\n",
-                         "\tsrcStride     = ", stringify(srcStride), "\n",
-                         "\tcount         = ", stringify(count));
+                    try! "\tLocale        = %?\n".format(here.id),
+                    try! "\tStride levels = %?\n".format(stridelevels),
+                    try! "\tdstStride     = %?\n".format(dstStride),
+                    try! "\tsrcStride     = %?\n".format(srcStride),
+                    try! "\tcount         = %?".format(count));
     }
 
     const AO = A.getDataIndex(AFirst, getShifted = false);

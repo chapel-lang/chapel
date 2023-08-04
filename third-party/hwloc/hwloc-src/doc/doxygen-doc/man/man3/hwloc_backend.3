@@ -1,4 +1,4 @@
-.TH "hwloc_backend" 3 "Mon Jun 3 2019" "Version 1.11.13" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwloc_backend" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -12,10 +12,10 @@ hwloc_backend
 
 .in +1c
 .ti -1c
-.RI "unsigned long \fBflags\fP"
+.RI "unsigned \fBphases\fP"
 .br
 .ti -1c
-.RI "int \fBis_custom\fP"
+.RI "unsigned long \fBflags\fP"
 .br
 .ti -1c
 .RI "int \fBis_thissystem\fP"
@@ -27,13 +27,10 @@ hwloc_backend
 .RI "void(* \fBdisable\fP )(struct \fBhwloc_backend\fP *backend)"
 .br
 .ti -1c
-.RI "int(* \fBdiscover\fP )(struct \fBhwloc_backend\fP *backend)"
+.RI "int(* \fBdiscover\fP )(struct \fBhwloc_backend\fP *backend, struct \fBhwloc_disc_status\fP *status)"
 .br
 .ti -1c
-.RI "int(* \fBget_obj_cpuset\fP )(struct \fBhwloc_backend\fP *backend, struct \fBhwloc_backend\fP *caller, struct \fBhwloc_obj\fP *obj, \fBhwloc_bitmap_t\fP cpuset)"
-.br
-.ti -1c
-.RI "int(* \fBnotify_new_object\fP )(struct \fBhwloc_backend\fP *backend, struct \fBhwloc_backend\fP *caller, struct \fBhwloc_obj\fP *obj)"
+.RI "int(* \fBget_pci_busid_cpuset\fP )(struct \fBhwloc_backend\fP *backend, struct hwloc_pcidev_attr_s *busid, \fBhwloc_bitmap_t\fP cpuset)"
 .br
 .in -1c
 .SH "Detailed Description"
@@ -42,37 +39,35 @@ Discovery backend structure\&.
 
 A backend is the instantiation of a discovery component\&. When a component gets enabled for a topology, its instantiate() callback creates a backend\&.
 .PP
-\fBhwloc_backend_alloc()\fP initializes all fields to default values that the component may change (except 'component' and 'next') before enabling the backend with \fBhwloc_backend_enable()\fP\&. 
+\fBhwloc_backend_alloc()\fP initializes all fields to default values that the component may change (except 'component' and 'next') before enabling the backend with \fBhwloc_backend_enable()\fP\&.
+.PP
+Most backends assume that the topology is_thissystem flag is set because they talk to the underlying operating system\&. However they may still be used in topologies without the is_thissystem flag for debugging reasons\&. In practice, they are usually auto-disabled in such cases (excluded by xml or synthetic backends, or by environment variables when changing the Linux fsroot or the x86 cpuid path)\&. 
 .SH "Field Documentation"
 .PP 
 .SS "void(* hwloc_backend::disable) (struct \fBhwloc_backend\fP *backend)"
 
 .PP
 Callback for freeing the private_data\&. May be NULL\&. 
-.SS "int(* hwloc_backend::discover) (struct \fBhwloc_backend\fP *backend)"
+.SS "int(* hwloc_backend::discover) (struct \fBhwloc_backend\fP *backend, struct \fBhwloc_disc_status\fP *status)"
 
 .PP
-Main discovery callback\&. returns > 0 if it modified the topology tree, -1 on error, 0 otherwise\&. May be NULL if type is \fBHWLOC_DISC_COMPONENT_TYPE_MISC\fP\&. 
+Main discovery callback\&. returns -1 on error, either because it couldn't add its objects ot the existing topology, or because of an actual discovery/gathering failure\&. May be NULL\&. 
 .SS "unsigned long hwloc_backend::flags"
 
 .PP
-Backend flags, as an OR'ed set of \fBhwloc_backend_flag_e\fP\&. 
-.SS "int(* hwloc_backend::get_obj_cpuset) (struct \fBhwloc_backend\fP *backend, struct \fBhwloc_backend\fP *caller, struct \fBhwloc_obj\fP *obj, \fBhwloc_bitmap_t\fP cpuset)"
+Backend flags, currently always 0\&. 
+.SS "int(* hwloc_backend::get_pci_busid_cpuset) (struct \fBhwloc_backend\fP *backend, struct hwloc_pcidev_attr_s *busid, \fBhwloc_bitmap_t\fP cpuset)"
 
 .PP
-Callback used by the PCI backend to retrieve the locality of a PCI object from the OS/cpu backend\&. May be NULL\&. 
-.SS "int hwloc_backend::is_custom"
-
-.PP
-Backend-specific 'is_custom' property\&. Shortcut on !strcmp(\&.\&.->component->name, 'custom')\&. Only the custom component should touch this\&. 
+Callback to retrieve the locality of a PCI object\&. Called by the PCI core when attaching PCI hierarchy to CPU objects\&. May be NULL\&. 
 .SS "int hwloc_backend::is_thissystem"
 
 .PP
-Backend-specific 'is_thissystem' property\&. Set to 0 or 1 if the backend should enforce the thissystem flag when it gets enabled\&. Set to -1 if the backend doesn't care (default)\&. 
-.SS "int(* hwloc_backend::notify_new_object) (struct \fBhwloc_backend\fP *backend, struct \fBhwloc_backend\fP *caller, struct \fBhwloc_obj\fP *obj)"
+Backend-specific 'is_thissystem' property\&. Set to 0 if the backend disables the thissystem flag for this topology (e\&.g\&. loading from xml or synthetic string, or using a different fsroot on Linux, or a x86 CPUID dump)\&. Set to -1 if the backend doesn't care (default)\&. 
+.SS "unsigned hwloc_backend::phases"
 
 .PP
-Callback called by backends to notify this backend that a new object was added\&. returns > 0 if it modified the topology tree, 0 otherwise\&. May be NULL\&. 
+Discovery phases performed by this component, possibly without some of them if excluded by other components\&. OR'ed set of \fBhwloc_disc_phase_t\fP\&. 
 .SS "void* hwloc_backend::private_data"
 
 .PP

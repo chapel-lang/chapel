@@ -13,7 +13,7 @@ class A {
   type idxType;
 }
 
-class Z : A {
+class Z : A(?) {
   param stridable;
 
   var d : Dummy(int, stridable=stridable);

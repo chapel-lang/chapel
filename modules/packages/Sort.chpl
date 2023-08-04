@@ -273,7 +273,7 @@ defaultComparator = new DefaultComparator();
    default sort order.
 
  */
-const reverseComparator: ReverseComparator;
+const reverseComparator: ReverseComparator(DefaultComparator);
 reverseComparator = new ReverseComparator();
 
 /* Private methods */
@@ -3030,8 +3030,8 @@ module TwoArrayPartitioning {
 
             // Compute the regions on the same locale as the first, last
             // elements in the bin.
-            const firstLoc = A.domain.dist.idxToLocale(binStart);
-            const lastLoc = A.domain.dist.idxToLocale(binEnd);
+            const firstLoc = A.domain.distribution.idxToLocale(binStart);
+            const lastLoc = A.domain.distribution.idxToLocale(binEnd);
             const onFirstLoc = A.localSubdomain(firstLoc)[binStart..binEnd];
             const onLastLoc = A.localSubdomain(lastLoc)[binStart..binEnd];
             var theLocale = firstLoc;

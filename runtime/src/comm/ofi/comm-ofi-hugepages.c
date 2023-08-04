@@ -39,3 +39,7 @@ void* chpl_comm_ofi_hp_get_huge_pages(size_t size) {
 size_t chpl_comm_ofi_hp_gethugepagesize(void) {
   return gethugepagesize();
 }
+
+chpl_bool chpl_comm_ofi_hp_supported(void) {
+  return true;
+}

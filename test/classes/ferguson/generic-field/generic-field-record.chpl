@@ -3,7 +3,7 @@ record GenericRecord {
 }
 
 record Wrapper {
-  var f:GenericRecord;
+  var f:GenericRecord(?);
   proc init(arg:GenericRecord) {
     this.f = arg;
   }
@@ -11,7 +11,7 @@ record Wrapper {
 
 proc test1() {
   var x = new Wrapper(new GenericRecord(1));
-  var y:Wrapper = new Wrapper(new GenericRecord(1));
+  var y:Wrapper(?) = new Wrapper(new GenericRecord(1));
   var z:Wrapper(GenericRecord(int)) = new Wrapper(new GenericRecord(1));
 
   writeln(x.type:string, " ", x);

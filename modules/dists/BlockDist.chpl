@@ -355,7 +355,7 @@ class LocBlock {
 // locDoms:   a non-distributed array of local domain classes
 // whole:     a non-distributed domain that defines the domain's indices
 //
-class BlockDom: BaseRectangularDom {
+class BlockDom: BaseRectangularDom(?) {
   type sparseLayoutType;
   const dist: unmanaged Block(rank, idxType, sparseLayoutType);
   var locDoms: [dist.targetLocDom] unmanaged LocBlockDom(rank, idxType, strides);
@@ -388,7 +388,7 @@ class LocBlockDom {
 // locArr: a non-distributed array of local array classes
 // myLocArr: optimized reference to here's local array class (or nil)
 //
-class BlockArr: BaseRectangularArr {
+class BlockArr: BaseRectangularArr(?) {
   type sparseLayoutType;
   var doRADOpt: bool = defaultDoRADOpt;
   var dom: unmanaged BlockDom(rank, idxType, strides, sparseLayoutType);
@@ -435,6 +435,21 @@ class LocBlockArr {
     this.myElems = this.locDom.myBlock.buildArray(eltType, initElts=initElts);
   }
 
+  proc init(type eltType,
+            param rank: int,
+            type idxType,
+            param strides: strideKind,
+            const locDom: unmanaged LocBlockDom(rank, idxType, strides),
+            data: _ddata(eltType),
+            size: int) {
+    this.eltType = eltType;
+    this.rank = rank;
+    this.idxType = idxType;
+    this.strides = strides;
+    this.locDom = locDom;
+    this.myElems = this.locDom.myBlock.buildArrayWith(eltType, data, size);
+  }
+
   // guard against dynamic dispatch resolution trying to resolve
   // write()ing out an array of sync vars and hitting the sync var
   // type's compilerError()
@@ -476,7 +491,7 @@ proc Block.init(boundingBox: domain,
   if boundingBox.sizeAs(uint) == 0 then
     halt("Block() requires a non-empty boundingBox");
 
-  this.boundingBox = boundingBox : domain(rank, idxType);
+  this.boundingBox = boundsBox(boundingBox);
 
   if !allowDuplicateTargetLocales {
     var checkArr: [LocaleSpace] bool;
@@ -528,6 +543,17 @@ proc Block.init(boundingBox: domain,
     writeln("Creating new Block distribution:");
     dsiDisplayRepresentation();
   }
+}
+
+// Returns a DR domain with (lowBound..highBound) of each of src's dimensions.
+// If we used domain.boundingBox() instead, this test would fail under gasnet:
+//   test/optimizations/bulkcomm/block/blockToBlock.chpl
+proc boundsBox(srcDom: domain) {
+  var dst: srcDom.rank*range(srcDom.idxType, boundKind.both, strideKind.one);
+  const src = srcDom.dims();
+  for param dim in 0..src.size-1 do
+    dst[dim] = src[dim].lowBound .. src[dim].highBound;
+  return {(...dst)};
 }
 
 @unstable(category="experimental", reason="'Block.redistribute()' is currently unstable due to lack of design review and is being made available as a prototype")
@@ -906,8 +932,7 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
     var low  = wholeDim.orderToIndex(followDim.low);
     var high = wholeDim.orderToIndex(followDim.high);
     if wholeDim.hasNegativeStride() then low <=> high;
-    t(i) = ( low..high by (wholeDim.stride*followDim.stride)
-           ).safeCast(t(i).type);
+    t(i) = try! (low..high by (wholeDim.stride*followDim.stride)) : t(i).type;
   }
   for i in {(...t)} {
     yield i;
@@ -952,6 +977,55 @@ proc BlockDom.dsiBuildArray(type eltType, param initElts:bool) {
   return arr;
 }
 
+proc BlockDom.doiTryCreateArray(type eltType) throws {
+  const dom = this;
+  const creationLocale = here.id;
+  const dummyLBD = new unmanaged LocBlockDom(rank, idxType, strides);
+  const dummyLBA = new unmanaged LocBlockArr(eltType, rank, idxType,
+                                             strides, dummyLBD, false);
+  var locArrTemp: [dom.dist.targetLocDom]
+        unmanaged LocBlockArr(eltType, rank, idxType, strides) = dummyLBA;
+  var myLocArrTemp: unmanaged LocBlockArr(eltType, rank, idxType, strides)?;
+
+  // formerly in BlockArr.setup()
+  coforall (loc, locDomsElt, locArrTempElt)
+    in zip(dom.dist.targetLocales, dom.locDoms, locArrTemp)
+           with (ref myLocArrTemp) {
+    on loc {
+      const locSize = locDomsElt.myBlock.size;
+      var callPostAlloc = false;
+      var data = _ddata_allocate_noinit_nocheck(eltType, locSize, callPostAlloc);
+
+      // TODO: Add a more distinguishable error type
+      if data == nil then
+        throw new Error("Could not allocate memory");
+
+      init_elts(data, locSize, eltType);
+
+      if callPostAlloc {
+        _ddata_allocate_postalloc(data, locSize);
+        callPostAlloc = false;
+      }
+
+      const LBA = new unmanaged LocBlockArr(eltType, rank, idxType, strides,
+                                            locDomsElt, data=data, size=locSize);
+      locArrTempElt = LBA;
+      if here.id == creationLocale then
+        myLocArrTemp = LBA;
+    }
+  }
+  delete dummyLBA, dummyLBD;
+
+  var arr = new unmanaged BlockArr(eltType=eltType, rank=rank, idxType=idxType,
+       strides=strides, sparseLayoutType=sparseLayoutType,
+       dom=_to_unmanaged(dom), locArr=locArrTemp, myLocArr=myLocArrTemp);
+
+  // formerly in BlockArr.setup()
+  if arr.doRADOpt && disableBlockLazyRAD then arr.setupRADOpt();
+
+  return arr;
+}
+
 // common redirects
 proc BlockDom.parSafe param {
   compilerError("this domain type does not support 'parSafe'");
@@ -975,6 +1049,7 @@ proc BlockDom.dsiSerialWrite(x) { x.write(whole); }
 proc BlockDom.dsiLocalSlice(param strides, ranges) do return whole((...ranges));
 override proc BlockDom.dsiIndexOrder(i) do              return whole.indexOrder(i);
 override proc BlockDom.dsiMyDist() do                   return dist;
+override proc BlockDom.isBlock() param do return true;
 
 //
 // INTERFACE NOTES: Could we make dsiSetIndices() for a rectangular
@@ -1208,7 +1283,7 @@ proc BlockArr.dsiDynamicFastFollowCheck(lead: []) do
 
 proc BlockArr.dsiDynamicFastFollowCheck(lead: domain) {
   // TODO: Should this return true for domains with the same shape?
-  return lead.dist.dsiEqualDMaps(this.dom.dist) && lead._value.whole == this.dom.whole;
+  return lead.distribution.dsiEqualDMaps(this.dom.dist) && lead._value.whole == this.dom.whole;
 }
 
 iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {
@@ -1231,7 +1306,7 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
     // NOTE: Not bothering to check to see if these can fit into idxType
     var low = followThis(i).lowBound * abs(stride):idxType;
     var high = followThis(i).highBound * abs(stride):idxType;
-    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).low by followThis(i).stride).safeCast(myFollowThis(i).type);
+    myFollowThis(i) = try! ((low..high by stride) + dom.whole.dim(i).low by followThis(i).stride) : myFollowThis(i).type;
     lowIdx(i) = myFollowThis(i).lowBound;
   }
 

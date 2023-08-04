@@ -21,7 +21,7 @@ module ResultDB {
         var units: string;
         var atts: string;
         var attsSuffix: string;
-        var results: sortedMap;
+        var results: sortedMap(?);
         var homeLocale: locale;
 
         proc init(testName: string, units: string, atts = "BlckSz:", attsSuffix = "KB") {

@@ -21,4 +21,3 @@ proc test1() {
   writeln(A);
 }
 test1();
-

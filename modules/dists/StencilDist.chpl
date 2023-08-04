@@ -284,7 +284,7 @@ class LocStencil {
 // locDoms:   a non-distributed array of local domain classes
 // whole:     a non-distributed domain that defines the domain's indices
 //
-class StencilDom: BaseRectangularDom {
+class StencilDom: BaseRectangularDom(?) {
   param ignoreFluff : bool;
   const dist: unmanaged Stencil(rank, idxType, ignoreFluff);
   var locDoms: [dist.targetLocDom] unmanaged LocStencilDom(rank, idxType,
@@ -329,7 +329,7 @@ class LocStencilDom {
 // locArr: a non-distributed array of local array classes
 // myLocArr: optimized reference to here's local array class (or nil)
 //
-class StencilArr: BaseRectangularArr {
+class StencilArr: BaseRectangularArr(?) {
   param ignoreFluff: bool;
   var doRADOpt: bool = defaultDoRADOpt;
   var dom: unmanaged StencilDom(rank, idxType, strides, ignoreFluff);
@@ -448,7 +448,7 @@ proc Stencil.init(boundingBox: domain,
   this.idxType = idxType;
   this.ignoreFluff = ignoreFluff;
 
-  this.boundingBox = boundingBox : domain(rank, idxType);
+  this.boundingBox = boundsBox(boundingBox);
   this.fluff = fluff;
 
   // can't have periodic if there's no fluff
@@ -808,8 +808,7 @@ iter StencilDom.these(param tag: iterKind, followThis) where tag == iterKind.fol
     var low  = wholeDim.orderToIndex(followDim.low);
     var high = wholeDim.orderToIndex(followDim.high);
     if wholeDim.hasNegativeStride() then low <=> high;
-    t(i) = ( low..high by (wholeDim.stride*followDim.stride)
-           ).safeCast(t(i).type);
+    t(i) = try! (low..high by (wholeDim.stride*followDim.stride)) : t(i).type;
   }
   for i in {(...t)} {
     yield i;
@@ -1295,7 +1294,7 @@ proc StencilArr.dsiDynamicFastFollowCheck(lead: []) do
   return this.dsiDynamicFastFollowCheck(lead.domain);
 
 proc StencilArr.dsiDynamicFastFollowCheck(lead: domain) {
-  return lead.dist.dsiEqualDMaps(this.dom.dist) && lead._value.whole == this.dom.whole;
+  return lead.distribution.dsiEqualDMaps(this.dom.dist) && lead._value.whole == this.dom.whole;
 }
 
 iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {
@@ -1318,7 +1317,7 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
     // NOTE: Not bothering to check to see if these can fit into idxType
     var low = followThis(i).lowBound * abs(stride):idxType;
     var high = followThis(i).highBound * abs(stride):idxType;
-    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).low by followThis(i).stride).safeCast(myFollowThis(i).type);
+    myFollowThis(i) = try! ((low..high by stride) + dom.whole.dim(i).low by followThis(i).stride) : myFollowThis(i).type;
     lowIdx(i) = myFollowThis(i).lowBound;
   }
 

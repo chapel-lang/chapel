@@ -8,5 +8,5 @@ config const num = 42;
 try {
   test(num);
 } catch e {
-  halt(e:string);
+  halt(e);
 }

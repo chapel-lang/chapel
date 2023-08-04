@@ -139,7 +139,7 @@ proc main() {
   writeln(r3.oldName); // Should warn, but show the same value
 
   // Check various declarations of a class with the new field present
-  var c4: ReplaceType = new ReplaceType(uint);
+  var c4: ReplaceType(?) = new ReplaceType(uint);
   var c5: ReplaceType(int) = new ReplaceType(int);
   // Check direct references
   writeln(c4.newName: string);
@@ -148,7 +148,7 @@ proc main() {
   writeln(c5.oldName: string); // Should warn, but show the same value
 
   // Check various declarations of a record with the new field present
-  var r4: ReplaceType2 = new ReplaceType2(uint);
+  var r4: ReplaceType2(?) = new ReplaceType2(uint);
   var r5 = new ReplaceType2(int);
   var r6: ReplaceType2(bool);
   // Check direct references
@@ -160,7 +160,7 @@ proc main() {
   writeln(r6.oldName: string); // Should warn, but show the same value
 
   // Check various declarations of a class with the new field present
-  var c7: ReplaceParam = new ReplaceParam(4);
+  var c7: ReplaceParam(?) = new ReplaceParam(4);
   var c8: ReplaceParam(2) = new ReplaceParam(2);
   // Check direct references
   writeln(c7.newName);
@@ -169,7 +169,7 @@ proc main() {
   writeln(c8.oldName); // Should warn, but show the same value
 
   // Check various declarations of a record with the new field present
-  var r7: ReplaceParam2 = new ReplaceParam2(4);
+  var r7: ReplaceParam2(?) = new ReplaceParam2(4);
   var r8 = new ReplaceParam2(2);
   var r9: ReplaceParam2(1);
   // Check direct references
@@ -202,7 +202,7 @@ proc main() {
   writeln(r12.oldName); // Should warn, but show the same value
 
   // Check various declarations of a class with the new field present
-  var c13: ReplaceVarGeneric = new ReplaceVarGeneric(10);
+  var c13: ReplaceVarGeneric(?) = new ReplaceVarGeneric(10);
   var c14 = new ReplaceVarGeneric(0);
   // Check direct references
   writeln(c13.newName);
@@ -217,7 +217,7 @@ proc main() {
   writeln(c14.oldName); // Should warn, but show the same value
 
   // Check various declarations of a record with the new field present
-  var r13: ReplaceVarGeneric2 = new ReplaceVarGeneric2(10);
+  var r13: ReplaceVarGeneric2(?) = new ReplaceVarGeneric2(10);
   var r14 = new ReplaceVarGeneric2(0);
   var r15: ReplaceVarGeneric2(int);
   // Check direct references
@@ -233,7 +233,7 @@ proc main() {
   writeln(r15.oldName); // Should warn, but show the same value
 
   // Check various declarations of a class with the new field present
-  var c16: ReplaceConstGeneric = new ReplaceConstGeneric(3);
+  var c16: ReplaceConstGeneric(?) = new ReplaceConstGeneric(3);
   var c17 = new ReplaceConstGeneric(17);
   // Check direct references
   writeln(c16.newName);
@@ -242,7 +242,7 @@ proc main() {
   writeln(c17.oldName); // Should warn, but show the same value
 
   // Check various declarations of a record with the new field present
-  var r16: ReplaceConstGeneric2 = new ReplaceConstGeneric2(3);
+  var r16: ReplaceConstGeneric2(?) = new ReplaceConstGeneric2(3);
   var r17 = new ReplaceConstGeneric2(17);
   var r18: ReplaceConstGeneric2(int);
   // Check direct references

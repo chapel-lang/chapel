@@ -601,6 +601,11 @@ module CTypes {
       where t.eltType == x.eltType || x.eltType == void {
     return __primitive("cast", t, x);
   }
+  // c_ptr(void) specific overload need for types that implicitly convert to it
+  @chpldoc.nodoc
+  inline operator :(x:c_ptr(void), type t:_ddata) {
+    return __primitive("cast", t, x);
+  }
   @chpldoc.nodoc
   inline operator :(x:_ddata, type t:c_ptr(void)) {
     return __primitive("cast", t, x);
@@ -764,7 +769,7 @@ module CTypes {
     :returns: a pointer to the array's elements
   */
   inline proc c_ptrTo(arr: []): c_ptr(arr.eltType) {
-    if (!arr.isRectangular() || !arr.domain.dist._value.dsiIsLayout()) then
+    if (!arr.isRectangular() || !arr.domain.distribution._value.dsiIsLayout()) then
       compilerError("Only single-locale rectangular arrays support c_ptrTo() at present");
 
     if (arr._value.locale != here) then
@@ -785,7 +790,7 @@ module CTypes {
    disallows direct modification of the pointee.
    */
   inline proc c_ptrToConst(const arr: []): c_ptrConst(arr.eltType) {
-    if (!arr.isRectangular() || !arr.domain.dist._value.dsiIsLayout()) then
+    if (!arr.isRectangular() || !arr.domain.distribution._value.dsiIsLayout()) then
       compilerError("Only single-locale rectangular arrays support c_ptrToConst() at present");
 
     if (arr._value.locale != here) then
@@ -1013,7 +1018,7 @@ module CTypes {
     of the array. The returned pointer will be invalid if the array is freed.
   */
   inline proc c_addrOf(arr: []) {
-    if (!arr.isRectangular() || !arr.domain.dist._value.dsiIsLayout()) then
+    if (!arr.isRectangular() || !arr.domain.distribution._value.dsiIsLayout()) then
       compilerError("Only single-locale rectangular arrays support c_addrOf() at present");
 
     if (arr._value.locale != here) then
@@ -1030,7 +1035,7 @@ module CTypes {
    disallows direct modification of the pointee.
   */
   inline proc c_addrOfConst(arr: []) {
-    if (!arr.isRectangular() || !arr.domain.dist._value.dsiIsLayout()) then
+    if (!arr.isRectangular() || !arr.domain.distribution._value.dsiIsLayout()) then
       compilerError("Only single-locale rectangular arrays support c_addrOfConst() at present");
 
     if (arr._value.locale != here) then

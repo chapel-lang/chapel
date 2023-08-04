@@ -1,4 +1,4 @@
-# Copyright © 2009-2018 Inria.  All rights reserved.
+# Copyright © 2009-2021 Inria.  All rights reserved.
 # Copyright © 2009-2012, 2014, 2016 Université Bordeaux
 # Copyright © 2009-2014 Cisco Systems, Inc.  All rights reserved.
 #
@@ -10,69 +10,80 @@ AM_CFLAGS = $(HWLOC_CFLAGS)
 AM_CPPFLAGS = $(HWLOC_CPPFLAGS)
 AM_LDFLAGS = $(HWLOC_LDFLAGS)
 
-LDADD = $(HWLOC_top_builddir)/src/libhwloc.la
+LDADD = $(HWLOC_top_builddir)/hwloc/libhwloc.la
 
 EXTRA_DIST = \
-        test-hwloc-annotate.input test-hwloc-annotate.output \
-        test-hwloc-assembler.input1 test-hwloc-assembler.input2 test-hwloc-assembler.output \
+        test-hwloc-annotate.input test-hwloc-annotate.output test-hwloc-annotate.output2 \
         test-hwloc-calc.output \
         test-hwloc-compress-dir.input.tar.gz test-hwloc-compress-dir.output.tar.gz \
         test-hwloc-diffpatch.input1 test-hwloc-diffpatch.input2 \
-        test-hwloc-distances.output \
         test-hwloc-distrib.output \
-        test-hwloc-info.output
+        test-hwloc-info.output \
+        test-build-custom-topology.output
 
-noinst_HEADERS = misc.h
+noinst_HEADERS = misc.h common-ps.h
+
+# convenience library used by both hwloc-ps and lstopo
+noinst_LTLIBRARIES = libutils_common.la
+libutils_common_la_SOURCES = common-ps.c
+libutils_common_la_LIBADD = $(LDADD)
 
 bin_PROGRAMS = \
         hwloc-annotate \
-        hwloc-assembler \
         hwloc-bind \
         hwloc-calc \
         hwloc-diff \
-        hwloc-distances \
         hwloc-distrib \
         hwloc-info \
         hwloc-patch
 
+# start tests here before recursing into subdirs
+SUBDIRS = .
+
 if !HWLOC_HAVE_WINDOWS
 bin_PROGRAMS += hwloc-ps
 endif
+if HWLOC_HAVE_X86_CPUID
+bin_PROGRAMS += hwloc-gather-cpuid
+endif HWLOC_HAVE_X86_CPUID
 
 if HWLOC_HAVE_LINUX
 if HWLOC_HAVE_X86
 sbin_PROGRAMS = hwloc-dump-hwdata
+SUBDIRS += test-hwloc-dump-hwdata
 endif HWLOC_HAVE_X86
 endif HWLOC_HAVE_LINUX
 
 hwloc_dump_hwdata_SOURCES = \
 	hwloc-dump-hwdata.c \
 	hwloc-dump-hwdata-knl.c
-hwloc_dump_hwdata_CPPFLAGS = $(AM_CPPFLAGS) -DRUNSTATEDIR=\"$(HWLOC_runstatedir)\"
+hwloc_dump_hwdata_CPPFLAGS = $(AM_CPPFLAGS) -DRUNSTATEDIR="\"$(HWLOC_runstatedir)\""
 
 hwloc_calc_SOURCES = \
         hwloc-calc.h \
         hwloc-calc.c
 
-bin_SCRIPTS = hwloc-assembler-remote hwloc-compress-dir
+hwloc_ps_SOURCES = hwloc-ps.c
+# keep HWLOC_PS_LIBS first in case there's also -lnsl which cannot be before -lsocket
+hwloc_ps_LDADD = $(HWLOC_PS_LIBS) $(LDADD) libutils_common.la
+
+bin_SCRIPTS = hwloc-compress-dir
 if HWLOC_HAVE_LINUX
 bin_SCRIPTS += hwloc-gather-topology
 endif HWLOC_HAVE_LINUX
 
-if !HWLOC_HAVE_MINGW32
 TESTS = \
         test-hwloc-annotate.sh \
-        test-hwloc-assembler.sh \
         test-hwloc-calc.sh \
         test-hwloc-compress-dir.sh \
         test-hwloc-diffpatch.sh \
-        test-hwloc-distances.sh \
         test-hwloc-distrib.sh \
-        test-hwloc-info.sh
+        test-hwloc-info.sh \
+        test-build-custom-topology.sh \
+        test-parsing-flags.sh
 if HWLOC_HAVE_PLUGINS
 TESTS += test-fake-plugin.sh
 endif HWLOC_HAVE_PLUGINS
-endif !HWLOC_HAVE_MINGW32
 
 SEDMAN = $(SED) -e 's/%PACKAGE_NAME%/@PACKAGE_NAME@/g' \
 	  -e 's/%PACKAGE_VERSION%/@PACKAGE_VERSION@/g' \
@@ -85,13 +96,10 @@ nodist_man_MANS = $(man7_pages)
 
 man1_pages = \
         hwloc-annotate.1 \
-        hwloc-assembler.1 \
-        hwloc-assembler-remote.1 \
         hwloc-bind.1 \
         hwloc-calc.1 \
         hwloc-compress-dir.1 \
         hwloc-diff.1 \
-        hwloc-distances.1 \
         hwloc-distrib.1 \
         hwloc-info.1 \
         hwloc-patch.1
@@ -112,6 +120,13 @@ hps_page = hwloc-ps.1
 EXTRA_DIST += $(hps_page:.1=.1in)
 if !HWLOC_HAVE_WINDOWS
 nodist_man_MANS += $(hps_page)
+endif
+
+# Same for hwloc-gather-cpuid on x86
+hgc_page = hwloc-gather-cpuid.1
+EXTRA_DIST += $(hgc_page:.1=.1in)
+if HWLOC_HAVE_X86_CPUID
+nodist_man_MANS += $(hgc_page)
 endif
 
 # Same for dump-hwdata page on Linux/x86
@@ -146,11 +161,10 @@ endif HWLOC_HAVE_LINUX
 	  > $@ < $<
 
 install-exec-hook:
-	$(SED) -e 's/HWLOC_top_builddir\/utils\/hwloc/bindir/' -e 's/HWLOC_top_builddir\/utils\/lstopo/bindir/' -e '/HWLOC_top_builddir/d' $(DESTDIR)$(bindir)/hwloc-assembler-remote > $(DESTDIR)$(bindir)/hwloc-assembler-remote.tmp && mv -f $(DESTDIR)$(bindir)/hwloc-assembler-remote.tmp $(DESTDIR)$(bindir)/hwloc-assembler-remote
 	$(SED) -e 's/HWLOC_top_builddir\/utils\/hwloc/bindir/' -e 's/HWLOC_top_builddir\/utils\/lstopo/bindir/' -e '/HWLOC_top_builddir/d' $(DESTDIR)$(bindir)/hwloc-compress-dir > $(DESTDIR)$(bindir)/hwloc-compress-dir.tmp && mv -f $(DESTDIR)$(bindir)/hwloc-compress-dir.tmp $(DESTDIR)$(bindir)/hwloc-compress-dir
-	chmod +x $(DESTDIR)$(bindir)/hwloc-assembler-remote $(DESTDIR)$(bindir)/hwloc-compress-dir
+	chmod +x $(DESTDIR)$(bindir)/hwloc-compress-dir
 if HWLOC_HAVE_LINUX
-	$(SED) -e 's/HWLOC_top_builddir\/utils\/lstopo/bindir/' -e '/HWLOC_top_builddir/d' $(DESTDIR)$(bindir)/hwloc-gather-topology > $(DESTDIR)$(bindir)/hwloc-gather-topology.tmp && mv -f $(DESTDIR)$(bindir)/hwloc-gather-topology.tmp $(DESTDIR)$(bindir)/hwloc-gather-topology
+	$(SED) -e 's/HWLOC_top_builddir\/utils\/lstopo/bindir/' -e 's/HWLOC_top_builddir\/utils\/hwloc/bindir/' -e '/HWLOC_top_builddir/d' $(DESTDIR)$(bindir)/hwloc-gather-topology > $(DESTDIR)$(bindir)/hwloc-gather-topology.tmp && mv -f $(DESTDIR)$(bindir)/hwloc-gather-topology.tmp $(DESTDIR)$(bindir)/hwloc-gather-topology
 	chmod +x $(DESTDIR)$(bindir)/hwloc-gather-topology
 endif HWLOC_HAVE_LINUX
 

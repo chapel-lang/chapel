@@ -104,8 +104,8 @@ module SortedMap {
 
     /* The underlying implementation */
     @chpldoc.nodoc
-    var _set: sortedSet;
-
+    var _set: sortedSet(_eltType, parSafe=false,
+                        _keyComparator(comparator.type));
 
     //TODO: Maybe we should use the lock from the underlying implementation
     @chpldoc.nodoc
@@ -343,7 +343,7 @@ module SortedMap {
       var found: bool;
       (found, result) = _set.lowerBound((k, nil));
       if !found || comparator.compare(result[0], k) != 0 then
-        boundsCheckHalt("sortedMap index " + k:string + " out of bounds");
+        boundsCheckHalt(try! "sortedMap index %? out of bounds".format(k));
       return result[1]!.val;
     }
     /*
@@ -356,7 +356,7 @@ module SortedMap {
       var found: bool;
       (found, result) = _set.lowerBound((k, nil));
       if !found || comparator.compare(result[0], k) != 0 then
-        boundsCheckHalt("sortedMap index " + k:string + " out of bounds");
+        boundsCheckHalt(try! "sortedMap index %? out of bounds".format(k));
 
       _set.remove((k, nil));
 

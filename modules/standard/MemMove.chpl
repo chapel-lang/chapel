@@ -397,9 +397,9 @@ module MemMove {
     const srcGood = src.domain.contains(if isRange(srcRegion) then {srcRegion}
                                         else srcRegion);
     if !dstGood then
-      throw new IllegalArgumentError("dstRegion", "region contains invalid indices");
+      throw new IllegalArgumentError("illegal argument 'dstRegion': region contains invalid indices");
     if !srcGood then
-      throw new IllegalArgumentError("srcRegion", "region contains invalid indices");
+      throw new IllegalArgumentError("illegal argument 'srcRegion': region contains invalid indices");
 
     _testArrayAlias(dst, dstRegion, src, srcRegion);
   }

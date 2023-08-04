@@ -2,7 +2,7 @@ class A {
   type eltType;
 }
 
-class B : A {
+class B : A(?) {
 }
 
 var a = new owned A(int);

@@ -1,3 +1,5 @@
+castAwayStridableRange.chpl:13: warning: range.safeCast() is deprecated; instead consider using a cast ':'
+castAwayStridableRange.chpl:19: warning: range.safeCast() is deprecated; instead consider using a cast ':'
 before cast/assign unstridableRange=1..10
 before cast/assign stridableRange=1..20 by 2
 after cast/assign unstridableRange=1..20

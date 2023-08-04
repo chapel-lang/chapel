@@ -1,19 +1,26 @@
-.TH "hwlocality_xmlexport" 3 "Mon Jun 3 2019" "Version 1.11.13" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_xmlexport" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-hwlocality_xmlexport
+hwlocality_xmlexport \- Exporting Topologies to XML
 .SH SYNOPSIS
 .br
 .PP
+.SS "Enumerations"
+
+.in +1c
+.ti -1c
+.RI "enum \fBhwloc_topology_export_xml_flags_e\fP { \fBHWLOC_TOPOLOGY_EXPORT_XML_FLAG_V1\fP }"
+.br
+.in -1c
 .SS "Functions"
 
 .in +1c
 .ti -1c
-.RI "int \fBhwloc_topology_export_xml\fP (\fBhwloc_topology_t\fP topology, const char *xmlpath)"
+.RI "int \fBhwloc_topology_export_xml\fP (\fBhwloc_topology_t\fP topology, const char *xmlpath, unsigned long flags)"
 .br
 .ti -1c
-.RI "int \fBhwloc_topology_export_xmlbuffer\fP (\fBhwloc_topology_t\fP topology, char **xmlbuffer, int *buflen)"
+.RI "int \fBhwloc_topology_export_xmlbuffer\fP (\fBhwloc_topology_t\fP topology, char **xmlbuffer, int *buflen, unsigned long flags)"
 .br
 .ti -1c
 .RI "void \fBhwloc_free_xmlbuffer\fP (\fBhwloc_topology_t\fP topology, char *xmlbuffer)"
@@ -34,6 +41,18 @@ hwlocality_xmlexport
 .SH "Detailed Description"
 .PP 
 
+.SH "Enumeration Type Documentation"
+.PP 
+.SS "enum \fBhwloc_topology_export_xml_flags_e\fP"
+
+.PP
+Flags for exporting XML topologies\&. Flags to be given as a OR'ed set to \fBhwloc_topology_export_xml()\fP\&. 
+.PP
+\fBEnumerator\fP
+.in +1c
+.TP
+\fB\fIHWLOC_TOPOLOGY_EXPORT_XML_FLAG_V1 \fP\fP
+Export XML that is loadable by hwloc v1\&.x\&. However, the export may miss some details about the topology\&. 
 .SH "Function Documentation"
 .PP 
 .SS "int hwloc_export_obj_userdata (void * reserved, \fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP obj, const char * name, const void * buffer, size_t length)"
@@ -60,17 +79,21 @@ The function does not take care of portability issues if the export may be reimp
 
 .PP
 Free a buffer allocated by \fBhwloc_topology_export_xmlbuffer()\fP 
-.SS "int hwloc_topology_export_xml (\fBhwloc_topology_t\fP topology, const char * xmlpath)"
+.SS "int hwloc_topology_export_xml (\fBhwloc_topology_t\fP topology, const char * xmlpath, unsigned long flags)"
 
 .PP
 Export the topology into an XML file\&. This file may be loaded later through \fBhwloc_topology_set_xml()\fP\&.
 .PP
-\fBReturns:\fP
+By default, the latest export format is used, which means older hwloc releases (e\&.g\&. v1\&.x) will not be able to import it\&. Exporting to v1\&.x specific XML format is possible using flag \fBHWLOC_TOPOLOGY_EXPORT_XML_FLAG_V1\fP but it may miss some details about the topology\&. If there is any chance that the exported file may ever be imported back by a process using hwloc 1\&.x, one should consider detecting it at runtime and using the corresponding export format\&.
+.PP
+\fCflags\fP is a OR'ed set of \fBhwloc_topology_export_xml_flags_e\fP\&.
+.PP
+\fBReturns\fP
 .RS 4
 -1 if a failure occured\&.
 .RE
 .PP
-\fBNote:\fP
+\fBNote\fP
 .RS 4
 See also \fBhwloc_topology_set_userdata_export_callback()\fP for exporting application-specific object userdata\&.
 .PP
@@ -82,21 +105,25 @@ If \fCname\fP is '-', the XML output is sent to the standard output\&.
 .RE
 .PP
 
-.SS "int hwloc_topology_export_xmlbuffer (\fBhwloc_topology_t\fP topology, char ** xmlbuffer, int * buflen)"
+.SS "int hwloc_topology_export_xmlbuffer (\fBhwloc_topology_t\fP topology, char ** xmlbuffer, int * buflen, unsigned long flags)"
 
 .PP
 Export the topology into a newly-allocated XML memory buffer\&. \fCxmlbuffer\fP is allocated by the callee and should be freed with \fBhwloc_free_xmlbuffer()\fP later in the caller\&.
 .PP
 This memory buffer may be loaded later through \fBhwloc_topology_set_xmlbuffer()\fP\&.
 .PP
+By default, the latest export format is used, which means older hwloc releases (e\&.g\&. v1\&.x) will not be able to import it\&. Exporting to v1\&.x specific XML format is possible using flag \fBHWLOC_TOPOLOGY_EXPORT_XML_FLAG_V1\fP but it may miss some details about the topology\&. If there is any chance that the exported buffer may ever be imported back by a process using hwloc 1\&.x, one should consider detecting it at runtime and using the corresponding export format\&.
+.PP
 The returned buffer ends with a \\0 that is included in the returned length\&.
 .PP
-\fBReturns:\fP
+\fCflags\fP is a OR'ed set of \fBhwloc_topology_export_xml_flags_e\fP\&.
+.PP
+\fBReturns\fP
 .RS 4
 -1 if a failure occured\&.
 .RE
 .PP
-\fBNote:\fP
+\fBNote\fP
 .RS 4
 See also \fBhwloc_topology_set_userdata_export_callback()\fP for exporting application-specific object userdata\&.
 .PP
@@ -117,7 +144,7 @@ This function lets applications set \fCexport_cb\fP to a callback function that 
 .PP
 \fCexport_cb\fP may be set to \fCNULL\fP if userdata should not be exported to XML\&.
 .PP
-\fBNote:\fP
+\fBNote\fP
 .RS 4
 The topology-specific userdata pointer is ignored when exporting to XML\&. 
 .RE
@@ -134,7 +161,7 @@ This function lets applications set \fCimport_cb\fP to a callback function that 
 .PP
 \fCimport_cb\fP may be \fCNULL\fP if userdata should be ignored during import\&.
 .PP
-\fBNote:\fP
+\fBNote\fP
 .RS 4
 \fCbuffer\fP contains \fClength\fP characters followed by a null byte ('\\0')\&.
 .PP
