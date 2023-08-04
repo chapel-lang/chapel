@@ -1315,7 +1315,7 @@ static void destructureTupleAssignment(CallExpr* assign, CallExpr* lhsCall);
 static void processSyntacticTupleAssignment(CallExpr* call) {
   if (call->isNamedAstr(astrSassign)) {
     if (CallExpr* lhsCall = toCallExpr(call->get(1))) {
-      if (lhsCall->isNamed("_build_tuple")) {
+      if (lhsCall->isNamedAstr(astrBuildTuple)) {
         destructureTupleAssignment(call, lhsCall);
       }
     }
@@ -1360,7 +1360,7 @@ static void insertDestructureStatements(Expr*     S1,
       CallExpr* nextLHS = toCallExpr(expr);
       Expr*     nextRHS = new CallExpr(rhs->copy(), new_IntSymbol(index));
 
-      if (nextLHS != NULL && nextLHS->isNamed("_build_tuple") == true) {
+      if (nextLHS != NULL && nextLHS->isNamedAstr(astrBuildTuple) == true) {
         insertDestructureStatements(S1, S2, nextLHS, nextRHS);
 
       } else {
@@ -2632,7 +2632,7 @@ static void evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp) {
   //   A better long term solution would be preferred
   if (call->isNamedAstr(astr_initCopy)     == true &&
       parentCall                          != NULL &&
-      parentCall->isNamed("_build_tuple") == true) {
+      parentCall->isNamedAstr(astrBuildTuple) == true) {
     tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
   }
 
@@ -4370,7 +4370,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
 }
 
 static TypeSymbol* getTypeForSpecialConstructor(CallExpr* call) {
-  if (call->isNamed("_build_tuple") || call->isNamed("*")) {
+  if (call->isNamedAstr(astrBuildTuple) || call->isNamedAstr(astrSstar)) {
     INT_ASSERT(!call->isPrimitive(PRIM_MULT));
     return dtTuple->symbol;
   }
@@ -4483,7 +4483,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
   int position = 1;
   bool isTuple = false;
 
-  if (call->isNamed("_build_tuple")) {
+  if (call->isNamedAstr(astrBuildTuple)) {
     isTuple = true;
     Expr*     actual = new SymExpr(new_IntSymbol(call->numActuals()));
     CallExpr* query  = makePrimQuery(queried, new_CStringSymbol("size"));
@@ -4495,7 +4495,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
 
     position = position + 1; // tuple size is technically 1st param/type
 
-  } else if (call->isNamed("*")) {
+  } else if (call->isNamedAstr(astrSstar)) {
     // it happens to be that 1st actual == size so that will be checked below
     addToWhereClause(fn, formal,
                      new CallExpr(PRIM_IS_STAR_TUPLE_TYPE, queried->copy()));

@@ -2144,13 +2144,14 @@ private proc isBCPindex(type t) param do
     }
   }
 
-  //////////////////////////////////////////////////////////////////////////////////
-  // Range arithmetic.
+  /////////// operators + and - ///////////
+
   //
   // Shifts and entire range to the right or left.
   // The alignment shifts along with the range.
   //
   @chpldoc.nodoc
+  @unstable("'+' on ranges is unstable and may change in the future")
   inline operator +(r: range(?e, ?b, ?s), i: integral)
   {
     return new range(e, b, s,
@@ -2163,16 +2164,19 @@ private proc isBCPindex(type t) param do
 
   // TODO can this be removed?
   @chpldoc.nodoc
+  @unstable("'+=' on ranges is unstable and may change in the future")
   inline operator +=(ref r: range(?e, ?b, ?s), offset: integral)
   {
     r = r + offset;
   }
 
   @chpldoc.nodoc
+  @unstable("'+' on ranges is unstable and may change in the future")
   inline operator +(i:integral, r: range(?e,?b,?s)) do
     return r + i;
 
   @chpldoc.nodoc
+  @unstable("'-' on ranges is unstable and may change in the future")
   inline operator -(r: range(?e,?b,?s), i: integral)
   {
     return new range(e, b, s,
@@ -2185,10 +2189,13 @@ private proc isBCPindex(type t) param do
 
   // TODO can this be removed?
   @chpldoc.nodoc
+  @unstable("'-=' on ranges is unstable and may change in the future")
   inline operator -=(ref r: range(?e, ?b, ?s), offset: integral)
   {
     r = r - offset;
   }
+
+  /////////// operators 'by', 'align', '#' ///////////
 
   inline proc chpl_check_step_integral(step) {
     if !isIntegral(step.type) then

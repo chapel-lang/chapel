@@ -529,7 +529,7 @@ DefExpr* AggregateType::toLocalField(SymExpr* expr) const {
 DefExpr* AggregateType::toLocalField(CallExpr* expr) const {
   DefExpr* retval = NULL;
 
-  if (expr->isNamed(".") == true) {
+  if (expr->isNamedAstr(astrSdot)) {
     SymExpr* base = toSymExpr(expr->get(1));
     SymExpr* name = toSymExpr(expr->get(2));
 

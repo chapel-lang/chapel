@@ -393,18 +393,21 @@ module ChapelDomain {
   }
 
   @chpldoc.nodoc
+  @unstable("'+' on domains is unstable and may change in the future")
   operator +(in d: domain, i: index(d)) where d.isIrregular() {
     d.add(i);
     return d;
   }
 
   @chpldoc.nodoc
+  @unstable("'+' on domains is unstable and may change in the future")
   operator +(i, in d: domain) where isSubtype(i.type,index(d)) && d.isIrregular() {
     d.add(i);
     return d;
   }
 
   @chpldoc.nodoc
+  @unstable("'+' on domains is unstable and may change in the future")
   operator +(in d1: domain, d2: domain) where
                                     d1.type == d2.type &&
                                     d1.isIrregular() &&
@@ -423,8 +426,10 @@ module ChapelDomain {
   }
 
   @chpldoc.nodoc
+  @unstable("'+=' on domains is unstable and may change in the future")
   inline operator +=(ref D: domain, idx) { D.add(idx); }
   @chpldoc.nodoc
+  @unstable("'+=' on domains is unstable and may change in the future")
   inline operator +=(ref D: domain, param idx) { D.add(idx); }
 
   @chpldoc.nodoc
@@ -436,6 +441,7 @@ module ChapelDomain {
   }
 
   @chpldoc.nodoc
+  @unstable("'-' on domains is unstable and may change in the future")
   operator -(in d: domain, i: index(d)) where d.isIrregular() {
     d.remove(i);
     return d;
@@ -459,8 +465,10 @@ module ChapelDomain {
   }
 
   @chpldoc.nodoc
+  @unstable("'-=' on domains is unstable and may change in the future")
   inline operator -=(ref D: domain, idx) { D.remove(idx); }
   @chpldoc.nodoc
+  @unstable("'-=' on domains is unstable and may change in the future")
   inline operator -=(ref D: domain, param idx) { D.remove(idx); }
 
   @chpldoc.nodoc
@@ -552,6 +560,7 @@ module ChapelDomain {
            (d1.isSparse()      && d2.isSparse()     );
 
   @chpldoc.nodoc
+  @unstable("'-' on domains is unstable and may change in the future")
   operator -(a :domain, b :domain) where (a.type == b.type) &&
     a.isAssociative() {
     var newDom : a.type;
@@ -567,6 +576,7 @@ module ChapelDomain {
      occurs.
   */
   @chpldoc.nodoc
+  @unstable("'-=' on domains is unstable and may change in the future")
   operator -=(ref a :domain, b :domain) where (a.type == b.type) &&
     a.isAssociative() {
     for e in b do
@@ -575,12 +585,14 @@ module ChapelDomain {
   }
 
   @chpldoc.nodoc
+  @unstable("'|' on domains is unstable and may change in the future")
   operator |(a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     return a + b;
   }
 
   @chpldoc.nodoc
+  @unstable("'|=' on domains is unstable and may change in the future")
   operator |=(ref a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     for e in b do
@@ -593,6 +605,7 @@ module ChapelDomain {
   }
 
   @chpldoc.nodoc
+  @unstable("'+=' on domains is unstable and may change in the future")
   operator +=(ref a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     a |= b;
@@ -604,6 +617,7 @@ module ChapelDomain {
      occurs.
   */
   @chpldoc.nodoc
+  @unstable("'&' on domains is unstable and may change in the future")
   operator &(a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     var newDom : a.type;
@@ -615,6 +629,7 @@ module ChapelDomain {
   }
 
   @chpldoc.nodoc
+  @unstable("'&=' on domains is unstable and may change in the future")
   operator &=(ref a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     var removeSet: domain(a.idxType);
@@ -631,6 +646,7 @@ module ChapelDomain {
   }
 
   @chpldoc.nodoc
+  @unstable("'^' on domains is unstable and may change in the future")
   operator ^(a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     var newDom : a.type;
@@ -651,6 +667,7 @@ module ChapelDomain {
      added to the LHS.
   */
   @chpldoc.nodoc
+  @unstable("'^=' on domains is unstable and may change in the future")
   operator ^=(ref a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     for e in b do

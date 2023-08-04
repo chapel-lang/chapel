@@ -2603,7 +2603,7 @@ static Expr* preFoldNamed(CallExpr* call) {
     }
 
   // BHARSH TODO: Move the dtUninstantiated stuff over to resolveTypeComparisonCall
-  } else if (call->isNamed("==")) {
+  } else if (call->isNamedAstr(astrSeq)) {
     bool isMethodCall = false;
     if (call->partialTag == false) {
       if (SymExpr* se = toSymExpr(call->get(1))) {
@@ -2631,7 +2631,7 @@ static Expr* preFoldNamed(CallExpr* call) {
     }
 
 
-  } else if (call->isNamed("!=")) {
+  } else if (call->isNamedAstr(astrSne)) {
     bool isMethodCall = false;
     if (call->partialTag == false) {
       if (SymExpr* se = toSymExpr(call->get(1))) {
@@ -2713,6 +2713,19 @@ static Expr* preFoldNamed(CallExpr* call) {
 
       if (retval != NULL)
         call->replace(retval);
+    }
+  } else if (fWarnUnstable && call->numActuals() == 2 &&
+             (call->isNamedAstr(astrSstar) || call->isNamed(astrSstarstar))) {
+    // Is the first argument a range?
+    if (call->get(1)->typeInfo()->getValType()->symbol->hasFlag(FLAG_RANGE)) {
+      Type* t2 = call->get(2)->typeInfo()->getValType();
+      if (call->isNamedAstr(astrSstar)) {
+        if (t2->symbol->hasFlag(FLAG_RANGE)) USR_WARN(call,
+          "(range * range) is unstable and may change in the future");
+      } else if (call->isNamedAstr(astrSstarstar)) {
+        if (is_int_type(t2) || is_uint_type(t2)) USR_WARN(call,
+          "(range ** integer) is unstable and may change in the future");
+      }
     }
   } else if (isMethodCall(call)) {
     // Handle a reference to an interface associated type, if applicable.

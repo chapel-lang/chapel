@@ -269,7 +269,7 @@ BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
 
       // try to optimize anonymous range iteration
       if (CallExpr* call = toCallExpr(iteratorExpr))
-        if (call->isNamed("_build_tuple"))
+        if (call->isNamedAstr(astrBuildTuple))
           for_actuals(actual, call)
             tryToReplaceWithDirectRangeIterator(actual);
     }

@@ -7383,7 +7383,7 @@ static CallExpr* findOutIntentCallFromAssign(CallExpr* call,
                                              ArgSymbol** outFormal) {
   // Call is an assign from a temp
   // Find an out/inout argument call setting the temp
-  if (call->isNamed("=")) {
+  if (call->isNamedAstr(astrSassign)) {
     if (SymExpr* lhs = toSymExpr(call->get(1))) {
       if (SymExpr* rhs = toSymExpr(call->get(2))) {
         if (rhs->symbol()->hasFlag(FLAG_TEMP)) {
