@@ -1,0 +1,4 @@
+paramLoopAttribute.chpl:4: In function 'doSum':
+paramLoopAttribute.chpl:8: warning: Unknown attribute tool name 'llvm'
+paramLoopAttribute.chpl:9: warning: invalid value for llvm.attribute
+result 130816
