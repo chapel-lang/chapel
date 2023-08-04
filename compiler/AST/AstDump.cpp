@@ -977,6 +977,8 @@ void AstDump::printLoopStmtDetails(LoopStmt* loop) {
     write("hazard");
   if (loop->isOrderIndependent())
     write("order-independent");
+  if (loop->hasLLVMAttributes())
+    write("llvm-attributes");
 }
 
 void AstDump::newline() {

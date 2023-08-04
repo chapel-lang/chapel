@@ -48,6 +48,7 @@
 #include "parser.h"
 #include "resolution.h"
 #include "ResolveScope.h"
+#include "attribute.h"
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/global-strings.h"
@@ -311,6 +312,81 @@ struct Converter {
   }
 
   Expr* visit(const uast::Comment* node) {
+    return nullptr;
+  }
+
+  LLVMAttributePtr tupleToLLVMAttribute(const uast::Tuple* node) {
+    if (node->numActuals() != 1 && node->numActuals() != 2) return nullptr;
+
+    if (!node->actual(0)->isStringLiteral()) return nullptr;
+    auto attrName = node->actual(0)->toStringLiteral()->value().astr(context);
+
+    if (node->numActuals() == 1) {
+      return LLVMAttribute::construct(attrName);
+    } else {
+      auto attrVal = node->actual(1);
+      
+      if (auto str = attrVal->toStringLiteral())
+        return LLVMAttribute::constructString(attrName, str->value().astr(context));
+      else if (auto int_ = attrVal->toIntLiteral())
+        return LLVMAttribute::constructInt(attrName, int_->value());
+      else if (auto bool_ = attrVal->toBoolLiteral())
+        return LLVMAttribute::constructBool(attrName, bool_->value());
+      else if (auto tup = attrVal->toTuple()) {
+        auto v = tupleToLLVMAttribute(tup);
+        if (v == nullptr) return nullptr;
+        return LLVMAttribute::constructAttribute(attrName, v);
+      }
+      else return nullptr;
+    }
+  }
+
+  LLVMAttributePtr nodeToLLVMAttribute(const uast::AstNode* node) {
+    if (node->isTuple()) {
+      return tupleToLLVMAttribute(node->toTuple());
+    } else if (node->isStringLiteral()) {
+      auto attrName = node->toStringLiteral()->value().astr(context);
+      return LLVMAttribute::construct(attrName);
+    } else {
+    return nullptr;
+    }
+  }
+  
+  LLVMAttributeList buildLLVMAttributeList(const uast::AttributeGroup* node) {
+    LLVMAttributeList llvmAttrs;
+    if(!node) return llvmAttrs;
+
+    if (auto llvmAttrNode = node->getAttributeNamed(UniqueString::get(context, "llvm.attribute"))) {
+      for (auto act: llvmAttrNode->actuals()) {
+        auto attr = nodeToLLVMAttribute(act);
+        if(attr != nullptr) {
+          llvmAttrs.push_back(attr);
+        } else {
+          USR_WARN(node->id(), "invalid value for llvm.attribute");
+        }
+      }
+    }
+    return llvmAttrs;
+  }
+
+  LLVMAttributeList buildLLVMLoopAttributes(const uast::Loop* node) {
+    auto attrs = buildLLVMAttributeList(node->attributeGroup());
+    auto assertVectorize = buildAssertVectorize(node->attributeGroup());
+    if(assertVectorize) {
+      attrs.push_back(assertVectorize);
+    }
+    return attrs;
+  }
+
+
+
+
+  LLVMAttributePtr buildAssertVectorize(const uast::AttributeGroup* node) {
+    if(!node) return nullptr;
+    if (auto llvmAttrNode = node->getAttributeNamed(UniqueString::get(context, "llvm.assertVectorized"))) {
+      auto attrName = astr("chpl.loop.assertvectorized");
+      return LLVMAttribute::constructBool(attrName, true);
+    }
     return nullptr;
   }
 
@@ -1568,7 +1644,7 @@ struct Converter {
   BlockStmt* visit(const uast::DoWhile* node) {
     Expr* condExpr = toExpr(convertAST(node->condition()));
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
-    return DoWhileStmt::build(condExpr, body);
+    return DoWhileStmt::build(condExpr, body, buildLLVMLoopAttributes(node));
   }
 
   BlockStmt* visit(const uast::While* node) {
@@ -1583,7 +1659,7 @@ struct Converter {
       condExpr = toExpr(convertAST(node->condition()));
     }
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
-    return WhileDoStmt::build(condExpr, body);
+    return WhileDoStmt::build(condExpr, body, buildLLVMLoopAttributes(node));
   }
 
   /// IndexableLoops ///
@@ -1768,7 +1844,7 @@ struct Converter {
       INT_ASSERT(block);
 
       ret = ForLoop::buildForLoop(index, iteratorExpr, block, zippered,
-                                  isForExpr);
+                                  isForExpr, buildLLVMLoopAttributes(node));
     }
 
     INT_ASSERT(ret != nullptr);
@@ -1851,7 +1927,7 @@ struct Converter {
 
     auto ret = ForLoop::buildForeachLoop(indices, iteratorExpr, body,
                                          zippered,
-                                         isForExpr);
+                                         isForExpr, buildLLVMLoopAttributes(node));
 
     return ret;
   }

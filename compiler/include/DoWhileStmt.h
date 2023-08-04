@@ -29,7 +29,8 @@ class DoWhileStmt final : public WhileStmt
   // Class interface
   //
 public:
-  static BlockStmt*      build(Expr* cond, BlockStmt* body);
+  static BlockStmt*      build(Expr* cond, BlockStmt* body,
+                                LLVMAttributeList attrs = {});
 
 
   //

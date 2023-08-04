@@ -39,30 +39,35 @@ public:
                                        Expr*      iteratorExpr,
                                        BlockStmt* body,
                                        bool       zippered,
-                                       bool       isForExpr);
+                                       bool       isForExpr,
+                                       LLVMAttributeList attrs = {});
 
   static BlockStmt*      buildForeachLoop (Expr*      indices,
                                            Expr*      iteratorExpr,
                                            BlockStmt* body,
                                            bool       zippered,
-                                           bool       isForExpr);
+                                           bool       isForExpr,
+                                           LLVMAttributeList attrs = {});
 
   static BlockStmt*      buildCoforallLoop (Expr*      indices,
                                             Expr*      iteratorExpr,
                                             BlockStmt* body,
-                                            bool       zippered);
+                                            bool       zippered,
+                                            LLVMAttributeList attrs = {});
 
   static BlockStmt*      buildLoweredForallLoop (Expr*      indices,
                                                  Expr*      iteratorExpr,
                                                  BlockStmt* body,
                                                  bool       zippered,
-                                                 bool       isForExpr);
+                                                 bool       isForExpr,
+                                                 LLVMAttributeList attrs = {});
 
 
 private:
   static BlockStmt*      doBuildForLoop (Expr*      indices,
                                          Expr*      iteratorExpr,
                                          BlockStmt* body,
+                                         LLVMAttributeList attrs,
                                          bool       coforall,
                                          bool       zippered,
                                          bool       isLoweredForall,

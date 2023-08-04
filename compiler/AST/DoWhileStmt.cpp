@@ -29,7 +29,7 @@
 *                                                                           *
 ************************************* | ************************************/
 
-BlockStmt* DoWhileStmt::build(Expr* cond, BlockStmt* body)
+BlockStmt* DoWhileStmt::build(Expr* cond, BlockStmt* body, LLVMAttributeList attrs)
 {
   VarSymbol*   condVar       = newTemp();
   CallExpr*    condTest      = new CallExpr("_cond_test", cond);
@@ -53,6 +53,8 @@ BlockStmt* DoWhileStmt::build(Expr* cond, BlockStmt* body)
 
   loop->mContinueLabel = continueLabel;
   loop->mBreakLabel    = breakLabel;
+
+  loop->mLLVMAttributeList = attrs;
 
   retval->insertAtTail(new DefExpr(condVar));
 
@@ -88,6 +90,7 @@ DoWhileStmt* DoWhileStmt::copyInner(SymbolMap* map)
 
   retval->copyInnerShare(*this, map);
   retval->userLabel = this->userLabel;
+  retval->mLLVMAttributeList = mLLVMAttributeList;
 
   return retval;
 }
