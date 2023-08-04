@@ -1432,7 +1432,7 @@ proc symlink(oldName: string, newName: string) throws {
 
       'umask' is unstable on locale models other than the flat locale model.
 
-   :arg mask: The file creation mask to use now. Octal literals may be specified, e.g., ``0o777``
+   :arg mask: The file creation mask to use now. Octal literals may be specified, e.g., ``0o777``. See :ref:`Integral literal values <Integral literal values>`.
    :type mask: `int`
 
    :return: The previous file creation mask
