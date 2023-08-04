@@ -5,5 +5,5 @@ record R {
 }
 // Compiler should be able to auto-generate Hashable for compatible interfaces.
 
-// Make sure R can be used in a set, which requires hashing.
-var setOfR: set(R);
+// Make sure R is usable for hashing.
+chpl__defaultHashWrapper(new R());
