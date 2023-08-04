@@ -32,7 +32,7 @@
 // An interface formal is a TypeSymbol, defining a ConstrainedType.
 //
 
-InterfaceSymbol* diHashable = nullptr;
+InterfaceSymbol* gHashable = nullptr;
 
 static Symbol* isInterfaceFormalSymbol(Symbol* sym) {
   if (TypeSymbol* var = toTypeSymbol(sym))
@@ -70,7 +70,7 @@ DefExpr* InterfaceSymbol::buildDef(const char* name,
   InterfaceSymbol* isym = new InterfaceSymbol(name, body);
 
   if (name == astr("Hashable")) {
-    diHashable = isym;
+    gHashable = isym;
   }
 
   for_alist(formal, formals->argList) {

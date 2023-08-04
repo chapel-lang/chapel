@@ -2041,7 +2041,7 @@ static Expr* closestInterestingScopeAnchor(Expr*   callsite,
 }
 
 static bool isAutoImplementInternalInterface(InterfaceSymbol* isym) {
-  return isym == diHashable;
+  return isym == gHashable;
 }
 
 static Expr* anchorPointForAutoImplementInterface(InterfaceSymbol* isym,
