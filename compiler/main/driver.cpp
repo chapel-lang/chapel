@@ -2014,7 +2014,7 @@ static void postprocess_args() {
   // To avoid redundant warnings in driver sub-invocations, disable them unless
   // we are in a top-level invocation.
   if (driverInSubInvocation) {
-    ignore_warnings = false;
+    ignore_warnings = true;
   }
 
   setMaxCIndentLen();
