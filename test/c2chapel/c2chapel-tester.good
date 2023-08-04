@@ -18,6 +18,7 @@ intDefines: OK
 invalidC: OK
 miscTypedef: OK
 miscTypedefUnion: OK
+nestedArrays: OK
 nestedStruct: OK
 nestedUnion: OK
 opaqueStruct: OK
@@ -42,6 +43,7 @@ intDefines: OK
 invalidC: OK
 miscTypedef: OK
 miscTypedefUnion: OK
+nestedArrays: OK
 nestedStruct: OK
 nestedUnion: OK
 opaqueStruct: OK
