@@ -5413,7 +5413,10 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
 
       // c_ptr/ddata are already addresses, so dereference one level.
       if (dt->hasFlag(FLAG_DATA_CLASS)) {
-        USR_WARN(call, "fixme to not do dereference");
+        USR_WARN(call,
+                "put/get primitive special behavior for "
+                "c_ptr/_ddata will be removed -- please pass a ref "
+                "to the primitive");
         localAddr = codegenValue(localAddr);
       }
     }
@@ -5463,7 +5466,10 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
       remoteAddr = codegenRaddr(remoteAddr);
 
     } else if (t->hasFlag(FLAG_DATA_CLASS) == true)  {
-      USR_WARN(call, "fixme to not do dereference");
+      USR_WARN(call,
+                "put/get primitive special behavior for "
+                "c_ptr/_ddata will be removed -- please pass a ref "
+                "to the primitive");
       remoteAddr = codegenValue(remoteAddr);
 
     } else if (curArg->isRef()        == false) {
