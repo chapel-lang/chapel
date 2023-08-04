@@ -80,8 +80,12 @@ module ChapelGpuSupport {
     on __primitive("chpl_on_locale_num",
                    chpl_buildLocaleID(src_node, src_subloc)) {
 
-      __primitive("chpl_comm_put", raddr:c_ptr(uint(8)), dst_node,
-                  dst_subloc, addr:c_ptr(uint(8)), size);
+      // communicate to the primitive using a reference rather than a ptr
+      // the primitive will copy data using these references
+      const ref addrRef = (addr:c_ptr(uint(8))).deref();
+      ref raddrRef = (raddr:c_ptr(uint(8))).deref();
+      __primitive("chpl_comm_put", raddrRef, dst_node,
+                  dst_subloc, addrRef, size);
 
     }
   }
@@ -99,8 +103,12 @@ module ChapelGpuSupport {
     on __primitive("chpl_on_locale_num",
                    chpl_buildLocaleID(dst_node, dst_subloc)) {
 
-      __primitive("chpl_comm_get", raddr:c_ptr(uint(8)), src_node,
-                  src_subloc, addr:c_ptr(uint(8)), size);
+      // communicate to the primitive using a reference rather than a ptr
+      // the primitive will copy data using these references
+      ref addrRef = (addr:c_ptr(uint(8))).deref();
+      const ref raddrRef = (raddr:c_ptr(uint(8))).deref();
+      __primitive("chpl_comm_get", raddrRef, src_node,
+                  src_subloc, addrRef, size);
 
     }
   }
