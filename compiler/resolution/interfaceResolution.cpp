@@ -2095,6 +2095,19 @@ static ImplementsStmt* findSatisfyingIstm(InterfaceSymbol* isym,
                                           IfcConstraint* constraint,
                                           CallExpr* call2wf);
 
+static ImplementsStmt*
+searchForExplicitSatisfyingIstms(CallExpr* callsite,
+                                 Expr*          addlSite,
+                                 IfcConstraint* constraint,
+                                 InterfaceSymbol* isym,
+                                 CallExpr*      call2wf,
+                                 SymbolMap&     substitutions);
+static ImplementsStmt*
+tryGenerateSatisfyingIstm(CallExpr*        callsite,
+                          Expr*            addlSite,
+                          InterfaceSymbol* isym,
+                          CallExpr*        call2wf);
+
 /*
 constraintIsSatisfiedAtCallSite() checks if 'constraint' is satisfied.
 Return the corresponding ImplementsStmt if yes, NULL if no.
@@ -2142,6 +2155,23 @@ ConstraintSat constraintIsSatisfiedAtCallSite(CallExpr*      callsite,
         return csat;
     }
 
+  ImplementsStmt* bestIstm =
+    searchForExplicitSatisfyingIstms(callsite, addlSite, constraint, isym,
+                                     call2wf, substitutions);
+  if (!bestIstm)
+    bestIstm = tryGenerateSatisfyingIstm(callsite, addlSite, isym, call2wf);
+
+  // It is resolved, if non-null.
+  return ConstraintSat(bestIstm);
+}
+
+static ImplementsStmt*
+searchForExplicitSatisfyingIstms(CallExpr* callsite,
+                                 Expr*          addlSite,
+                                 IfcConstraint* constraint,
+                                 InterfaceSymbol* isym,
+                                 CallExpr*      call2wf,
+                                 SymbolMap&     substitutions) {
   ImplementsStmt* bestIstm = findSatisfyingIstm(isym, callsite,
                                                 constraint, call2wf);
 
@@ -2158,9 +2188,39 @@ ConstraintSat constraintIsSatisfiedAtCallSite(CallExpr*      callsite,
     if (bestIstm == nullptr)
       bestIstm = findSatisfyingIstm(isym, addlSite, constraint, call2wf);
   }
+  return bestIstm;
+}
 
-  // It is resolved, if non-null.
-  return ConstraintSat(bestIstm);;
+static ImplementsStmt*
+tryGenerateSatisfyingIstm(CallExpr*        callsite,
+                          Expr*            addlSite,
+                          InterfaceSymbol* isym,
+                          CallExpr*        call2wf) {
+  if (!isAutoImplementInternalInterface(isym)) return nullptr;
+
+  debuggerBreakHere();
+
+  ImplementsStmt* bestIstm = checkInferredImplStmt(callsite, isym, call2wf,
+                                                   nullptr,
+                                                   /* generatedOnly */ true);
+
+  if (bestIstm == nullptr && addlSite != nullptr && addlSite != callsite) {
+    // also check from the scope of the constraint actuals' types
+    // Todo: in the following, do not call findSatisfyingIstm() again
+    // if we have already checked that scope, i.e., callsite->parentExpr.
+    for_actuals(actual, call2wf) {
+      DefExpr* defPoint = actual->qualType().type()->symbol->defPoint;
+      bestIstm = checkInferredImplStmt(defPoint, isym, call2wf, nullptr,
+                                       /* generatedOnly */ true);
+      if (bestIstm != nullptr) break;
+    }
+    // also check from the additional scope
+    if (bestIstm == nullptr)
+      bestIstm = checkInferredImplStmt(addlSite, isym, call2wf, nullptr,
+                                       /* generatedOnly */ true);
+  }
+
+  return bestIstm;
 }
 
 ConstraintSat trySatisfyConstraintAtCallsite(CallExpr*      callsite,
@@ -2204,16 +2264,10 @@ static ImplementsStmt* findSatisfyingIstm(InterfaceSymbol* isym,
     // instantiate a generic istm
     bestIstm = useGenericImplementsStmt(callsite, isym, call2wf, genSuccess);
   } else {
-    if (fInferImplementsStmts || isAutoImplementInternalInterface(isym)) {
-      // If we're trying to infer a compiler-generated interface, we only
-      // want to use compiler-generated procedures, since the whole point
-      // of interfaces for library procedures is to avoid user-defined methods
-      // from accidentally being used in a special way. However, if fInferImplementsStmts
-      // is set, the user is specifically opting into such uses. So,
-      // set generatedOnly to !fInferImplementsStmts, which given the condition
-      // of this branch implies that this is a special interface.
+    if (fInferImplementsStmts) {
       bestIstm = checkInferredImplStmt(callsite, isym, call2wf,
-                                       pick.failure, !fInferImplementsStmts);
+                                       pick.failure,
+                                       /* generatedOnly */ false);
     }
   }
 
