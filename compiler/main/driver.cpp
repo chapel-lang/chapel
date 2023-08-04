@@ -1771,7 +1771,7 @@ static void setMultiLocaleInterop() {
   fMultiLocaleInterop = true;
 }
 
-static void setMaxCIndentLen() {
+static void setMaxCIdentLen() {
   bool gotPGI = !strcmp(CHPL_TARGET_COMPILER, "pgi")
              || !strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-pgi");
   // conservatively how much is needed for the current PGI compiler
@@ -2017,7 +2017,7 @@ static void postprocess_args() {
     ignore_warnings = true;
   }
 
-  setMaxCIndentLen();
+  setMaxCIdentLen();
 
   postLocal();
 
