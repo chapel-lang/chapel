@@ -357,6 +357,18 @@ struct Converter {
     if(!node) return llvmAttrs;
 
     if (auto llvmAttrNode = node->getAttributeNamed(UniqueString::get(context, "llvm.attribute"))) {
+
+      // no matter what, warn for this attribute that its unstable
+      auto attrLoc = chpl::parsing::locateId(context, llvmAttrNode->id());
+      bool warnUnstable = chpl::parsing::shouldWarnUnstableForPath(context, attrLoc.path());
+      if (warnUnstable) {
+        // can't use CHPL_REPORT or reportUnstableWarningForId
+        // because AttributeGroup is not a NamedDecl
+        std::string msg = "'llvm.attribute' is an unstable attribute";
+        auto err = GeneralError::get(ErrorBase::WARNING, attrLoc, msg);
+        context->report(std::move(err));
+      }
+
       for (auto act: llvmAttrNode->actuals()) {
         auto attr = nodeToLLVMAttribute(act);
         if(attr != nullptr) {
@@ -384,6 +396,17 @@ struct Converter {
   LLVMAttributePtr buildAssertVectorize(const uast::AttributeGroup* node) {
     if(!node) return nullptr;
     if (auto llvmAttrNode = node->getAttributeNamed(UniqueString::get(context, "llvm.assertVectorized"))) {
+
+      auto attrLoc = chpl::parsing::locateId(context, llvmAttrNode->id());
+      bool warnUnstable = chpl::parsing::shouldWarnUnstableForPath(context, attrLoc.path());
+      if (warnUnstable) {
+        // can't use CHPL_REPORT or reportUnstableWarningForId
+        // because AttributeGroup is not a NamedDecl
+        std::string msg = "'llvm.assertVectorized' is an unstable attribute";
+        auto err = GeneralError::get(ErrorBase::WARNING, attrLoc, msg);
+        context->report(std::move(err));
+      }
+
       auto attrName = astr("chpl.loop.assertvectorized");
       return LLVMAttribute::constructBool(attrName, true);
     }
