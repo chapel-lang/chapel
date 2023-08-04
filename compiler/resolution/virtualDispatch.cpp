@@ -204,6 +204,8 @@ static FnSymbol* getInstantiatedFunction(FnSymbol* pfn,
 
   if (_thisAt->isGeneric() == true) {
     subs.put(_this, ct->symbol);
+  } else {
+    INT_ASSERT(!_thisAt->symbol->hasFlag(FLAG_GENERIC));
   }
 
   for (int i = 3; i <= cfn->numFormals(); i++) {

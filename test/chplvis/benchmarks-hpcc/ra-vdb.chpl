@@ -253,6 +253,10 @@ proc verifyResults(T) {
 //
 record vlock {
   var l: atomic bool;
+  proc init() {}
+  proc init=(other: vlock) {
+    this.l = other.l.read();
+  }
   proc lock() {
     on this do while l.testAndSet() != false do chpl_task_yield();
   }

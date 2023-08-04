@@ -61,6 +61,18 @@ module Graph500_defs
       var duplicates: int=0;
       var vlock$: sync bool = true;
 
+      proc init(nd: domain(1) = {1..0}) {
+        this.nd = nd;
+      }
+      proc init=(other: vertex_struct) {
+        this.nd = other.nd;
+        this.Neighbors = other.Neighbors;
+        this.neighbor_count = other.neighbor_count;
+        this.self_edges = other.self_edges;
+        this.duplicates = other.duplicates;
+        this.vlock$ = other.vlock$.readXX();
+      }
+
       proc is_a_neighbor (new_vertex_ID: vertex_id) {
          var is_member: bool = false;
          forall n in Neighbors (1..neighbor_count) with (ref is_member) {
@@ -68,13 +80,13 @@ module Graph500_defs
          }
          return is_member;
       }
-        
+
       proc add_self_edge () {
          vlock$.readFE();
          self_edges += 1;
          vlock$.writeEF(true);
       }
- 
+
       proc add_duplicate () {
          vlock$.readFE();
          duplicates += 1;
@@ -92,15 +104,15 @@ module Graph500_defs
          else
          {
            if (neighbor_count >= Neighbors.size) {
-             grow_helper(); 
+             grow_helper();
            }
            neighbor_count += 1;
            Neighbors[neighbor_count]= new_vertex_ID;
          }
          vlock$.writeEF(true);
       }
-         
-      proc grow_helper() { 
+
+      proc grow_helper() {
           halt("Should not call grow_helper");
           var new_nd = Neighbors.size + 1;
           nd = {1..new_nd};
@@ -135,7 +147,7 @@ module Graph500_defs
 // SSCA2 code uses level sets. The set of vertices at a particular distance
 // from the starting vertex form a level set
 // The class allows the full set of vertices visited to be partitioned into a
-// linked list of level sets 
+// linked list of level sets
 
 class Level_Set {
   type Vertex_List;

@@ -285,7 +285,7 @@ module DistributedMap {
             return ret;
         }
 
-        proc addOrSet(in k: keyType, in v: valType) {
+        proc addOrReplace(in k: keyType, in v: valType) {
             const loc = this._localeFor(k);
             on loc {
                 this.locks[loc.id].lock();

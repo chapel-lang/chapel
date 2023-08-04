@@ -1,7 +1,7 @@
 use Reflection;
 
 proc parse(ref data: ?t) {
-  param numfield = numFields(t);
+  param numfield = getNumFields(t);
   for param i in 0..<numfield {
     type vtype = getField(data, i).type;
     writeln(getFieldName(t, i));

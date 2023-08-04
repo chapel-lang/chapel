@@ -5,16 +5,16 @@ module Scalable_Graph_Generator
 {
    use Graph500_defs;
 
-// A Chapel implementation of the Scalable Graph Generator 
+// A Chapel implementation of the Scalable Graph Generator
 // for the Graph500 Benchmark
 
-// The scalable data generator constructs a list of edge tuples containing 
-// vertex identifiers. Each edge is undirected with its endpoints given in 
-// the tuple as StartVertex and EndVertex. 
+// The scalable data generator constructs a list of edge tuples containing
+// vertex identifiers. Each edge is undirected with its endpoints given in
+// the tuple as StartVertex and EndVertex.
 
-// I am currently leveraging some of the code from the Chapel implementation 
-// of the RMAT Graph generator developed by John Lewis for SSCA2 but 
-// made changes to this to more closely follow the XMT implementation of the 
+// I am currently leveraging some of the code from the Chapel implementation
+// of the RMAT Graph generator developed by John Lewis for SSCA2 but
+// made changes to this to more closely follow the XMT implementation of the
 // ScalableGraphGenerator.c used for the 2010 Graph500 submission
 
 // Here I will use a similar data structure as the SSCA2 code and have Edges
@@ -59,14 +59,14 @@ module Scalable_Graph_Generator
   // Main RMAT Graph Generation Procedure
   // ====================================~
 
-// Note that we include the inquiry of the domain type for edges so we can use 
+// Note that we include the inquiry of the domain type for edges so we can use
 // this to allocate additional arrays using the same distribution
 
   proc Scalable_Data_Generator ( SCALE :int, N_VERTICES : int,
                                 n_raw_edges : int, Edges:[?ArrD] )
   {
       use BlockDist;
-      use Graph500_defs;
+      // use Graph500_defs;
       use Random;
       use Time;
 
@@ -125,7 +125,7 @@ module Scalable_Graph_Generator
 
          serial (SHUFFLE_DETERMINISTICALLY) {
          forall j in ArrD do
-         { 
+         {
 //          Choose two locations at random
             var ndx1 = floor (1 + Unif_Random (j) * N_VERTICES) : int;
             var ndx2 = floor (1 + Unif_Random2(j) * N_VERTICES) : int;
@@ -148,10 +148,10 @@ module Scalable_Graph_Generator
               permutation$ (ndx2).writeEF (label1);
             };
 
-          }; 
+          };
          }
       };
- 
+
       graph_gen_time.stop();
       if (PRINT_TIMING_STATISTICS){
         writeln("Time for SDG: Construct Perm Array  = ", graph_gen_time.elapsed());
@@ -161,7 +161,7 @@ module Scalable_Graph_Generator
       graph_gen_time.clear();
       graph_gen_time.start();
 
-// Approach A: Leverage Lewis code using assign_quadrant, but this looks 
+// Approach A: Leverage Lewis code using assign_quadrant, but this looks
 //             to have multiple trips through the full list of edges
 
   if RMAT_WITH_NOISE then {
@@ -271,7 +271,7 @@ module Scalable_Graph_Generator
 
      serial (SHUFFLE_DETERMINISTICALLY) {
      forall j in ArrD do
-     { 
+     {
 
 //     Choose two locations at random
        var ndx1 = floor (1 + Unif_Random (j) * N_VERTICES) : int;

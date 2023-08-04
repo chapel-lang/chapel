@@ -390,6 +390,7 @@ module ChapelDistribution {
     proc isRectangular() param do return false;
     proc isAssociative() param do return false;
     proc isSparse()      param do return false;
+    proc isBlock()       param do return false;
 
     proc type isDefaultRectangular() param do return false;
     proc isDefaultRectangular() param do return false;
@@ -460,7 +461,7 @@ module ChapelDistribution {
     }
   }
 
-  class BaseSparseDomImpl : BaseSparseDom {
+  class BaseSparseDomImpl : BaseSparseDom(?) {
 
     var nnzDom = {1..0};
 
@@ -626,7 +627,7 @@ module ChapelDistribution {
 
   record SparseIndexBuffer {
     param rank: int;
-    var obj: BaseSparseDom;
+    var obj: borrowed BaseSparseDom(?);
 
     type idxType = if rank==1 then int else rank*int;
     var bufDom = domain(1);
@@ -1003,7 +1004,7 @@ module ChapelDistribution {
   }
 
   pragma "base array"
-  class BaseRectangularArr: BaseArrOverRectangularDom {
+  class BaseRectangularArr: BaseArrOverRectangularDom(?) {
     /* rank, idxType, strides are from BaseArrOverRectangularDom */
     type eltType;
 
@@ -1040,7 +1041,7 @@ module ChapelDistribution {
    * implementing sparse array classes.
    */
   pragma "base array"
-  class BaseSparseArr: AbsBaseArr {
+  class BaseSparseArr: AbsBaseArr(?) {
     param rank : int;
     type idxType;
 
@@ -1058,7 +1059,7 @@ module ChapelDistribution {
    * go here.
    */
   pragma "base array"
-  class BaseSparseArrImpl: BaseSparseArr {
+  class BaseSparseArrImpl: BaseSparseArr(?) {
 
     pragma "local field" pragma "unsafe"
     // may be initialized separately
@@ -1201,7 +1202,7 @@ module ChapelDistribution {
 
     var result: rank * resultType;
     for param i in 0..rank-1 do
-      result(i) = from(i).safeCast(resultType);
+      result(i) = from(i) : resultType;
 
     return result;
   }

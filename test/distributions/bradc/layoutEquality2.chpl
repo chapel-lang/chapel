@@ -9,39 +9,39 @@ var DS2: sparse subdomain(D2);
 var DS_CSR1: sparse subdomain(D1) dmapped CS();
 var DS_CSR2: sparse subdomain(D2) dmapped CS();
 
-writeln(DS1.dist == DS1.dist);
-writeln(DS1.dist == DS2.dist);
-writeln(DS1.dist == DS_CSR1.dist);
-writeln(DS1.dist == DS_CSR2.dist);
+writeln(DS1.distribution == DS1.distribution);
+writeln(DS1.distribution == DS2.distribution);
+writeln(DS1.distribution == DS_CSR1.distribution);
+writeln(DS1.distribution == DS_CSR2.distribution);
 writeln();
 
-writeln(DS2.dist == DS2.dist);
-writeln(DS2.dist == DS_CSR1.dist);
-writeln(DS2.dist == DS_CSR2.dist);
+writeln(DS2.distribution == DS2.distribution);
+writeln(DS2.distribution == DS_CSR1.distribution);
+writeln(DS2.distribution == DS_CSR2.distribution);
 writeln();
 
-writeln(DS_CSR1.dist == DS_CSR1.dist);
-writeln(DS_CSR1.dist == DS_CSR2.dist);
+writeln(DS_CSR1.distribution == DS_CSR1.distribution);
+writeln(DS_CSR1.distribution == DS_CSR2.distribution);
 writeln();
 
-writeln(DS_CSR2.dist == DS_CSR2.dist);
+writeln(DS_CSR2.distribution == DS_CSR2.distribution);
 writeln();
 
 
-writeln(DS1.dist != DS1.dist);
-writeln(DS1.dist != DS2.dist);
-writeln(DS1.dist != DS_CSR1.dist);
-writeln(DS1.dist != DS_CSR2.dist);
+writeln(DS1.distribution != DS1.distribution);
+writeln(DS1.distribution != DS2.distribution);
+writeln(DS1.distribution != DS_CSR1.distribution);
+writeln(DS1.distribution != DS_CSR2.distribution);
 writeln();
 
-writeln(DS2.dist != DS2.dist);
-writeln(DS2.dist != DS_CSR1.dist);
-writeln(DS2.dist != DS_CSR2.dist);
+writeln(DS2.distribution != DS2.distribution);
+writeln(DS2.distribution != DS_CSR1.distribution);
+writeln(DS2.distribution != DS_CSR2.distribution);
 writeln();
 
-writeln(DS_CSR1.dist != DS_CSR1.dist);
-writeln(DS_CSR1.dist != DS_CSR2.dist);
+writeln(DS_CSR1.distribution != DS_CSR1.distribution);
+writeln(DS_CSR1.distribution != DS_CSR2.distribution);
 writeln();
 
-writeln(DS_CSR2.dist != DS_CSR2.dist);
+writeln(DS_CSR2.distribution != DS_CSR2.distribution);
 writeln();

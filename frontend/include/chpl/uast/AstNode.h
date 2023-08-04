@@ -169,7 +169,7 @@ class AstNode {
   /**
     Returns the ID of this AST node.
    */
-  ID id() const {
+  inline const ID& id() const {
     return id_;
   }
 

@@ -1,8 +1,8 @@
-.TH "hwlocality_helper_ancestors" 3 "Mon Jun 3 2019" "Version 1.11.13" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_helper_ancestors" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-hwlocality_helper_ancestors
+hwlocality_helper_ancestors \- Looking at Ancestor and Child Objects
 .SH SYNOPSIS
 .br
 .PP
@@ -10,7 +10,7 @@ hwlocality_helper_ancestors
 
 .in +1c
 .ti -1c
-.RI "static \fBhwloc_obj_t\fP \fBhwloc_get_ancestor_obj_by_depth\fP (\fBhwloc_topology_t\fP topology, unsigned depth, \fBhwloc_obj_t\fP obj)"
+.RI "static \fBhwloc_obj_t\fP \fBhwloc_get_ancestor_obj_by_depth\fP (\fBhwloc_topology_t\fP topology, int depth, \fBhwloc_obj_t\fP obj)"
 .br
 .ti -1c
 .RI "static \fBhwloc_obj_t\fP \fBhwloc_get_ancestor_obj_by_type\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type, \fBhwloc_obj_t\fP obj)"
@@ -30,14 +30,28 @@ hwlocality_helper_ancestors
 Be sure to see the figure in \fBTerms and Definitions\fP that shows a complete topology tree, including depths, child/sibling/cousin relationships, and an example of an asymmetric topology where one package has fewer caches than its peers\&. 
 .SH "Function Documentation"
 .PP 
-.SS "static \fBhwloc_obj_t\fP hwloc_get_ancestor_obj_by_depth (\fBhwloc_topology_t\fP topology, unsigned depth, \fBhwloc_obj_t\fP obj)\fC [inline]\fP, \fC [static]\fP"
+.SS "static \fBhwloc_obj_t\fP hwloc_get_ancestor_obj_by_depth (\fBhwloc_topology_t\fP topology, int depth, \fBhwloc_obj_t\fP obj)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Returns the ancestor object of \fCobj\fP at depth \fCdepth\fP\&. 
+.PP
+\fBNote\fP
+.RS 4
+\fCdepth\fP should not be the depth of PU or NUMA objects since they are ancestors of no objects (except Misc or I/O)\&. This function rather expects an intermediate level depth, such as the depth of Packages, Cores, or Caches\&. 
+.RE
+.PP
+
 .SS "static \fBhwloc_obj_t\fP hwloc_get_ancestor_obj_by_type (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type, \fBhwloc_obj_t\fP obj)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Returns the ancestor object of \fCobj\fP with type \fCtype\fP\&. 
+.PP
+\fBNote\fP
+.RS 4
+\fCtype\fP should not be \fBHWLOC_OBJ_PU\fP or \fBHWLOC_OBJ_NUMANODE\fP since these objects are ancestors of no objects (except Misc or I/O)\&. This function rather expects an intermediate object type, such as \fBHWLOC_OBJ_PACKAGE\fP, \fBHWLOC_OBJ_CORE\fP, etc\&. 
+.RE
+.PP
+
 .SS "static \fBhwloc_obj_t\fP hwloc_get_common_ancestor_obj (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP obj1, \fBhwloc_obj_t\fP obj2)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
@@ -45,15 +59,19 @@ Returns the common parent object to objects \fCobj1\fP and \fCobj2\fP\&.
 .SS "static \fBhwloc_obj_t\fP hwloc_get_next_child (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP parent, \fBhwloc_obj_t\fP prev)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
-Return the next child\&. If \fCprev\fP is \fCNULL\fP, return the first child\&. 
+Return the next child\&. Return the next child among the normal children list, then among the memory children list, then among the I/O children list, then among the Misc children list\&.
+.PP
+If \fCprev\fP is \fCNULL\fP, return the first child\&.
+.PP
+Return \fCNULL\fP when there is no next child\&. 
 .SS "static int hwloc_obj_is_in_subtree (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP obj, \fBhwloc_obj_t\fP subtree_root)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Returns true if \fCobj\fP is inside the subtree beginning with ancestor object \fCsubtree_root\fP\&. 
 .PP
-\fBNote:\fP
+\fBNote\fP
 .RS 4
-This function assumes that both \fCobj\fP and \fCsubtree_root\fP have a \fCcpuset\fP\&. 
+This function cannot work if \fCobj\fP and \fCsubtree_root\fP objects do not have CPU sets (I/O or Misc objects)\&. 
 .RE
 .PP
 

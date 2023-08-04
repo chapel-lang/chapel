@@ -3,7 +3,7 @@ class C1 {
   var x: T;
 }
 
-class C2: C1 {
+class C2: C1(?) {
   type TT;
   var y: TT;
 }

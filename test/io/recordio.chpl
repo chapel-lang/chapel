@@ -66,7 +66,7 @@ var B: [0..#3] MyRecord;
   // read until we reach EOF
   // (note: if you want to handle format errors or I/O errors,
   //  you need to use error= versions of the I/O functions)
-  while( reader.readf("%t\t%t\t%'S\n", rec.i, rec.r, rec.s) ) {
+  while( reader.readf("%?\t%?\t%'S\n", rec.i, rec.r, rec.s) ) {
     // for debugging purposes, we also output it to stdout
     if debug then writeln("read ", rec);
     B[i] = rec;

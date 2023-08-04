@@ -51,7 +51,73 @@ module GpuDiagnostics
   pragma "chpldoc ignore chpl prefix"
   extern record chpl_gpuDiagnostics {
     var kernel_launch: uint(64);
+    var host_to_device: uint(64);
+    var device_to_host: uint(64);
+    var device_to_device: uint(64);
   };
+
+  /*
+   * Utility function to assert GPU diagnostic values. First 4 formals have the
+   * same names as the fields in chpl_gpuDiagnostics type. `_um` and `_aod`
+   * versions of `kernel_launch` are for convenience where we expect different
+   * number of launches in different memory modes
+   *  - -1 (and really any other negative value) signals that a given diagnostic
+   *    should be ignored.
+   *  - kernel_launch overrides _um and _aod variants if it is set to something
+   *    non-negative.
+   *  - For the time being, this is only considering locale 0s GPUs.
+   */
+  @chpldoc.nodoc
+  proc assertGpuDiags(kernel_launch=-1,
+                      host_to_device=-1,
+                      device_to_host=-1,
+                      device_to_device=-1,
+                      kernel_launch_um=-1,
+                      kernel_launch_aod=-1) {
+
+    /* doesn't do any comparison for expected<0. If compared, and
+       expected != actual, prints out a message and returns false. Otherwise,
+       returns true quietly. */
+    proc compare(expected, actual, name) {
+      const res = (expected<0) || (actual == expected);
+
+      if res == false {
+        writef("Unexpected GPU Diagnostic: observed %i %s instead of %i\n",
+               actual, name, expected);
+      }
+
+      return res;
+    }
+
+    use ChplConfig;
+
+    param isUm = CHPL_GPU_MEM_STRATEGY == "unified_memory";
+
+    const expectedLaunch;
+    if kernel_launch >= 0 {
+      assert(kernel_launch_um < 0 && kernel_launch_aod < 0,
+             "when kernel_launch is set, kernel_launch* shouldn't be set");
+
+      expectedLaunch = kernel_launch;
+    }
+    else {
+      expectedLaunch = if isUm then kernel_launch_um else kernel_launch_aod;
+    }
+
+    const diags = getGpuDiagnostics()[0];
+    var success = compare(expectedLaunch, diags.kernel_launch, "launches");
+
+    if !isUm {
+      success &= compare(host_to_device, diags.host_to_device,
+                         "host to device communication calls");
+      success &= compare(device_to_host, diags.device_to_host,
+                         "device to host communication calls");
+      success &= compare(device_to_device, diags.device_to_device,
+                         "device to device communication calls");
+    }
+
+    assert(success, "GPU Diagnostics assertion failed");
+  }
 
   /*
     The Chapel record type inherits the runtime definition of it.

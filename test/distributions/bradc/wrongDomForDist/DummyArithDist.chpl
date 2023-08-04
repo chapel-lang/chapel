@@ -12,7 +12,7 @@ class MyDist : BaseDist {
   proc dsiClone() do return new unmanaged MyDist();
 }
 
-class MyDom : BaseRectangularDom {
+class MyDom : BaseRectangularDom(?) {
   const dist: unmanaged MyDist?;
 
   proc dsiGetIndices() {

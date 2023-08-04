@@ -470,7 +470,7 @@ class LocBlockCyclic {
         const locid_i = if isTuple(locid) then locid(i) else locid;
         const lo = lowIdx(i) + (locid_i * blocksize(i));
         const str = blocksize(i) * targetLocDom.dim(i).size;
-        myStarts(i) = (lo.. by str).safeCast(myStarts(i).type);
+        myStarts(i) = try! (lo.. by str) : myStarts(i).type;
       }
     this.myStarts = myStarts;
   }
@@ -494,7 +494,7 @@ proc LocBlockCyclic.writeThis(x) throws {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Domain Class
 //
-class BlockCyclicDom: BaseRectangularDom {
+class BlockCyclicDom: BaseRectangularDom(?) {
   //
   // LEFT LINK: a pointer to the parent distribution
   //
@@ -576,7 +576,7 @@ iter BlockCyclicDom.these(param tag: iterKind, followThis) where tag == iterKind
     const stride    = dim.stride;
     const low       = (stride * curFollow.lowBound): idxType;
     const high      = (stride * curFollow.highBound): idxType;
-    t(i) = ((low..high by stride) + dim.lowBound).safeCast(t(i).type);
+    t(i) = try! ((low..high by stride) + dim.lowBound) : t(i).type;
   }
 
   for i in {(...t)} {
@@ -845,7 +845,7 @@ proc LocBlockCyclicDom._sizes {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Array Class
 //
-class BlockCyclicArr: BaseRectangularArr {
+class BlockCyclicArr: BaseRectangularArr(?) {
 
   //
   // LEFT LINK: the global domain descriptor for this array
@@ -1008,7 +1008,7 @@ iter BlockCyclicArr.these(param tag: iterKind, followThis) ref where tag == iter
     const stride    = dim.stride;
     const low       = curFollow.lowBound * stride;
     const high      = curFollow.highBound * stride;
-    myFollowThis(i) = ((low..high by stride) + dim.lowBound).safeCast(curFollow.type);
+    myFollowThis(i) = try! ((low..high by stride) + dim.lowBound) : curFollow.type;
   }
 
   const myFollowThisDom = {(...myFollowThis)};

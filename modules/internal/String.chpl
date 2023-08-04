@@ -45,6 +45,7 @@ module String {
   use CTypes;
   use ByteBufferHelpers;
   use BytesStringCommon;
+  use ChplConfig only compiledForSingleLocale;
   import OS.{errorCode};
 
   use CString;
@@ -64,7 +65,7 @@ module String {
                                               buf:c_string,
                                               buflen:c_ssize_t): errorCode;
   pragma "fn synchronization free"
-  private extern proc qio_encode_char_buf(dst:c_void_ptr, chr:int(32)):errorCode;
+  private extern proc qio_encode_char_buf(dst:c_ptr(void), chr:int(32)):errorCode;
   pragma "fn synchronization free"
   private extern proc qio_nbytes_char(chr:int(32)):c_int;
 
@@ -157,12 +158,6 @@ module String {
 
   inline proc chpl__intToIdx(type idxType: codepointIndex, i: int) do
     return i: codepointIndex;
-
-  proc chpl__idxTypeToIntIdxType(type idxType: byteIndex) type do
-    return int;
-
-  proc chpl__idxTypeToIntIdxType(type idxType: codepointIndex) type do
-    return int;
 
   @chpldoc.nodoc inline operator byteIndex.>(x: byteIndex, y: byteIndex) {
     return x: int > y: int;
@@ -415,7 +410,8 @@ module String {
                  terminating null byte.
     :type length: `int`
 
-    :throws DecodeError: if `x` contains non-UTF-8 characters.
+    :throws: Throws a :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
+      characters.
 
     :returns: A new `string`
   */
@@ -439,7 +435,8 @@ module String {
                  terminating null byte.
     :type length: `int`
 
-    :throws: `DecodeError` if `x` contains non-UTF-8 characters.
+    :throws: Throws a :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
+      characters.
 
     :returns: A new `string`
   */
@@ -456,11 +453,11 @@ module String {
                                     length: int,
                                     numCodepoints: int) : string {
     // copy the string to the combined buffer
-    var buf = buffer:c_void_ptr:c_ptr(uint(8));
+    var buf = buffer:c_ptr(void):c_ptr(uint(8));
     buf = buf + offset;
     import OS.POSIX.memcpy;
-    memcpy(buf:c_void_ptr, x:c_void_ptr, length.safeCast(c_size_t));
-    memcpy(buf:c_void_ptr, x:c_void_ptr, length.safeCast(c_size_t));
+    memcpy(buf:c_ptr(void), x:c_ptr(void), length.safeCast(c_size_t));
+    memcpy(buf:c_ptr(void), x:c_ptr(void), length.safeCast(c_size_t));
     // add null byte
     buf[length] = 0;
 
@@ -488,7 +485,8 @@ module String {
      :arg size: Size of memory allocated for `x` in bytes
      :type length: `int`
 
-     :throws DecodeError: if `x` contains non-UTF-8 characters.
+     :throws: Throws a :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
+      characters.
 
      :returns: A new `string`
   */
@@ -514,7 +512,8 @@ module String {
      :arg size: Size of memory allocated for `x` in bytes
      :type length: `int`
 
-     :throws: `DecodeError` if `x` contains non-UTF-8 characters.
+     :throws: Throws a :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
+      characters.
 
      :returns: A new `string`
   */
@@ -547,7 +546,8 @@ module String {
                  terminating null byte.
     :type length: `int`
 
-     :throws DecodeError: if `x` contains non-UTF-8 characters.
+    :throws: Throws a :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
+      characters.
 
     :returns: A new `string`
   */
@@ -570,7 +570,8 @@ module String {
                  terminating null byte.
     :type length: `int`
 
-     :throws: `DecodeError` if `x` contains non-UTF-8 characters.
+    :throws: Throws a :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
+      characters.
 
     :returns: A new `string`
   */
@@ -595,7 +596,8 @@ module String {
      :arg size: Size of memory allocated for `x` in bytes
      :type length: `int`
 
-     :throws DecodeError: if `x` contains non-UTF-8 characters.
+     :throws: Throws a :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
+      characters.
 
      :returns: A new `string`
   */
@@ -620,7 +622,8 @@ module String {
      :arg size: Size of memory allocated for `x` in bytes
      :type length: `int`
 
-     :throws: `DecodeError` if `x` contains non-UTF-8 characters.
+     :throws: Throws a :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
+      characters.
 
      :returns: A new `string`
   */
@@ -670,8 +673,8 @@ module String {
                  - `decodePolicy.escape` escapes each illegal byte with private
                    use codepoints
 
-    :throws DecodeError: if `decodePolicy.strict` is passed to the `policy`
-            argument and `x` contains non-UTF-8 characters.
+    :throws: Throws a :class:`~Errors.DecodeError`: if `decodePolicy.strict` is
+      passed to the `policy` argument and `x` contains non-UTF-8 characters.
 
     :returns: A new `string`
   */
@@ -698,8 +701,8 @@ module String {
                  - `decodePolicy.escape` escapes each illegal byte with private
                    use codepoints
 
-    :throws: `DecodeError` if `decodePolicy.strict` is passed to the `policy`
-             argument and `x` contains non-UTF-8 characters.
+    :throws: Throws a :class:`~Errors.DecodeError`: if `decodePolicy.strict` is
+      passed to the `policy` argument and `x` contains non-UTF-8 characters.
 
     :returns: A new `string`
   */
@@ -733,7 +736,8 @@ module String {
                    `decodePolicy.escape` escapes each illegal byte with private
                    use codepoints
 
-     :throws DecodeError: if `x` contains non-UTF-8 characters.
+     :throws: a :class:`~Errors.DecodeError` if `x` contains non-UTF-8
+       characters.
 
      :returns: A new `string`
   */
@@ -765,7 +769,8 @@ module String {
                    `decodePolicy.escape` escapes each illegal byte with private
                    use codepoints
 
-     :throws: `DecodeError` if `x` contains non-UTF-8 characters.
+     :throws: a :class:`~Errors.DecodeError` if `x` contains non-UTF-8
+       characters.
 
      :returns: A new `string`
   */
@@ -912,7 +917,7 @@ module String {
     // assumes that 'this' is already localized
     proc _cpIndexLenHelpNoAdjustment(ref start: int) {
       if boundsChecking {
-        if !_local && this.locale_id != chpl_nodeID {
+        if !compiledForSingleLocale() && this.locale_id != chpl_nodeID {
           halt("internal error -- method requires localized string");
         }
       }
@@ -999,7 +1004,7 @@ module String {
                            const splitCount: int, const noSplits: bool,
                            const limitSplits: bool, const iEnd: byteIndex) {
       if boundsChecking {
-        if !_local && this.locale_id != chpl_nodeID {
+        if !compiledForSingleLocale() && this.locale_id != chpl_nodeID {
           halt("internal error -- method requires localized string");
         }
       }
@@ -1262,7 +1267,7 @@ module String {
                current locale, otherwise a deep copy is performed.
   */
   inline proc string.localize() : string {
-    if _local || this.locale_id == chpl_nodeID {
+    if compiledForSingleLocale() || this.locale_id == chpl_nodeID {
       return string.createBorrowingBuffer(this);
     } else {
       const x:string = this; // assignment makes it local
@@ -1619,8 +1624,8 @@ module String {
 
     :arg r: range of the indices the new string should be made from
 
-    :throws CodepointSplittingError: if slicing results in splitting a
-            multi-byte codepoint.
+    :throws: throws a :class:`~Errors.CodepointSplitError`: if slicing results
+      in splitting a multi-byte codepoint.
 
     :returns: a new string that is a substring within ``0..<string.size``. If
               the length of `r` is zero, an empty string is returned.

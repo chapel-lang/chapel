@@ -1,4 +1,4 @@
-use IO, LinkedLists;
+use IO, LinkedLists, JSON;
 
 record MyRecord {
   var numbers:LinkedList(int); // could it be [1..0] int ?
@@ -13,7 +13,7 @@ myEntry.numbers.push_back(1);
 myEntry.numbers.push_back(2);
 myEntry.numbers.push_back(3);
 
-writef("testing json write: %jt\n", myEntry);
+stdout.withSerializer(JsonSerializer).writef("testing json write: %?\n", myEntry);
 
 var f = openTempFile();
 {
@@ -25,11 +25,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var r:MyRecord;
 
-  reader.readf("%jt", r);
+  reader.readf("%?", r);
 
   writeln("Read: ", r);
 
@@ -45,11 +45,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var r:MyRecord;
 
-  reader.readf("%jt", r);
+  reader.readf("%?", r);
 
   writeln("Read: ", r);
 
@@ -65,11 +65,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var r:MyRecord;
 
-  reader.readf("%jt", r);
+  reader.readf("%?", r);
 
   writeln("Read: ", r);
 
@@ -85,11 +85,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var r:MyRecord;
 
-  reader.readf("%jt", r);
+  reader.readf("%?", r);
 
   writeln("Read: ", r);
 
@@ -105,11 +105,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var r:MyRecord;
 
-  reader.readf("%jt", r);
+  reader.readf("%?", r);
 
   writeln("Read: ", r);
 
@@ -125,11 +125,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var r:MyRecord;
 
-  reader.readf("%jt", r);
+  reader.readf("%?", r);
 
   writeln("Read: ", r);
 
@@ -145,11 +145,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var r:MyRecord;
 
-  reader.readf("%jt", r);
+  reader.readf("%?", r);
 
   writeln("Read: ", r);
 
@@ -165,11 +165,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var r:MyRecord;
 
-  reader.readf("%jt", r);
+  reader.readf("%?", r);
 
   writeln("Read: ", r);
 
@@ -185,11 +185,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var r:MyRecord;
 
-  reader.readf("%jt", r);
+  reader.readf("%?", r);
 
   writeln("Read: ", r);
 
@@ -205,14 +205,13 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var r:MyRecord;
 
-  reader.readf("%jt", r);
+  reader.readf("%?", r);
 
   writeln("Read: ", r);
 
   reader.close();
 }
-

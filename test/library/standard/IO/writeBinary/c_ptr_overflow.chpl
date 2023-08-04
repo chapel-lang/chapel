@@ -26,4 +26,4 @@ proc testCPtrOverflow(toWrite) {
 var a = [1,2,3,4,5,6,7,8,9,10]:uint(8);
 
 testCPtrOverflow(c_ptrTo(a));
-testCPtrOverflow(c_ptrTo(a): c_void_ptr);
+testCPtrOverflow(c_ptrTo(a): c_ptr(void));

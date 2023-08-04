@@ -56,8 +56,8 @@ module HTable {
                                numFields : hsize_t, numRecords : hsize_t, type_size : hsize_t,
                                field_names : c_array(c_string), field_offset : c_array(hsize_t),
                                field_types : c_array(hid_t),
-                               chunk_size : hsize_t, fill_data : c_void_ptr, compress : c_int,
-                               data : c_void_ptr);
+                               chunk_size : hsize_t, fill_data : c_ptr(void), compress : c_int,
+                               data : c_ptr(void));
     var meta = new H5MetaTable(R);
     var cname = name.c_str();
     var nfields = meta.nFields : hsize_t;
@@ -103,7 +103,7 @@ module HTable {
                                    numRecords : hsize_t, type_size : hsize_t,
                                    field_offset : c_array(hsize_t),
                                    field_sizes : c_array(c_size_t),
-                                   data : c_void_ptr);
+                                   data : c_ptr(void));
     var meta = new H5MetaTable(R);
     var cname = name.c_str();
     var type_size = meta.Rsize : hsize_t;
@@ -137,7 +137,7 @@ module HTable {
                                      nrecords : hsize_t, type_size : c_size_t,
                                      field_offset : c_array(hsize_t),
                                      field_sizes : c_array(c_size_t),
-                                     data : c_void_ptr);
+                                     data : c_ptr(void));
     extern proc H5TBget_table_info(loc_id : hid_t, table_name : c_string,
                                    nfields : c_ptr(hsize_t), nrecords : c_ptr(hsize_t));
     var meta = new H5MetaTable(R);

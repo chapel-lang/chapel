@@ -9,7 +9,7 @@ and(a, a, b); // 8 & 40 = 8
 writeln(a);
 
 b.set(2);
-ior(b, a, b);  // 8 | 2 = 10
+or(b, a, b);  // 8 | 2 = 10
 writeln(b);
 
 a.set(6);
@@ -21,23 +21,23 @@ com(a, a); // one's complement of 129, aka bitwise negation
 writeln(a);
 
 a.set(13);
-writeln(a, " has ", a.popcount(), " bits set");
+writeln(a, " has ", a.popCount(), " bits set");
 
 b.set(7);
-writeln("hamming distance between ", a, " and ", b, " is ", a.hamdist(b));
+writeln("hamming distance between ", a, " and ", b, " is ", a.hammingDistance(b));
 
 a.set(79);
-writeln(a, "'s first 0 bit is in position ", a.scan0(0));
+writeln(a, "'s first 0 bit is in position ", a.findNext0(0));
 
 a.set(96);
-writeln(a, "'s first 1 bit is in position ", a.scan1(0));
+writeln(a, "'s first 1 bit is in position ", a.findNext1(0));
 
-a.setbit(2);  // set bit 2 (if not set, adds 2^2)
+a.setBit(2);  // set bit 2 (if not set, adds 2^2)
 writeln(a);
 
-a.clrbit(6);  // clear bit 6 (if set, subtracts 2^6)
+a.clearBit(6);  // clear bit 6 (if set, subtracts 2^6)
 writeln(a);
 
-a.combit(3);  // flip the bit signifying 2^3 (adds or subtracts 2^3)
+a.toggleBit(3);  // flip the bit signifying 2^3 (adds or subtracts 2^3)
 writeln(a);
-writeln("bit 3 of a is ", a.tstbit(3));
+writeln("bit 3 of a is ", a.getBit(3));

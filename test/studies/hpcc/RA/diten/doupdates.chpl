@@ -13,7 +13,7 @@ proc doUpdates(A, nu) {
         t(i) = A(start+i-1);
       }
     }
-    on T.domain.dist.idxToLocale(t(0) & indexMask) {
+    on T.domain.distribution.idxToLocale(t(0) & indexMask) {
       var tt = t;
       local {
         for i in 0..#nu {

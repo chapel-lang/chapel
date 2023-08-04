@@ -36,7 +36,7 @@ module DefaultAssociative {
 
   // helps to move around array elements when rehashing the domain
   class DefaultAssociativeDomRehashHelper : chpl__rehashHelpers {
-    var dom: unmanaged DefaultAssociativeDom;
+    var dom: unmanaged DefaultAssociativeDom(?);
     override proc startRehash(newSize: int) {
       for arr in dom._arrs {
         arr._startRehash(newSize);
@@ -430,7 +430,7 @@ module DefaultAssociative {
     }
   }
 
-  class DefaultAssociativeArr: AbsBaseArr {
+  class DefaultAssociativeArr: AbsBaseArr(?) {
     type idxType;
     param parSafeDom: bool;
     var dom: unmanaged DefaultAssociativeDom(idxType, parSafe=parSafeDom);

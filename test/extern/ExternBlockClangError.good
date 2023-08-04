@@ -1,9 +1,3 @@
-ExternBlockClangError.chpl:3:8: error: no previous prototype for function 'bar' [-Werror,-Wmissing-prototypes]
-  void bar(void) {
-       ^
-ExternBlockClangError.chpl:3:3: note: declare 'static' if the function is not intended to be used outside of this translation unit
-  void bar(void) {
-  ^
-  static 
-1 error generated.
-ExternBlockClangError.chpl:1: error: error running clang on extern block
+ExternBlockClangError.chpl:1: error: running clang on extern block failed -- clang errors follow
+ExternBlockClangError.chpl:3: note: error: no previous prototype for function 'bar'
+ExternBlockClangError.chpl:9: note: warning: cast to smaller integer type 'int' from 'short *'

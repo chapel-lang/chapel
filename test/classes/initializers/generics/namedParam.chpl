@@ -17,7 +17,7 @@ class Parent {
   }
 }
 
-class Child : Parent {
+class Child : Parent(?) {
   param stridable;
 
   // Trouble here if compiler does not replace 'stridable' with instantiation

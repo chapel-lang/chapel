@@ -961,10 +961,10 @@ proc isDistributed(a) param {
   else if a.domain.isSparse() {
     // TODO: is there a better way to check for distributed sparse domains?
     use BlockDist;
-    return isSubtype(a.domain.dist.type, Block);
+    return isSubtype(a.domain.distribution.type, Block);
   }
   else {
-    return !isSubtype(a.domain.dist.type, DefaultDist);
+    return !isSubtype(a.domain.distribution.type, DefaultDist);
   }
 }
 
@@ -1450,6 +1450,42 @@ private proc _isDiag(A: [?D] ?eltType) {
   return true;
 }
 
+/* Return `true` if matrix is the additive identity (zero matrix). */
+proc isZero(A: [?D] ?eltType) where isDenseMatrix(A) {
+  return _isZero(A);
+}
+
+private proc _isZero(A: [?D] ?eltType) {
+  if D.rank != 2 then
+    compilerError("Rank is not 2");
+
+  for (i, j) in D {
+    if A[i, j] != 0 then return false;
+  }
+  return true;
+}
+
+private proc _isEye(A: [?D] ?eltType) {
+  if D.rank != 2 then
+    compilerError("Rank is not 2");
+
+  if !isSquare(A) then return false;
+
+  for (i, j) in D {
+    if i == j {
+      if A[i, j] != 1 then return false;
+    } else {
+      if A[i, j] != 0 then return false;
+    }
+  }
+
+  return true;
+}
+
+/* Return `true` if matrix is the multiplicative identity (identity matrix).  */
+proc isEye(A: [?D] ?eltType) where isDenseMatrix(A) {
+  return _isEye(A);
+}
 
 /* Return `true` if matrix is Hermitian */
 proc isHermitian(A: [?D]) where isDenseMatrix(A) {
@@ -2223,7 +2259,18 @@ proc eig(A: [] ?t, param left = false, param right = false)
 
   .. note::
 
-   A temporary copy of ``A`` will be created within this computation.
+    A temporary copy of ``A`` will be created within this computation.
+
+  .. note::
+
+    Arrays with strided domains are not supported.
+
+  .. note::
+
+    Arrays whose domains have nonzero offsets are supported. ``U`` inherits the
+    row indexing of ``A``, while ``Vh`` inherits the column indexing of ``A``.
+    The columns of ``U``, rows of ``Vh``, and ``s`` all share the same 0-based
+    indexing.
 
   .. note::
 
@@ -2231,7 +2278,8 @@ proc eig(A: [] ?t, param left = false, param right = false)
     compiler error if ``lapackImpl`` is ``off``.
 */
 proc svd(A: [?Adom] ?t) throws
-  where isLAPACKType(t) && usingLAPACK && Adom.rank == 2 {
+  where isLAPACKType(t) && usingLAPACK && Adom.rank == 2
+    && Adom.strides == strideKind.one {
   if isDistributed(A) then
     compilerError("svd does not support distributed vectors/matrices");
 
@@ -2248,11 +2296,11 @@ proc svd(A: [?Adom] ?t) throws
   // Results
 
   // Stores singular values, sorted
-  var s: [0..<min((...A.shape))] realType;
-  // Unitary matrix, U
-  var u: [0..<m, 0..<m] t;
-  // Unitary matrix V^T (or V^H)
-  var vt: [0..<n, 0..<n] t;
+  var s: [0..<min(m,n)] realType;
+  // Unitary matrix, U, inherits row offset of A
+  var u: [Adom.dim(0), 0..<m] t;
+  // Unitary matrix V^T (or V^H), inherits column offset of A
+  var vt: [0..<n, Adom.dim(1)] t;
 
   // if return code 'info' > 0, then this stores unconverged superdiagonal
   // elements of upper bidiagonal matrix 'B' whose diagonal is in 's'.
@@ -2559,7 +2607,7 @@ proc isLocalArr(A: [?D]) param : bool {
 @chpldoc.nodoc
 /* Returns ``true`` if the domain is dense N-dimensional non-distributed domain. */
 proc isLocalDom(D: domain) param : bool {
-  return D.dist.type == defaultDist.type;
+  return D.distribution.type == defaultDist.type;
 }
 
 // TODO: Add this to public interface eventually
@@ -2583,7 +2631,7 @@ proc type _array.rank param {
 @chpldoc.nodoc
 /* Returns ``true`` if the domain is ``DefaultSparse`` */
 private proc isDefaultSparseDom(D: domain) param {
-  return isSubtype(_to_borrowed(D.dist.type), DefaultDist) && D.isSparse();
+  return isSubtype(_to_borrowed(D.distribution.type), DefaultDist) && D.isSparse();
 }
 
 @chpldoc.nodoc
@@ -3388,6 +3436,15 @@ module Sparse {
     return _isDiag(A);
   }
 
+  /* Return `true` if sparse matrix is the additive identity (zero matrix). */
+  proc isZero(A: [?D] ?eltType) where A.isSparse() {
+    return _isZero(A);
+  }
+
+  /* Return `true` if sparse matrix is the multiplicative identity (identity matrix).  */
+  proc isEye(A: [?D] ?eltType) where A.isSparse() {
+    return _isEye(A);
+  }
 
   /* Return ``true`` if matrix is Hermitian. Supports CSR and COO arrays. */
   proc isHermitian(A: [?D]) where A.isSparse() {
@@ -3424,11 +3481,11 @@ module Sparse {
 
   @chpldoc.nodoc
   /* Returns ``true`` if the array is dmapped to ``CS`` layout. */
-  proc isCSArr(A: []) param { return isCSType(A.domain.dist.type); }
+  proc isCSArr(A: []) param { return isCSType(A.domain.distribution.type); }
 
   @chpldoc.nodoc
   /* Returns ``true`` if the domain is dmapped to ``CS`` layout. */
-  proc isCSDom(D: domain) param { return isCSType(D.dist.type); }
+  proc isCSDom(D: domain) param { return isCSType(D.distribution.type); }
 
 
 } // submodule LinearAlgebra.Sparse

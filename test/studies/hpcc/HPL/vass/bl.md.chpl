@@ -12,7 +12,7 @@ use DimensionalDist2D;
 use ReplicatedDim;
 use BlockDim;
 //use BlockCycDim; //MBC //BC
-use Time, Random;
+use Time, Random, Math;
 
 config param reproducible = false;
 config var verbose = true;

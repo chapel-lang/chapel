@@ -21,6 +21,9 @@ record ForwardingWrapper {
 class C {
   type eltType;
   var lock$ : sync bool;
+  proc init(type eltType) {
+    this.eltType = eltType;
+  }
 }
 
 var wrapper : ForwardingWrapper(int);

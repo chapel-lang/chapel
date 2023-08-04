@@ -27,11 +27,11 @@ iter myiter(depth: int, param tag: iterKind): int
     var cnt$: sync int = 1;
     coforall ooo in 1..nn {
       const current = cnt$.readFE();
-      writef("myiter start %t\n", current);
+      writef("myiter start %i\n", current);
       for jjj in 1..mm {
         yield current * 100 + jjj;
       }
-      writef("myiter done  %t\n", current);
+      writef("myiter done  %i\n", current);
       cnt$.writeEF(current + 1);
     }
   } else {

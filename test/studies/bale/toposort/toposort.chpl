@@ -1015,7 +1015,7 @@ where D.rank == 2
     }
 
     if count == 1 {
-      workQueue.add( row, D.dist.dsiIndexToLocale( (row,minCol) ) );
+      workQueue.add( row, D.distribution.dsiIndexToLocale( (row,minCol) ) );
     }
 
     rowCount[row].write( count );
@@ -1091,7 +1091,7 @@ where D.rank == 2
           // if previousRowCount = 2 (ie rowCount[row] == 1)
           if previousRowCount == 2 {
             if enableRuntimeDebugging && debugTopo then writeln( "Queueing ", row);
-            workQueue.add( row, D.dist.dsiIndexToLocale( (row,minCol) ) );
+            workQueue.add( row, D.distribution.dsiIndexToLocale( (row,minCol) ) );
           }
         }
       }

@@ -181,7 +181,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
         // TODO: reimplement this properly within the Chapel type system
 #ifdef HAVE_LLVM_TYPED_POINTERS
         llvm::Type *PointeeTy = ty->getPointerElementType();
-        // handle string, c_string, nil, opaque, c_void_ptr
+        // handle string, c_string, nil, opaque, raw_c_void_ptr
         if(PointeeTy->isIntegerTy()) {
           llvm::DIType* pteIntDIType; //create the DI-pointeeType
           pteIntDIType = this->dibuilder.createBasicType(

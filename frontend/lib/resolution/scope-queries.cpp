@@ -265,6 +265,7 @@ bool createsScope(asttags::AstTag tag) {
          || asttags::isCobegin(tag)
          || asttags::isConditional(tag)
          || asttags::isSelect(tag)
+         || asttags::isWhen(tag)
          || asttags::isTry(tag)
          || asttags::isCatch(tag)
          || asttags::isSync(tag);
@@ -1505,7 +1506,21 @@ static void errorIfNameNotInScope(Context* context,
                                /* traceCurPath */ nullptr,
                                /* traceResult */ nullptr);
 
-  if (got == false || result.size() == 0) {
+  bool found = got && result.size() > 0;
+
+  if (!found) {
+    // Builtins aren't explicitly visible in the scope, but can be used therein
+    // and so are valid in imports and uses.
+
+    auto topLevelScope = scopeForId(context, ID());
+    bool got = helpLookupInScope(context, topLevelScope, {}, resolving, name, config,
+                                 checkedScopes, result,
+                                 /* traceCurPath */ nullptr,
+                                 /* traceResult */ nullptr);
+    found = got && result.size() > 0;
+  }
+
+  if (!found) {
     CHPL_REPORT(context, UseImportUnknownSym, name.c_str(),
                 exprForError,
                 clauseForError,

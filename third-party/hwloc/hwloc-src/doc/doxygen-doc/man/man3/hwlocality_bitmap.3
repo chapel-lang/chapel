@@ -1,8 +1,8 @@
-.TH "hwlocality_bitmap" 3 "Mon Jun 3 2019" "Version 1.11.13" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_bitmap" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-hwlocality_bitmap
+hwlocality_bitmap \- The bitmap API
 .SH SYNOPSIS
 .br
 .PP
@@ -42,7 +42,7 @@ hwlocality_bitmap
 .RI "\fBhwloc_bitmap_t\fP \fBhwloc_bitmap_dup\fP (\fBhwloc_const_bitmap_t\fP bitmap)"
 .br
 .ti -1c
-.RI "void \fBhwloc_bitmap_copy\fP (\fBhwloc_bitmap_t\fP dst, \fBhwloc_const_bitmap_t\fP src)"
+.RI "int \fBhwloc_bitmap_copy\fP (\fBhwloc_bitmap_t\fP dst, \fBhwloc_const_bitmap_t\fP src)"
 .br
 .ti -1c
 .RI "int \fBhwloc_bitmap_snprintf\fP (char *restrict buf, size_t buflen, \fBhwloc_const_bitmap_t\fP bitmap)"
@@ -78,40 +78,49 @@ hwlocality_bitmap
 .RI "void \fBhwloc_bitmap_fill\fP (\fBhwloc_bitmap_t\fP bitmap)"
 .br
 .ti -1c
-.RI "void \fBhwloc_bitmap_only\fP (\fBhwloc_bitmap_t\fP bitmap, unsigned id)"
+.RI "int \fBhwloc_bitmap_only\fP (\fBhwloc_bitmap_t\fP bitmap, unsigned id)"
 .br
 .ti -1c
-.RI "void \fBhwloc_bitmap_allbut\fP (\fBhwloc_bitmap_t\fP bitmap, unsigned id)"
+.RI "int \fBhwloc_bitmap_allbut\fP (\fBhwloc_bitmap_t\fP bitmap, unsigned id)"
 .br
 .ti -1c
-.RI "void \fBhwloc_bitmap_from_ulong\fP (\fBhwloc_bitmap_t\fP bitmap, unsigned long mask)"
+.RI "int \fBhwloc_bitmap_from_ulong\fP (\fBhwloc_bitmap_t\fP bitmap, unsigned long mask)"
 .br
 .ti -1c
-.RI "void \fBhwloc_bitmap_from_ith_ulong\fP (\fBhwloc_bitmap_t\fP bitmap, unsigned i, unsigned long mask)"
+.RI "int \fBhwloc_bitmap_from_ith_ulong\fP (\fBhwloc_bitmap_t\fP bitmap, unsigned i, unsigned long mask)"
 .br
 .ti -1c
-.RI "void \fBhwloc_bitmap_set\fP (\fBhwloc_bitmap_t\fP bitmap, unsigned id)"
+.RI "int \fBhwloc_bitmap_from_ulongs\fP (\fBhwloc_bitmap_t\fP bitmap, unsigned nr, const unsigned long *masks)"
 .br
 .ti -1c
-.RI "void \fBhwloc_bitmap_set_range\fP (\fBhwloc_bitmap_t\fP bitmap, unsigned begin, int end)"
+.RI "int \fBhwloc_bitmap_set\fP (\fBhwloc_bitmap_t\fP bitmap, unsigned id)"
 .br
 .ti -1c
-.RI "void \fBhwloc_bitmap_set_ith_ulong\fP (\fBhwloc_bitmap_t\fP bitmap, unsigned i, unsigned long mask)"
+.RI "int \fBhwloc_bitmap_set_range\fP (\fBhwloc_bitmap_t\fP bitmap, unsigned begin, int end)"
 .br
 .ti -1c
-.RI "void \fBhwloc_bitmap_clr\fP (\fBhwloc_bitmap_t\fP bitmap, unsigned id)"
+.RI "int \fBhwloc_bitmap_set_ith_ulong\fP (\fBhwloc_bitmap_t\fP bitmap, unsigned i, unsigned long mask)"
 .br
 .ti -1c
-.RI "void \fBhwloc_bitmap_clr_range\fP (\fBhwloc_bitmap_t\fP bitmap, unsigned begin, int end)"
+.RI "int \fBhwloc_bitmap_clr\fP (\fBhwloc_bitmap_t\fP bitmap, unsigned id)"
 .br
 .ti -1c
-.RI "void \fBhwloc_bitmap_singlify\fP (\fBhwloc_bitmap_t\fP bitmap)"
+.RI "int \fBhwloc_bitmap_clr_range\fP (\fBhwloc_bitmap_t\fP bitmap, unsigned begin, int end)"
+.br
+.ti -1c
+.RI "int \fBhwloc_bitmap_singlify\fP (\fBhwloc_bitmap_t\fP bitmap)"
 .br
 .ti -1c
 .RI "unsigned long \fBhwloc_bitmap_to_ulong\fP (\fBhwloc_const_bitmap_t\fP bitmap)"
 .br
 .ti -1c
 .RI "unsigned long \fBhwloc_bitmap_to_ith_ulong\fP (\fBhwloc_const_bitmap_t\fP bitmap, unsigned i)"
+.br
+.ti -1c
+.RI "int \fBhwloc_bitmap_to_ulongs\fP (\fBhwloc_const_bitmap_t\fP bitmap, unsigned nr, unsigned long *masks)"
+.br
+.ti -1c
+.RI "int \fBhwloc_bitmap_nr_ulongs\fP (\fBhwloc_const_bitmap_t\fP bitmap)"
 .br
 .ti -1c
 .RI "int \fBhwloc_bitmap_isset\fP (\fBhwloc_const_bitmap_t\fP bitmap, unsigned id)"
@@ -135,19 +144,28 @@ hwlocality_bitmap
 .RI "int \fBhwloc_bitmap_weight\fP (\fBhwloc_const_bitmap_t\fP bitmap)"
 .br
 .ti -1c
-.RI "void \fBhwloc_bitmap_or\fP (\fBhwloc_bitmap_t\fP res, \fBhwloc_const_bitmap_t\fP bitmap1, \fBhwloc_const_bitmap_t\fP bitmap2)"
+.RI "int \fBhwloc_bitmap_first_unset\fP (\fBhwloc_const_bitmap_t\fP bitmap)"
 .br
 .ti -1c
-.RI "void \fBhwloc_bitmap_and\fP (\fBhwloc_bitmap_t\fP res, \fBhwloc_const_bitmap_t\fP bitmap1, \fBhwloc_const_bitmap_t\fP bitmap2)"
+.RI "int \fBhwloc_bitmap_next_unset\fP (\fBhwloc_const_bitmap_t\fP bitmap, int prev)"
 .br
 .ti -1c
-.RI "void \fBhwloc_bitmap_andnot\fP (\fBhwloc_bitmap_t\fP res, \fBhwloc_const_bitmap_t\fP bitmap1, \fBhwloc_const_bitmap_t\fP bitmap2)"
+.RI "int \fBhwloc_bitmap_last_unset\fP (\fBhwloc_const_bitmap_t\fP bitmap)"
 .br
 .ti -1c
-.RI "void \fBhwloc_bitmap_xor\fP (\fBhwloc_bitmap_t\fP res, \fBhwloc_const_bitmap_t\fP bitmap1, \fBhwloc_const_bitmap_t\fP bitmap2)"
+.RI "int \fBhwloc_bitmap_or\fP (\fBhwloc_bitmap_t\fP res, \fBhwloc_const_bitmap_t\fP bitmap1, \fBhwloc_const_bitmap_t\fP bitmap2)"
 .br
 .ti -1c
-.RI "void \fBhwloc_bitmap_not\fP (\fBhwloc_bitmap_t\fP res, \fBhwloc_const_bitmap_t\fP bitmap)"
+.RI "int \fBhwloc_bitmap_and\fP (\fBhwloc_bitmap_t\fP res, \fBhwloc_const_bitmap_t\fP bitmap1, \fBhwloc_const_bitmap_t\fP bitmap2)"
+.br
+.ti -1c
+.RI "int \fBhwloc_bitmap_andnot\fP (\fBhwloc_bitmap_t\fP res, \fBhwloc_const_bitmap_t\fP bitmap1, \fBhwloc_const_bitmap_t\fP bitmap2)"
+.br
+.ti -1c
+.RI "int \fBhwloc_bitmap_xor\fP (\fBhwloc_bitmap_t\fP res, \fBhwloc_const_bitmap_t\fP bitmap1, \fBhwloc_const_bitmap_t\fP bitmap2)"
+.br
+.ti -1c
+.RI "int \fBhwloc_bitmap_not\fP (\fBhwloc_bitmap_t\fP res, \fBhwloc_const_bitmap_t\fP bitmap)"
 .br
 .ti -1c
 .RI "int \fBhwloc_bitmap_intersects\fP (\fBhwloc_const_bitmap_t\fP bitmap1, \fBhwloc_const_bitmap_t\fP bitmap2)"
@@ -183,9 +201,11 @@ hwloc_bitmap_free(set);
 .fi
 .PP
 .PP
-\fBNote:\fP
+\fBNote\fP
 .RS 4
-Several examples of using the bitmap API are available under the doc/examples/ directory in the source tree\&. Regression tests such as tests/hwloc_bitmap*\&.c also make intensive use of this API\&. 
+Most functions below return an int that may be negative in case of error\&. The usual error case would be an internal failure to realloc/extend the storage of the bitmap (\fCerrno\fP would be set to \fCENOMEM\fP)\&.
+.PP
+Several examples of using the bitmap API are available under the doc/examples/ directory in the source tree\&. Regression tests such as tests/hwloc/hwloc_bitmap*\&.c also make intensive use of this API\&. 
 .RE
 .PP
 
@@ -196,7 +216,7 @@ Several examples of using the bitmap API are available under the doc/examples/ d
 .PP
 Loop macro iterating on bitmap \fCbitmap\fP\&. The loop must start with \fBhwloc_bitmap_foreach_begin()\fP and end with \fBhwloc_bitmap_foreach_end()\fP followed by a terminating ';'\&.
 .PP
-\fCindex\fP is the loop variable; it should be an unsigned int\&. The first iteration will set \fCindex\fP to the lowest index in the bitmap\&. Successive iterations will iterate through, in order, all remaining indexes set in the bitmap\&. To be specific: each iteration will return a value for \fCindex\fP such that hwloc_bitmap_isset(bitmap, index) is true\&.
+\fCid\fP is the loop variable; it should be an unsigned int\&. The first iteration will set \fCid\fP to the lowest index in the bitmap\&. Successive iterations will iterate through, in order, all remaining indexes set in the bitmap\&. To be specific: each iteration will return a value for \fCid\fP such that hwloc_bitmap_isset(bitmap, id) is true\&.
 .PP
 The assert prevents the loop from being infinite if the bitmap is infinitely set\&. 
 .SS "#define hwloc_bitmap_foreach_end()"
@@ -204,7 +224,7 @@ The assert prevents the loop from being infinite if the bitmap is infinitely set
 .PP
 End of loop macro iterating on a bitmap\&. Needs a terminating ';'\&.
 .PP
-\fBSee also:\fP
+\fBSee also\fP
 .RS 4
 \fBhwloc_bitmap_foreach_begin()\fP 
 .RE
@@ -222,7 +242,7 @@ Set of bits represented as an opaque pointer to an internal bitmap\&.
 a non-modifiable \fBhwloc_bitmap_t\fP 
 .SH "Function Documentation"
 .PP 
-.SS "void hwloc_bitmap_allbut (\fBhwloc_bitmap_t\fP bitmap, unsigned id)"
+.SS "int hwloc_bitmap_allbut (\fBhwloc_bitmap_t\fP bitmap, unsigned id)"
 
 .PP
 Fill the bitmap \fCand\fP clear the index \fCid\fP\&. 
@@ -231,7 +251,7 @@ Fill the bitmap \fCand\fP clear the index \fCid\fP\&.
 .PP
 Allocate a new empty bitmap\&. 
 .PP
-\fBReturns:\fP
+\fBReturns\fP
 .RS 4
 A valid bitmap or \fCNULL\fP\&.
 .RE
@@ -241,11 +261,11 @@ The bitmap should be freed by a corresponding call to \fBhwloc_bitmap_free()\fP\
 
 .PP
 Allocate a new full bitmap\&. 
-.SS "void hwloc_bitmap_and (\fBhwloc_bitmap_t\fP res, \fBhwloc_const_bitmap_t\fP bitmap1, \fBhwloc_const_bitmap_t\fP bitmap2)"
+.SS "int hwloc_bitmap_and (\fBhwloc_bitmap_t\fP res, \fBhwloc_const_bitmap_t\fP bitmap1, \fBhwloc_const_bitmap_t\fP bitmap2)"
 
 .PP
 And bitmaps \fCbitmap1\fP and \fCbitmap2\fP and store the result in bitmap \fCres\fP\&. \fCres\fP can be the same as \fCbitmap1\fP or \fCbitmap2\fP 
-.SS "void hwloc_bitmap_andnot (\fBhwloc_bitmap_t\fP res, \fBhwloc_const_bitmap_t\fP bitmap1, \fBhwloc_const_bitmap_t\fP bitmap2)"
+.SS "int hwloc_bitmap_andnot (\fBhwloc_bitmap_t\fP res, \fBhwloc_const_bitmap_t\fP bitmap1, \fBhwloc_const_bitmap_t\fP bitmap2)"
 
 .PP
 And bitmap \fCbitmap1\fP and the negation of \fCbitmap2\fP and store the result in bitmap \fCres\fP\&. \fCres\fP can be the same as \fCbitmap1\fP or \fCbitmap2\fP 
@@ -254,17 +274,17 @@ And bitmap \fCbitmap1\fP and the negation of \fCbitmap2\fP and store the result 
 .PP
 Stringify a bitmap into a newly allocated string\&. 
 .PP
-\fBReturns:\fP
+\fBReturns\fP
 .RS 4
 -1 on error\&. 
 .RE
 .PP
 
-.SS "void hwloc_bitmap_clr (\fBhwloc_bitmap_t\fP bitmap, unsigned id)"
+.SS "int hwloc_bitmap_clr (\fBhwloc_bitmap_t\fP bitmap, unsigned id)"
 
 .PP
 Remove index \fCid\fP from bitmap \fCbitmap\fP\&. 
-.SS "void hwloc_bitmap_clr_range (\fBhwloc_bitmap_t\fP bitmap, unsigned begin, int end)"
+.SS "int hwloc_bitmap_clr_range (\fBhwloc_bitmap_t\fP bitmap, unsigned begin, int end)"
 
 .PP
 Remove indexes from \fCbegin\fP to \fCend\fP in bitmap \fCbitmap\fP\&. If \fCend\fP is \fC-1\fP, the range is infinite\&. 
@@ -273,7 +293,7 @@ Remove indexes from \fCbegin\fP to \fCend\fP in bitmap \fCbitmap\fP\&. If \fCend
 .PP
 Compare bitmaps \fCbitmap1\fP and \fCbitmap2\fP in lexicographic order\&. Lexicographic comparison of bitmaps, starting for their highest indexes\&. Compare last indexes first, then second, etc\&. The empty bitmap is considered lower than anything\&.
 .PP
-\fBReturns:\fP
+\fBReturns\fP
 .RS 4
 -1 if \fCbitmap1\fP is considered smaller than \fCbitmap2\fP\&. 
 .PP
@@ -284,7 +304,7 @@ Compare bitmaps \fCbitmap1\fP and \fCbitmap2\fP in lexicographic order\&. Lexico
 .PP
 For instance comparing binary bitmaps 0011 and 0110 returns -1 (hence 0011 is considered smaller than 0110)\&. Comparing 00101 and 01010 returns -1 too\&.
 .PP
-\fBNote:\fP
+\fBNote\fP
 .RS 4
 This is different from the non-existing hwloc_bitmap_compare_last() which would only compare the highest index of each bitmap\&. 
 .RE
@@ -295,7 +315,7 @@ This is different from the non-existing hwloc_bitmap_compare_last() which would 
 .PP
 Compare bitmaps \fCbitmap1\fP and \fCbitmap2\fP using their lowest index\&. A bitmap is considered smaller if its least significant bit is smaller\&. The empty bitmap is considered higher than anything (because its least significant bit does not exist)\&.
 .PP
-\fBReturns:\fP
+\fBReturns\fP
 .RS 4
 -1 if \fCbitmap1\fP is considered smaller than \fCbitmap2\fP\&. 
 .PP
@@ -304,13 +324,13 @@ Compare bitmaps \fCbitmap1\fP and \fCbitmap2\fP using their lowest index\&. A bi
 .PP
 For instance comparing binary bitmaps 0011 and 0110 returns -1 (hence 0011 is considered smaller than 0110) because least significant bit of 0011 (0001) is smaller than least significant bit of 0110 (0010)\&. Comparing 01001 and 00110 would also return -1 for the same reason\&.
 .PP
-\fBReturns:\fP
+\fBReturns\fP
 .RS 4
 0 if bitmaps are considered equal, even if they are not strictly equal\&. They just need to have the same least significant bit\&. For instance, comparing binary bitmaps 0010 and 0110 returns 0 because they have the same least significant bit\&. 
 .RE
 .PP
 
-.SS "void hwloc_bitmap_copy (\fBhwloc_bitmap_t\fP dst, \fBhwloc_const_bitmap_t\fP src)"
+.SS "int hwloc_bitmap_copy (\fBhwloc_bitmap_t\fP dst, \fBhwloc_const_bitmap_t\fP src)"
 
 .PP
 Copy the contents of bitmap \fCsrc\fP into the already allocated bitmap \fCdst\fP\&. 
@@ -327,9 +347,20 @@ Fill bitmap \fCbitmap\fP with all possible indexes (even if those objects don't 
 .PP
 Compute the first index (least significant bit) in bitmap \fCbitmap\fP\&. 
 .PP
-\fBReturns:\fP
+\fBReturns\fP
 .RS 4
 -1 if no index is set in \fCbitmap\fP\&. 
+.RE
+.PP
+
+.SS "int hwloc_bitmap_first_unset (\fBhwloc_const_bitmap_t\fP bitmap)"
+
+.PP
+Compute the first unset index (least significant bit) in bitmap \fCbitmap\fP\&. 
+.PP
+\fBReturns\fP
+.RS 4
+-1 if no index is unset in \fCbitmap\fP\&. 
 .RE
 .PP
 
@@ -337,20 +368,24 @@ Compute the first index (least significant bit) in bitmap \fCbitmap\fP\&.
 
 .PP
 Free bitmap \fCbitmap\fP\&. If \fCbitmap\fP is \fCNULL\fP, no operation is performed\&. 
-.SS "void hwloc_bitmap_from_ith_ulong (\fBhwloc_bitmap_t\fP bitmap, unsigned i, unsigned long mask)"
+.SS "int hwloc_bitmap_from_ith_ulong (\fBhwloc_bitmap_t\fP bitmap, unsigned i, unsigned long mask)"
 
 .PP
 Setup bitmap \fCbitmap\fP from unsigned long \fCmask\fP used as \fCi\fP -th subset\&. 
-.SS "void hwloc_bitmap_from_ulong (\fBhwloc_bitmap_t\fP bitmap, unsigned long mask)"
+.SS "int hwloc_bitmap_from_ulong (\fBhwloc_bitmap_t\fP bitmap, unsigned long mask)"
 
 .PP
 Setup bitmap \fCbitmap\fP from unsigned long \fCmask\fP\&. 
+.SS "int hwloc_bitmap_from_ulongs (\fBhwloc_bitmap_t\fP bitmap, unsigned nr, const unsigned long * masks)"
+
+.PP
+Setup bitmap \fCbitmap\fP from unsigned longs \fCmasks\fP used as first \fCnr\fP subsets\&. 
 .SS "int hwloc_bitmap_intersects (\fBhwloc_const_bitmap_t\fP bitmap1, \fBhwloc_const_bitmap_t\fP bitmap2)"
 
 .PP
 Test whether bitmaps \fCbitmap1\fP and \fCbitmap2\fP intersects\&. 
 .PP
-\fBReturns:\fP
+\fBReturns\fP
 .RS 4
 1 if bitmaps intersect, 0 otherwise\&. 
 .RE
@@ -361,7 +396,7 @@ Test whether bitmaps \fCbitmap1\fP and \fCbitmap2\fP intersects\&.
 .PP
 Test whether bitmap \fCbitmap1\fP is equal to bitmap \fCbitmap2\fP\&. 
 .PP
-\fBReturns:\fP
+\fBReturns\fP
 .RS 4
 1 if bitmaps are equal, 0 otherwise\&. 
 .RE
@@ -372,12 +407,12 @@ Test whether bitmap \fCbitmap1\fP is equal to bitmap \fCbitmap2\fP\&.
 .PP
 Test whether bitmap \fCbitmap\fP is completely full\&. 
 .PP
-\fBReturns:\fP
+\fBReturns\fP
 .RS 4
 1 if bitmap is full, 0 otherwise\&.
 .RE
 .PP
-\fBNote:\fP
+\fBNote\fP
 .RS 4
 A full bitmap is always infinitely set\&. 
 .RE
@@ -388,12 +423,12 @@ A full bitmap is always infinitely set\&.
 .PP
 Test whether bitmap \fCsub_bitmap\fP is part of bitmap \fCsuper_bitmap\fP\&. 
 .PP
-\fBReturns:\fP
+\fBReturns\fP
 .RS 4
 1 if \fCsub_bitmap\fP is included in \fCsuper_bitmap\fP, 0 otherwise\&.
 .RE
 .PP
-\fBNote:\fP
+\fBNote\fP
 .RS 4
 The empty bitmap is considered included in any other bitmap\&. 
 .RE
@@ -404,7 +439,7 @@ The empty bitmap is considered included in any other bitmap\&.
 .PP
 Test whether index \fCid\fP is part of bitmap \fCbitmap\fP\&. 
 .PP
-\fBReturns:\fP
+\fBReturns\fP
 .RS 4
 1 if the bit at index \fCid\fP is set in bitmap \fCbitmap\fP, 0 otherwise\&. 
 .RE
@@ -415,7 +450,7 @@ Test whether index \fCid\fP is part of bitmap \fCbitmap\fP\&.
 .PP
 Test whether bitmap \fCbitmap\fP is empty\&. 
 .PP
-\fBReturns:\fP
+\fBReturns\fP
 .RS 4
 1 if bitmap is empty, 0 otherwise\&. 
 .RE
@@ -426,9 +461,20 @@ Test whether bitmap \fCbitmap\fP is empty\&.
 .PP
 Compute the last index (most significant bit) in bitmap \fCbitmap\fP\&. 
 .PP
-\fBReturns:\fP
+\fBReturns\fP
 .RS 4
 -1 if no index is set in \fCbitmap\fP, or if \fCbitmap\fP is infinitely set\&. 
+.RE
+.PP
+
+.SS "int hwloc_bitmap_last_unset (\fBhwloc_const_bitmap_t\fP bitmap)"
+
+.PP
+Compute the last unset index (most significant bit) in bitmap \fCbitmap\fP\&. 
+.PP
+\fBReturns\fP
+.RS 4
+-1 if no index is unset in \fCbitmap\fP, or if \fCbitmap\fP is infinitely set\&. 
 .RE
 .PP
 
@@ -437,7 +483,7 @@ Compute the last index (most significant bit) in bitmap \fCbitmap\fP\&.
 .PP
 Stringify a bitmap into a newly allocated list string\&. 
 .PP
-\fBReturns:\fP
+\fBReturns\fP
 .RS 4
 -1 on error\&. 
 .RE
@@ -452,9 +498,9 @@ Up to \fCbuflen\fP characters may be written in buffer \fCbuf\fP\&.
 .PP
 If \fCbuflen\fP is 0, \fCbuf\fP may safely be \fCNULL\fP\&.
 .PP
-\fBReturns:\fP
+\fBReturns\fP
 .RS 4
-the number of character that were actually written if not truncating, or that would have been written (not including the ending \\0)\&. 
+the number of characters that were actually written if not truncating, or that would have been written (not including the ending \\0)\&. 
 .RE
 .PP
 
@@ -467,42 +513,66 @@ Parse a list string and stores it in bitmap \fCbitmap\fP\&.
 .PP
 Compute the next index in bitmap \fCbitmap\fP which is after index \fCprev\fP\&. If \fCprev\fP is -1, the first index is returned\&.
 .PP
-\fBReturns:\fP
+\fBReturns\fP
 .RS 4
 -1 if no index with higher index is set in \fCbitmap\fP\&. 
 .RE
 .PP
 
-.SS "void hwloc_bitmap_not (\fBhwloc_bitmap_t\fP res, \fBhwloc_const_bitmap_t\fP bitmap)"
+.SS "int hwloc_bitmap_next_unset (\fBhwloc_const_bitmap_t\fP bitmap, int prev)"
+
+.PP
+Compute the next unset index in bitmap \fCbitmap\fP which is after index \fCprev\fP\&. If \fCprev\fP is -1, the first unset index is returned\&.
+.PP
+\fBReturns\fP
+.RS 4
+-1 if no index with higher index is unset in \fCbitmap\fP\&. 
+.RE
+.PP
+
+.SS "int hwloc_bitmap_not (\fBhwloc_bitmap_t\fP res, \fBhwloc_const_bitmap_t\fP bitmap)"
 
 .PP
 Negate bitmap \fCbitmap\fP and store the result in bitmap \fCres\fP\&. \fCres\fP can be the same as \fCbitmap\fP 
-.SS "void hwloc_bitmap_only (\fBhwloc_bitmap_t\fP bitmap, unsigned id)"
+.SS "int hwloc_bitmap_nr_ulongs (\fBhwloc_const_bitmap_t\fP bitmap)"
+
+.PP
+Return the number of unsigned longs required for storing bitmap \fCbitmap\fP entirely\&. This is the number of contiguous unsigned longs from the very first bit of the bitmap (even if unset) up to the last set bit\&. This is useful for knowing the \fCnr\fP parameter to pass to \fBhwloc_bitmap_to_ulongs()\fP (or which calls to \fBhwloc_bitmap_to_ith_ulong()\fP are needed) to entirely convert a bitmap into multiple unsigned longs\&.
+.PP
+When called on the output of \fBhwloc_topology_get_topology_cpuset()\fP, the returned number is large enough for all cpusets of the topology\&.
+.PP
+\fBReturns\fP
+.RS 4
+-1 if \fCbitmap\fP is infinite\&. 
+.RE
+.PP
+
+.SS "int hwloc_bitmap_only (\fBhwloc_bitmap_t\fP bitmap, unsigned id)"
 
 .PP
 Empty the bitmap \fCbitmap\fP and add bit \fCid\fP\&. 
-.SS "void hwloc_bitmap_or (\fBhwloc_bitmap_t\fP res, \fBhwloc_const_bitmap_t\fP bitmap1, \fBhwloc_const_bitmap_t\fP bitmap2)"
+.SS "int hwloc_bitmap_or (\fBhwloc_bitmap_t\fP res, \fBhwloc_const_bitmap_t\fP bitmap1, \fBhwloc_const_bitmap_t\fP bitmap2)"
 
 .PP
 Or bitmaps \fCbitmap1\fP and \fCbitmap2\fP and store the result in bitmap \fCres\fP\&. \fCres\fP can be the same as \fCbitmap1\fP or \fCbitmap2\fP 
-.SS "void hwloc_bitmap_set (\fBhwloc_bitmap_t\fP bitmap, unsigned id)"
+.SS "int hwloc_bitmap_set (\fBhwloc_bitmap_t\fP bitmap, unsigned id)"
 
 .PP
 Add index \fCid\fP in bitmap \fCbitmap\fP\&. 
-.SS "void hwloc_bitmap_set_ith_ulong (\fBhwloc_bitmap_t\fP bitmap, unsigned i, unsigned long mask)"
+.SS "int hwloc_bitmap_set_ith_ulong (\fBhwloc_bitmap_t\fP bitmap, unsigned i, unsigned long mask)"
 
 .PP
 Replace \fCi\fP -th subset of bitmap \fCbitmap\fP with unsigned long \fCmask\fP\&. 
-.SS "void hwloc_bitmap_set_range (\fBhwloc_bitmap_t\fP bitmap, unsigned begin, int end)"
+.SS "int hwloc_bitmap_set_range (\fBhwloc_bitmap_t\fP bitmap, unsigned begin, int end)"
 
 .PP
 Add indexes from \fCbegin\fP to \fCend\fP in bitmap \fCbitmap\fP\&. If \fCend\fP is \fC-1\fP, the range is infinite\&. 
-.SS "void hwloc_bitmap_singlify (\fBhwloc_bitmap_t\fP bitmap)"
+.SS "int hwloc_bitmap_singlify (\fBhwloc_bitmap_t\fP bitmap)"
 
 .PP
-Keep a single index among those set in bitmap \fCbitmap\fP\&. May be useful before binding so that the process does not have a chance of migrating between multiple logical CPUs in the original mask\&. Instead of running the task on any PU inside the given CPU set, the operating system scheduler will be forced to run it on a single of these PUs\&. It avoids a migration overhead and cache-line ping-pongs between PUs\&.
+Keep a single index among those set in bitmap \fCbitmap\fP\&. May be useful before binding so that the process does not have a chance of migrating between multiple processors in the original mask\&. Instead of running the task on any PU inside the given CPU set, the operating system scheduler will be forced to run it on a single of these PUs\&. It avoids a migration overhead and cache-line ping-pongs between PUs\&.
 .PP
-\fBNote:\fP
+\fBNote\fP
 .RS 4
 This function is NOT meant to distribute multiple processes within a single CPU set\&. It always return the same single bit when called multiple times on the same input set\&. \fBhwloc_distrib()\fP may be used for generating CPU sets to distribute multiple tasks below a single multi-PU object\&.
 .PP
@@ -517,9 +587,9 @@ Stringify a bitmap\&. Up to \fCbuflen\fP characters may be written in buffer \fC
 .PP
 If \fCbuflen\fP is 0, \fCbuf\fP may safely be \fCNULL\fP\&.
 .PP
-\fBReturns:\fP
+\fBReturns\fP
 .RS 4
-the number of character that were actually written if not truncating, or that would have been written (not including the ending \\0)\&. 
+the number of characters that were actually written if not truncating, or that would have been written (not including the ending \\0)\&. 
 .RE
 .PP
 
@@ -532,7 +602,7 @@ Parse a bitmap string and stores it in bitmap \fCbitmap\fP\&.
 .PP
 Stringify a bitmap into a newly allocated taskset-specific string\&. 
 .PP
-\fBReturns:\fP
+\fBReturns\fP
 .RS 4
 -1 on error\&. 
 .RE
@@ -547,9 +617,9 @@ Up to \fCbuflen\fP characters may be written in buffer \fCbuf\fP\&.
 .PP
 If \fCbuflen\fP is 0, \fCbuf\fP may safely be \fCNULL\fP\&.
 .PP
-\fBReturns:\fP
+\fBReturns\fP
 .RS 4
-the number of character that were actually written if not truncating, or that would have been written (not including the ending \\0)\&. 
+the number of characters that were actually written if not truncating, or that would have been written (not including the ending \\0)\&. 
 .RE
 .PP
 
@@ -565,12 +635,23 @@ Convert the \fCi\fP -th subset of bitmap \fCbitmap\fP into unsigned long mask\&.
 
 .PP
 Convert the beginning part of bitmap \fCbitmap\fP into unsigned long \fCmask\fP\&. 
+.SS "int hwloc_bitmap_to_ulongs (\fBhwloc_const_bitmap_t\fP bitmap, unsigned nr, unsigned long * masks)"
+
+.PP
+Convert the first \fCnr\fP subsets of bitmap \fCbitmap\fP into the array of \fCnr\fP unsigned long \fCmasks\fP\&. \fCnr\fP may be determined earlier with \fBhwloc_bitmap_nr_ulongs()\fP\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 
+.RE
+.PP
+
 .SS "int hwloc_bitmap_weight (\fBhwloc_const_bitmap_t\fP bitmap)"
 
 .PP
 Compute the 'weight' of bitmap \fCbitmap\fP (i\&.e\&., number of indexes that are in the bitmap)\&. 
 .PP
-\fBReturns:\fP
+\fBReturns\fP
 .RS 4
 the number of indexes that are in the bitmap\&.
 .PP
@@ -578,7 +659,7 @@ the number of indexes that are in the bitmap\&.
 .RE
 .PP
 
-.SS "void hwloc_bitmap_xor (\fBhwloc_bitmap_t\fP res, \fBhwloc_const_bitmap_t\fP bitmap1, \fBhwloc_const_bitmap_t\fP bitmap2)"
+.SS "int hwloc_bitmap_xor (\fBhwloc_bitmap_t\fP res, \fBhwloc_const_bitmap_t\fP bitmap1, \fBhwloc_const_bitmap_t\fP bitmap2)"
 
 .PP
 Xor bitmaps \fCbitmap1\fP and \fCbitmap2\fP and store the result in bitmap \fCres\fP\&. \fCres\fP can be the same as \fCbitmap1\fP or \fCbitmap2\fP 

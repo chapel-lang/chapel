@@ -29,7 +29,13 @@ proc check(orig, gpuRes, cpuRes, s) {
 
   // To get this to work we'll need to resolve https://github.com/chapel-lang/chapel/issues/22114
   var isCorrect = true;
-  for (x,y) in zip(gpuRes,cpuRes) do isCorrect &= isclose(x,y);
+  for (x,y) in zip(gpuRes,cpuRes) {
+    if (isRealValue(x) || isImagValue(x) || isComplexValue(x)) {
+      isCorrect &= isClose(x,y);
+    } else {
+      isCorrect &= (x == y);
+    }
+  }
   var printVals = false;
   if !isCorrect {
     writeln(s + " computed wrong result. ");

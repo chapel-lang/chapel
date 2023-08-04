@@ -46,6 +46,7 @@ TYPE_NODE(NilType)
 TYPE_NODE(NothingType)
 TYPE_NODE(UnknownType)
 TYPE_NODE(VoidType)
+TYPE_NODE(CPtrType)
 
 // TODO:
 // migrate BytesType / StringType to something backed by the modules
@@ -95,6 +96,7 @@ TYPE_END_SUBCLASSES(BuiltinType)
 TYPE_BEGIN_SUBCLASSES(DeclaredType)
   TYPE_NODE(ClassType)
   TYPE_NODE(EnumType)
+  TYPE_NODE(ExternType)
   TYPE_NODE(FunctionType)
 
   TYPE_BEGIN_SUBCLASSES(CompositeType)

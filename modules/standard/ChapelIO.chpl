@@ -803,7 +803,7 @@ module ChapelIO {
       f._writeLiteral(" by ");
       f.write(stride);
 
-      if stride != -1 && aligned && ! isNaturallyAligned() {
+      if stride != -1 && isAligned() && ! chpl_isNaturallyAligned() {
     // Write out the alignment only if it differs from natural alignment.
     // We take alignment modulo the stride for consistency.
       f._writeLiteral(" align ");
@@ -842,11 +842,10 @@ module ChapelIO {
     if f.matchLiteral(" align ") {
       const alignVal = f.read(chpl_integralIdxType);
       if hasParamStrideAltvalAld() {
-        // It is valid to align this range. We do not store its alignment
-        // at runtime because the alignment always normalizes to 0.
+        // It is valid to align any range. In this case we do not store
+        // the alignment at runtime because it always normalizes to 0.
       } else {
         _alignment = chpl__mod(alignVal, _stride);
-        _aligned = true;
       }
     }
   }
@@ -911,10 +910,22 @@ module ChapelIO {
     try! { stdout.writef(fmt); }
   }
 
+  @chpldoc.nodoc
   proc chpl_stringify_wrapper(const args ...):string {
-    use IO only stringify;
-    return stringify((...args));
+    use IO only chpl_stringify;
+    return chpl_stringify((...args));
   }
+
+  //
+  // handle casting FCF types to string
+  //
+  @chpldoc.nodoc
+  proc isFcfType(type t) param do
+    return __primitive("is fcf type", t);
+
+  @chpldoc.nodoc
+  operator :(x, type t:string) where isFcfType(x.type) do
+    return chpl_stringify_wrapper(x);
 
   //
   // Catch all
@@ -929,6 +940,11 @@ module ChapelIO {
   pragma "last resort"
   @chpldoc.nodoc
   operator :(x, type t:string) where !isPrimitiveType(x.type) {
-    return stringify(x);
+    compilerWarning(
+      "universal 'x:string' is deprecated; please define a cast-to-string operator on the type '" +
+      x.type:string +
+      "', or use 'try! \"%?\".format(x)' from IO.FormattedIO instead"
+    );
+    return chpl_stringify_wrapper(x);
   }
 }

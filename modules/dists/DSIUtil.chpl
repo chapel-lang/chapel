@@ -356,7 +356,7 @@ proc densify(sArg: range(?,bounds=?B,strides=?S), w: range(?IT,?,strides=strideK
     else                               assert(cond);
   }
 
-  // todo: account for the case s.isAmbiguous()
+  // todo: account for the case ! s.isAligned()
   ensure(s.isEmpty() ||
          // If idxType is unsigned, caller must ensure that s.lowBound is big enough
          // so it can be subtracted from.

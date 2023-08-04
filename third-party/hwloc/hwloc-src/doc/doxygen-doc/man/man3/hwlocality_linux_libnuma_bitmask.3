@@ -1,8 +1,8 @@
-.TH "hwlocality_linux_libnuma_bitmask" 3 "Mon Jun 3 2019" "Version 1.11.13" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_linux_libnuma_bitmask" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-hwlocality_linux_libnuma_bitmask
+hwlocality_linux_libnuma_bitmask \- Interoperability with Linux libnuma bitmask
 .SH SYNOPSIS
 .br
 .PP
@@ -26,9 +26,7 @@ hwlocality_linux_libnuma_bitmask
 .PP 
 This interface helps converting between Linux libnuma bitmasks and hwloc cpusets and nodesets\&.
 .PP
-It also offers a consistent behavior on non-NUMA machines or non-NUMA-aware kernels by assuming that the machines have a single NUMA node\&.
-.PP
-\fBNote:\fP
+\fBNote\fP
 .RS 4
 Topology \fCtopology\fP must match the current machine\&.
 .PP
@@ -42,14 +40,14 @@ The behavior of libnuma is undefined if the kernel is not NUMA-aware\&. (when CO
 
 .PP
 Convert libnuma bitmask \fCbitmask\fP into hwloc CPU set \fCcpuset\fP\&. This function may be used after calling many numa_ functions that use a struct bitmask as an output parameter\&. 
-.SS "static struct bitmask * hwloc_cpuset_to_linux_libnuma_bitmask (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP cpuset)\fC [static]\fP"
+.SS "static struct bitmask * hwloc_cpuset_to_linux_libnuma_bitmask (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP cpuset)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Convert hwloc CPU set \fCcpuset\fP into the returned libnuma bitmask\&. The returned bitmask should later be freed with numa_bitmask_free\&.
 .PP
 This function may be used before calling many numa_ functions that use a struct bitmask as an input parameter\&.
 .PP
-\fBReturns:\fP
+\fBReturns\fP
 .RS 4
 newly allocated struct bitmask\&. 
 .RE
@@ -59,14 +57,14 @@ newly allocated struct bitmask\&.
 
 .PP
 Convert libnuma bitmask \fCbitmask\fP into hwloc NUMA node set \fCnodeset\fP\&. This function may be used after calling many numa_ functions that use a struct bitmask as an output parameter\&. 
-.SS "static struct bitmask * hwloc_nodeset_to_linux_libnuma_bitmask (\fBhwloc_topology_t\fP topology, \fBhwloc_const_nodeset_t\fP nodeset)\fC [static]\fP"
+.SS "static struct bitmask * hwloc_nodeset_to_linux_libnuma_bitmask (\fBhwloc_topology_t\fP topology, \fBhwloc_const_nodeset_t\fP nodeset)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Convert hwloc NUMA node set \fCnodeset\fP into the returned libnuma bitmask\&. The returned bitmask should later be freed with numa_bitmask_free\&.
 .PP
 This function may be used before calling many numa_ functions that use a struct bitmask as an input parameter\&.
 .PP
-\fBReturns:\fP
+\fBReturns\fP
 .RS 4
 newly allocated struct bitmask\&. 
 .RE

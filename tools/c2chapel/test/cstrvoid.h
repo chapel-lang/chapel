@@ -1,7 +1,7 @@
 
 void arg_c_string(char* str, int n);
 
-void arg_c_void_ptr(void* ptr);
+void arg_c_ptr_void(void* ptr);
 
 char* ret_cstr();
 

@@ -1,4 +1,4 @@
-.TH "hwloc_topology_discovery_support" 3 "Mon Jun 3 2019" "Version 1.11.13" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwloc_topology_discovery_support" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -14,12 +14,47 @@ hwloc_topology_discovery_support
 .ti -1c
 .RI "unsigned char \fBpu\fP"
 .br
+.ti -1c
+.RI "unsigned char \fBnuma\fP"
+.br
+.ti -1c
+.RI "unsigned char \fBnuma_memory\fP"
+.br
+.ti -1c
+.RI "unsigned char \fBdisallowed_pu\fP"
+.br
+.ti -1c
+.RI "unsigned char \fBdisallowed_numa\fP"
+.br
+.ti -1c
+.RI "unsigned char \fBcpukind_efficiency\fP"
+.br
 .in -1c
 .SH "Detailed Description"
 .PP 
 Flags describing actual discovery support for this topology\&. 
 .SH "Field Documentation"
 .PP 
+.SS "unsigned char hwloc_topology_discovery_support::cpukind_efficiency"
+
+.PP
+Detecting the efficiency of CPU kinds is supported, see \fBKinds of CPU cores\fP\&. 
+.SS "unsigned char hwloc_topology_discovery_support::disallowed_numa"
+
+.PP
+Detecting and identifying NUMA nodes that are not available to the current process is supported\&. 
+.SS "unsigned char hwloc_topology_discovery_support::disallowed_pu"
+
+.PP
+Detecting and identifying PU objects that are not available to the current process is supported\&. 
+.SS "unsigned char hwloc_topology_discovery_support::numa"
+
+.PP
+Detecting the number of NUMA nodes is supported\&. 
+.SS "unsigned char hwloc_topology_discovery_support::numa_memory"
+
+.PP
+Detecting the amount of memory in NUMA nodes is supported\&. 
 .SS "unsigned char hwloc_topology_discovery_support::pu"
 
 .PP

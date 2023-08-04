@@ -1,5 +1,5 @@
-deprecateOverwritingMethods.chpl:n: warning: bigint.divexact method is deprecated - please use the standalone function divexact
-deprecateOverwritingMethods.chpl:n: warning: bigint.divexact method is deprecated - please use the standalone function divexact
+deprecateOverwritingMethods.chpl:n: warning: bigint.divexact method is deprecated - please use the standalone function divExact
+deprecateOverwritingMethods.chpl:n: warning: bigint.divexact method is deprecated - please use the standalone function divExact
 deprecateOverwritingMethods.chpl:n: warning: bigint.powMod method is deprecated - please use the standalone function powMod
 deprecateOverwritingMethods.chpl:n: warning: bigint.powMod method is deprecated - please use the standalone function powMod
 deprecateOverwritingMethods.chpl:n: warning: bigint.powMod method is deprecated - please use the standalone function powMod
@@ -8,10 +8,10 @@ deprecateOverwritingMethods.chpl:n: warning: bigint.pow method is deprecated - p
 deprecateOverwritingMethods.chpl:n: warning: bigint.pow method is deprecated - please use the standalone function pow
 deprecateOverwritingMethods.chpl:n: warning: bigint.pow method is deprecated - please use the standalone function pow
 deprecateOverwritingMethods.chpl:n: warning: bigint.root method is deprecated - please use the standalone function root
-deprecateOverwritingMethods.chpl:n: warning: bigint.rootrem method is deprecated - please use the standalone function rootrem
+deprecateOverwritingMethods.chpl:n: warning: bigint.rootrem method is deprecated - please use the standalone function rootRem instead
 deprecateOverwritingMethods.chpl:n: warning: bigint.sqrt method is deprecated - please use the standalone function sqrt
-deprecateOverwritingMethods.chpl:n: warning: bigint.sqrtrem method is deprecated - please use the standalone function sqrtrem
-deprecateOverwritingMethods.chpl:n: warning: bigint.nextprime method is deprecated - please use the standalone function nextprime
+deprecateOverwritingMethods.chpl:n: warning: bigint.sqrtrem method is deprecated - please use the standalone function sqrtRem instead
+deprecateOverwritingMethods.chpl:n: warning: bigint.nextprime method is deprecated - please use the standalone function nextPrime
 deprecateOverwritingMethods.chpl:n: warning: bigint.gcd method is deprecated - please use the standalone function gcd
 deprecateOverwritingMethods.chpl:n: warning: bigint.gcd method is deprecated - please use the standalone function gcd
 deprecateOverwritingMethods.chpl:n: warning: bigint.gcd method is deprecated - please use the standalone function gcd
@@ -26,8 +26,8 @@ deprecateOverwritingMethods.chpl:n: warning: bigint.bin method is deprecated - p
 deprecateOverwritingMethods.chpl:n: warning: bigint.bin method is deprecated - please use the standalone function bin
 deprecateOverwritingMethods.chpl:n: warning: bigint.fib method is deprecated - please use the standalone function fib
 deprecateOverwritingMethods.chpl:n: warning: bigint.fib2 method is deprecated - please use the standalone function fib2
-deprecateOverwritingMethods.chpl:n: warning: bigint.lucnum method is deprecated - please use the standalone function lucnum
-deprecateOverwritingMethods.chpl:n: warning: bigint.lucnum2 method is deprecated - please use the standalone function lucnum2
+deprecateOverwritingMethods.chpl:n: warning: bigint.lucnum method is deprecated - please use the standalone function lucNum
+deprecateOverwritingMethods.chpl:n: warning: bigint.lucnum2 method is deprecated - please use the standalone function lucNum2
 deprecateOverwritingMethods.chpl:n: warning: bigint.add method is deprecated - please use the standalone function add
 deprecateOverwritingMethods.chpl:n: warning: bigint.add method is deprecated - please use the standalone function add
 deprecateOverwritingMethods.chpl:n: warning: bigint.add method is deprecated - please use the standalone function add
@@ -39,27 +39,27 @@ deprecateOverwritingMethods.chpl:n: warning: bigint.sub method is deprecated - p
 deprecateOverwritingMethods.chpl:n: warning: bigint.mul method is deprecated - please use the standalone function mul
 deprecateOverwritingMethods.chpl:n: warning: bigint.mul method is deprecated - please use the standalone function mul
 deprecateOverwritingMethods.chpl:n: warning: bigint.mul method is deprecated - please use the standalone function mul
-deprecateOverwritingMethods.chpl:n: warning: bigint.addmul method is deprecated - please use the standalone function addmul
-deprecateOverwritingMethods.chpl:n: warning: bigint.addmul method is deprecated - please use the standalone function addmul
-deprecateOverwritingMethods.chpl:n: warning: bigint.addmul method is deprecated - please use the standalone function addmul
-deprecateOverwritingMethods.chpl:n: warning: bigint.submul method is deprecated - please use the standalone function submul
-deprecateOverwritingMethods.chpl:n: warning: bigint.submul method is deprecated - please use the standalone function submul
-deprecateOverwritingMethods.chpl:n: warning: bigint.submul method is deprecated - please use the standalone function submul
-deprecateOverwritingMethods.chpl:n: warning: bigint.mul_2exp method is deprecated - please use the standalone function mul_2exp
+deprecateOverwritingMethods.chpl:n: warning: bigint.addmul method is deprecated - please use the standalone function addMul instead
+deprecateOverwritingMethods.chpl:n: warning: bigint.addmul method is deprecated - please use the standalone function addMul instead
+deprecateOverwritingMethods.chpl:n: warning: bigint.addmul method is deprecated - please use the standalone function addMul instead
+deprecateOverwritingMethods.chpl:n: warning: bigint.submul method is deprecated - please use the standalone function subMul instead
+deprecateOverwritingMethods.chpl:n: warning: bigint.submul method is deprecated - please use the standalone function subMul instead
+deprecateOverwritingMethods.chpl:n: warning: bigint.submul method is deprecated - please use the standalone function subMul instead
+deprecateOverwritingMethods.chpl:n: warning: bigint.mul_2exp method is deprecated - please use the standalone function mul2Exp
 deprecateOverwritingMethods.chpl:n: warning: bigint.neg method is deprecated - please use the standalone function neg
 deprecateOverwritingMethods.chpl:n: warning: bigint.abs method is deprecated - please use the standalone function abs
-deprecateOverwritingMethods.chpl:n: warning: bigint.divQ method is deprecated - please use the standalone function divQ
-deprecateOverwritingMethods.chpl:n: warning: bigint.divQ method is deprecated - please use the standalone function divQ
-deprecateOverwritingMethods.chpl:n: warning: bigint.divR method is deprecated - please use the standalone function divR
-deprecateOverwritingMethods.chpl:n: warning: bigint.divR method is deprecated - please use the standalone function divR
-deprecateOverwritingMethods.chpl:n: warning: bigint.divQR method is deprecated - please use the standalone function divQR
-deprecateOverwritingMethods.chpl:n: warning: bigint.divQR method is deprecated - please use the standalone function divQR
-deprecateOverwritingMethods.chpl:n: warning: bigint.divQ2Exp method is deprecated - please use the standalone function divQ2Exp
-deprecateOverwritingMethods.chpl:n: warning: bigint.divR2Exp method is deprecated - please use the standalone function divR2Exp
+deprecateOverwritingMethods.chpl:n: warning: bigint.divQ method is deprecated - please use the standalone function div with roundingMode instead
+deprecateOverwritingMethods.chpl:n: warning: bigint.divQ method is deprecated - please use the standalone function div with roundingMode instead
+deprecateOverwritingMethods.chpl:n: warning: bigint.divR method is deprecated - please use the standalone function rem with roundingMode instead
+deprecateOverwritingMethods.chpl:n: warning: bigint.divR method is deprecated - please use the standalone function rem with roundingMode instead
+deprecateOverwritingMethods.chpl:n: warning: bigint.divQR method is deprecated - please use the standalone function divRem with roundingMode instead
+deprecateOverwritingMethods.chpl:n: warning: bigint.divQR method is deprecated - please use the standalone function divRem with roundingMode instead
+deprecateOverwritingMethods.chpl:n: warning: bigint.divQ2Exp method is deprecated - please use the standalone function div2Exp with roundingMode instead
+deprecateOverwritingMethods.chpl:n: warning: bigint.divR2Exp method is deprecated - please use the standalone function rem2Exp with roundingMode instead
 deprecateOverwritingMethods.chpl:n: warning: bigint.mod method is deprecated - please use the standalone function mod
 deprecateOverwritingMethods.chpl:n: warning: bigint.mod method is deprecated - please use the standalone function mod
 deprecateOverwritingMethods.chpl:n: warning: bigint.and method is deprecated - please use the standalone function and
-deprecateOverwritingMethods.chpl:n: warning: bigint.ior method is deprecated - please use the standalone function ior
+deprecateOverwritingMethods.chpl:n: warning: bigint.ior method is deprecated - please use the standalone function or instead
 deprecateOverwritingMethods.chpl:n: warning: bigint.xor method is deprecated - please use the standalone function xor
 deprecateOverwritingMethods.chpl:n: warning: bigint.com method is deprecated - please use the standalone function com
 

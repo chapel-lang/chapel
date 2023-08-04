@@ -4,7 +4,7 @@ config param debug: bool = false;
 // Simple, stand-alone implementation of EWD840:
 // Derivation of a termination detection algorithm for distributed computations
 // "Compiler" transformed user code starts at "use Time;". The transformations
-// the compiler would apply are: 
+// the compiler would apply are:
 //   1. Call setupTerminationDetection() at the beginning of execution
 //   2. Insert a call to incEndCount before every begin statement
 //   3. Insert a call to decEndCount at the end of every begin statement
@@ -19,10 +19,12 @@ class MyEndCount {
   var count: sync int;
   var localColor: sync TerminationColor;
   var token: sync TerminationColor;
+  proc init() {}
 }
 
 class WakeupSyncVarHack {
   var wakeup: sync WakeupType;
+  proc init() {}
 }
 
 // keep them unmanaged as it makes it much easier with locale private

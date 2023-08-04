@@ -30,6 +30,7 @@
 
 #include "chpl-prefetch.h" // for chpl_prefetch
 #include "chpl-cache.h" // chpl_cache_enabled, chpl_cache_comm_get etc
+#include "chpl-gpu.h" // for comm between device and host
 
 // Don't warn about chpl_comm_get e.g. in this file.
 #include "chpl-comm-no-warning-macros.h"
@@ -61,6 +62,29 @@ void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
     chpl_comm_get(addr, node, raddr, size, commID, ln, fn);
   }
 }
+#ifdef HAS_GPU_LOCALE
+static inline
+void chpl_gen_comm_get_from_subloc(void *addr, c_nodeid_t src_node,
+                                   c_sublocid_t src_subloc, void* raddr,
+                                   size_t size, int32_t commID, int ln,
+                                   int32_t fn)
+{
+  c_sublocid_t dst_subloc = chpl_task_getRequestedSubloc();
+
+  if (chpl_nodeID == src_node) {
+    chpl_gpu_memcpy(dst_subloc, addr, src_subloc, raddr, size, commID, ln, fn);
+  } else if (dst_subloc >= 0 || src_subloc >= 0) {
+    chpl_gpu_comm_get(dst_subloc, addr, src_node, src_subloc, raddr, size,
+                      commID, ln, fn);
+#ifdef HAS_CHPL_CACHE_FNS
+  } else if( chpl_cache_enabled() ) {
+    chpl_cache_comm_get(addr, src_node, raddr, size, commID, ln, fn);
+#endif
+  } else {
+    chpl_comm_get(addr, src_node, raddr, size, commID, ln, fn);
+  }
+}
+#endif // HAS_GPU_LOCALE
 
 static inline
 void chpl_gen_comm_prefetch(c_nodeid_t node, void* raddr,
@@ -102,6 +126,30 @@ void chpl_gen_comm_put(void* addr, c_nodeid_t node, void* raddr,
     chpl_comm_put(addr, node, raddr, size, commID, ln, fn);
   }
 }
+#ifdef HAS_GPU_LOCALE
+static inline
+void chpl_gen_comm_put_to_subloc(void* addr,
+                                 c_nodeid_t dst_node, c_sublocid_t dst_subloc,
+                                 void* raddr, size_t size, int32_t commID,
+                                 int ln, int32_t fn)
+{
+
+  c_sublocid_t src_subloc = chpl_task_getRequestedSubloc();
+
+  if (chpl_nodeID == dst_node) {
+    chpl_gpu_memcpy(dst_subloc, raddr, src_subloc, addr, size, commID, ln, fn);
+  } else if (dst_subloc >= 0 || src_subloc >= 0) {
+    chpl_gpu_comm_put(dst_node, dst_subloc, raddr, src_subloc, addr, size,
+                      commID, ln, fn);
+#ifdef HAS_CHPL_CACHE_FNS
+  } else if( chpl_cache_enabled() ) {
+      chpl_cache_comm_put(addr, dst_node, raddr, size, commID, ln, fn);
+#endif
+  } else {
+      chpl_comm_put(addr, dst_node, raddr, size, commID, ln, fn);
+  }
+}
+#endif // HAS_GPU_LOCALE
 
 static inline
 void chpl_gen_comm_get_strd(void *addr, void *dststr, c_nodeid_t node, void *raddr,

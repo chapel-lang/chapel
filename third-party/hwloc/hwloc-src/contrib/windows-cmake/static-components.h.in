@@ -1,0 +1,32 @@
+HWLOC_DECLSPEC extern const struct hwloc_component hwloc_noos_component;
+HWLOC_DECLSPEC extern const struct hwloc_component hwloc_xml_component;
+HWLOC_DECLSPEC extern const struct hwloc_component hwloc_synthetic_component;
+HWLOC_DECLSPEC extern const struct hwloc_component hwloc_xml_nolibxml_component;
+HWLOC_DECLSPEC extern const struct hwloc_component hwloc_windows_component;
+#ifdef HWLOC_HAVE_X86_CPUID
+HWLOC_DECLSPEC extern const struct hwloc_component hwloc_x86_component;
+#endif
+#ifdef HWLOC_HAVE_LIBXML2
+HWLOC_DECLSPEC extern const struct hwloc_component hwloc_xml_libxml_component;
+#endif
+#ifdef HWLOC_HAVE_OPENCL
+HWLOC_DECLSPEC extern const struct hwloc_component hwloc_opencl_component;
+#endif
+
+static const struct hwloc_component * hwloc_static_components[] = {
+  &hwloc_noos_component,
+  &hwloc_xml_component,
+  &hwloc_synthetic_component,
+  &hwloc_xml_nolibxml_component,
+  &hwloc_windows_component,
+#ifdef HWLOC_HAVE_X86_CPUID
+  &hwloc_x86_component,
+#endif
+#ifdef HWLOC_HAVE_OPENCL
+  &hwloc_opencl_component,
+#endif
+#ifdef HWLOC_HAVE_LIBXML2
+  &hwloc_xml_libxml_component,
+#endif
+  NULL
+};

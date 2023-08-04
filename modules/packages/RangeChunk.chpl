@@ -36,6 +36,7 @@
    by the enum ``RemElems``.
 */
 module RangeChunk {
+  private use Math;
 
   /*
      ``RemElems`` specifies the distribution of remainder elements:
@@ -65,7 +66,9 @@ module RangeChunk {
     foreach (startOrder, endOrder) in chunksOrder(r, numChunks, remPol) {
       const start = r.orderToIndex(startOrder);
       const end = r.orderToIndex(endOrder);
-      yield ( start..end by r.stride ): r.type;
+      var result: r.type;
+      result.chpl_setFields(start, end, r.stride); // start..end by r.stride
+      yield result;
     }
   }
 
@@ -80,7 +83,9 @@ module RangeChunk {
     const (startOrder, endOrder) = chunkOrder(r, numChunks, idx, remPol);
     const start = r.orderToIndex(startOrder);
     const end = r.orderToIndex(endOrder);
-    return ( start..end by r.stride ): r.type;
+    var result: r.type;
+    result.chpl_setFields(start, end, r.stride); // start..end by r.stride
+    return result;
   }
 
   /*

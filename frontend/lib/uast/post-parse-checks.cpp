@@ -39,13 +39,12 @@ struct Visitor {
   std::set<UniqueString> exportedFnNames_;
   std::vector<const AstNode*> parents_;
   Context* context_ = nullptr;
+  bool warnUnstable_ = false;
   bool isUserCode_ = false;
 
-  // Helper to determine if a file path is for user code.
-  static bool isUserFilePath(Context* context, UniqueString filepath);
-
-  Visitor(Context* context, bool isUserCode)
+  Visitor(Context* context, bool warnUnstable, bool isUserCode)
     : context_(context),
+      warnUnstable_(warnUnstable),
       isUserCode_(isUserCode) {
   }
 
@@ -102,7 +101,7 @@ struct Visitor {
 
   bool isNamedThisAndNotReceiverOrFunction(const NamedDecl* node);
   bool isNameReservedWord(const NamedDecl* node);
-  bool shouldEmitUnstableWarning(const AstNode* node);
+  inline bool shouldEmitUnstableWarning(const AstNode* node);
 
   // Checks.
   void checkForArraysOfRanges(const Array* node);
@@ -113,6 +112,8 @@ struct Visitor {
   void checkForNestedClassDecorators(const FnCall* node);
   void checkExplicitDeinitCalls(const FnCall* node);
   void checkBorrowFromNew(const FnCall* node);
+  void checkSparseKeyword(const FnCall* node);
+  void checkDmappedKeyword(const OpCall* node);
   void checkConstVarNoInit(const Variable* node);
   void checkConfigVar(const Variable* node);
   void checkExportVar(const Variable* node);
@@ -163,22 +164,23 @@ struct Visitor {
   inline void visit(const AstNode* node) {} // Do nothing by default.
 
   void visit(const Array* node);
-  void visit(const BracketLoop* node);
   void visit(const Attribute* node);
   void visit(const AttributeGroup* node);
-  void visit(const FnCall* node);
-  void visit(const Variable* node);
-  void visit(const TypeQuery* node);
-  void visit(const Function* node);
-  void visit(const FunctionSignature* node);
-  void visit(const Union* node);
-  void visit(const Use* node);
-  void visit(const Import* node);
-  void visit(const Return* node);
-  void visit(const Yield* node);
+  void visit(const BracketLoop* node);
   void visit(const Break* node);
   void visit(const Continue* node);
   void visit(const ExternBlock* node);
+  void visit(const FnCall* node);
+  void visit(const Function* node);
+  void visit(const FunctionSignature* node);
+  void visit(const Import* node);
+  void visit(const OpCall* node);
+  void visit(const Return* node);
+  void visit(const TypeQuery* node);
+  void visit(const Union* node);
+  void visit(const Use* node);
+  void visit(const Variable* node);
+  void visit(const Yield* node);
 };
 
 /**
@@ -635,6 +637,22 @@ void Visitor::checkBorrowFromNew(const FnCall* node) {
                "variable to store the new class");
 }
 
+void Visitor::checkSparseKeyword(const FnCall* node) {
+  if (shouldEmitUnstableWarning(node)) // start with a cheap check
+    if (auto calledExpr = node->calledExpression())
+      if (auto ident = calledExpr->toIdentifier())
+        if (ident->name() == USTR("sparse"))
+          warn(node, "sparse domains are unstable,"
+               " their behavior is likely to change in the future.");
+}
+
+void Visitor::checkDmappedKeyword(const OpCall* node) {
+  if (node->op() == USTR("dmapped"))
+    if (shouldEmitUnstableWarning(node))
+      warn(node, "'dmapped' keyword is unstable,"
+           " instead please use factory functions when available");
+}
+
 
 // TODO: Extend to all 'VarLikeDecl' instead of just variables?
 void Visitor::checkConstVarNoInit(const Variable* node) {
@@ -862,7 +880,7 @@ void Visitor::checkConstReturnIntent(const Function* node) {
   if (node->returnIntent() != Function::CONST) return;
   if (!shouldEmitUnstableWarning(node)) return;
   warn(node, "'const' return intent is unstable and may work differently"
-             " in the future; please use 'out' intent instead");
+             " in the future, please use 'out' intent instead");
 }
 
 void
@@ -1000,7 +1018,7 @@ void Visitor::checkExportedName(const NamedDecl* node) {
 }
 
 bool Visitor::shouldEmitUnstableWarning(const AstNode* node) {
-  return isFlagSet(CompilerFlags::WARN_UNSTABLE);
+  return warnUnstable_;
 }
 
 bool Visitor::isNamedThisAndNotReceiverOrFunction(const NamedDecl* node) {
@@ -1264,6 +1282,11 @@ void Visitor::visit(const FnCall* node) {
   checkForNestedClassDecorators(node);
   checkExplicitDeinitCalls(node);
   checkBorrowFromNew(node);
+  checkSparseKeyword(node);
+}
+
+void Visitor::visit(const OpCall* node) {
+  checkDmappedKeyword(node);
 }
 
 void Visitor::visit(const Variable* node) {
@@ -1404,20 +1427,6 @@ void Visitor::visit(const ExternBlock* node) {
   checkExternBlockAtModuleScope(node);
 }
 
-// Duplicate the contents of 'idIsInBundledModule', while skipping the
-// call to 'filePathForId', because at this point the `setFilePathForId`
-// setter query may not have been run yet.
-bool Visitor::isUserFilePath(Context* context, UniqueString filepath) {
-  UniqueString modules = chpl::parsing::bundledModulePath(context);
-  if (modules.isEmpty()) return true;
-  // check for internal module paths
-  if (parsing::filePathIsInInternalModule(context, filepath)) return false;
-  // check for standard module paths
-  if (parsing::filePathIsInStandardModule(context, filepath)) return false;
-  bool ret = !filepath.startsWith(modules);
-  return ret;
-}
-
 } // end anonymous namespace
 
 namespace chpl {
@@ -1426,8 +1435,9 @@ namespace uast {
 void
 checkBuilderResult(Context* context, UniqueString path,
                    const BuilderResult& result) {
-  bool isUserCode = Visitor::isUserFilePath(context, path);
-  auto v = Visitor(context, isUserCode);
+  bool warnUnstable = parsing::shouldWarnUnstableForPath(context, path);
+  bool isUserCode  = !parsing::filePathIsInBundledModule(context, path);
+  auto v = Visitor(context, warnUnstable, isUserCode);
 
   for (auto ast : result.topLevelExpressions()) {
     if (ast->isComment()) continue;

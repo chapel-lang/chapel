@@ -8,5 +8,5 @@ proc R.init(type t=real) {
   field = 1.0;
 }
 
-var xx: R;
+var xx: R(?);
 writeln(xx.type:string, " ", xx);

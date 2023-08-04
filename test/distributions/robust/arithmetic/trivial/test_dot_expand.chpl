@@ -8,7 +8,7 @@ proc foo(Dom, Dist) {
     e = 2;
 
   writeln(A);
-  writeln(dist_eq(A.domain.dist, Dist));
+  writeln(dist_eq(A.domain.distribution, Dist));
 }
 
 foo(Dom1D, Dist1D);

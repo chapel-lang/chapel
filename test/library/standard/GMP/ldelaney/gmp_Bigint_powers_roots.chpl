@@ -27,14 +27,14 @@ root(a, d, 5); // fifth root of d = 3 // d^(1/5) = 3
 writeln(a);
 
 add(d, d, 10);
-rootrem(a, b, d, 5);
+rootRem(a, b, d, 5);
 writeln(a, ", remainder ", b);
 
 b.set(17);
 sqrt(d, b);
 writeln("sqrt ", b, " = ", d);
 
-sqrtrem(d, a, b);
+sqrtRem(d, a, b);
 writeln("sqrt ", b, " = ", d, " remainder ", a);
 
 c.set(81);

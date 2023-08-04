@@ -12,6 +12,13 @@ record taskPrivateData {
   var x: int;
   var y: [0..#numLocales] real;
 
+  proc init() {}
+  proc init=(other: taskPrivateData) {
+    this.tid$ =other.tid$.readXX();
+    this.x = other.x;
+    this.y = other.y;
+  }
+
   // need our version of writeThis so we can print the sync field
   proc writeThis(f) throws {
     f.write("(", tid$.readXX(), ": ", x, "  ", y, ")");
@@ -26,6 +33,11 @@ class localePrivateData {
   var slot: sync bool;
   var r = {0..#numTasks};
   var temps: [r] myStuff;
+
+  proc init(type myStuff) {
+    this.myStuff = myStuff;
+  }
+
   proc gettid() {
     extern proc chpl_task_getId(): chpl_taskID_t;
     var mytid = chpl_task_getId();

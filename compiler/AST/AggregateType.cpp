@@ -72,6 +72,7 @@ AggregateType::AggregateType(AggregateTag initTag) :
   genericField        = 0;
   mIsGeneric          = false;
   mIsGenericWithDefaults = false;
+  mIsGenericWithSomeDefaults = false;
   foundGenericFields = false;
   typeSignature      = NULL;
 
@@ -176,8 +177,16 @@ bool AggregateType::isGenericWithDefaults() const {
   return mIsGenericWithDefaults;
 }
 
+bool AggregateType::isGenericWithSomeDefaults() const {
+  return mIsGenericWithSomeDefaults;
+}
+
 void AggregateType::markAsGenericWithDefaults() {
   mIsGenericWithDefaults = true;
+}
+
+void AggregateType::markAsGenericWithSomeDefaults() {
+  mIsGenericWithSomeDefaults = true;
 }
 
 void AggregateType::verify() {
@@ -310,18 +319,11 @@ static bool isFieldTypeExprGeneric(Expr* typeExpr,
   }
 
   // Partial generic expressions with '?'
-  if (CallExpr* call = toCallExpr(typeExpr)) {
-    if (SymExpr* se = toSymExpr(call->baseExpr)) {
-      if (se->symbol()->type->symbol->hasFlag(FLAG_GENERIC)) {
-        for_actuals(actual, call) {
-          if (SymExpr* act = toSymExpr(actual)) {
-            if (act->symbol() == gUninstantiated) {
-              return true;
-            }
-          }
-        }
-      }
-    }
+  if (findSymExprFor(typeExpr, gUninstantiated)) {
+    // Note: this assumes that ? used in a nested call makes the type generic.
+    // That's not strictly true, but is close enough until
+    // we can use the dyno resolver to handle this in a more principled way.
+    return true;
   }
 
   if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(typeExpr)) {
@@ -527,7 +529,7 @@ DefExpr* AggregateType::toLocalField(SymExpr* expr) const {
 DefExpr* AggregateType::toLocalField(CallExpr* expr) const {
   DefExpr* retval = NULL;
 
-  if (expr->isNamed(".") == true) {
+  if (expr->isNamedAstr(astrSdot)) {
     SymExpr* base = toSymExpr(expr->get(1));
     SymExpr* name = toSymExpr(expr->get(2));
 
@@ -1012,13 +1014,23 @@ static Expr* resolveFieldExpr(Expr* expr, bool addCopy) {
   if (isBlockStmt(expr) == false) {
     BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
     expr->replace(block);
+    bool callTypeCtor = false;
+
     if (isSymExpr(expr) && toSymExpr(expr)->symbol()->hasFlag(FLAG_TYPE_VARIABLE) &&
         expr->typeInfo()->symbol->hasFlag(FLAG_GENERIC) &&
         isPrimitiveType(expr->typeInfo()) == false) {
+
+      AggregateType* at = toAggregateType(canonicalClassType(expr->typeInfo()));
+      if (at != nullptr)
+        callTypeCtor = at->isGenericWithDefaults();
+    }
+
+    if (callTypeCtor) {
       block->insertAtTail(new CallExpr(expr->typeInfo()->symbol));
     } else {
       block->insertAtTail(expr);
     }
+
     normalize(block);
     expr = block;
     if (CallExpr* last = toCallExpr(block->body.tail)) {
@@ -1869,6 +1881,8 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
 
   instantiations.push_back(retval);
 
+  checkSurprisingGenericDecls(field, field->defPoint->exprType, this);
+
   return retval;
 }
 
@@ -2145,10 +2159,29 @@ void AggregateType::processGenericFields() {
     return;
   }
 
+  // convert domain(?) into domain
+  // but do not convert range(?) into range (if it is generic with defaults)
+  for_fields(field, this) {
+    if (CallExpr* call = toCallExpr(field->defPoint->exprType)) {
+      if (call->numActuals() == 1) {
+        if (SymExpr* se = toSymExpr(call->get(1))) {
+          if (se->symbol() == gUninstantiated) {
+            auto baseType = toAggregateType(call->baseExpr->typeInfo());
+            if (!baseType->mIsGenericWithDefaults) {
+              call->replace(call->baseExpr->remove());
+              field->addFlag(FLAG_MARKED_GENERIC);
+            }
+          }
+        }
+      }
+    }
+  }
+
   std::set<AggregateType*> visited;
 
   foundGenericFields = true;
-  bool isGenericWithDefaults = mIsGeneric;
+  bool anyDefaultedGenericFields = false;
+  bool allDefaultedGenericFields = true;
 
   if (isClass() == true && dispatchParents.n > 0) {
     AggregateType* parent = dispatchParents.v[0];
@@ -2156,7 +2189,9 @@ void AggregateType::processGenericFields() {
       parent->processGenericFields();
 
       if (parent->mIsGeneric) {
-        isGenericWithDefaults = parent->mIsGenericWithDefaults;
+        anyDefaultedGenericFields = parent->mIsGenericWithSomeDefaults ||
+                                    parent->mIsGenericWithDefaults;
+        allDefaultedGenericFields = parent->mIsGenericWithDefaults;
       }
 
       for_vector(Symbol, field, parent->genericFields) {
@@ -2174,23 +2209,29 @@ void AggregateType::processGenericFields() {
       if (isTypeSymbol(field) == false) {
         genericFields.push_back(field);
         if (field->defPoint->init == NULL) {
-          isGenericWithDefaults = false;
+          allDefaultedGenericFields = false;
+        } else {
+          anyDefaultedGenericFields = true;
         }
       }
     } else if (field->defPoint->init == NULL) {
       if (field->defPoint->exprType == NULL) {
         genericFields.push_back(field); // "var x;"
-        isGenericWithDefaults = false;
+        allDefaultedGenericFields = false;
       } else if (isFieldTypeExprGeneric(field->defPoint->exprType, visited)) {
         genericFields.push_back(field); // "var x : integral;"
-        isGenericWithDefaults = false;
+        allDefaultedGenericFields = false;
       }
     }
   }
 
   typeSignature = buildTypeSignature(this);
 
-  this->mIsGenericWithDefaults = isGenericWithDefaults;
+  this->mIsGenericWithDefaults = genericFields.size() > 0 &&
+                                 allDefaultedGenericFields;
+  this->mIsGenericWithSomeDefaults = genericFields.size() > 0 &&
+                                     anyDefaultedGenericFields &&
+                                     !allDefaultedGenericFields;
 }
 
 bool AggregateType::isFieldInThisClass(const char* name) const {
@@ -2699,22 +2740,20 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
 }
 
 void AggregateType::fieldToArgType(DefExpr* fieldDef, ArgSymbol* arg) {
-  BlockStmt* exprType = new BlockStmt(fieldDef->exprType->copy(), BLOCK_TYPE);
-
   // If the type is simple, just set the argument's type directly.
-  // Otherwise, give it the block we just created.
-  if (exprType->body.length == 1) {
-    Type* type = exprType->body.only()->typeInfo();
+  Expr* only = fieldDef->exprType;
+
+  if (only) {
+    Type* type = only->typeInfo();
     if (type != dtUnknown && type != dtAny) {
       arg->type = type;
-
-    } else {
-      arg->typeExpr = exprType;
+      return;
     }
-
-  } else {
-    arg->typeExpr = exprType;
   }
+
+  // Otherwise, copy the block and use it
+  BlockStmt* exprType = new BlockStmt(fieldDef->exprType->copy(), BLOCK_TYPE);
+  arg->typeExpr = exprType;
 }
 
 bool AggregateType::handleSuperFields(FnSymbol*                    fn,

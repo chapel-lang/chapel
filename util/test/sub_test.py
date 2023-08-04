@@ -173,6 +173,22 @@ def elapsed_sub_test_time():
 import atexit
 atexit.register(elapsed_sub_test_time)
 
+def run_process(*args, **kwargs):
+    p = subprocess.Popen(*args, **kwargs)
+    (stdout, stderr) = p.communicate()
+
+    if stdout is not None:
+        stdout_str = str(stdout, encoding='utf-8', errors='surrogateescape')
+    else:
+        stdout_str = ""
+
+    if stderr is not None:
+        stderr_str = str(stderr, encoding='utf-8', errors='surrogateescape')
+    else:
+        stderr_str = ""
+
+    return (p.returncode, stdout_str, stderr_str)
+
 #
 # Time out class:  Read from a stream until time out
 #  A little ugly but sending SIGALRM (or any other signal) to Python
@@ -238,6 +254,7 @@ def trim_output(output):
         new_output = output[:max_size//2]
         new_output += output[-max_size//2:]
         output = new_output
+
     return ''.join(s if s in string.printable else "~" for s in output)
 
 
@@ -266,7 +283,7 @@ def PerfTFile(test_filename, sfx):
 
 def get_chplenv():
     env_cmd = [os.path.join(utildir, 'printchplenv'), '--all', '--simple', '--no-tidy', '--internal']
-    chpl_env = py3_compat.Popen(env_cmd, stdout=subprocess.PIPE).communicate()[0]
+    chpl_env = run_process(env_cmd, stdout=subprocess.PIPE)[1]
     chpl_env = dict(map(lambda l: l.split('=', 1), chpl_env.splitlines()))
     return chpl_env
 
@@ -313,8 +330,8 @@ def ReadFileWithComments(f, ignoreLeadingSpace=True, args=None):
             tmp_args = [os.path.abspath(f)]
             if args != None:
                 tmp_args += args
-            cmd = py3_compat.Popen(tmp_args, stdout=subprocess.PIPE, env=file_env)
-            mylines = cmd.communicate()[0].splitlines()
+            output = run_process(tmp_args, stdout=subprocess.PIPE, env=file_env)[1]
+            mylines = output.splitlines()
 
         except OSError as e:
             global localdir
@@ -344,36 +361,38 @@ def ReadFileWithComments(f, ignoreLeadingSpace=True, args=None):
 # diff 2 files
 def DiffFiles(f1, f2):
     sys.stdout.write('[Executing diff %s %s]\n'%(f1, f2))
-    p = py3_compat.Popen(['diff',f1,f2],
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    myoutput = p.communicate()[0] # grab stdout to avoid potential deadlock
-    if p.returncode != 0:
+    (returncode, myoutput, _) = run_process(['diff',f1,f2],
+                                            stdout=subprocess.PIPE,
+                                            stderr=subprocess.PIPE)
+    if returncode != 0:
         sys.stdout.write(trim_output(myoutput))
-    return p.returncode
+    return returncode
 
 def DiffBinaryFiles(f1, f2):
     sys.stdout.write('[Executing binary diff %s %s]\n'%(f1, f2))
-    p = py3_compat.Popen(['diff', '-a', f1,f2],
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    myoutput = p.communicate()[0] # grab stdout to avoid potential deadlock
-    if p.returncode != 0:
+    # Output is communicate()'d even though it's not needed, to avoid deadlock
+    (returncode, _, _) = run_process(['diff', '-a', f1,f2],
+                                      stdout=subprocess.PIPE,
+                                      stderr=subprocess.PIPE)
+    if returncode != 0:
         sys.stdout.write('Binary files differed\n')
-    return p.returncode
+    return returncode
 
 # diff output vs. .bad file, filtering line numbers out of error messages that arise
 # in module files.
 def DiffBadFiles(f1, f2):
     sys.stdout.write('[Executing diff-ignoring-module-line-numbers %s %s]\n'%(f1, f2))
-    p = py3_compat.Popen([utildir+'/test/diff-ignoring-module-line-numbers', f1, f2],
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    myoutput = p.communicate()[0] # grab stdout to avoid potential deadlock
-    if p.returncode != 0:
+    # Output is communicate()'d even though it's not needed, to avoid deadlock
+    (returncode, _, _) = run_process([utildir+'/test/diff-ignoring-module-line-numbers', f1, f2],
+                                      stdout=subprocess.PIPE,
+                                      stderr=subprocess.PIPE)
+    if returncode != 0:
         sys.stdout.write(myoutput)
-    return p.returncode
+    return returncode
 
 # kill process
 def KillProc(p, timeout):
-    k = py3_compat.Popen(['kill',str(p.pid)])
+    k = subprocess.Popen(['kill',str(p.pid)])
     k.wait()
     now = time.time()
     end_time = now + timeout # give it a little time
@@ -382,7 +401,7 @@ def KillProc(p, timeout):
             return
         now = time.time()
     # use the big hammer (and don't bother waiting)
-    py3_compat.Popen(['kill','-9', str(p.pid)])
+    subprocess.Popen(['kill','-9', str(p.pid)])
     return
 
 # clean up after the test has been built
@@ -411,11 +430,11 @@ def cleanup(execname, test_ran_and_more_compopts=False):
             lsof = which('lsof')
             if handle is not None:
                 sys.stdout.write('[Inspecting open file handles with: {0}\n'.format(handle))
-                py3_compat.Popen([handle]).communicate()
+                run_process([handle])
             elif lsof is not None:
                 cmd = [lsof, execname]
                 sys.stdout.write('[Inspecting open file handles with: {0}\n'.format(' '.join(cmd)))
-                py3_compat.Popen(cmd).communicate()
+                run_process(cmd)
 
         # Do not print the warning for cygwin32 when errno is 16 (Device or resource busy).
         if not (getattr(ex, 'errno', 0) == 16 and platform == 'cygwin32'):
@@ -581,10 +600,9 @@ def get_exec_log_name(execname, comp_opts_count=None, exec_opts_count=None):
 # Use testEnv to process skipif files, it works for executable and
 # non-executable versions
 def runSkipIf(skipifName):
-    p = py3_compat.Popen([utildir+'/test/testEnv', './'+skipifName], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    (stdout, stderr) = p.communicate()
-    status = p.returncode
-
+    (status, stdout, stderr) = run_process([utildir+'/test/testEnv', './'+skipifName],
+                                           stdout=subprocess.PIPE,
+                                           stderr=subprocess.PIPE)
     stderr = stderr.strip()
     errmsg = ""
     if stderr:
@@ -763,35 +781,21 @@ utildir = os.path.realpath(utildir)
 # purpose. compileline will not work correctly in some configurations when run
 # outside of its directory tree.
 compileline = os.path.join(chpl_home, 'util', 'config', 'compileline')
-p = py3_compat.Popen([compileline, '--compile'],
-                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-c_compiler = p.communicate()[0].rstrip()
-if p.returncode != 0:
-  Fatal('Cannot find c compiler')
-p = py3_compat.Popen([compileline, '--compile-c++'],
-                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-cpp_compiler = p.communicate()[0].rstrip()
-if p.returncode != 0:
-  Fatal('Cannot find c++ compiler')
+def run_compileline(flag, lookingfor):
+    (returncode, result, _) = run_process([compileline, flag],
+                                          stdout=subprocess.PIPE,
+                                          stderr=subprocess.PIPE)
+    result = result.rstrip()
+    if returncode != 0:
+      Fatal('Cannot find ' + lookingfor)
+    return result
 
-p = py3_compat.Popen([compileline, '--host-c-compiler'],
-                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-host_c_compiler = p.communicate()[0].rstrip()
-if p.returncode != 0:
-  Fatal('Cannot find host c compiler')
-
-p = py3_compat.Popen([compileline, '--host-cxx-compiler'],
-                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-host_cpp_compiler = p.communicate()[0].rstrip()
-if p.returncode != 0:
-  Fatal('Cannot find host c++ compiler')
-
-# Get runtime includes and defines
-p = py3_compat.Popen([compileline, '--includes-and-defines'],
-                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-runtime_includes_and_defines= p.communicate()[0].rstrip()
-if p.returncode != 0:
-  Fatal('Cannot find runtime includes and defines')
+c_compiler = run_compileline('--compile', 'c compiler')
+cpp_compiler = run_compileline('--compile-c++', 'c++ compiler')
+host_c_compiler = run_compileline('--host-c-compiler', 'host c compiler')
+host_cpp_compiler = run_compileline('--host-cxx-compiler', 'host c++ compiler')
+runtime_includes_and_defines = run_compileline('--includes-and-defines',
+                                               'runtime includes and defines')
 
 # Find the test directory
 testdir=chpl_home+'/test'
@@ -820,7 +824,7 @@ if useTimedExec:
 # sys.stdout.write('timedexec='+timedexec+'\n');
 
 # HW platform
-platform=py3_compat.Popen([utildir+'/chplenv/chpl_platform.py', '--target'], stdout=subprocess.PIPE).communicate()[0]
+platform = run_process([utildir+'/chplenv/chpl_platform.py', '--target'], stdout=subprocess.PIPE)[1]
 platform = platform.strip()
 # sys.stdout.write('platform='+platform+'\n')
 
@@ -894,10 +898,10 @@ chpltasksstr='.tasks-'+chpltasks
 if os.access('./PRETEST', os.R_OK|os.X_OK):
     sys.stdout.write('[Executing ./PRETEST %s]\n'%(compiler))
     sys.stdout.flush()
-    p = py3_compat.Popen(['./PRETEST', compiler],
+    stdout = run_process(['./PRETEST', compiler],
                          stdout=subprocess.PIPE,
-                         stderr=subprocess.STDOUT)
-    sys.stdout.write(p.communicate()[0])
+                         stderr=subprocess.STDOUT)[1]
+    sys.stdout.write(stdout)
     sys.stdout.flush()
 
 if os.getenv('CHPL_TEST_PERF')!=None:
@@ -988,12 +992,12 @@ else:
 
 globalLastcompopts=list();
 if os.access('./LASTCOMPOPTS',os.R_OK):
-    globalLastcompopts+=py3_compat.Popen(['cat', './LASTCOMPOPTS'], stdout=subprocess.PIPE).communicate()[0].strip().split()
+    globalLastcompopts+=run_process(['cat', './LASTCOMPOPTS'], stdout=subprocess.PIPE)[1].strip().split()
 # sys.stdout.write('globalLastcompopts=%s\n'%(globalLastcompopts))
 
 globalLastexecopts=list();
 if os.access('./LASTEXECOPTS',os.R_OK):
-    globalLastexecopts+=py3_compat.Popen(['cat', './LASTEXECOPTS'], stdout=subprocess.PIPE).communicate()[0].strip().split()
+    globalLastexecopts+=run_process(['cat', './LASTEXECOPTS'], stdout=subprocess.PIPE)[1].strip().split()
 # sys.stdout.write('globalLastexecopts=%s\n'%(globalLastexecopts))
 
 if os.access(PerfDirFile('NUMLOCALES'),os.R_OK):
@@ -1011,7 +1015,7 @@ if maxLocalesAvailable is not None:
     maxLocalesAvailable = int(maxLocalesAvailable)
 
 if os.access('./CATFILES',os.R_OK):
-    globalCatfiles=py3_compat.Popen(['cat', './CATFILES'], stdout=subprocess.PIPE).communicate()[0]
+    globalCatfiles=run_process(['cat', './CATFILES'], stdout=subprocess.PIPE)[1]
     globalCatfiles.strip(globalCatfiles)
 else:
     globalCatfiles=None
@@ -1394,18 +1398,18 @@ for testname in testsrc:
             killtimeout=ReadIntegerValue(f, localdir)
 
         elif (suffix=='.catfiles' and os.access(f, os.R_OK)):
-            execcatfiles=py3_compat.Popen(['cat', f], stdout=subprocess.PIPE).communicate()[0].strip()
+            execcatfiles=run_process(['cat', f], stdout=subprocess.PIPE)[1].strip()
             if catfiles:
                 catfiles+=execcatfiles
             else:
                 catfiles=execcatfiles
 
         elif (suffix=='.lastcompopts' and os.access(f, os.R_OK)):
-            lastcompopts+=py3_compat.Popen(['cat', f], stdout=subprocess.PIPE).communicate()[0].strip().split()
+            lastcompopts+=run_process(['cat', f], stdout=subprocess.PIPE)[1].strip().split()
             # sys.stdout.write("lastcompopts=%s\n"%(lastcompopts))
 
         elif (suffix=='.lastexecopts' and os.access(f, os.R_OK)):
-            lastexecopts+=py3_compat.Popen(['cat', f], stdout=subprocess.PIPE).communicate()[0].strip().split()
+            lastexecopts+=run_process(['cat', f], stdout=subprocess.PIPE)[1].strip().split()
             # sys.stdout.write("lastexecopts=%s\n"%(lastexecopts))
 
         elif (suffix==PerfSfx('numlocales') and os.access(f, os.R_OK)):
@@ -1592,18 +1596,18 @@ for testname in testsrc:
         if globalPrecomp:
             sys.stdout.write('[Executing ./PRECOMP %s %s %s]\n'%(execname, complog, compiler))
             sys.stdout.flush()
-            p = py3_compat.Popen(['./PRECOMP', execname, complog, compiler],
-                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            sys.stdout.write(p.communicate()[0])
+            stdout = run_process(['./PRECOMP', execname, complog, compiler],
+                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
+            sys.stdout.write(stdout)
             sys.stdout.flush()
 
         if precomp:
             sys.stdout.write('[Executing precomp %s.precomp]\n'%(test_filename))
             sys.stdout.flush()
             test_precomp = './{0}.precomp'.format(test_filename)
-            p = py3_compat.Popen([test_precomp, execname, complog, compiler],
-                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            sys.stdout.write(p.communicate()[0])
+            stdout = run_process([test_precomp, execname, complog, compiler],
+                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
+            sys.stdout.write(stdout)
             sys.stdout.flush()
 
 
@@ -1684,12 +1688,10 @@ for testname in testsrc:
         sys.stdout.flush()
         if useTimedExec:
             wholecmd = cmd+' '+' '.join(map(ShellEscape, args))
-            p = py3_compat.Popen([timedexec, str(comptimeout), wholecmd],
-                                 env=dict(list(os.environ.items()) + list(testcompenv.items())),
-                                 stdin=open(compstdin, 'r'),
-                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            output = p.communicate()[0]
-            status = p.returncode
+            (status, output, _) = run_process([timedexec, str(comptimeout), wholecmd],
+                                              env=dict(list(os.environ.items()) + list(testcompenv.items())),
+                                              stdin=open(compstdin, 'r'),
+                                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
             if status == 222:
                 sys.stdout.write('%s[Error: Timed out compilation for %s/%s'%
@@ -1703,12 +1705,12 @@ for testname in testsrc:
                 continue # on to next compopts
 
         else:
-            p = py3_compat.Popen([cmd]+args,
+            p = subprocess.Popen([cmd]+args,
                                  env=dict(list(os.environ.items()) + list(testcompenv.items())),
                                  stdin=open(compstdin, 'r'),
                                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             try:
-                output = py3_compat.bytes_to_str(SuckOutputWithTimeout(p.stdout, comptimeout))
+                output = str(SuckOutputWithTimeout(p.stdout, comptimeout), 'utf-8')
             except ReadTimeoutException:
                 sys.stdout.write('%s[Error: Timed out compilation for %s/%s'%
                                  (futuretest, localdir, test_filename))
@@ -1752,24 +1754,9 @@ for testname in testsrc:
                                  (test_filename+'.catfiles'))
                 sys.stdout.flush()
                 WaitForFiles(catfiles.split())
-                p = py3_compat.Popen(['cat']+catfiles.split(),
-                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                catoutput = p.communicate()[0]
-                # If the python 3 compatible popen command to concatenate files
-                # has given us a bytes back but the output up to this point was
-                # all str, then we may not be able to translate the cat output
-                # into a str and may have to go the other way
-                if (isinstance(catoutput, bytes) and
-                    not isinstance(output, bytes)):
-                    try:
-                        decodedcat = catoutput.decode('utf_8')
-                        output += decodedcat
-                    except UnicodeDecodeError:
-                        dealWithBinary = True
-                        output = output.encode('utf_8')
-                        output += catoutput
-                else:
-                    output += catoutput
+                catoutput = run_process(['cat']+catfiles.split(),
+                                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
+                output += catoutput
 
             # Sadly these scripts require an actual file
             with open(complog, 'w') as complogfile:
@@ -1779,29 +1766,29 @@ for testname in testsrc:
                 for sprediff in systemPrediffs:
                     sys.stdout.write('[Executing system-wide prediff %s]\n'%(sprediff))
                     sys.stdout.flush()
-                    p = py3_compat.Popen([sprediff, execname, complog, compiler,
+                    stdout = run_process([sprediff, execname, complog, compiler,
                                           ' '.join(envCompopts)+' '+compopts, ' '.join(args)],
-                                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                    sys.stdout.write(p.communicate()[0])
+                                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
+                    sys.stdout.write(stdout)
                     sys.stdout.flush()
 
             if globalPrediff:
                 sys.stdout.write('[Executing ./PREDIFF]\n')
                 sys.stdout.flush()
-                p = py3_compat.Popen(['./PREDIFF', execname, complog, compiler,
+                stdout = run_process(['./PREDIFF', execname, complog, compiler,
                                      ' '.join(envCompopts)+' '+compopts, ' '.join(args)],
-                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                sys.stdout.write(p.communicate()[0])
+                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
+                sys.stdout.write(stdout)
                 sys.stdout.flush()
 
             if prediff:
                 sys.stdout.write('[Executing prediff %s.prediff]\n'%(test_filename))
                 sys.stdout.flush()
                 test_prediff = './{0}.prediff'.format(test_filename)
-                p = py3_compat.Popen([test_prediff, execname, complog, compiler,
+                stdout = run_process([test_prediff, execname, complog, compiler,
                                      ' '.join(envCompopts)+' '+compopts, ' '.join(args)],
-                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                sys.stdout.write(p.communicate()[0])
+                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
+                sys.stdout.write(stdout)
                 sys.stdout.flush()
 
 
@@ -1960,10 +1947,8 @@ for testname in testsrc:
                 # computePerfStats for the current test
                 sys.stdout.write('[Executing computePerfStats %s %s %s %s %s]\n'%(datFileName, tempDatFilesDir, keyfile, printpassesfile, 'False'))
                 sys.stdout.flush()
-                p = py3_compat.Popen([utildir+'/test/computePerfStats', datFileName, tempDatFilesDir, keyfile, printpassesfile, 'False'], stdout=subprocess.PIPE)
-                compkeysOutput = p.communicate()[0]
+                (status, compkeysOutput, _) = run_process([utildir+'/test/computePerfStats', datFileName, tempDatFilesDir, keyfile, printpassesfile, 'False'], stdout=subprocess.PIPE)
                 datFiles = [tempDatFilesDir+'/'+datFileName+'.dat',  tempDatFilesDir+'/'+datFileName+'.error']
-                status = p.returncode
 
                 if status == 0:
                     sys.stdout.write('[Success finding compiler performance keys for %s/%s]\n'% (localdir, test_filename))
@@ -2025,26 +2010,26 @@ for testname in testsrc:
                 for spreexec in systemPreexecs:
                     sys.stdout.write('[Executing system-wide preexec %s]\n'%(spreexec))
                     sys.stdout.flush()
-                    p = py3_compat.Popen([spreexec, execname, execlog, compiler],
-                                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                    sys.stdout.write(p.communicate()[0])
+                    stdout = run_process([spreexec, execname, execlog, compiler],
+                                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
+                    sys.stdout.write(stdout)
                     sys.stdout.flush()
 
             if globalPreexec:
                 sys.stdout.write('[Executing ./PREEXEC]\n')
                 sys.stdout.flush()
-                p = py3_compat.Popen(['./PREEXEC', execname, execlog, compiler],
-                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                sys.stdout.write(p.communicate()[0])
+                stdout = run_process(['./PREEXEC', execname, execlog, compiler],
+                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
+                sys.stdout.write(stdout)
                 sys.stdout.flush()
 
             if preexec:
                 sys.stdout.write('[Executing preexec %s.preexec]\n'%(test_filename))
                 sys.stdout.flush()
                 test_preexec = './{0}.preexec'.format(test_filename)
-                p = py3_compat.Popen([test_preexec, execname, execlog, compiler],
-                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                sys.stdout.write(p.communicate()[0])
+                stdout = run_process([test_preexec, execname, execlog, compiler],
+                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
+                sys.stdout.write(stdout)
                 sys.stdout.flush()
 
             #
@@ -2186,12 +2171,10 @@ for testname in testsrc:
                         else:
                             my_stdin=open(redirectin, 'r')
                         test_command = [cmd] + args
-                        p = py3_compat.Popen(test_command,
-                                             env=dict(list(os.environ.items()) + list(testenv.items())),
-                                             stdin=my_stdin, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                        (stdout, stderr) = p.communicate()
-                        output = py3_compat.concat_streams(stdout, stderr)
-                        exec_status = p.returncode
+                        (exec_status, stdout, stderr) = run_process(test_command,
+                                        env=dict(list(os.environ.items()) + list(testenv.items())),
+                                        stdin=my_stdin, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        output = stdout + stderr
 
                         # Check for well-known failure modes
                         launcher_error, thistimeout = translateOutput(output)
@@ -2213,12 +2196,11 @@ for testname in testsrc:
                             my_stdin = sys.stdin
                         else:
                             my_stdin = open(redirectin, 'r')
-                        p = py3_compat.Popen([timedexec, str(timeout), wholecmd],
-                                             env=dict(list(os.environ.items()) + list(testenv.items())),
-                                             stdin=my_stdin, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                        (stdout, stderr) = p.communicate()
-                        output = py3_compat.concat_streams(stdout, stderr)
-                        exec_status = p.returncode
+
+                        (exec_status, stdout, stderr) = run_process([timedexec, str(timeout), wholecmd],
+                                         env=dict(list(os.environ.items()) + list(testenv.items())),
+                                         stdin=my_stdin, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        output = stdout + stderr
 
                         if exec_status == 222:
                             exectimeout = True
@@ -2246,11 +2228,11 @@ for testname in testsrc:
                             my_stdin = None
                         else:
                             my_stdin=open(redirectin, 'r')
-                        p = py3_compat.Popen([cmd]+args,
+                        p = subprocess.Popen([cmd]+args,
                                              env=dict(list(os.environ.items()) + list(testenv.items())),
                                              stdin=my_stdin, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                         try:
-                            stdoutOutput = SuckOutputWithTimeout(p.stdout, timeout)
+                            stdoutOutput = str(SuckOutputWithTimeout(p.stdout, timeout), "utf-8")
                         except ReadTimeoutException:
                             exectimeout = True
                             sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
@@ -2260,8 +2242,8 @@ for testname in testsrc:
                             sys.stdout.write(']\n')
                             KillProc(p, killtimeout)
 
-                        stderrOutput = p.stderr.read()
-                        output = py3_compat.concat_streams(stdoutOutput, stderrOutput)
+                        stderrOutput = str(p.stderr.read(), "utf-8")
+                        output = stdoutOutput + stderrOutput
                         p.poll()
                         exec_status = p.returncode
 
@@ -2305,56 +2287,51 @@ for testname in testsrc:
                                     (test_filename+'.catfiles'))
                     sys.stdout.flush()
                     WaitForFiles(catfiles.split())
-                    p = py3_compat.Popen(['cat']+catfiles.split(),
-                                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                    cat_output = p.communicate()[0]
-                    if sys.version_info[0] >= 3 and isinstance(cat_output, bytes):
-                        output = py3_compat.str_to_bytes(output)
+                    cat_output = run_process(['cat']+catfiles.split(),
+                                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
                     output += cat_output
 
-                # Sadly the scripts used below require an actual file
-                open_mode = 'w' if isinstance(output, str) else 'wb'
-                with open(execlog, open_mode) as execlogfile:
-                    if open_mode == 'wb':
-                        pre_exec_output_content = py3_compat.str_to_bytes(pre_exec_output)
-                    else:
-                        pre_exec_output_content = pre_exec_output
-                    execlogfile.write(pre_exec_output_content)
+                # It's got surrogates, so encode it as bytes and write it as binary
+                mode = "w"
+                output_to_write, pre_exec_to_write = output, pre_exec_output
+                if re.search(r'[\uD800-\uDFFF]', output) or re.search(r'[\uD800-\uDFFF]', pre_exec_output):
+                    output_to_write = output.encode(errors="surrogateescape")
+                    pre_exec_to_write = pre_exec_output.encode(errors="surrogateescape")
+                    mode = "wb"
 
-                    if open_mode == 'wb':
-                        output_content = py3_compat.str_to_bytes(output)
-                    else:
-                        output_content = output
-                    execlogfile.write(output_content)
+                # Sadly the scripts used below require an actual file
+                with open(execlog, mode) as execlogfile:
+                    execlogfile.write(pre_exec_to_write)
+                    execlogfile.write(output_to_write)
 
                 if not exectimeout and not launcher_error:
                     if systemPrediffs:
                         for sprediff in systemPrediffs:
                             sys.stdout.write('[Executing system-wide prediff %s]\n'%(sprediff))
                             sys.stdout.flush()
-                            p = py3_compat.Popen([sprediff, execname, execlog, compiler,
+                            stdout = run_process([sprediff, execname, execlog, compiler,
                                                   ' '.join(envCompopts)+' '+compopts, ' '.join(args)],
                                                  env=dict(list(os.environ.items()) + list(testenv.items())),
-                                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                            sys.stdout.write(p.communicate()[0])
+                                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
+                            sys.stdout.write(stdout)
 
                     if globalPrediff:
                         sys.stdout.write('[Executing ./PREDIFF]\n')
                         sys.stdout.flush()
-                        p = py3_compat.Popen(['./PREDIFF', execname, execlog, compiler,
+                        stdout = run_process(['./PREDIFF', execname, execlog, compiler,
                                              ' '.join(envCompopts)+ ' '+compopts, ' '.join(args)],
                                              env=dict(list(os.environ.items()) + list(testenv.items())),
-                                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                        sys.stdout.write(p.communicate()[0])
+                                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
+                        sys.stdout.write(stdout)
 
                     if prediff:
                         sys.stdout.write('[Executing prediff ./%s]\n'%(prediff))
                         sys.stdout.flush()
-                        p = py3_compat.Popen(['./'+prediff, execname, execlog, compiler,
+                        stdout = run_process(['./'+prediff, execname, execlog, compiler,
                                              ' '.join(envCompopts)+' '+compopts, ' '.join(args)],
                                              env=dict(list(os.environ.items()) + list(testenv.items())),
-                                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                        sys.stdout.write(p.communicate()[0])
+                                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
+                        sys.stdout.write(stdout)
 
                     if not perftest:
                         # find the good file
@@ -2379,8 +2356,7 @@ for testname in testsrc:
                         if not os.path.isfile(execgoodfile) or not os.access(execgoodfile, os.R_OK):
                             sys.stdout.write('[Error cannot locate program output comparison file %s/%s]\n'%(localdir, execgoodfile))
                             sys.stdout.write('[Execution output was as follows:]\n')
-                            p = py3_compat.Popen(['cat', execlog], stdout=subprocess.PIPE)
-                            exec_output = p.communicate()[0]
+                            exec_output = run_process(['cat', execlog], stdout=subprocess.PIPE)[1]
                             sys.stdout.write(trim_output(exec_output))
 
                             continue # on to next execopts
@@ -2442,13 +2418,12 @@ for testname in testsrc:
                     if exec_status == 0:
                         sys.stdout.write('[Executing %s/test/computePerfStats %s %s %s %s %s %s]\n'%(utildir, perfexecname, perfdir, keyfile, execlog, str(exectimeout), perfdate))
                         sys.stdout.flush()
-                        p = py3_compat.Popen([utildir+'/test/computePerfStats',
-                                            perfexecname, perfdir, keyfile, execlog, str(exectimeout), perfdate],
-                                            stdout=subprocess.PIPE)
-                        sys.stdout.write('%s'%(p.communicate()[0]))
+                        (status, stdout, _) = run_process([utildir+'/test/computePerfStats',
+                                                          perfexecname, perfdir, keyfile, execlog, str(exectimeout), perfdate],
+                                                          stdout=subprocess.PIPE)
+                        sys.stdout.write('%s'%(stdout))
                         sys.stdout.flush()
 
-                        status = p.returncode
                         if not exectimeout and not launcher_error:
                             if status == 0:
                                 os.unlink(execlog)

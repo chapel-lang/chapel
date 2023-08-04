@@ -105,7 +105,7 @@ class CS: BaseDist {
 } // CS
 
 
-class CSDom: BaseSparseDomImpl {
+class CSDom: BaseSparseDomImpl(?) {
   param compressRows;
   param sortedIndices;
   param strides;
@@ -646,7 +646,7 @@ class CSDom: BaseSparseDomImpl {
 } // CSDom
 
 
-class CSArr: BaseSparseArrImpl {
+class CSArr: BaseSparseArrImpl(?) {
 
   proc init(type eltType,
             param rank : int,

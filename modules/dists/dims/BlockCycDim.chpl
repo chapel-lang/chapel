@@ -499,7 +499,7 @@ proc BlockCyclic1dom.dsiSetIndices1d(rangeArg: rangeT): void {
   //
   // todo: document this in the spec for this distribution.
   // see also an assert is dsiSetLocalIndices1d()
-  assert(!rangeArg.isAmbiguous());
+  assert(rangeArg.isAligned());
 
   const prevStoragePerCycle = storagePerCycle;
   dsiSetIndicesUnimplementedCase = false;

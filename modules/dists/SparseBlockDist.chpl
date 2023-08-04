@@ -81,7 +81,7 @@ record TargetLocaleComparator {
 // locDoms:   a non-distributed array of local domain classes
 // whole:     a non-distributed domain that defines the domain's indices
 //
-class SparseBlockDom: BaseSparseDomImpl {
+class SparseBlockDom: BaseSparseDomImpl(?) {
   type sparseLayoutType;
   param strides = strideKind.one;  // TODO: remove default value eventually
   const dist: unmanaged BlockImpl(rank, idxType, sparseLayoutType);
@@ -387,7 +387,7 @@ class LocSparseBlockDom {
 // locArr: a non-distributed array of local array classes
 // myLocArr: optimized reference to here's local array class (or nil)
 //
-class SparseBlockArr: BaseSparseArr {
+class SparseBlockArr: BaseSparseArr(?) {
   param strides: strideKind;
   type sparseLayoutType = unmanaged DefaultDist;
 

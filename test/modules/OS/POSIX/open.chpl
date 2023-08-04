@@ -11,7 +11,7 @@ const fname_1 = c'open.file-1';
 writeln(fname_1:string, ':');
 var fildes = creat(fname_1, S_IRWXU | S_IRWXG | S_IRWXO);
 writeln(fildes >= 0);
-writeln(POSIX.write(fildes, c'hello\n':c_void_ptr, 6));
+writeln(POSIX.write(fildes, c'hello\n':c_ptr(void), 6));
 writeln(close(fildes));
 
 param bufSize = 10;
@@ -27,7 +27,7 @@ const fname_2 = c'open.file-2';
 writeln(fname_2:string, ':');
 fildes = open(fname_2, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 writeln(fildes >= 0);
-writeln(POSIX.write(fildes, c'goodbye\n':c_void_ptr, 8));
+writeln(POSIX.write(fildes, c'goodbye\n':c_ptr(void), 8));
 writeln(close(fildes));
 
 fildes = open(fname_2, O_RDONLY);
