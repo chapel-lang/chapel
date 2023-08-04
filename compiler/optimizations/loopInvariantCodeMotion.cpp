@@ -117,6 +117,10 @@ public:
       delete bitExits;
     }
 
+    LoopStmt* getLoopAST() const {
+      return loopAST;
+    }
+
     // This function exists to place an expr in the "preheader" of the loop
     void insertBefore(Expr* expr) {
       if (loopAST) {
@@ -1081,6 +1085,13 @@ static bool defDominatesAllUses(Loop* loop, SymExpr* def, std::vector<BitVec*>& 
  *
  */
 static bool defDominatesAllExits(Loop* loop, SymExpr* def, std::vector<BitVec*>& dominators, std::map<SymExpr*, int>& localMap) {
+  if (def->symbol()->defPoint != nullptr &&
+      LoopStmt::findEnclosingLoop(def->symbol()->defPoint) == loop->getLoopAST()) {
+    // If the symbol-to-hoist is defined inside a loop, no reason to worry about
+    // loop exits, since it can't be referenced outside.
+    return true;
+  }
+
   int defBlock = localMap[def];
 
   BitVec* bitExits = loop->getBitExits();
