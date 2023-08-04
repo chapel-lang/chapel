@@ -29,7 +29,10 @@ module ChapelHashing {
     proc Self.hash(): uint;
   }
 
-  proc chpl__defaultHashWrapper(x): uint {
+  // Hash interfaces return uint, this internal implementation (also used for
+  // compiler-generated hashes) also returns uint. The public API returns
+  // integers, though, so is a different function.
+  proc chpl__defaultHashWrapperInner(x): uint {
     use Reflection;
 
     if !canResolveMethod(x, "hash") then
@@ -41,6 +44,11 @@ module ChapelHashing {
                         "In the future, this will result in an error.");
 
     return x.hash();
+  }
+
+  proc chpl__defaultHashWrapper(x): int {
+    const hash = chpl__defaultHashWrapperInner(x);
+    return (hash & max(int)): int;
   }
 
   // Mix the bits, so that e.g. numbers in 0..N generate
