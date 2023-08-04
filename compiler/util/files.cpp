@@ -183,12 +183,18 @@ void restoreAdditionalSourceFiles() {
   closefile(additionalFilenamesList);
 }
 
-void ensureDirExists(const char* dirname, const char* explanation) {
+void ensureDirExists(const char* dirname, const char* explanation,
+                     bool checkWriteable) {
   // forward to chpl::ensureDirExists(), check for errors, and report them
   std::string dirName = std::string(dirname);
   if (auto err = chpl::ensureDirExists(dirName)) {
     USR_FATAL("creating directory %s failed: %s\n", dirname,
                    err.message().c_str());
+  }
+
+  // check writeability if we need it
+  if (checkWriteable && !chpl::isPathWriteable(dirName)) {
+    USR_FATAL("write permission denied for directory %s", dirname);
   }
 }
 

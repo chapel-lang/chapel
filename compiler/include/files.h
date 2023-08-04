@@ -54,7 +54,8 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname=NULL,
                       const std::vector<const char *>& splitFiles
                         = std::vector<const char*>());
 
-void ensureDirExists(const char* /* dirname */, const char* /* explanation */);
+void ensureDirExists(const char* dirname, const char* explanation,
+                     bool checkWriteable = true);
 const char* getCwd();
 void ensureTmpDirExists();
 void deleteDir(const char* dirname);

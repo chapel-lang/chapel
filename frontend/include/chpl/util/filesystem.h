@@ -58,6 +58,14 @@ bool fileExists(const char* path);
  */
 std::error_code ensureDirExists(const llvm::Twine& dirname);
 
+/**
+ * Check if the path specified is writeable by us.
+ *
+ * path the path to check write permission of
+ * returns bool
+ */
+bool isPathWriteable(const llvm::Twine& path);
+
 
 /**
  * creates a directory in the temp location for the system
