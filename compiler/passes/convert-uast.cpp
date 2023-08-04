@@ -371,10 +371,12 @@ struct Converter {
 
       for (auto act: llvmAttrNode->actuals()) {
         auto attr = nodeToLLVMAttribute(act);
-        if(attr != nullptr) {
+        if (attr != nullptr) {
           llvmAttrs.push_back(attr);
         } else {
-          USR_WARN(node->id(), "invalid value for llvm.attribute");
+          std::string msg = "Invalid value for 'llvm.attribute'";
+          auto err = GeneralError::get(ErrorBase::ERROR, attrLoc, msg);
+          context->report(std::move(err));
         }
       }
     }
