@@ -29,8 +29,7 @@ module ChapelHashing {
     proc Self.hash(): uint;
   }
 
-  pragma "last resort"
-  proc chpl__defaultHashWrapper(x): int {
+  proc chpl__defaultHashWrapper(x): uint {
     use Reflection;
 
     if !canResolveMethod(x, "hash") then
@@ -41,8 +40,7 @@ module ChapelHashing {
                         " does not implement Hashable. ",
                         "In the future, this will result in an error.");
 
-    const hash = x.hash();
-    return (hash & max(int)): int;
+    return x.hash();
   }
 
   // Mix the bits, so that e.g. numbers in 0..N generate
