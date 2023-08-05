@@ -1415,7 +1415,9 @@ static void createTwoPaths(FnSymbol* fn) {
 }
 
 void earlyGpuTransforms() {
-  forv_Vec(FnSymbol*, fn, gFnSymbols) {
-    createTwoPaths(fn);
+  if (usingGpuLocaleModel()) {
+    forv_Vec(FnSymbol*, fn, gFnSymbols) {
+      createTwoPaths(fn);
+    }
   }
 }
