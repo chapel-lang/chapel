@@ -473,6 +473,14 @@ record Block {
       return newRectangularDom(rank, idxType, strides, ranges, definedConst);
     }
 
+    proc newSparseDom(param rank: int, type idxType, dom: domain) {
+      var x = _value.dsiNewSparseDom(rank, idxType, dom);
+      if x.linksDistribution() {
+        _value.add_dom(x);
+      }
+      return x;
+    }
+
     proc idxToLocale(ind) do return _value.dsiIndexToLocale(ind);
 
     proc writeThis(f) throws {
