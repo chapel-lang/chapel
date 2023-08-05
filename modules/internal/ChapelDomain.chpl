@@ -103,7 +103,7 @@ module ChapelDomain {
   }
 
   pragma "runtime type init fn"
-  proc chpl__buildSparseDomainRuntimeType(dist: _distribution,
+  proc chpl__buildSparseDomainRuntimeType(dist,
                                           parentDom: domain) type {
     if ! isUltimatelyRectangularParent(parentDom) then
       compilerError("sparse subdomains are currently supported only for " +
@@ -1189,7 +1189,7 @@ module ChapelDomain {
     }
 
     @deprecated("domain.dist is deprecated, please use domain.distribution instead")
-    proc dist do return _getDistribution(_value.dist);
+    proc dist do return this.distribution;
 
     /* Return the number of dimensions in this domain */
     proc rank param {
@@ -2658,7 +2658,7 @@ module ChapelDomain {
       // could add e.g. dsiDefaultSparseDist to the DSI interface
       // and have this function use _value.dsiDefaultSparseDist()
       // (or perhaps _value.dist.dsiDefaultSparseDist() ).
-      return _getDistribution(_value.dist);
+      return this.distribution;
     }
 
     // returns a default rectangular domain
