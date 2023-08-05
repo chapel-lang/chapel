@@ -438,7 +438,7 @@ module ChapelArray {
   //
   // Support for distributed domain expression e.g. {1..3, 1..3} dmapped Dist()
   //
-  proc chpl__distributed(d: _distribution, dom: domain,
+  proc chpl__distributed(d, dom: domain,
                          definedConst: bool) {
     if definedConst {
       if dom.isRectangular() {
@@ -472,7 +472,7 @@ module ChapelArray {
   }
 
   pragma "last resort"
-  proc chpl__distributed(d: _distribution, expr, definedConst: bool) {
+  proc chpl__distributed(d, expr, definedConst: bool) {
     compilerError("'dmapped' can currently only be applied to domains.");
   }
 
@@ -552,7 +552,7 @@ module ChapelArray {
   // End of DomainView utility functions
   //
   // this is a type function and as such, definedConst has no effect
-  proc chpl__distributed(d: _distribution, type domainType,
+  proc chpl__distributed(d, type domainType,
                          definedConst: bool) type {
     if !isDomainType(domainType) then
       compilerError("cannot apply 'dmapped' to the non-domain type ",
@@ -676,6 +676,11 @@ module ChapelArray {
     return y.type;
   }
 
+  proc chpl__buildDistType(type t: record) type {
+    compilerWarning("The use of 'dmap' is depreacted for this distribution; please replace 'dmap(<DistName>(<args>))' with '<DistName>(<args>)'");
+    return t;
+  }
+
   proc chpl__buildDistType(type t) {
     compilerError("illegal domain map type specifier - must be a subclass of BaseDist");
   }
@@ -686,9 +691,24 @@ module ChapelArray {
   proc chpl__buildDistValue(in x:owned) where isSubtype(x.borrow().type, BaseDist) {
     return new _distribution(owned.release(x));
   }
+  proc chpl__buildDistValue(x:record) {
+    return x;
+  }
 
   proc chpl__buildDistValue(x) {
     compilerError("illegal domain map value specifier - must be a subclass of BaseDist");
+  }
+
+  proc chpl__buildDistDMapValue(x: record) {
+    compilerWarning("The use of 'dmap' is deprecated for this distribution; please replace 'new dmap(new <DistName>(<args>))' with 'new <DistName>(<args>)'");
+    return chpl__buildDistValue(x);
+  }
+
+  proc chpl__buildDistDMapValue(x:unmanaged) where isSubtype(x.borrow().type, BaseDist) {
+    return new _distribution(x);
+  }
+  proc chpl__buildDistDMapValue(in x:owned) where isSubtype(x.borrow().type, BaseDist) {
+    return new _distribution(owned.release(x));
   }
 
   //
@@ -869,9 +889,31 @@ module ChapelArray {
     return d1._value.dsiEqualDMaps(d2._value);
   }
 
+  // This is temporary while we work on retiring _distribution
+  @chpldoc.nodoc
+  inline operator ==(d1: _distribution(?), d2: record) param {
+    return false;
+  }
+
+  // This is temporary while we work on retiring _distribution
+  @chpldoc.nodoc
+  inline operator ==(d1: record, d2: _distribution(?)) param {
+    return false;
+  }
+
   @chpldoc.nodoc
   inline operator !=(d1: _distribution(?), d2: _distribution(?)) {
     return !(d1 == d2);
+  }
+
+  @chpldoc.nodoc
+  inline operator !=(d1: _distribution(?), d2: record) param {
+    return true;
+  }
+
+  @chpldoc.nodoc
+  inline operator !=(d1: record, d2: _distribution(?)) param {
+    return true;
   }
 
   // This alternative declaration of Sort.defaultComparator

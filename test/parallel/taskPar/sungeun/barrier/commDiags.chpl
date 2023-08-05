@@ -13,8 +13,8 @@ proc printCommDiagnostics(diag) {
 
 proc remoteTestBasic(b, numRemoteTasks) {
   const barSpace = 0..#numRemoteTasks;
-  var A: [{barSpace} dmapped new dmap(new Block({barSpace}))] int = barSpace;
-  var B: [{barSpace} dmapped new dmap(new Block({barSpace}))] int = -1;
+  var A: [{barSpace} dmapped new Block({barSpace})] int = barSpace;
+  var B: [{barSpace} dmapped new Block({barSpace})] int = -1;
   { // block keeps above variables alive
     resetCommDiagnostics();
     startCommDiagnostics();
@@ -30,8 +30,8 @@ proc remoteTestBasic(b, numRemoteTasks) {
 proc remoteTestSplitPhase(b: barrier, numRemoteTasks) {
   const barSpace = 0..#numRemoteTasks;
   const hi = barSpace.high;
-  var A: [{barSpace} dmapped new dmap(new Block({barSpace}))] int = barSpace;
-  var B: [{barSpace} dmapped new dmap(new Block({barSpace}))] int = -1;
+  var A: [{barSpace} dmapped new Block({barSpace})] int = barSpace;
+  var B: [{barSpace} dmapped new Block({barSpace})] int = -1;
   { // block keeps above variables alive
     resetCommDiagnostics();
     startCommDiagnostics();

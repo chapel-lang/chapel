@@ -9,7 +9,7 @@ config var n: int = 8;
 
 const D = LocaleSpace dmapped Block(boundingBox=LocaleSpace);
 var P: [D] atomic int;
-//var D: domain(1) dmapped new dmap(new Block(boundingBox={1..n})) = {1..n};
+//var D: domain(1) dmapped new Block(boundingBox={1..n}) = {1..n};
 //var A: [D] int;
 
 //startCommDiagnostics();

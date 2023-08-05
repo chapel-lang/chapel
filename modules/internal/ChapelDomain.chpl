@@ -69,7 +69,7 @@ module ChapelDomain {
   // Support for domain types
   //
   pragma "runtime type init fn"
-  proc chpl__buildDomainRuntimeType(dist: _distribution, param rank: int,
+  proc chpl__buildDomainRuntimeType(dist, param rank: int,
                                     type idxType = int,
                                     param strides: strideKind = strideKind.one
                                     ) type {
@@ -78,7 +78,7 @@ module ChapelDomain {
 
   // deprecated by Vass in 1.31 to implement #17131
   @deprecated("domain.stridable is deprecated; use domain.strides instead")
-  proc chpl__buildDomainRuntimeType(dist: _distribution, param rank: int,
+  proc chpl__buildDomainRuntimeType(dist, param rank: int,
                                     type idxType = int,
                                     param stridable: bool) type {
     return chpl__buildDomainRuntimeType(dist, rank, idxType,
@@ -86,7 +86,7 @@ module ChapelDomain {
   }
 
   pragma "runtime type init fn"
-  proc chpl__buildDomainRuntimeType(dist: _distribution, type idxType,
+  proc chpl__buildDomainRuntimeType(dist, type idxType,
                                     param parSafe: bool = true) type {
     if isDomainType(idxType) then
       compilerError("Values of 'domain' type do not support hash functions yet, so cannot be used as an associative domain's index type");
@@ -126,7 +126,7 @@ module ChapelDomain {
                   " please supply a domain value instead");
   }
 
-  proc chpl__convertRuntimeTypeToValue(dist: _distribution,
+  proc chpl__convertRuntimeTypeToValue(dist,
                                        param rank: int,
                                        type idxType = int,
                                        param strides: strideKind,
@@ -137,7 +137,7 @@ module ChapelDomain {
 
   // deprecated by Vass in 1.31 to implement #17131
   @deprecated("domain.stridable is deprecated; use domain.strides instead")
-  proc chpl__convertRuntimeTypeToValue(dist: _distribution,
+  proc chpl__convertRuntimeTypeToValue(dist,
                                        param rank: int,
                                        type idxType = int,
                                        param stridable: bool,
@@ -147,14 +147,14 @@ module ChapelDomain {
                        definedConst);
   }
 
-  proc chpl__convertRuntimeTypeToValue(dist: _distribution, type idxType,
+  proc chpl__convertRuntimeTypeToValue(dist, type idxType,
                                        param parSafe: bool,
                                        param isNoInit: bool,
                                        definedConst: bool) {
     return new _domain(dist, idxType, parSafe);
   }
 
-  proc chpl__convertRuntimeTypeToValue(dist: _distribution,
+  proc chpl__convertRuntimeTypeToValue(dist,
                                        parentDom: domain,
                                        param isNoInit: bool,
                                        definedConst: bool) {
@@ -1044,7 +1044,7 @@ module ChapelDomain {
       this._instance = value;
     }
 
-    proc init(d: _distribution,
+    proc init(d,
               param rank : int,
               type idxType = int,
               param strides = strideKind.one,
@@ -1052,7 +1052,7 @@ module ChapelDomain {
       this.init(d.newRectangularDom(rank, idxType, strides, definedConst));
     }
 
-    proc init(d: _distribution,
+    proc init(d,
               param rank : int,
               type idxType = int,
               param strides = strideKind.one,
@@ -1064,7 +1064,7 @@ module ChapelDomain {
 
     // deprecated by Vass in 1.31 to implement #17131
     @deprecated("domain.stridable is deprecated; use domain.strides instead")
-    proc init(d: _distribution,
+    proc init(d,
               param rank : int,
               type idxType = int,
               param stridable: bool,
@@ -1074,7 +1074,7 @@ module ChapelDomain {
 
     // deprecated by Vass in 1.31 to implement #17131
     @deprecated("domain.stridable is deprecated; use domain.strides instead")
-    proc init(d: _distribution,
+    proc init(d,
               param rank : int,
               type idxType = int,
               param stridable: bool,
@@ -1084,14 +1084,14 @@ module ChapelDomain {
                 chpl_convertRangeTuple(ranges, stridable), definedConst);
     }
 
-    proc init(d: _distribution,
+    proc init(d,
               type idxType,
               param parSafe: bool = true,
               definedConst: bool = false) {
       this.init(d.newAssociativeDom(idxType, parSafe));
     }
 
-    proc init(d: _distribution,
+    proc init(d,
               dom: domain,
               definedConst: bool = false) {
       this.init(d.newSparseDom(dom.rank, dom._value.idxType, dom));
@@ -1177,12 +1177,19 @@ module ChapelDomain {
 
     /* Return the domain map that implements this domain */
     pragma "return not owned"
+    proc distribution {
+      use Reflection;
+      if canResolveMethod(_value, "dsiGetDist") {
+        return _value.dsiGetDist();
+      } else {
+        // TODO: Remove this branch and conditional once _distribution is
+        // retired
+        return _getDistribution(_value.dist);
+      }
+    }
+
     @deprecated("domain.dist is deprecated, please use domain.distribution instead")
     proc dist do return _getDistribution(_value.dist);
-
-    /* Return the domain map that implements this domain */
-    pragma "return not owned"
-    proc distribution do return _getDistribution(_value.dist);
 
     /* Return the number of dimensions in this domain */
     proc rank param {

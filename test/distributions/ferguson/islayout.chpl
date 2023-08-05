@@ -6,13 +6,9 @@ use ExternalArray;
 proc main() {
   // Default is "distributed" so it's not as hard
   // to keep up to date. But, check one to be sure.
-  var blk = new unmanaged Block(boundingBox={1..10});
+  var blk = new Block(boundingBox={1..10});
   assert(!blk.dsiIsLayout());
   
-  //properly cleanup the distribution
-  blk.dsiDestroyDist();
-  delete blk;
-
   var cs = new unmanaged CS();
   assert(cs.dsiIsLayout());
   delete cs;

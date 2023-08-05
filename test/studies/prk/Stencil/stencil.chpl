@@ -91,7 +91,7 @@ proc main() {
   tiledLocalDom = {R.. # order-2*R by tileSize, R.. # order-2*R by tileSize};
 
   /* Flavors of parallelism, by distribution */
-  const blockDist = new dmap(new Block(localDom)),
+  const blockDist = new Block(localDom),
       stencilDist = new dmap(new Stencil(innerLocalDom, fluff=(R,R))),
            noDist = defaultDist;
 

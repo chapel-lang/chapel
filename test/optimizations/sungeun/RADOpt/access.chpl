@@ -136,7 +136,7 @@ proc main() {
 
   if doBlock {
     writeln();
-    const bD: domain(rank) dmapped new dmap (new Block(boundingBox=D)) = D;
+    const bD: domain(rank) dmapped new Block(boundingBox=D) = D;
     doit(bD, "Block");
   }
 
