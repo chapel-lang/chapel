@@ -58,7 +58,7 @@ typedef long long c_longlong;
 typedef unsigned long long c_ulonglong;
 typedef float c_float;
 typedef double c_double;
-typedef void* c_void_ptr;
+typedef void* raw_c_void_ptr;
 typedef void* c_fn_ptr;  // a white lie
 typedef uintptr_t c_uintptr;
 typedef intptr_t c_intptr;

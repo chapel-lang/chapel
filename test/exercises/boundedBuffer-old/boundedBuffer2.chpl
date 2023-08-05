@@ -16,6 +16,8 @@ class BoundedBuffer {
   var producerPos$: sync int = 0;
   var consumerPos$: sync int = 0;
 
+  proc init() {}
+
   // Add a value to the circular buffer. If it is full, wait until a
   // value has been consumed
   proc add(i: eltType) {

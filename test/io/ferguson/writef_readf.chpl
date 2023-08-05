@@ -61,7 +61,7 @@ proc testio(fmts: [] string, values: [])
 proc main() {
 
   var smallintformats = 
-         ["%t", "%jt", "%ht", "%n",
+         ["%?", "%n",
           "%r", "%10r", "%010r", "%-10r", "%+r", "% r",
           "%n", "%10n", "%010n", "%-10n", "%+n", "%+10n", "%-+10n", "% n", "% 10n", "%- 10n",
           "%i", "%10i", "%010i", "%-10i", "%+i", "%+10i", "%-+10i", "% i", "% 10i", "%- 10i",
@@ -77,7 +77,7 @@ proc main() {
           "%{###############.#}" ];
  
   var bigintformats = 
-         ["%t", "%jt", "%ht", "%n",
+         ["%?", "%n",
           "%i", "%10i", "%010i", "%-10i", "%+i", "%+10i", "%-+10i", "% i", "% 10i", "%- 10i",
           "%xi","%10xi", "%010xi", "%-10xi", "%+xi", "%+10xi", "% xi", "% 10xi", "%-+10xi", "%- 10xi",
           "%@xi","%@10xi", "%0@10xi", "%-@10xi", "%@+xi", "%@+10xi", "%@ xi", "%@ 10xi", "%@-+10xi", "%@- 10xi",
@@ -104,7 +104,7 @@ proc main() {
   testio(bigintformats, [-12884901888:int(64), ]);
 
   var fformats =
-         ["%t", "%n", "%jt", "%ht",
+         ["%?", "%n",
           "%r", "%10r", "%010r", "%-10r", "%+r", "% r",
           "%xr",
           "%Xr",
@@ -122,7 +122,7 @@ proc main() {
   testio(fformats, [0.002:real(64), -0.002:real(64)]);
 
   var mformats =
-         ["%t", "%n", "%jt", "%ht",
+         ["%?", "%n",
           "%m", "%10m", "%010m", "%-10m", "%+m", "% m",
           "%xm",
           "%Xm",
@@ -137,7 +137,7 @@ proc main() {
   testio(mformats, [0.002:imag(64), -0.002:imag(64)]);
 
   var eformats =
-         ["%t", "%jt", "%ht",
+         ["%?",
           "%xer",
           "%Xer",
           "%Er",
@@ -148,7 +148,7 @@ proc main() {
   testio(eformats, [57.24e23:real(64), -57.24e23:real(64)]);
 
   var zformats = 
-         ["%t", "%n", "%jt", "%ht",
+         ["%?", "%n",
           "%z", "%10z", "%010z", "%-10z", "%+z", "% z"];
  
   testio(zformats, [997.89+200.124i, -997.89-200.124i,
@@ -172,4 +172,3 @@ proc main() {
          ["", "a", "test", " ' ", " \" "]);
 
 }
-

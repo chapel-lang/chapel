@@ -61,7 +61,7 @@ class Class final : public AggregateDecl {
                     numElements),
       parentClassChildNum_(parentClassChildNum) {
     CHPL_ASSERT(parentClassChildNum_ == NO_CHILD ||
-           child(parentClassChildNum_)->isIdentifier());
+                isAcceptableInheritExpr(child(parentClassChildNum_)));
   }
 
   Class(Deserializer& des)
@@ -111,6 +111,12 @@ class Class final : public AggregateDecl {
 
   DECLARE_STATIC_DESERIALIZE(Class);
 
+  /** Returns the inherited Identifier, including considering
+      one marked generic with Superclass(?) */
+  static const Identifier* getInheritExprIdent(const AstNode* ast,
+                                               bool& markedGeneric);
+  /** Returns true if the passed inherit expression is legal */
+  static bool isAcceptableInheritExpr(const AstNode* ast);
 };
 
 

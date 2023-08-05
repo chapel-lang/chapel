@@ -1,4 +1,4 @@
-use Random;
+use Random, Math;
 
 config const n = 10000;
 config const seed = 1;

@@ -368,7 +368,7 @@ module Treap {
     proc _getReference(element: eltType) ref {
       var node = _findRef(_root, element);
       if node == nil then
-        boundsCheckHalt("index " + element:string + " out of bounds");
+        boundsCheckHalt(try! "index %? out of bounds".format(element));
       ref result = node!.element;
       return result;
     }
@@ -384,7 +384,7 @@ module Treap {
     proc const _getValue(element: eltType) const {
       var node = _find(_root, element);
       if node == nil then
-        boundsCheckHalt("index " + element:string + " out of bounds");
+        boundsCheckHalt(try! "index %? out of bounds".format(element));
       var result = node!.element;
       return result;
     }

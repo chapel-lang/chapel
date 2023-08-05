@@ -585,7 +585,7 @@ class LocCyclic {
 }
 
 
-class CyclicDom : BaseRectangularDom {
+class CyclicDom : BaseRectangularDom(?) {
   const dist: unmanaged CyclicImpl(rank, idxType);
 
   var locDoms: [dist.targetLocDom] unmanaged LocCyclicDom(rank, idxType);
@@ -841,7 +841,7 @@ private proc myBlockType(param rank, type idxType) type do
 proc LocCyclicDom.contains(i) do return myBlock.contains(i);
 
 
-class CyclicArr: BaseRectangularArr {
+class CyclicArr: BaseRectangularArr(?) {
   var doRADOpt: bool = defaultDoRADOpt;
   var dom: unmanaged CyclicDom(rank, idxType, strides);
 
@@ -1068,7 +1068,7 @@ proc CyclicArr.dsiDynamicFastFollowCheck(lead: []) do
   return this.dsiDynamicFastFollowCheck(lead.domain);
 
 proc CyclicArr.dsiDynamicFastFollowCheck(lead: domain) {
-  return lead.dist.dsiEqualDMaps(this.dom.dist) && lead._value.whole == this.dom.whole;
+  return lead.distribution.dsiEqualDMaps(this.dom.dist) && lead._value.whole == this.dom.whole;
 }
 
 iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {

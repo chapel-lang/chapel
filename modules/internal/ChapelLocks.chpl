@@ -38,6 +38,10 @@ module ChapelLocks {
     // a --warn-unstable error)
     proc init() {
     }
+    proc init=(other: chpl_LocalSpinlock) {
+      this.complete();
+      this.l.init_helper(other.l.read());
+    }
 
     inline proc lock() {
       on this do

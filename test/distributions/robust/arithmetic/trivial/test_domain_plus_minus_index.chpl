@@ -14,4 +14,4 @@ var A: [Dom2D.translate(1, 1)] int;
 writeln(A);
 for i in A.domain do
   writeln(i);
-writeln(dist_eq(A.domain.dist, Dist2D));
+writeln(dist_eq(A.domain.distribution, Dist2D));

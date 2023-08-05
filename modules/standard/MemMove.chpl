@@ -340,7 +340,7 @@ module MemMove {
 
       if overlap {
         use IO;
-        throw new IllegalArgumentError("Arguments to 'moveArrayElements' alias the same data. Regions are '%t' and '%t'".format(dstRegion, srcRegion));
+        throw new IllegalArgumentError("Arguments to 'moveArrayElements' alias the same data. Regions are '%?' and '%?'".format(dstRegion, srcRegion));
       }
     }
   }
@@ -397,9 +397,9 @@ module MemMove {
     const srcGood = src.domain.contains(if isRange(srcRegion) then {srcRegion}
                                         else srcRegion);
     if !dstGood then
-      throw new IllegalArgumentError("dstRegion", "region contains invalid indices");
+      throw new IllegalArgumentError("illegal argument 'dstRegion': region contains invalid indices");
     if !srcGood then
-      throw new IllegalArgumentError("srcRegion", "region contains invalid indices");
+      throw new IllegalArgumentError("illegal argument 'srcRegion': region contains invalid indices");
 
     _testArrayAlias(dst, dstRegion, src, srcRegion);
   }
@@ -588,4 +588,3 @@ module MemMove {
 
 // MemMove;
 }
-

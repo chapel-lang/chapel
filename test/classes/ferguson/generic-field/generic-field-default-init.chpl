@@ -3,14 +3,14 @@ record GenericRecord {
 }
 
 class GenericClass {
-  var f:GenericRecord;
+  var f:GenericRecord(?);
 }
 
 proc test() {
   var ownX = new owned GenericClass(new GenericRecord(1));
   var x = ownX.borrow();
   var ownY = new owned GenericClass(new GenericRecord(1));
-  var y:borrowed GenericClass = ownY.borrow();
+  var y:borrowed GenericClass(?) = ownY.borrow();
   var ownZ = new owned GenericClass(new GenericRecord(1));
   var z:borrowed GenericClass(GenericRecord(int)) = ownZ.borrow();
 

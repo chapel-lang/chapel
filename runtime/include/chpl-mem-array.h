@@ -102,6 +102,45 @@ void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize,
 }
 
 static inline
+void* chpl_mem_array_alloc_no_check(size_t nmemb, size_t eltSize,
+                                    c_sublocid_t subloc, chpl_bool* callPostAlloc,
+                                    int32_t lineno, int32_t filename) {
+  void* p = NULL;
+  const size_t size = nmemb * eltSize;
+#if defined(HAS_GPU_LOCALE) && !defined(GPU_RUNTIME_CPU)
+  if (chpl_gpu_running_on_gpu_locale()) {
+    *callPostAlloc = false;
+    p = chpl_gpu_mem_array_alloc(size, CHPL_RT_MD_ARRAY_ELEMENTS,
+                                 lineno, filename);
+  }
+  else {
+#endif
+    chpl_memhook_malloc_pre(nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
+                            lineno, filename);
+
+    *callPostAlloc = false;
+    if (chpl_mem_size_justifies_comm_alloc(size)) {
+      p = chpl_comm_regMemAlloc(size, CHPL_RT_MD_ARRAY_ELEMENTS,
+                                lineno, filename);
+      if (p != NULL) {
+        *callPostAlloc = true;
+      }
+    }
+
+    if (p == NULL) {
+      p = chpl_malloc(size);
+    }
+
+    if (p != NULL && CHPL_MEMHOOKS_ACTIVE)
+      chpl_track_malloc(p, nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
+                        lineno, filename);
+#if defined(HAS_GPU_LOCALE) && !defined(GPU_RUNTIME_CPU)
+  }
+#endif
+  return p;
+}
+
+static inline
 void chpl_mem_array_postAlloc(void* p, size_t nmemb, size_t eltSize,
                               int32_t lineno, int32_t filename) {
   //

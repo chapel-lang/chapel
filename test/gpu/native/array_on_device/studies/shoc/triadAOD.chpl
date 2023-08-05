@@ -4,6 +4,7 @@ use IO.FormattedIO;
 use GpuDiagnostics;
 use MemDiagnostics;
 
+
 config const passes = 1; //10;
 config const alpha = 1.75: real(32);
 config const noisy = false;
@@ -206,13 +207,13 @@ proc main() {
                 for i in 0..#halfNumFloats {
                     var expected:real(32) = (i:int(32)%16:int(32) + 0.12:real(32)) * alpha + (i:int(32)%16:int(32) + 0.12:real(32));
                     var actual = hos[i];
-                    if(noisy && !isclose(actual, expected)) {
+                    if(noisy && !isClose(actual, expected)) {
                         writeln("Pass: ", pass,
                         "\nBlock Size:", blkSize,
                         "\nIndex: ", i,
                         "\nExpected: ", expected, "\nActual: ", actual);
                     }
-                    assert(isclose(actual , expected));
+                    assert(isClose(actual , expected));
                     assert(hos[halfNumFloats+i] == hos[i]);
                 }
             }
@@ -235,6 +236,7 @@ proc main() {
     }
     else {
       stopGpuDiagnostics();
-      writeln(getGpuDiagnostics());
+      assertGpuDiags(kernel_launch_um=263, host_to_device=514,
+                     device_to_host=257, device_to_device=0);
     }
 }

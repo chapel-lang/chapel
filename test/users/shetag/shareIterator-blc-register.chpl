@@ -8,6 +8,8 @@ var A: [D] int;
 class OneToTen {
   var currIndex: sync int = 1;
 
+  proc init() {}
+
   iter count() {
     var done = false;
 

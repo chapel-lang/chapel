@@ -54,6 +54,14 @@ module LocaleModelHelpSetup {
     // than 'int' formals)
     proc init() {
     }
+    proc init=(other: chpl_root_locale_accum) {
+      this.complete();
+      this.nPUsPhysAcc.write(other.nPUsPhysAcc.read());
+      this.nPUsPhysAll.write(other.nPUsPhysAll.read());
+      this.nPUsLogAcc.write(other.nPUsLogAcc.read());
+      this.nPUsLogAll.write(other.nPUsLogAll.read());
+      this.maxTaskPar.write(other.maxTaskPar.read());
+    }
 
     proc accum(loc:locale) {
       nPUsPhysAcc.add(loc.nPUsPhysAcc);

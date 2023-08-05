@@ -47,7 +47,7 @@ static inline void chpl_gpu_printTimeDelta(
   printf("%s%u\n", msg, end - start);
 }
 
-static inline void chpl_gpu_force_sync() {
+static inline void chpl_gpu_force_sync(void) {
   if (!chpl_gpu_no_cpu_mode_warning) {
     chpl_warning("chpl_gpu_force_sync was called", 0, 0);
   }

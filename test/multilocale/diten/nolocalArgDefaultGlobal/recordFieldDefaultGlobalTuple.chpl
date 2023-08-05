@@ -3,9 +3,9 @@ record R {
   var a = t(0);
 }
 
-var r: R();
+var r: R;
 t(0) = 2;
-var s: R();
+var s: R;
 
 writeln(r);
 writeln(s);

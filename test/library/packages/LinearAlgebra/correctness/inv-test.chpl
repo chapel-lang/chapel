@@ -15,7 +15,8 @@ proc sinMatrix(n) {
   return A;
 }
 
-writeln(inv(sinMatrix(n)));
+var B = sinMatrix(n);
+writeln(inv(B));
 writeln();
 
 var A = sinMatrix(n);

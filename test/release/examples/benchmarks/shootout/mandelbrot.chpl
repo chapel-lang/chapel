@@ -6,7 +6,7 @@
    derived from the GNU C version by Greg Buchholz
 */
 
-use DynamicIters, IO;
+use DynamicIters, IO, Math;
 
 config const n = 200,              // image size in pixels (n x n)
              maxIter = 50,         // max # of iterations per pixel

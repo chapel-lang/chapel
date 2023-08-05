@@ -158,6 +158,7 @@ updates_local4();
 
 class MyClass {
   var x: atomic int;
+  proc init() {}
 }
 
 proc local_instance1() {
@@ -184,6 +185,10 @@ local_instance2();
 
 record MyRecord {
   var x: atomic int;
+  proc init() {}
+  proc init=(other: MyRecord) {
+    this.x = other.x.read();
+  }
 }
 
 proc local_record() {
@@ -468,6 +473,13 @@ record buffer3 {
   var deferredSignal: int;
   var signal: atomic int;
   var happensBeforeSignal: atomic int;
+
+  proc init() {}
+  proc init=(other: buffer3) {
+    this.deferredSignal = other.deferredSignal;
+    this.signal = other.signal.read();
+    this.happensBeforeSignal = other.happensBeforeSignal.read();
+  }
 }
 
 proc tls_signalling() {

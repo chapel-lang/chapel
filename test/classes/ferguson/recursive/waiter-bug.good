@@ -1,3 +1,7 @@
+waiter-bug.chpl:5: warning: please use '?' when declaring a field with generic type
+waiter-bug.chpl:5: note: for example with 'Waiter(?)'
+waiter-bug.chpl:6: warning: please use '?' when declaring a field with generic type
+waiter-bug.chpl:6: note: for example with 'Waiter(?)'
 waiter-bug.chpl:8: In initializer:
 waiter-bug.chpl:8: error: Cannot default-initialize a variable with generic type
 waiter-bug.chpl:8: note: 'prev' has generic type 'unmanaged Waiter?'

@@ -287,6 +287,7 @@ Resolver::createForInitialFieldStmt(Context* context,
   ret.inCompositeType = compositeType;
   ret.defaultsPolicy = defaultsPolicy;
   ret.byPostorder.setupForSymbol(decl);
+  ret.fieldTypesOnly = true;
   return ret;
 }
 
@@ -305,6 +306,7 @@ Resolver::createForInstantiatedFieldStmt(Context* context,
   ret.substitutions = &compositeType->substitutions();
   ret.defaultsPolicy = defaultsPolicy;
   ret.byPostorder.setupForSymbol(decl);
+  ret.fieldTypesOnly = true;
   return ret;
 }
 
@@ -320,6 +322,7 @@ Resolver::createForInstantiatedSignatureFields(Context* context,
   ret.substitutions = &substitutions;
   ret.defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
   ret.byPostorder.setupForSymbol(decl);
+  ret.fieldTypesOnly = true;
   return ret;
 }
 
@@ -424,11 +427,13 @@ gatherParentClassScopesForScopeResolving(Context* context, ID classDeclId) {
           // Intended to avoid calling methodReceiverScopes() recursively.
           // Uses the empty 'savecReceiverScopes' because the class expression
           // can't be a method anyways.
-          visitor.resolveIdentifier(parentClassExpr->toIdentifier(),
-                                    visitor.savedReceiverScopes);
+          bool ignoredMarkedGeneric = false;
+          auto ident = Class::getInheritExprIdent(parentClassExpr,
+                                                  ignoredMarkedGeneric);
+          visitor.resolveIdentifier(ident, visitor.savedReceiverScopes);
 
 
-          ResolvedExpression& re = r.byAst(parentClassExpr);
+          ResolvedExpression& re = r.byAst(ident);
           if (re.toId().isEmpty()) {
             context->error(parentClassExpr, "invalid parent class expression");
           } else {
@@ -660,6 +665,21 @@ static bool isCallToIntEtc(const AstNode* formalTypeExpr) {
   return false;
 }
 
+static bool isCallToCPtr(const AstNode* formalTypeExpr) {
+  if (auto call = formalTypeExpr->toFnCall()) {
+    if (auto calledAst = call->calledExpression()) {
+      if (auto calledIdent = calledAst->toIdentifier()) {
+        UniqueString n = calledIdent->name();
+        if (n == USTR("c_ptr")) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
 static void varArgTypeQueryError(Context* context,
                                  const AstNode* node,
                                  ResolvedExpression& result) {
@@ -729,6 +749,22 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
               auto it = IntType::get(context, 0);
               auto qt = QualifiedType(QualifiedType::PARAM, it, p);
               resolvedWidth.setType(qt);
+            }
+          }
+        }
+      }
+    } else if (isCallToCPtr(formalTypeExpr)) {
+      // If it is e.g. c_ptr(TypeQuery), resolve the type query to the eltType
+      // Set the type that we know (since it was passed in)
+      if (call->numActuals() == 1) {
+        if (auto tq = call->actual(0)->toTypeQuery()) {
+          if (auto pt = actualTypePtr->toCPtrType()) {
+            ResolvedExpression& resolvedElt = byPostorder.byAst(tq);
+            if (isNonStarVarArg) {
+              varArgTypeQueryError(context, call->actual(0), resolvedElt);
+            } else {
+              resolvedElt.setType(QualifiedType(QualifiedType::TYPE,
+                                                pt->eltType()));
             }
           }
         }
@@ -1205,7 +1241,23 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       initExprT = r.type();
     }
 
-    if (!typeExprT.hasTypePtr() && useType != nullptr) {
+    if (typeExpr == nullptr && initExpr == nullptr &&
+        var->linkage() == uast::Decl::EXTERN &&
+        var->storageKind() == QualifiedType::TYPE) {
+      // creating an opaque external type.
+
+      CHPL_ASSERT(var->isVariable());
+      auto linkageNameNode = var->linkageName();
+      CHPL_ASSERT(linkageNameNode == nullptr || linkageNameNode->isStringLiteral());
+
+      UniqueString linkageName = var->name();
+      if (linkageNameNode) {
+        linkageName = linkageNameNode->toStringLiteral()->value();
+      }
+      qtKind = QualifiedType::TYPE;
+      typePtr = ExternType::get(context, linkageName);
+      paramPtr = nullptr;
+    } else if (!typeExprT.hasTypePtr() && useType != nullptr) {
       // use type from argument to resolveNamedDecl
       typeExprT = QualifiedType(QualifiedType::TYPE, useType);
       typePtr = typeExprT.type();
@@ -1224,6 +1276,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
         // However, a `this` formal lacks a type expression if it belongs to a
         // primary method. This does not, however, mean that its type should be
         // AnyType; it is not adjusted here.
+
         typeExprT = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
       } else if (isFieldOrFormal) {
         // figure out if we should potentially infer the type from the init expr
@@ -1891,6 +1944,11 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
     return QualifiedType(kind, type);
   }
 
+  // Intercept the standard library `c_ptr` and turn it into the builtin type.
+  if (id == CPtrType::getId(context)) {
+    return QualifiedType(QualifiedType::TYPE, CPtrType::get(context));
+  }
+
   // if the id is contained within this symbol,
   // get the type information from the resolution result.
   //
@@ -2178,6 +2236,92 @@ bool Resolver::enter(const uast::Conditional* cond) {
   return false;
 }
 void Resolver::exit(const uast::Conditional* cond) {
+}
+
+bool Resolver::enter(const uast::Select* sel) {
+  sel->expr()->traverse(*this);
+
+  auto exprType = byPostorder.byAst(sel->expr()).type();
+
+  enterScope(sel);
+
+  const Scope* scope = scopeStack.back();
+  bool foundParamTrue = false;
+  int otherwise = -1;
+
+  for (int i = 0; i < sel->numWhenStmts(); i++) {
+    auto when = sel->whenStmt(i);
+    bool allParamFalse = true;
+    bool anyParamTrue = false;
+
+    if (when->isOtherwise()) {
+      CHPL_ASSERT(otherwise == -1);
+      otherwise = i;
+      continue;
+    }
+
+    // Resolve all the when-cases
+    for (auto caseExpr : when->caseExprs()) {
+      caseExpr->traverse(*this);
+
+      if (!scopeResolveOnly) {
+        auto caseResult = byPostorder.byAst(caseExpr);
+        auto caseType = caseResult.type();
+        std::vector<CallInfoActual> actuals;
+        actuals.push_back(CallInfoActual(exprType, UniqueString()));
+        actuals.push_back(CallInfoActual(caseType, UniqueString()));
+        auto ci = CallInfo (/* name */ USTR("=="),
+                            /* calledType */ QualifiedType(),
+                            /* isMethodCall */ false,
+                            /* hasQuestionArg */ false,
+                            /* isParenless */ false,
+                            actuals);
+        auto c = resolveGeneratedCall(context, caseExpr, ci, scope, poiScope);
+        handleResolvedAssociatedCall(caseResult, caseExpr, ci, c,
+                                     AssociatedAction::COMPARE,
+                                     caseExpr->id());
+
+        auto type = c.exprType();
+        anyParamTrue = anyParamTrue || type.isParamTrue();
+        allParamFalse = allParamFalse && type.isParamFalse();
+        byPostorder.byAst(caseExpr).setType(type);
+      }
+    }
+
+    if (!scopeResolveOnly && allParamFalse) {
+      // case will never be true, so do not resolve the statement
+      continue;
+    } else if (when->numStmts() > 0) {
+      // Otherwise, resolve the body.
+      when->stmt(0)->traverse(*this);
+    }
+
+    // Current behavior is to ignore when-stmts following a param-true
+    // condition.
+    //
+    // TODO: Should we keep resolving when-cases and warn for param-true
+    // cases further down the line?
+    if (anyParamTrue) {
+      foundParamTrue = true;
+      break;
+    }
+  }
+
+  // If one of the when-stmts is statically true, we should not resolve the
+  // 'otherwise' statement, should one exist.
+  if (foundParamTrue == false && otherwise != -1) {
+    auto other = sel->whenStmt(otherwise);
+    if (other->numStmts() > 0) {
+      other->stmt(0)->traverse(*this);
+    }
+  }
+
+  exitScope(sel);
+
+  return false;
+}
+
+void Resolver::exit(const uast::Select* sel) {
 }
 
 bool Resolver::enter(const Literal* literal) {
@@ -2629,7 +2773,32 @@ bool Resolver::enter(const NamedDecl* decl) {
 
   enterScope(decl);
 
-  return true;
+  // This logic exists to prioritize the field's type expression when
+  // resolving a field's type. If the type expression is concrete, then we
+  // do not need to resolve the init-expression. This is beneficial in cases
+  // where the init-expression would otherwise result in recursive resolution.
+  //
+  // TODO: Initializers will need to check the compatibility of the type
+  // expression and initialization expression.
+  if (!scopeResolveOnly && fieldTypesOnly && decl == curStmt) {
+    auto field = decl->toVarLikeDecl();
+    if (field->typeExpression() != nullptr &&
+        field->initExpression() != nullptr &&
+        field->storageKind() != Qualifier::TYPE &&
+        field->storageKind() != Qualifier::PARAM) {
+      field->typeExpression()->traverse(*this);
+      auto res = byPostorder.byAst(field->typeExpression());
+      auto g = getTypeGenericity(context, res.type().type());
+      if (g != Type::CONCRETE) {
+        field->initExpression()->traverse(*this);
+      }
+      return false;
+    } else {
+      return true;
+    }
+  } else {
+    return true;
+  }
 }
 
 void Resolver::exit(const NamedDecl* decl) {
@@ -2996,7 +3165,8 @@ void Resolver::exit(const Call* call) {
                              /* raiseErrors */ true,
                              &actualAsts);
 
-  // With two exceptions (see below), don't try to resolve a call that accepts:
+  // With these exceptions (see below), don't try to resolve a call that
+  // accepts:
   //  * an unknown param
   //  * a type that is a generic type unless there are substitutions
   //  * a value of generic type
@@ -3005,9 +3175,11 @@ void Resolver::exit(const Call* call) {
   // the actual argument can have unknown / generic type if it
   // refers directly to a particular variable.
   // EXCEPT, type construction can work with unknown or generic types
+  // EXCEPT, tuple type construction also works with unknown/generic types
 
   bool skip = false;
-  if (!ci.calledType().isType()) {
+  if (!ci.calledType().isType() &&
+      !call->isTuple()) {
     int actualIdx = 0;
     for (const auto& actual : ci.actuals()) {
       ID toId; // does the actual refer directly to a particular variable?

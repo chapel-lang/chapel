@@ -11,7 +11,7 @@ class Parent {
   }
 }
 
-class Child : Parent {
+class Child : Parent(?) {
   var y: t;
 
   proc init(yVal, xVal) where yVal.type == xVal.type {

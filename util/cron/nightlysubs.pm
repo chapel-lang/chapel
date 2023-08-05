@@ -9,7 +9,8 @@ use Sys::Hostname;
 
 $cwd = abs_path(dirname(__FILE__));
 $chplhomedir = abs_path("$cwd/../..");
-
+$file = "$chplhomedir/email.txt";
+unlink($file);
 
 sub mysystem {
     $command = $_[0];
@@ -39,6 +40,8 @@ sub mysystem {
                 print MAIL endMailHeader();
                 print MAIL endMailChplenv();
                 close(MAIL);
+                
+               
             } else {
                 print "CHPL_TEST_NOMAIL: No $mailcommand\n";
             }
@@ -139,5 +142,59 @@ sub endMailChplenv {
 
     $mystr;
 }
+sub writeEmail {
+    my $revision = $_[0];
+    my $starttime = $_[1];
+    my $endtime = $_[2];
+    my $crontab = $_[3];
+    my $testdirs = $_[4];
+    my $numtestssummary = $_[5];
+    my $summary = $_[6];
+    my $prevsummary = $_[7];
+    my $sortedsummary = $_[8];
+    print 
+    #Create a file "email.txt" in the chapel homedir. This file will be used by Jenkins to attach the test results in the email body
+    my $filename = "$chplhomedir/email.txt";
+    open(my $SF, '>', $filename) or die "Could not open file '$filename' $!";
+    print "Writing Test results summary... \n";
+    print "filename ... $filename \n";
+    print $SF startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab, $testdirs);
+    print $SF "$numtestssummary \n";
+    print $SF "$summary \n";
+    print $SF endMailHeader();
+        print $SF "--- New Errors -------------------------------\n";
+        print $SF `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
+        print $SF "\n";
 
+        print $SF "--- Resolved Errors --------------------------\n";
+        print $SF `LC_ALL=C comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
+        print $SF "\n";
+
+        print $SF "--- New Passing Future tests------------------\n";
+        print $SF `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
+        print $SF "\n";
+
+        print $SF "--- Passing Future tests ---------------------\n";
+        print $SF `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
+        print $SF "\n";
+
+        print $SF "--- New Passing Suppress tests------------------\n";
+        print $SF `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$suppressmarker" | grep "\\[Success"`;
+        print $SF "\n";
+
+        print $SF "--- Passing Suppress tests ---------------------\n";
+        print $SF `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$suppressmarker" | grep "\\[Success"`;
+        print $SF "\n";
+
+        print $SF "--- Unresolved Errors ------------------------\n";
+        print $SF `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
+        print $SF "\n";
+
+        print $SF "--- New Failing Future tests -----------------\n";
+        print $SF `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;
+        print $SF "\n";
+    print $SF      
+    print $SF endMailChplenv();
+    close($SF);
+}
 return(1);

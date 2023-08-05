@@ -84,47 +84,33 @@ static hipModule_t *chpl_gpu_rocm_modules;
 static int *deviceClockRates;
 
 
-static void chpl_gpu_ensure_context(void) {
-  // Some hipCtx* functions are deprecated so we're using `hipSetDevice`
-  // in its place
-  ROCM_CALL(hipSetDevice(chpl_task_getRequestedSubloc()));
-
-  // The below is a direct "hipification" of the CUDA runtime
-  // but it's using deprecated APIs
-  /*if (!chpl_gpu_has_context()) {
-    ROCM_CALL(hipCtxPushCurrent(next_context));
-  }
-  else {
-    hipCtx_t cur_context = NULL;
-    hipCtxGetCurrent(&cur_context);
-    if (cur_context == NULL) {
-      chpl_internal_error("Unexpected GPU context error");
-    }
-
-    if (cur_context != next_context) {
-      hipCtx_t popped;
-      ROCM_CALL(hipCtxPopCurrent(&popped));
-      ROCM_CALL(hipCtxPushCurrent(next_context));
-    }
-  }*/
+static void switch_context(int dev_id) {
+  ROCM_CALL(hipSetDevice(dev_id));
 }
-//
-static void chpl_gpu_impl_set_globals(hipModule_t module) {
-  /*
-    we expect this to work, but the LLVM backend puts the device version of
-    chpl_nodeID in the constant memory. To access constant memory, you need a
-    pointer to the thing, and can't do a name-based lookup. Differentiating by
-    name is complicated, because the compiler explicitly uses "chpl_nodeID" as
-    the name. We need to fix by making sure that chpl_nodeID is created in the
-    global memory and not in the constant memory.
 
+void chpl_gpu_impl_use_device(c_sublocid_t dev_id) {
+  switch_context(dev_id);
+}
+
+extern c_nodeid_t chpl_nodeID;
+
+static void chpl_gpu_impl_set_globals(c_sublocid_t dev_id, hipModule_t module) {
   hipDeviceptr_t ptr;
   size_t glob_size;
-  ROCM_CALL(hipModuleGetGlobal(&ptr, &glob_size, module, "chpl_nodeID"));
+
+  // Engin: The AMDGPU backend seems to optimize chpl_nodeID away when it is not
+  // used.  So, we should not error out if we can't find its definition. We can
+  // look into making sure that it remains in the module, which feels a bit
+  // safer, admittedly. Note also that this is the only diff between nvidia and
+  // amd implementations in terms of adjusting chpl_nodeID.
+  int err = hipModuleGetGlobal(&ptr, &glob_size, module, "chpl_nodeID");
+  if (err == hipErrorNotFound) {
+    return;
+  }
+  ROCM_CALL(err);
+
   assert(glob_size == sizeof(c_nodeid_t));
   chpl_gpu_impl_copy_host_to_device((void*)ptr, &chpl_nodeID, glob_size);
-
-  */
 }
 
 
@@ -148,17 +134,12 @@ void chpl_gpu_impl_init(int* num_devices) {
 
     ROCM_CALL(hipSetDevice(device));
     hipModule_t module = chpl_gpu_load_module(chpl_gpuBinary);
-    chpl_gpu_impl_set_globals(module);
     chpl_gpu_rocm_modules[i] = module;
 
     hipDeviceGetAttribute(&deviceClockRates[i], hipDeviceAttributeClockRate, device);
+
+    chpl_gpu_impl_set_globals(i, module);
   }
-}
-
-static bool chpl_gpu_device_alloc = false;
-
-void chpl_gpu_impl_support_module_finished_initializing(void) {
-  chpl_gpu_device_alloc = true;
 }
 
 bool chpl_gpu_impl_is_device_ptr(const void* ptr) {
@@ -211,14 +192,10 @@ static void chpl_gpu_launch_kernel_help(int ln,
                                         int blk_dim_z,
                                         int nargs,
                                         va_list args) {
-  CHPL_GPU_START_TIMER(context_time);
-
-  chpl_gpu_ensure_context();
-
-  CHPL_GPU_STOP_TIMER(context_time);
   CHPL_GPU_START_TIMER(load_time);
 
-  hipDeviceptr_t rocm_module = chpl_gpu_rocm_modules[chpl_task_getRequestedSubloc()];
+  c_sublocid_t dev_id = chpl_task_getRequestedSubloc();
+  hipDeviceptr_t rocm_module = chpl_gpu_rocm_modules[dev_id];
   void* function = chpl_gpu_load_function(rocm_module, name);
 
   CHPL_GPU_STOP_TIMER(load_time);
@@ -254,7 +231,8 @@ static void chpl_gpu_launch_kernel_help(int ln,
                                              CHPL_RT_MD_GPU_KERNEL_ARG,
                                              ln, fn);
 
-      chpl_gpu_copy_host_to_device(*kernel_params[i], cur_arg, cur_arg_size);
+      chpl_gpu_impl_copy_host_to_device(*kernel_params[i], cur_arg,
+                                        cur_arg_size);
 
       CHPL_GPU_DEBUG("\tKernel parameter %d: %p (device ptr)\n",
                    i, *kernel_params[i]);
@@ -297,12 +275,11 @@ static void chpl_gpu_launch_kernel_help(int ln,
   chpl_free(kernel_params);
 
   CHPL_GPU_STOP_TIMER(teardown_time);
-  CHPL_GPU_PRINT_TIMERS("<%20s> Context: %Lf, "
-                               "Load: %Lf, "
+  CHPL_GPU_PRINT_TIMERS("<%20s> Load: %Lf, "
                                "Prep: %Lf, "
                                "Kernel: %Lf, "
                                "Teardown: %Lf\n",
-         name, context_time, load_time, prep_time, kernel_time, teardown_time);
+         name, load_time, prep_time, kernel_time, teardown_time);
 }
 
 inline void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
@@ -336,35 +313,6 @@ inline void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
                               nargs, args);
 }
 
-void* chpl_gpu_impl_memmove(void* dst, const void* src, size_t n) {
-  #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
-  bool dst_on_host = chpl_gpu_impl_is_host_ptr(dst);
-  bool src_on_host = chpl_gpu_impl_is_host_ptr(src);
-
-  if (!dst_on_host && !src_on_host) {
-    chpl_gpu_impl_copy_device_to_device(dst, src, n);
-    return dst;
-  }
-  else if (!dst_on_host) {
-    chpl_gpu_impl_copy_host_to_device(dst, src, n);
-    return dst;
-  }
-  else if (!src_on_host) {
-    chpl_gpu_impl_copy_device_to_host(dst, src, n);
-    return dst;
-  }
-  else {
-    assert(dst_on_host && src_on_host);
-    return memmove(dst, src, n);
-  }
-  #else
-
-  // for unified memory strategy we don't want to generate calls to copy
-  // data from the device to host (since it can just be accessed directly)
-  return memmove(dst, src, n);
-  #endif
-}
-
 void* chpl_gpu_impl_memset(void* addr, const uint8_t val, size_t n) {
   assert(chpl_gpu_is_device_ptr(addr));
 
@@ -394,12 +342,10 @@ void chpl_gpu_impl_copy_device_to_device(void* dst, const void* src, size_t n) {
 
 
 void* chpl_gpu_impl_comm_async(void *dst, void *src, size_t n) {
-/*  hipStream_t stream;
+  hipStream_t stream;
   hipStreamCreateWithFlags(&stream, hipStreamNonBlocking);
-  cuMemcpyAsync((hipDeviceptr_t)dst, (hipDeviceptr_t)src, n, stream);
-  return stream;*/
-  assert(false);
-  return NULL;
+  hipMemcpyAsync((hipDeviceptr_t)dst, (hipDeviceptr_t)src, n, hipMemcpyDefault, stream);
+  return stream;
 }
 
 void chpl_gpu_impl_comm_wait(void *stream) {
@@ -407,45 +353,21 @@ void chpl_gpu_impl_comm_wait(void *stream) {
   hipStreamDestroy((hipStream_t)stream);
 }
 
-void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
-                               int32_t lineno, int32_t filename) {
-  chpl_gpu_ensure_context();
-
-  CHPL_GPU_DEBUG("chpl_gpu_mem_array_alloc called. Size:%zu file:%s line:%d\n", size,
-               chpl_lookupFilename(filename), lineno);
+void* chpl_gpu_impl_mem_array_alloc(size_t size) {
+  assert(size>0);
 
   hipDeviceptr_t ptr = 0;
-  if (size > 0) {
-    chpl_memhook_malloc_pre(1, size, description, lineno, filename);
+
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
-    if (chpl_gpu_device_alloc) {
-      ROCM_CALL(hipMalloc(&ptr, size));
-    }
-    else {
-      void* mem = chpl_mem_alloc(size, description, lineno, filename);
-      CHPL_GPU_DEBUG("\tregistering %p\n", mem);
-      ROCM_CALL(hipHostRegister(mem, size, hipHostRegisterPortable));
-      ROCM_CALL(hipHostGetDevicePointer(&ptr, mem, 0));
-      return mem;
-    }
+    ROCM_CALL(hipMalloc(&ptr, size));
 #else
     ROCM_CALL(hipMallocManaged(&ptr, size, hipMemAttachGlobal));
 #endif
-
-    chpl_memhook_malloc_post((void*)ptr, 1, size, description, lineno, filename);
-
-    CHPL_GPU_DEBUG("chpl_gpu_mem_array_alloc returning %p\n", (void*)ptr);
-  }
-  else {
-    CHPL_GPU_DEBUG("chpl_gpu_mem_array_alloc returning NULL (size was 0)\n");
-  }
 
   return (void*)ptr;
 }
 
 void* chpl_gpu_impl_mem_alloc(size_t size) {
-  chpl_gpu_ensure_context();
-
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
   void* ptr = 0;
   ROCM_CALL(hipHostMalloc(&ptr, size, 0));
@@ -459,8 +381,6 @@ void* chpl_gpu_impl_mem_alloc(size_t size) {
 }
 
 void chpl_gpu_impl_mem_free(void* memAlloc) {
-  chpl_gpu_ensure_context();
-
   if (memAlloc != NULL) {
     assert(chpl_gpu_is_device_ptr(memAlloc));
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE

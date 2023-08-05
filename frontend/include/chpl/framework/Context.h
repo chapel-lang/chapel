@@ -503,6 +503,10 @@ class Context {
       error/warning output (vs brief output). */
   void setDetailedErrorOutput(bool useDetailed);
 
+  /** Normalize a path for output in an error message by replacing
+      any prefix with the value of CHPL_HOME with the string $CHPL_HOME */
+  UniqueString adjustPathForErrorMsg(UniqueString path);
+
   /**
     Run printchplenv, or return a cached result of doing so. To get output,
     CHPL_HOME must have been provided via the constructor; otherwise, the
@@ -684,6 +688,15 @@ class Context {
   bool filePathForId(ID id,
                      UniqueString& pathOut,
                      UniqueString& parentSymbolPathOut);
+
+  /**
+    Return 'true' if the filePathForId was found
+    (which can only happen because setFilePathForModuleID was already
+     called for this ID).
+
+    Returns the path by setting 'pathOut'.
+   */
+  bool filePathForId(ID id, UniqueString& pathOut);
 
   /**
     Sets the file path for the given module ID. This

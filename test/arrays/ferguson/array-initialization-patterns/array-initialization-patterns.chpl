@@ -143,7 +143,7 @@ A = 0;
 test10();
 
 record RdomainTest {
-  var D: domain;
+  var D: domain(?);
   var A: [D] int;
 }
 

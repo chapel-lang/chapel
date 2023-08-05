@@ -1,3 +1,5 @@
+bulkAddAndCIB.chpl:4: warning: sparse domains are unstable, their behavior is likely to change in the future
+bulkAddAndCIB.chpl:5: warning: sparse domains are unstable, their behavior is likely to change in the future
 bulkAddAndCIB.chpl:6: warning: createIndexBuffer() is subject to change in the future.
 bulkAddAndCIB.chpl:7: warning: createIndexBuffer() is subject to change in the future.
 bulkAddAndCIB.chpl:9: warning: bulkAdd() is subject to change in the future.

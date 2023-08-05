@@ -11,17 +11,12 @@ use GpuDiagnostics;
 //
 use HPCCProblemSize;
 
-proc verifyLaunches() {
-  use ChplConfig;
-  param expected = if CHPL_GPU_MEM_STRATEGY == "unified_memory" then 12 else 16;
-  const actual = getGpuDiagnostics()[0].kernel_launch;
-  assert(actual == expected,
-         "observed ", actual, " launches instead of ", expected);
-}
 
 config param useForeach = true;
 config const useGpuDiags = true;
 config const SI = true;
+
+const host = here;
 
 //
 // The number of vectors and element type of those vectors
@@ -109,12 +104,15 @@ proc main() {
       execTime(trial) = timeSinceEpoch().totalSeconds() - startTime;  // store the elapsed time
     }
 
-    const validAnswer = verifyResults(A, B, C);        // verify...
-    printResults(validAnswer, execTime);               // ...and print the results
+    on host {
+      var AHost = A, BHost = B, CHost = C;
+      const validAnswer = verifyResults(AHost, BHost, CHost);  // verify...
+      printResults(validAnswer, execTime);      // ...and print the results
+    }
   }
   if useGpuDiags {
     stopGpuDiagnostics();
-    verifyLaunches();
+    assertGpuDiags(kernel_launch_um=12, kernel_launch_aod=16);
   }
 }
 

@@ -16,6 +16,8 @@ record RAIILock {
 class StatefulIterator {
 	var _lock$ : sync bool;
 
+  proc init() {}
+
 	proc lock() {
 		_lock$.writeEF(true);
 	}

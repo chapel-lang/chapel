@@ -38,10 +38,10 @@ var r12 = ..10;
 writeln(r12.alignment);
 
 var r13 = .. align 1 by 2;
-writeln(r13.alignment);
+writeln(r13.isAligned());
 
 var r14 = ..10 align 1 by 2;
-writeln(r14.alignment);
+writeln(r14.isAligned());
 
 var r15 = 1.. by 2;
 writeln(r15.alignment);
@@ -50,7 +50,7 @@ var r16 = 1.. align 2 by 2;
 writeln(r16.alignment);
 
 var r17 = .. by 2;
-writeln(r17.alignment);
+writeln(r17.isAligned());
 
 var r18 = .. by 2 align 2;
 writeln(r18.alignment);

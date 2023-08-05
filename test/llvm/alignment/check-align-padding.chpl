@@ -52,7 +52,7 @@ extern proc getOffset(const ref base, const ref field): int(64);
 
 proc printFieldOffsets(ref base: ?t) {
   use Reflection;
-  for param i in 0..numFields(t)-1 {
+  for param i in 0..getNumFields(t)-1 {
     writeln(getFieldName(base.type, i), ": ", getField(base, i).type:string, " = ", getOffset(base, getField(base, i)));
   }
 }

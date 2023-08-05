@@ -1,0 +1,3 @@
+tertiary-method-int.chpl:10: In function 'main':
+tertiary-method-int.chpl:11: error: unresolved call 'int(64).doSomething()'
+tertiary-method-int.chpl:11: note: because no functions named doSomething found in scope

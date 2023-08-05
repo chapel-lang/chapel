@@ -604,6 +604,7 @@ bool isClassLike(Type* t); // includes unmanaged, borrow, no ref
 bool isBuiltinGenericClassType(Type* t); // 'unmanaged' 'borrowed' etc
 bool isClassLikeOrManaged(Type* t); // includes unmanaged, borrow, owned, no ref
 bool isClassLikeOrPtr(Type* t); // includes c_ptr, ddata
+bool isCVoidPtr(Type* t); // includes both c_ptr(void) and raw_c_void_ptr
 bool isClassLikeOrNil(Type* t);
 bool isRecord(Type* t);
 bool isUserRecord(Type* t); // is it a record from the user viewpoint?
@@ -625,6 +626,11 @@ AggregateType* getManagedPtrManagerType(Type* t);
 bool isSyncType(const Type* t);
 bool isSingleType(const Type* t);
 bool isAtomicType(const Type* t);
+
+bool isOrContainsSyncType(Type* t);
+bool isOrContainsSingleType(Type* t);
+bool isOrContainsAtomicType(Type* t);
+
 bool isRefIterType(Type* t);
 
 bool isSubClass(Type* type, Type* baseType);
@@ -680,6 +686,7 @@ const Immediate& getDefaultImmediate(Type* t);
 #define UNION_ID_TYPE dtInt[INT_SIZE_64]
 #define SIZE_TYPE dtInt[INT_SIZE_64]
 #define NODE_ID_TYPE dtInt[INT_SIZE_32]
+#define SUBLOC_ID_TYPE dtInt[INT_SIZE_32]
 #define LOCALE_ID_TYPE dtLocaleID->typeInfo()
 
 #define is_arithmetic_type(t)                        \

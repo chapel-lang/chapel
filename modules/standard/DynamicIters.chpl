@@ -32,6 +32,7 @@
 module DynamicIters {
 
   use ChapelLocks, DSIUtil;
+  private use Math;
 
 /*
    Toggle debugging output.

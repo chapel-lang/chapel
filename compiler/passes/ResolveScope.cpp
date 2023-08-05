@@ -834,19 +834,13 @@ SymAndReferencedName ResolveScope::lookupForImport(Expr* expr,
     INT_ASSERT(rhsName != NULL);
 
     ResolveScope* scope = getScopeFor(outerMod->block);
-    if (Symbol* symbol = scope->getField(rhsName)) {
+
+    if (Symbol* symbol = scope->getFieldLocally(rhsName)) {
       if (retval == symbol) {
         USR_FATAL(expr, "duplicate mention of the same module '%s'",
                   symbol->name);
       }
       retval = symbol;
-
-    } else if (scope->matchesTypeWithMethods(rhsName)) {
-      // We would need to resolve further to know the exact type it is defined
-      // on, so for now just clear the symbol being returned and update the
-      // return argument to track this
-      retval = NULL;
-      symName = rhsName;
 
     } else {
       if (scope->progress == IUP_NOT_STARTED) {
@@ -879,7 +873,15 @@ SymAndReferencedName ResolveScope::lookupForImport(Expr* expr,
       } else if (Symbol *symbol =
           scope->lookupPublicUnqualAccessSyms(rhsName, call)) {
         retval = symbol;
+      } else if (scope->matchesTypeWithMethods(rhsName)) {
+        // This check only works after module / symbols have been accessed,
+        // because only then are the mVisibilityStmts populated for the scope.
 
+        // We would need to resolve further to know the exact type it is defined
+        // on, so for now just clear the symbol being returned and update the
+        // return argument to track this
+        retval = NULL;
+        symName = rhsName;
       } else {
         USR_FATAL(call, "Cannot find symbol '%s' in module '%s'",
                   rhsName, outerMod->name);
@@ -1140,10 +1142,46 @@ Symbol* ResolveScope::getFieldLocally(const char* fieldName) const {
 ************************************** | *************************************/
 
 bool ResolveScope::matchesTypeWithMethods(const char* name) const {
-  std::set<const char*>::const_iterator it = mMethodsOnTypeName.find(astr(name));
   // Returns true if we found a method defined on this name in scope, false
   // if no such method was found
-  return it != mMethodsOnTypeName.end();
+
+  auto it = mMethodsOnTypeName.find(astr(name));
+  if (it != mMethodsOnTypeName.end()) {
+    return true;
+  }
+
+  // If it doesn't re-export, no point checking public uses for matching methods.
+  if (!this->canReexport) return false;
+
+  for_vector_allowing_0s(VisibilityStmt, visStmt, mUseImportList) {
+    // Note: assumes that UseStmt and ImportStmt are the only subclasses of
+    // VisibilityStmt
+    if (visStmt != NULL) {
+      if (!visStmt->isPrivate) {
+        if (!visStmt->skipSymbolSearch(name)) {
+          const char *nameToUse = name;
+          const bool isSymRenamed = visStmt->isARenamedSym(name);
+          if (isSymRenamed) {
+            nameToUse = visStmt->getRenamedSym(name);
+          }
+          if (SymExpr *se = toSymExpr(visStmt->src)) {
+            if (ModuleSymbol *ms = toModuleSymbol(se->symbol())) {
+              ResolveScope *scope = ResolveScope::getScopeFor(ms->block);
+
+              // Mimick the behavior of lookupPublicUnqualAccessSyms, and don't
+              // recurse. Maybe not sufficient?
+              auto it = scope->mMethodsOnTypeName.find(astr(nameToUse));
+              if (it != scope->mMethodsOnTypeName.end()) {
+                return true;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return false;
 }
 
 /************************************* | **************************************

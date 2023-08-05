@@ -1,5 +1,5 @@
 .\" -*- nroff -*-
-.\" Copyright © 2013-2018 Inria.  All rights reserved.
+.\" Copyright © 2013-2022 Inria.  All rights reserved.
 .\" See COPYING in top-level directory.
 .TH HWLOC-ANNOTATE "1" "%HWLOC_DATE%" "%PACKAGE_VERSION%" "%PACKAGE_NAME%"
 .SH NAME
@@ -9,6 +9,15 @@ hwloc-annotate \- Modify attributes in a XML topology
 .\"    Synopsis Section
 .\" **************************
 .SH SYNOPSIS
+.B hwloc-annotate
+[\fIoptions\fR]
+\fI<input.xml>\fR
+\fI<output.xml>\fR
+-- \fI<location1>\fR \fI<location2>\fR ... --
+\fI<mode>\fR
+\fI<annotation>\fR
+.
+
 .B hwloc-annotate
 [\fIoptions\fR]
 \fI<input.xml>\fR
@@ -42,6 +51,18 @@ Clear the existing userdata from the target objects.
 If nothing else has to be performed after clearing, \fImode\fR should be
 set to \fInone\fR.
 .
+.TP
+\fB\-\-cd\fR
+Clear the existing distances from the topology.
+If nothing else has to be performed after clearing, \fImode\fR should be
+set to \fInone\fR.
+.TP
+\fB\-\-version\fR
+Report version and exit.
+.TP
+\fB\-h\fR \fB\-\-help\fR
+Display help message and exit.
+.
 .\" **************************
 .\"    Description Section
 .\" **************************
@@ -60,8 +81,106 @@ This is specified by the \fImode\fR:
 Specifies a new string info attribute whose name is \fIname\fR and
 value is \fIvalue\fR.
 .TP
+.B subtype <subtype>
+Specifies that the subtype attribute of the object should now be \fIsubtype\fR.
+If an empty string is given, the subtype is removed.
+.TP
+.B size <size>
+Specifies the size of a cache or NUMA node.
+The value may be suffixed with \fBkB\fR, \fBKiB\fR, \fBMB\fR, \fBMiB\fR,
+\fBGB\fR, \fBGiB\fR, etc.
+.TP
 .B misc <name>
 Specifies a new Misc object name.
+.TP
+.B memattr <name> <ﬂags>
+Register a new memory attribute whose name is \fIname\fR and
+flags is \fIflags\fR.
+\fIlocation\fR is ignored in this mode.
+
+Flags may be given as numeric values or as a comma-separated list of flag names
+that are passed to \fIhwloc_memattr_register()\fR.
+Those names may be substrings of actual flag names as long as a single one matches.
+For instance, a value of \fB1\fR (or \fBhigher\fR) means that
+highest values are considered best for this attribute.
+.TP
+.B memattr <name> <initiator> <value>
+Set the memory attribute (whose name is \fIname\fR)
+from initiator \fIinitiator\fR (either an object or a CPU-set)
+to target NUMA node \fIlocation\fR
+to value \fIvalue\fR.
+
+If this attribute does not require specific initiators,
+\fIinitiator\fR is ignored.
+
+Standard attribute names are \fICapacity\fR, \fILocality\fR,
+\fIBandwidth\fR, and \fILatency\fR.
+All existing attributes in the input topology may be listed with
+
+    $ lstopo --memattrs -i input.xml
+
+.TP
+.B cpukind <cpuset> <efficiency> <flags> [<infoname> <infovalue>]
+Specifies the kind of CPU for PUs listed in the given cpuset.
+\fIlocation\fR is ignored in this mode.
+
+\fIefficiency\fR is an abstracted efficiency value that will enforce
+ranking of kinds. It should be -1 if unknown.
+
+\fIflags\fR must be 0 for now.
+
+If \fIinfoname\fR and \fIinfovalue\fR are given and non-empty,
+they are added as info attributes to this kind of CPU.
+
+See the function hwloc_cpukinds_register() for details.
+
+.TP
+.B distances <filename> [<flags>]
+Specifies new distances to be added to the topology using specifications in \fI<filename>\fR.
+The optional \fIflags\fR (0 unless specified) corresponds to the flags
+given to the function \fBhwloc_distances_set()\fR.
+\fIlocation\fR is ignored in this mode.
+
+The real first line of the pointed file must be a integer representing
+a distances \fBkind\fR as defined in \fBhwloc/distances.h\fR.
+The second line is the number of objects involved in the distances.
+The next lines contain one object each.
+The next lines contain one distance value each,
+or a single line may be given with a integer combination of format \fBx*y\fR or \fBx*y*z\fR.
+An optional line before all others may start with \fBname=\fR
+to specify the name of the distances structure if any.
+
+.TP
+.B distances-transform <name> links
+Transform a bandwidth distances structure named <name> into links.
+See the documentation of HWLOC_DISTANCES_TRANSFORM_LINKS in hwloc/distances.h for details.
+.TP
+.B distances-transform <name> merge-switch-ports
+When switches appear in the matrix as different ports, merge all of them
+into a single port for clarity.
+This currently only applies to the NVLinkBandwidth matrix between NVIDIA GPUs.
+See the documentation of HWLOC_DISTANCES_TRANSFORM_MERGE_SWITCH_PORTS in hwloc/distances.h for details.
+.TP
+.B distances-transform <name> transitive-closure
+If objects are connected across a switch, apply a transitive-closure
+to report the bandwidth through that switch.
+This currently only applies to the NVLinkBandwidth matrix between NVIDIA GPUs.
+The bandwidth between all pairs of GPUs will be exposed instead of
+bandwidths between single GPUs and single NVSwitch ports.
+See the documentation of HWLOC_DISTANCES_TRANSFORM_TRANSITIVE_CLOSURE in hwloc/distances.h for details.
+.TP
+.B distances-transform <name> remove-obj <obj>
+Remove the given object from the distances structure named <name>.
+.TP
+.B distances-transform <name> replace-objs <oldtype> <newtype>
+Replace objects of type <oldtype> in distances structure named <name>
+with objects of type <newtype> with same locality.
+If <oldtype> or <newtype> are not object types, they are assumed
+subtypes of OS devices, e.g. "NVML" or "OpenCL".
+See the documentation of hwloc_get_obj_with_same_locality() in hwloc/helper.h for details.
+
+If <newtype> is "NULL", objects are removed from the distances structure.
+
 .TP
 .B none
 No new annotation is added. This is useful when clearing existing attributes.
@@ -70,6 +189,7 @@ No new annotation is added. This is useful when clearing existing attributes.
 Annotations may be added to one specific object in the topology,
 all of them, or all of a given type.
 This is specified by the \fIlocation\fR (see also EXAMPLES below).
+Multiple locations may be affected if they are specified between \fB--\fR.
 Objects may be specified as location tuples, as explained in hwloc(7).
 However hexadecimal bitmasks are not accepted since they may correspond to multiple objects.
 .
@@ -90,7 +210,11 @@ hwloc(7) directly apply to the hwloc-annotate utility.
 hwloc-annotate's operation is best described through several examples.
 .
 .PP
-Add an info attribute to all Core objects:
+Add an info attribute to all Core and PU objects:
+
+    $ hwloc-annotate input.xml output.xml -- Core:all PU:all -- info infoname infovalue
+
+Only add to all Core objects:
 
     $ hwloc-annotate input.xml output.xml Core:all info infoname infovalue
 
@@ -107,6 +231,45 @@ Change package objects to green with red text in the lstopo graphical output:
 
     $ hwloc-annotate topo.xml topo.xml package:all info lstopoStyle "Background=#00ff00;Text=#ff0000"
     $ lstopo -i topo.xml
+
+Set the memory attribute latency to 123 nanoseconds from the PUs in the first package to the first NUMA node:
+
+    $ hwloc-annotate topo.xml topo.xml numanode:0 memattr Latency $(hwloc-calc package:0) 123
+
+Register a memory attribute \fBMyApplicationPerformance\fR
+(with flags specifying that it requires an initiator and reports higher values first)
+and set its value for initiator CPU-set 0x11 to NUMA node #2 to 2345:
+
+    $ hwloc-annotate topo.xml topo.xml ignored memattr MyApplicationPerformance need_init,higher
+    $ hwloc-annotate topo.xml topo.xml numanode:2 memattr MyApplicationPerformance 0x11 2345
+
+To clarify that NUMA node #0 is DDR while NUMA node #1 is HBM:
+
+    $ hwloc-annotate topo.xml topo.xml numa:0 subtype DDR
+    $ hwloc-annotate topo.xml topo.xml numa:1 subtype HBM
+
+Specify that PU 0-3 and PU 4-7 are of different kinds, and the latter is more efficient:
+
+    $ hwloc-annotate topo.xml topo.xml dummy cpukind 0x0f 0 0 CoreType Small
+    $ hwloc-annotate topo.xml topo.xml dummy cpukind 0xf0 1 0 CoreType Big
+
+Replace NUMA nodes with Packages in the NUMALatency distances matrix,
+when they have the exact same locality.
+
+    $ hwloc-annotate topo.xml topo.xml -- dummy -- distances-transform NUMALatency replace-objs numanode packages
+
+Remove NUMA node #3 from the NUMALatency distances matrix:
+
+    $ hwloc-annotate topo.xml topo.xml -- dummy -- distances-transform NUMALatency remove-obj numa:3
+
+Merge all NVSwitch ports bandwidth information into a single port in the NVLinkBandwidth matrix:
+
+    $ hwloc-annotate topo.xml topo.xml -- dummy -- distances-transform NVLinkBandwidth merge-switch-ports
+
+Apply a transitive closure to get inter-GPU bandwidth across NVSwitches in the NVLinkBandwidth matrix:
+
+    $ hwloc-annotate topo.xml topo.xml -- dummy -- distances-transform NVLinkBandwidth transitive-closure
+
 .
 .\" **************************
 .\" Return value section

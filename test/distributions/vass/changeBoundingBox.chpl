@@ -9,7 +9,7 @@ use BlockDist;
 const dummyBB: domain(1) = {1..1}; // or whatever bounding box type you want eventually
 
 // Create a distribution without knowing its bounding box dimensions.
-const dist = new unmanaged BlockGuts(dummyBB);
+const dist = new unmanaged BlockImpl(dummyBB);
 
 // Any computations here, should not involve 'dist'. //
 
@@ -36,7 +36,7 @@ for idx in D do writeln("B:  ", idx, "  maps to ", A[idx].locale);
 /*
 WARNING: currently, the following will not work when compiled with --local:
 
-  var dist = new unmanaged BlockGuts(...);
+  var dist = new unmanaged BlockImpl(...);
   var dm   = new Block(dist);
   dist.changeBoundingBox(...);
 
@@ -46,7 +46,7 @@ and destroys the original. We have a .future on this.
 For now, do this instead:
 */
 
-const distTemp = new unmanaged BlockGuts(dummyBB);
+const distTemp = new unmanaged BlockImpl(dummyBB);
 const DM = new Block(distTemp);
 
 DM.changeBoundingBox(1..4);
@@ -71,13 +71,13 @@ calling changeBoundingBox() will affect only future domains/arrays
 created using 'this' - it will not redistribute already-existing
 domains/arrays.
 */
-proc BlockGuts.changeBoundingBox(newBB) {
+proc BlockImpl.changeBoundingBox(newBB) {
   // Comment out this check if desired. NB Block-distributed domains created
   // using 'this' will not be re-distributed upon changeBoundingBox().
   if _doms_containing_dist != 0 then
     halt("changeBoundingBox: the distribution already has declared domain(s)");
 
-  // From BlockGuts.dsiAssign, with mods.
+  // From BlockImpl.dsiAssign, with mods.
   boundingBox = newBB;
   coforall locid in targetLocDom do
     on targetLocales(locid) {

@@ -1,0 +1,5 @@
+perfkeys: Aggregate performance (GB/s):
+files: multiGpuStream.dat
+graphkeys: Aggregate performance (GB/s)
+ylabel: Aggregate performance (GB/s)
+graphtitle: 8-GPU STREAM Performance (GB/s; GB = 10^9 bytes)

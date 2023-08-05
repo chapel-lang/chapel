@@ -26,7 +26,12 @@ proc testAddSub(type t) {
     coforall 1..numTasks do
       for 1..numItersPerTask do
         a.sub(1:t);
-  assert(isclose(a.read(), 0:t));
+
+  if (isRealType(t) || isImagType(t) || isComplexType(t)) {
+    assert(isClose(a.read(), 0:t));
+  } else {
+    assert(a.read() == 0:t);
+  }
 }
 
 enum ExchangeType {cmpxchg, cmpxchgW, cas};
@@ -75,7 +80,12 @@ proc testLoopAdd(type t, param exchangeType: ExchangeType) {
     coforall 1..numTasks do
       for 1..numItersPerTask do
         a.loopAdd((-1):t, exchangeType);
-  assert(isclose(a.read(), 0:t));
+
+  if (isRealType(t) || isImagType(t) || isComplexType(t)) {
+    assert(isClose(a.read(), 0:t));
+  } else {
+    assert(a.read() == 0:t);
+  }
 }
 
 proc testLoopAdd(type t) {

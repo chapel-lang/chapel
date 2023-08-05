@@ -55,6 +55,8 @@ class TupleType final : public CompositeType {
       if (elt.postOrderId() == -1) {
         isKnownSize_ = false;
       }
+    } else if (subs_.size() == 0) {
+      isKnownSize_ = false;
     }
     computeIsStarTuple();
     computeIsParamKnown();

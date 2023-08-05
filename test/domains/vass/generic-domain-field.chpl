@@ -1,5 +1,5 @@
 class C { 
-  var x: domain;
+  var x: domain(?);
 }
 proc writeDom(y: domain) {
   writeln(y);

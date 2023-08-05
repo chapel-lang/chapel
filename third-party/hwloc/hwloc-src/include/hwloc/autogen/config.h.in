@@ -1,6 +1,6 @@
 /* -*- c -*-
  * Copyright © 2009 CNRS
- * Copyright © 2009-2014 Inria.  All rights reserved.
+ * Copyright © 2009-2022 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -10,6 +10,21 @@
 
 #ifndef HWLOC_CONFIG_H
 #define HWLOC_CONFIG_H
+
+#undef HWLOC_VERSION
+#undef HWLOC_VERSION_MAJOR
+#undef HWLOC_VERSION_MINOR
+#undef HWLOC_VERSION_RELEASE
+#undef HWLOC_VERSION_GREEK
+
+#undef HWLOC_PCI_COMPONENT_BUILTIN
+#undef HWLOC_OPENCL_COMPONENT_BUILTIN
+#undef HWLOC_CUDA_COMPONENT_BUILTIN
+#undef HWLOC_NVML_COMPONENT_BUILTIN
+#undef HWLOC_RSMI_COMPONENT_BUILTIN
+#undef HWLOC_LEVELZERO_COMPONENT_BUILTIN
+#undef HWLOC_GL_COMPONENT_BUILTIN
+#undef HWLOC_XML_LIBXML_COMPONENT_BUILTIN
 
 #if (__GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 95))
 # define __hwloc_restrict __restrict
@@ -65,6 +80,13 @@
 #define GCC_ABOVE_3_3 1
 #else
 #define GCC_ABOVE_3_3 0
+#endif
+
+#if !defined(__cplusplus) &&					\
+    (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4))
+#define GCC_ABOVE_3_4 1
+#else
+#define GCC_ABOVE_3_4 0
 #endif
 
 /* Maybe before gcc 2.95 too */
@@ -148,6 +170,19 @@
 # define __hwloc_attribute_may_alias
 #endif
 
+#ifdef HWLOC_HAVE_ATTRIBUTE_WARN_UNUSED_RESULT
+#define __HWLOC_HAVE_ATTRIBUTE_WARN_UNUSED_RESULT HWLOC_HAVE_ATTRIBUTE_WARN_UNUSED_RESULT
+#elif defined(__GNUC__)
+# define __HWLOC_HAVE_ATTRIBUTE_WARN_UNUSED_RESULT (GXX_ABOVE_3_4 || GCC_ABOVE_3_4)
+#else
+# define __HWLOC_HAVE_ATTRIBUTE_WARN_UNUSED_RESULT 0
+#endif
+#if __HWLOC_HAVE_ATTRIBUTE_WARN_UNUSED_RESULT
+# define __hwloc_attribute_warn_unused_result __attribute__((__warn_unused_result__))
+#else
+# define __hwloc_attribute_warn_unused_result
+#endif
+
 #ifdef HWLOC_C_HAVE_VISIBILITY
 # if HWLOC_C_HAVE_VISIBILITY
 #  define HWLOC_DECLSPEC __attribute__((__visibility__("default")))
@@ -190,6 +225,9 @@ typedef DWORDLONG hwloc_uint64_t;
 typedef uint64_t hwloc_uint64_t;
 
 #endif /* HWLOC_HAVE_WINDOWS_H */
+
+/* Define to 1 if --enable-32bits-pci-domain is called. */
+#undef HWLOC_HAVE_32BITS_PCI_DOMAIN
 
 /* Whether we need to re-define all the hwloc public symbols or not */
 #undef HWLOC_SYM_TRANSFORM

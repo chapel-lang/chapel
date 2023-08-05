@@ -48,7 +48,7 @@ iter genDigits(numDigits) {
   proc nextTerm(k) {
     const k2 = 2 * k + 1;
 
-    addmul(accum, numer, 2);
+    addMul(accum, numer, 2);
     accum *= k2;
     denom *= k2;
     numer *= k;
@@ -57,13 +57,13 @@ iter genDigits(numDigits) {
   proc extractDigit(nth) {
     mul(tmp1, numer, nth);
     add(tmp2, tmp1, accum);
-    divQ(tmp1, tmp2, denom);
+    div(tmp1, tmp2, denom);
 
     return tmp1: int;
   }
 
   proc eliminateDigit(d) {
-    submul(accum, denom, d);
+    subMul(accum, denom, d);
     accum *= 10;
     numer *= 10;
   }

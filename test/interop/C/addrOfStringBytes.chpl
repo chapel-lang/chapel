@@ -16,12 +16,12 @@ proc testAddrVsPtr(type t) {
         addr_buf0_const = c_addrOfConst(x.buff[0]);
 
   if verbose {
-    writeln("pointer to x: ", ptr_x: c_void_ptr);
+    writeln("pointer to x: ", ptr_x: c_ptr(void));
     writeln("address of x: ", addr_x);
     writeln("pointer to x.buff[0]: ", ptr_buf0);
     writeln("address of x.buff[0]: ", addr_buf0);
 
-    writeln("pointer to const x: ", ptr_x_const: c_void_ptr);
+    writeln("pointer to const x: ", ptr_x_const: c_ptr(void));
     writeln("address of const x: ", addr_x_const);
     writeln("pointer to const x.buff[0]: ", ptr_buf0_const);
     writeln("address of const x.buff[0]: ", addr_buf0_const);
@@ -36,7 +36,7 @@ proc testAddrVsPtr(type t) {
   writeln(cmp(ptr_x_const, addr_buf0_const));
 }
 
-proc cmp (x, y): bool do return (x: c_void_ptr) == (y: c_void_ptr);
+proc cmp (x, y): bool do return (x: c_ptr(void)) == (y: c_ptr(void));
 
 testAddrVsPtr(string);
 testAddrVsPtr(bytes);

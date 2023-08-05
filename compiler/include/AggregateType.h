@@ -80,7 +80,10 @@ public:
   // and false for
   //    class C { type t; }
   bool                        isGenericWithDefaults()                    const;
+  // similar, but some (not all) generic fields have defaults
+  bool                        isGenericWithSomeDefaults()                const;
   void                        markAsGenericWithDefaults();
+  void                        markAsGenericWithSomeDefaults();
 
   const char*                 classStructName(bool standalone);
 
@@ -288,6 +291,7 @@ private:
 
   bool                        mIsGeneric;
   bool                        mIsGenericWithDefaults;
+  bool                        mIsGenericWithSomeDefaults;
 };
 
 // support for deprecation by Vass in 1.31 to implement #17131

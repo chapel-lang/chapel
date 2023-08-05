@@ -57,6 +57,7 @@
 
 #ifdef HAVE_LLVM
 #include "llvm/Config/llvm-config.h"
+#include "llvm/Support/CommandLine.h"
 #if HAVE_LLVM_VER >= 140
 #include "llvm/MC/TargetRegistry.h"
 #else
@@ -329,6 +330,8 @@ static bool fPrintVersion = false;
 static bool fPrintChplHome = false;
 
 std::string llvmFlags;
+std::string llvmRemarksFilters;
+std::vector<std::string> llvmRemarksFunctionsToShow;
 
 bool fPrintAdditionalErrors;
 
@@ -721,13 +724,34 @@ static void setLDFlags(const ArgumentDescription* desc, const char* arg) {
 static void setLLVMFlags(const ArgumentDescription* desc, const char* arg) {
   // Append arg to the end of llvmFlags.
 
+#ifdef HAVE_LLVM
   // add a space if there are already arguments here
   if( llvmFlags.length() > 0 )
     llvmFlags += ' ';
 
   llvmFlags += arg;
+
+  if (0 == strcmp(arg, "--help")) {
+    std::vector<const char*> Args = {"chpl --mllvm", "--help", nullptr};
+    llvm::cl::ParseCommandLineOptions(Args.size()-1, &Args[0]);
+  }
+#else
+  printf("Cannot use '--mllvm': this 'chpl' was built without LLVM support\n");
+  clean_exit(1);
+#endif
 }
 
+static void setLLVMRemarksFilters(const ArgumentDescription* desc, const char* arg) {
+  llvmRemarksFilters = std::string(arg);
+}
+
+static void setLLVMRemarksFunctions(const ArgumentDescription* desc, const char* arg) {
+  std::vector<std::string> fNames;
+  splitString(std::string(arg), fNames, ",");
+  for(auto n: fNames) {
+    llvmRemarksFunctionsToShow.push_back(n);
+  }
+}
 
 static void handleLibrary(const ArgumentDescription* desc, const char* arg_unused) {
  addLibFile(libraryFilename);
@@ -1211,6 +1235,8 @@ static ArgumentDescription arg_desc[] = {
 // {"log-symbol", ' ', "<symbol-name>", "Restrict IR dump to the named symbol(s)", "S256", log_symbol, "CHPL_LOG_SYMBOL", NULL}, // This doesn't work yet.
  {"llvm-print-ir", ' ', "<name>", "Dump LLVM Intermediate Representation of given function to stdout", "S", NULL, "CHPL_LLVM_PRINT_IR", &setPrintIr},
  {"llvm-print-ir-stage", ' ', "<stage>", "Specifies from which LLVM optimization stage to print function: none, basic, full", "S", NULL, "CHPL_LLVM_PRINT_IR_STAGE", &verifyStageAndSetStageNum},
+ {"llvm-remarks", ' ', "<regex>", "Print LLVM optimization remarks", "S", NULL, NULL, &setLLVMRemarksFilters},
+ {"llvm-remarks-function", ' ', "<name>", "Print LLVM optimization remarks only for these functions", "S", NULL, NULL, &setLLVMRemarksFunctions},
  {"verify", ' ', NULL, "Run consistency checks during compilation", "N", &fVerify, "CHPL_VERIFY", NULL},
  {"parse-only", ' ', NULL, "Stop compiling after 'parse' pass for syntax checking", "N", &fParseOnly, NULL, NULL},
  {"parser-debug", ' ', NULL, "Set parser debug level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},

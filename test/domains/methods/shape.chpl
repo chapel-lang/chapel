@@ -57,6 +57,6 @@ assertEqual(blockArray.shape, (10, 10), msg='blockArray:');
 proc assertEqual(a, b, msg) {
   if a != b {
     writeln(msg);
-    writeln('AssertionError: %t != %t'.format(a, b));
+    writeln('AssertionError: %? != %?'.format(a, b));
   }
 }

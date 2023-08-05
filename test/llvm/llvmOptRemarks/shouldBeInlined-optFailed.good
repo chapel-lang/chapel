@@ -1,0 +1,1 @@
+shouldBeInlined.chpl:n:0: opt missed for 'inline' - 'foo_chpl' not inlined into 'chpl_user_main' because it should never be inlined (cost=never): no alwaysinline attribute

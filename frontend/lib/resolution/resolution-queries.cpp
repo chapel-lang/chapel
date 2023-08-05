@@ -1001,6 +1001,17 @@ Type::Genericity getTypeGenericityIgnoring(Context* context, const Type* t,
   if (t->isUnknownType())
     return Type::MAYBE_GENERIC;
 
+  if (auto pt = t->toCPtrType()) {
+    // Mimics the fields logic: if any field is non-concrete, the whole
+    // type is generic. Logically, the c_ptr has a single field, the element
+    // type.
+    if (getTypeGenericityIgnoring(context, pt->eltType(), ignore) == Type::CONCRETE) {
+      return Type::CONCRETE;
+    } else {
+      return Type::GENERIC;
+    }
+  }
+
   // MAYBE_GENERIC should only be returned for CompositeType /
   // ClassType right now.
   CHPL_ASSERT(t->isCompositeType() || t->isClassType());
@@ -1764,8 +1775,8 @@ resolveFunctionByPoisQuery(Context* context,
   return QUERY_END(result);
 }
 
-// this wrapper around resolveFunctionByPoisQuery helps to avoid
-// 'possibly dangling reference to a temporary' warnings from GCC 13.
+// TODO: remove this workaround now that the build uses
+// -Wno-dangling-reference
 static const owned<ResolvedFunction>&
 resolveFunctionByPoisQueryWrapper(Context* context,
                                   const TypedFnSignature* sig,
@@ -2345,8 +2356,8 @@ filterCandidatesInitial(Context* context,
   return QUERY_END(result);
 }
 
-// this wrapper around filterCandidatesInitial helps to avoid
-// 'possibly dangling reference to a temporary' warnings from GCC 13.
+// TODO: remove this workaround now that the build uses
+// -Wno-dangling-reference
 static const std::vector<const TypedFnSignature*>&
 filterCandidatesInitialWrapper(Context* context,
                                std::vector<BorrowedIdsWithName>&& lst,
@@ -2590,6 +2601,67 @@ static const Type* getNumericType(Context* context,
   return nullptr;
 }
 
+static const Type* getCPtrType(Context* context,
+                               const AstNode* astForErr,
+                               const CallInfo& ci) {
+  UniqueString name = ci.name();
+
+  if (name == USTR("c_ptr")) {
+    // Should we compute the generic version of the type (e.g. c_ptr(?))
+    bool useGenericType = false;
+
+    // There should be 0 or 1 actuals depending on if it is ?
+    if (ci.hasQuestionArg()) {
+      // handle c_ptr(?)
+      if (ci.numActuals() != 0) {
+        context->error(astForErr, "invalid c_ptr type construction");
+        return ErroneousType::get(context);
+      }
+      useGenericType = true;
+    } else {
+      // handle c_ptr(?t) or c_ptr(eltT)
+      if (ci.numActuals() != 1) {
+        context->error(astForErr, "invalid c_ptr type construction");
+        return ErroneousType::get(context);
+      }
+
+      QualifiedType qt = ci.actual(0).type();
+      if (qt.type() && qt.type()->isAnyType()) {
+        useGenericType = true;
+      }
+    }
+
+    if (useGenericType) {
+      return CPtrType::get(context);
+    }
+
+    QualifiedType qt;
+    if (ci.numActuals() > 0)
+      qt = ci.actual(0).type();
+
+    const Type* t = qt.type();
+    if (t == nullptr) {
+      // Details not yet known so return UnknownType
+      return UnknownType::get(context);
+    }
+    if (t->isUnknownType() || t->isErroneousType()) {
+      // Just propagate the Unknown / Erroneous type
+      // without raising any errors
+      return t;
+    }
+
+    if (!qt.isType()) {
+      // raise an error b/c of type mismatch
+      context->error(astForErr, "invalid c_ptr type construction");
+      return ErroneousType::get(context);
+    }
+
+    return CPtrType::get(context, qt.type());
+  }
+
+  return nullptr;
+}
+
 static const Type*
 convertClassTypeToNilable(Context* context, const Type* t) {
   const ClassType* ct = nullptr;
@@ -2616,6 +2688,8 @@ convertClassTypeToNilable(Context* context, const Type* t) {
 static const Type* resolveFnCallSpecialType(Context* context,
                                             const AstNode* astForErr,
                                             const CallInfo& ci) {
+  // none of the special type function calls are methods; we can stop here.
+  if (ci.isMethodCall()) return nullptr;
 
   if (ci.name() == USTR("?")) {
     if (ci.numActuals() > 0) {
@@ -2641,6 +2715,10 @@ static const Type* resolveFnCallSpecialType(Context* context,
   }
 
   if (auto t = getNumericType(context, astForErr, ci)) {
+    return t;
+  }
+
+  if (auto t = getCPtrType(context, astForErr, ci)) {
     return t;
   }
 

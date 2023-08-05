@@ -217,6 +217,12 @@ class BoundedBuffer {
 
   var rng = new owned RandomStream(real);
 
+  proc init(type eltType = real, capacity: int, sentinel: eltType = -1.0) {
+    this.eltType = eltType;
+    this.capacity = capacity;
+    this.sentinel = sentinel;
+  }
+
   //
   // Place an item at the head position of the buffer, assuming
   // it's available (empty).  If not, the write to 'buff$[head]' will

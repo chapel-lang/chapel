@@ -867,6 +867,7 @@ extern const QIO_FDFLAG_WRITEABLE:c_int;
 extern const QIO_FDFLAG_SEEKABLE:c_int;
 
 @chpldoc.nodoc
+@deprecated(notes="QIO_CH_ALWAYS_UNBUFFERED is deprecated")
 extern const QIO_CH_ALWAYS_UNBUFFERED:c_int;
 @chpldoc.nodoc
 extern const QIO_CH_ALWAYS_BUFFERED:c_int;
@@ -914,7 +915,7 @@ private extern const QIO_FILE_PTR_NULL:qio_file_ptr_t;
 
 @chpldoc.nodoc
 extern record qiovec_t {
-  var iov_base: c_void_ptr;
+  var iov_base: c_ptr(void);
   var iov_len: c_size_t;
 }
 
@@ -1144,54 +1145,54 @@ class QioPluginChannel {
 
 // These functions let the C QIO code call the plugins
 // TODO: Move more of the QIO code to be pure Chapel
-export proc chpl_qio_setup_plugin_channel(file:c_void_ptr, ref plugin_ch:c_void_ptr, start:int(64), end:int(64), qio_ch:qio_channel_ptr_t):errorCode {
+export proc chpl_qio_setup_plugin_channel(file:c_ptr(void), ref plugin_ch:c_ptr(void), start:int(64), end:int(64), qio_ch:qio_channel_ptr_t):errorCode {
   var f=(file:unmanaged QioPluginFile?)!;
   var pluginChannel:unmanaged QioPluginChannel? = nil;
   var ret = f.setupChannel(pluginChannel, start, end, qio_ch);
-  plugin_ch = pluginChannel:c_void_ptr;
+  plugin_ch = pluginChannel:c_ptr(void);
   return ret;
 }
 
-export proc chpl_qio_read_atleast(ch_plugin:c_void_ptr, amt:int(64)) {
+export proc chpl_qio_read_atleast(ch_plugin:c_ptr(void), amt:int(64)) {
   var c=(ch_plugin:unmanaged QioPluginChannel?)!;
   return c.readAtLeast(amt);
 }
-export proc chpl_qio_write(ch_plugin:c_void_ptr, amt:int(64)) {
+export proc chpl_qio_write(ch_plugin:c_ptr(void), amt:int(64)) {
   var c=(ch_plugin:unmanaged QioPluginChannel?)!;
   return c.write(amt);
 }
-export proc chpl_qio_channel_close(ch:c_void_ptr):errorCode {
+export proc chpl_qio_channel_close(ch:c_ptr(void)):errorCode {
   var c=(ch:unmanaged QioPluginChannel?)!;
   var err = c.close();
   delete c;
   return err;
 }
 
-export proc chpl_qio_filelength(file:c_void_ptr, ref length:int(64)):errorCode {
+export proc chpl_qio_filelength(file:c_ptr(void), ref length:int(64)):errorCode {
   var f=(file:unmanaged QioPluginFile?)!;
   return f.filelength(length);
 }
-export proc chpl_qio_getpath(file:c_void_ptr, ref str:c_string, ref len:int(64)):errorCode {
+export proc chpl_qio_getpath(file:c_ptr(void), ref str:c_string, ref len:int(64)):errorCode {
   var f=(file:unmanaged QioPluginFile?)!;
   return f.getpath(str, len);
 }
-export proc chpl_qio_fsync(file:c_void_ptr):errorCode {
+export proc chpl_qio_fsync(file:c_ptr(void)):errorCode {
   var f=(file:unmanaged QioPluginFile?)!;
   return f.fsync();
 }
-export proc chpl_qio_get_chunk(file:c_void_ptr, ref length:int(64)):errorCode {
+export proc chpl_qio_get_chunk(file:c_ptr(void), ref length:int(64)):errorCode {
   var f=(file:unmanaged QioPluginFile?)!;
   return f.getChunk(length);
 }
-export proc chpl_qio_get_locales_for_region(file:c_void_ptr, start:int(64),
-    end:int(64), ref localeNames:c_void_ptr, ref nLocales:int(64)):errorCode {
+export proc chpl_qio_get_locales_for_region(file:c_ptr(void), start:int(64),
+    end:int(64), ref localeNames:c_ptr(void), ref nLocales:int(64)):errorCode {
   var strPtr:c_ptr(c_string);
   var f=(file:unmanaged QioPluginFile?)!;
   var ret = f.getLocalesForRegion(start, end, strPtr, nLocales);
-  localeNames = strPtr:c_void_ptr;
+  localeNames = strPtr:c_ptr(void);
   return ret;
 }
-export proc chpl_qio_file_close(file:c_void_ptr):errorCode {
+export proc chpl_qio_file_close(file:c_ptr(void)):errorCode {
   var f = (file:unmanaged QioPluginFile?)!;
   var err = f.close();
   delete f;
@@ -1226,8 +1227,8 @@ private extern proc qio_file_sync(f:qio_file_ptr_t):errorCode;
 
 private extern proc qio_channel_end_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 private extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyleInternal);
-private extern proc qio_file_get_plugin(f:qio_file_ptr_t):c_void_ptr;
-private extern proc qio_channel_get_plugin(ch:qio_channel_ptr_t):c_void_ptr;
+private extern proc qio_file_get_plugin(f:qio_file_ptr_t):c_ptr(void);
+private extern proc qio_channel_get_plugin(ch:qio_channel_ptr_t):c_ptr(void);
 private extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):errorCode;
 
 private extern proc qio_channel_create(ref ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), const ref style:iostyleInternal, bufIoMax:int(64)):errorCode;
@@ -1292,7 +1293,7 @@ private extern proc qio_channel_read_bits(threadsafe:c_int, ch:qio_channel_ptr_t
 
 private extern proc qio_locales_for_region(fl:qio_file_ptr_t,
                                    start:int(64), end:int(64),
-                                   loc_names_out:c_void_ptr,
+                                   loc_names_out:c_ptr(void),
                                    ref num_locs_out:c_int):errorCode;
 private extern proc qio_get_chunk(fl:qio_file_ptr_t, ref len:int(64)):errorCode;
 private extern proc qio_get_fs_type(fl:qio_file_ptr_t, ref tp:c_int):errorCode;
@@ -1382,9 +1383,9 @@ private extern proc qio_channel_print_bytes(threadsafe:c_int, ch:qio_channel_ptr
 private extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:c_string, len:c_ssize_t):errorCode;
 
 private extern proc qio_channel_scan_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:c_ssize_t, skipwsbefore:c_int):errorCode;
-private extern proc qio_channel_scan_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_void_ptr, len:c_ssize_t, skipwsbefore:c_int):errorCode;
+private extern proc qio_channel_scan_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_ptr(void), len:c_ssize_t, skipwsbefore:c_int):errorCode;
 private extern proc qio_channel_print_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:c_ssize_t):errorCode;
-private extern proc qio_channel_print_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_void_ptr, len:c_ssize_t):errorCode;
+private extern proc qio_channel_print_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_ptr(void), len:c_ssize_t):errorCode;
 
 private extern proc qio_channel_skip_json_field(threadsafe:c_int, ch:qio_channel_ptr_t):errorCode;
 
@@ -1396,11 +1397,11 @@ extern record qio_conv_t {
   var argType:uint(8);
   var literal_is_whitespace:uint(8);
   var literal_length:uint(32);
-  var literal:c_void_ptr;
+  var literal:c_ptr(void);
   var regex_length:uint(32);
-  var regex:c_void_ptr;
+  var regex:c_ptr(void);
   var regex_flags_length:uint(32);
-  var regex_flags:c_void_ptr;
+  var regex_flags:c_ptr(void);
 }
 
 private extern const QIO_CONV_UNK:c_int;
@@ -1421,6 +1422,7 @@ private extern const QIO_CONV_ARG_TYPE_CHAR:c_int;
 private extern const QIO_CONV_ARG_TYPE_STRING:c_int;
 private extern const QIO_CONV_ARG_TYPE_BINARY_STRING:c_int;
 private extern const QIO_CONV_ARG_TYPE_REPR:c_int;
+private extern const QIO_CONV_ARG_TYPE_SERDE:c_int;
 private extern const QIO_CONV_ARG_TYPE_REGEX:c_int;
 private extern const QIO_CONV_ARG_TYPE_NONE_REGEX_LITERAL:c_int;
 private extern const QIO_CONV_ARG_TYPE_NONE_LITERAL:c_int;
@@ -2180,7 +2182,7 @@ proc openplugin(pluginFile: QioPluginFile, mode:ioMode,
   import HaltWrappers;
 
   extern proc qio_file_init_plugin(ref file_out:qio_file_ptr_t,
-                                   file_info:c_void_ptr, flags:c_int,
+                                   file_info:c_ptr(void), flags:c_int,
                                    const ref style:iostyleInternal):errorCode;
 
   var local_style = style;
@@ -2209,7 +2211,7 @@ proc openplugin(pluginFile: QioPluginFile, mode:ioMode,
   if seekable then
     flags |= QIO_FDFLAG_SEEKABLE;
 
-  var err = qio_file_init_plugin(ret._file_internal, pluginFile:c_void_ptr, flags, style);
+  var err = qio_file_init_plugin(ret._file_internal, pluginFile:c_ptr(void), flags, style);
   if err {
     var path:string = "unknown";
     if pluginFile {
@@ -4043,7 +4045,7 @@ proc fileReader.seek(region: range(?)) throws where (!region.hasHighBound() ||
     compilerError("Cannot seek on a locking fileReader");
 
   if (!region.hasLowBound()) {
-    throw new IllegalArgumentError("region", "must have a lower bound");
+    throw new IllegalArgumentError("illegal argument 'region': must have a lower bound");
 
   } else {
     if (region.hasHighBound()) {
@@ -4094,7 +4096,7 @@ proc fileWriter.seek(region: range(?)) throws where (!region.hasHighBound() ||
     compilerError("Cannot seek on a locking fileWriter");
 
   if (!region.hasLowBound()) {
-    throw new IllegalArgumentError("region", "must have a lower bound");
+    throw new IllegalArgumentError("illegal argument 'region': must have a lower bound");
 
   } else {
     if (region.hasHighBound()) {
@@ -4117,7 +4119,7 @@ proc fileWriter.seek(region: range(?)) throws where (!region.hasHighBound() ||
 proc fileReader.seek(region: range(?)) throws where (region.hasHighBound() &&
                                                      !useNewSeekRegionBounds) {
   if (!region.hasLowBound()) {
-    throw new IllegalArgumentError("region", "must have a lower bound");
+    throw new IllegalArgumentError("illegal argument 'region': must have a lower bound");
 
   } else {
     const err = qio_channel_seek(_channel_internal, region.low, region.high);
@@ -4131,7 +4133,7 @@ proc fileReader.seek(region: range(?)) throws where (region.hasHighBound() &&
 proc fileWriter.seek(region: range(?)) throws where (region.hasHighBound() &&
                                                      !useNewSeekRegionBounds) {
   if (!region.hasLowBound()) {
-    throw new IllegalArgumentError("region", "must have a lower bound");
+    throw new IllegalArgumentError("illegal argument 'region': must have a lower bound");
 
   } else {
     const err = qio_channel_seek(_channel_internal, region.low, region.high);
@@ -4790,7 +4792,7 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
                        in deserializer: ?dt = defaultSerializeVal(false))
   : fileReader(kind, locking, dt) throws {
   if (region.hasLowBound() && region.low < 0) {
-    throw new IllegalArgumentError("region", "file region's lowest accepted bound is 0");
+    throw new IllegalArgumentError("illegal argument 'region': file region's lowest accepted bound is 0");
   }
 
   // It is the responsibility of the caller to release the returned fileReader
@@ -5032,7 +5034,7 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
   fileWriter(kind,locking,st) throws {
 
   if (region.hasLowBound() && region.low < 0) {
-    throw new IllegalArgumentError("region", "file region's lowest accepted bound is 0");
+    throw new IllegalArgumentError("illegal argument 'region': file region's lowest accepted bound is 0");
   }
 
   // It is the responsibility of the caller to retain and release the returned
@@ -6219,7 +6221,13 @@ public use ChapelIOStringifyHelper;
     Writes each argument, possibly using a `writeThis` method,
     to a string and returns the result.
   */
+@deprecated("'stringify(x)' is deprecated; please use 'try! \"%?\".format(x)' from IO.FormattedIO instead");
 proc stringify(const args ...?k):string {
+  return chpl_stringify((...args));
+}
+
+@chpldoc.nodoc
+proc chpl_stringify(const args ...?k):string {
   if _can_stringify_direct(args) {
     return stringify_simple((...args));
   } else {
@@ -6424,8 +6432,8 @@ proc fileReader.readline(arg: [] uint(8), out numRead : int, start = arg.domain.
  */
 proc fileReader.readLine(ref a: [] ?t, maxSize=a.size,
                          stripNewline=false): int throws
-      where (t == uint(8) || t == int(8)) && a.rank == 1 &&
-            a.isRectangular() && a.hasUnitStride()
+      where a.rank == 1 && a.isRectangular() && a.strides == strideKind.one &&
+            (t == uint(8) || t == int(8))
 {
   if maxSize > a.size
     then throw new IllegalArgumentError("'maxSize' argument exceeds size of array in readLine");
@@ -7239,8 +7247,8 @@ proc fileReader.readAll(ref b: bytes): int throws {
                        due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readAll(ref a: [?d] ?t): int throws
-  where (t == uint(8) || t == int(8)) && a.rank == 1 &&
-        a.isRectangular() && a.hasUnitStride()
+  where a.rank == 1 && a.isRectangular() && a.strides == strideKind.one &&
+        (t == uint(8) || t == int(8))
 {
   var i = d.low;
 
@@ -7520,11 +7528,11 @@ proc fileReader.readBits(ref x:integral, numBits:int):bool throws {
   if castChecking {
     // Error if reading more bits than fit into x
     if Types.numBits(x.type) < numBits then
-      throw new owned IllegalArgumentError("x, numBits", "readBits numBits=" + numBits:string +
+      throw new owned IllegalArgumentError("readBits numBits=" + numBits:string +
                                                  " > bits in x:" + x.type:string);
     // Error if reading negative number of bits
     if isIntType(numBits.type) && numBits < 0 then
-      throw new owned IllegalArgumentError("numBits", "readBits numBits=" + numBits:string + " < 0");
+      throw new owned IllegalArgumentError("readBits numBits=" + numBits:string + " < 0");
   }
 
   var tmp:_internalIoBits;
@@ -7578,13 +7586,12 @@ proc fileWriter.writeBits(x: integral, numBits: int) : void throws {
   if castChecking {
     // Error if writing more bits than fit into x
     if Types.numBits(x.type) < numBits then
-      throw new owned IllegalArgumentError("x, numBits",
-              "writeBits numBits=" + numBits:string +
-               " > bits in x:" + x.type:string);
+      throw new owned IllegalArgumentError("writeBits numBits=" +
+        numBits:string + " > bits in x:" + x.type:string);
     // Error if writing negative number of bits
     if isIntType(numBits.type) && numBits < 0 then
-      throw new owned IllegalArgumentError("numBits",
-              "writeBits numBits=" + numBits:string + " < 0");
+      throw new owned IllegalArgumentError("writeBits numBits=" +
+        numBits:string + " < 0");
   }
 
   try this.write(new _internalIoBits(x:uint(64), numBits:int(8)));
@@ -7787,7 +7794,7 @@ proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
 }
 
 /*
-  Write ``numBytes`` of data from a :type:`~CTypes.c_void_ptr` to a ``fileWriter``
+  Write ``numBytes`` of data from a ``CTypes.c_ptr(void)`` to a ``fileWriter``
 
   The data are written to the file one byte at a time.
 
@@ -7795,7 +7802,7 @@ proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
     This method provides no protection against attempting to access invalid
     memory
 
-  :arg ptr: a typeless :type:`~CTypes.c_void_ptr` to some valid memory
+  :arg ptr: a ``c_ptr(void)`` to some valid memory
   :arg numBytes: the number of bytes to write
 
   :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
@@ -7804,7 +7811,7 @@ proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
   :throws SystemError: Thrown if data could not be written to the ``fileWriter``
                        due to a :ref:`system error<io-general-sys-error>`.
 */
-proc fileWriter.writeBinary(ptr: c_void_ptr, numBytes: int) throws {
+proc fileWriter.writeBinary(ptr: c_ptr(void), numBytes: int) throws {
   var e:errorCode = 0;
 
   var byte_ptr = ptr : c_ptr(uint(8));
@@ -7890,7 +7897,7 @@ proc fileWriter.writeBinary(arg:numeric, endian:ioendian) throws {
 proc fileWriter.writeBinary(s: string, size: int = s.size) throws {
   // handle bad arguments
   if size > s.size then
-    throw new owned IllegalArgumentError("size", "cannot exceed length of provided string");
+    throw new owned IllegalArgumentError("illegal argument 'size': cannot exceed length of provided string");
   if s.hasEscapes then
     throw createSystemOrChplError(EILSEQ, "illegal use of escaped string characters in 'writeBinary'");
 
@@ -7938,7 +7945,7 @@ proc fileWriter.writeBinary(s: string, size: int = s.size) throws {
 proc fileWriter.writeBinary(b: bytes, size: int = b.size) throws {
   // handle bad arguments
   if size > b.size then
-    throw new owned IllegalArgumentError("size", "cannot exceed length of provided bytes");
+    throw new owned IllegalArgumentError("illegal argument 'size': cannot exceed length of provided bytes");
 
   on this._home {
     // write the first size bytes to the fileWriter
@@ -7974,7 +7981,7 @@ proc fileWriter.writeBinary(b: bytes, size: int = b.size) throws {
                        due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioendian.native) throws
-  where d.rank == 1 && d.isRectangular() && d.hasUnitStride() && (
+  where data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   var e : errorCode = 0;
@@ -8024,8 +8031,8 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
   :throws SystemError: Thrown if data could not be written to the ``fileWriter``
                        due to a :ref:`system error<io-general-sys-error>`.
 */
-proc fileWriter.writeBinary(const ref data: [?d] ?t, endian:ioendian) throws
-  where d.rank == 1 && d.isRectangular() && d.hasUnitStride() && (
+proc fileWriter.writeBinary(const ref data: [] ?t, endian:ioendian) throws
+  where data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   select (endian) {
@@ -8233,9 +8240,9 @@ config param ReadBinaryArrayReturnInt = false;
                                values are read.
 */
 @deprecated(notes="The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant")
-proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): bool throws
+proc fileReader.readBinary(ref data: [] ?t, param endian = ioendian.native): bool throws
   where ReadBinaryArrayReturnInt == false &&
-    d.rank == 1 && d.isRectangular() && d.hasUnitStride() && (
+    data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   var e : errorCode = 0,
@@ -8295,7 +8302,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): b
 */
 proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): int throws
   where ReadBinaryArrayReturnInt == true &&
-    d.rank == 1 && d.isRectangular() && d.hasUnitStride() && (
+    data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   var e : errorCode = 0,
@@ -8357,9 +8364,9 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
                                ``data.size`` values are read.
 */
 @deprecated(notes="The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant")
-proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):bool throws
+proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):bool throws
   where ReadBinaryArrayReturnInt == false &&
-    d.rank == 1 && d.isRectangular() && d.hasUnitStride() && (
+    data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   var rv: bool = false;
@@ -8397,9 +8404,9 @@ proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):bool throws
    :throws SystemError: Thrown if data could not be read from the ``fileReader``
                         due to a :ref:`system error<io-general-sys-error>`.
 */
-proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):int throws
+proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):int throws
   where ReadBinaryArrayReturnInt == true &&
-    d.rank == 1 && d.isRectangular() && d.hasUnitStride() && (
+    data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   var nr: int = 0;
@@ -8453,11 +8460,11 @@ proc fileReader.readBinary(ptr: c_ptr(?t), maxBytes: int): int throws {
 
 /*
    Read up to ``maxBytes`` bytes from a ``fileReader`` into a
-   :type:`~CTypes.c_void_ptr`
+   ``CTypes.c_ptr(void)``
 
    Note that data are read from the file one byte at a time.
 
-   :arg ptr: a typeless :type:`~CTypes.c_void_ptr` to some memory — existing
+   :arg ptr: a ``c_ptr(void)`` to some memory — existing
              values will be overwritten
    :arg maxBytes: the maximum number of bytes to read from the ``fileReader``
    :returns: the number of bytes that were read. this can be less than
@@ -8467,7 +8474,7 @@ proc fileReader.readBinary(ptr: c_ptr(?t), maxBytes: int): int throws {
    :throws SystemError: Thrown if data could not be read from the ``fileReader``
                         due to a :ref:`system error<io-general-sys-error>`.
 */
-proc fileReader.readBinary(ptr: c_void_ptr, maxBytes: int): int throws {
+proc fileReader.readBinary(ptr: c_ptr(void), maxBytes: int): int throws {
   var e: errorCode = 0,
       numRead: c_ssize_t = 0;
   var bytes_ptr = ptr: c_ptr(uint(8));
@@ -8919,8 +8926,9 @@ proc read(type t ...?numTypes) throws {
 
 /* Equivalent to ``stdin.readLine``.  See :proc:`fileReader.readLine` */
 proc readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int throws
-      where (t == uint(8) || t == int(8)) && a.rank == 1 &&
-            a.isRectangular() && a.hasUnitStride() {
+  where a.rank == 1 && a.isRectangular() && a.strides == strideKind.one &&
+        (t == uint(8) || t == int(8))
+{
   return stdin.readLine(a, maxSize, stripNewline);
 }
 
@@ -9124,9 +9132,9 @@ C         Chapel       Meaning
 
 Unlike in C, a value of the wrong type will be cast appropriately - so for
 example printing 2 (an ``int``)  with ``%.2dr`` will result in ``2.00``.  Note
-that ``%n`` and ``%t`` are equivalent to ``%r`` for real conversions and ``%i``
+that ``%n`` and ``%?`` are equivalent to ``%r`` for real conversions and ``%i``
 for numeric conversions; so these are also equivalent to ``%i`` ``%d`` or
-``%g`` in C. Also note that Chapel format strings includes many capabilities
+``%g`` in C. Also note that Chapel format strings include many capabilities
 not available with C formatted I/O routines - including quoted strings,
 binary numbers, and complex numbers.
 
@@ -9417,16 +9425,72 @@ General Conversions
 
 ``%t``
  read or write the object according to its readThis/writeThis routine
+
+  .. warning::
+    ``%t`` is deprecated and should be replaced with ``%?`` which will invoke
+    the ``fileReader``/``fileWriter``'s serializer/deserializer to execute IO
+    operations for the associated argument.
+
 ``%jt``
  read or write an object in JSON format using readThis/writeThis
+
+  .. warning::
+    ``%jt`` is deprecated and should be replaced with ``%?`` on a ``fileWriter``
+    or ``fileReader`` configured with the JSON Serializer or Deserializer
+    respectively. Example:
+
+    .. code-block:: chapel
+
+      use IO, JSON;
+
+      record R {
+        // fields...
+      }
+
+      var f = open("data.json"),
+          r: R;
+
+      // write an 'R' in JSON format
+      f.writer(serializer = new JsonSerializer()).writef("%?", new R(/* ... */));
+
+      // read into an 'R' from JSON format
+      f.reader(deserializer = new JsonDeserializer()).readf("%?", r);
+
 ``%ht``
  read or write an object in Chapel syntax using readThis/writeThis
+
+  .. warning::
+    ``%ht`` is deprecated and should be replaced with ``%?`` on a ``fileWriter``
+    or ``fileReader`` configured with the Chapel-Format Serializer or
+    Deserializer respectively. Example:
+
+    .. code-block:: chapel
+
+      use IO, ChplFormat;
+
+      record R {
+        // fields...
+      }
+
+      var f = open("data.json"),
+          r: R;
+
+      // write an 'R' in Chapel Syntax format
+      f.writer(serializer = new ChplSerializer()).writef("%?", new R(/* ... */))
+
+      // read into an 'R' from Chapel Syntax format
+      f.reader(deserializer = new ChplDeserializer()).readf("%?", r);
+
 ``%|t``
  read or write an object in binary native-endian with readThis/writeThis *(deprecated)*
 ``%<t``
  read or write an object little-endian in binary with readThis/writeThis *(deprecated)*
 ``%>t``
  read or write an object big-endian in binary with readThis/writeThis *(deprecated)*
+
+``%?``
+ Use the ``fileReader``/``fileWriter``'s associated serializer/deserializer to write
+ or read a value.
 
 Note About Whitespace
 +++++++++++++++++++++
@@ -10055,7 +10119,11 @@ proc _toString(x:bytes)
 private inline
 proc _toString(x:?t) where (_isIoPrimitiveType(t) && t!=bytes && t!=string)
 {
-  return (x:string, true);
+  if isPrimitiveType(t) {
+    return (x:string, true);
+  } else {
+    return (chpl_stringify(x), true);
+  }
 }
 private inline
 proc _toString(x:?t) where !_isIoPrimitiveType(t)
@@ -10371,10 +10439,8 @@ proc fileReader._format_reader(
 @chpldoc.nodoc
 proc fileWriter._format_reader(
     fmtStr:?fmtType, ref cur:c_size_t, len:c_size_t, ref error:errorCode,
-    ref conv:qio_conv_t, ref gotConv:bool, ref style:iostyleInternal,
-    ref r:unmanaged _channel_regex_info?)
+    ref conv:qio_conv_t, ref gotConv:bool, ref style:iostyleInternal)
 {
-  if r != nil then r!.hasRegex = false;
   if !error {
     const ref fmt = fmtStr.localize().c_str();
     while cur < len {
@@ -10746,7 +10812,6 @@ proc fileReader._read_complex(width:uint(32), out t:complex, i:int)
 @chpldoc.nodoc
 proc fileWriter._writefOne(fmtStr, ref arg, i: int,
                            ref cur: c_size_t, ref j: int,
-                           ref r: unmanaged _channel_regex_info?,
                            argType: c_ptr(c_int), argTypeLen: int,
                            ref conv: qio_conv_t, ref gotConv: bool,
                            ref style: iostyleInternal, ref err: errorCode,
@@ -10759,8 +10824,8 @@ proc fileWriter._writefOne(fmtStr, ref arg, i: int,
   gotConv = false;
 
   if j <= i {
-    _format_reader(fmtStr, cur, len, err,
-                   conv, gotConv, style, r);
+    this._format_reader(fmtStr, cur, len, err,
+                        conv, gotConv, style);
   }
 
   _conv_helper(err, conv, gotConv, j, argType, argTypeLen);
@@ -10844,11 +10909,26 @@ proc fileWriter._writefOne(fmtStr, ref arg, i: int,
         // a regex. So we just don't handle it.
         err = qio_format_error_write_regex();
       } when QIO_CONV_ARG_TYPE_REPR {
+        select style.aggregate_style {
+          when QIO_AGGREGATE_FORMAT_BRACES do // %t
+            warning("The '%t' format specifier is deprecated; please use '%?' to invoke the type's 'serialize' method instead");
+          when QIO_AGGREGATE_FORMAT_CHPL do  // %ht
+            warning("The '%ht' format specifier is deprecated; please use '%?' with the Chapel-Format Serializer instead");
+          when QIO_AGGREGATE_FORMAT_JSON do  // %jt
+            warning("The '%jt' format specifier is deprecated; please use '%?' with the JSON Serializer instead");
+        }
         try _writeOne(iokind.dynamic, arg, origLocale);
+      } when QIO_CONV_ARG_TYPE_SERDE {
+        if serializerType != nothing {
+          this._serializeOne(arg, origLocale);
+        } else {
+          try _writeOne(iokind.dynamic, arg, origLocale);
+        }
       } otherwise {
         // Unhandled argument type!
-        throw new owned IllegalArgumentError("args(" + i:string + ")",
-                                       "writef internal error " + argType(i):string);
+        throw new owned IllegalArgumentError(
+          "illegal argument 'args(" + i:string + ")': writef internal error " + argType(i):string
+        );
       }
     }
   }
@@ -10889,11 +10969,6 @@ proc fileWriter.writef(fmtStr: ?t, const args ...?k) throws
     // c_ptr. This should reduce number of instantiations of writefOne
     var argType: c_array(c_int, argTypeLen);
 
-    var r:unmanaged _channel_regex_info?;
-    defer {
-      if r then delete r;
-    }
-
     for i in 0..argType.size-1 {
       argType(i) = QIO_CONV_UNK;
     }
@@ -10901,15 +10976,15 @@ proc fileWriter.writef(fmtStr: ?t, const args ...?k) throws
     var j = 0;
 
     for param i in 0..k-1 {
-      _writefOne(fmtStr, args(i), i, cur, j, r, c_ptrTo(argType[0]), argTypeLen,
+      _writefOne(fmtStr, args(i), i, cur, j, c_ptrTo(argType[0]), argTypeLen,
                  conv, gotConv, style, err, origLocale, len);
     }
 
     if ! err {
       if cur < len {
         var dummy:c_int;
-        _format_reader(fmtStr, cur, len, err,
-                       conv, gotConv, style, r);
+        this._format_reader(fmtStr, cur, len, err,
+                            conv, gotConv, style);
       }
 
       if cur < len {
@@ -10941,13 +11016,8 @@ proc fileWriter.writef(fmtStr:?t) throws
     var end:c_size_t;
     var dummy:c_int;
 
-    var r:unmanaged _channel_regex_info?;
-    defer {
-      if r then delete r;
-    }
-
     _format_reader(fmtStr, cur, len, err,
-                   conv, gotConv, style, r);
+                   conv, gotConv, style);
 
     if ! err {
       if gotConv {
@@ -11178,7 +11248,21 @@ proc fileReader.readf(fmtStr:?t, ref args ...?k): bool throws
                 }
               }
             } when QIO_CONV_ARG_TYPE_REPR {
+              select style.array_style {
+                when QIO_ARRAY_FORMAT_SPACE do // %t
+                  warning("The '%t' format specifier is deprecated; please use '%?' to invoke the type's 'deserialize' method instead");
+                when QIO_ARRAY_FORMAT_CHPL do  // %ht
+                  warning("The '%ht' format specifier is deprecated; please use '%?' with the Chapel-Format Deserializer instead");
+                when QIO_ARRAY_FORMAT_JSON do  // %jt
+                  warning("The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead");
+              }
               try _readOne(iokind.dynamic, args(i), origLocale);
+            } when QIO_CONV_ARG_TYPE_SERDE {
+              if deserializerType != nothing {
+                this._deserializeOne(args(i), origLocale);
+              } else {
+                try _readOne(iokind.dynamic, args(i), origLocale);
+              }
             } when QIO_CONV_SET_CAPTURE {
               if r == nil {
                 err = qio_format_error_bad_regex();
@@ -11219,8 +11303,9 @@ proc fileReader.readf(fmtStr:?t, ref args ...?k): bool throws
                 }
               }
             } otherwise {
-              throw new owned IllegalArgumentError("args(" + i:string + ")",
-                                             "readf internal error " + argType(i):string);
+              throw new owned IllegalArgumentError(
+                "illegal argument 'args(" + i:string + ")': readf internal error " + argType(i):string
+              );
             }
           }
         }

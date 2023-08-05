@@ -18,11 +18,11 @@ Initializing Modules:
         ChapelArray
          ChapelPrivatization
          ChapelDomain
-          IO
-           FormattedIO
-            Regex
-             RegexIoSupport
-           Types
+          FormattedIO
+           IO
+            Types
+           Regex
+            RegexIoSupport
          Sort
           List
            ChapelLocks

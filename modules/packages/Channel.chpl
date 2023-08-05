@@ -276,8 +276,8 @@ module Channel {
     var recvIdx = 0;
     var count = 0;
     var closed = false;
-    var sendWaiters : owned WaiterQueue;
-    var recvWaiters : owned WaiterQueue;
+    var sendWaiters : owned WaiterQueue(eltType);
+    var recvWaiters : owned WaiterQueue(eltType);
     var lock$ = new _LockWrapper();
 
     proc init(type elt, size = 0) {
@@ -502,7 +502,7 @@ module Channel {
 
     /* Retrieve the address of the involved channel */
     override proc getAddr() : c_uintptr {
-      return ((selectChannel.channelObj : c_void_ptr) : c_uintptr);
+      return ((selectChannel.channelObj : c_ptr(void)) : c_uintptr);
     }
 
     override proc enqueueWaiter(ref process$ : single bool, ref isDone : atomic int) {

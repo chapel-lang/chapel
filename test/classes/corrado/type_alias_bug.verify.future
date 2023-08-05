@@ -1,0 +1,1 @@
+cannot catch a type alias of a class with --verify and/or address sanitization: https://github.com/chapel-lang/chapel/issues/22720

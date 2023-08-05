@@ -23,6 +23,7 @@ module BytesStringCommon {
   private use CTypes;
   private use ByteBufferHelpers;
   private use String.NVStringFactory;
+  private use ChplConfig only compiledForSingleLocale;
 
   extern const CHPL_SHORT_STRING_SIZE : c_int;
 
@@ -88,7 +89,7 @@ module BytesStringCommon {
   // issue (#448 chapel-private)
   inline proc getCStr(const ref x: ?t): c_string {
     assertArgType(t, "getCStr");
-    if _local == false && x.locale_id != chpl_nodeID then
+    if !compiledForSingleLocale() && x.locale_id != chpl_nodeID then
       halt("Cannot call .c_str() on a remote " + t:string);
 
     var buff: bufferType = x.buff;
@@ -109,7 +110,7 @@ module BytesStringCommon {
       throws {
     import OS.{errorCode};
     pragma "fn synchronization free"
-    extern proc qio_encode_char_buf(dst: c_void_ptr, chr: int(32)): errorCode;
+    extern proc qio_encode_char_buf(dst: c_ptr(void), chr: int(32)): errorCode;
     pragma "fn synchronization free"
     extern proc qio_nbytes_char(chr: int(32)): c_int;
 
@@ -323,7 +324,7 @@ module BytesStringCommon {
 
     if otherLen > 0 {
       x.buffLen = otherLen;
-      if !_local && otherRemote {
+      if !compiledForSingleLocale() && otherRemote {
         // if s is remote, copy and own the buffer
         x.buff = bufferCopyRemote(other.locale_id, other.buff, otherLen);
         x.buffSize = otherLen+1;
@@ -374,7 +375,7 @@ module BytesStringCommon {
       // byteIndex
       const intR = r:range(int, r.bounds, r.strides);
       if boundsChecking {
-        if !x.byteIndices.boundsCheck(intR) {
+        if !x.byteIndices.chpl_boundsCheck(intR) {
           halt("range ", r, " out of bounds for " + t:string + " with length ",
                x.numBytes);
         }
@@ -393,18 +394,18 @@ module BytesStringCommon {
         // if the low bound of the range is within the byteIndices of the
         // string, it must be the initial byte of a codepoint
         if r.hasLowBound() &&
-           x.byteIndices.boundsCheck(r.lowBound:int) &&
+           x.byteIndices.contains(r.lowBound:int) &&
            !isInitialByte(x.byte[r.lowBound:int]) {
-          throw new CodepointSplittingError(
+          throw new CodepointSplitError(
             "Byte-based string slice is not aligned to codepoint boundaries. " +
             "The byte at low boundary " + r.lowBound:string + " is not the first byte of a UTF-8 codepoint");
         }
         // if the "high bound of the range plus one" is within the byteIndices
         // of the string, that index must be the initial byte of a codepoint
         if r.hasHighBound() &&
-           x.byteIndices.boundsCheck(r.highBound:int+1) &&
+           x.byteIndices.contains(r.highBound:int+1) &&
            !isInitialByte(x.byte[r.highBound:int+1]) {
-          throw new CodepointSplittingError(
+          throw new CodepointSplitError(
             "Byte-based string slice is not aligned to codepoint boundaries. " +
             "The byte at high boundary " + r.highBound:string + " is not the first byte of a UTF-8 codepoint");
         }
@@ -430,7 +431,7 @@ module BytesStringCommon {
       // codepointIdx
       const intR = r:range(int, r.bounds, r.strides);
       if boundsChecking {
-        if !x.indices.boundsCheck(intR) {
+        if !x.indices.chpl_boundsCheck(intR) {
           halt("range ", r, " out of bounds for string with length ", x.size);
         }
       }
@@ -1137,7 +1138,7 @@ module BytesStringCommon {
     assertArgType(t, "doAssign");
 
     inline proc helpMe(ref lhs: t, rhs: t) {
-      if _local || rhs.locale_id == chpl_nodeID {
+      if compiledForSingleLocale() || rhs.locale_id == chpl_nodeID {
         if t == string {
           reinitWithNewBuffer(lhs, rhs.buff, rhs.buffLen, rhs.buffSize,
                               rhs.numCodepoints);
@@ -1160,7 +1161,7 @@ module BytesStringCommon {
       }
     }
 
-    if _local || lhs.locale_id == chpl_nodeID then {
+    if compiledForSingleLocale() || lhs.locale_id == chpl_nodeID then {
       helpMe(lhs, rhs);
     }
     else {

@@ -226,7 +226,7 @@ bool exprIsOptimizable(BlockStmt* loop, Expr* lastStmt,
       Expr* rhs = call->get(2);
       if (lhs->getValType() == rhs->getValType()) // same type
         return true;
-    } else if (call->isNamed("=")) {
+    } else if (call->isNamedAstr(astrSassign)) {
       Symbol* lhs = toSymExpr(call->get(1))->symbol();
       Symbol* rhs = toSymExpr(call->get(2))->symbol();
       if (lhs->getValType() == rhs->getValType()) // same type

@@ -1,0 +1,1 @@
+public-use-transitive.chpl:14: error: Cannot find symbol 'R' in module 'Pipe2'

@@ -106,11 +106,10 @@ proc parseToml(input: string) : shared Toml {
   var D: domain(string);
   var table: [D] shared Toml?;
   var rootTable = new shared Toml(table);
-  const source = new unmanaged Source(input);
+  const source = new shared Source(input);
   const parser = new unmanaged Parser(source, rootTable);
   const tomlData = parser.parseLoop();
   delete parser;
-  delete source;
   return tomlData;
 }
 
@@ -149,7 +148,7 @@ module TomlParser {
   @chpldoc.nodoc
   class Parser {
 
-    var source: Source;
+    var source: shared Source;
     var rootTable: shared Toml;
     var curTable: string;
 

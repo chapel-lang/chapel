@@ -11,16 +11,16 @@ const B3 = Space dmapped Block(boundingBox=Space, targetLocales=OneLocOnly);
 
 writeln("Block comparisons:");
 
-writeln(B1.dist == B1.dist);
-writeln(B1.dist == B2.dist);
-writeln(B1.dist == B3.dist);
+writeln(B1.distribution == B1.distribution);
+writeln(B1.distribution == B2.distribution);
+writeln(B1.distribution == B3.distribution);
 
-writeln(B2.dist == B2.dist);
-writeln(B2.dist == B3.dist);
+writeln(B2.distribution == B2.distribution);
+writeln(B2.distribution == B3.distribution);
 
-writeln(B3.dist == B3.dist);
+writeln(B3.distribution == B3.distribution);
 
-writeln(B1.dist == (Space dmapped Block(boundingBox=Space)).dist);
+writeln(B1.distribution == (Space dmapped Block(boundingBox=Space)).distribution);
 
 writeln();
 
@@ -32,22 +32,22 @@ const C4 = Space dmapped Cyclic(startIdx=Space.low, targetLocales=OneLocOnly);
 
 writeln("Cyclic comparisons:");
 
-writeln(C1.dist == C1.dist);
-writeln(C1.dist == C2.dist); // tricky, but equal on 2x2 locales since 3==1, mod 2
+writeln(C1.distribution == C1.distribution);
+writeln(C1.distribution == C2.distribution); // tricky, but equal on 2x2 locales since 3==1, mod 2
 
-writeln(C1.dist == C3.dist);
-writeln(C1.dist == C4.dist);
+writeln(C1.distribution == C3.distribution);
+writeln(C1.distribution == C4.distribution);
 
-writeln(C2.dist == C2.dist);
-writeln(C2.dist == C3.dist);
-writeln(C2.dist == C4.dist);
+writeln(C2.distribution == C2.distribution);
+writeln(C2.distribution == C3.distribution);
+writeln(C2.distribution == C4.distribution);
 
-writeln(C3.dist == C3.dist);
-writeln(C3.dist == C4.dist);
+writeln(C3.distribution == C3.distribution);
+writeln(C3.distribution == C4.distribution);
 
-writeln(C4.dist == C4.dist);
+writeln(C4.distribution == C4.distribution);
 
-writeln(C1.dist == (Space dmapped Cyclic(startIdx=Space.low)).dist);
+writeln(C1.distribution == (Space dmapped Cyclic(startIdx=Space.low)).distribution);
 
 writeln();
 
@@ -65,22 +65,22 @@ const BC4 = Space dmapped BlockCyclic(startIdx=Space.low,
 
 writeln("Block-Cyclic comparisons:");
 
-writeln(BC1.dist == BC1.dist);
-writeln(BC1.dist == BC2.dist);
-writeln(BC1.dist == BC3.dist);
-writeln(BC1.dist == BC4.dist);
+writeln(BC1.distribution == BC1.distribution);
+writeln(BC1.distribution == BC2.distribution);
+writeln(BC1.distribution == BC3.distribution);
+writeln(BC1.distribution == BC4.distribution);
 
-writeln(BC2.dist == BC2.dist);
-writeln(BC2.dist == BC3.dist);
-writeln(BC2.dist == BC4.dist);
+writeln(BC2.distribution == BC2.distribution);
+writeln(BC2.distribution == BC3.distribution);
+writeln(BC2.distribution == BC4.distribution);
 
-writeln(BC3.dist == BC3.dist);
-writeln(BC3.dist == BC4.dist);
+writeln(BC3.distribution == BC3.distribution);
+writeln(BC3.distribution == BC4.distribution);
 
-writeln(BC4.dist == BC4.dist);
+writeln(BC4.distribution == BC4.distribution);
 
-writeln(BC1.dist == (Space dmapped BlockCyclic(startIdx=Space.low,
-                                          blocksize=(2,3))).dist);
+writeln(BC1.distribution == (Space dmapped BlockCyclic(startIdx=Space.low,
+                                          blocksize=(2,3))).distribution);
 
 writeln();
 
@@ -92,9 +92,9 @@ const R2 = Space dmapped Replicated(targetLocales=OneLocOnly1D);
 
 writeln("Replicated comparisons:");
 
-writeln(R1.dist == R1.dist);
-writeln(R1.dist == R2.dist);
+writeln(R1.distribution == R1.distribution);
+writeln(R1.distribution == R2.distribution);
 
-writeln(R2.dist == R2.dist);
+writeln(R2.distribution == R2.distribution);
 
-writeln(R2.dist == (Space dmapped Replicated(targetLocales=OneLocOnly1D)).dist);
+writeln(R2.distribution == (Space dmapped Replicated(targetLocales=OneLocOnly1D)).distribution);

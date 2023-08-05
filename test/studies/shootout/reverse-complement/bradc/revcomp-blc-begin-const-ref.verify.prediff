@@ -1,0 +1,5 @@
+#!/bin/bash
+
+sed -i '' -r "s/MAI-CHE-CKS-[0-9]+/MAI-CHE-CKS-nnnn/g" $2
+sed -i '' -r "s/chpl version .*/chpl version mmmm/g" $2
+perl -pi -e 'chomp if eof' $2

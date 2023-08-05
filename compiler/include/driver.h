@@ -289,6 +289,8 @@ extern bool fIncrementalCompilation;
 
 // LLVM flags (-mllvm)
 extern std::string llvmFlags;
+extern std::string llvmRemarksFilters;
+extern std::vector<std::string> llvmRemarksFunctionsToShow;
 
 extern bool fPrintAdditionalErrors;
 

@@ -504,8 +504,9 @@ a matching identifier is found:
 ``:var:``
 ``:param:``
 ``:type:``
+``:enum:``
 
-    Reference a module-level variable, constant, compiler param, or type.
+    Reference a module-level variable, constant, compiler param, type, or enum.
 
 ``:class:``
 ``:record:``

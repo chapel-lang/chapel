@@ -1,0 +1,25 @@
+implicit-numeric-to-int-qw-etc.chpl:31: warning: deprecated use of implicit conversion when passing to a generic formal
+implicit-numeric-to-int-qw-etc.chpl:31: note: actual with type 'bool'
+implicit-numeric-to-int-qw-etc.chpl:5: note: is passed to formal with type 'int(?w)'
+note: consider adding a cast to 'int(64)' or an overload to handle 'bool'
+implicit-numeric-to-int-qw-etc.chpl:32: warning: deprecated use of implicit conversion when passing to a generic formal
+implicit-numeric-to-int-qw-etc.chpl:32: note: actual with type 'bool'
+implicit-numeric-to-int-qw-etc.chpl:8: note: is passed to formal with type 'uint(?w)'
+note: consider adding a cast to 'uint(64)' or an overload to handle 'bool'
+implicit-numeric-to-int-qw-etc.chpl:33: warning: deprecated use of implicit conversion when passing to a generic formal
+implicit-numeric-to-int-qw-etc.chpl:33: note: actual with type 'int(64)'
+implicit-numeric-to-int-qw-etc.chpl:11: note: is passed to formal with type 'real(?w)'
+note: consider adding a cast to 'real(64)' or an overload to handle 'int(64)'
+implicit-numeric-to-int-qw-etc.chpl:34: warning: deprecated use of implicit conversion when passing to a generic formal
+implicit-numeric-to-int-qw-etc.chpl:34: note: actual with type 'int(64)'
+implicit-numeric-to-int-qw-etc.chpl:17: note: is passed to formal with type 'complex(?w)'
+note: consider adding a cast to 'complex(128)' or an overload to handle 'int(64)'
+in intq(int(64))
+in uintq(uint(64))
+in realq(real(64))
+in imagq(imag(64))
+in complexq(complex(128))
+in intq(int(64))
+in uintq(uint(64))
+in realq(real(64))
+in complexq(complex(128))

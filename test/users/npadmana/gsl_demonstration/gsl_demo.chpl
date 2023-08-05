@@ -96,7 +96,7 @@ gsl_spline_free(sp);
 record Payload {
   var alpha : real;
 }
-export proc func1(x : real, p : c_void_ptr) : real {
+export proc func1(x : real, p : c_ptr(void)) : real {
   var r = (p : c_ptr(Payload)).deref();
   return log(r.alpha*x)/sqrt(x);
 }

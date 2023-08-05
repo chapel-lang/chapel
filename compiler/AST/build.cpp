@@ -813,7 +813,7 @@ BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body) {
 void
 checkIndices(BaseAST* indices) {
   if (CallExpr* call = toCallExpr(indices)) {
-    if (!call->isNamed("_build_tuple") || call->numActuals() == 0)
+    if (!call->isNamedAstr(astrBuildTuple) || call->numActuals() == 0)
       USR_FATAL(indices, "invalid index expression");
     for_actuals(actual, call)
       checkIndices(actual);
@@ -853,7 +853,7 @@ static Expr* destructureIndicesAfter(Expr* insertAfter,
                                      Expr* init,
                                      bool coforall) {
   if (CallExpr* call = toCallExpr(indices)) {
-    if (call->isNamed("_build_tuple")) {
+    if (call->isNamedAstr(astrBuildTuple)) {
       int i = 0;
 
       // Add checks that the index has tuple type of the right shape.

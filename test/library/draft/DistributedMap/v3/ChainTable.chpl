@@ -32,6 +32,17 @@ module ChainTable {
       this.numEntries.write(0);
     }
 
+    proc init=(other: chainTable) {
+      this.keyType = other.keyType;
+      this.valType = other.valType;
+      this.numBuckets = other.numBuckets;
+      this.numEntries = other.numEntries.read();
+      this.numStaticManagers = other.numStaticManagers.read();
+      this.isRehashing = other.isRehashing.read();
+      this.bucketDom = other.bucketDom;
+      this.buckets = other.buckets;
+    }
+
     // determine if the map has an entry for the given key
     //  if so, return (true, bucket index, index within the bucket)
     //  otherwise, return (false, bucket index, 0)

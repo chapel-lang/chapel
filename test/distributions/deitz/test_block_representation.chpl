@@ -6,7 +6,7 @@ var A: [{1..4, 1..4} dmapped Block(boundingBox={1..4,1..4},
 
 writeln("Distribution Representation");
 writeln();
-A.domain.dist.displayRepresentation();
+A.domain.distribution.displayRepresentation();
 
 writeln();
 writeln("Domain");

@@ -2,6 +2,7 @@ use CTypes;
 use GpuDiagnostics;
 use GPU;
 use Time;
+use Math;
 
 // This test implements matrix transpose operations based on the following example:
 //
@@ -115,45 +116,58 @@ inline proc transposeLowLevel(original, output) {
           /* kernel args */ c_ptrTo(output), c_ptrTo(original), sizeX, sizeY);
 }
 
-on here.gpus[0] {
-  var original: [0..#sizeX, 0..#sizeY] dataType;
-  var output: [0..#sizeY, 0..#sizeY] dataType;
+var originalHost: [0..#sizeX, 0..#sizeY] dataType;
+var outputHost: [0..#sizeY, 0..#sizeX] dataType;
+forall (a, (x,y)) in zip(originalHost, originalHost.domain) {
+  a = x*sizeY + y;
+}
 
-  for (a, (x,y)) in zip(original, original.domain) {
-    a = x*sizeY + y;
-  }
+var timer: stopwatch;
+
+
+on here.gpus[0] {
+  var originalDev: [0..#sizeX, 0..#sizeY] dataType;
+  var outputDev: [0..#sizeY, 0..#sizeX] dataType;
+
+  originalDev = originalHost;
 
   // Make sure a is on device if we're using unified memory.
-  foreach a in original do a = a + 1;
+  foreach a in originalDev do a = a + 1;
 
-  var timer: stopwatch;
   for 1..#numTrials {
     timer.start();
     select impl {
-      when naive do transposeNaive(original, output);
-      when clever do transposeClever(original, output);
-      when lowlevel do transposeLowLevel(original, output);
+      when naive do transposeNaive(originalDev, outputDev);
+      when clever do transposeClever(originalDev, outputDev);
+      when lowlevel do transposeLowLevel(originalDev, outputDev);
     }
     timer.stop();
   }
-  var elapsed = timer.elapsed() / numTrials;
 
-  var sizeInBytes = original.size * numBytes(dataType);
-  var sizeInGb = sizeInBytes / (1000.0 * 1000.0 * 1000.0);
-  var gbPerSec = sizeInGb / elapsed;
-  if perftest {
-    writeln("Wall clock time (s): ", elapsed);
-    writeln("Performance (GB/s): ", gbPerSec);
-  }
-
-  var passed = true;
-  for (x,y) in original.domain {
-    if original[x,y] != output[y,x] {
-      writeln("Incorrect output at ", (x,y),
-              ". Expected ", original[x,y],
-              ", got ", output[y,x]);
-      passed = false;
-    }
-  }
-  writeln(if passed then "Passed" else "Failed");
+  outputHost = outputDev;
 }
+
+var elapsed = timer.elapsed() / numTrials;
+
+if perftest {
+var sizeInBytes = originalHost.size * numBytes(dataType);
+  writeln("Wall clock time (s): ", elapsed);
+  var sizeInGb = sizeInBytes / (1000.0 * 1000.0 * 1000.0);
+  var gibPerSec = sizeInGb / elapsed;
+  // GiB/s is the precise metric here. However, GB/s can be used interchangably
+  // and that's how we started testing. Changing it confuses the test system.
+  // Note that we report this as GiB/s in the relevant plot.
+  writeln("Performance (GB/s): ", gibPerSec);
+}
+
+var passed = true;
+for (x,y) in originalHost.domain {
+  // -1 because we incremented the input once as a warmup
+  if !isClose(originalHost[x,y], outputHost[y,x]-1) {
+    writeln("Incorrect output at ", (x,y),
+            ". Expected ", originalHost[x,y],
+            ", got ", outputHost[y,x]);
+    passed = false;
+  }
+}
+writeln(if passed then "Passed" else "Failed");

@@ -508,8 +508,7 @@ static void checkPathAllChildren(Context* context,
                                  const AstNode* ast,
                                  UniqueString expectPath) {
   UniqueString gotPath;
-  UniqueString gotParentSymbolPath;
-  bool found = context->filePathForId(ast->id(), gotPath, gotParentSymbolPath);
+  bool found = context->filePathForId(ast->id(), gotPath);
   assert(found);
   assert(gotPath == expectPath);
 

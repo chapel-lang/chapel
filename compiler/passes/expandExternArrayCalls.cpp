@@ -51,13 +51,13 @@
 //      chpl__extern_array_print_array(c_ptrTo(x), n);
 //    }
 //
-// If no element type is specified for the array a c_void_ptr will be used. If
+// If no element type is specified for the array a c_ptr(void) will be used. If
 // we leave out the element type in the example above the result would be:
 //
-//    extern proc chpl__extern_array_print_array(x: c_void_ptr, n: int);
+//    extern proc chpl__extern_array_print_array(x: c_ptr(void), n: int);
 //
 //    inline proc print_array(x: [], n: int) {
-//      chpl__extern_array_print_array((c_ptrTo(x)):c_void_ptr, n);
+//      chpl__extern_array_print_array((c_ptrTo(x)):c_ptr(void), n);
 //    }
 
 bool ExpandExternArrayCalls::shouldProcess(FnSymbol* fn) {
@@ -93,7 +93,8 @@ void ExpandExternArrayCalls::process(FnSymbol* fn) {
           new BlockStmt(
             new CallExpr("c_ptr", eltType->remove())));
     } else {
-      // generic arrays are replaced with 'c_void_ptr'
+      // generic arrays are replaced with 'raw_c_void_ptr'
+      // TODO: use c_ptr(void) instead of raw version
       SET_LINENO(formal);
       formal->typeExpr->replace(
           new BlockStmt(

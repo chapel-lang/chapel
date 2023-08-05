@@ -246,11 +246,12 @@ module DistributedDeque {
   @chpldoc.nodoc
   class DistributedDequeCounter {
     var _value : atomic int;
+    proc init() {}
 
     forwarding _value;
   }
 
-  class DistributedDequeImpl : CollectionImpl {
+  class DistributedDequeImpl : CollectionImpl(?) {
     /*
       Capacity, the maximum number of elements a Deque can hold. A `cap` of -1 is
       considered unbounded.
@@ -871,6 +872,10 @@ module DistributedDeque {
     // The size of a segment. This is used as both a means of knowing when an element
     // gets added, as well as a barrier to prevent the head and tail from being cached.
     var size : atomic int;
+
+    proc init(type eltType) {
+      this.eltType = eltType;
+    }
 
     inline proc recycleNode() {
       // If we have cached a previous used node, reuse it here...

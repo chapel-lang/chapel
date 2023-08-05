@@ -1315,8 +1315,12 @@ class CCodeGenConsumer final : public ASTConsumer {
 
     bool shouldHandleDecl(Decl* d) {
       if (gCodegenGPU) {
-        //this decl must have __device__
-        return d->hasAttr<CUDADeviceAttr>();
+        // this decl must have __device__ and it must be explicit (for some
+        // reason odd reason, with AMD code generation we see am implicit use of
+        // __device__ on some math functions in the C stdlib that really aren't
+        // supposed to have them and this causes linker issues later on).
+        return d->hasAttr<CUDADeviceAttr>() &&
+          !d->getAttr<CUDADeviceAttr>()->isImplicit();
       }
       else {
         // this decl either doesn't have __device__, or if it has, it also has a
@@ -1794,7 +1798,9 @@ void setupClang(GenInfo* info, std::string mainFile)
     }
 
     std::vector<const char*> Args;
-    Args.push_back("chpl-llvm-opts");
+    Args.push_back("chpl --mllvm"); // pretend this is the name of the program
+                                    // so it shows 'chpl --mllvm --help'
+                                    // if the option was not recognized
     for (auto & i : vec) {
       Args.push_back(i.c_str());
     }
@@ -2456,9 +2462,7 @@ void prepareCodegenLLVM()
     // --ieee-float
     FM.setAllowContract(true);
   }
-  if (gCodegenGPU == false) {
-    info->irBuilder->setFastMathFlags(FM);
-  }
+  info->irBuilder->setFastMathFlags(FM);
 
   checkAdjustedDataLayout();
 
@@ -2630,17 +2634,16 @@ static void helpComputeClangArgs(std::string& clangCC,
   // when compiling the code in Chapel 'extern' blocks will play well
   // with our backend.
   const char* clangRequiredWarningFlags[] = {
-    "-Wall",
-    "-Werror",
-    "-Wpointer-arith",
-    "-Wwrite-strings",
-    "-Wno-strict-aliasing",
-    "-Wmissing-declarations",
-    "-Wmissing-prototypes",
-    "-Wstrict-prototypes",
-    "-Wmissing-format-attribute",
+    "-Werror=pointer-arith",
+    "-Werror=write-strings",
+    "-Werror=missing-declarations",
+    "-Werror=missing-prototypes",
+    "-Werror=strict-prototypes",
+    "-Werror=missing-format-attribute",
     // clang can't tell which functions we use
     "-Wno-unused-function",
+    // Chapel C backend normally throws this
+    "-Wno-strict-aliasing",
     NULL};
 
   const char* clang_debug = "-g";
@@ -3668,7 +3671,7 @@ static clang::CanQualType getClangType(::Type* t, bool makeRef) {
 
   if (t == dtVoid || t == dtNothing)
     return Ctx->VoidTy;
-  // could match other builtin types like c_void_ptr or c_int here
+  // could match other builtin types like c_int here
 
   clang::TypeDecl* cTypeDecl = NULL;
   clang::ValueDecl* cValueDecl = NULL;
@@ -4239,6 +4242,11 @@ static void linkGpuDeviceLibraries() {
   // save external functions
   std::set<std::string> externals;
   for (auto it = info->module->begin() ; it!= info->module->end() ; ++it) {
+    if (it->hasExternalLinkage()) {
+      externals.insert(it->getGlobalIdentifier());
+    }
+  }
+  for (auto it = info->module->global_begin() ; it!= info->module->global_end() ; ++it) {
     if (it->hasExternalLinkage()) {
       externals.insert(it->getGlobalIdentifier());
     }

@@ -1,0 +1,7 @@
+listParSafe.chpl:4: warning: 'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future
+listParSafe.chpl:5: warning: 'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future
+listParSafe.chpl:6: warning: 'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future
+listParSafe.chpl:7: warning: 'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future
+listParSafe.chpl:9: warning: 'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future
+listParSafe.chpl:14: warning: 'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future
+parSafe
