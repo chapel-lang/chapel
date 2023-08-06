@@ -607,7 +607,7 @@ proc SparseBlockDom.dsiGetDist() {
   if _isPrivatized(dist) then
     return new Block(dist.pid, dist, _unowned=true);
   else
-    return new Block(nullPid, dist, _unonwned=true);
+    return new Block(nullPid, dist, _unowned=true);
 }
 
 /*
