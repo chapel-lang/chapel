@@ -54,8 +54,8 @@ chpl_bool chpl_mem_size_justifies_comm_alloc(size_t size) {
 static inline
 void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize,
                            c_sublocid_t subloc, chpl_bool* callPostAlloc,
-                           int32_t lineno, int32_t filename,
-                           chpl_bool haltOnOom) {
+                           chpl_bool haltOnOom,
+                           int32_t lineno, int32_t filename) {
   void* p = NULL;
   const size_t size = nmemb * eltSize;
 #if defined(HAS_GPU_LOCALE) && !defined(GPU_RUNTIME_CPU)
