@@ -104,7 +104,7 @@ static void addLoopRVMetadata(std::vector<llvm::Metadata*>& args) {
 static llvm::Metadata* constructLLVMMetadata(LLVMMetadataPtr attr) {
   GenInfo* info = gGenInfo;
   auto &ctx = info->module->getContext();
-  
+
   llvm::MDString* key = llvm::MDString::get(ctx, attr->key);
   if (attr->kind == LAT_NO_VALUE) {
     llvm::Metadata *metaArray[] = {key};
@@ -146,7 +146,7 @@ static llvm::Metadata* constructLLVMMetadata(LLVMMetadataPtr attr) {
 // Returns the loop metadata node to associate with the branch.
 // If thisLoopParallelAccess is set, accessGroup will be set to the
 // metadata node to use in llvm.access.group metadata for this loop.
-static llvm::MDNode* generateLoopMetadata(LoopStmt* loop, 
+static llvm::MDNode* generateLoopMetadata(LoopStmt* loop,
                                           bool thisLoopParallelAccess,
                                           llvm::MDNode*& accessGroup)
 {

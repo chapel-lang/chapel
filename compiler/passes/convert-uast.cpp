@@ -325,7 +325,7 @@ struct Converter {
       return LLVMMetadata::construct(attrName);
     } else {
       auto attrVal = node->actual(1);
-      
+
       if (auto str = attrVal->toStringLiteral())
         return LLVMMetadata::constructString(attrName, str->value().astr(context));
       else if (auto int_ = attrVal->toIntLiteral())
@@ -351,7 +351,7 @@ struct Converter {
     return nullptr;
     }
   }
-  
+
   LLVMMetadataList buildLLVMMetadataList(const uast::AttributeGroup* node) {
     LLVMMetadataList llvmAttrs;
     if(!node) return llvmAttrs;
