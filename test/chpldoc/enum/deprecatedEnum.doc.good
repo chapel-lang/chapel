@@ -55,7 +55,6 @@ or
 
    There was documentation of this symbol 
 
-
    .. warning::
 
       atomicSymbols is deprecated
@@ -69,7 +68,6 @@ or
 .. enum:: enum monsters { vampire, werewolf, ghost }
 
    This symbol also was documented 
-
 
    .. warning::
 
@@ -85,7 +83,6 @@ or
 
    Truncated Frankenstein's monster 
 
-
    .. enumconstant:: enum constant Frankenstein
 
    .. enumconstant:: enum constant Wolfman
@@ -97,7 +94,6 @@ or
 .. enum:: enum directions { north, south, east, west }
 
    This symbol is deprecated 
-
 
    .. enumconstant:: enum constant north
 
@@ -111,7 +107,6 @@ or
 
    This symbol is also deprecated, please use bones instead 
 
-
    .. enumconstant:: enum constant head
 
    .. enumconstant:: enum constant shoulders
@@ -123,7 +118,6 @@ or
 .. enum:: enum bones { tibia, fibia, skull, rib, kneecap }
 
    Replaces the deprecated bodyParts 
-
 
    .. enumconstant:: enum constant tibia
 
