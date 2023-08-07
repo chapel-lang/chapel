@@ -33,19 +33,6 @@ cmake-build-*/
 /lib
 /tar
 
-# Compiler ignores.
-/compiler/BROWSE
-/compiler/chpl
-/compiler/codegen/reservedSymbolNames.h
-/compiler/ifa/prim_data.cpp
-/compiler/ifa/prim_data.h
-/compiler/ifa/make_prims/make_prims
-/compiler/ifa/make_prims/cygwin
-/compiler/main/BUILD_VERSION
-/compiler/main/COPYRIGHT
-/compiler/main/LICENSE
-/compiler/parser/bison-chapel.output
-
 # Doc ignores.
 /doc/**/*.aux
 /doc/**/*.log

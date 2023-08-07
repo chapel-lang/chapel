@@ -1,0 +1,7 @@
+# Compiler ignores.
+/BROWSE
+/chpl
+/ifa/prim_data.cpp
+/ifa/prim_data.h
+/ifa/make_prims/make_prims
+/ifa/make_prims/cygwin
