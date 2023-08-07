@@ -1719,7 +1719,7 @@ private proc initHelper(ref f: file, fp, hints=ioHintSet.empty,
   }
 }
 
-@deprecated("initializing a file with a 'style' argument is deprecated. Please use Serializers or Deserializers when creating fileReaders or fileWriters instead.")
+@deprecated("initializing a file with a 'style' argument is deprecated")
 proc file.init(fp: ?t, hints=ioHintSet.empty, style:iostyle,
                own=false) throws where t == chpl_cFilePtr || t == c_ptr(chpl_cFile) {
   // TODO: when the c_FILE behavior-change deprecation is complete,
@@ -4452,7 +4452,7 @@ proc openreader(path:string,
 }
 
 
-@deprecated("openReader with a 'style' argument is deprecated, please use Deserializers instead")
+@deprecated("openReader with a 'style' argument is deprecated, please use a Deserializer with the 'deserializer' argument instead")
 proc openReader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
@@ -4610,7 +4610,7 @@ proc openwriter(path:string,
   return openWriter(path, kind, locking, start, end, hints, style);
 }
 
-@deprecated("openWriter with a 'style' argument is deprecated, please use Serializers instead")
+@deprecated("openWriter with a 'style' argument is deprecated, please use a Serializer with the 'serializer' argument instead")
 proc openWriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
@@ -4708,7 +4708,7 @@ private proc openWriterHelper(path:string,
   return try fl.writerHelper(kind, locking, start..end, hints, style, serializer=serializer);
 }
 
-@deprecated("reader with a 'style' argument is deprecated, please use Deserializers instead")
+@deprecated("reader with a 'style' argument is deprecated, please use a Deserializer with the 'deserializer' argument instead")
 proc file.reader(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  hints=ioHintSet.empty,
@@ -4859,7 +4859,7 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
   return ret;
 }
 
-@deprecated("lines with a local_'style' argument is deprecated")
+@deprecated("lines with a 'local_style' argument is deprecated")
 proc file.lines(param locking:bool = true, start:int(64) = 0,
                 end:int(64) = max(int(64)), hints=ioHintSet.empty,
                 in local_style:iostyle) throws {
@@ -4946,7 +4946,7 @@ proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
   return ret;
 }
 
-@deprecated("writer with a 'style' argument is deprecated, please use Serializers instead")
+@deprecated("writer with a 'style' argument is deprecated, please use a Serializer with the 'serializer' argument instead")
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  hints=ioHintSet.empty, style:iostyle):

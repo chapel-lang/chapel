@@ -1,3 +1,3 @@
-iostringformat.chpl:1: warning: iostringformat is unstable and will eventually be replaced
-iostringformat.chpl:3: warning: iostringformat is unstable and will eventually be replaced
-iostringformat.chpl:3: warning: iostringformat is unstable and will eventually be replaced
+iostringformat.chpl:1: warning: iostringformat is deprecated, please use Serializers or Deserializers instead
+iostringformat.chpl:3: warning: iostringformat is deprecated, please use Serializers or Deserializers instead
+iostringformat.chpl:3: warning: iostringformat is deprecated, please use Serializers or Deserializers instead

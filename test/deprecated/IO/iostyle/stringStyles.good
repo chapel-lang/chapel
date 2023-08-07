@@ -1,5 +1,5 @@
-stringStyles.chpl:3: warning: stringStyleTerminated is unstable because it supports the unstable type 'iostyle'
-stringStyles.chpl:4: warning: stringStyleNullTerminated is unstable because it supports the unstable type 'iostyle'
-stringStyles.chpl:5: warning: stringStyleExactLen is unstable because it supports the unstable type 'iostyle'
-stringStyles.chpl:6: warning: stringStyleWithVariableLength is unstable because it supports the unstable type 'iostyle'
-stringStyles.chpl:7: warning: stringStyleWithLength is unstable because it supports the unstable type 'iostyle'
+stringStyles.chpl:3: warning: stringStyleTerminated is deprecated following the deprecation of 'iostyle', please use Serializers or Deserializers instead
+stringStyles.chpl:4: warning: stringStyleNullTerminated is deprecated following the deprecation of 'iostyle', please use Serializers or Deserializers instead
+stringStyles.chpl:5: warning: stringStyleExactLen is deprecated following the deprecation of 'iostyle', please use Serializers or Deserializers instead
+stringStyles.chpl:6: warning: stringStyleWithVariableLength is deprecated following the deprecation of 'iostyle', please use Serializers or Deserializers instead
+stringStyles.chpl:7: warning: stringStyleWithLength is deprecated following the deprecation of 'iostyle', please use Serializers or Deserializers instead

@@ -1,2 +1,2 @@
-openReaderWriter.chpl:5: warning: openWriter with a style argument is unstable
-openReaderWriter.chpl:7: warning: openReader with a style argument is unstable
+openReaderWriter.chpl:5: warning: openWriter with a 'style' argument is deprecated, please use a Serializer with the 'serializer' argument instead
+openReaderWriter.chpl:7: warning: openReader with a 'style' argument is deprecated, please use a Deserializer with the 'deserializer' argument instead
