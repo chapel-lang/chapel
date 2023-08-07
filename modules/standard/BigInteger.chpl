@@ -247,6 +247,23 @@ module BigInteger {
       this.localeId = chpl_nodeID;
     }
 
+    proc init(const ref x: bigint) {
+      this.complete();
+      if compiledForSingleLocale() || x.localeId == chpl_nodeID {
+        mpz_init_set(this.mpz, x.mpz);
+      } else {
+        var mpz_struct = x.getImpl();
+
+        mpz_init(this.mpz);
+
+        chpl_gmp_get_mpz(this.mpz, x.localeId, mpz_struct);
+      }
+
+      this.localeId = chpl_nodeID;
+    }
+
+    pragma "last resort"
+    @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
     proc init(const ref num: bigint) {
       this.complete();
       if compiledForSingleLocale() || num.localeId == chpl_nodeID {
@@ -262,10 +279,17 @@ module BigInteger {
       this.localeId = chpl_nodeID;
     }
 
-    proc init=(const ref num: bigint) {
-      this.init(num);
+    proc init=(const ref x: bigint) do this.init(x);
+
+    proc init(x: int) {
+      this.complete();
+      mpz_init_set_si(this.mpz, x.safeCast(c_long));
+
+      this.localeId = chpl_nodeID;
     }
 
+    pragma "last resort"
+    @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
     proc init(num: int) {
       this.complete();
       mpz_init_set_si(this.mpz, num.safeCast(c_long));
@@ -273,6 +297,15 @@ module BigInteger {
       this.localeId = chpl_nodeID;
     }
 
+    proc init(x: uint) {
+      this.complete();
+      mpz_init_set_ui(this.mpz, x.safeCast(c_ulong));
+
+      this.localeId = chpl_nodeID;
+    }
+
+    pragma "last resort"
+    @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
     proc init(num: uint) {
       this.complete();
       mpz_init_set_ui(this.mpz, num.safeCast(c_ulong));
@@ -280,9 +313,7 @@ module BigInteger {
       this.localeId = chpl_nodeID;
     }
 
-    proc init=(num : integral) {
-      this.init(num);
-    }
+    proc init=(x : integral) do this.init(x);
 
     @deprecated(notes="bigint initializers that halt are deprecated, please set the config param :param:`bigintInitThrows` to 'true' to opt in to using the new initializer that throws")
     proc init(str: string, base: int = 0) where bigintInitThrows == false {
@@ -321,6 +352,39 @@ module BigInteger {
        to use with the string.  If the string is not a correct base ``base``
        number, will throw a :type:`~OS.BadFormatError`.
 
+       :arg x: The value to be stored in the resulting :type:`bigint`.
+       :type x: :type:`~String.string`
+
+       :arg base: The base to use when creating the :type:`bigint` from ``x``.
+                  May vary from ``2`` to ``62`` or be ``0``.  Defaults to ``0``,
+                  which causes the base to be read from the start of the ``x``
+                  itself (``0x`` and ``0X`` will give hexadecimal, ``0b`` and
+                  ``0B`` will give binary, ``0`` will give octal, and everything
+                  else will be interpreted as decimal).
+       :type base: `int`
+
+       :throws BadFormatError: Thrown when ``x`` is not a correctly formatted
+                               number in base ``base``.
+
+     */
+    proc init(x: string, base: int = 0) throws where bigintInitThrows == true {
+      this.complete();
+      const ref x_ = x.localize().c_str();
+      const base_ = base.safeCast(c_int);
+
+      if mpz_init_set_str(this.mpz, x_, base_) != 0 {
+        mpz_clear(this.mpz);
+
+        throwingInitWorkaround();
+      }
+
+      this.localeId = chpl_nodeID;
+    }
+
+    /* Initialize a :type:`bigint` from a string and optionally a provided base
+       to use with the string.  If the string is not a correct base ``base``
+       number, will throw a :type:`~OS.BadFormatError`.
+
        :arg str: The value to be stored in the resulting :type:`bigint`.
        :type str: `string`
 
@@ -336,6 +400,8 @@ module BigInteger {
                                number in base ``base``.
 
      */
+    pragma "last resort"
+    @deprecated("the argument name 'str' is deprecated - please use 'x' instead")
     proc init(str: string, base: int = 0) throws where bigintInitThrows == true {
       this.complete();
       const ref str_ = str.localize().c_str();
@@ -1030,18 +1096,18 @@ module BigInteger {
   // Comparison Operations
   //
 
-  private inline proc cmp(const ref a: bigint, const ref b: bigint)
-    do return a.cmp(b);
+  private inline proc cmp(const ref x: bigint, const ref y: bigint)
+    do return x.cmp(y);
 
-  private inline proc cmp(const ref a: bigint, b: int)
-    do return a.cmp(b);
-  private inline proc cmp(const ref a: bigint, b: uint)
-    do return a.cmp(b);
+  private inline proc cmp(const ref x: bigint, y: int)
+    do return x.cmp(y);
+  private inline proc cmp(const ref x: bigint, y: uint)
+    do return x.cmp(y);
 
-  private inline proc cmp(a: int, const ref b: bigint)
-    do return 0 - (b.cmp(a));
-  private inline proc cmp(a: uint, const ref b: bigint)
-    do return 0 - (b.cmp(a));
+  private inline proc cmp(x: int, const ref y: bigint)
+    do return 0 - (y.cmp(x));
+  private inline proc cmp(x: uint, const ref y: bigint)
+    do return 0 - (y.cmp(x));
 
 
   // Equality
@@ -1987,24 +2053,29 @@ module BigInteger {
   }
 
   // Root Extraction Functions
-  proc root(ref result: bigint, const ref a: bigint, n: uint) : int {
-    const n_  = n.safeCast(c_ulong);
+  proc root(ref result: bigint, const ref x: bigint, n: uint) : int {
+    const n_ = n.safeCast(c_ulong);
     var   ret: c_int;
 
     if compiledForSingleLocale() {
-      ret = mpz_root(result.mpz, a.mpz, n_);
+      ret = mpz_root(result.mpz, x.mpz, n_);
     } else if result.localeId == chpl_nodeID {
-      const a_ = a;
-      ret = mpz_root(result.mpz, a_.mpz, n_);
+      const x_ = x;
+      ret = mpz_root(result.mpz, x_.mpz, n_);
     } else {
       const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
       on __primitive("chpl_on_locale_num", resultLoc) {
-        const a_ = a;
-        ret = mpz_root(result.mpz, a_.mpz, n_);
+        const x_ = x;
+        ret = mpz_root(result.mpz, x_.mpz, n_);
       }
     }
     return ret.safeCast(int);
   }
+
+  pragma "last resort"
+  @deprecated("the argument name 'a' is deprecated - please use 'x' instead")
+  proc root(ref result: bigint, const ref a: bigint, n: uint) : int
+    do return root(result, a, n);
 
   @deprecated(notes="bigint.root method is deprecated - please use the standalone function :proc:`~BigInteger.root`")
   proc bigint.root(const ref a: bigint, n: uint) : int {
@@ -2056,20 +2127,25 @@ module BigInteger {
   proc bigint.rootrem(ref rem: bigint, const ref u: bigint, n: uint)
     do BigInteger.rootRem(this, rem, u, n);
 
-  proc sqrt(ref result: bigint, const ref a: bigint) {
+  proc sqrt(ref result: bigint, const ref x: bigint) {
     if compiledForSingleLocale() {
-      mpz_sqrt(result.mpz, a.mpz);
+      mpz_sqrt(result.mpz, x.mpz);
     } else if result.localeId == chpl_nodeID {
-      const a_ = a;
-      mpz_sqrt(result.mpz, a_.mpz);
+      const x_ = x;
+      mpz_sqrt(result.mpz, x_.mpz);
     } else {
       const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
       on __primitive("chpl_on_locale_num", resultLoc) {
-        const a_ = a;
-        mpz_sqrt(result.mpz, a_.mpz);
+        const x_ = x;
+        mpz_sqrt(result.mpz, x_.mpz);
       }
     }
   }
+
+  pragma "last resort"
+  @deprecated("the argument name 'a' is deprecated - please use 'x' instead")
+  proc sqrt(ref result: bigint, const ref a: bigint)
+    do sqrt(result, a);
 
   @deprecated(notes="bigint.sqrt method is deprecated - please use the standalone function :proc:`~BigInteger.sqrt`")
   proc bigint.sqrt(const ref a: bigint) {
@@ -2525,6 +2601,46 @@ module BigInteger {
     }
   }
 
+  /* Set the value of ``result`` to the inverse of ``x`` modulo ``y``
+
+     .. note::
+        If an inverse does not exist, an :class:`InversionError` will be thrown,
+        and the value of ``result`` will be left undefined
+
+     This fulfills the same role as the GMP number theoretic function ``mpz_invert``.
+
+     :arg result: Where the result is stored
+     :type result: :record:`bigint`
+
+     :arg x: The dividend of the modulo operation
+     :type x: :record:`bigint`
+
+     :arg y: The divisor of the modulo operation
+     :type y: :record:`bigint`
+
+  */
+  proc invert(ref result: bigint, const ref x: bigint, const ref y: bigint) throws {
+    var ret: c_int;
+    if compiledForSingleLocale() {
+      ret = mpz_invert(result.mpz, x.mpz, y.mpz);
+    } else if result.localeId == chpl_nodeID {
+      const x_ = x;
+      const y_ = y;
+      ret = mpz_invert(result.mpz, x_.mpz, y_.mpz);
+    } else {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
+        const x_ = x;
+        const y_ = y;
+        ret = mpz_invert(result.mpz, x_.mpz, y_.mpz);
+      }
+    }
+
+    if (ret.safeCast(int) == 0) {
+      throw new owned InversionError();
+    }
+  }
+
   /* Set the value of ``result`` to the inverse of ``a`` modulo ``b``
 
      .. note::
@@ -2543,27 +2659,10 @@ module BigInteger {
      :type b: :record:`bigint`
 
   */
-  proc invert(ref result: bigint, const ref a: bigint, const ref b: bigint) throws {
-    var ret: c_int;
-    if compiledForSingleLocale() {
-      ret = mpz_invert(result.mpz, a.mpz, b.mpz);
-    } else if result.localeId == chpl_nodeID {
-      const a_ = a;
-      const b_ = b;
-      ret = mpz_invert(result.mpz, a_.mpz, b_.mpz);
-    } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
-      on __primitive("chpl_on_locale_num", resultLoc) {
-        const a_ = a;
-        const b_ = b;
-        ret = mpz_invert(result.mpz, a_.mpz, b_.mpz);
-      }
-    }
-
-    if (ret.safeCast(int) == 0) {
-      throw new owned InversionError();
-    }
-  }
+  pragma "last resort"
+  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
+  proc invert(ref result: bigint, const ref a: bigint, const ref b: bigint) throws
+    do invert(result, a, b);
 
   /* Set the value of ``this`` to the inverse of ``a`` modulo ``b``
 
@@ -3284,254 +3383,292 @@ module BigInteger {
   // 5.5 Arithmetic functions
   //
 
-  proc add(ref result: bigint, const ref a: bigint, const ref b: bigint) {
+  proc add(ref result: bigint, const ref x: bigint, const ref y: bigint) {
     if compiledForSingleLocale() {
-      mpz_add(result.mpz, a.mpz, b.mpz);
+      mpz_add(result.mpz, x.mpz, y.mpz);
     }
     else if result.localeId == chpl_nodeID {
-      const a_ = a;
-      const b_ = b;
-      mpz_add(result.mpz, a_.mpz, b_.mpz);
+      const x_ = x;
+      const y_ = y;
+      mpz_add(result.mpz, x_.mpz, y_.mpz);
     } else {
       const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
       on __primitive("chpl_on_locale_num", resultLoc) {
-        const a_ = a;
-        const b_ = b;
-        mpz_add(result.mpz, a_.mpz, b_.mpz);
+        const x_ = x;
+        const y_ = y;
+        mpz_add(result.mpz, x_.mpz, y_.mpz);
       }
     }
   }
+
+  pragma "last resort"
+  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
+  proc add(ref result: bigint, const ref a: bigint, const ref b: bigint)
+    do BigInteger.add(result, a, b);
 
   @deprecated(notes="bigint.add method is deprecated - please use the standalone function :proc:`~BigInteger.add`")
-  proc bigint.add(const ref a: bigint, const ref b: bigint) {
-    BigInteger.add(this, a, b);
-  }
+  proc bigint.add(const ref a: bigint, const ref b: bigint)
+    do BigInteger.add(this, a, b);
 
-  proc add(ref result: bigint, const ref a: bigint, b: int) {
-    if b >= 0 {
-      BigInteger.add(result, a, b:uint);
+  proc add(ref result: bigint, const ref x: bigint, y: int) {
+    if y >= 0 {
+      BigInteger.add(result, x, y:uint);
     }
     else {
-      const b_ = (0 - b).safeCast(c_ulong);
+      const y_ = (0 - y).safeCast(c_ulong);
 
       if compiledForSingleLocale() {
-        mpz_sub_ui(result.mpz, a.mpz, b_);
+        mpz_sub_ui(result.mpz, x.mpz, y_);
       }
       else if result.localeId == chpl_nodeID {
-        const a_ = a;
-        mpz_sub_ui(result.mpz, a_.mpz, b_);
+        const x_ = x;
+        mpz_sub_ui(result.mpz, x_.mpz, y_);
       }
       else {
         const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
         on __primitive("chpl_on_locale_num", resultLoc) {
-          const a_ = a;
-          mpz_sub_ui(result.mpz, a_.mpz, b_);
+          const x_ = x;
+          mpz_sub_ui(result.mpz, x_.mpz, y_);
         }
       }
     }
   }
 
-  @deprecated(notes="bigint.add method is deprecated - please use the standalone function :proc:`~BigInteger.add`")
-  proc bigint.add(const ref a: bigint, b: int) {
-    BigInteger.add(this, a, b);
-  }
+  pragma "last resort"
+  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
+  proc add(ref result: bigint, const ref a: bigint, b: int)
+    do BigInteger.add(result, a, b);
 
-  proc add(ref result: bigint, const ref a: bigint, b: uint) {
-    const b_ = b.safeCast(c_ulong);
+  @deprecated(notes="bigint.add method is deprecated - please use the standalone function :proc:`~BigInteger.add`")
+  proc bigint.add(const ref a: bigint, b: int) do BigInteger.add(this, a, b);
+
+  proc add(ref result: bigint, const ref x: bigint, y: uint) {
+    const y_ = y.safeCast(c_ulong);
     if compiledForSingleLocale() {
-      mpz_add_ui(result.mpz, a.mpz, b_);
+      mpz_add_ui(result.mpz, x.mpz, y_);
     }
     else if result.localeId == chpl_nodeID {
-      const a_ = a;
-      mpz_add_ui(result.mpz, a_.mpz, b_);
+      const x_ = x;
+      mpz_add_ui(result.mpz, x_.mpz, y_);
     }
     else {
       const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
       on __primitive("chpl_on_locale_num", resultLoc) {
-        const a_ = a;
-        mpz_add_ui(result.mpz, a_.mpz, b_);
+        const x_ = x;
+        mpz_add_ui(result.mpz, x_.mpz, y_);
       }
     }
   }
+
+  pragma "last resort"
+  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
+  proc add(ref result: bigint, const ref a: bigint, b: uint)
+    do BigInteger.add(result, a, b);
 
   @deprecated(notes="bigint.add method is deprecated - please use the standalone function :proc:`~BigInteger.add`")
   proc bigint.add(const ref a: bigint, b: uint) {
     BigInteger.add(this, a, b);
   }
 
-  proc sub(ref result: bigint, const ref a: bigint, const ref b: bigint) {
+  proc sub(ref result: bigint, const ref x: bigint, const ref y: bigint) {
     if compiledForSingleLocale() {
-      mpz_sub(result.mpz, a.mpz, b.mpz);
+      mpz_sub(result.mpz, x.mpz, y.mpz);
     } else if result.localeId == chpl_nodeID {
-      const a_ = a;
-      const b_ = b;
-      mpz_sub(result.mpz, a_.mpz, b_.mpz);
+      const x_ = x;
+      const y_ = y;
+      mpz_sub(result.mpz, x_.mpz, y_.mpz);
     } else {
       const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
       on __primitive("chpl_on_locale_num", resultLoc) {
-        const a_ = a;
-        const b_ = b;
-        mpz_sub(result.mpz, a_.mpz, b_.mpz);
+        const x_ = x;
+        const y_ = y;
+        mpz_sub(result.mpz, x_.mpz, y_.mpz);
       }
     }
   }
 
-  @deprecated(notes="bigint.sub method is deprecated - please use the standalone function :proc:`~BigInteger.sub`")
-  proc bigint.sub(const ref a: bigint, const ref b: bigint) {
-    BigInteger.sub(this, a, b);
-  }
+  pragma "last resort"
+  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
+  proc sub(ref result: bigint, const ref a: bigint, const ref b: bigint)
+    do BigInteger.sub(result, a, b);
 
-  proc sub(ref result: bigint, const ref a: bigint, b: int) {
-    if b >= 0 {
-      BigInteger.sub(result, a, b:uint);
+  @deprecated(notes="bigint.sub method is deprecated - please use the standalone function :proc:`~BigInteger.sub`")
+  proc bigint.sub(const ref a: bigint, const ref b: bigint)
+    do BigInteger.sub(this, a, b);
+
+  proc sub(ref result: bigint, const ref x: bigint, y: int) {
+    if y >= 0 {
+      BigInteger.sub(result, x, y:uint);
     } else {
-      BigInteger.add(result, a, (0 - b):uint);
+      BigInteger.add(result, x, (0 - y):uint);
     }
   }
 
-  @deprecated(notes="bigint.sub method is deprecated - please use the standalone function :proc:`~BigInteger.sub`")
-  proc bigint.sub(const ref a: bigint, b: int) {
-    BigInteger.sub(this, a, b);
-  }
+  pragma "last resort"
+  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
+  proc sub(ref result: bigint, const ref a: bigint, b: int)
+    do BigInteger.sub(result, a, b);
 
-  proc sub(ref result:bigint, const ref a: bigint, b: uint) {
-    const b_ = b.safeCast(c_ulong);
+  @deprecated(notes="bigint.sub method is deprecated - please use the standalone function :proc:`~BigInteger.sub`")
+  proc bigint.sub(const ref a: bigint, b: int) do BigInteger.sub(this, a, b);
+
+  proc sub(ref result:bigint, const ref x: bigint, y: uint) {
+    const y_ = y.safeCast(c_ulong);
 
     if compiledForSingleLocale() {
-      mpz_sub_ui(result.mpz, a.mpz, b_);
+      mpz_sub_ui(result.mpz, x.mpz, y_);
     } else if result.localeId == chpl_nodeID {
-      const a_ = a;
-      mpz_sub_ui(result.mpz, a_.mpz, b_);
+      const x_ = x;
+      mpz_sub_ui(result.mpz, x_.mpz, y_);
     } else {
       const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
       on __primitive("chpl_on_locale_num", resultLoc) {
-        const a_ = a;
-        mpz_sub_ui(result.mpz, a_.mpz, b_);
+        const x_ = x;
+        mpz_sub_ui(result.mpz, x_.mpz, y_);
       }
     }
   }
 
-  @deprecated(notes="bigint.sub method is deprecated - please use the standalone function :proc:`~BigInteger.sub`")
-  proc bigint.sub(const ref a: bigint, b: uint) {
-    BigInteger.sub(this, a, b);
-  }
+  pragma "last resort"
+  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
+  proc sub(ref result:bigint, const ref a: bigint, b: uint)
+    do BigInteger.sub(result, a, b);
 
-  proc sub(ref result: bigint, a: int, const ref b: bigint) {
-    if a >= 0 {
-      BigInteger.sub(result, a:uint, b);
+  @deprecated(notes="bigint.sub method is deprecated - please use the standalone function :proc:`~BigInteger.sub`")
+  proc bigint.sub(const ref a: bigint, b: uint) do BigInteger.sub(this, a, b);
+
+  proc sub(ref result: bigint, x: int, const ref y: bigint) {
+    if x >= 0 {
+      BigInteger.sub(result, x:uint, y);
     } else {
-      const a_ = (0 - a).safeCast(c_ulong);
+      const x_ = (0 - x).safeCast(c_ulong);
 
       if compiledForSingleLocale() {
-        mpz_add_ui(result.mpz, b.mpz, a_);
+        mpz_add_ui(result.mpz, y.mpz, x_);
         mpz_neg(result.mpz, result.mpz);
       } else if result.localeId == chpl_nodeID {
-        const b_ = b;
-        mpz_add_ui(result.mpz, b_.mpz, a_);
+        const y_ = y;
+        mpz_add_ui(result.mpz, y_.mpz, x_);
         mpz_neg(result.mpz, result.mpz);
       } else {
         const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
         on __primitive("chpl_on_locale_num", resultLoc) {
-          const b_ = b;
-          mpz_add_ui(result.mpz, b_.mpz, a_);
+          const y_ = y;
+          mpz_add_ui(result.mpz, y_.mpz, x_);
           mpz_neg(result.mpz, result.mpz);
         }
       }
     }
   }
 
-  @deprecated(notes="bigint.sub method is deprecated - please use the standalone function :proc:`~BigInteger.sub`")
-  proc bigint.sub(a: int, const ref b: bigint) {
-    BigInteger.sub(this, a, b);
-  }
-
-  proc sub(ref result: bigint, a: uint, const ref b: bigint) {
-    const a_ = a.safeCast(c_ulong);
-
-    if compiledForSingleLocale() {
-      mpz_ui_sub(result.mpz, a_, b.mpz);
-    } else if result.localeId == chpl_nodeID {
-      const b_ = b;
-      mpz_ui_sub(result.mpz, a_, b_.mpz);
-    } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
-      on __primitive("chpl_on_locale_num", resultLoc) {
-        const b_ = b;
-        mpz_ui_sub(result.mpz, a_, b_.mpz);
-      }
-    }
-  }
+  pragma "last resort"
+  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
+  proc sub(ref result: bigint, a: int, const ref b: bigint)
+    do BigInteger.sub(result, a, b);
 
   @deprecated(notes="bigint.sub method is deprecated - please use the standalone function :proc:`~BigInteger.sub`")
-  proc bigint.sub(a: uint, const ref b: bigint) {
-    BigInteger.sub(this, a, b);
-  }
+  proc bigint.sub(a: int, const ref b: bigint) do BigInteger.sub(this, a, b);
 
-  proc mul(ref result: bigint, const ref a: bigint, const ref b: bigint) {
+  proc sub(ref result: bigint, x: uint, const ref y: bigint) {
+    const x_ = x.safeCast(c_ulong);
+
     if compiledForSingleLocale() {
-      mpz_mul(result.mpz, a.mpz, b.mpz);
+      mpz_ui_sub(result.mpz, x_, y.mpz);
     } else if result.localeId == chpl_nodeID {
-      const a_ = a;
-      const b_ = b;
-      mpz_mul(result.mpz, a_.mpz, b_.mpz);
+      const y_ = y;
+      mpz_ui_sub(result.mpz, x_, y_.mpz);
     } else {
       const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
       on __primitive("chpl_on_locale_num", resultLoc) {
-        const a_ = a;
-        const b_ = b;
-        mpz_mul(result.mpz, a_.mpz, b_.mpz);
+        const y_ = y;
+        mpz_ui_sub(result.mpz, x_, y_.mpz);
       }
     }
   }
 
-  @deprecated(notes="bigint.mul method is deprecated - please use the standalone function :proc:`~BigInteger.mul`")
-  proc bigint.mul(const ref a: bigint, const ref b: bigint) {
-    BigInteger.mul(this, a, b);
-  }
+  pragma "last resort"
+  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
+  proc sub(ref result: bigint, a: uint, const ref b: bigint)
+    do BigInteger.sub(result, a, b);
 
-  proc mul(ref result: bigint, const ref a: bigint, b: int) {
-    const b_ = b.safeCast(c_long);
+  @deprecated(notes="bigint.sub method is deprecated - please use the standalone function :proc:`~BigInteger.sub`")
+  proc bigint.sub(a: uint, const ref b: bigint) do BigInteger.sub(this, a, b);
 
+  proc mul(ref result: bigint, const ref x: bigint, const ref y: bigint) {
     if compiledForSingleLocale() {
-      mpz_mul_si(result.mpz, a.mpz, b_);
+      mpz_mul(result.mpz, x.mpz, y.mpz);
     } else if result.localeId == chpl_nodeID {
-      const a_ = a;
-      mpz_mul_si(result.mpz, a_.mpz, b_);
+      const x_ = x;
+      const y_ = y;
+      mpz_mul(result.mpz, x_.mpz, y_.mpz);
     } else {
       const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
       on __primitive("chpl_on_locale_num", resultLoc) {
-        const a_ = a;
-        mpz_mul_si(result.mpz, a_.mpz, b_);
+        const x_ = x;
+        const y_ = y;
+        mpz_mul(result.mpz, x_.mpz, y_.mpz);
       }
     }
   }
 
-  @deprecated(notes="bigint.mul method is deprecated - please use the standalone function :proc:`~BigInteger.mul`")
-  proc bigint.mul(const ref a: bigint, b: int) {
-    BigInteger.mul(this, a, b);
-  }
+  pragma "last resort"
+  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
+  proc mul(ref result: bigint, const ref a: bigint, const ref b: bigint)
+    do BigInteger.mul(result, a, b);
 
-  proc mul(ref result: bigint, const ref a: bigint, b: uint) {
-    const b_ = b.safeCast(c_long);
+  @deprecated(notes="bigint.mul method is deprecated - please use the standalone function :proc:`~BigInteger.mul`")
+  proc bigint.mul(const ref a: bigint, const ref b: bigint)
+    do BigInteger.mul(this, a, b);
+
+  proc mul(ref result: bigint, const ref x: bigint, y: int) {
+    const y_ = y.safeCast(c_long);
 
     if compiledForSingleLocale() {
-      mpz_mul_ui(result.mpz, a.mpz, b_);
+      mpz_mul_si(result.mpz, x.mpz, y_);
     } else if result.localeId == chpl_nodeID {
-      const a_ = a;
-      mpz_mul_ui(result.mpz, a_.mpz, b_);
+      const x_ = x;
+      mpz_mul_si(result.mpz, x_.mpz, y_);
     } else {
       const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
       on __primitive("chpl_on_locale_num", resultLoc) {
-        const a_ = a;
-        mpz_mul_ui(result.mpz, a_.mpz, b_);
+        const x_ = x;
+        mpz_mul_si(result.mpz, x_.mpz, y_);
       }
     }
   }
 
+  pragma "last resort"
+  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
+  proc mul(ref result: bigint, const ref a: bigint, b: int)
+    do BigInteger.mul(result, a, b);
+
   @deprecated(notes="bigint.mul method is deprecated - please use the standalone function :proc:`~BigInteger.mul`")
-  proc bigint.mul(const ref a: bigint, b: uint) {
-    BigInteger.mul(this, a, b);
+  proc bigint.mul(const ref a: bigint, b: int) do BigInteger.mul(this, a, b);
+
+  proc mul(ref result: bigint, const ref x: bigint, y: uint) {
+    const y_ = y.safeCast(c_long);
+
+    if compiledForSingleLocale() {
+      mpz_mul_ui(result.mpz, x.mpz, y_);
+    } else if result.localeId == chpl_nodeID {
+      const x_ = x;
+      mpz_mul_ui(result.mpz, x_.mpz, y_);
+    } else {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
+        const x_ = x;
+        mpz_mul_ui(result.mpz, x_.mpz, y_);
+      }
+    }
   }
+
+  pragma "last resort"
+  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
+  proc mul(ref result: bigint, const ref a: bigint, b: uint)
+    do BigInteger.mul(result, a, b);
+
+  @deprecated(notes="bigint.mul method is deprecated - please use the standalone function :proc:`~BigInteger.mul`")
+  proc bigint.mul(const ref a: bigint, b: uint) do BigInteger.mul(this, a, b);
 
   @deprecated(notes="bigint.addmul method is deprecated - please use the standalone function :proc:`addMul` instead")
   proc bigint.addmul(const ref a: bigint, const ref b: bigint)
@@ -3740,45 +3877,49 @@ module BigInteger {
     BigInteger.mul_2exp(this, a, b);
   }
 
-  proc neg(ref result: bigint, const ref a: bigint) {
+  proc neg(ref result: bigint, const ref x: bigint) {
     if compiledForSingleLocale() {
-      mpz_neg(result.mpz, a.mpz);
+      mpz_neg(result.mpz, x.mpz);
     } else if result.localeId == chpl_nodeID {
-      const a_ = a;
-      mpz_neg(result.mpz, a_.mpz);
+      const x_ = x;
+      mpz_neg(result.mpz, x_.mpz);
     } else {
       const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
       on __primitive("chpl_on_locale_num", resultLoc) {
-        const a_ = a;
-        mpz_neg(result.mpz, a_.mpz);
+        const x_ = x;
+        mpz_neg(result.mpz, x_.mpz);
       }
     }
   }
+
+  pragma "last resort"
+  @deprecated("the argument name 'a' is deprecated - please use 'x' instead")
+  proc neg(ref result: bigint, const ref a: bigint) do BigInteger.neg(result, a);
 
   @deprecated(notes="bigint.neg method is deprecated - please use the standalone function :proc:`~BigInteger.neg`")
-  proc bigint.neg(const ref a: bigint) {
-    BigInteger.neg(this, a);
-  }
+  proc bigint.neg(const ref a: bigint) do BigInteger.neg(this, a);
 
-  proc abs(ref result: bigint, const ref a: bigint) {
+  proc abs(ref result: bigint, const ref x: bigint) {
     if compiledForSingleLocale() {
-      mpz_abs(result.mpz, a.mpz);
+      mpz_abs(result.mpz, x.mpz);
     } else if result.localeId == chpl_nodeID {
-      const a_ = a;
-      mpz_abs(result.mpz, a_.mpz);
+      const x_ = x;
+      mpz_abs(result.mpz, x_.mpz);
     } else {
       const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
       on __primitive("chpl_on_locale_num", resultLoc) {
-        const a_ = a;
-        mpz_abs(result.mpz, a_.mpz);
+        const x_ = x;
+        mpz_abs(result.mpz, x_.mpz);
       }
     }
   }
 
+  pragma "last resort"
+  @deprecated("the argument name 'a' is deprecated - please use 'x' instead")
+  proc abs(ref result: bigint, const ref a: bigint) do BigInteger.abs(result, a);
+
   @deprecated(notes="bigint.abs method is deprecated - please use the standalone function :proc:`~BigInteger.abs`")
-  proc bigint.abs(const ref a: bigint) {
-    BigInteger.abs(this, a);
-  }
+  proc bigint.abs(const ref a: bigint) do BigInteger.abs(this, a);
 
   @deprecated("bigint.div_q using Round is deprecated, use the standalone function :proc:`~BigInteger.div` with :enum:`roundingMode` instead")
   proc bigint.div_q(const ref n: bigint,
@@ -4594,154 +4735,185 @@ module BigInteger {
   }
 
   // Comparison Functions
-  proc bigint.cmp(const ref b: bigint) : int {
+  proc bigint.cmp(const ref x: bigint) : int {
     var ret: c_int;
 
     if compiledForSingleLocale() {
-      ret = mpz_cmp(this.mpz, b.mpz);
+      ret = mpz_cmp(this.mpz, x.mpz);
 
-    } else if this.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      ret = mpz_cmp(this.mpz, b.mpz);
+    } else if this.localeId == chpl_nodeID && x.localeId == chpl_nodeID {
+      ret = mpz_cmp(this.mpz, x.mpz);
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        const b_ = b.localize();
+        const x_ = x.localize();
 
-        ret = mpz_cmp(this.mpz, b_.mpz);
+        ret = mpz_cmp(this.mpz, x_.mpz);
       }
     }
 
     return ret.safeCast(int);
   }
 
-  proc bigint.cmp(b: int) : int {
-    const b_ = b.safeCast(c_long);
+
+  pragma "last resort"
+  @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
+  proc bigint.cmp(const ref b: bigint) : int do return this.cmp(b);
+
+  proc bigint.cmp(x: int) : int {
+    const x_ = x.safeCast(c_long);
     var   ret: c_int;
 
     if compiledForSingleLocale() {
-      ret = mpz_cmp_si(this.mpz, b_);
+      ret = mpz_cmp_si(this.mpz, x_);
 
     } else if this.localeId == chpl_nodeID {
-      ret = mpz_cmp_si(this.mpz, b_);
+      ret = mpz_cmp_si(this.mpz, x_);
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        ret = mpz_cmp_si(this.mpz, b_);
+        ret = mpz_cmp_si(this.mpz, x_);
       }
     }
 
     return ret.safeCast(int);
   }
 
-  proc bigint.cmp(b: uint) : int {
-    const b_ = b.safeCast(c_ulong);
+  pragma "last resort"
+  @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
+  proc bigint.cmp(b: int) : int do return this.cmp(b);
+
+  proc bigint.cmp(x: uint) : int {
+    const x_ = x.safeCast(c_ulong);
     var   ret: c_int;
 
     if compiledForSingleLocale() {
-      ret = mpz_cmp_ui(this.mpz, b_);
+      ret = mpz_cmp_ui(this.mpz, x_);
 
     } else if this.localeId == chpl_nodeID {
-      ret = mpz_cmp_ui(this.mpz, b_);
+      ret = mpz_cmp_ui(this.mpz, x_);
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        ret = mpz_cmp_ui(this.mpz, b_);
+        ret = mpz_cmp_ui(this.mpz, x_);
       }
     }
 
     return ret.safeCast(int);
   }
 
-  proc bigint.cmp(b: real) : int {
-    const b_ = b : c_double;
+  pragma "last resort"
+  @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
+  proc bigint.cmp(b: uint) : int do return this.cmp(b);
+
+  proc bigint.cmp(x: real) : int {
+    const x_ = x : c_double;
     var   ret: c_int;
 
     if compiledForSingleLocale() {
-      ret = mpz_cmp_d(this.mpz, b_);
+      ret = mpz_cmp_d(this.mpz, x_);
 
     } else if this.localeId == chpl_nodeID {
-      ret = mpz_cmp_d(this.mpz, b_);
+      ret = mpz_cmp_d(this.mpz, x_);
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        ret = mpz_cmp_d(this.mpz, b_);
+        ret = mpz_cmp_d(this.mpz, x_);
       }
     }
 
     return ret.safeCast(int);
   }
 
-  proc bigint.cmpabs(const ref b: bigint) : int {
+
+  pragma "last resort"
+  @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
+  proc bigint.cmp(b: real) : int do return this.cmp(b);
+
+  proc bigint.cmpabs(const ref x: bigint) : int {
     var ret: c_int;
 
     if compiledForSingleLocale() {
-      ret = mpz_cmpabs(this.mpz, b.mpz);
+      ret = mpz_cmpabs(this.mpz, x.mpz);
 
-    } else if this.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      ret = mpz_cmpabs(this.mpz, b.mpz);
+    } else if this.localeId == chpl_nodeID && x.localeId == chpl_nodeID {
+      ret = mpz_cmpabs(this.mpz, x.mpz);
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        var b_ = b;
+        var x_ = x;
 
-        ret = mpz_cmpabs(this.mpz, b_.mpz);
+        ret = mpz_cmpabs(this.mpz, x_.mpz);
       }
     }
 
     return ret.safeCast(int);
   }
 
-  proc bigint.cmpabs(b: uint) : int {
-    const b_ = b.safeCast(c_ulong);
+
+  pragma "last resort"
+  @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
+  proc bigint.cmpabs(const ref b: bigint) : int do return this.cmpabs(b);
+
+  proc bigint.cmpabs(x: uint) : int {
+    const x_ = x.safeCast(c_ulong);
     var   ret: c_int;
 
     if compiledForSingleLocale() {
-      ret = mpz_cmpabs_ui(this.mpz, b_);
+      ret = mpz_cmpabs_ui(this.mpz, x_);
 
     } else if this.localeId == chpl_nodeID {
-      ret = mpz_cmpabs_ui(this.mpz, b_);
+      ret = mpz_cmpabs_ui(this.mpz, x_);
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        ret = mpz_cmpabs_ui(this.mpz, b_);
+        ret = mpz_cmpabs_ui(this.mpz, x_);
       }
     }
 
     return ret.safeCast(int);
   }
 
-  proc bigint.cmpabs(b: real) : int {
-    const b_ = b : c_double;
+  pragma "last resort"
+  @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
+  proc bigint.cmpabs(b: uint) : int do return this.cmpabs(b);
+
+  proc bigint.cmpabs(x: real) : int {
+    const x_ = x : c_double;
     var   ret: c_int;
 
     if compiledForSingleLocale() {
-      ret = mpz_cmpabs_d(this.mpz, b_);
+      ret = mpz_cmpabs_d(this.mpz, x_);
 
     } else if this.localeId == chpl_nodeID {
-      ret = mpz_cmpabs_d(this.mpz, b_);
+      ret = mpz_cmpabs_d(this.mpz, x_);
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        ret = mpz_cmpabs_d(this.mpz, b_);
+        ret = mpz_cmpabs_d(this.mpz, x_);
       }
     }
 
     return ret.safeCast(int);
   }
+
+  pragma "last resort"
+  @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
+  proc bigint.cmpabs(b: real) : int do return this.cmpabs(b);
 
   proc bigint.sgn() : int {
     var ret: c_int;
@@ -4764,22 +4936,27 @@ module BigInteger {
   }
 
   // Logical and Bit Manipulation Functions
-  proc and(ref result: bigint, const ref a: bigint, const ref b: bigint) {
+  proc and(ref result: bigint, const ref x: bigint, const ref y: bigint) {
     if compiledForSingleLocale() {
-      mpz_and(result.mpz, a.mpz, b.mpz);
+      mpz_and(result.mpz, x.mpz, y.mpz);
     } else if result.localeId == chpl_nodeID {
-      const a_ = a;
-      const b_ = b;
-      mpz_and(result.mpz, a_.mpz, b_.mpz);
+      const x_ = x;
+      const y_ = y;
+      mpz_and(result.mpz, x_.mpz, y_.mpz);
     } else {
       const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
       on __primitive("chpl_on_locale_num", resultLoc) {
-        const a_ = a;
-        const b_ = b;
-        mpz_and(result.mpz, a_.mpz, b_.mpz);
+        const x_ = x;
+        const y_ = y;
+        mpz_and(result.mpz, x_.mpz, y_.mpz);
       }
     }
   }
+
+  pragma "last resort"
+  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
+  proc and(ref result: bigint, const ref a: bigint, const ref b: bigint)
+    do BigInteger.and(result, a, b);
 
   @deprecated(notes="bigint.and method is deprecated - please use the standalone function :proc:`~BigInteger.and`")
   proc bigint.and(const ref a: bigint, const ref b: bigint) {
@@ -4826,42 +5003,51 @@ module BigInteger {
   proc bigint.ior(const ref a: bigint, const ref b: bigint)
     do BigInteger.or(this, a, b);
 
-  proc xor(ref result: bigint, const ref a: bigint, const ref b: bigint) {
+  proc xor(ref result: bigint, const ref x: bigint, const ref y: bigint) {
     if compiledForSingleLocale() {
-      mpz_xor(result.mpz, a.mpz, b.mpz);
+      mpz_xor(result.mpz, x.mpz, y.mpz);
     } else if result.localeId == chpl_nodeID {
-      const a_ = a;
-      const b_ = b;
-      mpz_xor(result.mpz, a_.mpz, b_.mpz);
+      const x_ = x;
+      const y_ = y;
+      mpz_xor(result.mpz, x_.mpz, y_.mpz);
     } else {
       const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
       on __primitive("chpl_on_locale_num", resultLoc) {
-        const a_ = a;
-        const b_ = b;
-        mpz_xor(result.mpz, a_.mpz, b_.mpz);
+        const x_ = x;
+        const y_ = y;
+        mpz_xor(result.mpz, x_.mpz, y_.mpz);
       }
     }
   }
+
+  pragma "last resort"
+  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
+  proc xor(ref result: bigint, const ref a: bigint, const ref b: bigint)
+    do BigInteger.xor(result, a, b);
 
   @deprecated(notes="bigint.xor method is deprecated - please use the standalone function :proc:`~BigInteger.xor`")
   proc bigint.xor(const ref a: bigint, const ref b: bigint) {
     BigInteger.xor(this, a, b);
   }
 
-  proc com(ref result: bigint, const ref a: bigint) {
+  proc com(ref result: bigint, const ref x: bigint) {
     if compiledForSingleLocale() {
-      mpz_com(result.mpz, a.mpz);
+      mpz_com(result.mpz, x.mpz);
     } else if result.localeId == chpl_nodeID {
-      const a_ = a;
-      mpz_com(result.mpz, a_.mpz);
+      const x_ = x;
+      mpz_com(result.mpz, x_.mpz);
     } else {
       const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
       on __primitive("chpl_on_locale_num", resultLoc) {
-        const a_ = a;
-        mpz_com(result.mpz, a_.mpz);
+        const x_ = x;
+        mpz_com(result.mpz, x_.mpz);
       }
     }
   }
+
+  pragma "last resort"
+  @deprecated("the argument name 'a' is deprecated - please use 'x' instead")
+  proc com(ref result: bigint, const ref a: bigint) do BigInteger.com(result, a);
 
   @deprecated(notes="bigint.com method is deprecated - please use the standalone function :proc:`~BigInteger.com`")
   proc bigint.com(const ref a: bigint) {
@@ -4869,131 +5055,155 @@ module BigInteger {
   }
 
   // Assignment functions
-  proc bigint.set(const ref a: bigint) {
+  proc bigint.set(const ref x: bigint) {
     if compiledForSingleLocale() {
-      mpz_set(this.mpz, a.mpz);
+      mpz_set(this.mpz, x.mpz);
 
-    } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
-      mpz_set(this.mpz, a.mpz);
+    } else if this.localeId == chpl_nodeID && x.localeId == chpl_nodeID {
+      mpz_set(this.mpz, x.mpz);
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        const mpz_struct = a.getImpl();
+        const mpz_struct = x.getImpl();
 
-        chpl_gmp_get_mpz(this.mpz, a.localeId, mpz_struct);
+        chpl_gmp_get_mpz(this.mpz, x.localeId, mpz_struct);
       }
     }
   }
 
-  proc bigint.set(num : int) {
-    const num_ = num.safeCast(c_long);
+  pragma "last resort"
+  @deprecated("the argument name 'a' is deprecated - please use 'x' instead")
+  proc bigint.set(const ref a: bigint) do this.set(a);
+
+  proc bigint.set(x : int) {
+    const x_ = x.safeCast(c_long);
 
     if compiledForSingleLocale() {
-      mpz_set_si(this.mpz, num_);
+      mpz_set_si(this.mpz, x_);
 
     } else if this.localeId == chpl_nodeID {
-      mpz_set_si(this.mpz, num_);
+      mpz_set_si(this.mpz, x_);
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        mpz_set_si(this.mpz, num_);
+        mpz_set_si(this.mpz, x_);
       }
     }
   }
 
-  proc bigint.set(num : uint) {
-    const num_ = num.safeCast(c_ulong);
+  pragma "last resort"
+  @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
+  proc bigint.set(num : int) do this.set(num);
+
+  proc bigint.set(x : uint) {
+    const x_ = x.safeCast(c_ulong);
 
     if compiledForSingleLocale() {
-      mpz_set_ui(this.mpz, num_);
+      mpz_set_ui(this.mpz, x_);
 
     } else if this.localeId == chpl_nodeID {
-      mpz_set_ui(this.mpz, num_);
+      mpz_set_ui(this.mpz, x_);
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        mpz_set_ui(this.mpz, num_);
+        mpz_set_ui(this.mpz, x_);
       }
     }
   }
 
-  proc bigint.set(num: real) {
-    const num_ = num : c_double;
+  pragma "last resort"
+  @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
+  proc bigint.set(num : uint) do this.set(num);
+
+  proc bigint.set(x: real) {
+    const x_ = x : c_double;
 
     if compiledForSingleLocale() {
-      mpz_set_d(this.mpz, num_);
+      mpz_set_d(this.mpz, x_);
 
     } else if this.localeId == chpl_nodeID {
-      mpz_set_d(this.mpz, num_);
+      mpz_set_d(this.mpz, x_);
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        mpz_set_d(this.mpz, num_);
+        mpz_set_d(this.mpz, x_);
       }
     }
   }
 
-  proc bigint.set(str: string, base: int = 0) {
+  pragma "last resort"
+  @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
+  proc bigint.set(num: real) do this.set(num);
+
+  proc bigint.set(x: string, base: int = 0) {
     const base_ = base.safeCast(c_int);
 
     if compiledForSingleLocale() {
-      mpz_set_str(this.mpz, str.localize().c_str(), base_);
+      mpz_set_str(this.mpz, x.localize().c_str(), base_);
 
     } else if this.localeId == chpl_nodeID {
-      mpz_set_str(this.mpz, str.localize().c_str(), base_);
+      mpz_set_str(this.mpz, x.localize().c_str(), base_);
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        mpz_set_str(this.mpz, str.localize().c_str(), base_);
+        mpz_set_str(this.mpz, x.localize().c_str(), base_);
       }
     }
   }
 
-  proc bigint.swap(ref a: bigint) {
-    if compiledForSingleLocale() {
-      mpz_swap(this.mpz, a.mpz);
+  pragma "last resort"
+  @deprecated("the argument name 'str' is deprecated - please use 'x' instead")
+  proc bigint.set(str: string, base: int = 0) do this.set(str, base);
 
-    } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
-      mpz_swap(this.mpz, a.mpz);
+  proc bigint.swap(ref x: bigint) {
+    if compiledForSingleLocale() {
+      mpz_swap(this.mpz, x.mpz);
+
+    } else if this.localeId == chpl_nodeID && x.localeId == chpl_nodeID {
+      mpz_swap(this.mpz, x.mpz);
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        var tmp = new bigint(a);
+        var tmp = new bigint(x);
 
-        a.set(this);
+        x.set(this);
 
         mpz_set(this.mpz, tmp.mpz);
       }
     }
   }
 
+  pragma "last resort"
+  @deprecated("the argument name 'a' is deprecated - please use 'x' instead")
+  proc bigint.swap(ref a: bigint) do this.swap(a);
+
   @chpldoc.nodoc
   record bigintWrapper {
     pragma "no init"
     var mpz: mpz_t;
     var isOwned: bool;
-    proc init(a: mpz_t) {
-      mpz = a;
+    proc init(x: mpz_t) {
+      mpz = x;
       isOwned = false;
     }
 
-    proc init(a: bigint) {
+    proc init(x: bigint) {
       this.complete();
-      var mpz_struct = a.getImpl();
+      var mpz_struct = x.getImpl();
       mpz_init(this.mpz);
-      chpl_gmp_get_mpz(this.mpz, a.localeId, mpz_struct);
+      chpl_gmp_get_mpz(this.mpz, x.localeId, mpz_struct);
       isOwned = true;
     }
 
