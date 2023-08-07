@@ -283,7 +283,8 @@ module HDFS {
                 replication, blockSize);
     }
 
-    @unstable("open with a style argument is unstable")
+    pragma "last resort"
+    @deprecated("open with a style argument is deprecated")
     proc open(path:string, mode:ioMode,
               style:iostyle,
               in flags:c_int = 0, // default to based on mode

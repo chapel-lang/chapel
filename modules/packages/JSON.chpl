@@ -55,7 +55,7 @@ module JSON {
       var st = dc._styleInternal();
       var orig = st; defer { dc._set_styleInternal(orig); }
       st.realfmt = 2;
-      st.string_format = iostringformat.json:uint(8);
+      st.string_format = iostringformatInternal.json:uint(8);
       st.aggregate_style = QIO_AGGREGATE_FORMAT_JSON:uint(8);
       st.array_style = QIO_ARRAY_FORMAT_JSON:uint(8);
       st.tuple_style = QIO_TUPLE_FORMAT_JSON:uint(8);
@@ -372,7 +372,7 @@ module JSON {
       var orig = st; defer { dc._set_styleInternal(orig); }
       st.realfmt = 2;
       st.bytes_prefix = 0;
-      st.string_format = iostringformat.json:uint(8);
+      st.string_format = iostringformatInternal.json:uint(8);
       st.aggregate_style = QIO_AGGREGATE_FORMAT_JSON:uint(8);
       st.array_style = QIO_ARRAY_FORMAT_JSON:uint(8);
       st.tuple_style = QIO_TUPLE_FORMAT_JSON:uint(8);
