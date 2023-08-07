@@ -361,7 +361,7 @@ module BigInteger {
                   itself (``0x`` and ``0X`` will give hexadecimal, ``0b`` and
                   ``0B`` will give binary, ``0`` will give octal, and everything
                   else will be interpreted as decimal).
-       :type base: `int`
+       :type base: ``int``
 
        :throws BadFormatError: Thrown when ``x`` is not a correctly formatted
                                number in base ``base``.
