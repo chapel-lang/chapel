@@ -95,7 +95,7 @@ bool LoopStmt::isParallelAccessVectorizable() const
          !mParallelAccessVectorizationHazard;
 }
 
-bool LoopStmt::hasLLVMMetadatas() const {
+bool LoopStmt::hasLLVMMetadata() const {
   return !mLLVMMetadataList.empty();
 }
 bool LoopStmt::hasLLVMMetadata(const char* a) const {

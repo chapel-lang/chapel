@@ -59,7 +59,7 @@ public:
   // for llvm.loop.parallel_accesses (and C pragmas)
   bool                   isParallelAccessVectorizable()                 const;
 
-  bool                   hasLLVMMetadatas()                            const;
+  bool                   hasLLVMMetadata()                            const;
   bool                   hasLLVMMetadata(const char* a)                const;
   const LLVMMetadataList& getLLVMMetadatas()                          const;
   void                   setLLVMMetadatas(const LLVMMetadataList& al);
