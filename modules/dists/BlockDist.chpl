@@ -1272,7 +1272,6 @@ proc BlockDom.dsiSerialWrite(x) { x.write(whole); }
 proc BlockDom.dsiLocalSlice(param strides, ranges) do return whole((...ranges));
 override proc BlockDom.dsiIndexOrder(i) do              return whole.indexOrder(i);
 override proc BlockDom.dsiMyDist() do                   return dist;
-override proc BlockDom.isBlock() param do return true;
 
 //
 // INTERFACE NOTES: Could we make dsiSetIndices() for a rectangular

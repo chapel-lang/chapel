@@ -1543,7 +1543,7 @@ module ChapelDomain {
     pragma "no copy return"
     @unstable("tryCreateArray() is subject to change in the future.")
     proc tryCreateArray(type eltType) throws {
-      if !this.isDefaultRectangular() && !this.isBlock() then
+      if !(__primitive("resolves", _value.doiTryCreateArray(eltType))) then
         compilerError("'tryCreateArray' is only supported on " +
                       "default rectangular and block domains");
 
