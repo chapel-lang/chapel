@@ -4831,7 +4831,20 @@ module BigInteger {
     return BigInteger.mod(this, a, b);
   }
 
-  // Comparison Functions
+  /*
+     Compares ``this`` and ``x``.
+
+     :arg x: The number to compare against
+     :type x: :record:`bigint`, ``uint``, ``int``, ``real``
+     :returns: Returns a positive value if ``this`` is greater than ``x``,
+               a negative value if ``this`` is less than ``x``, or zero if they
+               are equal.
+     :rtype: ``int``
+
+     .. seealso::
+        :proc:`GMP.mpz_cmp` and
+        `mpz_cmp <https://gmplib.org/manual/Integer-Comparisons#index-mpz_005fcmp>`_.
+  */
   proc bigint.cmp(const ref x: bigint) : int {
     var ret: c_int;
 
@@ -4854,11 +4867,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-
-  pragma "last resort"
-  @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
-  proc bigint.cmp(const ref b: bigint) : int do return this.cmp(b);
-
+  /* See :proc:`~bigint.cmp` */
   proc bigint.cmp(x: int) : int {
     const x_ = x.safeCast(c_long);
     var   ret: c_int;
@@ -4880,10 +4889,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  pragma "last resort"
-  @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
-  proc bigint.cmp(b: int) : int do return this.cmp(b);
-
+  /* See :proc:`~bigint.cmp` */
   proc bigint.cmp(x: uint) : int {
     const x_ = x.safeCast(c_ulong);
     var   ret: c_int;
@@ -4905,10 +4911,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  pragma "last resort"
-  @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
-  proc bigint.cmp(b: uint) : int do return this.cmp(b);
-
+  /* See :proc:`~bigint.cmp` */
   proc bigint.cmp(x: real) : int {
     const x_ = x : c_double;
     var   ret: c_int;
@@ -4930,11 +4933,36 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
+  pragma "last resort"
+  @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
+  proc bigint.cmp(const ref b: bigint) : int do return this.cmp(b);
+
+  pragma "last resort"
+  @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
+  proc bigint.cmp(b: int) : int do return this.cmp(b);
+
+  pragma "last resort"
+  @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
+  proc bigint.cmp(b: uint) : int do return this.cmp(b);
 
   pragma "last resort"
   @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
   proc bigint.cmp(b: real) : int do return this.cmp(b);
 
+  /*
+     Compares the absolute value of ``this`` and the absolute value of ``x``.
+
+     :arg x: The number to compare against
+     :type x: :record:`bigint`, ``uint``, ``real``
+     :returns: Returns a positive value if ``abs(this)`` is greater than
+               ``abs(x)``, a negative value if ``abs(this)`` is less than
+               ``abs(x)``, or zero if they are equal.
+     :rtype: ``int``
+
+     .. seealso::
+        :proc:`GMP.mpz_cmpabs` and
+        `mpz_cmpabs <https://gmplib.org/manual/Integer-Comparisons#index-mpz_005fcmpabs>`_.
+  */
   proc bigint.cmpabs(const ref x: bigint) : int {
     var ret: c_int;
 
@@ -4957,11 +4985,29 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
+  /* See :proc:`~bigint.cmpabs` */
+  proc bigint.cmpabs(x: real) : int {
+    const x_ = x : c_double;
+    var   ret: c_int;
 
-  pragma "last resort"
-  @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
-  proc bigint.cmpabs(const ref b: bigint) : int do return this.cmpabs(b);
+    if compiledForSingleLocale() {
+      ret = mpz_cmpabs_d(this.mpz, x_);
 
+    } else if this.localeId == chpl_nodeID {
+      ret = mpz_cmpabs_d(this.mpz, x_);
+
+    } else {
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+
+      on __primitive("chpl_on_locale_num", thisLoc) {
+        ret = mpz_cmpabs_d(this.mpz, x_);
+      }
+    }
+
+    return ret.safeCast(int);
+  }
+
+  /* See :proc:`~bigint.cmpabs` */
   proc bigint.cmpabs(x: uint) : int {
     const x_ = x.safeCast(c_ulong);
     var   ret: c_int;
@@ -4985,33 +5031,26 @@ module BigInteger {
 
   pragma "last resort"
   @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
+  proc bigint.cmpabs(const ref b: bigint) : int do return this.cmpabs(b);
+
+  pragma "last resort"
+  @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
   proc bigint.cmpabs(b: uint) : int do return this.cmpabs(b);
-
-  proc bigint.cmpabs(x: real) : int {
-    const x_ = x : c_double;
-    var   ret: c_int;
-
-    if compiledForSingleLocale() {
-      ret = mpz_cmpabs_d(this.mpz, x_);
-
-    } else if this.localeId == chpl_nodeID {
-      ret = mpz_cmpabs_d(this.mpz, x_);
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        ret = mpz_cmpabs_d(this.mpz, x_);
-      }
-    }
-
-    return ret.safeCast(int);
-  }
 
   pragma "last resort"
   @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
   proc bigint.cmpabs(b: real) : int do return this.cmpabs(b);
 
+  /*
+     Returns the sign of ``this``.
+
+     :returns: Returns 1 if positive, -1 if negative, and 0 if zero.
+     :rtype: ``int``
+
+     .. seealso::
+        :proc:`GMP.mpz_sgn` and
+        `mpz_sgn <https://gmplib.org/manual/Integer-Comparisons#index-mpz_005fsgn>`_.
+  */
   proc bigint.sgn() : int {
     var ret: c_int;
 
@@ -5032,7 +5071,20 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  // Logical and Bit Manipulation Functions
+  /*
+    Compute the bitwise and of ``x`` and ``y`` and store it in ``result``.
+
+    :arg result: Where the result is stored
+    :type result: :record:`bigint`
+    :arg x: First operand
+    :type x: :record:`bigint`
+    :arg y: Second operand
+    :type y: :record:`bigint`
+
+    .. seealso::
+       :proc:`GMP.mpz_and` and
+       `mpz_and <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling#index-mpz_005fand>`_.
+  */
   proc and(ref result: bigint, const ref x: bigint, const ref y: bigint) {
     if compiledForSingleLocale() {
       mpz_and(result.mpz, x.mpz, y.mpz);
@@ -5073,7 +5125,7 @@ module BigInteger {
 
     .. seealso::
        :proc:`GMP.mpz_ior` and
-       `mpz_ior <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling>`_.
+       `mpz_ior <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling#index-mpz_005fior>`_.
   */
   proc or(ref result: bigint, const ref x: bigint, const ref y: bigint) {
     if compiledForSingleLocale() {
@@ -5100,6 +5152,21 @@ module BigInteger {
   proc bigint.ior(const ref a: bigint, const ref b: bigint)
     do BigInteger.or(this, a, b);
 
+  /*
+    Compute the bitwise exclusive or of ``x`` and ``y`` and store it in
+    ``result``.
+
+    :arg result: Where the result is stored
+    :type result: :record:`bigint`
+    :arg x: First operand
+    :type x: :record:`bigint`
+    :arg y: Second operand
+    :type y: :record:`bigint`
+
+    .. seealso::
+       :proc:`GMP.mpz_xor` and
+       `mpz_xor <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling#index-mpz_005fxor>`_.
+  */
   proc xor(ref result: bigint, const ref x: bigint, const ref y: bigint) {
     if compiledForSingleLocale() {
       mpz_xor(result.mpz, x.mpz, y.mpz);
@@ -5127,6 +5194,18 @@ module BigInteger {
     BigInteger.xor(this, a, b);
   }
 
+  /*
+    Compute the bitwise one's complement of ``x`` and store it in ``result``.
+
+    :arg result: Where the result is stored
+    :type result: :record:`bigint`
+    :arg x: Number to be complemented
+    :type x: :record:`bigint`
+
+    .. seealso::
+       :proc:`GMP.mpz_com` and
+       `mpz_com <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling#index-mpz_005fcom>`_.
+  */
   proc com(ref result: bigint, const ref x: bigint) {
     if compiledForSingleLocale() {
       mpz_com(result.mpz, x.mpz);
