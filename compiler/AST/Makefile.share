@@ -20,7 +20,7 @@ AST_SRCS =                                          \
            AggregateType.cpp                        \
            alist.cpp                                \
            astutil.cpp                              \
-					 attribute.cpp														\
+					 metadata.cpp						   								\
            baseAST.cpp                              \
            bb.cpp                                   \
            build.cpp                                \

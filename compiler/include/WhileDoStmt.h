@@ -29,7 +29,7 @@ class WhileDoStmt final : public WhileStmt
   // Class interface
   //
 public:
-  static BlockStmt*      build(Expr* cond, BlockStmt* body, LLVMAttributeList attrs = {});
+  static BlockStmt*      build(Expr* cond, BlockStmt* body, LLVMMetadataList attrs = {});
 
 private:
   static bool            isPrimitiveCForLoop(Expr* cond);

@@ -30,7 +30,7 @@ class DoWhileStmt final : public WhileStmt
   //
 public:
   static BlockStmt*      build(Expr* cond, BlockStmt* body,
-                                LLVMAttributeList attrs = {});
+                                LLVMMetadataList attrs = {});
 
 
   //

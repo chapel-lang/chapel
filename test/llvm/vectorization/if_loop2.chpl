@@ -7,7 +7,7 @@ proc loop (A, B) {
   var sum : int(32) = 0;
 
   // interleave by 4 will load each array 4 times per loop iteration
-  @llvm.attribute(("llvm.loop.vectorize.width", 8), ("llvm.loop.interleave.count", 4))
+  @llvm.metadata(("llvm.loop.vectorize.width", 8), ("llvm.loop.interleave.count", 4))
   foreach i in 1..511 {
     // CHECK: load <8 x i32>
     // CHECK: load <8 x i32>

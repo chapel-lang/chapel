@@ -7,8 +7,8 @@ proc saxpy(a: ?elmType, X: [?d] a.type, Y: X.type) {
   // this means assertVectorized will always assert true even if optimizations improve
   // this makes the test less fragile
 
-  @llvm.assertVectorized
-  @llvm.attribute(("llvm.loop.isvectorized", true))
+  @llvm.assertVectorized()
+  @llvm.metadata(("llvm.loop.isvectorized", true))
   foreach (r, x, y) in zip(R, X, Y) {
     r = a*x + y;
   }

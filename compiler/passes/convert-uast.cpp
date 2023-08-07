@@ -48,7 +48,7 @@
 #include "parser.h"
 #include "resolution.h"
 #include "ResolveScope.h"
-#include "attribute.h"
+#include "metadata.h"
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/global-strings.h"
@@ -315,48 +315,48 @@ struct Converter {
     return nullptr;
   }
 
-  LLVMAttributePtr tupleToLLVMAttribute(const uast::Tuple* node) {
+  LLVMMetadataPtr tupleToLLVMMetadata(const uast::Tuple* node) {
     if (node->numActuals() != 1 && node->numActuals() != 2) return nullptr;
 
     if (!node->actual(0)->isStringLiteral()) return nullptr;
     auto attrName = node->actual(0)->toStringLiteral()->value().astr(context);
 
     if (node->numActuals() == 1) {
-      return LLVMAttribute::construct(attrName);
+      return LLVMMetadata::construct(attrName);
     } else {
       auto attrVal = node->actual(1);
       
       if (auto str = attrVal->toStringLiteral())
-        return LLVMAttribute::constructString(attrName, str->value().astr(context));
+        return LLVMMetadata::constructString(attrName, str->value().astr(context));
       else if (auto int_ = attrVal->toIntLiteral())
-        return LLVMAttribute::constructInt(attrName, int_->value());
+        return LLVMMetadata::constructInt(attrName, int_->value());
       else if (auto bool_ = attrVal->toBoolLiteral())
-        return LLVMAttribute::constructBool(attrName, bool_->value());
+        return LLVMMetadata::constructBool(attrName, bool_->value());
       else if (auto tup = attrVal->toTuple()) {
-        auto v = tupleToLLVMAttribute(tup);
+        auto v = tupleToLLVMMetadata(tup);
         if (v == nullptr) return nullptr;
-        return LLVMAttribute::constructAttribute(attrName, v);
+        return LLVMMetadata::constructMetadata(attrName, v);
       }
       else return nullptr;
     }
   }
 
-  LLVMAttributePtr nodeToLLVMAttribute(const uast::AstNode* node) {
+  LLVMMetadataPtr nodeToLLVMMetadata(const uast::AstNode* node) {
     if (node->isTuple()) {
-      return tupleToLLVMAttribute(node->toTuple());
+      return tupleToLLVMMetadata(node->toTuple());
     } else if (node->isStringLiteral()) {
       auto attrName = node->toStringLiteral()->value().astr(context);
-      return LLVMAttribute::construct(attrName);
+      return LLVMMetadata::construct(attrName);
     } else {
     return nullptr;
     }
   }
   
-  LLVMAttributeList buildLLVMAttributeList(const uast::AttributeGroup* node) {
-    LLVMAttributeList llvmAttrs;
+  LLVMMetadataList buildLLVMMetadataList(const uast::AttributeGroup* node) {
+    LLVMMetadataList llvmAttrs;
     if(!node) return llvmAttrs;
 
-    if (auto llvmAttrNode = node->getAttributeNamed(UniqueString::get(context, "llvm.attribute"))) {
+    if (auto llvmAttrNode = node->getAttributeNamed(UniqueString::get(context, "llvm.metadata"))) {
 
       // no matter what, warn for this attribute that its unstable
       auto attrLoc = chpl::parsing::locateId(context, llvmAttrNode->id());
@@ -364,17 +364,17 @@ struct Converter {
       if (warnUnstable) {
         // can't use CHPL_REPORT or reportUnstableWarningForId
         // because AttributeGroup is not a NamedDecl
-        std::string msg = "'llvm.attribute' is an unstable attribute";
+        std::string msg = "'llvm.metadata' is an unstable attribute";
         auto err = GeneralError::get(ErrorBase::WARNING, attrLoc, msg);
         context->report(std::move(err));
       }
 
       for (auto act: llvmAttrNode->actuals()) {
-        auto attr = nodeToLLVMAttribute(act);
+        auto attr = nodeToLLVMMetadata(act);
         if (attr != nullptr) {
           llvmAttrs.push_back(attr);
         } else {
-          std::string msg = "Invalid value for 'llvm.attribute'";
+          std::string msg = "Invalid value for 'llvm.metadata'";
           auto err = GeneralError::get(ErrorBase::ERROR, attrLoc, msg);
           context->report(std::move(err));
         }
@@ -383,8 +383,8 @@ struct Converter {
     return llvmAttrs;
   }
 
-  LLVMAttributeList buildLLVMLoopAttributes(const uast::Loop* node) {
-    auto attrs = buildLLVMAttributeList(node->attributeGroup());
+  LLVMMetadataList buildLLVMLoopAttributes(const uast::Loop* node) {
+    auto attrs = buildLLVMMetadataList(node->attributeGroup());
     auto assertVectorize = buildAssertVectorize(node->attributeGroup());
     if(assertVectorize) {
       attrs.push_back(assertVectorize);
@@ -395,7 +395,7 @@ struct Converter {
 
 
 
-  LLVMAttributePtr buildAssertVectorize(const uast::AttributeGroup* node) {
+  LLVMMetadataPtr buildAssertVectorize(const uast::AttributeGroup* node) {
     if(!node) return nullptr;
     if (auto llvmAttrNode = node->getAttributeNamed(UniqueString::get(context, "llvm.assertVectorized"))) {
 
@@ -410,7 +410,7 @@ struct Converter {
       }
 
       auto attrName = astr("chpl.loop.assertvectorized");
-      return LLVMAttribute::constructBool(attrName, true);
+      return LLVMMetadata::constructBool(attrName, true);
     }
     return nullptr;
   }

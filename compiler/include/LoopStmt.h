@@ -22,7 +22,7 @@
 #define _LOOP_STMT_H_
 
 #include "stmt.h"
-#include "attribute.h"
+#include "metadata.h"
 
 class LoopStmt : public BlockStmt
 {
@@ -59,10 +59,10 @@ public:
   // for llvm.loop.parallel_accesses (and C pragmas)
   bool                   isParallelAccessVectorizable()                 const;
 
-  bool                   hasLLVMAttributes()                            const;
-  bool                   hasLLVMAttribute(const char* a)                const;
-  const LLVMAttributeList& getLLVMAttributes()                          const;
-  void                   setLLVMAttributes(const LLVMAttributeList& al);
+  bool                   hasLLVMMetadatas()                            const;
+  bool                   hasLLVMMetadata(const char* a)                const;
+  const LLVMMetadataList& getLLVMMetadatas()                          const;
+  void                   setLLVMMetadatas(const LLVMMetadataList& al);
 
 protected:
                          LoopStmt(BlockStmt* initBody);
@@ -73,7 +73,7 @@ protected:
   bool                   mOrderIndependent;
   bool                   mVectorizationHazard;
   bool                   mParallelAccessVectorizationHazard;
-  LLVMAttributeList      mLLVMAttributeList;
+  LLVMMetadataList      mLLVMMetadataList;
 
   void                   reportVectorizable();
 

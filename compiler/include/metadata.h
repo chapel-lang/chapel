@@ -25,27 +25,27 @@
 #include <cstdint>
 #include <vector>
 
-enum LLVMAttributeType {
+enum LLVMMetadataType {
   LAT_NO_VALUE, LAT_INT, LAT_BOOL, LAT_STRING, LAT_ATTRIBUTE
 };
-struct LLVMAttribute;
-using LLVMAttributePtr = LLVMAttribute*;
-using LLVMAttributeList = std::vector<LLVMAttributePtr>;
-struct LLVMAttribute {
+struct LLVMMetadata;
+using LLVMMetadataPtr = LLVMMetadata*;
+using LLVMMetadataList = std::vector<LLVMMetadataPtr>;
+struct LLVMMetadata {
   const char* key;
-  LLVMAttributeType kind;
+  LLVMMetadataType kind;
   union {
     int64_t int_val;
     bool bool_val;
     const char* string_val;
-    LLVMAttributePtr attribute_val;
+    LLVMMetadataPtr attribute_val;
   };
-  LLVMAttribute(const char* key, enum LLVMAttributeType kind);
-  static LLVMAttributePtr construct(const char*);
-  static LLVMAttributePtr constructInt(const char*, int64_t);
-  static LLVMAttributePtr constructBool(const char*, bool);
-  static LLVMAttributePtr constructString(const char*, const char*);
-  static LLVMAttributePtr constructAttribute(const char*, LLVMAttributePtr);
+  LLVMMetadata(const char* key, enum LLVMMetadataType kind);
+  static LLVMMetadataPtr construct(const char*);
+  static LLVMMetadataPtr constructInt(const char*, int64_t);
+  static LLVMMetadataPtr constructBool(const char*, bool);
+  static LLVMMetadataPtr constructString(const char*, const char*);
+  static LLVMMetadataPtr constructMetadata(const char*, LLVMMetadataPtr);
 };
 
 #endif

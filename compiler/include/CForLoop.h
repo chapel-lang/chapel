@@ -33,7 +33,7 @@ class CForLoop final : public LoopStmt
 public:
   static BlockStmt*      buildCForLoop(CallExpr*  cforInfo,
                                        BlockStmt* body,
-                                       LLVMAttributeList attrs = {});
+                                       LLVMMetadataList attrs = {});
 
   static CForLoop*       buildWithBodyFrom(ForLoop* forLoop);
 

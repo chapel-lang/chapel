@@ -38,7 +38,7 @@ static CallExpr* isPrimIfVar(Expr* cond) {
   return nullptr;
 }
 
-BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body, LLVMAttributeList attrs)
+BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body, LLVMMetadataList attrs)
 {
   BlockStmt* retval = NULL;
 
@@ -82,7 +82,7 @@ BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body, LLVMAttributeList att
 
     loop->mContinueLabel = continueLabel;
     loop->mBreakLabel    = breakLabel;
-    loop->mLLVMAttributeList = attrs;
+    loop->mLLVMMetadataList = attrs;
 
     loop->insertAtHead(varDef);
     varDef->init = new CallExpr(PRIM_TO_NON_NILABLE_CLASS, borrow);
@@ -112,7 +112,7 @@ BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body, LLVMAttributeList att
 
     loop->mContinueLabel = continueLabel;
     loop->mBreakLabel    = breakLabel;
-    loop->mLLVMAttributeList = attrs;
+    loop->mLLVMMetadataList = attrs;
 
     loop->insertAtTail(new DefExpr(continueLabel));
     loop->insertAtTail(new CallExpr(PRIM_MOVE, condVar, condTest->copy()));
@@ -155,7 +155,7 @@ WhileDoStmt* WhileDoStmt::copyInner(SymbolMap* map)
 
   retval->copyInnerShare(*this, map);
   retval->userLabel = this->userLabel;
-  retval->mLLVMAttributeList = mLLVMAttributeList;
+  retval->mLLVMMetadataList = mLLVMMetadataList;
 
   return retval;
 }

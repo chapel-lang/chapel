@@ -34,7 +34,7 @@
 ************************************* | ************************************/
 
 // A WhileDo loop may have a C_FOR_LOOP prim as the termination condition
-BlockStmt* CForLoop::buildCForLoop(CallExpr* call, BlockStmt* body, LLVMAttributeList attrs)
+BlockStmt* CForLoop::buildCForLoop(CallExpr* call, BlockStmt* body, LLVMMetadataList attrs)
 {
   BlockStmt* retval = buildChapelStmt();
 
@@ -55,7 +55,7 @@ BlockStmt* CForLoop::buildCForLoop(CallExpr* call, BlockStmt* body, LLVMAttribut
 
     loop->mContinueLabel = continueLabel;
     loop->mBreakLabel    = breakLabel;
-    loop->mLLVMAttributeList = attrs;
+    loop->mLLVMMetadataList = attrs;
 
     loop->loopHeaderSet(initBlock, testBlock, incrBlock);
 
@@ -82,7 +82,7 @@ CForLoop* CForLoop::buildWithBodyFrom(ForLoop* forLoop)
   retval->mBreakLabel       = forLoop->breakLabelGet();
   retval->mContinueLabel    = forLoop->continueLabelGet();
   retval->mOrderIndependent = forLoop->isOrderIndependent();
-  retval->mLLVMAttributeList = forLoop->getLLVMAttributes();
+  retval->mLLVMMetadataList = forLoop->getLLVMMetadatas();
 
   for_alist(expr, forLoop->body)
     retval->insertAtTail(expr->copy(&map, true));
@@ -134,7 +134,7 @@ CForLoop* CForLoop::copyInner(SymbolMap* map)
   retval->mBreakLabel       = mBreakLabel;
   retval->mContinueLabel    = mContinueLabel;
   retval->mOrderIndependent = mOrderIndependent;
-  retval->mLLVMAttributeList = mLLVMAttributeList;
+  retval->mLLVMMetadataList = mLLVMMetadataList;
 
   if (initBlockGet() != 0 && testBlockGet() != 0 && incrBlockGet() != 0)
     retval->loopHeaderSet(initBlockGet()->copy(map, true),

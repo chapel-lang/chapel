@@ -1,7 +1,7 @@
 
 proc doSum(A) {
   var sum: A.eltType = 0;
-  @llvm.assertVectorized
+  @llvm.assertVectorized()
   foreach i in A.domain {
     const ref a = A[i];
     sum += a;
@@ -11,7 +11,7 @@ proc doSum(A) {
 
 proc doSum2(A) {
   var sum: A.eltType = 0;
-  @llvm.assertVectorized
+  @llvm.assertVectorized()
   foreach a in A {
     sum += sqrt(a);
   }

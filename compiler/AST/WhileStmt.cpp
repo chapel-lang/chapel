@@ -46,7 +46,7 @@ void WhileStmt::copyInnerShare(const WhileStmt& ref,
   mBreakLabel       = ref.mBreakLabel;
   mContinueLabel    = ref.mContinueLabel;
   mOrderIndependent = ref.mOrderIndependent;
-  mLLVMAttributeList = ref.mLLVMAttributeList;
+  mLLVMMetadataList = ref.mLLVMMetadataList;
 
   if (condExpr != 0)
     mCondExpr = condExpr->copy(map, true);

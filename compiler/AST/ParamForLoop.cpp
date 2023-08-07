@@ -191,7 +191,7 @@ ParamForLoop* ParamForLoop::copyInner(SymbolMap* map)
   retval->blockTag       = blockTag;
   retval->mBreakLabel    = mBreakLabel;
   retval->mContinueLabel = mContinueLabel;
-  retval->mLLVMAttributeList = mLLVMAttributeList;
+  retval->mLLVMMetadataList = mLLVMMetadataList;
 
   if (mResolveInfo != 0)
     retval->mResolveInfo = mResolveInfo->copy(map, true);

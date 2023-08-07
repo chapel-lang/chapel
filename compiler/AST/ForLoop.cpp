@@ -173,7 +173,7 @@ static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
 BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
                           Expr*      iteratorExpr,
                           BlockStmt* body,
-                          LLVMAttributeList attrs,
+                          LLVMMetadataList attrs,
                           bool       coforall,
                           bool       zippered,
                           bool       isLoweredForall,
@@ -193,7 +193,7 @@ BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
 
   iterator->addFlag(FLAG_EXPR_TEMP);
 
-  loop->setLLVMAttributes(attrs);
+  loop->setLLVMMetadatas(attrs);
 
   if (isForeach) {
     loop->orderIndependentSet(true);
@@ -318,7 +318,7 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
                                  BlockStmt* body,
                                  bool       zippered,
                                  bool       isForExpr,
-                                 LLVMAttributeList attrs)
+                                 LLVMMetadataList attrs)
 {
   return doBuildForLoop(indices, iteratorExpr, body, attrs,
                         /* coforall */ false,
@@ -333,7 +333,7 @@ BlockStmt* ForLoop::buildForeachLoop(Expr*      indices,
                                      BlockStmt* body,
                                      bool       zippered,
                                      bool       isForExpr,
-                                     LLVMAttributeList attrs)
+                                     LLVMMetadataList attrs)
 
 {
   return doBuildForLoop(indices, iteratorExpr, body, attrs,
@@ -348,7 +348,7 @@ BlockStmt* ForLoop::buildCoforallLoop(Expr*      indices,
                                       Expr*      iteratorExpr,
                                       BlockStmt* body,
                                       bool       zippered,
-                                      LLVMAttributeList attrs)
+                                      LLVMMetadataList attrs)
 {
   return doBuildForLoop(indices, iteratorExpr, body, attrs,
                         /* coforall */ true,
@@ -364,7 +364,7 @@ BlockStmt* ForLoop::buildLoweredForallLoop(Expr*      indices,
                                            BlockStmt* body,
                                            bool       zippered,
                                            bool       isForExpr,
-                                           LLVMAttributeList attrs)
+                                           LLVMMetadataList attrs)
 {
   return doBuildForLoop(indices, iteratorExpr, body, attrs,
                         /* coforall */ false,
@@ -414,7 +414,7 @@ ForLoop* ForLoop::copyInner(SymbolMap* map)
   retval->mBreakLabel       = mBreakLabel;
   retval->mContinueLabel    = mContinueLabel;
   retval->mOrderIndependent = mOrderIndependent;
-  retval->mLLVMAttributeList = mLLVMAttributeList;
+  retval->mLLVMMetadataList = mLLVMMetadataList;
 
   retval->mIndex            = mIndex->copy(map, true),
   retval->mIterator         = mIterator->copy(map, true);

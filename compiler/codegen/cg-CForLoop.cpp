@@ -101,7 +101,7 @@ static void addLoopRVMetadata(std::vector<llvm::Metadata*>& args) {
 
 
 
-static llvm::Metadata* constructLLVMAttribute(LLVMAttributePtr attr) {
+static llvm::Metadata* constructLLVMMetadata(LLVMMetadataPtr attr) {
   GenInfo* info = gGenInfo;
   auto &ctx = info->module->getContext();
   
@@ -135,7 +135,7 @@ static llvm::Metadata* constructLLVMAttribute(LLVMAttributePtr attr) {
     return llvm::MDNode::get(ctx, metaArray);
 
   } else if (attr->kind == LAT_ATTRIBUTE) {
-    auto value = constructLLVMAttribute(attr->attribute_val);
+    auto value = constructLLVMMetadata(attr->attribute_val);
 
     llvm::Metadata *metaArray[] = {key, value};
     return llvm::MDNode::get(ctx, metaArray);
@@ -180,9 +180,9 @@ static llvm::MDNode* generateLoopMetadata(LoopStmt* loop,
 
   }
 
-  auto llvmAttrs = loop->getLLVMAttributes();
+  auto llvmAttrs = loop->getLLVMMetadatas();
   for (const auto& attr: llvmAttrs) {
-    auto meta = constructLLVMAttribute(attr);
+    auto meta = constructLLVMMetadata(attr);
     if (meta)
       args.push_back(meta);
     else
