@@ -81,10 +81,11 @@ void* chpl_mem_allocMany(size_t number, size_t size,
                          chpl_mem_descInt_t description,
                          int32_t lineno, int32_t filename) {
   void* memAlloc;
+  bool haltOnOom=true;
   chpl_memhook_malloc_pre(number, size, description, lineno, filename);
   memAlloc = chpl_malloc(number*size);
   chpl_memhook_malloc_post(memAlloc, number, size, description,
-                           lineno, filename);
+                           lineno, filename, haltOnOom);
   return memAlloc;
 }
 
@@ -99,10 +100,11 @@ void* chpl_mem_allocManyZero(size_t number, size_t size,
                              chpl_mem_descInt_t description,
                              int32_t lineno, int32_t filename) {
   void* memAlloc;
+  bool haltOnOom=true;
   chpl_memhook_malloc_pre(number, size, description, lineno, filename);
   memAlloc = chpl_calloc(number, size);
   chpl_memhook_malloc_post(memAlloc, number, size, description,
-                           lineno, filename);
+                           lineno, filename, haltOnOom);
   return memAlloc;
 }
 
@@ -141,9 +143,11 @@ void* chpl_mem_memalign(size_t boundary, size_t size,
                         chpl_mem_descInt_t description,
                         int32_t lineno, int32_t filename) {
   void* memAlloc;
+  bool haltOnOom=true;
   chpl_memhook_malloc_pre(1, size, description, lineno, filename);
   memAlloc = chpl_memalign(boundary, size);
-  chpl_memhook_malloc_post(memAlloc, 1, size, description, lineno, filename);
+  chpl_memhook_malloc_post(memAlloc, 1, size, description, lineno, filename,
+                           haltOnOom);
   return memAlloc;
 }
 
