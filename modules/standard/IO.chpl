@@ -4452,7 +4452,7 @@ proc openreader(path:string,
 }
 
 
-@deprecated("openReader with a 'style' argument is deprecated, please use a Deserializer with the 'deserializer' argument instead")
+@deprecated("openReader with a 'style' argument is deprecated, please pass a Deserializer to the 'deserializer' argument instead")
 proc openReader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
@@ -4610,7 +4610,7 @@ proc openwriter(path:string,
   return openWriter(path, kind, locking, start, end, hints, style);
 }
 
-@deprecated("openWriter with a 'style' argument is deprecated, please use a Serializer with the 'serializer' argument instead")
+@deprecated("openWriter with a 'style' argument is deprecated, please pass a Serializer to the 'serializer' argument instead")
 proc openWriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
@@ -4708,7 +4708,7 @@ private proc openWriterHelper(path:string,
   return try fl.writerHelper(kind, locking, start..end, hints, style, serializer=serializer);
 }
 
-@deprecated("reader with a 'style' argument is deprecated, please use a Deserializer with the 'deserializer' argument instead")
+@deprecated("reader with a 'style' argument is deprecated, please pass a Deserializer to the 'deserializer' argument instead")
 proc file.reader(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  hints=ioHintSet.empty,
@@ -4946,7 +4946,7 @@ proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
   return ret;
 }
 
-@deprecated("writer with a 'style' argument is deprecated, please use a Serializer with the 'serializer' argument instead")
+@deprecated("writer with a 'style' argument is deprecated, please pass a Serializer to the 'serializer' argument instead")
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  hints=ioHintSet.empty, style:iostyle):
