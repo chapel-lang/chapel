@@ -2626,23 +2626,20 @@ module BigInteger {
     }
   }
 
-  /* Set the value of ``result`` to the inverse of ``x`` modulo ``y``
-
-     .. note::
-        If an inverse does not exist, an :class:`InversionError` will be thrown,
-        and the value of ``result`` will be left undefined
-
-     This fulfills the same role as the GMP number theoretic function ``mpz_invert``.
+  /*
+     Set the value of ``result`` to the inverse of ``x`` modulo ``y``
 
      :arg result: Where the result is stored
      :type result: :record:`bigint`
-
      :arg x: The dividend of the modulo operation
      :type x: :record:`bigint`
-
      :arg y: The divisor of the modulo operation
      :type y: :record:`bigint`
+     :throws InversionError: Thrown when the inverse does not exist and the value of ``result`` will be left undefined.
 
+     .. seealso::
+        :proc:`GMP.mpz_invert` and
+        `mpz_invert <https://gmplib.org/manual/Number-Theoretic-Functions#index-mpz_005finvert>`_.
   */
   proc invert(ref result: bigint, const ref x: bigint, const ref y: bigint) throws {
     var ret: c_int;
