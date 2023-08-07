@@ -1914,6 +1914,7 @@ struct CommentVisitor {
 struct ReportVisitor {
   std::vector<const Function*> undocProcs;
   std::vector<const Function*> deprecatedProcs;
+  std::vector<const Function*> nodocProc;
   Context* context_;
 
   ReportVisitor(Context* context) : context_(context) {}
@@ -1922,16 +1923,22 @@ struct ReportVisitor {
     auto comment = previousComment(context_, node->id());
 
     // Undocumented Public Procedures
-    if ((!isNoDoc(node)) && (node->visibility() != chpl::uast::Decl::PRIVATE) && (comment == nullptr)) {
+    if ((!isNoDoc(node)) && (node->visibility() != chpl::uast::Decl::PRIVATE) && (comment == nullptr)) { //public, no documentation
       undocProcs.push_back(node);
     }
 
     // Deprecated Private Procedures
     if (auto attrs = node->attributeGroup()) {
-      if ((attrs->isDeprecated()) && (node->visibility() == chpl::uast::Decl::PRIVATE) && (comment != nullptr)) { //deprecated, public, has a comment
+      if ((node->visibility() == chpl::uast::Decl::PRIVATE) && (attrs->isDeprecated())) { //private, deprecated
         deprecatedProcs.push_back(node);
       }
     }
+
+    // @nodoc Procedures with Documentation
+    if ((isNoDoc(node)) && (comment != nullptr)) { //nodoc, has documentation
+      nodocProc.push_back(node);
+    }
+
     return false;
   }
 
@@ -1953,14 +1960,22 @@ void printUndocProc(Context* context, ID id) {
       count++;
       std::cout << "warning: undocumented public procedure " << count << ": '" << proc->name().c_str() << "'" << std::endl;
     }
-    std::cout << count << " undocumented public procedures.\n" << std::endl;
+    std::cout << count << " undocumented public procedure(s).\n" << std::endl;
 
-    int count = 0;
+    count = 0;
     for (auto proc: visitor.deprecatedProcs) {
       count++;
       std::cout << "warning: deprecated private procedure " << count << ": '" << proc->name().c_str() << "'" << std::endl;
     }
-    std::cout << count << " deprecated private procedures.\n" << std::endl;
+    std::cout << count << " deprecated private procedure(s).\n" << std::endl;
+
+    count = 0;
+    for (auto proc: visitor.nodocProc) {
+      count++;
+      std::cout << "warning: @nodoc documented procedure " << count << ": '" << proc->name().c_str() << "'" << std::endl;
+    }
+    std::cout << count << " @nodoc documented procedure(s)." << std::endl;
+
   }
 }
 
