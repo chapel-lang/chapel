@@ -33,21 +33,6 @@ cmake-build-*/
 /lib
 /tar
 
-# Make ignores.
-/make/Chapel.xcodeproj/*.pbxuser
-/make/Chapel.xcodeproj/*.mode1v3
-
-# Man ignores.
-/man/man1/
-/man/man3/
-
-# Modules ignores.
-/modules/docs
-/modules/webdocs
-
-# Runtime ignores.
-/runtime/include/chpl_rt_utils.h
-
 # Spec ignores.
 /spec/*.aux
 /spec/*.ind
