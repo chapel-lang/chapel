@@ -21,9 +21,41 @@ or
 
    This is a color enum. 
 
+   .. enumconstant:: enum constant Red
+
+   .. enumconstant:: enum constant Yellow
+
+   .. enumconstant:: enum constant Blue
 
 .. enum:: enum Months { January = 1, February, March, April, May, June, July, August, September, October, November, December }
 
    Another enum with inline comments for constants. 
 
+   .. enumconstant:: enum constant January = 1
+
+   .. enumconstant:: enum constant February
+
+      month two! 
+
+   .. enumconstant:: enum constant March
+
+      the ides of 
+
+   .. enumconstant:: enum constant April
+
+   .. enumconstant:: enum constant May
+
+   .. enumconstant:: enum constant June
+
+   .. enumconstant:: enum constant July
+
+   .. enumconstant:: enum constant August
+
+   .. enumconstant:: enum constant September
+
+   .. enumconstant:: enum constant October
+
+   .. enumconstant:: enum constant November
+
+   .. enumconstant:: enum constant December
 
