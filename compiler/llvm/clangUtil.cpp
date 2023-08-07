@@ -4609,8 +4609,8 @@ static void checkLoopsAssertVectorize() {
       // extract from it the MD_loop, which will return something if its a BR
       // if its not well formed, the terminator will return nullptr
       if(auto I = BB.getTerminator()) {
-        if(auto MD = I->getMetadata(LLVMContext::MD_loop)) { 
-          auto MD_assertvectorized = 
+        if(auto MD = I->getMetadata(LLVMContext::MD_loop)) {
+          auto MD_assertvectorized =
             getMetadataContainingAttr(MD, "chpl.loop.assertvectorized");
           auto hasAssertVectorized = getBinaryMetadataValue(MD_assertvectorized) == 1;
           if(hasAssertVectorized) {
@@ -4618,9 +4618,9 @@ static void checkLoopsAssertVectorize() {
             auto isVectorized = getBinaryMetadataValue(MD_isvectorize) == 1;
             if(!isVectorized) {
               const char* astr_funcCName = astr(F.getName().str());
-              auto funcIt = gGenInfo->functionCNameAstrToSymbol.find(astr_funcCName);
+              auto funcIt = info->functionCNameAstrToSymbol.find(astr_funcCName);
               FnSymbol* fn = nullptr;
-              if (funcIt != gGenInfo->functionCNameAstrToSymbol.end()) {
+              if (funcIt != info->functionCNameAstrToSymbol.end()) {
                 fn = funcIt->second;
               }
               int lineno = -1;
@@ -4634,7 +4634,6 @@ static void checkLoopsAssertVectorize() {
               USR_WARN(fn, "loop on line %d was marked 'assertVectorized' but did not vectorize", lineno);
             }
           }
-          
         }
       }
     }
