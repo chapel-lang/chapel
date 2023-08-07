@@ -1,6 +1,6 @@
-llvm.Metadata.chpl:2: In function 'saxpy':
-llvm.Metadata.chpl:10: warning: Unknown attribute tool name 'llvm'
-llvm.Metadata.chpl:11: warning: Unknown attribute tool name 'llvm'
-llvm.Metadata.chpl:11: warning: 'llvm.metadata' is an unstable attribute
-llvm.Metadata.chpl:10: warning: 'llvm.assertVectorized' is an unstable attribute
+llvmMetadata.chpl:2: In function 'saxpy':
+llvmMetadata.chpl:10: warning: Unknown attribute tool name 'llvm'
+llvmMetadata.chpl:11: warning: Unknown attribute tool name 'llvm'
+llvmMetadata.chpl:11: warning: 'llvm.metadata' is an unstable attribute
+llvmMetadata.chpl:10: warning: 'llvm.assertVectorized' is an unstable attribute
 3.0 6.0 9.0 12.0 15.0 18.0 21.0 24.0 27.0 30.0 33.0 36.0 39.0 42.0 45.0 48.0
