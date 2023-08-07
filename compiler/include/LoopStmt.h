@@ -61,8 +61,8 @@ public:
 
   bool                   hasLLVMMetadata()                            const;
   bool                   hasLLVMMetadata(const char* a)                const;
-  const LLVMMetadataList& getLLVMMetadatas()                          const;
-  void                   setLLVMMetadatas(const LLVMMetadataList& al);
+  const LLVMMetadataList& getLLVMMetadata()                          const;
+  void                   setLLVMMetadata(const LLVMMetadataList& al);
 
 protected:
                          LoopStmt(BlockStmt* initBody);

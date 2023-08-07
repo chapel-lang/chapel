@@ -101,14 +101,14 @@ bool LoopStmt::hasLLVMMetadata() const {
 bool LoopStmt::hasLLVMMetadata(const char* a) const {
   const char* aa = astr(a);
   auto it = std::find_if(mLLVMMetadataList.begin(),
-                          mLLVMMetadataList.end(),
-                          [aa](auto elm) {return elm->key == aa;});
+                         mLLVMMetadataList.end(),
+                         [aa](auto elm) {return elm->key == aa;});
   return it != mLLVMMetadataList.end();
 }
-const LLVMMetadataList& LoopStmt::getLLVMMetadatas() const {
+const LLVMMetadataList& LoopStmt::getLLVMMetadata() const {
   return mLLVMMetadataList;
 }
-void LoopStmt::setLLVMMetadatas(const LLVMMetadataList& al) {
+void LoopStmt::setLLVMMetadata(const LLVMMetadataList& al) {
   mLLVMMetadataList = al;
 }
 

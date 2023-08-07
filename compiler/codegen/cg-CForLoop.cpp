@@ -180,7 +180,7 @@ static llvm::MDNode* generateLoopMetadata(LoopStmt* loop,
 
   }
 
-  auto llvmAttrs = loop->getLLVMMetadatas();
+  auto llvmAttrs = loop->getLLVMMetadata();
   for (const auto& attr: llvmAttrs) {
     auto meta = constructLLVMMetadata(attr);
     if (meta)
