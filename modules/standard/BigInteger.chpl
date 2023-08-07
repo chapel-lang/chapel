@@ -3648,6 +3648,22 @@ module BigInteger {
   @deprecated(notes="bigint.sub method is deprecated - please use the standalone function :proc:`~BigInteger.sub`")
   proc bigint.sub(a: uint, const ref b: bigint) do BigInteger.sub(this, a, b);
 
+  /*
+     Sets ``result`` to the product of ``x`` and ``y``.
+
+     :arg result: Where the result is stored
+     :type result: :record:`bigint`
+     :arg x: The first operand of the product
+     :type x: :record:`bigint`
+     :arg y: The second operand of the product
+     :type y: :record:`bigint`, ``uint``, ``int``
+
+     .. seealso::
+        :proc:`GMP.mpz_mul`,
+        :proc:`GMP.mpz_mul_ui`,
+        :proc:`GMP.mpz_mul_si`, and
+        `mpz_mul <https://gmplib.org/manual/Integer-Arithmetic#index-mpz_005fmul>`_.
+  */
   proc mul(ref result: bigint, const ref x: bigint, const ref y: bigint) {
     if compiledForSingleLocale() {
       mpz_mul(result.mpz, x.mpz, y.mpz);
@@ -3665,15 +3681,7 @@ module BigInteger {
     }
   }
 
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc mul(ref result: bigint, const ref a: bigint, const ref b: bigint)
-    do BigInteger.mul(result, a, b);
-
-  @deprecated(notes="bigint.mul method is deprecated - please use the standalone function :proc:`~BigInteger.mul`")
-  proc bigint.mul(const ref a: bigint, const ref b: bigint)
-    do BigInteger.mul(this, a, b);
-
+  /* See :proc:`mul` */
   proc mul(ref result: bigint, const ref x: bigint, y: int) {
     const y_ = y.safeCast(c_long);
 
@@ -3691,14 +3699,7 @@ module BigInteger {
     }
   }
 
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc mul(ref result: bigint, const ref a: bigint, b: int)
-    do BigInteger.mul(result, a, b);
-
-  @deprecated(notes="bigint.mul method is deprecated - please use the standalone function :proc:`~BigInteger.mul`")
-  proc bigint.mul(const ref a: bigint, b: int) do BigInteger.mul(this, a, b);
-
+  /* See :proc:`mul` */
   proc mul(ref result: bigint, const ref x: bigint, y: uint) {
     const y_ = y.safeCast(c_long);
 
@@ -3715,6 +3716,23 @@ module BigInteger {
       }
     }
   }
+
+  pragma "last resort"
+  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
+  proc mul(ref result: bigint, const ref a: bigint, const ref b: bigint)
+    do BigInteger.mul(result, a, b);
+
+  @deprecated(notes="bigint.mul method is deprecated - please use the standalone function :proc:`~BigInteger.mul`")
+  proc bigint.mul(const ref a: bigint, const ref b: bigint)
+    do BigInteger.mul(this, a, b);
+
+  pragma "last resort"
+  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
+  proc mul(ref result: bigint, const ref a: bigint, b: int)
+    do BigInteger.mul(result, a, b);
+
+  @deprecated(notes="bigint.mul method is deprecated - please use the standalone function :proc:`~BigInteger.mul`")
+  proc bigint.mul(const ref a: bigint, b: int) do BigInteger.mul(this, a, b);
 
   pragma "last resort"
   @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
