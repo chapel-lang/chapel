@@ -5230,7 +5230,16 @@ module BigInteger {
     BigInteger.com(this, a);
   }
 
-  // Assignment functions
+  /*
+    Assign ``x`` to ``this``
+
+    :arg x: Number to be assigned
+    :type x: :record:`bigint`
+
+    .. seealso::
+       :proc:`GMP.mpz_set` and
+       `mpz_set <https://gmplib.org/manual/Assigning-Integers#index-mpz_005fset>`_.
+  */
   proc bigint.set(const ref x: bigint) {
     if compiledForSingleLocale() {
       mpz_set(this.mpz, x.mpz);
@@ -5249,10 +5258,7 @@ module BigInteger {
     }
   }
 
-  pragma "last resort"
-  @deprecated("the argument name 'a' is deprecated - please use 'x' instead")
-  proc bigint.set(const ref a: bigint) do this.set(a);
-
+  /* See :proc:`bigint.set` */
   proc bigint.set(x : int) {
     const x_ = x.safeCast(c_long);
 
@@ -5271,10 +5277,7 @@ module BigInteger {
     }
   }
 
-  pragma "last resort"
-  @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
-  proc bigint.set(num : int) do this.set(num);
-
+  /* See :proc:`bigint.set` */
   proc bigint.set(x : uint) {
     const x_ = x.safeCast(c_ulong);
 
@@ -5293,10 +5296,7 @@ module BigInteger {
     }
   }
 
-  pragma "last resort"
-  @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
-  proc bigint.set(num : uint) do this.set(num);
-
+  /* See :proc:`bigint.set` */
   proc bigint.set(x: real) {
     const x_ = x : c_double;
 
@@ -5315,10 +5315,7 @@ module BigInteger {
     }
   }
 
-  pragma "last resort"
-  @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
-  proc bigint.set(num: real) do this.set(num);
-
+  /* See :proc:`bigint.set` */
   proc bigint.set(x: string, base: int = 0) {
     const base_ = base.safeCast(c_int);
 
@@ -5338,9 +5335,35 @@ module BigInteger {
   }
 
   pragma "last resort"
+  @deprecated("the argument name 'a' is deprecated - please use 'x' instead")
+  proc bigint.set(const ref a: bigint) do this.set(a);
+
+  pragma "last resort"
+  @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
+  proc bigint.set(num : int) do this.set(num);
+
+  pragma "last resort"
+  @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
+  proc bigint.set(num : uint) do this.set(num);
+
+  pragma "last resort"
+  @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
+  proc bigint.set(num: real) do this.set(num);
+
+  pragma "last resort"
   @deprecated("the argument name 'str' is deprecated - please use 'x' instead")
   proc bigint.set(str: string, base: int = 0) do this.set(str, base);
 
+  /*
+    Swaps ``this`` and ``x``
+
+    :arg x: Number to be swapped
+    :type x: :record:`bigint`
+
+    .. seealso::
+       :proc:`GMP.mpz_swap` and
+       `mpz_swap <https://gmplib.org/manual/Assigning-Integers#index-mpz_005fswap>`_.
+  */
   proc bigint.swap(ref x: bigint) {
     if compiledForSingleLocale() {
       mpz_swap(this.mpz, x.mpz);
