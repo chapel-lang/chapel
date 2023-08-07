@@ -369,12 +369,14 @@ void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
                chpl_lookupFilename(filename), lineno);
 
   void *ptr = NULL;
+  bool haltOnOom=true;
   if (size > 0) {
     chpl_gpu_impl_use_device(chpl_task_getRequestedSubloc());
 
     chpl_memhook_malloc_pre(1, size, description, lineno, filename);
     ptr = chpl_gpu_impl_mem_alloc(size);
-    chpl_memhook_malloc_post((void*)ptr, 1, size, description, lineno, filename);
+    chpl_memhook_malloc_post((void*)ptr, 1, size, description, lineno, filename,
+                             haltOnOom);
 
     CHPL_GPU_DEBUG("chpl_gpu_mem_alloc returning %p\n", (void*)ptr);
   }
@@ -393,10 +395,12 @@ void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
   chpl_gpu_impl_use_device(chpl_task_getRequestedSubloc());
 
   void* ptr = 0;
+  bool haltOnOom=true;
   if (size > 0) {
     chpl_memhook_malloc_pre(1, size, description, lineno, filename);
     ptr = chpl_gpu_impl_mem_array_alloc(size);
-    chpl_memhook_malloc_post((void*)ptr, 1, size, description, lineno, filename);
+    chpl_memhook_malloc_post((void*)ptr, 1, size, description, lineno, filename,
+                             haltOnOom);
 
     CHPL_GPU_DEBUG("chpl_gpu_mem_array_alloc returning %p\n", (void*)ptr);
   }
@@ -433,6 +437,7 @@ void* chpl_gpu_mem_calloc(size_t number, size_t size,
     // help a bit, but omp doesn't expose it. I don't know whether performance
     // here matters.
     const size_t total_size = number*size;
+    bool haltOnOom=true;
 
     void *host_mem = chpl_mem_calloc(number, size, description, lineno,
                                      filename);
@@ -442,7 +447,8 @@ void* chpl_gpu_mem_calloc(size_t number, size_t size,
 
     chpl_memhook_malloc_pre(1, total_size, description, lineno, filename);
     ptr = chpl_gpu_impl_mem_alloc(total_size);
-    chpl_memhook_malloc_post((void*)ptr, 1, total_size, description, lineno, filename);
+    chpl_memhook_malloc_post((void*)ptr, 1, total_size, description, lineno, filename,
+                             haltOnOom);
 
     chpl_gpu_impl_copy_host_to_device(ptr, host_mem, total_size);
 
