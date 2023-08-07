@@ -1913,14 +1913,24 @@ struct CommentVisitor {
 */
 struct ReportVisitor {
   std::vector<const Function*> undocProcs;
+  std::vector<const Function*> deprecatedProcs;
   Context* context_;
 
   ReportVisitor(Context* context) : context_(context) {}
 
   bool enter(const Function* node) {
     auto comment = previousComment(context_, node->id());
+
+    // Undocumented Public Procedures
     if ((!isNoDoc(node)) && (node->visibility() != chpl::uast::Decl::PRIVATE) && (comment == nullptr)) {
       undocProcs.push_back(node);
+    }
+
+    // Deprecated Private Procedures
+    if (auto attrs = node->attributeGroup()) {
+      if ((attrs->isDeprecated()) && (node->visibility() == chpl::uast::Decl::PRIVATE) && (comment != nullptr)) { //deprecated, public, has a comment
+        deprecatedProcs.push_back(node);
+      }
     }
     return false;
   }
@@ -1940,11 +1950,18 @@ void printUndocProc(Context* context, ID id) {
     node->traverse(visitor);
 
     for (auto proc : visitor.undocProcs) {
-        count++;
-        std::cout << "warning: undocumented public procedure " << count << " : '" << proc->name().c_str() << "'" << std::endl;
+      count++;
+      std::cout << "warning: undocumented public procedure " << count << ": '" << proc->name().c_str() << "'" << std::endl;
     }
+    std::cout << count << " undocumented public procedures.\n" << std::endl;
+
+    int count = 0;
+    for (auto proc: visitor.deprecatedProcs) {
+      count++;
+      std::cout << "warning: deprecated private procedure " << count << ": '" << proc->name().c_str() << "'" << std::endl;
+    }
+    std::cout << count << " deprecated private procedures.\n" << std::endl;
   }
-  std::cout << count << " undocumented procedures." << std::endl;
 }
 
 /**
