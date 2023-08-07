@@ -2052,7 +2052,20 @@ module BigInteger {
     BigInteger.pow(this, base, exp);
   }
 
-  // Root Extraction Functions
+  /*
+     Sets ``result`` to the truncated integer ``n`` th root of ``x``.
+
+     :arg result: Where the result is stored
+     :type result: :record:`bigint`
+     :arg x: Number to take the root of
+     :type x: :record:`bigint`
+     :arg n: Which root to take
+     :type n: ``uint``
+
+     .. seealso::
+        :proc:`GMP.mpz_root` and
+        `mpz_root <https://gmplib.org/manual/Integer-Roots#index-mpz_005froot>`_.
+  */
   proc root(ref result: bigint, const ref x: bigint, n: uint) : int {
     const n_ = n.safeCast(c_ulong);
     var   ret: c_int;
@@ -2096,7 +2109,7 @@ module BigInteger {
 
      .. seealso::
         :proc:`GMP.mpz_rootrem` and
-        `mpz_rootrem <https://gmplib.org/manual/Integer-Roots>`_.
+        `mpz_rootrem <https://gmplib.org/manual/Integer-Roots#index-mpz_005frootrem>`_.
   */
   proc rootRem(ref result: bigint, ref remain: bigint, const ref x: bigint, n: uint) {
     const n_  = n.safeCast(c_ulong);
@@ -2127,6 +2140,18 @@ module BigInteger {
   proc bigint.rootrem(ref rem: bigint, const ref u: bigint, n: uint)
     do BigInteger.rootRem(this, rem, u, n);
 
+  /*
+     Sets ``result`` to the truncated integer square root of ``x``.
+
+     :arg result: Where the result is stored
+     :type result: :record:`bigint`
+     :arg x: Number to take the square root of
+     :type x: :record:`bigint`
+
+     .. seealso::
+        :proc:`GMP.mpz_sqrt` and
+        `mpz_sqrt <https://gmplib.org/manual/Integer-Roots#index-mpz_005fsqrt>`_.
+  */
   proc sqrt(ref result: bigint, const ref x: bigint) {
     if compiledForSingleLocale() {
       mpz_sqrt(result.mpz, x.mpz);
@@ -2163,12 +2188,12 @@ module BigInteger {
      :type result: :record:`bigint`
      :arg remain: Where the remainder is stored
      :type remain: :record:`bigint`
-     :arg x: Number to take the root of
+     :arg x: Number to take the square root of
      :type x: :record:`bigint`
 
      .. seealso::
         :proc:`GMP.mpz_sqrtrem` and
-        `mpz_sqrtrem <https://gmplib.org/manual/Integer-Roots>`_.
+        `mpz_sqrtrem <https://gmplib.org/manual/Integer-Roots#index-mpz_005fsqrtrem>`_.
   */
   proc sqrtRem(ref result: bigint, ref remain: bigint, const ref x: bigint) {
     if compiledForSingleLocale() {
