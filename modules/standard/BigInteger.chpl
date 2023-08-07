@@ -3401,10 +3401,21 @@ module BigInteger {
       return false;
   }
 
-  //
-  // 5.5 Arithmetic functions
-  //
+  /*
+     Sets ``result`` to the sum of ``x`` and ``y``.
 
+     :arg result: Where the result is stored
+     :type result: :record:`bigint`
+     :arg x: The first operand of the sum
+     :type x: :record:`bigint`
+     :arg y: The second operand of the sum
+     :type y: :record:`bigint`, ``uint``, ``int``
+
+     .. seealso::
+        :proc:`GMP.mpz_add`,
+        :proc:`GMP.mpz_add_ui`, and
+        `mpz_add <https://gmplib.org/manual/Integer-Arithmetic#index-mpz_005fadd>`_.
+  */
   proc add(ref result: bigint, const ref x: bigint, const ref y: bigint) {
     if compiledForSingleLocale() {
       mpz_add(result.mpz, x.mpz, y.mpz);
@@ -3423,15 +3434,7 @@ module BigInteger {
     }
   }
 
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc add(ref result: bigint, const ref a: bigint, const ref b: bigint)
-    do BigInteger.add(result, a, b);
-
-  @deprecated(notes="bigint.add method is deprecated - please use the standalone function :proc:`~BigInteger.add`")
-  proc bigint.add(const ref a: bigint, const ref b: bigint)
-    do BigInteger.add(this, a, b);
-
+  /* See :proc:`add` */
   proc add(ref result: bigint, const ref x: bigint, y: int) {
     if y >= 0 {
       BigInteger.add(result, x, y:uint);
@@ -3456,14 +3459,7 @@ module BigInteger {
     }
   }
 
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc add(ref result: bigint, const ref a: bigint, b: int)
-    do BigInteger.add(result, a, b);
-
-  @deprecated(notes="bigint.add method is deprecated - please use the standalone function :proc:`~BigInteger.add`")
-  proc bigint.add(const ref a: bigint, b: int) do BigInteger.add(this, a, b);
-
+  /* See :proc:`add` */
   proc add(ref result: bigint, const ref x: bigint, y: uint) {
     const y_ = y.safeCast(c_ulong);
     if compiledForSingleLocale() {
@@ -3484,6 +3480,23 @@ module BigInteger {
 
   pragma "last resort"
   @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
+  proc add(ref result: bigint, const ref a: bigint, const ref b: bigint)
+    do BigInteger.add(result, a, b);
+
+  @deprecated(notes="bigint.add method is deprecated - please use the standalone function :proc:`~BigInteger.add`")
+  proc bigint.add(const ref a: bigint, const ref b: bigint)
+    do BigInteger.add(this, a, b);
+
+  pragma "last resort"
+  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
+  proc add(ref result: bigint, const ref a: bigint, b: int)
+    do BigInteger.add(result, a, b);
+
+  @deprecated(notes="bigint.add method is deprecated - please use the standalone function :proc:`~BigInteger.add`")
+  proc bigint.add(const ref a: bigint, b: int) do BigInteger.add(this, a, b);
+
+  pragma "last resort"
+  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
   proc add(ref result: bigint, const ref a: bigint, b: uint)
     do BigInteger.add(result, a, b);
 
@@ -3492,6 +3505,21 @@ module BigInteger {
     BigInteger.add(this, a, b);
   }
 
+  /*
+     Sets ``result`` to the difference of ``x`` and ``y``.
+
+     :arg result: Where the result is stored
+     :type result: :record:`bigint`
+     :arg x: The first operand of the difference
+     :type x: :record:`bigint`, ``uint``, ``int``
+     :arg y: The second operand of the difference
+     :type y: :record:`bigint`, ``uint``, ``int``
+
+     .. seealso::
+        :proc:`GMP.mpz_sub`,
+        :proc:`GMP.mpz_sub_ui`, and
+        `mpz_sub <https://gmplib.org/manual/Integer-Arithmetic#index-mpz_005fsub>`_.
+  */
   proc sub(ref result: bigint, const ref x: bigint, const ref y: bigint) {
     if compiledForSingleLocale() {
       mpz_sub(result.mpz, x.mpz, y.mpz);
@@ -3509,15 +3537,7 @@ module BigInteger {
     }
   }
 
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc sub(ref result: bigint, const ref a: bigint, const ref b: bigint)
-    do BigInteger.sub(result, a, b);
-
-  @deprecated(notes="bigint.sub method is deprecated - please use the standalone function :proc:`~BigInteger.sub`")
-  proc bigint.sub(const ref a: bigint, const ref b: bigint)
-    do BigInteger.sub(this, a, b);
-
+  /* See :proc:`sub` */
   proc sub(ref result: bigint, const ref x: bigint, y: int) {
     if y >= 0 {
       BigInteger.sub(result, x, y:uint);
@@ -3526,14 +3546,7 @@ module BigInteger {
     }
   }
 
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc sub(ref result: bigint, const ref a: bigint, b: int)
-    do BigInteger.sub(result, a, b);
-
-  @deprecated(notes="bigint.sub method is deprecated - please use the standalone function :proc:`~BigInteger.sub`")
-  proc bigint.sub(const ref a: bigint, b: int) do BigInteger.sub(this, a, b);
-
+  /* See :proc:`sub` */
   proc sub(ref result:bigint, const ref x: bigint, y: uint) {
     const y_ = y.safeCast(c_ulong);
 
@@ -3551,14 +3564,7 @@ module BigInteger {
     }
   }
 
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc sub(ref result:bigint, const ref a: bigint, b: uint)
-    do BigInteger.sub(result, a, b);
-
-  @deprecated(notes="bigint.sub method is deprecated - please use the standalone function :proc:`~BigInteger.sub`")
-  proc bigint.sub(const ref a: bigint, b: uint) do BigInteger.sub(this, a, b);
-
+  /* See :proc:`sub` */
   proc sub(ref result: bigint, x: int, const ref y: bigint) {
     if x >= 0 {
       BigInteger.sub(result, x:uint, y);
@@ -3583,14 +3589,7 @@ module BigInteger {
     }
   }
 
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc sub(ref result: bigint, a: int, const ref b: bigint)
-    do BigInteger.sub(result, a, b);
-
-  @deprecated(notes="bigint.sub method is deprecated - please use the standalone function :proc:`~BigInteger.sub`")
-  proc bigint.sub(a: int, const ref b: bigint) do BigInteger.sub(this, a, b);
-
+  /* See :proc:`sub` */
   proc sub(ref result: bigint, x: uint, const ref y: bigint) {
     const x_ = x.safeCast(c_ulong);
 
@@ -3607,6 +3606,39 @@ module BigInteger {
       }
     }
   }
+
+  pragma "last resort"
+  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
+  proc sub(ref result: bigint, const ref a: bigint, const ref b: bigint)
+    do BigInteger.sub(result, a, b);
+
+  @deprecated(notes="bigint.sub method is deprecated - please use the standalone function :proc:`~BigInteger.sub`")
+  proc bigint.sub(const ref a: bigint, const ref b: bigint)
+    do BigInteger.sub(this, a, b);
+
+  pragma "last resort"
+  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
+  proc sub(ref result: bigint, const ref a: bigint, b: int)
+    do BigInteger.sub(result, a, b);
+
+  @deprecated(notes="bigint.sub method is deprecated - please use the standalone function :proc:`~BigInteger.sub`")
+  proc bigint.sub(const ref a: bigint, b: int) do BigInteger.sub(this, a, b);
+
+  pragma "last resort"
+  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
+  proc sub(ref result:bigint, const ref a: bigint, b: uint)
+    do BigInteger.sub(result, a, b);
+
+  @deprecated(notes="bigint.sub method is deprecated - please use the standalone function :proc:`~BigInteger.sub`")
+  proc bigint.sub(const ref a: bigint, b: uint) do BigInteger.sub(this, a, b);
+
+  pragma "last resort"
+  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
+  proc sub(ref result: bigint, a: int, const ref b: bigint)
+    do BigInteger.sub(result, a, b);
+
+  @deprecated(notes="bigint.sub method is deprecated - please use the standalone function :proc:`~BigInteger.sub`")
+  proc bigint.sub(a: int, const ref b: bigint) do BigInteger.sub(this, a, b);
 
   pragma "last resort"
   @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
