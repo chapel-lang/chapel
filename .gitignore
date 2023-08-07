@@ -422,20 +422,3 @@ cmake-build-*/
 /test/users/thom/returnGenericLineno/strassen
 
 test/types/string/validation/stress.good
-
-# Third party ignores.
-/third-party/**/build
-/third-party/**/install
-/third-party/llvm/llvm
-
-/third-party/gmp/gmp-src/doc/gmp.info.*
-
-/third-party/fltk/build.*
-/third-party/fltk/install.*
-
-# Tools ignores.
-
-/tools/chplvis/chplvis
-/tools/chplvis/chplvis.cxx
-/tools/chplvis/chplvis.h
-/tools/chpldoc/COPYRIGHT
