@@ -33,6 +33,7 @@ using LLVMMetadataPtr = std::shared_ptr<LLVMMetadata>;
 using LLVMMetadataList = std::vector<LLVMMetadataPtr>;
 struct LLVMMetadata {
   const char* key;
+  // TODO: This absolutely should be a C++17 variant
   LLVMMetadataType kind;
   union {
     int64_t int_val;

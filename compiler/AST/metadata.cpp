@@ -1,8 +1,9 @@
 #include "metadata.h"
 #include "stringutil.h"
 
+// default initialize by calling shared_ptr constructor
 LLVMMetadata::LLVMMetadata(const char* key, LLVMMetadataType kind)
-    : key(astr(key)), kind(kind) {}
+    : key(astr(key)), kind(kind), attribute_val(nullptr) {}
 
 LLVMMetadata::~LLVMMetadata() {
   if(kind == LAT_ATTRIBUTE) {
