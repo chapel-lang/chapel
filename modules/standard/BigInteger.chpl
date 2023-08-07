@@ -3949,6 +3949,18 @@ module BigInteger {
     BigInteger.mul_2exp(this, a, b);
   }
 
+  /*
+     Sets ``result`` to the negation of ``x``.
+
+     :arg result: Where the result is stored
+     :type result: :record:`bigint`
+     :arg x: The number to be negated
+     :type x: :record:`bigint`
+
+     .. seealso::
+        :proc:`GMP.mpz_neg` amd
+        `mpz_neg <https://gmplib.org/manual/Integer-Arithmetic#index-mpz_005fneg>`_.
+  */
   proc neg(ref result: bigint, const ref x: bigint) {
     if compiledForSingleLocale() {
       mpz_neg(result.mpz, x.mpz);
@@ -3971,6 +3983,19 @@ module BigInteger {
   @deprecated(notes="bigint.neg method is deprecated - please use the standalone function :proc:`~BigInteger.neg`")
   proc bigint.neg(const ref a: bigint) do BigInteger.neg(this, a);
 
+
+  /*
+     Sets ``result`` to the absolute value of ``x``.
+
+     :arg result: Where the result is stored
+     :type result: :record:`bigint`
+     :arg x: The number to take the absoulte value of
+     :type x: :record:`bigint`
+
+     .. seealso::
+        :proc:`GMP.mpz_abs` amd
+        `mpz_abs <https://gmplib.org/manual/Integer-Arithmetic#index-mpz_005fabs>`_.
+  */
   proc abs(ref result: bigint, const ref x: bigint) {
     if compiledForSingleLocale() {
       mpz_abs(result.mpz, x.mpz);
