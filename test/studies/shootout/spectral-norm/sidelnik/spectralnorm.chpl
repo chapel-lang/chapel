@@ -70,5 +70,5 @@ proc main() {
   var   vBv = + reduce (u * v);
   const res = sqrt(vBv/vv);
 
-  writeln(res, new iostyleInternal(precision=10));
+  writef("%.10r\n", res);
 }
