@@ -29,7 +29,7 @@ enum LLVMMetadataType {
   LAT_NO_VALUE, LAT_INT, LAT_BOOL, LAT_STRING, LAT_ATTRIBUTE
 };
 struct LLVMMetadata;
-using LLVMMetadataPtr = LLVMMetadata*;
+using LLVMMetadataPtr = std::shared_ptr<LLVMMetadata>;
 using LLVMMetadataList = std::vector<LLVMMetadataPtr>;
 struct LLVMMetadata {
   const char* key;
@@ -41,6 +41,7 @@ struct LLVMMetadata {
     LLVMMetadataPtr attribute_val;
   };
   LLVMMetadata(const char* key, enum LLVMMetadataType kind);
+  ~LLVMMetadata();
   static LLVMMetadataPtr construct(const char*);
   static LLVMMetadataPtr constructInt(const char*, int64_t);
   static LLVMMetadataPtr constructBool(const char*, bool);
