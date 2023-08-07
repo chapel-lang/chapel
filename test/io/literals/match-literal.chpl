@@ -71,7 +71,7 @@ proc testJSON() {
 
   var r = f.reader(locking=false);
   var st = r._styleInternal();
-  st.string_format = iostringformat.json:uint(8);
+  st.string_format = iostringformatInternal.json:uint(8);
   r._set_styleInternal(st);
 
   try {

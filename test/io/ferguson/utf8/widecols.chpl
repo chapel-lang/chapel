@@ -22,7 +22,7 @@ for s in strings {
   writeln(new ioLiteral("|"));
 }
 
-st.string_format = iostringformat.chpl:uint(8);
+st.string_format = iostringformatInternal.chpl:uint(8);
 st.min_width_columns = 79;
 st.leftjustify = 1;
 
@@ -42,7 +42,7 @@ for s in strings {
   writeln(new ioLiteral("|"));
 }
 
-st.string_format = iostringformat.json:uint(8);
+st.string_format = iostringformatInternal.json:uint(8);
 st.min_width_columns = 79;
 st.leftjustify = 1;
 
