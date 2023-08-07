@@ -33,28 +33,6 @@ cmake-build-*/
 /lib
 /tar
 
-# Doc ignores.
-/doc/**/*.aux
-/doc/**/*.log
-/doc/developer/chips/html
-/doc/developer/chips/tmp
-/doc/developer/compilerOverview/compiler.pdf
-/doc/developer/compilerOverview/compiler.dvi
-/doc/developer/compilerOverview/compiler.toc
-/doc/quickReference/*.dvi
-/doc/quickReference/*.pdf
-/doc/quickReference/*.ps
-/doc/tutorial/workbooks/boundedBuffer.pdf
-/doc/tutorial/workbooks/histogram.pdf
-/doc/tutorial/workbooks/life.pdf
-/doc/tutorial/workbooks/*.dvi
-/doc/tutorial/workbooks/*.bbl
-/doc/tutorial/workbooks/*.blg
-/doc/sphinx/build
-
-# Frontend ignores
-/frontend/lib/util/git-version.cpp
-
 # Make ignores.
 /make/Chapel.xcodeproj/*.pbxuser
 /make/Chapel.xcodeproj/*.mode1v3
