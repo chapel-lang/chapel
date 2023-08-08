@@ -46,10 +46,10 @@ exception will be generated.
 Constants
 ---------
 :var:`e`
-:var:`log2_e`
-:var:`log10_e`
-:var:`ln_2`
-:var:`ln_10`
+:var:`log2E`
+:var:`log10E`
+:var:`ln2`
+:var:`ln10`
 :var:`pi`
 :var:`half_pi`
 :var:`quarter_pi`
