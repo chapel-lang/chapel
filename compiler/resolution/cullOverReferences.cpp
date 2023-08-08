@@ -30,6 +30,7 @@
 #include "loopDetails.h"
 #include "postFold.h"
 #include "resolution.h"
+#include "resolveIntents.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "symbol.h"
@@ -469,8 +470,38 @@ void markSymbolNotConst(Symbol* sym)
   // ref-with-unknown-constness and ref-not-const,
   // so we can just leave it alone.
   INT_ASSERT(!sym->qualType().isConst());
-  if (arg && arg->intent == INTENT_REF_MAYBE_CONST)
+  if (arg && arg->intent == INTENT_REF_MAYBE_CONST) {
+
+    bool isArgThis = arg->hasFlag(FLAG_ARG_THIS);
+    // this is still being used for tuples assignment
+    bool fromPragma = arg->hasFlag(FLAG_INTENT_REF_MAYBE_CONST_FORMAL);
+
+    bool isTaskIntent = false;
+    if(FnSymbol* fn = arg->getFunction()) {
+      isTaskIntent = fn->hasEitherFlag(FLAG_COBEGIN_OR_COFORALL, FLAG_BEGIN);
+    }
+
+    bool shouldWarn = !isArgThis && !isTaskIntent && !fromPragma
+
+    if(shouldWarn) {
+      IntentTag defaultIntent = blankIntentForType(arg->type);
+      // if default intent is not ref-maybe-const, do nothing
+      if(defaultIntent != INTENT_REF_MAYBE_CONST) shouldWarn = false;
+    }
+
+    if(shouldWarn) {
+
+      char* intentName = isTaskIntent ? "task" (isArgThis ? "this" : "default");
+
+      USR_WARN(arg,
+               "inferring a %s intent to be 'ref' for '%s' is deprecated "
+               "- please use an explicit intent",
+               intentName,
+               arg->name);
+    }
+
     arg->intent = INTENT_REF;
+  }
 
   if (sym->hasFlag(FLAG_REF_IF_MODIFIED)) {
     sym->removeFlag(FLAG_REF_IF_MODIFIED);
