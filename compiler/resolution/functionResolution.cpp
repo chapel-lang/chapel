@@ -13861,6 +13861,9 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
           USR_PRINT("consider adding 'owned', 'shared', or 'borrowed'");
           USR_PRINT("if generic memory management is desired, "
                     "use a 'type' field to store the class type");
+          if (fWarnUnstable) {
+            USR_PRINT("this warning may be an error in the future");
+          }
         }
 
         // consider the class type ignoring management for
@@ -13948,6 +13951,9 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
           USR_WARN(sym, "please use '?' when declaring a %s with generic type",
                    fieldOrVar);
           USR_PRINT(sym, "for example with '%s'", s.c_str());
+        }
+        if (fWarnUnstable) {
+          USR_PRINT("this warning may be an error in the future");
         }
       }
     }
