@@ -383,9 +383,9 @@ def DiffBinaryFiles(f1, f2):
 def DiffBadFiles(f1, f2):
     sys.stdout.write('[Executing diff-ignoring-module-line-numbers %s %s]\n'%(f1, f2))
     # Output is communicate()'d even though it's not needed, to avoid deadlock
-    (returncode, _, _) = run_process([utildir+'/test/diff-ignoring-module-line-numbers', f1, f2],
-                                      stdout=subprocess.PIPE,
-                                      stderr=subprocess.PIPE)
+    (returncode, myoutput, _) = run_process([utildir+'/test/diff-ignoring-module-line-numbers', f1, f2],
+                                            stdout=subprocess.PIPE,
+                                            stderr=subprocess.PIPE)
     if returncode != 0:
         sys.stdout.write(myoutput)
     return returncode
