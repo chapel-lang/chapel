@@ -1,0 +1,6 @@
+# Test/types/file ignores.
+/_test_fwrite*.txt
+/_test_fread*.txt
+/OUTPUT
+/arr.out
+/arr2.out
