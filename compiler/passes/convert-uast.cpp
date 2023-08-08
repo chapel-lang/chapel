@@ -348,71 +348,50 @@ struct Converter {
       auto attrName = node->toStringLiteral()->value().astr(context);
       return LLVMMetadata::construct(attrName);
     } else {
-    return nullptr;
+      return nullptr;
     }
   }
 
-  LLVMMetadataList buildLLVMMetadataList(const uast::AttributeGroup* node) {
+  LLVMMetadataList buildLLVMMetadataList(const uast::Attribute* node) {
     LLVMMetadataList llvmAttrs;
-    if(!node) return llvmAttrs;
 
-    if (auto llvmAttrNode = node->getAttributeNamed(UniqueString::get(context, "llvm.metadata"))) {
-
-      // no matter what, warn for this attribute that its unstable
-      auto attrLoc = chpl::parsing::locateId(context, llvmAttrNode->id());
-      bool warnUnstable = chpl::parsing::shouldWarnUnstableForPath(context, attrLoc.path());
-      if (warnUnstable) {
-        // can't use CHPL_REPORT or reportUnstableWarningForId
-        // because AttributeGroup is not a NamedDecl
-        std::string msg = "'llvm.metadata' is an unstable attribute";
-        auto err = GeneralError::get(ErrorBase::WARNING, attrLoc, msg);
+    for (auto act: node->actuals()) {
+      auto attr = nodeToLLVMMetadata(act);
+      if (attr != nullptr) {
+        llvmAttrs.push_back(attr);
+      } else {
+        auto loc = chpl::parsing::locateId(context, node->id());
+        std::string msg = "Invalid value for '" + node->name().str() + "'";
+        auto err = GeneralError::get(ErrorBase::ERROR, loc, msg);
         context->report(std::move(err));
-      }
-
-      for (auto act: llvmAttrNode->actuals()) {
-        auto attr = nodeToLLVMMetadata(act);
-        if (attr != nullptr) {
-          llvmAttrs.push_back(attr);
-        } else {
-          std::string msg = "Invalid value for 'llvm.metadata'";
-          auto err = GeneralError::get(ErrorBase::ERROR, attrLoc, msg);
-          context->report(std::move(err));
-        }
       }
     }
     return llvmAttrs;
   }
 
-  LLVMMetadataList buildLLVMLoopAttributes(const uast::Loop* node) {
-    auto attrs = buildLLVMMetadataList(node->attributeGroup());
-    auto assertVectorize = buildAssertVectorize(node->attributeGroup());
-    if(assertVectorize) {
-      attrs.push_back(assertVectorize);
-    }
-    return attrs;
+  LLVMMetadataPtr buildAssertVectorize(const uast::Attribute* node) {
+    auto attrName = astr("chpl.loop.assertvectorized");
+    return LLVMMetadata::constructBool(attrName, true);
   }
 
+  LLVMMetadataList buildLoopAttributes(const uast::Loop* node) {
+    auto attrs = node->attributeGroup();
+    if (attrs == nullptr) return {};
+    
+    auto llvmMetadata = UniqueString::get(context, "llvm.metadata");
+    auto assertVectorized = UniqueString::get(context, "llvm.assertVectorized");
 
+    LLVMMetadataList llvmAttrs;
 
-
-  LLVMMetadataPtr buildAssertVectorize(const uast::AttributeGroup* node) {
-    if(!node) return nullptr;
-    if (auto llvmAttrNode = node->getAttributeNamed(UniqueString::get(context, "llvm.assertVectorized"))) {
-
-      auto attrLoc = chpl::parsing::locateId(context, llvmAttrNode->id());
-      bool warnUnstable = chpl::parsing::shouldWarnUnstableForPath(context, attrLoc.path());
-      if (warnUnstable) {
-        // can't use CHPL_REPORT or reportUnstableWarningForId
-        // because AttributeGroup is not a NamedDecl
-        std::string msg = "'llvm.assertVectorized' is an unstable attribute";
-        auto err = GeneralError::get(ErrorBase::WARNING, attrLoc, msg);
-        context->report(std::move(err));
-      }
-
-      auto attrName = astr("chpl.loop.assertvectorized");
-      return LLVMMetadata::constructBool(attrName, true);
+    if (auto a = attrs->getAttributeNamed(llvmMetadata)) {
+      auto userAttrs = buildLLVMMetadataList(a);
+      llvmAttrs.insert(llvmAttrs.end(), userAttrs.begin(), userAttrs.end());
     }
-    return nullptr;
+    if (auto a = attrs->getAttributeNamed(assertVectorized)) {
+      llvmAttrs.push_back(buildAssertVectorize(a));
+    }
+
+    return llvmAttrs;
   }
 
   Expr* visit(const uast::AttributeGroup* node) {
@@ -1669,7 +1648,7 @@ struct Converter {
   BlockStmt* visit(const uast::DoWhile* node) {
     Expr* condExpr = toExpr(convertAST(node->condition()));
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
-    return DoWhileStmt::build(condExpr, body, buildLLVMLoopAttributes(node));
+    return DoWhileStmt::build(condExpr, body, buildLoopAttributes(node));
   }
 
   BlockStmt* visit(const uast::While* node) {
@@ -1684,7 +1663,7 @@ struct Converter {
       condExpr = toExpr(convertAST(node->condition()));
     }
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
-    return WhileDoStmt::build(condExpr, body, buildLLVMLoopAttributes(node));
+    return WhileDoStmt::build(condExpr, body, buildLoopAttributes(node));
   }
 
   /// IndexableLoops ///
@@ -1869,7 +1848,7 @@ struct Converter {
       INT_ASSERT(block);
 
       ret = ForLoop::buildForLoop(index, iteratorExpr, block, zippered,
-                                  isForExpr, buildLLVMLoopAttributes(node));
+                                  isForExpr, buildLoopAttributes(node));
     }
 
     INT_ASSERT(ret != nullptr);
@@ -1952,7 +1931,7 @@ struct Converter {
 
     auto ret = ForLoop::buildForeachLoop(indices, iteratorExpr, body,
                                          zippered,
-                                         isForExpr, buildLLVMLoopAttributes(node));
+                                         isForExpr, buildLoopAttributes(node));
 
     return ret;
   }
