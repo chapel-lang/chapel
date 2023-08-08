@@ -247,12 +247,10 @@ proc process_json(logfile:fileReader, fname:string, ref Pairs) {
   total_tweets_processed.add(ntweets);
   total_lines_processed.add(nlines);
 
-  while true {
-    var got = max_user_id.read();
-    var id = if got > max_id then got else max_id;
-    var success = max_user_id.compareAndSwap(got, id);
-    if success then break;
-  }
+  var old_id = max_user_id.read();
+  do {
+    var id = if old_id > max_id then old_id else max_id;
+  } while(!max_user_id.compareExchangeWeak(old_id, id));
 }
 
 proc process_json(fname: string, ref Pairs)
