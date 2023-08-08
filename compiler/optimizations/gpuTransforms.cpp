@@ -538,7 +538,9 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
 
   for_vector(CallExpr, call, calls) {
     if (call->primitive) {
-      // TODO: hack!
+      // classifyPrimitive gets mad that that this primitive should already
+      // have been removed from the tree. We know it's safe, so just
+      // leave it.
       if (call->primitive->tag == PRIM_GPU_ELIGIBLE) continue;
 
       // only primitives that are fast and local are allowed for now
@@ -651,10 +653,6 @@ bool GpuizableLoop::extractUpperBound() {
 }
 
 void GpuizableLoop::reportNotGpuizable(const BaseAST* ast, const char *msg) {
-  if (loop_->id == 2608813) {
-    debuggerBreakHere();
-  }
-
   this->reason = msg;
   if(this->shouldErrorIfNotGpuizable_) {
     USR_FATAL_CONT(loop_, "Loop containing assertOnGpu() is not eligible for execution on a GPU");
@@ -1274,7 +1272,7 @@ static void outlineGpuKernelsInFn(FnSymbol *fn) {
       // be a copy of one. If that's the case, we inserted a primitive
       // into its body.
 
-      // todo: sometimes, this loop can be made no longer eligible by
+      // TODO: sometimes, this loop can be made no longer eligible by
       // other transformations. Is that okay?
       auto gpuLoop = GpuizableLoop::fromEligibleClone(loop);
       if (gpuLoop.isEligible()) {
@@ -1434,7 +1432,10 @@ CForLoop* GpuizableLoop::generateGpuAndNonGpuPaths() {
   CForLoop* gpuLoop = cpuLoop()->copy();
   gpuBlock->insertAtTail(gpuLoop);
 
-  // we can't add elseStmt later on
+  // later on, if we're using CPU-as-device, the CPU block will be moved
+  // to follow the if-statement. For now, leave it as-is to make it
+  // easier to wrangle the CondStmt AST elsewhere (c.f. makeCpuOnly,
+  // makeGpuOnly).
   CondStmt* cond = new CondStmt(condExpr, gpuBlock, cpuBlock);
 
   // first, make sure the conditional is in place
@@ -1442,11 +1443,6 @@ CForLoop* GpuizableLoop::generateGpuAndNonGpuPaths() {
 
   // then relocate the loop
   cpuBlock->insertAtHead(cpuLoop()->remove());
-
-  // if not doing GPU codegen, just add cpuBlock after the conditional
-  if (!isFullGpuCodegen()) {
-    cond->insertAfter(cpuBlock);
-  }
 
   // Save the new AST nodes we created so we can operate on them later.
   cpuBlock_ = cpuBlock;
@@ -1475,8 +1471,8 @@ void GpuizableLoop::fixupNonGpuPath() const {
   // the conditional.
 
   if (!isFullGpuCodegen()) {
-    cpuLoop()->remove();
-    gpuCond_->insertAfter(cpuLoop());
+    cpuBlock_->remove();
+    gpuCond_->insertAfter(cpuBlock_);
   }
 }
 
