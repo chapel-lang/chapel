@@ -359,7 +359,6 @@ public:
 
   static GpuizableLoop fromEligibleClone(BlockStmt* blk) {
     GpuizableLoop loop{blk};
-    INT_ASSERT(loop.isEligible());
     std::swap(loop.gpuLoop_, loop.loop_);
 
     // Try to recover some fields from existing AST structure.
@@ -1275,9 +1274,15 @@ static void outlineGpuKernelsInFn(FnSymbol *fn) {
       // be a copy of one. If that's the case, we inserted a primitive
       // into its body.
 
+      // todo: sometimes, this loop can be made no longer eligible by
+      // other transformations. Is that okay?
       auto gpuLoop = GpuizableLoop::fromEligibleClone(loop);
-      outlineEligibleLoop(fn, gpuLoop);
-      gpuLoop.makeGpuOnly();
+      if (gpuLoop.isEligible()) {
+        outlineEligibleLoop(fn, gpuLoop);
+        gpuLoop.makeGpuOnly();
+      } else {
+        gpuLoop.makeCpuOnly();
+      }
     }
   }
 }
