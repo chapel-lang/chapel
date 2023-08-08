@@ -526,7 +526,7 @@ static Expr* preFoldPrimInitVarForManagerResource(CallExpr* call) {
       //
       //    manage man as res do ...;
       //
-      // It means that multiple candidates were found for 'man.enterThis()'.
+      // It means that multiple candidates were found for 'man.enterContext()'.
       // We currently don't specify a disambiguation order in this case,
       // which means we have no way to determine the storage of 'res'.
       //
@@ -592,12 +592,12 @@ static Expr* preFoldPrimInitVarForManagerResource(CallExpr* call) {
       // case multiple overloads either do not exist, or if they do there
       // is no ambiguity at the callsite.
       } else {
-        auto enterThisCall = toCallExpr(moveIntoTemp->get(2));
+        auto enterContextCall = toCallExpr(moveIntoTemp->get(2));
 
-        INT_ASSERT(enterThisCall);
+        INT_ASSERT(enterContextCall);
 
         // If this doesn't fire, then there was already a resolution error.
-        if (FnSymbol* fn = enterThisCall->resolvedFunction()) {
+        if (FnSymbol* fn = enterContextCall->resolvedFunction()) {
           bool isTagConstRef = fn->retTag == RET_CONST_REF;
           bool isTagRef = fn->retTag == RET_REF;
 
