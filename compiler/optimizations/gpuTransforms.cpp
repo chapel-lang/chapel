@@ -360,6 +360,7 @@ public:
 
   static GpuizableLoop fromEligibleClone(BlockStmt* blk) {
     GpuizableLoop loop{blk};
+    INT_ASSERT(loop.isEligible());
     std::swap(loop.gpuLoop_, loop.loop_);
     return loop;
   }
@@ -1231,7 +1232,7 @@ static void outlineEligibleLoop(FnSymbol *fn, GpuizableLoop &gpuLoop) {
 
 static void outlineGpuKernelsInFn(FnSymbol *fn) {
   std::vector<CForLoop*> asts;
-  collectCForLoopStmts(fn, asts);
+  collectCForLoopStmtsPreorder(fn, asts);
 
   for_vector(CForLoop, loop, asts) {
     // In the case of a nested foreach loop we may end up replacing the
@@ -1249,7 +1250,7 @@ static void outlineGpuKernelsInFn(FnSymbol *fn) {
       auto& eligibleLoop = foundLoop->second;
       eligibleLoop.fixupNonGpuPath();
       outlineEligibleLoop(fn, eligibleLoop);
-    } if (getGpuEligibleMarker(loop)) {
+    } if (fGpuSpecialization && getGpuEligibleMarker(loop)) {
       // Even if this wasn't a loop originally marked eligible, it could
       // be a copy of one. If that's the case, we inserted a primitive
       // into its body.
@@ -1272,7 +1273,7 @@ static void outlineGpuKernelsInFn(FnSymbol *fn) {
 // We need to strip any GPU specific primitives that remain
 static void cleanupForeachLoopsGauranteedToRunOnCpu(FnSymbol *fn) {
   std::vector<CForLoop*> asts;
-  collectCForLoopStmts(fn, asts);
+  collectCForLoopStmtsPreorder(fn, asts);
   for_vector(CForLoop, loop, asts) {
     CpuBoundLoopCleanup::doit(loop);
   }
@@ -1328,7 +1329,7 @@ static void logGpuizableLoops() {
 
   forv_Vec(FnSymbol*, fn, gFnSymbols) {
     std::vector<CForLoop*> loops;
-    collectCForLoopStmts(fn, loops);
+    collectCForLoopStmtsPreorder(fn, loops);
 
     for_vector(CForLoop, loop, loops) {
       GpuizableLoop gpuLoop(loop);
@@ -1456,7 +1457,7 @@ void GpuizableLoop::fixupNonGpuPath() const {
 // TODO naming
 static void createTwoPaths(FnSymbol* fn) {
   std::vector<CForLoop*> asts;
-  collectCForLoopStmts(fn, asts);
+  collectCForLoopStmtsPreorder(fn, asts);
 
   for_vector(CForLoop, loop, asts) {
     // In the case of a nested foreach loop we may end up replacing the
