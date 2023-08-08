@@ -4631,7 +4631,7 @@ static void checkLoopsAssertVectorize() {
               }
               else {
                 USR_WARN(fn, "loop was marked 'assertVectorized' but did not vectorize");
-              }              
+              }
             }
           }
         }

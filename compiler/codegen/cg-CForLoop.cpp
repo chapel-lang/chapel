@@ -70,8 +70,6 @@ static llvm::Metadata* constructLLVMMetadata(llvm::StringRef name, llvm::ArrayRe
   return llvm::MDNode::get(ctx, metaArray);
 }
 
-// ideally 
-
 // constructs !0 = !{!name, i1 value}
 static llvm::Metadata* constructLLVMMetadata(llvm::StringRef name, bool value) {
   GenInfo* info = gGenInfo;
