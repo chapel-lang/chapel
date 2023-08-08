@@ -1537,15 +1537,15 @@ module ChapelDomain {
       memory to satisfy the allocation, which will then fail with a bus
       error when attempting to access the array.
 
-      This method is currently supported on both default rectangular
-      and block domains.
+      This method can be called on all domains that implement a
+      'doiTryCreateArray' method.
     */
     pragma "no copy return"
     @unstable("tryCreateArray() is subject to change in the future.")
     proc tryCreateArray(type eltType) throws {
       if !(__primitive("resolves", _value.doiTryCreateArray(eltType))) then
-        compilerError("'tryCreateArray' is only supported on " +
-                      "default rectangular and block domains");
+        compilerError("cannot call 'tryCreateArray' on domains that do not" +
+                      " support a 'doiTryCreateArray' method.");
 
       chpl_checkEltType(eltType);
       chpl_checkNegativeStride();
