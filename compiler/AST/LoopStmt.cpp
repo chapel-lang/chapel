@@ -95,20 +95,23 @@ bool LoopStmt::isParallelAccessVectorizable() const
          !mParallelAccessVectorizationHazard;
 }
 
-bool LoopStmt::hasLLVMMetadata() const {
+bool LoopStmt::hasAdditionalLLVMMetadata() const {
   return !mLLVMMetadataList.empty();
 }
-bool LoopStmt::hasLLVMMetadata(const char* a) const {
+bool LoopStmt::hasAdditionalLLVMMetadata(const char* a) const {
+  return this->getAdditionalLLVMMetadata(a) != nullptr;
+}
+const LLVMMetadataList& LoopStmt::getAdditionalLLVMMetadata() const {
+  return mLLVMMetadataList;
+}
+LLVMMetadataPtr LoopStmt::getAdditionalLLVMMetadata(const char* a) const {
   const char* aa = astr(a);
   auto it = std::find_if(mLLVMMetadataList.begin(),
                          mLLVMMetadataList.end(),
                          [aa](auto elm) {return elm->key == aa;});
-  return it != mLLVMMetadataList.end();
+  return it != mLLVMMetadataList.end() ? *it : nullptr;
 }
-const LLVMMetadataList& LoopStmt::getLLVMMetadata() const {
-  return mLLVMMetadataList;
-}
-void LoopStmt::setLLVMMetadata(const LLVMMetadataList& al) {
+void LoopStmt::setAdditionalLLVMMetadata(const LLVMMetadataList& al) {
   mLLVMMetadataList = al;
 }
 

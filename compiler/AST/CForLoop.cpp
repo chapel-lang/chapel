@@ -82,7 +82,7 @@ CForLoop* CForLoop::buildWithBodyFrom(ForLoop* forLoop)
   retval->mBreakLabel       = forLoop->breakLabelGet();
   retval->mContinueLabel    = forLoop->continueLabelGet();
   retval->mOrderIndependent = forLoop->isOrderIndependent();
-  retval->mLLVMMetadataList = forLoop->getLLVMMetadata();
+  retval->mLLVMMetadataList = forLoop->getAdditionalLLVMMetadata();
 
   for_alist(expr, forLoop->body)
     retval->insertAtTail(expr->copy(&map, true));

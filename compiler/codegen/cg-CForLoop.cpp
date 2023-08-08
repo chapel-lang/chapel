@@ -233,7 +233,7 @@ static llvm::MDNode* generateLoopMetadata(LoopStmt* loop,
 
   }
 
-  addLoopUserMetadata(loop, args, loop->getLLVMMetadata());
+  addLoopUserMetadata(loop, args, loop->getAdditionalLLVMMetadata());
 
   // only construct metadata if there is metadata to be had
   if(args.size() > 1) {

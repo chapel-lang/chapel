@@ -193,7 +193,7 @@ BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
 
   iterator->addFlag(FLAG_EXPR_TEMP);
 
-  loop->setLLVMMetadata(attrs);
+  loop->setAdditionalLLVMMetadata(attrs);
 
   if (isForeach) {
     loop->orderIndependentSet(true);
