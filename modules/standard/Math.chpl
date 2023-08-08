@@ -81,6 +81,7 @@ Trigonometric Functions
 
 Log Functions
 -------------
+:proc:`ln`
 :proc:`log`
 :proc:`log10`
 :proc:`log1p`
@@ -163,12 +164,12 @@ module Math {
   /* log10(e) */
   @deprecated(notes="'log10_e' is deprecated, please use :param:`log10E` instead")
   param log10_e = 0.43429448190325182765;
-  /* log(2) (natural logarithm) */
+  /* ln(2) (natural logarithm) */
   param ln2 = 0.69314718055994530942;
   /* log(2) (natural logarithm) */
   @deprecated(notes="'ln_2' is deprecated, please use :param:`ln2` instead")
   param ln_2 = 0.69314718055994530942;
-  /* log(10) (natural logarithm) */
+  /* ln(10) (natural logarithm) */
   param ln10 = 2.30258509299404568402;
   /* log(10) (natural logarithm) */
   @deprecated(notes="'ln_10' is deprecated, please use :param:`ln10` instead")
@@ -537,6 +538,32 @@ module Math {
   */
   inline proc lgamma(x : real(32)): real(32) {
     return chpl_lgamma(x);
+  }
+
+  /* Returns the natural logarithm of the argument `x`.
+
+     It is an error if `x` is less than or equal to zero.
+  */
+  inline proc ln(x: real(64)): real(64) {
+    return chpl_log(x);
+  }
+
+  /* Returns the natural logarithm of the argument `x`.
+
+     It is an error if `x` is less than or equal to zero.
+  */
+  inline proc ln(x : real(32)): real(32) {
+    return chpl_log(x);
+  }
+
+  /* Returns the natural logarithm of the argument `x`. */
+  inline proc ln(x: complex(64)): complex(64) {
+    return chpl_log(x);
+  }
+
+  /* Returns the natural logarithm of the argument `x`. */
+  inline proc ln(x: complex(128)): complex(128) {
+    return chpl_log(x);
   }
 
   /* Returns the natural logarithm of the argument `x`.
