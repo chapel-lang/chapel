@@ -1,0 +1,5 @@
+# Test/library/standard/FileSystem/lydia/moveDir ignores.
+/complexCopy
+/complexDest
+/hasLink
+/linkDest
