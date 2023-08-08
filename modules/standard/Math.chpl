@@ -631,6 +631,7 @@ module Math {
 
      :rtype: `int`
   */
+  @unstable("'logBasePow2' is unstable due to questions about its utility.  If you rely on this function, please let us know!")
   inline proc logBasePow2(x: int(?w), exp) {
     return chpl_logBasePow2(x, exp);
   }
@@ -642,6 +643,7 @@ module Math {
 
      :rtype: `int`
   */
+  @unstable("'logBasePow2' is unstable due to questions about its utility.  If you rely on this function, please let us know!")
   inline proc logBasePow2(x: uint(?w), exp) {
     return chpl_logBasePow2(x, exp);
   }
