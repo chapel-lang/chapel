@@ -38,6 +38,70 @@
 #ifdef HAVE_LLVM
 
 
+// constructs !0 = !name
+static llvm::Metadata* constructLLVMMetadata(llvm::StringRef name) {
+  GenInfo* info = gGenInfo;
+  auto &ctx = info->module->getContext();
+  return llvm::MDString::get(ctx, name);
+}
+
+// constructs !0 = !{!name, !value}
+static llvm::Metadata* constructLLVMMetadata(llvm::StringRef name, llvm::Metadata* value) {
+  GenInfo* info = gGenInfo;
+  auto &ctx = info->module->getContext();
+
+  llvm::Metadata *metaArray[] = {
+    llvm::MDString::get(ctx, name),
+    value,
+  };
+  return llvm::MDNode::get(ctx, metaArray);
+}
+// constructs !0 = !{!name, !1}
+//            !1 = value
+static llvm::Metadata* constructLLVMMetadata(llvm::StringRef name, llvm::ArrayRef<llvm::Metadata*> array) {
+  GenInfo* info = gGenInfo;
+  auto &ctx = info->module->getContext();
+
+  auto value = llvm::MDNode::get(ctx, array);
+  llvm::Metadata *metaArray[] = {
+    llvm::MDString::get(ctx, name),
+    value,
+  };
+  return llvm::MDNode::get(ctx, metaArray);
+}
+
+// ideally 
+
+// constructs !0 = !{!name, i1 value}
+static llvm::Metadata* constructLLVMMetadata(llvm::StringRef name, bool value) {
+  GenInfo* info = gGenInfo;
+  auto &ctx = info->module->getContext();
+
+  auto constant = llvm::ConstantAsMetadata::get(
+    llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx), value)
+  );
+  return constructLLVMMetadata(name, constant);
+}
+// constructs !0 = !{!name, i64 value}
+static llvm::Metadata* constructLLVMMetadata(llvm::StringRef name, int64_t value) {
+  GenInfo* info = gGenInfo;
+  auto &ctx = info->module->getContext();
+
+  auto constant = llvm::ConstantAsMetadata::get(
+    llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), value)
+  );
+  return constructLLVMMetadata(name, constant);
+}
+// constructs !0 = !{!name, !1}
+//            !1 = !{value}
+static llvm::Metadata* constructLLVMMetadata(llvm::StringRef name, llvm::StringRef value) {
+  GenInfo* info = gGenInfo;
+  auto &ctx = info->module->getContext();
+
+  auto str = llvm::ArrayRef<llvm::Metadata*>( llvm::MDString::get(ctx, value) );
+  return constructLLVMMetadata(name, str);
+}
+
 static bool loopHasAnyParallelAccess(bool thisLoopParallelAccess,
                                      llvm::MDNode*& accessGroup) {
   GenInfo* info = gGenInfo;
@@ -65,7 +129,7 @@ static void addLoopParallelAccess(std::vector<llvm::Metadata*>& args,
   auto &ctx = info->module->getContext();
 
   std::vector<llvm::Metadata*> v;
-  v.push_back(llvm::MDString::get(ctx, "llvm.loop.parallel_accesses"));
+  v.push_back(constructLLVMMetadata("llvm.loop.parallel_accesses"));
 
   // Generate {"llvm.loop.parallel_accesses", group1, group2, ...}
   // where the groups are any parallel loops we are currently in
@@ -83,64 +147,51 @@ static void addLoopParallelAccess(std::vector<llvm::Metadata*>& args,
   args.push_back(parAccesses);
 }
 
-static void addLoopRVMetadata(std::vector<llvm::Metadata*>& args) {
+GenRet LLVMMetadata::codegen() {
+
   GenInfo* info = gGenInfo;
   auto &ctx = info->module->getContext();
 
-  llvm::Constant* one = llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx), true);
-  llvm::Metadata *loopVectorizeEnable[] = {
-    llvm::MDString::get(ctx, "rv.loop.vectorize.enable"),
-    llvm::ConstantAsMetadata::get(one)
-  };
+  llvm::Metadata* metadata = nullptr;
+  if (kind == LAT_NO_VALUE) {
+    // do some extra work here so the end result is
+    // !0 = distinct {!0,  !1}
+    // !1 = !str;
+    auto md = constructLLVMMetadata(key);
+    metadata = llvm::MDNode::get(ctx, md);
+  } else if (kind == LAT_INT) {
+    metadata = constructLLVMMetadata(key, int_val);
+  } else if (kind == LAT_BOOL) {
+    metadata = constructLLVMMetadata(key, bool_val);
+  } else if (kind == LAT_STRING) {
+    // char* can normally be passed to StringRef using implicit conversion
+    // in this case, C++ "decays" the pointer to a bool value and calls the bool version
+    // even changing the argument to char* would still causes this to occur
+    metadata = constructLLVMMetadata(key, llvm::StringRef(string_val));
+  } else if (kind == LAT_ATTRIBUTE) {
+    auto ret = attribute_val->codegen();
+    if (auto* MD = llvm::dyn_cast<llvm::MetadataAsValue>(ret.val)) {
+      metadata = constructLLVMMetadata(key, MD->getMetadata());
+    }
+  }
 
-  args.push_back(llvm::MDNode::get(ctx, loopVectorizeEnable));
-
-  // Note that the Region Vectorizer once required
-  // llvm.loop.vectorize.width but no longer does.
+  GenRet ret;
+  if (metadata != nullptr) {
+    ret.val = llvm::MetadataAsValue::get(ctx, metadata);
+  }
+  return ret;
 }
 
 
 
-static llvm::Metadata* constructLLVMMetadata(LLVMMetadataPtr attr) {
-  GenInfo* info = gGenInfo;
-  auto &ctx = info->module->getContext();
-
-  llvm::MDString* key = llvm::MDString::get(ctx, attr->key);
-  if (attr->kind == LAT_NO_VALUE) {
-    llvm::Metadata *metaArray[] = {key};
-    return llvm::MDNode::get(ctx, metaArray);
-
-  } else if (attr->kind == LAT_INT) {
-    auto constant = llvm::ConstantInt::get(
-        llvm::Type::getInt64Ty(ctx), attr->int_val);
-    auto value = llvm::ConstantAsMetadata::get(constant);
-
-    llvm::Metadata *metaArray[] = {key, value};
-    return llvm::MDNode::get(ctx, metaArray);
-
-  } else if (attr->kind == LAT_BOOL) {
-    auto constant = llvm::ConstantInt::get(
-        llvm::Type::getInt1Ty(ctx), attr->bool_val);
-    auto value = llvm::ConstantAsMetadata::get(constant);
-
-    llvm::Metadata *metaArray[] = {key, value};
-    return llvm::MDNode::get(ctx, metaArray);
-
-  } else if (attr->kind == LAT_STRING) {
-    auto mdstr = llvm::MDString::get(ctx, attr->string_val);
-    llvm::Metadata *mdstrArr[] = {mdstr};
-    auto value = llvm::MDNode::get(ctx, mdstrArr);
-
-    llvm::Metadata *metaArray[] = {key, value};
-    return llvm::MDNode::get(ctx, metaArray);
-
-  } else if (attr->kind == LAT_ATTRIBUTE) {
-    auto value = constructLLVMMetadata(attr->attribute_val);
-
-    llvm::Metadata *metaArray[] = {key, value};
-    return llvm::MDNode::get(ctx, metaArray);
+static void addLoopUserMetadata(LoopStmt* loop, std::vector<llvm::Metadata*>& args, LLVMMetadataList attrs) {
+  for (const auto& attr: attrs) {
+    auto ret = attr->codegen();
+    if (auto* MD = llvm::dyn_cast<llvm::MetadataAsValue>(ret.val))
+      args.push_back(MD->getMetadata());
+    else
+      USR_WARN(loop, "failed to add llvm metadata");
   }
-  return nullptr;
 }
 
 // Returns the loop metadata node to associate with the branch.
@@ -175,20 +226,15 @@ static llvm::MDNode* generateLoopMetadata(LoopStmt* loop,
 
     // When using the Region Vectorizer, emit rv.loop.vectorize.enable metadata
     if(fRegionVectorizer) {
-      addLoopRVMetadata(args);
+      args.push_back(constructLLVMMetadata("rv.loop.vectorize.enable", true));
+
+      // Note that the Region Vectorizer once required
+      // llvm.loop.vectorize.width but no longer does.
     }
 
   }
 
-  auto llvmAttrs = loop->getLLVMMetadata();
-  for (const auto& attr: llvmAttrs) {
-    auto meta = constructLLVMMetadata(attr);
-    if (meta)
-      args.push_back(meta);
-    else
-      USR_WARN(loop, "failed to construct llvm attribute");
-  }
-
+  addLoopUserMetadata(loop, args, loop->getLLVMMetadata());
 
   // only construct metadata if there is metadata to be had
   if(args.size() > 1) {

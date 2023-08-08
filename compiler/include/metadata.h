@@ -24,6 +24,7 @@
 #include <memory>
 #include <cstdint>
 #include <vector>
+#include "genret.h"
 
 enum LLVMMetadataType {
   LAT_NO_VALUE, LAT_INT, LAT_BOOL, LAT_STRING, LAT_ATTRIBUTE
@@ -43,11 +44,14 @@ struct LLVMMetadata {
   };
   LLVMMetadata(const char* key, enum LLVMMetadataType kind);
   ~LLVMMetadata();
+
   static LLVMMetadataPtr construct(const char*);
   static LLVMMetadataPtr constructInt(const char*, int64_t);
   static LLVMMetadataPtr constructBool(const char*, bool);
   static LLVMMetadataPtr constructString(const char*, const char*);
   static LLVMMetadataPtr constructMetadata(const char*, LLVMMetadataPtr);
+
+  GenRet codegen();
 };
 
 #endif
