@@ -3043,7 +3043,14 @@ record DefaultDeserializer {
   }
 }
 
+/*
+  A basic binary Serializer to be used with ``fileWriter``.
+*/
 record BinarySerializer {
+  /*
+    'endian' represents the endianness of the binary output produced by this
+    Serializer.
+  */
   const endian : ioendian = ioendian.native;
 
   // TODO: We could store a 'size' field internally to track the expected
@@ -3196,7 +3203,14 @@ record BinarySerializer {
   }
 }
 
+/*
+  A basic binary Deserializer to be used with ``fileReader``.
+*/
 record BinaryDeserializer {
+  /*
+    'endian' represents the endianness that this Deserializer should use when
+    deserializing input.
+  */
   const endian : IO.ioendian = IO.ioendian.native;
 
   @chpldoc.nodoc
