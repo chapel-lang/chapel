@@ -3083,7 +3083,14 @@ record BinarySerializer {
     dc._writeOne(dc.kind, val, here);
   }
 
-  proc serializeValue(writer: _writeType, const val:?t) throws {
+  /*
+    Serialize a value in this basic binary format.
+
+    :arg writer: the ``fileWriter`` to which the serialized output will be written.
+    :arg val: the value to be serialized.
+  */
+  proc serializeValue(writer: fileWriter(serializerType=BinarySerializer, locking=false, ?),
+                      const val:?t) throws {
     if isNumericType(t) {
       select endian {
         when ioendian.native do writer.writeBinary(val, ioendian.native);
@@ -3216,6 +3223,7 @@ record BinaryDeserializer {
   @chpldoc.nodoc
   var _numElements : uint;
 
+  @chpldoc.nodoc
   proc init(endian: IO.ioendian = IO.ioendian.native) {
     this.endian = endian;
     this.complete();
@@ -3245,6 +3253,12 @@ record BinaryDeserializer {
     dc._readOne(dc.kind, val, here);
   }
 
+  /*
+    Deserialize and return a value of the given type in this basic binary format.
+
+    :arg reader: the ``fileReader`` whose input will be used to deserialize the value. 
+    :arg readType: the type to be deserialized.
+  */
   proc deserializeType(reader:_readerType, type readType) : readType throws {
     if isClassType(readType) {
       const notNil = reader.readByte();
@@ -3289,6 +3303,12 @@ record BinaryDeserializer {
     }
   }
 
+  /*
+    Deserialize a value in-place.
+
+    :arg reader: the ``fileReader`` whose input will be used to deserialize the value.
+    :arg val: the value to be deserialized in-place.
+  */
   proc deserializeValue(reader: _readerType, ref val: ?readType) : void throws {
     if canResolveMethod(val, "deserialize", reader, this) {
       var alias = reader.withDeserializer(_fork());
