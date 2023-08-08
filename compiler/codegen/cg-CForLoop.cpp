@@ -96,8 +96,9 @@ static llvm::Metadata* constructLLVMMetadata(llvm::StringRef name, llvm::StringR
   GenInfo* info = gGenInfo;
   auto &ctx = info->module->getContext();
 
-  auto str = llvm::ArrayRef<llvm::Metadata*>( llvm::MDString::get(ctx, value) );
-  return constructLLVMMetadata(name, str);
+  llvm::Metadata* strArr[] = {llvm::MDString::get(ctx, value)};
+  auto arrRef = llvm::ArrayRef<llvm::Metadata*>(strArr, 1);
+  return constructLLVMMetadata(name, arrRef);
 }
 
 static bool loopHasAnyParallelAccess(bool thisLoopParallelAccess,

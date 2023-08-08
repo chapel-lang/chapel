@@ -377,7 +377,7 @@ struct Converter {
   LLVMMetadataList buildLoopAttributes(const uast::Loop* node) {
     auto attrs = node->attributeGroup();
     if (attrs == nullptr) return {};
-    
+
     auto llvmMetadata = UniqueString::get(context, "llvm.metadata");
     auto assertVectorized = UniqueString::get(context, "llvm.assertVectorized");
 
