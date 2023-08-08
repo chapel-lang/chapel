@@ -154,12 +154,24 @@ module Math {
   /* e - exp(1) or  the base of the natural logarithm */
   param e = 2.7182818284590452354;
   /* log2(e) */
+  param log2E = 1.4426950408889634074;
+  /* log2(e) */
+  @deprecated(notes="'log2_e' is deprecated, please use :param:`log2E` instead")
   param log2_e = 1.4426950408889634074;
   /* log10(e) */
+  param log10E = 0.43429448190325182765;
+  /* log10(e) */
+  @deprecated(notes="'log10_e' is deprecated, please use :param:`log10E` instead")
   param log10_e = 0.43429448190325182765;
   /* log(2) (natural logarithm) */
+  param ln2 = 0.69314718055994530942;
+  /* log(2) (natural logarithm) */
+  @deprecated(notes="'ln_2' is deprecated, please use :param:`ln2` instead")
   param ln_2 = 0.69314718055994530942;
   /* log(10) (natural logarithm) */
+  param ln10 = 2.30258509299404568402;
+  /* log(10) (natural logarithm) */
+  @deprecated(notes="'ln_10' is deprecated, please use :param:`ln10` instead")
   param ln_10 = 2.30258509299404568402;
   /* pi - the circumference/the diameter of a circle */
   param pi = 3.14159265358979323846;
