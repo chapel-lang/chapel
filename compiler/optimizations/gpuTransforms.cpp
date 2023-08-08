@@ -117,9 +117,7 @@ static VarSymbol* generateAssignmentToPrimitive(FnSymbol* fn,
 template <size_t Size>
 bool isEqualToAnyOfTheLoops(LoopStmt* loop, CForLoop* const (&loops)[Size]) {
   for (size_t i = 0; i < Size; i++) {
-    if (loops[i] != nullptr && /* loops can contain nulls, but don't allow
-                                  comparison to pass if the loop is null. */
-        loops[i] == loop) return true;
+    if (loops[i] == loop) return true;
   }
   return false;
 }
@@ -350,6 +348,7 @@ class GpuizableLoop {
 
   CondStmt* gpuCond_ = nullptr;
   BlockStmt* cpuBlock_ = nullptr;
+  BlockStmt* gpuBlock_ = nullptr;
   CForLoop* gpuLoop_ = nullptr;
 
   // To allow move constructor
@@ -362,6 +361,22 @@ public:
     GpuizableLoop loop{blk};
     INT_ASSERT(loop.isEligible());
     std::swap(loop.gpuLoop_, loop.loop_);
+
+    // Try to recover some fields from existing AST structure.
+    loop.gpuBlock_ = toBlockStmt(loop.gpuLoop_->parentExpr);
+    INT_ASSERT(loop.gpuBlock_ != nullptr);
+    loop.gpuCond_ = toCondStmt(loop.gpuBlock_->parentExpr);
+    INT_ASSERT(loop.gpuCond_);
+    loop.cpuBlock_ = loop.gpuCond_->elseStmt;
+    INT_ASSERT(loop.cpuBlock_);
+
+    // LICM might've moved a few things outside of the loop.
+    for_alist(expr, loop.cpuBlock_->body) {
+      loop.loop_ = toCForLoop(expr);
+      if (loop.loop_) break;
+    }
+    INT_ASSERT(loop.loop_);
+
     return loop;
   }
 
@@ -380,7 +395,8 @@ public:
   }
 
   CForLoop* generateGpuAndNonGpuPaths();
-  void cleanupGpuAndNonGpuPaths() const;
+  void makeCpuOnly() const;
+  void makeGpuOnly() const;
   void fixupNonGpuPath() const;
 
 private:
@@ -1173,8 +1189,8 @@ static CallExpr* generateGPUCall(GpuKernel& info, VarSymbol* numThreads) {
   return call;
 }
 
-static void generateGpuAndNonGpuPaths(const GpuizableLoop &gpuLoop,
-                                      GpuKernel &kernel) {
+static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
+                                  GpuKernel &kernel) {
   // If we're not creating AST specializations for functions where we can assume
   // we're on a GPU sublocale, then every time, before doing a kernel launch, we
   // need to check and see if we are on a GPU sublocale. The code to do this
@@ -1224,7 +1240,7 @@ static void outlineEligibleLoop(FnSymbol *fn, GpuizableLoop &gpuLoop) {
   // Construction of the GpuKernel will create the outlined function
   GpuKernel kernel(gpuLoop, fn->defPoint);
   if(!kernel.lateGpuizationFailure()) {
-    generateGpuAndNonGpuPaths(gpuLoop, kernel);
+    generateGPUKernelCall(gpuLoop, kernel);
   } else {
     kernel.fn()->defPoint->remove();
   }
@@ -1244,28 +1260,24 @@ static void outlineGpuKernelsInFn(FnSymbol *fn) {
 
     auto foundLoop = eligibleLoops.find(loop);
     if (foundLoop != eligibleLoops.end()) {
+      // The loops originally in eligibleLoops should be in non-specialized
+      // procs, and thus, should not ever be encountered during outlining.
+      INT_ASSERT(!fGpuSpecialization);
+
       // The GPU branches we create for eligible loops are always if-else,
       // not if-fallthrough. Make them fall through if necessary (that is,
       // if we're in CPU-as-device mode).
       auto& eligibleLoop = foundLoop->second;
       eligibleLoop.fixupNonGpuPath();
       outlineEligibleLoop(fn, eligibleLoop);
-    } if (fGpuSpecialization && getGpuEligibleMarker(loop)) {
+    } else if (fGpuSpecialization && getGpuEligibleMarker(loop)) {
       // Even if this wasn't a loop originally marked eligible, it could
       // be a copy of one. If that's the case, we inserted a primitive
       // into its body.
 
-      // We're in GPU specialization, so the conditional should be elided;
-      // replace it with the loop itself.
-      auto parentBlock = toBlockStmt(loop->parentExpr);
-      INT_ASSERT(parentBlock != nullptr);
-      auto parentCond = toCondStmt(parentBlock->parentExpr);
-      INT_ASSERT(parentCond != nullptr);
-      loop->remove();
-      parentCond->replace(loop);
-
       auto gpuLoop = GpuizableLoop::fromEligibleClone(loop);
       outlineEligibleLoop(fn, gpuLoop);
+      gpuLoop.makeGpuOnly();
     }
   }
 }
@@ -1291,8 +1303,9 @@ static void doGpuTransforms() {
       // since we found these loops before GPU specialization. Thus, they
       // are in the original, non-specialized copies of the functions,
       // and by definition won't run on the GPU.
-      eligible.second.cleanupGpuAndNonGpuPaths();
+      eligible.second.makeCpuOnly();
     }
+    eligibleLoops.clear();
   }
 
   // Outline all eligible loops; cleanup CPU bound loops
@@ -1432,15 +1445,23 @@ CForLoop* GpuizableLoop::generateGpuAndNonGpuPaths() {
 
   // Save the new AST nodes we created so we can operate on them later.
   cpuBlock_ = cpuBlock;
+  gpuBlock_ = gpuBlock;
   gpuLoop_ = gpuLoop;
   gpuCond_ = cond;
 
   return gpuLoop;
 }
 
-void GpuizableLoop::cleanupGpuAndNonGpuPaths() const {
-  cpuLoop()->remove();
-  gpuCond_->replace(cpuLoop());
+void GpuizableLoop::makeCpuOnly() const {
+  cpuBlock_->remove();
+  gpuCond_->replace(cpuBlock_);
+  cpuBlock_->flattenAndRemove();
+}
+
+void GpuizableLoop::makeGpuOnly() const {
+  gpuBlock_->remove();
+  gpuCond_->replace(gpuBlock_);
+  gpuBlock_->flattenAndRemove();
 }
 
 void GpuizableLoop::fixupNonGpuPath() const {
