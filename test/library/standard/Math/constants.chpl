@@ -12,10 +12,10 @@ proc check(x, y)
 }
 
 check(e, exp(1));
-check(log2_e, log2(e));
-check(log10_e, log10(e));
-check(ln_2, log(2));
-check(ln_10, log(10));
+check(log2E, log2(e));
+check(log10E, log10(e));
+check(ln2, log(2));
+check(ln10, log(10));
 assert(pi:int == 3);
 check(sin(pi), 0.0);
 check(half_pi, pi/2.0);
