@@ -1,5 +1,5 @@
 $CHPL_HOME/modules/internal/Atomics.chpl:nnnn: In function 'chpl__atomicType':
 $CHPL_HOME/modules/internal/Atomics.chpl:nnnn: error: Unsupported atomic type: string
-  callstack-internal-modules.chpl:28: called as chpl__atomicType(type T = string) from function 'foo'
+  callstack-internal-modules.chpl:28: called as chpl__atomicType(type valType = string) from function 'foo'
   callstack-internal-modules.chpl:24: called as foo() from function 'bar'
   callstack-internal-modules.chpl:20: called as bar() from function 'main'
