@@ -4623,15 +4623,15 @@ static void checkLoopsAssertVectorize() {
               if (funcIt != info->functionCNameAstrToSymbol.end()) {
                 fn = funcIt->second;
               }
-              int lineno = -1;
+
+              // use debug info if available to specify the loop
               if(I->getDebugLoc().get()) {
-                lineno = I->getDebugLoc().getLine();
+                int lineno = I->getDebugLoc().getLine();
+                USR_WARN(fn, "loop on line %d was marked 'assertVectorized' but did not vectorize", lineno);
               }
-              else if(fn != nullptr) {
-                lineno = fn->linenum();
-              }
-              // USR_WARN should handle the case of a nullptr
-              USR_WARN(fn, "loop on line %d was marked 'assertVectorized' but did not vectorize", lineno);
+              else {
+                USR_WARN(fn, "loop was marked 'assertVectorized' but did not vectorize");
+              }              
             }
           }
         }

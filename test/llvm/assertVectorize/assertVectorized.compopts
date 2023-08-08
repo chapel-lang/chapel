@@ -1,2 +1,4 @@
  # assertVectorized-baseline.good
 --fast
+-g # assertVectorized-debug.good
+-g --fast
