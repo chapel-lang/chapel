@@ -117,7 +117,9 @@ static VarSymbol* generateAssignmentToPrimitive(FnSymbol* fn,
 template <size_t Size>
 bool isEqualToAnyOfTheLoops(LoopStmt* loop, CForLoop* const (&loops)[Size]) {
   for (size_t i = 0; i < Size; i++) {
-    if (loops[i] == loop) return true;
+    if (loops[i] != nullptr && /* loops can contain nulls, but don't allow
+                                  comparison to pass if the loop is null. */
+        loops[i] == loop) return true;
   }
   return false;
 }
@@ -344,6 +346,7 @@ class GpuizableLoop {
   std::vector<Symbol*> loopIndices_;
   std::vector<Symbol*> lowerBounds_;
   bool shouldErrorIfNotGpuizable_;
+  const char* reason = nullptr;
 
   CondStmt* gpuCond_ = nullptr;
   BlockStmt* cpuBlock_ = nullptr;
@@ -354,6 +357,12 @@ class GpuizableLoop {
 public:
   GpuizableLoop(BlockStmt* blk);
   GpuizableLoop(GpuizableLoop&&) = default;
+
+  static GpuizableLoop fromEligibleClone(BlockStmt* blk) {
+    GpuizableLoop loop{blk};
+    std::swap(loop.gpuLoop_, loop.loop_);
+    return loop;
+  }
 
   bool isReportWorthy();
 
@@ -371,6 +380,7 @@ public:
 
   CForLoop* generateGpuAndNonGpuPaths();
   void cleanupGpuAndNonGpuPaths() const;
+  void fixupNonGpuPath() const;
 
 private:
   bool determineIfShouldErrorIfNotGpuizable();
@@ -512,6 +522,9 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
 
   for_vector(CallExpr, call, calls) {
     if (call->primitive) {
+      // TODO: hack!
+      if (call->primitive->tag == PRIM_GPU_ELIGIBLE) continue;
+
       // only primitives that are fast and local are allowed for now
       bool inLocal = inLocalBlock(call);
       int is = classifyPrimitive(call, inLocal);
@@ -622,6 +635,11 @@ bool GpuizableLoop::extractUpperBound() {
 }
 
 void GpuizableLoop::reportNotGpuizable(const BaseAST* ast, const char *msg) {
+  if (loop_->id == 2608813) {
+    debuggerBreakHere();
+  }
+
+  this->reason = msg;
   if(this->shouldErrorIfNotGpuizable_) {
     USR_FATAL_CONT(loop_, "Loop containing assertOnGpu() is not eligible for execution on a GPU");
     USR_PRINT(ast, "%s", msg);
@@ -695,7 +713,7 @@ static const char* getLoopName(CForLoop* loop) {
 }
 
 void GpuKernel::buildStubOutlinedFunction(DefExpr* insertionPoint) {
-  fn_ = new FnSymbol(getLoopName(gpuLoop.cpuLoop()));
+  fn_ = new FnSymbol(getLoopName(gpuLoop.gpuLoop()));
 
   fn_->body->blockInfoSet(new CallExpr(PRIM_BLOCK_LOCAL));
 
@@ -1180,20 +1198,27 @@ static void generateGpuAndNonGpuPaths(const GpuizableLoop &gpuLoop,
   CallExpr* gpuCall = generateGPUCall(kernel, numThreads);
   gpuBlock->insertAtTail(gpuCall);
 
-  CForLoop* loopToReplace = gpuLoop.gpuLoop();
-  if(fGpuSpecialization) {
-    // If we are creating GPU specializations then we already know we're on a GPU
-    // sublocale and can just generate the kernel launch call. Remove the
-    // conditional; the CPU loop will be all that remains, so replace it instead.
-    gpuLoop.cleanupGpuAndNonGpuPaths();
-    loopToReplace = gpuLoop.cpuLoop();
-  }
+  gpuLoop.gpuLoop()->replace(gpuBlock);
+}
 
-  loopToReplace->replace(gpuBlock);
+static CallExpr* getGpuEligibleMarker(CForLoop* loop) {
+  if (loop->body.length > 0) {
+    if (auto callExpr = toCallExpr(loop->body.get(1))) {
+      if (callExpr->primitive && callExpr->primitive->tag == PRIM_GPU_ELIGIBLE) {
+        return callExpr;
+      }
+    }
+  }
+  return nullptr;
 }
 
 static void outlineEligibleLoop(FnSymbol *fn, GpuizableLoop &gpuLoop) {
-  SET_LINENO(gpuLoop.cpuLoop());
+  SET_LINENO(gpuLoop.gpuLoop());
+
+  // The marker is a compile-time only primitive; remove it now.
+  if (auto marker = getGpuEligibleMarker(gpuLoop.gpuLoop())) {
+    marker->remove();
+  }
 
   // Construction of the GpuKernel will create the outlined function
   GpuKernel kernel(gpuLoop, fn->defPoint);
@@ -1217,10 +1242,30 @@ static void outlineGpuKernelsInFn(FnSymbol *fn) {
     }
 
     auto foundLoop = eligibleLoops.find(loop);
-    if (foundLoop == eligibleLoops.end()) continue;
+    if (foundLoop != eligibleLoops.end()) {
+      // The GPU branches we create for eligible loops are always if-else,
+      // not if-fallthrough. Make them fall through if necessary (that is,
+      // if we're in CPU-as-device mode).
+      auto& eligibleLoop = foundLoop->second;
+      eligibleLoop.fixupNonGpuPath();
+      outlineEligibleLoop(fn, eligibleLoop);
+    } if (getGpuEligibleMarker(loop)) {
+      // Even if this wasn't a loop originally marked eligible, it could
+      // be a copy of one. If that's the case, we inserted a primitive
+      // into its body.
 
-    auto& eligibleLoop = foundLoop->second;
-    outlineEligibleLoop(fn, eligibleLoop);
+      // We're in GPU specialization, so the conditional should be elided;
+      // replace it with the loop itself.
+      auto parentBlock = toBlockStmt(loop->parentExpr);
+      INT_ASSERT(parentBlock != nullptr);
+      auto parentCond = toCondStmt(parentBlock->parentExpr);
+      INT_ASSERT(parentCond != nullptr);
+      loop->remove();
+      parentCond->replace(loop);
+
+      auto gpuLoop = GpuizableLoop::fromEligibleClone(loop);
+      outlineEligibleLoop(fn, gpuLoop);
+    }
   }
 }
 
@@ -1236,6 +1281,17 @@ static void cleanupForeachLoopsGauranteedToRunOnCpu(FnSymbol *fn) {
 static void doGpuTransforms() {
   if(fGpuSpecialization) {
     CreateGpuFunctionSpecializations().doit();
+  }
+
+
+  if (fGpuSpecialization) {
+    for (auto& eligible : eligibleLoops) {
+      // For each loop in "eligibleLoops", immediately perform cleanup,
+      // since we found these loops before GPU specialization. Thus, they
+      // are in the original, non-specialized copies of the functions,
+      // and by definition won't run on the GPU.
+      eligible.second.cleanupGpuAndNonGpuPaths();
+    }
   }
 
   // Outline all eligible loops; cleanup CPU bound loops
@@ -1360,8 +1416,7 @@ CForLoop* GpuizableLoop::generateGpuAndNonGpuPaths() {
   gpuBlock->insertAtTail(gpuLoop);
 
   // we can't add elseStmt later on
-  CondStmt* cond = new CondStmt(condExpr, gpuBlock,
-                                isFullGpuCodegen() ? cpuBlock : NULL);
+  CondStmt* cond = new CondStmt(condExpr, gpuBlock, cpuBlock);
 
   // first, make sure the conditional is in place
   cpuLoop()->insertBefore(cond);
@@ -1384,13 +1439,18 @@ CForLoop* GpuizableLoop::generateGpuAndNonGpuPaths() {
 
 void GpuizableLoop::cleanupGpuAndNonGpuPaths() const {
   cpuLoop()->remove();
-
-  if (gpuCond_->elseStmt == nullptr) {
-    // The CPU block was placed after the conditional instead of as an else.
-    // Remove it separately.
-    cpuBlock_->remove();
-  }
   gpuCond_->replace(cpuLoop());
+}
+
+void GpuizableLoop::fixupNonGpuPath() const {
+  // In the CPU-as-device mode, instead of the plain loop being in an "else",
+  // it's always executed. So, take it from its branch and put it after
+  // the conditional.
+
+  if (!isFullGpuCodegen()) {
+    cpuLoop()->remove();
+    gpuCond_->insertAfter(cpuLoop());
+  }
 }
 
 // TODO naming
@@ -1408,8 +1468,10 @@ static void createTwoPaths(FnSymbol* fn) {
 
     GpuizableLoop gpuLoop(loop);
     if (gpuLoop.isEligible()) {
+      SET_LINENO(loop);
       auto gpuCopy = gpuLoop.generateGpuAndNonGpuPaths();
       eligibleLoops.insert({ gpuCopy, std::move(gpuLoop) });
+      gpuCopy->body.insertAtHead(new CallExpr(PRIM_GPU_ELIGIBLE));
     }
   }
 }
