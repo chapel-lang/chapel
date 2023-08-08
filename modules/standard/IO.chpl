@@ -3044,7 +3044,7 @@ record DefaultDeserializer {
 }
 
 /*
-  A basic binary Serializer to be used with ``fileWriter``.
+  An unstructured binary Serializer to be used with ``fileWriter``.
 */
 record BinarySerializer {
   /*
@@ -3211,7 +3211,7 @@ record BinarySerializer {
 }
 
 /*
-  A basic binary Deserializer to be used with ``fileReader``.
+  An unstructured binary Deserializer to be used with ``fileReader``.
 */
 record BinaryDeserializer {
   /*
