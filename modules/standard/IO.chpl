@@ -10837,6 +10837,9 @@ proc fileWriter._writefOne(fmtStr, ref arg, i: int,
     // otherwise we will consume at least one argument.
     select argType(i) {
       when QIO_CONV_ARG_TYPE_SIGNED, QIO_CONV_ARG_TYPE_BINARY_SIGNED {
+        if style.precision != -1 then
+          warning("Setting precision for integer format specifiers is not supported; use '%n' instead");
+
         var (t,ok) = _toSigned(arg);
         if ! ok {
           err = qio_format_error_arg_mismatch(i);
@@ -10847,6 +10850,9 @@ proc fileWriter._writefOne(fmtStr, ref arg, i: int,
             try _writeOne(iokind.dynamic, t, origLocale);
         }
       } when QIO_CONV_ARG_TYPE_UNSIGNED, QIO_CONV_ARG_TYPE_BINARY_UNSIGNED {
+        if style.precision != -1 then
+          warning("Setting precision for integer format specifiers is not supported; use '%n' instead");
+
         var (t,ok) = _toUnsigned(arg);
         if ! ok {
           err = qio_format_error_arg_mismatch(i);
