@@ -3256,7 +3256,7 @@ record BinaryDeserializer {
   /*
     Deserialize and return a value of the given type in this basic binary format.
 
-    :arg reader: the ``fileReader`` whose input will be used to deserialize the value. 
+    :arg reader: the ``fileReader`` whose input will be used to deserialize the value.
     :arg readType: the type to be deserialized.
   */
   proc deserializeType(reader:_readerType, type readType) : readType throws {
