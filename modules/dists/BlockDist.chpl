@@ -1216,19 +1216,7 @@ proc BlockDom.doiTryCreateArray(type eltType) throws {
            with (ref myLocArrTemp) {
     on loc {
       const locSize = locDomsElt.myBlock.size;
-      var callPostAlloc = false;
-      var data = _ddata_allocate_noinit_nocheck(eltType, locSize, callPostAlloc);
-
-      // TODO: Add a more distinguishable error type
-      if data == nil then
-        throw new Error("Could not allocate memory");
-
-      init_elts(data, locSize, eltType);
-
-      if callPostAlloc {
-        _ddata_allocate_postalloc(data, locSize);
-        callPostAlloc = false;
-      }
+      var data = _try_ddata_allocate(eltType, locSize);
 
       const LBA = new unmanaged LocBlockArr(eltType, rank, idxType, strides,
                                             locDomsElt, data=data, size=locSize);
@@ -1272,7 +1260,6 @@ proc BlockDom.dsiSerialWrite(x) { x.write(whole); }
 proc BlockDom.dsiLocalSlice(param strides, ranges) do return whole((...ranges));
 override proc BlockDom.dsiIndexOrder(i) do              return whole.indexOrder(i);
 override proc BlockDom.dsiMyDist() do                   return dist;
-override proc BlockDom.isBlock() param do return true;
 
 //
 // INTERFACE NOTES: Could we make dsiSetIndices() for a rectangular

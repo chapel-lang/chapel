@@ -705,19 +705,7 @@ module DefaultRectangular {
       if rank != 1 then
         throw new Error("'tryBuildArray' is only supported on domains of rank 1");
 
-      var callPostAlloc:bool;
-      var data = _ddata_allocate_noinit_nocheck(eltType, ranges(0).size, callPostAlloc);
-
-      // TODO: Add a more distinguishable error type
-      if data == nil then
-        throw new Error("Could not allocate memory");
-
-      init_elts(data, ranges(0).size, eltType);
-
-      if callPostAlloc {
-        _ddata_allocate_postalloc(data, ranges(0).size);
-        callPostAlloc = false;
-      }
+      var data = _try_ddata_allocate(eltType, ranges(0).size);
       return new unmanaged DefaultRectangularArr(eltType=eltType, rank=rank,
                                                  idxType=idxType,
                                                  strides=strides,
