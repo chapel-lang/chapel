@@ -363,7 +363,7 @@ module MPI {
     var flag, ret : c_int;
     ret = C_MPI.MPI_Test(request, flag, status);
     while (flag==0) {
-      chpl_task_yield();
+      currentTask.yieldExecution();
       ret = C_MPI.MPI_Test(request, flag, status);
     }
     return ret;

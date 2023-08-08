@@ -1770,6 +1770,12 @@ module ChapelBase {
     var _val;
   }
 
+  module currentTask {
+    inline proc yieldExecution() {
+      extern proc chpl_task_yield();
+      chpl_task_yield();
+    }
+  }
   //
   // data structures for naive implementation of end used for
   // sync statements and for joining coforall and cobegin tasks

@@ -405,7 +405,7 @@ module Atomics {
     inline proc const waitFor(val:bool, param order: memoryOrder = memoryOrder.seqCst): void {
       on this {
         while (this.read(order=memoryOrder.relaxed) != val) {
-          chpl_task_yield();
+          currentTask.yieldExecution();
         }
         chpl_atomic_thread_fence(c_memory_order(order));
       }
@@ -745,7 +745,7 @@ module Atomics {
     inline proc const waitFor(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
       on this {
         while (this.read(order=memoryOrder.relaxed) != val) {
-          chpl_task_yield();
+          currentTask.yieldExecution();
         }
         chpl_atomic_thread_fence(c_memory_order(order));
       }

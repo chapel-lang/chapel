@@ -378,7 +378,7 @@ module ConcurrentMap {
           }
         }
 
-        if shouldYield then chpl_task_yield(); // If lock could not be acquired
+        if shouldYield then currentTask.yieldExecution(); // If lock could not be acquired
         shouldYield = true;
       }
       return nil;
@@ -457,7 +457,7 @@ module ConcurrentMap {
           }
         }
 
-        if shouldYield then chpl_task_yield(); // If lock could not be acquired
+        if shouldYield then currentTask.yieldExecution(); // If lock could not be acquired
         shouldYield = true;
       }
       return retNil;
@@ -549,7 +549,7 @@ module ConcurrentMap {
             }
 
             if (continueFlag == false && deferred != nil) {
-              chpl_task_yield();
+              currentTask.yieldExecution();
             } else if (deferred == nil) then break;
           }
         }
@@ -944,7 +944,7 @@ module ConcurrentMap {
             clearHelper(r, tok);
             increment = true;
           } else {
-            if shouldYield then chpl_task_yield(); // If lock could not be acquired
+            if shouldYield then currentTask.yieldExecution(); // If lock could not be acquired
             shouldYield = true;
           }
         } else {

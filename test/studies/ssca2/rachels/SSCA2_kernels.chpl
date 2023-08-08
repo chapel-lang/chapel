@@ -608,7 +608,7 @@ module SSCA2_kernels
     proc gettid() {
       const tid = this.currTPV.fetchAdd(1)%numTPVs;
       on this.TPV[tid] do
-        while this.TPV[tid]!.used.testAndSet() do chpl_task_yield();
+        while this.TPV[tid]!.used.testAndSet() do currentTask.yieldExecution();
       return tid;
     }
     proc getTPV(tid) {
