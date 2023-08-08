@@ -491,10 +491,10 @@ void markSymbolNotConst(Symbol* sym)
 
     if(shouldWarn) {
 
-      char* intentName = isTaskIntent ? "task" (isArgThis ? "this" : "default");
+      char* intentName = isTaskIntent ? "task" (isArgThis ? "this" : "argument");
 
       USR_WARN(arg,
-               "inferring a %s intent to be 'ref' for '%s' is deprecated "
+               "inferring a default %s intent to be 'ref' for '%s' is deprecated "
                "- please use an explicit intent",
                intentName,
                arg->name);
