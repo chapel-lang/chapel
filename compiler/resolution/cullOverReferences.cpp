@@ -481,7 +481,7 @@ void markSymbolNotConst(Symbol* sym)
       isTaskIntent = fn->hasEitherFlag(FLAG_COBEGIN_OR_COFORALL, FLAG_BEGIN);
     }
 
-    bool shouldWarn = !isArgThis && !isTaskIntent && !fromPragma
+    bool shouldWarn = !isArgThis && !isTaskIntent && !fromPragma;
 
     if(shouldWarn) {
       IntentTag defaultIntent = blankIntentForType(arg->type);
@@ -491,7 +491,7 @@ void markSymbolNotConst(Symbol* sym)
 
     if(shouldWarn) {
 
-      char* intentName = isTaskIntent ? "task" (isArgThis ? "this" : "argument");
+      const char* intentName = isTaskIntent ? "task" : (isArgThis ? "this" : "argument");
 
       USR_WARN(arg,
                "inferring a default %s intent to be 'ref' for '%s' is deprecated "
