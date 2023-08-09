@@ -173,6 +173,9 @@ module BigInteger {
     @chpldoc.nodoc
     var localeId : chpl_nodeID_t;      // The locale id for the GMP state
 
+    /*
+      Initializes a :record:`bigint` to an initial value of 0.
+    */
     proc init() {
       this.complete();
       mpz_init(this.mpz);
@@ -180,6 +183,12 @@ module BigInteger {
       this.localeId = chpl_nodeID;
     }
 
+    /*
+      Initializes a :record:`bigint` to the value of ``x``.
+
+      :arg x: The value to be stored in the resulting :record:`bigint`.
+      :type x: :record:`bigint`, `int`, `uint`
+    */
     proc init(const ref x: bigint) {
       this.complete();
       if compiledForSingleLocale() || x.localeId == chpl_nodeID {
@@ -190,6 +199,66 @@ module BigInteger {
         mpz_init(this.mpz);
 
         chpl_gmp_get_mpz(this.mpz, x.localeId, mpz_struct);
+      }
+
+      this.localeId = chpl_nodeID;
+    }
+
+    /*
+      Copy initializes a :record:`bigint` to the value of ``x``.
+
+      :arg x: The value to be stored in the resulting :record:`bigint`.
+      :type x: :record:`bigint`, `integral`
+    */
+    proc init=(const ref x: bigint) do this.init(x);
+
+    /* See :proc:`init` */
+    proc init(x: int) {
+      this.complete();
+      mpz_init_set_si(this.mpz, x.safeCast(c_long));
+
+      this.localeId = chpl_nodeID;
+    }
+
+    /* See :proc:`init` */
+    proc init(x: uint) {
+      this.complete();
+      mpz_init_set_ui(this.mpz, x.safeCast(c_ulong));
+
+      this.localeId = chpl_nodeID;
+    }
+
+    /* See :proc:`init=` */
+    proc init=(x : integral) do this.init(x);
+
+    /* Initialize a :record:`bigint` from a string and optionally a provided base
+       to use with the string.  If the string is not a correct base ``base``
+       number, will throw a :type:`~OS.BadFormatError`.
+
+       :arg x: The value to be stored in the resulting :record:`bigint`.
+       :type x: :type:`~String.string`
+
+       :arg base: The base to use when creating the :record:`bigint` from ``x``.
+                  May vary from ``2`` to ``62`` or be ``0``.  Defaults to ``0``,
+                  which causes the base to be read from the start of the ``x``
+                  itself (``0x`` and ``0X`` will give hexadecimal, ``0b`` and
+                  ``0B`` will give binary, ``0`` will give octal, and everything
+                  else will be interpreted as decimal).
+       :type base: ``int``
+
+       :throws BadFormatError: Thrown when ``x`` is not a correctly formatted
+                               number in base ``base``.
+
+     */
+    proc init(x: string, base: int = 0) throws where bigintInitThrows == true {
+      this.complete();
+      const ref x_ = x.localize().c_str();
+      const base_ = base.safeCast(c_int);
+
+      if mpz_init_set_str(this.mpz, x_, base_) != 0 {
+        mpz_clear(this.mpz);
+
+        throwingInitWorkaround();
       }
 
       this.localeId = chpl_nodeID;
@@ -211,16 +280,6 @@ module BigInteger {
 
       this.localeId = chpl_nodeID;
     }
-
-    proc init=(const ref x: bigint) do this.init(x);
-
-    proc init(x: int) {
-      this.complete();
-      mpz_init_set_si(this.mpz, x.safeCast(c_long));
-
-      this.localeId = chpl_nodeID;
-    }
-
     pragma "last resort"
     @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
     proc init(num: int) {
@@ -229,14 +288,6 @@ module BigInteger {
 
       this.localeId = chpl_nodeID;
     }
-
-    proc init(x: uint) {
-      this.complete();
-      mpz_init_set_ui(this.mpz, x.safeCast(c_ulong));
-
-      this.localeId = chpl_nodeID;
-    }
-
     pragma "last resort"
     @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
     proc init(num: uint) {
@@ -246,7 +297,40 @@ module BigInteger {
       this.localeId = chpl_nodeID;
     }
 
-    proc init=(x : integral) do this.init(x);
+    /* Initialize a :record:`bigint` from a string and optionally a provided base
+       to use with the string.  If the string is not a correct base ``base``
+       number, will throw a :type:`~OS.BadFormatError`.
+
+       :arg str: The value to be stored in the resulting :record:`bigint`.
+       :type str: `string`
+
+       :arg base: The base to use when creating the :record:`bigint` from ``str``.
+                  May vary from ``2`` to ``62`` or be ``0``.  Defaults to ``0``,
+                  which causes the base to be read from the start of the ``str``
+                  itself (``0x`` and ``0X`` will give hexadecimal, ``0b`` and
+                  ``0B`` will give binary, ``0`` will give octal, and everything
+                  else will be interpreted as decimal).
+       :type base: `int`
+
+       :throws BadFormatError: Thrown when ``str`` is not a correctly formatted
+                               number in base ``base``.
+
+     */
+    pragma "last resort"
+    @deprecated("the argument name 'str' is deprecated - please use 'x' instead")
+    proc init(str: string, base: int = 0) throws where bigintInitThrows == true {
+      this.complete();
+      const ref str_ = str.localize().c_str();
+      const base_ = base.safeCast(c_int);
+
+      if mpz_init_set_str(this.mpz, str_, base_) != 0 {
+        mpz_clear(this.mpz);
+
+        throwingInitWorkaround();
+      }
+
+      this.localeId = chpl_nodeID;
+    }
 
     @deprecated(notes="bigint initializers that halt are deprecated, please set the config param :param:`bigintInitThrows` to 'true' to opt in to using the new initializer that throws")
     proc init(str: string, base: int = 0) where bigintInitThrows == false {
@@ -281,73 +365,6 @@ module BigInteger {
       this.localeId = chpl_nodeID;
     }
 
-    /* Initialize a :type:`bigint` from a string and optionally a provided base
-       to use with the string.  If the string is not a correct base ``base``
-       number, will throw a :type:`~OS.BadFormatError`.
-
-       :arg x: The value to be stored in the resulting :type:`bigint`.
-       :type x: :type:`~String.string`
-
-       :arg base: The base to use when creating the :type:`bigint` from ``x``.
-                  May vary from ``2`` to ``62`` or be ``0``.  Defaults to ``0``,
-                  which causes the base to be read from the start of the ``x``
-                  itself (``0x`` and ``0X`` will give hexadecimal, ``0b`` and
-                  ``0B`` will give binary, ``0`` will give octal, and everything
-                  else will be interpreted as decimal).
-       :type base: ``int``
-
-       :throws BadFormatError: Thrown when ``x`` is not a correctly formatted
-                               number in base ``base``.
-
-     */
-    proc init(x: string, base: int = 0) throws where bigintInitThrows == true {
-      this.complete();
-      const ref x_ = x.localize().c_str();
-      const base_ = base.safeCast(c_int);
-
-      if mpz_init_set_str(this.mpz, x_, base_) != 0 {
-        mpz_clear(this.mpz);
-
-        throwingInitWorkaround();
-      }
-
-      this.localeId = chpl_nodeID;
-    }
-
-    /* Initialize a :type:`bigint` from a string and optionally a provided base
-       to use with the string.  If the string is not a correct base ``base``
-       number, will throw a :type:`~OS.BadFormatError`.
-
-       :arg str: The value to be stored in the resulting :type:`bigint`.
-       :type str: `string`
-
-       :arg base: The base to use when creating the :type:`bigint` from ``str``.
-                  May vary from ``2`` to ``62`` or be ``0``.  Defaults to ``0``,
-                  which causes the base to be read from the start of the ``str``
-                  itself (``0x`` and ``0X`` will give hexadecimal, ``0b`` and
-                  ``0B`` will give binary, ``0`` will give octal, and everything
-                  else will be interpreted as decimal).
-       :type base: `int`
-
-       :throws BadFormatError: Thrown when ``str`` is not a correctly formatted
-                               number in base ``base``.
-
-     */
-    pragma "last resort"
-    @deprecated("the argument name 'str' is deprecated - please use 'x' instead")
-    proc init(str: string, base: int = 0) throws where bigintInitThrows == true {
-      this.complete();
-      const ref str_ = str.localize().c_str();
-      const base_ = base.safeCast(c_int);
-
-      if mpz_init_set_str(this.mpz, str_, base_) != 0 {
-        mpz_clear(this.mpz);
-
-        throwingInitWorkaround();
-      }
-
-      this.localeId = chpl_nodeID;
-    }
 
     // Within a given locale, bigint assignment creates a deep copy of the
     // data and so the record "owns" the GMP data.
@@ -362,42 +379,6 @@ module BigInteger {
       }
     }
 
-    /*
-      .. warning::
-
-         bigint.size() is @deprecated
-    */
-    @deprecated(notes="bigint.size() is deprecated")
-    proc size() : c_size_t {
-      var ret: c_size_t;
-
-      if compiledForSingleLocale() {
-        ret = mpz_size(this.mpz);
-
-      } else if this.localeId == chpl_nodeID {
-        ret = mpz_size(this.mpz);
-
-      } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          ret = mpz_size(this.mpz);
-        }
-      }
-
-      return ret;
-    }
-
-    /*
-      .. warning::
-
-         bigint.sizeinbase() is deprecated, use bigint.sizeInBase() instead
-    */
-    @deprecated
-    ("bigint.sizeinbase() is deprecated, use bigint.sizeInBase() instead")
-    proc sizeinbase(base: int) : uint {
-      return sizeInBase(base).safeCast(uint);
-    }
 
     /* Determine the size of ``this`` measured in number of digits in the given
        ``base``.  The sign of ``this`` is ignored, only the absolute value is
@@ -412,7 +393,7 @@ module BigInteger {
                  a power of 2, will always be exact.  If ``this`` is 0, will
                  always return 1.
        :rtype: ``int``
-     */
+    */
     proc sizeInBase(base: int) : int {
       const base_ = base.safeCast(c_int);
       var   ret: c_size_t;
@@ -432,11 +413,6 @@ module BigInteger {
       }
 
       return ret.safeCast(int);
-    }
-
-    @deprecated(notes="mpzStruct is deprecated, please use :proc:`getImpl` instead")
-    proc mpzStruct() : __mpz_struct {
-      return getImpl();
     }
 
     /* Return the underlying implementation of :record:`bigint`.  Currently,
@@ -463,12 +439,6 @@ module BigInteger {
       }
 
       return ret;
-    }
-
-    @deprecated(notes="get_d_2exp is deprecated in favor of :proc:`bigint.getD2Exp`, which returns (d, exp) instead of (exp, d).  Please use that method instead")
-    proc get_d_2exp() : (uint(32), real) {
-      var (dbl, exp) = getD2Exp();
-      return (exp, dbl);
     }
 
     /*
@@ -515,6 +485,54 @@ module BigInteger {
       return (dbl: real, exp.safeCast(uint(32)));
     }
 
+    /*
+      .. warning::
+
+         bigint.size() is @deprecated
+    */
+    @deprecated(notes="bigint.size() is deprecated")
+    proc size() : c_size_t {
+      var ret: c_size_t;
+
+      if compiledForSingleLocale() {
+        ret = mpz_size(this.mpz);
+
+      } else if this.localeId == chpl_nodeID {
+        ret = mpz_size(this.mpz);
+
+      } else {
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+
+        on __primitive("chpl_on_locale_num", thisLoc) {
+          ret = mpz_size(this.mpz);
+        }
+      }
+
+      return ret;
+    }
+
+    /*
+      .. warning::
+
+         bigint.sizeinbase() is deprecated, use bigint.sizeInBase() instead
+    */
+    @deprecated
+    ("bigint.sizeinbase() is deprecated, use bigint.sizeInBase() instead")
+    proc sizeinbase(base: int) : uint {
+      return sizeInBase(base).safeCast(uint);
+    }
+
+    @deprecated(notes="mpzStruct is deprecated, please use :proc:`getImpl` instead")
+    proc mpzStruct() : __mpz_struct {
+      return getImpl();
+    }
+
+    @deprecated(notes="get_d_2exp is deprecated in favor of :proc:`bigint.getD2Exp`, which returns (d, exp) instead of (exp, d).  Please use that method instead")
+    proc get_d_2exp() : (uint(32), real) {
+      var (dbl, exp) = getD2Exp();
+      return (exp, dbl);
+    }
+
     // private method
     @chpldoc.nodoc
     proc getStr(base: int = 10): string {
@@ -542,6 +560,7 @@ module BigInteger {
     @deprecated("get_str is deprecated - please use a cast to a string or IO methods to get the string representation")
     proc get_str(base: int = 10): string do return this.getStr(base);
 
+    /* Writes this number to a :type:`~IO.fileWriter` */
     proc writeThis(writer) throws {
       var s: string;
       s = this.getStr();
