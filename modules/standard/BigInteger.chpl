@@ -169,19 +169,23 @@ module BigInteger {
   /* An enumeration of the different rounding strategies, for use with e.g.
      :proc:`~BigInteger.divQ` to determine how to round the quotient when performing
      the computation.
-
-     - ``round.down`` indicates that the quotient should be rounded down towards
-       -infinity and any remainder should have the same sign as the denominator.
-     - ``round.zero`` indicates that the quotient should be rounded towards zero
-       and any remainder should have the same sign as the numerator.
-     - ``round.up`` indicates that the quotient should be rounded up towards
-       +infinity and any remainder should have the opposite sign as the
-       denominator.
    */
   @deprecated(notes="enum round is deprecated - please use enum :enum:`roundingMode` instead")
   enum round {
+    /*
+      Indicates that the quotient should be rounded down towards -infinity and
+      any remainder should have the same sign as the denominator.
+    */
     down = -1,
+    /*
+      Indicates that the quotient should be rounded towards zero and any
+      remainder should have the same sign as the numerator.
+    */
     zero = 0,
+    /*
+      Indicates that the quotient should be rounded up towards +infinity and any
+      remainder should have the opposite sign as the denominator.
+    */
     up = 1
   }
 
@@ -189,20 +193,22 @@ module BigInteger {
   /* An enumeration of the different rounding strategies, for use with e.g.
      :proc:`~BigInteger.div` to determine how to round the quotient when performing
      the computation.
-
-     - ``roundingMode.down`` indicates that the quotient should be rounded down
-       towards -infinity and any remainder should have the same sign as the
-       denominator.
-     - ``roundingMode.zero`` indicates that the quotient should be rounded
-       towards zero and any remainder should have the same sign as the
-       numerator.
-     - ``roundingMode.up`` indicates that the quotient should be rounded up
-       towards +infinity and any remainder should have the opposite sign as the
-       denominator.
    */
   enum roundingMode {
+    /*
+      Indicates that the quotient should be rounded down towards -infinity and
+      any remainder should have the same sign as the denominator.
+    */
     down = -1,
+    /*
+      Indicates that the quotient should be rounded towards zero and any
+      remainder should have the same sign as the numerator.
+    */
     zero = 0,
+    /*
+      Indicates that the quotient should be rounded up towards +infinity and any
+      remainder should have the opposite sign as the denominator.
+    */
     up = 1
   }
 
@@ -4066,7 +4072,7 @@ module BigInteger {
      :type denom: :record:`bigint`, ``integral``
      :arg rounding: The rounding style to use, see :enum:`roundingMode` for a
                     description of what the rounding styles entail.  Defaults to
-                    ``zero`` if unspecified
+                    :enumconstant:`~roundingMode.zero` if unspecified
      :type rounding: :enum:`roundingMode`
 
      .. warning::
@@ -4194,15 +4200,15 @@ module BigInteger {
      :type denom: :record:`bigint`, ``integral``
      :arg rounding: The rounding style to use, see :enum:`roundingMode` for a
                     description of what the rounding styles entail.  Defaults to
-                    ``zero`` if unspecified
+                    :enumconstant:`~roundingMode.zero` if unspecified
      :type rounding: :enum:`roundingMode`
 
      .. warning::
         If the denominator is zero, the program behavior is undefined.
 
      .. note::
-        When ``rounding == roundingMode.down``, this procedure is equivalent to
-        :proc:`~BigInteger.mod`.
+        When ``rounding`` is :enumconstant:`~roundingMode.down`, this procedure
+        is equivalent to :proc:`~BigInteger.mod`.
 
      .. seealso::
         :proc:`GMP.mpz_cdiv_r`,
@@ -4270,7 +4276,7 @@ module BigInteger {
      :type denom: :record:`bigint`, ``integral``
      :arg rounding: The rounding style to use, see :enum:`roundingMode` for a
                     description of what the rounding styles entail.  Defaults to
-                    ``zero`` if unspecified
+                    :enumconstant:`~roundingMode.zero` if unspecified
      :type rounding: :enum:`roundingMode`
 
      .. warning::
@@ -4446,7 +4452,7 @@ module BigInteger {
      ``result``.
 
      This is the same as performing a right bit shift of ``numer`` by ``exp``
-     bits when ``rounding==roundingMode.down``.
+     bits when ``rounding`` is :enumconstant:`~roundingMode.down`.
 
      :arg result: Where the result is stored
      :type result: :record:`bigint`
@@ -4457,7 +4463,7 @@ module BigInteger {
      :type exp: ``integral``
      :arg rounding: The rounding style to use, see :enum:`roundingMode` for a
                     description of what the rounding styles entail.  Defaults to
-                    ``zero`` if unspecified
+                    :enumconstant:`~roundingMode.zero` if unspecified
      :type rounding: :enum:`roundingMode`
 
      .. seealso::
@@ -4553,7 +4559,7 @@ module BigInteger {
      :type exp: ``integral``
      :arg rounding: The rounding style to use, see :enum:`roundingMode` for a
                     description of what the rounding styles entail.  Defaults to
-                    ``zero`` if unspecified
+                    :enumconstant:`~roundingMode.zero` if unspecified
      :type rounding: :enum:`roundingMode`
 
      .. seealso::
