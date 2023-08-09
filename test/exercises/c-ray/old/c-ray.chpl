@@ -27,7 +27,7 @@ use Image;    // use helper module related to writing out images
 use IO;       // allows access to stderr, stdin, ioMode
 use List;
 use ChplConfig;
-import Math.quarterPi;
+import Math.pi;
 
 //
 // Configuration constants
@@ -40,7 +40,7 @@ config const size = "800x600",            // size of output image
              imgType = extToFmt(image),   // the image file format
              usage = false,               // print usage message?
 
-             fieldOfView = quarterPi,     // field of view in radians
+             fieldOfView = pi/4,          // field of view in radians
              maxRayDepth = 5,             // raytrace recursion limit
              rayMagnitude = 1000.0,       // trace rays of this magnitude
              errorMargin = 1e-6,          // margin to avoid surface acne
