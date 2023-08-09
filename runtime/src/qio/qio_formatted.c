@@ -3282,10 +3282,21 @@ int _ftoa_core(char* buf, size_t buf_sz, double num,
       }
     } else {
       if( uppercase ) {
-        got = snprintf(buf, buf_sz, "%.*G", precision, num);
+        if ( floorf(num) == num ) {
+          // necessary to avoid ommiting precision digits
+          //  when argument is a whole number
+          got = snprintf(buf, buf_sz, "%.*F", precision, num);
+        } else {
+          got = snprintf(buf, buf_sz, "%.*G", precision, num);
+        }
       } else {
-        got = snprintf(buf, buf_sz, "%.*g", precision, num);
-        // printf("\tbuf:%s buf_sz: %zu pre: %d num: %f\n", buf, buf_sz, precision, num);
+        if ( floorf(num) == num ) {
+          // necessary to avoid ommiting precision digits
+          //  when argument is a whole number
+          got = snprintf(buf, buf_sz, "%.*f", precision, num);
+        } else {
+          got = snprintf(buf, buf_sz, "%.*g", precision, num);
+        }
       }
     }
   } else if( realfmt == 1 ) {
@@ -4862,13 +4873,12 @@ qioerr qio_conv_parse(c_string fmt,
         } else if( base_flag == 'd' ) {
           style_out->realfmt = 1;
         } else {
-          style_out->realfmt = 1;
+          style_out->realfmt = 0;
         }
       }
 
       // Set the conversion type.
       if( specifier == 'n' ) {
-        style_out->realfmt = 1;
         style_out->prefix_base = 1;
         spec_out->argType = QIO_CONV_ARG_TYPE_NUMERIC;
       }
