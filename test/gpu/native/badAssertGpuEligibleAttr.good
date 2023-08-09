@@ -1,0 +1,4 @@
+warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly
+badAssertGpuEligibleAttr.chpl:1: error: loop marked with @assertGpuEligible, but 'for' loops don't support GPU execution
+badAssertGpuEligibleAttr.chpl:2: error: loop marked with @assertGpuEligible, but 'while' loops don't support GPU execution
+badAssertGpuEligibleAttr.chpl:3: error: loop marked with @assertGpuEligible, but 'do-while' loops don't support GPU execution
