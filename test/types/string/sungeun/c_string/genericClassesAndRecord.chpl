@@ -14,10 +14,10 @@ use checkType;
   var c1 = ownC1.borrow();
   checkType(c1.x.type);
 
-  const blah2: c_string = "blah";
+  const blah2: c_ptrConst(c_char) = "blah";
   var ownC2 = new owned C(blah2);
   var c2 = ownC2.borrow();
-  checkType(c_string, c2.x.type);
+  checkType(c_ptrConst(c_char), c2.x.type);
 
   const blah3 = "blah";
   var ownC3 = new owned C(blah3);
@@ -52,9 +52,9 @@ use checkType;
   var r1 = new R(blah1);
   checkType(r1.x.type);
 
-  const blah2: c_string = "blah";
+  const blah2: c_ptrConst(c_char) = "blah";
   var r2 = new R(blah2);
-  checkType(c_string, r2.x.type);
+  checkType(c_ptrConst(c_char), r2.x.type);
 
   const blah3 = "blah";
   var r3 = new R(blah3);

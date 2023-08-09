@@ -1,7 +1,7 @@
 module Build{
   require "../parquetHeaders.chpl";
   public use parquetHeaders;
-  
+
   proc main(): int{
 
     use CTypes;

@@ -52,9 +52,9 @@ module HTable {
     // This is defined in C_HDF5, but the definition there was causing isseus with
     // field_names, field_offset, field_types, so I define an overload there.
     // It's more than likely I was doing something silly
-    extern proc H5TBmake_table(table_title : c_string, file_id : hid_t, dset_name: c_string,
+    extern proc H5TBmake_table(table_title : c_ptrConst(c_char), file_id : hid_t, dset_name: c_ptrConst(c_char),
                                numFields : hsize_t, numRecords : hsize_t, type_size : hsize_t,
-                               field_names : c_array(c_string), field_offset : c_array(hsize_t),
+                               field_names : c_array(c_ptrConst(c_char)), field_offset : c_array(hsize_t),
                                field_types : c_array(hid_t),
                                chunk_size : hsize_t, fill_data : c_ptr(void), compress : c_int,
                                data : c_ptr(void));

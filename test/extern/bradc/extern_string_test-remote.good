@@ -1,2 +1,10 @@
 returned string return string test
 returned string arg return string arg test
+returned string return c_ptrConst(c_uchar) test
+returned string arg return c_ptrConst(c_uchar) arg test
+returned string return c_ptrConst(c_char) test
+returned string arg return c_ptrConst(c_char) arg test
+returned string return c_ptr(c_uchar) test
+returned string arg return c_ptr(c_uchar) arg test
+returned string return c_ptr(c_char) test
+returned string arg return c_ptr(c_char) arg test

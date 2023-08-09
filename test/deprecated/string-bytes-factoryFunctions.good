@@ -1,3 +1,11 @@
+string-bytes-factoryFunctions.chpl:n: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'string.c_str()' from the 'CTypes' module instead
+string-bytes-factoryFunctions.chpl:n: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'string.c_str()' from the 'CTypes' module instead
+string-bytes-factoryFunctions.chpl:n: warning: the type 'c_string' is deprecated; please 'import CTypes' and use 'c_ptrConst(c_char)' instead
+string-bytes-factoryFunctions.chpl:n: warning: the type 'c_string' is deprecated; please 'import CTypes' and use 'c_ptrConst(c_char)' instead
+string-bytes-factoryFunctions.chpl:n: warning: the type 'c_string' is deprecated; please 'import CTypes' and use 'c_ptrConst(c_char)' instead
+string-bytes-factoryFunctions.chpl:n: warning: the type 'c_string' is deprecated; please 'import CTypes' and use 'c_ptrConst(c_char)' instead
+string-bytes-factoryFunctions.chpl:n: warning: the type 'c_string' is deprecated; please 'import CTypes' and use 'c_ptrConst(c_char)' instead
+string-bytes-factoryFunctions.chpl:n: warning: the type 'c_string' is deprecated; please 'import CTypes' and use 'c_ptrConst(c_char)' instead
 string-bytes-factoryFunctions.chpl:n: warning: createStringWithBorrowedBuffer is deprecated - please use string.createBorrowingBuffer instead
 string-bytes-factoryFunctions.chpl:n: warning: createStringWithBorrowedBuffer is deprecated - please use string.createBorrowingBuffer instead
 string-bytes-factoryFunctions.chpl:n: warning: createStringWithBorrowedBuffer is deprecated - please use string.createBorrowingBuffer instead

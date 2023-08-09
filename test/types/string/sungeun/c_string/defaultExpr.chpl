@@ -86,10 +86,10 @@ const s: string;
   f(real, s="bye");
 }
 
-// s should be c_string for these
+// s should be c_ptrConst(c_char) for these
 {
-  proc f(s: c_string = "hi") {
-    checkType(c_string, s.type);
+  proc f(s: c_ptrConst(c_char) = "hi") {
+    checkType(c_ptrConst(c_char), s.type);
   }
 
   f();
@@ -98,9 +98,9 @@ const s: string;
 }
 
 {
-  proc f(type gtype, g, s: c_string = "hi") {
+  proc f(type gtype, g, s: c_ptrConst(c_char) = "hi") {
     checkType(gtype, g.type);
-    checkType(c_string, s.type);
+    checkType(c_ptrConst(c_char), s.type);
   }
 
   f(int, 1);
@@ -109,9 +109,9 @@ const s: string;
 }
 
 {
-  proc f(s: c_string = "hi", type gtype, g = 3.14) {
+  proc f(s: c_ptrConst(c_char) = "hi", type gtype, g = 3.14) {
     checkType(gtype, g.type);
-    checkType(c_string, s.type);
+    checkType(c_ptrConst(c_char), s.type);
   }
 
   f(gtype=real);

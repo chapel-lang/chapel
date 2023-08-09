@@ -23,6 +23,14 @@
 
 module ChapelBase {
 
+  // We deprecate in the module code so that we don't have to modify dyno
+  // to teach it about the 'c_string' type. We perform the deprecation in
+  // ChapelBase so that you don't have to 'import CTypes' to see the type
+  // 'c_string' (which could break a lot of programs). This is OK because
+  // after the deprecation period we can just remove 'c_string' entirely.
+  @deprecated(notes="the type 'c_string' is deprecated; please 'import CTypes' and use 'c_ptrConst(c_char)' instead")
+  type c_string = chpl_c_string;
+
   pragma "locale private"
   @chpldoc.nodoc
   var rootLocaleInitialized: bool = false;
@@ -38,8 +46,8 @@ module ChapelBase {
   config param enablePostfixBangChecks = false;
 
   // These two are called by compiler-generated code.
-  extern proc chpl_config_has_value(name:c_string, module_name:c_string): bool;
-  extern proc chpl_config_get_value(name:c_string, module_name:c_string): c_string;
+  extern proc chpl_config_has_value(name:c_ptrConst(c_char), module_name:c_ptrConst(c_char)): bool;
+  extern proc chpl_config_get_value(name:c_ptrConst(c_char), module_name:c_ptrConst(c_char)): c_ptrConst(c_char);
 
   // the default low bound to use for arrays, tuples, etc.
   config param defaultLowBound = 0;
@@ -3274,7 +3282,7 @@ module ChapelBase {
 
   // Support for module deinit functions.
   class chpl_ModuleDeinit {
-    const moduleName: c_string;          // for debugging; non-null, not owned
+    const moduleName: c_ptrConst(c_char); // for debugging; non-null, not owned
     const deinitFun:  c_fn_ptr;          // module deinit function
     const prevModule: unmanaged chpl_ModuleDeinit?; // singly-linked list / LIFO queue
     proc writeThis(ch) throws {

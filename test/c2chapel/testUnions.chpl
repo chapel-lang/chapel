@@ -17,8 +17,8 @@ proc main() {
   intUnion_print(x);
 
   var y : stringUnion;
-  y.a = c"Hello";
-  y.b = c"World";
+  y.a = "Hello".c_str();
+  y.b = "World".c_str();
   stringUnion_print(y);
 
   var z : fnUnion;

@@ -1,16 +1,17 @@
 use checkType;
+use CTypes;
 
 proc rcs() {
-  var s = c"hi";
+  var s = "hi".c_str();
   var ss = string.createCopyingBuffer(s) + string.createCopyingBuffer(s);
   var cs = ss.c_str();
   return cs;
 }
 
-checkType(c_string, rcs().type);
+checkType(c_ptrConst(c_char), rcs().type);
 
 proc rcss():string {
-  var s = c"hi";
+  var s = "hi".c_str();
   var ss = string.createCopyingBuffer(s) + string.createCopyingBuffer(s);
   var cs = ss.c_str();
   return string.createCopyingBuffer(cs);

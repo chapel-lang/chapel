@@ -609,6 +609,7 @@ bool isClassLikeOrNil(Type* t);
 bool isRecord(Type* t);
 bool isUserRecord(Type* t); // is it a record from the user viewpoint?
 bool isUnion(Type* t);
+bool isCPtrConstChar(Type* t); // replacement for c_string
 
 bool isReferenceType(const Type* t);
 

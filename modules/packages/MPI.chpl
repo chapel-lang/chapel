@@ -296,7 +296,7 @@ module MPI {
               halt("Unable to parse PMI_GNI_COOKIE");
             }
             const newVal = ":".join(cookieJar);
-            C_Env.setenv("PMI_GNI_COOKIE",newVal.c_str(),1);
+            C_Env.setenv("PMI_GNI_COOKIE", newVal.c_str(), 1);
           }
         }
     }
@@ -731,7 +731,7 @@ module MPI {
   private module C_Env {
     use CTypes;
     // Helper routines to access the environment
-    extern proc getenv(name : c_string) : c_string;
-    extern proc setenv(name : c_string, envval : c_string, overwrite : c_int) : c_int;
+    extern proc getenv(name : c_ptrConst(c_char)) : c_ptrConst(c_char);
+    extern proc setenv(name : c_ptrConst(c_char), envval : c_ptrConst(c_char), overwrite : c_int) : c_int;
   }
 }

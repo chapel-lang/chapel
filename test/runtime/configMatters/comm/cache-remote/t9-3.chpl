@@ -1,10 +1,10 @@
 // various utilites for testing
-use IO;
+use IO, CTypes;
 
 extern proc chpl_cache_print();
 pragma "insert line file info"
 config const verbose=false;
-extern proc printf(fmt: c_string, vals...?numvals): int;
+extern proc printf(fmt: c_ptrConst(c_char), vals...?numvals): int;
 
 
 /// label the output with "phases" //////////////////////////////////////////

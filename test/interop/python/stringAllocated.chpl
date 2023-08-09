@@ -10,6 +10,6 @@ export proc g(size: int, ptr: c_ptr(uint(8))): int {
   }
 }
 
-export proc writeStr(in x: c_string) {
+export proc writeStr(in x: c_ptrConst(c_char)) {
   writeln(string.createCopyingBuffer(x));
 }
