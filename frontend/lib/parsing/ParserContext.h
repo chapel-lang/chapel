@@ -70,6 +70,7 @@ struct ParserContext {
   AttributeGroupParts attributeGroupParts;
   bool hasAttributeGroupParts;
   int numAttributesBuilt;
+  AttributeGroup* loopAttributes;
   YYLTYPE declStartLocation;
 
   // this type and stack helps the parser know if a function
@@ -105,6 +106,7 @@ struct ParserContext {
     this->attributeGroupParts     = {nullptr, nullptr, false, false, false, UniqueString(), UniqueString() };
     this->hasAttributeGroupParts  = false;
     this->numAttributesBuilt      = 0;
+    this->loopAttributes   = nullptr;
     YYLTYPE emptyLoc = {0};
     this->declStartLocation       = emptyLoc;
     this->atEOF                   = false;
@@ -479,6 +481,7 @@ struct ParserContext {
                                       AstNode* iterandExpr,
                                       WithClause* withClause,
                                       BlockOrDo blockOrDo);
+                                      // AttributeGroup* attributeGroup);
 
   CommentsAndStmt buildForeachLoopStmt(YYLTYPE locForeach,
                                        YYLTYPE locIndex,
@@ -487,6 +490,7 @@ struct ParserContext {
                                        AstNode* iterandExpr,
                                        WithClause* withClause,
                                        BlockOrDo blockOrDo);
+                                      //  AttributeGroup* attributeGroup);
 
   CommentsAndStmt buildForLoopStmt(YYLTYPE locFor,
                                    YYLTYPE locIndex,
@@ -494,6 +498,7 @@ struct ParserContext {
                                    AstNode* indexExpr,
                                    AstNode* iterandExpr,
                                    BlockOrDo blockOrDo);
+                                  //  AttributeGroup* attributeGroup);
 
   CommentsAndStmt buildCoforallLoopStmt(YYLTYPE locCoforall,
                                         YYLTYPE locIndex,
@@ -502,6 +507,7 @@ struct ParserContext {
                                         AstNode* iterandExpr,
                                         WithClause* withClause,
                                         BlockOrDo blockOrDo);
+                                        // AttributeGroup* attributeGroup);
 
   CommentsAndStmt buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
                                        YYLTYPE locThenBodyAnchor,

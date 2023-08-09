@@ -977,6 +977,10 @@ void AstDump::printLoopStmtDetails(LoopStmt* loop) {
     write("hazard");
   if (loop->isOrderIndependent())
     write("order-independent");
+  if (loop->hasAdditionalLLVMMetadata("chpl.loop.assertvectorized"))
+    write("assert-vectorized");
+  if (loop->hasAdditionalLLVMMetadata())
+    write("additional-llvm-metadata");
 }
 
 void AstDump::newline() {

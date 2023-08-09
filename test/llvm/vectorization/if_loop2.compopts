@@ -1,0 +1,1 @@
+--fast --llvm-print-ir loop --llvm-print-ir-stage full --mllvm -runtime-memory-check-threshold=0

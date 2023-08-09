@@ -134,6 +134,7 @@ struct Visitor {
                                   const VisibilityClause* clause);
   void checkAttributeNameRecognizedOrToolSpaced(const Attribute* node);
   void checkAttributeUsedParens(const Attribute* node);
+  void checkAttributeUnstable(const Attribute* node);
   void checkUserModuleHasPragma(const AttributeGroup* node);
   void checkExternBlockAtModuleScope(const ExternBlock* node);
   void checkLambdaDeprecated(const Function* node);
@@ -1269,9 +1270,19 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
   }
 }
 
+void Visitor::checkAttributeUnstable(const Attribute* node) {
+  if (shouldEmitUnstableWarning(node)) {
+    if(node->name() == UniqueString::get(context_, "llvm.metadata") ||
+       node->name() == UniqueString::get(context_, "llvm.metadata")) {
+      warn(node, "'%s' is an unstable attribute", node->name());
+    }
+  }
+}
+
 void Visitor::visit(const Attribute* node) {
   checkAttributeNameRecognizedOrToolSpaced(node);
   checkAttributeUsedParens(node);
+  checkAttributeUnstable(node);
 }
 
 void Visitor::visit(const AttributeGroup* node) {

@@ -4583,6 +4583,69 @@ static void saveIrToBcFileIfNeeded(const std::string& filename) {
   }
 }
 
+#ifdef HAVE_LLVM
+static llvm::MDNode* getMetadataContainingAttr(llvm::MDNode* MD, llvm::StringRef attr) {
+  for (unsigned i = 1, e = MD->getNumOperands(); i < e; ++i) {
+    if(auto md = llvm::dyn_cast<llvm::MDNode>(MD->getOperand(i))) {
+      if(auto S = llvm::dyn_cast<llvm::MDString>(md->getOperand(0))) {
+        if(S->getString() == attr) return md;
+      }
+    }
+  }
+  return nullptr;
+}
+static unsigned getBinaryMetadataValue(llvm::MDNode* MD) {
+  if (MD && MD->getNumOperands() == 2) {
+    unsigned Count =
+        llvm::mdconst::extract<ConstantInt>(MD->getOperand(1))->getZExtValue();
+    return Count;
+  }
+  return 0;
+}
+
+static void checkLoopsAssertVectorize() {
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(info);
+
+  // identify all loops
+  for (const auto& F : *info->module) {
+    for (const auto& BB: F) {
+      // if the BB is well-formed, we only care about the last instruction
+      // extract from it the MD_loop, which will return something if its a BR
+      // if its not well formed, the terminator will return nullptr
+      if(auto I = BB.getTerminator()) {
+        if(auto MD = I->getMetadata(LLVMContext::MD_loop)) {
+          auto MD_assertvectorized =
+            getMetadataContainingAttr(MD, "chpl.loop.assertvectorized");
+          auto hasAssertVectorized = getBinaryMetadataValue(MD_assertvectorized) == 1;
+          if(hasAssertVectorized) {
+            auto MD_isvectorize = getMetadataContainingAttr(MD, "llvm.loop.isvectorized");
+            auto isVectorized = getBinaryMetadataValue(MD_isvectorize) == 1;
+            if(!isVectorized) {
+              const char* astr_funcCName = astr(F.getName().str());
+              auto funcIt = info->functionCNameAstrToSymbol.find(astr_funcCName);
+              FnSymbol* fn = nullptr;
+              if (funcIt != info->functionCNameAstrToSymbol.end()) {
+                fn = funcIt->second;
+              }
+
+              // use debug info if available to specify the loop
+              if(I->getDebugLoc().get()) {
+                int lineno = I->getDebugLoc().getLine();
+                USR_WARN(fn, "loop on line %d was marked 'assertVectorized' but did not vectorize", lineno);
+              }
+              else {
+                USR_WARN(fn, "loop was marked 'assertVectorized' but did not vectorize");
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+#endif
+
 void makeBinaryLLVM(void) {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
@@ -4789,6 +4852,10 @@ void makeBinaryLLVM(void) {
 
     completePrintLlvmIrStage(llvmStageNum::FULL);
   }
+#endif
+
+#ifdef HAVE_LLVM
+  checkLoopsAssertVectorize();
 #endif
 
   // Make sure that we are generating PIC when we need to be.

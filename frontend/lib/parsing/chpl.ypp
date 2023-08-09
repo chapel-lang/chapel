@@ -861,8 +861,18 @@ decl_base:
 | class_level_stmt
 ;
 
+collect_attributes:
+  {
+    auto attributeGroup = context->buildAttributeGroup(@$);
+    if (attributeGroup != nullptr) {
+      context->resetAttributeGroupPartsState();
+    }
+    context->loopAttributes = attributeGroup.release();
+  }
+;
+
 attribute_receiver:
-  loop_stmt
+  collect_attributes loop_stmt { $$ = $2; }
   | decl_base
   | block_stmt
 ;
@@ -1591,7 +1601,8 @@ loop_stmt:
     auto body = context->consumeToBlock(@1, exprLst);
     auto node = DoWhile::build(BUILDER, LOC(@$), blockStyle,
                                std::move(body),
-                               toOwned($4));
+                               toOwned($4),
+                               toOwned(context->loopAttributes));
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
   }
@@ -1604,7 +1615,8 @@ loop_stmt:
     auto body = context->consumeToBlock(@3, exprLst);
     auto node = While::build(BUILDER, LOC(@1), toOwned($2),
                              blockStyle,
-                             std::move(body));
+                             std::move(body),
+                             toOwned(context->loopAttributes));
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
   }
@@ -1617,7 +1629,8 @@ loop_stmt:
     auto body = context->consumeToBlock(@3, exprLst);
     auto node = While::build(BUILDER, LOC(@1), toOwned($2),
                              blockStyle,
-                             std::move(body));
+                             std::move(body),
+                             toOwned(context->loopAttributes));
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
   }
@@ -1664,7 +1677,7 @@ loop_stmt:
                            std::move(body),
                            /*isExpressionLevel*/ false,
                            /*isParam*/ true,
-                           context->buildAttributeGroup(@$));
+                           toOwned(context->loopAttributes));
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     context->resetAttributeGroupPartsState();
     $$ = context->finishStmt(cs);

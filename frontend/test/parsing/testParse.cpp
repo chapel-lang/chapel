@@ -1123,6 +1123,141 @@ static void testAttributeMixedNamedArgs(Parser* parser) {
   assert(attr1->actual(2)->isIntLiteral());
 }
 
+static void testAttributeOnLoop(Parser* parser) {
+  ErrorGuard guard(parser->context());
+  auto program = R""""(
+    @myAttribute
+    proc foo(A, ref sum) {
+      @myLoopAttribute("some arg here")
+      for i in A.domain {
+        sum += A[i];
+      }
+      @myLoopAttribute("some arg here")
+      for i in A.domain {
+        const ref a = A[i];
+        sum += a;
+      }
+      @myLoopAttribute("some arg here")
+      // comment in the way
+      for i in A.domain {
+        const ref a = A[i];
+        sum += a;
+      }
+      @myLoopAttribute("some arg here")
+      foreach i in A.domain {
+        sum += A[i];
+      }
+      @myLoopAttribute("some arg here")
+      foreach i in A.domain {
+        const ref a = A[i];
+        sum += a;
+      }
+      @myLoopAttribute("some arg here")
+      // comment in the way
+      foreach i in A.domain {
+        const ref a = A[i];
+        sum += a;
+      }
+      @myLoopAttribute("some arg here")
+      forall i in A.domain {
+        sum += A[i];
+      }
+      @myLoopAttribute("some arg here")
+      forall i in A.domain {
+        const ref a = A[i];
+        sum += a;
+      }
+      @myLoopAttribute("some arg here")
+      // comment in the way
+      forall i in A.domain {
+        const ref a = A[i];
+        sum += a;
+      }
+      @myLoopAttribute("some arg here")
+      coforall i in A.domain {
+        sum += A[i];
+      }
+      @myLoopAttribute("some arg here")
+      coforall i in A.domain {
+        const ref a = A[i];
+        sum += a;
+      }
+      @myLoopAttribute("some arg here")
+      // comment in the way
+      coforall i in A.domain {
+        const ref a = A[i];
+        sum += a;
+      }
+      @myLoopAttribute("some arg here")
+      while true {
+        sum += A[A.domain.low];
+      }
+      @myLoopAttribute("some arg here")
+      while true {
+        const ref a = A[A.domain.low];
+        sum += a;
+      }
+      @myLoopAttribute("some arg here")
+      // comment in the way
+      while true {
+        const ref a = A[A.domain.low];
+        sum += a;
+      }
+      @myLoopAttribute("some arg here")
+      do {
+        sum += A[A.domain.low];
+      } while false;
+      @myLoopAttribute("some arg here")
+      do {
+        const ref a = A[A.domain.low];
+        sum += a;
+      } while false;
+      @myLoopAttribute("some arg here")
+      // comment in the way
+      do {
+        const ref a = A[A.domain.low];
+        sum += a;
+      } while false;
+      @myLoopAttribute("some arg here")
+      [i in A.domain] {
+        sum += A[i];
+      }
+      @myLoopAttribute("some arg here")
+      [i in A.domain] {
+        const ref a = A[i];
+        sum += a;
+      }
+      @myLoopAttribute("some arg here")
+      // comment in the way
+      [i in A.domain] {
+        const ref a = A[i];
+        sum += a;
+      }
+    }
+  )"""";
+
+  auto parseResult = parseStringAndReportErrors(parser, "testAttributeOnLoop.chpl", program);
+  assert(guard.realizeErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto f = mod->stmt(0)->toFunction();
+  assert(f);
+  // 7 kinds of loops, 3 for each kind plus 1 comment
+  assert(f->numStmts() == (7*(3+1)));
+  for(auto s: f->stmts()) {
+    assert(s);
+    assert(s->isLoop() || s->isComment());
+    if(s->isLoop()) {
+      auto attr = s->attributeGroup();
+      assert(attr->numAttributes() == 1);
+      auto attr1 = attr->getAttributeNamed(UniqueString::get(parser->context(), "myLoopAttribute"));
+      assert(attr1);
+    }
+  }
+}
+
+
 /* a test of the parser's ability to parse a proc with an attribute that has
    3 named arguments
 */
@@ -1247,6 +1382,7 @@ int main() {
   testAttributeNamedArgs(p);
   testAttributeMixedNamedArgs(p);
   testAttribute3NamedArgs(p);
+  testAttributeOnLoop(p);
   testPragmaChpldocIgnoreChplPrefix(p);
 
   return 0;
