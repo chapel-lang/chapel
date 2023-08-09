@@ -3087,7 +3087,7 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
 
   if( style->showplus || isnegative ) width++;
   if( style->prefix_base && base != 10 ) width += 2;
-  if( style->showpoint || style->precision > 0 ) {
+  if( false && (style->showpoint || style->precision > 0) ) {
     // intentionally doesn't handle showpointzero since showpointzero is
     // used to distinguish between floating point and integer values.
 
