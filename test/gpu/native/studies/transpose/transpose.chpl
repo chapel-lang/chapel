@@ -110,7 +110,7 @@ export proc transposeMatrix(odata: c_ptr(dataType), idata: c_ptr(dataType), widt
 
 inline proc transposeLowLevel(original, output) {
   __primitive("gpu kernel launch",
-          c"transposeMatrix",
+          "transposeMatrix":chpl_c_string,
           /* grid size */  sizeX / blockSize, sizeY / blockSize, 1,
           /* block size */ blockSize, blockSize, 1,
           /* kernel args */ c_ptrTo(output), c_ptrTo(original), sizeX, sizeY);
