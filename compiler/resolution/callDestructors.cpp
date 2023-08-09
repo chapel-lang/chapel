@@ -29,6 +29,7 @@
 #include "iterator.h"
 #include "lateConstCheck.h"
 #include "lifetime.h"
+#include "LoopStmt.h"
 #include "optimizations.h"
 #include "postFold.h"
 #include "resolution.h"
@@ -2066,11 +2067,36 @@ void AutoDestroyLoopExprTemps::process(CallExpr* call) {
   Symbol* targetSym = targetSE->symbol();
 
   SET_LINENO(call);
-  auto calledFn = call->getFunction();
   auto destroy = new CallExpr(PRIM_AUTO_DESTROY_RUNTIME_TYPE,
                               new SymExpr(targetSym));
+  if (LoopStmt::findEnclosingLoop(call)) {
+    BlockStmt* scope = call->getScopeBlock();
+    INT_ASSERT(scope);
 
-  calledFn->insertBeforeEpilogue(destroy);
+    CondStmt* ibb = nullptr;
+    for_alist (expr, scope->body) {
+      if (CondStmt* cond = toCondStmt(expr)) {
+        SymExpr* condSe = toSymExpr(cond->condExpr);
+        INT_ASSERT(condSe);
+
+        if (condSe->symbol() == gIteratorBreakToken) {
+          ibb = cond;
+          break;
+        }
+      }
+    }
+
+    if (ibb) {
+      ibb->thenStmt->insertAtHead(destroy);
+      ibb->insertAfter(destroy->copy());
+    }
+    else {
+      scope->insertAtTail(destroy);
+    }
+  }
+  else {
+    call->getFunction()->insertBeforeEpilogue(destroy);
+  }
 }
 
 bool InsertDestructorCalls::shouldProcess(CallExpr* call) {
