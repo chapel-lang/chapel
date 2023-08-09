@@ -99,7 +99,8 @@ bool lookupThisScopeAndUses(const char*           name,
                             bool skipExternBlocks,
                             std::map<Symbol*, astlocT*>& renameLocs,
                             bool storeRenames,
-                            std::map<Symbol*, VisibilityStmt*>& reexportPts);
+                            std::map<Symbol*, VisibilityStmt*>& reexportPts,
+                            llvm::SmallPtrSetImpl<Symbol*>& foundSymsSet);
 
 static ModuleSymbol* definesModuleSymbol(Expr* expr);
 
@@ -1785,7 +1786,8 @@ static void lookup(const char*           name,
                    llvm::SmallVectorImpl<Symbol*>& symbols,
                    std::map<Symbol*, astlocT*>& renameLocs,
                    bool storeRenames,
-                   std::map<Symbol*, VisibilityStmt*>& reexportPts);
+                   std::map<Symbol*, VisibilityStmt*>& reexportPts,
+                   llvm::SmallPtrSetImpl<Symbol*>& foundSymsSet);
 
 // Show what symbols from 'symbols' conflict with the given 'sym'.
 static void
@@ -1954,9 +1956,10 @@ void lookup(const char*           name,
             std::map<Symbol*, VisibilityStmt*>& reexportPts,
             bool storeRenames) {
   llvm::SmallPtrSet<BaseAST*, 32> visited;
+  llvm::SmallPtrSet<Symbol*, 32> foundSymsSet;
 
   lookup(name, context, context, visited, symbols, renameLocs, storeRenames,
-         reexportPts);
+         reexportPts, foundSymsSet);
 }
 
 static void lookup(const char*           name,
@@ -1968,14 +1971,18 @@ static void lookup(const char*           name,
                    llvm::SmallVectorImpl<Symbol*>& symbols,
                    std::map<Symbol*, astlocT*>& renameLocs,
                    bool storeRenames,
-                   std::map<Symbol*, VisibilityStmt*>& reexportPts) {
+                   std::map<Symbol*, VisibilityStmt*>& reexportPts,
+                   llvm::SmallPtrSetImpl<Symbol*>& foundSymsSet) {
 
   if (!visited.contains(scope)) {
     visited.insert(scope);
 
-    if (lookupThisScopeAndUses(name, context, scope, symbols,
+    bool found =
+        lookupThisScopeAndUses(name, context, scope, symbols,
                                /* skipExternBlocks */ false,
-                               renameLocs, storeRenames, reexportPts) == true) {
+                               renameLocs, storeRenames, reexportPts,
+                               foundSymsSet);
+    if (found) {
       // We've found an instance here.
       // Lydia note: in the access call case, we'd want to look in our
       // surrounding scopes for the symbols on the left and right part
@@ -1997,18 +2004,18 @@ static void lookup(const char*           name,
         if (outerScope->getModule() == rootModule ||
             outerScope->getModule() == theProgram) {
           lookup(name, context, outerScope, visited, symbols, renameLocs,
-                 storeRenames, reexportPts);
+                 storeRenames, reexportPts, foundSymsSet);
         } else {
           // if it's a nested module, don't look into the parent
           // module (a 'use' or 'import' is required to do that), but
           // do see if ChapelStandard or theProgram resolve things for
           // us that are not yet resolved.
           lookup(name, context, standardModule->block, visited, symbols,
-                 renameLocs, storeRenames, reexportPts);
+                 renameLocs, storeRenames, reexportPts, foundSymsSet);
           if (symbols.size() == 0) {
 
             lookup(name, context, theProgram->block, visited, symbols,
-                   renameLocs, storeRenames, reexportPts);
+                   renameLocs, storeRenames, reexportPts, foundSymsSet);
           }
         }
         // As a last ditch effort, see if this module's name happens to match.
@@ -2032,7 +2039,7 @@ static void lookup(const char*           name,
         if (AggregateType* ct =
             toAggregateType(canonicalClassType(fn->_this->type))) {
           lookup(name, context, ct->symbol, visited, symbols, renameLocs,
-                 storeRenames, reexportPts);
+                 storeRenames, reexportPts, foundSymsSet);
         }
       }
 
@@ -2041,7 +2048,7 @@ static void lookup(const char*           name,
         // If we didn't find something in the aggregate type that matched,
         // or we weren't in an aggregate type method, so look at next scope up.
         lookup(name, context, getScope(scope), visited, symbols, renameLocs,
-               storeRenames, reexportPts);
+               storeRenames, reexportPts, foundSymsSet);
       }
     }
   }
@@ -2052,9 +2059,6 @@ static void lookup(const char*           name,
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
-
-static bool      isRepeat(Symbol* toAdd,
-                          const llvm::SmallVectorImpl<Symbol*>& symbols);
 
 static Symbol*   inSymbolTable(const char* name, BaseAST* scope);
 
@@ -2073,17 +2077,34 @@ static void lookupUseImport(const char*           name,
                             std::map<Symbol*, VisibilityStmt*>& reexportPts,
                             VisitedModulesSet& visitedModules,
                             bool forShadowScope,
-                            bool publicOnly);
+                            bool publicOnly,
+                            llvm::SmallPtrSetImpl<Symbol*>& foundSymsSet);
 
-static void lookupUsedImportedMod(const char*           name,
-                                  BaseAST*              context,
-                                  BaseAST*              scope,
-                                  llvm::SmallVectorImpl<Symbol*>& symbols,
-                                  std::map<Symbol*, astlocT*>& renameLocs,
-                                  bool storeRenames,
-                                  bool forShadowScope,
-                                  bool publicOnly);
+static
+void lookupUsedImportedMod(const char*           name,
+                           BaseAST*              context,
+                           BaseAST*              scope,
+                           llvm::SmallVectorImpl<Symbol*>& symbols,
+                           std::map<Symbol*, astlocT*>& renameLocs,
+                           bool storeRenames,
+                           bool forShadowScope,
+                           bool publicOnly,
+                           llvm::SmallPtrSetImpl<Symbol*>& foundSymsSet);
 
+// Saves a symbol to symbols and foundSymsSet
+// Returns 'true' if it was added, 'false' if it was a duplicate symbol
+static bool saveSymbol(Symbol* sym,
+                       llvm::SmallVectorImpl<Symbol*>& symbols,
+                       llvm::SmallPtrSetImpl<Symbol*>& foundSymsSet) {
+  auto pair = foundSymsSet.insert(sym);
+  if (pair.second) {
+    // 1st time found in this search, so add it
+    symbols.push_back(sym);
+    return true;
+  }
+
+  return false;
+}
 
 static
 bool lookupThisScopeAndUses(const char*           name,
@@ -2093,7 +2114,8 @@ bool lookupThisScopeAndUses(const char*           name,
                             bool skipExternBlocks,
                             std::map<Symbol*, astlocT*>& renameLocs,
                             bool storeRenames,
-                            std::map<Symbol*, VisibilityStmt*>& reexportPts) {
+                            std::map<Symbol*, VisibilityStmt*>& reexportPts,
+                            llvm::SmallPtrSetImpl<Symbol*>& foundSymsSet) {
 
 
   bool scopeIsModule = false;
@@ -2120,7 +2142,7 @@ bool lookupThisScopeAndUses(const char*           name,
       // if we found a cached result, use it
       const std::vector<Symbol*>& vec = it->second;
       for (auto sym : vec) {
-        symbols.push_back(sym);
+        saveSymbol(sym, symbols, foundSymsSet);
       }
       return symbols.size() != 0;
     }
@@ -2131,20 +2153,19 @@ bool lookupThisScopeAndUses(const char*           name,
   if (Symbol* sym = inSymbolTable(name, scope)) {
     if (sym->hasFlag(FLAG_PRIVATE) == true) {
       if (sym->isVisible(context) == true) {
-        symbols.push_back(sym);
+        saveSymbol(sym, symbols, foundSymsSet);
       }
 
     } else {
-      symbols.push_back(sym);
+      saveSymbol(sym, symbols, foundSymsSet);
     }
   }
 
   if (Symbol* sym = inType(name, scope)) {
-    if (isRepeat(sym, symbols) == false) {
-      // When methods and fields can be private, need to check against the
-      // rejected private symbols here.  But that's in the future.
-      symbols.push_back(sym);
-    } else if (useCache == false) {
+    // When methods and fields can be private, need to check against the
+    // rejected private symbols here.  But that's in the future.
+    bool added = saveSymbol(sym, symbols, foundSymsSet);
+    if (added == false && useCache == false) {
       // If we're looking at the exact same Symbol, there's no need to add it
       // and we can just return.
       return true;
@@ -2158,7 +2179,8 @@ bool lookupThisScopeAndUses(const char*           name,
   lookupUseImport(name, context, scope, symbols,
                   renameLocs, storeRenames, reexportPts, visitedModules,
                   /* forShadowScope */ false,
-                  /* publicOnly */ false);
+                  /* publicOnly */ false,
+                  foundSymsSet);
 
   if (symbols.size() == 0) {
     // check private use only, not including names of modules
@@ -2167,7 +2189,8 @@ bool lookupThisScopeAndUses(const char*           name,
     lookupUseImport(name, context, scope, symbols,
                     renameLocs, storeRenames, reexportPts, visitedModules,
                     /* forShadowScope */ true,
-                    /* publicOnly */ false);
+                    /* publicOnly */ false,
+                    foundSymsSet);
   }
 
   if (symbols.size() == 0) {
@@ -2177,7 +2200,8 @@ bool lookupThisScopeAndUses(const char*           name,
     lookupUsedImportedMod(name, context, scope, symbols,
                           renameLocs, storeRenames,
                           /* forShadowScope */ true,
-                          /* publicOnly */ false);
+                          /* publicOnly */ false,
+                          foundSymsSet);
   }
 
   // If the module has an extern block or uses one that does
@@ -2191,7 +2215,7 @@ bool lookupThisScopeAndUses(const char*           name,
       skipExternBlocks == false) {
     Symbol* got = tryCResolve(scopeModule, name);
     if (got != nullptr)
-      symbols.push_back(got);
+      saveSymbol(got, symbols, foundSymsSet);
   }
 #endif
 
@@ -2217,7 +2241,8 @@ static void lookupUseImport(const char*           name,
                             std::map<Symbol*, VisibilityStmt*>& reexportPts,
                             VisitedModulesSet& visitedModules,
                             bool forShadowScope,
-                            bool publicOnly) {
+                            bool publicOnly,
+                            llvm::SmallPtrSetImpl<Symbol*>& foundSymsSet) {
   // Nothing found so far, look into the uses.
   if (BlockStmt* block = toBlockStmt(scope)) {
     if (block->useList != NULL) {
@@ -2262,7 +2287,8 @@ static void lookupUseImport(const char*           name,
         lookupUsedImportedMod(name, context, scope, symbols,
                               renameLocs, storeRenames,
                               /* forShadowScope */ false,
-                              /* publicOnly */ publicOnly);
+                              /* publicOnly */ publicOnly,
+                              foundSymsSet);
       }
 
       for_actuals(stmt, block->useList) {
@@ -2304,17 +2330,16 @@ static void lookupUseImport(const char*           name,
             }
             if (sym) {
               if (sym->hasFlag(FLAG_PRIVATE) == true) {
-                if (sym->isVisible(context) == true &&
-                    isRepeat(sym, symbols)  == false) {
-                  symbols.push_back(sym);
-                  if (storeRenames && use->isARenamedSym(name)) {
+                if (sym->isVisible(context) == true) {
+                  bool added = saveSymbol(sym, symbols, foundSymsSet);
+                  if (added && storeRenames && use->isARenamedSym(name)) {
                     renameLocs[sym] = &use->astloc;
                   }
                 }
 
-              } else if (isRepeat(sym, symbols) == false) {
-                symbols.push_back(sym);
-                if (storeRenames && use->isARenamedSym(name)) {
+              } else {
+                bool added = saveSymbol(sym, symbols, foundSymsSet);
+                if (added && storeRenames && use->isARenamedSym(name)) {
                   renameLocs[sym] = &use->astloc;
                 }
               }
@@ -2329,7 +2354,8 @@ static void lookupUseImport(const char*           name,
                                   symbols, renameLocs, storeRenames,
                                   reexportPts, visitedModules,
                                   /* forShadowScope */ false,
-                                  /* publicOnly */ true);
+                                  /* publicOnly */ true,
+                                  foundSymsSet);
                 }
               }
             }
@@ -2345,16 +2371,15 @@ static void lookupUseImport(const char*           name,
             BaseAST* scopeToUse = import->getSearchScope();
             if (Symbol* sym = inSymbolTable(nameToUse, scopeToUse)) {
               if (sym->hasFlag(FLAG_PRIVATE) == true) {
-                if (sym->isVisible(context) == true &&
-                    isRepeat(sym, symbols)  == false) {
-                  symbols.push_back(sym);
-                  if (storeRenames && import->isARenamedSym(name)) {
+                if (sym->isVisible(context) == true) {
+                  bool added = saveSymbol(sym, symbols, foundSymsSet);
+                  if (added && storeRenames && import->isARenamedSym(name)) {
                     renameLocs[sym] = &import->astloc;
                   }
                 }
-              } else if (isRepeat(sym, symbols) == false) {
-                symbols.push_back(sym);
-                if (storeRenames && import->isARenamedSym(name)) {
+              } else {
+                bool added = saveSymbol(sym, symbols, foundSymsSet);
+                if (added && storeRenames && import->isARenamedSym(name)) {
                   renameLocs[sym] = &import->astloc;
                 }
               }
@@ -2369,7 +2394,8 @@ static void lookupUseImport(const char*           name,
                                   symbols, renameLocs, storeRenames,
                                   reexportPts, visitedModules,
                                   /* forShadowScope */ false,
-                                  /* publicOnly */ true);
+                                  /* publicOnly */ true,
+                                  foundSymsSet);
                 }
               }
             }
@@ -2405,14 +2431,16 @@ static void lookupUseImport(const char*           name,
   }
 }
 
-static void lookupUsedImportedMod(const char*           name,
-                                  BaseAST*              context,
-                                  BaseAST*              scope,
-                                  llvm::SmallVectorImpl<Symbol*>& symbols,
-                                  std::map<Symbol*, astlocT*>& renameLocs,
-                                  bool storeRenames,
-                                  bool forShadowScope,
-                                  bool publicOnly) {
+static
+void lookupUsedImportedMod(const char*           name,
+                           BaseAST*              context,
+                           BaseAST*              scope,
+                           llvm::SmallVectorImpl<Symbol*>& symbols,
+                           std::map<Symbol*, astlocT*>& renameLocs,
+                           bool storeRenames,
+                           bool forShadowScope,
+                           bool publicOnly,
+                           llvm::SmallPtrSetImpl<Symbol*>& foundSymsSet) {
   // Check to see if the name matches a module name use'd / imported
   if (BlockStmt* block = toBlockStmt(scope)) {
     if (block->useList != NULL) {
@@ -2443,11 +2471,9 @@ static void lookupUsedImportedMod(const char*           name,
         if (UseStmt* use = toUseStmt(stmt)) {
           if (Symbol* modSym = use->checkIfModuleNameMatches(name)) {
             if (!(publicOnly && modSym->hasFlag(FLAG_PRIVATE))) {
-              if (isRepeat(modSym, symbols) == false) {
-                symbols.push_back(modSym);
-                if (storeRenames && use->isARename()) {
-                  renameLocs[modSym] = &use->astloc;
-                }
+              bool added = saveSymbol(modSym, symbols, foundSymsSet);
+              if (added && storeRenames && use->isARename()) {
+                renameLocs[modSym] = &use->astloc;
               }
             }
           }
@@ -2456,11 +2482,9 @@ static void lookupUsedImportedMod(const char*           name,
           if (imp->providesQualifiedAccess()) {
             if (Symbol* modSym = imp->checkIfModuleNameMatches(name)) {
               if (!(publicOnly && modSym->hasFlag(FLAG_PRIVATE))) {
-                if (isRepeat(modSym, symbols) == false) {
-                  symbols.push_back(modSym);
-                  if (storeRenames && imp->isARename()) {
-                    renameLocs[modSym] = &imp->astloc;
-                  }
+                bool added = saveSymbol(modSym, symbols, foundSymsSet);
+                if (added && storeRenames && imp->isARename()) {
+                  renameLocs[modSym] = &imp->astloc;
                 }
               }
             }
@@ -2471,12 +2495,6 @@ static void lookupUsedImportedMod(const char*           name,
   }
 }
 
-
-// Returns true if the symbol is present in the vector, false otherwise
-static bool isRepeat(Symbol* toAdd,
-                     const llvm::SmallVectorImpl<Symbol*>& symbols) {
-  return std::find(symbols.begin(), symbols.end(), toAdd) != symbols.end();
-}
 
 // Is this name defined in this scope?
 static Symbol* inSymbolTable(const char* name, BaseAST* ast) {
@@ -2511,9 +2529,11 @@ Symbol* lookupInModuleOrBuiltins(ModuleSymbol* mod, const char* name,
   SmallVector<Symbol*> syms;
   std::map<Symbol*, astlocT*> renameLocs;
   std::map<Symbol*, VisibilityStmt*> reexportPts;
+  llvm::SmallPtrSet<Symbol*, 32> foundSymsSet;
   lookupThisScopeAndUses(name, scope, scope, syms,
                          /* skipExternBlocks */ true,
-                         renameLocs, /* storeRenames */ false, reexportPts);
+                         renameLocs, /* storeRenames */ false, reexportPts,
+                         foundSymsSet);
 
   if (syms.size() > 0) {
     nSymbolsFound = syms.size();
