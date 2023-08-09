@@ -51,13 +51,13 @@ Constants
 :param:`ln2`
 :param:`ln10`
 :param:`pi`
-:param:`half_pi`
-:param:`quarter_pi`
-:param:`recipr_pi`
-:param:`twice_recipr_pi`
-:param:`twice_recipr_sqrt_pi`
-:param:`sqrt_2`
-:param:`recipr_sqrt_2`
+:param:`halfPi`
+:param:`quarterPi`
+:param:`reciprPi`
+:param:`twiceReciprPi`
+:param:`twiceReciprSqrtPi`
+:param:`sqrt2`
+:param:`reciprSqrt2`
 
 .. _math-trigonometry:
 
@@ -177,18 +177,46 @@ module Math {
   /* pi - the circumference/the diameter of a circle */
   param pi = 3.14159265358979323846;
   /* pi/2 */
+  @unstable("'halfPi' is unstable due to questions about its utility.  If you are seeing negative performance impacts from using 'pi/2' instead of this 'param', please let us know!")
+  param halfPi = 1.57079632679489661923;
+  /* pi/2 */
+  @deprecated(notes="'half_pi' is deprecated, please use :param:`halfPi` or 'pi/2' instead")
   param half_pi = 1.57079632679489661923;
   /* pi/4 */
+  @unstable("'quarterPi' is unstable due to questions about its utility.  If you are seeing negative performance impacts from using 'pi/4' instead of this 'param', please let us know!")
+  param quarterPi = 0.78539816339744830962;
+  /* pi/4 */
+  @deprecated(notes="'quarter_pi' is deprecated, please use :param:`quarterPi` or 'pi/4' instead")
   param quarter_pi = 0.78539816339744830962;
   /* 1/pi */
+  @unstable("'reciprPi' is unstable due to questions about its utility.  If you are seeing negative performance impacts from using '1/pi' instead of this 'param', please let us know!")
+  param reciprPi = 0.31830988618379067154;
+  /* 1/pi */
+  @deprecated(notes="'recipr_pi' is deprecated, please use :param:`reciprPi` or '1/pi' instead")
   param recipr_pi = 0.31830988618379067154;
   /* 2/pi */
+  @unstable("'twiceReciprPi' is unstable due to questions about its utility.  If you are seeing negative performance impacts from using '2/pi' instead of this 'param', please let us know!")
+  param twiceReciprPi = 0.63661977236758134308;
+  /* 2/pi */
+  @deprecated(notes="'twice_recipr_pi' is deprecated, please use :param:`twiceReciprPi` or '2/pi' instead")
   param twice_recipr_pi = 0.63661977236758134308;
   /* 2/sqrt(pi) */
+  @unstable("'twiceReciprSqrtPi' is unstable due to questions about its utility.  If you are using this symbol, please let us know!")
+  param twiceReciprSqrtPi = 1.12837916709551257390;
+  /* 2/sqrt(pi) */
+  @deprecated(notes="'twice_recipr_sqrt_pi' is deprecated, please use :param:`twiceReciprSqrtPi` or '2/sqrt(pi)' instead")
   param twice_recipr_sqrt_pi = 1.12837916709551257390;
   /* sqrt(2) */
+  @unstable("'sqrt2' is unstable due to questions about its utility.  If you are using this symbol, please let us know!")
+  param sqrt2 = 1.41421356237309504880;
+  /* sqrt(2) */
+  @deprecated(notes="'sqrt_2' is deprecated, please use :param:`sqrt2` or 'sqrt(2)' instead")
   param sqrt_2 = 1.41421356237309504880;
   /* 1/sqrt(2) */
+  @unstable("'reciprSqrt2' is unstable due to questions about its utility.  If you are using this symbol, please let us know!")
+  param reciprSqrt2 = 0.70710678118654752440;
+  /* 1/sqrt(2) */
+  @deprecated(notes="'recipr_sqrt_2' is deprecated, please use :param:`reciprSqrt2` or '1/sqrt(2)' instead")
   param recipr_sqrt_2 = 0.70710678118654752440;
 
   /* Returns the arc cosine of the argument `x`.
