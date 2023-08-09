@@ -1,0 +1,8 @@
+mathConstantsRenamed.chpl:3: warning: 'log2_e' is deprecated, please use log2E instead
+mathConstantsRenamed.chpl:4: warning: 'log10_e' is deprecated, please use log10E instead
+mathConstantsRenamed.chpl:5: warning: 'ln_2' is deprecated, please use ln2 instead
+mathConstantsRenamed.chpl:6: warning: 'ln_10' is deprecated, please use ln10 instead
+true
+true
+true
+true
