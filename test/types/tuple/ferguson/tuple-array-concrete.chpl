@@ -24,7 +24,7 @@ proc t4( args ... )
   t3( (...args) );
 }
 
-proc t5( a:g.type, b:g.type )
+proc t5( ref a:g.type, ref b:g.type )
 {
   t4(a, b);
 }

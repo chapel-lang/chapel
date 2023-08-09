@@ -9,7 +9,7 @@ proc main() {
 
 // a and b are passed the same array in the above
 // call so they must be possible to alias.
-proc test(a, b) {
+proc test(ref a, b) {
   for i in 1..n {
     a[1] += b[1];
   }

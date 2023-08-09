@@ -3634,7 +3634,7 @@ module HDF5 {
      Can read data of type int/uint (size 8, 16, 32, 64), real (size 32, 64),
      and c_ptrConst(c_char).
    */
-  proc readHDF5Dataset(file_id, dsetName: string, data) {
+  proc readHDF5Dataset(file_id, dsetName: string, ref data) {
     if !isArray(data) then compilerError("'data' must be an array");
 
     type eltType = data.eltType;
@@ -3697,7 +3697,7 @@ module HDF5 {
   proc writeArraysToHDF5Files(dirName: string, dsetNames: [] string,
                               filenames: [] string, type eltType,
                               param rank: int,
-                              data: [] ArrayWrapper(eltType, rank),
+                              ref data: [] ArrayWrapper(eltType, rank),
                               mode: Hdf5OpenMode) throws {
     use BlockDist, FileSystem;
 

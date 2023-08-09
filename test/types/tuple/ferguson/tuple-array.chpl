@@ -19,7 +19,7 @@ proc t4( args ... )
   t3( (...args) );
 }
 
-proc t5( a, b )
+proc t5( ref a, ref b )
 {
   t4(a, b);
 }
@@ -44,7 +44,7 @@ proc run()
   t1( (A, A) );
 }
 
-proc reset(A)
+proc reset(ref A)
 {
   A = [1,2,3,4];
 }

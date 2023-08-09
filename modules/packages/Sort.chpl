@@ -2328,7 +2328,7 @@ module TwoArrayPartitioning {
   // (e.g. sorted by the next digit in radix sort)
   // Counts per bin are stored in state.counts. Other data in
   // state is used locally by this routine or used elsewhere
-  proc bucketize(start_n: int, end_n: int, dst:[], src:[],
+  proc bucketize(start_n: int, end_n: int, ref dst:[], src:[],
                  ref state: TwoArrayBucketizerSharedState,
                  criterion, startbit:int) {
 
@@ -2434,7 +2434,7 @@ module TwoArrayPartitioning {
       counts[bin] = total;
     }
   }
-  proc testBucketize(start_n: int, end_n: int, dst:[], src:[],
+  proc testBucketize(start_n: int, end_n: int, ref dst:[], src:[],
                      bucketizer, criterion, startbit:int) {
 
     var state = new TwoArrayBucketizerSharedState(bucketizer=bucketizer);
@@ -3152,7 +3152,7 @@ module TwoArrayRadixSort {
   private use super.TwoArrayPartitioning;
   private use super.RadixSortHelp;
 
-  proc twoArrayRadixSort(Data:[], comparator:?rec=defaultComparator) {
+  proc twoArrayRadixSort(ref Data:[], comparator:?rec=defaultComparator) {
 
     var sequentialSizePerTask=4096;
     var baseCaseSize=16;
@@ -3210,7 +3210,7 @@ module TwoArraySampleSort {
 
   private use CTypes;
 
-  proc twoArraySampleSort(Data:[], comparator:?rec=defaultComparator) {
+  proc twoArraySampleSort(ref Data:[], comparator:?rec=defaultComparator) {
 
     var baseCaseSize=16;
     var distributedBaseCaseSize=1024;

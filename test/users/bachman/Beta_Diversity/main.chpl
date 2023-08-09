@@ -17,7 +17,16 @@ config const window_size : real(32);
 config const dx : real(32) = 5.0;
 config const printReduce = true;
 
-proc convolve_and_calculate(Image: [] int(8), centerPoints : ?, LeftMaskDomain : ?, CenterMaskDomain : ?, RightMaskDomain : ?, dissimilarity : [] real(64), Output: [] real(64), d_size : int, Mask_Size : int,  t: stopwatch) : [] {
+proc convolve_and_calculate(Image: [] int(8),
+                            centerPoints : ?,
+                            LeftMaskDomain : ?,
+                            CenterMaskDomain : ?,
+                            RightMaskDomain : ?,
+                            dissimilarity : [] real(64),
+                            ref Output: [] real(64),
+                            d_size : int,
+                            Mask_Size : int,
+                            t: stopwatch) : [] {
 
   // This 'eps' makes sure that we differentiate between land points (zero) and ocean points (nonzero), even
   // if the beta diversity at the ocean point is zero.

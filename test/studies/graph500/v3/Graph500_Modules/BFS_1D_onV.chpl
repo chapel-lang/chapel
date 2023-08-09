@@ -12,7 +12,7 @@ module Create_Parent_Tree
 {
 use Graph500_defs;
 
-proc BFS ( root : vertex_id, ParentTree, G )
+proc BFS ( root : vertex_id, ref ParentTree, G )
 {
 
   type Vertex_List = domain (index(vertex_domain) );

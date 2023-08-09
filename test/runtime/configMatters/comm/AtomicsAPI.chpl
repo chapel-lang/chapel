@@ -160,7 +160,7 @@ proc testOrderAtomicT(a, ref i, ref b, param o: memoryOrder) {
   writeln();
 }
 
-proc testUnorderedAtomicT(a, ref i, ref b) {
+proc testUnorderedAtomicT(ref a, ref i, ref b) {
   type eltType = if isArray(a) then a.eltType else a.type;
   type valType = eltType.valType;
   use UnorderedAtomics;

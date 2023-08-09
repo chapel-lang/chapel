@@ -2123,7 +2123,7 @@ module ChapelArray {
     return init_elts_method(size, eltType) == ArrayInit.parallelInit;
   }
 
-  proc _deinitElements(array: _array) {
+  proc _deinitElements(ref array: _array) {
     param needsDestroy = __primitive("needs auto destroy", array.eltType);
     if needsDestroy {
       if _deinitElementsIsParallel(array.eltType, array.size) {
