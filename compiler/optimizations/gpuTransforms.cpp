@@ -331,7 +331,7 @@ class GpuizableLoop {
   Symbol* upperBound_ = nullptr;
   std::vector<Symbol*> loopIndices_;
   std::vector<Symbol*> lowerBounds_;
-  Expr* shouldErrorIfNotGpuizable_;
+  CallExpr* shouldErrorIfNotGpuizable_;
 
 public:
   GpuizableLoop(BlockStmt* blk);
@@ -349,7 +349,8 @@ public:
   }
 
 private:
-  Expr* determineIfShouldErrorIfNotGpuizable();
+  CallExpr* determineIfShouldErrorIfNotGpuizable();
+  void printNonGpuizableError(CallExpr* assertion, Expr* loc);
   bool evaluateLoop();
   bool isAlreadyInGpuKernel();
   bool parentFnAllowsGpuization();
@@ -381,7 +382,8 @@ GpuizableLoop::GpuizableLoop(BlockStmt *blk) {
     !this->isEligible_ &&
     !isAlreadyInGpuKernel())
   {
-    USR_FATAL(blk, "Loop containing assertOnGpu() is not gpuizable");
+    printNonGpuizableError(this->shouldErrorIfNotGpuizable_, blk);
+    USR_STOP();
   }
 }
 
@@ -407,7 +409,7 @@ bool GpuizableLoop::isReportWorthy() {
   return true;
 }
 
-Expr* GpuizableLoop::determineIfShouldErrorIfNotGpuizable() {
+CallExpr* GpuizableLoop::determineIfShouldErrorIfNotGpuizable() {
   CForLoop *cfl = this->loop_;
   INT_ASSERT(cfl);
 
@@ -426,6 +428,50 @@ Expr* GpuizableLoop::determineIfShouldErrorIfNotGpuizable() {
   }
 
   return nullptr;
+}
+
+static const char* findImmediateStringValue(Expr* expr) {
+  auto symExpr = toSymExpr(expr);
+  if (!symExpr) return nullptr;
+
+  auto tryExtractString = [](SymExpr* stringRef) -> const char* {
+    if (stringRef->symbol()->isImmediate()) {
+      auto immediate = toVarSymbol(stringRef->symbol())->immediate;
+      return immediate->string_value();
+    }
+    return nullptr;
+  };
+
+  if (auto initialString = tryExtractString(symExpr)) {
+    return initialString;
+  }
+
+  // the initial symbol is something like local_string_literal, which is
+  // assigned from an _str_literal. Iterate the SymExprs of this symbol
+  // to find the assignment and thus the original symbol.
+  auto initialSymbol = symExpr->symbol();
+  for_SymbolSymExprs(se, initialSymbol) {
+    if (!se->parentExpr) continue;
+    if (auto ce = toCallExpr(se->parentExpr)) {
+      if (ce->isPrimitive(PRIM_MOVE) && ce->get(1) == se) {
+        auto assignFrom = toSymExpr(ce->get(2));
+        if (assignFrom != nullptr) return tryExtractString(assignFrom);
+      }
+    }
+  }
+
+  return nullptr;
+}
+
+void GpuizableLoop::printNonGpuizableError(CallExpr* assertion, Expr* loc) {
+    debuggerBreakHere();
+    const char* reason = "contains GPU assertion";
+    if (assertion->numActuals() > 0) {
+      if (const char* betterReason = findImmediateStringValue(assertion->get(1))) {
+        reason = betterReason;
+      }
+    }
+    USR_FATAL_CONT(loc, "Loop %s but is not eligible to be executed on the GPU", reason);
 }
 
 bool GpuizableLoop::isAlreadyInGpuKernel() {
@@ -597,7 +643,7 @@ bool GpuizableLoop::extractUpperBound() {
 
 void GpuizableLoop::reportNotGpuizable(const BaseAST* ast, const char *msg) {
   if(this->shouldErrorIfNotGpuizable_) {
-    USR_FATAL_CONT(loop_, "Loop containing assertOnGpu() is not eligible for execution on a GPU");
+    printNonGpuizableError(this->shouldErrorIfNotGpuizable_, loop_);
     USR_PRINT(ast, "%s", msg);
     USR_PRINT(this->shouldErrorIfNotGpuizable_, "the GPU assertion was here");
     USR_STOP();
@@ -803,9 +849,17 @@ void GpuKernel::determineBlockSize() {
 }
 
 bool GpuKernel::isCallToPrimitiveWeShouldNotCopyIntoKernel(CallExpr *call) {
-  return call &&
-    (call->isPrimitive(PRIM_ASSERT_ON_GPU) ||
-     call->isPrimitive(PRIM_GPU_SET_BLOCKSIZE));
+  if (!call) return false;
+
+  if (call->isPrimitive(PRIM_ASSERT_ON_GPU)) {
+    // Take this time to also make this primitive be in the form it's expected
+    // to be for code generation -- i.e., remove the string argument.
+    if (call->numActuals() == 1) {
+      call->get(1)->remove();
+    }
+    return true;
+  }
+  return call->isPrimitive(PRIM_GPU_SET_BLOCKSIZE);
 }
 
 void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
