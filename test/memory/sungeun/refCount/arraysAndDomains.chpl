@@ -137,7 +137,7 @@ proc do_local_array() {
   var A_reindex = A.reindex(4..n+3); // create new descriptor, ref count
 }
 
-proc do_array(A:[]) {
+proc do_array(ref A:[]) {
   if printProgress then writeln("Creating A_copy");
   var A_copy = A;                      // create nw array, ref count
 

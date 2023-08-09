@@ -71,7 +71,7 @@ proc main(args: [] string) {
   if printTimers >= 1 then writeln("Total: ", totalTimer.elapsed());
 }
 
-proc readData(infileName:string, A: [] real(32), nx: int,ny: int, nz: int) {
+proc readData(infileName:string, ref A: [] real(32), nx: int,ny: int, nz: int) {
   var f = open(infileName, ioMode.r);
   var r = f.reader(kind=ionative);
   r.read(A);
@@ -90,7 +90,7 @@ proc outputData(outfileName: string, ANext: [] real(32),
   f.close();
 }
 
-proc stencil(c0: real(32), c1: real(32), A: [] real(32), ANext: [] real(32),
+proc stencil(c0: real(32), c1: real(32), A: [] real(32), ref ANext: [] real(32),
              nx: int, ny: int, nz: int) {
   // aak! the nz and nx indices are swapped here!
   // This is also walking the leftmost dimension fastest!

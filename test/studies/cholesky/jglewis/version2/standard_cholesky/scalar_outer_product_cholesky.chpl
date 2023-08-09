@@ -46,7 +46,7 @@ module scalar_outer_product_cholesky {
   // the factorization.  
   // =========================================================================
     
-  proc scalar_outer_product_cholesky ( A : [] )
+  proc scalar_outer_product_cholesky ( ref A : [] )
 
     where ( A.domain.rank == 2 ) 
 

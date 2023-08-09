@@ -436,7 +436,7 @@ module AggregationPrimitives {
 
     // Copy size elements from lArr to the remote buffer. Must be running on
     // lArr's locale.
-    proc PUT(lref Arr: [] elemType, size: int) where lArr.isDefaultRectangular() {
+    proc PUT(ref lArr: [] elemType, size: int) where lArr.isDefaultRectangular() {
       if boundsChecking {
         assert(size <= this.size);
         assert(this.size == lArr.size);

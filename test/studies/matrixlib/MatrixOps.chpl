@@ -15,7 +15,7 @@ proc blockLU(x: [?D], piv, blk) where (D.rank != 2) {
   compilerError("blockLU factors a matrix.  The first input parameter to blockLU must be a two-dimensional array.");
 }
 
-proc blockLU(A: [?D], blk, ref piv: [D.dim(0)]) where (D.rank == 2) {
+proc blockLU(A: [?D], blk, ref ref piv: [D.dim(0)]) where (D.rank == 2) {
 
   // Test that the domain of A is square with the same index set for
   // each dimension.

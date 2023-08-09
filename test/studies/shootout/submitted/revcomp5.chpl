@@ -61,7 +61,7 @@ proc main(args: [] string) {
 }
 
 
-proc revcomp(buf, lo, hi) {
+proc revcomp(ref buf, lo, hi) {
   // shift all of the linefeeds into the right places
   const len = hi - lo + 1,
         off = (len - 1) % cols,

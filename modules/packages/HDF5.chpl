@@ -3894,7 +3894,7 @@ module HDF5 {
      to do preprocessing as desired before returning the data read.
    */
   class HDF5Preprocessor {
-    proc preprocess(A: []) {
+    proc preprocess(ref A: []) {
       import HaltWrappers;
       HaltWrappers.pureVirtualMethodHalt();
     }
