@@ -3283,7 +3283,7 @@ int _ftoa_core(char* buf, size_t buf_sz, double num,
     } else {
       if( uppercase ) {
         if ( floorf(num) == num ) {
-          // necessary to avoid ommiting precision digits
+          // necessary to avoid omitting precision digits
           //  when argument is a whole number
           got = snprintf(buf, buf_sz, "%.*F", precision, num);
         } else {
@@ -3291,7 +3291,7 @@ int _ftoa_core(char* buf, size_t buf_sz, double num,
         }
       } else {
         if ( floorf(num) == num ) {
-          // necessary to avoid ommiting precision digits
+          // necessary to avoid omitting precision digits
           //  when argument is a whole number
           got = snprintf(buf, buf_sz, "%.*f", precision, num);
         } else {
@@ -3408,8 +3408,6 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, bool needs_i, c
                    precision, style->uppercase, style->prefix_base,
                    &skip);
 
-  // printf(" ...\n---\n%s\n", dst);
-
   // got should include space for sign and base
   got += sign_base_width;
   // but skip space for sign and base
@@ -3422,8 +3420,6 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, bool needs_i, c
   *extra_space_needed = 1 + skip;
 
   if( got < 0 ) return -1;
-
-  // printf("%d || %d, (%d -> %d) relfmt: %d precision: %d \n", style->showpoint, style->showpointzero, skip, got, style->realfmt, style->precision);
 
   // Handle adding . or .0 at the end of integers.
   if( style->showpoint || style->showpointzero ) {
@@ -3463,8 +3459,6 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, bool needs_i, c
       }
     }
   }
-
-  // printf("%s\n---\n... ", dst);
 
   // Handle adding an i after an imaginary number.
   if( needs_i ) {

@@ -9651,8 +9651,11 @@ Going through each section for text conversions:
    conversions, the precision indicates the maximum number of characters
    (e.g. Unicode codepoints) to input.
 
-   The precision is silently ignored for integral conversions
-   (``%i``, ``%u``, etc) and for ``%//`` conversions.
+   Providing a precision argument to an integral specifier (``%i``, ``%u``, etc)
+   will emit a warning. Using ``%n`` to specify precision for an integer is
+   preferred.
+
+   The precision is silently ignored for for ``%//`` conversions.
 
 [optional base flag]
    ``d``
