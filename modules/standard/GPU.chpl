@@ -57,15 +57,16 @@ module GPU
      Currently using :proc:`~ChapelIO.write` to send output to ``stdout`` will
      make a loop ineligible for GPU execution; use :proc:`gpuWrite` instead.
 
-     Currently this function will only work if values of type ``c_string`` are
-     passed.
+     Currently this function will only work if values of type
+     ``c_ptrConst(c_char)`` are passed.
 
      On NVIDIA GPUs the written values will be flushed to the terminal after
      the kernel has finished executing.  Note that there is a 1MB limit on the
      size of this buffer.
    */
   proc gpuWrite(const args ...?k) {
-    // Right now this function will only work if passed in c_strings.
+    // Right now this function will only work if passed argumets are of type
+    // c_ptrConst(c_char).
     // I would prefer to do some string processing within the
     // function so I could pass in arguments other than C types.
     //
