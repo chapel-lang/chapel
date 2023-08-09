@@ -2003,7 +2003,7 @@ void lookup(const char*           name,
 // Returns true for parenful function; false for parenless fns, vars, types, ...
 static bool isParenfulFn(Symbol* sym) {
   if (FnSymbol* fn = toFnSymbol(sym)) {
-    return !sym->hasFlag(FLAG_NO_PARENS);
+    return !fn->hasFlag(FLAG_NO_PARENS);
   }
 
   return false;
