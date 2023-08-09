@@ -58,13 +58,13 @@ proc initProblemSize() {
   if (debugInit) then
     writeln(numElems, " ", numNodes);
 
-  return (numElems, numNodes); 
+  return (numElems, numNodes);
 }
 
 
 // read/compute the coordinates
 
-proc initCoordinates(ref ref X, ref ref Y, ref ref Z) {
+proc initCoordinates(refref refZ) {ref
   if (initFromFile) {
     for (x,y,z) in zip(X,Y,Z) do
       reader.read(x, y, z);
@@ -85,13 +85,13 @@ proc initCoordinates(ref ref X, ref ref Y, ref ref Z) {
 
 // read/compute the element-to-node mapping
 
-proc initElemToNodeMapping(ref ref elemToNode: [?D]) {
+proc initElemToNodeMapping(ref elemToNode: [?D]) {
   if (initFromFile) {
     param nodesPerElem = elemToNode[D.low].size;
-    for nodelist in elemToNode do 
+    for nodelist in elemToNode do
       for i in 0..<nodesPerElem do
         reader.read(nodelist[i]);
-    
+
     if debugInit {
       writeln("elemToNode mappings are:");
       for nodelist in elemToNode do
@@ -122,7 +122,7 @@ proc initElemToNodeMapping(ref ref elemToNode: [?D]) {
 
 // read/compute the greek variables
 
-proc initGreekVars(ref ref lxim, ref ref lxip, ref ref letam, ref ref letap, ref ref lzetam, ref ref lzetap) {
+proc initGreekVars(ref lxim, ref lxip, ref letam, ref letap, ref lzetam, ref lzetap) {
   param elemRank = lxim.domain.rank;
   if (initFromFile) {
     for (xm,xp,em,ep,zm,zp) in zip(lxim, lxip, letam, letap, lzetam, lzetap) do
@@ -130,24 +130,24 @@ proc initGreekVars(ref ref lxim, ref ref lxip, ref ref letam, ref ref letap, ref
   } else {
     forall num in lxim.domain {
       const (i,j,k) = elemIdxTo3D(num);
-      
-      lxim[num] = if (k == 0) 
+
+      lxim[num] = if (k == 0)
                     then num
                     else elem3DToIdx(elemRank,i,j,k-1);
 
       lxip[num] = if (k == elemsPerEdge-1)
                     then num
                       else elem3DToIdx(elemRank,i,j,k+1);
-    
-      letam[num] = if (j == 0) 
+
+      letam[num] = if (j == 0)
                     then num
                       else elem3DToIdx(elemRank,i,j-1,k);
 
       letap[num] = if (j == elemsPerEdge-1)
                     then num
                     else elem3DToIdx(elemRank,i,j+1,k);
-    
-      lzetam[num] = if (i == 0) 
+
+      lzetam[num] = if (i == 0)
                     then num
                     else elem3DToIdx(elemRank,i-1,j,k);
 
@@ -207,7 +207,7 @@ inline proc initFreeSurface(ref freeSurface) {
   } else {
     for ij in DimNodeFace do
       freeSurface += node2DToIdx(freeSurface.rank, ij, X, nodesPerEdge-1);
-                  
+
     for ij in DimNodeFace do
       freeSurface += node2DToIdx(freeSurface.rank, ij, Y, nodesPerEdge-1);
 
@@ -220,7 +220,7 @@ inline proc initFreeSurface(ref freeSurface) {
 
     const size = freeSurface.size;
     var sortedSurface: [0..<size] if (freeSurface.rank == 1)
-                                    then freeSurface.idxType 
+                                    then freeSurface.idxType
                                     else freeSurface.rank*freeSurface.idxType;
 
     for (a,b) in zip(sortedSurface, freeSurface) do a = b;

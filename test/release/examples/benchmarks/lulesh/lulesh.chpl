@@ -1311,7 +1311,7 @@ proc UpdateVolumesForElems() {
 
 
 proc CalcMonotonicQGradientsForElems(ref delv_xi, ref delv_eta, ref delv_zeta,
-                                     ref ref delx_xi, ref ref delx_eta, ref ref delx_zeta) {
+                                     ref delx_xi, ref delx_eta, ref delx_zeta) {
   forall eli in Elems {
     const ptiny = 1.0e-36;
     var xl, yl, zl: 8*real;
