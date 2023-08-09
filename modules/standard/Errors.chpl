@@ -158,6 +158,13 @@ module Errors {
     }
   }
 
+  class ArrayOOMError: Error {
+    @chpldoc.nodoc
+    override proc message() {
+      return "out of memory allocating array elements";
+    }
+  }
+
   @deprecated(notes=":class:`CodepointSplittingError` is deprecated; please use :class:`CodepointSplitError` instead")
   type CodepointSplittingError = CodepointSplitError;
 

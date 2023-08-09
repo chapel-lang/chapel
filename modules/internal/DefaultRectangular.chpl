@@ -703,7 +703,7 @@ module DefaultRectangular {
     proc doiTryCreateArray(type eltType) throws {
       // TODO: Update to support higher dimension (not needed in Arkouda)
       if rank != 1 then
-        throw new Error("'tryBuildArray' is only supported on domains of rank 1");
+        throw new Error("'tryCreateArray' is only supported on domains of rank 1");
 
       var data = _try_ddata_allocate(eltType, ranges(0).size);
       return new unmanaged DefaultRectangularArr(eltType=eltType, rank=rank,
