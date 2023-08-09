@@ -1949,7 +1949,7 @@ struct ReportVisitor {
   void exit(const AstNode* node) {}
 };
 
-void printUndocProc(Context* context, ID id) {
+static void printUndocProc(Context* context, ID id) {
   int count = 0;
   if (!id.isEmpty()) {
     const AstNode* node = idToAst(context, id);
