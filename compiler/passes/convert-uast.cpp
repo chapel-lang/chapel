@@ -1664,7 +1664,8 @@ struct Converter {
     Expr* condExpr = toExpr(convertAST(node->condition()));
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
     auto loopAttributes = buildLoopAttributes(node);
-    if (loopAttributes.assertGpuEligibleAttr) context->error(node, "TODO");
+    if (loopAttributes.assertGpuEligibleAttr)
+      CHPL_REPORT(context, InvalidGpuAssertion, node, loopAttributes.assertGpuEligibleAttr);
     return DoWhileStmt::build(condExpr, body, std::move(loopAttributes.llvmMetadata));
   }
 
@@ -1680,9 +1681,10 @@ struct Converter {
       condExpr = toExpr(convertAST(node->condition()));
     }
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
-    auto loopattributes = buildLoopAttributes(node);
-    if (loopattributes.assertGpuEligibleAttr) context->error(node, "TODO");
-    return WhileDoStmt::build(condExpr, body, std::move(loopattributes.llvmMetadata));
+    auto loopAttributes = buildLoopAttributes(node);
+    if (loopAttributes.assertGpuEligibleAttr)
+      CHPL_REPORT(context, InvalidGpuAssertion, node, loopAttributes.assertGpuEligibleAttr);
+    return WhileDoStmt::build(condExpr, body, std::move(loopAttributes.llvmMetadata));
   }
 
   /// IndexableLoops ///
@@ -1869,7 +1871,8 @@ struct Converter {
       INT_ASSERT(block);
 
       auto loopAttributes = buildLoopAttributes(node);
-      if (loopAttributes.assertGpuEligibleAttr) context->error(node, "TODO");
+      if (loopAttributes.assertGpuEligibleAttr)
+        CHPL_REPORT(context, InvalidGpuAssertion, node, loopAttributes.assertGpuEligibleAttr);
       ret = ForLoop::buildForLoop(index, iteratorExpr, block, zippered,
                                   isForExpr, std::move(loopAttributes.llvmMetadata));
     }

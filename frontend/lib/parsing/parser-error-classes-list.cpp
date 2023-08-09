@@ -418,6 +418,33 @@ void ErrorIllegalUseImport::write(ErrorWriterBase& wr) const {
   wr.note(clause, "only identifiers and 'dot' expressions are supported");
 }
 
+void ErrorInvalidGpuAssertion::write(ErrorWriterBase& wr) const {
+  auto loop = std::get<const uast::Loop*>(info);
+  auto attr = std::get<const uast::Attribute*>(info);
+
+  const char* loopTypes = nullptr;
+  if (loop->isFor()) {
+    loopTypes = "for";
+  } else if (loop->isWhile()) {
+    loopTypes = "while";
+  } else if (loop->isDoWhile()) {
+    loopTypes = "do-while";
+  }
+
+  if (loop) {
+    wr.heading(kind_, type_, loop, "loop marked with @assertGpuEligible, but '", loopTypes, "' loops don't support GPU execution");
+  } else {
+    wr.heading(kind_, type_, loop, "loop marked with @assertGpuEligible, but does not support GPU execution");
+  }
+
+  wr.message("The affected loop is here:");
+  wr.codeForLocation(loop);
+
+  // For now, attribute locations aren't correctly computed, so this is unhelpful.
+  // wr.note(attr, "marked for GPU execution here:");
+  // wr.codeForLocation(attr);
+}
+
 void ErrorMultipleManagementStrategies::write(ErrorWriterBase& wr) const {
   auto node = std::get<const uast::AstNode*>(info);
   auto outerMgt = std::get<1>(info);
