@@ -45,19 +45,19 @@ exception will be generated.
 
 Constants
 ---------
-:var:`e`
-:var:`log2E`
-:var:`log10E`
-:var:`ln2`
-:var:`ln10`
-:var:`pi`
-:var:`half_pi`
-:var:`quarter_pi`
-:var:`recipr_pi`
-:var:`twice_recipr_pi`
-:var:`twice_recipr_sqrt_pi`
-:var:`sqrt_2`
-:var:`recipr_sqrt_2`
+:param:`e`
+:param:`log2E`
+:param:`log10E`
+:param:`ln2`
+:param:`ln10`
+:param:`pi`
+:param:`half_pi`
+:param:`quarter_pi`
+:param:`recipr_pi`
+:param:`twice_recipr_pi`
+:param:`twice_recipr_sqrt_pi`
+:param:`sqrt_2`
+:param:`recipr_sqrt_2`
 
 .. _math-trigonometry:
 
