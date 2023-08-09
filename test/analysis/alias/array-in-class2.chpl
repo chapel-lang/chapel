@@ -45,7 +45,7 @@ proc innerArrayArgs(ref a, b) {
   return sum;
 }
 
-proc classArgs(A, d) {
+proc classArgs(ref A, d) {
   return innerArrayArgs(A, d.A);
 }
 

@@ -147,7 +147,7 @@ writeln("After decrementing B's elements, B is:\n", B, "\n");
 // ``D``:
 //
 
-proc negateAndPrintArr(X: [?D] real) {
+proc negateAndPrintArr(ref X: [?D] real) {
   writeln("within negateAndPrintArr, D is: ", D, "\n");
   forall (i,j) in D do
     X[i,j] = -X[i,j];
@@ -157,9 +157,10 @@ proc negateAndPrintArr(X: [?D] real) {
 negateAndPrintArr(B);
 
 //
-// Arrays are passed to routines by reference (``ref``) by default, so
-// the modifications to ``X`` in procedure ``negateAndPrintArr()`` are
-// reflected back in the actual argument ``B`` as well:
+// Arrays are passed to routines by constant reference (``const ref``) by
+// default, so for the modification to ``X`` in procedure
+// ``negateAndPrintArr()`` to be legal and reflected back to the actual argument
+// ``B``  the explicit ``ref`` must be used.
 //
 
 writeln("After calling negateAndPrintArr, B is:\n", B, "\n");

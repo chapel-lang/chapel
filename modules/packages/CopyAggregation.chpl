@@ -455,7 +455,7 @@ module AggregationPrimitives {
       AggregationPrimitives.PUT(data, lArr, loc, byte_size);
     }
 
-    proc GET(lArr: [] elemType, size: int) where lArr.isDefaultRectangular() {
+    proc GET(ref lArr: [] elemType, size: int) where lArr.isDefaultRectangular() {
       if boundsChecking {
         assert(size <= this.size);
         assert(this.size == lArr.size);

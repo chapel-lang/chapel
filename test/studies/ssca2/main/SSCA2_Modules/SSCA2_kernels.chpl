@@ -442,7 +442,7 @@ module SSCA2_kernels
                         "  is ", graph_diameter );
 
           pragma "dont disable remote value forwarding"
-          inline proc f4(ref BCaux, Between_Cent$, u) {
+          inline proc f4(ref BCaux, ref Between_Cent$, u) {
             BCaux[u].depend = + reduce [v in BCaux[u].children_list.Row_Children[1..BCaux[u].children_list.child_count.read()]]
               ( BCaux[u].path_count$.read() /
                 BCaux[v].path_count$.read() )      *

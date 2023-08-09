@@ -540,7 +540,7 @@ writeln(defaultsProc(y=9.876, x=13));
 // For example, taking arrays as parameters. The query operator is used to
 // determine the domain of ``A``. This is useful for defining the return type,
 // though it's not required.
-proc invertArray(A: [?D] int): [D] int{
+proc invertArray(ref A: [?D] int): [D] int{
   for a in A do a = -a;
   return A;
 }
