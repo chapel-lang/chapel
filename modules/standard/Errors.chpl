@@ -158,7 +158,8 @@ module Errors {
     }
   }
 
-  class ArrayOOMError: Error {
+  @unstable("`ArrayOomError` is unstable; expect this error to change in the future.")
+  class ArrayOomError: Error {
     @chpldoc.nodoc
     override proc message() {
       return "out of memory allocating array elements";

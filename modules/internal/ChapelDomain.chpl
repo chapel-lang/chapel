@@ -1540,7 +1540,7 @@ module ChapelDomain {
       This method can be called on all domains that implement a
       'doiTryCreateArray' method.
 
-      Throws a `ArrayOOMError` when out of memory allocating elements.
+      Throws an `ArrayOomError` when out of memory allocating elements.
     */
     pragma "no copy return"
     @unstable("tryCreateArray() is subject to change in the future.")

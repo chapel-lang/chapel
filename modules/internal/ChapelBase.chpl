@@ -1593,7 +1593,7 @@ module ChapelBase {
     ret = _ddata_allocate_noinit(eltType, size, callPostAlloc, subloc, false);
 
     if ret == nil then
-      throw new ArrayOOMError();
+      throw new ArrayOomError();
 
     init_elts(ret, size, eltType);
 
