@@ -5,7 +5,7 @@ proc chooseArray(A:[] int, B:[] int, chooseA:bool)
    else return B;
 }
 
-proc updateAndPrint(A:[], B:[], C:[], D:[])
+proc updateAndPrint(A:[], B:[], ref C:[], ref D:[])
 {
   C[1] = 8;
   D[1] = 9;

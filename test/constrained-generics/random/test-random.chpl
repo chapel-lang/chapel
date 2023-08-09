@@ -142,7 +142,7 @@ module RandomInterface {
   }
 
   // a simplified IC version of fillRandom()
-  proc icFillRandom(stream: ?Stream, arr: ?ARR)
+  proc icFillRandom(stream: ?Stream, ref arr: ?ARR)
     where Stream implements PCGRandomStreamImpl &&
           ARR implements Array1d(stream.eltType)
     // would also like: Stream.eltType == ARR.eltType

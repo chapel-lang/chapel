@@ -26,7 +26,7 @@ proc test(DA : domain, DB : domain) {
   test(A,B);
 }
 
-proc test(A : [?DA], B : [?DB]) {
+proc test(ref A : [?DA], B : [?DB]) {
   writeln("--- ", A.type:string, " vs. ", B.type:string, " ---");
   DA.distribution.displayRepresentation();
   writeln();

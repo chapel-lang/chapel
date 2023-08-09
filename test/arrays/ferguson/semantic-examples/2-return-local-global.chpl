@@ -10,7 +10,7 @@ proc f(x:bool) {
     return tmp;
   }
 }
-proc g(x) {
+proc g(ref x) {
   x[1] = one;
 }
 g(f(true));

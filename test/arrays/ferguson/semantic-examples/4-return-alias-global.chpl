@@ -8,7 +8,7 @@ proc f() {
   return B;
 }
 
-proc g(x) {
+proc g(ref x) {
   x[2] = one;
 }
 

@@ -34,7 +34,7 @@ proc main() {
   }
 }
 
-proc testit(A: [?DA], DInner) {
+proc testit(ref A: [?DA], DInner) {
   forall a in A do
     a = here.id;
 
@@ -101,7 +101,7 @@ proc testit(A: [?DA], DInner) {
       writeln("\nA is:\n", A);
   }
 
-  proc increment(X, D) {
+  proc increment(ref X, D) {
     writeln("Incrementing in routine by access");
     writeln("---------------------------------");
 
@@ -111,7 +111,7 @@ proc testit(A: [?DA], DInner) {
     stopTrial();
   }
 
-  proc increment(X) {
+  proc increment(ref X) {
     writeln("Incrementing in routine by iteration");
     writeln("------------------------------------");
 

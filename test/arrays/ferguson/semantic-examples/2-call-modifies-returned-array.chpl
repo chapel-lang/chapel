@@ -7,7 +7,7 @@ proc returnGlobalArray() {
   return globalArray;
 }
 
-proc setToTwo(A) {
+proc setToTwo(ref A) {
   A = ArrTwo;
 }
 

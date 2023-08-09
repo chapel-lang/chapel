@@ -1,6 +1,6 @@
 use samples;
 
-proc xform(arg) {
+proc xform(ref arg) {
   arg[1].x += 1;
   return arg;
 }
