@@ -92,7 +92,6 @@ void ExpandExternArrayCalls::process(FnSymbol* fn) {
       formal->typeExpr->replace(
           new BlockStmt(
             new CallExpr("c_ptr", eltType->remove())));
-      formal->intent = INTENT_BLANK;
     } else {
       // generic arrays are replaced with 'raw_c_void_ptr'
       // TODO: use c_ptr(void) instead of raw version
@@ -100,7 +99,6 @@ void ExpandExternArrayCalls::process(FnSymbol* fn) {
       formal->typeExpr->replace(
           new BlockStmt(
             new UnresolvedSymExpr("chpl__c_void_ptr")));
-      formal->intent = INTENT_BLANK;
     }
   }
 
