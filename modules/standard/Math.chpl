@@ -598,6 +598,38 @@ module Math {
 
      It is an error if `x` is less than or equal to zero.
   */
+  @chpldoc.nodoc
+  @unstable("The version of 'ln' that takes an int argument is unstable and may change its return type in the future")
+  inline proc ln(x: int(?w)) {
+    if (w < 32) {
+      // These were coerced to real(32) prior to the existence of this overload,
+      // so maintain that behavior for now.
+      return ln(x: real(32));
+    } else {
+      return ln(x: real(w));
+    }
+  }
+
+  /* Returns the natural logarithm of the argument `x`.
+
+     It is an error if `x` is equal to zero.
+  */
+  @chpldoc.nodoc
+  @unstable("The version of 'ln' that takes an uint argument is unstable and may change its return type in the future")
+  inline proc ln(x: uint(?w)) {
+    if (w < 32) {
+      // These were coerced to real(32) prior to the existence of this overload,
+      // so maintain that behavior for now.
+      return ln(x: real(32));
+    } else {
+      return ln(x: real(w));
+    }
+  }
+
+  /* Returns the natural logarithm of the argument `x`.
+
+     It is an error if `x` is less than or equal to zero.
+  */
   inline proc log(x: real(64)): real(64) {
     return chpl_log(x);
   }
@@ -620,6 +652,38 @@ module Math {
     return chpl_log(x);
   }
 
+  /* Returns the natural logarithm of the argument `x`.
+
+     It is an error if `x` is less than or equal to zero.
+  */
+  @chpldoc.nodoc
+  @unstable("The version of 'log' that takes an int argument is unstable and may change its return type in the future")
+  inline proc log(x: int(?w)) {
+    if (w < 32) {
+      // These were coerced to real(32) prior to the existence of this overload,
+      // so maintain that behavior for now.
+      return log(x: real(32));
+    } else {
+      return log(x: real(w));
+    }
+  }
+
+  /* Returns the natural logarithm of the argument `x`.
+
+     It is an error if `x` is equal to zero.
+  */
+  @chpldoc.nodoc
+  @unstable("The version of 'log' that takes an uint argument is unstable and may change its return type in the future")
+  inline proc log(x: uint(?w)) {
+    if (w < 32) {
+      // These were coerced to real(32) prior to the existence of this overload,
+      // so maintain that behavior for now.
+      return log(x: real(32));
+    } else {
+      return log(x: real(w));
+    }
+  }
+
   /* Returns the base 10 logarithm of the argument `x`.
 
      It is an error if `x` is less than or equal to zero.
@@ -636,6 +700,38 @@ module Math {
     return chpl_log10(x);
   }
 
+  /* Returns the base 10 logarithm of the argument `x`.
+
+     It is an error if `x` is less than or equal to zero.
+  */
+  @chpldoc.nodoc
+  @unstable("The version of 'log10' that takes an int argument is unstable and may change its return type in the future")
+  inline proc log10(x: int(?w)) {
+    if (w < 32) {
+      // These were coerced to real(32) prior to the existence of this overload,
+      // so maintain that behavior for now.
+      return log10(x: real(32));
+    } else {
+      return log10(x: real(w));
+    }
+  }
+
+  /* Returns the base 10 logarithm of the argument `x`.
+
+     It is an error if `x` is equal to zero.
+  */
+  @chpldoc.nodoc
+  @unstable("The version of 'log10' that takes an uint argument is unstable and may change its return type in the future")
+  inline proc log10(x: uint(?w)) {
+    if (w < 32) {
+      // These were coerced to real(32) prior to the existence of this overload,
+      // so maintain that behavior for now.
+      return log10(x: real(32));
+    } else {
+      return log10(x: real(w));
+    }
+  }
+
   /* Returns the natural logarithm of `x` + 1.
 
      It is an error if `x` is less than or equal to -1.
@@ -650,6 +746,36 @@ module Math {
   */
   inline proc log1p(x : real(32)): real(32) {
     return chpl_log1p(x);
+  }
+
+  /* Returns the natural logarithm of `x` + 1.
+
+     It is an error if `x` is less than or equal to -1.
+  */
+  @chpldoc.nodoc
+  @unstable("The version of 'log1p' that takes an int argument is unstable and may change its return type in the future")
+  inline proc log1p(x: int(?w)) {
+    if (w < 32) {
+      // These were coerced to real(32) prior to the existence of this overload,
+      // so maintain that behavior for now.
+      return log1p(x: real(32));
+    } else {
+      return log1p(x: real(w));
+    }
+  }
+
+  /* Returns the natural logarithm of `x` + 1.
+  */
+  @chpldoc.nodoc
+  @unstable("The version of 'log1p' that takes an uint argument is unstable and may change its return type in the future")
+  inline proc log1p(x: uint(?w)) {
+    if (w < 32) {
+      // These were coerced to real(32) prior to the existence of this overload,
+      // so maintain that behavior for now.
+      return log1p(x: real(32));
+    } else {
+      return log1p(x: real(w));
+    }
   }
 
   /* Returns the log to the base `2**exp` of the given `x` value.
@@ -725,6 +851,7 @@ module Math {
 
      It is an error if `x` is less than or equal to zero.
   */
+  @unstable("The version of 'log2' that takes an int argument is unstable")
   inline proc log2(x: int(?w)) {
     return chpl_log2(x);
   }
@@ -734,8 +861,9 @@ module Math {
 
      :rtype: `int`
 
-     It is an error if `x` is less than or equal to zero.
+     It is an error if `x` is equal to zero.
   */
+  @unstable("The version of 'log2' that takes an uint argument is unstable")
   inline proc log2(x: uint(?w)) {
     return chpl_log2(x);
   }
