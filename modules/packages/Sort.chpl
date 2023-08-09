@@ -461,7 +461,7 @@ algorithm used is made by the implementation.
   data is sorted.
 
  */
-proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+proc sort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
   // TODO: This should have a flag `stable` to request a stable sort
   chpl_check_comparator(comparator, eltType);
 
@@ -478,7 +478,7 @@ proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
 
 @chpldoc.nodoc
 /* Error message for multi-dimension arrays */
-proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
+proc sort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
   where Dom.rank != 1 || !Data.isRectangular() {
     compilerError("sort() is currently only supported for 1D rectangular arrays");
 }
@@ -587,7 +587,7 @@ module BubbleSort {
       data is sorted.
 
    */
-  proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+  proc bubbleSort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
@@ -625,7 +625,7 @@ module HeapSort {
       data is sorted.
 
    */
-  proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+  proc heapSort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
@@ -691,7 +691,7 @@ module InsertionSort {
       data is sorted.
 
    */
-  proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:int=Dom.low, hi:int=Dom.high) {
+  proc insertionSort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:int=Dom.low, hi:int=Dom.high) {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
@@ -720,7 +720,7 @@ module InsertionSort {
     }
   }
 
-  proc insertionSortMoveElts(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:int=Dom.low, hi:int=Dom.high) {
+  proc insertionSortMoveElts(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:int=Dom.low, hi:int=Dom.high) {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
@@ -765,7 +765,7 @@ module BinaryInsertionSort {
     :arg comparator: :ref:`Comparator <comparators>` record that defines how the
        data is sorted.
    */
-  proc binaryInsertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+  proc binaryInsertionSort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
@@ -840,7 +840,7 @@ module TimSort {
 
    */
 
-  proc timSort(Data: [?Dom] ?eltType, blockSize=16, comparator:?rec=defaultComparator) {
+  proc timSort(ref Data: [?Dom] ?eltType, blockSize=16, comparator:?rec=defaultComparator) {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
@@ -850,7 +850,7 @@ module TimSort {
     _TimSort(Data, Dom.low, Dom.high, blockSize, comparator);
   }
 
-  private proc _TimSort(Data: [?Dom], lo:int, hi:int, blockSize=16, comparator:?rec=defaultComparator) {
+  private proc _TimSort(ref Data: [?Dom], lo:int, hi:int, blockSize=16, comparator:?rec=defaultComparator) {
     import Sort.InsertionSort;
 
     /*Parallelly apply insertionSort on each block of size `blockSize`
@@ -891,7 +891,7 @@ module TimSort {
    TimSort._Merge() creates a copy of the segments to be merged and
    stores the results back into the original memory.
   */
-  private proc _Merge(Dst: [?Dom] ?eltType, lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
+  private proc _Merge(ref Dst: [?Dom] ?eltType, lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
     /* Data[lo..mid by stride] is much slower than Data[lo..mid] when
      * Dom is unstrided.  So specify the latter explicitly when possible. */
     if mid >= hi {
@@ -951,7 +951,7 @@ module MergeSort {
        data is sorted.
 
    */
-  proc mergeSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) {
+  proc mergeSort(ref Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
@@ -977,7 +977,7 @@ module MergeSort {
    * The data stays in Data "all they way down" until the first
    * _Merge(), then is moved back and forth as we return up the chain.
    */
-  private proc _MergeSort(Data: [?Dom], Scratch: [], lo:int, hi:int, minlen=16, comparator:?rec=defaultComparator, depth: int)
+  private proc _MergeSort(ref Data: [?Dom], ref Scratch: [], lo:int, hi:int, minlen=16, comparator:?rec=defaultComparator, depth: int)
     where Dom.rank == 1 {
     import Sort.InsertionSort;
 
@@ -1028,7 +1028,7 @@ module MergeSort {
     }
   }
 
-  private proc _Merge(Dst: [?Dom] ?eltType, Src: [], lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
+  private proc _Merge(ref Dst: [?Dom] ?eltType, Src: [], lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
     /* Data[lo..mid by stride] is much slower than Data[lo..mid] when
      * Dom is unstrided.  So specify the latter explicitly when possible. */
     const stride = abs(Dom.stride): Dom.idxType;
@@ -1085,7 +1085,7 @@ module QuickSort {
    equal to the pivot (and elements less are before eqStart and elements
    greater are after eqEnd).
    */
-  proc partition(Data: [?Dom] ?eltType,
+  proc partition(ref Data: [?Dom] ?eltType,
                  lo: int, pivIdx: int, hi: int,
                  comparator)
   {
@@ -1228,7 +1228,7 @@ module QuickSort {
   }
 
  /* Use quickSort to sort Data */
- proc quickSort(Data: [?Dom] ?eltType,
+ proc quickSort(ref Data: [?Dom] ?eltType,
                 minlen=16,
                 comparator:?rec=defaultComparator) {
 
@@ -1251,7 +1251,7 @@ module QuickSort {
 
 
   /* Non-stridable quickSort to sort Data[start..end] */
-  proc quickSortImpl(Data: [?Dom] ?eltType,
+  proc quickSortImpl(ref Data: [?Dom] ?eltType,
                      minlen=16,
                      comparator:?rec=defaultComparator,
                      start:int = Dom.low, end:int = Dom.high) {
@@ -1332,7 +1332,7 @@ module SelectionSort {
        data is sorted.
 
    */
-  proc selectionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+  proc selectionSort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
 
     if Dom.rank != 1 {
       compilerError("selectionSort() requires 1-D array");
@@ -1357,7 +1357,7 @@ module SelectionSort {
 @chpldoc.nodoc
 module ShellSort {
   private use Sort;
-  proc shellSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
+  proc shellSort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
                  start=Dom.low, end=Dom.high)
   {
     chpl_check_comparator(comparator, eltType);
@@ -1625,7 +1625,7 @@ module SampleSortHelp {
   // it could copy the sample somewhere else for sorting.
   proc putRandomSampleAtArrayStart(in start_n:int,
                                    end_n:int,
-                                   A:[],
+                                   ref A:[],
                                    in numSamples:int,
                                    seed=1) {
     private use Random;
@@ -1862,33 +1862,23 @@ module ShallowCopy {
   private use CTypes;
   private use OS.POSIX;
 
-  // The shallowCopy / shallowSwap code needs to be able to copy/swap
-  // _array records. But c_ptrTo on an _array will return a pointer to
-  // the first element, which messes up the shallowCopy/shallowSwap code
-  //
-  // As a workaround, this function just returns a pointer to the argument,
-  // whether or not it is an array.
-  private inline proc ptrTo(ref x) {
-    return c_pointer_return(x);
-  }
-
   // These shallow copy functions "move" a record around
   // (i.e. they neither swap nor call a copy initializer).
   //
   // TODO: move these out of the Sort module and/or consider
   // language support for it. See issue #14576.
 
-  inline proc shallowCopy(ref dst, ref src) {
+  inline proc shallowCopy(ref dst, src) {
     type st = __primitive("static typeof", dst);
     if isPODType(st) {
       dst = src;
     } else {
       var size = c_sizeof(st);
-      memcpy(ptrTo(dst), ptrTo(src), size);
+      memcpy(c_addrOf(dst), c_addrOfConsr(src), size);
       if boundsChecking {
         // The version moved from should never be used again,
         // but we clear it out just in case.
-        memset(ptrTo(src), 0, size);
+        memset(c_addrOf(src), 0, size);
       }
     }
   }
@@ -1918,11 +1908,11 @@ module ShallowCopy {
     } else {
       var size = c_sizeof(st);
       // tmp = lhs
-      memcpy(ptrTo(tmp), ptrTo(lhs), size);
+      memcpy(c_addrOf(tmp), c_addrOf(lhs), size);
       // lhs = rhs
-      memcpy(ptrTo(lhs), ptrTo(rhs), size);
+      memcpy(c_addrOf(lhs), c_addrOf(rhs), size);
       // rhs = tmp
-      memcpy(ptrTo(rhs), ptrTo(tmp), size);
+      memcpy(c_addrOf(rhs), c_addrOf(tmp), size);
     }
   }
 
@@ -1941,7 +1931,7 @@ module ShallowCopy {
     if A._instance.isDefaultRectangular() {
       type st = __primitive("static field type", A._value, "eltType");
       var size = (nElts:c_size_t)*c_sizeof(st);
-      memcpy(ptrTo(A[dst]), ptrTo(A[src]), size);
+      memcpy(c_addrOf(A[dst]), c_addrOf(A[src]), size);
     } else {
       var ok = chpl__bulkTransferArray(/*dst*/ A, {dst..#nElts},
                                        /*src*/ A, {src..#nElts});
@@ -1953,7 +1943,7 @@ module ShallowCopy {
       }
     }
   }
-  inline proc shallowCopy(ref DstA, dst, ref SrcA, src, nElts) {
+  inline proc shallowCopy(ref DstA, dst, SrcA, src, nElts) {
 
     // Ideally this would just be
     //DstA[dst..#nElts] = SrcA[src..#nElts];
@@ -1968,7 +1958,7 @@ module ShallowCopy {
        SrcA._instance.isDefaultRectangular() {
       type st = __primitive("static field type", DstA._value, "eltType");
       var size = (nElts:c_size_t)*c_sizeof(st);
-      memcpy(ptrTo(DstA[dst]), ptrTo(SrcA[src]), size);
+      memcpy(c_addrOf(DstA[dst]), c_addrOfConst(SrcA[src]), size);
     } else {
       var ok = chpl__bulkTransferArray(/*dst*/ DstA, {dst..#nElts},
                                        /*src*/ SrcA, {src..#nElts});
@@ -2005,7 +1995,7 @@ module SequentialInPlacePartitioning {
   // Returns the count for each bucket
   // Stores the data in dst in buckets according to the bucketizer.
   // (e.g. sorted by the next digit in radix sort)
-  proc bucketize(start_n: int, end_n: int, A:[],
+  proc bucketize(start_n: int, end_n: int, ref A:[],
                  bucketizer,
                  criterion, startbit:int) {
 
@@ -2456,7 +2446,7 @@ module TwoArrayPartitioning {
 
 
   private proc partitioningSortWithScratchSpaceHandleSampling(
-          start_n:int, end_n:int, A:[], Scratch:[],
+          start_n:int, end_n:int, ref A:[], ref Scratch:[],
           ref state: TwoArrayBucketizerSharedState,
           criterion, startbit:int):void {
     // If we are doing a sample sort, we need to gather a fresh sample.
@@ -2513,7 +2503,7 @@ module TwoArrayPartitioning {
 
   // Sorts the data in A.
   proc partitioningSortWithScratchSpace(
-          start_n:int, end_n:int, A:[], Scratch:[],
+          start_n:int, end_n:int, ref A:[], ref Scratch:[],
           ref state: TwoArrayBucketizerSharedState,
           criterion, startbit:int):void {
 
@@ -2654,7 +2644,7 @@ module TwoArrayPartitioning {
   }
 
   private proc distributedPartitioningSortWithScratchSpaceBaseCase(
-          start_n:int, end_n:int, A:[], Scratch:[],
+          start_n:int, end_n:int, ref A:[], ref Scratch:[],
           ref compat: TwoArrayBucketizerSharedState,
           criterion, startbit:int):void {
 
@@ -2708,7 +2698,7 @@ module TwoArrayPartitioning {
 
 
   private proc distributedPartitioningSortWithScratchSpaceHandleSampling(
-          start_n:int, end_n:int, A:[], Scratch:[],
+          start_n:int, end_n:int, ref A:[], ref Scratch:[],
           ref state: TwoArrayDistributedBucketizerSharedState,
           criterion, startbit:int):void {
     // If we are doing a sample sort, we need to gather a fresh sample.
@@ -2767,7 +2757,7 @@ module TwoArrayPartitioning {
   }
 
   proc distributedPartitioningSortWithScratchSpace(
-          start_n:int, end_n:int, A:[], Scratch:[],
+          start_n:int, end_n:int, ref A:[], ref Scratch:[],
           ref state1: TwoArrayDistributedBucketizerSharedState,
           ref state2: TwoArrayDistributedBucketizerSharedState,
           criterion, startbit:int): void {
@@ -3281,7 +3271,7 @@ module MSBRadixSort {
     const maxTasks = here.maxTaskPar;//;here.numPUs(logical=true); // maximum number of tasks to make
   }
 
-  proc msbRadixSort(Data:[], comparator:?rec=defaultComparator) {
+  proc msbRadixSort(ref Data:[], comparator:?rec=defaultComparator) {
 
     var endbit:int;
     endbit = msbRadixSortParamLastStartBit(Data, comparator);
@@ -3299,7 +3289,7 @@ module MSBRadixSort {
   // not easy that late in compilation
   pragma "no gpu codegen"
   // startbit counts from 0 and is a multiple of RADIX_BITS
-  proc msbRadixSort(A:[], start_n:A.idxType, end_n:A.idxType, criterion,
+  proc msbRadixSort(ref A:[], start_n:A.idxType, end_n:A.idxType, criterion,
                     startbit:int, endbit:int,
                     settings /* MSBRadixSortSettings */)
   {

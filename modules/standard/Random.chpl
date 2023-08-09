@@ -126,7 +126,7 @@ module Random {
     :arg algorithm: A param indicating which algorithm to use. Defaults to :param:`defaultRNG`.
     :type algorithm: :type:`RNG`
   */
-  proc fillRandom(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param
+  proc fillRandom(ref arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param
       algorithm=defaultRNG)
     where isSupportedNumericType(arr.eltType) {
     var randNums = createRandomStream(seed=seed,
@@ -137,7 +137,7 @@ module Random {
   }
 
   @chpldoc.nodoc
-  proc fillRandom(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param
+  proc fillRandom(ref arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param
       algorithm=defaultRNG) {
     compilerError("Random.fillRandom is only defined for numeric arrays");
   }
@@ -164,7 +164,7 @@ module Random {
     :type seed: `int(64)`
 
   */
-  proc fillRandom(arr: [], min: arr.eltType, max: arr.eltType,
+  proc fillRandom(ref arr: [], min: arr.eltType, max: arr.eltType,
       seed: int(64) = SeedGenerator.oddCurrentTime)
     where isSupportedNumericType(arr.eltType) {
     var randNums = createRandomStream(seed=seed,
@@ -175,7 +175,7 @@ module Random {
   }
 
   @chpldoc.nodoc
-  proc fillRandom(arr: [], min, max, seed: int(64) = SeedGenerator.oddCurrentTime) {
+  proc fillRandom(ref arr: [], min, max, seed: int(64) = SeedGenerator.oddCurrentTime) {
     compileError("Random.fillRandom is only defined for numeric arrays");
   }
 
@@ -187,7 +187,7 @@ module Random {
      :arg algorithm: A param indicating which algorithm to use. Defaults to PCG.
      :type algorithm: :type:`RNG`
    */
-  proc shuffle(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG) {
+  proc shuffle(ref arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG) {
 
     if(algorithm==RNG.NPB) then
       compilerError("Cannot use NPB Random number generator for array shuffling");
@@ -210,7 +210,7 @@ module Random {
      :arg algorithm: A param indicating which algorithm to use. Defaults to PCG.
      :type algorithm: :type:`RNG`
    */
-  proc permutation(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG) {
+  proc permutation(ref arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG) {
     if(algorithm==RNG.NPB) then
       compilerError("Cannot use NPB Random number generator for array permutation");
 
@@ -588,12 +588,12 @@ module Random {
       :arg arr: The array to be filled
       :type arr: [] :type:`eltType`
      */
-    proc fillRandom(arr: [] eltType) {
+    proc fillRandom(ref arr: [] eltType) {
       compilerError("RandomStreamInterface.fillRandom called");
     }
 
     @chpldoc.nodoc
-    proc fillRandom(arr: []) {
+    proc fillRandom(ref arr: []) {
       compilerError("RandomStreamInterface.fillRandom called");
     }
 
@@ -1081,7 +1081,7 @@ module Random {
         :arg arr: The array to be filled
         :type arr: `[] T`
       */
-      proc fillRandom(arr: []) {
+      proc fillRandom(ref arr: []) {
         if(!arr.isRectangular()) then
           compilerError("fillRandom does not support non-rectangular arrays");
 
@@ -1099,7 +1099,7 @@ module Random {
         :arg arr: The array to be filled
         :type arr: `[] T`
       */
-      proc fillRandom(arr: [], min: arr.eltType, max:arr.eltType) {
+      proc fillRandom(ref arr: [], min: arr.eltType, max:arr.eltType) {
         if(!arr.isRectangular()) then
           compilerError("fillRandom does not support non-rectangular arrays");
 
@@ -1217,7 +1217,7 @@ module Random {
       }
 
       /* Randomly shuffle a 1-D array. */
-      proc shuffle(arr: [?D] ?eltType ) {
+      proc shuffle(ref arr: [?D] ?eltType ) {
 
         if(!arr.isRectangular()) then
           compilerError("shuffle does not support non-rectangular arrays");
@@ -1255,7 +1255,7 @@ module Random {
          The resulting array will include each value from low..high
          exactly once, where low and high refer to the array's domain.
          */
-      proc permutation(arr: [] eltType) {
+      proc permutation(ref arr: [] eltType) {
 
         if(!arr.isRectangular()) then
           compilerError("permutation does not support non-rectangular arrays");
@@ -2778,7 +2778,7 @@ module Random {
         :arg arr: The array to be filled
         :type arr: [] :type:`eltType`
       */
-      proc fillRandom(arr: [] eltType) {
+      proc fillRandom(ref arr: [] eltType) {
         if(!arr.isRectangular()) then
           compilerError("fillRandom does not support non-rectangular arrays");
 
@@ -2787,7 +2787,7 @@ module Random {
       }
 
       @chpldoc.nodoc
-      proc fillRandom(arr: []) {
+      proc fillRandom(ref arr: []) {
         compilerError("NPBRandomStream(eltType=", eltType:string,
                       ") can only be used to fill arrays of ", eltType:string);
       }

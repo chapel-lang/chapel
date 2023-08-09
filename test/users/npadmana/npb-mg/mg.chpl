@@ -337,7 +337,7 @@ proc stencilConvolve(dest : [?Dom] real, const ref src : []real, const w : coeff
 
 
 // This is hardcoded, for simplicity.
-proc fillInit(U, V : [?Dom]) {
+proc fillInit(ref U, ref V : [?Dom]) {
   // Different cases for different classes
   // This could be generated on the fly, but it's simpler to just copy over the
   // correct values, since there are just 20 points.
@@ -380,7 +380,7 @@ proc fillInit(U, V : [?Dom]) {
   [ijk in positive] V[ijk-1] = 1.0;
 }
 
-inline proc increment(src : [?Dom]real, dest : []real) {
+inline proc increment(src : [?Dom]real, ref dest : []real) {
   forall ijk in Dom do dest.localAccess[ijk] += src.localAccess[ijk];
 }
 

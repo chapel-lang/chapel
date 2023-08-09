@@ -192,7 +192,7 @@ proc touch(pathToReg: string) {
 }
 
 /* Returns a map of packages found in cache along with their scores */
-proc getPackageScores(res: [] string) {
+proc getPackageScores(ref res: [] string) {
   use Map;
   const pathToReg = MASON_HOME + "/mason-registry/cache.toml";
   var cacheExists = false;
