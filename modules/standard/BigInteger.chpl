@@ -153,83 +153,10 @@ module BigInteger {
   use OS;
   use ChplConfig only compiledForSingleLocale;
 
-
   /*
    Local copy of IO.EFORMAT as it is being phased out and is private in IO
    */
   private extern proc chpl_macro_int_EFORMAT():c_int;
-
-  @deprecated(notes="The enum Round is deprecated, please use the enum :enum:`roundingMode` instead")
-  enum Round {
-    DOWN = -1,
-    ZERO =  0,
-    UP   =  1
-  }
-
-  /* An enumeration of the different rounding strategies, for use with e.g.
-     :proc:`~BigInteger.divQ` to determine how to round the quotient when performing
-     the computation.
-   */
-  @deprecated(notes="enum round is deprecated - please use enum :enum:`roundingMode` instead")
-  enum round {
-    /*
-      Indicates that the quotient should be rounded down towards -infinity and
-      any remainder should have the same sign as the denominator.
-    */
-    down = -1,
-    /*
-      Indicates that the quotient should be rounded towards zero and any
-      remainder should have the same sign as the numerator.
-    */
-    zero = 0,
-    /*
-      Indicates that the quotient should be rounded up towards +infinity and any
-      remainder should have the opposite sign as the denominator.
-    */
-    up = 1
-  }
-
-
-  /* An enumeration of the different rounding strategies, for use with e.g.
-     :proc:`~BigInteger.div` to determine how to round the quotient when performing
-     the computation.
-   */
-  enum roundingMode {
-    /*
-      Indicates that the quotient should be rounded down towards -infinity and
-      any remainder should have the same sign as the denominator.
-    */
-    down = -1,
-    /*
-      Indicates that the quotient should be rounded towards zero and any
-      remainder should have the same sign as the numerator.
-    */
-    zero = 0,
-    /*
-      Indicates that the quotient should be rounded up towards +infinity and any
-      remainder should have the opposite sign as the denominator.
-    */
-    up = 1
-  }
-
-  proc chpl_roundToRoundingMode(param r) param : roundingMode {
-    use BigInteger.round;
-    if r == down then return roundingMode.down;
-    if r == zero then return roundingMode.zero;
-    if r == up then return roundingMode.up;
-    compilerError("unknown bigint rounding mode");
-  }
-
-  /* A compile-time parameter to control the behavior of bigint initializers
-     that take a string argument.
-
-     When ``false``, the deprecated behavior is used (i.e., errors will trigger
-     a halt at execution.)
-
-     When ``true``, the new behavior is used (i.e., errors will cause a
-     :type:`~OS.BadFormatError` to be thrown)
-  */
-  config param bigintInitThrows = false;
 
   // TODO: remove when initializers can throw in their body
   private proc throwingInitWorkaround() throws {
@@ -620,6 +547,77 @@ module BigInteger {
       s = this.getStr();
       writer.write(s);
     }
+  }
+
+  /* A compile-time parameter to control the behavior of bigint initializers
+     that take a string argument.
+
+     When ``false``, the deprecated behavior is used (i.e., errors will trigger
+     a halt at execution.)
+
+     When ``true``, the new behavior is used (i.e., errors will cause a
+     :type:`~OS.BadFormatError` to be thrown)
+  */
+  config param bigintInitThrows = false;
+
+  /* An enumeration of the different rounding strategies, for use with e.g.
+     :proc:`~BigInteger.div` to determine how to round the quotient when performing
+     the computation.
+   */
+  enum roundingMode {
+    /*
+      Indicates that the quotient should be rounded down towards -infinity and
+      any remainder should have the same sign as the denominator.
+    */
+    down = -1,
+    /*
+      Indicates that the quotient should be rounded towards zero and any
+      remainder should have the same sign as the numerator.
+    */
+    zero = 0,
+    /*
+      Indicates that the quotient should be rounded up towards +infinity and any
+      remainder should have the opposite sign as the denominator.
+    */
+    up = 1
+  }
+
+  proc chpl_roundToRoundingMode(param r) param : roundingMode {
+    use BigInteger.round;
+    if r == down then return roundingMode.down;
+    if r == zero then return roundingMode.zero;
+    if r == up then return roundingMode.up;
+    compilerError("unknown bigint rounding mode");
+  }
+
+  @deprecated(notes="The enum Round is deprecated, please use the enum :enum:`roundingMode` instead")
+  enum Round {
+    DOWN = -1,
+    ZERO =  0,
+    UP   =  1
+  }
+
+  /* An enumeration of the different rounding strategies, for use with e.g.
+     :proc:`~BigInteger.divQ` to determine how to round the quotient when performing
+     the computation.
+   */
+  @deprecated(notes="enum round is deprecated - please use enum :enum:`roundingMode` instead")
+  enum round {
+    /*
+      Indicates that the quotient should be rounded down towards -infinity and
+      any remainder should have the same sign as the denominator.
+    */
+    down = -1,
+    /*
+      Indicates that the quotient should be rounded towards zero and any
+      remainder should have the same sign as the numerator.
+    */
+    zero = 0,
+    /*
+      Indicates that the quotient should be rounded up towards +infinity and any
+      remainder should have the opposite sign as the denominator.
+    */
+    up = 1
   }
 
   //
