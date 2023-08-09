@@ -420,7 +420,7 @@ void ErrorIllegalUseImport::write(ErrorWriterBase& wr) const {
 
 void ErrorInvalidGpuAssertion::write(ErrorWriterBase& wr) const {
   auto loop = std::get<const uast::Loop*>(info);
-  auto attr = std::get<const uast::Attribute*>(info);
+  // auto attr = std::get<const uast::Attribute*>(info);
 
   const char* loopTypes = nullptr;
   if (loop->isFor()) {

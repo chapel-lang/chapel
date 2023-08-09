@@ -471,7 +471,7 @@ void GpuizableLoop::printNonGpuizableError(CallExpr* assertion, Expr* loc) {
         reason = betterReason;
       }
     }
-    USR_FATAL_CONT(loc, "Loop %s but is not eligible to be executed on the GPU", reason);
+    USR_FATAL_CONT(loc, "Loop %s but is not eligible for execution on a GPU", reason);
 }
 
 bool GpuizableLoop::isAlreadyInGpuKernel() {
@@ -645,7 +645,6 @@ void GpuizableLoop::reportNotGpuizable(const BaseAST* ast, const char *msg) {
   if(this->shouldErrorIfNotGpuizable_) {
     printNonGpuizableError(this->shouldErrorIfNotGpuizable_, loop_);
     USR_PRINT(ast, "%s", msg);
-    USR_PRINT(this->shouldErrorIfNotGpuizable_, "the GPU assertion was here");
     USR_STOP();
   }
 }
