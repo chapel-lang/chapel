@@ -73,7 +73,7 @@ def resolveToAbsPath(current_sub_test_path, line):
 def main():
   # Print usage if the user does not provide the correct number of arguments
   if len(sys.argv) < 3:
-    print("Usage: python3 extractLineNumbers.py <log_file> <warning_message> [output_file_name]")
+    print("Usage: python3 extractLineNumbers.py <log_file> <search_string> [output_file_name]")
     exit(1)
   file_name = sys.argv[1]
   warning_message = sys.argv[2]
