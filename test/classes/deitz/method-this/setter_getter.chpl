@@ -1,12 +1,12 @@
 class C {
-  var x: int;
+  var x_field: int;
   proc x ref {
     writeln("setter invoked");
-    return x;
+    return x_field;
   }
   proc x {
     writeln("getter invoked");
-    return x;
+    return x_field;
   }
 
 }
