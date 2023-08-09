@@ -29,6 +29,7 @@
 X(tombstone      , "<tombstone>")
 X(empty          , "<empty>")
 X(align          , "align")
+X(assertGpu      , "assertGpuEligible")
 X(atomic         , "atomic")
 X(bool_          , "bool")
 X(borrow         , "borrow")

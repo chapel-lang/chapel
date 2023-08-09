@@ -1245,6 +1245,7 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
   if (node->name() == USTR("deprecated") ||
       node->name() == USTR("unstable") ||
       node->name() == USTR("stable") ||
+      node->name() == USTR("assertGpuEligible") ||
       node->name().startsWith(USTR("chpldoc."))) {
       // TODO: should we match chpldoc.nodoc or anything toolspaced with chpldoc.?
       return;

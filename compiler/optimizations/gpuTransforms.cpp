@@ -331,7 +331,7 @@ class GpuizableLoop {
   Symbol* upperBound_ = nullptr;
   std::vector<Symbol*> loopIndices_;
   std::vector<Symbol*> lowerBounds_;
-  bool shouldErrorIfNotGpuizable_;
+  Expr* shouldErrorIfNotGpuizable_;
 
 public:
   GpuizableLoop(BlockStmt* blk);
@@ -349,7 +349,7 @@ public:
   }
 
 private:
-  bool determineIfShouldErrorIfNotGpuizable();
+  Expr* determineIfShouldErrorIfNotGpuizable();
   bool evaluateLoop();
   bool isAlreadyInGpuKernel();
   bool parentFnAllowsGpuization();
@@ -407,7 +407,7 @@ bool GpuizableLoop::isReportWorthy() {
   return true;
 }
 
-bool GpuizableLoop::determineIfShouldErrorIfNotGpuizable() {
+Expr* GpuizableLoop::determineIfShouldErrorIfNotGpuizable() {
   CForLoop *cfl = this->loop_;
   INT_ASSERT(cfl);
 
@@ -421,11 +421,11 @@ bool GpuizableLoop::determineIfShouldErrorIfNotGpuizable() {
   for_alist(expr, cfl->body) {
     CallExpr *call = toCallExpr(expr);
     if (call && call->isPrimitive(PRIM_ASSERT_ON_GPU)) {
-      return true;
+      return call;
     }
   }
 
-  return false;
+  return nullptr;
 }
 
 bool GpuizableLoop::isAlreadyInGpuKernel() {
@@ -599,6 +599,7 @@ void GpuizableLoop::reportNotGpuizable(const BaseAST* ast, const char *msg) {
   if(this->shouldErrorIfNotGpuizable_) {
     USR_FATAL_CONT(loop_, "Loop containing assertOnGpu() is not eligible for execution on a GPU");
     USR_PRINT(ast, "%s", msg);
+    USR_PRINT(this->shouldErrorIfNotGpuizable_, "the GPU assertion was here");
     USR_STOP();
   }
 }
