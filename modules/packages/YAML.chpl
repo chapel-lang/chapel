@@ -1573,7 +1573,7 @@ module YAML {
         then throw new YamlEmitterError("Failed to initialize emitter");
 
       var p = path, w = "w";
-      var f = fopen(c_ptrTo(p), c_ptrTo(w));
+      var f = fopen(p.c_str(), w.c_str());
       this.file = f;
 
       yaml_emitter_set_output_file(c_ptrTo(this.emitter), this.file);
