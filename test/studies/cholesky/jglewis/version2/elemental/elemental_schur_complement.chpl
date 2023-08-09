@@ -11,7 +11,7 @@ module elemental_schur_complement {
   // and cyclic distributions.  The domains for the arrays are unstrided
   // in the standard block cyclic case and strided in the cyclic case.
 
-  proc elemental_schur_complement ( ref A : [] , L12 : [], L21 : [] )
+  proc elemental_schur_complement ( ref ref A : [] , L12 : [], L21 : [] )
 
     where ( A.domain.rank   == 2 &&
 	    L12.domain.rank == 2 &&
