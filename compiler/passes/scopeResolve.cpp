@@ -102,6 +102,8 @@ bool lookupThisScopeAndUses(const char*           name,
                             std::map<Symbol*, VisibilityStmt*>& reexportPts,
                             llvm::SmallPtrSetImpl<Symbol*>& foundSymsSet);
 
+static bool isParenfulFn(Symbol* sym);
+
 static ModuleSymbol* definesModuleSymbol(Expr* expr);
 
 static void computeClassHierarchy() {
@@ -1833,11 +1835,47 @@ void checkConflictingSymbols(llvm::SmallVectorImpl<Symbol *>& symbols,
                              std::map<Symbol*, astlocT*>& renameLocs,
                              std::map<Symbol*, VisibilityStmt*>& reexportPts) {
 
+  Symbol* foundOperator = nullptr;
+  Symbol* foundMethod = nullptr;
+  Symbol* foundNonMethod = nullptr;
+
   // If they're all functions
   //   then      assume function resolution will be applied
   //   otherwise fail
-  for(Symbol* sym : symbols) {
-    if (!isFnSymbol(sym)) {
+  for (Symbol* sym : symbols) {
+    bool isOperator = false;
+    bool isMethod = false;
+    bool isNonMethod = false;
+    if (isParenfulFn(sym)) {
+      if (sym->hasFlag(FLAG_OPERATOR)) isOperator = true;
+      else if (sym->hasFlag(FLAG_METHOD)) isMethod = true;
+      else isNonMethod = true;
+
+      if ((isOperator && (foundMethod || foundNonMethod)) ||
+          (foundOperator && !isOperator)) {
+        INT_FATAL(context, "mix of operator and non-operator matches");
+      }
+      if (!isOperator && !foundOperator) {
+        if (isMethod && foundNonMethod) {
+          USR_FATAL_CONT(context,
+                         "currently ambiguous what '%s' refers to", name);
+          USR_PRINT(foundNonMethod, "found this non-method");
+          USR_PRINT(sym, "and this method");
+          USR_STOP();
+        }
+        if (isNonMethod && foundMethod) {
+          USR_FATAL_CONT(context,
+                         "currently ambiguous what '%s' refers to", name);
+          USR_PRINT(foundMethod, "found this method");
+          USR_PRINT(sym, "and this non-method");
+          USR_STOP();
+        }
+      }
+
+      if (isOperator && !foundOperator) foundOperator = sym;
+      if (isMethod && !foundMethod) foundMethod = sym;
+      if (isNonMethod && !foundNonMethod) foundNonMethod = sym;
+    } else {
       if (std::count(failedUSymExprs.begin(),
                      failedUSymExprs.end(),
                      context) == 0) {
@@ -1962,6 +2000,29 @@ void lookup(const char*           name,
          reexportPts, foundSymsSet);
 }
 
+// Returns true for parenful function; false for parenless fns, vars, types, ...
+static bool isParenfulFn(Symbol* sym) {
+  if (FnSymbol* fn = toFnSymbol(sym)) {
+    return !sym->hasFlag(FLAG_NO_PARENS);
+  }
+
+  return false;
+}
+
+// When traversing up scopes, the scope resolver should stop searching
+// if it finds a variable/type/etc or a parenless function.
+// Continue searching if we have found a method.
+static bool shouldStopSearch(llvm::SmallVectorImpl<Symbol*>& symbols) {
+  for (Symbol* sym : symbols) {
+    if (!isParenfulFn(sym)) {
+      // found parenless fn or type or var or ...
+      return true;
+    }
+  }
+  return false;
+}
+
+
 static void lookup(const char*           name,
                    BaseAST*              context,
 
@@ -2033,6 +2094,9 @@ static void lookup(const char*           name,
       // Otherwise, look in the next scope up.
       FnSymbol* fn = toFnSymbol(scope);
 
+      if (shouldStopSearch(symbols))
+        return;
+
       if (fn != NULL && fn->_this) {
         // If currently in a method, the next scope up is anything visible
         // within the aggregate type
@@ -2040,16 +2104,16 @@ static void lookup(const char*           name,
             toAggregateType(canonicalClassType(fn->_this->type))) {
           lookup(name, context, ct->symbol, visited, symbols, renameLocs,
                  storeRenames, reexportPts, foundSymsSet);
+          // check again if we should stop before continuing up a scope
+          if (shouldStopSearch(symbols))
+            return;
         }
       }
 
-      // Check if found something in last lookup call
-      if (symbols.size() == 0) {
-        // If we didn't find something in the aggregate type that matched,
-        // or we weren't in an aggregate type method, so look at next scope up.
-        lookup(name, context, getScope(scope), visited, symbols, renameLocs,
-               storeRenames, reexportPts, foundSymsSet);
-      }
+      // If we didn't find something in the aggregate type that matched,
+      // or we weren't in an aggregate type method, so look at next scope up.
+      lookup(name, context, getScope(scope), visited, symbols, renameLocs,
+             storeRenames, reexportPts, foundSymsSet);
     }
   }
 }
