@@ -1812,6 +1812,7 @@ ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                  std::move(body),
                                  /*isExpressionLevel*/ false,
                                  toOwned(this->loopAttributes));
+  this->loopAttributes=nullptr;
 
   return { .comments=comments, .stmt=node.release() };
 }
@@ -1855,6 +1856,7 @@ CommentsAndStmt ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                  std::move(body),
                                  /*isExpressionLevel*/ false,
                                  toOwned(this->loopAttributes));
+  this->loopAttributes=nullptr;
 
   return { .comments=comments, .stmt=node.release() };
 }
@@ -1888,6 +1890,7 @@ CommentsAndStmt ParserContext::buildForallLoopStmt(YYLTYPE locForall,
                             std::move(body),
                             /*isExpressionLevel*/ false,
                             toOwned(this->loopAttributes));
+  this->loopAttributes=nullptr;
 
   return { .comments=comments, .stmt=node.release() };
 }
@@ -1920,6 +1923,7 @@ CommentsAndStmt ParserContext::buildForeachLoopStmt(YYLTYPE locForeach,
                              blockStyle,
                              std::move(body),
                              toOwned(this->loopAttributes));
+  this->loopAttributes=nullptr;
 
   return { .comments=comments, .stmt=node.release() };
 }
@@ -1952,7 +1956,7 @@ CommentsAndStmt ParserContext::buildForLoopStmt(YYLTYPE locFor,
                          /*isExpressionLevel*/ false,
                          /*isParam*/ false,
                          toOwned(this->loopAttributes));
-
+  this->loopAttributes=nullptr;
 
   return { .comments=comments, .stmt=node.release() };
 }
@@ -1985,6 +1989,7 @@ CommentsAndStmt ParserContext::buildCoforallLoopStmt(YYLTYPE locCoforall,
                               blockStyle,
                               std::move(body),
                               toOwned(this->loopAttributes));
+  this->loopAttributes=nullptr;
 
   return { .comments=comments, .stmt=node.release() };
 }

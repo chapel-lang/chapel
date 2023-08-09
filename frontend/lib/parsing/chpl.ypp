@@ -1603,6 +1603,7 @@ loop_stmt:
                                std::move(body),
                                toOwned($4),
                                toOwned(context->loopAttributes));
+    context->loopAttributes = nullptr;
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
   }
@@ -1617,6 +1618,7 @@ loop_stmt:
                              blockStyle,
                              std::move(body),
                              toOwned(context->loopAttributes));
+    context->loopAttributes = nullptr;
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
   }
@@ -1631,6 +1633,7 @@ loop_stmt:
                              blockStyle,
                              std::move(body),
                              toOwned(context->loopAttributes));
+    context->loopAttributes = nullptr;
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
   }
@@ -1678,6 +1681,7 @@ loop_stmt:
                            /*isExpressionLevel*/ false,
                            /*isParam*/ true,
                            toOwned(context->loopAttributes));
+    context->loopAttributes = nullptr;
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     context->resetAttributeGroupPartsState();
     $$ = context->finishStmt(cs);

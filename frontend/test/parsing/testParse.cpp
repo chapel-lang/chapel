@@ -1257,6 +1257,49 @@ static void testAttributeOnLoop(Parser* parser) {
   }
 }
 
+static void testAttributeAndNoAttributeOnLoop(Parser* parser) {
+  ErrorGuard guard(parser->context());
+  auto program = R""""(
+    proc foo(A, ref sum) {
+      @loopAttr()
+      foreach i in A.domain {
+        sum += A[i];
+      }
+    }
+    proc bar(A, ref sum) {
+      for i in A.domain {
+        sum += A[i];
+      }
+    }
+  )"""";
+
+  auto parseResult = parseStringAndReportErrors(parser, "testAttributeAndNoAttributeOnLoop.chpl", program);
+  assert(guard.realizeErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 2);
+  
+  auto foo = mod->stmt(0)->toFunction();
+  assert(foo);
+  auto bar = mod->stmt(1)->toFunction();
+  assert(bar);
+
+  assert(foo->numStmts() == 1);
+  assert(bar->numStmts() == 1);
+
+  auto fooLoop = foo->stmt(0)->toForeach();
+  assert(fooLoop);
+  auto barLoop = bar->stmt(0)->toFor();
+  assert(barLoop);
+
+  // bar should have no attributes
+  assert(!barLoop->attributeGroup());
+
+  auto loopAttr = fooLoop->attributeGroup();
+  assert(loopAttr);
+  assert(loopAttr->getAttributeNamed(UniqueString::get(parser->context(), "loopAttr")));
+}
+
 
 /* a test of the parser's ability to parse a proc with an attribute that has
    3 named arguments
@@ -1383,6 +1426,7 @@ int main() {
   testAttributeMixedNamedArgs(p);
   testAttribute3NamedArgs(p);
   testAttributeOnLoop(p);
+  testAttributeAndNoAttributeOnLoop(p);
   testPragmaChpldocIgnoreChplPrefix(p);
 
   return 0;
