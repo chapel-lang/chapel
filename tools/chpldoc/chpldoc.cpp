@@ -258,7 +258,7 @@ const std::string templateUsage = R"RAW(**Usage**
    use $MODULE;
 
 
-o
+or
 
 .. code-block:: chapel
 
@@ -1909,7 +1909,7 @@ struct CommentVisitor {
 };
 
 /**
- Visitor that BLAH BLAH BLAH
+ Visitor used for the --report command.
 */
 struct ReportVisitor {
   std::vector<const Function*> undocProcs;
@@ -1923,19 +1923,19 @@ struct ReportVisitor {
     auto comment = previousComment(context_, node->id());
 
     // Undocumented Public Procedures
-    if ((!isNoDoc(node)) && (node->visibility() != chpl::uast::Decl::PRIVATE) && (comment == nullptr)) { //public, no documentation
+    if ((!isNoDoc(node)) && (node->visibility() != chpl::uast::Decl::PRIVATE) && (comment == nullptr)) {
       undocProcs.push_back(node);
     }
 
     // Deprecated Private Procedures
     if (auto attrs = node->attributeGroup()) {
-      if ((node->visibility() == chpl::uast::Decl::PRIVATE) && (attrs->isDeprecated())) { //private, deprecated
+      if ((node->visibility() == chpl::uast::Decl::PRIVATE) && (attrs->isDeprecated())) {
         deprecatedProcs.push_back(node);
       }
     }
 
     // @nodoc Procedures with Documentation
-    if ((isNoDoc(node)) && (comment != nullptr)) { //nodoc, has documentation
+    if ((isNoDoc(node)) && (comment != nullptr)) {
       nodocProc.push_back(node);
     }
 
@@ -2438,7 +2438,6 @@ int main(int argc, char** argv) {
     }
   }
 
-//put this in new func so it doesn't run generateRST
   for (auto id : gather.modules) {
     if (auto& r = rstDoc(gContext, id)) {
         // given a module ID we can get the path to the file that we parsed
