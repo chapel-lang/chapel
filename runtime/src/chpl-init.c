@@ -398,6 +398,13 @@ void chpl_libraryModuleLevelCleanup(void);
 // }
 //
 void chpl_library_init(int argc, char* argv[]) {
+  static bool inited = false;
+
+  if (inited) {
+    chpl_error("Can't call chpl_library_init() twice", 0, 0);
+  } else {
+    inited = true;
+  }
   chpl_rt_init(argc, argv);                     // Initialize the runtime
   chpl_task_callMain(chpl_std_module_init);     // Initialize std modules
   chpl_libraryModuleLevelSetup();
@@ -416,5 +423,4 @@ extern void chpl_deinitModules(void);
 void chpl_library_finalize(void) {
   chpl_libraryModuleLevelCleanup();
   chpl_deinitModules();
-  chpl_rt_finalize(0);
 }
