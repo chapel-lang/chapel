@@ -1,0 +1,3 @@
+# Test/release/examples/benchmarks/hpcc/variants ignores.
+/stream-promoted
+/ra-cleanloop

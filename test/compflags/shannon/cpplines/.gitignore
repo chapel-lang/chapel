@@ -1,0 +1,3 @@
+# Test/compflags/shannon/cpplines ignores.
+/cppLines.OUTPUT
+/noCppLines.OUTPUT
