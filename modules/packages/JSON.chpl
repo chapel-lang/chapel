@@ -537,11 +537,27 @@ module JSON {
       if !_firstThing then reader._readLiteral(",");
       else _firstThing = false;
 
-      return reader.read(eltType);
+      // preemptively check if a list will end with the next byte
+      //  to avoid an uncaught BadFormatError in eltType's
+      //  deserializing initializer
+      if this.peekListEnd(reader)
+        then throw new BadFormatError();
+        else return reader.read(eltType);
     }
     @chpldoc.nodoc
     proc endList(reader: _readerType) throws {
       reader._readLiteral("]");
+    }
+    @chpldoc.nodoc
+    proc peekListEnd(reader: _readerType): bool throws {
+      reader.mark();
+      if reader.matchLiteral("]") {
+        reader.revert();
+        return true;
+      } else {
+        reader.commit(); // doesn't do anything
+        return false;
+      }
     }
 
     // Array helpers

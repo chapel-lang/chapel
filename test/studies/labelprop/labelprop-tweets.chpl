@@ -187,13 +187,15 @@ proc process_json(logfile:fileReader, fname:string, ref Pairs) {
   var nlines = 0;
   var max_id = 0;
 
+  var jsonReader = logfile.withDeserializer(JsonDeserializer);
+
   if progress then
     writeln(fname, " : processing");
 
   while true {
     try! {
       try {
-        got = logfile.readf("%~jt", tweet);
+        got = jsonReader.read(tweet);
       } catch e: BadFormatError {
         if verbose {
             try! logfile.lock();
@@ -204,7 +206,7 @@ proc process_json(logfile:fileReader, fname:string, ref Pairs) {
         }
 
         // read over something else
-        got = logfile.readf("%~jt", empty);
+        got = logfile.read(empty);
       }
     } catch e: SystemError {
       try! logfile.lock();
@@ -218,7 +220,7 @@ proc process_json(logfile:fileReader, fname:string, ref Pairs) {
     } // halt on truly unknown error
 
     if got {
-      if verbose then stdout.withSerializer(JsonSerializer).writef("%?\n", tweet);
+      if verbose then stdout.withSerializer(JsonSerializer).write(tweet);
       var id = tweet.user.id;
       if max_id < id then max_id = id;
       for mentions in tweet.entities.user_mentions {
