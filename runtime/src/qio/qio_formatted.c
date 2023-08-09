@@ -3087,7 +3087,7 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
 
   if( style->showplus || isnegative ) width++;
   if( style->prefix_base && base != 10 ) width += 2;
-  if( false && (style->showpoint || style->precision > 0) ) {
+  if( style->showpoint || style->precision > 0 ) {
     // intentionally doesn't handle showpointzero since showpointzero is
     // used to distinguish between floating point and integer values.
 
@@ -3285,6 +3285,7 @@ int _ftoa_core(char* buf, size_t buf_sz, double num,
         got = snprintf(buf, buf_sz, "%.*G", precision, num);
       } else {
         got = snprintf(buf, buf_sz, "%.*g", precision, num);
+        // printf("\tbuf:%s buf_sz: %zu pre: %d num: %f\n", buf, buf_sz, precision, num);
       }
     }
   } else if( realfmt == 1 ) {
@@ -3396,6 +3397,8 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, bool needs_i, c
                    precision, style->uppercase, style->prefix_base,
                    &skip);
 
+  // printf(" ...\n---\n%s\n", dst);
+
   // got should include space for sign and base
   got += sign_base_width;
   // but skip space for sign and base
@@ -3408,6 +3411,8 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, bool needs_i, c
   *extra_space_needed = 1 + skip;
 
   if( got < 0 ) return -1;
+
+  // printf("%d || %d, (%d -> %d) relfmt: %d precision: %d \n", style->showpoint, style->showpointzero, skip, got, style->realfmt, style->precision);
 
   // Handle adding . or .0 at the end of integers.
   if( style->showpoint || style->showpointzero ) {
@@ -3447,6 +3452,8 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, bool needs_i, c
       }
     }
   }
+
+  // printf("%s\n---\n... ", dst);
 
   // Handle adding an i after an imaginary number.
   if( needs_i ) {
@@ -4855,12 +4862,13 @@ qioerr qio_conv_parse(c_string fmt,
         } else if( base_flag == 'd' ) {
           style_out->realfmt = 1;
         } else {
-          style_out->realfmt = 0;
+          style_out->realfmt = 1;
         }
       }
 
       // Set the conversion type.
       if( specifier == 'n' ) {
+        style_out->realfmt = 1;
         style_out->prefix_base = 1;
         spec_out->argType = QIO_CONV_ARG_TYPE_NUMERIC;
       }
