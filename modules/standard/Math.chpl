@@ -856,12 +856,12 @@ module Math {
     return chpl_tanh(x);
   }
 
-  /* Returns the absolute value of the gamma function of the argument `x`. */
+  /* Returns the gamma function of the argument `x`. */
   inline proc tgamma(x: real(64)): real(64) {
     return chpl_tgamma(x);
   }
 
-  /* Returns the absolute value of the gamma function of the argument `x`. */
+  /* Returns the gamma function of the argument `x`. */
   inline proc tgamma(x : real(32)): real(32) {
     return chpl_tgamma(x);
   }
