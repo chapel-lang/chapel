@@ -1273,7 +1273,7 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
 void Visitor::checkAttributeUnstable(const Attribute* node) {
   if (shouldEmitUnstableWarning(node)) {
     if(node->name() == UniqueString::get(context_, "llvm.metadata") ||
-       node->name() == UniqueString::get(context_, "llvm.metadata")) {
+       node->name() == UniqueString::get(context_, "llvm.assertVectorized")) {
       warn(node, "'%s' is an unstable attribute", node->name());
     }
   }
