@@ -22,10 +22,16 @@
 //
 
 module ChapelTaskTable {
-
+  extern type faux_c_string = chpl__c_void_ptr; // in place of deprecated c_string
   proc chpldev_taskTable_init() {
   }
 
+  export proc chpldev_taskTable_add(taskID   : chpl_taskID_t,
+                                    lineno   : uint(32),
+                                    filename : faux_c_string,
+                                    tl_info  : uint(64))
+  {
+  }
 
   export proc chpldev_taskTable_remove(taskID : chpl_taskID_t)
   {
