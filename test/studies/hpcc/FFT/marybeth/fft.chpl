@@ -41,7 +41,7 @@ proc main() {
     fillRandom(z);
 
   // conjugate input, storing result to work array
-  Z = conjg(z);
+  Z = conj(z);
 
 
   // TIMED SECTION
@@ -153,7 +153,7 @@ proc verifyResults(z, Z, execTime, Twiddles) {
   const N = Z.size;
 
   // BLC: This line wants /(complex,real) to be implemented directly:
-  Z = conjg(Z) / N;
+  Z = conj(Z) / N;
 
   Z = bitReverseShuffle(Z);
   dfft(Z, Twiddles);
