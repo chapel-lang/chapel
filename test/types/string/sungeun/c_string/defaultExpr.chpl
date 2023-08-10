@@ -88,7 +88,7 @@ const s: string;
 
 // s should be c_ptrConst(c_char) for these
 {
-  proc f(s: c_ptrConst(c_char) = "hi") {
+  proc f(s: c_ptrConst(c_char) = "hi".c_str()) {
     checkType(c_ptrConst(c_char), s.type);
   }
 
@@ -98,7 +98,7 @@ const s: string;
 }
 
 {
-  proc f(type gtype, g, s: c_ptrConst(c_char) = "hi") {
+  proc f(type gtype, g, s: c_ptrConst(c_char) = "hi".c_str()) {
     checkType(gtype, g.type);
     checkType(c_ptrConst(c_char), s.type);
   }
@@ -109,7 +109,7 @@ const s: string;
 }
 
 {
-  proc f(s: c_ptrConst(c_char) = "hi", type gtype, g = 3.14) {
+  proc f(s: c_ptrConst(c_char) = "hi".c_str(), type gtype, g = 3.14) {
     checkType(gtype, g.type);
     checkType(c_ptrConst(c_char), s.type);
   }
