@@ -1831,7 +1831,7 @@ proc solve_triu(const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
 
 /* Return the solution ``x`` to the linear system ``A * x = b``.
 */
-proc solve(A: [?Adom] ?eltType, b: [?bdom] eltType) {
+proc solve(A: [?Adom] ?eltType, ref b: [?bdom] eltType) {
   var (LU, ipiv) = lu(A);
   b = permute (ipiv, b, true);
   var z = solve_tril(LU, b);

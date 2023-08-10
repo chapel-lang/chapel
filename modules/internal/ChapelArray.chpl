@@ -1147,7 +1147,7 @@ module ChapelArray {
     pragma "removable array access"
     pragma "alias scope from this"
     @chpldoc.nodoc // ref version
-    inline proc ref this(i: rank*_value.dom.idxType) ref {
+    inline proc ref this(const i: rank*_value.dom.idxType) ref {
       const value = _value;
       if boundsChecking then
         checkAccess(i, value=value);
@@ -1163,7 +1163,7 @@ module ChapelArray {
     }
     pragma "alias scope from this"
     @chpldoc.nodoc // value version, for POD types
-    inline proc const this(i: rank*_value.dom.idxType)
+    inline proc const this(const i: rank*_value.dom.idxType)
     where shouldReturnRvalueByValue(_value.eltType)
     {
       const value = _value;
@@ -1181,7 +1181,7 @@ module ChapelArray {
     }
     pragma "alias scope from this"
     @chpldoc.nodoc // const ref version, for not-POD types
-    inline proc const this(i: rank*_value.dom.idxType) const ref
+    inline proc const this(const i: rank*_value.dom.idxType) const ref
     {
       const value = _value;
       if boundsChecking then
@@ -1201,18 +1201,18 @@ module ChapelArray {
     pragma "removable array access"
     pragma "alias scope from this"
     @chpldoc.nodoc // ref version
-    inline proc ref this(i: _value.dom.idxType ...rank) ref do
+    inline proc ref this(const i: _value.dom.idxType ...rank) ref do
       return this(i);
 
     pragma "alias scope from this"
     @chpldoc.nodoc // value version, for POD types
-    inline proc const this(i: _value.dom.idxType ...rank)
+    inline proc const this(const i: _value.dom.idxType ...rank)
     where shouldReturnRvalueByValue(_value.eltType) do
       return this(i);
 
     pragma "alias scope from this"
     @chpldoc.nodoc // const ref version, for not-POD types
-    inline proc const this(i: _value.dom.idxType ...rank) const ref do
+    inline proc const this(const i: _value.dom.idxType ...rank) const ref do
       return this(i);
 
 

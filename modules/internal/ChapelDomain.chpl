@@ -223,7 +223,7 @@ module ChapelDomain {
   }
 
   // definedConst is added only for interface consistency
-  proc chpl__buildDomainExpr(keys..., definedConst) {
+  proc chpl__buildDomainExpr(const keys..., definedConst) {
     param count = keys.size;
     // keyType of string literals is assumed to be type string
     type keyType = keys(0).type;
@@ -2215,7 +2215,7 @@ module ChapelDomain {
     }
 
     @chpldoc.nodoc
-    proc contains(idx: rank*_value.idxType) {
+    proc contains(const idx: rank*_value.idxType) {
       if this.isRectangular() || this.isSparse() then
         return _value.dsiMember(_makeIndexTuple(rank, idx, "index"));
       else
@@ -2226,7 +2226,7 @@ module ChapelDomain {
        For sparse domains, only indices with a value are considered
        to be contained in the domain.
      */
-    inline proc contains(idx: _value.idxType ...rank) {
+    inline proc contains(const idx: _value.idxType ...rank) {
       return contains(idx);
     }
 

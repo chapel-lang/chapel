@@ -207,7 +207,7 @@ module FFTW {
 
     :returns: The :type:`fftw_plan` representing the resulting plan
   */
-  proc plan_dft(input: [?Din] complex(128), output: [?Dout] complex(128),
+  proc plan_dft(input: [?Din] complex(128), ref output: [?Dout] complex(128),
                  sign: FFTW_Direction, flags: FFTW_Flag) : fftw_plan
   {
     if !noFFTWsizeChecks {
@@ -238,7 +238,7 @@ module FFTW {
 
     :returns: The :type:`fftw_plan` representing the resulting plan
   */
-  proc plan_dft(arr: [] complex(128), sign: FFTW_Direction, flags: FFTW_Flag): fftw_plan {
+  proc plan_dft(ref arr: [] complex(128), sign: FFTW_Direction, flags: FFTW_Flag): fftw_plan {
     return plan_dft_help(arr, arr, sign, flags);
   }
 
@@ -246,7 +246,7 @@ module FFTW {
   // Though not strictly necessary, this helper routine is to avoid
   // doing the size check for the in-place case.
   //
-  private proc plan_dft_help(input: [] complex(128), output: [] complex(128),
+  private proc plan_dft_help(input: [] complex(128), ref output: [] complex(128),
                              sign: FFTW_Direction, flags: FFTW_Flag) : fftw_plan
   {
     param rank = input.rank;
@@ -255,7 +255,7 @@ module FFTW {
     for param i in 0..<rank do
       dims(i) = input.domain.dim(i).size.safeCast(c_int);
 
-    return C_FFTW.fftw_plan_dft(rank.safeCast(c_int), dims, c_ptrTo(input),
+    return C_FFTW.fftw_plan_dft(rank.safeCast(c_int), dims, c_ptrToConst(input),
                                      c_ptrTo(output), sign, flags);
   }
 
@@ -278,7 +278,7 @@ module FFTW {
 
     :returns: The :type:`fftw_plan` representing the resulting plan
   */
-  proc plan_dft_r2c(input : [?Din] real(64), output : [?Dout] complex(128),
+  proc plan_dft_r2c(input : [?Din] real(64), ref output : [?Dout] complex(128),
                     flags : FFTW_Flag) : fftw_plan
   {
     param rank = input.rank: c_int;
@@ -300,7 +300,7 @@ module FFTW {
       dims(i) = input.domain.dim(i).size: c_int;
 
     return C_FFTW.fftw_plan_dft_r2c(rank, dims,
-                                    c_ptrTo(input),
+                                    c_ptrToConst(input),
                                     c_ptrTo(output), flags);
   }
 
@@ -319,7 +319,7 @@ module FFTW {
 
     :returns: The :type:`fftw_plan` representing the resulting plan
    */
-  proc plan_dft_r2c(realDom : domain, arr : [?D] ?t, flags : FFTW_Flag) : fftw_plan
+  proc plan_dft_r2c(realDom : domain, ref arr : [?D] ?t, flags : FFTW_Flag) : fftw_plan
     where t == real || t == complex
   {
     if !noFFTWsizeChecks then
@@ -358,7 +358,7 @@ module FFTW {
 
     :returns: The :type:`fftw_plan` representing the resulting plan
   */
-  proc plan_dft_c2r(input : [?Din] complex(128), output : [?Dout] real(64),
+  proc plan_dft_c2r(input : [?Din] complex(128), ref output : [?Dout] real(64),
                     flags : FFTW_Flag) : fftw_plan
   {
     param rank = output.rank: c_int; // The dimensions are that of the real array
@@ -379,7 +379,7 @@ module FFTW {
     for param i in 0..<rank do
       dims(i) = output.domain.dim(i).size: c_int;
 
-    return C_FFTW.fftw_plan_dft_c2r(rank, dims, c_ptrTo(input), c_ptrTo(output), flags);
+    return C_FFTW.fftw_plan_dft_c2r(rank, dims, c_ptrToConst(input), c_ptrTo(output), flags);
   }
 
   /*
@@ -396,7 +396,7 @@ module FFTW {
 
     :returns: The :type:`fftw_plan` representing the resulting plan
    */
-  proc plan_dft_c2r(realDom : domain, arr: [?D] ?t, flags : FFTW_Flag) : fftw_plan
+  proc plan_dft_c2r(realDom : domain, ref arr: [?D] ?t, flags : FFTW_Flag) : fftw_plan
     where t == real || t == complex
   {
     if !noFFTWsizeChecks then
