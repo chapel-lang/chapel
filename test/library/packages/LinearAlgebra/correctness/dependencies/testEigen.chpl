@@ -339,10 +339,10 @@ proc testEigenvalSymm1(type t) {
 
   // Set the first element of each eigenvector to be positive
   var mat0 = Matrix([-2,1,0],[1,-2,1],[0,1,-2],eltType=t);
-  var true0 = Vector(-sqrt_2,0.0,sqrt_2, eltType=t) - 2.0 : t;
-  var eig0 = Matrix([0.5,-recipr_sqrt_2,0.5],
-                    [-recipr_sqrt_2,0.0,recipr_sqrt_2],
-                    [0.5,recipr_sqrt_2,0.5],eltType=t);
+  var true0 = Vector(-sqrt2,0.0,sqrt2, eltType=t) - 2.0 : t;
+  var eig0 = Matrix([0.5,-reciprSqrt2,0.5],
+                    [-reciprSqrt2,0.0,reciprSqrt2],
+                    [0.5,reciprSqrt2,0.5],eltType=t);
 
   testEighHelper(mat0, true0, eig0);
 }
