@@ -29,15 +29,15 @@ config param blockPadding = 1;
 config type dataType = real(32);
 
 inline proc transposeNaive(original, output) {
+  @assertOnGpu
   foreach (x,y) in original.domain {
-    assertOnGpu();
     output[y,x] = original[x,y];
   }
 }
 
 inline proc transposeClever(original, output) {
+  @assertOnGpu
   foreach 0..<original.size {
-    assertOnGpu();
     setBlockSize(blockSize * blockSize);
     param paddedBlockSize = blockSize + blockPadding;
     var smArrPtr = createSharedArray(dataType, paddedBlockSize*blockSize);
