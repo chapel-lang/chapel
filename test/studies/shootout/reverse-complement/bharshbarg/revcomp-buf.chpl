@@ -61,7 +61,7 @@ record buf {
     cur = min(cur + n, cap);
   }
 
-  proc _memchr(c : uint(8), arr : []) {
+  proc _memchr(c : uint(8), ref arr : []) {
     extern proc memchr(s:c_ptr(void), c : c_int, n : c_size_t) : c_ptr(void);
     const ptr = c_ptrTo(arr);
     const ret = memchr(ptr, c:c_int, arr.size:c_size_t);

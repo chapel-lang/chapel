@@ -91,7 +91,7 @@ HomoSapiens[2] = new Freq(103, 0.1975473066391); // g -> 103
 HomoSapiens[3] = new Freq(116, 0.3015094502008); // t -> 116
 
 // (Scan operation)
-proc sumAndScale(a :[?D]) {
+proc sumAndScale(ref a :[?D]) {
   var p : real = 0;
   for item in a {
     p += item.p;

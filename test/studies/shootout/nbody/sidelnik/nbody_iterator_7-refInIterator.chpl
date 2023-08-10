@@ -30,7 +30,7 @@ iter TriangleIter(B: [] unmanaged Planet) {
   }
 }
 
-proc advance(B: [] unmanaged Planet, dt: real) {
+proc advance(ref B: [] unmanaged Planet, dt: real) {
   for (b1,b2) in TriangleIter(B) {
     var d : [vecLen] real = b1.coord_vector - b2.coord_vector;
     var distance = sqrt(+ reduce d**2);

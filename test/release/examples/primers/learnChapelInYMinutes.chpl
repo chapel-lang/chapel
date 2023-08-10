@@ -632,7 +632,7 @@ writeln("Outside After: ", (inVar, outVar, inoutVar, refVar));
 // ``refElement`` returns a reference to an element of array.
 // This makes more practical sense for class methods where references to
 // elements in a data-structure are returned via a method or iterator.
-proc refElement(array : [?D] ?T, idx) ref : T {
+proc refElement(ref array : [?D] ?T, idx) ref : T {
   return array[idx];
 }
 

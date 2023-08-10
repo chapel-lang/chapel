@@ -1868,13 +1868,13 @@ module ShallowCopy {
   // TODO: move these out of the Sort module and/or consider
   // language support for it. See issue #14576.
 
-  inline proc shallowCopy(ref dst, src) {
+  inline proc shallowCopy(ref dst, ref src) {
     type st = __primitive("static typeof", dst);
     if isPODType(st) {
       dst = src;
     } else {
       var size = c_sizeof(st);
-      memcpy(c_addrOf(dst), c_addrOfConsr(src), size);
+      memcpy(c_addrOf(dst), c_addrOf(src), size);
       if boundsChecking {
         // The version moved from should never be used again,
         // but we clear it out just in case.

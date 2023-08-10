@@ -81,7 +81,7 @@ var HomoSapiens : [0..3] Freq = [
 ];
 
 // Scan operation
-proc sumAndScale(a) {
+proc sumAndScale(ref a) {
   var p : real = 0;
   for item in a {
     p += item.p;

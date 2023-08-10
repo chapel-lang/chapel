@@ -64,7 +64,7 @@ proc printConfiguration() {
 }
 
 
-proc initVectors(B, C) {
+proc initVectors(ref B, ref C) {
   var randlist = new NPBRandomStream(eltType=real, seed=seed);
 
   randlist.fillRandom(B);

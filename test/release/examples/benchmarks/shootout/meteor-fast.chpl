@@ -370,7 +370,7 @@ var recordSolutionLock: BackoffSpinLock;
 //
 // Recursively add pieces to the board, and check solution when filled
 //
-proc searchLinear(in board, in pos, used, placed, currentSolution) {
+proc searchLinear(in board, in pos, used, placed, ref currentSolution) {
 
   if placed == numPieces {
     recordSolutionLock.lock();

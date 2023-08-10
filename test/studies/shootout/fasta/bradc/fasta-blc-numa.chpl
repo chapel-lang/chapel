@@ -199,7 +199,7 @@ proc randomMake(desc, nuclInfo: [?nuclSpace], n) {
 //
 var lastRand = seed;
 
-proc getRands(n, arr) {
+proc getRands(n, ref arr) {
   for i in 0..#n {
     lastRand = (lastRand * IA + IC) % IM;
     arr[i] = lastRand;
