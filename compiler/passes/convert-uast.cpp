@@ -116,13 +116,13 @@ struct ConvertedSymbolsMap {
 struct LoopAttributeInfo {
   // LLVM metadata from various @llvm attributes.
   LLVMMetadataList llvmMetadata;
-  // The @assertGpuEligible attribute, if one is provided by the user.
-  const uast::Attribute* assertGpuEligibleAttr = nullptr;
+  // The @assertOnGpu attribute, if one is provided by the user.
+  const uast::Attribute* assertOnGpuAttr = nullptr;
 
   void insertGpuEligibilityAssertion(BlockStmt* body) {
-    if (assertGpuEligibleAttr) {
+    if (assertOnGpuAttr) {
       body->insertAtHead(new CallExpr(PRIM_ASSERT_ON_GPU,
-                                      new_CStringSymbol("is marked with @assertGpuEligible")));
+                                      new_CStringSymbol("is marked with @assertOnGpu")));
     }
   }
 };
@@ -394,7 +394,7 @@ struct Converter {
 
     auto llvmMetadata = UniqueString::get(context, "llvm.metadata");
     auto assertVectorized = UniqueString::get(context, "llvm.assertVectorized");
-    auto assertGpuEligible = UniqueString::get(context, "assertGpuEligible");
+    auto assertOnGpu = UniqueString::get(context, "assertOnGpu");
 
     LoopAttributeInfo toReturn;
 
@@ -405,7 +405,7 @@ struct Converter {
     if (auto a = attrs->getAttributeNamed(assertVectorized)) {
       toReturn.llvmMetadata.push_back(buildAssertVectorize(a));
     }
-    toReturn.assertGpuEligibleAttr = attrs->getAttributeNamed(assertGpuEligible);
+    toReturn.assertOnGpuAttr = attrs->getAttributeNamed(assertOnGpu);
 
     return toReturn;
   }
@@ -1665,8 +1665,8 @@ struct Converter {
     Expr* condExpr = toExpr(convertAST(node->condition()));
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
     auto loopAttributes = buildLoopAttributes(node);
-    if (loopAttributes.assertGpuEligibleAttr)
-      CHPL_REPORT(context, InvalidGpuAssertion, node, loopAttributes.assertGpuEligibleAttr);
+    if (loopAttributes.assertOnGpuAttr)
+      CHPL_REPORT(context, InvalidGpuAssertion, node, loopAttributes.assertOnGpuAttr);
     return DoWhileStmt::build(condExpr, body, std::move(loopAttributes.llvmMetadata));
   }
 
@@ -1683,8 +1683,8 @@ struct Converter {
     }
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
     auto loopAttributes = buildLoopAttributes(node);
-    if (loopAttributes.assertGpuEligibleAttr)
-      CHPL_REPORT(context, InvalidGpuAssertion, node, loopAttributes.assertGpuEligibleAttr);
+    if (loopAttributes.assertOnGpuAttr)
+      CHPL_REPORT(context, InvalidGpuAssertion, node, loopAttributes.assertOnGpuAttr);
     return WhileDoStmt::build(condExpr, body, std::move(loopAttributes.llvmMetadata));
   }
 
@@ -1872,8 +1872,8 @@ struct Converter {
       INT_ASSERT(block);
 
       auto loopAttributes = buildLoopAttributes(node);
-      if (loopAttributes.assertGpuEligibleAttr)
-        CHPL_REPORT(context, InvalidGpuAssertion, node, loopAttributes.assertGpuEligibleAttr);
+      if (loopAttributes.assertOnGpuAttr)
+        CHPL_REPORT(context, InvalidGpuAssertion, node, loopAttributes.assertOnGpuAttr);
       ret = ForLoop::buildForLoop(index, iteratorExpr, block, zippered,
                                   isForExpr, std::move(loopAttributes.llvmMetadata));
     }

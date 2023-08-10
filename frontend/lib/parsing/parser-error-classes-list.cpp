@@ -435,13 +435,13 @@ void ErrorInvalidGpuAssertion::write(ErrorWriterBase& wr) const {
 
   const char* whatIsAffected = "statement";
   if (loopTypes) {
-    wr.heading(kind_, type_, node, "loop marked with @assertGpuEligible, but '", loopTypes, "' loops don't support GPU execution.");
+    wr.heading(kind_, type_, node, "loop marked with @assertOnGpu, but '", loopTypes, "' loops don't support GPU execution.");
     whatIsAffected = "loop";
   } else if (node->isFunction()) {
-    wr.heading(kind_, type_, node, "functions do not currently support the @assertGpuEligible attribute.");
+    wr.heading(kind_, type_, node, "functions do not currently support the @assertOnGpu attribute.");
     whatIsAffected = "function";
   } else {
-    wr.heading(kind_, type_, node, "statement does not support the @assertGpuEligible attribute.");
+    wr.heading(kind_, type_, node, "statement does not support the @assertOnGpu attribute.");
   }
 
   wr.message("The affected ", whatIsAffected, " is here:");

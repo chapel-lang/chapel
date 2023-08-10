@@ -10,7 +10,7 @@ proc usesOutsideVar() { return globalVar; }
 
 pragma "no gpu codegen"
 proc funcMarkedNotGpuizableThatTriesToGpuize() {
-  @assertGpuEligible
+  @assertOnGpu
   foreach i in 0..10 {
    
   }
@@ -25,14 +25,14 @@ on here.gpus[0] {
   }
 
   if failureMode == 2 {
-    @assertGpuEligible
+    @assertOnGpu
     foreach i in 0..10 {
       funcMarkedNotGpuizable();
     }
   }
 
   if failureMode == 3 {
-    @assertGpuEligible
+    @assertOnGpu
     foreach i in 0..10 {
       usesOutsideVar();
     }
@@ -43,19 +43,19 @@ on here.gpus[0] {
   // to run these tests):
 
   // calling a recursive function is allowed now
-  @assertGpuEligible
+  @assertOnGpu
   foreach i in 0..10 {
     directlyRecursiveFunc(i);
   }
 
-  @assertGpuEligible
+  @assertOnGpu
   foreach i in 0..10 {
     indirectlyRecursiveFunc(i);
   }
 
   // I want to ensure this works
   // with forall loops as well:
-  @assertGpuEligible
+  @assertOnGpu
   forall i in 0..10 {
     directlyRecursiveFunc(i);
   }
@@ -63,17 +63,17 @@ on here.gpus[0] {
   // And loops of a multidimensional array:
   {
     var A: [1..10, 1..10] int;
-    @assertGpuEligible
+    @assertOnGpu
     foreach a in A {
       directlyRecursiveFunc(5);
     }
   }
 
-  @assertGpuEligible foreach i in 0..10 { }
-  @assertGpuEligible forall i in 0..10 { }
+  @assertOnGpu foreach i in 0..10 { }
+  @assertOnGpu forall i in 0..10 { }
   var A: [1..10, 1..10] int;
-  @assertGpuEligible foreach a in A { }
-  @assertGpuEligible foreach idx in {0..10, 0..10} { }
-  @assertGpuEligible forall a in A { }
-  @assertGpuEligible forall idx in {0..10, 0..10} { }
+  @assertOnGpu foreach a in A { }
+  @assertOnGpu foreach idx in {0..10, 0..10} { }
+  @assertOnGpu forall a in A { }
+  @assertOnGpu forall idx in {0..10, 0..10} { }
 }

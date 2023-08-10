@@ -1246,7 +1246,7 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
   if (node->name() == USTR("deprecated") ||
       node->name() == USTR("unstable") ||
       node->name() == USTR("stable") ||
-      node->name() == USTR("assertGpuEligible") ||
+      node->name() == USTR("assertOnGpu") ||
       node->name().startsWith(USTR("chpldoc."))) {
       // TODO: should we match chpldoc.nodoc or anything toolspaced with chpldoc.?
       return;
@@ -1276,7 +1276,7 @@ void Visitor::checkAttributeAppliedToCorrectNode(const Attribute* attr) {
   auto attributeGroup = parsing::parentAst(context_, attr);
   CHPL_ASSERT(attributeGroup->isAttributeGroup());
   auto node = parsing::parentAst(context_, attributeGroup);
-  if (attr->name() == USTR("assertGpuEligible")) {
+  if (attr->name() == USTR("assertOnGpu")) {
     if (node->isForall() || node->isForeach()) return;
 
     CHPL_REPORT(context_, InvalidGpuAssertion, node, attr);
