@@ -476,22 +476,22 @@ void markSymbolNotConst(Symbol* sym)
     // this is still being used for tuples assignment
     bool fromPragma = arg->hasFlag(FLAG_INTENT_REF_MAYBE_CONST_FORMAL);
 
+    bool isCompilerGenerated = false;
+
     bool isTaskIntent = false;
     if(FnSymbol* fn = arg->getFunction()) {
       isTaskIntent = fn->hasEitherFlag(FLAG_COBEGIN_OR_COFORALL, FLAG_BEGIN);
+
+      isCompilerGenerated = fn->hasFlag(FLAG_COMPILER_GENERATED);
     }
 
-    // we have full control over this, we could just make these ref to start with
-    bool isVarArgExp = arg->hasFlag(FLAG_EXPANDED_VARARGS);
-    // workaround for iters, eventually we just make this ref.
-    bool is_iterExpr = arg->name == astr("iterExpr");
     // we have full control here, but this should be ok
     bool isOuter = arg->hasFlag(FLAG_OUTER_VARIABLE);
-    bool temporaryOptOut = isVarArgExp || is_iterExpr || isOuter;
 
     bool notImplementedYetOptOut = isArgThis || isTaskIntent;
 
-    bool shouldWarn = !temporaryOptOut && !notImplementedYetOptOut && !fromPragma;
+
+    bool shouldWarn = !notImplementedYetOptOut && !isOuter && !fromPragma && !isCompilerGenerated;
 
     if(shouldWarn) {
       IntentTag defaultIntent = blankIntentForType(arg->type);
