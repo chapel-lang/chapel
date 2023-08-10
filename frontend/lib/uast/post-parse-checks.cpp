@@ -1273,9 +1273,10 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
 }
 
 void Visitor::checkAttributeAppliedToCorrectNode(const Attribute* attr) {
-  auto attributeGroup = parsing::parentAst(context_, attr);
+  CHPL_ASSERT(parents_.size() >= 2);
+  auto attributeGroup = parents_[parents_.size() - 1];
   CHPL_ASSERT(attributeGroup->isAttributeGroup());
-  auto node = parsing::parentAst(context_, attributeGroup);
+  auto node = parents_[parents_.size() - 2];
   if (attr->name() == USTR("assertOnGpu")) {
     if (node->isForall() || node->isForeach()) return;
 
