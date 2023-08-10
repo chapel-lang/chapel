@@ -121,7 +121,6 @@ struct LoopAttributeInfo {
 
   void insertGpuEligibilityAssertion(BlockStmt* body) {
     if (assertGpuEligibleAttr) {
-      astlocMarker marker(assertGpuEligibleAttr->id());
       body->insertAtHead(new CallExpr(PRIM_ASSERT_ON_GPU,
                                       new_CStringSymbol("is marked with @assertGpuEligible")));
     }

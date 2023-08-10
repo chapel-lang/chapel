@@ -331,6 +331,7 @@ class GpuizableLoop {
   Symbol* upperBound_ = nullptr;
   std::vector<Symbol*> loopIndices_;
   std::vector<Symbol*> lowerBounds_;
+  std::vector<CallExpr*> gpuAssertions_;
   CallExpr* shouldErrorIfNotGpuizable_;
 
 public:
@@ -352,6 +353,7 @@ private:
   CallExpr* determineIfShouldErrorIfNotGpuizable();
   void printNonGpuizableError(CallExpr* assertion, Expr* loc);
   bool evaluateLoop();
+  void cleanupAssertGpuizable();
   bool isAlreadyInGpuKernel();
   bool parentFnAllowsGpuization();
   bool callsInBodyAreGpuizable();
@@ -385,6 +387,8 @@ GpuizableLoop::GpuizableLoop(BlockStmt *blk) {
     printNonGpuizableError(this->shouldErrorIfNotGpuizable_, blk);
     USR_STOP();
   }
+
+  cleanupAssertGpuizable();
 }
 
 // Given --report-gpu we don't want to report on all 'for' loops, just those
@@ -485,6 +489,15 @@ bool GpuizableLoop::evaluateLoop() {
          attemptToExtractLoopInformation();
 }
 
+void GpuizableLoop::cleanupAssertGpuizable() {
+  // Remove the string reasons passed to the primitive (they don't go to
+  // the runtime).
+  for (auto call : gpuAssertions_) {
+    if (call->numActuals())
+      call->get(1)->remove();
+  }
+}
+
 bool GpuizableLoop::parentFnAllowsGpuization() {
   FnSymbol *cur = this->parentFn_;
   while (cur) {
@@ -529,6 +542,13 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
 
   std::vector<CallExpr*> calls;
   collectCallExprs(blk, calls);
+
+  // While here, note all the GPU assertions to clean up.
+  for (auto call : calls) {
+    if (call->isPrimitive(PRIM_ASSERT_ON_GPU)) {
+      gpuAssertions_.push_back(call);
+    }
+  }
 
   for_vector(CallExpr, call, calls) {
     if (call->primitive) {
@@ -850,15 +870,8 @@ void GpuKernel::determineBlockSize() {
 bool GpuKernel::isCallToPrimitiveWeShouldNotCopyIntoKernel(CallExpr *call) {
   if (!call) return false;
 
-  if (call->isPrimitive(PRIM_ASSERT_ON_GPU)) {
-    // Take this time to also make this primitive be in the form it's expected
-    // to be for code generation -- i.e., remove the string argument.
-    if (call->numActuals() == 1) {
-      call->get(1)->remove();
-    }
-    return true;
-  }
-  return call->isPrimitive(PRIM_GPU_SET_BLOCKSIZE);
+  return call->isPrimitive(PRIM_ASSERT_ON_GPU) ||
+         call->isPrimitive(PRIM_GPU_SET_BLOCKSIZE);
 }
 
 void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
