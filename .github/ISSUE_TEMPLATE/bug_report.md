@@ -1,8 +1,9 @@
-<!--
-If you are filing an issue that is not a bug report, please feel free to erase
-this template and describe the issue as clearly as possible.
--->
-
+---
+name: Bug Report
+about: Report a bug and we will do our best to fix it.
+title: ''
+labels: ''
+---
 
 ### Summary of Problem
 <!--
@@ -10,7 +11,6 @@ What behavior did you observe when encountering this issue?
 What behavior did you expect to observe?
 Is this a blocking issue with no known work-arounds?
 -->
-
 
 ### Steps to Reproduce
 
@@ -44,4 +44,3 @@ If an input file is required, include it as well. -->
 - Output of `$CHPL_HOME/util/printchplenv --anonymize`:
 - Back-end compiler and version, e.g. `gcc --version` or `clang --version`:
 - (For Cray systems only) Output of `module list`:
-
