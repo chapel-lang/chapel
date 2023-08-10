@@ -419,26 +419,33 @@ void ErrorIllegalUseImport::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorInvalidGpuAssertion::write(ErrorWriterBase& wr) const {
-  auto loop = std::get<const uast::Loop*>(info);
+  auto node = std::get<const uast::AstNode*>(info);
   // auto attr = std::get<const uast::Attribute*>(info);
 
   const char* loopTypes = nullptr;
-  if (loop->isFor()) {
+  if (node->isFor()) {
     loopTypes = "for";
-  } else if (loop->isWhile()) {
+  } else if (node->isWhile()) {
     loopTypes = "while";
-  } else if (loop->isDoWhile()) {
+  } else if (node->isDoWhile()) {
     loopTypes = "do-while";
+  } else if (node->isCoforall()) {
+    loopTypes = "coforall";
   }
 
-  if (loop) {
-    wr.heading(kind_, type_, loop, "loop marked with @assertGpuEligible, but '", loopTypes, "' loops don't support GPU execution");
+  const char* whatIsAffected = "statement";
+  if (loopTypes) {
+    wr.heading(kind_, type_, node, "loop marked with @assertGpuEligible, but '", loopTypes, "' loops don't support GPU execution.");
+    whatIsAffected = "loop";
+  } else if (node->isFunction()) {
+    wr.heading(kind_, type_, node, "functions do not currently support the @assertGpuEligible attribute.");
+    whatIsAffected = "function";
   } else {
-    wr.heading(kind_, type_, loop, "loop marked with @assertGpuEligible, but does not support GPU execution");
+    wr.heading(kind_, type_, node, "statement does not support the @assertGpuEligible attribute.");
   }
 
-  wr.message("The affected loop is here:");
-  wr.codeForLocation(loop);
+  wr.message("The affected ", whatIsAffected, " is here:");
+  wr.codeForLocation(node);
 
   // For now, attribute locations aren't correctly computed, so this is unhelpful.
   // wr.note(attr, "marked for GPU execution here:");

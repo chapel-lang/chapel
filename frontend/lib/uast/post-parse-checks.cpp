@@ -133,6 +133,7 @@ struct Visitor {
   void checkVisibilityClauseValid(const AstNode* parentNode,
                                   const VisibilityClause* clause);
   void checkAttributeNameRecognizedOrToolSpaced(const Attribute* node);
+  void checkAttributeAppliedToCorrectNode(const Attribute* attr);
   void checkAttributeUsedParens(const Attribute* node);
   void checkAttributeUnstable(const Attribute* node);
   void checkUserModuleHasPragma(const AttributeGroup* node);
@@ -1271,6 +1272,17 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
   }
 }
 
+void Visitor::checkAttributeAppliedToCorrectNode(const Attribute* attr) {
+  auto attributeGroup = parsing::parentAst(context_, attr);
+  CHPL_ASSERT(attributeGroup->isAttributeGroup());
+  auto node = parsing::parentAst(context_, attributeGroup);
+  if (attr->name() == USTR("assertGpuEligible")) {
+    if (node->isForall() || node->isForeach()) return;
+
+    CHPL_REPORT(context_, InvalidGpuAssertion, node, attr);
+  }
+}
+
 void Visitor::checkAttributeUnstable(const Attribute* node) {
   if (shouldEmitUnstableWarning(node)) {
     if(node->name() == UniqueString::get(context_, "llvm.metadata") ||
@@ -1281,6 +1293,7 @@ void Visitor::checkAttributeUnstable(const Attribute* node) {
 }
 
 void Visitor::visit(const Attribute* node) {
+  checkAttributeAppliedToCorrectNode(node);
   checkAttributeNameRecognizedOrToolSpaced(node);
   checkAttributeUsedParens(node);
   checkAttributeUnstable(node);
