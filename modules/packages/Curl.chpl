@@ -711,7 +711,7 @@ module Curl {
 
     private proc startsWith(haystack:c_ptrConst(c_char), needle:c_ptrConst(c_char)) {
       extern proc strncmp(s1: c_ptrConst(c_char), s2: c_ptrConst(c_char), n:c_size_t):c_int;
-      const len = strLen(needle):uint(64);
+      const len = strLen(needle):c_size_t;
       return strncmp(haystack, needle, len) == 0;
     }
 
