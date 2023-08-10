@@ -338,7 +338,7 @@ module GPU
     pragma "codegen for GPU"
     extern rtName proc chpl_atomicBinOp(x, val);
 
-    assertOnGpu();
+    __primitive("chpl_assert_on_gpu", false);
     chpl_atomicBinOp(c_ptrTo(x), val);
   }
 
@@ -349,7 +349,7 @@ module GPU
     pragma "codegen for GPU"
     extern rtName proc chpl_atomicTernOp(x, cmp, val);
 
-    assertOnGpu();
+    __primitive("chpl_assert_on_gpu", false);
     chpl_atomicTernOp(c_ptrTo(x), cmp, val);
   }
 
