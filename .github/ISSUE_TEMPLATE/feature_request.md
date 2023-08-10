@@ -12,4 +12,12 @@ Describe the solution you'd like.
 Describe alternatives you've considered
 -->
 
+**Is it a blocker for you?**
+<!--
+Tick putting 'x' inside the box.
+-->
+- [ ] Yes
+- [ ] No
+- [ ] Will be in the future
+
 ### Code sample

@@ -12,6 +12,14 @@ What behavior did you expect to observe?
 Is this a blocking issue with no known work-arounds?
 -->
 
+**Is it a blocker for you?**
+<!--
+Tick putting 'x' inside the box.
+-->
+- [ ] Yes
+- [ ] No
+- [ ] Will be in the future
+
 ### Steps to Reproduce
 
 **Source Code:**
