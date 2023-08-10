@@ -114,10 +114,10 @@ struct ConvertedSymbolsMap {
 };
 
 struct LoopAttributeInfo {
-  // LLVM metadata from varioys @llvm attributes.
+  // LLVM metadata from various @llvm attributes.
   LLVMMetadataList llvmMetadata;
-  // If thrown the @assertGpuEligible attribute.
-  uast::Attribute* assertGpuEligibleAttr;
+  // The @assertGpuEligible attribute, if one is provided by the user.
+  uast::Attribute* assertGpuEligibleAttr = nullptr;
 
   void insertGpuEligibilityAssertion(BlockStmt* body) {
     if (assertGpuEligibleAttr) {

@@ -332,7 +332,7 @@ class GpuizableLoop {
   std::vector<Symbol*> loopIndices_;
   std::vector<Symbol*> lowerBounds_;
   std::vector<CallExpr*> gpuAssertions_;
-  CallExpr* shouldErrorIfNotGpuizable_;
+  CallExpr* compileTimeGpuAssertion_;
 
 public:
   GpuizableLoop(BlockStmt* blk);
@@ -350,7 +350,7 @@ public:
   }
 
 private:
-  CallExpr* determineIfShouldErrorIfNotGpuizable();
+  CallExpr* findCompileTimeGpuAssertions();
   void printNonGpuizableError(CallExpr* assertion, Expr* loc);
   bool evaluateLoop();
   void cleanupAssertGpuizable();
@@ -372,7 +372,7 @@ GpuizableLoop::GpuizableLoop(BlockStmt *blk) {
 
   this->loop_ = toCForLoop(blk);
   this->parentFn_ = toFnSymbol(blk->getFunction());
-  this->shouldErrorIfNotGpuizable_ = determineIfShouldErrorIfNotGpuizable();
+  this->compileTimeGpuAssertion_ = findCompileTimeGpuAssertions();
   this->isEligible_ = evaluateLoop();
 
   // Ideally we should error out earlier than this with a more specific
@@ -380,11 +380,11 @@ GpuizableLoop::GpuizableLoop(BlockStmt *blk) {
   // There's one use case we want to exempt, which is failure to
   // gpuize a nested loop. In this case if there was a failure to gpuize
   // the outer loop we already would have errored.
-  if(this->shouldErrorIfNotGpuizable_ &&
+  if(this->compileTimeGpuAssertion_ &&
     !this->isEligible_ &&
     !isAlreadyInGpuKernel())
   {
-    printNonGpuizableError(this->shouldErrorIfNotGpuizable_, blk);
+    printNonGpuizableError(this->compileTimeGpuAssertion_, blk);
     USR_STOP();
   }
 
@@ -413,7 +413,7 @@ bool GpuizableLoop::isReportWorthy() {
   return true;
 }
 
-CallExpr* GpuizableLoop::determineIfShouldErrorIfNotGpuizable() {
+CallExpr* GpuizableLoop::findCompileTimeGpuAssertions() {
   CForLoop *cfl = this->loop_;
   INT_ASSERT(cfl);
 
@@ -662,8 +662,8 @@ bool GpuizableLoop::extractUpperBound() {
 }
 
 void GpuizableLoop::reportNotGpuizable(const BaseAST* ast, const char *msg) {
-  if(this->shouldErrorIfNotGpuizable_) {
-    printNonGpuizableError(this->shouldErrorIfNotGpuizable_, loop_);
+  if(this->compileTimeGpuAssertion_) {
+    printNonGpuizableError(this->compileTimeGpuAssertion_, loop_);
     USR_PRINT(ast, "%s", msg);
     USR_STOP();
   }
