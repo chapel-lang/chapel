@@ -434,46 +434,13 @@ CallExpr* GpuizableLoop::findCompileTimeGpuAssertions() {
   return nullptr;
 }
 
-static const char* findImmediateStringValue(Expr* expr) {
-  auto symExpr = toSymExpr(expr);
-  if (!symExpr) return nullptr;
-
-  auto tryExtractString = [](SymExpr* stringRef) -> const char* {
-    if (stringRef->symbol()->isImmediate()) {
-      auto immediate = toVarSymbol(stringRef->symbol())->immediate;
-      return immediate->string_value();
-    }
-    return nullptr;
-  };
-
-  if (auto initialString = tryExtractString(symExpr)) {
-    return initialString;
-  }
-
-  // the initial symbol is something like local_string_literal, which is
-  // assigned from an _str_literal. Iterate the SymExprs of this symbol
-  // to find the assignment and thus the original symbol.
-  auto initialSymbol = symExpr->symbol();
-  for_SymbolSymExprs(se, initialSymbol) {
-    if (!se->parentExpr) continue;
-    if (auto ce = toCallExpr(se->parentExpr)) {
-      if (ce->isPrimitive(PRIM_MOVE) && ce->get(1) == se) {
-        auto assignFrom = toSymExpr(ce->get(2));
-        if (assignFrom != nullptr) return tryExtractString(assignFrom);
-      }
-    }
-  }
-
-  return nullptr;
-}
-
 void GpuizableLoop::printNonGpuizableError(CallExpr* assertion, Expr* loc) {
     debuggerBreakHere();
-    const char* reason = "contains GPU assertion";
-    if (assertion->numActuals() > 0) {
-      if (const char* betterReason = findImmediateStringValue(assertion->get(1))) {
-        reason = betterReason;
-      }
+    const char* reason = "contains assertOnGpu()";
+    auto isAttributeSym = toSymExpr(assertion->get(1));
+    INT_ASSERT(isAttributeSym);
+    if (isAttributeSym->symbol() == gTrue) {
+      reason = "is marked with @assertOnGpu";
     }
     USR_FATAL_CONT(loc, "Loop %s but is not eligible for execution on a GPU", reason);
 }

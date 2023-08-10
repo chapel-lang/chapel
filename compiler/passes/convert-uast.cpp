@@ -122,7 +122,7 @@ struct LoopAttributeInfo {
   void insertGpuEligibilityAssertion(BlockStmt* body) {
     if (assertOnGpuAttr) {
       body->insertAtHead(new CallExpr(PRIM_ASSERT_ON_GPU,
-                                      new_CStringSymbol("is marked with @assertOnGpu")));
+                                      new SymExpr(gTrue)));
     }
   }
 };
