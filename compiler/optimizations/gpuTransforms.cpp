@@ -543,13 +543,6 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
   std::vector<CallExpr*> calls;
   collectCallExprs(blk, calls);
 
-  // While here, note all the GPU assertions to clean up.
-  for (auto call : calls) {
-    if (call->isPrimitive(PRIM_ASSERT_ON_GPU)) {
-      gpuAssertions_.push_back(call);
-    }
-  }
-
   for_vector(CallExpr, call, calls) {
     if (call->primitive) {
       // only primitives that are fast and local are allowed for now

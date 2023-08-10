@@ -5918,7 +5918,13 @@ DEFINE_BASIC_PRIM(RT_ERROR)
 DEFINE_BASIC_PRIM(RT_WARNING)
 DEFINE_BASIC_PRIM(START_RMEM_FENCE)
 DEFINE_BASIC_PRIM(FINISH_RMEM_FENCE)
-DEFINE_BASIC_PRIM(ASSERT_ON_GPU)
+
+DEFINE_PRIM(ASSERT_ON_GPU) {
+  // Remove the string argument to the GPU primitive.
+  call->get(1)->remove();
+
+  ret = call->codegenBasicPrimitiveExpr();
+}
 
 DEFINE_PRIM(NEW_PRIV_CLASS) {
     GenRet arg = call->get(1);

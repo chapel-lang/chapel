@@ -117,7 +117,7 @@ struct LoopAttributeInfo {
   // LLVM metadata from various @llvm attributes.
   LLVMMetadataList llvmMetadata;
   // The @assertGpuEligible attribute, if one is provided by the user.
-  uast::Attribute* assertGpuEligibleAttr = nullptr;
+  const uast::Attribute* assertGpuEligibleAttr = nullptr;
 
   void insertGpuEligibilityAssertion(BlockStmt* body) {
     if (assertGpuEligibleAttr) {
@@ -394,6 +394,7 @@ struct Converter {
 
     auto llvmMetadata = UniqueString::get(context, "llvm.metadata");
     auto assertVectorized = UniqueString::get(context, "llvm.assertVectorized");
+    auto assertGpuEligible = UniqueString::get(context, "assertGpuEligible");
 
     LoopAttributeInfo toReturn;
 
@@ -404,6 +405,7 @@ struct Converter {
     if (auto a = attrs->getAttributeNamed(assertVectorized)) {
       toReturn.llvmMetadata.push_back(buildAssertVectorize(a));
     }
+    toReturn.assertGpuEligibleAttr = attrs->getAttributeNamed(assertGpuEligible);
 
     return toReturn;
   }
