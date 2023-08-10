@@ -102,6 +102,7 @@ module GPU
   */
   pragma "insert line file info"
   pragma "always propagate line file info"
+  @deprecated(notes="the functional form of assertOnGpu() is deprecated. Please use the @assertOnGpu loop attribute instead.")
   inline proc assertOnGpu() {
     __primitive("chpl_assert_on_gpu", false);
   }
