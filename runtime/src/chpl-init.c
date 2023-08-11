@@ -423,4 +423,5 @@ extern void chpl_deinitModules(void);
 void chpl_library_finalize(void) {
   chpl_libraryModuleLevelCleanup();
   chpl_deinitModules();
+  chpl_finalize(0, 1);
 }
