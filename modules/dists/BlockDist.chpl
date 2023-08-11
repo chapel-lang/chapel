@@ -922,7 +922,6 @@ proc LocBlock.init(param rank, type idxType, param dummy: bool) where dummy {
 ////// BlockDom and LocBlockDom methods /////////////////////////////////////
 
 proc BlockDom.dsiGetDist() {
-//  compilerWarning("*** " + dist.rank:string + " " + dist.idxType:string);
   if _isPrivatized(dist) then
     return new Block(dist.pid, dist, _unowned=true);
   else
