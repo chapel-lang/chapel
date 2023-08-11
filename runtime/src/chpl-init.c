@@ -300,14 +300,6 @@ void chpl_rt_init(int argc, char* argv[]) {
 }
 
 //
-// Called by "main.c:main(...)" and "cphl-init.c:chpl_library_finalize()".
-//
-void chpl_rt_finalize(int return_value) {
-  //chpl_rt_postUserCodeHook();
-  chpl_exit_all(return_value);
-}
-
-//
 // Chapel standard module initialization.
 //
 // Factored out of "main.c:chpl_main(...)" this needs to be called from within the
@@ -418,7 +410,7 @@ void chpl_library_init(int argc, char* argv[]) {
 extern void chpl_deinitModules(void);
 
 //
-// A wrapper around chpl-init.c:chpl_rt_finalize(...), sole purpose is
+// A wrapper around chplexit.c:chpl_finalize(...), sole purpose is
 // to provide a "chpl_library_*" interface for the Chapel "library-user".
 void chpl_library_finalize(void) {
   chpl_libraryModuleLevelCleanup();
