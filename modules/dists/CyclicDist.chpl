@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-private use DSIUtil, DistUtil;
+private use DSIUtil;
 private use ChapelLocks;
 
 proc _determineRankFromStartIdx(startIdx) param {

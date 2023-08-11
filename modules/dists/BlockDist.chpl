@@ -39,7 +39,7 @@
 // 1. refactor pid fields from distribution, domain, and array classes
 //
 
-private use DSIUtil, DistUtil;
+private use DSIUtil;
 private use ChapelUtil;
 private use CommDiagnostics;
 private use ChapelLocks;
