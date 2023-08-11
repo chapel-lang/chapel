@@ -1,3 +1,3 @@
 #!/bin/bash
-echo Compiling defaultValueWarning.chpl
-$3 --library --static defaultValueWarning.chpl
+echo Compiling foo.chpl
+$3 --library --static foo.chpl
