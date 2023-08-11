@@ -100,6 +100,7 @@ struct Visitor {
   bool isParentFalseBlock(int depth=0) const;
 
   bool isNamedThisAndNotReceiverOrFunction(const NamedDecl* node);
+  bool isSpecialMethodKeywordUsedIncorrectly(const NamedDecl *node);
   bool isNameReservedWord(const NamedDecl* node);
   inline bool shouldEmitUnstableWarning(const AstNode* node);
 
@@ -223,6 +224,15 @@ static ControlFlowModifier nodeAllowsReturn(const AstNode* node,
       // can't return a value from an iterator.
       return ControlFlowModifier::BLOCKS;
     }
+
+    if(fn->name() == USTR("deinit") ||
+       fn->name() == USTR("postinit"))
+    {
+      if(ctrl->value() != nullptr) {
+        return ControlFlowModifier::BLOCKS;
+      }
+    }
+
     return ControlFlowModifier::ALLOWS;
   }
   if (node->isForall() || node->isForeach() || node->isCoforall() ||
@@ -1036,9 +1046,29 @@ bool Visitor::isNamedThisAndNotReceiverOrFunction(const NamedDecl* node) {
   return true;
 }
 
+bool Visitor::isSpecialMethodKeywordUsedIncorrectly(
+  const NamedDecl *node)
+{
+  if ((node->name() != USTR("init")) &&
+      (node->name() != USTR("deinit")) &&
+      (node->name() != USTR("postinit")))
+  {
+    return false;
+  }
+
+  // deinit can be a free function used to deinitialize the current
+  // module
+  if(node->name() == USTR("deinit")) {
+    return !node->isFunction();
+  }
+
+  return !(node->isFunction() && node->toFunction()->isMethod());
+}
+
 bool Visitor::isNameReservedWord(const NamedDecl* node) {
   auto name = node->name();
   if (isNamedThisAndNotReceiverOrFunction(node)) return true;
+  if (isSpecialMethodKeywordUsedIncorrectly(node)) return true;
   if (name == "none") return true;
   if (name == "false") return true;
   if (name == "true") return true;

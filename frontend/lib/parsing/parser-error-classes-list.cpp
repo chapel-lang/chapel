@@ -277,7 +277,9 @@ void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
   // The error for value-having return in an iterator is so specific that it's
   // easiest to special case it.
   if (auto ret = invalidAst->toReturn()) {
-    if (blockingAst && blockingAst->isFunction()) {
+    if (blockingAst && blockingAst->isFunction() &&
+        blockingAst->toFunction()->kind() == uast::Function::ITER)
+    {
       auto fn = blockingAst->toFunction();
       wr.heading(kind_, type_, ret,
                  "'return' statements with values are not allowed in iterators.");
@@ -297,6 +299,23 @@ void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
         wr.message("Did you mean to use the 'yield' keyword instead of 'return'?");
       }
       return;
+    }
+  }
+
+  // We also special case return statements in special methods that don't allow
+  // returns with values
+  if (auto ret = invalidAst->toReturn()) {
+    if(blockingAst) {
+      if (auto fn = blockingAst->toFunction()) {
+        if((fn->name() == "deinit") || (fn->name() == "postinit")) {
+          wr.heading(kind_, type_, ret,
+                     "'return' statements with values are not allowed in ", fn->name(), " methods");
+          wr.message("The following 'return' statement has a value:");
+          wr.code(ret, { ret->value() });
+          wr.codeForLocation(fn);
+          return;
+        }
+      }
     }
   }
 
