@@ -1047,8 +1047,10 @@ static bool canParamCoerce(Type*   actualType,
     }
   }
 
+  // need to allow converting param string->c_ptrConst(c_char)
   // param strings can coerce between string and c_string
-  if ((formalType == dtString || formalType == dtStringC) &&
+  if ((formalType == dtString || formalType == dtStringC ||
+       isCPtrConstChar(formalType))                      &&
       (actualType == dtString || actualType == dtStringC)) {
     if (actualSym && actualSym->isImmediate()) {
       *paramNarrows = true;
@@ -1538,6 +1540,14 @@ bool canCoerceAsSubtype(Type*     actualType,
 
   // coerce raw_c_void_ptr to c_ptr(void)
   if (actualType == dtCVoidPtr && isCVoidPtr(formalType))
+    return true;
+
+  // coerce c_ptrConst(c_char) to dtStringC
+  if (formalType == dtStringC && isCPtrConstChar(actualType))
+    return true;
+
+  // coerce dtStringC to c_ptrConst(c_char)
+  if (actualType == dtStringC && isCPtrConstChar(formalType))
     return true;
 
   // coerce c_ptr(t) to c_ptr(void)
@@ -13861,6 +13871,9 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
           USR_PRINT("consider adding 'owned', 'shared', or 'borrowed'");
           USR_PRINT("if generic memory management is desired, "
                     "use a 'type' field to store the class type");
+          if (fWarnUnstable) {
+            USR_PRINT("this warning may be an error in the future");
+          }
         }
 
         // consider the class type ignoring management for
@@ -13948,6 +13961,9 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
           USR_WARN(sym, "please use '?' when declaring a %s with generic type",
                    fieldOrVar);
           USR_PRINT(sym, "for example with '%s'", s.c_str());
+        }
+        if (fWarnUnstable) {
+          USR_PRINT("this warning may be an error in the future");
         }
       }
     }

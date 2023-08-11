@@ -1409,13 +1409,18 @@ struct RstResultBuilder {
 
     if (!textOnly_) os_ << ".. " << kind << ":: ";
     RstSignatureVisitor ppv{os_};
+
+    if (node->isEnumElement()) {
+      os_ << "enum constant ";
+    }
+
     node->traverse(ppv);
     if (!textOnly_) os_ << "\n";
+
     bool commentShown = showComment(node, indentComment);
     // TODO: Fix all this because why are we checking for specific node types
     //  just to add a newline?
-    if (commentShown && !textOnly_ && (node->isEnum() ||
-                                       node->isClass() ||
+    if (commentShown && !textOnly_ && (node->isClass() ||
                                        node->isRecord() ||
                                        node->isModule())) {
       os_ << "\n";
@@ -1515,6 +1520,14 @@ struct RstResultBuilder {
   owned<RstResult> visit(const Enum* e) {
     if (isNoDoc(e)) return {};
     show("enum", e);
+    visitChildren(e);
+    return getResult(true);
+  }
+
+  owned<RstResult> visit(const EnumElement* e) {
+    if (isNoDoc(e)) return {};
+    indentDepth_++;
+    show("enumconstant", e);
     return getResult();
   }
 
@@ -1881,6 +1894,7 @@ struct CommentVisitor {
 
   DEF_ENTER(Module, true)
   DEF_ENTER(TypeDecl, true)
+  DEF_ENTER(EnumElement, false)
   DEF_ENTER(Function, false)
   DEF_ENTER(Variable, false)
 

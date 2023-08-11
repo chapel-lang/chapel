@@ -835,9 +835,8 @@ genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
 static void genFilenameTable() {
   const char *name = "chpl_filenameTable";
   const char *sizeName = "chpl_filenameTableSize";
-  const char *eltType = "c_string";
+  const char *eltType = dtStringC->symbol->cname;
 
-  // Compute the element type
   GenRet cstringType = codegenTypeByName(eltType);
 
   // Construct the table elements
@@ -892,7 +891,7 @@ static void genUnwindSymbolTable(){
   // Generate the cname, Chapel name table
   {
     const char *name = "chpl_funSymTable";
-    const char *eltType = "c_string";
+    const char *eltType = dtStringC->symbol->cname;
 
     // Compute the element type
     GenRet cstringType = codegenTypeByName(eltType);
@@ -944,7 +943,7 @@ static void genUnwindSymbolTable(){
 
 static void
 genClassNames(std::vector<TypeSymbol*> & typeSymbol, bool isHeader) {
-  const char* eltType = "c_string";
+  const char* eltType = dtStringC->symbol->cname;
   const char* name = "chpl_classNames";
 
   if(isHeader) {

@@ -1,0 +1,22 @@
+warn-generic-var-field-no-q.chpl:6: warning: please use '?' when declaring a field with generic type
+warn-generic-var-field-no-q.chpl:6: note: for example with 'GR(?)'
+note: this warning may be an error in the future
+warn-generic-var-field-no-q.chpl:10: warning: please use '?' when declaring a field with generic type
+warn-generic-var-field-no-q.chpl:10: note: for example with 'GR(?)'
+note: this warning may be an error in the future
+warn-generic-var-field-no-q.chpl:14: warning: please use '?' when declaring a field with generic type
+warn-generic-var-field-no-q.chpl:14: note: for example with 'GR(?)'
+note: this warning may be an error in the future
+warn-generic-var-field-no-q.chpl:25: warning: please use '?' when declaring a variable with generic type
+warn-generic-var-field-no-q.chpl:25: note: for example with 'GR(?)'
+note: this warning may be an error in the future
+warn-generic-var-field-no-q.chpl:27: warning: please use '?' when declaring a variable with generic type
+warn-generic-var-field-no-q.chpl:27: note: for example with 'GR(?)'
+note: this warning may be an error in the future
+warn-generic-var-field-no-q.chpl:34: warning: please use '?' when declaring a variable with generic type
+warn-generic-var-field-no-q.chpl:34: note: for example with 'GR(?)'
+note: this warning may be an error in the future
+warn-generic-var-field-no-q.chpl:43: warning: please use '?' when declaring a variable with generic type
+warn-generic-var-field-no-q.chpl:43: note: for example with 'GR(?)'
+note: this warning may be an error in the future
+warn-generic-var-field-no-q.chpl:20: error: done

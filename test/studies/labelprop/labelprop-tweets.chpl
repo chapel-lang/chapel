@@ -187,13 +187,15 @@ proc process_json(logfile:fileReader, fname:string, ref Pairs) {
   var nlines = 0;
   var max_id = 0;
 
+  var jsonReader = logfile.withDeserializer(JsonDeserializer);
+
   if progress then
     writeln(fname, " : processing");
 
   while true {
     try! {
       try {
-        got = logfile.readf("%~jt", tweet);
+        got = jsonReader.read(tweet);
       } catch e: BadFormatError {
         if verbose {
             try! logfile.lock();
@@ -204,7 +206,7 @@ proc process_json(logfile:fileReader, fname:string, ref Pairs) {
         }
 
         // read over something else
-        got = logfile.readf("%~jt", empty);
+        got = logfile.read(empty);
       }
     } catch e: SystemError {
       try! logfile.lock();
@@ -218,7 +220,7 @@ proc process_json(logfile:fileReader, fname:string, ref Pairs) {
     } // halt on truly unknown error
 
     if got {
-      if verbose then stdout.withSerializer(JsonSerializer).writef("%?\n", tweet);
+      if verbose then stdout.withSerializer(JsonSerializer).write(tweet);
       var id = tweet.user.id;
       if max_id < id then max_id = id;
       for mentions in tweet.entities.user_mentions {
@@ -247,12 +249,10 @@ proc process_json(logfile:fileReader, fname:string, ref Pairs) {
   total_tweets_processed.add(ntweets);
   total_lines_processed.add(nlines);
 
-  while true {
-    var got = max_user_id.read();
-    var id = if got > max_id then got else max_id;
-    var success = max_user_id.compareAndSwap(got, id);
-    if success then break;
-  }
+  var old_id = max_user_id.read();
+  do {
+    var id = if old_id > max_id then old_id else max_id;
+  } while(!max_user_id.compareExchangeWeak(old_id, id));
 }
 
 proc process_json(fname: string, ref Pairs)

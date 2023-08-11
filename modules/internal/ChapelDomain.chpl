@@ -103,7 +103,7 @@ module ChapelDomain {
   }
 
   pragma "runtime type init fn"
-  proc chpl__buildSparseDomainRuntimeType(dist: _distribution,
+  proc chpl__buildSparseDomainRuntimeType(dist,
                                           parentDom: domain) type {
     if ! isUltimatelyRectangularParent(parentDom) then
       compilerError("sparse subdomains are currently supported only for " +
@@ -1189,7 +1189,7 @@ module ChapelDomain {
     }
 
     @deprecated("domain.dist is deprecated, please use domain.distribution instead")
-    proc dist do return _getDistribution(_value.dist);
+    proc dist do return this.distribution;
 
     /* Return the number of dimensions in this domain */
     proc rank param {
@@ -1537,15 +1537,17 @@ module ChapelDomain {
       memory to satisfy the allocation, which will then fail with a bus
       error when attempting to access the array.
 
-      This method is currently supported on both default rectangular
-      and block domains.
+      This method can be called on all domains that implement a
+      'doiTryCreateArray' method.
+
+      Throws an `ArrayOomError` when out of memory allocating elements.
     */
     pragma "no copy return"
     @unstable("tryCreateArray() is subject to change in the future.")
     proc tryCreateArray(type eltType) throws {
-      if !this.isDefaultRectangular() && !this.isBlock() then
-        compilerError("'tryCreateArray' is only supported on " +
-                      "default rectangular and block domains");
+      if !(__primitive("resolves", _value.doiTryCreateArray(eltType))) then
+        compilerError("cannot call 'tryCreateArray' on domains that do not" +
+                      " support a 'doiTryCreateArray' method.");
 
       chpl_checkEltType(eltType);
       chpl_checkNegativeStride();
@@ -2658,7 +2660,7 @@ module ChapelDomain {
       // could add e.g. dsiDefaultSparseDist to the DSI interface
       // and have this function use _value.dsiDefaultSparseDist()
       // (or perhaps _value.dist.dsiDefaultSparseDist() ).
-      return _getDistribution(_value.dist);
+      return this.distribution;
     }
 
     // returns a default rectangular domain

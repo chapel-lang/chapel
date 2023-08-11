@@ -1,3 +1,4 @@
+use CTypes;
 var a = " -10 ";
 
 var a1 = a:int;
@@ -11,7 +12,7 @@ writeln(a4);
 var a5 = a:int(64);
 writeln(a5);
 
-var x = " -10 ":c_string;
+var x = " -10 ":c_ptrConst(c_char);
 var x1 = x:int;
 writeln(x1);
 var x2 = x:int(8);

@@ -603,6 +603,13 @@ class LocSparseBlockArr {
   }
 }
 
+proc SparseBlockDom.dsiGetDist() {
+  if _isPrivatized(dist) then
+    return new Block(dist.pid, dist, _unowned=true);
+  else
+    return new Block(nullPid, dist, _unowned=true);
+}
+
 /*
 
 Some old code that might be useful to draw from as this

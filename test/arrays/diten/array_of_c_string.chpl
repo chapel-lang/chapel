@@ -5,7 +5,7 @@ use CTypes;
 extern proc foo(argc: int, argv: c_ptr(void));
 
 proc main(args: [] string) {
-  var c_args: [0..#args.size] c_string;
+  var c_args: [0..#args.size] c_ptrConst(c_char);
 
   for i in 0..#args.size do
     c_args[i] = args[i].c_str();

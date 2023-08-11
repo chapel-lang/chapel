@@ -405,7 +405,7 @@ void test_printscan_float(void)
                         "+0.", // showpoint, showplus
                         "0x0p+0", // hex
                         "0X0.000P+0", // hex, uppercase, showpoint, prec 3
-                        "0", // %g, 4 significant digits
+                        "0.0000", // %g, 4 significant digits
                         "0.0000", // %f, showpoint, precision 4
                         "0.0000e+00", // %e, showpoint, precision 4
                        };
@@ -417,7 +417,7 @@ void test_printscan_float(void)
                         "+1.", // showpoint, showplus
                         "0x1p+0", // hex
                         "0X1.000P+0", // hex, uppercase, showpoint, prec 3
-                        "1", // %g, 4 significant digits
+                        "1.0000", // %g, 4 significant digits
                         "1.0000", // %f, showpoint, precision 4
                         "1.0000e+00", // %e, showpoint, precision 4
                        };
@@ -1537,4 +1537,3 @@ int main(int argc, char** argv)
 
   return 0;
 }
-

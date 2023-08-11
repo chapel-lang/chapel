@@ -1,0 +1,4 @@
+# Test/users/franzf/v1/c99 ignores.
+/*.sln
+/*.icproj
+/*.vcproj

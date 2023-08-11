@@ -7,8 +7,8 @@ checkType(blah.type);
 var blah1: string = "blah";
 checkType(blah1.type);
 
-var blah2: c_string = "blah";
-checkType(c_string, blah2.type);
+var blah2: c_ptrConst(c_char) = "blah";
+checkType(c_ptrConst(c_char), blah2.type);
 
 // domains
 var D = { "blah" };
@@ -32,11 +32,11 @@ checkType(A1.eltType);
   class C {
     var blah = "blah";
     var blah1: string = "blah";
-    var blah2: c_string = "blah";
+    var blah2: c_ptrConst(c_char) = "blah".c_str();
     proc checkMe() {
       checkType(blah.type);
       checkType(blah1.type);
-      checkType(c_string, blah2.type);
+      checkType(c_ptrConst(c_char), blah2.type);
     }
   }
 

@@ -1,2 +1,4 @@
+# Test/release/examples/patterns ignores.
 readcsv-out1.csv
 readcsv-out2.csv
+/test.txt

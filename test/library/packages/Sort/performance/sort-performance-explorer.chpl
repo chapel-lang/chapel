@@ -4,6 +4,7 @@
 use Sort;
 use Random;
 use Time;
+use CTypes;
 
 config const printStats = true;
 config const minSize = 1;
@@ -71,11 +72,11 @@ proc testsort(input, method, parallel, cmp) {
 }
 
 proc doString() param {
-  return eltType == string || eltType == c_string;
+  return eltType == string || eltType == c_ptrConst(c_char);
 }
 proc makeInput(array, inputStrings) {
   if doString() {
-    if eltType == c_string {
+    if eltType == c_ptrConst(c_char) {
       var result = forall a in inputStrings do a.c_str();
       return result;
     } else {

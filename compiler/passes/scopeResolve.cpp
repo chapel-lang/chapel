@@ -262,6 +262,9 @@ static void checkClass(AggregateType* ct) {
         if (!ct->symbol->hasFlag(FLAG_SUPERCLASS_MARKED_GENERIC) &&
             parent->isGeneric() && !parent->isGenericWithDefaults()) {
           USR_WARN(ct->symbol, "missing '(?)' after a generic parent class");
+          if (fWarnUnstable) {
+            USR_PRINT("this warning may be an error in the future");
+          }
         }
         if (ct->symbol->hasFlag(FLAG_SUPERCLASS_MARKED_GENERIC) &&
             !parent->isGeneric()) {

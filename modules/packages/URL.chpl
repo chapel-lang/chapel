@@ -44,7 +44,8 @@ For example, the following program downloads a web-page from http://example.com 
 module URL {
   public use IO;
 
-  @unstable("openUrlReader with a style argument is unstable")
+  pragma "last resort"
+  @deprecated("openUrlReader with a style argument is deprecated")
   proc openUrlReader(url:string,
                      param kind=iokind.dynamic, param locking=true,
                      start:int(64) = 0, end:int(64) = max(int(64)),
@@ -99,7 +100,8 @@ module URL {
                           region=start..#end, fromOpenUrlReader=true);
   }
 
-  @unstable("openUrlWriter with a style argument is unstable")
+  pragma "last resort"
+  @deprecated("openUrlWriter with a style argument is deprecated")
   proc openUrlWriter(url:string,
                  param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),

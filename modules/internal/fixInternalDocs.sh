@@ -195,7 +195,7 @@ file="./Atomics.rst"
 removePrefixFunctions $file
 
 replace "record:: AtomicBool" "type:: atomic \(bool\)" $file
-replace "record:: AtomicT"    "type:: atomic \(T\)" $file
+replace "record:: AtomicT"    "type:: atomic \(valType\)" $file
 
 removeTitle $file
 removeUsage $file

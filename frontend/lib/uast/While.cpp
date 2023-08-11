@@ -36,23 +36,29 @@ std::string While::dumpChildLabelInner(int i) const {
 owned<While> While::build(Builder* builder, Location loc,
                       owned<AstNode> condition,
                       BlockStyle blockStyle,
-                      owned<Block> body) {
+                      owned<Block> body,
+                      owned<AttributeGroup> attributeGroup) {
 
   CHPL_ASSERT(condition.get() != nullptr);
   CHPL_ASSERT(body.get() != nullptr);
 
   AstList lst;
-  int8_t conditionChildNum = lst.size();
+  int attributeGroupChildNum = NO_CHILD;
 
+  if (attributeGroup.get() != nullptr) {
+    attributeGroupChildNum = lst.size();
+    lst.push_back(std::move(attributeGroup));
+  }
+
+  int8_t conditionChildNum = lst.size();
   lst.push_back(std::move(condition));
 
   const int loopBodyChildNum = lst.size();
-
   lst.push_back(std::move(body));
 
   While* ret = new While(std::move(lst), conditionChildNum,
                          blockStyle,
-                         loopBodyChildNum);
+                         loopBodyChildNum, attributeGroupChildNum);
 
   builder->noteLocation(ret, loc);
   return toOwned(ret);

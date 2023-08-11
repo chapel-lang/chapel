@@ -34,8 +34,7 @@ proc setupGridLocales(ensureManyLocs = false) {
 
 // show what we have
 config const vcalc = false, vsend = false;
-const fpstyle = new iostyleInternal(realfmt = 1, precision = 2,
-                                    min_width_columns = 6);
+const min_width_columns = 6;
 
 proc showme(oddphase: bool, delta: elType, msg = "") {
   if !vcalc then return;
@@ -46,14 +45,14 @@ proc showme(oddphase: bool, delta: elType, msg = "") {
     writeln("Grid point ", gix, " on locale ", dat.locale.id);
     if oddphase {
       writeln("B =");
-      writeln(dat.B, fpstyle);
+      writeln(dat.B);
       writeln("A =");
-      writeln(dat.A, fpstyle);
+      writeln(dat.A);
     } else {
       writeln("A =");
-      writeln(dat.A, fpstyle);
+      writeln(dat.A);
       writeln("B =");
-      writeln(dat.B, fpstyle);
+      writeln(dat.B);
     }
     writeln();
   }
@@ -67,10 +66,10 @@ proc showref(oddphase: bool, msg = "") {
 
   if oddphase {
     writeln("refdataA =");
-    writeln(refdataA, fpstyle);
+    writeln(refdataA);
   } else {
     writeln("refdataB =");
-    writeln(refdataB, fpstyle);
+    writeln(refdataB);
   }
   writeln();
 }
@@ -79,7 +78,7 @@ proc showref(oddphase: bool, msg = "") {
 //const showdummy: [0..n+1, 0..m+1] eltype;
 const colsep = "  ";
 proc showdummyrow() {
-  const width = (m+2) * fpstyle.min_width_columns;
+  const width = (m+2) * min_width_columns;
   for 1..width do write(" ");
 }
 proc showrealrow(oddphase: bool, gi:int, gj:int, i:int) {
@@ -89,7 +88,7 @@ proc showrealrow(oddphase: bool, gi:int, gj:int, i:int) {
     showrealrow(Data[gi,gj].A, i);
 }
 proc showrealrow(ARR, i:int) {
-  for j in 0..m+1 do write(ARR[i,j], fpstyle);
+  for j in 0..m+1 do writef("%*.2dr", min_width_columns, ARR[i,j]);
 }
 
 proc showfetch(oddphase: bool, msg = "") {
