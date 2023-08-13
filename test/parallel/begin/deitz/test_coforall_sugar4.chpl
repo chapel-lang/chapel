@@ -14,24 +14,24 @@ for (e,i) in zip(A,2001..) do
   if e != i then
     halt("fail: ", A);
 
-var count$: sync int = 0,
-    flag$: sync bool = true;
+var count: sync int = 0,
+    flag: sync bool = true;
 
 for i in 1..n {
-  const count = count$.readFE();
+  const count = count.readFE();
   if count == 0 then
-    flag$.readFE();
-  count$.writeEF(count + 1);
+    flag.readFE();
+  count.writeEF(count + 1);
   begin {
     A(i) = 3000+i;
-    const count = count$.readFE();
+    const count = count.readFE();
     if count == 1 then
-      flag$.writeEF(true);
-    count$.writeEF(count - 1);
+      flag.writeEF(true);
+    count.writeEF(count - 1);
   }
 }
 
-flag$.readFE();
+flag.readFE();
 
 for (e,i) in zip(A,3001..) do
   if e != i then
