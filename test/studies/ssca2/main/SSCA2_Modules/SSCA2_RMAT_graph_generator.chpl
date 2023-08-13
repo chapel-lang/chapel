@@ -235,15 +235,15 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
             const (ix1, ix2) = if v <= u then (v, u) else (u, v);
             swapTwo(permutation$(ix1), permutation$(ix2));
 
-            proc swapTwo(p1$: sync int, p2$: sync int): void {
-              on p1$ {
-                const label1 = p1$.readFE();
+            proc swapTwo(p1: sync int, p2: sync int): void {
+              on p1 {
+                const label1 = p1.readFE();
                 var label2: int;
-                on p2$ {
-                  label2 = p2$.readFE();
-                  p2$.writeEF(label1);
+                on p2 {
+                  label2 = p2.readFE();
+                  p2.writeEF(label1);
                 }
-                p1$.writeEF(label2);
+                p1.writeEF(label2);
               }
             }  // proc swapTwo
           }
@@ -414,7 +414,7 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
     // wins) or also use += instead of = (to sum duplicates' weights).
     // ----------------------------------------------------------
 
-    var firstAvailNeighbor$: [vertex_domain] sync int = initialFirstAvail;
+    var firstAvailNeighbor: [vertex_domain] sync int = initialFirstAvail;
 
     writeln("Starting Graph Generation ",
             if parGC then "in parallel" else "serially");
@@ -424,7 +424,7 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
 
   if parGC {
 
-    var self_edges$: atomic int;
+    var self_edges: atomic int;
     serial(SERIAL_GRAPH_GEN) {
       forall (e, w) in zip(Edges, Edge_Weight) do {
         const u = e.start;
@@ -432,18 +432,18 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
 
         if ( v == u ) then {
           // self-edge, ignore
-          self_edges$.add(1);
+          self_edges.add(1);
         } else {
           // Both the vertex and firstAvail must be passed by reference.
           // TODO: possibly compute how many neighbors the vertex has, first.
           // Then allocate that big of a neighbor list right away.
           // That way there will be no need for a sync, just an atomic.
-          G.Row[u].addEdgeOnVertex(u, v, w, firstAvailNeighbor$[u]);
+          G.Row[u].addEdgeOnVertex(u, v, w, firstAvailNeighbor[u]);
         }
       }
     }
 
-    self_edges = self_edges$.read();
+    self_edges = self_edges.read();
 
   } else {  // !parGC
 
@@ -458,14 +458,14 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
         const w = Edge_Weight(e);
         // Both the vertex and firstAvail must be passed by reference.
         // TODO: skip locking in this serial version.
-        G.Row[u].addEdgeOnVertex(u, v, w, firstAvailNeighbor$[u]);
+        G.Row[u].addEdgeOnVertex(u, v, w, firstAvailNeighbor[u]);
       }
     }
 
   } // if parGC
 
-    forall (vx, firstAvail$) in zip(G.Row, firstAvailNeighbor$) do
-      vx.tidyNeighbors(firstAvail$);
+    forall (vx, firstAvail) in zip(G.Row, firstAvailNeighbor) do
+      vx.tidyNeighbors(firstAvail);
 
     if PRINT_TIMING_STATISTICS then {
       sw.stop ();

@@ -42,7 +42,7 @@ proc main(args: [] string) {
     idx += lineSize - 1;
     lineSize = stdinNoLock.readLine(data[idx..]);
   }
-  
+
   // Resize our array to the amount actually read
   dataDom = {1..idx};
 
@@ -68,7 +68,7 @@ proc writeFreqs(data, param nclSize) {
   // sort by frequencies
 
   for (f, s) in sorted(arr, comparator=reverseComparator) do
-   writef("%s %.3dr\n", decode(s, nclSize), 
+   writef("%s %.3dr\n", decode(s, nclSize),
            (100.0 * f) / (data.size - nclSize));
   writeln();
 }
@@ -86,7 +86,7 @@ proc writeCount(data, param str) {
 proc calculate(data, param nclSize) {
   var freqs = new map(intWrapper, int);
 
-  var lock$: sync bool = true;
+  var lock: sync bool = true;
   const numTasks = here.maxTaskPar;
   coforall tid in 1..numTasks with (ref freqs) {
     var myArr = new map(intWrapper, int);
@@ -96,11 +96,11 @@ proc calculate(data, param nclSize) {
       myArr[a] += 1;
     }
 
-    lock$.readFE();        // acquire lock
+    lock.readFE();        // acquire lock
     for (k,v) in zip(myArr.keys(), myArr.values()) {
       freqs[k] += v;
     }
-    lock$.writeEF(true); // release lock
+    lock.writeEF(true); // release lock
   }
 
   return freqs;

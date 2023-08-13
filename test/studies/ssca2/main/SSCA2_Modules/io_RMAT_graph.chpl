@@ -261,7 +261,7 @@ repfiles[repfileST2] = createGraphFile(snapshot_prefix, START_FILENAME, rea);
 
 // For use with IOgate=true: allows only a single graphReaderIterator
 // follower invocation at a time.
-var IOgate$: sync bool;
+var IOgate: sync bool;
 
 // Seems we need this serial iterator declaration to keep the compiler happy.
 // But it is not implemented. Use --IOserial instead.
@@ -299,7 +299,7 @@ iter graphReaderIterator(GRow, uxIDs, type VType, vCount, eCount, repfiles,
 iter graphReaderReal(GRow, uxIDs, type VType, vCount, eCount, repfiles,
                      dON, dRow, dEdge, dstyle, myIDs)
 {
-  if IOgate then IOgate$.writeEF(true);
+  if IOgate then IOgate.writeEF(true);
 
   compilerAssert(myIDs.hasUnitStride()); // for efficiency, also for v1,v2
   // start/end IDs
@@ -375,7 +375,7 @@ iter graphReaderReal(GRow, uxIDs, type VType, vCount, eCount, repfiles,
   ww.close();
   sta.close();
 
-  if IOgate then IOgate$.readFE();
+  if IOgate then IOgate.readFE();
 } // graphReaderReal
 
 proc readOneVertex(GRow, type VType, vCount, u, dON, dRow, dEdge, dstyle,
