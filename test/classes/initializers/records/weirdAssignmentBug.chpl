@@ -7,15 +7,15 @@ record vertex_struct {
 
   proc init(nd: domain(1)) {
     this.nd = nd;
-    vlock$ = true;
+    vlock = true;
   }
   proc init=(other: vertex_struct) {
     this.nd = other.nd;
-    this.vlock$ = other.vlock$.readXX();
+    this.vlock = other.vlock.readXX();
   }
 
   var nd: domain(1);
-  var vlock$: sync bool;
+  var vlock: sync bool;
 
 }
 

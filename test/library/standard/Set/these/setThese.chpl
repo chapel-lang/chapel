@@ -40,12 +40,12 @@ proc doTest(type eltType) {
   assert(total == expected);
 
   var parcount = 0;
-  var lk$: sync int = 0;
+  var lk: sync int = 0;
 
   forall x in s1 with (ref parcount) {
-    var rd = lk$.readFE();
+    var rd = lk.readFE();
     parcount += 1;
-    lk$.writeEF(0);
+    lk.writeEF(0);
   }
 
   assert(parcount == s1.size);
@@ -53,4 +53,3 @@ proc doTest(type eltType) {
 
 doTest(int);
 doTest(testRecord);
-
