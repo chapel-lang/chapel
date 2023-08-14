@@ -811,6 +811,7 @@ def main():
     #
     global utildir, chpl_base, chpl_home, machine, envCompopts, platform
     global chplcommstr, chplnastr, chpllmstr, chpltasksstr, perflabel
+    global useLauncherTimeout
 
     if len(sys.argv)!=2:
         print('usage: sub_test COMPILER')
