@@ -176,8 +176,9 @@ class CSDom: BaseSparseDomImpl(?) {
       // Optimized COO -> CSR/CSC
 
       // Note: only COO->CSR can take advantage of COO having sorted indices
-      this.dsiBulkAdd(rhs._instance._indices[rhs.nnzDom.lowBound..#rhs._nnz],
-                      dataSorted=this.compressRows, isUnique=true);
+      this.dsiBulk(
+          rhs._instance._indices[rhs.nnzDom.lowBound..#rhs._nnz],
+          dataSorted=this.compressRows, isUnique=true);
     } else {
       // Unoptimized generic case
       chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
@@ -407,7 +408,7 @@ class CSDom: BaseSparseDomImpl(?) {
     return 1;
   }
 
-  override proc bulkAdd_help(inds: [?indsDom] rank*idxType,
+  override proc bulkAdd_help(ref inds: [?indsDom] rank*idxType,
       dataSorted=false, isUnique=false, addOn=nilLocale) {
     import Sort;
 

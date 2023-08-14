@@ -2008,11 +2008,21 @@ module ChapelDomain {
     @chpldoc.nodoc
     @unstable("bulkAdd() is subject to change in the future.")
     proc ref bulkAdd(inds: [] _value.idxType, dataSorted=false,
-        isUnique=false, preserveInds=true, addOn=nilLocale)
+        isUnique=false, addOn=nilLocale)
         where this.isSparse() && _value.rank==1 {
       if inds.isEmpty() then return 0;
 
-      return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
+      return _value.dsiBulkAdd(inds, dataSorted, isUnique, addOn);
+    }
+
+    @chpldoc.nodoc
+    @unstable("bulkAdd() is subject to change in the future.")
+    proc ref bulkAddNoPreserveInds(ref inds: [] _value.idxType, dataSorted=false,
+        isUnique=false, addOn=nilLocale)
+        where this.isSparse() && _value.rank==1 {
+      if inds.isEmpty() then return 0;
+
+      return _value.dsiBulkAddNoPreserveInds(inds, dataSorted, isUnique, addOn);
     }
 
     /*
@@ -2093,16 +2103,30 @@ module ChapelDomain {
     */
     @unstable("bulkAdd() is subject to change in the future.")
     proc ref bulkAdd(inds: [] _value.rank*_value.idxType,
-        dataSorted=false, isUnique=false, preserveInds=true, addOn=nilLocale)
+        dataSorted=false, isUnique=false, addOn=nilLocale)
         where this.isSparse() && _value.rank>1 {
       if inds.isEmpty() then return 0;
 
-      return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
+      return _value.dsiBulkAdd(inds, dataSorted, isUnique, addOn);
+    }
+
+    @unstable("bulkAdd() is subject to change in the future.")
+    proc ref bulkAddNoPreserveInds(ref inds: [] _value.rank*_value.idxType,
+        dataSorted=false, isUnique=false, addOn=nilLocale)
+        where this.isSparse() && _value.rank>1 {
+      if inds.isEmpty() then return 0;
+
+      return _value.dsiBulkAddNoPreserveInds(inds, dataSorted, isUnique, addOn);
     }
 
     pragma "last resort" @chpldoc.nodoc
     proc bulkAdd(args...) {
       compilerError("incompatible argument(s) or this domain type does not support 'bulkAdd'");
+    }
+
+    pragma "last resort" @chpldoc.nodoc
+    proc bulkAddNoPreserveInds(args...) {
+      compilerError("incompatible argument(s) or this domain type does not support 'bulkAddNoPreserveInds'");
     }
 
     /* Remove index ``idx`` from this domain */
