@@ -6,7 +6,9 @@ proc xform(ref arg) {
 }
 
 var A:[1..2] R;
-var B = xform(xform(xform(A)));
+var t1 = xform(A);
+var t2 = xform(t1);
+var B = xform(t2);
 
 // How many copies of the array A's elements should be made
 // by this program?

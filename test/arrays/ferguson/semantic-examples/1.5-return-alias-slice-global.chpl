@@ -8,7 +8,7 @@ proc f() {
   return slice;
 }
 
-proc g(ref x) {
+proc g(in x) {
   x[2] = one;
 }
 

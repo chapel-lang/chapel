@@ -14,7 +14,8 @@ proc setToTwo(ref A) {
 writeln("globalArray is ", globalArray);
 writeln("running setToTwo(returnGlobalArray())");
 
-setToTwo(returnGlobalArray());
+var t = returnGlobalArray();
+setToTwo(t);
 
 writeln("globalArray is now ", globalArray);
 writeln(globalArray);

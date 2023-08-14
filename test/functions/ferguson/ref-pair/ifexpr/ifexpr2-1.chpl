@@ -10,7 +10,7 @@ proc getter() const ref {
 }
 
 
-proc refIdentity(ref ref arg) ref {
+proc refIdentity(ref arg) ref {
   arg[1] += 1;
   return arg;
 }

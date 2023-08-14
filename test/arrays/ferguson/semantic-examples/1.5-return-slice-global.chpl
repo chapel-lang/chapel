@@ -11,7 +11,8 @@ proc g(ref x) {
   x[2] = one;
 }
 
-g(f());
+var t = f();
+g(t);
 writeln(A[2].x);
 
 // Does this program output 0 or 1?
