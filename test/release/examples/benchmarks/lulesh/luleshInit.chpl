@@ -64,7 +64,7 @@ proc initProblemSize() {
 
 // read/compute the coordinates
 
-proc initCoordinates(refref refZ) {ref
+proc initCoordinates(ref X, ref Y, ref Z) {
   if (initFromFile) {
     for (x,y,z) in zip(X,Y,Z) do
       reader.read(x, y, z);
