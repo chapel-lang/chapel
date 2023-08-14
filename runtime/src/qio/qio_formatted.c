@@ -1110,13 +1110,13 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
     if( err ) return err;
   }
 
-  err = qio_channel_mark(false, ch); //A
+  err = qio_channel_mark(false, ch); // begin mark A
   if( err ) goto unlock;
 
   // advance channel position to 'num_leading_ws' characters before
   //   the first non-whitespace character
   if( skipwsbefore ) {
-    err = qio_channel_mark(false, ch); //B
+    err = qio_channel_mark(false, ch); // begin mark B
     if( err ) goto revert;
 
     // consume whitespace characters until a non-ws character is reached
@@ -1137,7 +1137,7 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
       qio_channel_clear_error(ch);
     }
 
-    qio_channel_revert_unlocked(ch); //B
+    qio_channel_revert_unlocked(ch); // revert B
 
     if( ! err ) {
       // We've exited the loop because the last
@@ -1199,9 +1199,9 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
 
 revert:
   if( err ) {
-    qio_channel_revert_unlocked(ch); //A
+    qio_channel_revert_unlocked(ch); // revert A
   } else {
-    qio_channel_commit_unlocked(ch); //A
+    qio_channel_commit_unlocked(ch); // commit A
   }
   // Don't set error indicator on EFORMAT because
   // that's probably a temporary error.
