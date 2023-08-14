@@ -2104,13 +2104,22 @@ void AutoDestroyLoopExprTemps::process(CallExpr* call) {
     }
   }
 
-  // nothing special about it, just add at the end of the scope
   // TODO: should we try to find the correct anchor to make sure that destroys
   // are called in the correct order? But unless it is needed,
   // I'd like us to use proper autoDestroy support for RTTs instead of
   // engineering the same thing for RTTs here. Engin
   if (!handled) {
-    scope->insertAtTail(destroy);
+    FnSymbol* parentFn = toFnSymbol(call->parentSymbol);
+    INT_ASSERT(parentFn);
+
+    if (parentFn->body == scope) {
+      // directly inside the function, make sure to add it before `return`
+      parentFn->insertBeforeEpilogue(destroy);
+    }
+    else {
+      // nothing special about it, just add at the end of the scope
+      scope->insertAtTail(destroy);
+    }
   }
 }
 
