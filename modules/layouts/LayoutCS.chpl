@@ -176,7 +176,7 @@ class CSDom: BaseSparseDomImpl(?) {
       // Optimized COO -> CSR/CSC
 
       // Note: only COO->CSR can take advantage of COO having sorted indices
-      this.dsiBulk(
+      this.dsiBulkAdd(
           rhs._instance._indices[rhs.nnzDom.lowBound..#rhs._nnz],
           dataSorted=this.compressRows, isUnique=true);
     } else {
