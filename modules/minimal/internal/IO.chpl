@@ -43,9 +43,6 @@ module IO {
   export proc chpl_qio_filelength(file:raw_c_void_ptr, ref length:int(64)):errorCode {
     return qio_int_to_err(0);
   }
-  export proc chpl_qio_getpath(file:raw_c_void_ptr, ref str:c_string, ref len:int(64)):errorCode {
-    return qio_int_to_err(0);
-  }
   export proc chpl_qio_fsync(file:raw_c_void_ptr):errorCode {
     return qio_int_to_err(0);
   }

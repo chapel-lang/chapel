@@ -1,6 +1,6 @@
 // Stress test for parallel correctness.
 
-use BlockDist, CyclicDist, BlockCycDist, ReplicatedDist, ChplConfig;
+use BlockDist, CyclicDist, BlockCycDist, ReplicatedDist, ChplConfig, CTypes;
 
 const defR = if CHPL_COMM=="none" then 3000 else 1500;
 
@@ -33,7 +33,7 @@ proc setupDistributions() {
   else if distType == DistType.replicated then
     return new dmap(new Replicated());
 
-  else compilerError("unexpected 'distType': ", distType:c_string);
+  else compilerError("unexpected 'distType': ", distType:c_ptrConst(c_char));
 }
 
 const Dist2D = setupDistributions();

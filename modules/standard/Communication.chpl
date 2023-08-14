@@ -58,8 +58,11 @@ module Communication {
       }
     }
 
-    __primitive("chpl_comm_get", dest:c_ptr(uint(8)), srcLocID,
-                src:c_ptr(uint(8)), numBytes);
+    // communicate to the primitive using a reference rather than a ptr
+    // the primitive will copy data using these references
+    ref destRef = (dest:c_ptr(uint(8))).deref();
+    const ref srcRef = (src:c_ptr(uint(8))).deref();
+    __primitive("chpl_comm_get", destRef, srcLocID, srcRef, numBytes);
   }
 
   /*
@@ -84,7 +87,11 @@ module Communication {
              ") for Communication.put is negative.");
       }
     }
-    __primitive("chpl_comm_put", src:c_ptr(uint(8)), destLocID,
-                dest:c_ptr(uint(8)), numBytes);
+
+    // communicate to the primitive using a reference rather than a ptr
+    // the primitive will copy data using these references
+    const ref srcRef = (src:c_ptr(uint(8))).deref();
+    ref destRef = (dest:c_ptr(uint(8))).deref();
+    __primitive("chpl_comm_put", srcRef, destLocID, destRef, numBytes);
   }
 }

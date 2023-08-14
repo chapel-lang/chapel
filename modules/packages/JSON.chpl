@@ -55,7 +55,7 @@ module JSON {
       var st = dc._styleInternal();
       var orig = st; defer { dc._set_styleInternal(orig); }
       st.realfmt = 2;
-      st.string_format = iostringformat.json:uint(8);
+      st.string_format = iostringformatInternal.json:uint(8);
       st.aggregate_style = QIO_AGGREGATE_FORMAT_JSON:uint(8);
       st.array_style = QIO_ARRAY_FORMAT_JSON:uint(8);
       st.tuple_style = QIO_TUPLE_FORMAT_JSON:uint(8);
@@ -372,7 +372,7 @@ module JSON {
       var orig = st; defer { dc._set_styleInternal(orig); }
       st.realfmt = 2;
       st.bytes_prefix = 0;
-      st.string_format = iostringformat.json:uint(8);
+      st.string_format = iostringformatInternal.json:uint(8);
       st.aggregate_style = QIO_AGGREGATE_FORMAT_JSON:uint(8);
       st.array_style = QIO_ARRAY_FORMAT_JSON:uint(8);
       st.tuple_style = QIO_TUPLE_FORMAT_JSON:uint(8);
@@ -537,11 +537,27 @@ module JSON {
       if !_firstThing then reader._readLiteral(",");
       else _firstThing = false;
 
-      return reader.read(eltType);
+      // preemptively check if a list will end with the next byte
+      //  to avoid an uncaught BadFormatError in eltType's
+      //  deserializing initializer
+      if this.peekListEnd(reader)
+        then throw new BadFormatError();
+        else return reader.read(eltType);
     }
     @chpldoc.nodoc
     proc endList(reader: _readerType) throws {
       reader._readLiteral("]");
+    }
+    @chpldoc.nodoc
+    proc peekListEnd(reader: _readerType): bool throws {
+      reader.mark();
+      if reader.matchLiteral("]") {
+        reader.revert();
+        return true;
+      } else {
+        reader.commit(); // doesn't do anything
+        return false;
+      }
     }
 
     // Array helpers

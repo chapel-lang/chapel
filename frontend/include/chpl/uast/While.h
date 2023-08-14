@@ -48,9 +48,10 @@ class While final : public Loop {
  private:
   While(AstList children, int8_t conditionChildNum,
         BlockStyle blockStyle,
-        int loopBodyChildNum)
+        int loopBodyChildNum,
+        int attributeGroupChildNum)
     : Loop(asttags::While, std::move(children), blockStyle,
-           loopBodyChildNum, NO_CHILD /*attributeGroup*/),
+           loopBodyChildNum, attributeGroupChildNum),
       conditionChildNum_(conditionChildNum) {
     CHPL_ASSERT(condition());
   }
@@ -90,7 +91,8 @@ class While final : public Loop {
   static owned<While> build(Builder* builder, Location loc,
                             owned<AstNode> condition,
                             BlockStyle blockStyle,
-                            owned<Block> stmts);
+                            owned<Block> stmts,
+                            owned<AttributeGroup> attributeGroup = nullptr);
 
 
   /**

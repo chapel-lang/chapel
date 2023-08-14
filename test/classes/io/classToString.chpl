@@ -1,3 +1,4 @@
+use CTypes;
 class C {
   var x: int;
 }
@@ -54,7 +55,7 @@ delete c11;
 
 proc dynamicTypeAsString(expr, printClassMgmt = true) {
   var ret: string;
-  
+
   if (isClass(expr)) {
     if (printClassMgmt) {
       if (isOwnedClass(expr)) {
@@ -69,9 +70,9 @@ proc dynamicTypeAsString(expr, printClassMgmt = true) {
         halt("Unanticipated class management type in dynamicTypeAsString()");
       }
     }
-    ret += __primitive("class name by id",
+    ret += string.createCopyingBuffer(__primitive("class name by id",
                        __primitive("getcid", expr.borrow())
-                      ):string;
+                      ):c_ptrConst(c_char));
     return ret;
   } else {
     compilerError("dynamicTypeAsString() isn't currently implemented for non-classes");

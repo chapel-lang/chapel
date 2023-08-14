@@ -814,7 +814,7 @@ proc bsIncorporateOthersPartSums(diaFrom, diaTo, locId1, locId2) {
       seenOther = false;
       // since incorporation in ihelper
       for l2 in 0..#tl2 do ihelper(partSums[l2], l2);
-      if !seenOther then chpl_task_yield();
+      if !seenOther then currentTask.yieldExecution();
     }
   // We must have seen *something* the last time around.
   if checkBsub then assert(seenOther, "bsI-2");

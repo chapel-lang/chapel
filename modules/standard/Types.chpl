@@ -49,7 +49,7 @@ proc _isPrimitiveType(type t) param do return
   isRealType(t)     ||
 //To allow imag, need to define casts from primitive types into imag.
 //isImagType(t)     ||
-  (t == c_string);
+  (t == chpl_c_string);
 
 /*
 Returns ``true`` if the type ``t`` is a primitive type,

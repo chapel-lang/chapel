@@ -45,19 +45,19 @@ exception will be generated.
 
 Constants
 ---------
-:var:`e`
-:var:`log2_e`
-:var:`log10_e`
-:var:`ln_2`
-:var:`ln_10`
-:var:`pi`
-:var:`half_pi`
-:var:`quarter_pi`
-:var:`recipr_pi`
-:var:`twice_recipr_pi`
-:var:`twice_recipr_sqrt_pi`
-:var:`sqrt_2`
-:var:`recipr_sqrt_2`
+:param:`e`
+:param:`log2E`
+:param:`log10E`
+:param:`ln2`
+:param:`ln10`
+:param:`pi`
+:param:`halfPi`
+:param:`quarterPi`
+:param:`reciprPi`
+:param:`twiceReciprPi`
+:param:`twiceReciprSqrtPi`
+:param:`sqrt2`
+:param:`reciprSqrt2`
 
 .. _math-trigonometry:
 
@@ -81,6 +81,7 @@ Trigonometric Functions
 
 Log Functions
 -------------
+:proc:`ln`
 :proc:`log`
 :proc:`log10`
 :proc:`log1p`
@@ -154,28 +155,68 @@ module Math {
   /* e - exp(1) or  the base of the natural logarithm */
   param e = 2.7182818284590452354;
   /* log2(e) */
+  param log2E = 1.4426950408889634074;
+  /* log2(e) */
+  @deprecated(notes="'log2_e' is deprecated, please use :param:`log2E` instead")
   param log2_e = 1.4426950408889634074;
   /* log10(e) */
+  param log10E = 0.43429448190325182765;
+  /* log10(e) */
+  @deprecated(notes="'log10_e' is deprecated, please use :param:`log10E` instead")
   param log10_e = 0.43429448190325182765;
+  /* ln(2) (natural logarithm) */
+  param ln2 = 0.69314718055994530942;
   /* log(2) (natural logarithm) */
+  @deprecated(notes="'ln_2' is deprecated, please use :param:`ln2` instead")
   param ln_2 = 0.69314718055994530942;
+  /* ln(10) (natural logarithm) */
+  param ln10 = 2.30258509299404568402;
   /* log(10) (natural logarithm) */
+  @deprecated(notes="'ln_10' is deprecated, please use :param:`ln10` instead")
   param ln_10 = 2.30258509299404568402;
   /* pi - the circumference/the diameter of a circle */
   param pi = 3.14159265358979323846;
   /* pi/2 */
+  @unstable("'halfPi' is unstable due to questions about its utility.  If you are seeing negative performance impacts from using 'pi/2' instead of this 'param', please let us know!")
+  param halfPi = 1.57079632679489661923;
+  /* pi/2 */
+  @deprecated(notes="'half_pi' is deprecated, please use :param:`halfPi` or 'pi/2' instead")
   param half_pi = 1.57079632679489661923;
   /* pi/4 */
+  @unstable("'quarterPi' is unstable due to questions about its utility.  If you are seeing negative performance impacts from using 'pi/4' instead of this 'param', please let us know!")
+  param quarterPi = 0.78539816339744830962;
+  /* pi/4 */
+  @deprecated(notes="'quarter_pi' is deprecated, please use :param:`quarterPi` or 'pi/4' instead")
   param quarter_pi = 0.78539816339744830962;
   /* 1/pi */
+  @unstable("'reciprPi' is unstable due to questions about its utility.  If you are seeing negative performance impacts from using '1/pi' instead of this 'param', please let us know!")
+  param reciprPi = 0.31830988618379067154;
+  /* 1/pi */
+  @deprecated(notes="'recipr_pi' is deprecated, please use :param:`reciprPi` or '1/pi' instead")
   param recipr_pi = 0.31830988618379067154;
   /* 2/pi */
+  @unstable("'twiceReciprPi' is unstable due to questions about its utility.  If you are seeing negative performance impacts from using '2/pi' instead of this 'param', please let us know!")
+  param twiceReciprPi = 0.63661977236758134308;
+  /* 2/pi */
+  @deprecated(notes="'twice_recipr_pi' is deprecated, please use :param:`twiceReciprPi` or '2/pi' instead")
   param twice_recipr_pi = 0.63661977236758134308;
   /* 2/sqrt(pi) */
+  @unstable("'twiceReciprSqrtPi' is unstable due to questions about its utility.  If you are using this symbol, please let us know!")
+  param twiceReciprSqrtPi = 1.12837916709551257390;
+  /* 2/sqrt(pi) */
+  @deprecated(notes="'twice_recipr_sqrt_pi' is deprecated, please use :param:`twiceReciprSqrtPi` or '2/sqrt(pi)' instead")
   param twice_recipr_sqrt_pi = 1.12837916709551257390;
   /* sqrt(2) */
+  @unstable("'sqrt2' is unstable due to questions about its utility.  If you are using this symbol, please let us know!")
+  param sqrt2 = 1.41421356237309504880;
+  /* sqrt(2) */
+  @deprecated(notes="'sqrt_2' is deprecated, please use :param:`sqrt2` or 'sqrt(2)' instead")
   param sqrt_2 = 1.41421356237309504880;
   /* 1/sqrt(2) */
+  @unstable("'reciprSqrt2' is unstable due to questions about its utility.  If you are using this symbol, please let us know!")
+  param reciprSqrt2 = 0.70710678118654752440;
+  /* 1/sqrt(2) */
+  @deprecated(notes="'recipr_sqrt_2' is deprecated, please use :param:`reciprSqrt2` or '1/sqrt(2)' instead")
   param recipr_sqrt_2 = 0.70710678118654752440;
 
   /* Returns the arc cosine of the argument `x`.
@@ -531,6 +572,64 @@ module Math {
 
      It is an error if `x` is less than or equal to zero.
   */
+  inline proc ln(x: real(64)): real(64) {
+    return chpl_log(x);
+  }
+
+  /* Returns the natural logarithm of the argument `x`.
+
+     It is an error if `x` is less than or equal to zero.
+  */
+  inline proc ln(x : real(32)): real(32) {
+    return chpl_log(x);
+  }
+
+  /* Returns the natural logarithm of the argument `x`. */
+  inline proc ln(x: complex(64)): complex(64) {
+    return chpl_log(x);
+  }
+
+  /* Returns the natural logarithm of the argument `x`. */
+  inline proc ln(x: complex(128)): complex(128) {
+    return chpl_log(x);
+  }
+
+  /* Returns the natural logarithm of the argument `x`.
+
+     It is an error if `x` is less than or equal to zero.
+  */
+  @chpldoc.nodoc
+  @unstable("The version of 'ln' that takes an int argument is unstable and may change its return type in the future")
+  inline proc ln(x: int(?w)) {
+    if (w < 32) {
+      // These were coerced to real(32) prior to the existence of this overload,
+      // so maintain that behavior for now.
+      return ln(x: real(32));
+    } else {
+      return ln(x: real(w));
+    }
+  }
+
+  /* Returns the natural logarithm of the argument `x`.
+
+     It is an error if `x` is equal to zero.
+  */
+  @chpldoc.nodoc
+  @unstable("The version of 'ln' that takes an uint argument is unstable and may change its return type in the future")
+  inline proc ln(x: uint(?w)) {
+    if (w < 32) {
+      // These were coerced to real(32) prior to the existence of this overload,
+      // so maintain that behavior for now.
+      return ln(x: real(32));
+    } else {
+      return ln(x: real(w));
+    }
+  }
+
+  /* Returns the natural logarithm of the argument `x`.
+
+     It is an error if `x` is less than or equal to zero.
+  */
   inline proc log(x: real(64)): real(64) {
     return chpl_log(x);
   }
@@ -553,6 +652,38 @@ module Math {
     return chpl_log(x);
   }
 
+  /* Returns the natural logarithm of the argument `x`.
+
+     It is an error if `x` is less than or equal to zero.
+  */
+  @chpldoc.nodoc
+  @unstable("The version of 'log' that takes an int argument is unstable and may change its return type in the future")
+  inline proc log(x: int(?w)) {
+    if (w < 32) {
+      // These were coerced to real(32) prior to the existence of this overload,
+      // so maintain that behavior for now.
+      return log(x: real(32));
+    } else {
+      return log(x: real(w));
+    }
+  }
+
+  /* Returns the natural logarithm of the argument `x`.
+
+     It is an error if `x` is equal to zero.
+  */
+  @chpldoc.nodoc
+  @unstable("The version of 'log' that takes an uint argument is unstable and may change its return type in the future")
+  inline proc log(x: uint(?w)) {
+    if (w < 32) {
+      // These were coerced to real(32) prior to the existence of this overload,
+      // so maintain that behavior for now.
+      return log(x: real(32));
+    } else {
+      return log(x: real(w));
+    }
+  }
+
   /* Returns the base 10 logarithm of the argument `x`.
 
      It is an error if `x` is less than or equal to zero.
@@ -567,6 +698,38 @@ module Math {
   */
   inline proc log10(x : real(32)): real(32) {
     return chpl_log10(x);
+  }
+
+  /* Returns the base 10 logarithm of the argument `x`.
+
+     It is an error if `x` is less than or equal to zero.
+  */
+  @chpldoc.nodoc
+  @unstable("The version of 'log10' that takes an int argument is unstable and may change its return type in the future")
+  inline proc log10(x: int(?w)) {
+    if (w < 32) {
+      // These were coerced to real(32) prior to the existence of this overload,
+      // so maintain that behavior for now.
+      return log10(x: real(32));
+    } else {
+      return log10(x: real(w));
+    }
+  }
+
+  /* Returns the base 10 logarithm of the argument `x`.
+
+     It is an error if `x` is equal to zero.
+  */
+  @chpldoc.nodoc
+  @unstable("The version of 'log10' that takes an uint argument is unstable and may change its return type in the future")
+  inline proc log10(x: uint(?w)) {
+    if (w < 32) {
+      // These were coerced to real(32) prior to the existence of this overload,
+      // so maintain that behavior for now.
+      return log10(x: real(32));
+    } else {
+      return log10(x: real(w));
+    }
   }
 
   /* Returns the natural logarithm of `x` + 1.
@@ -585,6 +748,36 @@ module Math {
     return chpl_log1p(x);
   }
 
+  /* Returns the natural logarithm of `x` + 1.
+
+     It is an error if `x` is less than or equal to -1.
+  */
+  @chpldoc.nodoc
+  @unstable("The version of 'log1p' that takes an int argument is unstable and may change its return type in the future")
+  inline proc log1p(x: int(?w)) {
+    if (w < 32) {
+      // These were coerced to real(32) prior to the existence of this overload,
+      // so maintain that behavior for now.
+      return log1p(x: real(32));
+    } else {
+      return log1p(x: real(w));
+    }
+  }
+
+  /* Returns the natural logarithm of `x` + 1.
+  */
+  @chpldoc.nodoc
+  @unstable("The version of 'log1p' that takes an uint argument is unstable and may change its return type in the future")
+  inline proc log1p(x: uint(?w)) {
+    if (w < 32) {
+      // These were coerced to real(32) prior to the existence of this overload,
+      // so maintain that behavior for now.
+      return log1p(x: real(32));
+    } else {
+      return log1p(x: real(w));
+    }
+  }
+
   /* Returns the log to the base `2**exp` of the given `x` value.
      If `exp` is `1`, then returns the log to the base `2`;
      if `exp` is `2`, then returns the log to the base `4`, etc.
@@ -592,6 +785,7 @@ module Math {
 
      :rtype: `int`
   */
+  @unstable("'logBasePow2' is unstable due to questions about its utility.  If you rely on this function, please let us know!")
   inline proc logBasePow2(x: int(?w), exp) {
     return chpl_logBasePow2(x, exp);
   }
@@ -603,6 +797,7 @@ module Math {
 
      :rtype: `int`
   */
+  @unstable("'logBasePow2' is unstable due to questions about its utility.  If you rely on this function, please let us know!")
   inline proc logBasePow2(x: uint(?w), exp) {
     return chpl_logBasePow2(x, exp);
   }
@@ -656,6 +851,7 @@ module Math {
 
      It is an error if `x` is less than or equal to zero.
   */
+  @unstable("The version of 'log2' that takes an int argument is unstable")
   inline proc log2(x: int(?w)) {
     return chpl_log2(x);
   }
@@ -665,8 +861,9 @@ module Math {
 
      :rtype: `int`
 
-     It is an error if `x` is less than or equal to zero.
+     It is an error if `x` is equal to zero.
   */
+  @unstable("The version of 'log2' that takes an uint argument is unstable")
   inline proc log2(x: uint(?w)) {
     return chpl_log2(x);
   }
@@ -787,12 +984,12 @@ module Math {
     return chpl_tanh(x);
   }
 
-  /* Returns the absolute value of the gamma function of the argument `x`. */
+  /* Returns the gamma function of the argument `x`. */
   inline proc tgamma(x: real(64)): real(64) {
     return chpl_tgamma(x);
   }
 
-  /* Returns the absolute value of the gamma function of the argument `x`. */
+  /* Returns the gamma function of the argument `x`. */
   inline proc tgamma(x : real(32)): real(32) {
     return chpl_tgamma(x);
   }

@@ -38,6 +38,10 @@ details task parallelism as follows:
 -  :ref:`Serial` describes the serial statement, a structured
    way to suppress parallelism.
 
+-  :ref:`Yield_Task_Execution` describes yielding the current tasks
+    execution.
+
+
 .. _Task_parallelism:
 
 Tasks and Task Parallelism
@@ -839,3 +843,12 @@ generates task according to normal Chapel rules.
 
    because the expression evaluated to determine whether to serialize
    always evaluates to true.
+
+.. _Yield_Task_Execution:
+
+Yielding Task Execution
+-----------------------
+
+Execution of the current task can be explicitly yielded with
+``currentTask.yieldExecution()``, providing an opportunity for other tasks to
+execute.

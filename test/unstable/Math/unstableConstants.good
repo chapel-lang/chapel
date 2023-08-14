@@ -1,0 +1,14 @@
+unstableConstants.chpl:3: warning: 'halfPi' is unstable due to questions about its utility.  If you are seeing negative performance impacts from using 'pi/2' instead of this 'param', please let us know!
+unstableConstants.chpl:4: warning: 'quarterPi' is unstable due to questions about its utility.  If you are seeing negative performance impacts from using 'pi/4' instead of this 'param', please let us know!
+unstableConstants.chpl:5: warning: 'reciprPi' is unstable due to questions about its utility.  If you are seeing negative performance impacts from using '1/pi' instead of this 'param', please let us know!
+unstableConstants.chpl:7: warning: 'twiceReciprPi' is unstable due to questions about its utility.  If you are seeing negative performance impacts from using '2/pi' instead of this 'param', please let us know!
+unstableConstants.chpl:9: warning: 'twiceReciprSqrtPi' is unstable due to questions about its utility.  If you are using this symbol, please let us know!
+unstableConstants.chpl:10: warning: 'sqrt2' is unstable due to questions about its utility.  If you are using this symbol, please let us know!
+unstableConstants.chpl:11: warning: 'reciprSqrt2' is unstable due to questions about its utility.  If you are using this symbol, please let us know!
+true
+true
+true
+true
+true
+true
+true

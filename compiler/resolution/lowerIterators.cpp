@@ -1486,6 +1486,7 @@ static void markLoopProperties(ForLoop* forLoop, BlockStmt* ibody,
                                bool forVectorize) {
   bool forIsOrderIndep = forLoop->isOrderIndependent();
   bool forHasHazard = forLoop->hasVectorizationHazard();
+  auto llvmAttrs = forLoop->getAdditionalLLVMMetadata();
 
   if (forVectorize) {
     forLoop->orderIndependentSet(true);
@@ -1519,6 +1520,8 @@ static void markLoopProperties(ForLoop* forLoop, BlockStmt* ibody,
           bool hazard = loop->hasVectorizationHazard();
           hazard = hazard || forHasHazard;
           loop->setHasVectorizationHazard(hazard);
+
+          loop->setAdditionalLLVMMetadata(llvmAttrs);
         }
       }
     }

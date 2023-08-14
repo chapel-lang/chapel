@@ -6,10 +6,10 @@ require "chapelVarargs.h";
 // Note: Generated with fake std headers
 
 use CTypes;
-extern proc printf_wrapper(format : c_string, c__varargs ...) : void;
+extern proc printf_wrapper(format : c_ptrConst(c_char), c__varargs ...) : void;
 
 // Overload for empty varargs
-extern proc printf_wrapper(format : c_string) : void;
+extern proc printf_wrapper(format : c_ptrConst(c_char)) : void;
 
 extern proc multiArgs(a : c_int, b : c_char, c__varargs ...) : c_int;
 

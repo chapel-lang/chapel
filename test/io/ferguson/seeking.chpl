@@ -12,10 +12,21 @@ if bufsz > 0 {
   qbytes_iobuf_size = bufsz:c_size_t;
 }
 
+proc writer() {
+  var f = open(path, ioMode.cw);
+  var w = f.writer(locking=false, serializer=new BinarySerializer());
+  return w;
+}
+
+proc reader() {
+  var f = open(path, ioMode.r);
+  var r = f.reader(locking=false, deserializer=new BinaryDeserializer());
+  return r;
+}
+
 proc test1() {
   {
-    var f = open(path, ioMode.cw, style = new iostyleInternal(binary=1));
-    var w = f.writer(locking=false);
+    var w = writer();
     w.write(1:uint(8));
 
     w.seek(16..);
@@ -29,8 +40,7 @@ proc test1() {
   }
 
   {
-    var f = open(path, ioMode.r, style = new iostyleInternal(binary=1));
-    var r = f.reader(locking=false);
+    var r = reader();
     var b:uint(8);
     var got:bool;
     
@@ -54,8 +64,7 @@ proc test1() {
 proc test2() {
   // Create a file by writing in reverse.
   {
-    var f = open(path, ioMode.cw, style = new iostyleInternal(binary=1));
-    var w = f.writer(locking=false);
+    var w = writer();
 
     for i in 0..maxbyte by -1 {
       w.seek(i..);
@@ -65,8 +74,7 @@ proc test2() {
 
   // Check the data
   {
-    var f = open(path, ioMode.r, style = new iostyleInternal(binary=1));
-    var r = f.reader(locking=false);
+    var r = reader();
     for i in 0..maxbyte {
       var b:uint(8);
       var got:bool;
@@ -80,8 +88,7 @@ proc test2() {
 proc test3() {
   // Create a file by writing forward and read it in reverse
   {
-    var f = open(path, ioMode.cw, style = new iostyleInternal(binary=1));
-    var w = f.writer(locking=false);
+    var w = writer();
 
     for i in 0..maxbyte {
       w.write(i:uint(8));
@@ -90,8 +97,7 @@ proc test3() {
 
   // Check the data
   {
-    var f = open(path, ioMode.r, style = new iostyleInternal(binary=1));
-    var r = f.reader(locking=false);
+    var r = reader();
     for i in 0..maxbyte by -1 {
       var b:uint(8);
       var got:bool;
@@ -106,8 +112,7 @@ proc test3() {
 proc test4() {
   // Create a file by writing in reverse.
   {
-    var f = open(path, ioMode.cw, style = new iostyleInternal(binary=1));
-    var w = f.writer(locking=false);
+    var w = writer();
 
     for i in 0..maxint by -1 {
       w.seek(i*numBytes(int)..);
@@ -117,8 +122,7 @@ proc test4() {
 
   // Check the data
   {
-    var f = open(path, ioMode.r, style = new iostyleInternal(binary=1));
-    var r = f.reader(locking=false);
+    var r = reader();
     for i in 0..maxint {
       var b:int;
       var got:bool;
@@ -132,8 +136,7 @@ proc test4() {
 proc test5() {
   // Create a file by writing forward and read it in reverse
   {
-    var f = open(path, ioMode.cw, style = new iostyleInternal(binary=1));
-    var w = f.writer(locking=false);
+    var w = writer();
 
     for i in 0..maxint {
       w.write(i);
@@ -142,8 +145,7 @@ proc test5() {
 
   // Check the data
   {
-    var f = open(path, ioMode.r, style = new iostyleInternal(binary=1));
-    var r = f.reader(locking=false);
+    var r = reader();
     for i in 0..maxint by -1 {
       var b:int;
       var got:bool;
@@ -162,8 +164,7 @@ proc test6() {
 
   // Write to the permutation
   {
-    var f = open(path, ioMode.cw, style = new iostyleInternal(binary=1));
-    var w = f.writer(locking=false);
+    var w = writer();
 
     for a in A {
       w.seek(a*numBytes(int)..);
@@ -173,8 +174,7 @@ proc test6() {
 
   // Check the data
   {
-    var f = open(path, ioMode.r, style = new iostyleInternal(binary=1));
-    var r = f.reader(locking=false);
+    var r = reader();
     for i in 0..maxint {
       var b:int;
       var got:bool;
@@ -191,8 +191,7 @@ proc test7() {
   Random.permutation(A, seed=seed);
 
   {
-    var f = open(path, ioMode.cw, style = new iostyleInternal(binary=1));
-    var w = f.writer(locking=false);
+    var w = writer();
 
     for i in 0..maxint {
       w.write(i);
@@ -200,8 +199,7 @@ proc test7() {
   }
 
   {
-    var f = open(path, ioMode.r, style = new iostyleInternal(binary=1));
-    var r = f.reader(locking=false);
+    var r = reader();
     for a in A {
       var b:int;
       var got:bool;

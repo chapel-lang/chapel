@@ -1,5 +1,6 @@
+use CTypes;
 extern proc chpl_cache_print();
-extern proc printf(fmt: c_string, vals...?numvals): int;
+extern proc printf(fmt: c_ptrConst(c_char), vals...?numvals): int;
 
 //
 // privateSpace.chpl: This example demonstrates the use of PrivateSpace to

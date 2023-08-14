@@ -142,7 +142,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     if CHPL_TARGET_PLATFORM == "darwin" then
       return c_ptr(c_char); // char *
     else
-      return c_string; // const char *
+      return c_ptrConst(c_char); // const char *
   }
 
   /* Get the `time` since Unix Epoch in seconds
@@ -485,7 +485,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* Return a formatted `string` matching the `format` argument and the date */
   @unstable("'date.strftime' is unstable")
   proc date.strftime(fmt: string) {
-    extern proc strftime(s: c_ptr(void), size: c_size_t, format: c_string, ref timeStruct: tm);
+    extern proc strftime(s: c_ptr(void), size: c_size_t, format: c_ptrConst(c_char), ref timeStruct: tm);
     const bufLen: c_size_t = 100;
     var buf: [1..bufLen] c_char;
     var timeStruct: tm;
@@ -506,7 +506,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
     var str: string;
     try! {
-      str = string.createCopyingBuffer(c_ptrTo(buf):c_string);
+      str = string.createCopyingBuffer(c_ptrTo(buf));
     }
     return str;
   }
@@ -797,7 +797,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* Return a `string` matching the `format` argument for this `time` */
   @unstable("'time.strftime' is unstable")
   proc time.strftime(fmt: string) {
-    extern proc strftime(s: c_ptr(void), size: c_size_t, format: c_string, ref timeStruct: tm);
+    extern proc strftime(s: c_ptr(void), size: c_size_t, format: c_ptrConst(c_char), ref timeStruct: tm);
     const bufLen: c_size_t = 100;
     var buf: [1..bufLen] c_char;
     var timeStruct: tm;
@@ -825,7 +825,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
     var str: string;
     try! {
-      str = string.createCopyingBuffer(c_ptrTo(buf):c_string);
+      str = string.createCopyingBuffer(c_ptrTo(buf));
     }
 
     return str;
@@ -1407,7 +1407,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   */
   @unstable("'dateTime.strptime' is unstable")
   proc type dateTime.strptime(date_string: string, format: string) {
-    extern proc strptime(buf: c_string, format: c_string, ref ts: tm);
+    extern proc strptime(buf: c_ptrConst(c_char), format: c_ptrConst(c_char), ref ts: tm);
     var timeStruct: tm;
     strptime(date_string.c_str(), format.c_str(), timeStruct);
     return new dateTime(timeStruct.tm_year + 1900,
@@ -1421,7 +1421,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* Create a `string` from a `dateTime` matching the `format` string */
   @unstable("'dateTime.strftime' is unstable")
   proc dateTime.strftime(fmt: string) {
-    extern proc strftime(s: c_ptr(void), size: c_size_t, format: c_string, ref timeStruct: tm);
+    extern proc strftime(s: c_ptr(void), size: c_size_t, format: c_ptrConst(c_char), ref timeStruct: tm);
     const bufLen: c_size_t = 100;
     var buf: [1..bufLen] c_char;
     var timeStruct: tm;
@@ -1483,7 +1483,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
     var str: string;
     try! {
-      str = string.createCopyingBuffer(c_ptrTo(buf):c_string);
+      str = string.createCopyingBuffer(c_ptrTo(buf));
     }
 
     return str;

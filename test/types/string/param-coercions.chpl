@@ -13,7 +13,7 @@ proc run() {
   compilerWarning(c.type:string);
   param d:c_string = a + b;
   compilerWarning(d:string);
-  
+
   var a_cs = a;
   var b_cs = b;
   myadd(a_cs, b_cs); // don't expect this to resolve

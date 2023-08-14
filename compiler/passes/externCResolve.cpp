@@ -78,12 +78,6 @@ static Expr* convertPointerToChplType(ModuleSymbol* module,
                                       const char* typedefName=NULL) {
 
 
-  //Pointers to c_char must be converted to Chapel's C string type
-  // but only if they are const char*.
-  if (pointeeType.isConstQualified() &&
-      pointeeType.getTypePtr()->isCharType()) {
-    return tryCResolveExpr(module, "c_string");
-  }
 
   // Pointers to C functions become c_fn_ptr
   if (pointeeType.getTypePtr()->isFunctionType()) {

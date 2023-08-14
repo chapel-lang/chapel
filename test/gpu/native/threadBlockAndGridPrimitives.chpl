@@ -48,9 +48,9 @@ proc runExample(gdimX, gdimY, gdimZ, bdimX, bdimY, bdimZ) {
   writeln("Block size: ", bdimX, " x ", bdimY, " x ", bdimZ);
 
   const N = gdimX * gdimY * gdimZ * bdimX * bdimY * bdimZ * VALS_PER_THREAD;
-  
+
   var X : [0..<N] real(32);
-  __primitive("gpu kernel launch", c"add_nums",
+  __primitive("gpu kernel launch", "add_nums":chpl_c_string,
               gdimX, gdimY, gdimZ, bdimX, bdimY, bdimZ,
               c_ptrTo(X));
 

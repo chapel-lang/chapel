@@ -1,2 +1,4 @@
 Should be Hello:
 in print_c_string: Hello
+Should be Goodbye:
+in print_c_ptrConst: Goodbye

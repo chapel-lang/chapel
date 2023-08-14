@@ -703,21 +703,9 @@ module DefaultRectangular {
     proc doiTryCreateArray(type eltType) throws {
       // TODO: Update to support higher dimension (not needed in Arkouda)
       if rank != 1 then
-        throw new Error("'tryBuildArray' is only supported on domains of rank 1");
+        throw new Error("'tryCreateArray' is only supported on domains of rank 1");
 
-      var callPostAlloc:bool;
-      var data = _ddata_allocate_noinit_nocheck(eltType, ranges(0).size, callPostAlloc);
-
-      // TODO: Add a more distinguishable error type
-      if data == nil then
-        throw new Error("Could not allocate memory");
-
-      init_elts(data, ranges(0).size, eltType);
-
-      if callPostAlloc {
-        _ddata_allocate_postalloc(data, ranges(0).size);
-        callPostAlloc = false;
-      }
+      var data = _try_ddata_allocate(eltType, ranges(0).size);
       return new unmanaged DefaultRectangularArr(eltType=eltType, rank=rank,
                                                  idxType=idxType,
                                                  strides=strides,
@@ -2146,24 +2134,32 @@ module DefaultRectangular {
                                      Blocid, Bsublocid, len, offset=0) {
     if Adata == Bdata then return;
 
+    // communicate to the primitive using a reference rather than a ptr
+    // the primitive will copy data using these references
+    const ref srcRef = Bdata[offset];
+    ref dstRef = Adata[offset];
+
     // NOTE: This does not work with --heterogeneous, but heterogeneous
     // compilation does not work right now.  The calls to chpl_comm_get
     // and chpl_comm_put should be changed once that is fixed.
     if Alocid==here.id {
       if debugDefaultDistBulkTransfer then
         chpl_debug_writeln("\tlocal get() from ", Blocid);
-      __primitive("chpl_comm_array_get", Adata[offset], Blocid, Bsublocid,
-                  Bdata[offset], len);
+
+      __primitive("chpl_comm_array_get", dstRef, Blocid, Bsublocid,
+                  srcRef, len);
     } else if Blocid==here.id {
       if debugDefaultDistBulkTransfer then
         chpl_debug_writeln("\tlocal put() to ", Alocid);
-      __primitive("chpl_comm_array_put", Bdata[offset], Alocid, Asublocid,
-                  Adata[offset], len);
+
+      __primitive("chpl_comm_array_put", srcRef, Alocid, Asublocid,
+                  dstRef, len);
     } else on Adata.locale {
       if debugDefaultDistBulkTransfer then
         chpl_debug_writeln("\tremote get() on ", here.id, " from ", Blocid);
-      __primitive("chpl_comm_array_get", Adata[offset], Blocid, Bsublocid,
-                  Bdata[offset], len);
+
+      __primitive("chpl_comm_array_get", dstRef, Blocid, Bsublocid,
+                  srcRef, len);
     }
   }
 

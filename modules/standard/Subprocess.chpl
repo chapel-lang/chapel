@@ -134,9 +134,9 @@ module Subprocess {
   use CTypes;
   use OS.POSIX;
 
-  private extern proc qio_openproc(argv:c_ptr(c_string),
-                                   env:c_ptr(c_string),
-                                   executable:c_string,
+  private extern proc qio_openproc(argv:c_ptr(c_ptrConst(c_char)),
+                                   env:c_ptr(c_ptrConst(c_char)),
+                                   executable:c_ptrConst(c_char),
                                    ref stdin_fd:c_int,
                                    ref stdout_fd:c_int,
                                    ref stderr_fd:c_int,
@@ -155,10 +155,10 @@ module Subprocess {
   // So, we have here some functions that work with
   // the C allocator instead of the Chapel one.
 
-  private extern proc qio_spawn_strdup(str: c_string): c_string;
-  private extern proc qio_spawn_allocate_ptrvec(count: c_size_t): c_ptr(c_string);
-  private extern proc qio_spawn_free_ptrvec(args: c_ptr(c_string));
-  private extern proc qio_spawn_free_str(str: c_string);
+  private extern proc qio_spawn_strdup(str: c_ptrConst(c_char)): c_ptrConst(c_char);
+  private extern proc qio_spawn_allocate_ptrvec(count: c_size_t): c_ptr(c_ptrConst(c_char));
+  private extern proc qio_spawn_free_ptrvec(args: c_ptr(c_ptrConst(c_char)));
+  private extern proc qio_spawn_free_str(str: c_ptrConst(c_char));
 
   /*
      This record represents a subprocess.
@@ -452,7 +452,7 @@ module Subprocess {
              param kind=iokind.dynamic, param locking=true) throws
   {
     use ChplConfig;
-    extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
+    extern proc sys_getenv(name:c_ptrConst(c_char), ref string_out:c_ptrConst(c_char)):c_int;
 
     var stdin_fd:c_int = QIO_FD_FORWARD;
     var stdout_fd:c_int = QIO_FD_FORWARD;
@@ -488,9 +488,9 @@ module Subprocess {
     if CHPL_COMM == "ugni" {
       if stdin != pipeStyle.forward || stdout != pipeStyle.forward || stderr != pipeStyle.forward then
         if numLocales > 1 {
-          var env_c_str:c_string;
+          var env_c_str:c_ptrConst(c_char);
           var env_str:string;
-          if sys_getenv(c"PE_PRODUCT_LIST", env_c_str)==1 {
+          if sys_getenv("PE_PRODUCT_LIST", env_c_str)==1 {
             env_str = string.createCopyingBuffer(env_c_str);
             if env_str.count("HUGETLB") > 0 then
               throw createSystemError(
@@ -515,7 +515,7 @@ module Subprocess {
     for (a,i) in zip(args, 0..) {
       use_args[i] = qio_spawn_strdup(a.c_str());
     }
-    var use_env:c_ptr(c_string) = nil;
+    var use_env:c_ptr(c_ptrConst(c_char)) = nil;
     if env.size != 0 {
       var nenv = env.size + 1;
       use_env = qio_spawn_allocate_ptrvec( nenv.safeCast(c_size_t) );

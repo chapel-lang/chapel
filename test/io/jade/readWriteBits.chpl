@@ -7,13 +7,15 @@ proc testio(param typ:iokind, style:iostyleInternal, x:int, numBits:int)
   if noisy then writeln("Testing ",typ:int(64)," ",x.type:string," ",style.binary:int(64)," ",style.byteorder:int(64)," ",style.str_style);
   var f = openTempFile();
   {
-    var ch = f.writer(typ, style=style);
+    var ch = f.writer(typ);
+    ch._set_styleInternal(style);
     if noisy then writeln("Writing ", x:string);
     ch.writeBits(x, numBits);
     ch.close();
   }
   {
-    var ch = f.reader(typ, style=style);
+    var ch = f.reader(typ);
+    ch._set_styleInternal(style);
     var y = x;
     var z = x;
     if noisy then writeln("Reading element");

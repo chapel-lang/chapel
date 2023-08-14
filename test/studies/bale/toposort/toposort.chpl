@@ -62,7 +62,7 @@ class AtomicLock {
   }
 
   proc lock(){
-    while lock$.testAndSet() do chpl_task_yield();
+    while lock$.testAndSet() do currentTask.yieldExecution();
   }
 
   proc unlock(){
@@ -202,7 +202,7 @@ class ParallelWorkQueue {
           yield work;
         }
       } else  {
-        chpl_task_yield();
+        currentTask.yieldExecution();
       }
 
       delete unlockedQueue;
@@ -369,7 +369,7 @@ class LocalDistributedWorkQueue {
             yield work;
           }
         } else  {
-          chpl_task_yield();
+          currentTask.yieldExecution();
         }
 
         delete unlockedQueue;

@@ -3282,9 +3282,21 @@ int _ftoa_core(char* buf, size_t buf_sz, double num,
       }
     } else {
       if( uppercase ) {
-        got = snprintf(buf, buf_sz, "%.*G", precision, num);
+        if ( floorf(num) == num ) {
+          // necessary to avoid omitting precision digits
+          //  when argument is a whole number
+          got = snprintf(buf, buf_sz, "%.*F", precision, num);
+        } else {
+          got = snprintf(buf, buf_sz, "%.*G", precision, num);
+        }
       } else {
-        got = snprintf(buf, buf_sz, "%.*g", precision, num);
+        if ( floorf(num) == num ) {
+          // necessary to avoid omitting precision digits
+          //  when argument is a whole number
+          got = snprintf(buf, buf_sz, "%.*f", precision, num);
+        } else {
+          got = snprintf(buf, buf_sz, "%.*g", precision, num);
+        }
       }
     }
   } else if( realfmt == 1 ) {

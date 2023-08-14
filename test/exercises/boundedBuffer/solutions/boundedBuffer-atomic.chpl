@@ -168,11 +168,10 @@ class BoundedBuffer {
   // a simple helper function for advancing the head or tail position.
   //
   inline proc advance(ref pos: atomic int) {
-    var prevPos: int;
+    var prevPos = pos.read();
     do {
-      prevPos = pos.read();
       const nextPos = (prevPos + 1) % capacity;
-    } while (!pos.compareAndSwap(prevPos, nextPos));
+    } while (!pos.compareExchangeWeak(prevPos, nextPos));
 
     return prevPos;
   }

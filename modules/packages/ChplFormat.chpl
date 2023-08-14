@@ -51,7 +51,7 @@ module ChplFormat {
       var st = dc._styleInternal();
       var orig = st; defer { dc._set_styleInternal(orig); }
       st.realfmt = 2;
-      st.string_format = iostringformat.chpl:uint(8);
+      st.string_format = iostringformatInternal.chpl:uint(8);
       st.aggregate_style = QIO_AGGREGATE_FORMAT_CHPL:uint(8);
       st.array_style = QIO_ARRAY_FORMAT_CHPL:uint(8);
       st.tuple_style = QIO_TUPLE_FORMAT_CHPL:uint(8);
@@ -220,7 +220,7 @@ module ChplFormat {
       var st = dc._styleInternal();
       var orig = st; defer { dc._set_styleInternal(orig); }
       st.realfmt = 2;
-      st.string_format = iostringformat.chpl:uint(8);
+      st.string_format = iostringformatInternal.chpl:uint(8);
       st.aggregate_style = QIO_AGGREGATE_FORMAT_CHPL:uint(8);
       st.array_style = QIO_ARRAY_FORMAT_CHPL:uint(8);
       st.tuple_style = QIO_TUPLE_FORMAT_CHPL:uint(8);

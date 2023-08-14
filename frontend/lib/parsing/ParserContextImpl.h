@@ -1810,7 +1810,9 @@ ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                  toOwned(withClause),
                                  blockStyle,
                                  std::move(body),
-                                 /*isExpressionLevel*/ false);
+                                 /*isExpressionLevel*/ false,
+                                 toOwned(this->loopAttributes));
+  this->loopAttributes=nullptr;
 
   return { .comments=comments, .stmt=node.release() };
 }
@@ -1852,7 +1854,9 @@ CommentsAndStmt ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                  toOwned(withClause),
                                  blockStyle,
                                  std::move(body),
-                                 /*isExpressionLevel*/ false);
+                                 /*isExpressionLevel*/ false,
+                                 toOwned(this->loopAttributes));
+  this->loopAttributes=nullptr;
 
   return { .comments=comments, .stmt=node.release() };
 }
@@ -1864,6 +1868,7 @@ CommentsAndStmt ParserContext::buildForallLoopStmt(YYLTYPE locForall,
                                                    AstNode* iterandExpr,
                                                    WithClause* withClause,
                                                    BlockOrDo blockOrDo) {
+                                                  //  AttributeGroup* attributeGroup) {
   auto index = indexExpr ? buildLoopIndexDecl(locIndex, toOwned(indexExpr))
                          : nullptr;
 
@@ -1883,7 +1888,9 @@ CommentsAndStmt ParserContext::buildForallLoopStmt(YYLTYPE locForall,
                             toOwned(withClause),
                             blockStyle,
                             std::move(body),
-                            /*isExpressionLevel*/ false);
+                            /*isExpressionLevel*/ false,
+                            toOwned(this->loopAttributes));
+  this->loopAttributes=nullptr;
 
   return { .comments=comments, .stmt=node.release() };
 }
@@ -1895,6 +1902,7 @@ CommentsAndStmt ParserContext::buildForeachLoopStmt(YYLTYPE locForeach,
                                                     AstNode* iterandExpr,
                                                     WithClause* withClause,
                                                     BlockOrDo blockOrDo) {
+                                                    // AttributeGroup* attributeGroup) {
   auto index = indexExpr ? buildLoopIndexDecl(locIndex, toOwned(indexExpr))
                          : nullptr;
 
@@ -1913,7 +1921,9 @@ CommentsAndStmt ParserContext::buildForeachLoopStmt(YYLTYPE locForeach,
                              toOwned(iterandExpr),
                              toOwned(withClause),
                              blockStyle,
-                             std::move(body));
+                             std::move(body),
+                             toOwned(this->loopAttributes));
+  this->loopAttributes=nullptr;
 
   return { .comments=comments, .stmt=node.release() };
 }
@@ -1924,6 +1934,7 @@ CommentsAndStmt ParserContext::buildForLoopStmt(YYLTYPE locFor,
                                                 AstNode* indexExpr,
                                                 AstNode* iterandExpr,
                                                 BlockOrDo blockOrDo) {
+                                                // AttributeGroup* attributeGroup) {
   auto index = indexExpr ? buildLoopIndexDecl(locIndex, toOwned(indexExpr))
                          : nullptr;
 
@@ -1936,10 +1947,6 @@ CommentsAndStmt ParserContext::buildForLoopStmt(YYLTYPE locFor,
                     blockOrDo);
 
   auto body = consumeToBlock(locBodyAnchor, exprLst);
-  auto attributeGroup = buildAttributeGroup(locFor);
-  if (attributeGroup != nullptr) {
-     resetAttributeGroupPartsState();
-  }
 
   auto node = For::build(builder, convertLocation(locFor),
                          std::move(index),
@@ -1948,8 +1955,8 @@ CommentsAndStmt ParserContext::buildForLoopStmt(YYLTYPE locFor,
                          std::move(body),
                          /*isExpressionLevel*/ false,
                          /*isParam*/ false,
-                         std::move(attributeGroup));
-
+                         toOwned(this->loopAttributes));
+  this->loopAttributes=nullptr;
 
   return { .comments=comments, .stmt=node.release() };
 }
@@ -1961,6 +1968,7 @@ CommentsAndStmt ParserContext::buildCoforallLoopStmt(YYLTYPE locCoforall,
                                                      AstNode* iterandExpr,
                                                      WithClause* withClause,
                                                      BlockOrDo blockOrDo) {
+                                                    //  AttributeGroup* attributeGroup) {
   auto index = indexExpr ? buildLoopIndexDecl(locIndex, toOwned(indexExpr))
                          : nullptr;
 
@@ -1979,7 +1987,9 @@ CommentsAndStmt ParserContext::buildCoforallLoopStmt(YYLTYPE locCoforall,
                               toOwned(iterandExpr),
                               toOwned(withClause),
                               blockStyle,
-                              std::move(body));
+                              std::move(body),
+                              toOwned(this->loopAttributes));
+  this->loopAttributes=nullptr;
 
   return { .comments=comments, .stmt=node.release() };
 }

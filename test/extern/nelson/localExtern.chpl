@@ -1,5 +1,5 @@
-
-extern proc puts(s : c_string) : int;
+use CTypes;
+extern proc puts(s : c_ptrConst(c_char)) : int;
 
 local {
   puts("inside local");

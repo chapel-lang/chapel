@@ -28,12 +28,11 @@ proc setupGridLocales(ensureManyLocs = false) {
 
 // show what we have
 config const vsend = true;
-const fpstyle = new iostyleInternal(realfmt = 1, precision = 2,
-                                    min_width_columns = 6);
+const min_width_columns = 6;
 
 const colsep = "  ";
 proc showdummyrow() {
-  const width = (m) * fpstyle.min_width_columns;
+  const width = (m) * min_width_columns;
   for 1..width do write(" ");
 }
 proc showrealrow(oddphase: bool, gi:int, gj:int, i:int) {
@@ -43,7 +42,7 @@ proc showrealrow(oddphase: bool, gi:int, gj:int, i:int) {
     showrealrow(Data[gi,gj].A, i);
 }
 proc showrealrow(ARR, i:int) {
-  for j in 1..m do write(ARR[i,j], fpstyle);
+  for j in 1..m do writef("%*.2dr", min_width_columns, ARR[i,j]);
 }
 
 proc showfetch(oddphase: bool, msg = "") {

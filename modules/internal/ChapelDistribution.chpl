@@ -390,7 +390,6 @@ module ChapelDistribution {
     proc isRectangular() param do return false;
     proc isAssociative() param do return false;
     proc isSparse()      param do return false;
-    proc isBlock()       param do return false;
 
     proc type isDefaultRectangular() param do return false;
     proc isDefaultRectangular() param do return false;

@@ -43,6 +43,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "vec.h"
+#include "wellknown.h"
 
 #include "global-ast-vecs.h"
 
@@ -276,6 +277,10 @@ const char* toString(Type* type, bool decorateAllClasses) {
       // de-sugar chpl__c_void_ptr, which is used internally and is a distinct
       // type from c_ptr(void)
       retval = "raw_c_void_ptr";
+    } else if (vt == dtStringC) {
+      // present dtStringC type as familiar 'c_string' instead of the internal
+      // name 'chpl_c_string' or cname, 'c_string_rehook'.
+      retval = "c_string";
     }
 
     if (retval == NULL)
@@ -1054,7 +1059,14 @@ void initPrimitiveTypes() {
   dtInt[INT_SIZE_64]                   = createPrimitiveType("int",      "int64_t");
   dtReal[FLOAT_SIZE_64]                = createPrimitiveType("real",     "_real64");
 
-  dtStringC                            = createPrimitiveType("c_string", "c_string" );
+  // The Chapel name is prefixed with 'chpl_' to make it internal, but the
+  // C type is 'c_string' which is defined in the runtime as an alias for
+  // 'const char*'. The user-facing alias is defined in 'ChapelBase' so that
+  // it can easily be deprecated.
+  // Note that we actually map to the type 'c_string_rehook' to avoid a
+  // collision with the type alias when '--no-munge-user-idents' is thrown.
+  // TODO: a better solution than renaming c_string to avoid the collision would be preferred
+  dtStringC                            = createPrimitiveType("chpl_c_string", "c_string_rehook");
   dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
 
   dtObject                             = new AggregateType(AGGREGATE_CLASS);
@@ -1610,6 +1622,15 @@ bool isClassLikeOrPtr(Type* t) {
                             t == dtCVoidPtr ||
                             t == dtStringC ||
                             t == dtCFnPtr);
+}
+
+bool isCPtrConstChar(Type* t) {
+  if (t->symbol->hasFlag(FLAG_C_PTRCONST_CLASS)) {
+    if (auto dct = getDataClassType(t->symbol)) {
+      return dct->typeInfo() == dt_c_char;
+    }
+  }
+  return false;
 }
 
 bool isCVoidPtr(Type* t) {

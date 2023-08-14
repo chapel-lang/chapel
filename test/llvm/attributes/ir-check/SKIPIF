@@ -1,0 +1,2 @@
+# throws off loop attributes
+COMPOPTS <= --baseline

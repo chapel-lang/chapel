@@ -1,8 +1,10 @@
+use CTypes;
+
 var s1: real;
 var flag1: sync bool;
 var done: sync bool;
 
-extern proc printf(fmt:c_string, x...);
+extern proc printf(fmt:c_ptrConst(c_char), x...);
 
 proc main() {
   s1 = 1.0;
@@ -21,7 +23,7 @@ proc main() {
   sync {
     s2 = 1.0;
     on Locales(1) do begin with (ref s2) {
-        const tmp = flag2.readFE();;
+        const tmp = flag2.readFE();
         printf("%s\n", ("s2 is: " + s2:string).c_str());
       }
     s2 = 2.0;
