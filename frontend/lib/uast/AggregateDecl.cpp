@@ -40,6 +40,8 @@ bool AggregateDecl::validAggregateChildren(AstListIteratorPair<AstNode> it) {
       } else {
         return false;
       }
+    } else if (elt->isImplements()) {
+      // OK
     } else {
       return false;
     }

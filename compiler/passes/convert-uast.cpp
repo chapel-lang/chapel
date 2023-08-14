@@ -150,6 +150,13 @@ struct Converter {
     const resolution::ResolutionResultByPostorderID* resolved;
     owned<ConvertedSymbolsMap> convertedSyms;
 
+    // For aggregate declarations, we need to move `implements Bla` statements
+    // inside them up to be siblings of the declaration. Keep a list of those.
+    //
+    // performance: If the symStack gets large, it might make sense to move this
+    // vector to a separate aggregate decl stack.
+    std::vector<ImplementsStmt*> liftImplements;
+
     SymStackEntry(const uast::AstNode* ast,
                   const resolution::ResolutionResultByPostorderID* resolved,
                   ConvertedSymbolsMap* parentMap)
@@ -710,11 +717,23 @@ struct Converter {
     const char* name = astr(node->interfaceName());
     CallExpr* act = new CallExpr(PRIM_ACTUALS_LIST);
     Expr* ret = nullptr;
+    bool needsLift = false;
 
     if (node->typeIdent()) {
       auto conv = convertAST(node->typeIdent());
       INT_ASSERT(conv);
       act->insertAtTail(conv);
+    } else if (!node->isExpressionLevel() &&
+               symStack.size() > 0 && symStack.back().ast->isAggregateDecl()) {
+      // implements Hashable; as part of a record/class decl. Add the
+      // implicit Self.
+      auto aggregateRef = findConvertedSym(symStack.back().ast->id());
+      INT_ASSERT(aggregateRef);
+      act->insertAtTail(aggregateRef);
+
+      // Don't actually put this statement where it is written now; it'll
+      // be moved after the aggregate type.
+      needsLift = true;
     }
 
     Expr* conv = convertAST(node->interfaceExpr());
@@ -728,10 +747,16 @@ struct Converter {
     if (node->isExpressionLevel()) {
       ret = IfcConstraint::build(name, act);
     } else {
-      ret = ImplementsStmt::build(name, act, nullptr);
+      auto implements = ImplementsStmt::build(name, act, nullptr);
+      if (needsLift) {
+        // Don't return anything here, the expr will be inserted later.
+        symStack.back().liftImplements.push_back(implements);
+      } else {
+        ret = implements;
+      }
     }
 
-    INT_ASSERT(ret);
+    INT_ASSERT(ret || needsLift);
 
     return ret;
   }
@@ -3941,21 +3966,31 @@ struct Converter {
       INT_ASSERT(externFlag == FLAG_UNKNOWN);
     }
 
-    auto ret = buildClassDefExpr(name, cname, tag, inherit,
+    auto defExpr = buildClassDefExpr(name, cname, tag, inherit,
                                  decls,
                                  externFlag);
-    INT_ASSERT(ret->sym);
+    INT_ASSERT(defExpr->sym);
 
-    attachSymbolAttributes(node, ret->sym);
-    attachSymbolVisibility(node, ret->sym);
+    attachSymbolAttributes(node, defExpr->sym);
+    attachSymbolVisibility(node, defExpr->sym);
     if (inheritMarkedGeneric) {
-      ret->sym->addFlag(FLAG_SUPERCLASS_MARKED_GENERIC);
+      defExpr->sym->addFlag(FLAG_SUPERCLASS_MARKED_GENERIC);
     }
 
     // Note the type is converted so we can wire up SymExprs later
-    noteConvertedSym(node, ret->sym);
+    noteConvertedSym(node, defExpr->sym);
 
-    popFromSymStack(node, ret->sym);
+    Expr* ret = defExpr;
+    if (!symStack.back().liftImplements.empty()) {
+      auto containerBlock = new BlockStmt(BLOCK_SCOPELESS);
+      containerBlock->insertAtHead(defExpr);
+      for (auto implementsStmt : symStack.back().liftImplements) {
+        containerBlock->insertAtTail(implementsStmt);
+      }
+      ret = containerBlock;
+    }
+
+    popFromSymStack(node, defExpr->sym);
 
     return ret;
   }
