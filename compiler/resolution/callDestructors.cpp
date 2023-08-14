@@ -2029,8 +2029,17 @@ void RemoveElidedOnBlocks::process(BlockStmt* block) {
 
 bool AutoDestroyLoopExprTemps::shouldProcess(CallExpr* call) {
 
+  Symbol* parentSym = call->parentSymbol;
   // don't need to touch ArgSymbols
-  if (isArgSymbol(call->parentSymbol)) return false;
+  if (isArgSymbol(parentSym)) return false;
+
+  // if we are already in an iterator expression, no need to cleanup -- the
+  // caller will cleanup (e.g. foo([1..n][1..n] int);)
+  if (FnSymbol* parentFn = toFnSymbol(parentSym)) {
+    if (parentFn->hasFlag(FLAG_FN_RETURNS_ITERATOR)) {
+      return false;
+    }
+  }
 
   // are we calling a resolved call_forallexpr?
   FnSymbol* callee = call->resolvedFunction();
@@ -2065,13 +2074,15 @@ void AutoDestroyLoopExprTemps::process(CallExpr* call) {
   CallExpr* parentCall = toCallExpr(call->parentExpr);
   SymExpr* targetSE = toSymExpr(parentCall->get(1));
   Symbol* targetSym = targetSE->symbol();
+  BlockStmt* scope = call->getScopeBlock();
+  INT_ASSERT(scope);
 
   SET_LINENO(call);
   auto destroy = new CallExpr(PRIM_AUTO_DESTROY_RUNTIME_TYPE,
                               new SymExpr(targetSym));
+
+  bool handled = false;
   if (LoopStmt::findEnclosingLoop(call)) {
-    BlockStmt* scope = call->getScopeBlock();
-    INT_ASSERT(scope);
 
     CondStmt* ibb = nullptr;
     for_alist (expr, scope->body) {
@@ -2089,13 +2100,17 @@ void AutoDestroyLoopExprTemps::process(CallExpr* call) {
     if (ibb) {
       ibb->thenStmt->insertAtHead(destroy);
       ibb->insertAfter(destroy->copy());
-    }
-    else {
-      scope->insertAtTail(destroy);
+      handled = true;
     }
   }
-  else {
-    call->getFunction()->insertBeforeEpilogue(destroy);
+
+  // nothing special about it, just add at the end of the scope
+  // TODO: should we try to find the correct anchor to make sure that destroys
+  // are called in the correct order? But unless it is needed,
+  // I'd like us to use proper autoDestroy support for RTTs instead of
+  // engineering the same thing for RTTs here. Engin
+  if (!handled) {
+    scope->insertAtTail(destroy);
   }
 }
 
