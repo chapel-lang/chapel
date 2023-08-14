@@ -1,6 +1,6 @@
 /*
    Learn Chapel in Y Minutes
-   
+
    This primer will go over basic syntax and concepts in Chapel.
 */
 
@@ -121,7 +121,7 @@ References
 // be made to alias a variable other than the variable it is initialized with.
 // Here, ``refToActual`` refers to ``actual``.
 var actual = 10;
-ref refToActual = actual; 
+ref refToActual = actual;
 writeln(actual, " == ", refToActual); // prints the same value
 actual = -123; // modify actual (which refToActual refers to)
 writeln(actual, " == ", refToActual); // prints the same value
@@ -497,7 +497,7 @@ Procedures
 ----------
 */
 
-// Chapel procedures have similar syntax functions in other languages. 
+// Chapel procedures have similar syntax functions in other languages.
 proc fibonacci(n : int) : int {
   if n <= 1 then return n;
   return fibonacci(n-1) + fibonacci(n-2);
@@ -1137,29 +1137,29 @@ proc main() {
 // ``sync`` variables have two states: empty and full.
 // If you read an empty variable or write a full variable, you are waited
 // until the variable is full or empty again.
-  var someSyncVar$: sync int; // varName$ is a convention not a law.
+  var someSyncVar: sync int;
   sync {
     begin { // Reader task
       writeln("Reader: waiting to read.");
-      var read_sync = someSyncVar$.readFE();
+      var read_sync = someSyncVar.readFE();
       writeln("Reader: value is ", read_sync);
     }
 
     begin { // Writer task
       writeln("Writer: will write in...");
       countdown(3);
-      someSyncVar$.writeEF(123);
+      someSyncVar.writeEF(123);
     }
   }
 
 // ``single`` vars can only be written once. A read on an unwritten ``single``
 // results in a wait, but when the variable has a value it can be read indefinitely.
-  var someSingleVar$: single int; // varName$ is a convention not a law.
+  var someSingleVar: single int;
   sync {
     begin { // Reader task
       writeln("Reader: waiting to read.");
       for i in 1..5 {
-        var read_single = someSingleVar$.readFF();
+        var read_single = someSingleVar.readFF();
         writeln("Reader: iteration ", i,", and the value is ", read_single);
       }
     }
@@ -1167,17 +1167,17 @@ proc main() {
     begin { // Writer task
       writeln("Writer: will write in...");
       countdown(3);
-      someSingleVar$.writeEF(5); // first and only write ever.
+      someSingleVar.writeEF(5); // first and only write ever.
     }
   }
 
 // Here's an example using atomics and a ``sync`` variable to create a
 // count-down mutex (also known as a multiplexer).
   var count: atomic int; // our counter
-  var lock$: sync bool;   // the mutex lock
+  var lock: sync bool;   // the mutex lock
 
   count.write(2);       // Only let two tasks in at a time.
-  lock$.writeXF(true);  // Set lock$ to full (unlocked)
+  lock.writeXF(true);  // Set lock to full (unlocked)
   // Note: The value doesn't actually matter, just the state
   // (full:unlocked / empty:locked)
   // Also, writeXF() fills (F) the sync var regardless of its state (X)
@@ -1185,18 +1185,18 @@ proc main() {
   coforall task in 1..5 { // Generate tasks
     // Create a barrier
     do {
-      lock$.readFE();           // Read lock$ (wait)
+      lock.readFE();            // Read lock (wait)
     } while (count.read() < 1); // Keep waiting until a spot opens up
 
     count.sub(1);          // decrement the counter
-    lock$.writeXF(true); // Set lock$ to full (signal)
+    lock.writeXF(true); // Set lock to full (signal)
 
     // Actual 'work'
     writeln("Task #", task, " doing work.");
     sleep(2);
 
     count.add(1);        // Increment the counter
-    lock$.writeXF(true); // Set lock$ to full (signal)
+    lock.writeXF(true); // Set lock to full (signal)
   }
 
 // We can define the operations ``+ * & | ^ && || min max minloc maxloc``
