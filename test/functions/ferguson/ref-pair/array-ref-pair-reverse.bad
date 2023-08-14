@@ -1,11 +1,3 @@
-setit
-ARG REF
-GLOBAL REF
-0
-readit
-ARG REF
-GLOBAL CONST REF
-1
-setit
-GLOBAL REF
-0
+array-ref-pair-reverse.chpl:43: error: const actual is passed to 'ref' formal 'arg' of global_getter()
+note: to formal of type [domain(1,int(64),one)] int(64)
+array-ref-pair-reverse.chpl:15: note: to ref formal here
