@@ -75,7 +75,7 @@ proc testOrderAtomicBool(a, ref i, ref b, param o: memoryOrder) {
   writeln();
 }
 
-proc asyncAdd(a) { begin { a.add(1); } }
+proc asyncAdd(ref a) { begin { a.add(1); } }
 proc testAtomicT(ref a, ref i, ref b) {
   type eltType = if isArray(a) then a.eltType else a.type;
   type valType = eltType.valType;
