@@ -142,7 +142,7 @@ void ExpandExternArrayCalls::process(FnSymbol* fn) {
       bool isRef = formal->intent == INTENT_REF ||
                    formal->intent == INTENT_OUT ||
                    formal->intent == INTENT_INOUT;
-      
+
       const char* arrayToPtr = isRef ? "chpl_arrayToPtr" : "chpl_arrayToPtrConst";
 
       externCall->argList.insertAtTail(new CallExpr(arrayToPtr,
