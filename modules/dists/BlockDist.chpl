@@ -345,8 +345,10 @@ record Block {
     this.idxType = idxType;
     this.sparseLayoutType = _to_unmanaged(sparseLayoutType);
     this.chpl_distHelp = new chpl_PrivatizedDistHelper(
-                          if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid,
-                                                       value);
+                          if _isPrivatized(value)
+                            then _newPrivatizedClass(value)
+                            else nullPid,
+                          value);
   }
 
     proc init(_pid : int, _instance, _unowned : bool) {
@@ -363,8 +365,10 @@ record Block {
       this.idxType = value.idxType;
       this.sparseLayoutType = value.sparseLayoutType;
       this.chpl_distHelp = new chpl_PrivatizedDistHelper(
-                                                         if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid,
-                                                         _to_unmanaged(value));
+                             if _isPrivatized(value)
+                               then _newPrivatizedClass(value)
+                               else nullPid,
+                             _to_unmanaged(value));
     }
 
     // Note: This does not handle the case where the desired type of 'this'

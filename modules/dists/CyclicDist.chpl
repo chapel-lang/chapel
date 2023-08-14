@@ -211,8 +211,10 @@ record Cyclic {
     this.idxType = idxType;
 
     this.chpl_distHelp = new chpl_PrivatizedDistHelper(
-                          if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid,
-                                                       value);
+                          if _isPrivatized(value)
+                            then _newPrivatizedClass(value)
+                            else nullPid,
+                          value);
   }
 
     proc init(_pid : int, _instance, _unowned : bool) {
@@ -229,8 +231,10 @@ record Cyclic {
       this.idxType = value.idxType;
 
       this.chpl_distHelp = new chpl_PrivatizedDistHelper(
-                                                         if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid,
-                                                         _to_unmanaged(value));
+                             if _isPrivatized(value)
+                               then _newPrivatizedClass(value)
+                               else nullPid,
+                             _to_unmanaged(value));
     }
 
     // Note: This does not handle the case where the desired type of 'this'
