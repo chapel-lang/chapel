@@ -1862,6 +1862,21 @@ module ShallowCopy {
   private use CTypes;
   private use OS.POSIX;
 
+  // The shallowCopy / shallowSwap code needs to be able to copy/swap
+  // _array records. But c_ptrTo on an _array will return a pointer to
+  // the first element, which messes up the shallowCopy/shallowSwap code
+  //
+  // As a workaround, this function just returns a pointer to the argument,
+  // whether or not it is an array.
+  //
+  // TODO: these should be replaced with the appropriate c_ptrTo/c_addrOf calls
+  private inline proc ptrTo(ref x) {
+    return c_pointer_return(x);
+  }
+  private inline proc ptrToConst(const ref x) {
+    return c_pointer_return_const(x);
+  }
+
   // These shallow copy functions "move" a record around
   // (i.e. they neither swap nor call a copy initializer).
   //
@@ -1874,11 +1889,11 @@ module ShallowCopy {
       dst = src;
     } else {
       var size = c_sizeof(st);
-      memcpy(c_addrOf(dst), c_addrOf(src), size);
+      memcpy(ptrTo(dst), ptrTo(src), size);
       if boundsChecking {
         // The version moved from should never be used again,
         // but we clear it out just in case.
-        memset(c_addrOf(src), 0, size);
+        memset(ptrTo(src), 0, size);
       }
     }
   }
@@ -1908,11 +1923,11 @@ module ShallowCopy {
     } else {
       var size = c_sizeof(st);
       // tmp = lhs
-      memcpy(c_addrOf(tmp), c_addrOf(lhs), size);
+      memcpy(ptrTo(tmp), ptrTo(lhs), size);
       // lhs = rhs
-      memcpy(c_addrOf(lhs), c_addrOf(rhs), size);
+      memcpy(ptrTo(lhs), ptrTo(rhs), size);
       // rhs = tmp
-      memcpy(c_addrOf(rhs), c_addrOf(tmp), size);
+      memcpy(ptrTo(rhs), ptrTo(tmp), size);
     }
   }
 
@@ -1931,7 +1946,7 @@ module ShallowCopy {
     if A._instance.isDefaultRectangular() {
       type st = __primitive("static field type", A._value, "eltType");
       var size = (nElts:c_size_t)*c_sizeof(st);
-      memcpy(c_addrOf(A[dst]), c_addrOf(A[src]), size);
+      memcpy(ptrTo(A[dst]), ptrTo(A[src]), size);
     } else {
       var ok = chpl__bulkTransferArray(/*dst*/ A, {dst..#nElts},
                                        /*src*/ A, {src..#nElts});
@@ -1958,7 +1973,7 @@ module ShallowCopy {
        SrcA._instance.isDefaultRectangular() {
       type st = __primitive("static field type", DstA._value, "eltType");
       var size = (nElts:c_size_t)*c_sizeof(st);
-      memcpy(c_addrOf(DstA[dst]), c_addrOfConst(SrcA[src]), size);
+      memcpy(ptrTo(DstA[dst]), ptrToConst(SrcA[src]), size);
     } else {
       var ok = chpl__bulkTransferArray(/*dst*/ DstA, {dst..#nElts},
                                        /*src*/ SrcA, {src..#nElts});
@@ -3566,7 +3581,7 @@ record DefaultComparator {
     // Convert the real bits to a uint
     var src = x;
     var dst: uint(nbits);
-    memcpy(c_ptrTo(dst), c_ptrTo(src), c_sizeof(src.type));
+    memcpy(ptrTo(dst), ptrTo(src), c_sizeof(src.type));
 
     if (dst >> (nbits-1)) == 1 {
       // negative bit is set, flip all bits
