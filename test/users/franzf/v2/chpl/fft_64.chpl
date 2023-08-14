@@ -49,7 +49,7 @@ proc init_fft64() {
 
 }
 
-proc fft64\(ref Y: [] complex, X: [] complex) {
+proc fft64(ref Y: [] complex, X: [] complex) {
     for i1219 in 0..15 {
         var s2463, s2464, s2465, s2466, s2467, t4319, t4320,
     t4321:complex;

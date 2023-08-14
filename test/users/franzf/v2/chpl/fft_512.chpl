@@ -49,7 +49,7 @@ proc init_fft512() {
 
 }
 
-proc fft512\(ref Y: [] complex, X: [] complex) {
+proc fft512(ref Y: [] complex, X: [] complex) {
     for i1563 in 0..15 {
         var s3313, s3314, s3315, s3316, s3317, s3318, s3319,
     s3320, s3321, s3322, s3323, s3324, s3325, s3326, s3327,

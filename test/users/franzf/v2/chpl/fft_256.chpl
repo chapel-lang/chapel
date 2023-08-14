@@ -49,7 +49,7 @@ proc init_fft256() {
 
 }
 
-proc fft256\(ref Y: [] complex, X: [] complex) {
+proc fft256(ref Y: [] complex, X: [] complex) {
     for i1430 in 0..15 {
         var s2987, s2988, s2989, s2990, s2991, s2992, s2993,
     s2994, s2995, s2996, s2997, s2998, s2999, s3000, s3001,

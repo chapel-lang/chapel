@@ -59,7 +59,7 @@ proc init_fft2048() {
 
 }
 
-proc fft2048\(ref Y: [] complex, X: [] complex) {
+proc fft2048(ref Y: [] complex, X: [] complex) {
     for i1874 in 0..63 {
         var s4237, s4238, s4239, s4240, s4241, s4242, s4243,
     s4244, s4245, s4246, s4247, s4248, s4249, s4250, s4251,

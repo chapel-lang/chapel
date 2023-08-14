@@ -51,7 +51,7 @@ proc init_fft1024() {
 
 }
 
-proc fft1024\(ref Y: [] complex, X: [] complex) {
+proc fft1024(ref Y: [] complex, X: [] complex) {
     for i1710 in 0..31 {
         var s3687, s3688, s3689, s3690, s3691, s3692, s3693,
     s3694, s3695, s3696, s3697, s3698, s3699, s3700, s3701,

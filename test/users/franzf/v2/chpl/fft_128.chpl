@@ -51,7 +51,7 @@ proc init_fft128() {
 
 }
 
-proc fft128\(ref Y: [] complex, X: [] complex) {
+proc fft128(ref Y: [] complex, X: [] complex) {
     for i1316 in 0..31 {
         var s2609, s2610, s2611, s2612, s2613, t4511, t4512,
     t4513:complex;

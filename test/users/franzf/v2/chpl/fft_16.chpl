@@ -39,7 +39,7 @@ proc init_fft16() {
 
 }
 
-proc fft16\(ref Y: [] complex, X: [] complex) {
+proc fft16(ref Y: [] complex, X: [] complex) {
     var s2289, s2290, s2291, s2292, s2293, s2294, s2295,
     s2296, s2297, s2298, s2299, s2300, s2301, s2302, s2303,
     s2304, s2305, t3851, t3852, t3853, t3854, t3855, t3856,

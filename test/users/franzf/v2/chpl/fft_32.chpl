@@ -39,7 +39,7 @@ proc init_fft32() {
 
 }
 
-proc fft32\(ref Y: [] complex, X: [] complex) {
+proc fft32(ref Y: [] complex, X: [] complex) {
     var s2404, s2405, s2406, s2407, s2408, s2409, s2410,
     s2411, s2412, s2413, s2414, s2415, s2416, s2417, s2418,
     s2419, s2420, s2421, s2422, s2423, s2424, s2425, s2426,
