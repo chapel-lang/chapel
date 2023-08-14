@@ -142,21 +142,8 @@ import shlex
 import datetime
 import errno
 from functools import reduce
+import atexit
 
-# update path to allow 'import fixpath' below
-util_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'util')
-config_dir = os.path.join(util_dir, 'config')
-sys.path.insert(0, os.path.abspath(config_dir))
-
-# update PATH to remove CHPL_HOME paths if any
-# This essentially deactivates the venv that sub_test is run in,
-# because the test venv is built inside of CHPL_HOME.
-# We do this so tests/prediffs can use the system python instead of the venv
-import fixpath
-fixpath.update_path_env()
-
-localdir = ''
-sub_test_start_time = time.time()
 def elapsed_sub_test_time():
     """Print elapsed time for sub_test call to console."""
     global sub_test_start_time, localdir
@@ -169,9 +156,6 @@ def elapsed_sub_test_time():
         test_name = os.path.join(test_name, base_name)
 
     print('[Finished subtest "{0}" - {1:.3f} seconds]\n'.format(test_name, elapsed_sec))
-
-import atexit
-atexit.register(elapsed_sub_test_time)
 
 def run_process(*args, **kwargs):
     p = subprocess.Popen(*args, **kwargs)
@@ -806,12 +790,15 @@ def get_util_dir():
     # sys.stdout.write('utildir='+utildir+'\n');
     return utildir
 
+def get_config_dir(util_dir):
+    return os.path.join(util_dir, 'config')
+
 def main(): 
     # Start of sub_test proper
     #
     global utildir, chpl_base, chpl_home, machine, envCompopts, platform
     global chplcommstr, chplnastr, chpllmstr, chpltasksstr, perflabel
-    global useLauncherTimeout
+    global useLauncherTimeout, localdir, sub_test_start_time
 
     if len(sys.argv)!=2:
         print('usage: sub_test COMPILER')
@@ -824,7 +811,19 @@ def main():
     testdir = get_test_dir(chpl_home)
     localdir = get_local_dir(testdir)
     utildir = get_util_dir()
+    configdir = get_config_dir(utildir)
 
+    sys.path.insert(0, os.path.abspath(configdir))
+
+    # update PATH to remove CHPL_HOME paths if any
+    # This essentially deactivates the venv that sub_test is run in,
+    # because the test venv is built inside of CHPL_HOME.
+    # We do this so tests/prediffs can use the system python instead of the venv
+    import fixpath
+    fixpath.update_path_env()
+
+    sub_test_start_time = time.time()
+    atexit.register(elapsed_sub_test_time)
 
     # Find the c compiler
     # We open the compileline inside of CHPL_HOME rather than CHPL_TEST_UTIL_DIR on
