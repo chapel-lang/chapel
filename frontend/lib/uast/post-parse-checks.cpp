@@ -176,6 +176,7 @@ struct Visitor {
   void visit(const FnCall* node);
   void visit(const Function* node);
   void visit(const FunctionSignature* node);
+  void visit(const Implements* implements);
   void visit(const Import* node);
   void visit(const OpCall* node);
   void visit(const Return* node);
@@ -1352,6 +1353,26 @@ void Visitor::visit(const Union* node) {
 void Visitor::visit(const Use* node) {
   for (auto clause : node->visibilityClauses()) {
     checkVisibilityClauseValid(node, clause);
+  }
+}
+
+void Visitor::visit(const Implements* node) {
+  if (parents_.size() > 0) {
+    if (auto parentAggr = parents_.back()->toAggregateDecl()) {
+      // This is a unary implements statement inside of a class or record.
+
+      if (!node->interfaceExpr()->isIdentifier()) {
+        // It's invalid to write:
+        //
+        //   record R {
+        //     implements SomeInterface(T)
+        //   }
+        //
+        // Because, where should the "Self" / R argument to SomeInterface go?
+        // Error if the statement is anything other than `implements SomeInterface`.
+        CHPL_REPORT(context_, InvalidUnaryImplements, parentAggr, node);
+      }
+    }
   }
 }
 
