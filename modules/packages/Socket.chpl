@@ -662,9 +662,9 @@ proc tcpListener.accept(in timeout: struct_timeval = indefiniteTimeout):tcpConn 
   if err_out == 0 {
     return new file(fdOut):tcpConn;
   }
-  var localSync$: sync c_short;
+  var localSync: sync c_short;
   // create event pending state
-  var internalEvent = event_new(event_loop_base, this.socketFd, EV_READ | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync$):c_ptr(void));
+  var internalEvent = event_new(event_loop_base, this.socketFd, EV_READ | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync):c_ptr(void));
   defer {
     // cleanup
     event_free(internalEvent);
@@ -679,7 +679,7 @@ proc tcpListener.accept(in timeout: struct_timeval = indefiniteTimeout):tcpConn 
       throw new Error("accept() failed");
     }
     // return value
-    var retval = localSync$.readFE();
+    var retval = localSync.readFE();
     // stop timer
     t.stop();
     // if error was timeout throw error
@@ -857,9 +857,9 @@ proc connect(const ref address: ipAddr, in timeout = indefiniteTimeout): tcpConn
     setBlocking(socketFd, true);
     return new file(socketFd):tcpConn;
   }
-  var localSync$: sync int = 0;
-  localSync$.readFE();
-  var writerEvent = event_new(event_loop_base, socketFd, EV_WRITE | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync$):c_ptr(void));
+  var localSync: sync int = 0;
+  localSync.readFE();
+  var writerEvent = event_new(event_loop_base, socketFd, EV_WRITE | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync):c_ptr(void));
   defer {
     event_del(writerEvent);
     event_free(writerEvent);
@@ -868,7 +868,7 @@ proc connect(const ref address: ipAddr, in timeout = indefiniteTimeout): tcpConn
   if err_out != 0 {
     throw new Error("connect() failed");
   }
-  var retval = localSync$.readFE();
+  var retval = localSync.readFE();
   if retval & EV_TIMEOUT != 0 {
     throw createSystemError(ETIMEDOUT, "connect() timed out");
   }
@@ -1056,8 +1056,8 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = indefiniteTimeout,
     deallocate(buffer);
     throw createSystemError(err_out,"recv failed");
   }
-  var localSync$: sync c_short;
-  var internalEvent = event_new(event_loop_base, this.socketFd, EV_READ | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync$):c_ptr(void));
+  var localSync: sync c_short;
+  var internalEvent = event_new(event_loop_base, this.socketFd, EV_READ | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync):c_ptr(void));
   defer {
     event_free(internalEvent);
   }
@@ -1070,7 +1070,7 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = indefiniteTimeout,
       deallocate(buffer);
       throw new Error("recv failed");
     }
-    var retval = localSync$.readFE();
+    var retval = localSync.readFE();
     t.stop();
     if retval & EV_TIMEOUT != 0 {
       deallocate(buffer);
@@ -1171,8 +1171,8 @@ proc udpSocket.send(data: bytes, in address: ipAddr,
   if err_out != 0 && err_out != EAGAIN && err_out != EWOULDBLOCK {
     throw createSystemError(err_out, "send failed");
   }
-  var localSync$: sync c_short;
-  var internalEvent = event_new(event_loop_base, this.socketFd, EV_WRITE | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync$):c_ptr(void));
+  var localSync: sync c_short;
+  var internalEvent = event_new(event_loop_base, this.socketFd, EV_WRITE | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync):c_ptr(void));
   defer {
     event_free(internalEvent);
   }
@@ -1183,7 +1183,7 @@ proc udpSocket.send(data: bytes, in address: ipAddr,
     if err_out != 0 {
       throw createSystemError(err_out, "send failed");
     }
-    var retval = localSync$.readFE();
+    var retval = localSync.readFE();
     t.stop();
     if retval & EV_TIMEOUT != 0 {
       throw createSystemError(ETIMEDOUT, "send timed out");
