@@ -1,7 +1,8 @@
 # skip explicit fast
 COMPOPTS <= --fast
-# test only LLVM 15 or greater
+# throws off loop attributes
+COMPOPTS <= --baseline
+# test only LLVM 14 or greater
 CHPL_LLVM_VERSION==11
 CHPL_LLVM_VERSION==12
 CHPL_LLVM_VERSION==13
-CHPL_LLVM_VERSION==14
