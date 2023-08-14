@@ -1,0 +1,3 @@
+inbody-record-bad.chpl:6: error: this form of 'implements' statement is not allowed in record bodies
+inbody-record-bad.chpl:6: note: in particular, the interface is specified with actuals
+inbody-record-bad.chpl:5: note: the enclosing record is decalred here
