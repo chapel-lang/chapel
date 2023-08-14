@@ -1,4 +1,4 @@
  # assertVectorized-baseline.good
---fast
+--fast --no-ieee-float
 -g # assertVectorized-debug.good
--g --fast
+-g --fast --no-ieee-float
