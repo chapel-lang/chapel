@@ -709,7 +709,7 @@ module ChapelDomain {
     // Once an interface supports it:
     // if sd.RMO && d.RMO then rowSorted = true;
 
-    sd._value.dsiBulkAdd(arr, rowSorted, true, false);
+    sd._value.dsiBulkAddNoPreserveInds(arr, rowSorted, true);
   }
 
   // TODO: Implement bulkRemove
