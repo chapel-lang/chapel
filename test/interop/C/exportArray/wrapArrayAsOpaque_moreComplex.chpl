@@ -44,6 +44,6 @@ export proc addEltBlock(ref x: chpl_opaque_array, idx: int, val: int) {
   addEltBlock(chpl_x, idx, val);
 }
 
-proc addEltBlock(x: [D] int, idx: int, val: int) {
+proc addEltBlock(ref x: [D] int, idx: int, val: int) {
   x[idx] = val;
 }
