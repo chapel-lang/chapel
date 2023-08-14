@@ -338,7 +338,7 @@ module ChapelArray {
     halt("Should never get here");
   }
 
-  proc chpl__buildAssociativeArrayExpr( elems ...?k ) {
+  proc chpl__buildAssociativeArrayExpr( const elems ...?k ) {
     type keyType = elems(0).type;
     type valType = elems(1).type;
     var D : domain(keyType);
