@@ -18,24 +18,14 @@
  * limitations under the License.
  */
 
-module ChapelPrivatization {
-
-  private use CTypes;
-
-  // the type of elements in chpl_privateObjects.
-  extern record chpl_privateObject_t {
-    var obj:c_ptr(void);
+module CPtr {
+  // barebones version of c_ptr for use as a formal type
+  pragma "data class"
+  pragma "no object"
+  pragma "no default functions"
+  pragma "no wide class"
+  pragma "c_ptr class"
+  class c_ptr {
+    type eltType;
   }
-
-  extern var chpl_privateObjects:c_ptr(chpl_privateObject_t);
-
-  pragma "fn returns infinite lifetime"
-  @chpldoc.nodoc
-  // should this use pragma "local args"?
-  // Why is the compiler making the objectType argument wide?
-  inline
-  proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType {
-    return __primitive("cast", objectType, chpl_privateObjects[objectPid].obj);
-  }
-
 }
