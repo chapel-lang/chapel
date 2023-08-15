@@ -1978,7 +1978,7 @@ proc file.fsync() throws {
 Get the absolute path to an open file.
 
 Note that not all files have a path (e.g. files opened with :proc:`openMemFile`),
-and that this function may not work on all operating systems.
+and that this procedure may not work on all operating systems.
 
 The function :proc:`Path.realPath` is an alternative way
 to get the path to a file.
