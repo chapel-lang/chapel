@@ -19,7 +19,7 @@ writeln( "a64 - 2.0i = ", a64 - 2.0i);
 writeln( "a64 * b64 = ", a64 * b64);
 writeln( "a64 / b64 = ", a64 / b64);
 writeln( "a64 / 2.0 = ", a64 / 2.0);
-writeln( "conjg(a64) = ", conjg(a64));
+writeln( "conj(a64) = ", conj(a64));
 
 
 writeln( "\ncomplex(128) numbers");
@@ -41,7 +41,7 @@ writeln( "a128 - 2.0i = ", a128 - 2.0i);
 writeln( "a128 * b128 = ", a128 * b128);
 writeln( "a128 / b128 = ", a128 / b128);
 writeln( "a128 / 2.0 = ", a128 / 2.0);
-writeln( "conjg(a128) = ", conjg(a128));
+writeln( "conj(a128) = ", conj(a128));
 
 
 writeln( "\ncomplex numbers");
@@ -63,5 +63,5 @@ writeln( "r128 - 2.0i = ", r128 - 2.0i);
 writeln( "r128 * s128 = ", r128 * s128);
 writeln( "r128 / s128 = ", r128 / s128);
 writeln( "r128 / 2.0 = ", r128 / 2.0);
-writeln( "conjg(r128) = ", conjg(r128));
+writeln( "conj(r128) = ", conj(r128));
 

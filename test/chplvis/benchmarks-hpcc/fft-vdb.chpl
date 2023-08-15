@@ -107,7 +107,7 @@ proc main() {
   startVdebug("FFTvis");
   const startTime = timeSinceEpoch().totalSeconds();  // capture the start time
 
-  [(a,b) in zip(Zblk, z)] a = conjg(b);      // store the conjugate of z in Zblk
+  [(a,b) in zip(Zblk, z)] a = conj(b);      // store the conjugate of z in Zblk
   bitReverseShuffle(Zblk);                // permute Zblk
 
   dfft(Zblk, Twiddles, cyclicPhase=false); // compute the DFFT, block phases
@@ -322,7 +322,7 @@ proc log4(x) do return logBasePow2(x, 2);
 proc verifyResults(z, Zblk, Zcyc, Twiddles) {
   if (printArrays) then writeln("After FFT, Z is: ", Zblk, "\n");
 
-  [z in Zblk] z = conjg(z) / m;
+  [z in Zblk] z = conj(z) / m;
   bitReverseShuffle(Zblk);
   dfft(Zblk, Twiddles, cyclicPhase=false);
   forall (b, c) in zip(Zblk, Zcyc) do

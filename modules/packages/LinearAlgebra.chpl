@@ -1496,7 +1496,7 @@ proc isHermitian(A: [?D]) where isDenseMatrix(A) {
 
   for (i, j) in D {
     if i > j {
-      if A[i, j] != conjg(A[j, i]) then return false;
+      if A[i, j] != conj(A[j, i]) then return false;
     }
   }
   return true;
@@ -3454,7 +3454,7 @@ module Sparse {
       return false;
 
     for (i, j) in D {
-      if A[i, j] != conjg(A[j, i]) then return false;
+      if A[i, j] != conj(A[j, i]) then return false;
     }
     return true;
   }
