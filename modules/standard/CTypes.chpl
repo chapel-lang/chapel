@@ -616,10 +616,12 @@ module CTypes {
   }
 
   @chpldoc.nodoc
+  @deprecated(notes="Casting from class types directly to c_ptr(void) is deprecated. Please use c_ptrTo/c_ptrToConst instead.")
   inline operator :(x:borrowed, type t:c_ptr(void)) {
     return __primitive("cast", t, x);
   }
   @chpldoc.nodoc
+  @deprecated(notes="Casting from class types directly to c_ptr(void) is deprecated. Please use c_ptrTo/c_ptrToConst instead.")
   inline operator :(x:unmanaged, type t:c_ptr(void)) {
     return __primitive("cast", t, x);
   }
@@ -1015,12 +1017,12 @@ module CTypes {
   inline proc c_ptrTo(ref c: class): c_ptr(void)
     where cPtrToLogicalValue == true
   {
-    return c : c_ptr(void);
+    return __primitive("cast", c_ptr(void), c);
   }
   inline proc c_ptrTo(ref c: class?): c_ptr(void)
     where cPtrToLogicalValue == true
   {
-    return c : c_ptr(void);
+    return __primitive("cast", c_ptr(void), c);
   }
 
   @deprecated(notes="The c_ptrTo(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOf' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
