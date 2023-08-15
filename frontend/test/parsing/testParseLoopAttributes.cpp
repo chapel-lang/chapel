@@ -252,6 +252,64 @@ static void test6(Parser* parser) {
   }
 }
 
+static void test7(Parser* parser) {
+  for (auto pair1 : gLoopBits) {
+    for (auto pair2 : gLoopBits) {
+      runTest("siblingLoopFirst.chpl", parser, {
+          Part::attr("llvm.attribute"),
+          Part::loop(pair1.first),
+          Part::loop(pair2.first),
+      });
+    }
+  }
+}
+
+static void test8(Parser* parser) {
+  for (auto pair1 : gLoopBits) {
+    for (auto pair2 : gLoopBits) {
+      runTest("siblingLoopSecond.chpl", parser, {
+          Part::loop(pair1.first),
+          Part::attr("llvm.attribute"),
+          Part::loop(pair2.first),
+      });
+    }
+  }
+}
+
+static void test9(Parser* parser) {
+  for (auto pair1 : gLoopBits) {
+    for (auto pair2 : gLoopBits) {
+      runTest("siblingLoopBoth.chpl", parser, {
+          Part::attr("llvm.attribute"),
+          Part::loop(pair1.first),
+          Part::attr("llvm.attribute"),
+          Part::loop(pair2.first),
+      });
+    }
+  }
+}
+
+static void test10(Parser* parser) {
+  for (auto pair1 : gLoopBits) {
+    for (auto pair2 : gLoopBits) {
+      for (auto pair3 : gLoopBits) {
+        runTest("nestedAndSiblings.chpl", parser, {
+            Part::attr("llvm.attribute1"),
+            Part::attr("llvm.attribute2"),
+            Part::loop(pair1.first, {
+              Part::attr("llvm.attribute3"),
+              Part::attr("llvm.attribute4"),
+              Part::loop(pair2.first),
+            }),
+            Part::attr("llvm.attribute5"),
+            Part::attr("llvm.attribute6"),
+            Part::loop(pair3.first),
+        });
+      }
+    }
+  }
+}
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -265,6 +323,10 @@ int main() {
   test4(p);
   test5(p);
   test6(p);
+  test7(p);
+  test8(p);
+  test9(p);
+  test10(p);
 
   return 0;
 }
