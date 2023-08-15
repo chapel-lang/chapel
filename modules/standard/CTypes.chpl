@@ -960,12 +960,20 @@ module CTypes {
   @chpldoc.nodoc
   inline proc c_ptrTo_helper(ref c: class): c_ptr(void)
   {
-    return __primitive("cast", c_ptr(void), c);
+    if (isUnmanagedClass(c)) {
+      return __primitive("cast", c_ptr(void), c);
+    } else {
+      return __primitive("cast", c_ptr(void), c.borrow());
+    }
   }
   @chpldoc.nodoc
   inline proc c_ptrTo_helper(ref c: class?): c_ptr(void)
   {
-    return __primitive("cast", c_ptr(void), c);
+    if (isUnmanagedClass(c)) {
+      return __primitive("cast", c_ptr(void), c);
+    } else {
+      return __primitive("cast", c_ptr(void), c.borrow());
+    }
   }
   /****************************************************************************
     End of temporary helper functions while deprecating c_ptr(string) etc
@@ -1028,12 +1036,20 @@ module CTypes {
   inline proc c_ptrTo(ref c: class): c_ptr(void)
     where cPtrToLogicalValue == true
   {
-    return __primitive("cast", c_ptr(void), c);
+    if (isUnmanagedClass(c)) {
+      return __primitive("cast", c_ptr(void), c);
+    } else {
+      return __primitive("cast", c_ptr(void), c.borrow());
+    }
   }
   inline proc c_ptrTo(ref c: class?): c_ptr(void)
     where cPtrToLogicalValue == true
   {
-    return __primitive("cast", c_ptr(void), c);
+    if (isUnmanagedClass(c)) {
+      return __primitive("cast", c_ptr(void), c);
+    } else {
+      return __primitive("cast", c_ptr(void), c.borrow());
+    }
   }
 
   @deprecated(notes="The c_ptrTo(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOf' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
