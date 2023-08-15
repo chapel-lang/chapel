@@ -36,4 +36,5 @@ false
 
 true
 5
+c_ptr_class_type.chpl:55: warning: Casting from class types directly to c_ptr(void) is deprecated. Please use c_ptrTo/c_ptrToConst instead.
 5

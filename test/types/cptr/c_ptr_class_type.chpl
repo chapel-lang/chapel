@@ -51,7 +51,7 @@ if (cPtrToLogicalValue) {
   writeln(heapPtrTmp.type:string);
   heapPtrToAFoo = heapPtrTmp;
 } else {
-  // use the old method of casting to c_ptr(void)
+  // use the deprecated method of casting to c_ptr(void)
   heapPtrToAFoo = myunmanaged : c_ptr(void);
 }
 var maybeReconstitutedFoo: unmanaged Foo? = heapPtrToAFoo:unmanaged Foo?;
