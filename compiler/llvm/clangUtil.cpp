@@ -4907,7 +4907,6 @@ void makeBinaryLLVM(void) {
     cargs += " ";
     cargs += clangInfo->clangCCArgs[i];
   }
-  gdbShouldBreakHere();
 
   std::string gpuArgs = "";
   if (usingGpuLocaleModel()) {
