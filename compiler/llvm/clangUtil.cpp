@@ -4749,105 +4749,6 @@ void makeBinaryLLVM(void) {
   INT_ASSERT(clangInfo);
   LLVMGenFilenames* filenames = &info->llvmGenFilenames;
 
-  // setup output file info
-  std::error_code error;
-#if HAVE_LLVM_VER >= 120
-  llvm::sys::fs::OpenFlags flags = llvm::sys::fs::OF_None;
-#else
-  llvm::sys::fs::OpenFlags flags = llvm::sys::fs::F_None;
-#endif
-
-  // Make sure that we are generating PIC when we need to be.
-  if (strcmp(CHPL_LIB_PIC, "pic") == 0) {
-    INT_ASSERT(info->targetMachine->getRelocationModel()
-        == llvm::Reloc::Model::PIC_);
-  }
-
-  // Emit the .o file for linking with clang
-  // Setup and run LLVM passes to emit a .o file to outputOfile
-  {
-
-    bool disableVerify = !developer;
-
-    if (gCodegenGPU == false) {
-      llvm::raw_fd_ostream outputOfile(filenames->moduleFilename, error, flags);
-      if (error || outputOfile.has_error())
-        USR_FATAL("Could not open output file %s", filenames->moduleFilename.c_str());
-
-#if HAVE_LLVM_VER >= 100
-      llvm::CodeGenFileType FileType = llvm::CGFT_ObjectFile;
-#else
-      llvm::TargetMachine::CodeGenFileType FileType =
-        llvm::TargetMachine::CGFT_ObjectFile;
-#endif
-
-      {
-        llvm::legacy::PassManager emitPM;
-
-        emitPM.add(createTargetTransformInfoWrapperPass(
-                   info->targetMachine->getTargetIRAnalysis()));
-
-#if HAVE_LLVM_VER > 60
-        info->targetMachine->addPassesToEmitFile(emitPM, outputOfile,
-                                                 nullptr,
-                                                 FileType,
-                                                 disableVerify);
-#else
-        info->targetMachine->addPassesToEmitFile(emitPM, outputOfile,
-                                                 FileType,
-                                                 disableVerify);
-#endif
-
-        emitPM.run(*info->module);
-
-      }
-      outputOfile.close();
-
-      handlePrintAsm(filenames->moduleFilename);
-
-    } else {
-
-      auto artifactFileType = getCodeGenFileType();
-
-      llvm::raw_fd_ostream outputArtifactFile(filenames->artifactFilename, error, flags);
-
-      {
-
-        llvm::legacy::PassManager emitPM;
-
-        emitPM.add(createTargetTransformInfoWrapperPass(
-                   info->targetMachine->getTargetIRAnalysis()));
-
-        info->targetMachine->addPassesToEmitFile(emitPM, outputArtifactFile,
-                                                 nullptr,
-                                                 artifactFileType,
-                                                 disableVerify);
-
-        emitPM.run(*info->module);
-
-      }
-
-      outputArtifactFile.close();
-      switch (getGpuCodegenType()) {
-        case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
-          makeBinaryLLVMForCUDA(filenames->artifactFilename,
-                                filenames->gpuObjectFilename,
-                                filenames->fatbinFilename);
-          break;
-        case GpuCodegenType::GPU_CG_AMD_HIP:
-          makeBinaryLLVMForHIP(
-              filenames->artifactFilename,
-              filenames->gpuObjectFilename,
-              filenames->outFilename,
-              filenames->fatbinFilename);
-          break;
-        case GpuCodegenType::GPU_CG_CPU:
-          break;
-      }
-      linkGpuDeviceLibraries();
-    }
-  }
-
   // finishClang is before the call to the debug finalize
   deleteClang(clangInfo);
 
@@ -5194,11 +5095,110 @@ void llvmOptimizeAndCodegen(void) {
 #ifdef HAVE_LLVM
   checkLoopsAssertVectorize();
 #endif
+
+  // setup output file info
+  std::error_code error;
+#if HAVE_LLVM_VER >= 120
+  llvm::sys::fs::OpenFlags flags = llvm::sys::fs::OF_None;
+#else
+  llvm::sys::fs::OpenFlags flags = llvm::sys::fs::F_None;
+#endif
+
+  // Make sure that we are generating PIC when we need to be.
+  if (strcmp(CHPL_LIB_PIC, "pic") == 0) {
+    INT_ASSERT(info->targetMachine->getRelocationModel()
+        == llvm::Reloc::Model::PIC_);
+  }
+
+  // Emit the .o file for linking with clang
+  // Setup and run LLVM passes to emit a .o file to outputOfile
+  {
+
+    bool disableVerify = !developer;
+
+    if (gCodegenGPU == false) {
+      llvm::raw_fd_ostream outputOfile(filenames->moduleFilename, error, flags);
+      if (error || outputOfile.has_error())
+        USR_FATAL("Could not open output file %s", filenames->moduleFilename.c_str());
+
+#if HAVE_LLVM_VER >= 100
+      llvm::CodeGenFileType FileType = llvm::CGFT_ObjectFile;
+#else
+      llvm::TargetMachine::CodeGenFileType FileType =
+        llvm::TargetMachine::CGFT_ObjectFile;
+#endif
+
+      {
+        llvm::legacy::PassManager emitPM;
+
+        emitPM.add(createTargetTransformInfoWrapperPass(
+                   info->targetMachine->getTargetIRAnalysis()));
+
+#if HAVE_LLVM_VER > 60
+        info->targetMachine->addPassesToEmitFile(emitPM, outputOfile,
+                                                 nullptr,
+                                                 FileType,
+                                                 disableVerify);
+#else
+        info->targetMachine->addPassesToEmitFile(emitPM, outputOfile,
+                                                 FileType,
+                                                 disableVerify);
+#endif
+
+        emitPM.run(*info->module);
+
+      }
+      outputOfile.close();
+
+      handlePrintAsm(filenames->moduleFilename);
+
+    } else {
+
+      auto artifactFileType = getCodeGenFileType();
+
+      llvm::raw_fd_ostream outputArtifactFile(filenames->artifactFilename, error, flags);
+
+      {
+
+        llvm::legacy::PassManager emitPM;
+
+        emitPM.add(createTargetTransformInfoWrapperPass(
+                   info->targetMachine->getTargetIRAnalysis()));
+
+        info->targetMachine->addPassesToEmitFile(emitPM, outputArtifactFile,
+                                                 nullptr,
+                                                 artifactFileType,
+                                                 disableVerify);
+
+        emitPM.run(*info->module);
+
+      }
+
+      outputArtifactFile.close();
+      switch (getGpuCodegenType()) {
+        case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
+          makeBinaryLLVMForCUDA(filenames->artifactFilename,
+                                filenames->gpuObjectFilename,
+                                filenames->fatbinFilename);
+          break;
+        case GpuCodegenType::GPU_CG_AMD_HIP:
+          makeBinaryLLVMForHIP(
+              filenames->artifactFilename,
+              filenames->gpuObjectFilename,
+              filenames->outFilename,
+              filenames->fatbinFilename);
+          break;
+        case GpuCodegenType::GPU_CG_CPU:
+          break;
+      }
+      linkGpuDeviceLibraries();
+    }
+  }
 }
 
 static void handlePrintAsm(std::string dotOFile) {
-  assert((fDoMakeBinary || fDoMonolithic) &&
-         "handlePrintAsm should only be called during makebinary phase");
+  /* assert((fDoMakeBinary || fDoMonolithic) && */
+  /*        "handlePrintAsm should only be called during makebinary phase"); */
   if (llvmPrintIrStageNum == llvmStageNum::ASM ||
       llvmPrintIrStageNum == llvmStageNum::EVERY) {
 
