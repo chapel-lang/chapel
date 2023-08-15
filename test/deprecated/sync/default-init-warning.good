@@ -1,2 +1,1 @@
 default-init.chpl:n: warning: compiler generated default initializers for AT with 'sync' fields are deprecated, please supply an 'init' method
-default-init.chpl:n: warning: returning a sync by value is deprecated

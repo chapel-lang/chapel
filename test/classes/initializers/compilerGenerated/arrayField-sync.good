@@ -1,3 +1,2 @@
 arrayField-sync.chpl:2: warning: compiler generated default initializers for classes with 'sync' fields are deprecated, please supply an 'init' method
-arrayField-sync.chpl:3: warning: returning a sync by value is deprecated
 0 0 0 0 0 0 0 0 0 0
