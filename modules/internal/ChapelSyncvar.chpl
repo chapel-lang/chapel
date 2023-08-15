@@ -108,6 +108,10 @@ module ChapelSyncvar {
 
   proc chpl__readXX(x) do return x;
 
+  // TODO Jade 7/5/23: supports deprecation of returning atomics by value
+  // can be removed when that is
+  proc chpl__readXX(x) where isAtomicType(x.type) do return x.read();
+
   /************************************ | *************************************
   *                                                                           *
   * The record wrapper to implement sync                                      *
