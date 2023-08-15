@@ -485,11 +485,6 @@ module BigInteger {
       return (dbl: real, exp.safeCast(uint(32)));
     }
 
-    /*
-      .. warning::
-
-         bigint.size() is @deprecated
-    */
     @deprecated(notes="bigint.size() is deprecated")
     proc size() : c_size_t {
       var ret: c_size_t;
@@ -511,11 +506,6 @@ module BigInteger {
       return ret;
     }
 
-    /*
-      .. warning::
-
-         bigint.sizeinbase() is deprecated, use bigint.sizeInBase() instead
-    */
     @deprecated
     ("bigint.sizeinbase() is deprecated, use bigint.sizeInBase() instead")
     proc sizeinbase(base: int) : uint {
@@ -1712,11 +1702,6 @@ module BigInteger {
       return false;
   }
 
-  /*
-    .. warning::
-
-       bigint.powm is deprecated, use bigint.powMod instead
-  */
   @deprecated
   ("bigint.powm is deprecated, use bigint.powMod instead")
   proc bigint.powm(const ref base: bigint,
@@ -1725,11 +1710,6 @@ module BigInteger {
     BigInteger.powMod(this, base, exp, mod);
   }
 
-  /*
-    .. warning::
-
-       bigint.powm is deprecated, use bigint.powMod instead
-  */
   @deprecated
   ("bigint.powm is deprecated, use bigint.powMod instead")
   proc bigint.powm(const ref base: bigint,
@@ -1738,11 +1718,6 @@ module BigInteger {
     BigInteger.powMod(this, base, exp, mod);
   }
 
-  /*
-    .. warning::
-
-       bigint.powm is deprecated, use bigint.powMod instead
-  */
   @deprecated
   ("bigint.powm is deprecated, use bigint.powMod instead")
   proc bigint.powm(const ref base: bigint,
@@ -2174,11 +2149,6 @@ module BigInteger {
   proc bigint.sqrtrem(ref rem: bigint, const ref a: bigint)
     do BigInteger.sqrtRem(this, rem, a);
 
-  /*
-    .. warning::
-
-       bigint.perfect_power_p is deprecated, use bigint.isPerfectPower instead
-  */
   @deprecated
   ("bigint.perfect_power_p is deprecated, use bigint.isPerfectPower instead")
   proc bigint.perfect_power_p() : int {
@@ -2206,11 +2176,6 @@ module BigInteger {
       return false;
   }
 
-  /*
-    .. warning::
-
-       bigint.perfect_square_p is deprecated, use bigint.isPerfectSquare instead
-  */
   @deprecated
   ("bigint.perfect_square_p is deprecated, use bigint.isPerfectSquare instead")
   proc bigint.perfect_square_p() : int {
@@ -2658,12 +2623,6 @@ module BigInteger {
     BigInteger.invert(this, a, b);
   }
 
-  // remove
-    /*
-    .. warning::
-
-       bigint.remove is deprecated, use bigint.removeFactor instead
-  */
   @deprecated
   ("bigint.remove is deprecated, use bigint.removeFactor instead")
   proc bigint.remove(const ref a: bigint, const ref f: bigint) : uint {
@@ -3254,11 +3213,6 @@ module BigInteger {
       return false;
   }
 
-  /*
-    .. warning::
-
-       bigint.odd_p is deprecated, use bigint.isOdd instead
-  */
   @deprecated
   ("bigint.odd_p is deprecated, use bigint.isOdd instead")
   proc bigint.odd_p() : int {
