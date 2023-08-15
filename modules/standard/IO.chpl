@@ -1973,6 +1973,10 @@ proc file.fsync() throws {
   if err then try ioerror(err, "in file.fsync", this._tryGetPath());
 }
 
+@chpldoc.nodoc
+@deprecated("'filePathAbsolute' is deprecated and inactive. 'file.path' now returns an absolute path")
+config param filePathAbsolute = false;
+
 /*
 
 Get the absolute path to an open file.
