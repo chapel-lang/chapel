@@ -956,6 +956,17 @@ module CTypes {
     }
     return c_pointer_return(b.buff[0]);
   }
+
+  @chpldoc.nodoc
+  inline proc c_ptrTo_helper(ref c: class): c_ptr(void)
+  {
+    return __primitive("cast", c_ptr(void), c);
+  }
+  @chpldoc.nodoc
+  inline proc c_ptrTo_helper(ref c: class?): c_ptr(void)
+  {
+    return __primitive("cast", c_ptr(void), c);
+  }
   /****************************************************************************
     End of temporary helper functions while deprecating c_ptr(string) etc
   *****************************************************************************/
