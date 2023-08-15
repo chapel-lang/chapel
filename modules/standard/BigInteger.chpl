@@ -158,6 +158,17 @@ module BigInteger {
    */
   private extern proc chpl_macro_int_EFORMAT():c_int;
 
+  /* A compile-time parameter to control the behavior of bigint initializers
+     that take a string argument.
+
+     When ``false``, the deprecated behavior is used (i.e., errors will trigger
+     a halt at execution.)
+
+     When ``true``, the new behavior is used (i.e., errors will cause a
+     :type:`~OS.BadFormatError` to be thrown)
+  */
+  config param bigintInitThrows = false;
+
   // TODO: remove when initializers can throw in their body
   private proc throwingInitWorkaround() throws {
     throw new BadFormatError("Error initializing big integer");
@@ -552,17 +563,6 @@ module BigInteger {
       writer.write(s);
     }
   }
-
-  /* A compile-time parameter to control the behavior of bigint initializers
-     that take a string argument.
-
-     When ``false``, the deprecated behavior is used (i.e., errors will trigger
-     a halt at execution.)
-
-     When ``true``, the new behavior is used (i.e., errors will cause a
-     :type:`~OS.BadFormatError` to be thrown)
-  */
-  config param bigintInitThrows = false;
 
   /* An enumeration of the different rounding strategies, for use with e.g.
      :proc:`~BigInteger.div` to determine how to round the quotient when performing
