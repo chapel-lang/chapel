@@ -201,7 +201,7 @@ for tloc in testLocs() {
   // gotta create new dmap() on the same locale as 'domainmap'
   trydist(defaultDist, tloc, "default");
   trydist(new Block(boundingBox=Dbase), tloc, "block");
-  trydist(new dmap(new Cyclic(startIdx=Dbase.low)), tloc, "cyclic");
+  trydist(new Cyclic(startIdx=Dbase.low), tloc, "cyclic");
 }
 
 write("\nDone\n");

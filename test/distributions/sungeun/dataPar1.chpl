@@ -65,12 +65,12 @@ var BA, BB, BC: [BDom] real;
 dit(BDom, BA, BB, BC);
 checkdit("Block", BA, BB, BC);
 
-const CDom = Space dmapped new dmap(new Cyclic(startIdx=(1:myIntType,
+const CDom = Space dmapped new Cyclic(startIdx=(1:myIntType,
                                                          1:myIntType,
                                                          1:myIntType,
                                                          1:myIntType,
                                                          1:myIntType,
-                                                         1:myIntType)));
+                                                         1:myIntType));
 var CA, CB, CC: [CDom] real;
 dit(CDom, CA, CB, CC);
 checkdit("Cyclic", CA, CB, CC);

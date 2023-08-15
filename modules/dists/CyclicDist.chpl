@@ -183,7 +183,109 @@ where the updates are made.
 
 This distribution has not been tuned for performance.
 */
-class Cyclic: BaseDist {
+
+pragma "ignore noinit"
+record Cyclic {
+  param rank: int;
+  type idxType = int;
+
+
+  forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(unmanaged CyclicImpl(rank, idxType));
+
+  proc init(startIdx,
+            targetLocales: [] locale = Locales,
+            dataParTasksPerLocale=getDataParTasksPerLocale(),
+            dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
+            dataParMinGranularity=getDataParMinGranularity(),
+            param rank = _determineRankFromStartIdx(startIdx),
+            type idxType = _determineIdxTypeFromStartIdx(startIdx))
+    where isTuple(startIdx) || isIntegral(startIdx)
+  {
+    const value = new unmanaged CyclicImpl(startIdx, targetLocales,
+                                           dataParTasksPerLocale,
+                                           dataParIgnoreRunningTasks,
+                                           dataParMinGranularity,
+                                           rank, idxType
+                                          );
+    this.rank = rank;
+    this.idxType = idxType;
+
+    this.chpl_distHelp = new chpl_PrivatizedDistHelper(
+                          if _isPrivatized(value)
+                            then _newPrivatizedClass(value)
+                            else nullPid,
+                          value);
+  }
+
+    proc init(_pid : int, _instance, _unowned : bool) {
+      this.rank = _instance.rank;
+      this.idxType = _instance.idxType;
+
+      this.chpl_distHelp = new chpl_PrivatizedDistHelper(_pid,
+                                                         _instance,
+                                                         _unowned);
+    }
+
+    proc init(value) {
+      this.rank = value.rank;
+      this.idxType = value.idxType;
+
+      this.chpl_distHelp = new chpl_PrivatizedDistHelper(
+                             if _isPrivatized(value)
+                               then _newPrivatizedClass(value)
+                               else nullPid,
+                             _to_unmanaged(value));
+    }
+
+    // Note: This does not handle the case where the desired type of 'this'
+    // does not match the type of 'other'. That case is handled by the compiler
+    // via coercions.
+    proc init=(const ref other : Cyclic(?)) {
+      this.init(other._value.dsiClone());
+    }
+
+    proc clone() {
+      return new Cyclic(this._value.dsiClone());
+    }
+
+  @chpldoc.nodoc
+  inline operator ==(d1: Cyclic(?), d2: Cyclic(?)) {
+    if (d1._value == d2._value) then
+      return true;
+    return d1._value.dsiEqualDMaps(d2._value);
+  }
+
+  @chpldoc.nodoc
+  inline operator !=(d1: Cyclic(?), d2: Cyclic(?)) {
+    return !(d1 == d2);
+  }
+
+  proc writeThis(x) {
+    chpl_distHelp.writeThis(x);
+  }
+}
+
+
+@chpldoc.nodoc
+@unstable(category="experimental", reason="assignment between distributions is currently unstable due to lack of testing")
+operator =(ref a: Cyclic(?), b: Cyclic(?)) {
+  if a._value == nil {
+    __primitive("move", a, chpl__autoCopy(b.clone(), definedConst=false));
+  } else {
+    if a._value.type != b._value.type then
+      compilerError("type mismatch in distribution assignment");
+    if a._value == b._value {
+      // do nothing
+    } else
+        a._value.dsiAssign(b._value);
+    if _isPrivatized(a._instance) then
+      _reprivatize(a._value);
+  }
+}
+
+
+@chpldoc.nodoc
+class CyclicImpl: BaseDist {
   param rank: int;
   type idxType = int;
 
@@ -262,7 +364,7 @@ class Cyclic: BaseDist {
         locDist(locid) = new unmanaged LocCyclic(rank, idxType, locid, this);
   }
 
-  proc dsiEqualDMaps(that: Cyclic(?)) {
+  proc dsiEqualDMaps(that: CyclicImpl(?)) {
     return (this.startIdx == that.startIdx &&
             this.targetLocs.equals(that.targetLocs));
   }
@@ -272,7 +374,7 @@ class Cyclic: BaseDist {
   }
 
   proc dsiClone() {
-    return new unmanaged Cyclic(startIdx, targetLocs,
+    return new unmanaged CyclicImpl(startIdx, targetLocs,
                       dataParTasksPerLocale,
                       dataParIgnoreRunningTasks,
                       dataParMinGranularity);
@@ -287,19 +389,19 @@ class Cyclic: BaseDist {
 
 }
 
-proc Cyclic.chpl__locToLocIdx(loc: locale) {
+proc CyclicImpl.chpl__locToLocIdx(loc: locale) {
   for locIdx in targetLocDom do
     if (targetLocs[locIdx] == loc) then
       return (true, locIdx);
   return (false, targetLocDom.first);
 }
 
-proc Cyclic.getChunk(inds, locid) {
+proc CyclicImpl.getChunk(inds, locid) {
   const chunk = locDist(locid).myChunk((...inds.getIndices()));
   return chunk;
 }
 
-override proc Cyclic.dsiDisplayRepresentation() {
+override proc CyclicImpl.dsiDisplayRepresentation() {
   writeln("startIdx = ", startIdx);
   writeln("targetLocDom = ", targetLocDom);
   writeln("targetLocs = ", for tl in targetLocs do tl.id);
@@ -312,7 +414,7 @@ override proc Cyclic.dsiDisplayRepresentation() {
 
 override proc CyclicDom.dsiSupportsAutoLocalAccess() param { return true; }
 
-proc Cyclic.init(other: Cyclic, privateData,
+proc CyclicImpl.init(other: CyclicImpl, privateData,
                  param rank = other.rank,
                  type idxType = other.idxType) {
   this.rank = rank;
@@ -326,21 +428,21 @@ proc Cyclic.init(other: Cyclic, privateData,
   dataParMinGranularity = privateData[4];
 }
 
-override proc Cyclic.dsiSupportsPrivatization() param do return true;
+override proc CyclicImpl.dsiSupportsPrivatization() param do return true;
 
-proc Cyclic.dsiGetPrivatizeData() do return (startIdx,
+proc CyclicImpl.dsiGetPrivatizeData() do return (startIdx,
                                           targetLocDom.dims(),
                                           dataParTasksPerLocale,
                                           dataParIgnoreRunningTasks,
                                           dataParMinGranularity);
 
-proc Cyclic.dsiPrivatize(privatizeData) {
-  return new unmanaged Cyclic(_to_unmanaged(this), privatizeData);
+proc CyclicImpl.dsiPrivatize(privatizeData) {
+  return new unmanaged CyclicImpl(_to_unmanaged(this), privatizeData);
 }
 
-proc Cyclic.dsiGetReprivatizeData() do return 0;
+proc CyclicImpl.dsiGetReprivatizeData() do return 0;
 
-proc Cyclic.dsiReprivatize(other, reprivatizeData) {
+proc CyclicImpl.dsiReprivatize(other, reprivatizeData) {
   targetLocDom = other.targetLocDom;
   targetLocs = other.targetLocs;
   locDist = other.locDist;
@@ -350,7 +452,7 @@ proc Cyclic.dsiReprivatize(other, reprivatizeData) {
   dataParMinGranularity = other.dataParMinGranularity;
 }
 
-override proc Cyclic.dsiNewRectangularDom(param rank: int, type idxType, param strides: strideKind, inds) {
+override proc CyclicImpl.dsiNewRectangularDom(param rank: int, type idxType, param strides: strideKind, inds) {
   if idxType != this.idxType then
     compilerError("Cyclic domain index type does not match distribution's");
   if rank != this.rank then
@@ -394,7 +496,7 @@ proc _cyclic_matchArgsShape(type rangeType, type scalarType, args) type {
   return helper(0);
 }
 
-proc Cyclic.writeThis(x) throws {
+proc CyclicImpl.writeThis(x) throws {
   x.writeln(this.type:string);
   x.writeln("------");
   for locid in targetLocDom do
@@ -402,7 +504,7 @@ proc Cyclic.writeThis(x) throws {
       locDist(locid).myChunk);
 }
 
-proc Cyclic.targetLocsIdx(i: idxType) {
+proc CyclicImpl.targetLocsIdx(i: idxType) {
   const numLocs:idxType = targetLocDom.sizeAs(idxType);
   // this is wrong if i is less than startIdx
   //return ((i - startIdx(0)) % numLocs):int;
@@ -410,7 +512,7 @@ proc Cyclic.targetLocsIdx(i: idxType) {
   return chpl__diffMod(i, startIdx(0), numLocs):idxType;
 }
 
-proc Cyclic.targetLocsIdx(ind: rank*idxType) {
+proc CyclicImpl.targetLocsIdx(ind: rank*idxType) {
   var x: rank*int;
   for param i in 0..rank-1 {
     var dimLen = targetLocDom.dim(i).sizeAs(int);
@@ -423,11 +525,11 @@ proc Cyclic.targetLocsIdx(ind: rank*idxType) {
     return x;
 }
 
-proc Cyclic.dsiIndexToLocale(i: idxType) where rank == 1 {
+proc CyclicImpl.dsiIndexToLocale(i: idxType) where rank == 1 {
   return targetLocs(targetLocsIdx(i));
 }
 
-proc Cyclic.dsiIndexToLocale(i: rank*idxType) {
+proc CyclicImpl.dsiIndexToLocale(i: rank*idxType) {
   return targetLocs(targetLocsIdx(i));
 }
 
@@ -488,7 +590,7 @@ class LocCyclic {
 
 
 class CyclicDom : BaseRectangularDom(?) {
-  const dist: unmanaged Cyclic(rank, idxType);
+  const dist: unmanaged CyclicImpl(rank, idxType);
 
   var locDoms: [dist.targetLocDom] unmanaged LocCyclicDom(rank, idxType);
 
@@ -502,6 +604,13 @@ proc CyclicDom.setup() {
         locDoms(localeIdx).myBlock = chunk;
       }
     }
+}
+
+proc CyclicDom.dsiGetDist() {
+  if _isPrivatized(dist) then
+    return new Cyclic(dist.pid, dist, _unowned=true);
+  else
+    return new Cyclic(nullPid, dist, _unowned=true);
 }
 
 override proc CyclicDom.dsiDestroyDom() {
@@ -1264,12 +1373,12 @@ proc CyclicArr.dsiTargetLocales() const ref {
 proc CyclicDom.dsiTargetLocales() const ref {
   return dist.targetLocs;
 }
-proc Cyclic.dsiTargetLocales() const ref {
+proc CyclicImpl.dsiTargetLocales() const ref {
   return targetLocs;
 }
 
 proc type Cyclic.createDomain(dom: domain) {
-  return dom dmapped Cyclic(startIdx=dom.lowBound);
+  return dom dmapped CyclicImpl(startIdx=dom.lowBound);
 }
 
 proc type Cyclic.createDomain(rng: range...) {
