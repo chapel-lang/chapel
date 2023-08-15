@@ -36,7 +36,7 @@ proc main() {
 
   const startTime = timeSinceEpoch().totalSeconds();
 
-  Z = conjg(z);
+  Z = conj(z);
   bitReverseShuffle(Z);
   dfft(Z, Twiddles);
 
@@ -170,7 +170,7 @@ proc log4(x) do return logBasePow2(x, 2);
 proc verifyResults(z, Z, Twiddles) {
   if (printArrays) then writeln("After FFT, Z is: ", Z, "\n");
 
-  Z = conjg(Z) / m;
+  Z = conj(Z) / m;
   bitReverseShuffle(Z);
   dfft(Z, Twiddles);
 

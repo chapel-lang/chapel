@@ -9,8 +9,8 @@ static void* mytest(void* x) {
 }
 */
 
-extern proc printf(fmt:c_string, ptr:c_ptr(void));
-extern proc printf(fmt:c_string, ptr:c_ptr(uint(8)));
+extern proc printf(fmt:c_ptrConst(c_char), ptr:c_ptr(void));
+extern proc printf(fmt:c_ptrConst(c_char), ptr:c_ptr(uint(8)));
 
 var x:c_ptr(void);
 x = mytest(x); // now it's 2.

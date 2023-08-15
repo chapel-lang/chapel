@@ -1,0 +1,3 @@
+# Test/library/standard/FileSystem/lydia/sameFile ignores.
+/linkToIt
+/moveMe.txt

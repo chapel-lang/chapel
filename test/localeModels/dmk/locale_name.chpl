@@ -1,4 +1,5 @@
-extern proc chpl_nodeName(): c_string;
+use CTypes;
+extern proc chpl_nodeName(): c_ptrConst(c_char);
 
 var locale_name = here.chpl_name();
 

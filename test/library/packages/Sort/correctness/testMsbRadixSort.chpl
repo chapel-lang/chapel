@@ -165,7 +165,7 @@ proc testSortsUnsigned(input) {
 
 
  proc main() {
-  
+
    assert(chpl_compare(9,3, new uintCriterion8()) > 0);
    assert(chpl_compare(2,3, new uintCriterion8()) < 0);
    assert(chpl_compare(0,0, new uintCriterion8()) == 0);
@@ -182,7 +182,7 @@ proc testSortsUnsigned(input) {
    {
      var A:[1..64] uint;
      for i in 0..63 {
-       A[64-i] = 1:uint << i; 
+       A[64-i] = 1:uint << i;
      }
      testSortsUnsigned(A);
    }
@@ -197,9 +197,9 @@ proc testSortsUnsigned(input) {
 
    testStringSorts([ "hi", "hii", "hiii", "a", "b", "boo", "", "x", "zoo" ]);
 
-   var array:[1..size] int; 
+   var array:[1..size] int;
    fillRandom(array);
-   
+
    for i in array.domain {
      array[i] = abs(array[i]);
    }
@@ -211,7 +211,7 @@ proc testSortsUnsigned(input) {
                              0, max(int), new MSBRadixSortSettings());
 
    t.stop();
- 
+
    if printStats {
      writeln("Time: ", t.elapsed());
    }

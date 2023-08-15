@@ -56,7 +56,7 @@ record TargetLocaleComparator {
   param rank;
   type idxType;
   type sparseLayoutType;
-  var dist: unmanaged Block(rank, idxType, sparseLayoutType);
+  var dist: unmanaged BlockImpl(rank, idxType, sparseLayoutType);
   proc key(a: index(rank, idxType)) {
     if rank == 2 { // take special care for CSC/CSR
       if sparseLayoutType == unmanaged CS(compressRows=false) then
@@ -84,7 +84,7 @@ record TargetLocaleComparator {
 class SparseBlockDom: BaseSparseDomImpl(?) {
   type sparseLayoutType;
   param strides = strideKind.one;  // TODO: remove default value eventually
-  const dist: unmanaged Block(rank, idxType, sparseLayoutType);
+  const dist: unmanaged BlockImpl(rank, idxType, sparseLayoutType);
   var whole: domain(rank=rank, idxType=idxType, strides=strides);
   var locDoms: [dist.targetLocDom] unmanaged LocSparseBlockDom(rank, idxType,
                                                  strides, sparseLayoutType)?;
@@ -601,6 +601,13 @@ class LocSparseBlockArr {
   override proc writeThis(f) throws {
     halt("LocSparseBlockArr.writeThis() is not implemented / should not be needed");
   }
+}
+
+proc SparseBlockDom.dsiGetDist() {
+  if _isPrivatized(dist) then
+    return new Block(dist.pid, dist, _unowned=true);
+  else
+    return new Block(nullPid, dist, _unowned=true);
 }
 
 /*

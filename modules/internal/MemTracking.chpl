@@ -64,9 +64,9 @@ module MemTracking
   // memory tracking.
   //
   // This function is a little tricky as it is called from every
-  // locale from the runtime.  Recall that c_string is considered a
+  // locale from the runtime.  Recall that c_ptrConst is a
   // local-only data type, so we must use some tricks to copy the
-  // c_string from locale 0 to the remote locales.  We use the globals
+  // c_ptrConst from locale 0 to the remote locales.  We use the globals
   // s_memLog and s_memLeaksLog to create global Chapel strings to
   // make them available to all locales.
   //
@@ -74,12 +74,12 @@ module MemTracking
   proc chpl_memTracking_returnConfigVals(ref ret_memTrack: bool,
                                          ref ret_memStats: bool,
                                          ref ret_memLeaksByType: bool,
-                                         ref ret_memLeaksByDesc: c_string,
+                                         ref ret_memLeaksByDesc: c_ptrConst(c_char),
                                          ref ret_memLeaks: bool,
                                          ref ret_memMax: c_size_t,
                                          ref ret_memThreshold: c_size_t,
-                                         ref ret_memLog: c_string,
-                                         ref ret_memLeaksLog: c_string) {
+                                         ref ret_memLog: c_ptrConst(c_char),
+                                         ref ret_memLeaksLog: c_ptrConst(c_char)) {
     ret_memTrack = memTrack;
     ret_memStats = memStats;
     ret_memLeaksByType = memLeaksByType;

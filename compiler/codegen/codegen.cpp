@@ -835,9 +835,8 @@ genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
 static void genFilenameTable() {
   const char *name = "chpl_filenameTable";
   const char *sizeName = "chpl_filenameTableSize";
-  const char *eltType = "c_string";
+  const char *eltType = dtStringC->symbol->cname;
 
-  // Compute the element type
   GenRet cstringType = codegenTypeByName(eltType);
 
   // Construct the table elements
@@ -892,7 +891,7 @@ static void genUnwindSymbolTable(){
   // Generate the cname, Chapel name table
   {
     const char *name = "chpl_funSymTable";
-    const char *eltType = "c_string";
+    const char *eltType = dtStringC->symbol->cname;
 
     // Compute the element type
     GenRet cstringType = codegenTypeByName(eltType);
@@ -944,7 +943,7 @@ static void genUnwindSymbolTable(){
 
 static void
 genClassNames(std::vector<TypeSymbol*> & typeSymbol, bool isHeader) {
-  const char* eltType = "c_string";
+  const char* eltType = dtStringC->symbol->cname;
   const char* name = "chpl_classNames";
 
   if(isHeader) {
@@ -3010,19 +3009,18 @@ void setupLLVMCodegenFilenames(void) {
         genIntermediateFilename("chpl__gpu_module-opt1.bc");
     filenames->opt2Filename =
         genIntermediateFilename("chpl__gpu_module-opt2.bc");
-    filenames->ptxObjectFilename = genIntermediateFilename("chpl__gpu_ptx.o");
+    filenames->gpuObjectFilename = genIntermediateFilename("chpl__gpu.o");
     filenames->fatbinFilename = genIntermediateFilename("chpl__gpu.fatbin");
     filenames->outFilename = genIntermediateFilename("chpl__gpu.out");
 
-    // In CUDA, we generate assembly and then assemble it. For
-    // AMD, we generate an object file. Thus, we need to use
-    // different file names.
+    // This switch may seem unnecessary, but in the past we wanted to use a
+    // different "type" of intermediate file for different GPUs and we may want
+    // to do that again in the future. See the comment in getGpuCodegenType()
+    // for more details about this history.
     switch (getGpuCodegenType()) {
       case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
-        filenames->artifactFilename = genIntermediateFilename("chpl__gpu_ptx.s");
-        break;
       case GpuCodegenType::GPU_CG_AMD_HIP:
-        filenames->artifactFilename = genIntermediateFilename("chpl__gpu.o");
+        filenames->artifactFilename = genIntermediateFilename("chpl__gpu.s");
         break;
       case GpuCodegenType::GPU_CG_CPU:
         break;

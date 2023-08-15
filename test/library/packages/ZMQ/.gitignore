@@ -1,2 +1,4 @@
+# Test/library/packages/ZMQ ignores.
 version.good
 version-c
+getLastEndpointHelper

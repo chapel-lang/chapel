@@ -22,8 +22,8 @@ var f = open(fileName, ioMode.cwr);
 
 
 // Let's create a few records and store them in an array.
-var A = [ new MyRecord(1,3.0,"test one"),
-          new MyRecord(6,-1.1,"quick brown"),
+var A = [ new MyRecord(1,3.0,"testone"),
+          new MyRecord(6,-1.1,"quickbrown"),
           new MyRecord(9,1e6,"fox") ];
 
 // We'll read back into B and check that they match...
@@ -43,11 +43,11 @@ var B: [0..#3] MyRecord;
     // writer.writef("%t\t%t\t%t\n", a.i, a.r, a.s);
     // but if you wanted to control precision/width and to
     // handle strings with tabs, you might use:
-    writer.writef("%2i\t%2.2r\t%'S\n", a.i, a.r, a.s);
+    writer.writef("%2i\t%2.2r\t%s\n", a.i, a.r, a.s);
     // (%'S asks for a single-quoted string)
 
     // for debugging purposes, we also output it to stdout
-    if debug then writef("%2i\t%2.2r\t%'S\n", a.i, a.r, a.s);
+    if debug then writef("%2i\t%2.2r\t%s\n", a.i, a.r, a.s);
   }
 
   writer.close();
@@ -66,7 +66,7 @@ var B: [0..#3] MyRecord;
   // read until we reach EOF
   // (note: if you want to handle format errors or I/O errors,
   //  you need to use error= versions of the I/O functions)
-  while( reader.readf("%?\t%?\t%'S\n", rec.i, rec.r, rec.s) ) {
+  while( reader.readf("%?\t%?\t%s\n", rec.i, rec.r, rec.s) ) {
     // for debugging purposes, we also output it to stdout
     if debug then writeln("read ", rec);
     B[i] = rec;
@@ -118,9 +118,7 @@ proc MyRecord.init(r: fileReader) throws {
 }
 
 {
-  // create a reader but specify that we'd like to use single-quoted strings.
-  // 0x27 is ascii for '
-  var reader = f.reader(style=new iostyleInternal(string_format=iostringformat.basic:uint(8), string_start = 0x27, string_end = 0x27));
+  var reader = f.reader();
 
   var rec:MyRecord;
   var i = 0;

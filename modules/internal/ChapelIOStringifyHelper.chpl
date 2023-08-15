@@ -22,14 +22,15 @@
    be called without IO and not cause circular dependencies.
 */
 module ChapelIOStringifyHelper {
-  private use ChapelStandard;
+  private use ChapelStandard, CTypes;
   private use BytesStringCommon only decodePolicy;
 
   @chpldoc.nodoc
   proc _can_stringify_direct(t) param : bool {
     if (t.type == string ||
         t.type == bytes ||
-        t.type == c_string ||
+        t.type == chpl_c_string ||
+        t.type == c_ptrConst(c_char) ||
         isRangeType(t.type) ||
         isPrimitiveType(t.type)) {
       return true;
@@ -48,7 +49,7 @@ module ChapelIOStringifyHelper {
     var str = "(";
 
     for param i in 0..tup.size-1 {
-      if (tup[i].type == c_string) {
+      if (tup[i].type == chpl_c_string || tup[i].type == c_ptrConst(c_char)) {
         try! {
           str += string.createCopyingBuffer(tup[i]);
         }
@@ -77,7 +78,7 @@ module ChapelIOStringifyHelper {
     for param i in 0..k-1 {
       if (args[i].type == string) {
         str += args[i];
-      } else if (args[i].type == c_string) {
+      } else if (args[i].type == chpl_c_string || args[i].type == c_ptrConst(c_char)) {
         //decodePolicy.replace never throws
         try! {
           str += string.createCopyingBuffer(args[i],

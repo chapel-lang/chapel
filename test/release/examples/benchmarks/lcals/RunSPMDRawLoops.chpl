@@ -417,15 +417,15 @@ module RunSPMDRawLoops {
                       // new A1
                       var r = zac1*cslamt + zac2;
                       var z5 = c2*a2t,
-                          z4 = conjg(c1) * z5 * (cslamt-1);
-                      z3 = conjg(c1) * a0t * snlamt;
+                          z4 = conj(c1) * z5 * (cslamt-1);
+                      z3 = conj(c1) * a0t * snlamt;
                       t1[it0+i] = a1t*r + z4 - ireal*z3;
 
                       // new A2
                       r = zac1 + zac2*cslamt;
                       z5 = c1*a1t;
-                      z4 = conjg(c2) * z5 * (cslamt-1);
-                      z3 = conjg(c2) * a0t * snlamt;
+                      z4 = conj(c2) * z5 * (cslamt-1);
+                      z3 = conj(c2) * a0t * snlamt;
                       t2[it0+i] = (a2t*r + z4 - ireal*z3) * r_fratio;
                     }
                   }

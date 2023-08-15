@@ -7,13 +7,13 @@ printvisibleOptFalse.chpl:3: Printing symbols visible from here:
   modules/minimal/internal/ChapelLocale.chpl:61: chpl_taskRunningCntReset
   modules/minimal/internal/ChapelTaskData.chpl:24: chpl_task_setCommDiagsTemporarilyDisabled
   modules/minimal/internal/ChapelTaskData.chpl:28: chpl_task_getCommDiagsTemporarilyDisabled
-  modules/minimal/internal/ChapelTaskTable.chpl:26: chpldev_taskTable_init
-  modules/minimal/internal/ChapelTaskTable.chpl:29: chpldev_taskTable_add
-  modules/minimal/internal/ChapelTaskTable.chpl:36: chpldev_taskTable_remove
-  modules/minimal/internal/ChapelTaskTable.chpl:40: chpldev_taskTable_set_active
-  modules/minimal/internal/ChapelTaskTable.chpl:44: chpldev_taskTable_set_suspended
-  modules/minimal/internal/ChapelTaskTable.chpl:48: chpldev_taskTable_get_tl_info
-  modules/minimal/internal/ChapelTaskTable.chpl:52: chpldev_taskTable_print
+  modules/minimal/internal/ChapelTaskTable.chpl:25: chpldev_taskTable_init
+  modules/minimal/internal/ChapelTaskTable.chpl:28: chpldev_taskTable_add
+  modules/minimal/internal/ChapelTaskTable.chpl:35: chpldev_taskTable_remove
+  modules/minimal/internal/ChapelTaskTable.chpl:39: chpldev_taskTable_set_active
+  modules/minimal/internal/ChapelTaskTable.chpl:43: chpldev_taskTable_set_suspended
+  modules/minimal/internal/ChapelTaskTable.chpl:47: chpldev_taskTable_get_tl_info
+  modules/minimal/internal/ChapelTaskTable.chpl:51: chpldev_taskTable_print
   modules/minimal/internal/ChapelUtil.chpl:28: chpl_main_argument
   modules/minimal/internal/ChapelUtil.chpl:35: chpl_rt_preUserCodeHook
   modules/minimal/internal/ChapelUtil.chpl:36: chpl_rt_postUserCodeHook
@@ -29,10 +29,9 @@ printvisibleOptFalse.chpl:3: Printing symbols visible from here:
   modules/minimal/internal/IO.chpl:37: chpl_qio_write
   modules/minimal/internal/IO.chpl:40: chpl_qio_channel_close
   modules/minimal/internal/IO.chpl:43: chpl_qio_filelength
-  modules/minimal/internal/IO.chpl:46: chpl_qio_getpath
-  modules/minimal/internal/IO.chpl:49: chpl_qio_fsync
-  modules/minimal/internal/IO.chpl:52: chpl_qio_get_chunk
-  modules/minimal/internal/IO.chpl:55: chpl_qio_get_locales_for_region
-  modules/minimal/internal/IO.chpl:58: chpl_qio_file_close
+  modules/minimal/internal/IO.chpl:46: chpl_qio_fsync
+  modules/minimal/internal/IO.chpl:49: chpl_qio_get_chunk
+  modules/minimal/internal/IO.chpl:52: chpl_qio_get_locales_for_region
+  modules/minimal/internal/IO.chpl:55: chpl_qio_file_close
   modules/minimal/internal/MemTracking.chpl:32: chpl_memTracking_returnConfigVals
   printvisibleOptFalse.chpl:1: xyzSymbol

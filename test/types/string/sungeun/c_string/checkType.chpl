@@ -1,3 +1,5 @@
+public use CTypes;
+
 proc checkType(type t, param d=2) {
   checkType(string, t, d+1);
 }

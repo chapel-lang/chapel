@@ -149,7 +149,7 @@ module LockFreeStack {
       do {
         var oldTop = _top.read();
         n.next = oldTop;
-        if shouldYield then chpl_task_yield();
+        if shouldYield then currentTask.yieldExecution();
         shouldYield = true;
       } while (!_top.compareAndSwap(oldTop, n));
       tok.unpin();
@@ -167,7 +167,7 @@ module LockFreeStack {
           return (false, retval);
         }
         var newTop = oldTop!.next;
-        if shouldYield then chpl_task_yield();
+        if shouldYield then currentTask.yieldExecution();
         shouldYield = true;
       } while (!_top.compareAndSwap(oldTop, newTop));
       var retval = oldTop!.val;

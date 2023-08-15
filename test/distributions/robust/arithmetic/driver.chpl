@@ -34,11 +34,11 @@ proc setupDistributions(param DT : DistType) {
   }
   if DT == DistType.block {
     return (
-            new dmap(new Block(rank=1, boundingBox=Space1)),
-            new dmap(new Block(rank=2, boundingBox=Space2)),
-            new dmap(new Block(rank=3, boundingBox=Space3)),
-            new dmap(new Block(rank=4, boundingBox=Space4)),
-            new dmap(new Block(rank=2, idxType=int(32), boundingBox=Space2D32))
+            new Block(rank=1, boundingBox=Space1),
+            new Block(rank=2, boundingBox=Space2),
+            new Block(rank=3, boundingBox=Space3),
+            new Block(rank=4, boundingBox=Space4),
+            new Block(rank=2, idxType=int(32), boundingBox=Space2D32)
            );
   }
   if DT == DistType.cyclic {

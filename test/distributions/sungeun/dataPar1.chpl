@@ -60,7 +60,7 @@ var DA, DB, DC: [DDom] real;
 dit(DDom, DA, DB, DC);
 checkdit("Default", DA, DB, DC);
 
-const BDom = Space dmapped new dmap(new Block(boundingBox=Space));
+const BDom = Space dmapped new Block(boundingBox=Space);
 var BA, BB, BC: [BDom] real;
 dit(BDom, BA, BB, BC);
 checkdit("Block", BA, BB, BC);

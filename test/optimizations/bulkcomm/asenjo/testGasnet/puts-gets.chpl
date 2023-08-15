@@ -95,7 +95,7 @@ proc BlockArr.TestGetsPuts(B)
 use BlockDist;
 
 const n: int=50*numLocales;
-var Dist = new dmap(new Block({1..n}));
+var Dist = new Block({1..n});
 
 var Dom: domain(1,int) dmapped Dist = {1..n};
 

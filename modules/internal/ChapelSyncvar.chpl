@@ -234,7 +234,7 @@ module ChapelSyncvar {
   */
   proc _syncvar.readXX() {
     // Yield to allow readXX in a loop to make progress
-    chpl_task_yield();
+    currentTask.yieldExecution();
     return wrapped.readXX();
   }
 
@@ -897,7 +897,7 @@ module ChapelSyncvar {
   */
   proc _singlevar.readXX() {
     // Yield to allow readXX in a loop to make progress
-    chpl_task_yield();
+    currentTask.yieldExecution();
     return wrapped.readXX();
   }
 

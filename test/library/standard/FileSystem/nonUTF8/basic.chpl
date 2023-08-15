@@ -62,7 +62,7 @@ writeln("exists works: ", exists(filename1) == true);
 
 const gid = getGid(filename1);
 const uid = getUid(filename1);
-const mode = getMode(filename1); 
+const mode = getMode(filename1);
 const size = getFileSize(filename1);
 writeln();
 

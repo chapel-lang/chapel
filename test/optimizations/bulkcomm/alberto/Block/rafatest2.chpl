@@ -3,8 +3,8 @@ use BlockDist;
 config const n=10;
 const S = {1..n};
 const R = {1..n,1..n};
-const BDist = new dmap(new Block(boundingBox=S));
-const RDist = new dmap(new Block(boundingBox=R));
+const BDist = new Block(boundingBox=S);
+const RDist = new Block(boundingBox=R);
 const BDom : domain(1) dmapped BDist=S;
 
 //var A : [[1..n] dmapped Block(rank=1,boundingBox=[1..n])] int;

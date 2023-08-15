@@ -1127,7 +1127,7 @@ static void processSyntacticDistributions(CallExpr* call) {
     if (CallExpr* type = toCallExpr(call->get(1))) {
       if (SymExpr* base = toSymExpr(type->baseExpr)) {
         if (base->symbol()->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == true) {
-          const char* name = "chpl__buildDistValue";
+          const char* name = "chpl__buildDistDMapValue";
 
           type->baseExpr->replace(new UnresolvedSymExpr(name));
 
@@ -1146,6 +1146,12 @@ static void processSyntacticDistributions(CallExpr* call) {
                 new NamedExpr(astr_chpl_manager,
                               new SymExpr(dtUnmanaged->symbol)),
                 distCall->remove());
+
+            call->insertAtHead(new CallExpr("chpl__buildDistValue", newExpr));
+
+            processManagedNew(newExpr);
+          } else {  // handle new cases where we use a record instead
+            CallExpr* newExpr = new CallExpr(PRIM_NEW, distCall->remove());
 
             call->insertAtHead(new CallExpr("chpl__buildDistValue", newExpr));
 

@@ -51,7 +51,8 @@ class Forall final : public IndexableLoop {
          int8_t withClauseChildNum,
          BlockStyle blockStyle,
          int loopBodyChildNum,
-         bool isExpressionLevel)
+         bool isExpressionLevel,
+         int attributeGroupChildNum)
     : IndexableLoop(asttags::Forall, std::move(children),
                     indexChildNum,
                     iterandChildNum,
@@ -59,7 +60,7 @@ class Forall final : public IndexableLoop {
                     blockStyle,
                     loopBodyChildNum,
                     isExpressionLevel,
-                    NO_CHILD /*attributeGroup*/) {
+                    attributeGroupChildNum) {
   }
 
   Forall(Deserializer& des)
@@ -86,7 +87,8 @@ class Forall final : public IndexableLoop {
                              owned<WithClause> withClause,
                              BlockStyle blockStyle,
                              owned<Block> body,
-                             bool isExpressionLevel);
+                             bool isExpressionLevel,
+                             owned<AttributeGroup> attributeGroup = nullptr);
 
   void serialize(Serializer& ser) const override {
     IndexableLoop::serialize(ser);

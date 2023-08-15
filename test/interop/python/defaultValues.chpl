@@ -1,5 +1,6 @@
-export proc cstringDefault(in x: c_string = "blah") {
-  writeln(string.createCopyingBuffer(x));
+use CTypes;
+export proc cstringDefault(in x: chpl_c_string = "blah") {
+  writeln(string.createCopyingBuffer(x:c_ptrConst(c_char)));
 }
 
 export proc intDefault(x: int = 3) {

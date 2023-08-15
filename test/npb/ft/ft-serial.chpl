@@ -140,7 +140,7 @@ proc fftz2(dir, l, m, n, ny, ny1 : int, u, x, y) {
   var lk = 1<<(l-1), li = 1<<(m-l), lj = 2*lk;
   for i in 0..li-1 {
     var i11 = i * lk, i12 = i11 + n/2, i21 = i * lj, i22 = i21 + lk;
-    var u1 = if dir == 1 then u(li+i) else conjg(u(li+i));
+    var u1 = if dir == 1 then u(li+i) else conj(u(li+i));
     for k in 0..lk-1 {
       for j in 0..ny-1 {
         var x11 = x(i11+k, j);

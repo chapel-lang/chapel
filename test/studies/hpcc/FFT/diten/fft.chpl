@@ -62,7 +62,7 @@ proc main() {
   // to m/4-1.  Twiddles is the vector of twiddle values.
   //
   //const TwiddleDist = new dmap(new Cyclic(startIdx=0:idxType, tasksPerLocale=tasksPerLocale));
-  const TwiddleDist = new dmap(new Block(rank=1, idxType=idxType, boundingBox={0..m/4-1}, targetLocales=Locales));
+  const TwiddleDist = new Block(rank=1, idxType=idxType, boundingBox={0..m/4-1}, targetLocales=Locales);
   const TwiddleDom: domain(1, int(64)) dmapped TwiddleDist = {0..m/4-1};
   var Twiddles: [TwiddleDom] elemType;
 
@@ -72,10 +72,10 @@ proc main() {
   // from 0 to m-1.  It is distributes the vectors Z and z across the
   // locales using the Block distribution.
   //
-  const BlkDist = new dmap(new Block(rank=1, idxType=idxType, boundingBox={0..m-1},
+  const BlkDist = new Block(rank=1, idxType=idxType, boundingBox={0..m-1},
                                      targetLocales=Locales,
                                      dataParTasksPerLocale=tasksPerLocale,
-                                     dataParIgnoreRunningTasks=true));
+                                     dataParIgnoreRunningTasks=true);
   const BlkDom: domain(1, int(64)) dmapped BlkDist = {0..m-1};
   var Z, z: [BlkDom] elemType;
 
@@ -89,7 +89,7 @@ proc main() {
 
   const startTime = timeSinceEpoch().totalSeconds();  // capture the start time
 
-  Z = conjg(z);                        // store the conjugate of z in Z
+  Z = conj(z);                        // store the conjugate of z in Z
   bitReverseShuffle(Z);                // permute Z
   dfft(Z, Twiddles, 0);   // compute the Fourier transform block phase
   forall (b, c) in zip(Z, Zcyc) do
@@ -319,7 +319,7 @@ proc log4(x) do return logBasePow2(x, 2);
 proc verifyResults(z, Z, Cyc, Twiddles) {
   if (printArrays) then writeln("After FFT, Z is: ", Z, "\n");
 
-  Z = conjg(Z) / m;
+  Z = conj(Z) / m;
   bitReverseShuffle(Z);
   dfft(Z, Twiddles, 0);
   forall (b, c) in zip(Z, Cyc) do

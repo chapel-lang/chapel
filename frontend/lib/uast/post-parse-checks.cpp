@@ -134,10 +134,11 @@ struct Visitor {
                                   const VisibilityClause* clause);
   void checkAttributeNameRecognizedOrToolSpaced(const Attribute* node);
   void checkAttributeUsedParens(const Attribute* node);
+  void checkAttributeUnstable(const Attribute* node);
   void checkUserModuleHasPragma(const AttributeGroup* node);
   void checkExternBlockAtModuleScope(const ExternBlock* node);
   void checkLambdaDeprecated(const Function* node);
-
+  void checkCStringLiteral(const CStringLiteral* node);
   /*
   TODO
   void checkProcedureFormalsAgainstRetType(const Function* node);
@@ -169,6 +170,7 @@ struct Visitor {
   void visit(const BracketLoop* node);
   void visit(const Break* node);
   void visit(const Continue* node);
+  void visit(const CStringLiteral* node);
   void visit(const ExternBlock* node);
   void visit(const FnCall* node);
   void visit(const Function* node);
@@ -1268,9 +1270,19 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
   }
 }
 
+void Visitor::checkAttributeUnstable(const Attribute* node) {
+  if (shouldEmitUnstableWarning(node)) {
+    if(node->name() == UniqueString::get(context_, "llvm.metadata") ||
+       node->name() == UniqueString::get(context_, "llvm.assertVectorized")) {
+      warn(node, "'%s' is an unstable attribute", node->name());
+    }
+  }
+}
+
 void Visitor::visit(const Attribute* node) {
   checkAttributeNameRecognizedOrToolSpaced(node);
   checkAttributeUsedParens(node);
+  checkAttributeUnstable(node);
 }
 
 void Visitor::visit(const AttributeGroup* node) {
@@ -1423,9 +1435,18 @@ void Visitor::checkExternBlockAtModuleScope(const ExternBlock* node) {
   }
 }
 
+void Visitor::checkCStringLiteral(const CStringLiteral* node) {
+   warn(node, "the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst(\"string\")' or 'string.c_str()' from the 'CTypes' module instead");
+}
+
 void Visitor::visit(const ExternBlock* node) {
   checkExternBlockAtModuleScope(node);
 }
+
+void Visitor::visit(const CStringLiteral* node) {
+  checkCStringLiteral(node);
+}
+
 
 } // end anonymous namespace
 

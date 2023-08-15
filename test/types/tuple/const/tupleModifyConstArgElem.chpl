@@ -123,7 +123,7 @@ proc test() {
 
   // unmanaged, OK
   run(new unmanaged C?());
-  
+
   // atomic, OK
   var atm: atomic int;
   run(atm);
@@ -141,7 +141,7 @@ proc test() {
 
   // bytes, OK
   run("foo":bytes);
- 
+
   // record, OK
   run(new r());
 

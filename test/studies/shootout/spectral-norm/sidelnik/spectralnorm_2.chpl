@@ -41,8 +41,8 @@ proc eval_AtA_times_u(u,AtAu,v : [] real, inRange)
 }
 
 proc main() {
-  var Dist = new dmap(new Block(rank=1, idxType=int(64), boundingBox={0..#n},
-                                      dataParTasksPerLocale=here.maxTaskPar));
+  var Dist = new Block(rank=1, idxType=int(64), boundingBox={0..#n},
+                                      dataParTasksPerLocale=here.maxTaskPar);
   var Dom : domain(1, int(64)) dmapped Dist = {0..#n};
 
   var tmp, U, V : [Dom] real;
@@ -58,5 +58,5 @@ proc main() {
   var vBv = + reduce [(u,v) in zip(U,V)] (u * v);
 
   const res = sqrt(vBv/vv);
-  writeln(res, new iostyleInternal(precision=10));
+  writef("%.10r\n", res);
 }

@@ -24,18 +24,18 @@ proc CreateNetCDF(filename : string, ImageSpace : ?, out varid_out) {
     var xName = "x";
 
   /* Create the file. */
-    extern proc nc_create(path : c_string, cmode : c_int, ncidp : c_ptr(c_int)) : c_int;
+    extern proc nc_create(path : c_ptrConst(c_char), cmode : c_int, ncidp : c_ptr(c_int)) : c_int;
     nc_create( filename.c_str(), NC_CLOBBER, c_ptrTo(ncid));
 
   /* Define the dimensions. The record dimension is defined to have
      unlimited length - it can grow as needed. In this example it is
      the time dimension.*/
-    extern proc nc_def_dim(ncid : c_int, name : c_string, len : c_size_t, idp : c_ptr(c_int)) : c_int;
+    extern proc nc_def_dim(ncid : c_int, name : c_ptrConst(c_char), len : c_size_t, idp : c_ptr(c_int)) : c_int;
     nc_def_dim(ncid, yName.c_str(), shape[0] : c_size_t, y_dimid);
     nc_def_dim(ncid, xName.c_str(), shape[1] : c_size_t, x_dimid);
 
   /* Define the coordinate variables. */
-    extern proc nc_def_var(ncid : c_int, name : c_string, xtype : nc_type, ndims : c_int, dimidsp : c_ptr(c_int), varidp : c_ptr(c_int)) : c_int;
+    extern proc nc_def_var(ncid : c_int, name : c_ptrConst(c_char), xtype : nc_type, ndims : c_int, dimidsp : c_ptr(c_int), varidp : c_ptr(c_int)) : c_int;
       nc_def_var(ncid, yName.c_str(), NC_FLOAT, 1 : c_int, c_ptrTo(y_dimid), c_ptrTo(y_varid));
       nc_def_var(ncid, xName.c_str(), NC_FLOAT, 1 : c_int, c_ptrTo(x_dimid), c_ptrTo(x_varid));
 
@@ -91,7 +91,7 @@ coforall loc in Locales do on loc {
   var ncid : c_int;
   var varid = varid_in : c_int;
 
-  extern proc nc_open(path : c_string, mode : c_int, ncidp : c_ptr(c_int)) : c_int;
+  extern proc nc_open(path : c_ptrConst(c_char), mode : c_int, ncidp : c_ptr(c_int)) : c_int;
   nc_open( filename.c_str() , NC_WRITE, c_ptrTo(ncid));
 
   /* Determine where to start reading file, and how many elements to read */

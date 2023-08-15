@@ -1,5 +1,3 @@
-extern proc chpl_task_yield();
-
 /*  - The Chameneos game is as follows:
       A population of n chameneos gathers at a common meeting place, where
       m meetings will take place (n and m may be distinct).  At any time, only
@@ -116,7 +114,7 @@ class Chameneos {
 
           // Gives slightly better performance than waitFor, but is not "nicer"
           while (!meetingCompleted.read(memoryOrder.acquire)) {
-            chpl_task_yield();
+            currentTask.yieldExecution();
           }
 
           meetingCompleted.write(false, memoryOrder.release);
