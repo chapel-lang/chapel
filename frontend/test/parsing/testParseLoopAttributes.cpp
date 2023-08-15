@@ -32,6 +32,7 @@
 
 #include <iostream>
 #include <algorithm>
+#include <sstream>
 
 std::map<AstTag, std::tuple<std::string, std::string, std::string>> gLoopBits = {
   { asttags::For, {"for", "in 1..10", ""}},
@@ -71,7 +72,11 @@ class Part {
     return !!expectTag;
   }
 
-  void generateProgram(std::vector<std::string>& lines) const {
+  void generateProgram(std::ostream& lines, int indent = 0) const {
+    auto doIndent = [&]() {
+      for (int i = 0; i < indent; i++) lines << ' ';
+    };
+
     if (expectTag) {
       // It's some kind of loop, put it together!
       auto it = gLoopBits.find(*expectTag);
@@ -81,22 +86,22 @@ class Part {
       auto afterVar = std::get<1>(it->second);
       auto afterEndBody = std::get<2>(it->second);
 
-      std::vector<std::string> childLines;
-      for (auto& child : childParts) child.generateProgram(childLines);
-
+      doIndent();
       if (!afterVar.empty()) {
         auto newVar = "i" + std::to_string(gFreshVarCounter++);
-        lines.push_back(beforeVar + " " + newVar + " " + afterVar + " {");
+        lines << beforeVar << " " << newVar << " " << afterVar << " {" << std::endl;
       } else {
-        lines.push_back(beforeVar + " {");
+        lines << beforeVar << " {" << std::endl;
       }
-      for (auto childLine : childLines) {
-        lines.push_back("  " + childLine);
-      }
-      lines.push_back("} " + afterEndBody);
+
+      for (auto& child : childParts) child.generateProgram(lines, indent+2);
+
+      doIndent();
+      lines << "} " << afterEndBody << std::endl;
     } else {
       // It's an attribute
-      lines.insert(lines.end(), "@" + theString);
+      doIndent();
+      lines << "@" << theString << std::endl;
     }
   }
 
@@ -155,16 +160,11 @@ static void validateParts(const AstNode* container,
 
 static void runTest(const char* testName, Parser* parser, const std::vector<Part>& parts) {
   parser->context()->advanceToNextRevision(false);
-  std::vector<std::string> lines;
+  std::ostringstream programStream;
   for (auto& part : parts) {
-    part.generateProgram(lines);
+    part.generateProgram(programStream);
   }
-
-  std::string program;
-  for (auto& line : lines) {
-    program += line;
-    program += "\n";
-  }
+  std::string program = programStream.str();
 
   std::cout << "---- Running test for the following program ----" << std::endl;
   std::cout << program << std::endl << std::endl;
