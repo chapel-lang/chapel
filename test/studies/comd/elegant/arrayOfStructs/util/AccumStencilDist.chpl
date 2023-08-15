@@ -84,7 +84,7 @@ class LocAccumStencil {
 // locDoms:   a non-distributed array of local domain classes
 // whole:     a non-distributed domain that defines the domain's indices
 //
-class AccumStencilDom: BaseRectangularDom {
+class AccumStencilDom: BaseRectangularDom(?) {
   param ignoreFluff : bool;
   const dist: unmanaged AccumStencil(rank, idxType, ignoreFluff);
   var locDoms: [dist.targetLocDom] unmanaged LocAccumStencilDom(rank, idxType,
@@ -125,7 +125,7 @@ class LocAccumStencilDom {
 // locArr: a non-distributed array of local array classes
 // myLocArr: optimized reference to here's local array class (or nil)
 //
-class AccumStencilArr: BaseRectangularArr {
+class AccumStencilArr: BaseRectangularArr(?) {
   param ignoreFluff: bool;
   var doRADOpt: bool = defaultDoRADOpt;
   var dom: unmanaged AccumStencilDom(rank, idxType, strides, ignoreFluff);
@@ -249,7 +249,7 @@ proc AccumStencil.init(boundingBox: domain,
   this.idxType = idxType;
   this.ignoreFluff = ignoreFluff;
 
-  this.boundingBox = boundingBox : domain(rank, idxType);
+  this.boundingBox = boundsBox(boundingBox);
   this.fluff = fluff;
 
   // can't have periodic if there's no fluff
@@ -666,14 +666,14 @@ iter AccumStencilDom.these(param tag: iterKind, followThis) where tag == iterKin
     chpl__testPar("AccumStencil domain follower invoked on ", followThis);
 
   var t: rank*range(idxType, strides=chpl_strideProduct(strides,
-                                       chpl_strideUnion(followThis)));
-  type strType = chpl__signedType(idxType);
+                                      chpl_strideUnion(followThis)));
   for param i in 0..rank-1 {
-    var stride = whole.dim(i).stride: strType;
-    // not checking here whether the new low and high fit into idxType
-    var low = (stride * followThis(i).low:strType):idxType;
-    var high = (stride * followThis(i).high:strType):idxType;
-    t(i) = ((low..high by stride:strType) + whole.dim(i).low by followThis(i).stride:strType).safeCast(t(i).type);
+    const wholeDim  = whole.dim(i);
+    const followDim = followThis(i);
+    var low  = wholeDim.orderToIndex(followDim.low);
+    var high = wholeDim.orderToIndex(followDim.high);
+    if wholeDim.hasNegativeStride() then low <=> high;
+    t(i) = try! (low..high by (wholeDim.stride*followDim.stride)) : t(i).type;
   }
   for i in {(...t)} {
     yield i;
@@ -1054,10 +1054,10 @@ override proc AccumStencilArr.dsiStaticFastFollowCheck(type leadType) param do
   return leadType == this.type || leadType == this.dom.type;
 
 proc AccumStencilArr.dsiDynamicFastFollowCheck(lead: []) do
-  return lead.domain._value == this.dom;
+  return this.dsiDynamicFastFollowCheck(lead.domain);
 
 proc AccumStencilArr.dsiDynamicFastFollowCheck(lead: domain) do
-  return lead._value == this.dom;
+  return lead.distribution.dsiEqualDMaps(this.dom.dist) && lead._value.whole == this.dom.whole;
 
 iter AccumStencilArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {
   if chpl__testParFlag {
@@ -1071,16 +1071,16 @@ iter AccumStencilArr.these(param tag: iterKind, followThis, param fast: bool = f
     writeln((if fast then "fast" else "regular") + " follower invoked for AccumStencil array");
 
   var myFollowThis: rank*range(idxType=idxType, strides=chpl_strideProduct(
-                                     strides, chpl_strideUnion(followThis)));
+                                      strides, chpl_strideUnion(followThis)));
   var lowIdx: rank*idxType;
 
   for param i in 0..rank-1 {
-    var stride = dom.whole.dim(i).stride;
+    const stride = dom.whole.dim(i).stride;
     // NOTE: Not bothering to check to see if these can fit into idxType
-    var low = followThis(i).low * abs(stride):idxType;
-    var high = followThis(i).high * abs(stride):idxType;
-    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).low by followThis(i).stride).safeCast(myFollowThis(i).type);
-    lowIdx(i) = myFollowThis(i).low;
+    var low = followThis(i).lowBound * abs(stride):idxType;
+    var high = followThis(i).highBound * abs(stride):idxType;
+    myFollowThis(i) = try! ((low..high by stride) + dom.whole.dim(i).low by followThis(i).stride) : myFollowThis(i).type;
+    lowIdx(i) = myFollowThis(i).lowBound;
   }
 
   const myFollowThisDom = {(...myFollowThis)};
@@ -1108,13 +1108,13 @@ iter AccumStencilArr.these(param tag: iterKind, followThis, param fast: bool = f
     //
     ref chunk = arrSection.myElems(myFollowThisDom);
     local {
-      for i in chunk do yield i;
+      foreach i in chunk do yield i;
     }
   } else {
     //
     // we don't necessarily own all the elements we're following
     //
-    for i in myFollowThisDom {
+    foreach i in myFollowThisDom {
       yield dsiAccess(i);
     }
   }
