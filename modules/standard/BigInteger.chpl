@@ -2200,23 +2200,25 @@ module BigInteger {
 
   // Number Theoretic Functions
 
-  /* An enumeration of the different possibilities of a number being prime, for use with e.g.
-     :proc:`~bigint.probablyPrime` to determine if a number is prime or not.
-
-     - ``primality.notPrime`` indicates that the number is not a prime.
-     - ``primality.maybePrime`` indicates that the number may or may not be a prime.
-     - ``primality.isPrime`` indicates that the number is a prime.
+  /*
+    An enumeration of the different possibilities of a number being prime, for
+    use with e.g. :proc:`~bigint.probablyPrime` to determine if a number is
+    prime or not.
    */
   enum primality {
+    /* Indicates that the number is not a prime. */
     notPrime=0,
+    /* Indicates that the number may or may not be a prime. */
     maybePrime,
+    /* Indicates that the number is a prime. */
     isPrime
   };
 
   /*
     Determine whether ``this`` is prime.  Returns one of the :enum:`primality`
-    constants - ``primality.isPrime``, ``primality.maybePrime``, or
-    ``primality.notPrime``.
+    constants - :enumconstant:`~primality.isPrime`,
+    :enumconstant:`~primality.maybePrime`, or
+    :enumconstant:`~primality.notPrime`.
 
     Performs some trial divisions, a Baillie-PSW probable prime test, and
     reps-24 Miller-Rabin probabilistic primality tests.  A higher ``reps`` value
@@ -2228,12 +2230,14 @@ module BigInteger {
     Utilizes the GMP function `mpz_probab_prime_p
     <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
 
-    :arg reps: number of attempts before returning ``primality.maybePrime`` if
-               a definitive answer can't be found before then.
+    :arg reps: number of attempts before returning
+               :enumconstant:`~primality.maybePrime` if a definitive answer
+               can't be found before then.
     :type reps: ``int``
 
-    :returns: ``primality.isPrime``, ``primality.maybePrime`` or
-              ``primality.notPrime``.
+    :returns: :enumconstant:`~primality.isPrime`,
+              :enumconstant:`~primality.maybePrime`, or
+              :enumconstant:`~primality.notPrime`.
     :rtype: :enum:`primality`
    */
   @unstable("bigint.probablyPrime is unstable and may change in the future")
