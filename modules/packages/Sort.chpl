@@ -1869,7 +1869,7 @@ module ShallowCopy {
   // As a workaround, this function just returns a pointer to the argument,
   // whether or not it is an array.
   //
-  // TODO: these should be replaced with the appropriate c_ptrTo/c_addrOf calls
+  // TODO: these should be replaced with the appropriate c_addrOf[Const] calls
   private inline proc ptrTo(ref x) {
     return c_pointer_return(x);
   }
