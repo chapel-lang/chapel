@@ -115,9 +115,9 @@ static void checkSyncSingleAtomicDefaultInit() {
 }
 
 
-// This function is checking for any function which returns a a non-default
+// This function is checking for any function which returns a non-default
 // copyable type (sync/single/atomic). This has exclusions for functions that
-// are no copying like array aliases or explicit "no copy" functions. This
+// don't copy like array aliases or explicit "no copy" functions. This
 // includes functions which return a type which is a container for that type
 // like an array or tuple.
 static void checkSyncSingleAtomicReturnByCopy() {
