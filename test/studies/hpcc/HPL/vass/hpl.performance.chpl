@@ -334,13 +334,13 @@ proc schurComplement(blk, AD, BD, Rest) {
 
 
   forall (ab, ra) in zip(AbSlice1, replA) do
-    local
+    local do
       ra = ab;
   replicateA(blk);
   vmsgmore("  replA");
 
   forall (ab, rb) in zip(AbSlice2, replB) do
-    local
+    local do
       rb = ab;
   replicateB(blk);
   vmsgmore("  replB");
@@ -377,13 +377,13 @@ proc schurComplement(blk, AD, BD, Rest) {
 
 proc DimensionalArr.dsiLocalSlice1((sliceDim1, sliceDim2)) {
   // might be more elegant to replace the explicit arg tuple with 'slice'
-  proc toScalar(slice)
+  proc toScalar(slice) do
     return if isIntegralType(slice.type) then slice else slice.low;
-  proc toRange(slice)
+  proc toRange(slice) do
     return if isIntegralType(slice.type) then slice..slice else slice;
-  proc origScalar(param dim) param
+  proc origScalar(param dim) param do
     return isIntegralType(if dim==1 then sliceDim1.type else sliceDim2.type);
-  proc toOrig(param dim, arg)
+  proc toOrig(param dim, arg) do
     return if origScalar(dim) then toScalar(arg) else toRange(arg);
 
   const dom = this.dom;
@@ -471,7 +471,7 @@ proc panelSolve(
 */
     // replicate
     on cornerLocale {
-      local
+      local do
         for j in panel.dim(1)[k+1..] do
           replK[0,j] = Ab[k,j];
       vmsgmore("  seeding replication");
@@ -480,7 +480,7 @@ proc panelSolve(
     }
     // compute
     forall (i,j) in panel[k+1.., k+1..] do
-      local
+      local do
         Ab[i,j] -= Ab[i,k] * replK[0,j];
 
     vmsgmore("panelSolve ", k);
@@ -505,7 +505,7 @@ proc updateBlockRow(
   const tlDims = tl.dims();
   on cornerLocale {
     const tlDimsLocal = tlDims; // where is value forwarding???
-    local
+    local do
       // we do not need the last row of tl, but pruning it off seems expensive
       forall (i,j) in {(...tlDimsLocal)} do
         replU[i-blk, j-blk] = Ab[i,j];
@@ -526,7 +526,7 @@ proc updateBlockRow(
           if v1 != v2 then halt("replU mismatch ", v1, " vs ", v2,
                                 "  at ", (i,k,j));
         }
-        local
+        local do
           Ab[i, j] -= replU[i-blk, k-blk] * Ab[k,j];
       }
 
@@ -757,7 +757,7 @@ proc bsComputeMyXs(diaFrom, diaTo, locId1, locId2, zeroOutX) {
       // TODO: bulkify, unless it is already
       locB = Ab._value.dsiLocalSlice1((diaSlice, n+1));
     }
-    local
+    local do
       bsComputeMyXsWithB(diaFrom, diaTo, locAB, locX, locB);
   }
 }
@@ -809,7 +809,7 @@ proc bsIncorporateOthersPartSums(diaFrom, diaTo, locId1, locId2) {
     }
   } // proc ihelper
 
-  local
+  local do
     while toIncorporate > 0 {
       seenOther = false;
       // since incorporation in ihelper
@@ -1101,14 +1101,14 @@ proc replicateU(abIx) {
         replU._value.localArrs[targloc.id].arrLocalRep = myLocalArr;
 }
 
-proc targetLocalesIndexForAbIndex(param dim, abIx)
+proc targetLocalesIndexForAbIndex(param dim, abIx) do
   return (divceilpos(abIx, blkSize) - 1) % (if dim == 1 then tl1 else tl2);
 
-proc targetLocaleForAbIndex(i,j)
+proc targetLocaleForAbIndex(i,j) do
   return targetLocales[targetLocalesIndexForAbIndex(1, i),
                        targetLocalesIndexForAbIndex(2, j)];
 
-proc targetLocaleReplForAbIndex(i,j)
+proc targetLocaleReplForAbIndex(i,j) do
   return targetLocalesRepl[targetLocalesIndexForAbIndex(1, i),
                            targetLocalesIndexForAbIndex(2, j)];
 
@@ -1163,8 +1163,8 @@ proc gaxpyMinus(A: [],
 
 // This confirms that our intentions, for efficiency, are fulfilled.
 proc ensureDR(value, param msg) {
-  proc etest(type t) param where t : DefaultRectangularArr return true;
-  proc etest(type t) param return false;
+  proc etest(type t) param do where t : DefaultRectangularArr return true;
+  proc etest(type t) param do return false;
   compilerAssert(etest(value.type), "ensureDR ", msg, 2);
 }
 
