@@ -1035,9 +1035,16 @@ extern record iostyleInternal { // aka qio_style_t
      uppercase? */
   var uppercase:uint(8) = 0;
   /* When printing a numeric value in a field of specified width, should
-     the number be on the left (that is padded on the right?). The default
-     is to right-justify the number. */
+     the number be left, right, or center justified. The default
+     is to right-justify the number.
+
+              | 'leftjustify' | 'centjustify' |
+    - right   |  0            |  0            |
+    - left    |  1            |  0            |
+    - center  |  0            |  1            |
+  */
   var leftjustify:uint(8) = 0;
+  var centjustify:uint(8) = 0;
   /* When printing an integral value using a real format, should a trailing
      decimal point be included? If so, the value 0 will be written as ``0.`` */
   var showpoint:uint(8) = 0;

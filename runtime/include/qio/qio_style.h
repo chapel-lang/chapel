@@ -153,7 +153,8 @@ typedef struct qio_style_s {
                  // 1 == write positive numbers preceded by positive_char
                  // 2 == write positive numbers preceded by pad_char
   uint8_t uppercase; // numeric stuff is uppercase
-  uint8_t leftjustify; // 1 == left, 0 == right
+  uint8_t leftjustify; // 1 == left, 0 == right || cent
+  uint8_t centjustify; // 1 == center, 0 == right || left
 
   // more numeric options that make the most sense for floating point but
   // also apply to integers. Thes only apply to printing (not reading).
