@@ -18,3 +18,13 @@ config var n = 10;
   const Dist2: dmap(Cyclic(1)) = new Cyclic(1);
   writeln(Dist2.type:string);
 }
+
+{
+  use ReplicatedDist;
+  var Dist = new dmap(new Replicated());
+  var Dom = {1..n} dmapped Dist;
+  var A: [Dom] real;
+  writeln(A);
+  const Dist2: dmap(Replicated) = new Replicated();
+  writeln(Dist2.type:string);
+}
