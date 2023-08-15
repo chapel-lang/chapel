@@ -506,8 +506,7 @@ module BigInteger {
       return ret;
     }
 
-    @deprecated
-    ("bigint.sizeinbase() is deprecated, use bigint.sizeInBase() instead")
+    @deprecated("bigint.sizeinbase is deprecated, use :proc:`bigint.sizeInBase` instead")
     proc sizeinbase(base: int) : uint {
       return sizeInBase(base).safeCast(uint);
     }
@@ -1702,24 +1701,21 @@ module BigInteger {
       return false;
   }
 
-  @deprecated
-  ("bigint.powm is deprecated, use bigint.powMod instead")
+  @deprecated("bigint.powm method is deprecated, please use the standalone function :proc:`~BigInteger.powMod` instead")
   proc bigint.powm(const ref base: bigint,
                    const ref exp:  bigint,
                    const ref mod:  bigint) {
     BigInteger.powMod(this, base, exp, mod);
   }
 
-  @deprecated
-  ("bigint.powm is deprecated, use bigint.powMod instead")
+  @deprecated("bigint.powm method is deprecated, please use the standalone function :proc:`~BigInteger.powMod` instead")
   proc bigint.powm(const ref base: bigint,
                              exp:  int,
                    const ref mod:  bigint) {
     BigInteger.powMod(this, base, exp, mod);
   }
 
-  @deprecated
-  ("bigint.powm is deprecated, use bigint.powMod instead")
+  @deprecated("bigint.powm method is deprecated, please use the standalone function :proc:`~BigInteger.powMod` instead")
   proc bigint.powm(const ref base: bigint,
                              exp:  uint,
                    const ref mod:  bigint) {
@@ -2149,8 +2145,7 @@ module BigInteger {
   proc bigint.sqrtrem(ref rem: bigint, const ref a: bigint)
     do BigInteger.sqrtRem(this, rem, a);
 
-  @deprecated
-  ("bigint.perfect_power_p is deprecated, use bigint.isPerfectPower instead")
+  @deprecated("bigint.perfect_power_p is deprecated, use :proc:`bigint.isPerfectPower` instead")
   proc bigint.perfect_power_p() : int {
     return this.isPerfectPower();
   }
@@ -2176,8 +2171,7 @@ module BigInteger {
       return false;
   }
 
-  @deprecated
-  ("bigint.perfect_square_p is deprecated, use bigint.isPerfectSquare instead")
+  @deprecated("bigint.perfect_square_p is deprecated, use :proc:`bigint.isPerfectSquare` instead")
   proc bigint.perfect_square_p() : int {
     return this.isPerfectSquare();
   }
@@ -2623,8 +2617,7 @@ module BigInteger {
     BigInteger.invert(this, a, b);
   }
 
-  @deprecated
-  ("bigint.remove is deprecated, use bigint.removeFactor instead")
+  @deprecated("bigint.remove is deprecated, use :proc:`bigint.removeFactor` instead")
   proc bigint.remove(const ref a: bigint, const ref f: bigint) : uint {
     return BigInteger.removeFactor(this, a,f);
   }
@@ -3213,8 +3206,7 @@ module BigInteger {
       return false;
   }
 
-  @deprecated
-  ("bigint.odd_p is deprecated, use bigint.isOdd instead")
+  @deprecated("bigint.odd_p is deprecated, use :proc:`bigint.isOdd` instead")
   proc bigint.odd_p() : int {
     return this.isOdd();
   }
@@ -3865,8 +3857,7 @@ module BigInteger {
     }
   }
 
-  @deprecated
-  ("bigint.div_q using Round is deprecated, use the standalone function :proc:`~BigInteger.div` with :enum:`roundingMode` instead")
+  @deprecated("bigint.div_q using Round is deprecated, use the standalone function :proc:`~BigInteger.div` with :enum:`roundingMode` instead")
   proc bigint.div_q(const ref n: bigint,
                               d: integral,
                     param     rounding = Round.ZERO) {
