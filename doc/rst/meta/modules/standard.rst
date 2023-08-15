@@ -103,7 +103,6 @@ System/Interoperability
    CTypes <standard/CTypes>
    OS <standard/OS>
    Subprocess <standard/Subprocess>
-   Sys <standard/Sys>
 
 Utilities
 ---------
