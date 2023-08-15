@@ -455,6 +455,7 @@ void ErrorInvalidGpuAssertion::write(ErrorWriterBase& wr) const {
 void ErrorInvalidUnaryImplements::write(ErrorWriterBase& wr) const {
   auto decl = std::get<const uast::AggregateDecl*>(info);
   auto implements = std::get<const uast::Implements*>(info);
+  auto badInterface = std::get<const uast::AstNode*>(info);
 
   const char* inWhat = "here";
   const char* what = nullptr;
@@ -468,8 +469,8 @@ void ErrorInvalidUnaryImplements::write(ErrorWriterBase& wr) const {
 
   wr.heading(kind_, type_, implements,
              "this form of 'implements' statement is not allowed ", inWhat, ".");
-  wr.note(implements->interfaceExpr(), "in particular, the interface is specified with actuals:");
-  wr.code(implements, { implements->interfaceExpr() });
+  wr.note(badInterface, "in particular, the interface is specified with actuals:");
+  wr.code(implements, { badInterface });
   wr.message("This is not currently allowed.");
   wr.note(decl, "the enclosing ", what, " is decalred here:");
   wr.codeForDef(decl);

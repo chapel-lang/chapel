@@ -38,8 +38,8 @@ std::string Implements::dumpChildLabelInner(int i) const {
   return "";
 }
 
-UniqueString Implements::interfaceName() const {
-  auto expr = interfaceExpr();
+UniqueString Implements::interfaceName(int i) const {
+  auto expr = interfaceExpr(i);
   CHPL_ASSERT(expr);
 
   if (auto ident = expr->toIdentifier()) {

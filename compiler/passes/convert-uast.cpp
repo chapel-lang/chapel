@@ -714,49 +714,69 @@ struct Converter {
   }
 
   Expr* visit(const uast::Implements* node) {
-    const char* name = astr(node->interfaceName());
-    CallExpr* act = new CallExpr(PRIM_ACTUALS_LIST);
     Expr* ret = nullptr;
-    bool needsLift = false;
+    bool inAggrBody = !node->isExpressionLevel() &&
+                      symStack.size() > 0 &&
+                      symStack.back().ast->isAggregateDecl();
+    Symbol* selfType = nullptr;
+    Expr* typeIdent = nullptr;
 
     if (node->typeIdent()) {
-      auto conv = convertAST(node->typeIdent());
-      INT_ASSERT(conv);
-      act->insertAtTail(conv);
-    } else if (!node->isExpressionLevel() &&
-               symStack.size() > 0 && symStack.back().ast->isAggregateDecl()) {
+      INT_ASSERT(!inAggrBody);
+      typeIdent = convertAST(node->typeIdent());
+      INT_ASSERT(typeIdent);
+    } else if (inAggrBody) {
       // implements Hashable; as part of a record/class decl. Add the
       // implicit Self.
-      auto aggregateRef = findConvertedSym(symStack.back().ast->id());
-      INT_ASSERT(aggregateRef);
-      act->insertAtTail(aggregateRef);
+      selfType = findConvertedSym(symStack.back().ast->id());
+      INT_ASSERT(selfType);
 
       // Don't actually put this statement where it is written now; it'll
       // be moved after the aggregate type.
-      needsLift = true;
+      inAggrBody = true;
     }
 
-    Expr* conv = convertAST(node->interfaceExpr());
-    if (auto call = toCallExpr(conv)) {
-      for_actuals(actual, call) {
-        actual->remove();
-        act->insertAtTail(actual);
+    auto containerBlock = new BlockStmt(BLOCK_SCOPELESS);
+    for (int i = 0; i < node->numInterfaceExprs(); i++) {
+      CallExpr* act = new CallExpr(PRIM_ACTUALS_LIST);
+
+      if (typeIdent) act->insertAtTail(typeIdent->copy());
+      if (selfType) act->insertAtTail(new SymExpr(selfType));
+
+      Expr* conv = convertAST(node->interfaceExpr(i));
+      if (auto call = toCallExpr(conv)) {
+        for_actuals(actual, call) {
+          actual->remove();
+          act->insertAtTail(actual);
+        }
       }
-    }
 
-    if (node->isExpressionLevel()) {
-      ret = IfcConstraint::build(name, act);
-    } else {
-      auto implements = ImplementsStmt::build(name, act, nullptr);
-      if (needsLift) {
-        // Don't return anything here, the expr will be inserted later.
-        symStack.back().liftImplements.push_back(implements);
+      const char* name = astr(node->interfaceName(i));
+      if (node->isExpressionLevel()) {
+        INT_ASSERT(i == 0);
+        ret = IfcConstraint::build(name, act);
       } else {
-        ret = implements;
+        auto implements = ImplementsStmt::build(name, act, nullptr);
+        if (inAggrBody) {
+          // Don't return anything here, the expr will be inserted later.
+          symStack.back().liftImplements.push_back(implements);
+        } else {
+          containerBlock->insertAtTail(implements);
+        }
       }
     }
 
-    INT_ASSERT(ret || needsLift);
+    if (ret == nullptr && !inAggrBody) {
+      // ret is null here if we are generating statements to insert (as opposed to
+      // expression-based constraints).
+      ret = containerBlock;
+    } else {
+      // ret is not null, so we're generating a constraint; there should be
+      // no statements to insert.
+      INT_ASSERT(containerBlock->body.length == 0);
+    }
+
+    INT_ASSERT((!inAggrBody && ret) || (inAggrBody && !ret && containerBlock->body.length == 0));
 
     return ret;
   }

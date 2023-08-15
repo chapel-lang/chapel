@@ -1361,16 +1361,20 @@ void Visitor::visit(const Implements* node) {
     if (auto parentAggr = parents_.back()->toAggregateDecl()) {
       // This is a unary implements statement inside of a class or record.
 
-      if (!node->interfaceExpr()->isIdentifier()) {
-        // It's invalid to write:
-        //
-        //   record R {
-        //     implements SomeInterface(T)
-        //   }
-        //
-        // Because, where should the "Self" / R argument to SomeInterface go?
-        // Error if the statement is anything other than `implements SomeInterface`.
-        CHPL_REPORT(context_, InvalidUnaryImplements, parentAggr, node);
+      for (int i = 0; i < node->numInterfaceExprs(); i++) {
+        auto interfaceExpr = node->interfaceExpr(i);
+        if (!interfaceExpr->isIdentifier()) {
+          // It's invalid to write:
+          //
+          //   record R {
+          //     implements SomeInterface(T)
+          //   }
+          //
+          // Because, where should the "Self" / R argument to SomeInterface go?
+          // Error if the statement is anything other than `implements SomeInterface`.
+          CHPL_REPORT(context_, InvalidUnaryImplements, parentAggr,
+                      node, interfaceExpr);
+        }
       }
     }
   }

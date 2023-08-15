@@ -54,7 +54,7 @@ class Implements final : public AstNode {
   static const int8_t interfaceExprNoTypeChildNum_ = 0;
 
   /* Compute the position of the interface expression. */
-  int8_t interfaceExprChildNum() const {
+  int8_t firstInterfaceExprChildNum() const {
     auto ret = typeIdentChildNum_ == AstNode::NO_CHILD
       ? interfaceExprNoTypeChildNum_
       : typeIdentChildNum_ + 1;
@@ -67,15 +67,17 @@ class Implements final : public AstNode {
         typeIdentChildNum_(typeIdentChildNum),
         isExpressionLevel_(isExpressionLevel) {
     if (typeIdentChildNum_ != AstNode::NO_CHILD) {
-      CHPL_ASSERT(children_.size() == 2);
+      CHPL_ASSERT(children_.size() >= 2);
       CHPL_ASSERT(child(typeIdentChildNum_)->isIdentifier());
     } else {
-      CHPL_ASSERT(children_.size() == 1);
+      CHPL_ASSERT(children_.size() >= 1);
     }
 
-    CHPL_ASSERT(interfaceExpr());
-    CHPL_ASSERT(interfaceExpr()->isIdentifier() ||
-           interfaceExpr()->isFnCall());
+    for (int i = firstInterfaceExprChildNum(); i < children.size(); i++) {
+      CHPL_ASSERT(interfaceExpr(i));
+      CHPL_ASSERT(interfaceExpr(i)->isIdentifier() ||
+             interfaceExpr(i)->isFnCall());
+    }
   }
 
   Implements(Deserializer& des)
@@ -127,8 +129,12 @@ class Implements final : public AstNode {
     return isExpressionLevel_;
   }
 
+  int numInterfaceExprs() const {
+    return numChildren() - firstInterfaceExprChildNum();
+  }
+
   /**
-    Returns the name of the interface this is implementing.
+    Returns the name of the ith interface this is implementing.
 
     For the following:
 
@@ -142,7 +148,7 @@ class Implements final : public AstNode {
 
     This method returns 'Foo' and 'Bar', respectively.
   */
-  UniqueString interfaceName() const;
+  UniqueString interfaceName(int i) const;
 
   /**
     Returns the interface expression. This method may return either an
@@ -161,9 +167,9 @@ class Implements final : public AstNode {
     This method returns the FnCall 'Foo(A, B)' or the Identifier 'Bar',
     respectively.
   */
-  const AstNode* interfaceExpr() const {
-    CHPL_ASSERT(interfaceExprChildNum() != AstNode::NO_CHILD);
-    const AstNode* ret = child(interfaceExprChildNum());
+  const AstNode* interfaceExpr(int i) const {
+    CHPL_ASSERT(firstInterfaceExprChildNum() != AstNode::NO_CHILD);
+    const AstNode* ret = child(firstInterfaceExprChildNum() + i);
     CHPL_ASSERT(ret);
     return ret;
   }
