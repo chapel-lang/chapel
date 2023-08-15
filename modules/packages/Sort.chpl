@@ -3581,7 +3581,7 @@ record DefaultComparator {
     // Convert the real bits to a uint
     var src = x;
     var dst: uint(nbits);
-    memcpy(ptrTo(dst), ptrTo(src), c_sizeof(src.type));
+    memcpy(c_ptrTo(dst), c_ptrTo(src), c_sizeof(src.type));
 
     if (dst >> (nbits-1)) == 1 {
       // negative bit is set, flip all bits
