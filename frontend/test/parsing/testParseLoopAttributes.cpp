@@ -43,10 +43,14 @@ std::map<AstTag, std::tuple<std::string, std::string, std::string>> gLoopBits = 
 
 int gFreshVarCounter = 0;
 
+class Part;
+static void validateParts(const AstNode* container,
+                          const std::vector<Part>& parts);
 class Part {
  private:
   chpl::optional<chpl::uast::AstTag> expectTag;
   std::string theString;
+  std::vector<Part> childParts;
 
  public:
 
@@ -56,17 +60,19 @@ class Part {
     return toReturn;
   }
 
-  static Part loop(AstTag tag) {
+  static Part loop(AstTag tag, std::vector<Part> children = {}) {
     Part toReturn;
     toReturn.expectTag = tag;
+    toReturn.childParts = std::move(children);
     return toReturn;
   }
 
-  void wrap(std::vector<std::string>& lines) const {
-    if (expectTag) {
-      // indent everyhting
-      for (auto& line : lines) line = "  " + line;
+  bool isLoop() const {
+    return !!expectTag;
+  }
 
+  void generateProgram(std::vector<std::string>& lines) const {
+    if (expectTag) {
       // It's some kind of loop, put it together!
       auto it = gLoopBits.find(*expectTag);
       assert(it != gLoopBits.end());
@@ -75,47 +81,83 @@ class Part {
       auto afterVar = std::get<1>(it->second);
       auto afterEndBody = std::get<2>(it->second);
 
+      std::vector<std::string> childLines;
+      for (auto& child : childParts) child.generateProgram(childLines);
+
       if (!afterVar.empty()) {
         auto newVar = "i" + std::to_string(gFreshVarCounter++);
-        lines.insert(lines.begin(), beforeVar + " " + newVar + " " + afterVar + " {");
+        lines.push_back(beforeVar + " " + newVar + " " + afterVar + " {");
       } else {
-        lines.insert(lines.begin(), beforeVar + " {");
+        lines.push_back(beforeVar + " {");
+      }
+      for (auto childLine : childLines) {
+        lines.push_back("  " + childLine);
       }
       lines.push_back("} " + afterEndBody);
     } else {
       // It's an attribute
-      lines.insert(lines.begin(), "@" + theString);
+      lines.insert(lines.end(), "@" + theString);
     }
   }
 
-  void unwrap(int& childCounter, const uast::Loop*& node) const {
+  void validateParsed(int attrChildCounter, const uast::Loop* node) const {
     if (expectTag) {
       assert(node->tag() == *expectTag);
-      childCounter = 0;
-      if (node->body()->numChildren() > 0) {
-        auto nodeChild = node->body()->child(0);
-        assert(nodeChild && nodeChild->isLoop());
-        node = nodeChild->toLoop();
-      } else {
-        node = nullptr;
-      }
+      validateParts(node->body(), childParts);
     } else {
+      assert(childParts.empty());
       assert(node->attributeGroup());
       // asserts internally
-      auto nthChild = node->attributeGroup()->child(childCounter);
+      auto nthChild = node->attributeGroup()->child(attrChildCounter);
       auto nthAttribute = nthChild->toAttribute();
       assert(nthAttribute);
       assert(nthAttribute->name() == theString);
-      childCounter++;
     }
   }
 };
 
+static void validateParts(const AstNode* container,
+                          const std::vector<Part>& parts) {
+  if (parts.size() == 0) return;
+
+  // If there's any part, there must be at least one loop, otherwise it's
+  // floating attributes.
+
+  auto nthLoop = [&](int i) {
+    auto nodeChild = container->child(i);
+    assert(nodeChild && nodeChild->isLoop());
+    return nodeChild->toLoop();
+  };
+  int childCounter = 0;
+  int attrChildCounter = 0;
+  auto childLoop = nthLoop(0);
+
+  for (auto& part : parts) {
+    if (childLoop == nullptr) childLoop = nthLoop(childCounter);
+    part.validateParsed(attrChildCounter, childLoop);
+
+    if (part.isLoop()) {
+      if (attrChildCounter > 0) {
+        assert(childLoop->attributeGroup() &&
+               childLoop->attributeGroup()->numAttributes() == attrChildCounter);
+      } else {
+        assert(!childLoop->attributeGroup());
+      }
+      attrChildCounter = 0;
+      childCounter++;
+      childLoop = nullptr;
+      // Don't immediately access loop here because we might be the last part.
+    } else {
+      attrChildCounter++;
+    }
+  }
+}
+
 static void runTest(const char* testName, Parser* parser, const std::vector<Part>& parts) {
   parser->context()->advanceToNextRevision(false);
   std::vector<std::string> lines;
-  for (auto it = parts.rbegin(); it != parts.rend(); it++) {
-    it->wrap(lines);
+  for (auto& part : parts) {
+    part.generateProgram(lines);
   }
 
   std::string program;
@@ -132,17 +174,7 @@ static void runTest(const char* testName, Parser* parser, const std::vector<Part
   assert(!guard.realizeErrors());
   assert(parseResult.numTopLevelExpressions() == 1);
 
-  // Each part will "descend" into the AST, modifying childCounter
-  // and currentLoop.
-  int childCounter = 0;
-  auto firstNode = parseResult.topLevelExpression(0)->toModule()->stmt(0);
-  assert(firstNode && firstNode->isLoop());
-  auto currentLoop = firstNode->toLoop();
-  for (auto& part : parts) {
-    assert(currentLoop);
-    part.unwrap(childCounter, currentLoop);
-  }
-  assert(currentLoop == nullptr); // made it to the end
+  validateParts(parseResult.topLevelExpression(0)->toModule(), parts);
 }
 
 static void test1(Parser* parser) {
@@ -169,8 +201,9 @@ static void test3(Parser* parser) {
     for (auto pair2 : gLoopBits) {
       runTest("outerLoopAttr.chpl", parser, {
           Part::attr("llvm.assertVectorized"),
-          Part::loop(pair1.first),
+          Part::loop(pair1.first, {
             Part::loop(pair2.first),
+          }),
       });
     }
   }
@@ -180,9 +213,10 @@ static void test4(Parser* parser) {
   for (auto pair1 : gLoopBits) {
     for (auto pair2 : gLoopBits) {
       runTest("innerLoopAttr.chpl", parser, {
-          Part::loop(pair1.first),
+          Part::loop(pair1.first, {
             Part::attr("llvm.assertVectorized"),
             Part::loop(pair2.first),
+          }),
       });
     }
   }
@@ -193,9 +227,10 @@ static void test5(Parser* parser) {
     for (auto pair2 : gLoopBits) {
       runTest("bothLoopAttr.chpl", parser, {
           Part::attr("llvm.attribute"),
-          Part::loop(pair1.first),
+          Part::loop(pair1.first, {
             Part::attr("llvm.assertVectorized"),
             Part::loop(pair2.first),
+          }),
       });
     }
   }
@@ -207,10 +242,11 @@ static void test6(Parser* parser) {
       runTest("bothLoopAttr.chpl", parser, {
           Part::attr("llvm.attribute"),
           Part::attr("llvm.notARealAttributeButAllowed"),
-          Part::loop(pair1.first),
+          Part::loop(pair1.first, {
             Part::attr("llvm.assertVectorized"),
             Part::attr("llvm.alsoNotARealAttributeButAllowed"),
             Part::loop(pair2.first),
+          }),
       });
     }
   }
