@@ -102,8 +102,9 @@ module GPU
   */
   pragma "insert line file info"
   pragma "always propagate line file info"
+  @deprecated(notes="the functional form of assertOnGpu() is deprecated. Please use the @assertOnGpu loop attribute instead.")
   inline proc assertOnGpu() {
-    __primitive("chpl_assert_on_gpu");
+    __primitive("chpl_assert_on_gpu", false);
   }
 
   /*
@@ -337,7 +338,7 @@ module GPU
     pragma "codegen for GPU"
     extern rtName proc chpl_atomicBinOp(x, val);
 
-    assertOnGpu();
+    __primitive("chpl_assert_on_gpu", false);
     chpl_atomicBinOp(c_ptrTo(x), val);
   }
 
@@ -348,7 +349,7 @@ module GPU
     pragma "codegen for GPU"
     extern rtName proc chpl_atomicTernOp(x, cmp, val);
 
-    assertOnGpu();
+    __primitive("chpl_assert_on_gpu", false);
     chpl_atomicTernOp(c_ptrTo(x), cmp, val);
   }
 

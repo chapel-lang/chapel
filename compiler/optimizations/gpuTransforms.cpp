@@ -331,7 +331,8 @@ class GpuizableLoop {
   Symbol* upperBound_ = nullptr;
   std::vector<Symbol*> loopIndices_;
   std::vector<Symbol*> lowerBounds_;
-  bool shouldErrorIfNotGpuizable_;
+  std::vector<CallExpr*> gpuAssertions_;
+  CallExpr* compileTimeGpuAssertion_;
 
 public:
   GpuizableLoop(BlockStmt* blk);
@@ -349,8 +350,10 @@ public:
   }
 
 private:
-  bool determineIfShouldErrorIfNotGpuizable();
+  CallExpr* findCompileTimeGpuAssertions();
+  void printNonGpuizableError(CallExpr* assertion, Expr* loc);
   bool evaluateLoop();
+  void cleanupAssertGpuizable();
   bool isAlreadyInGpuKernel();
   bool parentFnAllowsGpuization();
   bool callsInBodyAreGpuizable();
@@ -369,7 +372,7 @@ GpuizableLoop::GpuizableLoop(BlockStmt *blk) {
 
   this->loop_ = toCForLoop(blk);
   this->parentFn_ = toFnSymbol(blk->getFunction());
-  this->shouldErrorIfNotGpuizable_ = determineIfShouldErrorIfNotGpuizable();
+  this->compileTimeGpuAssertion_ = findCompileTimeGpuAssertions();
   this->isEligible_ = evaluateLoop();
 
   // Ideally we should error out earlier than this with a more specific
@@ -377,12 +380,15 @@ GpuizableLoop::GpuizableLoop(BlockStmt *blk) {
   // There's one use case we want to exempt, which is failure to
   // gpuize a nested loop. In this case if there was a failure to gpuize
   // the outer loop we already would have errored.
-  if(this->shouldErrorIfNotGpuizable_ &&
+  if(this->compileTimeGpuAssertion_ &&
     !this->isEligible_ &&
     !isAlreadyInGpuKernel())
   {
-    USR_FATAL(blk, "Loop containing assertOnGpu() is not gpuizable");
+    printNonGpuizableError(this->compileTimeGpuAssertion_, blk);
+    USR_STOP();
   }
+
+  cleanupAssertGpuizable();
 }
 
 // Given --report-gpu we don't want to report on all 'for' loops, just those
@@ -407,7 +413,7 @@ bool GpuizableLoop::isReportWorthy() {
   return true;
 }
 
-bool GpuizableLoop::determineIfShouldErrorIfNotGpuizable() {
+CallExpr* GpuizableLoop::findCompileTimeGpuAssertions() {
   CForLoop *cfl = this->loop_;
   INT_ASSERT(cfl);
 
@@ -421,11 +427,22 @@ bool GpuizableLoop::determineIfShouldErrorIfNotGpuizable() {
   for_alist(expr, cfl->body) {
     CallExpr *call = toCallExpr(expr);
     if (call && call->isPrimitive(PRIM_ASSERT_ON_GPU)) {
-      return true;
+      return call;
     }
   }
 
-  return false;
+  return nullptr;
+}
+
+void GpuizableLoop::printNonGpuizableError(CallExpr* assertion, Expr* loc) {
+    debuggerBreakHere();
+    const char* reason = "contains assertOnGpu()";
+    auto isAttributeSym = toSymExpr(assertion->get(1));
+    INT_ASSERT(isAttributeSym);
+    if (isAttributeSym->symbol() == gTrue) {
+      reason = "is marked with @assertOnGpu";
+    }
+    USR_FATAL_CONT(loc, "Loop %s but is not eligible for execution on a GPU", reason);
 }
 
 bool GpuizableLoop::isAlreadyInGpuKernel() {
@@ -437,6 +454,15 @@ bool GpuizableLoop::evaluateLoop() {
          parentFnAllowsGpuization() &&
          callsInBodyAreGpuizable() &&
          attemptToExtractLoopInformation();
+}
+
+void GpuizableLoop::cleanupAssertGpuizable() {
+  // Remove the string reasons passed to the primitive (they don't go to
+  // the runtime).
+  for (auto call : gpuAssertions_) {
+    if (call->numActuals())
+      call->get(1)->remove();
+  }
 }
 
 bool GpuizableLoop::parentFnAllowsGpuization() {
@@ -596,8 +622,8 @@ bool GpuizableLoop::extractUpperBound() {
 }
 
 void GpuizableLoop::reportNotGpuizable(const BaseAST* ast, const char *msg) {
-  if(this->shouldErrorIfNotGpuizable_) {
-    USR_FATAL_CONT(loop_, "Loop containing assertOnGpu() is not eligible for execution on a GPU");
+  if(this->compileTimeGpuAssertion_) {
+    printNonGpuizableError(this->compileTimeGpuAssertion_, loop_);
     USR_PRINT(ast, "%s", msg);
     USR_STOP();
   }
@@ -802,9 +828,10 @@ void GpuKernel::determineBlockSize() {
 }
 
 bool GpuKernel::isCallToPrimitiveWeShouldNotCopyIntoKernel(CallExpr *call) {
-  return call &&
-    (call->isPrimitive(PRIM_ASSERT_ON_GPU) ||
-     call->isPrimitive(PRIM_GPU_SET_BLOCKSIZE));
+  if (!call) return false;
+
+  return call->isPrimitive(PRIM_ASSERT_ON_GPU) ||
+         call->isPrimitive(PRIM_GPU_SET_BLOCKSIZE);
 }
 
 void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {

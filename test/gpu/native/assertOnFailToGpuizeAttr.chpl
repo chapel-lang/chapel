@@ -1,6 +1,6 @@
-// This test and assertOnFailToGpuizeAttr are siblings; they both test the
-// same functionality, one as a "magic function call" (this one) and one as
-// an attribute (the other one).
+// This test and assertOnFailToGpuize are siblings; they both test the
+// same functionality, one as an attribute (this one) and one as
+// a "magic function call" (the other one).
 
 use GPU;
 
@@ -14,8 +14,9 @@ proc usesOutsideVar() { return globalVar; }
 
 pragma "no gpu codegen"
 proc funcMarkedNotGpuizableThatTriesToGpuize() {
+  @assertOnGpu
   foreach i in 0..10 {
-    assertOnGpu();
+   
   }
 }
 
@@ -28,15 +29,15 @@ on here.gpus[0] {
   }
 
   if failureMode == 2 {
+    @assertOnGpu
     foreach i in 0..10 {
-      assertOnGpu();
       funcMarkedNotGpuizable();
     }
   }
 
   if failureMode == 3 {
+    @assertOnGpu
     foreach i in 0..10 {
-      assertOnGpu();
       usesOutsideVar();
     }
   }
@@ -46,37 +47,37 @@ on here.gpus[0] {
   // to run these tests):
 
   // calling a recursive function is allowed now
+  @assertOnGpu
   foreach i in 0..10 {
-    assertOnGpu();
     directlyRecursiveFunc(i);
   }
 
+  @assertOnGpu
   foreach i in 0..10 {
-    assertOnGpu();
     indirectlyRecursiveFunc(i);
   }
 
   // I want to ensure this works
   // with forall loops as well:
+  @assertOnGpu
   forall i in 0..10 {
-    assertOnGpu();
     directlyRecursiveFunc(i);
   }
 
   // And loops of a multidimensional array:
   {
     var A: [1..10, 1..10] int;
+    @assertOnGpu
     foreach a in A {
-      assertOnGpu();
       directlyRecursiveFunc(5);
     }
   }
 
-  foreach i in 0..10 { assertOnGpu(); }
-  forall i in 0..10 { assertOnGpu(); }
+  @assertOnGpu foreach i in 0..10 { }
+  @assertOnGpu forall i in 0..10 { }
   var A: [1..10, 1..10] int;
-  foreach a in A { assertOnGpu(); }
-  foreach idx in {0..10, 0..10} { assertOnGpu(); }
-  forall a in A { assertOnGpu(); }
-  forall idx in {0..10, 0..10} { assertOnGpu(); }
+  @assertOnGpu foreach a in A { }
+  @assertOnGpu foreach idx in {0..10, 0..10} { }
+  @assertOnGpu forall a in A { }
+  @assertOnGpu forall idx in {0..10, 0..10} { }
 }

@@ -70,7 +70,7 @@ struct ParserContext {
   AttributeGroupParts attributeGroupParts;
   bool hasAttributeGroupParts;
   int numAttributesBuilt;
-  AttributeGroup* loopAttributes;
+  std::vector<owned<AttributeGroup>> loopAttributes;
   YYLTYPE declStartLocation;
 
   // this type and stack helps the parser know if a function
@@ -106,7 +106,6 @@ struct ParserContext {
     this->attributeGroupParts     = {nullptr, nullptr, false, false, false, UniqueString(), UniqueString() };
     this->hasAttributeGroupParts  = false;
     this->numAttributesBuilt      = 0;
-    this->loopAttributes   = nullptr;
     YYLTYPE emptyLoc = {0};
     this->declStartLocation       = emptyLoc;
     this->atEOF                   = false;
@@ -141,6 +140,7 @@ struct ParserContext {
                                   bool usedParens,
                                   ParserExprList* toolspace,
                                   MaybeNamedActualList* actuals);
+  owned<AttributeGroup> popLoopAttributeGroup();
 
   // If attributes do not exist yet, returns nullptr.
   owned<AttributeGroup> buildAttributeGroup(YYLTYPE locationOfDecl);
