@@ -1973,27 +1973,16 @@ proc file.fsync() throws {
   if err then try ioerror(err, "in file.fsync", this._tryGetPath());
 }
 
-/*
-  A compile-time parameter to control the behavior of :proc:`file.path`
-
-  When 'false', the deprecated behavior is used (i.e., return the shortest of
-  the relative path and the absolute path)
-
-  When 'true', the new behavior is used (i.e., always return the absolute path)
-*/
+@chpldoc.nodoc
+@deprecated("'filePathAbsolute' is deprecated and inactive. 'file.path' now returns an absolute path")
 config param filePathAbsolute = false;
-
-@deprecated(notes="The variant of `file.path` that can return a relative path is deprecated; please compile with `-sfilePathAbsolute=true` to use the strictly absolute variant")
-proc file.path: string throws where !filePathAbsolute {
-  return fileRelPathHelper(this);
-}
 
 /*
 
 Get the absolute path to an open file.
 
 Note that not all files have a path (e.g. files opened with :proc:`openMemFile`),
-and that this function may not work on all operating systems.
+and that this procedure may not work on all operating systems.
 
 The function :proc:`Path.realPath` is an alternative way
 to get the path to a file.
@@ -2003,7 +1992,7 @@ to get the path to a file.
 
 :throws SystemError: Thrown if the path could not be retrieved.
  */
-proc file.path : string throws where filePathAbsolute {
+proc file.path : string throws {
   return this._abspath;
 }
 
