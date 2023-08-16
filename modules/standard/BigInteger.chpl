@@ -2191,6 +2191,11 @@ module BigInteger {
     Negative values can only be odd perfect powers.
 
     :return: ``true`` if ``this`` is a perfect power, ``false`` otherwise.
+    :rtype: ``bool``
+
+    .. seealso::
+       :proc:`GMP.mpz_perfect_power_p` and
+       `mpz_perfect_power_p <https://gmplib.org/manual/Integer-Roots#index-mpz_005fperfect_005fpower_005fp>`_.
   */
   proc bigint.isPerfectPower () : bool {
     var t_ = this.localize();
@@ -2211,11 +2216,16 @@ module BigInteger {
 
   /*
     Return ``true`` if ``this`` is a perfect square, i.e., if the square root of
-    ``this`` is an integer.  Under this definition both ``0`` and ``1`` are
-    considered to be perfect squares.
+    ``this`` is an integer.
+
+    Under this definition both ``0`` and ``1`` are considered to be perfect squares.
 
     :return: ``true`` if ``this`` is a perfect square, ``false`` otherwise.
     :rtype: ``bool``
+
+    .. seealso::
+       :proc:`GMP.mpz_perfect_square_p` and
+       `mpz_perfect_square_p <https://gmplib.org/manual/Integer-Roots#index-mpz_005fperfect_005fsquare_005fp>`_.
   */
   proc bigint.isPerfectSquare() : bool {
     var t_ = this.localize();
@@ -3001,7 +3011,7 @@ module BigInteger {
 
     :arg x: value to compare ``this`` against
     :type x: :record:`bigint`
-    :returns: the number of bits that differ
+    :returns: The number of bits that differ
     :rtype: ``uint``
 
     .. seealso::
@@ -3026,9 +3036,9 @@ module BigInteger {
 
     If the bit at ``startBitIdx`` is ``0``, will return ``startBitIdx``.
 
-    :arg startBitIdx: the index of the first bit to start searching for a ``0``
+    :arg startBitIdx: The index of the first bit to start searching for a ``0``
     :type startBitIdx: ``integral``
-    :returns: the index of the first ``0`` bit after ``startBitIdx``, inclusive
+    :returns: The index of the first ``0`` bit after ``startBitIdx``, inclusive
     :rtype: ``uint``
   */
   @deprecated("scan0 is deprecated - please use :proc:`bigint.findNext0` instead")
@@ -3042,9 +3052,9 @@ module BigInteger {
 
     If the bit at ``startBitIdx`` is ``1``, will return ``startBitIdx``.
 
-    :arg startBitIdx: the index of the first bit to start searching for a ``1``
+    :arg startBitIdx: The index of the first bit to start searching for a ``1``
     :type startBitIdx: ``integral``
-    :returns: the index of the first ``1`` bit after ``startBitIdx``, inclusive
+    :returns: The index of the first ``1`` bit after ``startBitIdx``, inclusive
     :rtype: ``uint``
   */
   @deprecated("scan1 is deprecated - please use :proc:`bigint.findNext1` instead")
@@ -3057,9 +3067,9 @@ module BigInteger {
 
     If the bit at ``startBitIdx`` is ``1``, will return ``startBitIdx``.
 
-    :arg startBitIdx: the index of the first bit to start searching for a ``0``
+    :arg startBitIdx: The index of the first bit to start searching for a ``0``
     :type startBitIdx: ``integral``
-    :returns: the index of the first ``0`` bit after ``startBitIdx``, inclusive
+    :returns: The index of the first ``0`` bit after ``startBitIdx``, inclusive
     :rtype: ``uint``
 
     .. seealso::
@@ -3082,9 +3092,9 @@ module BigInteger {
 
     If the bit at ``startBitIdx`` is ``1``, will return ``startBitIdx``.
 
-    :arg startBitIdx: the index of the first bit to start searching for a ``1``
+    :arg startBitIdx: The index of the first bit to start searching for a ``1``
     :type startBitIdx: ``integral``
-    :returns: the index of the first ``1`` bit after ``startBitIdx``, inclusive
+    :returns: The index of the first ``1`` bit after ``startBitIdx``, inclusive
     :rtype: ``uint``
 
     .. seealso::
@@ -3108,7 +3118,7 @@ module BigInteger {
   /*
     Set the bit at ``idx`` of ``this``.
 
-    :arg idx: the index of the bit to be set
+    :arg idx: The index of the bit to be set
     :type idx: ``integral``
 
     .. seealso::
@@ -3135,7 +3145,7 @@ module BigInteger {
   /*
     Clear the bit at ``idx`` of ``this``.
 
-    :arg idx: the index of the bit to be cleared
+    :arg idx: The index of the bit to be cleared
     :type idx: ``integral``
 
     .. seealso::
@@ -3163,7 +3173,7 @@ module BigInteger {
     Toggle the bit at ``idx`` of ``this``. If the bit was 1, set it to 0. If
     the bit was 0, set it to 1.
 
-    :arg idx: the index of the bit to be toggled
+    :arg idx: The index of the bit to be toggled
     :type idx: ``integral``
 
     .. seealso::
@@ -3190,9 +3200,9 @@ module BigInteger {
   /*
     Get the bit at ``idx`` of ``this``.
 
-    :arg idx: the index of the bit to be returned
+    :arg idx: The index of the bit to be returned
     :type idx: ``integral``
-    :returns: the bit at index ``idx``
+    :returns: The bit at index ``idx``
     :rtype: ``int``
 
     .. seealso::
