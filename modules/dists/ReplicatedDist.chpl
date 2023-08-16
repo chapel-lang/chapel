@@ -115,14 +115,15 @@ when the initializer encounters an error.
 record Replicated {
   forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(unmanaged ReplicatedImpl);
 
-  proc init(targetLocales: [] locale = Locales) {
-    const value = new unmanaged ReplicatedImpl(targetLocales);
+  proc init(targetLocales: [] locale = Locales,
+                  purposeMessage = "used to create a Replicated") {
+    const value = new unmanaged ReplicatedImpl(targetLocales, purposeMessage);
 
     this.chpl_distHelp = new chpl_PrivatizedDistHelper(
-                          if _isPrivatized(value)
-                            then _newPrivatizedClass(value)
-                            else nullPid,
-                          value);
+                           if _isPrivatized(value)
+                             then _newPrivatizedClass(value)
+                             else nullPid,
+                           value);
   }
 
   proc init(_pid : int, _instance, _unowned : bool) {

@@ -106,10 +106,10 @@ private const rcDomainIx   = 1; // todo convert to param
    as shown :ref:`above <ReplicatedVar_subset-of-locales>`. */
 const rcDomainBase = {rcDomainIx..rcDomainIx};
 private const rcLocales    = Locales;
-private const rcDomainMap  = new unmanaged Replicated(rcLocales);
+private const rcDomainMap  = new Replicated(rcLocales);
 /* Use this domain to declare a user-level replicated variable,
    as shown :ref:`above <ReplicatedVar_basic-usage>` . */
-const rcDomain     = rcDomainBase dmapped new dmap(rcDomainMap);
+const rcDomain     = rcDomainBase dmapped rcDomainMap;
 private param _rcErr1 = " must be 'rcDomain' or 'rcDomainBase dmapped Replicated(an array of locales)'";
 
 private proc _rcTargetLocalesHelper(replicatedVar: [?D])
