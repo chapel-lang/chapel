@@ -2415,8 +2415,7 @@ module DefaultRectangular {
     return res;
   }
 
-    /* This computes a 1D scan in parallel on the array, for 1D arrays only */
-  proc DefaultRectangularArr.doiCopy(arr, dom) throws {
+  proc DefaultRectangularArr.doiTryCopy(arr, dom) throws {
     var res = dom.tryCreateArray(eltType, initElts=!isPOD(eltType));
     res = arr;
     if isPOD(eltType) then res.dsiElementInitializationComplete();

@@ -2045,7 +2045,7 @@ module ChapelArray {
     }
 
     proc tryCopy() throws {
-      return _value.doiCopy(this, this.domain);
+      return _value.doiTryCopy(this, this.domain);
     }
 
     @chpldoc.nodoc
