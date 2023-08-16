@@ -1,60 +1,61 @@
-use StencilDist;
+/*
+  A distributed 2D finite-difference heat/diffusion equation solver
 
-// ---- set up simulation parameters ------
-// declare configurable parameters with default values
-config const xLen = 2.0,    // length of the domain in x
-             yLen = 2.0,    // length of the domain in y
-             nx = 31,       // number of grid points in x
-             ny = 31,       // number of grid points in y
+  Computation is executed over a 2D distributed array.
+  The array distribution and sharing of "fluff"/"halo"
+  regions are managed by the `Stencil` distribution. The
+  `forall` loop manages task creation and synchronization
+  across and within locales.
+*/
+
+import StencilDist.Stencil,
+       Time.stopwatch;
+
+// create a stopwatch to time kernel execution
+var t = new stopwatch();
+config const writeTime = false;
+
+// declare configurable constants with default values
+config const nx = 256,      // number of grid points in x
+             ny = 256,      // number of grid points in y
              nt = 50,       // number of time steps
-             sigma = 0.25,  // CFL condition
-             nu = 0.05;     // viscosity
+             alpha = 0.25;  // diffusion constant
 
-// declare non-configurable parameters
-const dx: real = xLen / (nx - 1),       // grid spacing in x
-      dy: real = yLen / (ny - 1),       // grid spacing in y
-      dt: real = sigma * dx * dy / nu;  // time step size
-
-// ---- set up the grid ------
 // define a distributed 2D domain and subdomain to describe the grid and its interior
-const indices = {0..<nx, 0..<ny} dmapped Stencil({1..<nx-1, 1..<ny-1}, fluff=(1,1)),
-      indicesInner = indices[{1..<nx-1, 1..<ny-1}];
+const indices = {0..<nx, 0..<ny},
+      indicesInner = indices.expand(-1),
+      INDICES = indices dmapped Stencil(indicesInner, fluff=(1,1)),
+      INDICES_INNER = INDICES[{1..<nx-1, 1..<ny-1}];
 
 // define a distributed 2D array over the above domain
-var u: [indices] real;
+var u: [INDICES] real;
 
 // set up initial conditions
 u = 1.0;
-u[
-  (0.5 / dx):int..<(1.0 / dx + 1):int,
-  (0.5 / dy):int..<(1.0 / dy + 1):int
-] = 2;
+u[nx/4..nx/2, ny/4..ny/2] = 2.0;
 
-// ---- run the finite difference computation ------
 // create a temporary copy of 'u' to store the previous time step
 var un = u;
 
 // iterate for 'nt' time steps
+t.start();
 for 1..nt {
-
-  // swap the arrays to prepare for the next time step
+  // swap arrays to prepare for next time step
   u <=> un;
 
-  // swap halo regions between neighboring compute nodes
+  // swap halo regions between neighboring tasks
   un.updateFluff();
 
-  // update the solution over the interior of the domain in parallel
-  forall (i, j) in indicesInner {
-    u[i, j] = un[i, j] +
-              nu * dt / dy**2 *
-                (un[i-1, j] - 2 * un[i, j] + un[i+1, j]) +
-              nu * dt / dx**2 *
-                (un[i, j-1] - 2 * un[i, j] + un[i, j+1]);
-  }
+  // compute the FD kernel in parallel
+  forall (i, j) in INDICES_INNER do
+    u[i, j] = un[i, j] + alpha *
+      (un[i, j-1] + un[i-1, j] + un[i+1, j] + un[i, j+1] - 4 * un[i, j]);
 }
 
-// ---- print final results ------
+// print final results
 const mean = (+ reduce u) / u.size,
       stdDev = sqrt((+ reduce (u - mean)**2) / u.size);
+t.stop();
 
-writeln((0.102424 - stdDev) < 1e-6);
+writeln(abs(0.222751 - stdDev) < 1e-6);
+if writeTime then writeln("time: ", t.elapsed(), " (sec)");
