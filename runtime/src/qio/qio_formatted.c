@@ -4940,6 +4940,10 @@ qioerr qio_conv_parse(c_string fmt,
       if( space_flag ) style_out->showplus = 2;
       if( plus_flag ) style_out->showplus = 1;
 
+      if( style_out->leftjustify == 1 && style_out->centjustify == 1 ) {
+        QIO_GET_CONSTANT_ERROR(err, EINVAL, "left and center justification cannot be specified simultaneously for a single argument");
+      }
+
       if( base_flag == 'b' ) style_out->base = 2;
       else if( base_flag == 'o' ) style_out->base = 8;
       else if( base_flag == 'd' ) style_out->base = 10;
