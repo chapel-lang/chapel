@@ -719,12 +719,12 @@ module DefaultRectangular {
         throw new Error("'tryCreateArray' is only supported on domains of rank 1");
 
       //TODO: callPostAlloc
-      var (data, _) = _try_ddata_allocate_noinit(eltType, ranges(0).size);
-      return new unmanaged DefaultRectangularArr(eltType=eltType, rank=rank,
-                                                 idxType=idxType,
-                                                 strides=strides,
-                                                 dom=_to_unmanaged(this),
-                                                 data=data);
+      var (data, callPostAlloc) = _try_ddata_allocate_noinit(eltType, ranges(0).size);
+      return (new unmanaged DefaultRectangularArr(eltType=eltType, rank=rank,
+                                                  idxType=idxType,
+                                                  strides=strides,
+                                                  dom=_to_unmanaged(this),
+                                                  data=data), callPostAlloc);
     }
 
     proc dsiBuildArrayWith(type eltType, data:_ddata(eltType), allocSize:int) {
@@ -2432,11 +2432,12 @@ module DefaultRectangular {
   proc DefaultRectangularArr.doiTryCopy(arr) throws {
       // TODO: Update to support higher dimension (not needed in Arkouda)
       if rank != 1 then
-        throw new Error("'tryCreateArray' is only supported on domains of rank 1");
+        throw new Error("'tryCopy' is only supported on domains of rank 1");
 
-      var res = arr.domain.tryCreateArrayNoInit(arr.eltType);
+      var (res, callPostAlloc) = arr.domain.tryCreateArrayNoInit(arr.eltType);
       res = arr;
-      _ddata_allocate_postalloc(res._value.data, res.size);
+      if callPostAlloc then
+        _ddata_allocate_postalloc(res._value.data, res.size);
       return res;
     }
 

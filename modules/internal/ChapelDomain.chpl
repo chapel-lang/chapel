@@ -1568,7 +1568,7 @@ module ChapelDomain {
       chpl_checkEltType(eltType);
       chpl_checkNegativeStride();
 
-      var x = _value.doiTryCreateArrayNoInit(eltType);
+      var (x, callPostAlloc) = _value.doiTryCreateArrayNoInit(eltType);
       pragma "dont disable remote value forwarding"
       proc help() {
         _value.add_arr(x);
@@ -1577,7 +1577,7 @@ module ChapelDomain {
 
       chpl_incRefCountsForDomainsInArrayEltTypes(x, x.eltType);
 
-      return _newArray(x);
+      return (_newArray(x), callPostAlloc);
     }
 
     // assumes that data is already initialized
