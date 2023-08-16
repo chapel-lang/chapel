@@ -702,7 +702,7 @@ module BigInteger {
     rounding towards zero).
 
     .. warning::
-       If the resulting expoenent from the conversion is too big, the result is
+       If the resulting exponent from the conversion is too big, the result is
        system dependant. If supported, an infinity may be returned. A hardware
        overflow trap may also occur.
 
@@ -1337,7 +1337,7 @@ module BigInteger {
 
 
   /*
-    Returns the Jacobi symbol ``a/b``, which is definied only when ``b`` is odd.
+    Returns the Jacobi symbol ``a/b``, which is defined only when ``b`` is odd.
 
     :rtype: ``int``
 
@@ -1359,7 +1359,7 @@ module BigInteger {
 
 
   /*
-    Returns the Legendre symbol ``a/p``, which is definied only when ``p`` is
+    Returns the Legendre symbol ``a/p``, which is defined only when ``p`` is
     an odd positive prime number.
 
     :rtype: ``int``
@@ -1561,7 +1561,6 @@ module BigInteger {
 
     :arg div: number to check if ``this`` is divisible by
     :type div: :record:`bigint`, ``int`` or ``uint``
-
     :return: ``true`` if ``this`` is exactly divisible by ``div``, ``false``
              otherwise
     :rtype: ``bool``
@@ -1630,7 +1629,7 @@ module BigInteger {
 
     .. seealso::
        :proc:`GMP.mpz_divisible_2exp_p` and
-       `mpz_divisible_2exp_p <hhttps://gmplib.org/manual/Integer-Division#index-mpz_005fdivisible_005f2exp_005fp>`_.
+       `mpz_divisible_2exp_p <https://gmplib.org/manual/Integer-Division#index-mpz_005fdivisible_005f2exp_005fp>`_.
    */
   proc bigint.isDivisibleBy2Pow(exp: integral) : bool {
     const t_ = this.localize();
@@ -2291,8 +2290,8 @@ module BigInteger {
   /* Set ``result`` to the next prime number greater than ``x``.
 
      .. note::
-        This is probablistic function and in an unlikely case may set
-        ``result`` to a compositie number.
+        This is a probabilistic function and in an unlikely case may set
+        ``result`` to a composite number.
 
      :arg result: return value that will contain the next prime number
      :type result: :record:`bigint`
@@ -3252,7 +3251,7 @@ module BigInteger {
 
     .. seealso::
        :proc:`GMP.mpz_even_p` and
-       `mpz_even_p <hhttps://gmplib.org/manual/Miscellaneous-Integer-Functions#index-mpz_005feven_005fp>`_.
+       `mpz_even_p <https://gmplib.org/manual/Miscellaneous-Integer-Functions#index-mpz_005feven_005fp>`_.
   */
   proc bigint.isEven() : bool {
     var t_ = this.localize();
@@ -3278,7 +3277,7 @@ module BigInteger {
 
     .. seealso::
        :proc:`GMP.mpz_odd_p` and
-       `mpz_odd_p <hhttps://gmplib.org/manual/Miscellaneous-Integer-Functions#index-mpz_005fodd_005fp>`_.
+       `mpz_odd_p <https://gmplib.org/manual/Miscellaneous-Integer-Functions#index-mpz_005fodd_005fp>`_.
   */
   proc bigint.isOdd() : bool {
     var t_ = this.localize();
@@ -3880,7 +3879,7 @@ module BigInteger {
 
      :arg result: Where the result is stored
      :type result: :record:`bigint`
-     :arg x: The number to take the absoulte value of
+     :arg x: The number to take the absolute value of
      :type x: :record:`bigint`
 
      .. seealso::
