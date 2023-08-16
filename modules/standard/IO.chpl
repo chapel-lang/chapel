@@ -2201,7 +2201,8 @@ proc openplugin(pluginFile: QioPluginFile, mode:ioMode,
   if seekable then
     flags |= QIO_FDFLAG_SEEKABLE;
 
-  var err = qio_file_init_plugin(ret._file_internal, pluginFile:c_ptr(void), flags, style);
+  var err = qio_file_init_plugin(ret._file_internal,
+      c_ptrToConst_helper(pluginFile), flags, style);
   if err {
     var path:string = "unknown";
     if pluginFile {

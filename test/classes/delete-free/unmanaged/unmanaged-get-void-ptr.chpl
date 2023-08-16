@@ -12,7 +12,7 @@ proc test() {
   use CTypes;
   var x = new unmanaged MyClass(1);
   var y = x:borrowed ParentClass;
-  var z = x:c_ptr(void);
+  var z = c_ptrTo(x);
 
   if debug {
     writeln(x);
@@ -22,7 +22,7 @@ proc test() {
 
   var x2 = x:unmanaged ParentClass;
   var y2 = x2:borrowed MyClass;
-  var z2 = x2:c_ptr(void);
+  var z2 = c_ptrTo(x2);
 
   if debug {
     writeln(x2);

@@ -189,7 +189,7 @@ module ExternalArray {
 
     var ret: chpl_opaque_array;
     ret._pid = arr._pid;
-    ret._instance = arr._value: c_ptr(void);
+    ret._instance = c_ptrToConst_helper(arr._value);
     ret._unowned = arr._unowned;
     if (!arr._unowned) {
       arr._unowned = true;

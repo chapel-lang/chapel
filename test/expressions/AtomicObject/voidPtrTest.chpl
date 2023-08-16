@@ -7,8 +7,8 @@ proc fn(f : c_ptr(void)) {
 
 var ownObj = new owned Obj(1,2,3);
 var obj = ownObj.borrow();
-fn(obj : c_ptr(void));
+fn(c_ptrTo(obj));
 
 var ownObj2 = new owned Obj(4,5,6);
 var obj2 : borrowed Obj = ownObj2.borrow();
-fn(obj2 : c_ptr(void));
+fn(c_ptrTo(obj2));

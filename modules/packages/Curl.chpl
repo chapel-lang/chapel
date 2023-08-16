@@ -828,9 +828,10 @@ module Curl {
         // Set the function to get the data to send
         err = curl_easy_setopt_long(curl, CURLOPT_UPLOAD, 1);
         if err then return EINVAL;
-        err =curl_easy_setopt_ptr(curl, CURLOPT_READFUNCTION, c_ptrTo(curl_read_buffered):c_ptr(void));
+        err =curl_easy_setopt_ptr(curl, CURLOPT_READFUNCTION,
+            c_ptrTo(curl_read_buffered):c_ptr(void));
         if err then return EINVAL;
-        err = curl_easy_setopt_ptr(curl, CURLOPT_READDATA, cc:c_ptr(void));
+        err = curl_easy_setopt_ptr(curl, CURLOPT_READDATA, c_ptrToConst_helper(cc));
         if err then return EINVAL;
 
         // TODO -- is this necessary?
@@ -841,7 +842,8 @@ module Curl {
         // Set the function to process the received data
         err = curl_easy_setopt_ptr(curl, CURLOPT_WRITEFUNCTION, c_ptrTo(curl_write_received):c_ptr(void));
         if err then return EINVAL;
-        err = curl_easy_setopt_ptr(curl, CURLOPT_WRITEDATA, cc:c_ptr(void));
+        err = curl_easy_setopt_ptr(curl, CURLOPT_WRITEDATA,
+            c_ptrToConst_helper(cc));
         if err then return EINVAL;
       }
       // If it's seekable, start at the right offset
