@@ -616,10 +616,12 @@ module CTypes {
   }
 
   @chpldoc.nodoc
+  @deprecated(notes="Casting from class types directly to c_ptr(void) is deprecated. Please use c_ptrTo/c_ptrToConst (with '-s cPtrToLogicalValue=true') instead.")
   inline operator :(x:borrowed, type t:c_ptr(void)) {
     return __primitive("cast", t, x);
   }
   @chpldoc.nodoc
+  @deprecated(notes="Casting from class types directly to c_ptr(void) is deprecated. Please use c_ptrTo/c_ptrToConst (with '-s cPtrToLogicalValue=true') instead.")
   inline operator :(x:unmanaged, type t:c_ptr(void)) {
     return __primitive("cast", t, x);
   }
@@ -954,6 +956,27 @@ module CTypes {
     }
     return c_pointer_return(b.buff[0]);
   }
+
+  @chpldoc.nodoc
+  inline proc c_ptrTo_helper(c: class): c_ptr(void)
+  {
+    return __primitive("cast", c_ptr(void), c.borrow());
+  }
+  @chpldoc.nodoc
+  inline proc c_ptrTo_helper(c: class?): c_ptr(void)
+  {
+    return __primitive("cast", c_ptr(void), c.borrow());
+  }
+  @chpldoc.nodoc
+  inline proc c_ptrToConst_helper(const c: class): c_ptr(void)
+  {
+    return __primitive("cast", c_ptr(void), c.borrow());
+  }
+  @chpldoc.nodoc
+  inline proc c_ptrToConst_helper(const c: class?): c_ptr(void)
+  {
+    return __primitive("cast", c_ptr(void), c.borrow());
+  }
   /****************************************************************************
     End of temporary helper functions while deprecating c_ptr(string) etc
   *****************************************************************************/
@@ -1012,15 +1035,15 @@ module CTypes {
     lifetime of the instance.  The returned pointer will be invalid if the
     instance is freed or even reallocated.
   */
-  inline proc c_ptrTo(ref c: class): c_ptr(void)
+  inline proc c_ptrTo(c: class): c_ptr(void)
     where cPtrToLogicalValue == true
   {
-    return c : c_ptr(void);
+    return __primitive("cast", c_ptr(void), c.borrow());
   }
-  inline proc c_ptrTo(ref c: class?): c_ptr(void)
+  inline proc c_ptrTo(c: class?): c_ptr(void)
     where cPtrToLogicalValue == true
   {
-    return c : c_ptr(void);
+    return __primitive("cast", c_ptr(void), c.borrow());
   }
 
   @deprecated(notes="The c_ptrTo(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOf' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
@@ -1039,15 +1062,15 @@ module CTypes {
   /*
    Like :proc:`c_ptrTo` for class types, but also accepts ``const`` data.
    */
-  inline proc c_ptrToConst(const ref c: class): c_ptr(void)
+  inline proc c_ptrToConst(const c: class): c_ptr(void)
     where cPtrToLogicalValue == true
   {
-    return c : c_ptr(void);
+    return __primitive("cast", c_ptr(void), c.borrow());
   }
-  inline proc c_ptrToConst(const ref c: class?): c_ptr(void)
+  inline proc c_ptrToConst(const c: class?): c_ptr(void)
     where cPtrToLogicalValue == true
   {
-    return c : c_ptr(void);
+    return __primitive("cast", c_ptr(void), c.borrow());
   }
 
   @deprecated(notes="The c_ptrToConst(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
