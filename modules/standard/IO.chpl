@@ -3705,7 +3705,7 @@ inline operator :(x: _internalIoChar, type t:string) {
   // The caller has responsibility for freeing the returned string.
   try! {
     return string.createAdoptingBuffer(csc);
-  }
+  } 
 }
 
 
@@ -3722,7 +3722,11 @@ When reading an ioNewline, read routines will skip any character sequence
 ``skipWhitespaceOnly`` is set to true.
 
  */
-record ioNewline {
+@deprecated(notes=":type:`ioNewline` is deprecated; please use :proc:`fileReader.readNewline`, :proc:`fileReader.matchNewline`, or :proc:`fileWriter.writeNewline` instead")
+type ioNewline = chpl_ioNewline;
+
+@chpldoc.nodoc
+record chpl_ioNewline {
   /*
     Normally, we will skip anything at all to get to a ``\n``,
     but if skipWhitespaceOnly is set, it will be an error
@@ -3742,7 +3746,7 @@ record ioNewline {
 }
 
 @chpldoc.nodoc
-inline operator :(x: ioNewline, type t:string) {
+inline operator :(x: chpl_ioNewline, type t:string) {
   return "\n";
 }
 
@@ -3757,7 +3761,11 @@ When reading, the ``ioLiteral`` must be matched exactly - or else the read call
 will return an error for incorrectly formatted input
 
 */
-record ioLiteral {
+@deprecated(notes=":type:`ioLiteral` is deprecated; please use :proc:`fileReader.readLiteral`, :proc:`fileReader.matchLiteral`, or :proc:`fileWriter.writeLiteral` instead")
+type ioLiteral = chpl_ioLiteral;
+
+@chpldoc.nodoc
+record chpl_ioLiteral {
   /* The value of the literal */
   var val: string;
   /* Should read operations using this literal ignore and consume
@@ -3771,7 +3779,7 @@ record ioLiteral {
 }
 
 @chpldoc.nodoc
-inline operator :(x: ioLiteral, type t:string) {
+inline operator :(x: chpl_ioLiteral, type t:string) {
   return x.val;
 }
 
@@ -5467,7 +5475,7 @@ proc _isIoPrimitiveType(type t) param do return
 
 @chpldoc.nodoc
  proc _isIoPrimitiveTypeOrNewline(type t) param do return
-  _isIoPrimitiveType(t) || t == ioNewline || t == ioLiteral || t == _internalIoChar || t == _internalIoBits;
+  _isIoPrimitiveType(t) || t == chpl_ioNewline || t == chpl_ioLiteral || t == _internalIoChar || t == _internalIoBits;
 
 // Read routines for all primitive types.
 private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
@@ -5774,8 +5782,8 @@ proc fileReader._constructIoErrorMsg(param kind: iokind, const x:?t): string {
   result += t:string;
 
   select t {
-    when ioNewline do result += " " + "newline";
-    when ioLiteral do result += " " + "\"" + x:string + "\"";
+    when chpl_ioNewline do result += " " + "newline";
+    when chpl_ioLiteral do result += " " + "\"" + x:string + "\"";
   }
 
   return result;
@@ -5787,8 +5795,8 @@ proc fileWriter._constructIoErrorMsg(param kind: iokind, const x:?t): string {
   result += t:string;
 
   select t {
-    when ioNewline do result += " " + "newline";
-    when ioLiteral do result += " " + "\"" + x:string + "\"";
+    when chpl_ioNewline do result += " " + "newline";
+    when chpl_ioLiteral do result += " " + "\"" + x:string + "\"";
   }
 
   return result;
@@ -5821,7 +5829,7 @@ proc fileReader._deserializeOne(ref x:?t, loc:locale) throws {
   defer { reader._channel_internal = QIO_CHANNEL_PTR_NULL;
           reader._deserializer = nil; }
 
-  if t == ioLiteral || t == ioNewline || t == _internalIoBits || t == _internalIoChar {
+  if t == chpl_ioLiteral || t == chpl_ioNewline || t == _internalIoBits || t == _internalIoChar {
     reader._readOne(reader.kind, x, reader.getLocaleOfIoRequest());
     return;
   }
@@ -5867,7 +5875,7 @@ proc fileWriter._serializeOne(const x:?t, loc:locale) throws {
   defer { writer._channel_internal = QIO_CHANNEL_PTR_NULL;
           writer._serializer = nil; }
 
-  if t == ioLiteral || t == ioNewline || t == _internalIoBits || t == _internalIoChar {
+  if t == chpl_ioLiteral || t == chpl_ioNewline || t == _internalIoBits || t == _internalIoChar {
     writer._writeOne(writer.kind, x, writer.getLocaleOfIoRequest());
     return;
   }
@@ -5897,11 +5905,11 @@ private proc _read_io_type_internal(_channel_internal:qio_channel_ptr_t,
                                     ref x:?t,
                                     loc:locale): errorCode throws {
   var e:errorCode = 0;
-  if t == ioNewline {
+  if t == chpl_ioNewline {
     return qio_channel_skip_past_newline(false, _channel_internal, x.skipWhitespaceOnly);
   } else if t == _internalIoChar {
     return qio_channel_read_char(false, _channel_internal, x.ch);
-  } else if t == ioLiteral {
+  } else if t == chpl_ioLiteral {
     return qio_channel_scan_literal(false, _channel_internal,
                                     x.val.localize().c_str(),
                                     x.val.numBytes: c_ssize_t, x.ignoreWhiteSpace);
@@ -5953,11 +5961,11 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
                                         const x:?t,
                                         loc:locale): errorCode throws where _isIoPrimitiveTypeOrNewline(t) {
   var e:errorCode = 0;
-  if t == ioNewline {
+  if t == chpl_ioNewline {
     return qio_channel_write_newline(false, _channel_internal);
   } else if t == _internalIoChar {
     return qio_channel_write_char(false, _channel_internal, x.ch);
-  } else if t == ioLiteral {
+  } else if t == chpl_ioLiteral {
     return qio_channel_print_literal(false, _channel_internal, x.val.localize().c_str(), x.val.numBytes:c_ssize_t);
   } else if t == _internalIoBits {
     return qio_channel_write_bits(false, _channel_internal, x.x, x.numBits);
@@ -6003,11 +6011,11 @@ private proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
   if isNilableClassType(t) {
     // future - write class IDs, have serialization format, handle binary
     var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-    var iolit:ioLiteral;
+    var iolit:chpl_ioLiteral;
     if st == QIO_AGGREGATE_FORMAT_JSON {
-      iolit = new ioLiteral("null");
+      iolit = new chpl_ioLiteral("null");
     } else {
-      iolit = new ioLiteral("nil");
+      iolit = new chpl_ioLiteral("nil");
     }
     var e:errorCode = 0;
     e = try _read_one_internal(_channel_internal, iokind.dynamic, iolit, loc);
@@ -6059,11 +6067,11 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
     if x == nil {
       // future - write class IDs, have serialization format, handle binary
       var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-      var iolit:ioLiteral;
+      var iolit:chpl_ioLiteral;
       if st == QIO_AGGREGATE_FORMAT_JSON {
-        iolit = new ioLiteral("null");
+        iolit = new chpl_ioLiteral("null");
       } else {
-        iolit = new ioLiteral("nil");
+        iolit = new chpl_ioLiteral("nil");
       }
       err = try _write_one_internal(_channel_internal, iokind.dynamic,
                                     iolit, loc);
@@ -6106,29 +6114,31 @@ proc fileWriter.writeIt(const x) throws {
   }
 }
 
-/* Explicit call for reading or writing a literal as an
-   alternative to using :type:`IO.ioLiteral`.
+/* Explicit call for reading or writing a literal. Equivalent to calling
+    :proc:`fileReader.readLiteral`.
 */
+@deprecated(notes=":proc:`fileReader.readWriteLiteral` is deprecated; please use :proc:`fileReader.readLiteral` instead")
 inline
 proc fileReader.readWriteLiteral(lit:string, ignoreWhiteSpace=true) throws
 {
   // This method was more interesting when it could be for either a reader or a
   // writer channel.  However, we don't think it was used much in practice so
   // will ultimately get deprecated
-  var iolit = new ioLiteral(lit:string, ignoreWhiteSpace);
+  var iolit = new chpl_ioLiteral(lit:string, ignoreWhiteSpace);
   this.readIt(iolit);
 }
 
-/* Explicit call for reading or writing a literal as an
-   alternative to using :type:`IO.ioLiteral`.
+/* Explicit call for reading or writing a literal. Equivalent to calling
+    :proc:`fileWriter.writeLiteral`
 */
+@deprecated(notes=":proc:`fileWriter.readWriteLiteral` is deprecated; please use :proc:`fileWriter.writeLiteral` instead")
 inline
 proc fileWriter.readWriteLiteral(lit:string, ignoreWhiteSpace=true) throws
 {
   // This method was more interesting when it could be for either a reader or a
   // writer channel.  However, we don't think it was used much in practice so
   // will ultimately get deprecated
-  var iolit = new ioLiteral(lit:string, ignoreWhiteSpace);
+  var iolit = new chpl_ioLiteral(lit:string, ignoreWhiteSpace);
   this.writeIt(iolit);
 }
 
@@ -6205,7 +6215,7 @@ inline proc fileReader._readLiteralCommon(x:?t, ignore:bool,
 inline
 proc fileReader._readLiteral(literal:string,
                              ignoreWhitespace=true) : void throws {
-  var iolit = new ioLiteral(literal, ignoreWhitespace);
+  var iolit = new chpl_ioLiteral(literal, ignoreWhitespace);
   this.readIt(iolit);
 }
 
@@ -6226,7 +6236,6 @@ proc fileReader._readLiteral(literal:string,
   :throws EofError: Thrown if end of fileReader is encountered.
 
 */
-@unstable("fileReader.readLiteral is unstable and subject to change.")
 inline
 proc fileReader.readLiteral(literal:string,
                             ignoreWhitespace=true) : void throws {
@@ -6250,7 +6259,6 @@ proc fileReader.readLiteral(literal:string,
   :throws EofError: Thrown if end of the ``fileReader`` is encountered.
 
 */
-@unstable("fileReader.readLiteral is unstable and subject to change.")
 inline
 proc fileReader.readLiteral(literal:bytes,
                             ignoreWhitespace=true) : void throws {
@@ -6278,7 +6286,7 @@ proc fileReader._readNewlineCommon(param isMatch:bool) throws {
 // non-unstable version we can use internally
 @chpldoc.nodoc
 inline proc fileReader._readNewline() : void throws {
-  var ionl = new ioNewline(true);
+  var ionl = new chpl_ioNewline(true);
   this.readIt(ionl);
 }
 
@@ -6295,7 +6303,6 @@ inline proc fileReader._readNewline() : void throws {
   :throws BadFormatError: Thrown if a newline could not be matched.
   :throws EofError: Thrown if end of the ``fileReader`` is encountered.
 */
-@unstable("fileReader.readNewline is unstable and subject to change.")
 inline
 proc fileReader.readNewline() : void throws {
   _readNewlineCommon(isMatch=false);
@@ -6334,7 +6341,6 @@ proc fileReader._matchLiteralCommon(literal, ignore : bool) : bool throws {
   :returns: ``true`` if the read succeeded, and ``false`` on end of file or if
             the literal could not be matched.
 */
-@unstable("fileReader.matchLiteral is unstable and subject to change.")
 inline
 proc fileReader.matchLiteral(literal:string,
                              ignoreWhitespace=true) : bool throws {
@@ -6360,7 +6366,6 @@ proc fileReader.matchLiteral(literal:string,
   :returns: ``true`` if the read succeeded, and ``false`` on end of file or if
             the literal could not be matched.
 */
-@unstable("fileReader.matchLiteral is unstable and subject to change.")
 inline
 proc fileReader.matchLiteral(literal:bytes,
                              ignoreWhitespace=true) : bool throws {
@@ -6382,7 +6387,6 @@ proc fileReader.matchLiteral(literal:bytes,
   :returns: ``true`` if the read succeeded, and ``false`` on end of file or if
             the newline could not be matched.
 */
-@unstable("fileReader.matchNewline is unstable and subject to change.")
 inline
 proc fileReader.matchNewline() : bool throws {
   try {
@@ -6414,7 +6418,7 @@ proc fileWriter._writeLiteralCommon(x:?t) : void throws {
 @chpldoc.nodoc
 inline
 proc fileWriter._writeLiteral(literal:string) : void throws {
-  var iolit = new ioLiteral(literal);
+  var iolit = new chpl_ioLiteral(literal);
   this.writeIt(iolit);
 }
 
@@ -6422,7 +6426,6 @@ proc fileWriter._writeLiteral(literal:string) : void throws {
   Writes a string to the ``fileWriter``, ignoring any formatting configured for
   this ``fileWriter``.
 */
-@unstable("fileWriter.writeLiteral is unstable and subject to change.")
 inline
 proc fileWriter.writeLiteral(literal:string) : void throws {
   _writeLiteralCommon(literal);
@@ -6432,7 +6435,6 @@ proc fileWriter.writeLiteral(literal:string) : void throws {
   Writes bytes to the ``fileWriter``, ignoring any formatting configured for this
   ``fileWriter``.
 */
-@unstable("fileWriter.writeLiteral is unstable and subject to change.")
 inline
 proc fileWriter.writeLiteral(literal:bytes) : void throws {
   _writeLiteralCommon(literal);
@@ -6443,7 +6445,6 @@ proc fileWriter.writeLiteral(literal:bytes) : void throws {
   Writes a newline to the ``fileWriter``, ignoring any formatting configured for
   this ``fileWriter``.
 */
-@unstable("fileWriter.writeNewline is unstable and subject to change.")
 inline
 proc fileWriter.writeNewline() : void throws {
   on this._home {
@@ -6453,21 +6454,23 @@ proc fileWriter.writeNewline() : void throws {
   }
 }
 
-/* Explicit call for reading or writing a newline as an
-   alternative to using :type:`IO.ioNewline`.
+/* Explicit call for reading or writing a newline. Equivalent to
+    :proc:`fileReader.readNewline`.
 */
+@deprecated(notes=":proc:`fileReader.readWriteNewline` is deprecated; please use :proc:`fileReader.readNewline` instead")
 inline proc fileReader.readWriteNewline() throws
 {
-  var ionl = new ioNewline();
+  var ionl = new chpl_ioNewline();
   this.readIt(ionl);
 }
 
-/* Explicit call for reading or writing a newline as an
-   alternative to using :type:`IO.ioNewline`.
+/* Explicit call for reading or writing a newline. Equivalent to
+    :proc:`fileWriter.writeNewline`.
 */
+@deprecated(notes=":proc:`fileWriter.readWriteNewline` is deprecated; please use :proc:`fileWriter.writeNewline` instead")
 inline proc fileWriter.readWriteNewline() throws
 {
-  var ionl = new ioNewline();
+  var ionl = new chpl_ioNewline();
   this.writeIt(ionl);
 }
 
@@ -8863,7 +8866,7 @@ proc fileReader.readBinary(ptr: c_ptr(void), maxBytes: int): int throws {
 @chpldoc.nodoc
 @unstable("'readln' is unstable and may be removed or modified in a future release")
 proc fileReader.readln():bool throws {
-  var nl = new ioNewline();
+  var nl = new chpl_ioNewline();
   return try this.read(nl);
 }
 
@@ -8886,7 +8889,7 @@ proc fileReader.readln():bool throws {
  */
 @unstable("'readln' is unstable and may be removed or modified in a future release")
 proc fileReader.readln(ref args ...?k):bool throws {
-  var nl = new ioNewline();
+  var nl = new chpl_ioNewline();
   return try this.read((...args), nl);
 }
 
@@ -8899,7 +8902,7 @@ proc fileReader.readln(ref args ...?k,
 @chpldoc.nodoc
 proc fileReader.readlnHelper(ref args ...?k,
                           style:iostyleInternal):bool throws {
-  var nl = new ioNewline();
+  var nl = new chpl_ioNewline();
   return try this.readHelper((...args), nl, style=style);
 }
 
@@ -8968,7 +8971,7 @@ proc fileReader.read(type t) throws {
 @unstable("'readln' is unstable and may be removed or modified in a future release")
 proc fileReader.readln(type t) throws {
   var tmp:t;
-  var nl = new ioNewline();
+  var nl = new chpl_ioNewline();
   this._readInner(tmp, nl);
   return tmp;
 }
@@ -8989,7 +8992,7 @@ proc fileReader.readln(type t) throws {
 @unstable("'readln' is unstable and may be removed or modified in a future release")
 proc fileReader.readln(type t ...?numTypes) throws where numTypes > 1 {
   var tupleVal: t;
-  var nl = new ioNewline();
+  var nl = new chpl_ioNewline();
   this._readInner((...tupleVal), nl);
   return tupleVal;
 }
@@ -9078,7 +9081,7 @@ proc fileWriter.writeHelper(const args ...?k, style:iostyleInternal) throws {
 // documented in varargs version
 @chpldoc.nodoc
 proc fileWriter.writeln() throws {
-  try this.write(new ioNewline());
+  try this.write(new chpl_ioNewline());
 }
 
 /*
@@ -9100,12 +9103,12 @@ proc fileWriter.writeln() throws {
                         due to a :ref:`system error<io-general-sys-error>`.
  */
 proc fileWriter.writeln(const args ...?k) throws {
-  try this.write((...args), new ioNewline());
+  try this.write((...args), new chpl_ioNewline());
 }
 
 @deprecated("writeln with a 'style' argument is deprecated")
 proc fileWriter.writeln(const args ...?k, style:iostyle) throws {
-  try this.writeHelper((...args), new ioNewline(), style=style);
+  try this.writeHelper((...args), new chpl_ioNewline(), style=style);
 }
 
 @deprecated(notes="fileReader.flush is deprecated; it has no replacement because 'flush' has no effect on 'fileReader'")
