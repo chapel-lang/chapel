@@ -1,22 +1,32 @@
+/*
+  A distributed 2D finite-difference heat/diffusion equation solver
+
+  Computation is executed over a 2D distributed array.
+  The array distribution is managed by the `Block` distribution.
+  Tasks are spawned manually with a `coforall` loop and synchronization
+  is done manually using a `barrier`. Halo regions are shared across
+  locales manually via direct assignment between locally owned arrays.
+*/
+
 import BlockDist.Block,
-       Collectives.barrier;
+       Collectives.barrier,
+       Time.stopwatch;
 
+// create a stopwatch to time kernel execution
+var t = new stopwatch();
+config const writeTime = false;
+
+// compile with `-sRunCommDiag=true` to see comm diagnostics
 use CommDiagnostics;
-config param runCommDiag = false;
+config param RunCommDiag = false;
 
-config const xLen = 2.0,    // length of the grid in x
-             yLen = 2.0,    // length of the grid in y
-             nx = 31,       // number of grid points in x
-             ny = 31,       // number of grid points in y
+// declare configurable constants with default values
+config const nx = 256,      // number of grid points in x
+             ny = 256,      // number of grid points in y
              nt = 50,       // number of time steps
-             sigma = 0.25,  // stability parameter
-             nu = 0.05;     // viscosity
+             alpha = 0.25;  // diffusion constant
 
-const dx : real = xLen / (nx - 1),       // grid spacing in x
-      dy : real = yLen / (ny - 1),       // grid spacing in y
-      dt : real = sigma * dx * dy / nu;  // time step size
-
-// define block distributed array
+// define distributed domains and block-distributed array
 const indices = {0..<nx, 0..<ny},
       indicesInner = indices.expand(-1),
       INDICES = Block.createDomain(indices);
@@ -24,138 +34,108 @@ var u: [INDICES] real;
 
 // apply initial conditions
 u = 1.0;
-u[
-  (0.5 / dx):int..<(1.0 / dx + 1):int,
-  (0.5 / dy):int..<(1.0 / dy + 1):int
-] = 2;
+u[nx/4..nx/2, ny/4..ny/2] = 2.0;
 
 // number of tasks per dimension based on Block distributions decomposition
 const tidXMax = u.targetLocales().dim(0).high,
       tidYMax = u.targetLocales().dim(1).high;
 
-// barrier for one-task-per-locale
+// barrier for one task per locale
 var b = new barrier(u.targetLocales().size);
 
-enum Edge { N, E, S, W }
-class LocalArrayPair {
-  // the set of global indices that this locale owns
-  //  used to index into the global array
-  var globalIndices: domain(2) = {0..0, 0..0};
+// a type for creating a "skyline" array of local arrays
+record localArray {
+  var d: domain(2);
+  var v: [d] real;
 
-  // indices over which local arrays are defined
-  //  same as 'globalIndices' set with a halo region along the edge
-  var indices: domain(2) = {0..0, 0..0};
-
-  // indices over which the kernel is executed
-  //  can differ from 'globalIndices' for locales along the border of the global domain
-  var compIndices: domain(2) = {0..0, 0..0};
-
-  var a: [indices] real;
-  var b: [indices] real;
-
-  proc init() {
-    this.globalIndices = {0..0, 0..0};
-    this.indices = {0..0, 0..0};
-    this.compIndices = {0..0, 0..0};
-  }
-
-  proc init(myGlobalIndices: domain(2), globalInnerAll: domain(2)) {
-    this.globalIndices = myGlobalIndices;
-    this.indices = myGlobalIndices.expand(1);
-    this.compIndices = myGlobalIndices[globalInnerAll];
-  }
-
-  proc ref copyInitialConditions(const ref u: [] real) {
-    this.a = 1.0;
-    this.a[this.globalIndices] = u[globalIndices];
-    this.b = this.a;
-  }
-
-   proc fillBuffer(edge: Edge, values: [] real) {
-    select edge {
-      when Edge.N do this.b[.., this.indices.dim(1).low] = values;
-      when Edge.S do this.b[.., this.indices.dim(1).high] = values;
-      when Edge.E do this.b[this.indices.dim(0).high, ..] = values;
-      when Edge.W do this.b[this.indices.dim(0).low, ..] = values;
-    }
-  }
-
-  proc getEdge(edge: Edge) {
-    select edge {
-      when Edge.N do return this.b[.., this.indices.dim(1).low+1];
-      when Edge.S do return this.b[.., this.indices.dim(1).high-1];
-      when Edge.E do return this.b[this.indices.dim(0).high-1, ..];
-      when Edge.W do return this.b[this.indices.dim(0).low+1, ..];
-    }
-    return this.b[this.indices.dim(0).low, ..]; // never actually returned
-  }
-
-  proc swap() {
-    this.a <=> this.b;
-  }
+  proc init() do this.d = {0..0, 0..0};
+  proc init(dGlobal: domain(2)) do this.d = dGlobal;
 }
 
-// set up array of local arrays over same distribution as 'u'
-var TL_DOM = Block.createDomain(u.targetLocales().domain);
-var localArrays = [d in TL_DOM] new LocalArrayPair();
+// set up an arrays of local arrays over same distribution as 'u.targetLocales'
+var LOCALE_DOM = Block.createDomain(u.targetLocales().domain);
+var uTaskLocal, unTaskLocal: [LOCALE_DOM] localArray;
 
 proc main() {
-  if runCommDiag then startVerboseComm();
+  if RunCommDiag then startCommDiagnostics();
 
-  // execute the FD computation with one task per locale
-  coforall (loc, (tidX, tidY)) in zip(u.targetLocales(), u.targetLocales().domain) do on loc {
-
-    // initialize local arrays owned by this task
-    localArrays[tidX, tidY] = new LocalArrayPair(u.localSubdomain(here), indicesInner);
-    localArrays[tidX, tidY].copyInitialConditions(u);
-
-    // synchronize across tasks
-    b.barrier();
-
-    // run the portion of the FD computation owned by this task
-    work(tidX, tidY);
+  // spawn one task for each locale
+  t.start();
+  coforall (loc, (tidX, tidY)) in zip(u.targetLocales(), LOCALE_DOM) {
+    // run initialization and computation on the task for this locale
+    on loc do work(tidX, tidY);
   }
 
-  if runCommDiag {
-    stopVerboseComm();
+  if RunCommDiag {
+    stopCommDiagnostics();
     printCommDiagnosticsTable();
   }
 
   // print final results
   const mean = (+ reduce u) / u.size,
         stdDev = sqrt((+ reduce (u - mean)**2) / u.size);
-
-  writeln(abs(0.102424 - stdDev) < 1e-6);
+  t.stop();
+  writeln(abs(0.222751 - stdDev) < 1e-6);
+  if writeTime then writeln("time: ", t.elapsed(), " (sec)");
 }
 
 proc work(tidX: int, tidY: int) {
-  // get a pointer to this task's local arrays
-  var uLocal: borrowed LocalArrayPair = localArrays[tidX, tidY];
+  // define domains to describe the indices owned by this task
+  const myGlobalIndices = u.localSubdomain(here),
+        localIndicesBuffered = myGlobalIndices.expand(1),
+        localIndicesInner = myGlobalIndices[indicesInner];
+
+  // initialize this tasks local arrays using indices from `Block` dist.
+  uTaskLocal[tidX, tidY] = new localArray(localIndicesBuffered);
+  unTaskLocal[tidX, tidY] = new localArray(localIndicesBuffered);
+
+  // get a reference to this task's local arrays
+  ref uLocal = uTaskLocal[tidX, tidY].v,
+      unLocal = unTaskLocal[tidX, tidY].v;
+
+  // copy initial conditions from global array
+  uLocal = 1;
+  uLocal[myGlobalIndices] = u[myGlobalIndices];
+  unLocal = uLocal;
+
+  // define constants for indexing into edges of local array
+  const N = myGlobalIndices.dim(1).low,
+        S = myGlobalIndices.dim(1).high,
+        E = myGlobalIndices.dim(0).high,
+        W = myGlobalIndices.dim(0).low;
+
+  b.barrier();
+
+  // define constants for indexing into halo regions of neighboring arrays
+  const NN = if tidY < tidYMax then unTaskLocal[tidX, tidY+1].d.dim(1).low else 0,
+        SS = if tidY > 0       then unTaskLocal[tidX, tidY-1].d.dim(1).high else 0,
+        WW = if tidX < tidXMax then unTaskLocal[tidX+1, tidY].d.dim(0).low else 0,
+        EE = if tidX > 0       then unTaskLocal[tidX-1, tidY].d.dim(0).high else 0;
 
   // run FD computation
   for 1..nt {
-    // store results from last iteration in neighboring tasks buffers
-    if tidX > 0       then localArrays[tidX-1, tidY].fillBuffer(Edge.E, uLocal.getEdge(Edge.W));
-    if tidX < tidXMax then localArrays[tidX+1, tidY].fillBuffer(Edge.W, uLocal.getEdge(Edge.E));
-    if tidY > 0       then localArrays[tidX, tidY-1].fillBuffer(Edge.S, uLocal.getEdge(Edge.N));
-    if tidY < tidYMax then localArrays[tidX, tidY+1].fillBuffer(Edge.N, uLocal.getEdge(Edge.S));
+    // store results from last iteration in neighboring task's halos
+    if tidX > 0       then unTaskLocal[tidX-1, tidY].v[EE, ..] = unLocal[W, ..];
+    if tidX < tidXMax then unTaskLocal[tidX+1, tidY].v[WW, ..] = unLocal[E, ..];
+    if tidY > 0       then unTaskLocal[tidX, tidY-1].v[.., SS] = unLocal[.., N];
+    if tidY < tidYMax then unTaskLocal[tidX, tidY+1].v[.., NN] = unLocal[.., S];
 
-    // swap 'a' and 'b' arrays
+    // swap all local arrays
     b.barrier();
-    uLocal.swap();
+    uLocal <=> unLocal;
 
     // compute the FD kernel in parallel
-    foreach (i, j) in uLocal.compIndices do
-      uLocal.b[i, j] = uLocal.a[i, j] +
-              nu * dt / dy**2 *
-                (uLocal.a[i-1, j] - 2 * uLocal.a[i, j] + uLocal.a[i+1, j]) +
-              nu * dt / dx**2 *
-                (uLocal.a[i, j-1] - 2 * uLocal.a[i, j] + uLocal.a[i, j+1]);
+    foreach (i, j) in localIndicesInner do
+      unLocal[i, j] = uLocal[i, j] + alpha * (
+          uLocal[i-1, j] + uLocal[i+1, j] +
+          uLocal[i, j-1] + uLocal[i, j+1] -
+          4 * uLocal[i, j]
+        );
 
     b.barrier();
   }
 
   // store results in global array
-  uLocal.swap();
-  u[uLocal.globalIndices] = uLocal.a[uLocal.globalIndices];
+  uLocal <=> unLocal;
+  u[myGlobalIndices] = uLocal[myGlobalIndices];
 }
