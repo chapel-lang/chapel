@@ -9654,7 +9654,7 @@ Real Conversions
 ``%<6r``
  as with ``%r`` but padded on the right to 6 columns (i.e., left-justified)
 ``%^r``
- as with ``%r`` but padded equally on the left and right to 6 columns (ie center-justified)
+ as with ``%r`` but padded equally on the left and right to 6 columns (i.e., center-justified)
 ``%>6r``
  equivalent to ``%6r``
 ``%-6r``
@@ -9740,6 +9740,8 @@ String and Bytes Conversions
   * when writing - a string equally left and right padded (center justified) to 17 columns
 ``%>17s``
   * when writing - a string left padded (right justified) to 17 columns
+  * when reading - read up to 17 bytes or a whitespace, whichever comes
+    first, rounding down to whole characters
 ``%-17s``
  * when writing - a string right padded (left justified) to 17 columns *(deprecated)*
 ``%.17s``
@@ -10015,9 +10017,9 @@ Going through each section for text conversions:
    Note, if both ``0`` and ``<`` are given, the effect is as if only ``<``
    were given.
   ``^``
-   center-justify the converted value instead of right-justifying. Note,
-   if ``0`` is also given, it will only apply to the padding on the left of
-   a numerical value.
+   center-justify the converted value instead of right-justifying. Note, if
+   both ``0`` and ``<`` are given, zero-padding will only be applied to the
+   left of the numerical value
   ``>``
    explicitly denote right-justification
   ``~``
