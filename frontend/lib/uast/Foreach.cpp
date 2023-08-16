@@ -43,7 +43,6 @@ owned<Foreach> Foreach::build(Builder* builder,
   int8_t withClauseChildNum = NO_CHILD;
   int attributeGroupChildNum = NO_CHILD;
 
-  debuggerBreakHere();
   if (attributeGroup.get() != nullptr) {
     attributeGroupChildNum = lst.size();
     lst.push_back(std::move(attributeGroup));
