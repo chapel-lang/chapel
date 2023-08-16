@@ -1,0 +1,3 @@
+--arrSize=10_000_000 --scanType=serial  --bitsAtATime=16
+--arrSize=10_000_000 --scanType=hillisSteele  --bitsAtATime=16
+--arrSize=10_000_000 --scanType=blelloch  --bitsAtATime=16
