@@ -1,3 +1,3 @@
-uncaught TaskErrors: 1 errors: Error: Could not allocate memory
+uncaught TaskErrors: 1 errors: ArrayOomError: out of memory allocating array elements
   blockOomCheck.chpl:8: thrown here
   blockOomCheck.chpl:8: uncaught here

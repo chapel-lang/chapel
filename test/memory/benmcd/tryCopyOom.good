@@ -1,0 +1,3 @@
+uncaught ArrayOomError: out of memory allocating array elements
+  tryCopyOom.chpl:7: thrown here
+  tryCopyOom.chpl:7: uncaught here
