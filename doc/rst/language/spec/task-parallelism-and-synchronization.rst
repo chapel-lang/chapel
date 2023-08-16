@@ -359,10 +359,10 @@ statements may not be used to exit a cobegin block.
 
    .. BLOCK-test-chapelpre
 
-      var s1, s2: sync int;
-      proc stmt1() { s1.readFE(); }
-      proc stmt2() { s2.readFE(); s1.writeEF(1); }
-      proc stmt3() { s2.writeEF(1); }
+      var sync1, sync2: sync int;
+      proc stmt1() { sync1.readFE(); }
+      proc stmt2() { sync2.readFE(); sync1.writeEF(1); }
+      proc stmt3() { sync2.writeEF(1); }
 
 
 
