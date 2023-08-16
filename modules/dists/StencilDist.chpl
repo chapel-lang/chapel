@@ -56,6 +56,7 @@ config param stencilDistAllowPackedUpdateFluff = true;
 
 config param disableStencilDistBulkTransfer = false;
 
+private config param allowDuplicateTargetLocales = false;
 // Instructs the _packedUpdate method to only perform the optimized buffer
 // packing if the number of GETs/PUTs would be greater than or equal to the
 // value in this config const.
@@ -450,6 +451,15 @@ proc Stencil.init(boundingBox: domain,
 
   this.boundingBox = boundsBox(boundingBox);
   this.fluff = fluff;
+
+  if !allowDuplicateTargetLocales {
+    var checkArr: [LocaleSpace] bool;
+    for loc in targetLocales {
+      if checkArr[loc.id] then
+        halt("StencilDist does not allow duplicate targetLocales");
+      checkArr[loc.id] = true;
+    }
+  }
 
   // can't have periodic if there's no fluff
   this.periodic = periodic && !isZeroTuple(fluff);
@@ -1171,7 +1181,8 @@ override proc StencilArr.dsiDestroyArr(deinitElts:bool) {
 
 
 inline proc StencilArr.dsiLocalAccess(i: rank*idxType) ref {
-  return _to_nonnil(myLocArr).this(i);
+  return if allowDuplicateTargetLocales then this.dsiAccess(i)
+                                        else _to_nonnil(myLocArr).this(i);
 }
 
 //
@@ -1906,8 +1917,8 @@ proc Stencil.chpl__locToLocIdx(loc: locale) {
 
 // Stencil subdomains are continuous
 
-proc StencilArr.dsiHasSingleLocalSubdomain() param do return true;
-proc StencilDom.dsiHasSingleLocalSubdomain() param do return true;
+proc StencilArr.dsiHasSingleLocalSubdomain() param do return !allowDuplicateTargetLocales;
+proc StencilDom.dsiHasSingleLocalSubdomain() param do return !allowDuplicateTargetLocales;
 
 // returns the current locale's subdomain
 
