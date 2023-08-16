@@ -1753,7 +1753,7 @@ module BigInteger {
 
 
   /*
-    Set ``result`` to the result of (``base`` raised to ``exp``) modulo ``mod``.
+    Set ``result`` to the result of ``(base**exp) modulo mod``.
 
     :arg result: Where the result is stored
     :type result: :record:`bigint`
@@ -1768,8 +1768,12 @@ module BigInteger {
     :type mod: :record:`bigint`
 
     .. warning::
-        The program behavior is undefined if ``exp`` is negative and the inverse
-        (1/``base``) modulo ``mod`` does not exist.
+       The program behavior is undefined if ``exp`` is negative and the inverse
+       ``(1/base) modulo mod`` does not exist.
+
+    .. seealso::
+       :proc:`GMP.mpz_powm` and
+       `mpz_powm <https://gmplib.org/manual/Integer-Exponentiation#index-mpz_005fpowm>`_.
   */
   proc powMod(ref result: bigint,
               const ref base: bigint,
@@ -1891,7 +1895,20 @@ module BigInteger {
     }
   }
 
-  // Documented in uint, uint version
+  /*
+    Set ``result`` to the result of ``base`` raised to ``exp``.
+
+    :arg result: Where the result is stored
+    :type result: :record:`bigint`
+    :arg base: The value to be raised to the power of ``exp``.
+    :type base: :record:`bigint`, ``int`` or ``uint``
+    :arg exp: The exponent to raise ``base`` to the power of.
+    :type exp: ``int`` or ``uint``
+
+    .. seealso::
+       :proc:`GMP.mpz_pow_ui` and
+       `mpz_pow_ui <https://gmplib.org/manual/Integer-Exponentiation#index-mpz_005fpow_005fui>`_.
+  */
   proc pow(ref result: bigint, const ref base: bigint, exp: int) {
     if exp >= 0 {
       BigInteger.pow(result, base, exp : uint);
@@ -1911,13 +1928,7 @@ module BigInteger {
     }
   }
 
-  // Documented in uint, uint version
-  @deprecated(notes="bigint.pow method is deprecated - please use the standalone function :proc:`~BigInteger.pow`")
-  proc bigint.pow(const ref base: bigint, exp: int) {
-    BigInteger.pow(this, base, exp);
-  }
-
-  // Documented in uint, uint version
+  /* See :proc:`~BigInteger.pow` */
   proc pow(ref result: bigint, const ref base: bigint, exp: uint) {
     const exp_ = exp.safeCast(c_ulong);
     if compiledForSingleLocale() {
@@ -1934,13 +1945,7 @@ module BigInteger {
     }
   }
 
-  // Documented in uint, uint version
-  @deprecated(notes="bigint.pow method is deprecated - please use the standalone function :proc:`~BigInteger.pow`")
-  proc bigint.pow(const ref base: bigint, exp: uint) {
-    BigInteger.pow(this, base, exp);
-  }
-
-  // Documented in uint, uint version
+  /* See :proc:`~BigInteger.pow` */
   proc pow(ref result: bigint, base: int, exp: int) {
     if base >= 0 && exp >= 0 {
       BigInteger.pow(result, base : uint, exp : uint);
@@ -1955,23 +1960,7 @@ module BigInteger {
     }
   }
 
-  // Documented in uint, uint version
-  @deprecated(notes="bigint.pow method is deprecated - please use the standalone function :proc:`~BigInteger.pow`")
-  proc bigint.pow(base: int, exp: int) {
-    BigInteger.pow(this, base, exp);
-  }
-
-  /* Set ``result`` to the result of ``base`` raised to ``exp``.
-
-     :arg result: Where the result is stored
-     :type result: :record:`bigint`
-
-     :arg base: The value to be raised to the power of ``exp``.
-     :type base: :record:`bigint`, ``int`` or ``uint``
-
-     :arg exp: The exponent to raise ``base`` to the power of.
-     :type exp: ``int`` or ``uint``
-   */
+  /* See :proc:`~BigInteger.pow` */
   proc pow(ref result: bigint, base: uint, exp: uint) {
     const base_ = base.safeCast(c_ulong);
     const exp_  = exp.safeCast(c_ulong);
@@ -1986,6 +1975,24 @@ module BigInteger {
         mpz_ui_pow_ui(result.mpz, base_, exp_);
       }
     }
+  }
+
+  // Documented in uint, uint version
+  @deprecated(notes="bigint.pow method is deprecated - please use the standalone function :proc:`~BigInteger.pow`")
+  proc bigint.pow(const ref base: bigint, exp: int) {
+    BigInteger.pow(this, base, exp);
+  }
+
+  // Documented in uint, uint version
+  @deprecated(notes="bigint.pow method is deprecated - please use the standalone function :proc:`~BigInteger.pow`")
+  proc bigint.pow(const ref base: bigint, exp: uint) {
+    BigInteger.pow(this, base, exp);
+  }
+
+  // Documented in uint, uint version
+  @deprecated(notes="bigint.pow method is deprecated - please use the standalone function :proc:`~BigInteger.pow`")
+  proc bigint.pow(base: int, exp: int) {
+    BigInteger.pow(this, base, exp);
   }
 
   /* Set ``this`` to the result of ``base`` raised to ``exp``.
