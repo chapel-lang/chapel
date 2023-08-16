@@ -975,6 +975,24 @@ module CTypes {
       return __primitive("cast", c_ptr(void), c.borrow());
     }
   }
+  @chpldoc.nodoc
+  inline proc c_ptrToConst_helper(const ref c: class): c_ptr(void)
+  {
+    if (isUnmanagedClass(c)) {
+      return __primitive("cast", c_ptr(void), c);
+    } else {
+      return __primitive("cast", c_ptr(void), c.borrow());
+    }
+  }
+  @chpldoc.nodoc
+  inline proc c_ptrToConst_helper(const ref c: class?): c_ptr(void)
+  {
+    if (isUnmanagedClass(c)) {
+      return __primitive("cast", c_ptr(void), c);
+    } else {
+      return __primitive("cast", c_ptr(void), c.borrow());
+    }
+  }
   /****************************************************************************
     End of temporary helper functions while deprecating c_ptr(string) etc
   *****************************************************************************/
