@@ -1544,15 +1544,31 @@ module ChapelDomain {
     */
     pragma "no copy return"
     @unstable("tryCreateArray() is subject to change in the future.")
-    proc tryCreateArray(type eltType, param initElts=true) throws {
-      if !(__primitive("resolves", _value.doiTryCreateArray(eltType, initElts))) then
+    proc tryCreateArray(type eltType) throws {
+      if !(__primitive("resolves", _value.doiTryCreateArray(eltType))) then
         compilerError("cannot call 'tryCreateArray' on domains that do not" +
                       " support a 'doiTryCreateArray' method.");
 
       chpl_checkEltType(eltType);
       chpl_checkNegativeStride();
 
-      var x = _value.doiTryCreateArray(eltType, initElts);
+      var x = _value.doiTryCreateArray(eltType);
+      pragma "dont disable remote value forwarding"
+      proc help() {
+        _value.add_arr(x);
+      }
+      help();
+
+      chpl_incRefCountsForDomainsInArrayEltTypes(x, x.eltType);
+
+      return _newArray(x);
+    }
+
+    proc tryCreateArrayNoInit(type eltType) throws {
+      chpl_checkEltType(eltType);
+      chpl_checkNegativeStride();
+
+      var x = _value.doiTryCreateArrayNoInit(eltType);
       pragma "dont disable remote value forwarding"
       proc help() {
         _value.add_arr(x);

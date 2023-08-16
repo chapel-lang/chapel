@@ -1084,7 +1084,7 @@ proc BlockDom.dsiBuildArray(type eltType, param initElts:bool) {
   return arr;
 }
 
-proc BlockDom.doiTryCreateArray(type eltType, param initElts) throws {
+proc BlockDom.doiTryCreateArray(type eltType) throws {
   const dom = this;
   const creationLocale = here.id;
   const dummyLBD = new unmanaged LocBlockDom(rank, idxType, strides);
@@ -1100,7 +1100,7 @@ proc BlockDom.doiTryCreateArray(type eltType, param initElts) throws {
            with (ref myLocArrTemp) {
     on loc {
       const locSize = locDomsElt.myBlock.size;
-      var data = _try_ddata_allocate(eltType, locSize, initElts=initElts);
+      var data = _try_ddata_allocate(eltType, locSize);
 
       const LBA = new unmanaged LocBlockArr(eltType, rank, idxType, strides,
                                             locDomsElt, data=data, size=locSize);
@@ -1117,8 +1117,6 @@ proc BlockDom.doiTryCreateArray(type eltType, param initElts) throws {
 
   // formerly in BlockArr.setup()
   if arr.doRADOpt && disableBlockLazyRAD then arr.setupRADOpt();
-
-  if !initElts then arr.dsiElementInitializationComplete();
 
   return arr;
 }

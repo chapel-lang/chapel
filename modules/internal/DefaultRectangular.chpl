@@ -700,12 +700,26 @@ module DefaultRectangular {
                                                  initElts=initElts);
     }
 
-    proc doiTryCreateArray(type eltType, param initElts:bool) throws {
+    proc doiTryCreateArray(type eltType) throws {
       // TODO: Update to support higher dimension (not needed in Arkouda)
       if rank != 1 then
         throw new Error("'tryCreateArray' is only supported on domains of rank 1");
 
-      var data = _try_ddata_allocate(eltType, ranges(0).size, initElts=initElts);
+      var data = _try_ddata_allocate(eltType, ranges(0).size);
+      return new unmanaged DefaultRectangularArr(eltType=eltType, rank=rank,
+                                                 idxType=idxType,
+                                                 strides=strides,
+                                                 dom=_to_unmanaged(this),
+                                                 data=data);
+    }
+
+    proc doiTryCreateArrayNoInit(type eltType) throws {
+      // TODO: Update to support higher dimension (not needed in Arkouda)
+      if rank != 1 then
+        throw new Error("'tryCreateArray' is only supported on domains of rank 1");
+
+      //TODO: callPostAlloc
+      var (data, _) = _try_ddata_allocate_noinit(eltType, ranges(0).size);
       return new unmanaged DefaultRectangularArr(eltType=eltType, rank=rank,
                                                  idxType=idxType,
                                                  strides=strides,
@@ -2415,12 +2429,16 @@ module DefaultRectangular {
     return res;
   }
 
-  proc DefaultRectangularArr.doiTryCopy(arr, dom) throws {
-    var res = dom.tryCreateArray(eltType, initElts=!isPOD(eltType));
-    res = arr;
-    if isPOD(eltType) then res.dsiElementInitializationComplete();
-    return res;
-  }
+  proc DefaultRectangularArr.doiTryCopy(arr) throws {
+      // TODO: Update to support higher dimension (not needed in Arkouda)
+      if rank != 1 then
+        throw new Error("'tryCreateArray' is only supported on domains of rank 1");
+
+      var res = arr.domain.tryCreateArrayNoInit(arr.eltType);
+      res = arr;
+      _ddata_allocate_postalloc(res._value.data, res.size);
+      return res;
+    }
 
   // A helper routine that will perform a pointer swap on an array
   // instead of doing a deep copy of that array. Returns true

@@ -1586,8 +1586,7 @@ module ChapelBase {
   }
 
   inline proc _try_ddata_allocate(type eltType, size: integral,
-                                  subloc = c_sublocid_none,
-                                  param initElts: bool) throws {
+                                  subloc = c_sublocid_none) throws {
     var callPostAlloc: bool;
     var ret: _ddata(eltType);
 
@@ -1596,15 +1595,26 @@ module ChapelBase {
     if ret == nil then
       throw new ArrayOomError();
 
-    if initElts {
-      init_elts(ret, size, eltType);
-    }
+    init_elts(ret, size, eltType);
 
     if callPostAlloc {
       _ddata_allocate_postalloc(ret, size);
     }
 
     return ret;
+  }
+
+  inline proc _try_ddata_allocate_noinit(type eltType, size: integral,
+                                  subloc = c_sublocid_none) throws {
+    var callPostAlloc: bool;
+    var ret: _ddata(eltType);
+
+    ret = _ddata_allocate_noinit(eltType, size, callPostAlloc, subloc, false);
+
+    if ret == nil then
+      throw new ArrayOomError();
+
+    return (ret, callPostAlloc);
   }
 
   inline proc _ddata_allocate_postalloc(data:_ddata, size: integral) {
