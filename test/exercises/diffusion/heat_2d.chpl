@@ -8,12 +8,6 @@
   the command line (e.g., `./heat_2D --nt=100`)
 */
 
-import Time.stopwatch;
-
-// create a stopwatch to time kernel execution
-var t = new stopwatch();
-config const writeTime = false;
-
 // declare configurable constants with default values
 config const nx = 256,      // number of grid points in x
              ny = 256,      // number of grid points in y
@@ -52,4 +46,3 @@ const mean = (+ reduce u) / u.size,
 t.stop();
 
 writeln(abs(0.222751 - stdDev) < 1e-6);
-if writeTime then writeln("time: ", t.elapsed(), " (sec)");

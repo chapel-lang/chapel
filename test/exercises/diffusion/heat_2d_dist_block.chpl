@@ -54,4 +54,4 @@ const mean = (+ reduce u) / u.size,
 
 t.stop();
 writeln(abs(0.222751 - stdDev) < 1e-6);
-if writeTime then writeln("time: ", t.elapsed(), " (sec)");
+if writeTime then writeln("time: ", t.elapsed());
