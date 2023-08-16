@@ -284,6 +284,7 @@ studies/rbc/tvandoren/RBC.graph
 exercises/c-ray/old/c-ray.graph
 scan/scanPerf.graph
 io/corrado/qio_buf_optimization_perf/large_binary_io.graph
+exercises/diffusion/heat_2d_dist.graph
 # suite: Colorado State University
 studies/colostate/Jacobi1D.graph
 studies/colostate/Jacobi2D.graph
