@@ -1100,7 +1100,7 @@ proc BlockDom.doiTryCreateArray(type eltType) throws {
            with (ref myLocArrTemp) {
     on loc {
       const locSize = locDomsElt.myBlock.size;
-      var data = _try_ddata_allocate(eltType, locSize);
+      var (data, callPostAlloc) = _try_ddata_allocate_noinit(eltType, locSize);
 
       const LBA = new unmanaged LocBlockArr(eltType, rank, idxType, strides,
                                             locDomsElt, data=data, size=locSize);
@@ -1119,6 +1119,43 @@ proc BlockDom.doiTryCreateArray(type eltType) throws {
   if arr.doRADOpt && disableBlockLazyRAD then arr.setupRADOpt();
 
   return arr;
+}
+
+proc BlockDom.doiTryCreateArrayNoInit(type eltType) throws {
+  const dom = this;
+  const creationLocale = here.id;
+  const dummyLBD = new unmanaged LocBlockDom(rank, idxType, strides);
+  const dummyLBA = new unmanaged LocBlockArr(eltType, rank, idxType,
+                                             strides, dummyLBD, false);
+  var locArrTemp: [dom.dist.targetLocDom]
+        unmanaged LocBlockArr(eltType, rank, idxType, strides) = dummyLBA;
+  var myLocArrTemp: unmanaged LocBlockArr(eltType, rank, idxType, strides)?;
+
+  // formerly in BlockArr.setup()
+  coforall (loc, locDomsElt, locArrTempElt)
+    in zip(dom.dist.targetLocales, dom.locDoms, locArrTemp)
+           with (ref myLocArrTemp) {
+    on loc {
+      const locSize = locDomsElt.myBlock.size;
+      var data = _try_ddata_allocate(eltType, locSize);
+
+      const LBA = new unmanaged LocBlockArr(eltType, rank, idxType, strides,
+                                            locDomsElt, data=data, size=locSize);
+      locArrTempElt = LBA;
+      if here.id == creationLocale then
+        myLocArrTemp = LBA;
+    }
+  }
+  delete dummyLBA, dummyLBD;
+
+  var arr = new unmanaged BlockArr(eltType=eltType, rank=rank, idxType=idxType,
+       strides=strides, sparseLayoutType=sparseLayoutType,
+       dom=_to_unmanaged(dom), locArr=locArrTemp, myLocArr=myLocArrTemp);
+
+  // formerly in BlockArr.setup()
+  if arr.doRADOpt && disableBlockLazyRAD then arr.setupRADOpt();
+
+  return (arr, true);
 }
 
 // common redirects
@@ -2104,10 +2141,11 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
   return res;
 }
 
-proc BlockArr.doiTryCopy(arr, dom) throws {
-  var res = dom.tryCreateArray(eltType, initElts=!isPOD(eltType));
+proc BlockArr.doiTryCopy(arr) throws {
+  var (res, callPostAlloc) = arr.domain.tryCreateArrayNoInit(arr.eltType);
   res = arr;
-  if isPOD(eltType) then res.dsiElementInitializationComplete();
+  if callPostAlloc then
+    res.dsiElementInitializationComplete();
   return res;
 }
 
