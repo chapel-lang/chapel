@@ -4,8 +4,10 @@
 // This primer illustrates Chapel's sync and single variables.
 //
 
-// ``Sync`` and ``single`` are type qualifiers that can be applied to all
-// Chapel primitive types except ``strings`` and ``complex``.
+// ``sync`` and ``single`` are type qualifiers that can be applied to the
+// Chapel primitive types ``nothing``, ``bool``, ``int``, ``uint``, ``real``,
+// ``imag``, ``complex``, ``range``, ``bytes``, and ``string``; to enumerated
+// types; and to class types and record types.
 //
 
 // Sync and single variables have an associated state that is either
