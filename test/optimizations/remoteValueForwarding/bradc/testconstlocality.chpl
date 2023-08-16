@@ -5,7 +5,7 @@ const GLOBCONST = 2**4;
 config const n = 10;
 config const checkSync = false;
 
-var sync: sync bool = true;
+var syncVar: sync bool = true;
 
 const D = {1..n} dmapped Block({1..n});
 
@@ -18,7 +18,7 @@ proc testit(valblc: int) {
     local {
       a = valblc+i/10.0;
       if (here.id == 0) {
-        sync.readFF();
+        syncVar.readFF();
       }
     }
   }

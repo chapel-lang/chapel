@@ -90,7 +90,7 @@ sy.writeFF(4*n);
 
 //
 // The following creates a new task via a :ref:`begin
-// <primers-taskparallel-begin>` statement and declares a variable ``sy``
+// <primers-taskparallel-begin>` statement and declares a variable ``sy4``
 // that is initialized using ``sy``.  The initialization statement will block
 // until ``sy`` is ``full``.  The last statement in the ``begin`` block sets
 // ``done`` to ``full``.
@@ -98,8 +98,8 @@ sy.writeFF(4*n);
 var done: sync bool;
 writeln("Launching new task");
 begin {
-  var sy = sy.readFE(); // This statement will block until sy is full
-  writeln("New task unblocked, sy=", sy);
+  var sy4 = sy.readFE(); // This statement will block until sy is full
+  writeln("New task unblocked, sy4=", sy4);
   done.writeEF(true);
 }
 

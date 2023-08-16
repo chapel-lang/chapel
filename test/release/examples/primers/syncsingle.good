@@ -6,7 +6,7 @@ sy3 21
 si3 true
 Launching new task
 After launching new task
-New task unblocked, sy=28
+New task unblocked, sy4=28
 ......done
 sy.isFull false - now passing to f_withSyncIntFormal
 the full bit is: false
