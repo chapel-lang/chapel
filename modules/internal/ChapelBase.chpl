@@ -1586,7 +1586,8 @@ module ChapelBase {
   }
 
   inline proc _try_ddata_allocate(type eltType, size: integral,
-                                  subloc = c_sublocid_none) throws {
+                                  subloc = c_sublocid_none,
+                                  param initElts: bool) throws {
     var callPostAlloc: bool;
     var ret: _ddata(eltType);
 
@@ -1595,7 +1596,9 @@ module ChapelBase {
     if ret == nil then
       throw new ArrayOomError();
 
-    init_elts(ret, size, eltType);
+    if initElts {
+      init_elts(ret, size, eltType);
+    }
 
     if callPostAlloc {
       _ddata_allocate_postalloc(ret, size);

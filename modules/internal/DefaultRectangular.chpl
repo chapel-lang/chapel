@@ -700,12 +700,12 @@ module DefaultRectangular {
                                                  initElts=initElts);
     }
 
-    proc doiTryCreateArray(type eltType) throws {
+    proc doiTryCreateArray(type eltType, param initElts:bool) throws {
       // TODO: Update to support higher dimension (not needed in Arkouda)
       if rank != 1 then
         throw new Error("'tryCreateArray' is only supported on domains of rank 1");
 
-      var data = _try_ddata_allocate(eltType, ranges(0).size);
+      var data = _try_ddata_allocate(eltType, ranges(0).size, initElts=initElts);
       return new unmanaged DefaultRectangularArr(eltType=eltType, rank=rank,
                                                  idxType=idxType,
                                                  strides=strides,
@@ -2412,6 +2412,14 @@ module DefaultRectangular {
 
     // Clean up and return
     delete op;
+    return res;
+  }
+
+    /* This computes a 1D scan in parallel on the array, for 1D arrays only */
+  proc DefaultRectangularArr.doiCopy(arr, dom) throws {
+    var res = dom.tryCreateArray(eltType, initElts=!isPOD(eltType));
+    res = arr;
+    if isPOD(eltType) then res.dsiElementInitializationComplete();
     return res;
   }
 

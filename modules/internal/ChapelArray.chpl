@@ -2044,6 +2044,10 @@ module ChapelArray {
       return _value.doiScan(op, this.domain);
     }
 
+    proc tryCopy() throws {
+      return _value.doiCopy(this, this.domain);
+    }
+
     @chpldoc.nodoc
     proc iteratorYieldsLocalElements() param {
       return _value.dsiIteratorYieldsLocalElements();
