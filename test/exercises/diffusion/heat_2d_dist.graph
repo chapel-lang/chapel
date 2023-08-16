@@ -1,4 +1,4 @@
-perfKeys: time:, time:, time:
+perfkeys: time:, time:, time:
 files: heat_2d_dist_block.dat, heat_2d_dist_stencil.dat, heat_2d_dist_buffers.dat
 graphkeys: BlockDist, StencilDist, SPMD_style
 ylabel: Time (seconds)
