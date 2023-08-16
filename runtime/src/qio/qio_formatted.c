@@ -4084,25 +4084,44 @@ qioerr qio_channel_write_newline(const int threadsafe, qio_channel_t* restrict c
 static qioerr maybe_left_pad(qio_channel_t* restrict ch, int gotsize)
 {
   qioerr err = 0;
-  // left justify == pad on the right
-  // right justify == pad on the left!
-  if( ! ch->style.leftjustify ) {
+  // right justify (pad on left)
+  if( !ch->style.leftjustify && !ch->style.centjustify ) {
     while( gotsize < ch->style.min_width_columns && !err ) {
       err = qio_channel_write_char(false, ch, ch->style.pad_char);
       gotsize++;
     }
   }
+
+  // center justify (pad some on left)
+  if( ch->style.centjustify ) {
+    int i = 0;
+    for ( ; i < (ch->style.min_width_columns - gotsize) / 2; i++) {
+      err = qio_channel_write_char(false, ch, ch->style.pad_char);
+      if( err ) break;
+    }
+  }
+
   return err;
 }
 static qioerr maybe_right_pad(qio_channel_t* restrict ch, int gotsize)
 {
   qioerr err = 0;
-  if( ch->style.leftjustify ) {
+  // left or center justify (pad on right)
+  if( ch->style.leftjustify || (ch->style.centjustify && ch->style.pad_char != '0' ) ) {
     while( gotsize < ch->style.min_width_columns && !err ) {
       err = qio_channel_write_char(false, ch, ch->style.pad_char);
       gotsize++;
     }
   }
+
+  // don't pad with zeros on the right
+  if ( ch->style.centjustify && ch->style.pad_char == '0') {
+    while( gotsize < ch->style.min_width_columns && !err ) {
+      err = qio_channel_write_char(false, ch, ' ');
+      gotsize++;
+    }
+  }
+
   return err;
 }
 
@@ -4269,6 +4288,7 @@ qioerr qio_channel_print_complex(const int threadsafe,
       width = re_got + im_got + 3;
       err = maybe_left_pad(ch, width);
       if( err ) goto rewind;
+      if( ch->style.centjustify ) width += (ch->style.min_width_columns - width) / 2;
       err = qio_channel_write_amt(false, ch, re_buf, re_got);
       if( err ) goto rewind;
       err = qio_channel_write_char(false, ch, ' ');
@@ -4287,6 +4307,7 @@ qioerr qio_channel_print_complex(const int threadsafe,
     width = re_got + im_got + 3;
     err = maybe_left_pad(ch, width);
     if( err ) goto rewind;
+    if( ch->style.centjustify ) width += (ch->style.min_width_columns - width) / 2;
     err = qio_channel_write_char(false, ch, '(');
     if( err ) goto rewind;
     err = qio_channel_write_amt(false, ch, re_buf, re_got);
