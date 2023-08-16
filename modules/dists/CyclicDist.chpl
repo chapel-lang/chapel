@@ -497,7 +497,7 @@ proc _cyclic_matchArgsShape(type rangeType, type scalarType, args) type {
 }
 
 proc CyclicImpl.writeThis(x) throws {
-  x.writeln(this.type:string);
+  x.writeln("Cyclic");
   x.writeln("------");
   for locid in targetLocDom do
     x.writeln(" [", locid, "=", targetLocs(locid), "] owns chunk: ",

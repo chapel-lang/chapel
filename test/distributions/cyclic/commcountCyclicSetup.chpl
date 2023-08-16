@@ -14,7 +14,7 @@ printCommDiagnosticsTable();
 
 resetCommDiagnostics();
 startCommDiagnostics();
-var dist = new dmap(new Cyclic(1));
+var dist = new Cyclic(1);
 stopCommDiagnostics();
 printCommDiagnosticsTable();
 
