@@ -2044,6 +2044,10 @@ module ChapelArray {
       return _value.doiScan(op, this.domain);
     }
 
+    /* Copy the contents of an array, skipping default initialization for POD
+       types. This method will throw an ``arrayOomError`` if there is not enough
+       memory to satisfy the allocation. */
+    @unstable("the 'Array.tryCopy()' method is unstable")
     proc tryCopy() throws {
       return _value.doiTryCopy(this, this.domain);
     }
