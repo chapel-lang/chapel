@@ -958,22 +958,22 @@ module CTypes {
   }
 
   @chpldoc.nodoc
-  inline proc c_ptrTo_helper(ref c: class): c_ptr(void)
+  inline proc c_ptrTo_helper(c: class): c_ptr(void)
   {
     return __primitive("cast", c_ptr(void), c.borrow());
   }
   @chpldoc.nodoc
-  inline proc c_ptrTo_helper(ref c: class?): c_ptr(void)
+  inline proc c_ptrTo_helper(c: class?): c_ptr(void)
   {
     return __primitive("cast", c_ptr(void), c.borrow());
   }
   @chpldoc.nodoc
-  inline proc c_ptrToConst_helper(const ref c: class): c_ptr(void)
+  inline proc c_ptrToConst_helper(const c: class): c_ptr(void)
   {
     return __primitive("cast", c_ptr(void), c.borrow());
   }
   @chpldoc.nodoc
-  inline proc c_ptrToConst_helper(const ref c: class?): c_ptr(void)
+  inline proc c_ptrToConst_helper(const c: class?): c_ptr(void)
   {
     return __primitive("cast", c_ptr(void), c.borrow());
   }
@@ -1035,12 +1035,12 @@ module CTypes {
     lifetime of the instance.  The returned pointer will be invalid if the
     instance is freed or even reallocated.
   */
-  inline proc c_ptrTo(ref c: class): c_ptr(void)
+  inline proc c_ptrTo(c: class): c_ptr(void)
     where cPtrToLogicalValue == true
   {
     return __primitive("cast", c_ptr(void), c.borrow());
   }
-  inline proc c_ptrTo(ref c: class?): c_ptr(void)
+  inline proc c_ptrTo(c: class?): c_ptr(void)
     where cPtrToLogicalValue == true
   {
     return __primitive("cast", c_ptr(void), c.borrow());
@@ -1062,12 +1062,12 @@ module CTypes {
   /*
    Like :proc:`c_ptrTo` for class types, but also accepts ``const`` data.
    */
-  inline proc c_ptrToConst(const ref c: class): c_ptr(void)
+  inline proc c_ptrToConst(const c: class): c_ptr(void)
     where cPtrToLogicalValue == true
   {
     return __primitive("cast", c_ptr(void), c.borrow());
   }
-  inline proc c_ptrToConst(const ref c: class?): c_ptr(void)
+  inline proc c_ptrToConst(const c: class?): c_ptr(void)
     where cPtrToLogicalValue == true
   {
     return __primitive("cast", c_ptr(void), c.borrow());
