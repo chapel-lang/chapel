@@ -185,7 +185,7 @@ module BigInteger {
     var localeId : chpl_nodeID_t;      // The locale id for the GMP state
 
     /*
-      Initializes a :record:`bigint` to an initial value of 0.
+      Initializes a :record:`bigint` to an initial value of ``0``.
     */
     proc init() {
       this.complete();
@@ -276,36 +276,15 @@ module BigInteger {
 
     pragma "last resort"
     @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
-    proc init(const ref num: bigint) {
-      this.complete();
-      if compiledForSingleLocale() || num.localeId == chpl_nodeID {
-        mpz_init_set(this.mpz, num.mpz);
-      } else {
-        var mpz_struct = num.getImpl();
+    proc init(const ref num: bigint) do this.init(num);
 
-        mpz_init(this.mpz);
-
-        chpl_gmp_get_mpz(this.mpz, num.localeId, mpz_struct);
-      }
-
-      this.localeId = chpl_nodeID;
-    }
     pragma "last resort"
     @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
-    proc init(num: int) {
-      this.complete();
-      mpz_init_set_si(this.mpz, num.safeCast(c_long));
+    proc init(num: int) do this.init(num);
 
-      this.localeId = chpl_nodeID;
-    }
     pragma "last resort"
     @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
-    proc init(num: uint) {
-      this.complete();
-      mpz_init_set_ui(this.mpz, num.safeCast(c_ulong));
-
-      this.localeId = chpl_nodeID;
-    }
+    proc init(num: uint) do this.init(num);
 
     /* Initialize a :record:`bigint` from a string and optionally a provided base
        to use with the string.  If the string is not a correct base ``base``
@@ -328,19 +307,8 @@ module BigInteger {
      */
     pragma "last resort"
     @deprecated("the argument name 'str' is deprecated - please use 'x' instead")
-    proc init(str: string, base: int = 0) throws where bigintInitThrows == true {
-      this.complete();
-      const ref str_ = str.localize().c_str();
-      const base_ = base.safeCast(c_int);
-
-      if mpz_init_set_str(this.mpz, str_, base_) != 0 {
-        mpz_clear(this.mpz);
-
-        throwingInitWorkaround();
-      }
-
-      this.localeId = chpl_nodeID;
-    }
+    proc init(str: string, base: int = 0) throws where bigintInitThrows == true
+      do this.init(num);
 
     @deprecated(notes="bigint initializers that halt are deprecated, please set the config param :param:`bigintInitThrows` to 'true' to opt in to using the new initializer that throws")
     proc init(str: string, base: int = 0) where bigintInitThrows == false {
@@ -388,7 +356,6 @@ module BigInteger {
         mpz_clear(this.mpz);
       }
     }
-
 
     /* Determine the size of ``this`` measured in number of digits in the given
        ``base``.  The sign of ``this`` is ignored, only the absolute value is
