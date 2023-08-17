@@ -34,6 +34,16 @@ module DefaultAssociative {
 
   config param defaultAssociativeSupportsAutoLocalAccess = true;
 
+  private proc _usingSerializers(f) param : bool {
+    if f._writing then return f.serializerType != nothing;
+    else return f.deserializerType != nothing;
+  }
+
+  private proc _isDefaultDeser(f) param : bool {
+    if f._writing then return f.serializerType == IO.DefaultSerializer;
+    else return f.deserializerType == IO.DefaultDeserializer;
+  }
+
   // helps to move around array elements when rehashing the domain
   class DefaultAssociativeDomRehashHelper : chpl__rehashHelpers {
     var dom: unmanaged DefaultAssociativeDom(?);
@@ -103,15 +113,6 @@ module DefaultAssociative {
                                                  parSafeDom=parSafe,
                                                  dom=_to_unmanaged(this),
                                                  initElts=initElts);
-    }
-
-    proc _isDefaultDeser(f) param : bool {
-      if f._writing then return f.serializerType == IO.DefaultSerializer;
-      else return f.deserializerType == IO.DefaultDeserializer;
-    }
-    proc _usingSerializers(f) param : bool {
-      if f._writing then return f.serializerType != nothing;
-      else return f.deserializerType != nothing;
     }
 
     proc dsiSerialWrite(f) throws where _usingSerializers(f) && !_isDefaultDeser(f) {
@@ -672,11 +673,6 @@ module DefaultAssociative {
       }
     }
 
-    proc _usingSerializers(f) param : bool {
-      if f._writing then return f.serializerType != nothing;
-      else return f.deserializerType != nothing;
-    }
-
     proc dsiSerialReadWrite(f, in printBraces=true, inout first = true) throws
     where _usingSerializers(f) && !_isDefaultDeser(f) {
       ref fmt = if f._writing then f.serializer else f.deserializer;
@@ -704,11 +700,6 @@ module DefaultAssociative {
       }
 
       fmt.endMap(f);
-    }
-
-    proc _isDefaultDeser(f) param : bool {
-      if f._writing then return f.serializerType == IO.DefaultSerializer;
-      else return f.deserializerType == IO.DefaultDeserializer;
     }
 
     proc dsiSerialReadWrite(f, in printBraces=true, inout first = true) throws
@@ -942,6 +933,35 @@ module DefaultAssociative {
       }
       this.eltsNeedDeinit = false;
     }
+  }
+
+  proc chpl_serialReadWriteAssociativeHelper(f, arr, dom) throws
+  where _usingSerializers(f) && !_isDefaultDeser(f) {
+      ref fmt = if f._writing then f.serializer else f.deserializer;
+
+      if f._writing then
+        fmt.startMap(f, dom.dsiNumIndices:uint);
+      else
+        fmt.startMap(f);
+
+      if f._writing {
+        for key in dom {
+          fmt.writeKey(f, key);
+          fmt.writeValue(f, arr.dsiAccess(key));
+        }
+      } else {
+        for 0..<dom.dsiNumIndices {
+          const k = fmt.readKey(f, dom.idxType);
+
+          if !dom.dsiMember(k) {
+            // TODO: throw error
+          } else {
+            arr.dsiAccess(k) = fmt.readValue(f, arr.eltType);
+          }
+        }
+      }
+
+      fmt.endMap(f);
   }
 
   proc chpl_serialReadWriteAssociativeHelper(f, arr, dom) throws {

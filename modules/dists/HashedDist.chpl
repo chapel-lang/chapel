@@ -908,6 +908,33 @@ class UserMapAssocArr: AbsBaseArr(?) {
 
   }
 
+  proc dsiSerialWrite(f) throws where f.serializerType != nothing {
+    use IO;
+    ref fmt = f.serializer;
+    if f.serializerType == IO.DefaultSerializer {
+      fmt.startArray(f, dom.dsiNumIndices:uint);
+      fmt.startArrayDim(f, dom.dsiNumIndices:uint);
+
+      for locArr in locArrs {
+        for val in locArr!.myElems do fmt.writeArrayElement(f, val);
+      }
+
+      fmt.endArrayDim(f);
+      fmt.endArray(f);
+    } else {
+      fmt.startMap(f, dom.dsiNumIndices:uint);
+
+      for locArr in locArrs {
+        for (key, val) in zip(locArr!.myElems.domain, locArr!.myElems) {
+          fmt.writeKey(f, key);
+          fmt.writeValue(f, val);
+        }
+      }
+
+      fmt.endMap(f);
+    }
+  }
+
   override proc dsiDisplayRepresentation() {
 
     writeln("dsiDisplayRepresentation TODO");
