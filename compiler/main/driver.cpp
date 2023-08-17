@@ -155,6 +155,8 @@ bool fMultiLocaleInterop = false;
 bool fMultiLocaleLibraryDebug = false;
 
 bool driverInSubInvocation = false;
+bool driverDebugCompilation = true;
+bool driverDebugMakeBinary = false;
 bool no_codegen = false;
 int  debugParserLevel = 0;
 bool developer = false;
@@ -896,6 +898,25 @@ static void setSubInvocation(const ArgumentDescription* desc, const char* arg) {
   driverInSubInvocation = true;
 }
 
+static void setDriverDebugPhase(const ArgumentDescription* desc,
+                                const char* arg) {
+  if (0 == strcmp(arg, "1")) {
+    driverDebugCompilation = true;
+    driverDebugMakeBinary = false;
+  } else if (0 == strcmp(arg, "2")) {
+    driverDebugCompilation = false;
+    driverDebugMakeBinary = true;
+  } else if (0 == strcmp(arg, "all")) {
+    driverDebugCompilation = true;
+    driverDebugMakeBinary = true;
+  } else {
+    USR_FATAL(
+        "--driverDebugCompilation requires a valid phase number or 'all', "
+        "but got: %s\n",
+        arg);
+  }
+}
+
 static void addModulePath(const ArgumentDescription* desc, const char* newpath) {
   addFlagModulePath(newpath);
 
@@ -1363,10 +1384,11 @@ static ArgumentDescription arg_desc[] = {
  {"do-monolithic", ' ', NULL, "Run compiler as monolithic without driver", "F", &fDoMonolithic, NULL, NULL},
  {"do-compilation", ' ', NULL, "Run driver compilation step", "F", &fDoCompilation, NULL, setSubInvocation},
  {"do-make-binary", ' ', NULL, "Run driver make binary step", "F", &fDoMakeBinary, NULL, setSubInvocation},
+ {"driver-debug-phase", ' ', "<phase>", "Specify driver compilation phase to debug: 1, 2, all", "S", NULL, NULL, setDriverDebugPhase},
  {"gdb", ' ', NULL, "Run compiler in gdb", "F", &fRungdb, NULL, NULL},
+ {"lldb", ' ', NULL, "Run compiler in lldb", "F", &fRunlldb, NULL, NULL},
  {"interprocedural-alias-analysis", ' ', NULL, "Enable [disable] interprocedural alias analysis", "n", &fNoInterproceduralAliasAnalysis, NULL, NULL},
  {"lifetime-checking", ' ', NULL, "Enable [disable] lifetime checking pass", "n", &fNoLifetimeChecking, NULL, NULL},
- {"lldb", ' ', NULL, "Run compiler in lldb", "F", &fRunlldb, NULL, NULL},
  {"split-initialization", ' ', NULL, "Enable [disable] support for split initialization", "n", &fNoSplitInit, NULL, NULL},
  {"early-deinit", ' ', NULL, "Enable [disable] support for early deinit based upon expiring value analysis", "n", &fNoEarlyDeinit, NULL, NULL},
  {"copy-elision", ' ', NULL, "Enable [disable] copy elision based upon expiring value analysis", "n", &fNoCopyElision, NULL, NULL},
@@ -1839,16 +1861,21 @@ static void warnDeprecatedFlags() {
 
 static void checkCompilerDriverFlags() {
   if (fDoMonolithic) {
+    // Prevent running if we are in monolithic mode but appear to be in a
+    // sub-invocation, to ensure we are safe from contradictory flags down the
+    // line.
     if (driverInSubInvocation) {
-      USR_WARN(
-          "You have requested monolithic compilation, but one or more internal "
-          "compiler-driver flags were set; they will be ignored and monolithic "
-          "compilation will be performed.");
+      USR_FATAL(
+          "Requested monolithic compilation, but an internal compiler-driver "
+          "flag was set");
     }
     if (driverTmpDir[0]) {
-      // user has specified a driver tmp dir
       USR_WARN(
           "Driver temp dir set for monolithic compilation will be ignored");
+    }
+    if (driverDebugCompilation || driverDebugMakeBinary) {
+      USR_WARN(
+          "Driver debug phase has no effect for monolithic compilation");
     }
   }
 }
@@ -2282,11 +2309,14 @@ int main(int argc, char* argv[]) {
   if (!fDoMonolithic && !driverInSubInvocation)
     runAsCompilerDriver(argc, argv);
 
-  if (fRungdb)
-    runCompilerInGDB(argc, argv);
-
-  if (fRunlldb)
-    runCompilerInLLDB(argc, argv);
+  // In driver mode, debug only if we are in a driver phase that was requested
+  // to be debugged.
+  if (!((fDoCompilation && !driverDebugCompilation) ||
+        (fDoMakeBinary && !driverDebugMakeBinary))) {
+    // re-run compiler in appropriate debugger if requested
+    if (fRungdb) runCompilerInGDB(argc, argv);
+    if (fRunlldb) runCompilerInLLDB(argc, argv);
+  }
 
   assertSourceFilesFound();
 
