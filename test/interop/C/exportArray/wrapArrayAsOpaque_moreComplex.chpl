@@ -3,7 +3,8 @@ const D = {1..5} dmapped Block({1..5});
 
 // returns getExternalArrayType(makeBlockArray_chpl.ret)
 export proc makeBlockArray(): chpl_opaque_array {
-  var ret = convertToExternalArray(makeBlockArray_chpl());
+  var t = makeBlockArray_chpl();
+  var ret = convertToExternalArray(t);
   return ret;
 }
 

@@ -1893,11 +1893,18 @@ static void fixupExportedArrayReturns(FnSymbol* fn) {
     CallExpr* retCall = toCallExpr(fn->body->body.tail);
     INT_ASSERT(retCall && retCall->isPrimitive(PRIM_RETURN));
 
-    // This appears to be prior to any insertion of call temps, etc, so it seems
-    // okay for now to just insert the conversion call around the function call.
-    CallExpr* transformRet = new CallExpr("convertToExternalArray",
-                                          retCall->get(1)->remove());
-    retCall->insertAtTail(transformRet);
+    // if return value is a call expr, explicitly expand and suppress lvalue
+    // errors from `convertToExternalArray`
+    // otherwise, just use the value directly and let the normal call temp
+    // insertion take care of it
+    Expr* retVal = retCall->get(1);
+    if(CallExpr* callVal = toCallExpr(retVal)) {
+      Symbol* retSym = insertCallTempsWithStmt(callVal, retCall);
+      retSym->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
+      retVal = new SymExpr(retSym);
+    }
+    CallExpr* transformRet = new CallExpr("convertToExternalArray", retVal);
+    retCall->get(1)->replace(transformRet);
   }
 }
 
