@@ -1778,7 +1778,7 @@ private proc isBCPindex(type t) param do
       if _low > _high then return false;
     }
 
-    if ! this.isAligned() || ! other.isAligned()
+    if ! this.isAligned()
       then return false;
 
     return true;
@@ -1786,17 +1786,44 @@ private proc isBCPindex(type t) param do
 
   inline proc range.chpl_boundsCheck(other: range(?e,?b,?s))
   {
-    if ! this.isAligned() || ! other.isAligned()
+    if ! this.isAligned()
       then return false;
 
-    var boundedOther = new range(
+    var boundedOther = if other.isAligned() then
+                        new range(
                           idxType, boundKind.both, other.strides,
                           if other.hasLowBound() then other._low else _low,
                           if other.hasHighBound() then other._high else _high,
-                          other._stride, other._alignment);
+                          other._stride, other._alignment)
+                      // If 'other' is not aligned, we want to create an
+                      // aligned range to pass it to contains() below, because
+                      // otherwise it will always return false. For that, we
+                      // copy alignment from 'this'.
+                      // If 'this' is unit-stride, the alignment is zero,
+                      // otherwise this.alignment potentially needs to be
+                      // normalized w.r.t. other.stride.
+                      else if this.hasPosNegUnitStride() then
+                        new range(
+                          idxType, boundKind.both, other.strides,
+                          if other.hasLowBound() then other._low else _low,
+                          if other.hasHighBound() then other._high else _high,
+                          other._stride, 0:chpl__rangeStrideType(idxType))
+                      else
+                        new range(
+                          idxType, boundKind.both, other.strides,
+                          if other.hasLowBound() then other._low else _low,
+                          if other.hasHighBound() then other._high else _high,
+                          other._stride, this._alignment, true);
+                          // Note: we don't really know why the strategy of
+                          // copying the alignment from 'this' is correct.
+                          // But we haven't been able to produce a counterexample
+                          // where it doesn't work.
+                          // If someone can prove or disprove this method that
+                          // would be useful to know.
 
     return (boundedOther.sizeAs(uint) == 0) || contains(boundedOther);
   }
+
   /* Returns ``true`` if ``other`` is contained in this range and ``false``
      otherwise. */
   @deprecated("range.boundsCheck() is deprecated, please use range.contains() instead")

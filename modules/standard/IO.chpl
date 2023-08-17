@@ -1035,9 +1035,16 @@ extern record iostyleInternal { // aka qio_style_t
      uppercase? */
   var uppercase:uint(8) = 0;
   /* When printing a numeric value in a field of specified width, should
-     the number be on the left (that is padded on the right?). The default
-     is to right-justify the number. */
+     the number be left, right, or center justified. The default
+     is to right-justify the number.
+
+              | 'leftjustify' | 'centjustify' |
+    - right   |  0            |  0            |
+    - left    |  1            |  0            |
+    - center  |  0            |  1            |
+  */
   var leftjustify:uint(8) = 0;
+  var centjustify:uint(8) = 0;
   /* When printing an integral value using a real format, should a trailing
      decimal point be included? If so, the value 0 will be written as ``0.`` */
   var showpoint:uint(8) = 0;
@@ -1150,7 +1157,7 @@ export proc chpl_qio_setup_plugin_channel(file:c_ptr(void), ref plugin_ch:c_ptr(
   var f=(file:unmanaged QioPluginFile?)!;
   var pluginChannel:unmanaged QioPluginChannel? = nil;
   var ret = f.setupChannel(pluginChannel, start, end, qio_ch);
-  plugin_ch = pluginChannel:c_ptr(void);
+  plugin_ch = c_ptrTo_helper(pluginChannel);
   return ret;
 }
 
@@ -1973,27 +1980,16 @@ proc file.fsync() throws {
   if err then try ioerror(err, "in file.fsync", this._tryGetPath());
 }
 
-/*
-  A compile-time parameter to control the behavior of :proc:`file.path`
-
-  When 'false', the deprecated behavior is used (i.e., return the shortest of
-  the relative path and the absolute path)
-
-  When 'true', the new behavior is used (i.e., always return the absolute path)
-*/
+@chpldoc.nodoc
+@deprecated("'filePathAbsolute' is deprecated and inactive. 'file.path' now returns an absolute path")
 config param filePathAbsolute = false;
-
-@deprecated(notes="The variant of `file.path` that can return a relative path is deprecated; please compile with `-sfilePathAbsolute=true` to use the strictly absolute variant")
-proc file.path: string throws where !filePathAbsolute {
-  return fileRelPathHelper(this);
-}
 
 /*
 
 Get the absolute path to an open file.
 
 Note that not all files have a path (e.g. files opened with :proc:`openMemFile`),
-and that this function may not work on all operating systems.
+and that this procedure may not work on all operating systems.
 
 The function :proc:`Path.realPath` is an alternative way
 to get the path to a file.
@@ -2003,7 +1999,7 @@ to get the path to a file.
 
 :throws SystemError: Thrown if the path could not be retrieved.
  */
-proc file.path : string throws where filePathAbsolute {
+proc file.path : string throws {
   return this._abspath;
 }
 
@@ -2212,7 +2208,8 @@ proc openplugin(pluginFile: QioPluginFile, mode:ioMode,
   if seekable then
     flags |= QIO_FDFLAG_SEEKABLE;
 
-  var err = qio_file_init_plugin(ret._file_internal, pluginFile:c_ptr(void), flags, style);
+  var err = qio_file_init_plugin(ret._file_internal,
+      c_ptrToConst_helper(pluginFile), flags, style);
   if err {
     var path:string = "unknown";
     if pluginFile {
@@ -9620,21 +9617,20 @@ Integral Conversions
  as with ``%17i`` but read the minimum width from the preceding argument
 ``%017i``
  a decimal integer padded on the left with zeros to 17 columns
-``%-17i``
+``%<17i``
  a decimal integer left-justified (padded on the right) to 17 columns
+``%^17i``
+ a decimal integer center-justified (padded equally on the left and right) to 17 columns
+``%>17i``
+ a decimal integer right-justified (padded on the left) to 17 columns — equivalent to ``%17i``
+``%-17i``
+ a decimal integer left-justified (padded on the right) to 17 columns *(deprecated)*
 ``%+i``
  a decimal integer showing ``+`` for positive numbers
 ``% i``
  a decimal integer with a space for positive numbers
 ``%|4i``
  output 4 raw, binary bytes of the passed integer in native endianness *(deprecated)*
-``%<4i``
- output 4 raw, binary bytes of the passed integer little endian *(deprecated)*
-``%>4i``
- output 4 raw, binary bytes of the passed integer big endian *(deprecated)*
-``%<8i``
- output 8 raw, binary bytes of the passed integer little endian
- (byte widths of 1, 2, 4, and 8 are supported for integral conversions) *(deprecated)*
 
 Real Conversions
 ++++++++++++++++
@@ -9644,9 +9640,15 @@ Real Conversions
  exponential is chosen if the decimal version would be too long
 
 ``%6r``
- as with ``%r`` but padded on the left to 6 columns (ie right-justified)
+ as with ``%r`` but padded on the left to 6 columns (i.e., right-justified)
+``%<6r``
+ as with ``%r`` but padded on the right to 6 columns (i.e., left-justified)
+``%^r``
+ as with ``%r`` but padded equally on the left and right to 6 columns (i.e., center-justified)
+``%>6r``
+ equivalent to ``%6r``
 ``%-6r``
- as with ``%r`` but padded on the right to 6 columns (ie left-justified)
+ as with ``%r`` but padded on the right to 6 columns (i.e., left-justified) *(deprecated)*
 ``%.4r``
  as with ``%r`` but with 4 significant digits
 ``%.*r``
@@ -9681,11 +9683,6 @@ Real Conversions
 
 ``%|4r``
  emit 4 raw, binary bytes of the passed number in native endianness *(deprecated)*
-``%<8r``
- emit 8 raw, binary bytes of the passed number in little endian *(deprecated)*
-``%<4r``
- emit 4 raw, binary bytes of the passed number in little endian
- (``<`` ``|`` and ``>`` are supported for widths 4 or 8) *(deprecated)*
 
 Complex and Imaginary Conversions
 +++++++++++++++++++++++++++++++++
@@ -9711,8 +9708,6 @@ Complex and Imaginary Conversions
  same as ``%|4r`` *(deprecated)*
 ``%|8z``
  emit 8 raw, binary bytes of native-endian complex (a,b are each 4 bytes) *(deprecated)*
-``%<16z``
- emit 16 raw, binary bytes of little-endian complex (a,b each 8 bytes) *(deprecated)*
 
 String and Bytes Conversions
 ++++++++++++++++++++++++++++
@@ -9729,8 +9724,16 @@ String and Bytes Conversions
   * when writing - a string left padded (right justified) to 17 columns
   * when reading - read up to 17 bytes or a whitespace, whichever comes
     first, rounding down to whole characters
+``%<17s``
+  * when writing - a string right padded (left justified) to 17 columns
+``%^17s``
+  * when writing - a string equally left and right padded (center justified) to 17 columns
+``%>17s``
+  * when writing - a string left padded (right justified) to 17 columns
+  * when reading - read up to 17 bytes or a whitespace, whichever comes
+    first, rounding down to whole characters
 ``%-17s``
- * when writing - a string right padded (left justified) to 17 columns
+ * when writing - a string right padded (left justified) to 17 columns *(deprecated)*
 ``%.17s``
  * when writing - a string truncated to 17 columns. When combined
    with quoting strings, for example ``%.17"S``, the conversion
@@ -9867,10 +9870,6 @@ General Conversions
 
 ``%|t``
  read or write an object in binary native-endian with readThis/writeThis *(deprecated)*
-``%<t``
- read or write an object little-endian in binary with readThis/writeThis *(deprecated)*
-``%>t``
- read or write an object big-endian in binary with readThis/writeThis *(deprecated)*
 
 ``%?``
  Use the ``fileReader``/``fileWriter``'s associated serializer/deserializer to write
@@ -10002,7 +10001,17 @@ Going through each section for text conversions:
   ``-``
    left-justify the converted value instead of right-justifying.
    Note, if both ``0`` and ``-`` are given, the effect is as if only ``-``
+   were given. *(deprecated)*
+  ``<``
+   left-justify the converted value instead of right-justifying.
+   Note, if both ``0`` and ``<`` are given, the effect is as if only ``<``
    were given.
+  ``^``
+   center-justify the converted value instead of right-justifying. Note, if
+   both ``0`` and ``^`` are given, zero-padding will only be applied to the
+   left of the numerical value
+  ``>``
+   explicitly denote right-justification
   ``~``
    when reading a record or class instance, skip over fields in the input not
    present in the Chapel type. This flag currently only works in combination
@@ -10106,10 +10115,6 @@ Going through each section for text conversions:
 For binary conversions *(deprecated)*:
 
 [optional endian flag] *(deprecated)*
-   ``<``
-    means little-endian *(deprecated)*
-   ``>``
-    means big-endian *(deprecated)*
    ``|``
     means native-endian *(deprecated)*
 
@@ -10182,21 +10187,6 @@ Formatted I/O Examples
        // outputs:
        // 43.29 + 279.1i
 
-  writef("%<4u", 0x11223344); // (deprecated)
-       // outputs:
-       // (hexdump of the output)
-       // 4433 2211
-  writef("%>4u", 0x11223344); // (deprecated)
-       // outputs:
-       // (hexdump of the output)
-       // 1122 3344
-  writef("%<4i %<4i", 2, 32); // (deprecated)
-       // outputs:
-       // (hexdump of the output -- note that spaces after
-       //  a binary format specifier are ignored)
-       // 0200 0000 2000 0000
-
-
   writef("%|0S\n", "test"); // (deprecated)
        // outputs:
        // (hexdump of the output)
@@ -10205,22 +10195,6 @@ Formatted I/O Examples
        // outputs:
        // (hexdump of the output)
        // 0474 6573 740a
-  writef("%>2S\n", "test"); // (deprecated)
-       // outputs:
-       // (hexdump of the output)
-       // 0004 7465 7374 0a
-  writef("%>4S\n", "test"); // (deprecated)
-       // outputs:
-       // (hexdump of the output)
-       // 0000 0004 7465 7374 0a
-  writef("%>8S\n", "test"); // (deprecated)
-       // outputs:
-       // (hexdump of the output)
-       // 0000 0000 0000 0004 7465 7374 0a
-  writef("%|vS\n", "test"); // (deprecated)
-       // outputs:
-       // (hexdump of the output)
-       // 04 7465 7374 0a
 
   writef('%"S\n', "test \"\" \'\' !");
        // outputs:
@@ -10233,11 +10207,15 @@ Formatted I/O Examples
        // (test (\))
 
 
-  writef("%40s|\n", "test");
-  writef("%-40s|\n", "test");
+  writef("|%40s|\n", "test");
+  writef("|%<40s|\n", "test");
+  writef("|%^40s|\n", "test");
+  writef("|%>40s|\n", "test")
        // outputs:
-       //                                     test|
-       // test                                    |
+       // |                                    test|
+       // |test                                    |
+       // |                  test                  |
+       // |                                    test|
 
   writef("123456\n");
   writef("%6.6'S\n", "a");

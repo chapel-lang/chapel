@@ -2,6 +2,8 @@
 COMPOPTS <= --fast
 # throws off loop attributes
 COMPOPTS <= --baseline
+CHPL_TARGET_COMPILER != llvm
+CHPL_COMM != none
 # test only LLVM 14 or greater
 CHPL_LLVM_VERSION==11
 CHPL_LLVM_VERSION==12

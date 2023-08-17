@@ -181,6 +181,13 @@ owned<Attribute> ParserContext::buildAttribute(YYLTYPE loc, AstNode* firstIdent,
   return node;
 }
 
+owned<AttributeGroup> ParserContext::popLoopAttributeGroup() {
+  CHPL_ASSERT(loopAttributes.size() > 0);
+  auto toReturn = std::move(loopAttributes.back());
+  loopAttributes.pop_back();
+  return toReturn;
+}
+
 owned<AttributeGroup> ParserContext::buildAttributeGroup(YYLTYPE locationOfDecl) {
   numAttributesBuilt += 1;
 
@@ -1811,8 +1818,7 @@ ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                  blockStyle,
                                  std::move(body),
                                  /*isExpressionLevel*/ false,
-                                 toOwned(this->loopAttributes));
-  this->loopAttributes=nullptr;
+                                 this->popLoopAttributeGroup());
 
   return { .comments=comments, .stmt=node.release() };
 }
@@ -1855,8 +1861,7 @@ CommentsAndStmt ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                  blockStyle,
                                  std::move(body),
                                  /*isExpressionLevel*/ false,
-                                 toOwned(this->loopAttributes));
-  this->loopAttributes=nullptr;
+                                 this->popLoopAttributeGroup());
 
   return { .comments=comments, .stmt=node.release() };
 }
@@ -1889,8 +1894,7 @@ CommentsAndStmt ParserContext::buildForallLoopStmt(YYLTYPE locForall,
                             blockStyle,
                             std::move(body),
                             /*isExpressionLevel*/ false,
-                            toOwned(this->loopAttributes));
-  this->loopAttributes=nullptr;
+                            this->popLoopAttributeGroup());
 
   return { .comments=comments, .stmt=node.release() };
 }
@@ -1922,8 +1926,7 @@ CommentsAndStmt ParserContext::buildForeachLoopStmt(YYLTYPE locForeach,
                              toOwned(withClause),
                              blockStyle,
                              std::move(body),
-                             toOwned(this->loopAttributes));
-  this->loopAttributes=nullptr;
+                             this->popLoopAttributeGroup());
 
   return { .comments=comments, .stmt=node.release() };
 }
@@ -1955,8 +1958,7 @@ CommentsAndStmt ParserContext::buildForLoopStmt(YYLTYPE locFor,
                          std::move(body),
                          /*isExpressionLevel*/ false,
                          /*isParam*/ false,
-                         toOwned(this->loopAttributes));
-  this->loopAttributes=nullptr;
+                         this->popLoopAttributeGroup());
 
   return { .comments=comments, .stmt=node.release() };
 }
@@ -1988,8 +1990,7 @@ CommentsAndStmt ParserContext::buildCoforallLoopStmt(YYLTYPE locCoforall,
                               toOwned(withClause),
                               blockStyle,
                               std::move(body),
-                              toOwned(this->loopAttributes));
-  this->loopAttributes=nullptr;
+                              this->popLoopAttributeGroup());
 
   return { .comments=comments, .stmt=node.release() };
 }

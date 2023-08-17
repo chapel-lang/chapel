@@ -1853,15 +1853,12 @@ static Type* finalArrayElementType(AggregateType* arrayType) {
   return eltType;
 }
 
-static bool isOrContains(Type *type, Flag flag, bool canBeTypeVar = false) {
+static bool isOrContains(Type *type, Flag flag, bool checkRefs = true) {
   if (type == nullptr) {
     return false;
+  } else if (!checkRefs && type->isRef()) {
+    return false;
   } else if (type->symbol->hasFlag(flag)) {
-    return true;
-  } else if (canBeTypeVar && !type->symbol->hasFlag(FLAG_TYPE_VARIABLE)) {
-    // in the base case, this function should not return true for something like
-    // type T = sync int;
-    // But when searching tuples and arrays, this is needed
     return true;
   } else {
     Type* vt = type->getValType();
@@ -1872,21 +1869,27 @@ static bool isOrContains(Type *type, Flag flag, bool canBeTypeVar = false) {
       // get backing array instance and recurse
       if (at->symbol->hasFlag(FLAG_ARRAY)) {
         Type* eltType = finalArrayElementType(at);
-        if (isOrContains(eltType, flag, true /*can be type var*/)) return true;
+        if (isOrContains(eltType, flag, checkRefs)) return true;
       } else if (at->symbol->hasFlag(FLAG_TUPLE)) {
         // if its a tuple, search the tuple type substitutions
         for (const auto& ns: at->substitutionsPostResolve) {
           Type* eltType = ns.value->type;
-          if (isOrContains(eltType, flag, true /*can be type var*/)) return true;
+          if (isOrContains(eltType, flag, checkRefs)) return true;
         }
       }
     }
   }
   return false;
 }
-bool isOrContainsSyncType(Type* t) { return isOrContains(t, FLAG_SYNC); }
-bool isOrContainsSingleType(Type* t) { return isOrContains(t, FLAG_SINGLE); }
-bool isOrContainsAtomicType(Type* t) { return isOrContains(t, FLAG_ATOMIC_TYPE); }
+bool isOrContainsSyncType(Type* t, bool checkRefs) {
+  return isOrContains(t, FLAG_SYNC, checkRefs);
+}
+bool isOrContainsSingleType(Type* t, bool checkRefs) {
+  return isOrContains(t, FLAG_SINGLE, checkRefs);
+}
+bool isOrContainsAtomicType(Type* t, bool checkRefs) {
+  return isOrContains(t, FLAG_ATOMIC_TYPE, checkRefs);
+}
 
 
 bool isRefIterType(Type* t) {

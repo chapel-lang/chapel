@@ -1,0 +1,2 @@
+-sdropX=true  # inBlock.dropX
+-sdropX=false # inBlock.retX

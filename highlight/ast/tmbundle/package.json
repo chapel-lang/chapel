@@ -1,0 +1,34 @@
+{
+  "name": "chapel-ast-vscode-syntax-highlighter",
+  "displayName": "Chapel AST",
+  "description": "A simple extension for Chapel AST syntax highlighting.",
+  "version": "0.0.1",
+  "publisher": "chapel",
+  "engines": {
+    "vscode": "^1.70.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "chapel-ast",
+        "aliases": [
+          "chapel-ast"
+        ],
+        "extensions": [
+          ".ast"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "chapel-ast",
+        "scopeName": "source.ast",
+        "path": "./syntaxes/chapel-ast.tmLanguage.json"
+      }
+    ]
+  }
+}

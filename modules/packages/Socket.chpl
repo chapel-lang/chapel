@@ -1397,8 +1397,7 @@ proc getSockOpt(socketFd:c_int, level: c_int, optname: c_int, buflen: uint(16)) 
 
 /*
   Returns the value of the given socket option which is expected to be of type
-  :type:`~Bytes.bytes` on provided :type:`tcpConn`. The needed symbolic constants (SO_* etc.)
-  are defined in :mod:`Sys` module.
+  :type:`~Bytes.bytes` on provided :type:`tcpConn`.
 
   :arg socket: socket to set option on
   :type socket: `tcpConn` or `udpSocket` or `tcpListener`

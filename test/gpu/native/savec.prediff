@@ -1,3 +1,5 @@
 #!/usr/bin/env bash
 
-find savec_dir -type f -name "*.o" -o -name "*.s" >> $2
+# Get list of all .o and .s files. Exclude 'savec.tmp_launcher.o' since we want this test
+# to pass regardless of whether a launcher is being used or not.
+find savec_dir -type f -name "*.o" -o -name "*.s" | grep -v "savec\.tmp_launcher\.o" | sort >> $2

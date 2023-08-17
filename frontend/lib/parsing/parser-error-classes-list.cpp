@@ -418,6 +418,40 @@ void ErrorIllegalUseImport::write(ErrorWriterBase& wr) const {
   wr.note(clause, "only identifiers and 'dot' expressions are supported");
 }
 
+void ErrorInvalidGpuAssertion::write(ErrorWriterBase& wr) const {
+  auto node = std::get<const uast::AstNode*>(info);
+  // auto attr = std::get<const uast::Attribute*>(info);
+
+  const char* loopTypes = nullptr;
+  if (node->isFor()) {
+    loopTypes = "for";
+  } else if (node->isWhile()) {
+    loopTypes = "while";
+  } else if (node->isDoWhile()) {
+    loopTypes = "do-while";
+  } else if (node->isCoforall()) {
+    loopTypes = "coforall";
+  }
+
+  const char* whatIsAffected = "statement";
+  if (loopTypes) {
+    wr.heading(kind_, type_, node, "loop marked with @assertOnGpu, but '", loopTypes, "' loops don't support GPU execution.");
+    whatIsAffected = "loop";
+  } else if (node->isFunction()) {
+    wr.heading(kind_, type_, node, "functions do not currently support the @assertOnGpu attribute.");
+    whatIsAffected = "function";
+  } else {
+    wr.heading(kind_, type_, node, "statement does not support the @assertOnGpu attribute.");
+  }
+
+  wr.message("The affected ", whatIsAffected, " is here:");
+  wr.codeForLocation(node);
+
+  // For now, attribute locations aren't correctly computed, so this is unhelpful.
+  // wr.note(attr, "marked for GPU execution here:");
+  // wr.codeForLocation(attr);
+}
+
 void ErrorMultipleManagementStrategies::write(ErrorWriterBase& wr) const {
   auto node = std::get<const uast::AstNode*>(info);
   auto outerMgt = std::get<1>(info);

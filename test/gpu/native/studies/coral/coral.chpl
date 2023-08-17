@@ -39,9 +39,8 @@ proc convolve_and_calculate(Array: [] real(32), const in centerPoints : ?, locL 
   if verbose_gpu then startVerboseGpu();
 
   
+  @assertOnGpu
   foreach i in centerPoints.dim(0) {
-    assertOnGpu();
-
     // Only these need to be real(64) in order to guarantee non-negative outputs
     var tmpLL : real(64) = 0;
     var tmpLC : real(64) = 0;

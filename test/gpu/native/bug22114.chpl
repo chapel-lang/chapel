@@ -7,15 +7,15 @@ proc main() {
   on here.gpus[0] {
     var A: [0..<N] real;
 
+    @assertOnGpu
     foreach i in 0..<N {
 	add1(A, i);
-	assertOnGpu();
     }
     writeln(A);
 
+    @assertOnGpu
     foreach i in 0..<N {
         add2(A, i);
-        assertOnGpu();
     }
     writeln(A);
   }

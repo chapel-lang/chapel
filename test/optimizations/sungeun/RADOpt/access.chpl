@@ -142,7 +142,7 @@ proc main() {
 
   if doCyclic {
     writeln();
-    const cD: domain(rank) dmapped new dmap (new Cyclic(startIdx=zeroT)) = D;
+    const cD: domain(rank) dmapped new Cyclic(startIdx=zeroT) = D;
     doit(cD, "Cyclic");
   }
 

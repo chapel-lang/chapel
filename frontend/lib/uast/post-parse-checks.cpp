@@ -133,6 +133,7 @@ struct Visitor {
   void checkVisibilityClauseValid(const AstNode* parentNode,
                                   const VisibilityClause* clause);
   void checkAttributeNameRecognizedOrToolSpaced(const Attribute* node);
+  void checkAttributeAppliedToCorrectNode(const Attribute* attr);
   void checkAttributeUsedParens(const Attribute* node);
   void checkAttributeUnstable(const Attribute* node);
   void checkUserModuleHasPragma(const AttributeGroup* node);
@@ -1245,6 +1246,7 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
   if (node->name() == USTR("deprecated") ||
       node->name() == USTR("unstable") ||
       node->name() == USTR("stable") ||
+      node->name() == USTR("assertOnGpu") ||
       node->name().startsWith(USTR("chpldoc."))) {
       // TODO: should we match chpldoc.nodoc or anything toolspaced with chpldoc.?
       return;
@@ -1270,6 +1272,18 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
   }
 }
 
+void Visitor::checkAttributeAppliedToCorrectNode(const Attribute* attr) {
+  CHPL_ASSERT(parents_.size() >= 2);
+  auto attributeGroup = parents_[parents_.size() - 1];
+  CHPL_ASSERT(attributeGroup->isAttributeGroup());
+  auto node = parents_[parents_.size() - 2];
+  if (attr->name() == USTR("assertOnGpu")) {
+    if (node->isForall() || node->isForeach()) return;
+
+    CHPL_REPORT(context_, InvalidGpuAssertion, node, attr);
+  }
+}
+
 void Visitor::checkAttributeUnstable(const Attribute* node) {
   if (shouldEmitUnstableWarning(node)) {
     if(node->name() == UniqueString::get(context_, "llvm.metadata") ||
@@ -1280,6 +1294,7 @@ void Visitor::checkAttributeUnstable(const Attribute* node) {
 }
 
 void Visitor::visit(const Attribute* node) {
+  checkAttributeAppliedToCorrectNode(node);
   checkAttributeNameRecognizedOrToolSpaced(node);
   checkAttributeUsedParens(node);
   checkAttributeUnstable(node);
