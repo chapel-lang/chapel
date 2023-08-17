@@ -32,7 +32,7 @@ proc main() {
   
   for trial in 1..numTrials {
     const startTime = timeSinceEpoch().totalSeconds();
-    coforall loc in Locales {
+    coforall loc in Locales with (ref allValidAnswer) {
       on loc {
         const MyProblemSpace: domain(1, indexType) 
                             = BlockPartition(ProblemSpace, here.id, numLocales);

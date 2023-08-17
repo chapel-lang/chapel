@@ -1,7 +1,7 @@
 var taskCounts: [0..#numLocales] (int, int);
 
 proc main() {
-  coforall loc in Locales do on loc {
+  coforall loc in Locales with (ref taskCounts) do on loc {
     const rt = here.runningTasks();
     taskCounts[loc.id] = (loc.id, rt);
   }

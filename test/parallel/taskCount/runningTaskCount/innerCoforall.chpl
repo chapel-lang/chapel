@@ -6,7 +6,7 @@ var taskCounts: [0..#numLocales, 0..#tasksPerLoc] (int, int);
 proc main() {
   for loc in Locales do on loc {
     var bar = new barrier(tasksPerLoc);
-    coforall tid in 0..#tasksPerLoc {
+    coforall tid in 0..#tasksPerLoc with (ref taskCounts) {
       bar.barrier();
       const taskID = (loc.id * tasksPerLoc) + tid;
       const rt = here.runningTasks();

@@ -7,7 +7,7 @@ record QQ {
 }
 
 proc QQ.w1(factor: int) {
-  coforall i in RNG {
+  coforall i in RNG with (ref data_arg) {
     data[i] = i * factor;
   }
 }
@@ -17,7 +17,7 @@ proc QQ.w2() {
 }
 
 proc QQ.w3() {
-  coforall i in RNG {
+  coforall i in RNG with (ref data_arg) {
     data[i] = i;
   }
   w2();

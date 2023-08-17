@@ -145,12 +145,12 @@ vwln("  replB", replB.domain, " = Ab", BD, "  ", [BD.dim(0), 1..n+1]);
   // a multiple of blkSize (but are always non-empty if Rest is non-empty).
 
   // replicating into replA, replB
-  coforall dest in tla[tla.domain.dim(0).high, tla.domain.dim(1)] do
+  coforall dest in tla[tla.domain.dim(0).high, tla.domain.dim(1)] with (ref replA) do
     on dest do
       { vwln("copying to replA on ", here.id);
       replA = Ab[1..n, AD.dim(1)];
       }
-  coforall dest in tla[tla.domain.dim(0), tla.domain.dim(1).high] do
+  coforall dest in tla[tla.domain.dim(0), tla.domain.dim(1).high] with (ref replB) do
     on dest do
       { vwln("copying to replB on ", here.id);
       replB = Ab[BD.dim(0), 1..n+1];

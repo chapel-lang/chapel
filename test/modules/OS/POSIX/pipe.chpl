@@ -8,7 +8,7 @@ if ret == 0 {
   // writes to the write end and the other reads from the read end.
   var vals: [0..3] int;
   var order:single bool; // this is just to keep the output ordered
-  cobegin {
+  cobegin with (ref vals) {
     { // this is the writer task
       vals = [ 1, 2, 3, max(int) ]; // thanks, George Gamow!
       writeln(POSIX.write(fildes[1], c_ptrTo(vals),

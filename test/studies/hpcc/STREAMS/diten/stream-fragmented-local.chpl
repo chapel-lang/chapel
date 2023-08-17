@@ -30,7 +30,7 @@ proc main() {
   var   allExecTime: [LocaleSpace] [1..numTrials] real;
   var   allValidAnswer: [LocaleSpace] bool;
   
-  coforall loc in Locales {
+  coforall loc in Locales with (ref allExecTime) with (ref allValidAnswer) {
     on loc {
       const MyProblemSpace: domain(1, indexType) 
                           = BlockPartition(ProblemSpace, here.id, numLocales);

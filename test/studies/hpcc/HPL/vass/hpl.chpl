@@ -226,12 +226,12 @@ proc schurComplement(AD: domain, BD: domain, Rest: domain) {
   // Copy data into replicated arrays so every processor has a local copy
   // of the data it will need to perform a local matrix-multiply.
   //
-  coforall dest in targetLocales[targetIds.dim(0).high, targetIds.dim(1)] do
+  coforall dest in targetLocales[targetIds.dim(0).high, targetIds.dim(1)] with (ref replA) do
     on dest do
       // replA on tgLocales[d1,i] gets a copy of Ab from tgLocales[d1,..]
       replA = Ab[1..n, AD.dim(1)];
 
-  coforall dest in targetLocales[targetIds.dim(0), targetIds.dim(1).high] do
+  coforall dest in targetLocales[targetIds.dim(0), targetIds.dim(1).high] with (ref replB) do
     on dest do
       // replB on tgLocales[i,d2] gets a copy of Ab from tgLocales[..,d2]
       replB = Ab[BD.dim(0), 1..n+1];
