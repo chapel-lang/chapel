@@ -4609,6 +4609,7 @@ qioerr qio_conv_parse(c_string fmt,
   int zero_flag = 0;
   int left_alignment_flag = 0;
   int cent_alignment_flag = 0;
+  int right_alignment_flag = 0;
   int space_flag = 0;
   int plus_flag = 0;
   int sloppy_flag = 0;
@@ -4725,7 +4726,7 @@ qioerr qio_conv_parse(c_string fmt,
       } else if( fmt[i] == '^' ) {
         cent_alignment_flag = 1;
       } else if( fmt[i] == '>' ) {
-        // do nothing, right justification is on by default
+        right_alignment_flag = 1;
       } else if( fmt[i] == ' ' ) {
         space_flag = 1;
       } else if( fmt[i] == '+' ) {
@@ -4735,8 +4736,13 @@ qioerr qio_conv_parse(c_string fmt,
         // but it also means to skip JSON fields not in use.
         sloppy_flag = 1;
       } else {
+        // check if a padding_char is being specified before a: <, ^, >
+        //  (can only happen if one of the above flags has not already been set, and
+        //   the next flag is a '<', '^', or '>')
         char maybe_pad_char = fmt[i];
-        if( fmt[i+1] && (fmt[i+1] == '<' || fmt[i+1] == '^' || fmt[i+1] == '>') ) {
+        int fsum = at_flag + zero_flag + left_alignment_flag + cent_alignment_flag +
+                    right_alignment_flag + space_flag + plus_flag + sloppy_flag;
+        if( fmt[i+1] && fsum == 0 && (fmt[i+1] == '<' || fmt[i+1] == '^' || fmt[i+1] == '>' || fmt[i+1] == '-') ) {
           style_out->pad_char = maybe_pad_char;
         } else {
           break;
