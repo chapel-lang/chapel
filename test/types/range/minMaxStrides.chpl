@@ -8,7 +8,7 @@ proc test(type t) {
   for by_ in (Types.min(ST), Types.max(ST), Types.max(ST):UT) {
     for align_ in (Types.min(ST), Types.max(ST), Types.max(UT)) {
       var r = (0:align_.type)..(100:align_.type) by by_ align align_;
-      writef("by_=%22n:%-10s; align_=%22n:%-10s; range=", 
+      writef("by_=%22n:%<10s; align_=%22n:%<10s; range=", 
         by_,
         by_.type:string,
         align_,
