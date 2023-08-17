@@ -1,0 +1,2 @@
+duplicateTargetLocales.chpl:23: warning: scan has been serialized (see issue #12482)
+duplicateTargetLocales.chpl:9: error: halt reached - StencilDist does not allow duplicate targetLocales

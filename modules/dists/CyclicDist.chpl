@@ -33,6 +33,7 @@ config param debugCyclicDist = false;
 config param verboseCyclicDistWriters = false;
 config param debugCyclicDistBulkTransfer = false;
 
+private config param allowDuplicateTargetLocales = false;
 //
 // If the testFastFollowerOptimization flag is set to true, the
 // follower will write output to indicate whether the fast follower is
@@ -314,7 +315,14 @@ class CyclicImpl: BaseDist {
     const ranges = setupTargetLocRanges(rank, targetLocales);
     this.targetLocDom = {(...ranges)};
     this.targetLocs = reshape(targetLocales, this.targetLocDom);
-
+    if !allowDuplicateTargetLocales {
+      var checkArr: [LocaleSpace] bool;
+      for loc in targetLocs {
+        if checkArr[loc.id] then
+          halt("CyclicDist does not allow duplicate targetLocales");
+        checkArr[loc.id] = true;
+      }
+    }
     var startIdxTemp: rank*idxType;
     for param i in 0..rank-1 {
       const startIdxI = if isTuple(startIdx) then startIdx(i) else startIdx;
@@ -985,7 +993,8 @@ inline proc _remoteAccessData.getDataIndex(
 }
 
 inline proc CyclicArr.dsiLocalAccess(i: rank*idxType) ref {
-  return _to_nonnil(myLocArr).this(i);
+  return if allowDuplicateTargetLocales then this.dsiAccess(i)
+                                        else _to_nonnil(myLocArr).this(i);
 }
 
 proc CyclicArr.dsiAccess(i:rank*idxType) ref {
@@ -1397,8 +1406,8 @@ proc type Cyclic.createArray(rng: range..., type eltType) {
 
 // Cyclic subdomains are represented as a single domain
 
-proc CyclicArr.dsiHasSingleLocalSubdomain() param do return true;
-proc CyclicDom.dsiHasSingleLocalSubdomain() param do return true;
+proc CyclicArr.dsiHasSingleLocalSubdomain() param do return !allowDuplicateTargetLocales;
+proc CyclicDom.dsiHasSingleLocalSubdomain() param do return !allowDuplicateTargetLocales;
 
 proc CyclicArr.dsiLocalSubdomain(loc: locale) {
   if (loc == here) {
