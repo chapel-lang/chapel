@@ -955,6 +955,17 @@ checkFormalActualTypesMatch()
             continue;
         }
 
+        // Allow raw_c_void_ptr/c_ptr(void) mismatch. Although implicit
+        // conversion between the two is allowed, the compiler currently inserts
+        // function such as chpl_here_free using raw_c_void_ptr after
+        // resolution.
+        // TODO: Remove this once we are using c_ptr(void) everywhere in the
+        // compiler and no longer have raw_c_void_ptr (dtCVoidPtr) sticking
+        // around.
+        if (isCVoidPtr(actual->typeInfo()) && isCVoidPtr(formal->type)) {
+          continue;
+        }
+
         if (formal->getValType() != actual->getValType()) {
           INT_FATAL(call,
                     "actual formal type mismatch for %s: %s != %s",
