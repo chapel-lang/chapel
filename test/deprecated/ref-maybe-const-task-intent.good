@@ -1,4 +1,4 @@
-ref-maybe-const-task-intent.chpl:2: warning: interpreting 'ref-maybe-const' as 'ref' for 'y' is unstable
-ref-maybe-const-task-intent.chpl:7: warning: interpreting 'ref-maybe-const' as 'ref' for 'z' is unstable
-ref-maybe-const-task-intent.chpl:14: warning: interpreting 'ref-maybe-const' as 'ref' for 'z' is unstable
-ref-maybe-const-task-intent.chpl:14: warning: interpreting 'ref-maybe-const' as 'ref' for 'w' is unstable
+ref-maybe-const-task-intent.chpl:2: warning: inferring a default task intent to be 'y' for 'args' is deprecated - please use an explicit intent
+ref-maybe-const-task-intent.chpl:7: warning: inferring a default task intent to be 'ref' for 'z' is deprecated - please use an explicit intent
+ref-maybe-const-task-intent.chpl:7: warning: inferring a default task intent to be 'ref' for 'z' is deprecated - please use an explicit intent
+ref-maybe-const-task-intent.chpl:14: warning: inferring a default task intent to be 'ref' for 'w' is deprecated - please use an explicit intent

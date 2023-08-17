@@ -467,20 +467,15 @@ static void maybeIssueRefMaybeConstWarning(ArgSymbol* arg) {
   bool fromPragma = arg->hasFlag(FLAG_INTENT_REF_MAYBE_CONST_FORMAL);
 
   bool isCompilerGenerated = false;
-
   bool isTaskIntent = false;
   if (FnSymbol* fn = arg->getFunction()) {
     isTaskIntent = fn->hasEitherFlag(FLAG_COBEGIN_OR_COFORALL, FLAG_BEGIN);
-
     isCompilerGenerated = fn->hasFlag(FLAG_COMPILER_GENERATED);
   }
-
   // we have full control here, but this should be ok
   bool isOuter = arg->hasFlag(FLAG_OUTER_VARIABLE);
 
-  bool notImplementedYetOptOut = isArgThis || isTaskIntent;
-
-
+  bool notImplementedYetOptOut = isArgThis;
   bool shouldWarn = !notImplementedYetOptOut && !isOuter && !fromPragma && !isCompilerGenerated;
 
   if (shouldWarn) {
