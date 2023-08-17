@@ -573,7 +573,7 @@ proc StencilImpl.init(boundingBox: domain,
   const dummyLS = new unmanaged LocStencil(rank, idxType, dummy=true);
   var locDistTemp: [targetLocDom] unmanaged LocStencil(rank, idxType) = dummyLS;
 
-  coforall locid in targetLocDom do
+  coforall locid in targetLocDom with (ref locDistTemp) do
     on this.targetLocales(locid) do
       locDistTemp(locid) = new unmanaged LocStencil(rank, idxType, locid,
                                                     boundingBox, targetLocDom);
@@ -669,7 +669,7 @@ override proc StencilImpl.dsiNewRectangularDom(param rank: int, type idxType,
   const dummyLSD = new unmanaged LocStencilDom(rank, idxType, strides);
   var locDomsTemp: [this.targetLocDom]
                   unmanaged LocStencilDom(rank, idxType, strides) = dummyLSD;
-  coforall localeIdx in this.targetLocDom do
+  coforall localeIdx in this.targetLocDom with (ref locDomsTemp) do
     on this.targetLocales(localeIdx) do
       locDomsTemp(localeIdx) =
         new unmanaged LocStencilDom(rank, idxType, strides,
@@ -947,7 +947,7 @@ proc StencilDom.dsiBuildArray(type eltType, param initElts:bool) {
   var myLocArrTemp: unmanaged LocStencilArr(eltType, rank, idxType, strides)?;
 
   // formerly in StencilArr.setup()
-  coforall localeIdx in dom.dist.targetLocDom with (ref myLocArrTemp) {
+  coforall localeIdx in dom.dist.targetLocDom with (ref locArrTemp, ref myLocArrTemp) {
     on dom.dist.targetLocales(localeIdx) {
       const LSA = new unmanaged LocStencilArr(eltType, rank, idxType, strides,
                                               dom.getLocDom(localeIdx),

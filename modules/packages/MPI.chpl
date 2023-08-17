@@ -236,7 +236,7 @@ module MPI {
   /* Module level deinit */
   proc deinit() {
     if _freeChplComm {
-      coforall loc in Locales do on loc {
+      coforall loc in Locales with (ref CHPL_COMM_WORLD_REPLICATED) do on loc {
           C_MPI.MPI_Comm_free(CHPL_COMM_WORLD_REPLICATED(1));
         }
     }

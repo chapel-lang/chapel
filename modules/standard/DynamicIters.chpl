@@ -521,7 +521,7 @@ where tag == iterKind.leader
     var barrier : atomic int;
 
     // Start the parallel work
-    coforall tid in 0..#nTasks with (const in r) {
+    coforall tid in 0..#nTasks with (const in r, ref localWork, ref moreLocalWork, ref locks) {
 
       // Step 1: Initial range per Thread/Task
 

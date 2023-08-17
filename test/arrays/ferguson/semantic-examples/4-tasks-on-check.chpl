@@ -3,7 +3,7 @@ proc test_begin() {
 
   var A:[1..10] int;
   sync {
-    begin {
+    begin with (ref A) {
       A[1] = 1;
     }
   }
@@ -16,7 +16,7 @@ proc test_begin_on() {
 
   var A:[1..10] int;
   sync {
-    begin on Locales[numLocales-1] {
+    begin with (ref A) on Locales[numLocales-1] {
       A[1] = 1;
     }
   }
@@ -27,7 +27,7 @@ proc test_begin_on() {
 proc test_cobegin() {
 
   var A:[1..10] int;
-  cobegin {
+  cobegin with (ref A) {
     A[1] = 1;
     A[2] = 2;
   }
@@ -38,7 +38,7 @@ proc test_cobegin() {
 proc test_cobegin_on() {
 
   var A:[1..10] int;
-  cobegin {
+  cobegin with (ref A) {
     on Locales[numLocales-1] do A[1] = 1;
     on Locales[numLocales-1] do A[2] = 2;
   }
@@ -50,7 +50,7 @@ proc test_cobegin_on() {
 proc test_coforall() {
 
   var A:[1..10] int;
-  coforall i in 1..10 {
+  coforall i in 1..10 with (ref A) {
     A[i] = i;
   }
 
@@ -60,7 +60,7 @@ proc test_coforall() {
 proc test_coforall_on() {
 
   var A:[1..10] int;
-  coforall i in 1..10 {
+  coforall i in 1..10 with (ref A) {
     on Locales[numLocales-1] do A[i] = i;
   }
 
