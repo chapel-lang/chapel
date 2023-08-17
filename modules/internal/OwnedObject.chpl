@@ -291,6 +291,7 @@ module OwnedObject {
       }
     }
 
+    @deprecated("calling `.borrow()` on a type is deprecated - please use a cast to `borrowed` instead")
     proc type borrow() type {
       if _to_nilable(chpl_t) == chpl_t {
         return chpl_t;
