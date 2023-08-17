@@ -395,13 +395,11 @@ module BigInteger {
       return ret.safeCast(int);
     }
 
-    /* Return the underlying implementation of :record:`bigint`.  Currently,
-       the type returned is ``__mpz_struct``.
-
-       .. warning::
-          This method is provided as a convenience but its result may change in
-          the future.
+    /*
+      Return the underlying implementation of :record:`bigint`.  Currently,
+      the type returned is ``__mpz_struct``.
     */
+    @unstable("getImpl is provided as a convenience but its result may change in the future")
     proc getImpl(): __mpz_struct {
       var ret: __mpz_struct;
 
