@@ -2837,12 +2837,12 @@ record DefaultSerializer {
   // Map helpers
   @chpldoc.nodoc
   proc startMap(writer: fileWriter, size: uint) throws {
-    writer._writeLiteral("{ ");
+    writer._writeLiteral("{");
   }
 
   @chpldoc.nodoc
   proc writeKey(writer: fileWriter, const key: ?) throws {
-    if !_firstThing then writer._writeLiteral(" , ");
+    if !_firstThing then writer._writeLiteral(", ");
     else _firstThing = false;
 
     writer.write(key);
@@ -2850,13 +2850,13 @@ record DefaultSerializer {
 
   @chpldoc.nodoc
   proc writeValue(writer: fileWriter, const val: ?) throws {
-    writer._writeLiteral(" : ");
+    writer._writeLiteral(": ");
     writer.write(val);
   }
 
   @chpldoc.nodoc
   proc endMap(writer: fileWriter) throws {
-    writer._writeLiteral(" }");
+    writer._writeLiteral("}");
   }
 
   // TODO: How should we handle types that don't have a format-specific
