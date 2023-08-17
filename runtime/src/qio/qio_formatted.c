@@ -4735,10 +4735,15 @@ qioerr qio_conv_parse(c_string fmt,
         // but it also means to skip JSON fields not in use.
         sloppy_flag = 1;
       } else {
-        break;
+        char maybe_pad_char = fmt[i];
+        if( fmt[i+1] && (fmt[i+1] == '<' || fmt[i+1] == '^' || fmt[i+1] == '>') ) {
+          style_out->pad_char = maybe_pad_char;
+        } else {
+          break;
+        }
       }
     }
-    // a - overrides a 0 if both are given
+    // a '-' or '<' overrides a 0 if both are given
     if( left_alignment_flag ) zero_flag = 0;
 
     // Read the width. *S has different meaning.

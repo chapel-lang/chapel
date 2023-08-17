@@ -84,6 +84,11 @@ module test {
   writef("|% +7i|\n":t, 7);
 
   writeln("Part 9");
+  writef("|%_<7i|\n":t, 7);
+  writef("|%_^7i|\n":t, 7);
+  writef("|%_>7i|\n":t, 7);
+
+  writeln("Part 10");
   writef("|%20'S|\n":t, "abcdef");
   writef("|%<20'S|\n":t, "abcdef");
   writef("|%>20'S|\n":t, "abcdef");
