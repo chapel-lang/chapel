@@ -17,7 +17,7 @@ var ownB = new owned BarrierWF(tk);
 const b = ownB.borrow();
 
 // use it
-coforall task in 1..tk {
+coforall task in 1..tk with (ref log) {
   for tryN in 1..ty {
     log[cur.fetchAdd(1)+1] = tryN;
     b.barrier();

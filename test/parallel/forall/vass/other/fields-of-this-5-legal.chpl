@@ -42,7 +42,7 @@ proc RR.asdf() {
   writeln("coforall w/ const ref intent: ", this);
 
   // implicit intent, using shadow variables for the fields of `this`
-  coforall idx in dom2 {
+  coforall idx in dom2 with (ref this) {
     this.aa[idx] += 3;
     // can't update this.xx
   }

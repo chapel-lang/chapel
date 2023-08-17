@@ -6,7 +6,7 @@ var A: [1..n] int;
 
 for i in 1..trials {
 
-  coforall i in 1..n {
+  coforall i in 1..n with (ref A) {
     A(i) += 1;
   }
 

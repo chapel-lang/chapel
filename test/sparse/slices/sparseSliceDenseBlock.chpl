@@ -9,7 +9,7 @@ use ReplicatedDist;
 var DR = {1..10, 1..10} dmapped Replicated();
 var AR: [DR] int;
 
-coforall loc in Locales do
+coforall loc in Locales with (ref AR) do
   on loc do
     AR = here.id + 1;
 

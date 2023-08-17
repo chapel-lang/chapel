@@ -42,7 +42,7 @@ proc main() {
 
   writeln("Calling sync begin do_array() with global:");
   m1 = memoryUsed();
-  serial do sync begin do_array(A);
+  serial with (ref A) do sync begin do_array(A);
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
   if printMemStats then printMemAllocs();

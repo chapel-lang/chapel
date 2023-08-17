@@ -141,7 +141,7 @@ proc randomMake(desc, nuclInfo: [?nuclSpace], n) {
   outGo.write(0);
 
   // create tasks to pipeline the RNG, computation, and output
-  coforall itid in 0..#numNumaTasks {
+  coforall itid in 0..#numNumaTasks with (ref outGo) with (ref randGo) {
     if itid%numSockets == 0 {
     const tid = itid / numSockets;
     const chunkSize = lineLength*blockSize,

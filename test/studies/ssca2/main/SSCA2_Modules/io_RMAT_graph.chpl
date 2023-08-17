@@ -203,7 +203,7 @@ proc Readin_RMAT_graph(G, snapshot_prefix:string, dstyle = "-"): void {
     const repfileDom = repfileBase dmapped Replicated(Locales);
     var repfiles: [repfileDom] file;
 
-    coforall l in Locales do on l {
+    coforall l in Locales with (ref repfiles) do on l {
 repfiles[repfileSV] = createGraphFile(snapshot_prefix, SV2_FILENAME, rea);
 repfiles[repfileEV] = createGraphFile(snapshot_prefix, EV2_FILENAME, rea);
 repfiles[repfileWW] = createGraphFile(snapshot_prefix, WEIGHT_FILENAME, rea);

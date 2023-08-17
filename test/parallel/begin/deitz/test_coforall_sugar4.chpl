@@ -6,7 +6,7 @@ for e in A do
   if e != 1000 then
     halt("fail: ", A);
 
-coforall i in 1..n {
+coforall i in 1..n with (ref A) {
   A(i) = 2000+i;
 }
 
@@ -21,8 +21,8 @@ for i in 1..n {
   const count = countSync.readFE();
   if count == 0 then
     flag.readFE();
-  countSync.writeEF(count + 1);
-  begin {
+  count.writeEF(count + 1);
+  begin with (ref A) {
     A(i) = 3000+i;
     const count = countSync.readFE();
     if count == 1 then

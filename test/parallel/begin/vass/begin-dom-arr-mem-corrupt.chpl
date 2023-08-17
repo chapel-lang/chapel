@@ -23,7 +23,7 @@ proc test() {
   var arr2: ArrType2;
   var s: sync int;
 
-  begin with (ref dom1, ref dom2) {
+  begin with (ref dom1, ref dom2) with (ref arr1) with (ref arr2) {
     writeln("in begin");
     writeln("dom1", " ", dom1, ".");
     writeln("dom2", " ", dom2, ".");
