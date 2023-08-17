@@ -2048,7 +2048,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
   const sameDynamicDist = sameStaticDist && dsiDynamicFastFollowCheck(res);
 
   // Fire up tasks per participating locale
-  coforall locid in targetLocs.domain {
+  coforall locid in targetLocs.domain with (ref res, ref elemPerLoc, ref outputReady) {
     on targetLocs[locid] {
       const myop = op.clone(); // this will be deleted by doiScan()
 

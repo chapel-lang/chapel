@@ -225,7 +225,7 @@ class BlockCyclic : BaseDist {
     const dummyLBC = new unmanaged LocBlockCyclic(rank, idxType, dummy=true);
     var locDistTemp: [targetLocDom] unmanaged LocBlockCyclic(rank, idxType) = dummyLBC;
 
-    coforall locid in targetLocDom do
+    coforall locid in targetLocDom with (ref locDistTemp) do
       on this.targetLocales(locid) do
         locDistTemp(locid) = new unmanaged LocBlockCyclic(rank, idxType, locid, this.lowIdx, this.blocksize, targetLocDom);
 
@@ -596,7 +596,7 @@ proc BlockCyclicDom.dsiBuildArray(type eltType, param initElts:bool) {
   const creationLocale = here;
 
   // formerly BlockCyclicArr.setup()
-  coforall localeIdx in dom.dist.targetLocDom with (ref myLocArrTemp) {
+  coforall localeIdx in dom.dist.targetLocDom with (ref locArrTemp, ref myLocArrTemp) {
     on dom.dist.targetLocales(localeIdx) {
       const LBCA = new unmanaged LocBlockCyclicArr(eltType, rank,
                                                    idxType, strides,

@@ -2853,7 +2853,7 @@ module TwoArrayPartitioning {
       //       state, criterion, task.startbit);
 
       coforall (bktLoc, bktLocId, bktTask) in distTask.localesAndTasks(A)
-      with (ref state1, ref state2, ref nextDistTaskElts) do
+      with (ref state1, ref state2, ref nextDistTaskElts, ref smallTasksPerLocale) do
       on bktLoc {
         // Each bucket can run in parallel - this allows each
         // bucket to use nested coforalls to barrier.
@@ -3127,7 +3127,7 @@ module TwoArrayPartitioning {
 
     // Always use state 1 for small subproblems...
     ref state = state1;
-    coforall (loc,tid) in zip(A.targetLocales(),0..) with (ref state) do
+    coforall (loc,tid) in zip(A.targetLocales(),0..) with (ref state, ref smallTasksPerLocale) do
     on loc {
       // Get the tasks to sort here
 
