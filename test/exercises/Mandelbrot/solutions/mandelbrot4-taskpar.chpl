@@ -35,7 +35,7 @@ proc main() {
   //
   // Compute the image, using task parallelism
   //
-  coforall tid in 0..#numTasks do  // Create a number of sibling tasks
+  coforall tid in 0..#numTasks with (ref Image) do  // Create a number of sibling tasks
     //
     // Each will perform a portion of the computation, based on the task ID.
     //
