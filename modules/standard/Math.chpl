@@ -473,24 +473,28 @@ module Math {
     return chpl_divfloorpos(x, y);
   }
 
-  /* Returns the error function of the argument `x`. */
+  /* Returns the error function of the argument `x`. This is equivalent to the
+     integral of :proc:`twiceReciprSqrtPi`\ * :proc:`exp`\(`-t**2`)dt from 0
+     to `x`. */
   inline proc erf(x: real(64)): real(64) {
     return chpl_erf(x);
   }
 
-  /* Returns the error function of the argument `x`. */
+  /* Returns the error function of the argument `x`. This is equivalent to the
+     integral of :proc:`twiceReciprSqrtPi`\ * :proc:`exp`\(`-t**2`)dt from 0
+     to `x`. */
   inline proc erf(x : real(32)): real(32) {
     return chpl_erf(x);
   }
 
-  /* Returns the complementary error function of the argument.
+  /* Returns the complementary error function of the argument `x`.
      This is equivalent to 1.0 - :proc:`erf`\(`x`).
   */
   inline proc erfc(x: real(64)): real(64) {
     return chpl_erfc(x);
   }
 
-  /* Returns the complementary error function of the argument.
+  /* Returns the complementary error function of the argument `x`.
      This is equivalent to 1.0 - :proc:`erf`\(`x`).
   */
   inline proc erfc(x : real(32)): real(32) {
