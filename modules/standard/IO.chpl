@@ -2938,7 +2938,17 @@ record DefaultDeserializer {
   }
 
   proc deserializeValue(reader: fileReader, ref val: ?readType) : void throws {
-    if Reflection.canResolveMethod(val, "deserialize", reader, this) {
+    if isNilableClassType(readType) {
+      if reader.matchLiteral("nil") {
+        val = nil;
+        return;
+      }
+    }
+
+    if isRecordType(readType) ||
+       isNonNilableClass(readType) ||
+       isSingleType(readType) || isSyncType(readType) ||
+       (isNilableClassType(readType) && val != nil) {
       var alias = reader.withDeserializer(new DefaultDeserializer());
       val.deserialize(reader=alias, deserializer=alias.deserializer);
     } else {
