@@ -6,6 +6,7 @@ import chpl_locale_model
 import chpl_llvm
 import chpl_compiler
 import re
+import chpl_tasks
 from utils import error, warning, memoize, run_command, which, is_ver_in_range
 
 def _validate_cuda_version():
@@ -274,7 +275,7 @@ def _validate_rocm_version_impl():
     return True
 
 @memoize
-def validate(chplLocaleModel, chplComm):
+def validate(chplLocaleModel):
     if chplLocaleModel != "gpu":
         return True
 
@@ -285,6 +286,8 @@ def validate(chplLocaleModel, chplComm):
     gpu.validate_sdk_version()
 
     if get() == 'cpu':
+        if chpl_tasks.get() == 'fifo':
+            error("The 'fifo' tasking model is not supported with CPU-as-device mode")
         return True
 
     if chpl_compiler.get('target') != 'llvm':
