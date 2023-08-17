@@ -112,11 +112,12 @@ when the initializer encounters an error.
 */
 
 
+pragma "ignore noinit"
 record Replicated {
   forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(unmanaged ReplicatedImpl);
 
   proc init(targetLocales: [] locale = Locales,
-                  purposeMessage = "used to create a Replicated") {
+            purposeMessage = "used to create a Replicated") {
     const value = new unmanaged ReplicatedImpl(targetLocales, purposeMessage);
 
     this.chpl_distHelp = new chpl_PrivatizedDistHelper(
@@ -169,6 +170,7 @@ record Replicated {
 }
 
 
+@chpldoc.nodoc
 class ReplicatedImpl : BaseDist {
   var targetLocDom : domain(here.id.type);
 
@@ -427,6 +429,13 @@ iter ReplicatedDom.these(param tag: iterKind, followThis) where tag == iterKind.
   // redirect to DefaultRectangular
   for i in whole.these(tag, followThis) do
     yield i;
+}
+
+proc ReplicatedDom.dsiGetDist() {
+  if _isPrivatized(dist) then
+    return new Replicated(dist.pid, dist, _unowned=true);
+  else
+    return new Replicated(nullPid, dist, _unowned=true);
 }
 
 override proc ReplicatedDom.dsiDestroyDom() {
