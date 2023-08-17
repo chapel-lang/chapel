@@ -29,7 +29,6 @@ u[nx/4..nx/2, ny/4..ny/2] = 2.0;
 var un = u;
 
 // iterate for 'nt' time steps
-t.start();
 for 1..nt {
   // swap arrays to prepare for next time step
   u <=> un;
@@ -43,6 +42,5 @@ for 1..nt {
 // print final results
 const mean = (+ reduce u) / u.size,
       stdDev = sqrt((+ reduce (u - mean)**2) / u.size);
-t.stop();
 
 writeln(abs(0.222751 - stdDev) < 1e-6);
