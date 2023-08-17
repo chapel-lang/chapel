@@ -169,10 +169,9 @@ proc R.writeThis(ch: fileWriter) throws {
 // channel. We'll read the ``vals`` tuple between asterisks like how it
 // was written above.
 proc R.readThis(ch: fileReader) throws {
-  var star = new ioLiteral("*");
-  ch.read(star);
+  ch.readLiteral("*");
   ch.read(vals);
-  ch.read(star);
+  ch.readLiteral("*");
 }
 
 {

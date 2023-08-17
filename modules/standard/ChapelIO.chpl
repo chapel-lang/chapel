@@ -60,12 +60,9 @@ particular, these methods should not refer to :var:`~IO.stdin`,
 calling the global :proc:`writeln` function).  Instead, these methods should
 only perform I/O on the fileReader or fileWriter passed as an argument.
 
-Note that the types :type:`IO.ioLiteral` and :type:`IO.ioNewline` may be useful
-when implementing ``readThis`` and ``writeThis`` methods. :type:`IO.ioLiteral`
-represents some string that must be read or written as-is (e.g. ``","`` when
-working with a tuple), and :type:`IO.ioNewline` will emit a newline when
-writing but skip to and consume a newline when reading. Note that these types
-are not included by default.
+Note that the procedures :proc:`~IO.fileReader.readLiteral` and
+:proc:`~IO.fileWriter.writeLiteral` may be useful when implementing ``readThis``
+and ``writeThis`` methods. These methods are not included by default.
 
 This example defines a writeThis method - so that there will be a function
 resolution error if the record NoRead is read.
