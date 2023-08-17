@@ -319,7 +319,7 @@ module MPI {
   @chpldoc.nodoc
   proc setChplComm() {
     if numLocales > 1 {
-      coforall loc in Locales do on loc {
+      coforall loc in Locales with (ref CHPL_COMM_WORLD_REPLICATED) do on loc {
         C_MPI.MPI_Comm_split(MPI_COMM_WORLD, 0, here.id : c_int,
           CHPL_COMM_WORLD_REPLICATED(1));
       }

@@ -33,7 +33,7 @@ writeln("Number of tasks     = ", tasks);
 // overhead.
 //
 var counts: [1..tasks] int;
-coforall task in 1..tasks {
+coforall task in 1..tasks with (ref counts) {
   var rs = new owned NPBRandomStream(real, seed + task*2, parSafe=false);
   var count = 0;
   for i in (task-1)*n/tasks+1..task*n/tasks do

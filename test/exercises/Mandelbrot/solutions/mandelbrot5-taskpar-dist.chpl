@@ -35,9 +35,9 @@ proc main() {
   //
   // Compute the image, using task parallelism across multiple locales
   //
-  coforall loc in Locales do              // Create a task per locale
+  coforall loc in Locales with (ref Image) do              // Create a task per locale
     on loc do                             // and place it on that locale
-      coforall tid in 0..#numTasks do     // Create a number of sibling tasks per locale
+      coforall tid in 0..#numTasks with (ref Image) do     // Create a number of sibling tasks per locale
         //
         // Each will perform a portion of the computation, based on the task and locale ID.
         //

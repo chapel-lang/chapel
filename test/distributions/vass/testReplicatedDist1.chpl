@@ -27,12 +27,12 @@ proc show() {
     }
   }
 }
-    
+
 
 // set everything to predetermined values
 proc reset() {
   // explicitly go to each locale
-  coforall loc in repllocales do on loc do
+  coforall loc in repllocales with (ref ARepl) do on loc do
     // explicitly index into each element
     for ix in DsubLoc do ARepl[ix] = 100 + here.id;
 }
