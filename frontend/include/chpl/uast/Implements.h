@@ -73,7 +73,7 @@ class Implements final : public AstNode {
       CHPL_ASSERT(children_.size() >= 1);
     }
 
-    for (int i = firstInterfaceExprChildNum(); i < children.size(); i++) {
+    for (size_t i = firstInterfaceExprChildNum(); i < children.size(); i++) {
       CHPL_ASSERT(interfaceExpr(i));
       CHPL_ASSERT(interfaceExpr(i)->isIdentifier() ||
              interfaceExpr(i)->isFnCall());
