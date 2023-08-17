@@ -504,19 +504,19 @@ module Math {
   }
 
   /* Returns the value of the Napierian `e` raised to the power of the
-     argument. */
+     argument `x`. */
   inline proc exp(x : real(32)): real(32) {
     return chpl_exp(x);
   }
 
   /* Returns the value of the Napierian `e` raised to the power of the
-     argument. */
+     argument `x`. */
   inline proc exp(x: complex(64)): complex(64) {
     return chpl_exp(x);
   }
 
   /* Returns the value of the Napierian `e` raised to the power of the
-     argument. */
+     argument `x`. */
   inline proc exp(x: complex(128)): complex(128) {
     return chpl_exp(x);
   }
@@ -543,13 +543,14 @@ module Math {
     return chpl_expm1(x);
   }
 
-  /* Multiply by an integer power of 2.
-     Returns x * 2**n.
-     */
+  /* Returns the value of the argument `x` multiplied by the number 2 raised to
+    the argument `n` power. */
   inline proc ldexp(x:real(64), n:int(32)):real(64) {
     return chpl_ldexp(x, n);
   }
 
+  /* Returns the value of the argument `x` multiplied by the number 2 raised to
+    the argument `n` power. */
   inline proc ldexp(x:real(32), n:int(32)):real(32) {
     return chpl_ldexp(x, n);
   }
@@ -1031,37 +1032,37 @@ module Math {
   }
 
   /* Returns the Bessel function of the second kind of order `0` of `x`, where
-     `x` must be greater than 0 */
+     `x` must be greater than 0. */
   inline proc y0(x: real(32)): real(32) {
     return chpl_y0(x);
   }
 
   /* Returns the Bessel function of the second kind of order `0` of `x`,
-     where `x` must be greater than 0 */
+     where `x` must be greater than 0. */
   inline proc y0(x: real(64)): real(64) {
     return chpl_y0(x);
   }
 
   /* Returns the Bessel function of the second kind of order `1` of `x`,
-     where `x` must be greater than 0 */
+     where `x` must be greater than 0. */
   inline proc y1(x: real(32)): real(32) {
     return chpl_y1(x);
   }
 
   /* Returns the Bessel function of the second kind of order `1` of `x`,
-     where `x` must be greater than 0 */
+     where `x` must be greater than 0. */
   inline proc y1(x: real(64)): real(64) {
     return chpl_y1(x);
   }
 
   /* Returns the Bessel function of the second kind of order `n` of `x`,
-     where `x` must be greater than 0 */
+     where `x` must be greater than 0. */
   inline proc yn(n: int, x: real(32)): real(32) {
     return chpl_yn(n, x);
   }
 
   /* Returns the Bessel function of the second kind of order `n` of `x`,
-     where `x` must be greater than 0 */
+     where `x` must be greater than 0. */
   inline proc yn(n: int, x: real(64)): real(64) {
     return chpl_yn(n, x);
   }
