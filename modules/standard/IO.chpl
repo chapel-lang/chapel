@@ -10019,7 +10019,7 @@ Going through each section for text conversions:
   ``^``
    center-justify the converted value instead of right-justifying. Note, if
    both ``0`` and ``^`` are given, zero-padding will only be applied to the
-   left of a numerical value
+   left of the numerical value
   ``>``
    explicitly denote right-justification
   ``~``
