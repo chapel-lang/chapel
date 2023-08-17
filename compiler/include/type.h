@@ -569,6 +569,7 @@ TYPE_EXTERN PrimitiveType*    dtSyncVarAuxFields;
 TYPE_EXTERN PrimitiveType*    dtSingleVarAuxFields;
 
 TYPE_EXTERN PrimitiveType*    dtStringC; // the type of a C string (unowned)
+// TODO: replace raw dtCVoidPtr with a well-known AggregateType for c_ptr(void)
 TYPE_EXTERN PrimitiveType*    dtCVoidPtr; // the type of a C void* (unowned)
 TYPE_EXTERN PrimitiveType*    dtCFnPtr;   // a C function pointer (unowned)
 
@@ -628,9 +629,9 @@ bool isSyncType(const Type* t);
 bool isSingleType(const Type* t);
 bool isAtomicType(const Type* t);
 
-bool isOrContainsSyncType(Type* t);
-bool isOrContainsSingleType(Type* t);
-bool isOrContainsAtomicType(Type* t);
+bool isOrContainsSyncType(Type* t, bool checkRefs = true);
+bool isOrContainsSingleType(Type* t, bool checkRefs = true);
+bool isOrContainsAtomicType(Type* t, bool checkRefs = true);
 
 bool isRefIterType(Type* t);
 

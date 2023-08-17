@@ -52,7 +52,7 @@ proc makeSymm(A : [?Adom]) {
 // equal to the upper triangular
 proc makeHerm(A : [?Adom]) {
   for (i,j) in Adom {
-    if i < j then A[i,j] = conjg(A[j,i]);
+    if i < j then A[i,j] = conj(A[j,i]);
     if i==j then A[i,i] = A[i,i].re;
   }
 }
@@ -230,7 +230,7 @@ proc transpose(A: [?D] ?t) where A.rank == 2 {
 /* Adjoint = transpose, then complex conjugate (Hermitian)*/
 proc adjoint(A: [?D] ?t) where A.rank == 2 {
   var B = transpose(A);
-  B = conjg(A);
+  B = conj(A);
   return B;
 }
 
@@ -243,7 +243,7 @@ proc makeRandomInvertible (A: [?Adom] ?t) {
   makeUnit(I);
 
   var A2: [Adom] t;
-  forall (i,j) in A.domain do A2[i,j] = + reduce (A[i,..]*conjg(A[..,j]));
+  forall (i,j) in A.domain do A2[i,j] = + reduce (A[i,..]*conj(A[..,j]));
 
   const n = Adom.shape(1);
   const scale = (1/n**2) : t;

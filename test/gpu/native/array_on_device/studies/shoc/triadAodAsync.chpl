@@ -94,8 +94,8 @@ proc main() {
                   }
 
                   // Triad computation for left half
+                  @assertOnGpu
                   foreach i in 0..<elemsInBlock {
-                    assertOnGpu();
                     C0[i] = A0[i] + alpha * B0[i];
                   }
 
@@ -106,8 +106,8 @@ proc main() {
                   if(currentIdx + elemsInBlock*2 <= numMaxFloats) {
                     gpuCommWait(ev1);
                     gpuCommWait(ev2);
+                    @assertOnGpu
                     foreach i in 0..<elemsInBlock {
-                      assertOnGpu();
                       C1[i] = A1[i] + alpha * B1[i];
                     }
                   }

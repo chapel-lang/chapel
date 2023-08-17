@@ -115,6 +115,46 @@ static void checkSyncSingleAtomicDefaultInit() {
 }
 
 
+// This function is checking for any function which returns a non-default
+// copyable type (sync/single/atomic). This has exclusions for functions that
+// don't copy like array aliases or explicit "no copy" functions. This
+// includes functions which return a type which is a container for that type
+// like an array or tuple.
+static void checkSyncSingleAtomicReturnByCopy() {
+
+  const char* astrCompilerCopySyncSingle = astr("chpl__compilerGeneratedCopySyncSingle");
+
+  //checks for return by anything by ref
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+
+    // skip functions which support deprecation
+    if (fn->name == astrCompilerCopySyncSingle) continue;
+    if (fn->hasFlag(FLAG_DEPRECATED)) continue;
+
+    bool isSync = isOrContainsSyncType(fn->retType, false);
+    bool isSingle = isOrContainsSingleType(fn->retType, false);
+    bool isAtomic = isOrContainsAtomicType(fn->retType, false);
+    bool isRef = fn->returnsRefOrConstRef() || fn->retType->isRef();
+
+    bool isInitAutoCopy = fn->hasEitherFlag(FLAG_INIT_COPY_FN, FLAG_AUTO_COPY_FN);
+    bool isNoCopy = fn->hasEitherFlag(FLAG_NO_COPY, FLAG_NO_COPY_RETURN) || fn->hasFlag(FLAG_NO_COPY_RETURNS_OWNED);
+    bool isCoerce = fn->hasFlag(FLAG_COERCE_FN);
+    bool isDefaultOf = fn->name == astr_defaultOf;
+    bool isAliasing = fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY);
+    bool isDefaultActualFn = fn->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
+    bool optOut = isInitAutoCopy || isNoCopy ||
+                  isCoerce || isDefaultOf || isAliasing || isDefaultActualFn;
+
+    bool shouldWarn = !optOut && !isRef && (isSync || isSingle || isAtomic);
+
+    if (shouldWarn) {
+      USR_WARN(fn,
+               "returning a%s by %s is deprecated",
+               isSync ? " sync" : (isSingle ? " single" : "n atomic"),
+               retTagDescrString(fn->retTag));
+    }
+  }
+}
 
 void
 checkResolved() {
@@ -177,6 +217,7 @@ checkResolved() {
   checkExportedProcs();
 
   checkSyncSingleAtomicDefaultInit();
+  checkSyncSingleAtomicReturnByCopy();
 }
 
 

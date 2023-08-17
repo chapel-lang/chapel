@@ -64,7 +64,7 @@ Rounding
 Computations Involving Complex Numbers
 --------------------------------------
 :proc:`carg`
-:proc:`conjg`
+:proc:`conj`
 :proc:`cproj`
 
 .. _automath-inf-nan:
@@ -893,7 +893,7 @@ module AutoMath {
 
      :rtype: A complex number of the same type as `x`.
   */
-  inline proc conjg(x: complex(?w)) {
+  inline proc conj(x: complex(?w)) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc conjf(x: complex(64)): complex(64);
@@ -910,7 +910,7 @@ module AutoMath {
 
      :rtype: An imaginary number of the same type as `x`.
   */
-  inline proc conjg(x: imag(?w)) {
+  inline proc conj(x: imag(?w)) {
     return -x;
   }
 
@@ -918,15 +918,15 @@ module AutoMath {
 
      :rtype: A number that is not complex or imaginary of the same type as `x`.
   */
-  inline proc conjg(x: int(?w)) {
+  inline proc conj(x: int(?w)) {
     return x;
   }
 
-  inline proc conjg(x: uint(?w)) {
+  inline proc conj(x: uint(?w)) {
     return x;
   }
 
-  inline proc conjg(x: real(?w)) {
+  inline proc conj(x: real(?w)) {
     return x;
   }
 
@@ -934,42 +934,37 @@ module AutoMath {
 
      :rtype: A complex number of the same type as `z`.
   */
-  pragma "last resort"
-  @deprecated("The argument name 'z' is deprecated for 'conjg', please use 'x' instead")
+  @deprecated("'conjg' with a 'z' argument has been deprecated, please use 'conj' with an 'x' argument instead")
   inline proc conjg(z: complex(?w)) {
-    return conjg(z);
+    return conj(z);
   }
 
   /* Returns the complex conjugate of the imaginary argument `z`.
 
      :rtype: An imaginary number of the same type as `z`.
   */
-  pragma "last resort"
-  @deprecated("The argument name 'z' is deprecated for 'conjg', please use 'x' instead")
+  @deprecated("'conjg' with a 'z' argument has been deprecated, please use 'conj' with an 'x' argument instead")
   inline proc conjg(z: imag(?w)) {
-    return conjg(z);
+    return conj(z);
   }
 
   /* Returns the argument `z`.
 
      :rtype: A number that is not complex or imaginary of the same type as `z`.
   */
-  pragma "last resort"
-  @deprecated("The argument name 'z' is deprecated for 'conjg', please use 'x' instead")
+  @deprecated("'conjg' with a 'z' argument has been deprecated, please use 'conj' with an 'x' argument instead")
   inline proc conjg(z: int(?w)) {
-    return conjg(z);
+    return conj(z);
   }
 
-  pragma "last resort"
-  @deprecated("The argument name 'z' is deprecated for 'conjg', please use 'x' instead")
+  @deprecated("'conjg' with a 'z' argument has been deprecated, please use 'conj' with an 'x' argument instead")
   inline proc conjg(z: uint(?w)) {
-    return conjg(z);
+    return conj(z);
   }
 
-  pragma "last resort"
-  @deprecated("The argument name 'z' is deprecated for 'conjg', please use 'x' instead")
+  @deprecated("'conjg' with a 'z' argument has been deprecated, please use 'conj' with an 'x' argument instead")
   inline proc conjg(z: real(?w)) {
-    return conjg(z);
+    return conj(z);
   }
 
   /* Returns the projection of `x` on a Riemann sphere. */

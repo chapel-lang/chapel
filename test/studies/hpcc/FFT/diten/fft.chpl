@@ -89,7 +89,7 @@ proc main() {
 
   const startTime = timeSinceEpoch().totalSeconds();  // capture the start time
 
-  Z = conjg(z);                        // store the conjugate of z in Z
+  Z = conj(z);                        // store the conjugate of z in Z
   bitReverseShuffle(Z);                // permute Z
   dfft(Z, Twiddles, 0);   // compute the Fourier transform block phase
   forall (b, c) in zip(Z, Zcyc) do
@@ -319,7 +319,7 @@ proc log4(x) do return logBasePow2(x, 2);
 proc verifyResults(z, Z, Cyc, Twiddles) {
   if (printArrays) then writeln("After FFT, Z is: ", Z, "\n");
 
-  Z = conjg(Z) / m;
+  Z = conj(Z) / m;
   bitReverseShuffle(Z);
   dfft(Z, Twiddles, 0);
   forall (b, c) in zip(Z, Cyc) do

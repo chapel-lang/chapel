@@ -113,6 +113,20 @@ struct ConvertedSymbolsMap {
   void applyFixups(Context* context, const uast::AstNode* inAst, bool trace);
 };
 
+struct LoopAttributeInfo {
+  // LLVM metadata from various @llvm attributes.
+  LLVMMetadataList llvmMetadata;
+  // The @assertOnGpu attribute, if one is provided by the user.
+  const uast::Attribute* assertOnGpuAttr = nullptr;
+
+  void insertGpuEligibilityAssertion(BlockStmt* body) {
+    if (assertOnGpuAttr) {
+      body->insertAtHead(new CallExpr(PRIM_ASSERT_ON_GPU,
+                                      new SymExpr(gTrue)));
+    }
+  }
+};
+
 // TODO: replace this global variable with a field in Converter
 // once we have a single Converter instance that converts a module
 // and all of its dependencies.
@@ -374,24 +388,26 @@ struct Converter {
     return LLVMMetadata::constructBool(attrName, true);
   }
 
-  LLVMMetadataList buildLoopAttributes(const uast::Loop* node) {
+  LoopAttributeInfo buildLoopAttributes(const uast::Loop* node) {
     auto attrs = node->attributeGroup();
     if (attrs == nullptr) return {};
 
     auto llvmMetadata = UniqueString::get(context, "llvm.metadata");
     auto assertVectorized = UniqueString::get(context, "llvm.assertVectorized");
+    auto assertOnGpu = UniqueString::get(context, "assertOnGpu");
 
-    LLVMMetadataList llvmAttrs;
+    LoopAttributeInfo toReturn;
 
     if (auto a = attrs->getAttributeNamed(llvmMetadata)) {
       auto userAttrs = buildLLVMMetadataList(a);
-      llvmAttrs.insert(llvmAttrs.end(), userAttrs.begin(), userAttrs.end());
+      toReturn.llvmMetadata.insert(toReturn.llvmMetadata.end(), userAttrs.begin(), userAttrs.end());
     }
     if (auto a = attrs->getAttributeNamed(assertVectorized)) {
-      llvmAttrs.push_back(buildAssertVectorize(a));
+      toReturn.llvmMetadata.push_back(buildAssertVectorize(a));
     }
+    toReturn.assertOnGpuAttr = attrs->getAttributeNamed(assertOnGpu);
 
-    return llvmAttrs;
+    return toReturn;
   }
 
   Expr* visit(const uast::AttributeGroup* node) {
@@ -1648,7 +1664,10 @@ struct Converter {
   BlockStmt* visit(const uast::DoWhile* node) {
     Expr* condExpr = toExpr(convertAST(node->condition()));
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
-    return DoWhileStmt::build(condExpr, body, buildLoopAttributes(node));
+    auto loopAttributes = buildLoopAttributes(node);
+    if (loopAttributes.assertOnGpuAttr)
+      CHPL_REPORT(context, InvalidGpuAssertion, node, loopAttributes.assertOnGpuAttr);
+    return DoWhileStmt::build(condExpr, body, std::move(loopAttributes.llvmMetadata));
   }
 
   BlockStmt* visit(const uast::While* node) {
@@ -1663,7 +1682,10 @@ struct Converter {
       condExpr = toExpr(convertAST(node->condition()));
     }
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
-    return WhileDoStmt::build(condExpr, body, buildLoopAttributes(node));
+    auto loopAttributes = buildLoopAttributes(node);
+    if (loopAttributes.assertOnGpuAttr)
+      CHPL_REPORT(context, InvalidGpuAssertion, node, loopAttributes.assertOnGpuAttr);
+    return WhileDoStmt::build(condExpr, body, std::move(loopAttributes.llvmMetadata));
   }
 
   /// IndexableLoops ///
@@ -1773,6 +1795,8 @@ struct Converter {
         INT_ASSERT(intents);
       }
 
+      auto loopAttributes = buildLoopAttributes(node);
+      loopAttributes.insertGpuEligibilityAssertion(body);
       return ForallStmt::build(indices, iterator, intents, body, zippered,
                                serialOK);
     }
@@ -1847,8 +1871,11 @@ struct Converter {
       BlockStmt* block = toBlockStmt(body);
       INT_ASSERT(block);
 
+      auto loopAttributes = buildLoopAttributes(node);
+      if (loopAttributes.assertOnGpuAttr)
+        CHPL_REPORT(context, InvalidGpuAssertion, node, loopAttributes.assertOnGpuAttr);
       ret = ForLoop::buildForLoop(index, iteratorExpr, block, zippered,
-                                  isForExpr, buildLoopAttributes(node));
+                                  isForExpr, std::move(loopAttributes.llvmMetadata));
     }
 
     INT_ASSERT(ret != nullptr);
@@ -1904,6 +1931,8 @@ struct Converter {
       bool zippered = node->iterand()->isZip();
       bool serialOK = false;
 
+      auto loopAttributes = buildLoopAttributes(node);
+      loopAttributes.insertGpuEligibilityAssertion(body);
       return ForallStmt::build(indices, iterator, intents, body, zippered,
                                serialOK);
     }
@@ -1929,9 +1958,11 @@ struct Converter {
     // convert these for now, despite the error, so that symbols are converted.
     convertWithClause(node->withClause(), node);
 
+    auto loopAttributes = buildLoopAttributes(node);
+    loopAttributes.insertGpuEligibilityAssertion(body);
     auto ret = ForLoop::buildForeachLoop(indices, iteratorExpr, body,
                                          zippered,
-                                         isForExpr, buildLoopAttributes(node));
+                                         isForExpr, std::move(loopAttributes.llvmMetadata));
 
     return ret;
   }

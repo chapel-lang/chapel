@@ -247,7 +247,7 @@ proc main() {
   initVectors(Twiddles, z);            // initialize twiddles and input vector z
   var t1,t2,T1,T2,T3,T4: real;
   const startTime = timeSinceEpoch().totalSeconds();  // capture the start time
-  [(a,b) in zip(Zblk, z)] a = conjg(b);      // store the conjugate of z in Zblk
+  [(a,b) in zip(Zblk, z)] a = conj(b);      // store the conjugate of z in Zblk
 
   //Comm y tieme bitReverse
   t1=timeSinceEpoch().totalSeconds();
@@ -489,7 +489,7 @@ proc log4(x) do return logBasePow2(x, 2);
 	     proc verifyResults(z, Zblk, Zcyc, Twiddles) {
 	       if (printArrays) then writeln("After FFT, Z is: ", Zblk, "\n");
 
-	       [z in Zblk] z = conjg(z) / m;
+	       [z in Zblk] z = conj(z) / m;
 	       bitReverseShuffle(Zblk);
 	       dfft(Zblk, Twiddles, cyclicPhase=false);
 	       forall (b, c) in zip(Zblk, Zcyc) do

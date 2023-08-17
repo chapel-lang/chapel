@@ -4447,13 +4447,43 @@ static void moveGeneratedLibraryFile(const char* tmpbinname);
 static void moveResultFromTmp(const char* resultName, const char* tmpbinname);
 
 static llvm::CodeGenFileType getCodeGenFileType() {
+  // At one point, we returned CGFT_AssemblyFGile for NVIDIA and
+  // CGFT_ObjectFile for AMD (we since figured out how to assemble for AMD so
+  // no longer go directly to .o). Given that, this function may seem a little
+  // crufty, but we may want to return to doing different things for future
+  // GPUs.
   switch (getGpuCodegenType()) {
     case GpuCodegenType::GPU_CG_AMD_HIP:
-      return llvm::CodeGenFileType::CGFT_ObjectFile;
     case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
     default:
       return llvm::CodeGenFileType::CGFT_AssemblyFile;
   }
+}
+
+static std::string findSiblingClangToolPath(const std::string &toolName) {
+  // Find path to a tool that is a sibling to clang
+  // note that if we have /path/to/clang-14, this logic
+  // will loop for /path/to/${toolName}-14.
+  //
+  // If such suffixes do not turn out to matter in practice, it would
+  // be nice to update this code to use sys::path::parent_path().
+  std::vector<std::string> split;
+  std::string result = toolName;
+
+  splitStringWhitespace(CHPL_LLVM_CLANG_C, split);
+  if (split.size() > 0) {
+    std::string tmp = split[0];
+    const char* clang = "clang";
+    auto pos = tmp.find(clang);
+    if (pos != std::string::npos) {
+      tmp.replace(pos, strlen(clang), toolName);
+      if (pathExists(tmp.c_str())) {
+        result = tmp;
+      }
+    }
+  }
+
+  return result;
 }
 
 static void stripPtxDebugDirective(const std::string& artifactFilename) {
@@ -4481,7 +4511,7 @@ static void stripPtxDebugDirective(const std::string& artifactFilename) {
 }
 
 static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
-                                  const std::string& ptxObjectFilename,
+                                  const std::string& gpuObjectFilename,
                                   const std::string& fatbinFilename) {
   if (myshell("which ptxas > /dev/null 2>&1", "Check to see if ptxas command can be found", true)) {
     USR_FATAL("Command 'ptxas' not found\n");
@@ -4519,7 +4549,7 @@ static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
   std::string ptxCmd = std::string("ptxas -m64 --gpu-name ") + gpuArch +
                        " " + ptxasFlags + " " +
                        std::string(" --output-file ") +
-                       ptxObjectFilename.c_str() +
+                       gpuObjectFilename.c_str() +
                        " " + artifactFilename.c_str();
 
   mysystem(ptxCmd.c_str(), "PTX to  object file");
@@ -4534,15 +4564,22 @@ static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
                              std::string("--create ") +
                              fatbinFilename.c_str() +
                              std::string(" --image=profile=") + gpuArch +
-                             ",file=" + ptxObjectFilename.c_str() +
+                             ",file=" + gpuObjectFilename.c_str() +
                              std::string(" --image=profile=") + computeCap +
                              ",file=" + artifactFilename.c_str();
   mysystem(fatbinaryCmd.c_str(), "object file to fatbinary");
 }
 
 static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
+                                 const std::string& gpuObjFilename,
                                  const std::string& outFilename,
-                                 const std::string& fatbinFilename) {
+                                 const std::string& fatbinFilename)
+{
+  std::string asmCmd = findSiblingClangToolPath("llvm-mc") + " " +
+                       "--filetype=obj " +
+                       "--triple=amdgcn-amd-amdhsa --mcpu=" + gpuArch + " " +
+                       artifactFilename + " " +
+                       "-o " + gpuObjFilename;
   std::string lldCmd = std::string(gGpuSdkPath) +
                       "/llvm/bin/lld -flavor gnu" +
                        " --no-undefined -shared" +
@@ -4551,7 +4588,7 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
                        " -plugin-opt=O3" +
                        " -plugin-opt=-amdgpu-early-inline-all=true" +
                        " -plugin-opt=-amdgpu-function-calls=false -o " +
-                       outFilename + " " + artifactFilename;
+                       outFilename + " " + gpuObjFilename;
   std::string bundlerCmd = std::string(gGpuSdkPath) +
                           "/llvm/bin/clang-offload-bundler" +
                            " -type=o -bundle-align=4096" +
@@ -4560,6 +4597,7 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
                            " -inputs=/dev/null," + outFilename +
                            " -outputs=" + fatbinFilename;
 
+  mysystem(asmCmd.c_str(), "Assembly to .o file");
   mysystem(lldCmd.c_str(), "Device .o file to .out file");
   mysystem(bundlerCmd.c_str(), ".out file to fatbin file");
 }
@@ -4660,7 +4698,7 @@ void makeBinaryLLVM(void) {
   std::string opt1Filename;
   std::string opt2Filename;
   std::string artifactFilename;
-  std::string ptxObjectFilename;
+  std::string gpuObjectFilename;
   std::string outFilename;
   std::string fatbinFilename;
 
@@ -4674,19 +4712,18 @@ void makeBinaryLLVM(void) {
     preOptFilename = genIntermediateFilename("chpl__gpu_module-nopt.bc");
     opt1Filename = genIntermediateFilename("chpl__gpu_module-opt1.bc");
     opt2Filename = genIntermediateFilename("chpl__gpu_module-opt2.bc");
-    ptxObjectFilename = genIntermediateFilename("chpl__gpu_ptx.o");
+    gpuObjectFilename = genIntermediateFilename("chpl__gpu.o");
     fatbinFilename = genIntermediateFilename("chpl__gpu.fatbin");
     outFilename = genIntermediateFilename("chpl__gpu.out");
 
-    // In CUDA, we generate assembly and then assemble it. For
-    // AMD, we generate an object file. Thus, we need to use
-    // different file names.
+    // This switch may seem unnecessary, but in the past we wanted to use a
+    // different "type" of intermediate file for different GPUs and we may want
+    // to do that again in the future. See the comment in getGpuCodegenType()
+    // for more details about this history.
     switch (getGpuCodegenType()) {
       case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
-        artifactFilename = genIntermediateFilename("chpl__gpu_ptx.s");
-        break;
       case GpuCodegenType::GPU_CG_AMD_HIP:
-        artifactFilename = genIntermediateFilename("chpl__gpu.o");
+        artifactFilename = genIntermediateFilename("chpl__gpu.s");
         break;
       case GpuCodegenType::GPU_CG_CPU:
         break;
@@ -4925,16 +4962,15 @@ void makeBinaryLLVM(void) {
                                                  disableVerify);
 
         emitPM.run(*info->module);
-
       }
 
       outputArtifactFile.close();
       switch (getGpuCodegenType()) {
         case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
-          makeBinaryLLVMForCUDA(artifactFilename, ptxObjectFilename, fatbinFilename);
+          makeBinaryLLVMForCUDA(artifactFilename, gpuObjectFilename, fatbinFilename);
           break;
         case GpuCodegenType::GPU_CG_AMD_HIP:
-          makeBinaryLLVMForHIP(artifactFilename, outFilename, fatbinFilename);
+          makeBinaryLLVMForHIP(artifactFilename, gpuObjectFilename, outFilename, fatbinFilename);
           break;
         case GpuCodegenType::GPU_CG_CPU:
           break;
@@ -5113,27 +5149,7 @@ static void handlePrintAsm(std::string dotOFile) {
   if (llvmPrintIrStageNum == llvmStageNum::ASM ||
       llvmPrintIrStageNum == llvmStageNum::EVERY) {
 
-    // Find llvm-objdump as a sibling to clang
-    // note that if we have /path/to/clang-14, this logic
-    // will loop for /path/to/llvm-objdump-14.
-    //
-    // If such suffixes do not turn out to matter in practice, it would
-    // be nice to update this code to use sys::path::parent_path().
-    std::vector<std::string> split;
-    std::string llvmObjDump = "llvm-objdump";
-
-    splitStringWhitespace(CHPL_LLVM_CLANG_C, split);
-    if (split.size() > 0) {
-      std::string tmp = split[0];
-      const char* clang = "clang";
-      auto pos = tmp.find(clang);
-      if (pos != std::string::npos) {
-        tmp.replace(pos, strlen(clang), "llvm-objdump");
-        if (pathExists(tmp.c_str())) {
-          llvmObjDump = tmp;
-        }
-      }
-    }
+    std::string llvmObjDump = findSiblingClangToolPath("llvm-objdump");
 
     // Note: if we want to support GNU objdump, just need to use
     // --disassemble= instead of the LLVM flag --disassemble-symbols=

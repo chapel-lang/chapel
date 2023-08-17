@@ -1074,7 +1074,10 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
   char chr = -1;
   ssize_t nread = 0;
   int64_t lastwspos = 0;
+  size_t num_leading_ws = 0;
 
+  // determine where match's leading whitespace stops
+  //  'nread' will have the position of the first non-ws character
   if( skipwsbefore && len > 0 ) {
     int nbytes = 0;
     int32_t wchr;
@@ -1097,7 +1100,7 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
       len = 0;
     } else {
       nread = 0;
-      if( skipwsbefore ) nread = min_nonspace;
+      num_leading_ws = min_nonspace;
       //if( skipwsafter ) len = max_nonspace + 1;
     }
   }
@@ -1107,13 +1110,17 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
     if( err ) return err;
   }
 
-  err = qio_channel_mark(false, ch);
+  err = qio_channel_mark(false, ch); // begin mark A
   if( err ) goto unlock;
 
+  // advance channel position to 'num_leading_ws' characters before
+  //   the first non-whitespace character
   if( skipwsbefore ) {
-    err = qio_channel_mark(false, ch);
+    err = qio_channel_mark(false, ch); // begin mark B
     if( err ) goto revert;
 
+    // consume whitespace characters until a non-ws character is reached
+    // record its position
     while( 1 ) {
       lastwspos = qio_channel_offset_unlocked(ch);
       err = qio_channel_read_char(false, ch, &wchr);
@@ -1130,16 +1137,18 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
       qio_channel_clear_error(ch);
     }
 
-    qio_channel_revert_unlocked(ch);
+    qio_channel_revert_unlocked(ch); // revert B
 
     if( ! err ) {
       // We've exited the loop because the last
       // one we read wasn't whitespace, so seek
       // back to lastwspos.
-      qio_channel_advance_unlocked(ch, lastwspos - qio_channel_offset_unlocked(ch));
+      qio_channel_advance_unlocked(ch, lastwspos - qio_channel_offset_unlocked(ch)
+        - num_leading_ws);
     }
   }
 
+  // attempt to match characters from the channel w/ the match string
   if( err == 0 ) {
     for( ; nread < len; nread++ ) {
       err = qio_channel_read_amt(false, ch, &chr, 1);
@@ -1148,6 +1157,7 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
     }
   }
 
+  // throw an error if there was not a match
   if( err == 0 ) {
     if( nread == len ) {
       // we matched the whole thing!
@@ -1189,9 +1199,9 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
 
 revert:
   if( err ) {
-    qio_channel_revert_unlocked(ch);
+    qio_channel_revert_unlocked(ch); // revert A
   } else {
-    qio_channel_commit_unlocked(ch);
+    qio_channel_commit_unlocked(ch); // commit A
   }
   // Don't set error indicator on EFORMAT because
   // that's probably a temporary error.
