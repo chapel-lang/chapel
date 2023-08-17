@@ -3705,7 +3705,7 @@ inline operator :(x: _internalIoChar, type t:string) {
   // The caller has responsibility for freeing the returned string.
   try! {
     return string.createAdoptingBuffer(csc);
-  } 
+  }
 }
 
 
