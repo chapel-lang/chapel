@@ -1,8 +1,4 @@
-ref-maybe-const-task-intent.chpl:1: warning: inferring a default task intent to be 'ref' for 'y' is deprecated - please use an explicit intent
-ref-maybe-const-task-intent.chpl:2: note: 'y' is used in a parallel construct here
-ref-maybe-const-task-intent.chpl:6: warning: inferring a default task intent to be 'ref' for 'z' is deprecated - please use an explicit intent
-ref-maybe-const-task-intent.chpl:8: note: 'z' is used in a parallel construct here
-ref-maybe-const-task-intent.chpl:6: warning: inferring a default task intent to be 'ref' for 'z' is deprecated - please use an explicit intent
-ref-maybe-const-task-intent.chpl:9: note: 'z' is used in a parallel construct here
-ref-maybe-const-task-intent.chpl:12: warning: inferring a default task intent to be 'ref' for 'w' is deprecated - please use an explicit intent
-ref-maybe-const-task-intent.chpl:14: note: 'w' is used in a parallel construct here
+ref-maybe-const-task-intent.chpl:2: warning: inferring a default task intent to be 'ref' for 'y' is deprecated - please use an explicit intent
+ref-maybe-const-task-intent.chpl:8: warning: inferring a default task intent to be 'ref' for 'z' is deprecated - please use an explicit intent
+ref-maybe-const-task-intent.chpl:9: warning: inferring a default task intent to be 'ref' for 'z' is deprecated - please use an explicit intent
+ref-maybe-const-task-intent.chpl:14: warning: inferring a default task intent to be 'ref' for 'w' is deprecated - please use an explicit intent
