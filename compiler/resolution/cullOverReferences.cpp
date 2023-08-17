@@ -501,6 +501,9 @@ static void maybeIssueRefMaybeConstWarning(ArgSymbol* arg) {
               "inferring a default intent to be 'ref' is deprecated "
               "- please use an explicit intent for the argument '%s'",
               argName);
+      if(isTaskIntent) {
+        USR_PRINT(arg->getFunction(), "'%s' is used in a parallel construct here", argName);
+      }
   }
 }
 
