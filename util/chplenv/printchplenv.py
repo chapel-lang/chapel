@@ -92,7 +92,7 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_TARGET_CPU_FLAG', INTERNAL),
     ChapelEnv('CHPL_TARGET_BACKEND_CPU', INTERNAL),
     ChapelEnv('CHPL_LOCALE_MODEL', RUNTIME | LAUNCHER | DEFAULT, 'loc'),
-    ChapelEnv('  CHPL_GPU', RUNTIME, 'gpu'),
+    ChapelEnv('  CHPL_GPU', RUNTIME | DEFAULT, 'gpu'),
     ChapelEnv('  CHPL_GPU_ARCH', INTERNAL),
     ChapelEnv('  CHPL_GPU_MEM_STRATEGY', RUNTIME , 'gpu_mem' ),
     ChapelEnv('  CHPL_CUDA_PATH', INTERNAL),
@@ -234,7 +234,7 @@ def compute_all_values():
     chpl_arch.validate('target')
     chpl_llvm.validate_llvm_config()
     chpl_compiler.validate_compiler_settings()
-    chpl_gpu.validate(ENV_VALS['CHPL_LOCALE_MODEL'], ENV_VALS['CHPL_COMM'])
+    chpl_gpu.validate(ENV_VALS['CHPL_LOCALE_MODEL'])
 
 
 """Compute '--internal' env var values and populate global dict, ENV_VALS"""
