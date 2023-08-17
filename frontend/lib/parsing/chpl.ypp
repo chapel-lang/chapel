@@ -525,9 +525,10 @@
 
 // These are exprList so that they can include preceeding comments
 %type <commentsAndStmt> interface_stmt
-%type <commentsAndStmt> unary_implements_stmt binary_implements_stmt
-%type <exprList> interface_expr_ls
-%type <expr> interface_expr
+%type <commentsAndStmt> unary_implements_stmt_idents unary_implements_stmt_call
+%type <commentsAndStmt> binary_implements_stmt
+%type <exprList> interface_ident_ls
+%type <expr> interface_expr interface_expr_ident interface_expr_call
 %type <exprList>  ifc_formal_ls
 %type <expr>   ifc_formal
 
@@ -688,8 +689,9 @@ stmt_base:
 | import_stmt               { $$ = context->finishStmt($1); }
 | require_stmt              { $$ = context->finishStmt($1); }
 | extern_block_stmt         { $$ = context->finishStmt($1); }
-| // unary form is a class_level_stmt, reached above via decl_base.
-  binary_implements_stmt    { $$ = context->finishStmt($1); }
+| // unary form without a call is a class_level_stmt, reached above via decl_base.
+  unary_implements_stmt_call{ $$ = context->finishStmt($1); }
+| binary_implements_stmt    { $$ = context->finishStmt($1); }
 | interface_stmt            { $$ = context->finishStmt($1); }
 | TDEFER stmt
   {
@@ -1482,7 +1484,7 @@ inner_class_level_stmt:
 | class_decl_stmt
 | forwarding_decl_stmt
 | extern_export_decl_stmt
-| unary_implements_stmt
+| unary_implements_stmt_idents
 ;
 
 forwarding_decl_stmt:
@@ -1950,37 +1952,50 @@ implements_type_error_ident:
 | TINDEX
 ;
 
-interface_expr:
+interface_expr_ident:
   ident_def
   {
     $$ = context->buildInterfaceExpr(@1, $1, nullptr).release();
   }
-// | ident_def TLP actual_ls TRP
-//   {
-//     $$ = context->buildInterfaceExpr(YLOC2(@1, @4), $1, $3).release();
-//   }
-// ;
-//
-// Disallow expressions in the list for now, as it's only used for in-record-body
-// implements statements where the I(T) form would be invalid.
+;
 
-interface_expr_ls:
-  interface_expr
+interface_expr_call:
+  ident_def TLP actual_ls TRP
+  {
+    $$ = context->buildInterfaceExpr(YLOC2(@1, @4), $1, $3).release();
+  }
+;
+
+interface_expr:
+  interface_expr_ident
+| interface_expr_call
+;
+
+interface_ident_ls:
+  interface_expr_ident
   {
     $$ = context->makeList($1);
   }
-| interface_expr_ls TCOMMA interface_expr
+| interface_ident_ls TCOMMA interface_expr_ident
   {
     $$ = context->appendList($1, $3);
   }
 ;
 
-unary_implements_stmt:
-  TIMPLEMENTS interface_expr_ls TSEMI
+unary_implements_stmt_idents:
+  TIMPLEMENTS interface_ident_ls TSEMI
   {
     $$ = context->buildImplementsStmt(@$, $2);
   }
 ;
+
+unary_implements_stmt_call:
+  TIMPLEMENTS interface_expr_call TSEMI
+  {
+    $$ = context->buildImplementsStmt(@$, context->makeList($2));
+  }
+;
+
 
 binary_implements_stmt:
   implements_type_ident TIMPLEMENTS interface_expr TSEMI
