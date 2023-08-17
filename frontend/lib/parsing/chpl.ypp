@@ -526,6 +526,8 @@
 // These are exprList so that they can include preceeding comments
 %type <commentsAndStmt> interface_stmt
 %type <commentsAndStmt> unary_implements_stmt binary_implements_stmt
+%type <exprList> interface_expr_ls
+%type <expr> interface_expr
 %type <exprList>  ifc_formal_ls
 %type <expr>   ifc_formal
 
@@ -1948,25 +1950,42 @@ implements_type_error_ident:
 | TINDEX
 ;
 
-unary_implements_stmt:
-  TIMPLEMENTS ident_def TLP actual_ls TRP TSEMI
+interface_expr:
+  ident_def
   {
-    $$ = context->buildImplementsStmt(@$, YLOC2(@2, @5), $2, $4);
+    $$ = context->buildInterfaceExpr(@1, $1, nullptr).release();
   }
-| TIMPLEMENTS ident_def TSEMI
+// | ident_def TLP actual_ls TRP
+//   {
+//     $$ = context->buildInterfaceExpr(YLOC2(@1, @4), $1, $3).release();
+//   }
+// ;
+//
+// Disallow expressions in the list for now, as it's only used for in-record-body
+// implements statements where the I(T) form would be invalid.
+
+interface_expr_ls:
+  interface_expr
   {
-    $$ = context->buildImplementsStmt(@$, @2, $2, nullptr);
+    $$ = context->makeList($1);
+  }
+| interface_expr_ls TCOMMA interface_expr
+  {
+    $$ = context->appendList($1, $3);
+  }
+;
+
+unary_implements_stmt:
+  TIMPLEMENTS interface_expr_ls TSEMI
+  {
+    $$ = context->buildImplementsStmt(@$, $2);
   }
 ;
 
 binary_implements_stmt:
-  implements_type_ident TIMPLEMENTS ident_def TSEMI
+  implements_type_ident TIMPLEMENTS interface_expr TSEMI
   {
-    $$ = context->buildImplementsStmt(@$, @1, $1, @3, $3, nullptr);
-  }
-| implements_type_ident TIMPLEMENTS ident_def TLP actual_ls TRP TSEMI
-  {
-    $$ = context->buildImplementsStmt(@$, @1, $1, YLOC2(@3, @6), $3, $5);
+    $$ = context->buildImplementsStmt(@$, @1, $1, context->makeList($3));
   }
 ;
 

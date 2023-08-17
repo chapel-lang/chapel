@@ -2945,18 +2945,13 @@ ParserContext::buildInterfaceExpr(YYLTYPE location,
 
 CommentsAndStmt
 ParserContext::buildImplementsStmt(YYLTYPE location,
-                                   YYLTYPE locInterfaceExpr,
-                                   PODUniqueString name,
-                                   MaybeNamedActualList* formals) {
+                                   ParserExprList* interfaces) {
   auto comments = gatherComments(location);
-  auto interfaceExpr = this->buildInterfaceExpr(locInterfaceExpr,
-                                                name,
-                                                formals);
 
   const bool isExpressionLevel = false;
   auto node = Implements::build(builder, convertLocation(location),
                                 /*typeExpr*/ nullptr,
-                                std::move(interfaceExpr),
+                                consumeList(interfaces),
                                 isExpressionLevel);
 
   CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
@@ -2968,21 +2963,16 @@ CommentsAndStmt
 ParserContext::buildImplementsStmt(YYLTYPE location,
                                    YYLTYPE locTypeExpr,
                                    PODUniqueString type,
-                                   YYLTYPE locInterfaceExpr,
-                                   PODUniqueString name,
-                                   MaybeNamedActualList* formals) {
+                                   ParserExprList* interfaces) {
 
   auto comments = gatherComments(location);
-  auto interfaceExpr = buildInterfaceExpr(locInterfaceExpr,
-                                          name,
-                                          formals);
 
   auto typeIdent = Identifier::build(builder, convertLocation(locTypeExpr),
                                      type);
   const bool isExpressionLevel = false;
   auto node = Implements::build(builder, convertLocation(location),
                                 std::move(typeIdent),
-                                std::move(interfaceExpr),
+                                consumeList(interfaces),
                                 isExpressionLevel);
   CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
 
@@ -2998,10 +2988,12 @@ ParserContext::buildImplementsConstraint(YYLTYPE location,
                                                           name,
                                                           formals);
 
+  AstList interfacesList;
+  interfacesList.push_back(std::move(interfaceExpr));
   const bool isExpressionLevel = true;
   auto node = Implements::build(builder, convertLocation(location),
                                 /*typeExpr*/ nullptr,
-                                std::move(interfaceExpr),
+                                std::move(interfacesList),
                                 isExpressionLevel);
 
   return node.release();
@@ -3021,10 +3013,12 @@ ParserContext::buildImplementsConstraint(YYLTYPE location,
   auto typeExpr = Identifier::build(builder, convertLocation(locTypeExpr),
                                     type);
 
+  AstList interfacesList;
+  interfacesList.push_back(std::move(interfaceExpr));
   const bool isExpressionLevel = true;
   auto node = Implements::build(builder, convertLocation(location),
                                 std::move(typeExpr),
-                                std::move(interfaceExpr),
+                                std::move(interfacesList),
                                 isExpressionLevel);
 
   return node.release();

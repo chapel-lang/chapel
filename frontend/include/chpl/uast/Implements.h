@@ -176,7 +176,7 @@ class Implements final : public AstNode {
 
   static owned<Implements> build(Builder* builder, Location loc,
                                  owned<Identifier> typeIdent,
-                                 owned<AstNode> interfaceExpr,
+                                 AstList interfaceExprs,
                                  bool isExpressionLevel);
 
   void serialize(Serializer& ser) const override {

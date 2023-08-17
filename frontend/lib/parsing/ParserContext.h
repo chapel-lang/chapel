@@ -663,14 +663,10 @@ struct ParserContext {
   CommentsAndStmt buildImplementsStmt(YYLTYPE location,
                                       YYLTYPE locTypeExpr,
                                       PODUniqueString type,
-                                      YYLTYPE locInterfaceExpr,
-                                      PODUniqueString name,
-                                      MaybeNamedActualList* formals);
+                                      ParserExprList* interfaces);
 
   CommentsAndStmt buildImplementsStmt(YYLTYPE location,
-                                      YYLTYPE locInterfaceExpr,
-                                      PODUniqueString name,
-                                      MaybeNamedActualList* formals);
+                                      ParserExprList* interfaces);
 
   AstNode* buildImplementsConstraint(YYLTYPE location,
                                      YYLTYPE locTypeExpr,
