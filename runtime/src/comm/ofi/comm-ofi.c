@@ -3002,9 +3002,11 @@ void init_ofiForAms(void) {
   // buffers (see below), so reflect that here also.
   //
   const char *ev = "COMM_OFI_LZ_SIZE";
-  const size_t defaultSize = (size_t) 64 << 20;
-  const char *sizeStr = chpl_env_rt_get(ev, "64M");
-  size_t amLZSize = chpl_env_str_to_size(ev, sizeStr, defaultSize);
+  size_t amLZSize = (size_t) 64 << 20;
+  const char *sizeStr = chpl_env_rt_get(ev, NULL);
+  if (sizeStr != NULL) {
+    amLZSize = chpl_env_str_to_size(ev, sizeStr, amLZSize);
+  }
 
   char buf[10];
   DBG_PRINTF(DBG_AM_BUF, "AM LZ size %s (%#zx)",
