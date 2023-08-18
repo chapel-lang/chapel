@@ -241,6 +241,7 @@ FnSymbol* FnSymbol::copyInnerCore(SymbolMap* map) {
   newFn->copyFlags(this);
   newFn->deprecationMsg = this->deprecationMsg;
   newFn->unstableMsg = this->unstableMsg;
+  newFn->parenfulDeprecationMsg = this->parenfulDeprecationMsg;
 
   if (this->throwsError() == true) {
     newFn->throwsErrorInit();
@@ -785,6 +786,16 @@ CallExpr* FnSymbol::singleInvocation() const {
 
   // The use is not as the callee, ex. as a FCF.
   return retval;
+}
+
+const char* FnSymbol::getParenfulDeprecationMsg() const {
+  if (parenfulDeprecationMsg[0] == '\0') {
+    const char* msg = astr("the parenful form of procedure ", name, " is deprecated");
+    return msg;
+  }
+  else {
+    return parenfulDeprecationMsg.c_str();
+  }
 }
 
 
