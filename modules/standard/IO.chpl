@@ -11806,7 +11806,13 @@ proc readf(fmt:string):bool throws {
    :throws UnexpectedEofError: Thrown if EOF encountered skipping field.
    :throws SystemError: Thrown if the field could not be skipped.
  */
+@deprecated("skipField is deprecated, please use JsonDeserializer instead.")
 proc fileReader.skipField() throws {
+  this._skipField();
+}
+
+@chpldoc.nodoc
+proc fileReader._skipField() throws {
   var err:errorCode = 0;
   on this._home {
     try this.lock(); defer { this.unlock(); }

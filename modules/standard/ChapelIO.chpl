@@ -399,7 +399,7 @@ module ChapelIO {
         // Skip an unknown JSON field.
 
 
-        try reader.skipField();
+        try reader._skipField();
         needsComma = true;
       }
     }
@@ -515,7 +515,7 @@ module ChapelIO {
           // Try skipping fields if we're JSON and allowed to do so.
           if !hasReadFieldName then
             if isSkipUnknown && isJson {
-              try reader.skipField();
+              try reader._skipField();
               needsComma = true;
             } else {
               throw new owned
