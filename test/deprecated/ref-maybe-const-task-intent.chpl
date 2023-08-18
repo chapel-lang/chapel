@@ -27,7 +27,7 @@ proc bar() {
   }
   foo();
 }
-bar()
+bar();
 
 record R {
   var A: [1..10] int;
