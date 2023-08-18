@@ -934,7 +934,8 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants,
     // passed to a kernel by reference from underneath the kernel is undefined
     // behavior.
     auto isArray = symExpr->typeInfo() &&
-                   symExpr->typeInfo()->symbol->hasFlag(FLAG_ARRAY);
+                   (symExpr->typeInfo()->symbol->hasFlag(FLAG_ARRAY) ||
+                    isArrayClass(symExpr->typeInfo()));
     if (!isGpuBound || !isArray) {
       if (isArgSymbol(symExpr->symbol()) &&
           symExpr->getValType()->symbol->hasFlag(FLAG_ITERATOR_CLASS) == false) {
