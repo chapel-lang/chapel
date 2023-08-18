@@ -6,19 +6,28 @@ LOG=$2
 #    executable>, <log>, <compiler executable>)
 
 MYLOG=""
-
 LAST=""
+FOUND_MARKER=0
 
-for word in `cat $LOG`
-  do
-    if [[ $word == -Ltest-* ]]
-      then
-        if [[ $word != $LAST ]]
-          then
-            MYLOG+=" $word"
-            LAST=$word
-          fi
-      fi
-done
+while read line || [[ -n $line ]];
+do
+  # skip until we find "compiling generated source" line
+  if [[ $line == *"compiling generated source"* ]]; then
+    FOUND_MARKER=1
+  fi
+  if [ $FOUND_MARKER -ne 1 ]; then continue; fi
+
+  for word in $line
+    do
+      if [[ $word == "-Ltest-"* ]]
+        then
+          if [[ $word != $LAST ]]
+            then
+              MYLOG+=" $word"
+              LAST=$word
+            fi
+        fi
+  done
+done <<< "$(cat $LOG)"
 
 echo $MYLOG > $LOG
