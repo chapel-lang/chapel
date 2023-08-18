@@ -476,10 +476,9 @@ struct Converter {
 
     if (attr->isParenfulDeprecated()) {
       auto fnSym = toFnSymbol(sym);
-
-      if (!fnSym) {
-        context->error(attr, "TODO");
-      }
+      // post-parse checks have ensured that decl it's a parenless function.
+      // How can the decl be a function but not the resulting symbol?
+      INT_ASSERT(fnSym);
 
       INT_ASSERT(!sym->hasFlag(FLAG_DEPRECATED_PARENFUL));
       sym->addFlag(FLAG_DEPRECATED_PARENFUL);

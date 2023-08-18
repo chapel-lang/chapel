@@ -137,6 +137,7 @@ struct Visitor {
   void checkAttributeUsedParens(const Attribute* node);
   void checkAttributeUnstable(const Attribute* node);
   void checkUserModuleHasPragma(const AttributeGroup* node);
+  void checkParenfulDeprecation(const AttributeGroup* node);
   void checkExternBlockAtModuleScope(const ExternBlock* node);
   void checkLambdaDeprecated(const Function* node);
   void checkCStringLiteral(const CStringLiteral* node);
@@ -1234,6 +1235,16 @@ void Visitor::checkUserModuleHasPragma(const AttributeGroup* node) {
   }
 }
 
+void Visitor::checkParenfulDeprecation(const AttributeGroup* node) {
+  if (!node->isParenfulDeprecated()) return;
+  auto groupParent = parents_.back();
+  auto fn = groupParent->toFunction();
+
+  if (!fn || !fn->isParenless()) {
+    CHPL_REPORT(context_, InvalidParenfulDeprecation, node, groupParent);
+  }
+}
+
 void Visitor::checkAttributeUsedParens(const Attribute* node) {
   if (node->numActuals() > 0 && !node->usedParens()) {
      CHPL_REPORT(context_, ParenlessAttributeArgDeprecated, node);
@@ -1302,6 +1313,7 @@ void Visitor::visit(const Attribute* node) {
 
 void Visitor::visit(const AttributeGroup* node) {
   checkUserModuleHasPragma(node);
+  checkParenfulDeprecation(node);
 }
 
 void Visitor::visit(const FnCall* node) {
