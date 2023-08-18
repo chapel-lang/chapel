@@ -146,7 +146,7 @@ static bool fRunlldb = false;
 bool fDoMonolithic = false;
 bool fDoCompilation = false;
 bool fDoMakeBinary = false;
-bool fDriverDebugPhaseSpecified = false;
+bool driverDebugPhaseSpecified = false;
 bool fLibraryCompile = false;
 bool fLibraryFortran = false;
 bool fLibraryMakefile = false;
@@ -909,7 +909,7 @@ static void setSubInvocation(const ArgumentDescription* desc, const char* arg) {
 
 static void setDriverDebugPhase(const ArgumentDescription* desc,
                                 const char* arg) {
-  fDriverDebugPhaseSpecified = true;
+  driverDebugPhaseSpecified = true;
 
   if (0 == strcmp(arg, "1")) {
     driverDebugCompilation = true;
@@ -1399,7 +1399,7 @@ static ArgumentDescription arg_desc[] = {
  {"do-monolithic", ' ', NULL, "Run compiler as monolithic without driver", "F", &fDoMonolithic, NULL, NULL},
  {"do-compilation", ' ', NULL, "Run driver compilation step", "F", &fDoCompilation, NULL, setSubInvocation},
  {"do-make-binary", ' ', NULL, "Run driver make binary step", "F", &fDoMakeBinary, NULL, setSubInvocation},
- {"driver-debug-phase", ' ', "<phase>", "Specify driver compilation phase to run when debugging: 1, 2, all", "S", &fDriverDebugPhaseSpecified, NULL, setDriverDebugPhase},
+ {"driver-debug-phase", ' ', "<phase>", "Specify driver compilation phase to run when debugging: 1, 2, all", "S", NULL, NULL, setDriverDebugPhase},
  {"gdb", ' ', NULL, "Run compiler in gdb", "F", &fRungdb, NULL, NULL},
  {"lldb", ' ', NULL, "Run compiler in lldb", "F", &fRunlldb, NULL, NULL},
  {"interprocedural-alias-analysis", ' ', NULL, "Enable [disable] interprocedural alias analysis", "n", &fNoInterproceduralAliasAnalysis, NULL, NULL},
@@ -1888,9 +1888,15 @@ static void checkCompilerDriverFlags() {
       USR_WARN(
           "Driver temp dir set for monolithic compilation will be ignored");
     }
-    if (fDriverDebugPhaseSpecified) {
+  }
+  if (driverDebugPhaseSpecified) {
+    if (fDoMonolithic) {
       USR_WARN(
           "Driver debug phase has no effect for monolithic compilation");
+    }
+    if (!(fRungdb || fRunlldb)) {
+      USR_WARN(
+          "Driver debug phase has no effect when not running with debugger");
     }
   }
 }
