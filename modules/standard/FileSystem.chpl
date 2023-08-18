@@ -219,6 +219,12 @@ proc chmod(name: string, mode: int) throws {
    to the specified values.  If `uid` or `gid` are -1, the value in question
    will remain unchanged.
 
+   .. note::
+
+      Changing the owner typically requires root or elevated privileges.
+      Changing the group typically requires being the owner and a member of the
+      group, or having elevated privileges.
+
    :arg name: The name of the file to be changed.
    :type name: `string`
    :arg uid: The intended new owner(user) id, or -1 if it should remain the
