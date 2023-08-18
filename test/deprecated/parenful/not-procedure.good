@@ -1,1 +1,1 @@
-not-procedure.chpl:2: error: the '@deprecated' attribute with 'parenful' style can only be applied to parenless procedures
+not-procedure.chpl:2: error: the '@deprecated' attribute with 'parenless=true' can only be applied to parenless procedures

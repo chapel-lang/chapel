@@ -911,7 +911,7 @@ static void test12(Parser* parser) {
   assert(guard.error(1)->kind() == ErrorBase::Kind::ERROR);
 
   assert(guard.error(2)->message() == "unrecognized argument name 'sincer'. "
-         "'@deprecated' attribute only accepts 'since', 'notes', 'style', and "
+         "'@deprecated' attribute only accepts 'since', 'notes', 'parenless', and "
          "'suggestion' arguments");
   assert(guard.error(2)->kind() == ErrorBase::Kind::ERROR);
 

@@ -303,28 +303,25 @@ void ParserContext::noteDeprecation(YYLTYPE loc, MaybeNamedActualList* actuals) 
       if (!(actual.name == UniqueString::get(context(), "since").podUniqueString() ||
             actual.name == UniqueString::get(context(), "notes").podUniqueString() ||
             actual.name == UniqueString::get(context(), "suggestion").podUniqueString()||
-            actual.name == UniqueString::get(context(), "style").podUniqueString() ||
+            actual.name == UniqueString::get(context(), "parenless").podUniqueString() ||
             actual.name.isEmpty())) {
         error(loc, "unrecognized argument name '%s'. "
                    "'@deprecated' attribute only accepts 'since', 'notes', "
-                   "'style', and 'suggestion' arguments",
+                   "'parenless', and 'suggestion' arguments",
                    actual.name.c_str());
       }
       if (actual.name.isEmpty()) {
         allActualsNamed = false;
       }
-      if (!actual.expr->isStringLiteral()) {
-        error(loc, "deprecated attribute arguments must be string literals for now");
-      }
-      if (actual.name == UniqueString::get(context(), "style").podUniqueString()) {
-        if (auto strLit = actual.expr->toStringLiteral()) {
-          if (strLit->value() == UniqueString::get(context(), "parenful")) {
-            isParenfulDeprecation = true;
-          } else {
-            error(loc, "invalid value for deprecated attribute's 'style' "
-                       "parameter; only 'parenful' is supported.");
-          }
+      if (actual.name == UniqueString::get(context(), "parenless").podUniqueString()) {
+        auto boolLit = actual.expr->toBoolLiteral();
+        if (!boolLit || !boolLit->value()) {
+          error(loc, "invalid value for deprecated attribute's 'parenless' "
+                     "parameter; only 'true' is supported.");
         }
+        isParenfulDeprecation = true;
+      } else if (!actual.expr->isStringLiteral()) {
+        error(loc, "deprecated attribute arguments must be string literals for now");
       }
       // TODO: Decide how this interaction should work, if we want to continue
       // supporting "message" or if we should adapt that field to match the
