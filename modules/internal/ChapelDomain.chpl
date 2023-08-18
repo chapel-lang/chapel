@@ -2780,6 +2780,51 @@ module ChapelDomain {
     }
 
     /* Cast a rectangular domain to a new rectangular domain type.
+       Throw an IllegalArgumentError when the original bounds and/or stride(s)
+       do not fit in the new idxType or when the original stride(s)
+       are not legal for the new `strides` parameter.
+     */
+    proc tryCast(type t: domain)
+      where chpl__isRectangularDomType(t) && this.isRectangular()
+        &&  this.chpl_domainTryCastIsSafe(t)
+    do
+      return try! this.chpl_domainTryCastHelper(t);
+
+    // This overload catches unsupported cases.
+    @chpldoc.nodoc
+    proc tryCast(type t: domain) throws
+    do
+      if ! chpl__isRectangularDomType(t) || ! this.isRectangular() then
+        compilerError("tryCast() from ", this.type:string, " to ",
+                      t:string, " is not available");
+      else
+        return this.chpl_domainTryCastHelper(t);
+
+    // identical to chpl_domainCastHelper except uses tryCast instead of ':'
+    inline proc chpl_domainTryCastHelper(type t:_domain) throws {
+      var tmpD: t;
+      const ref d = this;
+      if tmpD.rank != d.rank then
+        compilerError("rank mismatch in tryCast()");
+      else {
+        var inds = d.getIndices();
+        var newInds: tmpD.getIndices().type;
+        for param i in 0..tmpD.rank-1 {
+          newInds(i) = inds(i).tryCast( newInds(i).type );
+        }
+        tmpD.setIndices(newInds);
+        return tmpD;
+      }
+    }
+
+    proc chpl_domainTryCastIsSafe(type t: domain) param {
+      var dst: t;
+      // this is implemented only for rectangular domains
+      compilerAssert(this.isRectangular() && dst.isRectangular());
+      return chpl_tryCastIsSafe(this.dim(0), dst.dim(0).type);
+    }
+
+    /* Cast a rectangular domain to a new rectangular domain type.
        The overload below throws when the original bounds and/or stride
        do not fit in the new type or 'strides'.
        TODO: should we allow 't' to be generic?
