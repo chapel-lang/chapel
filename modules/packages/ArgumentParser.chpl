@@ -1905,7 +1905,7 @@ module ArgumentParser {
     /*
     Return the single value collected from the command line, if any.
     If no value was collected, the program will halt as result of
-    calling ``list.first()`` on an empty list.
+    calling ``list.first`` on an empty list.
 
     .. warning::
       This can only be called safely if you are sure a value was collected,
@@ -1925,7 +1925,7 @@ module ArgumentParser {
 
     */
     proc value() : string {
-      return this._values.first();
+      return this._values.first;
     }
 
     /*
@@ -1976,12 +1976,12 @@ module ArgumentParser {
 
       if !this.hasValue() {
         throw new ArgumentError("No value in this argument to convert");
-      } else if _convertStringToBool(this._values.first(), rtn) {
+      } else if _convertStringToBool(this._values.first, rtn) {
         return rtn;
       }
       else {
         throw new ArgumentError("Boolean requested but could not convert " +
-                                this._values.first():string + " to bool");
+                                this._values.first:string + " to bool");
       }
     }
   }
