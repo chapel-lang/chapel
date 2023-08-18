@@ -15,6 +15,7 @@ use HPCCProblemSize;
 config param useForeach = true;
 config const useGpuDiags = true;
 config const SI = true;
+config const doValidation = true;
 
 const host = here;
 
@@ -156,6 +157,8 @@ proc initVectors(B, C) {
 // Verify that the computation is correct
 //
 proc verifyResults(A, B, C) {
+  if !doValidation then return true;
+
   if (printArrays) then writeln("A is:     ", A, "\n");  // optionally print A
 
   //
@@ -201,7 +204,10 @@ proc verifyResults(A, B, C) {
 // Print out success/failure, the timings, and the throughput
 //
 proc printResults(successful, execTimes) {
-  writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
+  if doValidation then
+    writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
+  else
+    writeln("Validation: SKIPPED");
   if (printStats) {
     /*
     TODO: these reductions somehow compile but don't generate the right result.
