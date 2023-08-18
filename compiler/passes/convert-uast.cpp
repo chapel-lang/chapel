@@ -470,6 +470,26 @@ struct Converter {
       }
     }
 
+    if (!attr->isParenfulDeprecated()) {
+      INT_ASSERT(attr->parenfulDeprecationMessage().isEmpty());
+    }
+
+    if (attr->isParenfulDeprecated()) {
+      auto fnSym = toFnSymbol(sym);
+
+      if (!fnSym) {
+        context->error(attr, "TODO");
+      }
+
+      INT_ASSERT(!sym->hasFlag(FLAG_DEPRECATED_PARENFUL));
+      sym->addFlag(FLAG_DEPRECATED_PARENFUL);
+
+      auto msg = attr->parenfulDeprecationMessage();
+      if (!msg.isEmpty()) {
+        fnSym->parenfulDeprecationMsg = astr(msg);
+      }
+    }
+
     for (auto pragma : attr->pragmas()) {
       Flag flag = convertPragmaToFlag(pragma);
       if (flag != FLAG_UNKNOWN) {
