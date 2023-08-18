@@ -819,8 +819,16 @@ static void runAsCompilerDriver(int argc, char* argv[]) {
     clean_exit(status);
   }
 
-  // skip make binary if the compile command does not require it
+  // Skip make binary if the compile command does not require it, or if we are
+  // running in a debugger for the compilation phase only.
+  bool skipDueToDebug = (fRungdb || fRunlldb) &&
+    (driverDebugCompilation && !driverDebugMakeBinary);
+  if (skipDueToDebug) {
+    USR_WARN("Skipping make-binary phase due to running only compilation phase "
+        "in debugger; change this with --driver-debug-phase if desired");
+  }
   bool shouldSkipMakeBinary =
+      skipDueToDebug ||
       fParseOnly || countTokens || printTokens ||
       (stopAfterPass[0] && strcmp(stopAfterPass, "makeBinary") != 0);
   if (!shouldSkipMakeBinary) {
@@ -911,7 +919,7 @@ static void setDriverDebugPhase(const ArgumentDescription* desc,
     driverDebugMakeBinary = true;
   } else {
     USR_FATAL(
-        "--driverDebugCompilation requires a valid phase number or 'all', "
+        "--driver-debug-phase requires a valid phase number or 'all', "
         "but got: %s\n",
         arg);
   }
@@ -1388,7 +1396,7 @@ static ArgumentDescription arg_desc[] = {
  {"do-monolithic", ' ', NULL, "Run compiler as monolithic without driver", "F", &fDoMonolithic, NULL, NULL},
  {"do-compilation", ' ', NULL, "Run driver compilation step", "F", &fDoCompilation, NULL, setSubInvocation},
  {"do-make-binary", ' ', NULL, "Run driver make binary step", "F", &fDoMakeBinary, NULL, setSubInvocation},
- {"driver-debug-phase", ' ', "<phase>", "Specify driver compilation phase to debug: 1, 2, all", "S", NULL, NULL, setDriverDebugPhase},
+ {"driver-debug-phase", ' ', "<phase>", "Specify driver compilation phase to run when debugging: 1, 2, all", "S", NULL, NULL, setDriverDebugPhase},
  {"gdb", ' ', NULL, "Run compiler in gdb", "F", &fRungdb, NULL, NULL},
  {"lldb", ' ', NULL, "Run compiler in lldb", "F", &fRunlldb, NULL, NULL},
  {"interprocedural-alias-analysis", ' ', NULL, "Enable [disable] interprocedural alias analysis", "n", &fNoInterproceduralAliasAnalysis, NULL, NULL},

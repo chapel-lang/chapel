@@ -59,6 +59,7 @@ _chpl ()
 --do-compilation \
 --do-make-binary \
 --do-monolithic \
+--driver-debug-phase \
 --driver-tmp-dir \
 --dynamic \
 --dynamic-auto-local-access \
