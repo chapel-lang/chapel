@@ -129,7 +129,8 @@ public:
     }
 
     bool isGpuBound() const {
-      return isLoopGpuBound((CForLoop*) loopAST);
+      auto cLoop = toCForLoop(loopAST);
+      return cLoop && isLoopGpuBound(cLoop);
     }
 
     //Set the header, insert the header into the loop blocks, and build up the
@@ -932,44 +933,48 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants,
     // For GPU-bound loops, relax this restriction and say that changing things
     // passed to a kernel by reference from underneath the kernel is undefined
     // behavior.
-    if (isArgSymbol(symExpr->symbol()) &&
-        symExpr->getValType()->symbol->hasFlag(FLAG_ITERATOR_CLASS) == false) {
-      if(ArgSymbol* argSymbol = toArgSymbol(symExpr->symbol())) {
-        if(argSymbol->isRef() && !isGpuBound) {
-          mightHaveBeenDeffedElseWhere = true;
-        }
-      }
-      for_set(Symbol, aliasSym, aliases[symExpr->symbol()]) {
-        if(ArgSymbol* argSymbol = toArgSymbol(aliasSym)) {
-          if(argSymbol->isRef() && !isGpuBound) {
+    auto isArray = symExpr->typeInfo() &&
+                   symExpr->typeInfo()->symbol->hasFlag(FLAG_ARRAY);
+    if (!isGpuBound || !isArray) {
+      if (isArgSymbol(symExpr->symbol()) &&
+          symExpr->getValType()->symbol->hasFlag(FLAG_ITERATOR_CLASS) == false) {
+        if(ArgSymbol* argSymbol = toArgSymbol(symExpr->symbol())) {
+          if(argSymbol->isRef()) {
             mightHaveBeenDeffedElseWhere = true;
           }
         }
+        for_set(Symbol, aliasSym, aliases[symExpr->symbol()]) {
+          if(ArgSymbol* argSymbol = toArgSymbol(aliasSym)) {
+            if(argSymbol->isRef()) {
+              mightHaveBeenDeffedElseWhere = true;
+            }
+          }
+        }
       }
-    }
-    // Find where the variable is defined.
-    Symbol* defScope = symExpr->symbol()->defPoint->parentSymbol;
-    // if the variable is a module level (global) variable
-    if (isModuleSymbol(defScope)) {
-      // if there are any function calls inside the loop, assume that one of
-      // the functions may have changed the value of the global. Note that we
-      // don't have to worry about a different task updating the global since
-      // that would have to be protected with a sync or be atomic in which case
-      // no hoisting will occur in the function at all. Any defs to the global
-      // inside of this loop will be detected just like any other variable
-      // definitions.
-      // TODO this could be improved to check which functions modify the global
-      // and see if any of those functions are being called in this loop.
-      if (callsInLoop.size() != 0 && !isGpuBound) {
-        mightHaveBeenDeffedElseWhere = true;
+      // Find where the variable is defined.
+      Symbol* defScope = symExpr->symbol()->defPoint->parentSymbol;
+      // if the variable is a module level (global) variable
+      if (isModuleSymbol(defScope)) {
+        // if there are any function calls inside the loop, assume that one of
+        // the functions may have changed the value of the global. Note that we
+        // don't have to worry about a different task updating the global since
+        // that would have to be protected with a sync or be atomic in which case
+        // no hoisting will occur in the function at all. Any defs to the global
+        // inside of this loop will be detected just like any other variable
+        // definitions.
+        // TODO this could be improved to check which functions modify the global
+        // and see if any of those functions are being called in this loop.
+        if (callsInLoop.size() != 0) {
+          mightHaveBeenDeffedElseWhere = true;
+        }
       }
-    }
-    if (symExpr->symbol()->isRef() && !isGpuBound) {
-        mightHaveBeenDeffedElseWhere = true;
-    }
-    for_set(Symbol, aliasSym, aliases[symExpr->symbol()]) {
-      if (aliasSym->isRef() && !isGpuBound) {
-        mightHaveBeenDeffedElseWhere = true;
+      if (symExpr->symbol()->isRef()) {
+          mightHaveBeenDeffedElseWhere = true;
+      }
+      for_set(Symbol, aliasSym, aliases[symExpr->symbol()]) {
+        if (aliasSym->isRef()) {
+          mightHaveBeenDeffedElseWhere = true;
+        }
       }
     }
     //if there were no defs of the symbol, it is invariant
@@ -1085,11 +1090,16 @@ static bool defDominatesAllUses(Loop* loop, SymExpr* def, std::vector<BitVec*>& 
  *
  */
 static bool defDominatesAllExits(Loop* loop, SymExpr* def, std::vector<BitVec*>& dominators, std::map<SymExpr*, int>& localMap) {
-  if (def->symbol()->defPoint != nullptr &&
-      LoopStmt::findEnclosingLoop(def->symbol()->defPoint) == loop->getLoopAST()) {
-    // If the symbol-to-hoist is defined inside a loop, no reason to worry about
-    // loop exits, since it can't be referenced outside.
-    return true;
+  // Strictly speaking, the below early return is equally valid off-GPU.
+  // However, just for the time being, only apply it to GPUs to minimize
+  // the possible negative impact.
+  if (loop->isGpuBound()) {
+    if (def->symbol()->defPoint != nullptr &&
+        LoopStmt::findEnclosingLoop(def->symbol()->defPoint) == loop->getLoopAST()) {
+      // If the symbol-to-hoist is defined inside a loop, no reason to worry about
+      // loop exits, since it can't be referenced outside.
+      return true;
+    }
   }
 
   int defBlock = localMap[def];

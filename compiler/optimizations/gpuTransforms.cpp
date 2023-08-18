@@ -1188,23 +1188,6 @@ static CallExpr* generateGPUCall(GpuKernel& info, VarSymbol* numThreads) {
 
 static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
                                   GpuKernel &kernel) {
-  // If we're not creating AST specializations for functions where we can assume
-  // we're on a GPU sublocale, then every time, before doing a kernel launch, we
-  // need to check and see if we are on a GPU sublocale. The code to do this
-  // looks like this:
-  //
-  // if (chpl_task_getRequestedSubloc() >= 0) {
-  //   code to determine number of threads to launch kernel with
-  //   call the generated GPU kernel
-  // } [else] {
-  //   run the existing loop on the CPU
-  // }
-  //
-  // Normally, We put the CPU block as the else block. If we are not doing GPU
-  // codegen, we put it as an anonymous block right after the conditional. This
-  // will make sure that we call the runtime support as if there's a GPU, yet
-  // still executing the loop always.
-
   BlockStmt* gpuBlock = new BlockStmt();
 
   // populate the gpu block
@@ -1421,6 +1404,28 @@ bool isLoopGpuBound(CForLoop* loop) {
 CForLoop* GpuizableLoop::generateGpuAndNonGpuPaths() {
   SET_LINENO(cpuLoop());
 
+  // Without GPU specialization, every time, before doing a kernel launch, we
+  // need to check and see if we are on a GPU sublocale. The code to do this
+  // looks like this:
+  //
+  // if (chpl_task_getRequestedSubloc() >= 0) {
+  //   code to determine number of threads to launch kernel with
+  //   call the generated GPU kernel
+  // } [else] {
+  //   run the existing loop on the CPU
+  // }
+  //
+  // Normally, We put the CPU block as the else block. If we are not doing GPU
+  // codegen, we want the CPU loop to run always, and thus instead put it in
+  // an anonymous block after the conditional.
+  //
+  // The code below always generates if-GPU-else-CPU structure; the else
+  // branch is moved into the anonymous block by fixupNonGpuPath later. Deferring
+  // that transformation helps simplify other logic (e.g. if we know
+  // the condition will be true or false, we can just replace the if-else with
+  // one of its branches; this doesn't work if there might be more code after
+  // the conditional).
+
   BlockStmt* cpuBlock = new BlockStmt();
   BlockStmt* gpuBlock = new BlockStmt();
 
@@ -1467,8 +1472,10 @@ void GpuizableLoop::makeGpuOnly() const {
 
 void GpuizableLoop::fixupNonGpuPath() const {
   // In the CPU-as-device mode, instead of the plain loop being in an "else",
-  // it's always executed. So, take it from its branch and put it after
-  // the conditional.
+  // it's always executed. This will make sure that we call the runtime support
+  // as if there's a GPU, yet still executing the loop always.
+  //
+  // So, take it from its else branch and put it after the conditional.
 
   if (!isFullGpuCodegen()) {
     cpuBlock_->remove();
@@ -1476,8 +1483,7 @@ void GpuizableLoop::fixupNonGpuPath() const {
   }
 }
 
-// TODO naming
-static void createTwoPaths(FnSymbol* fn) {
+static void duplicateEligibleLoopsForAdjustedLICM(FnSymbol* fn) {
   std::vector<CForLoop*> asts;
   collectCForLoopStmtsPreorder(fn, asts);
 
@@ -1502,7 +1508,7 @@ static void createTwoPaths(FnSymbol* fn) {
 void earlyGpuTransforms() {
   if (usingGpuLocaleModel()) {
     forv_Vec(FnSymbol*, fn, gFnSymbols) {
-      createTwoPaths(fn);
+      duplicateEligibleLoopsForAdjustedLICM(fn);
     }
   }
 }
