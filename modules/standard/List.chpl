@@ -984,7 +984,8 @@ module List {
       :return: A reference to the first item in this list.
       :rtype: `ref eltType`
     */
-    proc ref first() ref {
+    @deprecated(style="parenful", notes="`list.first()` is deprecated; please use the parenless version `list.first` instead")
+    proc ref first ref {
       if parSafe then
         compilerWarning('Calling `first()` on a list initialized with ' +
                         '`parSafe=true` has been deprecated, consider ' +
@@ -1015,7 +1016,8 @@ module List {
       :return: A reference to the last item in this list.
       :rtype: `ref eltType`
     */
-    proc ref last() ref {
+    @deprecated(style="parenful", notes="`list.last()` is deprecated; please use the parenless version `list.last` instead")
+    proc ref last ref {
       if parSafe then
         compilerWarning('Calling `last()` on a list initialized with ' +
                         '`parSafe=true` has been deprecated, consider ' +
