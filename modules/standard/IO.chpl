@@ -2942,17 +2942,17 @@ record DefaultDeserializer {
       if reader.matchLiteral("nil") {
         val = nil;
         return;
+      } else if val == nil {
+        val = deserializeType(reader, readType);
       }
     }
 
-    if isRecordType(readType) ||
-       isNonNilableClass(readType) ||
-       isSingleType(readType) || isSyncType(readType) ||
-       (isNilableClassType(readType) && val != nil) {
+    if isNumericType(readType) || isBoolType(readType) || isEnumType(readType) ||
+       readType == string || readType == bytes {
+      reader._readOne(reader._kind, val, here);
+    } else {
       var alias = reader.withDeserializer(new DefaultDeserializer());
       val.deserialize(reader=alias, deserializer=alias.deserializer);
-    } else {
-      val = deserializeType(reader, readType);
     }
   }
 
