@@ -3001,7 +3001,7 @@ void init_ofiForAms(void) {
   // renewing.  We actually then split this in half and create 2 half-sized
   // buffers (see below), so reflect that here also.
   //
-  const char *ev = "COMM_OFI_LZ_SIZE";
+  const char *ev = "COMM_OFI_AM_LZ_SIZE";
   size_t amLZSize = (size_t) 64 << 20;
   const char *sizeStr = chpl_env_rt_get(ev, NULL);
   if (sizeStr != NULL) {
