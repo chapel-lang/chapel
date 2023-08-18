@@ -478,6 +478,11 @@ static void maybeIssueRefMaybeConstWarning(ArgSymbol* arg) {
   bool notImplementedYetOptOut = isArgThis;
   bool shouldWarn = !notImplementedYetOptOut && !isOuter && !fromPragma && !isCompilerGenerated;
 
+  // if its an outer variable but its used in a task intent, warn
+  if (!shouldWarn && isOuter && isTaskIntent) {
+    shouldWarn = true;
+  }
+
   if (shouldWarn) {
     IntentTag defaultIntent = blankIntentForType(arg->type);
     // if default intent is not ref-maybe-const, do nothing
@@ -486,16 +491,21 @@ static void maybeIssueRefMaybeConstWarning(ArgSymbol* arg) {
 
   if (shouldWarn) {
 
-    const char* argName = nullptr;
-    char argBuffer[64];
-    if (!arg->hasFlag(FLAG_EXPANDED_VARARGS)) {
-      argName = arg->name;
-    } else {
-      int varArgNum;
-      int ret = sscanf(arg->name, "_e%d_%63s", &varArgNum, argBuffer);
-      CHPL_ASSERT(ret == 2);
-      argName = argBuffer;
-    }
+      const char* intentName = isTaskIntent ? "task" : (isArgThis ? "this" : "argument");
+
+      const char* argName = nullptr;
+      char argBuffer[64];
+      if (isTaskIntent && fieldAccessArgToOriginalArg.find(arg) != fieldAccessArgToOriginalArg.end()) {
+        sprintf(argBuffer, "this");
+        argName = argBuffer;
+      } else if (arg->hasFlag(FLAG_EXPANDED_VARARGS)) {
+        int varArgNum;
+        int ret = sscanf(arg->name, "_e%d_%63s", &varArgNum, argBuffer);
+        CHPL_ASSERT(ret == 2);
+        argName = argBuffer;
+      } else {
+        argName = arg->name;
+      }
 
       Symbol* warnSym = (isTaskIntent && arg->getFunction()) ? (Symbol*)arg->getFunction() : (Symbol*)arg;
       USR_WARN(warnSym,

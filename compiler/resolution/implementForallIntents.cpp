@@ -1100,6 +1100,8 @@ static ArgSymbol* createArgForFieldAccess(ArgSymbol* thisArg, FnSymbol* fn,
   return fieldArg;
 }
 
+std::unordered_map<ArgSymbol*, Symbol*> fieldAccessArgToOriginalArg;
+
 // This handles task-parallel constructs.
 // Caller to ensure that 'fn' needs task intents.
 // See also convertFieldsOfRecordReceiver().
@@ -1125,8 +1127,10 @@ void convertFieldsOfRecordThis(FnSymbol* fn) {
     if (Symbol* fieldSym = isFieldAccess(thisType, se))
      {
        ArgSymbol*& fieldArg = fieldArgs[fieldSym];
-       if (fieldArg == NULL)
+       if (fieldArg == NULL) {
          fieldArg = createArgForFieldAccess(thisArg, fn, fieldSym);
+         fieldAccessArgToOriginalArg.insert({fieldArg, fieldSym});
+       }
        se->parentExpr->replace(new SymExpr(fieldArg));
      }
 }
