@@ -214,7 +214,7 @@ class AttributeGroup final : public AstNode {
 
   /**
     Returns true if the declaration associated with this attributeGroup
-    has a prenful form that's deprecated in favor of a parenless form.
+    has a parenful form that's deprecated in favor of a parenless form.
   */
   bool isParenfulDeprecated() const {
     return isParenfulDeprecated_;
