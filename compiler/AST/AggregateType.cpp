@@ -994,6 +994,20 @@ AggregateType* AggregateType::generateType(CallExpr* call, const char* callStrin
   // place positional args in a map based on remaining unspecified fields
   for_vector(Symbol, field, genericFields) {
     if (substitutionForField(field, map) == NULL && notNamed.size() > 0) {
+      if (getModule()->modTag == MOD_STANDARD &&
+          field->hasFlag(FLAG_DEPRECATED) &&
+          strcmp(field->name, "kind") == 0) {
+        std::string typeName = notNamed.front()->type->symbol->name;
+        if (typeName != "iokind" && typeName != "_iokind") {
+          // If trying to pass a type other than iokind to 'kind' field,
+          // assume user is ignoring the deprecated field.
+          //
+          // TODO: How can we write this to apply more generally to any
+          // deprecated field?
+          continue;
+        }
+      }
+
       map.put(field, notNamed.front());
       notNamed.pop();
     }
