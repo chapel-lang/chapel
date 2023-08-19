@@ -3086,13 +3086,16 @@ record BinarySerializer {
   */
   const endian : ioendian = ioendian.native;
 
+  @chpldoc.nodoc
+  const _structured = true;
+
   // TODO: We could store a 'size' field internally to track the expected
   // number of fields or elements, and throw errors if that expectation is
   // violated.
 
   @chpldoc.nodoc
   proc _fork() {
-    return new BinarySerializer(endian=endian);
+    return new BinarySerializer(endian=endian, _structured);
   }
 
   @chpldoc.nodoc
@@ -3110,7 +3113,10 @@ record BinarySerializer {
 
     st.binary = 1;
     st.byteorder = 1 + endian:uint(8);
-    st.str_style = iostringstyleInternal.lenVb_data: int(64);
+    if _structured then
+      st.str_style = iostringstyleInternal.lenVb_data: int(64);
+    else
+      st.str_style = iostringstyleInternal.data_toeof: int(64);
 
     dc._set_styleInternal(st);
     dc._writeOne(dc._kind, val, here);
@@ -3140,9 +3146,11 @@ record BinarySerializer {
       //
       // TODO: Should 'startClass' handle this case?
       if val == nil {
-        writer.writeByte(0);
+        if _structured then
+          writer.writeByte(0);
       } else {
-        writer.writeByte(1);
+        if _structured then
+          writer.writeByte(1);
         var alias = writer.withSerializer(_fork());
         val!.serialize(writer=alias, serializer=alias.serializer);
       }
@@ -3214,8 +3222,12 @@ record BinarySerializer {
   @chpldoc.nodoc
   proc writeBulkElements(writer: _writeType, data: c_ptr(?eltType), numElements: uint) throws
   where isNumericType(eltType) {
-    const n = c_sizeof(eltType)*numElements;
-    writer.writeBinary(data, n.safeCast(int));
+    if endian == ioendian.native {
+      const n = c_sizeof(eltType)*numElements;
+      writer.writeBinary(data, n.safeCast(int));
+    } else {
+      for i in 0..<numElements do writer.write(data[i]);
+    }
   }
 
   @chpldoc.nodoc
@@ -3257,14 +3269,18 @@ record BinaryDeserializer {
   var _numElements : uint;
 
   @chpldoc.nodoc
-  proc init(endian: IO.ioendian = IO.ioendian.native) {
+  var _structured = true;
+
+  @chpldoc.nodoc
+  proc init(endian: IO.ioendian = IO.ioendian.native, _structured : bool = true) {
     this.endian = endian;
+    this._structured = _structured;
     this.complete();
   }
 
   @chpldoc.nodoc
   proc _fork() {
-    return new BinaryDeserializer(endian=endian);
+    return new BinaryDeserializer(endian=endian, _structured);
   }
 
   @chpldoc.nodoc
@@ -3280,10 +3296,28 @@ record BinaryDeserializer {
 
     st.binary = 1;
     st.byteorder = 1 + endian:uint(8);
-    st.str_style = iostringstyleInternal.lenVb_data: int(64);
+    if _structured then
+      st.str_style = iostringstyleInternal.lenVb_data: int(64);
+    else
+      st.str_style = iostringstyleInternal.data_toeof: int(64);
 
     dc._set_styleInternal(st);
     dc._readOne(dc._kind, val, here);
+  }
+
+  @chpldoc.nodoc
+  proc _checkClassNil(reader:_readerType, type readType) : bool throws {
+    const notNil = if _structured then reader.readByte() else 1;
+    if notNil == 0 {
+      if isNilableClassType(readType) then
+        return true;
+      else
+        throw new BadFormatError("cannot read nil class into non-nilable class");
+    } else if notNil != 1 {
+      throw new BadFormatError("invalid binary format found for class nilability");
+    }
+
+    return false;
   }
 
   /*
@@ -3294,17 +3328,11 @@ record BinaryDeserializer {
   */
   proc deserializeType(reader:_readerType, type readType) : readType throws {
     if isClassType(readType) {
-      const notNil = reader.readByte();
-      if notNil == 0 {
-        if isNilableClassType(readType) then
-          return nil:readType;
-        else
-          throw new BadFormatError("cannot read nil class into non-nilable class");
-      } else if notNil != 1 {
-        throw new BadFormatError("invalid binary format found for class nilability");
-      }
-      // else: not nil, proceed to try initializing
+      var isNil = _checkClassNil(reader, readType);
+      if isNilableClassType(readType) && isNil then
+        return nil:readType;
     }
+    // else: not nil, proceed to try initializing
 
     if isNumericType(readType) {
       var x : readType;
@@ -3343,6 +3371,12 @@ record BinaryDeserializer {
     :arg val: the value to be deserialized in-place.
   */
   proc deserializeValue(reader: _readerType, ref val: ?readType) : void throws {
+    if isClassType(readType) {
+      var isNil = _checkClassNil(reader, readType);
+      if isNilableClassType(readType) && isNil then
+        val = nil;
+    }
+
     if canResolveMethod(val, "deserialize", reader, this) {
       var alias = reader.withDeserializer(_fork());
       val.deserialize(reader=alias, deserializer=alias.deserializer);
@@ -3421,10 +3455,15 @@ record BinaryDeserializer {
   @chpldoc.nodoc
   proc readBulkElements(reader: _readerType, data: c_ptr(?eltType), numElements: uint) throws
   where isNumericType(eltType) {
-    const n = c_sizeof(eltType)*numElements;
-    const got = reader.readBinary(data, n.safeCast(int));
-    if got < n then throw new EofError();
-    else _numElements -= numElements;
+    if endian == ioendian.native {
+      const n = c_sizeof(eltType)*numElements;
+      const got = reader.readBinary(data, n.safeCast(int));
+      if got < n then throw new EofError();
+      else _numElements -= numElements;
+    } else {
+      for i in 0..<numElements do
+        reader.read(data[i]);
+    }
   }
 
   @chpldoc.nodoc
