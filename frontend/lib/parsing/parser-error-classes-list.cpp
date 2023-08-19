@@ -463,7 +463,7 @@ void ErrorInvalidParenfulDeprecation::write(ErrorWriterBase& wr) const {
     wr.message("The attribute is applied to a non-parenless function here:");
     wr.codeForDef(fn);
   } else {
-    wr.message("the attribute is applied to a non-procedure here:");
+    wr.message("the attribute is applied to a non-function here:");
     wr.codeForLocation(appliedTo);
   }
 }

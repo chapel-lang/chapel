@@ -790,7 +790,7 @@ CallExpr* FnSymbol::singleInvocation() const {
 
 const char* FnSymbol::getParenfulDeprecationMsg() const {
   if (parenfulDeprecationMsg[0] == '\0') {
-    const char* msg = astr("the parenful form of procedure ", name, " is deprecated");
+    const char* msg = astr("the parenful form of function ", name, " is deprecated");
     return msg;
   }
   else {
