@@ -1636,6 +1636,20 @@ static bool buildFieldNames(AggregateType* at, std::string& str, bool cname) {
       // A fully instantiated type
       bool isFirst = true;
       for_vector(Symbol, field, root->genericFields) {
+        Symbol* newField = at->getField(field->name);
+        const char* valStr = buildValueName(newField, cname);
+
+        bool isFileReaderWriter = root->getModule() == ioModule &&
+                                  (strcmp(root->symbol->name, "fileReader") == 0 ||
+                                   strcmp(root->symbol->name, "fileWriter") == 0);
+        bool isSubprocess = root->getModule()->modTag == MOD_STANDARD &&
+                            strcmp(root->getModule()->name, "Subprocess") == 0 &&
+                            strcmp(root->symbol->name, "subprocess") == 0;
+        if ((isFileReaderWriter || isSubprocess) &&
+            strcmp(field->name, "kind") == 0 &&
+            strcmp(valStr, "dynamic") == 0) {
+          continue;
+        }
 
         if (isFirst) {
           isFirst = false;
@@ -1648,8 +1662,7 @@ static bool buildFieldNames(AggregateType* at, std::string& str, bool cname) {
           str += "=";
         }
 
-        Symbol* newField = at->getField(field->name);
-        str += buildValueName(newField, cname);
+        str += valStr;
       }
     } else {
       // A partial instantiation
