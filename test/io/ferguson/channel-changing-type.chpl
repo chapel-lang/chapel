@@ -6,9 +6,7 @@ proc test1() {
   {
     var ch = f.writer(); // defaults to dynamic, text, locking
     // make a binary, unlocked channel using same buffer as ch
-    var cha: fileWriter(kind=iokind.big, locking=false);
-    cha; // no split init
-    cha = ch;
+    var cha = ch.withSerializer(new BinarySerializer(ioendian.big));
     cha.write(1);
   }
 
@@ -27,7 +25,7 @@ proc test2() {
   {
     var ch = f.writer(); // defaults to dynamic, text, locking
     // make a binary, unlocked channel using same buffer as ch
-    var cha: fileWriter(kind=iokind.big, locking=false) = ch;
+    var cha = ch.withSerializer(new BinarySerializer(ioendian.big));
     cha.write(1);
   }
 

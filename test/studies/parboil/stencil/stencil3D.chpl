@@ -73,7 +73,7 @@ proc main(args: [] string) {
 
 proc readData(infileName:string, ref A: [] real(32), nx: int,ny: int, nz: int) {
   var f = open(infileName, ioMode.r);
-  var r = f.reader(kind=ionative);
+  var r = f.reader(deserializer=new BinaryDeserializer());
   r.read(A);
   r.close();
   f.close();
@@ -82,7 +82,7 @@ proc readData(infileName:string, ref A: [] real(32), nx: int,ny: int, nz: int) {
 proc outputData(outfileName: string, ANext: [] real(32),
                 nx: int, ny: int, nz: int) {
   var f = open(outfileName, ioMode.cw);
-  var w = f.writer(kind=ionative);
+  var w = f.writer(serializer=new BinarySerializer());
   var size = (nx*ny*nz):int(32);
   w.write(size);
   w.write(ANext);
