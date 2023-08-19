@@ -9350,18 +9350,18 @@ record itemReaderInternal {
 // And now, the toplevel items.
 
 /* standard input, otherwise known as file descriptor 0 */
-const stdin:fileReader(iokind.dynamic, true);
+const stdin:fileReader(true);
 stdin = try! (new file(0)).reader();
 
 extern proc chpl_cstdout():chpl_cFilePtr;
 /* standard output, otherwise known as file descriptor 1 */
-const stdout:fileWriter(iokind.dynamic, true);
+const stdout:fileWriter(true);
 stdout = try! (new file(chpl_cstdout())).writer();
 
 
 extern proc chpl_cstderr():chpl_cFilePtr;
 /* standard error, otherwise known as file descriptor 2 */
-const stderr:fileWriter(iokind.dynamic, true);
+const stderr:fileWriter(true);
 stderr = try! (new file(chpl_cstderr())).writer();
 
 /* Equivalent to ``stdin.read``. See :proc:`fileReader.read` */
