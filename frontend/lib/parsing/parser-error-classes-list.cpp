@@ -456,11 +456,11 @@ void ErrorInvalidParenfulDeprecation::write(ErrorWriterBase& wr) const {
   auto attributeGroup = std::get<const uast::AttributeGroup*>(info);
   auto appliedTo = std::get<const uast::AstNode*>(info);
 
-  wr.heading(kind_, type_, attributeGroup, "the '@deprecated' attribute with 'parenless=true' can only be applied to parenless procedures.");
-  wr.message("It is used to indicate that a parenless procedure used to be callable with parentheses.");
+  wr.heading(kind_, type_, attributeGroup, "the '@deprecated' attribute with 'parenful=true' can only be applied to parenless functions.");
+  wr.message("It is used to indicate that a parenless function used to be callable with parentheses.");
 
   if (auto fn = appliedTo->toFunction()) {
-    wr.message("The attribute is applied to a non-parenless procedure here:");
+    wr.message("The attribute is applied to a non-parenless function here:");
     wr.codeForDef(fn);
   } else {
     wr.message("the attribute is applied to a non-procedure here:");

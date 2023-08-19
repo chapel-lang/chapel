@@ -303,20 +303,20 @@ void ParserContext::noteDeprecation(YYLTYPE loc, MaybeNamedActualList* actuals) 
       if (!(actual.name == UniqueString::get(context(), "since").podUniqueString() ||
             actual.name == UniqueString::get(context(), "notes").podUniqueString() ||
             actual.name == UniqueString::get(context(), "suggestion").podUniqueString()||
-            actual.name == UniqueString::get(context(), "parenless").podUniqueString() ||
+            actual.name == UniqueString::get(context(), "parenful").podUniqueString() ||
             actual.name.isEmpty())) {
         error(loc, "unrecognized argument name '%s'. "
                    "'@deprecated' attribute only accepts 'since', 'notes', "
-                   "'parenless', and 'suggestion' arguments",
+                   "'parenful', and 'suggestion' arguments",
                    actual.name.c_str());
       }
       if (actual.name.isEmpty()) {
         allActualsNamed = false;
       }
-      if (actual.name == UniqueString::get(context(), "parenless").podUniqueString()) {
+      if (actual.name == UniqueString::get(context(), "parenful").podUniqueString()) {
         auto boolLit = actual.expr->toBoolLiteral();
         if (!boolLit || !boolLit->value()) {
-          error(loc, "invalid value for deprecated attribute's 'parenless' "
+          error(loc, "invalid value for deprecated attribute's 'parenful' "
                      "parameter; only 'true' is supported.");
         }
         isParenfulDeprecation = true;

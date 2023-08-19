@@ -1,4 +1,4 @@
-@deprecated(notes="the parenful version of function f() is deprecated", parenless=true)
+@deprecated(notes="the parenful version of function f() is deprecated", parenful=true)
 proc f() {
     return 42;
 }
