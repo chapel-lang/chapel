@@ -410,14 +410,14 @@ private proc copyFileImpl(src: string, dest: string) throws {
     } catch { /* ignore errors */ }
   }
 
-  var srcChnl = try srcFile.reader(kind=ionative, locking=false);
+  var srcChnl = try srcFile.reader(locking=false);
   defer {
     try {
       srcChnl.close();
     } catch { /* ignore errors */ }
   }
 
-  var destChnl = try destFile.writer(kind=ionative, locking=false);
+  var destChnl = try destFile.writer(locking=false);
   defer {
     try {
       destChnl.close();
@@ -430,7 +430,7 @@ private proc copyFileImpl(src: string, dest: string) throws {
   // If increasing the read size, make sure there's a test in
   // test/library/standard/FileSystem that copies a file larger than one buffer.
   while (try srcChnl.readBytes(buf, maxSize=4096)) {
-    try destChnl.write(buf);
+    try destChnl.writeBytes(buf);
     // From mppf:
     // If you want it to be faster, we can make it only buffer once (sharing
     // the bytes read into memory between the two channels). To do that you'd
