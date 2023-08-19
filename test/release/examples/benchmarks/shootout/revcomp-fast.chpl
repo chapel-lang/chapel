@@ -10,8 +10,7 @@ const table = initTable("ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n");
 
 proc main(args: [] string) {
   const stdin = new file(0),
-        input = stdin.reader(iokind.native, locking=false,
-                             hints=ioHintSet.mmap(true)),
+        input = stdin.reader(locking=false, hints=ioHintSet.mmap(true)),
         len = stdin.size;
   var data: [0..#len] uint(8);
 
@@ -42,7 +41,7 @@ proc main(args: [] string) {
       input.revert();
 
       // Read up to the nextDescOffset into the data array.
-      input.read(data[descOffset..nextDescOffset]);
+      input.readBinary(data[descOffset..nextDescOffset]);
 
       // chars to rewind past: 1 for '\n' and 1 for '>' if we're not yet at eof
       const rewind = if eof then 1 else 2;
@@ -53,7 +52,7 @@ proc main(args: [] string) {
   }
 
   // write the data out to stdout once all tasks have completed
-  const stdoutBin = (new file(1)).writer(iokind.native, locking=false);
+  const stdoutBin = (new file(1)).writer(locking=false);
   stdoutBin.writeBinary(data);
 }
 

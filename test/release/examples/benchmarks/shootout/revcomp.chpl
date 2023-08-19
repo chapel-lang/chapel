@@ -40,7 +40,7 @@ proc main(args: [] string) {
       process(data, start, idx-2);
   }
 
-  const stdoutBin = (new file(1)).writer(iokind.native, locking=false);
+  const stdoutBin = (new file(1)).writer(locking=false);
   stdoutBin.writeBinary(data);
 }
 
