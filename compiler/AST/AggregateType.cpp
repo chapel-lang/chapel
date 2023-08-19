@@ -977,6 +977,8 @@ AggregateType* AggregateType::generateType(CallExpr* call, const char* callStrin
         USR_PRINT(call, "type specifier did not match: %s", typeSignature);
         USR_PRINT(call, "type '%s' does not contain a field named '%s'", symbol->name, ne->name);
         USR_STOP();
+      } else if (field->hasFlag(FLAG_DEPRECATED)) {
+        field->maybeGenerateDeprecationWarning(ne);
       }
       map.put(field, toSymExpr(ne->actual)->symbol());
     } else {
