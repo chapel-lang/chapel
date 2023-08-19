@@ -2523,12 +2523,14 @@ with any file, and so cannot be used to perform I/O.
 The :record:`fileReader` type is generic.
 */
 pragma "ignore noinit"
+pragma "ignore deprecated use"
 record fileReader {
   /*
      kind is an enum :type:`iokind` that allows narrowing
      this fileReader's I/O style for more efficient binary I/O.
    */
-  param kind:iokind;
+  @deprecated(notes="'kind' is deprecated, please use Deserializers to configure endianness instead")
+  param kind:iokind = iokind.dynamic;
   /*
      locking is a boolean indicating whether it is safe to use this
      fileReader concurrently (when `true`).
@@ -2597,12 +2599,14 @@ file, and so cannot be used to perform I/O.
 The :record:`fileWriter` type is generic.
 */
 pragma "ignore noinit"
+pragma "ignore deprecated use"
 record fileWriter {
   /*
      kind is an enum :type:`iokind` that allows narrowing
      this fileWriter's I/O style for more efficient binary I/O.
    */
-  param kind:iokind;
+  @deprecated(notes="'kind' is deprecated, please use Serializers to configure endianness instead")
+  param kind:iokind = iokind.dynamic;
   /*
      locking is a boolean indicating whether it is safe to use this
      fileWriter concurrently (when `true`).
