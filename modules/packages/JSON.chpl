@@ -60,7 +60,7 @@ module JSON {
       st.array_style = QIO_ARRAY_FORMAT_JSON:uint(8);
       st.tuple_style = QIO_TUPLE_FORMAT_JSON:uint(8);
       dc._set_styleInternal(st);
-      dc._writeOne(dc.kind, val, here);
+      dc._writeOne(dc._kind, val, here);
     }
 
     proc serializeValue(writer: _writeType, const val:?t) throws {
@@ -377,7 +377,7 @@ module JSON {
       st.array_style = QIO_ARRAY_FORMAT_JSON:uint(8);
       st.tuple_style = QIO_TUPLE_FORMAT_JSON:uint(8);
       dc._set_styleInternal(st);
-      dc._readOne(dc.kind, val, here);
+      dc._readOne(dc._kind, val, here);
     }
 
     proc deserializeType(reader:_readerType, type readType) : readType throws {
@@ -389,7 +389,7 @@ module JSON {
       // - escaped strings
       if isNumericType(readType) || isBoolType(readType) {
         var x : readType;
-        reader._readOne(reader.kind, x, here);
+        reader._readOne(reader._kind, x, here);
         return x;
       } else if isStringType(readType) || isBytesType(readType) {
         // TODO: Ideally something like:
