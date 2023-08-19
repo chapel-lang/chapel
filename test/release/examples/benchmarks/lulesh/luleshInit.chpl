@@ -29,7 +29,7 @@ if initFromFile {
 // Helper variables for reading from a file
 
 var infile: file;
-var reader: fileReader(iokind.dynamic, true);
+var reader: fileReader(locking=true);
 
 if initFromFile {
   infile = open(filename, ioMode.r);
