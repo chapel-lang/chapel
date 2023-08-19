@@ -4943,10 +4943,6 @@ This function is equivalent to calling :proc:`open` and then
 :proc:`file.reader` on the resulting file.
 
 :arg path: which file to open (for example, "some/file.txt").
-:arg kind: :type:`iokind` compile-time argument to determine the
-            corresponding parameter of the :record:`fileReader` type. Defaults
-            to ``iokind.dynamic``, meaning that the associated
-            :record:`iostyle` controls the formatting choices.
 :arg locking: compile-time argument to determine whether or not the
               fileReader should use locking; sets the
               corresponding parameter of the :record:`fileReader` type.
@@ -5090,10 +5086,6 @@ This function is equivalent to calling :proc:`open` with ``ioMode.cwr`` and then
 :proc:`file.writer` on the resulting file.
 
 :arg path: which file to open (for example, "some/file.txt").
-:arg kind: :type:`iokind` compile-time argument to determine the
-           corresponding parameter of the :record:`fileWriter` type. Defaults
-           to ``iokind.dynamic``, meaning that the associated
-           :record:`iostyle` controls the formatting choices.
 :arg locking: compile-time argument to determine whether or not the
               fileWriter should use locking; sets the
               corresponding parameter of the :record:`fileWriter` type.
@@ -5173,10 +5165,6 @@ config param useNewFileReaderRegionBounds = false;
    return `false` in many cases such as :proc:`fileReader.read`) to indicate
    that the end was reached.
 
-   :arg kind: :type:`iokind` compile-time argument to determine the
-              corresponding parameter of the :record:`fileReader` type. Defaults
-              to ``iokind.dynamic``, meaning that the associated
-              :record:`iostyle` controls the formatting choices.
    :arg locking: compile-time argument to determine whether or not the
                  fileReader should use locking; sets the
                  corresponding parameter of the :record:`fileReader` type.
@@ -5427,10 +5415,6 @@ config param useNewFileWriterRegionBounds = false;
    that file will have a size equal to the last offset written to by any
    fileWriter.
 
-   :arg kind: :type:`iokind` compile-time argument to determine the
-              corresponding parameter of the :record:`fileWriter` type. Defaults
-              to ``iokind.dynamic``, meaning that the associated
-              :record:`iostyle` controls the formatting choices.
    :arg locking: compile-time argument to determine whether or not the
                  fileWriter should use locking; sets the
                  corresponding parameter of the :record:`fileWriter` type.
