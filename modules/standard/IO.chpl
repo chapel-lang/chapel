@@ -602,6 +602,18 @@ enum iomode {
   cwr = 4,
 }
 
+@chpldoc.nodoc
+enum _iokind {
+  // don't change these without updating qio_style.h QIO_NATIVE, etc
+  // a default of 0 is always reasonable, but you can avoid some
+  // branches to get faster I/O by setting this to native, big, or little.
+  // In that case, the style is only consulted for text or string I/O.
+  dynamic = 0, // look in iostyle
+  native = 1,
+  big = 2, // aka "network"
+  little = 3
+}
+
 /*
 
 The :type:`iokind` type is an enum. When used as arguments to the
@@ -634,25 +646,34 @@ There are synonyms available for these values:
 * :proc:`iolittle` = ``iokind.little``
 
 */
-enum iokind {
-  // don't change these without updating qio_style.h QIO_NATIVE, etc
-  // a default of 0 is always reasonable, but you can avoid some
-  // branches to get faster I/O by setting this to native, big, or little.
-  // In that case, the style is only consulted for text or string I/O.
-  dynamic = 0, // look in iostyle
-  native = 1,
-  big = 2, // aka "network"
-  little = 3
-}
+@deprecated(notes="'iokind' is deprecated, please use Serializers that support endianness instead")
+type iokind = _iokind;
+
+@chpldoc.nodoc
+@deprecated(notes="'iokind.dynamic' is deprecated, please use Serializers that support endianness instead")
+proc type iokind.dynamic param do return _iokind.dynamic;
+@chpldoc.nodoc
+@deprecated(notes="'iokind.native' is deprecated, please use Serializers that support endianness instead")
+proc type iokind.native param do return _iokind.native;
+@chpldoc.nodoc
+@deprecated(notes="'iokind.big' is deprecated, please use Serializers that support endianness instead")
+proc type iokind.big param do return _iokind.big;
+@chpldoc.nodoc
+@deprecated(notes="'iokind.little' is deprecated, please use Serializers that support endianness instead")
+proc type iokind.little param do return _iokind.little;
 
 /* A synonym for ``iokind.dynamic``; see :type:`iokind` */
-param iodynamic = iokind.dynamic;
-/* A synonym for ``iokind.native``; see :type:`iokind` */
-param ionative = iokind.native;
-/* A synonym for ``iokind.big``; see :type:`iokind` */
-param iobig = iokind.big;
-/* A synonym for ``iokind.little``; see :type:`iokind` */
-param iolittle = iokind.little;
+@deprecated(notes="'iodynamic' is deprecated, please use Serializers that support endianness instead")
+param iodynamic = _iokind.dynamic;
+/* A synonym for ``_iokind.native``; see :type:`_iokind` */
+@deprecated(notes="'ionative' is deprecated, please use Serializers that support endianness instead")
+param ionative = _iokind.native;
+/* A synonym for ``_iokind.big``; see :type:`_iokind` */
+@deprecated(notes="'iobig' is deprecated, please use Serializers that support endianness instead")
+param iobig = _iokind.big;
+/* A synonym for ``_iokind.little``; see :type:`_iokind` */
+@deprecated(notes="'iolittle' is deprecated, please use Serializers that support endianness instead")
+param iolittle = _iokind.little;
 
 /*
 
