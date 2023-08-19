@@ -105,6 +105,37 @@ module DefaultAssociative {
                                                  initElts=initElts);
     }
 
+    proc _isDefaultDeser(f) param : bool {
+      if f._writing then return f.serializerType == IO.DefaultSerializer;
+      else return f.deserializerType == IO.DefaultDeserializer;
+    }
+    proc _usingSerializers(f) param : bool {
+      if f._writing then return f.serializerType != nothing;
+      else return f.deserializerType != nothing;
+    }
+
+    proc dsiSerialWrite(f) throws where _usingSerializers(f) && !_isDefaultDeser(f) {
+      ref ser = f.serializer;
+      ser.startList(f, dsiNumIndices:uint);
+      for idx in this do
+        ser.writeListElement(f, idx);
+      ser.endList(f);
+    }
+
+    proc dsiSerialRead(f) throws where _usingSerializers(f) && !_isDefaultDeser(f) {
+      dsiClear();
+      ref des = f.deserializer;
+      des.startList(f);
+      while true {
+        try {
+          dsiAdd(des.readListElement(f, idxType));
+        } catch {
+          break;
+        }
+      }
+      des.endList(f);
+    }
+
     proc dsiSerialWrite(f) throws {
       const binary = f.binary();
 
