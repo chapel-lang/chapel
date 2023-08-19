@@ -132,7 +132,7 @@ proc main(args: [] string) {
   // Read in array
   //var f = open(in_array, ioMode.r);
   var f = open(in_name + "_" + map_type + ".bin", ioMode.r);
-  var r = f.reader(kind=ionative);
+  var r = f.reader(deserializer=new BinaryDeserializer());
 
   // Read in dissimilarity coefficients
   var dissimilarity_file = map_type + ".txt";
@@ -177,7 +177,7 @@ proc main(args: [] string) {
     // Read in array
     var f = open(in_name + "_" + map_type + ".bin", ioMode.r);
     var first_point = locD_plus.first[0]*locD_plus.shape[1] + locD_plus.first[1];
-    var r = f.reader(kind=ionative, region=first_point..);
+    var r = f.reader(deserializer=new BinaryDeserializer(), region=first_point..);
 
     for i in locD_plus.first[0]..locD_plus.last[0] {
       for j in locD_plus.first[1]..locD_plus.last[1] {

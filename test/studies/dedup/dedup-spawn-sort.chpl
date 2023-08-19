@@ -25,7 +25,7 @@ proc main(args:[] string)
   var BlockNumLocales = {0..#numLocales} dmapped Block({0..#numLocales});
   var distributedBuffers: [BlockNumLocales] file;
   var distributedWriters: [BlockNumLocales]
-    fileWriter(kind=iokind.native, locking=true);
+    fileWriter(locking=true);
   
   // Open up buffers to store the hashes 
   forall (f,w) in zip(distributedBuffers, distributedWriters) {

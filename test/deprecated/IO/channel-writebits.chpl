@@ -3,7 +3,7 @@ use IO;
 
 config const testfile="test.bin";
 var f = open(testfile, ioMode.cwr);
-var r = f.writer(kind=ionative);
+var r = f.writer(serializer=new BinarySerializer());
 
 
 // should throw deprecation

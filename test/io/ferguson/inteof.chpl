@@ -93,7 +93,7 @@ for i in 0..sizes.size-1
     if verbose then writeln("n=", n, " reopen=", reopen, " read binary");
     {
       var infile = open(filename, ioMode.cwr);
-      var writer = infile.writer(kind=iokind.native);
+      var writer = infile.writer(serializer=new BinarySerializer());
 
       writer.write(n);
       for i in 1..n {
@@ -107,7 +107,7 @@ for i in 0..sizes.size-1
         infile = open(filename, ioMode.r);
       }
 
-      var reader = infile.reader(kind=iokind.native);
+      var reader = infile.reader(deserializer=new BinaryDeserializer());
 
       var gotn:int;
       reader.read(gotn);
