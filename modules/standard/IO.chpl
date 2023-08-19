@@ -649,17 +649,18 @@ There are synonyms available for these values:
 @deprecated(notes="'iokind' is deprecated, please use Serializers that support endianness instead")
 type iokind = _iokind;
 
+// These exist because field accessors aren't carried over for type aliases
+pragma "ignore deprecated use"
 @chpldoc.nodoc
-@deprecated(notes="'iokind.dynamic' is deprecated, please use Serializers that support endianness instead")
 proc type iokind.dynamic param do return _iokind.dynamic;
+pragma "ignore deprecated use"
 @chpldoc.nodoc
-@deprecated(notes="'iokind.native' is deprecated, please use Serializers that support endianness instead")
 proc type iokind.native param do return _iokind.native;
+pragma "ignore deprecated use"
 @chpldoc.nodoc
-@deprecated(notes="'iokind.big' is deprecated, please use Serializers that support endianness instead")
 proc type iokind.big param do return _iokind.big;
+pragma "ignore deprecated use"
 @chpldoc.nodoc
-@deprecated(notes="'iokind.little' is deprecated, please use Serializers that support endianness instead")
 proc type iokind.little param do return _iokind.little;
 
 /* A synonym for ``iokind.dynamic``; see :type:`iokind` */
