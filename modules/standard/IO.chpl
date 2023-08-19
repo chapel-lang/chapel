@@ -4973,6 +4973,16 @@ This function is equivalent to calling :proc:`open` and then
 :throws IllegalArgumentError: Thrown if trying to read explicitly prior to byte
                               0.
  */
+proc openReader(path:string, param locking=true,
+                region: range(?) = 0.., hints=ioHintSet.empty,
+                in deserializer: ?dt = defaultSerializeVal(false))
+    : fileReader(locking, dt) throws where (!region.hasHighBound() ||
+                                            useNewOpenReaderRegionBounds) {
+  return openReaderHelper(path, iokind.dynamic, locking, region, hints, deserializer=deserializer);
+}
+
+pragma "last resort"
+@deprecated("openReader with a 'kind' argument is deprecated, please use Deserializers that support endianness instead")
 proc openReader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty,
@@ -5102,6 +5112,15 @@ This function is equivalent to calling :proc:`open` with ``ioMode.cwr`` and then
 :throws IllegalArgumentError: Thrown if trying to write explicitly prior to byte
                               0.
 */
+proc openWriter(path:string, param locking=true,
+                hints = ioHintSet.empty,
+                in serializer: ?st = defaultSerializeVal(true))
+    : fileWriter(locking, st) throws {
+  return openWriterHelper(path, iokind.dynamic, locking, hints=hints, serializer=serializer);
+}
+
+pragma "last resort"
+@deprecated("openWriter with a 'kind' argument is deprecated, please use Serializers that support endianness instead")
 proc openWriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 hints = ioHintSet.empty,
@@ -5179,6 +5198,17 @@ config param useNewFileReaderRegionBounds = false;
    :throws IllegalArgumentError: Thrown if trying to read explicitly prior to
                                  byte 0.
  */
+proc file.reader(param locking=true,
+                 region: range(?) = 0.., hints = ioHintSet.empty,
+                 in deserializer: ?dt = defaultSerializeVal(false))
+  : fileReader(locking, dt) throws where (!region.hasHighBound() ||
+                                          useNewFileReaderRegionBounds) {
+  return this.readerHelper(iokind.dynamic, locking, region, hints,
+                           deserializer=deserializer);
+}
+
+pragma "last resort"
+@deprecated("reader with a 'kind' argument is deprecated, please use Deserializers instead")
 proc file.reader(param kind=iokind.dynamic, param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty,
                  in deserializer: ?dt = defaultSerializeVal(false))
@@ -5423,6 +5453,16 @@ config param useNewFileWriterRegionBounds = false;
    :throws IllegalArgumentError: Thrown if trying to write explicitly prior to
                                  byte 0.
  */
+proc file.writer(param locking=true,
+                 region: range(?) = 0.., hints = ioHintSet.empty,
+                 in serializer:?st = defaultSerializeVal(true)):
+                 fileWriter(locking,st) throws where (!region.hasHighBound() ||
+                                                      useNewFileWriterRegionBounds) {
+  return this.writerHelper(iokind.dynamic, locking, region, hints, serializer=serializer);
+}
+
+pragma "last resort"
+@deprecated("writer with a 'kind' argument is deprecated, please use Serializers instead")
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty,
                  in serializer:?st = defaultSerializeVal(true)):
