@@ -2562,6 +2562,11 @@ record fileReader {
   var _readWriteThisFromLocale = nilLocale;
 }
 
+pragma "ignore deprecated use"
+@chpldoc.nodoc
+proc fileReader._kind param do return kind;
+
+
 /* Returns a bool indicating whether the fileReader is used for writing.  It is
    always ``false`` */
 @deprecated(notes="'fileReader.writing' is deprecated and will be removed in a future release")
@@ -2638,6 +2643,10 @@ record fileWriter {
   var _readWriteThisFromLocale = nilLocale;
 }
 
+pragma "ignore deprecated use"
+@chpldoc.nodoc
+proc fileWriter._kind param do return kind;
+
 /* Returns a bool indicating whether the fileWriter is used for writing.  It is
    always ``true`` */
 @deprecated(notes="'fileWriter.writing' is deprecated and will be removed in a future release")
@@ -2701,7 +2710,7 @@ record DefaultSerializer {
   proc serializeValue(writer: fileWriter, const val: ?t) : void throws {
     if isNumericType(t) || isBoolType(t) || isEnumType(t) ||
        t == string || t == bytes {
-      writer._writeOne(writer.kind, val, writer.getLocaleOfIoRequest());
+      writer._writeOne(writer._kind, val, writer.getLocaleOfIoRequest());
     } else if t == _nilType {
       writer._writeLiteral("nil");
     } else if isClassType(t) || chpl_isAnyCPtr(t) {
@@ -2912,7 +2921,7 @@ record DefaultDeserializer {
     if isNumericType(readType) || isBoolType(readType) || isEnumType(readType) ||
        readType == string || readType == bytes {
       var x : readType;
-      reader._readOne(reader.kind, x, here);
+      reader._readOne(reader._kind, x, here);
       return x;
     } else if canResolveTypeMethod(readType, "deserializeFrom", reader, this) ||
               isArrayType(readType) {
@@ -3103,7 +3112,7 @@ record BinarySerializer {
     st.str_style = iostringstyleInternal.lenVb_data: int(64);
 
     dc._set_styleInternal(st);
-    dc._writeOne(dc.kind, val, here);
+    dc._writeOne(dc._kind, val, here);
   }
 
   /*
@@ -3273,7 +3282,7 @@ record BinaryDeserializer {
     st.str_style = iostringstyleInternal.lenVb_data: int(64);
 
     dc._set_styleInternal(st);
-    dc._readOne(dc.kind, val, here);
+    dc._readOne(dc._kind, val, here);
   }
 
   /*
@@ -3508,7 +3517,7 @@ proc fileWriter.init(param kind:_iokind, param locking:bool, type serializerType
 @chpldoc.nodoc
 proc fileReader.init=(x: fileReader) {
   // allow the kind and locking fields to be modified in initialization
-  this.kind = if this.type.kind != ? then this.type.kind else x.kind;
+  this.kind = if this.type.kind != ? then this.type.kind else x._kind;
   this.locking = if this.type.locking != ?
                  then this.type.locking
                  else x.locking;
@@ -3527,7 +3536,7 @@ proc fileReader.init=(x: fileReader) {
 @chpldoc.nodoc
 proc fileWriter.init=(x: fileWriter) {
   // allow the kind and locking fields to be modified in initialization
-  this.kind = if this.type.kind != ? then this.type.kind else x.kind;
+  this.kind = if this.type.kind != ? then this.type.kind else x._kind;
   this.locking = if this.type.locking != ?
                  then this.type.locking
                  else x.locking;
@@ -3647,14 +3656,14 @@ proc ref fileWriter.deinit() {
 // Convenience for forms like 'r.withDeserializer(DefaultDeserializer)`
 @chpldoc.nodoc
 proc fileReader.withDeserializer(type deserializerType) :
-  fileReader(this.kind, this.locking, deserializerType) {
+  fileReader(this._kind, this.locking, deserializerType) {
   var des : deserializerType;
   return withDeserializer(des);
 }
 
 @chpldoc.nodoc
-proc fileReader.withDeserializer(in deserializer: ?dt) : fileReader(this.kind, this.locking, dt) {
-  var ret = new fileReader(this.kind, this.locking, dt);
+proc fileReader.withDeserializer(in deserializer: ?dt) : fileReader(this._kind, this.locking, dt) {
+  var ret = new fileReader(this._kind, this.locking, dt);
   ret._deserializer = new unmanaged _serializeWrapper(dt, deserializer);
   ret._channel_internal = this._channel_internal;
   ret._home = _home;
@@ -3668,14 +3677,14 @@ proc fileReader.withDeserializer(in deserializer: ?dt) : fileReader(this.kind, t
 // Convenience for forms like 'w.withSerializer(DefaultSerializer)`
 @chpldoc.nodoc
 proc fileWriter.withSerializer(type serializerType) :
-  fileWriter(this.kind, this.locking, serializerType) {
+  fileWriter(this._kind, this.locking, serializerType) {
   var ser : serializerType;
   return withSerializer(ser);
 }
 
 @chpldoc.nodoc
-proc fileWriter.withSerializer(in serializer: ?st) : fileWriter(this.kind, this.locking, st) {
-  var ret = new fileWriter(this.kind, this.locking, st);
+proc fileWriter.withSerializer(in serializer: ?st) : fileWriter(this._kind, this.locking, st) {
+  var ret = new fileWriter(this._kind, this.locking, st);
   ret._serializer = new unmanaged _serializeWrapper(st, serializer);
   ret._channel_internal = this._channel_internal;
   ret._home = _home;
@@ -5887,7 +5896,7 @@ proc fileReader._deserializeOne(ref x:?t, loc:locale) throws {
           reader._deserializer = nil; }
 
   if t == chpl_ioLiteral || t == chpl_ioNewline || t == _internalIoBits || t == _internalIoChar {
-    reader._readOne(reader.kind, x, reader.getLocaleOfIoRequest());
+    reader._readOne(reader._kind, x, reader.getLocaleOfIoRequest());
     return;
   }
 
@@ -5933,7 +5942,7 @@ proc fileWriter._serializeOne(const x:?t, loc:locale) throws {
           writer._serializer = nil; }
 
   if t == chpl_ioLiteral || t == chpl_ioNewline || t == _internalIoBits || t == _internalIoChar {
-    writer._writeOne(writer.kind, x, writer.getLocaleOfIoRequest());
+    writer._writeOne(writer._kind, x, writer.getLocaleOfIoRequest());
     return;
   }
 
@@ -6156,7 +6165,7 @@ proc fileReader.readIt(ref x) throws {
     if deserializerType != nothing {
       _deserializeOne(x, origLocale);
     } else {
-      _readOne(kind, x, origLocale);
+      _readOne(_kind, x, origLocale);
     }
   }
 }
@@ -6167,7 +6176,7 @@ proc fileWriter.writeIt(const x) throws {
 
   on this._home {
     try! this.lock(); defer { this.unlock(); }
-    try _writeOne(kind, x, origLocale);
+    try _writeOne(_kind, x, origLocale);
   }
 }
 
@@ -6626,7 +6635,7 @@ iter fileReader.lines(stripNewline = false) {
   this._set_styleInternal(newline_style);
 
   // Iterate over lines
-  var itemReader = new itemReaderInternal(string, kind, locking, deserializerType, this);
+  var itemReader = new itemReaderInternal(string, _kind, locking, deserializerType, this);
   for line in itemReader {
     if !stripNewline then yield line;
     else {
@@ -6722,7 +6731,7 @@ inline proc fileReader._readInner(ref args ...?k):void throws {
       if deserializerType != nothing {
         _deserializeOne(args[i], origLocale);
       } else {
-        _readOne(kind, args[i], origLocale);
+        _readOne(_kind, args[i], origLocale);
       }
     }
   }
@@ -6776,7 +6785,7 @@ proc fileReader.readHelper(ref args ...?k, style:iostyleInternal):bool throws {
         if deserializerType != nothing {
           _deserializeOne(args[i], origLocale);
         } else {
-          _readOne(kind, args[i], origLocale);
+          _readOne(_kind, args[i], origLocale);
         }
       }
     }
@@ -9005,7 +9014,7 @@ proc fileReader.read(type t) throws {
     } else {
       pragma "no auto destroy"
       var tmp : t;
-      _readOne(kind, tmp, origLocale);
+      _readOne(_kind, tmp, origLocale);
       __primitive("=", ret, tmp);
     }
   }
@@ -9100,7 +9109,7 @@ inline proc fileWriter.write(const args ...?k) throws {
       if serializerType != nothing {
         this._serializeOne(args(i), origLocale);
       } else {
-        try _writeOne(kind, args(i), origLocale);
+        try _writeOne(_kind, args(i), origLocale);
       }
     }
   }
