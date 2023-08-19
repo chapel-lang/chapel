@@ -1,4 +1,4 @@
 fileReader
-fileReader(native,false,nothing)
+fileReader(false,nothing)
 fileWriter
-fileWriter(native,false,nothing)
+fileWriter(false,nothing)
