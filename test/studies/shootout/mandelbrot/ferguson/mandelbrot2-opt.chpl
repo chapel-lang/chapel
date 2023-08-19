@@ -60,7 +60,7 @@ proc main() {
   datastart = hwriter.offset();
   hwriter.close();
 
-  var writer = f.writer(kind=iokind.native, locking=false, region=datastart..);
+  var writer = f.writer(serializer=new BinarySerializer(), locking=false, region=datastart..);
   for (im,re8) in D {
     writer.write(set(im,re8));
   }
