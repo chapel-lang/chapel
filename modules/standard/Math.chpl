@@ -346,7 +346,7 @@ module Math {
     return chpl_atan2(y, x);
   }
 
-  /* Returns the arc tangent of the two arguments.
+  /* Returns the arc tangent of the ratio of the two arguments.
 
      This is equivalent to
      the arc tangent of `y` / `x` except that the signs of `y`
@@ -546,13 +546,13 @@ module Math {
   }
 
   /* Returns the value of the argument `x` multiplied by 2 raised to the
-     argument `n` power, i.e. x * 2**n. */
+     argument `n` power, i.e., x * 2**n. */
   inline proc ldexp(x:real(64), n:int(32)):real(64) {
     return chpl_ldexp(x, n);
   }
 
   /* Returns the value of the argument `x` multiplied by 2 raised to the
-     argument `n` power, i.e. x * 2**n. */
+     argument `n` power, i.e., x * 2**n. */
   inline proc ldexp(x:real(32), n:int(32)):real(32) {
     return chpl_ldexp(x, n);
   }
@@ -997,7 +997,7 @@ module Math {
     return chpl_tgamma(x);
   }
 
-  /* Returns the greatest common divisor of the integer argument `x` and
+  /* Returns the greatest common divisor of the integer arguments `x` and
      `y`. */
   proc gcd(in x: int,in y: int): int {
     return chpl_gcd(x, y);
