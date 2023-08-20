@@ -1,7 +1,30 @@
-use BlockDist, CyclicDist;
+config var n = 10;
+{
+  use BlockDist;
+  var Dist = new dmap(new Block({1..n}));
+  var Dom = {1..n} dmapped Dist;
+  var A: [Dom] real;
+  writeln(A);
+  const Dist2: dmap(Block(1)) = new Block({1..10});
+  writeln(Dist2.type:string);
+}
 
-const Dist: dmap(Block(1)) = new Block({1..10});
-const Dist2: dmap(Cyclic(1)) = new Cyclic(1);
+{
+  use CyclicDist;
+  var Dist = new dmap(new Cyclic(1));
+  var Dom = {1..n} dmapped Dist;
+  var A: [Dom] real;
+  writeln(A);
+  const Dist2: dmap(Cyclic(1)) = new Cyclic(1);
+  writeln(Dist2.type:string);
+}
 
-writeln(Dist.type:string);
-writeln(Dist2.type:string);
+{
+  use ReplicatedDist;
+  var Dist = new dmap(new Replicated());
+  var Dom = {1..n} dmapped Dist;
+  var A: [Dom] real;
+  writeln(A);
+  const Dist2: dmap(Replicated) = new Replicated();
+  writeln(Dist2.type:string);
+}

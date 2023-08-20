@@ -11,7 +11,7 @@ proc myDM(param dmType: DMType) {
     when DMType.block do return new Block(rank=1, boundingBox={1..n});
     when DMType.cyclic do return new Cyclic(startIdx=1);
     when DMType.blockcyclic do return new dmap(new BlockCyclic(startIdx=(1,), blocksize=(3,)));
-    when DMType.replicated do return new dmap(new Replicated());
+    when DMType.replicated do return new Replicated();
     otherwise halt("unexpected 'dmType': ", dmType);
     }
 }

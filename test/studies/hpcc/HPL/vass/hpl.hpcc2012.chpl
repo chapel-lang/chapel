@@ -13,7 +13,7 @@ use LinearAlgebra, Random, Time;
 // Use the distributions we need for this computation
 //
 use DimensionalDist2D, ReplicatedDim, BlockCycDim;
-use ReplicatedDist;
+use ReplicatedDist, ChplConfig;
 
 //
 // The number of matrices and the element type of those matrices
@@ -366,13 +366,13 @@ proc schurComplement(blk, AD, BD, Rest) {
 pragma "no copy return"
 proc DimensionalArr.dsiLocalSlice1((sliceDim1, sliceDim2)) {
   // might be more elegant to replace the explicit arg tuple with 'slice'
-  proc toScalar(slice)
+  proc toScalar(slice) do
     return if isIntegralType(slice.type) then slice else slice.low;
-  proc toRange(slice)
+  proc toRange(slice) do
     return if isIntegralType(slice.type) then slice..slice else slice;
-  proc origScalar(param dim) param
+  proc origScalar(param dim) param do
     return isIntegralType(if dim==1 then sliceDim1.type else sliceDim2.type);
-  proc toOrig(param dim, arg)
+  proc toOrig(param dim, arg) do
     return if origScalar(dim) then toScalar(arg) else toRange(arg);
 
   const dom = this.dom;
@@ -1074,14 +1074,14 @@ proc replicateU(abIx) {
         replU._value.localArrs[targloc.id].arrLocalRep = myLocalArr;
 }
 
-proc targetLocalesIndexForAbIndex(param dim, abIx)
+proc targetLocalesIndexForAbIndex(param dim, abIx) do
   return (divceilpos(abIx, blkSize) - 1) % (if dim == 1 then tl1 else tl2);
 
-proc targetLocaleForAbIndex(i,j)
+proc targetLocaleForAbIndex(i,j) do
   return targetLocales[targetLocalesIndexForAbIndex(1, i),
                        targetLocalesIndexForAbIndex(2, j)];
 
-proc targetLocaleReplForAbIndex(i,j)
+proc targetLocaleReplForAbIndex(i,j) do
   return targetLocalesRepl[targetLocalesIndexForAbIndex(1, i),
                            targetLocalesIndexForAbIndex(2, j)];
 

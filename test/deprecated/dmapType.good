@@ -1,4 +1,12 @@
-dmapType.chpl:3: warning: The use of 'dmap' is depreacted for this distribution; please replace 'dmap(<DistName>(<args>))' with '<DistName>(<args>)'
-dmapType.chpl:4: warning: The use of 'dmap' is depreacted for this distribution; please replace 'dmap(<DistName>(<args>))' with '<DistName>(<args>)'
+dmapType.chpl:4: warning: The use of 'dmap' is deprecated for this distribution; please replace 'new dmap(new <DistName>(<args>))' with 'new <DistName>(<args>)'
+dmapType.chpl:8: warning: The use of 'dmap' is depreacted for this distribution; please replace 'dmap(<DistName>(<args>))' with '<DistName>(<args>)'
+dmapType.chpl:14: warning: The use of 'dmap' is deprecated for this distribution; please replace 'new dmap(new <DistName>(<args>))' with 'new <DistName>(<args>)'
+dmapType.chpl:18: warning: The use of 'dmap' is depreacted for this distribution; please replace 'dmap(<DistName>(<args>))' with '<DistName>(<args>)'
+dmapType.chpl:24: warning: The use of 'dmap' is deprecated for this distribution; please replace 'new dmap(new <DistName>(<args>))' with 'new <DistName>(<args>)'
+dmapType.chpl:28: warning: The use of 'dmap' is depreacted for this distribution; please replace 'dmap(<DistName>(<args>))' with '<DistName>(<args>)'
+0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 Block(1,int(64),unmanaged DefaultDist)
+0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 Cyclic(1,int(64))
+0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+Replicated
