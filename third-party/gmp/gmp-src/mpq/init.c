@@ -32,7 +32,7 @@ see https://www.gnu.org/licenses/.  */
 #include "gmp-impl.h"
 
 void
-mpq_init (mpq_t x)
+mpq_init (mpq_ptr x)
 {
   static const mp_limb_t dummy_limb=0xc1a0;
   ALLOC(NUM(x)) = 0;

@@ -3,8 +3,8 @@
    Return the single-limb remainder.
    There are no constraints on the value of the divisor.
 
-Copyright 1991, 1993, 1994, 1999, 2000, 2002, 2007-2009, 2012 Free Software
-Foundation, Inc.
+Copyright 1991, 1993, 1994, 1999, 2000, 2002, 2007-2009, 2012, 2020
+Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -111,20 +111,18 @@ mpn_mod_1_unnorm (mp_srcptr up, mp_size_t un, mp_limb_t d)
   ASSERT (un > 0);
   ASSERT (d != 0);
 
-  d <<= GMP_NAIL_BITS;
-
   /* Skip a division if high < divisor.  Having the test here before
      normalizing will still skip as often as possible.  */
-  r = up[un - 1] << GMP_NAIL_BITS;
+  r = up[un - 1];
   if (r < d)
     {
-      r >>= GMP_NAIL_BITS;
-      un--;
-      if (un == 0)
+      if (--un == 0)
 	return r;
     }
   else
     r = 0;
+
+  d <<= GMP_NAIL_BITS;
 
   /* If udiv_qrnnd doesn't need a normalized divisor, can use the simple
      code above. */

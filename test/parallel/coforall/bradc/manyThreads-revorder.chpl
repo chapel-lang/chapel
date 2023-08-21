@@ -1,10 +1,10 @@
 config const numThreads = 64;
 
-var flag$: [0..numThreads] sync bool;
+var flag: [0..numThreads] sync bool;
 
-flag$[numThreads].writeEF(true);
+flag[numThreads].writeEF(true);
 coforall i in 1..numThreads {
-  const tmp = flag$[i].readFE();
+  const tmp = flag[i].readFE();
   writeln("Task ", i, " fired");
-  flag$[i-1].writeEF(true);
+  flag[i-1].writeEF(true);
 }

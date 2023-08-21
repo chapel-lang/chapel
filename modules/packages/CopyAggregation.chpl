@@ -91,7 +91,11 @@ module CopyAggregation {
 
   private config param verboseAggregation = false;
 
-  private param defaultBuffSize = if CHPL_COMM == "ugni" then 4096 else 8192;
+  private param defaultBuffSize =
+    if CHPL_TARGET_PLATFORM == "hpe-cray-ex" then 1024
+    else if CHPL_COMM == "ugni" then 4096
+    else 8192;
+
   private const yieldFrequency = getEnvInt("CHPL_AGGREGATION_YIELD_FREQUENCY", 1024);
   private const dstBuffSize = getEnvInt("CHPL_AGGREGATION_DST_BUFF_SIZE", defaultBuffSize);
   private const srcBuffSize = getEnvInt("CHPL_AGGREGATION_SRC_BUFF_SIZE", defaultBuffSize);

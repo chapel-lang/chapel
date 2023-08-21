@@ -138,6 +138,15 @@ see https://www.gnu.org/licenses/.  */
 	   : "=r" (m), "=r" (sh), "=&r" (sl)				\
 	   : "r" (ah), "rI" (bh), "%r" (al), "rI" (bl) __CLOBBER_CC)
 #endif
+
+#if defined (__aarch64__) && W_TYPE_SIZE == 64
+#define add_mssaaaa(m, sh, sl, ah, al, bh, bl)				\
+  __asm__ (  "adds	%2, %x5, %6\n\t"				\
+	     "adcs	%1, %x3, %x4\n\t"				\
+	     "csinv	%0, xzr, xzr, cc\n\t"				\
+	   : "=r" (m), "=r" (sh), "=&r" (sl)				\
+	   : "rZ" (ah), "rZ" (bh), "%rZ" (al), "rI" (bl) __CLOBBER_CC)
+#endif
 #endif /* defined (__GNUC__) */
 
 #ifndef add_mssaaaa
@@ -256,7 +265,7 @@ mpn_mod_1_1p_cps (mp_limb_t cps[4], mp_limb_t b)
       cps[2] = B1modb >> cnt;
     }
   B2modb = - b * bi;
-  ASSERT (B2modb <= b);    /* NB: equality iff b = B/2 */
+  ASSERT (B2modb <= b);    // NB: equality iff b = B/2
   cps[3] = B2modb;
 }
 

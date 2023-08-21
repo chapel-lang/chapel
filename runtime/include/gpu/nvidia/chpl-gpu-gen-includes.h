@@ -80,17 +80,17 @@ __device__ static inline uint32_t chpl_gpu_getGridDimZ()   { return __nvvm_read_
 // Atomic Operations
 // =================
 
-#define GPU_2OP_ATOMIC(T, runtime_name, cuda_name)           \
-  __device__ static inline void runtime_name(T *x, T val) {  \
-    cuda_name(x, val);                                       \
-  }                                                          \
-  __host__ static inline void runtime_name(T *x, T val) {}
+#define GPU_2OP_ATOMIC(T, runtime_name, cuda_name)            \
+  __device__ static inline T runtime_name(T *x, T val) {      \
+    return cuda_name(x, val);                                 \
+  }                                                           \
+  __host__ static inline T runtime_name(T *x, T val) {return 0;}
 
 #define GPU_3OP_ATOMIC(T, runtime_name, cuda_name)                   \
-  __device__ static inline void runtime_name(T *x, T val1, T val2) { \
-    cuda_name(x, val1, val2);                                        \
+  __device__ static inline T runtime_name(T *x, T val1, T val2) {    \
+    return cuda_name(x, val1, val2);                                 \
   }                                                                  \
-  __host__ static inline void runtime_name(T *x, T val1, T val2) {}
+  __host__ static inline T runtime_name(T *x, T val1, T val2) {return 0;}
 
 GPU_2OP_ATOMIC(int,                chpl_gpu_atomic_add_int,       atomicAdd);
 GPU_2OP_ATOMIC(unsigned int,       chpl_gpu_atomic_add_uint,      atomicAdd);

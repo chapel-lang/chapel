@@ -1,6 +1,6 @@
 /* Test mpz_nextprime.
 
-Copyright 2009, 2015, 2018 Free Software Foundation, Inc.
+Copyright 2009, 2015, 2018, 2020 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library test suite.
 
@@ -33,6 +33,116 @@ refmpz_nextprime (mpz_ptr p, mpz_srcptr t)
 }
 
 void
+refmpz_prevprime (mpz_ptr p, mpz_srcptr t)
+{
+  if (mpz_cmp_ui(t, 2) <= 0)
+    return;
+
+  mpz_sub_ui (p, t, 1L);
+  while (! mpz_probab_prime_p (p, 10))
+    mpz_sub_ui (p, p, 1L);
+}
+
+void
+test_largegap (mpz_t low, const int gap)
+{
+  mpz_t t, nxt;
+  mpz_init (t);
+  mpz_init (nxt);
+
+  mpz_nextprime(nxt, low);
+  mpz_sub(t, nxt, low);
+
+  if (mpz_cmp_ui(t, gap) != 0)
+     {
+      gmp_printf ("nextprime gap %Zd => %Zd != %d\n", low, nxt, gap);
+      abort ();
+    }
+
+  mpz_prevprime(t, nxt);
+  if (mpz_cmp(t, low) != 0)
+    {
+      gmp_printf ("prevprime gap %Zd => %Zd != %d\n", nxt, t, gap);
+      abort ();
+    }
+
+  mpz_clear (t);
+  mpz_clear (nxt);
+}
+
+void
+test_largegaps ()
+{
+  mpz_t n;
+
+  mpz_init (n);
+
+  // largest gap with start < 2^32.
+  mpz_set_str (n, "3842610773", 10);
+  test_largegap (n, 336);
+
+  // largest gap with start < 2^64.
+  mpz_set_str (n, "18361375334787046697", 10);
+  test_largegap (n, 1550);
+
+  // test high merit primegap in the P30 digit range.
+  mpz_set_str (n, "3001549619028223830552751967", 10);
+  test_largegap (n, 2184);
+
+  // test high merit primegap in the P100 range.
+  mpz_primorial_ui (n, 257);
+  mpz_divexact_ui (n, n, 5610);
+  mpz_mul_ui (n, n, 4280516017UL);
+  mpz_sub_ui (n, n, 2560);
+  test_largegap (n, 9006);
+
+  // test high merit primegap in the P200 range.
+  mpz_primorial_ui (n, 409);
+  mpz_divexact_ui (n, n, 30);
+  mpz_mul_ui (n, n, 3483347771UL);
+  mpz_sub_ui (n, n, 7016);
+  test_largegap (n, 15900);
+
+  mpz_clear (n);
+}
+
+void
+test_bitboundaries ()
+{
+  mpz_t n;
+  mpz_init (n);
+
+  mpz_set_str (n, "0xfff1", 0);
+  test_largegap (n, 16);
+
+  mpz_set_str (n, "0xfffffffb", 0);
+  test_largegap (n, 20);
+
+  mpz_set_str (n, "0xffffffffffc5", 0);
+  test_largegap (n, 80);
+
+  mpz_set_str (n, "0xffffffffffffffc5", 0);
+  test_largegap (n, 72);
+
+  mpz_set_str (n, "0xffffffffffffffffffbf", 0);
+  test_largegap (n, 78);
+
+  mpz_set_str (n, "0xffffffffffffffffffffffef", 0);
+  test_largegap (n, 78);
+
+  mpz_set_str (n, "0xffffffffffffffffffffffffffb5", 0);
+  test_largegap (n, 100);
+
+  mpz_set_str (n, "0xffffffffffffffffffffffffffffff61", 0);
+  test_largegap (n, 210);
+
+  mpz_set_str (n, "0xffffffffffffffffffffffffffffffffffffffffffffff13", 0);
+  test_largegap (n, 370);
+
+  mpz_clear (n);
+}
+
+void
 run (const char *start, int reps, const char *end, short diffs[])
 {
   mpz_t x, y;
@@ -58,8 +168,8 @@ run (const char *start, int reps, const char *end, short diffs[])
 
   if (mpz_cmp (x, y) != 0)
     {
-      gmp_printf ("got  %Zx\n", x);
-      gmp_printf ("want %Zx\n", y);
+      gmp_printf ("got  %Zd\n", x);
+      gmp_printf ("want %Zd\n", y);
       abort ();
     }
 
@@ -67,24 +177,94 @@ run (const char *start, int reps, const char *end, short diffs[])
   mpz_clear (x);
 }
 
+void
+run_p (const char *start, int reps, const char *end, short diffs[])
+{
+  mpz_t x, y;
+  int i;
+
+  mpz_init_set_str (x, end, 0);
+  mpz_init (y);
+
+  // Last rep doesn't share same data with nextprime
+  for (i = 0; i < reps - 1; i++)
+    {
+      mpz_prevprime (y, x);
+      mpz_sub (x, x, y);
+      if (diffs != NULL &&
+	  (! mpz_fits_sshort_p (x) || diffs[reps - i - 1] != (short) mpz_get_ui (x)))
+	{
+	  gmp_printf ("diff list discrepancy %Zd, %d vs %d\n",
+                y, diffs[i], mpz_get_ui (x));
+	  abort ();
+	}
+      mpz_swap (x, y);
+    }
+
+  // starts aren't always prime, so check that result is less than or equal
+  mpz_prevprime(x, x);
+
+  mpz_set_str(y, start, 0);
+  if (mpz_cmp (x, y) > 0)
+    {
+      gmp_printf ("got  %Zd\n", x);
+      gmp_printf ("want %Zd\n", y);
+      abort ();
+    }
+
+  mpz_clear (y);
+  mpz_clear (x);
+}
+
+
 extern short diff1[];
 extern short diff3[];
 extern short diff4[];
 extern short diff5[];
 extern short diff6[];
 
-int
-main (int argc, char **argv)
+void
+test_ref (gmp_randstate_ptr rands, int reps,
+          void (*func)(mpz_t, const mpz_t),
+          void(*ref_func)(mpz_t, const mpz_t))
 {
   int i;
-  int reps = 20;
-  gmp_randstate_ptr rands;
-  mpz_t bs, x, nxtp, ref_nxtp;
+  mpz_t bs, x, test_p, ref_p;
   unsigned long size_range;
 
-  tests_start();
-  rands = RANDS;
+  mpz_init (bs);
+  mpz_init (x);
+  mpz_init (test_p);
+  mpz_init (ref_p);
 
+  for (i = 0; i < reps; i++)
+    {
+      mpz_urandomb (bs, rands, 32);
+      size_range = mpz_get_ui (bs) % 8 + 2; /* 0..1024 bit operands */
+
+      mpz_urandomb (bs, rands, size_range);
+      mpz_rrandomb (x, rands, mpz_get_ui (bs));
+
+      func (test_p, x);
+      ref_func (ref_p, x);
+      if (mpz_cmp (test_p, ref_p) != 0)
+        {
+          gmp_printf ("start %Zd\n", x);
+          gmp_printf ("got   %Zd\n", test_p);
+          gmp_printf ("want  %Zd\n", ref_p);
+	  abort ();
+        }
+    }
+
+  mpz_clear (bs);
+  mpz_clear (x);
+  mpz_clear (test_p);
+  mpz_clear (ref_p);
+}
+
+void
+test_nextprime(gmp_randstate_ptr rands, int reps)
+{
   run ("2", 1000, "0x1ef7", diff1);
 
   run ("3", 1000 - 1, "0x1ef7", NULL);
@@ -101,33 +281,80 @@ main (int argc, char **argv)
   run ("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF80", 50, /* 2^128 - 128 */
        "0x10000000000000000000000000000155B", diff6);
 
-  mpz_init (bs);
-  mpz_init (x);
-  mpz_init (nxtp);
-  mpz_init (ref_nxtp);
+  test_ref(
+      rands, reps,
+      (void (*)(mpz_t, const mpz_t)) mpz_nextprime,
+      refmpz_nextprime);
+}
 
+void
+test_prevprime (gmp_randstate_ptr rands, int reps)
+{
+  long i;
+  int retval;
+  mpz_t n, prvp;
+
+  mpz_init (n);
+  mpz_init (prvp);
+
+  /* Test mpz_prevprime(n <= 2) returns 0, leaves rop unchanged. */
+  {
+    int temp = 123;
+    mpz_set_ui (prvp, temp);
+    for (i = 0; i <= 2; i++)
+      {
+        mpz_set_si(n, i);
+        retval = mpz_prevprime (prvp, n);
+        if ( retval != 0 || mpz_cmp_ui (prvp, temp) != 0 )
+          {
+            gmp_printf ("mpz_prevprime(%Zd) return (%d) rop (%Zd)\n", n, retval, prvp);
+            abort ();
+          }
+      }
+  }
+
+  mpz_clear (n);
+  mpz_clear (prvp);
+
+  run_p ("2", 1000, "0x1ef7", diff1);
+
+  run_p ("3", 1000 - 1, "0x1ef7", NULL);
+
+  run_p ("0x8a43866f5776ccd5b02186e90d28946aeb0ed914", 50,
+         "0x8a43866f5776ccd5b02186e90d28946aeb0eeec5", diff3);
+
+  run_p ("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF6C", 50, /* 2^148 - 148 */
+         "0x100000000000000000000000000000000010ab", diff4);
+
+  run_p ("0x1c2c26be55317530311facb648ea06b359b969715db83292ab8cf898d8b1b", 50,
+         "0x1c2c26be55317530311facb648ea06b359b969715db83292ab8cf898da957", diff5);
+
+  run_p ("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF80", 50, /* 2^128 - 128 */
+         "0x10000000000000000000000000000155B", diff6);
+
+  // Cast away int return from mpz_prevprime for test ref.
+  test_ref(
+      rands, reps,
+      (void (*)(mpz_t, const mpz_t)) mpz_prevprime,
+      refmpz_prevprime);
+}
+
+int
+main (int argc, char **argv)
+{
+  gmp_randstate_ptr rands;
+  int reps = 20;
+
+  tests_start();
+
+  rands = RANDS;
   TESTS_REPS (reps, argv, argc);
 
-  for (i = 0; i < reps; i++)
-    {
-      mpz_urandomb (bs, rands, 32);
-      size_range = mpz_get_ui (bs) % 8 + 2; /* 0..1024 bit operands */
+  test_nextprime(rands, reps);
+  test_prevprime(rands, reps);
 
-      mpz_urandomb (bs, rands, size_range);
-      mpz_rrandomb (x, rands, mpz_get_ui (bs));
-
-/*      gmp_printf ("%ld: %Zd\n", mpz_sizeinbase (x, 2), x); */
-
-      mpz_nextprime (nxtp, x);
-      refmpz_nextprime (ref_nxtp, x);
-      if (mpz_cmp (nxtp, ref_nxtp) != 0)
-	abort ();
-    }
-
-  mpz_clear (bs);
-  mpz_clear (x);
-  mpz_clear (nxtp);
-  mpz_clear (ref_nxtp);
+  test_largegaps ();
+  test_bitboundaries ();
 
   tests_end ();
   return 0;

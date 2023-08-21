@@ -442,10 +442,6 @@ struct Converter {
 
     if (!attr) return;
 
-    if (!attr->isDeprecated()) {
-      INT_ASSERT(attr->deprecationMessage().isEmpty());
-    }
-
     if (attr->isDeprecated()) {
       INT_ASSERT(!sym->hasFlag(FLAG_DEPRECATED));
       sym->addFlag(FLAG_DEPRECATED);
@@ -454,10 +450,8 @@ struct Converter {
       if (!msg.isEmpty()) {
         sym->deprecationMsg = astr(msg);
       }
-    }
-
-    if (!attr->isUnstable()) {
-      INT_ASSERT(attr->unstableMessage().isEmpty());
+    } else {
+      INT_ASSERT(attr->deprecationMessage().isEmpty());
     }
 
     if (attr->isUnstable()) {
@@ -468,6 +462,25 @@ struct Converter {
       if (!msg.isEmpty()) {
         sym->unstableMsg = astr(msg);
       }
+    } else {
+      INT_ASSERT(attr->unstableMessage().isEmpty());
+    }
+
+    if (attr->isParenfulDeprecated()) {
+      auto fnSym = toFnSymbol(sym);
+      // post-parse checks have ensured that decl is a parenless function,
+      // so the resulting symbol is a FnSymbol.
+      INT_ASSERT(fnSym);
+
+      INT_ASSERT(!sym->hasFlag(FLAG_DEPRECATED_PARENFUL));
+      sym->addFlag(FLAG_DEPRECATED_PARENFUL);
+
+      auto msg = attr->parenfulDeprecationMessage();
+      if (!msg.isEmpty()) {
+        fnSym->parenfulDeprecationMsg = astr(msg);
+      }
+    } else {
+      INT_ASSERT(attr->parenfulDeprecationMessage().isEmpty());
     }
 
     for (auto pragma : attr->pragmas()) {

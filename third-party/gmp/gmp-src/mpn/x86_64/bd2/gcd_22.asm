@@ -35,7 +35,7 @@ C	     cycles/bit
 C AMD K8,K9	12.3
 C AMD K10	 8.0
 C AMD bd1	10.0
-C AMD bd2	 7.2
+C AMD bd2	 7.2 
 C AMD bd3	 ?
 C AMD bd4	 6.7
 C AMD bt1	13.6

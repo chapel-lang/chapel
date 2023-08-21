@@ -452,6 +452,22 @@ void ErrorInvalidGpuAssertion::write(ErrorWriterBase& wr) const {
   // wr.codeForLocation(attr);
 }
 
+void ErrorInvalidParenfulDeprecation::write(ErrorWriterBase& wr) const {
+  auto attributeGroup = std::get<const uast::AttributeGroup*>(info);
+  auto appliedTo = std::get<const uast::AstNode*>(info);
+
+  wr.heading(kind_, type_, attributeGroup, "the '@deprecated' attribute with 'parenful=true' can only be applied to parenless functions.");
+  wr.message("It is used to indicate that a parenless function used to be callable with parentheses.");
+
+  if (auto fn = appliedTo->toFunction()) {
+    wr.message("The attribute is applied to a non-parenless function here:");
+    wr.codeForDef(fn);
+  } else {
+    wr.message("the attribute is applied to a non-function here:");
+    wr.codeForLocation(appliedTo);
+  }
+}
+
 void ErrorMultipleManagementStrategies::write(ErrorWriterBase& wr) const {
   auto node = std::get<const uast::AstNode*>(info);
   auto outerMgt = std::get<1>(info);

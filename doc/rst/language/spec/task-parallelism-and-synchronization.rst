@@ -203,10 +203,10 @@ full and store the value from that expression.
           if (isLeaf) then
              return value;
 
-          var x$: sync int;
-          begin x$.writeEF(left!.sum());
+          var x: sync int;
+          begin x.writeEF(left!.sum());
           var y = right!.sum();
-          return x$.readFE() + y;
+          return x.readFE() + y;
         }
       }
 
@@ -232,12 +232,10 @@ full and store the value from that expression.
 
       4
 
-   the sync variable ``x$`` is assigned by an
+   the sync variable ``x`` is assigned by an
    asynchronous task created with the begin statement. The task
-   returning the sum waits on the reading of ``x$``
-   until it has been assigned. By convention, synchronization variables
-   end in ``$`` to provide a visual cue to the programmer indicating
-   that the task may block.
+   returning the sum waits on the reading of ``x``
+   until it has been assigned.
 
 ..
 
@@ -257,19 +255,19 @@ full and store the value from that expression.
 
    .. code-block:: chapel
 
-      var count$: sync int = n;  // counter which also serves as a lock
-      var release$: single bool; // barrier release
+      var count: sync int = n;  // counter which also serves as a lock
+      var release: single bool; // barrier release
 
       forall t in 1..n do begin {
         work(t);
-        var myc = count$.readFE();  // read the count, set state to empty
+        var myc = count.readFE();  // read the count, set state to empty
         if myc!=1 {
           write(".");
-          count$.writeEF(myc-1);   // update the count, set state to full
+          count.writeEF(myc-1);   // update the count, set state to full
           // we could also do some work here before blocking
-          release$.readFF();
+          release.readFF();
         } else {
-          release$.writeEF(true);  // last one here, release everyone
+          release.writeEF(true);  // last one here, release everyone
           writeln("done");
         }
       }
@@ -281,11 +279,11 @@ full and store the value from that expression.
       ...........................................done
 
    In each iteration of the forall loop after the work is completed, the
-   task reads the ``count$`` variable, which is used
+   task reads the ``count`` variable, which is used
    to tally the number of tasks that have arrived. All tasks except the
    last task to arrive will block while trying to read the variable
-   ``release$``. The last task to arrive will write
-   to ``release$``, setting its state to full at
+   ``release``. The last task to arrive will write
+   to ``release``, setting its state to full at
    which time all the other tasks can be unblocked and run.
 
 If a formal argument with a default intent either has a synchronization
@@ -361,10 +359,10 @@ statements may not be used to exit a cobegin block.
 
    .. BLOCK-test-chapelpre
 
-      var s1, s2: sync int;
-      proc stmt1() { s1.readFE(); }
-      proc stmt2() { s2.readFE(); s1.writeEF(1); }
-      proc stmt3() { s2.writeEF(1); }
+      var sync1, sync2: sync int;
+      proc stmt1() { sync1.readFE(); }
+      proc stmt2() { sync2.readFE(); sync1.writeEF(1); }
+      proc stmt3() { sync2.writeEF(1); }
 
 
 
@@ -382,11 +380,11 @@ statements may not be used to exit a cobegin block.
 
    .. code-block:: chapel
 
-      var s1$, s2$, s3$: single bool;
-      begin { stmt1(); s1$.writeEF(true); }
-      begin { stmt2(); s2$.writeEF(true); }
-      begin { stmt3(); s3$.writeEF(true); }
-      s1$.readFF(); s2$.readFF(); s3$.readFF();
+      var s1, s2, s3: single bool;
+      begin { stmt1(); s1.writeEF(true); }
+      begin { stmt2(); s2.writeEF(true); }
+      begin { stmt3(); s3.writeEF(true); }
+      s1.readFF(); s2.readFF(); s3.readFF();
 
    Each begin statement is executed concurrently but control does not
    continue past the final line above until each of the single variables
@@ -446,28 +444,28 @@ statements may not be used to exit a coforall block.
 
    .. code-block:: chapel
 
-      var runningCount$: sync int = 1;
-      var finished$: single bool;
+      var runningCount: sync int = 1;
+      var finished: single bool;
       for i in iterator() {
-        runningCount$.writeEF(runningCount$.readFE() + 1);
+        runningCount.writeEF(runningCount.readFE() + 1);
         begin {
           body();
-          var tmp = runningCount$.readFE();
-          runningCount$.writeEF(tmp-1);
-          if tmp == 1 then finished$.writeEF(true);
+          var tmp = runningCount.readFE();
+          runningCount.writeEF(tmp-1);
+          if tmp == 1 then finished.writeEF(true);
         }
       }
-      var tmp = runningCount$.readFE();
-      runningCount$.writeEF(tmp-1);
-      if tmp == 1 then finished$.writeEF(true);
-      finished$.readFF();
+      var tmp = runningCount.readFE();
+      runningCount.writeEF(tmp-1);
+      if tmp == 1 then finished.writeEF(true);
+      finished.readFF();
 
    Each call to ``body()`` executes concurrently because it is in a
    begin statement. The sync variable
-   ``runningCount$`` is used to keep track of the
+   ``runningCount`` is used to keep track of the
    number of executing tasks plus one for the main task. When this
    variable reaches zero, the single variable
-   ``finished$`` is used to signal that all of the
+   ``finished`` is used to signal that all of the
    tasks have completed. Thus control does not continue past the last
    line until all of the tasks have completed.
 

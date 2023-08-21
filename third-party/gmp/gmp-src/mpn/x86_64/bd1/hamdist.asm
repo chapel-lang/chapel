@@ -170,7 +170,7 @@ L(x):	.byte	0x8f,0xe9,0x78,0xd3,0xc4	C vphaddubq %xmm4, %xmm0
 	paddq	%xmm0, %xmm8
 	pshufd	$14, %xmm8, %xmm0
 	paddq	%xmm8, %xmm0
-	movq	%xmm0, %rax
+	movd	%xmm0, %rax
 	add	%r10, %rax
 	FUNC_EXIT()
 	ret

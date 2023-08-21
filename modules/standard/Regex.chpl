@@ -1073,10 +1073,9 @@ record regex {
     var pattern:exprType;
     // Note -- this is wrong because we didn't quote
     // and there's no way to get the flags
-    var litOne = new ioLiteral("new regex(\"");
-    var litTwo = new ioLiteral("\")");
-
-    if (f.read(litOne, pattern, litTwo)) then
+    if f.matchLiteral("new regex(\"") &&
+       f.read(pattern) &&
+       f.matchLiteral("\")") then
       on this.home {
         var localPattern = pattern.localize();
         var opts: qio_regex_options_t;

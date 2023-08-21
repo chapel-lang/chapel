@@ -635,19 +635,19 @@ private proc _CurrentLocaleToLocIDs(targetLocales, desiredLocale)
 {
   var result: targetLocales.rank * locIdT;
   // guard updates to 'result' to ensure atomicity of updates
-  var gotresult$: sync bool = false;
+  var gotresult: sync bool = false;
   forall (lls, loc) in zip(targetLocales.domain, targetLocales) with (ref result) do
     if loc == desiredLocale {
       // if we get multiple matches, we do not specify which is returned
-      // could add a pre-test if it were cheap: if !gotresult$.readXX()
-      gotresult$.readFE();
+      // could add a pre-test if it were cheap: if !gotresult.readXX()
+      gotresult.readFE();
       result = lls;
-      gotresult$.writeEF(true);
+      gotresult.writeEF(true);
     }
   // instead of crashing right away, return a flag
-  //if !gotresult$.readXX() then halt("DimensionalDist2D: the current locale ", desiredLocale, " is not among the target locales ", targetLocales);
+  //if !gotresult.readXX() then halt("DimensionalDist2D: the current locale ", desiredLocale, " is not among the target locales ", targetLocales);
 
-  return (result, gotresult$.readXX());
+  return (result, gotresult.readXX());
 }
 
 // How we usually invoke _CurrentLocaleToLocIDs().

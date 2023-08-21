@@ -1,1 +1,1 @@
-config var n$ : single int;
+config var n : single int;

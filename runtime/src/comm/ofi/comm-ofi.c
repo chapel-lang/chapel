@@ -2985,18 +2985,29 @@ static void init_amHandling(void);
 
 static
 void init_ofiForAms(void) {
+
+  // Specify the amount of space we should allocate for AM landing zones. We
+  // should have enough that we needn't re-post the multi-receive buffer more
+  // often than, say, every tenth of a second. The original value was 40MB as
+  // explained in the comment below. The default is now 64MB and it's
+  // configurable, although more experiments are necessary to perform a
+  // similar size computation on more modern hardware.
   //
-  // Compute the amount of space we should allow for AM landing zones.
-  // We should have enough that we needn't re-post the multi-receive
-  // buffer more often than, say, every tenth of a second.  We know from
-  // the Chapel performance/comm/low-level/many-to-one test that the
-  // comm=ugni AM handler can handle just over 150k "fast" AM requests
-  // in 0.1 sec.  Assuming an average AM request size of 256 bytes, a 40
-  // MiB buffer is enough to give us the desired 0.1 sec lifetime before
-  // it needs renewing.  We actually then split this in half and create
-  // 2 half-sized buffers (see below), so reflect that here also.
+  // Original comment:
+  // We know from the Chapel performance/comm/low-level/many-to-one test that
+  // the comm=ugni AM handler can handle just over 150k "fast" AM requests in
+  // 0.1 sec.  Assuming an average AM request size of 256 bytes, a 40 MiB
+  // buffer is enough to give us the desired 0.1 sec lifetime before it needs
+  // renewing.  We actually then split this in half and create 2 half-sized
+  // buffers (see below), so reflect that here also.
   //
-  const size_t amLZSize = ((size_t) 40 << 20) / 2;
+  size_t amLZSize = chpl_env_rt_get_size("COMM_OFI_AM_LZ_SIZE",
+                                               (size_t) 64 << 20);
+  char buf[10];
+  DBG_PRINTF(DBG_AM_BUF, "AM LZ size %s (%#zx)",
+             chpl_snprintf_KMG_z(buf, sizeof(buf), amLZSize), amLZSize);
+
+  amLZSize /= 2;
 
   //
   // Set the minimum multi-receive buffer space.  Make it big enough to

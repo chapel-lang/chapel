@@ -188,10 +188,10 @@ mpn_preinv_mu_divappr_q (mp_ptr qp,
   else
     MPN_COPY (rp, np, dn);
 
-  if (qn == 0)
+  if (UNLIKELY (qn == 0))
     return qh;			/* Degenerate use.  Should we allow this? */
 
-  while (qn > 0)
+  for (;;) /* The exit condition (qn == 0) is verified in the loop. */
     {
       if (qn < in)
 	{

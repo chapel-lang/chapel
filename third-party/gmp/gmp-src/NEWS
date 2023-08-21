@@ -1,32 +1,44 @@
-Copyright 1996, 1999-2016, 2018-2020 Free Software Foundation, Inc.
+Copyright 1996, 1999-2016, 2018-2023 Free Software Foundation, Inc.
 
 Verbatim copying and distribution of this entire article is permitted in any
 medium, provided this notice is preserved.
 
-Changes between GMP version 6.2.0 and 6.2.1
+Changes between GMP version 6.2.* and 6.3.*.
 
   BUGS FIXED
   * A possible overflow of type int is avoided for mpz_cmp on huge operands.
 
-  * Overflows are more carefully detected and reported for mpz_pow_ui.
-
-  * A bug in longlong.h for aarch64 sub_ddmmss, not affecting GMP, was healed.
-
-  * mini-gmp: mpz_out_str and mpq_out_str now correctly handle out of
-    range bases.
+  * A possible error condition when a malformed file is read with
+    mpz_inp_raw is now correctly handled.
 
   FEATURES
-  * C90 compliance.
+  * New public function mpz_prevprime, companion of the existing
+    mpz_nextprime.
 
-  * Initial support for Darwin on arm64, and improved portability.
+  * New documented pointer types mpz_ptr, mpz_srcptr, and similar for
+    other GMP types. Refer to the manual for full list and suggested
+    usage. These types have been present in gmp.h at least since
+    GMP-4.0, but previously not advertised to users.
 
-  * Support for more processors.
+  * Support for 64-bit Arm under Macos.
+
+  * Support for the loongarch64 CPU family.
+
+  * Support for building with LTO, link-time optimisations.
 
   SPEEDUPS
-  * None, except indirectly through recognition of new CPUs.
+  * New special code for base = 2 in mpz_powm reduces the average time
+    for the functions that test primality.
 
-  MISC
-  * None.
+  * Speedup for the function mpz_nextprime on large operands.
+
+  * Speedup for multiplications (some sizes only) thanks to new
+    internal functions to compute small negacyclic products.
+
+  * Special assembly code for IBM z13 and later "mainframe" CPUs, resulting in
+    a huge speedup.
+
+  * Improved assembly for several 64-bit x86 CPUs, Risc-V, 64-bit Arm.
 
 Changes between GMP version 6.1.* and 6.2.0
 

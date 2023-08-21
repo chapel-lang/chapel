@@ -21,7 +21,7 @@ proc test() {
   var dom2: DomType2;
   var arr1: ArrType1;
   var arr2: ArrType2;
-  var s$: sync int;
+  var s: sync int;
 
   begin with (ref dom1, ref dom2) {
     writeln("in begin");
@@ -34,10 +34,10 @@ proc test() {
     dom2 = init2dom;
     arr1 = init1arr;
     arr2 = init2arr;
-    s$.writeEF(1);
+    s.writeEF(1);
   }
 
-  s$.readFE();
+  s.readFE();
   writeln("after begin");
   writeln("dom1", " ", dom1, ".");
   writeln("dom2", " ", dom2, ".");

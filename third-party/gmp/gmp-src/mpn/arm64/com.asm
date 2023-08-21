@@ -1,6 +1,6 @@
 dnl  ARM64 mpn_com.
 
-dnl  Copyright 2013, 2014 Free Software Foundation, Inc.
+dnl  Copyright 2013, 2020 Free Software Foundation, Inc.
 
 dnl  This file is part of the GNU MP Library.
 dnl
@@ -31,9 +31,13 @@ dnl  see https://www.gnu.org/licenses/.
 include(`../config.m4')
 
 C	     cycles/limb
-C Cortex-A53	 2.25
-C Cortex-A57	 1.25
-C X-Gene	 1.75
+C Cortex-A53	 
+C Cortex-A55	 
+C Cortex-A57	 
+C Cortex-A72	 
+C Cortex-A73	 
+C X-Gene	 
+C Apple M1	 
 
 changecom(blah)
 
@@ -48,37 +52,41 @@ PROLOGUE(mpn_com)
 
 C Copy until rp is 128-bit aligned
 	tbz	rp, #3, L(al2)
-	ld1	{v22.1d}, [up], #8
+	ldr	x4, [up],#8
 	sub	n, n, #1
-	mvn	v22.8b, v22.8b
-	st1	{v22.1d}, [rp], #8
+	mvn	x4, x4
+	str	x4, [rp],#8
 
-L(al2):	ld1	{v26.2d}, [up], #16
-	subs	n, n, #6
-	b.lt	L(end)
+L(al2):	ldp	x4,x5, [up],#16
+	sub	n, n, #6
+	tbnz	n, #63, L(end)
 
 	ALIGN(16)
-L(top):	ld1	{v22.2d}, [up], #16
-	mvn	v26.16b, v26.16b
-	st1	{v26.2d}, [rp], #16
-	ld1	{v26.2d}, [up], #16
-	mvn	v22.16b, v22.16b
-	st1	{v22.2d}, [rp], #16
-	subs	n, n, #4
-	b.ge	L(top)
+L(top):	ldp	x6,x7, [up],#32
+	mvn	x4, x4
+	mvn	x5, x5
+	stp	x4,x5, [rp],#32
+	ldp	x4,x5, [up,#-16]
+	mvn	x6, x6
+	mvn	x7, x7
+	stp	x6,x7, [rp,#-16]
+	sub	n, n, #4
+	tbz	n, #63, L(top)
 
-L(end):	mvn	v26.16b, v26.16b
-	st1	{v26.2d}, [rp], #16
+L(end):	mvn	x4, x4
+	mvn	x5, x5
+	stp	x4,x5, [rp],#16
 
 C Copy last 0-3 limbs.  Note that rp is aligned after loop, but not when we
 C arrive here via L(bc)
 L(bc):	tbz	n, #1, L(tl1)
-	ld1	{v22.2d}, [up], #16
-	mvn	v22.16b, v22.16b
-	st1	{v22.2d}, [rp], #16
+	ldp	x4,x5, [up],#16
+	mvn	x4, x4
+	mvn	x5, x5
+	stp	x4,x5, [rp],#16
 L(tl1):	tbz	n, #0, L(tl2)
-	ld1	{v22.1d}, [up]
-	mvn	v22.8b, v22.8b
-	st1	{v22.1d}, [rp]
+	ldr	x4, [up]
+	mvn	x4, x4
+	str	x4, [rp]
 L(tl2):	ret
 EPILOGUE()

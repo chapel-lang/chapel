@@ -55,7 +55,7 @@ class Domain {
   var f              : [localDom] [1..MAXATOMS] real3;     // force per atom in local cells
   var pe             : [localDom] [1..MAXATOMS] real;      // potential energy per atom in local cells
   var neighDom       : domain(1) = {1..6};                 // domain of neighbors on each face (xm, xp, ym, yp, zm, zp)
-  var nM$, nP$       : sync bool;                          // sync updates to neighbors for each face pair (xm/xp, ym/yp, zm/zp)
+  var nM, nP         : sync bool;                          // sync updates to neighbors for each face pair (xm/xp, ym/yp, zm/zp)
   var neighs         : [neighDom] int3;                    // neighbors on each face (xm, xp, ym, yp, zm, zp)
   var temps1         : [neighDom] FaceArr;                 // temp arrays for each face (xm, xp, ym, yp, zm, zp)
   var bufDom         : domain(1);                          // Domain for buffer size, set during grid initialization
@@ -79,9 +79,9 @@ class Domain {
   var vcmTemp        : real3;                              // temp vcm for this domain
 
   var force          : unmanaged Force;                    // clones! may the force be with you
-//  var haloTicker1    = new Ticker("      commHaloPull");   // ticker for halo exchange  
-//  var haloTicker2    = new Ticker("      commHaloSync");   // ticker for halo exchange  
-//  var haloTicker3    = new Ticker("      commHaloUpdt");   // ticker for halo exchange  
+//  var haloTicker1    = new Ticker("      commHaloPull");   // ticker for halo exchange
+//  var haloTicker2    = new Ticker("      commHaloSync");   // ticker for halo exchange
+//  var haloTicker3    = new Ticker("      commHaloUpdt");   // ticker for halo exchange
 
   proc deinit() {
     if replicateForce then delete force;

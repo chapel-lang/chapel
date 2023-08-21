@@ -196,6 +196,9 @@ PRAGMA(DEPRECATED, npr,
 PRAGMA(DEPRECATED_IMPLICIT_CONVERSION, npr,
        "deprecated impliict conversions",
        "implicit conversions when passing to this formal are deprecated")
+PRAGMA(DEPRECATED_PARENFUL, npr,
+       "deprecated parenful",
+       "applied to parenless functions whose parenful forms are deprecated")
 PRAGMA(DISTRIBUTION, ypr, "distribution", ncm)
 PRAGMA(DOCS_ONLY, ypr,
        "docs only",

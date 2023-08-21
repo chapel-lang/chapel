@@ -231,7 +231,7 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
 //
 proc LUFactorize(n: indexType,
                 piv: [1..n] indexType) {
-  
+
   // Initialize the pivot vector to represent the initially unpivoted matrix.
   piv = 1..n;
 
@@ -275,7 +275,7 @@ proc LUFactorize(n: indexType,
     //
     panelSolve(l, piv);
     updateBlockRow(tl, tr);
-    
+
     //
     // update trailing submatrix (if any)
     //
@@ -297,7 +297,7 @@ proc LUFactorize(n: indexType,
 //     |aaaaa|.....|.....|.....|  function but called AD here.  Similarly,
 //     +-----+-----+-----+-----+  'b' was 'tr' in the calling code, but BD
 //     |aaaaa|.....|.....|.....|  here.
-//     |aaaaa|.....|.....|.....|  
+//     |aaaaa|.....|.....|.....|
 //     |aaaaa|.....|.....|.....|
 //     +-----+-----+-----+-----+
 //
@@ -422,7 +422,7 @@ proc panelSolve(
 /* psReduce() does the following:
 
     const col = panel[k.., k..k];
-    
+
     // Find the pivot, the element with the largest absolute value.
     const (_, (pivotRow, _)) = maxloc reduce zip(abs(Ab(col)), col);
 
@@ -452,7 +452,7 @@ proc panelSolve(
     // divide all values below and in the same col as the pivot by
     // the pivot value
     Ab[k+1.., k..k] /= pivotVal;
-    
+
     // update all other values below the pivot
     forall (i,j) in panel[k+1.., k+1..] do
       Ab[i,j] -= Ab[i,k] * Ab[k,j];
@@ -482,7 +482,7 @@ proc psReduce(blk, k) {
 
       local {
         // guard updates to locResult and maxRes within the forall
-        var upd$: sync bool;
+        var upd: sync bool;
         var maxRes: atomic real;
         maxRes.write(min(real));
         // Starts of all the blocks in the panel that are local to this node.
@@ -494,12 +494,12 @@ proc psReduce(blk, k) {
             ref locAB = Ab._value.dsiLocalSlice1((iRange, k));
             for i in iRange do myResult.updateE(i, locAB[i]);
             if myResult.absmx > maxRes.read() { // only lock if we might update
-              upd$.writeEF(true);  // lock
+              upd.writeEF(true);  // lock
               if myResult.absmx > maxRes.read() { // check again while locked
                 locResult.updateE(myResult);
                 maxRes.write(myResult.absmx);
               }
-              upd$.readFE();  // unlock
+              upd.readFE();  // unlock
             }
           } // forall
       } // local
@@ -713,7 +713,7 @@ proc backwardSub(n: indexType) {
       prevDiaFrom = diaFrom_N;
 
   while prevDiaFrom > 1 {
-      
+
     // the immediately preceeding block along the diagonal
     const locId1 = (prevLocId1 + (tl1-1)) % tl1,
           locId2 = (prevLocId2 + (tl2-1)) % tl2,
@@ -938,7 +938,7 @@ proc printConfiguration() {
   }
 }
 
-//   
+//
 // construct an n by n+1 matrix filled with random values and scale
 // it to be in the range -1.0..1.0
 //
@@ -957,7 +957,7 @@ proc verifyResults(x) {
 
   // make the rest of the code operate locally without changing it
   ref Ab = makeLocalCopyOfAb();
-  
+
   const axmbNorm = norm(gaxpyMinus(Ab[.., 1..n], x, Ab[.., n+1..n+1]), normType.normInf);
 
   const a1norm   = norm(Ab[.., 1..n], normType.norm1),

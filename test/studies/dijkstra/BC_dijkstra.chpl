@@ -9,7 +9,7 @@ module BC_dijkstra {
     // Initialize records
     var D1 = {0..(nNodes-1)};
     var Records: [D1] unmanaged Record =
-     for i in D1 do 
+     for i in D1 do
       // onStack = next record on stack; -1 EOS; -2 not on stack
       // inHeap = location of this record in heap
       new unmanaged Record(distance = INFINITY, onStack = -2, inHeap = -1,
@@ -101,7 +101,7 @@ module BC_dijkstra {
       stack = Records[node].onStack;
 
 //      Nodes[node].vb += Records[node].delta;
-      Nodes[node].vb$.writeEF(Nodes[node].vb$.readFE() + Records[node].delta);
+      Nodes[node].vb.writeEF(Nodes[node].vb.readFE() + Records[node].delta);
 
       var ptr: unmanaged PreEdge? = Records[node].preEdge;
 
@@ -118,7 +118,7 @@ module BC_dijkstra {
         Records[predecessor].delta += factor;
 
 //        Edges[edge].vb += factor;
-        Edges[edge]!.vb$.writeEF(Edges[edge]!.vb$.readFE() + factor);
+        Edges[edge]!.vb.writeEF(Edges[edge]!.vb.readFE() + factor);
       }
     }
 
