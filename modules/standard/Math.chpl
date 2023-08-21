@@ -474,13 +474,13 @@ module Math {
   }
 
   /* Returns the error function of the argument `x`. This is equivalent to
-     2/sqrt(pi) * the integral of exp(-t**2)dt from 0 to `x`. */
+     ``2/sqrt(pi)`` * the integral of ``exp(-t**2)dt`` from 0 to `x`. */
   inline proc erf(x: real(64)): real(64) {
     return chpl_erf(x);
   }
 
   /* Returns the error function of the argument `x`. This is equivalent to
-     2/sqrt(pi) * the integral of exp(-t**2)dt from 0 to `x`. */
+     ``2/sqrt(pi)`` * the integral of ``exp(-t**2)dt`` from 0 to `x`. */
   inline proc erf(x : real(32)): real(32) {
     return chpl_erf(x);
   }
@@ -546,13 +546,13 @@ module Math {
   }
 
   /* Returns the value of the argument `x` multiplied by 2 raised to the
-     argument `n` power, i.e., x * 2**n. */
+     argument `n` power, i.e., ``x * 2**n``. */
   inline proc ldexp(x:real(64), n:int(32)):real(64) {
     return chpl_ldexp(x, n);
   }
 
   /* Returns the value of the argument `x` multiplied by 2 raised to the
-     argument `n` power, i.e., x * 2**n. */
+     argument `n` power, i.e., ``x * 2**n``. */
   inline proc ldexp(x:real(32), n:int(32)):real(32) {
     return chpl_ldexp(x, n);
   }
