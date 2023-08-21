@@ -364,12 +364,12 @@ module DistributedMap {
             this.dm = dm;
         }
 
-        proc ref enterThis() ref: dmType {
+        proc ref enterContext() ref: dmType {
             this.dm._incrementStaticCounts();
             return this.dm;
         }
 
-        proc ref leaveThis(in err: owned Error?) {
+        proc ref exitContext(in err: owned Error?) {
             this.dm._decrementStaticCounts();
             this.dm._maybeResizeAndBallance();
             if err then try! { throw err; }

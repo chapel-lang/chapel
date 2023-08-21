@@ -1858,7 +1858,7 @@ module ChapelDomain {
       }
 
       @chpldoc.nodoc
-      proc enterThis() ref {
+      proc enterContext() ref {
 
         // TODO: Is it possible to nest unsafe assignments? Future work...
         if _isActiveManager {
@@ -1912,7 +1912,7 @@ module ChapelDomain {
       }
 
       @chpldoc.nodoc
-      proc leaveThis(in err: owned Error?) throws {
+      proc exitContext(in err: owned Error?) throws {
         _ensureNoLongerManagingThis();
         if err then throw err;
       }
