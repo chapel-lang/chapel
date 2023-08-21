@@ -53,7 +53,8 @@ EXTRA_LTLIBRARIES = libspeed.la
 
 libspeed_la_SOURCES =							\
   common.c divrem1div.c divrem1inv.c divrem2div.c divrem2inv.c		\
-  div_qr_1n_pi1_1.c div_qr_1n_pi1_2.c div_qr_1_tune.c			\
+  div_qr_1n_pi1_1.c div_qr_1n_pi1_2.c div_qr_1n_pi1_3.c 		\
+  div_qr_1n_pi1_4.c div_qr_1_tune.c					\
   freq.c								\
   gcdext_single.c gcdext_double.c gcdextod.c gcdextos.c			\
   hgcd_lehmer.c hgcd_appr_lehmer.c hgcd_reduce_1.c hgcd_reduce_2.c	\

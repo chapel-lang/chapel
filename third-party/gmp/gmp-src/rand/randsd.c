@@ -31,7 +31,7 @@ see https://www.gnu.org/licenses/.  */
 #include "gmp-impl.h"
 
 void
-gmp_randseed (gmp_randstate_t rstate,
+gmp_randseed (gmp_randstate_ptr rstate,
 	      mpz_srcptr seed)
 {
   (*((gmp_randfnptr_t *) RNG_FNPTR (rstate))->randseed_fn) (rstate, seed);

@@ -100,7 +100,7 @@ testmain (int argc, char **argv)
 	  || mpz_sizeinbase (t, 2) - 1 != e || mpz_cmp_ui (mpq_denref (aq), 1) != 0)
 	{
 	  fprintf (stderr, "mpq_div_2exp failed: %lu\n", e);
-	  fprintf (stderr, "%li %li %lu %lu\n", e2, t2, mpz_scan1 (t, 0), (unsigned long) mpz_sizeinbase (t, 2));
+	  fprintf (stderr, "%li %li %lu %zu\n", e2, t2, mpz_scan1 (t, 0), mpz_sizeinbase (t, 2));
 	  dump ("na", a);
 	  dump ("da", b);
 	  dump ("nr", mpq_numref (rq));

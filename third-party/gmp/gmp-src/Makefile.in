@@ -102,6 +102,7 @@
 #        6.1.2   13:2:3    9:2:5     -
 #        6.2.0   14:0:4   10:0:6     -
 #        6.2.1   14:1:4   10:1:6     -
+#        6.3.0   15:0:5   11:0:7     -
 #
 # Starting at 3:0:0 is a slight abuse of the versioning system, but it
 # ensures we're past soname libgmp.so.2, which was used on Debian GNU/Linux
@@ -566,12 +567,12 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-LIBGMP_LT_CURRENT = 14
-LIBGMP_LT_REVISION = 1
-LIBGMP_LT_AGE = 4
-LIBGMPXX_LT_CURRENT = 10
-LIBGMPXX_LT_REVISION = 1
-LIBGMPXX_LT_AGE = 6
+LIBGMP_LT_CURRENT = 15
+LIBGMP_LT_REVISION = 0
+LIBGMP_LT_AGE = 5
+LIBGMPXX_LT_CURRENT = 11
+LIBGMPXX_LT_REVISION = 0
+LIBGMPXX_LT_AGE = 7
 SUBDIRS = tests mpn mpz mpq mpf printf scanf rand cxx demos tune doc
 
 # Put asl.h here for now.
@@ -595,7 +596,7 @@ SUBDIRS = tests mpn mpz mpq mpf printf scanf rand cxx demos tune doc
 # Distribute mini-gmp. Test sources copied by dist-hook.
 EXTRA_DIST = configfsf.guess configfsf.sub .gdbinit INSTALL.autoconf \
 	COPYING.LESSERv3 COPYINGv2 COPYINGv3 asl.h gmpxx.h bootstrap.c \
-	gen-fac.c gen-fib.c gen-bases.c gen-trialdivtab.c \
+	gen-fac.c gen-sieve.c gen-fib.c gen-bases.c gen-trialdivtab.c \
 	gen-jacobitab.c gen-psqr.c mini-gmp/README mini-gmp/mini-gmp.c \
 	mini-gmp/mini-gmp.h mini-gmp/ChangeLog mini-gmp/mini-mpq.c \
 	mini-gmp/mini-mpq.h mini-gmp/tests/Makefile \
@@ -617,12 +618,12 @@ includeexecdir = $(exec_prefix)/include
 include_HEADERS = $(GMPXX_HEADERS_OPTION)
 nodist_includeexec_HEADERS = gmp.h
 lib_LTLIBRARIES = libgmp.la $(GMPXX_LTLIBRARIES_OPTION)
-BUILT_SOURCES = gmp.h fac_table.h fib_table.h mpn/fib_table.c \
-	mp_bases.h mpn/mp_bases.c trialdivtab.h mpn/jacobitab.h \
-	mpn/perfsqr.h
+BUILT_SOURCES = gmp.h fac_table.h sieve_table.h fib_table.h \
+	mpn/fib_table.c mp_bases.h mpn/mp_bases.c trialdivtab.h \
+	mpn/jacobitab.h mpn/perfsqr.h
 DISTCLEANFILES = $(BUILT_SOURCES) config.m4 @gmp_srclinks@ \
-	gen-fac$(EXEEXT_FOR_BUILD) gen-fib$(EXEEXT_FOR_BUILD) \
-	gen-bases$(EXEEXT_FOR_BUILD) \
+	gen-fac$(EXEEXT_FOR_BUILD) gen-sieve$(EXEEXT_FOR_BUILD) \
+	gen-fib$(EXEEXT_FOR_BUILD) gen-bases$(EXEEXT_FOR_BUILD) \
 	gen-trialdivtab$(EXEEXT_FOR_BUILD) \
 	gen-jacobitab$(EXEEXT_FOR_BUILD) gen-psqr$(EXEEXT_FOR_BUILD)
 
@@ -1452,6 +1453,12 @@ fac_table.h: gen-fac$(EXEEXT_FOR_BUILD)
 
 gen-fac$(EXEEXT_FOR_BUILD): gen-fac$(U_FOR_BUILD).c bootstrap.c
 	$(CC_FOR_BUILD) `test -f 'gen-fac$(U_FOR_BUILD).c' || echo '$(srcdir)/'`gen-fac$(U_FOR_BUILD).c -o gen-fac$(EXEEXT_FOR_BUILD)
+
+sieve_table.h: gen-sieve$(EXEEXT_FOR_BUILD)
+	./gen-sieve $(GMP_LIMB_BITS) >sieve_table.h || (rm -f sieve_table.h; exit 1)
+
+gen-sieve$(EXEEXT_FOR_BUILD): gen-sieve$(U_FOR_BUILD).c bootstrap.c
+	$(CC_FOR_BUILD) `test -f 'gen-sieve$(U_FOR_BUILD).c' || echo '$(srcdir)/'`gen-sieve$(U_FOR_BUILD).c -o gen-sieve$(EXEEXT_FOR_BUILD)
 
 fib_table.h: gen-fib$(EXEEXT_FOR_BUILD)
 	./gen-fib header $(GMP_LIMB_BITS) $(GMP_NAIL_BITS) >fib_table.h || (rm -f fib_table.h; exit 1)

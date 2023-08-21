@@ -32,9 +32,11 @@ include(`../config.m4')
 
 C  INPUT PARAMETERS
 define(`rp',	`a0')
-define(`up',	`a1')
-define(`vp',	`a2')
+define(`ap',	`a1')
+define(`bp',	`a2')
 define(`n',	`a3')
+
+define(`i',	`a6')
 
 ifdef(`OPERATION_add_n',`
     define(`ADDSUB',	`add')
@@ -43,7 +45,7 @@ ifdef(`OPERATION_add_n',`
 ')
 ifdef(`OPERATION_sub_n',`
     define(`ADDSUB',	`sub')
-    define(`CMPCY',	`sltu	$1, $3, $2')
+    define(`CMPCY',	`sltu	$1, $3, $4')
     define(`func',	`mpn_sub_n')
 ')
 
@@ -52,38 +54,82 @@ MULFUNC_PROLOGUE(mpn_add_n mpn_sub_n)
 ASM_START()
 PROLOGUE(func)
 	li	t6, 0
+	srli	i, n, 2
+
+	ld	a4, 0(ap)
+	ld	a5, 0(bp)
 
 	andi	t0, n, 1
-	beq	t0, x0, L(top)
-	addi	up, up, 8
-	addi	vp, vp, -8
-	addi	rp, rp, -8
-	addi	n, n, -1
-	j	L(mid)
+	andi	t1, n, 2
+	bnez	t0, L(bx1)
+L(bx0):	bnez	t1, L(b10)
+L(b00):	addi	rp, rp, -8
+	addi	i, i, -1
+	j	L(b0)
+L(b10):	addi	bp, bp, -16
+	addi	ap, ap, -16
+	addi	rp, rp, -24
+	j	L(b2)
+L(bx1):	bnez	t1, L(b11)
+L(b01):	beqz	i, L(1)
+	addi	bp, bp, 8
+	addi	ap, ap, 8
+	addi	i, i, -1
+	j	L(b1)
+L(1):	ADDSUB	t0, a4, a5
+	sd	t0, 0(rp)
+	CMPCY(	a0, t0, a4, a5)
+	ret
+L(b11):	addi	bp, bp, -8
+	addi	ap, ap, -8
+	addi	rp, rp, -16
+	j	L(b3)
 
-L(top):	ld	a4, 0(up)
-	ld	a6, 0(vp)
-	addi	n, n, -2	C bookkeeping
-	addi	up, up, 16	C bookkeeping
-	ADDSUB	t0, a4, a6
-	CMPCY(	t2, t0, a4)
-	ADDSUB	t4, t0, t6	C cycle 3, 9, ...
-	CMPCY(	t3, t4, t0)	C cycle 4, 10, ...
+	ALIGN(	16)
+L(top):	addi	bp, bp, 32
+	addi	ap, ap, 32
+	addi	rp, rp, 32
+	addi	i, i, -1
+L(b1):	ADDSUB	t0, a4, a5
+	CMPCY(	t2, t0, a4, a5)
+	ld	a4, 0(ap)
+	ld	a5, 0(bp)
+	ADDSUB	t4, t0, t6
+	CMPCY(	t3, t4, t0, t6)
 	sd	t4, 0(rp)
-	add	t6, t2, t3	C cycle 5, 11, ...
-L(mid):	ld	a5, -8(up)
-	ld	a7, 8(vp)
-	addi	vp, vp, 16	C bookkeeping
-	addi	rp, rp, 16	C bookkeeping
-	ADDSUB	t1, a5, a7
-	CMPCY(	t2, t1, a5)
-	ADDSUB	t4, t1, t6	C cycle 0, 6, ...
-	CMPCY(	t3, t4, t1)	C cycle 1, 7, ...
-	sd	t4, -8(rp)
-	add	t6, t2, t3	C cycle 2, 8, ...
-	bne	n, x0, L(top)	C bookkeeping
+	or	t6, t2, t3
 
-L(end):	mv	a0, t6
+L(b0):	ADDSUB	t1, a4, a5
+	CMPCY(	t2, t1, a4, a5)
+	ld	a4, 8(ap)
+	ld	a5, 8(bp)
+	ADDSUB	t4, t1, t6
+	CMPCY(	t3, t4, t1, t6)
+	sd	t4, 8(rp)
+	or	t6, t2, t3
+L(b3):	ADDSUB	t0, a4, a5
+	CMPCY(	t2, t0, a4, a5)
+	ld	a4, 16(ap)
+	ld	a5, 16(bp)
+	ADDSUB	t4, t0, t6
+	CMPCY(	t3, t4, t0, t6)
+	sd	t4, 16(rp)
+	or	t6, t2, t3
+L(b2):	ADDSUB	t1, a4, a5
+	CMPCY(	t2, t1, a4, a5)
+	ld	a4, 24(ap)
+	ld	a5, 24(bp)
+	ADDSUB	t4, t1, t6
+	CMPCY(	t3, t4, t1, t6)
+	sd	t4, 24(rp)
+	or	t6, t2, t3
+	bne	i, x0, L(top)
+
+L(end):	ADDSUB	t0, a4, a5
+	CMPCY(	t2, t0, a4, a5)
+	ADDSUB	t4, t0, t6
+	CMPCY(	t3, t4, t0, t6)
+	sd	t4, 32(rp)
+	or	a0, t2, t3
 	ret
 EPILOGUE()
-ASM_END()

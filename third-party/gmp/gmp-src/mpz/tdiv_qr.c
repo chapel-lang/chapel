@@ -1,8 +1,8 @@
 /* mpz_tdiv_qr(quot,rem,dividend,divisor) -- Set QUOT to DIVIDEND/DIVISOR,
    and REM to DIVIDEND mod DIVISOR.
 
-Copyright 1991, 1993, 1994, 2000, 2001, 2005, 2011, 2012 Free Software
-Foundation, Inc.
+Copyright 1991, 1993, 1994, 2000, 2001, 2005, 2011, 2012, 2021 Free
+Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -36,7 +36,7 @@ see https://www.gnu.org/licenses/.  */
 void
 mpz_tdiv_qr (mpz_ptr quot, mpz_ptr rem, mpz_srcptr num, mpz_srcptr den)
 {
-  mp_size_t ql;
+  mp_size_t ql, n0;
   mp_size_t ns, ds, nl, dl;
   mp_ptr np, dp, qp, rp;
   TMP_DECL;
@@ -95,7 +95,12 @@ mpz_tdiv_qr (mpz_ptr quot, mpz_ptr rem, mpz_srcptr num, mpz_srcptr den)
       np = tp;
     }
 
-  mpn_tdiv_qr (qp, rp, 0L, np, nl, dp, dl);
+  for (n0 = 0; *dp == 0; ++dp)
+    {
+      rp [n0++] = *np++;
+      --nl;
+    }
+  mpn_tdiv_qr (qp, rp + n0, 0L, np, nl, dp, dl - n0);
 
   ql -=  qp[ql - 1] == 0;
   MPN_NORMALIZE (rp, dl);

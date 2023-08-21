@@ -37,7 +37,9 @@ C AMD bd1	n/a
 C AMD bd2	n/a
 C AMD bd3	n/a
 C AMD bd4	 ?
-C AMD zen	 ?
+C AMD zen1	 ?
+C AMD zen2	 ?
+C AMD zen3	 1.5
 C AMD bt1	n/a
 C AMD bt2	n/a
 C Intel P4	n/a

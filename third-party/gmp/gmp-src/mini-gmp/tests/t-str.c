@@ -1,6 +1,6 @@
 /*
 
-Copyright 2012-2014, 2016, 2020 Free Software Foundation, Inc.
+Copyright 2012-2014, 2016 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library test suite.
 
@@ -140,7 +140,7 @@ testmain (int argc, char **argv)
   char *ap;
   char *bp;
   char *rp;
-  size_t bn, rn, arn;
+  size_t bn, rn, arn, bps;
 
   mpz_t a, b;
 
@@ -194,6 +194,7 @@ testmain (int argc, char **argv)
 	      abort ();
 	    }
 	  bp = mpz_get_str (NULL, (i&1 || base > 36) ? base: -base, a);
+	  bps = strlen(bp) + 1;
 	  if (strcmp (bp, rp))
 	    {
 	      fprintf (stderr, "mpz_get_str failed:\n");
@@ -323,7 +324,7 @@ testmain (int argc, char **argv)
 	    }
 	  free (ap);
 	  free (rp);
-	  testfree (bp);
+	  testfree (bp, bps);
 	}
     }
   mpz_clear (a);

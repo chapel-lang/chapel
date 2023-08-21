@@ -167,7 +167,7 @@ L(e2):	popcnt	48(up), %r8
 	paddq	%xmm5, %xmm8
 	pshufd	$14, %xmm8, %xmm0
 	paddq	%xmm8, %xmm0
-	movq	%xmm0, %rax
+	movd	%xmm0, %rax
 	add	%rdx, %rax
 	FUNC_EXIT()
 	ret

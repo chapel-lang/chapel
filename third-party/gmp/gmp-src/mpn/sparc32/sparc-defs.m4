@@ -3,7 +3,7 @@ divert(-1)
 dnl  m4 macros for SPARC assembler (32 and 64 bit).
 
 
-dnl  Copyright 2002, 2011, 2013, 2017 Free Software Foundation, Inc.
+dnl  Copyright 2002, 2011, 2013, 2017, 2021 Free Software Foundation, Inc.
 
 dnl  This file is part of the GNU MP Library.
 dnl
@@ -74,16 +74,20 @@ dnl  of one after the other.  That might need one more scratch register.
 
 define(LEA64,
 m4_assert_numargs(3)
-m4_assert_defined(`HAVE_GOTDATA')
 `ifdef(`PIC',`
 	rd	%pc, %`$2'
 	sethi	%hi(_GLOBAL_OFFSET_TABLE_+4), %`$3'
 	add	%`$3', %lo(_GLOBAL_OFFSET_TABLE_+8), %`$3'
 	add	%`$2', %`$3', %`$3'
+ifelse(HAVE_GDOP,yes,`
 	sethi	%gdop_hix22(`$1'), %`$2'
 	xor	%`$2', %gdop_lox10(`$1'), %`$2'
 	ldx	[%`$3' + %`$2'], %`$2', %gdop(`$1')
 ',`
+	sethi	%hi(`$1'), %`$2'
+	or	%`$2', %lo(`$1'), %`$2'
+	ldx	[%`$3' + %`$2'], %`$2'
+')',`
 	sethi	%h44(`$1'), %`$2'
 	or	%`$2', %m44(`$1'), %`$2'
 	sllx	%`$2', 12, %`$2'
