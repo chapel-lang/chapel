@@ -2367,6 +2367,27 @@ static bool isMethodCall(CallExpr* call) {
   return false;
 }
 
+static const char* getParenfulDeprecationMessage(Symbol* thisActual) {
+  if (!thisActual->hasFlag(FLAG_TEMP)) return nullptr;
+  SymExpr* def = thisActual->getSingleDef();
+  if (def == nullptr) return nullptr;
+
+  CallExpr* move = toCallExpr(def->parentExpr);
+  if (!move->isPrimitive(PRIM_MOVE)) return nullptr;
+
+  auto assignedFromCall = toCallExpr(move->get(2));
+  if (!assignedFromCall) return nullptr;
+
+  if (auto calledSym = toSymExpr(assignedFromCall->baseExpr)) {
+    if (auto fnSym = toFnSymbol(calledSym->symbol())) {
+      if (fnSym->hasFlag(FLAG_DEPRECATED_PARENFUL)) {
+        return fnSym->getSanitizedMsg(fnSym->getParenfulDeprecationMsg());
+      }
+    }
+  }
+
+  return nullptr;
+}
 
 static Expr* preFoldNamed(CallExpr* call) {
   Expr* retval = NULL;
@@ -2426,6 +2447,10 @@ static Expr* preFoldNamed(CallExpr* call) {
         if (Expr* expr = resolveTupleIndexing(call, base->symbol())) {
           retval = expr;  // call was replaced by expr
         }
+      } else if (auto deprecationMessage = getParenfulDeprecationMessage(sym)) {
+        USR_WARN(call, "%s", deprecationMessage);
+        retval = new SymExpr(sym);
+        call->replace(retval);
       }
     }
 

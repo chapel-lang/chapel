@@ -78,8 +78,8 @@ module ResultDB {
                         var stdDev = (sumOfSqDiff/this.results[blockSize].size)**0.5;
 
                         // Calc min and max
-                        var min = resultSorted.first();
-                        var max = resultSorted.last();
+                        var min = resultSorted.first;
+                        var max = resultSorted.last;
 
                         // Write the result row
                         write(testName,"\t", atts, blockSize, attsSuffix, "\t", units,'\t');
