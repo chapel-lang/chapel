@@ -666,13 +666,13 @@ proc type iokind.little param do return _iokind.little;
 /* A synonym for ``iokind.dynamic``; see :type:`iokind` */
 @deprecated(notes="'iodynamic' is deprecated, please use Serializers that support endianness instead")
 param iodynamic = _iokind.dynamic;
-/* A synonym for ``_iokind.native``; see :type:`_iokind` */
+/* A synonym for ``iokind.native``; see :type:`iokind` */
 @deprecated(notes="'ionative' is deprecated, please use Serializers that support endianness instead")
 param ionative = _iokind.native;
-/* A synonym for ``_iokind.big``; see :type:`_iokind` */
+/* A synonym for ``iokind.big``; see :type:`iokind` */
 @deprecated(notes="'iobig' is deprecated, please use Serializers that support endianness instead")
 param iobig = _iokind.big;
-/* A synonym for ``_iokind.little``; see :type:`_iokind` */
+/* A synonym for ``iokind.little``; see :type:`iokind` */
 @deprecated(notes="'iolittle' is deprecated, please use Serializers that support endianness instead")
 param iolittle = _iokind.little;
 
