@@ -21,13 +21,11 @@ config const nx = 256,      // number of grid points in x
              alpha = 0.25;  // diffusion constant
 
 // define a distributed 2D domain and subdomain to describe the grid and its interior
-const indices = {0..<nx, 0..<ny},
-      indicesInner = indices.expand(-1),
-      INDICES = Block.createDomain(indices),
-      INDICES_INNER = INDICES[indicesInner];
+const Indices = Block.createDomain({0..<nx, 0..<ny}),
+      IndicesInner = Indices[1..<nx-1, 1..<ny-1];
 
 // define a distributed 2D array over the above domain
-var u: [INDICES] real;
+var u: [Indices] real;
 
 // set up initial conditions
 u = 1.0;
@@ -43,7 +41,7 @@ for 1..nt {
   u <=> un;
 
   // compute the FD kernel in parallel
-  forall (i, j) in INDICES_INNER do
+  forall (i, j) in IndicesInner do
     u[i, j] = un[i, j] + alpha *
       (un[i, j-1] + un[i-1, j] + un[i+1, j] + un[i, j+1] - 4 * un[i, j]);
 }

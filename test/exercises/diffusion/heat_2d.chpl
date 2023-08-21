@@ -22,7 +22,7 @@ config const nx = 256,      // number of grid points in x
 
 // define a 2D domain and subdomain to describe the grid and its interior
 const indices = {0..<nx, 0..<ny},
-      indicesInner = {1..<nx-1, 1..<ny-1}; // equivalent to ` = indices.expand(-1)`
+      indicesInner = {1..<nx-1, 1..<ny-1};
 
 // define a 2D array over the above domain
 var u: [indices] real;

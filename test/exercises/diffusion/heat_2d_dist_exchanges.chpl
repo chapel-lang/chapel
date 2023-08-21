@@ -29,8 +29,8 @@ config const nx = 256,      // number of grid points in x
 // define distributed domains and block-distributed array
 const indices = {0..<nx, 0..<ny},
       indicesInner = indices.expand(-1),
-      INDICES = Block.createDomain(indices);
-var u: [INDICES] real;
+      Indices = Block.createDomain(indices);
+var u: [Indices] real;
 
 // apply initial conditions
 u = 1.0;
