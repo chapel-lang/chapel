@@ -3001,13 +3001,8 @@ void init_ofiForAms(void) {
   // renewing.  We actually then split this in half and create 2 half-sized
   // buffers (see below), so reflect that here also.
   //
-  const char *ev = "COMM_OFI_AM_LZ_SIZE";
-  size_t amLZSize = (size_t) 64 << 20;
-  const char *sizeStr = chpl_env_rt_get(ev, NULL);
-  if (sizeStr != NULL) {
-    amLZSize = chpl_env_str_to_size(ev, sizeStr, amLZSize);
-  }
-
+  size_t amLZSize = chpl_env_rt_get_size("COMM_OFI_AM_LZ_SIZE",
+                                               (size_t) 64 << 20);
   char buf[10];
   DBG_PRINTF(DBG_AM_BUF, "AM LZ size %s (%#zx)",
              chpl_snprintf_KMG_z(buf, sizeof(buf), amLZSize), amLZSize);
