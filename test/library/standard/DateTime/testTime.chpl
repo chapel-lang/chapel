@@ -96,7 +96,7 @@ proc test_resolution_info() {
 
 proc test_replace() {
   var args = (1, 2, 3, 4);
-  var base = new time((...args));
+  var base = new time((...args), tz=nil);
   assert(base == base.replace(tz=base.timezone));
 
   var i = 0;
@@ -106,8 +106,8 @@ proc test_replace() {
                          ("microsecond", 8)) {
     var newargs = args;
     newargs[i] = newval;
-    var expected = new time((...newargs));
-    var got: time;
+    var expected = new time((...newargs), tz=nil);
+    var got: time(tz_aware=true);
     if name == "hour" then
       got = base.replace(hour=newval, tz=base.timezone);
     else if name == "minute" then

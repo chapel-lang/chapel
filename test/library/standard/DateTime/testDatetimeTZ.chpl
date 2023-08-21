@@ -15,16 +15,16 @@ class FixedOffset: Timezone {
     this.dstoffset = new timeDelta(minutes=dstoffset);
   }
 
-  override proc utcOffset(dt: dateTime) {
+  override proc utcOffset(dt: dateTime(?)) {
     return offset;
   }
-  override proc tzname(dt: dateTime) {
+  override proc tzname(dt: dateTime(?)) {
     return name;
   }
-  override proc dst(dt: dateTime) {
+  override proc dst(dt: dateTime(?)) {
     return dstoffset;
   }
-  override proc fromUtc(dt: dateTime) {
+  override proc fromUtc(dt: dateTime(?)) {
     var dtoff = dt.utcOffset();
     var dtdst = dt.dst();
     var delta = dtoff - dtdst;
@@ -244,7 +244,7 @@ proc test_tzinfo_fromtimestamp() {
 
   // Try to make sure tz= actually does some conversion.
   var timestamp = 1000000000;
-  var utcdateTime = dateTime.createUtcFromTimestamp(timestamp);
+  var utcdateTime = dateTime.createUtcFromTimestamp(timestamp).replace(tz=nil);
   // In POSIX (epoch 1970), that's 2001-09-09 01:46:40 UTC, give or take.
   // But on some flavor of Mac, it's nowhere near that.  So we can't have
   // any idea here what time that actually is, we can only test that
@@ -394,7 +394,7 @@ proc test_replace() {
     var newargs = args;
     newargs[i] = newval;
     var expected = new dateTime((...newargs), z100);
-    var got: dateTime;
+    var got: dateTime(tz_aware=true);
     if name == "year" then
       got = base.replace(year=newval, tz=z100);
     else if name == "month" then
@@ -463,7 +463,7 @@ proc test_aware_subtract() {
   // Ensure that utcoffset() is ignored when the operands have the
   // same tz member.
   class OperandDependentOffset: Timezone {
-    override proc utcOffset(dt: dateTime) {
+    override proc utcOffset(dt: dateTime(?)) {
       if dt.minute < 10 {
         // d0 and d1 equal after adjustment
         return new timeDelta(minutes=dt.minute);
@@ -487,7 +487,7 @@ proc test_aware_subtract() {
   }
   // OTOH, if the tz members are distinct, utcoffsets aren't
   // ignored.
-  base = new dateTime(8, 9, 10, 11, 12, 13, 14);
+  base = new dateTime(8, 9, 10, 11, 12, 13, 14, tz=nil);
   d0 = base.replace(minute=3, tz=new shared OperandDependentOffset());
   d1 = base.replace(minute=9, tz=new shared OperandDependentOffset());
   d2 = base.replace(minute=11, tz=new shared OperandDependentOffset());
@@ -511,8 +511,8 @@ proc test_aware_subtract() {
 }
 
 proc test_mixed_compare() {
-  var t1 = new dateTime(1, 2, 3, 4, 5, 6, 7);
-  var t2 = new dateTime(1, 2, 3, 4, 5, 6, 7);
+  var t1 = new dateTime(1, 2, 3, 4, 5, 6, 7, tz=nil);
+  var t2 = new dateTime(1, 2, 3, 4, 5, 6, 7, tz=nil);
   assert(t1 == t2);
   t2 = t2.replace(tz=nil);
   assert(t1 == t2);
@@ -524,7 +524,7 @@ proc test_mixed_compare() {
     proc init() {
       offset = new timeDelta(minutes=22);
     }
-    override proc utcOffset(dt: dateTime) {
+    override proc utcOffset(dt: dateTime(?)) {
       offset += new timeDelta(minutes=1);
       return offset;
     }

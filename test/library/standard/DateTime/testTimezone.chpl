@@ -109,7 +109,7 @@ proc test_replace() {
     var newargs = args;
     newargs[i] = newval;
     var expected = new time((...newargs), z100);
-    var got: time;
+    var got: time(tz_aware=true);
     if name == "hour" then
       got = base.replace(hour=newval, tz=base.timezone);
     else if name == "minute" then
@@ -143,10 +143,8 @@ proc test_replace() {
 }
 
 proc test_mixed_compare() {
-  var t1 = new time(1, 2, 3);
-  var t2 = new time(1, 2, 3);
-  assert(t1 == t2);
-  t2 = t2.replace(tz=nil);
+  var t1 = new time(1, 2, 3, tz=nil);
+  var t2 = new time(1, 2, 3, tz=nil);
   assert(t1 == t2);
   t2 = t2.replace(tz=new shared FixedOffset(0, ""));
 
@@ -157,14 +155,14 @@ proc test_mixed_compare() {
     proc init() {
       offset = new timeDelta(minutes=22);
     }
-    override proc utcOffset(dt: dateTime) {
+    override proc utcOffset(dt: dateTime(?)) {
       offset += new timeDelta(minutes=1);
       return offset;
     }
-    override proc dst(dt: dateTime) {
+    override proc dst(dt: dateTime(?)) {
       return new timeDelta(0);
     }
-    override proc tzname(dt: dateTime) {
+    override proc tzname(dt: dateTime(?)) {
       return name;
     }
   }

@@ -665,7 +665,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* initializers/factories for time values */
 
   @chpldoc.nodoc
-  proc time.init(tz_aware: bool) {
+  proc time.init(param tz_aware: bool) {
+    this.tz_aware = tz_aware;
   }
 
   /* Initialize a new `time` value from the given `hour`, `minute`, `second`,
@@ -1084,7 +1085,12 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* initializers/factories for dateTime values */
 
   @chpldoc.nodoc
-  proc dateTime.init(tz_aware: bool) {
+  proc dateTime.init(param tz_aware: bool) {
+    this.tz_aware = tz_aware;
+  }
+
+  @chpldoc.nodoc
+  proc dateTime.init() {
   }
 
   /* Initialize a new `dateTime` value from the given `year`, `month`, `day`,
@@ -1150,7 +1156,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* Return a `dateTime` value representing the current time and date in UTC */
-  proc type dateTime.utcNow() : dateTime(tz_aware=true) {
+  proc type dateTime.utcNow() : dateTime(tz_aware=false) {
     const timeSinceEpoch = getTimeOfDay();
     const td = new timeDelta(seconds=timeSinceEpoch(0),
                              microseconds=timeSinceEpoch(1));
@@ -1170,7 +1176,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* The `dateTime` that is `timestamp` seconds from the epoch */
   proc type dateTime.createFromTimestamp(timestamp: real) : dateTime(tz_aware=false) {
-    return dateTime.createFromTimestamp(timestamp, nil);
+    var withTz = dateTime.createFromTimestamp(timestamp, nil);
+    return new dateTime(withTz.getDate(), withTz.getTime());
   }
 
   /* The `dateTime` that is `timestamp` seconds from the epoch */
@@ -1183,7 +1190,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
       return new dateTime(year=lt.tm_year+1900, month=lt.tm_mon+1,
                           day=lt.tm_mday,       hour=lt.tm_hour,
                           minute=lt.tm_min,     second=lt.tm_sec,
-                          microsecond=t(1));
+                          microsecond=t(1),
+                          tz=nil);
     } else {
       var dt = dateTime.createUtcFromTimestamp(timestamp);
       return (dt + tz!.utcOffset(dt)).replace(tz=tz);
@@ -1196,7 +1204,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* The `dateTime` that is `timestamp` seconds from the epoch in UTC */
-  proc type dateTime.createUtcFromTimestamp(timestamp) : dateTime(tz_aware=true) {
+  proc type dateTime.createUtcFromTimestamp(timestamp) : dateTime(tz_aware=false) {
     return unixEpoch + new timeDelta(seconds=timestamp: int, microseconds=((timestamp-timestamp: int)*1000000): int);
   }
 
@@ -1463,7 +1471,9 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     timeStruct.tm_mon = (month-1): int(32);    // 0 based
     timeStruct.tm_mday = day: int(32);
     timeStruct.tm_wday = (weekday(): int(32) + 1) % 7; // shift Sunday to 0
-    timeStruct.tm_yday = (this.replace(tz=nil) - new dateTime(year, 1, 1)).days: int(32);
+    timeStruct.tm_yday =
+      (this.replace(tz=nil) - (new dateTime(year, 1, 1, tz=nil))).days
+        : int(32);
 
     // Iterate over format specifiers in strftime(), replacing %f with microseconds
     iter strftok(const ref s: string)
@@ -1549,6 +1559,12 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     this.init();
     readThis(reader);
   }
+  @chpldoc.nodoc
+  proc dateTime.init(param tz_aware: bool, reader: fileReader, ref deserializer) throws
+  {
+    this.init(tz_aware);
+    readThis(reader);
+  }
 
 
   // TODO: Add a dateTime.timestamp() method
@@ -1590,12 +1606,14 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   @chpldoc.nodoc
-  operator dateTime.+(dt: dateTime, td: timeDelta) {
+  operator dateTime.+(dt: dateTime(?), td: timeDelta)
+                      : dateTime(tz_aware=dt.tz_aware) {
     return td + dt;
   }
 
   @chpldoc.nodoc
-  operator dateTime.-(dt: dateTime, td: timeDelta) {
+  operator dateTime.-(dt: dateTime(?), td: timeDelta)
+                      : dateTime(tz_aware=dt.tz_aware) {
     var deltasec  = td.seconds % 60;
     var deltamin  = (td.seconds / 60) % 60;
     var deltahour = td.seconds / (60*60);
@@ -1623,10 +1641,16 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
       subDays += 1;
       newhour += 24;
     }
+    var newTime;
+    if (dt.tz_aware) {
+      newTime = new time(hour = newhour, minute = newmin, second = newsec,
+               microsecond = newmicro, tz = dt.timezone);
+    } else {
+      newTime = new time(hour = newhour, minute = newmin, second = newsec,
+               microsecond = newmicro);
+    }
     return dateTime.combine(date.createFromOrdinal(dt.getDate().toOrdinal()-subDays),
-                            new time(hour=newhour, minute=newmin,
-                                     second=newsec, microsecond=newmicro,
-                                     tz=dt.timezone));
+                            newTime);
   }
 
   @chpldoc.nodoc
@@ -2003,7 +2027,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     /* Convert a `time` in UTC to this time zone */
     proc fromUtc(dt: dateTime(?)): dateTime(tz_aware=true) {
       HaltWrappers.pureVirtualMethodHalt();
-      return new dateTime(0,0,0);
+      return new dateTime(0,0,0,tz=nil);
     }
 
   }

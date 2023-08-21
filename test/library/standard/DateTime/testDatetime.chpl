@@ -220,7 +220,7 @@ proc test_combine() {
 
 proc test_replace() {
   var args = (1, 2, 3, 4, 5, 6, 7);
-  var base = new dateTime((...args));
+  var base = new dateTime((...args), tz=nil);
   var nilTZ:shared Timezone?;
 
   assert(base == base.replace(tz=nilTZ));
@@ -234,9 +234,9 @@ proc test_replace() {
                          ("second", 7),
                          ("microsecond", 8)) {
     var newargs = args;
-    var got: dateTime;
+    var got: dateTime(tz_aware=true);
     newargs[i] = newval;
-    var expected = new dateTime((...newargs));
+    var expected = new dateTime((...newargs), tz=nil);
 
     if name == "year" then
       got = base.replace(year = newval, tz=nilTZ);

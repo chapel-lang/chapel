@@ -27,18 +27,18 @@ class USTimeZone: Timezone {
     return reprname;
   }
 
-  override proc tzname(dt: dateTime) {
+  override proc tzname(dt: dateTime(?)) {
     if dst(dt) != new timeDelta(0) then
       return dstname;
     else
       return stdname;
   }
 
-  override proc utcOffset(dt: dateTime) {
+  override proc utcOffset(dt: dateTime(?)) {
     return stdoffset + dst(dt);
   }
 
-  override proc dst(dt: dateTime) {
+  override proc dst(dt: dateTime(?)) {
     if dt.timezone.borrow() == nil {
       // An exception instead may be sensible here, in one or more of
       // the cases.
@@ -63,7 +63,7 @@ class USTimeZone: Timezone {
     }
   }
 
-  override proc fromUtc(dt: dateTime) {
+  override proc fromUtc(dt: dateTime(?)) {
     var dtoff = dt.utcOffset();
     var dtdst = dt.dst();
     var delta = dtoff - dtdst;
@@ -84,19 +84,19 @@ class FixedOffset: Timezone {
     this.dstoffset = new timeDelta(minutes=dstoffset);
   }
 
-  override proc utcOffset(dt: dateTime) {
+  override proc utcOffset(dt: dateTime(?)) {
     return offset;
   }
 
-  override proc tzname(dt: dateTime) {
+  override proc tzname(dt: dateTime(?)) {
     return name;
   }
 
-  override proc dst(dt: dateTime) {
+  override proc dst(dt: dateTime(?)) {
     return dstoffset;
   }
 
-  override proc fromUtc(dt: dateTime) {
+  override proc fromUtc(dt: dateTime(?)) {
     var dtoff = dt.utcOffset();
     var dtdst = dt.dst();
     var delta = dtoff - dtdst;
@@ -246,9 +246,9 @@ proc test_easy() {
 
 proc test_tricky() {
   // 22:00 on day before daylight starts.
-  var fourback = dston - new timeDelta(hours=4);
+  var fourback_naive = dston - new timeDelta(hours=4);
   var ninewest = new shared FixedOffset(-9*60, "-0900", 0);
-  fourback = fourback.replace(tz=ninewest);
+  var fourback = fourback_naive.replace(tz=ninewest);
   // 22:00-0900 is 7:00 UTC == 2:00 EST == 3:00 DST.  Since it's "after
   // 2", we should get the 3 spelling.
   // If we plug 22:00 the day before into Eastern, it "looks like std
@@ -281,15 +281,15 @@ proc test_tricky() {
       // Convert that to UTC.
       first_std_hour -= tz.borrow().utcOffset(new dateTime(1,1,1));
       // Adjust for possibly fake UTC.
-      var asutc = first_std_hour + utc.borrow().utcOffset(new dateTime(1,1,1));
+      var asutc_real = first_std_hour + utc.borrow().utcOffset(new dateTime(1,1,1));
       // First UTC hour to convert; this is 4:00 when utc=utc_real &
       // tz=Eastern.
-      var asutcbase = asutc.replace(tz=utc);
+      var asutcbase = asutc_real.replace(tz=utc);
       for tzhour in (0, 1, 1, 2) {
         var expectedbase = dstoff.replace(hour=tzhour, tz=dstoff.timezone);
         for minute in (0, 30, 59) {
           expected = expectedbase.replace(minute=minute, tz=expectedbase.timezone);
-          asutc = asutcbase.replace(minute=minute, tz=asutcbase.timezone);
+          var asutc = asutcbase.replace(minute=minute, tz=asutcbase.timezone);
           var astz = asutc.astimezone(tz);
           assert(astz.replace(tz=nil) == expected);
         }
@@ -307,7 +307,7 @@ proc test_fromutc() {
 
   // Always converts UTC to standard time.
   class FauxUSTimeZone: USTimeZone {
-    override proc fromUtc(dt: dateTime) {
+    override proc fromUtc(dt: dateTime(?)) {
       return dt + stdoffset;
     }
 
