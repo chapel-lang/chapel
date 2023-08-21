@@ -664,6 +664,10 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* initializers/factories for time values */
 
+  @chpldoc.nodoc
+  proc time.init(tz_aware: bool) {
+  }
+
   /* Initialize a new `time` value from the given `hour`, `minute`, `second`,
      `microsecond`, and `timezone`.  All arguments are optional
    */
@@ -1080,7 +1084,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* initializers/factories for dateTime values */
 
   @chpldoc.nodoc
-  proc dateTime.init() {
+  proc dateTime.init(tz_aware: bool) {
   }
 
   /* Initialize a new `dateTime` value from the given `year`, `month`, `day`,
