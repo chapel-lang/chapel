@@ -292,7 +292,7 @@ L(am1end):
 	adc	%rcx, w1		C relies on rcx = 0
 	mov	w1, 8(rp)
 
-	dec	vn			C clear CF and OF as side-effect
+	dec	vn			C clear OF as side-effect
 	jnz	L(outer)
 L(done):
 	pop	%r14
@@ -302,8 +302,7 @@ L(done):
 	FUNC_EXIT()
 	ret
 
-L(f2):
-	mulx(	-8,(up), w2, w3)
+L(f2):	mulx(	-8,(up), w2, w3)
 	lea	8(rp,unneg,8), rp
 	mulx(	(up), w0, w1)
 

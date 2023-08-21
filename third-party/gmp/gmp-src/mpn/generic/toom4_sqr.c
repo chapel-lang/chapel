@@ -6,7 +6,7 @@
    SAFE TO REACH IT THROUGH DOCUMENTED INTERFACES.  IN FACT, IT IS ALMOST
    GUARANTEED THAT IT WILL CHANGE OR DISAPPEAR IN A FUTURE GNU MP RELEASE.
 
-Copyright 2006-2010, 2013 Free Software Foundation, Inc.
+Copyright 2006-2010, 2013, 2021 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -37,7 +37,7 @@ see https://www.gnu.org/licenses/.  */
 
 #include "gmp-impl.h"
 
-/* Evaluate in: -1, -1/2, 0, +1/2, +1, +2, +inf
+/* Evaluate in: -2, -1, 0, +1/2, +1, +2, +inf
 
   <-s--><--n--><--n--><--n-->
    ____ ______ ______ ______
@@ -47,8 +47,8 @@ see https://www.gnu.org/licenses/.  */
   v1  = ( a0+ a1+ a2+ a3)^2 #    A(1)^2   ah  <= 3
   vm1 = ( a0- a1+ a2- a3)^2 #   A(-1)^2  |ah| <= 1
   v2  = ( a0+2a1+4a2+8a3)^2 #    A(2)^2   ah  <= 14
+  vm2 = ( a0-2a1+4a2-8a3)^2 #   A(-2)^2  -9<=ah<=4
   vh  = (8a0+4a1+2a2+ a3)^2 #  A(1/2)^2   ah  <= 14
-  vmh = (8a0-4a1+2a2- a3)^2 # A(-1/2)^2  -4<=ah<=9
   vinf=               a3 ^2 #  A(inf)^2
 */
 
@@ -154,7 +154,8 @@ mpn_toom4_sqr (mp_ptr pp,
   mpn_toom_eval_dgr3_pm1 (apx, amx, ap, n, s, tp);
 
   TOOM4_SQR_REC (v1, apx, n + 1, tp);	/* v1,  2n+1 limbs */
-  TOOM4_SQR_REC (vm1, amx, n + 1, tp);	/* vm1,  2n+1 limbs */
+  vm1 [2 * n] = 0;
+  TOOM4_SQR_REC (vm1, amx, n + amx[n], tp);	/* vm1,  2n+1 limbs */
 
   TOOM4_SQR_REC (v0, a0, n, tp);
   TOOM4_SQR_REC (vinf, a3, s, tp);	/* vinf, 2s limbs */

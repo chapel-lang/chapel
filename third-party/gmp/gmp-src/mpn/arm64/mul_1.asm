@@ -37,6 +37,7 @@ C Cortex-A53	7.5-8
 C Cortex-A57	 7
 C Cortex-A72
 C X-Gene	 4
+C Apple M1	 1
 
 C TODO
 C  * Start first multiply earlier.

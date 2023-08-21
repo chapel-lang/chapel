@@ -1,6 +1,6 @@
 /* Speed measuring program.
 
-Copyright 1999-2003, 2005, 2006, 2008-2019 Free Software Foundation, Inc.
+Copyright 1999-2003, 2005, 2006, 2008-2022 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -36,7 +36,9 @@ see https://www.gnu.org/licenses/.  */
    speed_foo() wants an "r" parameter.
 
    The routines don't have help messages or descriptions, but most have
-   suggestive names.  See the source code for full details. */
+   suggestive names.  See the source code for full details.
+
+*/
 
 #include "config.h"
 
@@ -189,6 +191,9 @@ const struct routine_t {
 #if HAVE_NATIVE_mpn_addmul_8
   { "mpn_addmul_8",      speed_mpn_addmul_8,  FLAG_R_OPTIONAL },
 #endif
+#if HAVE_NATIVE_mpn_addaddmul_1msb0
+  { "mpn_addaddmul_1msb0",      speed_mpn_addaddmul_1msb0, FLAG_R_OPTIONAL },
+#endif
   { "mpn_mul_1",         speed_mpn_mul_1,     FLAG_R },
   { "mpn_mul_1_inplace", speed_mpn_mul_1_inplace, FLAG_R },
 #if HAVE_NATIVE_mpn_mul_2
@@ -242,6 +247,8 @@ const struct routine_t {
   { "mpn_div_qr_1n_pi1", speed_mpn_div_qr_1n_pi1, FLAG_R  },
   { "mpn_div_qr_1n_pi1_1",speed_mpn_div_qr_1n_pi1_1, FLAG_R  },
   { "mpn_div_qr_1n_pi1_2",speed_mpn_div_qr_1n_pi1_2, FLAG_R  },
+  { "mpn_div_qr_1n_pi1_3",speed_mpn_div_qr_1n_pi1_3, FLAG_R  },
+  { "mpn_div_qr_1n_pi1_4",speed_mpn_div_qr_1n_pi1_4, FLAG_R  },
   { "mpn_div_qr_1",      speed_mpn_div_qr_1,      FLAG_R },
 
   { "mpn_div_qr_2n",     speed_mpn_div_qr_2n,       },
@@ -314,7 +321,11 @@ const struct routine_t {
   { "mpn_gcdext_lehmer",     speed_mpn_gcdext_lehmer     },
 #endif
 
+  { "gmp_primesieve",    speed_gmp_primesieve, FLAG_NODATA      },
   { "mpz_nextprime",     speed_mpz_nextprime        },
+  { "mpz_nextprime_1",   speed_mpz_nextprime_1, FLAG_R_OPTIONAL },
+  { "mpz_prevprime",     speed_mpz_prevprime        },
+  { "mpz_prevprime_1",   speed_mpz_prevprime_1, FLAG_R_OPTIONAL },
 
   { "mpz_jacobi",        speed_mpz_jacobi           },
   { "mpn_jacobi_base",   speed_mpn_jacobi_base      },
@@ -373,6 +384,11 @@ const struct routine_t {
   { "mpn_mulmod_bnm1",         speed_mpn_mulmod_bnm1         },
   { "mpn_mulmod_bnm1_rounded", speed_mpn_mulmod_bnm1_rounded },
   { "mpn_sqrmod_bnm1",         speed_mpn_sqrmod_bnm1         },
+
+  { "mpn_mulmod_bknp1",        speed_mpn_mulmod_bknp1, FLAG_R_OPTIONAL },
+  { "mpn_sqrmod_bknp1",        speed_mpn_sqrmod_bknp1, FLAG_R_OPTIONAL },
+  { "mpn_mulmod_bnp1",         speed_mpn_mulmod_bnp1         },
+  { "mpn_sqrmod_bnp1",         speed_mpn_sqrmod_bnp1         },
 
   { "mpn_invert",              speed_mpn_invert              },
   { "mpn_invertappr",          speed_mpn_invertappr          },

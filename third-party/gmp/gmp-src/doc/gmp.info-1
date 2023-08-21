@@ -1,7 +1,7 @@
 This is gmp.info, produced by makeinfo version 6.7 from gmp.texi.
 
 This manual describes how to install and use the GNU multiple precision
-arithmetic library, version 6.2.1.
+arithmetic library, version 6.3.0.
 
    Copyright 1991, 1993-2016, 2018-2020 Free Software Foundation, Inc.
 
@@ -24,7 +24,7 @@ GNU MP
 ******
 
 This manual describes how to install and use the GNU multiple precision
-arithmetic library, version 6.2.1.
+arithmetic library, version 6.3.0.
 
    Copyright 1991, 1993-2016, 2018-2020 Free Software Foundation, Inc.
 
@@ -101,7 +101,7 @@ has the additional option of applying later versions of these licenses.
 (The reason for this dual licensing is to make it possible to use the
 library with programs which are licensed under GPL version 2, but which
 for historical or other reasons do not allow use under later versions of
-the GPL).
+the GPL.)
 
    Programs which are not part of the library itself, such as
 demonstration programs and the GMP testsuite, are licensed under the
@@ -134,11 +134,11 @@ simplicity or elegance).
 
    There is assembly code for these CPUs: ARM Cortex-A9, Cortex-A15, and
 generic ARM, DEC Alpha 21064, 21164, and 21264, AMD K8 and K10 (sold
-under many brands, e.g.  Athlon64, Phenom, Opteron) Bulldozer, and
+under many brands, e.g.  Athlon64, Phenom, Opteron), Bulldozer, and
 Bobcat, Intel Pentium, Pentium Pro/II/III, Pentium 4, Core2, Nehalem,
 Sandy bridge, Haswell, generic x86, Intel IA-64, Motorola/IBM PowerPC 32
 and 64 such as POWER970, POWER5, POWER6, and POWER7, MIPS 32-bit and
-64-bit, SPARC 32-bit ad 64-bit with special support for all UltraSPARC
+64-bit, SPARC 32-bit and 64-bit with special support for all UltraSPARC
 models.  There is also assembly code for many obsolete CPUs.
 
 For up-to-date information on GMP, please see the GMP web pages at
@@ -230,7 +230,7 @@ Build Directory
      directory.  For example
 
           cd /my/build/dir
-          /my/sources/gmp-6.2.1/configure
+          /my/sources/gmp-6.3.0/configure
 
      Not all 'make' programs have the necessary features ('VPATH') to
      support this.  In particular, SunOS and Slowaris 'make' have bugs
@@ -283,9 +283,9 @@ Cross Compilation, '--host=CPU-VENDOR-OS'
      plain 'ranlib'.  This makes it possible for a set of
      cross-compiling tools to co-exist with native tools.  The prefix is
      the argument to '--host', and this can be an alias, such as
-     'm68k-linux'.  But note that tools don't have to be setup this way,
-     it's enough to just have a 'PATH' with a suitable cross-compiling
-     'cc' etc.
+     'm68k-linux'.  But note that tools don't have to be set up this
+     way, it's enough to just have a 'PATH' with a suitable
+     cross-compiling 'cc' etc.
 
      Compiling for a different CPU in the same family as the build
      system is a form of cross-compilation, though very possibly this
@@ -324,7 +324,7 @@ CPU types
      details of what code and compiler options they select.
 
         * Alpha: alpha, alphaev5, alphaev56, alphapca56, alphapca57,
-          alphaev6, alphaev67, alphaev68 alphaev7
+          alphaev6, alphaev67, alphaev68, alphaev7
 
         * Cray: c90, j90, t90, sv1
 
@@ -528,8 +528,8 @@ Execution Profiling, '--enable-profiling=prof/gprof/instrument'
 
 'MPN_PATH'
      Various assembly versions of each mpn subroutines are provided.
-     For a given CPU, a search is made though a path to choose a version
-     of each.  For example 'sparcv8' has
+     For a given CPU, a search is made through a path to choose a
+     version of each.  For example 'sparcv8' has
 
           MPN_PATH="sparc32/v8 sparc32 generic"
 
@@ -592,7 +592,7 @@ has for installing library or header files built for a particular ABI.
 This will probably only matter when installing multiple builds of GMP,
 and it might be as simple as configuring with a special 'libdir', or it
 might require more than that.  Note that builds for different ABIs need
-to done separately, with a fresh './configure' and 'make' each.
+to be done separately, with a fresh './configure' and 'make' each.
 
 
 AMD64 ('x86_64')
@@ -645,7 +645,7 @@ HPPA 2.0 ('hppa2.0*', 'hppa64')
                gcc [built for 2.0n]
                cc  +DA2.0 +e
 
-          Note that current versions of GCC (eg. 3.2) don't generate
+          Note that current versions of GCC (e.g. 3.2) don't generate
           64-bit instructions for 'long long' operations and so may be
           slower than for 2.0w.  (The GMP assembly code is the same
           though.)
@@ -698,7 +698,7 @@ MIPS under IRIX 6 ('mips*-*-irix[6789]')
      'ABI=o32'
           The o32 ABI is 32-bit pointers and integers, and no 64-bit
           operations.  GMP will be slower than in n32 or 64, this option
-          only exists to support old compilers, eg. GCC 2.7.2.
+          only exists to support old compilers, e.g. GCC 2.7.2.
           Applications can be compiled with no special flags on an old
           compiler, or on a newer compiler with
 
@@ -1063,7 +1063,7 @@ DJGPP ('*-*-msdosdjgpp*')
      'config.log'.  Use 'bash' 2.04 or higher.
 
      'make all' was found to run out of memory during the final
-     'libgmp.la' link on one system tested, despite having 64Mb
+     'libgmp.la' link on one system tested, despite having 64MiB
      available.  Running 'make libgmp.la' directly helped, perhaps
      recursing into the various subdirectories uses up memory.
 
@@ -1137,7 +1137,7 @@ most critical operation.
 
    In particular for long-running GMP applications, and applications
 demanding extremely large numbers, building and running the 'tuneup'
-program in the 'tune' subdirectory, can be important.  For example,
+program in the 'tune' subdirectory can be important.  For example,
 
      cd tune
      make tuneup
@@ -1188,12 +1188,14 @@ File: gmp.info,  Node: Headers and Libraries,  Next: Nomenclature and Types,  Pr
 =========================
 
 All declarations needed to use GMP are collected in the include file
-'gmp.h'.  It is designed to work with both C and C++ compilers.
+'gmp.h', except for the *note C++ Class Interface:: which comes with its
+own separate header 'gmpxx.h'.  'gmp.h' is designed to work with both C
+and C++ compilers.
 
      #include <gmp.h>
 
    Note however that prototypes for GMP functions with 'FILE *'
-parameters are only provided if '<stdio.h>' is included too.
+parameters are only provided if '<stdio.h>' is included before.
 
      #include <stdio.h>
      #include <gmp.h>
@@ -1208,9 +1210,10 @@ typical Unix-like system this can be done with '-lgmp', for example
 
      gcc myprogram.c -lgmp
 
-   GMP C++ functions are in a separate 'libgmpxx' library.  This is
-built and installed if C++ support has been enabled (*note Build
-Options::).  For example,
+   GMP C++ functions are in a separate 'libgmpxx' library, including the
+*note C++ Class Interface:: but also *note C++ Formatted Output:: for
+regular GMP types.  This is built and installed if C++ support has been
+enabled (*note Build Options::).  For example,
 
      g++ mycxxprog.cc -lgmpxx -lgmp
 
@@ -1275,6 +1278,52 @@ The C data type for such objects is 'gmp_randstate_t'.  For example:
    Also, in general 'mp_bitcnt_t' is used for bit counts and ranges, and
 'size_t' is used for byte or character counts.
 
+
+   Internally, GMP data types such as 'mpz_t' are defined as one-element
+arrays, whose element type is part of the GMP internals (*note
+Internals::).
+
+   When an array is used as a function argument in C, it is not passed
+by value, instead its value is a pointer to the first element.  In C
+jargon, this is sometimes referred to as the array "decaying" to a
+pointer.  For GMP types like 'mpz_t', that means that the function
+called gets a pointer to the caller's 'mpz_t' value, which is why no
+explicit '&' operator is needed when passing output arguments (*note
+Parameter Conventions::).
+
+   GMP defines names for these pointer types, e.g., 'mpz_ptr'
+corresponding to 'mpz_t', and 'mpz_srcptr' corresponding to 'const
+mpz_t'.  Most functions don't need to use these pointer types directly;
+it works fine to declare a function using the 'mpz_t' or 'const mpz_t'
+as the argument types, the same "pointer decay" happens in the
+background regardless.
+
+   Occasionally, it is useful to manipulate pointers directly, e.g., to
+conditionally swap _references_ to a function's inputs without changing
+the _values_ as seen by the caller, or returning a pointer to an 'mpz_t'
+which is part of a larger structure.  For these cases, the pointer types
+are necessary.  And a 'mpz_ptr' can be passed as argument to any GMP
+function declared to take an 'mpz_t' argument.
+
+   Their definition is equivalent to the following code, which is given
+for illustratory purposes only:
+
+         typedef foo_internal foo_t[1];
+         typedef foo_internal * foo_ptr;
+         typedef const foo_internal * foo_srcptr;
+
+   The following pointer types are defined by GMP:
+   * 'mpz_ptr' for pointers to the element type in 'mpz_t'
+   * 'mpz_srcptr' for 'const' pointers to the element type in 'mpz_t'
+   * 'mpq_ptr' for pointers to the element type in 'mpq_t'
+   * 'mpq_srcptr' for 'const' pointers to the element type in 'mpq_t'
+   * 'mpf_ptr' for pointers to the element type in 'mpf_t'
+   * 'mpf_srcptr' for 'const' pointers to the element type in 'mpf_t'
+   * 'gmp_randstate_ptr' for pointers to the element type in
+     'gmp_randstate_t'
+   * 'gmp_randstate_srcptr' for 'const' pointers to the element type in
+     'gmp_randstate_t'
+
 
 File: gmp.info,  Node: Function Classes,  Next: Variable Conventions,  Prev: Nomenclature and Types,  Up: GMP Basics
 
@@ -1295,7 +1344,7 @@ There are six classes of functions in the GMP library:
 
   3. Functions for floating-point arithmetic, with names beginning with
      'mpf_'.  The associated type is 'mpf_t'.  There are about 70
-     functions is this class.  (*note Floating-point Functions::)
+     functions in this class.  (*note Floating-point Functions::)
 
   4. Fast low-level functions that operate on natural numbers.  These
      are used by the functions in the preceding groups, and you can also
@@ -1356,14 +1405,15 @@ end.  For example,
    GMP types like 'mpz_t' are implemented as one-element arrays of
 certain structures.  Declaring a variable creates an object with the
 fields GMP needs, but variables are normally manipulated by using the
-pointer to the object.  For both behavior and efficiency reasons, it is
-discouraged to make copies of the GMP object itself (either directly or
-via aggregate objects containing such GMP objects).  If copies are done,
-all of them must be used read-only; using a copy as the output of some
-function will invalidate all the other copies.  Note that the actual
-fields in each 'mpz_t' etc are for internal use only and should not be
-accessed directly by code that expects to be compatible with future GMP
-releases.
+pointer to the object.  The appropriate pointer types (*note
+Nomenclature and Types::) may be used to explicitly manipulate the
+pointer.  For both behavior and efficiency reasons, it is discouraged to
+make copies of the GMP object itself (either directly or via aggregate
+objects containing such GMP objects).  If copies are done, all of them
+must be used read-only; using a copy as the output of some function will
+invalidate all the other copies.  Note that the actual fields in each
+'mpz_t' etc are for internal use only and should not be accessed
+directly by code that expects to be compatible with future GMP releases.
 
 
 File: gmp.info,  Node: Parameter Conventions,  Next: Memory Management,  Prev: Variable Conventions,  Up: GMP Basics
@@ -1414,7 +1464,10 @@ want to bother supporting that sort of thing.
 
    Since GMP types are implemented as one-element arrays, using a GMP
 variable as a parameter passes a pointer to the object.  Hence the
-call-by-reference.
+call-by-reference.  A more explicit (and equivalent) prototype for our
+function 'foo' could be:
+
+     void foo (mpz_ptr result, mpz_srcptr param, unsigned long n);
 
 
 File: gmp.info,  Node: Memory Management,  Next: Reentrancy,  Prev: Parameter Conventions,  Up: GMP Basics
@@ -1503,7 +1556,7 @@ File: gmp.info,  Node: Useful Macros and Constants,  Next: Compatibility with ol
 
  -- Global Constant: const char * const gmp_version
      The GMP version number, as a null-terminated string, in the form
-     "i.j.k".  This release is "6.2.1".  Note that the format "i.j" was
+     "i.j.k".  This release is "6.3.0".  Note that the format "i.j" was
      used, before version 4.3.0, when k was zero.
 
  -- Macro: __GMP_CC
@@ -1571,7 +1624,7 @@ sort of expression evaluation within the main GMP library.  Going beyond
 something minimal quickly leads to matters like user-defined functions,
 looping, fixnums for control variables, etc, which are considered
 outside the scope of GMP (much closer to language interpreters or
-compilers, *Note Language Bindings::.)  Something simple for program
+compilers, *Note Language Bindings::).  Something simple for program
 input convenience may yet be a possibility, a combination of the 'expr'
 demo and the 'pexpr' tree back-end perhaps.  But for now the above
 evaluators are offered as illustrations.
@@ -1629,8 +1682,8 @@ Reallocations
      The 'ui' functions and the small number of 'si' functions exist for
      convenience and should be used where applicable.  But if for
      example an 'mpz_t' contains a value that fits in an 'unsigned long'
-     there's no need extract it and call a 'ui' function, just use the
-     regular 'mpz' function.
+     there's no need to extract it and call a 'ui' function, just use
+     the regular 'mpz' function.
 
 In-Place Operations
      'mpz_abs', 'mpq_abs', 'mpf_abs', 'mpz_neg', 'mpq_neg' and 'mpf_neg'
@@ -1676,8 +1729,8 @@ Divisibility Testing (Small Integers)
      However when testing divisibility by several small integers, it's
      best to take a remainder modulo their product, to save
      multi-precision operations.  For instance to test whether a number
-     is divisible by any of 23, 29 or 31 take a remainder modulo
-     23*29*31 = 20677 and then test that.
+     is divisible by 23, 29 or 31 take a remainder modulo 23*29*31 =
+     20677 and then test that.
 
      The division functions like 'mpz_tdiv_q_ui' which give a quotient
      as well as a remainder are generally a little slower than the
@@ -1805,7 +1858,7 @@ Source File Paths
      to the source directory.
 
           cd /my/build/dir
-          /my/source/dir/gmp-6.2.1/configure
+          /my/source/dir/gmp-6.3.0/configure
 
      This works via 'VPATH', and might require GNU 'make'.  Alternately
      it might be possible to change the '.c.lo' rules appropriately.
@@ -2055,9 +2108,10 @@ not too much to ask you to report the bugs you find.
    Before you report a bug, check it's not already addressed in *note
 Known Build Problems::, or perhaps *note Notes for Particular Systems::.
 You may also want to check <https://gmplib.org/> for patches for this
-release.
+release, or try a recent snapshot from
+<https://gmplib.org/download/snapshot/>.
 
-   Please include the following in any report,
+   Please include the following in any report:
 
    * The GMP version number, and if pre-packaged or patched then say so.
 
@@ -2237,9 +2291,9 @@ Initializing Integers::).
      for binary, '0' for octal, or decimal otherwise.
 
      For bases up to 36, case is ignored; upper-case and lower-case
-     letters have the same value.  For bases 37 to 62, upper-case letter
-     represent the usual 10..35 while lower-case letter represent
-     36..61.
+     letters have the same value.  For bases 37 to 62, upper-case
+     letters represent the usual 10..35 while lower-case letters
+     represent 36..61.
 
      This function returns 0 if the entire string is a valid number in
      base BASE.  Otherwise it returns -1.
@@ -2412,7 +2466,7 @@ File: gmp.info,  Node: Integer Division,  Next: Integer Exponentiation,  Prev: I
 
 Division is undefined if the divisor is zero.  Passing a zero divisor to
 the division or modulo functions (including the modular powering
-functions 'mpz_powm' and 'mpz_powm_ui'), will cause an intentional
+functions 'mpz_powm' and 'mpz_powm_ui') will cause an intentional
 division by zero.  This lets a program handle arithmetic exceptions in
 these functions the same way as for normal C 'int' arithmetic.
 
@@ -2506,8 +2560,8 @@ these functions the same way as for normal C 'int' arithmetic.
 
      For positive N both 'mpz_fdiv_q_2exp' and 'mpz_tdiv_q_2exp' are
      simple bitwise right shifts.  For negative N, 'mpz_fdiv_q_2exp' is
-     effectively an arithmetic right shift treating N as twos complement
-     the same as the bitwise logical functions do, whereas
+     effectively an arithmetic right shift treating N as two's
+     complement the same as the bitwise logical functions do, whereas
      'mpz_tdiv_q_2exp' effectively treats N as sign and magnitude.
 
  -- Function: void mpz_mod (mpz_t R, const mpz_t N, const mpz_t D)
@@ -2657,7 +2711,16 @@ File: gmp.info,  Node: Number Theoretic Functions,  Next: Integer Comparisons,  
  -- Function: void mpz_nextprime (mpz_t ROP, const mpz_t OP)
      Set ROP to the next prime greater than OP.
 
-     This function uses a probabilistic algorithm to identify primes.
+ -- Function: int mpz_prevprime (mpz_t ROP, const mpz_t OP)
+     Set ROP to the greatest prime less than OP.
+
+     If a previous prime doesn't exist (i.e.  OP < 3), rop is unchanged
+     and 0 is returned.
+
+     Return 1 if ROP is a probably prime, and 2 if ROP is definitely
+     prime.
+
+     These functions use a probabilistic algorithm to identify primes.
      For practical purposes it's adequate, the chance of a composite
      passing will be extremely small.
 
@@ -2768,7 +2831,7 @@ File: gmp.info,  Node: Number Theoretic Functions,  Next: Integer Comparisons,  
  -- Function: void mpz_fib_ui (mpz_t FN, unsigned long int N)
  -- Function: void mpz_fib2_ui (mpz_t FN, mpz_t FNSUB1, unsigned long
           int N)
-     'mpz_fib_ui' sets FN to to F[n], the N'th Fibonacci number.
+     'mpz_fib_ui' sets FN to F[n], the Nth Fibonacci number.
      'mpz_fib2_ui' sets FN to F[n], and FNSUB1 to F[n-1].
 
      These functions are designed for calculating isolated Fibonacci
@@ -2779,7 +2842,7 @@ File: gmp.info,  Node: Number Theoretic Functions,  Next: Integer Comparisons,  
  -- Function: void mpz_lucnum_ui (mpz_t LN, unsigned long int N)
  -- Function: void mpz_lucnum2_ui (mpz_t LN, mpz_t LNSUB1, unsigned long
           int N)
-     'mpz_lucnum_ui' sets LN to to L[n], the N'th Lucas number.
+     'mpz_lucnum_ui' sets LN to L[n], the Nth Lucas number.
      'mpz_lucnum2_ui' sets LN to L[n], and LNSUB1 to L[n-1].
 
      These functions are designed for calculating isolated Lucas
@@ -2832,7 +2895,7 @@ File: gmp.info,  Node: Integer Logic and Bit Fiddling,  Next: I/O of Integers,  
 5.11 Logical and Bit Manipulation Functions
 ===========================================
 
-These functions behave as if twos complement arithmetic were used
+These functions behave as if two's complement arithmetic were used
 (although sign-magnitude is the actual implementation).  The least
 significant bit is number 0.
 
@@ -2889,6 +2952,10 @@ significant bit is number 0.
  -- Function: int mpz_tstbit (const mpz_t OP, mp_bitcnt_t BIT_INDEX)
      Test bit BIT_INDEX in OP and return 0 or 1 accordingly.
 
+   Shifting is also possible using multiplication (*note Integer
+Arithmetic::) and division (*note Integer Division::), in particular the
+'2exp' functions.
+
 
 File: gmp.info,  Node: I/O of Integers,  Next: Integer Random Numbers,  Prev: Integer Logic and Bit Fiddling,  Up: Integer Functions
 
@@ -2928,9 +2995,9 @@ prototypes for these functions.
      for binary, '0' for octal, or decimal otherwise.
 
      For bases up to 36, case is ignored; upper-case and lower-case
-     letters have the same value.  For bases 37 to 62, upper-case letter
-     represent the usual 10..35 while lower-case letter represent
-     36..61.
+     letters have the same value.  For bases 37 to 62, upper-case
+     letters represent the usual 10..35 while lower-case letters
+     represent 36..61.
 
      Return the number of bytes read, or if an error occurred, return 0.
 
@@ -2965,7 +3032,7 @@ File: gmp.info,  Node: Integer Random Numbers,  Next: Integer Import and Export,
 5.13 Random Number Functions
 ============================
 
-The random number functions of GMP come in two groups; older function
+The random number functions of GMP come in two groups; older functions
 that rely on a global state, and newer functions that accept a state
 parameter that is read and modified.  Please see the *note Random Number
 Functions:: for more information on how to use and not to use random
@@ -3444,7 +3511,7 @@ File: gmp.info,  Node: Comparing Rationals,  Next: Applying Integer Functions,  
 
      NUM2 and DEN2 are allowed to have common factors.
 
-     These functions are implemented as a macros and evaluate their
+     These functions are implemented as macros and evaluate their
      arguments multiple times.
 
  -- Macro: int mpq_sgn (const mpq_t OP)
@@ -3473,11 +3540,13 @@ take an 'mpq_t' out of the canonical form described at the start of this
 chapter (*note Rational Number Functions::) then 'mpq_canonicalize' must
 be called before any other 'mpq' functions are applied to that 'mpq_t'.
 
- -- Macro: mpz_t mpq_numref (const mpq_t OP)
- -- Macro: mpz_t mpq_denref (const mpq_t OP)
+ -- Macro: mpz_ptr mpq_numref (const mpq_t OP)
+ -- Macro: mpz_ptr mpq_denref (const mpq_t OP)
      Return a reference to the numerator and denominator of OP,
      respectively.  The 'mpz' functions can be used on the result of
-     these macros.
+     these macros.  Such calls may modify the numerator or denominator.
+     However, care should be taken so that OP remains in canonical form
+     prior to a possible later call to an 'mpq' function.
 
  -- Function: void mpq_get_num (mpz_t NUMERATOR, const mpq_t RATIONAL)
  -- Function: void mpq_get_den (mpz_t DENOMINATOR, const mpq_t RATIONAL)
@@ -3595,8 +3664,8 @@ one computer often differ from the results on a computer with a
 different word size.
 
    New projects should consider using the GMP extension library MPFR
-(<http://mpfr.org>) instead.  MPFR provides well-defined precision and
-accurate rounding, and thereby naturally extends IEEE P754.
+(<https://www.mpfr.org/>) instead.  MPFR provides well-defined precision
+and accurate rounding, and thereby naturally extends IEEE P754.
 
 * Menu:
 
@@ -3736,8 +3805,8 @@ Initializing Floats::).
      decimal.
 
      For bases up to 36, case is ignored; upper-case and lower-case
-     letters have the same value; for bases 37 to 62, upper-case letter
-     represent the usual 10..35 while lower-case letter represent
+     letters have the same value; for bases 37 to 62, upper-case letters
+     represent the usual 10..35 while lower-case letters represent
      36..61.
 
      Unlike the corresponding 'mpz' function, the base will not be
@@ -4164,7 +4233,7 @@ For example, {S1P, S1N}.
  -- Function: mp_limb_t mpn_neg (mp_limb_t *RP, const mp_limb_t *SP,
           mp_size_t N)
      Perform the negation of {SP, N}, and write the result to {RP, N}.
-     This is equivalent to calling 'mpn_sub_n' with a N-limb zero
+     This is equivalent to calling 'mpn_sub_n' with an N-limb zero
      minuend and passing {SP, N} as subtrahend.  Return borrow, either 0
      or 1.
 
@@ -4340,7 +4409,7 @@ For example, {S1P, S1N}.
      significant COUNT bits of the return value (the rest of the return
      value is zero).
 
-     COUNT must be in the range 1 to mp_bits_per_limb-1.  The regions
+     COUNT must be in the range 1 to mp_bits_per_limb{}-1.  The regions
      {SP, N} and {RP, N} may overlap, provided RP >= SP.
 
      This function is written in assembly for most CPUs.
@@ -4352,7 +4421,7 @@ For example, {S1P, S1N}.
      significant COUNT bits of the return value (the rest of the return
      value is zero).
 
-     COUNT must be in the range 1 to mp_bits_per_limb-1.  The regions
+     COUNT must be in the range 1 to mp_bits_per_limb{}-1.  The regions
      {SP, N} and {RP, N} may overlap, provided RP <= SP.
 
      This function is written in assembly for most CPUs.
@@ -4892,7 +4961,7 @@ File: gmp.info,  Node: Random State Initialization,  Next: Random State Seeding,
      choice is 'GMP_RAND_ALG_LC', which is 'gmp_randinit_lc_2exp_size'
      described above.  A third parameter of type 'unsigned long' is
      required, this is the SIZE for that function.
-     'GMP_RAND_ALG_DEFAULT' or 0 are the same as 'GMP_RAND_ALG_LC'.
+     'GMP_RAND_ALG_DEFAULT' and 0 are the same as 'GMP_RAND_ALG_LC'.
 
      'gmp_randinit' sets bits in the global variable 'gmp_errno' to
      indicate an error.  'GMP_ERROR_UNSUPPORTED_ARGUMENT' if ALG is
@@ -4916,8 +4985,8 @@ File: gmp.info,  Node: Random State Seeding,  Next: Random State Miscellaneous, 
      Set an initial seed value into STATE.
 
      The size of a seed determines how many different sequences of
-     random numbers that it's possible to generate.  The "quality" of
-     the seed is the randomness of a given seed compared to the previous
+     random numbers it's possible to generate.  The "quality" of the
+     seed is the randomness of a given seed compared to the previous
      seed used, and this affects the randomness of separate number
      sequences.  The method for choosing a seed is critical if the
      generated numbers are to be used for important applications, such
@@ -5066,8 +5135,8 @@ and 'N'.
 
    'M' is a proxy for the C library 'l' or 'L', according to the size of
 'mp_limb_t'.  Unsigned conversions will be usual, but a signed
-conversion can be used and will interpret the value as a twos complement
-negative.
+conversion can be used and will interpret the value as a two's
+complement negative.
 
    'n' can be used with any type, even the GMP types.
 
@@ -5168,7 +5237,7 @@ shouldn't normally occur.
      Form a null-terminated string in a block of memory obtained from
      the current memory allocation function (*note Custom Allocation::).
      The block will be the size of the string and null-terminator.  The
-     address of the block in stored to *PP.  The return value is the
+     address of the block is stored to *PP.  The return value is the
      number of characters produced, excluding the null-terminator.
 
      Unlike the C library 'asprintf', 'gmp_asprintf' doesn't return -1
@@ -5206,7 +5275,7 @@ Options::).  Prototypes are available from '<gmp.h>'.
 
      In hex or octal, OP is printed as a signed number, the same as for
      decimal.  This is unlike the standard 'operator<<' routines on
-     'int' etc, which instead give twos complement.
+     'int' etc, which instead give two's complement.
 
  -- Function: ostream& operator<< (ostream& STREAM, const mpq_t OP)
      Print OP to STREAM, using its 'ios' formatting settings.
@@ -5938,7 +6007,7 @@ used if this doesn't suit.
 
      The restrictions described for 'mpf_set_prec_raw' (*note
      Initializing Floats::) apply to 'mpf_class::set_prec_raw'.  Note in
-     particular that the 'mpf_class' must be restored to it's allocated
+     particular that the 'mpf_class' must be restored to its allocated
      precision before being destroyed.  This must be done by application
      code, there's no automatic mechanism for it.
 
@@ -6528,7 +6597,7 @@ With this x=X(b) and y=Y(b).
    The w[i] are going to be determined, and when they are they'll give
 the final result using w=W(b), since x*y=X(b)*Y(b)=W(b).  The
 coefficients will be roughly b^2 each, and the final W(b) will be an
-addition like,
+addition like this:
 
       high                                        low
      +-------+-------+
@@ -6554,7 +6623,7 @@ equivalent merely to a basecase multiply.  Instead the following
 approach is used.
 
    X(t) and Y(t) are evaluated and multiplied at 5 points, giving values
-of W(t) at those points.  In GMP the following points are used,
+of W(t) at those points.  In GMP the following points are used:
 
      Point    Value
      t=0      x0 * y0, which gives w0 immediately
@@ -6659,7 +6728,7 @@ of W(t) at those points.  In GMP the following points are used,
 
    The number of additions and subtractions for Toom-4 is much larger
 than for Toom-3.  But several subexpressions occur multiple times, for
-example x2+x0, occurs for both t=1 and t=-1.
+example x2+x0 occurs for both t=1 and t=-1.
 
    Toom-4 is asymptotically O(N^1.404), the exponent being
 log(7)/log(4), representing 7 recursive multiplies of 1/4 the original
@@ -6672,19 +6741,18 @@ File: gmp.info,  Node: Higher degree Toom'n'half,  Next: FFT Multiplication,  Pr
 --------------------------------
 
 The Toom algorithms described above (*note Toom 3-Way Multiplication::,
-*note Toom 4-Way Multiplication::) generalizes to split into an
-arbitrary number of pieces.  In general a split of two equally long
-operands into r pieces leads to evaluations and pointwise
-multiplications done at 2*r-1 points.  To fully exploit symmetries it
-would be better to have a multiple of 4 points, that's why for higher
-degree Toom'n'half is used.
+*note Toom 4-Way Multiplication::) generalize to split into an arbitrary
+number of pieces.  In general a split of two equally long operands into
+r pieces leads to evaluations and pointwise multiplications done at
+2*r-1 points.  To fully exploit symmetries it would be better to have a
+multiple of 4 points, that's why for higher degree Toom'n'half is used.
 
    Toom'n'half means that the existence of one more piece is considered
 for a single operand.  It can be virtual, i.e.  zero, or real, when the
-two operand are not exactly balanced.  By choosing an even r, Toom-r+1/2
-requires 2r points, a multiple of four.
+two operands are not exactly balanced.  By choosing an even r,
+Toom-r+1/2 requires 2r points, a multiple of four.
 
-   The quadruplets of points include 0, inf, +1, -1 and +-2^i, +-2^-i .
+   The quadruplets of points include 0, inf, +1, and +-2^i, +-2^-i.
 Each of them giving shortcuts for the evaluation phase and for some
 steps in the interpolation phase.  Further tricks are used to reduce the
 memory footprint of the whole multiplication algorithm to a memory
@@ -6716,9 +6784,9 @@ into 2^k pieces of M=N/2^k bits each.  N must be a multiple of
 (2^k)*mp_bits_per_limb so the split falls on limb boundaries, avoiding
 bit shifts in the split and combine stages.
 
-   The evaluations, pointwise multiplications, and interpolation, are
-all done modulo 2^N'+1 where N' is 2M+k+3 rounded up to a multiple of
-2^k and of 'mp_bits_per_limb'.  The results of interpolation will be the
+   The evaluations, pointwise multiplications, and interpolation are all
+done modulo 2^N'+1 where N' is 2M+k+3 rounded up to a multiple of 2^k
+and of 'mp_bits_per_limb'.  The results of interpolation will be the
 following negacyclic convolution of the input pieces, and the choice of
 N' ensures these sums aren't truncated.
 
@@ -6856,7 +6924,7 @@ Multiplication of operands with different sizes, both below
    For operands between these sizes, we use Toom inspired algorithms
 suggested by Alberto Zanoni and Marco Bodrato.  The idea is to split the
 operands into polynomials of different degree.  GMP currently splits the
-smaller operand onto 2 coefficients, i.e., a polynomial of degree 1, but
+smaller operand into 2 coefficients, i.e., a polynomial of degree 1, but
 the larger operand can be split into 2, 3, or 4 coefficients, i.e., a
 polynomial of degree 1 to 3.
 
@@ -6954,118 +7022,4 @@ requiring an addback of the divisor, but that happens rarely.
 algorithm and will run at a speed similar to a basecase QxM
 multiplication, differing in fact only in the extra multiply and divide
 for each of the Q quotient limbs.
-
-
-File: gmp.info,  Node: Divide and Conquer Division,  Next: Block-Wise Barrett Division,  Prev: Basecase Division,  Up: Division Algorithms
-
-15.2.3 Divide and Conquer Division
-----------------------------------
-
-For divisors larger than 'DC_DIV_QR_THRESHOLD', division is done by
-dividing.  Or to be precise by a recursive divide and conquer algorithm
-based on work by Moenck and Borodin, Jebelean, and Burnikel and Ziegler
-(*note References::).
-
-   The algorithm consists essentially of recognising that a 2NxN
-division can be done with the basecase division algorithm (*note
-Basecase Division::), but using N/2 limbs as a base, not just a single
-limb.  This way the multiplications that arise are (N/2)x(N/2) and can
-take advantage of Karatsuba and higher multiplication algorithms (*note
-Multiplication Algorithms::).  The two "digits" of the quotient are
-formed by recursive Nx(N/2) divisions.
-
-   If the (N/2)x(N/2) multiplies are done with a basecase multiplication
-then the work is about the same as a basecase division, but with more
-function call overheads and with some subtractions separated from the
-multiplies.  These overheads mean that it's only when N/2 is above
-'MUL_TOOM22_THRESHOLD' that divide and conquer is of use.
-
-   'DC_DIV_QR_THRESHOLD' is based on the divisor size N, so it will be
-somewhere above twice 'MUL_TOOM22_THRESHOLD', but how much above depends
-on the CPU.  An optimized 'mpn_mul_basecase' can lower
-'DC_DIV_QR_THRESHOLD' a little by offering a ready-made advantage over
-repeated 'mpn_submul_1' calls.
-
-   Divide and conquer is asymptotically O(M(N)*log(N)) where M(N) is the
-time for an NxN multiplication done with FFTs.  The actual time is a sum
-over multiplications of the recursed sizes, as can be seen near the end
-of section 2.2 of Burnikel and Ziegler.  For example, within the Toom-3
-range, divide and conquer is 2.63*M(N). With higher algorithms the M(N)
-term improves and the multiplier tends to log(N). In practice, at
-moderate to large sizes, a 2NxN division is about 2 to 4 times slower
-than an NxN multiplication.
-
-
-File: gmp.info,  Node: Block-Wise Barrett Division,  Next: Exact Division,  Prev: Divide and Conquer Division,  Up: Division Algorithms
-
-15.2.4 Block-Wise Barrett Division
-----------------------------------
-
-For the largest divisions, a block-wise Barrett division algorithm is
-used.  Here, the divisor is inverted to a precision determined by the
-relative size of the dividend and divisor.  Blocks of quotient limbs are
-then generated by multiplying blocks from the dividend by the inverse.
-
-   Our block-wise algorithm computes a smaller inverse than in the plain
-Barrett algorithm.  For a 2n/n division, the inverse will be just
-ceil(n/2) limbs.
-
-
-File: gmp.info,  Node: Exact Division,  Next: Exact Remainder,  Prev: Block-Wise Barrett Division,  Up: Division Algorithms
-
-15.2.5 Exact Division
----------------------
-
-A so-called exact division is when the dividend is known to be an exact
-multiple of the divisor.  Jebelean's exact division algorithm uses this
-knowledge to make some significant optimizations (*note References::).
-
-   The idea can be illustrated in decimal for example with 368154
-divided by 543.  Because the low digit of the dividend is 4, the low
-digit of the quotient must be 8.  This is arrived at from 4*7 mod 10,
-using the fact 7 is the modular inverse of 3 (the low digit of the
-divisor), since 3*7 == 1 mod 10.  So 8*543=4344 can be subtracted from
-the dividend leaving 363810.  Notice the low digit has become zero.
-
-   The procedure is repeated at the second digit, with the next quotient
-digit 7 (7 == 1*7 mod 10), subtracting 7*543=3801, leaving 325800.  And
-finally at the third digit with quotient digit 6 (8*7 mod 10),
-subtracting 6*543=3258 leaving 0.  So the quotient is 678.
-
-   Notice however that the multiplies and subtractions don't need to
-extend past the low three digits of the dividend, since that's enough to
-determine the three quotient digits.  For the last quotient digit no
-subtraction is needed at all.  On a 2NxN division like this one, only
-about half the work of a normal basecase division is necessary.
-
-   For an NxM exact division producing Q=N-M quotient limbs, the saving
-over a normal basecase division is in two parts.  Firstly, each of the Q
-quotient limbs needs only one multiply, not a 2x1 divide and multiply.
-Secondly, the crossproducts are reduced when Q>M to Q*M-M*(M+1)/2, or
-when Q<=M to Q*(Q-1)/2.  Notice the savings are complementary.  If Q is
-big then many divisions are saved, or if Q is small then the
-crossproducts reduce to a small number.
-
-   The modular inverse used is calculated efficiently by 'binvert_limb'
-in 'gmp-impl.h'.  This does four multiplies for a 32-bit limb, or six
-for a 64-bit limb.  'tune/modlinv.c' has some alternate implementations
-that might suit processors better at bit twiddling than multiplying.
-
-   The sub-quadratic exact division described by Jebelean in "Exact
-Division with Karatsuba Complexity" is not currently implemented.  It
-uses a rearrangement similar to the divide and conquer for normal
-division (*note Divide and Conquer Division::), but operating from low
-to high.  A further possibility not currently implemented is
-"Bidirectional Exact Integer Division" by Krandick and Jebelean which
-forms quotient limbs from both the high and low ends of the dividend,
-and can halve once more the number of crossproducts needed in a 2NxN
-division.
-
-   A special case exact division by 3 exists in 'mpn_divexact_by3',
-supporting Toom-3 multiplication and 'mpq' canonicalizations.  It forms
-quotient digits with a multiply by the modular inverse of 3 (which is
-'0xAA..AAB') and uses two comparisons to determine a borrow for the next
-limb.  The multiplications don't need to be on the dependent chain, as
-long as the effect of the borrows is applied, which can help chips with
-pipelined multipliers.
 

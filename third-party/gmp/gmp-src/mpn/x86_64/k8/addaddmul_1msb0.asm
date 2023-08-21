@@ -1,6 +1,6 @@
 dnl  AMD64 mpn_addaddmul_1msb0, R = Au + Bv, u,v < 2^63.
 
-dnl  Copyright 2008 Free Software Foundation, Inc.
+dnl  Copyright 2008, 2021 Free Software Foundation, Inc.
 
 dnl  This file is part of the GNU MP Library.
 dnl
@@ -53,11 +53,16 @@ define(`v0',	`%r9')
 
 define(`bp', `%rbp')
 
+ABI_SUPPORT(DOS64)
+ABI_SUPPORT(STD64)
+
 ASM_START()
 	TEXT
 	ALIGN(16)
 PROLOGUE(mpn_addaddmul_1msb0)
-	push	%r12
+        FUNC_ENTRY(4)
+IFDOS(`	mov	56(%rsp), %r8	')
+IFDOS(`	mov	64(%rsp), %r9	')
 	push	%rbp
 
 	lea	(ap,n,8), ap
@@ -67,56 +72,61 @@ PROLOGUE(mpn_addaddmul_1msb0)
 
 	mov	(ap,n,8), %rax
 	mul	%r8
-	mov	%rax, %r12
+	mov	%rax, %r11
 	mov	(bp,n,8), %rax
 	mov	%rdx, %r10
 	add	$3, n
 	jns	L(end)
 
+	push	%r13
+
 	ALIGN(16)
 L(top):	mul	%r9
-	add	%rax, %r12
+	add	%rax, %r11
 	mov	-16(ap,n,8), %rax
 	adc	%rdx, %r10
-	mov	%r12, -24(rp,n,8)
+	mov	%r11, -24(rp,n,8)
 	mul	%r8
 	add	%rax, %r10
 	mov	-16(bp,n,8), %rax
-	mov	$0, R32(%r11)
-	adc	%rdx, %r11
+	mov	$0, R32(%r13)
+	adc	%rdx, %r13
 	mul	%r9
 	add	%rax, %r10
 	mov	-8(ap,n,8), %rax
-	adc	%rdx, %r11
+	adc	%rdx, %r13
 	mov	%r10, -16(rp,n,8)
 	mul	%r8
-	add	%rax, %r11
+	add	%rax, %r13
 	mov	-8(bp,n,8), %rax
-	mov	$0, R32(%r12)
-	adc	%rdx, %r12
+	mov	$0, R32(%r11)
+	adc	%rdx, %r11
 	mul	%r9
-	add	%rax, %r11
-	adc	%rdx, %r12
+	add	%rax, %r13
+	adc	%rdx, %r11
 	mov	(ap,n,8), %rax
 	mul	%r8
-	add	%rax, %r12
-	mov	%r11, -8(rp,n,8)
+	add	%rax, %r11
+	mov	%r13, -8(rp,n,8)
 	mov	(bp,n,8), %rax
 	mov	$0, R32(%r10)
 	adc	%rdx, %r10
 	add	$3, n
 	js	L(top)
 
-L(end):	cmp	$1, R32(n)
-	ja	2f
-	jz	1f
+	pop	%r13
 
-	mul	%r9
-	add	%rax, %r12
-	mov	-16(ap), %rax
+L(end):	mul	%r9
+	add	%rax, %r11
 	adc	%rdx, %r10
-	mov	%r12, -24(rp)
-	mul	%r8
+	cmp	$1, R32(n)
+	ja	L(two)
+	mov	-16(ap,n,8), %rax
+	mov	%r11, -24(rp,n,8)
+	mov	%r10, %r11
+	jz	L(one)
+
+L(nul):	mul	%r8
 	add	%rax, %r10
 	mov	-16(bp), %rax
 	mov	$0, R32(%r11)
@@ -126,45 +136,18 @@ L(end):	cmp	$1, R32(n)
 	mov	-8(ap), %rax
 	adc	%rdx, %r11
 	mov	%r10, -16(rp)
-	mul	%r8
+L(one):	mul	%r8
 	add	%rax, %r11
 	mov	-8(bp), %rax
-	mov	$0, R32(%r12)
-	adc	%rdx, %r12
+	mov	$0, R32(%r10)
+	adc	%rdx, %r10
 	mul	%r9
 	add	%rax, %r11
-	adc	%rdx, %r12
-	mov	%r11, -8(rp)
-	mov	%r12, %rax
-	pop	%rbp
-	pop	%r12
-	ret
-
-1:	mul	%r9
-	add	%rax, %r12
-	mov	-8(ap), %rax
 	adc	%rdx, %r10
-	mov	%r12, -16(rp)
-	mul	%r8
-	add	%rax, %r10
-	mov	-8(bp), %rax
-	mov	$0, R32(%r11)
-	adc	%rdx, %r11
-	mul	%r9
-	add	%rax, %r10
-	adc	%rdx, %r11
-	mov	%r10, -8(rp)
-	mov	%r11, %rax
-	pop	%rbp
-	pop	%r12
-	ret
 
-2:	mul	%r9
-	add	%rax, %r12
-	mov	%r12, -8(rp)
-	adc	%rdx, %r10
+L(two):	mov	%r11, -8(rp)
 	mov	%r10, %rax
-	pop	%rbp
-	pop	%r12
+L(ret):	pop	%rbp
+	FUNC_EXIT()
 	ret
 EPILOGUE()
