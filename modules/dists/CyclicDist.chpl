@@ -148,7 +148,6 @@ The ``rank`` and ``idxType`` arguments are inferred from the
 They must match the rank and index type of the domains
 "dmapped" using that Cyclic instance.
 
-
 **Convenience Initializer Functions**
 
 It is common for a ``Cyclic`` distribution to distribute its indices
@@ -166,6 +165,8 @@ domain or array.
     var CyclicDom2 = Cyclic.createDomain(1..5, 1..5);
     var CyclicArr2 = Cyclic.createArray(1..5, 1..5, real);
 
+Note that an optional ``targetLocales`` argument can be passed to modify the
+target locales over which the domain or array will be distributed.
 
 **Data-Parallel Iteration**
 
@@ -540,7 +541,6 @@ proc CyclicImpl.dsiIndexToLocale(i: idxType) where rank == 1 {
 proc CyclicImpl.dsiIndexToLocale(i: rank*idxType) {
   return targetLocs(targetLocsIdx(i));
 }
-
 
   proc chpl__computeCyclicDim(type idxType, lo, myloc, numlocs) {
     const lower = min(idxType)..(lo+myloc) by -numlocs;

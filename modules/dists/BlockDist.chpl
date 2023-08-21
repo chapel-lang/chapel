@@ -249,7 +249,7 @@ currently coordinate, but :class:`LayoutCS.CS` is an interesting alternative.
 It is common for a ``Block`` distribution to distribute its ``boundingBox``
 across all locales. In this case, a convenience function can be used to
 declare variables of block-distributed domain or array type.  These functions
-take a domain or list of ranges as arguments and return a block-distributed
+take a domain or series of ranges as arguments and return a block-distributed
 domain or array.
 
   .. code-block:: chapel
@@ -260,6 +260,9 @@ domain or array.
     var BlockArr1 = Block.createArray({1..5, 1..5}, real);
     var BlockDom2 = Block.createDomain(1..5, 1..5);
     var BlockArr2 = Block.createArray(1..5, 1..5, real);
+
+Note that an optional ``targetLocales`` argument can be passed to modify the
+target locales over which the domain or array will be distributed.
 
 **Data-Parallel Iteration**
 
@@ -877,14 +880,14 @@ proc type Block.createDomain(rng: range..., targetLocales: [] locale = Locales) 
   return createDomain({(...rng)}, targetLocales);
 }
 
-proc type Block.createArray(dom: domain, type eltType) {
-  var D = createDomain(dom);
+proc type Block.createArray(dom: domain, type eltType, targetLocales: [] locale = Locales) {
+  var D = createDomain(dom, targetLocales);
   var A: [D] eltType;
   return A;
 }
 
-proc type Block.createArray(rng: range..., type eltType) {
-  return createArray({(...rng)}, eltType);
+proc type Block.createArray(rng: range..., type eltType, targetLocales: [] locale = Locales) {
+  return createArray({(...rng)}, eltType, targetLocales);
 }
 
 proc chpl__computeBlock(locid, targetLocBox:domain, boundingBox:domain,
