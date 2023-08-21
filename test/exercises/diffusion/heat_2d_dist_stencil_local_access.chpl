@@ -15,6 +15,10 @@ import StencilDist.Stencil,
 var t = new stopwatch();
 config const writeTime = false;
 
+// compile with `-sRunCommDiag=true` to see comm diagnostics
+use CommDiagnostics;
+config param RunCommDiag = false;
+
 // declare configurable constants with default values
 config const nx = 256,      // number of grid points in x
              ny = 256,      // number of grid points in y
@@ -27,12 +31,16 @@ const indices = {0..<nx, 0..<ny},
       Indices = indices dmapped Stencil(indicesInner, fluff=(1,1)),
       IndicesInner = Indices[{1..<nx-1, 1..<ny-1}];
 
+
 // define a distributed 2D array over the above domain
 var u: [Indices] real;
 
 // set up initial conditions
 u = 1.0;
 u[nx/4..nx/2, ny/4..ny/2] = 2.0;
+
+// start comm diag
+if RunCommDiag then startCommDiagnostics();
 
 // create a temporary copy of 'u' to store the previous time step
 var un = u;
