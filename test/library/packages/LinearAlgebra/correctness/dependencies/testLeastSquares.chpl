@@ -82,7 +82,7 @@ use TestUtils;
 /* Compute least squares solution via solve() */
 proc directLeastSquares(a: [], b: [], cmplx=false) {
   var at = a.T;
-  if cmplx then at = conjg(at);
+  if cmplx then at = conj(at);
   var a1 = dot(at, a),
       b1 = dot(at, b);
   return solve(a1, b1);

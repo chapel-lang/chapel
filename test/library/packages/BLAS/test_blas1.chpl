@@ -492,7 +492,7 @@ proc test_dotc_helper(type t) {
     var X: [D] t = [1: t, 2: t, 3: t],
         Y: [D] t = [3: t, 2: t, 1: t];
 
-    var prod = conjg(X)*Y;
+    var prod = conj(X)*Y;
     var red = + reduce prod;
 
     var res = dotc(X, Y);
