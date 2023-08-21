@@ -18,7 +18,8 @@ config const writeTime = false;
 config const nx = 256,      // number of grid points in x
              ny = 256,      // number of grid points in y
              nt = 50,       // number of time steps
-             alpha = 0.25;  // diffusion constant
+             alpha = 0.25,  // diffusion constant
+             solutionStd = 0.222751; // know solution for the default parameters
 
 // define a 2D domain and subdomain to describe the grid and its interior
 const indices = {0..<nx, 0..<ny},
@@ -35,6 +36,7 @@ u[nx/4..nx/2, ny/4..ny/2] = 2.0;
 var un = u;
 
 // iterate for 'nt' time steps
+t.start();
 for 1..nt {
   // swap arrays to prepare for next time step
   u <=> un;
@@ -50,5 +52,5 @@ t.stop();
 const mean = (+ reduce u) / u.size,
       stdDev = sqrt((+ reduce (u - mean)**2) / u.size);
 
-writeln(abs(0.222751 - stdDev) < 1e-6);
+writeln(abs(solutionStd - stdDev) < 1e-6);
 if writeTime then writeln("time: ", t.elapsed());
