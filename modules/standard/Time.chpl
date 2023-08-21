@@ -610,6 +610,11 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     var chpl_hour, chpl_minute, chpl_second, chpl_microsecond: int;
     var chpl_tz: shared Timezone?;
 
+    // Timezone awareness/naivety is part of the type so we can prohibit
+    // comparison of an aware vs naive time at compile-time.
+    @chpldoc.nodoc
+    param tz_aware : bool;
+
     /* The hour represented by this `time` value */
     proc hour {
       return chpl_hour;
@@ -678,6 +683,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     this.chpl_second = second;
     this.chpl_microsecond = microsecond;
     this.chpl_tz = tz;
+    this.tz_aware = true;
   }
 
   /* Initialize a new `time` value from the given `hour`, `minute`, `second`,
@@ -697,6 +703,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     this.chpl_second = second;
     this.chpl_microsecond = microsecond;
     this.chpl_tz = nil;
+    this.tz_aware = false;
   }
 
   /* Initialize a new `time` value from the given `hour`, `minute`, `second`,
@@ -712,7 +719,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* Replace the `hour`, `minute`, `second`, `microsecond` in a
      `time` to create a new `time`. All arguments are optional.
    */
-  proc time.replace(hour=-1, minute=-1, second=-1, microsecond=-1) {
+  proc time.replace(hour = -1, minute = -1, second = -1, microsecond = -1)
+      : time(tz_aware = false) {
     const newhour = if hour != -1 then hour else this.hour;
     const newminute = if minute != -1 then minute else this.minute;
     const newsecond = if second != -1 then second else this.second;
@@ -726,7 +734,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
    */
   @unstable("tz is unstable; its type may change in the future")
   proc time.replace(hour=-1, minute=-1, second=-1, microsecond=-1,
-                    in tz) {
+                    in tz) : time(tz_aware=true) {
     const newhour = if hour != -1 then hour else this.hour;
     const newminute = if minute != -1 then minute else this.minute;
     const newsecond = if second != -1 then second else this.second;
@@ -894,9 +902,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   @chpldoc.nodoc
   operator time.<(t1: time, t2: time): bool {
-    if (t1.timezone.borrow() != nil && t2.timezone.borrow() == nil) ||
-        (t1.timezone.borrow() == nil && t2.timezone.borrow() != nil) {
-      halt("both dateTimes must both be either naive or aware");
+    if (t1.tz_aware != t2.tz_aware) {
+      compilerError("both times must both be either naive or aware");
     } else if t1.timezone == t2.timezone {
       const sec1 = t1.hour*3600 + t1.minute*60 + t1.second;
       const usec1 = t1.microsecond;
@@ -932,9 +939,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   @chpldoc.nodoc
   operator time.<=(t1: time, t2: time): bool {
-    if (t1.timezone.borrow() != nil && t2.timezone.borrow() == nil) ||
-        (t1.timezone.borrow() == nil && t2.timezone.borrow() != nil) {
-      halt("both dateTimes must both be either naive or aware");
+    if (t1.tz_aware != t2.tz_aware) {
+      compilerError("both times must both be either naive or aware");
     } else if t1.timezone == t2.timezone {
       const sec1 = t1.hour*3600 + t1.minute*60 + t1.second;
       const usec1 = t1.microsecond;
@@ -955,9 +961,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   @chpldoc.nodoc
   operator time.>(t1: time, t2: time): bool {
-    if (t1.timezone.borrow() != nil && t2.timezone.borrow() == nil) ||
-        (t1.timezone.borrow() == nil && t2.timezone.borrow() != nil) {
-      halt("both dateTimes must both be either naive or aware");
+    if (t1.tz_aware != t2.tz_aware) {
+      compilerError("both times must both be either naive or aware");
     } else if t1.timezone == t2.timezone {
       const sec1 = t1.hour*3600 + t1.minute*60 + t1.second;
       const usec1 = t1.microsecond;
@@ -978,9 +983,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   @chpldoc.nodoc
   operator time.>=(t1: time, t2: time): bool {
-    if (t1.timezone.borrow() != nil && t2.timezone.borrow() == nil) ||
-        (t1.timezone.borrow() == nil && t2.timezone.borrow() != nil) {
-      halt("both dateTimes must both be either naive or aware");
+    if (t1.tz_aware != t2.tz_aware) {
+      compilerError("both times must both be either naive or aware");
     } else if t1.timezone == t2.timezone {
       const sec1 = t1.hour*3600 + t1.minute*60 + t1.second;
       const usec1 = t1.microsecond;
@@ -1005,7 +1009,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* A record representing a combined `date` and `time` */
   record dateTime {
     var chpl_date: date;
-    var chpl_time: time;
+    var chpl_time: time(?);
 
     /* The minimum representable `date` and `time` */
     proc type min {
@@ -1114,14 +1118,15 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* Return a `dateTime` value representing the current time and date */
-  proc type dateTime.now(in tz: shared Timezone?) {
+  proc type dateTime.now(in tz: shared Timezone?) : dateTime {
     if tz.borrow() == nil {
       const timeSinceEpoch = getTimeOfDay();
       const lt = getLocalTime(timeSinceEpoch);
       return new dateTime(year=lt.tm_year+1900, month=lt.tm_mon+1,
                           day=lt.tm_mday,       hour=lt.tm_hour,
                           minute=lt.tm_min,     second=lt.tm_sec,
-                          microsecond=timeSinceEpoch(1));
+                          microsecond=timeSinceEpoch(1),
+                          tz=nil);
     } else {
       const timeSinceEpoch = getTimeOfDay();
       const td = new timeDelta(seconds=timeSinceEpoch(0),
@@ -1221,8 +1226,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* Get the `time` portion of the `dateTime` value, with `tz` = nil */
-  proc dateTime.getTime() {
-    if chpl_time.timezone.borrow() == nil then
+  proc dateTime.getTime() : time(tz_aware=false) {
+    if chpl_time.tz_aware == false then
       return chpl_time;
     else
       return new time(hour=hour, minute=minute,
@@ -1605,9 +1610,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   @chpldoc.nodoc
   operator dateTime.-(dt1: dateTime, dt2: dateTime): timeDelta {
-    if (dt1.timezone.borrow() != nil && dt2.timezone.borrow() == nil) ||
-       (dt1.timezone.borrow() == nil && dt2.timezone.borrow() != nil) {
-      halt("both dateTimes must both be either naive or aware");
+    if (dt1.chpl_time.tz_aware != dt2.chpl_time.tz_aware) {
+      compilerError("both dateTimes must both be either naive or aware");
     }
     if dt1.timezone == dt2.timezone {
       const newmicro = dt1.microsecond - dt2.microsecond,
@@ -1626,9 +1630,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   @chpldoc.nodoc
   operator dateTime.==(dt1: dateTime, dt2: dateTime): bool {
-    if dt1.timezone.borrow() == nil && dt2.timezone.borrow() != nil ||
-       dt1.timezone.borrow() != nil && dt2.timezone.borrow() == nil {
-      halt("Cannot compare naive dateTime to aware dateTime");
+    if (dt1.chpl_time.tz_aware != dt2.chpl_time.tz_aware) {
+      compilerError("both dateTimes must both be either naive or aware");
     } else if dt1.timezone == dt2.timezone {
       // just ignore timezone
       var d1: date = dt1.replace(tz=nil).getDate(),
@@ -1653,9 +1656,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   @chpldoc.nodoc
   operator dateTime.<(dt1: dateTime, dt2: dateTime): bool {
-    if (dt1.timezone.borrow() != nil && dt2.timezone.borrow() == nil) ||
-        (dt1.timezone.borrow() == nil && dt2.timezone.borrow() != nil) {
-      halt("both dateTimes must both be either naive or aware");
+    if (dt1.chpl_time.tz_aware != dt2.chpl_time.tz_aware) {
+      compilerError("both dateTimes must both be either naive or aware");
     } else if dt1.timezone == dt2.timezone {
       const date1 = dt1.getDate(),
             date2 = dt2.getDate();
@@ -1670,9 +1672,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   @chpldoc.nodoc
   operator dateTime.<=(dt1: dateTime, dt2: dateTime): bool {
-    if (dt1.timezone.borrow() != nil && dt2.timezone.borrow() == nil) ||
-        (dt1.timezone.borrow() == nil && dt2.timezone.borrow() != nil) {
-      halt("both dateTimes must both be either naive or aware");
+    if (dt1.chpl_time.tz_aware != dt2.chpl_time.tz_aware) {
+      compilerError("both dateTimes must both be either naive or aware");
     } else if dt1.timezone == dt2.timezone {
       const date1 = dt1.getDate(),
             date2 = dt2.getDate();
@@ -1687,9 +1688,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   @chpldoc.nodoc
   operator dateTime.>(dt1: dateTime, dt2: dateTime): bool {
-    if (dt1.timezone.borrow() != nil && dt2.timezone.borrow() == nil) ||
-        (dt1.timezone.borrow() == nil && dt2.timezone.borrow() != nil) {
-      halt("both dateTimes must both be either naive or aware");
+    if (dt1.chpl_time.tz_aware != dt2.chpl_time.tz_aware) {
+      compilerError("both dateTimes must both be either naive or aware");
     } else if dt1.timezone == dt2.timezone {
       const date1 = dt1.getDate(),
             date2 = dt2.getDate();
@@ -1704,9 +1704,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   @chpldoc.nodoc
   operator dateTime.>=(dt1: dateTime, dt2: dateTime): bool {
-    if (dt1.timezone.borrow() != nil && dt2.timezone.borrow() == nil) ||
-        (dt1.timezone.borrow() == nil && dt2.timezone.borrow() != nil) {
-      halt("both dateTimes must both be either naive or aware");
+    if (dt1.chpl_time.tz_aware != dt2.chpl_time.tz_aware) {
+      compilerError("both dateTimes must both be either naive or aware");
     } else if dt1.timezone == dt2.timezone {
       const date1 = dt1.getDate(),
             date2 = dt2.getDate();
