@@ -54,7 +54,7 @@ if ($status == 2) {
 }
 
 if ($status == 0) {
-     print " \n status 0 \n";
+     
     `cat $rawsummary | grep -v "^.END" | grep -v "^.Test Summary" | LC_ALL=C sort > $sortedsummary`;
 
     $oldsummary = `grep Summary: $prevsummary`; chomp($oldsummary);
@@ -107,13 +107,13 @@ if ($status == 0) {
     $newfailures += 0;
 }
 
-if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0 && $newpassingsuppress == 0) {
-    print "Mailing to minimal group\n";
+if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0 && $newpassingsuppress == 0) 
+{
     $email=0;
     $recipient = $nochangerecipient;
 
 } else {
-    print "Mailing to everyone\n";
+    print "Test results changed from the last run \n";
 }
 
 # Persist the test summary to a (email.txt) in the jenkins workspace.
