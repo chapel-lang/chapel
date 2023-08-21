@@ -31,7 +31,7 @@
 // When a distribution, domain, or array class instance is created, a
 // corresponding local class instance is created on each locale that is
 // mapped to by the distribution.
-//
+//const locLeftMaskDomain = LeftMask.domain;
 
 //
 // TO DO List
@@ -869,12 +869,12 @@ iter BlockImpl.activeTargetLocales(const space : domain = boundingBox) {
   }
 }
 
-proc type Block.createDomain(dom: domain) {
-  return dom dmapped Block(dom);
+proc type Block.createDomain(dom: domain, targetLocales: [] locale = Locales) {
+  return dom dmapped Block(dom, targetLocales);
 }
 
-proc type Block.createDomain(rng: range...) {
-  return createDomain({(...rng)});
+proc type Block.createDomain(rng: range..., targetLocales: [] locale = Locales) {
+  return createDomain({(...rng)}, targetLocales);
 }
 
 proc type Block.createArray(dom: domain, type eltType) {

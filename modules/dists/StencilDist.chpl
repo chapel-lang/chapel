@@ -683,6 +683,32 @@ iter Stencil.activeTargetLocales(const space : domain = boundingBox) {
   }
 }
 
+proc type Stencil.createDomain(
+  dom: domain,
+  targetLocales: [] locale = Locales,
+  fluff: dom.rank*dom.idxType = makeZero(dom.rank, dom.idxType)
+) {
+  return dom dmapped Stencil(dom, targetLocales, fluff=fluff);
+}
+
+proc type Stencil.createDomain(
+  rng: range...,
+  targetLocales: [] locale = Locales,
+  fluff: dom.rank*dom.idxType = makeZero(dom.rank, dom.idxType)
+) {
+  return createDomain({(...rng)}, targetLocales, fluff);
+}
+
+proc type Stencil.createArray(dom: domain, type eltType) {
+  var D = createDomain(dom);
+  var A: [D] eltType;
+  return A;
+}
+
+proc type Stencil.createArray(rng: range..., type eltType) {
+  return createArray({(...rng)}, eltType);
+}
+
 proc chpl__computeBlock(locid, targetLocBox, boundingBox) {
   param rank = targetLocBox.rank;
   type idxType = chpl__tuplify(boundingBox)(0).idxType;
