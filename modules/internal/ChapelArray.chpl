@@ -691,7 +691,7 @@ module ChapelArray {
   proc chpl__buildDistValue(in x:owned) where isSubtype(x.borrow().type, BaseDist) {
     return new _distribution(owned.release(x));
   }
-  proc chpl__buildDistValue(const ref x:record) ref {
+  proc chpl__buildDistValue(const ref x:record) const ref {
     return x;
   }
 
@@ -699,7 +699,7 @@ module ChapelArray {
     compilerError("illegal domain map value specifier - must be a subclass of BaseDist");
   }
 
-  proc chpl__buildDistDMapValue(const ref x: record) ref {
+  proc chpl__buildDistDMapValue(const ref x: record) const ref {
     compilerWarning("The use of 'dmap' is deprecated for this distribution; please replace 'new dmap(new <DistName>(<args>))' with 'new <DistName>(<args>)'");
     return chpl__buildDistValue(x);
   }
