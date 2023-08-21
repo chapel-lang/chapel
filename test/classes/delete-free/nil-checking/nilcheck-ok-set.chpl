@@ -17,14 +17,14 @@ okSetInInner();
 
 proc okSetInTask() {
   var x: owned MyClass?;
-  var s$: sync int;
+  var s: sync int;
 
   begin with (ref x) {
     x = new owned MyClass(1);
-    s$.writeEF(1);
+    s.writeEF(1);
   }
 
-  s$.readFE(); // wait for task to complete
+  s.readFE(); // wait for task to complete
 
   x!.method();
 }

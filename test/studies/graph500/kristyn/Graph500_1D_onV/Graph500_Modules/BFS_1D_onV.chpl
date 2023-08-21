@@ -16,7 +16,7 @@ proc BFS ( root : vertex_id, ParentTree, G )
 {
 
   type Vertex_List = domain (index(vertex_domain) );
-  var visited$ : [vertex_domain] sync int = -1;
+  var visited : [vertex_domain] sync int = -1;
 
   use ReplicatedVar;
   var Active_Level: [rcDomain] unmanaged Level_Set (Vertex_List)?;
@@ -36,7 +36,7 @@ proc BFS ( root : vertex_id, ParentTree, G )
     rcLocal(Active_Level)!.Members.add ( root );
     rcLocal(Next_Level)!.Members.clear ();
     ParentTree[root] = root;
-    visited$ (root).writeFF(1);
+    visited (root).writeFF(1);
     rcLocal (Active_Level)!.previous = nil;
     rcLocal (Next_Level)!.previous = rcLocal (Active_Level);
   }
@@ -53,17 +53,17 @@ proc BFS ( root : vertex_id, ParentTree, G )
 
         forall v in G.Neighbors (u) do on v {
 
-          if ( visited$ (v).readXX() < 0 )
+          if ( visited (v).readXX() < 0 )
           {
-            if (visited$ (v).readFE() < 0 )
+            if (visited (v).readFE() < 0 )
             {
-                visited$ (v).writeEF (1);
+                visited (v).writeEF (1);
                 rcLocal(Next_Level)!.Members.add (v);
                 ParentTree (v) = u;
             }
             else
             {
-                visited$ (v).writeEF(1);
+                visited (v).writeEF(1);
             }
           }
         }
@@ -100,6 +100,3 @@ proc BFS ( root : vertex_id, ParentTree, G )
 
 
 }
-
-
-

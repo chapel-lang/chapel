@@ -11,7 +11,7 @@ producer writes 'numItems' to a bounded buffer of size 'bufferSize'
 and then writes a sentinel value per consumer.  The consumer reads
 items from the bounded buffer until it sees a sentinel value.  The
 boundedBuffer is itself implemented as a class storing an array of
-sync variables ('buff$') to prevent overrun/underrun (we don't want
+sync variables ('buff') to prevent overrun/underrun (we don't want
 the producer to overwrite values that have not yet been consumed; nor
 do we want to consumer trying to read values that have not yet been
 written).  The class also stores a head/tail cursor indicating where

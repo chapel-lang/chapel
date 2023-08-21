@@ -51,7 +51,7 @@ module Edges {
       }
 
       Edges[i] = new unmanaged Edge(id = i, dupl = 1, n1 = u - 1, n2 = v - 1, distance = if (w > 0.0) then w else -w);
-      Edges[i]!.vb$.writeEF(0.0);
+      Edges[i]!.vb.writeEF(0.0);
 
       var lm: int;
       lm = if (u > v) then u else v;
@@ -64,7 +64,7 @@ module Edges {
 
     // mark duplicate edges
     for i in 1..(nEdges-1) {
-      if (Edges[i]!.n1 == Edges[i-1]!.n1 && 
+      if (Edges[i]!.n1 == Edges[i-1]!.n1 &&
           Edges[i]!.n2 == Edges[i-1]!.n2) then
         Edges[i]!.dupl = 0;
     }

@@ -57,7 +57,7 @@ module Graph500_defs
       var neighbor_count: int=0;
       var self_edges: int=0;
       var duplicates: int=0;
-      var vlock$: sync bool = true;
+      var vlock: sync bool = true;
 
       proc init(nd: domain(1) = {1..0}) {
         this.nd = nd;
@@ -68,7 +68,7 @@ module Graph500_defs
         this.neighbor_count = other.neighbor_count;
         this.self_edges = other.self_edges;
         this.duplicates = other.duplicates;
-        this.vlock$ = other.vlock$.readXX();
+        this.vlock = other.vlock.readXX();
       }
 
 
@@ -81,19 +81,19 @@ module Graph500_defs
       }
 
       proc add_self_edge () {
-         vlock$.readFE();
+         vlock.readFE();
          self_edges += 1;
-         vlock$.writeEF(true);
+         vlock.writeEF(true);
       }
 
       proc add_duplicate () {
-         vlock$.readFE();
+         vlock.readFE();
          duplicates += 1;
-         vlock$.writeEF(true);
+         vlock.writeEF(true);
       }
 
       proc add_Neighbor (new_vertex_ID: vertex_id) {
-         vlock$.readFE();
+         vlock.readFE();
          var ID: vertex_id = new_vertex_ID;
 //       Check again to make sure another thread did not recently
 //       add v to u's neighbor list
@@ -108,7 +108,7 @@ module Graph500_defs
            neighbor_count += 1;
            Neighbors[neighbor_count]= new_vertex_ID;
          }
-         vlock$.writeEF(true);
+         vlock.writeEF(true);
       }
 
       proc grow_helper() {

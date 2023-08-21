@@ -2,7 +2,7 @@
 
 const RNG = 1..4;
 
-var s$: sync int;
+var s: sync int;
 
 class CT {
   var fieldd: int;
@@ -57,13 +57,13 @@ proc QQ.bgn() {
   begin {
     data[2] = 234;
     writeln(number, pointer.fieldd);
-    s$.writeEF(1);
+    s.writeEF(1);
   }
 }
 
 var rec3 = new QQ(3);
 rec3.bgn();
-s$.readFE();
+s.readFE();
 writeln(rec3);
 writeln();
 

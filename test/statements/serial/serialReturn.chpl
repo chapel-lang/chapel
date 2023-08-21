@@ -5,19 +5,19 @@ proc serialWithReturn() {
 }
 
 proc test() {
-  var x$: sync int;
-  
+  var x: sync int;
+
   serialWithReturn();
 
   sync{
     begin{
-      x$.readFE(); 
+      x.readFE();
       writeln("Begin 1");
     }
 
     begin{
       writeln("Begin 2");
-      x$.writeEF(1);
+      x.writeEF(1);
     }
   }
 }
