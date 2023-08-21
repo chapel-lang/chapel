@@ -2,7 +2,7 @@
 // Use standard modules for vector and matrix Norms, Random numbers
 // and Timing routines
 //
-use LinearAlgebra, Random, Time;
+use LinearAlgebra, Random, Time, Math, ChplConfig;
 
 //
 // Use the user module for computing HPCC problem sizes
@@ -12,8 +12,8 @@ use LinearAlgebra, Random, Time;
 //
 // Use the distributions we need for this computation
 //
-use DimensionalDist2D, ReplicatedDim, BlockCycDim;
-use ReplicatedDist, ChplConfig;
+use DimensionalDist2D, ReplicatedDim, BlockCycDim, DSIUtil;
+use ReplicatedDist;
 
 //
 // The number of matrices and the element type of those matrices
@@ -93,10 +93,10 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
   // Replicate 'targetLocales' to reduce comm.
   // 'targetLocales' itself could be replicated instead,
   // but this way the changes are smaller.
-  const targetIdsRepl = targetIds dmapped new dmap(distReplicated);
+  const targetIdsRepl = targetIds dmapped distReplicated;
   var targetLocalesRepl: [targetIdsRepl] locale;
   coforall (l, id) in zip(Locales, LocaleSpace) do on l {
-    targetLocalesRepl._value.localArrs[id].arrLocalRep = targetLocales;
+    targetLocalesRepl._value.localArrs[id]!.arrLocalRep = targetLocales;
   }
 
   // Create individual dimension descriptors
@@ -146,7 +146,7 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
   const replKD = {0..0, 1..n+1} dmapped new dmap(dist1r2b);
   var   replK: [replKD] elemType;
 
-  const replUD = {0..#blkSize, 0..#blkSize} dmapped new dmap(distReplicated);
+  const replUD = {0..#blkSize, 0..#blkSize} dmapped distReplicated;
         // can't use targetLocales because of "consistency" req. - that's OK
   var   replU: [replUD] elemType;
 
@@ -172,7 +172,7 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
     if elemType == real(64) then chpl__processorAtomicType(real)
     else compilerError("need to define cpuAtomicElemType");
   type cpuAtomicCountType = chpl__processorAtomicType(int);
-  const replPD = {0..#blkSize} dmapped new dmap(distReplicated);
+  const replPD = {0..#blkSize} dmapped distReplicated;
 
   // for the working 'x' vector, replX, we'll reuse replK
 
@@ -192,7 +192,7 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
   }
 
   // (Only needed on diagonal nodes, for simplicity create everywhere.)
-  const bsOthersPartSumsD = {0..#tl2} dmapped new dmap(distReplicated);
+  const bsOthersPartSumsD = {0..#tl2} dmapped distReplicated;
   var bsOthersPartSums: [bsOthersPartSumsD] bsSetofPartSums;
 
   initAB();
@@ -494,12 +494,12 @@ proc psReduce(blk, k) {
             ref locAB = Ab._value.dsiLocalSlice1((iRange, k));
             for i in iRange do myResult.updateE(i, locAB[i]);
             if myResult.absmx > maxRes.read() { // only lock if we might update
-              upd$ = true;  // lock
+              upd$.writeEF(true);  // lock
               if myResult.absmx > maxRes.read() { // check again while locked
                 locResult.updateE(myResult);
                 maxRes.write(myResult.absmx);
               }
-              upd$;  // unlock
+              upd$.readFE();  // unlock
             }
           } // forall
       } // local
@@ -520,7 +520,7 @@ proc psReduce(blk, k) {
 
 proc psCompute(panel, blk, k, pivotVal) {
   if k == n then return; // nothing to do
-  const dim2end = panel.dim(1).alignedHigh;
+  const dim2end = panel.dim(1).high;
   const lid2 = targetLocalesIndexForAbIndex(2, k);
 
   coforall lid1 in 0..#tl1 {
@@ -647,7 +647,7 @@ proc updateBlockRow(
 
   const blkStarts = tr.dim(1)[.. by blkSize align 1];
   const lid1 = targetLocalesIndexForAbIndex(1, blk);
-  const blkStartsStart = blkStarts.alignedLow;
+  const blkStartsStart = blkStarts.low;
 
   coforall lid2 in 0..#tl2 {
    on targetLocalesRepl[lid1, lid2] {
@@ -659,7 +659,7 @@ proc updateBlockRow(
     local {
       const dim2 = js..min(js+blkSize-1,n+1);
       ref locAB  = Ab._value.dsiLocalSlice1((dim1, dim2));
-      ref locU   = replU._value.localArrs[here.id].arrLocalRep;
+      ref locU   = replU._value.localArrs[here.id]!.arrLocalRep;
 
       for row in dim1 {
         const i = row, iRel = i-blk;
@@ -774,7 +774,7 @@ proc bsComputeRow(diaFrom, diaTo, locId1, locId2, diaLocId2) {
   } else {
     // off the diagonal
 
-    ref myPartSums = bsLocalPartSums._value.localArrs[here.id].arrLocalRep;
+    ref myPartSums = bsLocalPartSums._value.localArrs[here.id]!.arrLocalRep;
     ensureDR(myPartSums._value, "bsR myPartSums");
 
     var gotBlocks: bool;
@@ -829,7 +829,7 @@ proc bsComputeMyXsWithB(diaFrom, diaTo, locAB, locX, locB) {
 
 proc bsIncorporateOthersPartSums(diaFrom, diaTo, locId1, locId2) {
   // Apart from asserts and writeln(), everything here should be local.
-  ref partSums = bsOthersPartSums._value.localArrs[here.id].arrLocalRep;
+  ref partSums = bsOthersPartSums._value.localArrs[here.id]!.arrLocalRep;
   ref locX     = replK._value.dsiLocalSlice1((0, diaFrom..diaTo));
   ensureDR(partSums._value, "bsI partSums");
   ensureDR(locX._value, "bsI locX");
@@ -999,7 +999,7 @@ proc replicateA(abIx, dim2) {
             ref locAB = Ab._value.dsiLocalSlice1((iRange, dim2));
 
             // locReplA[iRange,..] = locAB[iRange, dim2];
-            const jStart = dim2.alignedLow,
+            const jStart = dim2.low,
                   rStart = replA._value.dom.dom1._dsiStorageIdx(iStart);
             for i in iRange {
               for j in dim2 do
@@ -1034,7 +1034,7 @@ proc replicateB(abIx, dim1) {
             ref locAB = Ab._value.dsiLocalSlice1((dim1, jRange));
 
             // locReplB[..,jRange] = locAB[dim1, jRange];
-            const iStart = dim1.alignedLow,
+            const iStart = dim1.low,
                   rStart = replB._value.dom.dom2._dsiStorageIdx(jStart);
             for i in dim1 {
               for j in jRange do
@@ -1068,10 +1068,10 @@ proc replicateU(abIx) {
     const fromLocId1 = targetLocalesIndexForAbIndex(1, abIx);
     const fromLocId2 = targetLocalesIndexForAbIndex(2, abIx);
     // verify that we are on a good locale, optionally
-    ref myLocalArr = replU._value.localArrs[here.id].arrLocalRep;
+    ref myLocalArr = replU._value.localArrs[here.id]!.arrLocalRep;
     coforall targloc in targetLocales[fromLocId1, ..] do
       if targloc != here then
-        replU._value.localArrs[targloc.id].arrLocalRep = myLocalArr;
+        replU._value.localArrs[targloc.id]!.arrLocalRep = myLocalArr;
 }
 
 proc targetLocalesIndexForAbIndex(param dim, abIx) do
