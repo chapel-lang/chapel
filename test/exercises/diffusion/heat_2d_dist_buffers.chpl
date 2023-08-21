@@ -63,7 +63,7 @@ var b = new barrier(numLocales);
 proc main() {
   if RunCommDiag then startCommDiagnostics();
 
-  // spawn one task for each locale
+  // solve, spawning one task for each locale
   t.start();
   coforall (loc, (tidX, tidY)) in zip(u.targetLocales(), LOCALE_DOM) {
     // run initialization and computation on the task for this locale
