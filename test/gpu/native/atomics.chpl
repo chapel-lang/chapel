@@ -5,8 +5,8 @@ config param excludeForRocm = (CHPL_GPU == "amd");
 
 // CPU versions of associated GPU functions. These aren't actually atomic but
 // are used for test verification:
-proc cpuAtomicAdd (ref x : ?T, val : T) : T { x += val; return x-val;}
-proc cpuAtomicSub (ref x : ?T, val : T) : T { x -= val; return x+val;}
+proc cpuAtomicAdd (ref x : ?T, val : T) : T { const retval = x; x += val; return retval;}
+proc cpuAtomicSub (ref x : ?T, val : T) : T { const retval = x; x -= val; return retval;}
 proc cpuAtomicExch(ref x : ?T, val : T) : T { const retval = x; x = val; return retval;}
 proc cpuAtomicMin (ref x : ?T, val : T) : T { const retval = x; x = min(x, val); return retval;}
 proc cpuAtomicMax (ref x : ?T, val : T) : T { const retval = x; x = max(x, val); return retval;}

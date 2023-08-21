@@ -353,33 +353,40 @@ module GPU
     return chpl_atomicTernOp(c_ptrTo(x), cmp, val);
   }
 
-  /* When run on a GPU, atomically add 'val' to 'x' (result is stored in 'x'). */
+  /* When run on a GPU, atomically add 'val' to 'x' and store the result in 'x'.
+     The operation returns the old value of x. */
   inline proc gpuAtomicAdd(  ref x : ?T, val : T) : T { return gpuAtomicBinOp("add", x, val); }
-  /* When run on a GPU, atomically subtract 'val' from 'x' (result is stored in 'x'). */
+  /* When run on a GPU, atomically subtract 'val' from 'x' and store the result in 'x'.
+     The operation returns the old value of x. */
   inline proc gpuAtomicSub(  ref x : ?T, val : T) : T { return gpuAtomicBinOp("sub", x, val); }
-  @chpldoc.nodoc
+  /* When run on a GPU, atomically exchange the value stored in 'x' with 'val'.
+     The operation returns the old value of x. */
   inline proc gpuAtomicExch( ref x : ?T, val : T) : T { return gpuAtomicBinOp("exch", x, val); }
-  /* When run on a GPU, atomically compare 'x' and 'val' and store the minimum in 'x'. */
+  /* When run on a GPU, atomically compare 'x' and 'val' and store the minimum in 'x'.
+     The operation returns the old value of x. */
   inline proc gpuAtomicMin(  ref x : ?T, val : T) : T { return gpuAtomicBinOp("min", x, val); }
-  /* When run on a GPU, atomically compare 'x' and 'val' and store the maximum in 'x'. */
+  /* When run on a GPU, atomically compare 'x' and 'val' and store the maximum in 'x'.
+     The operation returns the old value of x. */
   inline proc gpuAtomicMax(  ref x : ?T, val : T) : T { return gpuAtomicBinOp("max", x, val); }
   /* When run on a GPU, atomically increments x if the original value of x is
-     greater-than or equal to val, if so the result is stored in 'x'. */
+     greater-than or equal to val, if so the result is stored in 'x'. Otherwise x is set to 0.
+     The operation returns the old value of x. */
   inline proc gpuAtomicInc(  ref x : ?T, val : T) : T { return gpuAtomicBinOp("inc", x, val); }
   /* When run on a GPU, atomically determine if 'x' equals 0 or is greater than 'val'.
-     If so store 'val' in 'x' otherwise decrement 'x' by 1. */
+     If so store 'val' in 'x' otherwise decrement 'x' by 1. Otherwise x is set to val.
+     The operation returns the old value of x. */
   inline proc gpuAtomicDec(  ref x : ?T, val : T) : T { return gpuAtomicBinOp("dec", x, val); }
   /* When run on a GPU, atomically perform a bitwise 'and' operation on 'x' and 'val' and store
-     the result in 'x'. */
+     the result in 'x'. The operation returns the old value of x. */
   inline proc gpuAtomicAnd(  ref x : ?T, val : T) : T { return gpuAtomicBinOp("and", x, val); }
   /* When run on a GPU, atomically perform a bitwise 'or' operation on 'x' and 'val' and store
-     the result in 'x'.  */
+     the result in 'x'. The operation returns the old value of x. */
   inline proc gpuAtomicOr(   ref x : ?T, val : T) : T { return gpuAtomicBinOp("or", x, val); }
   /* When run on a GPU, atomically perform a bitwise 'xor' operation on 'x' and 'val' and store
-     the result in 'x'. */
+     the result in 'x'. The operation returns the old value of x. */
   inline proc gpuAtomicXor(  ref x : ?T, val : T) : T { return gpuAtomicBinOp("xor", x, val); }
 
   /* When run on a GPU, atomically compare the value in 'x' and 'cmp', if they
-     are equal store 'val' in 'x'.  */
+     are equal store 'val' in 'x'. The operation returns the old value of x. */
   inline proc gpuAtomicCAS(  ref x : ?T, cmp : T, val : T) : T { return gpuAtomicTernOp("CAS", x, cmp, val); }
 }
