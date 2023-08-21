@@ -81,6 +81,7 @@ proc main() {
       work(tidX, tidY);
     }
   }
+  t.stop();
 
   if RunCommDiag {
     stopCommDiagnostics();
@@ -90,7 +91,7 @@ proc main() {
   // print final results
   const mean = (+ reduce u) / u.size,
         stdDev = sqrt((+ reduce (u - mean)**2) / u.size);
-  t.stop();
+
   writeln(abs(0.222751 - stdDev) < 1e-6);
   if writeTime then writeln("time: ", t.elapsed());
 }
