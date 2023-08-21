@@ -21,4 +21,4 @@ SUCCESS: date
 --------------------
 "2002-03-01T00:00:00"
 ====================
-ERROR: BadFormatError: bad format: missing expected literal (while reading ioLiteral "." with path "unknown" offset 20)
+ERROR: BadFormatError: bad format: missing expected literal (while reading chpl_ioLiteral "." with path "unknown" offset 20)
