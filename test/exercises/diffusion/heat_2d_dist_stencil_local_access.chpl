@@ -57,7 +57,7 @@ for 1..nt {
   // compute the FD kernel in parallel
   forall (i, j) in IndicesInner do
     u.localAccess[i, j] = un.localAccess[i, j] + alpha * (
-        un.localAccess[i, j-1] + un.localAccess[i-1, j] +
+        un.localAccess[i-1, j] + un.localAccess[i, j-1] +
         un.localAccess[i+1, j] + un.localAccess[i, j+1] -
         4 * un.localAccess[i, j]
       );
