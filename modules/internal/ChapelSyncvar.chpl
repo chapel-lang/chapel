@@ -247,10 +247,10 @@ module ChapelSyncvar {
     1) Block until the ``sync`` variable is empty.
     2) Write the value of the ``sync`` variable and leave the variable full.
 
-    :arg x: New value of the ``sync`` variable.
+    :arg val: New value of the ``sync`` variable.
   */
-  proc _syncvar.writeEF(in x : valType) {
-    wrapped.writeEF(x);
+  proc _syncvar.writeEF(in val : valType) {
+    wrapped.writeEF(val);
   }
 
   /* Write into a full ``sync`` variable, leaving it full.
@@ -258,10 +258,10 @@ module ChapelSyncvar {
     1) Block until the ``sync`` variable is full.
     2) Write the value of the ``sync`` variable and leave the variable full.
 
-    :arg x: New value of the ``sync`` variable.
+    :arg val: New value of the ``sync`` variable.
   */
-  proc _syncvar.writeFF(in x : valType) {
-    wrapped.writeFF(x);
+  proc _syncvar.writeFF(in val : valType) {
+    wrapped.writeFF(val);
   }
 
   /* Write into a ``sync`` variable regardless of its state, leaving it full.
@@ -269,10 +269,10 @@ module ChapelSyncvar {
     1) Do not block.
     2) Write the value of the ``sync`` variable, leave it's state full.
 
-    :arg x: New value of the ``sync`` variable.
+    :arg val: New value of the ``sync`` variable.
   */
-  proc _syncvar.writeXF(in x : valType) {
-    wrapped.writeXF(x);
+  proc _syncvar.writeXF(in val : valType) {
+    wrapped.writeXF(val);
   }
 
   /*
@@ -910,10 +910,10 @@ module ChapelSyncvar {
     1) Block until the ``single`` variable is empty.
     2) Write the value of the ``single`` variable and leave the variable full.
 
-    :arg x: New value of the single variable.
+    :arg val: New value of the single variable.
   */
-  proc _singlevar.writeEF(in x : valType) {
-    wrapped.writeEF(x);
+  proc _singlevar.writeEF(in val : valType) {
+    wrapped.writeEF(val);
   }
 
   /*
