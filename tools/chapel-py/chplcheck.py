@@ -2,6 +2,7 @@ import chapel
 import chapel.core
 import re
 import sys
+import argparse
 
 def consecutive_decls(node):
     def is_relevant_decl(node):
@@ -65,6 +66,9 @@ def ignores_rule(node, rulename):
     return False
 
 def report_violation(node, name):
+    if name in args.ignored_rules:
+        return
+
     location = node.location()
     first_line, _ = location.start()
     print("{}:{}: node violates rule {}".format(location.path(), first_line, name))
@@ -122,8 +126,13 @@ Rules = [
     ("ChplPrefixReserved", chapel.core.NamedDecl, check_reserved_prefix),
 ]
 
+parser = argparse.ArgumentParser( prog='chplcheck', description='A linter for the Chapel language')
+parser.add_argument('filename')
+parser.add_argument('--ignore-rule', action='append', dest='ignored_rules', default=[])
+args = parser.parse_args()
+
 ctx = chapel.core.Context()
-ast = ctx.parse(sys.argv[1])
+ast = ctx.parse(args.filename)
 
 for rule in Rules:
     check_basic_rule(ast, rule)
