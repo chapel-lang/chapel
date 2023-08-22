@@ -28,8 +28,7 @@ config const nx = 256,      // number of grid points in x
 
 // define a distributed 2D domain and subdomain to describe the grid and its interior
 const indices = {0..<nx, 0..<ny},
-      indicesInner = indices.expand(-1),
-      Indices = indices dmapped Stencil(indicesInner, fluff=(1,1)),
+      Indices = indices dmapped Stencil(indices, fluff=(1,1)),
       IndicesInner = Indices[{1..<nx-1, 1..<ny-1}];
 
 // define a distributed 2D array over the above domain

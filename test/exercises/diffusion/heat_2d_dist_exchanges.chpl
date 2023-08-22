@@ -39,13 +39,6 @@ var u: [Indices] real;
 u = 1.0;
 u[nx/4..nx/2, ny/4..ny/2] = 2.0;
 
-// number of tasks per dimension based on Block distributions decomposition
-const tidXMax = u.targetLocales().dim(0).high,
-      tidYMax = u.targetLocales().dim(1).high;
-
-// barrier for one task per locale
-var b = new barrier(u.targetLocales().size);
-
 // a type for creating a "skyline" array of local arrays
 record localArray {
   var d: domain(2);
@@ -59,14 +52,21 @@ record localArray {
 var OnePerLocale = Block.createDomain(u.targetLocales().domain);
 var uTaskLocal, unTaskLocal: [OnePerLocale] localArray;
 
+// number of tasks per dimension based on Block distributions decomposition
+const tidXMax = OnePerLocale.dim(0).high,
+      tidYMax = OnePerLocale.dim(1).high;
+
+// barrier for one task per locale
+var b = new barrier(OnePerLocale.size);
+
 proc main() {
   if RunCommDiag then startCommDiagnostics();
 
   // solve, spawning one task for each locale
   t.start();
-  coforall (loc, (tidX, tidY)) in zip(u.targetLocales(), OnePerLocale) {
-    // run initialization and computation on the task for this locale
-    on loc do work(tidX, tidY);
+  forall (tidX, tidY) in OnePerLocale {
+    // run the portion of the FD computation owned by this locale
+    work(tidX, tidY);
   }
   t.stop();
 
