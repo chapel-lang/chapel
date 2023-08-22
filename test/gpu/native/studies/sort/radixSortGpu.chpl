@@ -274,13 +274,13 @@ module SortTest {
       if verboseGpu then
         stopVerboseGpu();
       if scanType == "hillisSteele" then
-        assertGpuDiags(kernel_launch=76, host_to_device=12,device_to_host=8,
+        assertGpuDiags(kernel_launch_aod=76, kernel_launch_um=72, host_to_device=12,device_to_host=8,
                                                       device_to_device=72);
       else if scanType == "blelloch" then
-        assertGpuDiags(kernel_launch=136, host_to_device=12,device_to_host=8,
+        assertGpuDiags(kernel_launch_aod=136, kernel_launch_um=132, host_to_device=12,device_to_host=8,
                                                       device_to_device=128);
       else if scanType == "serial" then
-        assertGpuDiags(kernel_launch=8, host_to_device=4,device_to_host=4,
+        assertGpuDiags(kernel_launch_aod=8, kernel_launch_um=4, host_to_device=4,device_to_host=4,
                                                       device_to_device=0);
 
     }
