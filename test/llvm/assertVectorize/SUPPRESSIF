@@ -1,0 +1,2 @@
+# verify should not affect opt, but test fails with it
+COMPOPTS <= --verify

@@ -2,9 +2,14 @@
 COMPOPTS <= --fast
 # throws off loop attributes
 COMPOPTS <= --baseline
-CHPL_TARGET_COMPILER != llvm
+# mem libcalls throw off opt
+EXECOPTS <= --memLeaks
+# COMM throws off opt
 CHPL_COMM != none
+COMPOPTS <= --no-local
+
 # test only LLVM 14 or greater
+CHPL_TARGET_COMPILER != llvm
 CHPL_LLVM_VERSION==11
 CHPL_LLVM_VERSION==12
 CHPL_LLVM_VERSION==13
