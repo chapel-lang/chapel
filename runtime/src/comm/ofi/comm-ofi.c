@@ -3003,9 +3003,11 @@ void init_ofiForAms(void) {
   //
   size_t amLZSize = chpl_env_rt_get_size("COMM_OFI_AM_LZ_SIZE",
                                                (size_t) 64 << 20);
-  char buf[10];
-  DBG_PRINTF(DBG_AM_BUF, "AM LZ size %s (%#zx)",
-             chpl_snprintf_KMG_z(buf, sizeof(buf), amLZSize), amLZSize);
+#ifdef CHPL_COMM_DEBUG
+    char buf[10];
+    DBG_PRINTF(DBG_AM_BUF, "AM LZ size %s (%#zx)",
+               chpl_snprintf_KMG_z(buf, sizeof(buf), amLZSize), amLZSize);
+#endif
 
   amLZSize /= 2;
 
