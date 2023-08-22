@@ -1,4 +1,4 @@
  # assertVectorized-baseline.good
---fast --no-ieee-float
+--fast --no-ieee-float --mllvm -fno-math-errno
 -g # assertVectorized-debug.good
--g --fast --no-ieee-float
+-g --fast --no-ieee-float --mllvm -fno-math-errno
