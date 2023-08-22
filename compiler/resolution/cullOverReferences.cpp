@@ -493,7 +493,7 @@ static void maybeIssueRefMaybeConstWarning(ArgSymbol* arg) {
 
     const char* argName = nullptr;
     char argBuffer[64];
-    if (isTaskIntent && fieldAccessArgToOriginalArg.find(arg) != fieldAccessArgToOriginalArg.end()) {
+    if (isTaskIntent && arg->hasFlag(FLAG_FIELD_ACCESSOR)) {
       sprintf(argBuffer, "this");
       argName = argBuffer;
     } else if (arg->hasFlag(FLAG_EXPANDED_VARARGS)) {

@@ -161,9 +161,6 @@ FnSymbol* getTheIteratorFn(Type* icType);
 extern Symbol* markPruned;
 bool isReduceOp(Type* type);
 void convertFieldsOfRecordThis(FnSymbol* fn);
-// used to deprecate ref-maybe-const
-// should be removed after deprecation is removed
-extern std::unordered_map<ArgSymbol*, Symbol*> fieldAccessArgToOriginalArg;
 
 // forall intents
 CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE);
