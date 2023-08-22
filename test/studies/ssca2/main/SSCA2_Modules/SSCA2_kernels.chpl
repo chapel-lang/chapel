@@ -180,7 +180,7 @@ module SSCA2_kernels
   // ==================================================================
 
   proc approximate_betweenness_centrality ( G, starting_vertices,
-                                            Between_Cent : [] real,
+                                            ref Between_Cent : [] real,
                                             out Sum_Min_Dist : real )
 
     // -----------------------------------------------------------------------
@@ -284,7 +284,7 @@ module SSCA2_kernels
         const tpv = TPVM.getTPV(tid);
         ref BCaux = tpv.BCaux;
         pragma "dont disable remote value forwarding"
-        inline proc f1(BCaux, v) {
+        inline proc f1(ref BCaux, v) {
           BCaux[v].path_count$.write(0.0);
         }
         forall v in vertex_domain do {
@@ -319,7 +319,7 @@ module SSCA2_kernels
         //
         ref Active_Level = tpv.Active_Level;
         pragma "dont disable remote value forwarding"
-        inline proc f2(BCaux, s) {
+        inline proc f2(ref BCaux, s) {
           BCaux[s].path_count$.write(1.0);
         }
 
@@ -355,7 +355,7 @@ module SSCA2_kernels
             // coforall loop.
             const current_distance_c = current_distance;
             pragma "dont disable remote value forwarding"
-            inline proc f3(BCaux, v, u, current_distance_c, Active_Level, ref dist_temp) {
+            inline proc f3(ref BCaux, v, u, current_distance_c, Active_Level, ref dist_temp) {
 
                   // --------------------------------------------
                   // add any unmarked neighbors to the next level
@@ -442,7 +442,7 @@ module SSCA2_kernels
                         "  is ", graph_diameter );
 
           pragma "dont disable remote value forwarding"
-          inline proc f4(BCaux, Between_Cent$, u) {
+          inline proc f4(ref BCaux, ref Between_Cent$, u) {
             BCaux[u].depend = + reduce [v in BCaux[u].children_list.Row_Children[1..BCaux[u].children_list.child_count.read()]]
               ( BCaux[u].path_count$.read() /
                 BCaux[v].path_count$.read() )      *

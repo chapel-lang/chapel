@@ -1,4 +1,4 @@
-proc foo(x: [], 
+proc foo(ref x: [], 
         y: x.eltType = min(x.eltType), 
         z: x.eltType = max(x.eltType))
     where isIntegralType(x.eltType) {

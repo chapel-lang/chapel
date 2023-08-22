@@ -15,7 +15,7 @@ writeln("n=", n, " m=", m);
 
 enum testTypes {init, lhs, rhs, both};
 
-proc dit (A, param ttype: testTypes) {
+proc dit (ref A, param ttype: testTypes) {
   for loc in Locales do
     on loc {
       var B: [1..n,1..m] real;

@@ -51,7 +51,7 @@ writeln("Histogram computed in ", timer.elapsed(), " seconds\n");
 if printHistogram then
   outputHistogram(Y);
 
-proc computeHistogram(X: [] real, Y: [] int) {
+proc computeHistogram(X: [] real, ref Y: [] int) {
   var lock: sync bool;
   coforall t in 1..numThreads {
     var low = 1+(t-1)*numNumbers/numThreads;

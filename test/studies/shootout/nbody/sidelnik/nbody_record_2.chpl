@@ -18,7 +18,7 @@ record Planet {
   var mass : real;
 }
 
-proc advance(nbodies:int, B: [] Planet, dt: real) {
+proc advance(nbodies:int, ref B: [] Planet, dt: real) {
   var b2 : Planet;
   
   for (b1, i) in zip(B, 0..) {
@@ -64,7 +64,7 @@ proc energy(nbodies:int, B : [] Planet) : real {
   return e;
 }
 
-proc offset_momentum(nbodies:int, B : [] Planet) {
+proc offset_momentum(nbodies:int, ref B : [] Planet) {
   var px,py,pz : real;
   for b in B {
     px += b.vx * b.mass;

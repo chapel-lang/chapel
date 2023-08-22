@@ -14,13 +14,13 @@ proc main() {
 }
 
 
-proc kernel3for(A) {
+proc kernel3for(ref A) {
   foreach (i,j) in zip(1..n, 2..) {
     A[i] = j:real;
   }
 }
 
-proc kernel5for(A, B, C) {
+proc kernel5for(ref A, B, C) {
   foreach (a,b,c) in zip(A, B, C) {
     a = b + c;
   }

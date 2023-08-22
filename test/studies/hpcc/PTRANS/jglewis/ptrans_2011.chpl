@@ -162,7 +162,7 @@ module HPCC_PTRANS {
   //  =====================================================
 
   proc Chapel_PTRANS ( A : [?A_domain] real, 
-                       C : [?C_domain] real, 
+                       ref C : [?C_domain] real, 
                        beta : real ) : bool
     where ( A.rank == 2 ) && ( C.rank == 2 )
     {
@@ -203,7 +203,7 @@ module HPCC_PTRANS {
   //  =====================================================
 
   proc Chapel_blocked_PTRANS_v1 ( A : [?A_domain] real, 
-                                  C : [?C_domain] real, 
+                                  ref C : [?C_domain] real, 
                                   beta : real           ) : bool
     where ( A.rank == 2 ) && ( C.rank == 2 )
     {
@@ -252,7 +252,7 @@ module HPCC_PTRANS {
   //  =====================================================
 
   proc Chapel_blocked_PTRANS_v2 ( A : [?A_domain] real, 
-                                  C : [?C_domain] real, 
+                                  ref C : [?C_domain] real, 
                                   beta : real           ) : bool
     where ( A.rank == 2 ) && ( C.rank == 2 )
     {

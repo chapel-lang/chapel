@@ -21,7 +21,7 @@ class Planet {
   var mass : real;
 }
 
-proc advance(B: [] unmanaged Planet, dt: real) {
+proc advance(ref B: [] unmanaged Planet, dt: real) {
   for i in NBODIES {
     ref b1 = B[i];
     for j in i+1..nbodies {

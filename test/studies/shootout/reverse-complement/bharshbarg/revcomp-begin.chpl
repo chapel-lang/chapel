@@ -57,7 +57,7 @@ proc main(args: [] string) {
   binout.writeBinary(data);
 }
 
-proc process(data : [], in front : int, in back : int) {
+proc process(ref data : [], in front : int, in back : int) {
 
   // Advance to the next line
   while data[front] != newLine do front += 1;

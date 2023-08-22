@@ -7,7 +7,7 @@ var alpha = 2.0;
 scale(x, y, alpha);
 writeln(x);
 
-proc scale(x, y, alpha: real) {
+proc scale(ref x, y, alpha: real) {
   if (x.size != y.size) then
     writeln("Error:  Inputs are not the same length.");
   else {

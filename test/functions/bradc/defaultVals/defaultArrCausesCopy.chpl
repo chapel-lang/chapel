@@ -4,7 +4,7 @@ var A: [D] real;
 
 
 
-proc foo(X = A) {
+proc foo(ref X = A) {
   writeln("X is: ", X);
   X += 0.1;
   writeln("X is: ", X);

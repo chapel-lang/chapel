@@ -50,7 +50,7 @@ writeln("Histogram computed in ", timer.elapsed(), " seconds\n");
 if printHistogram then
   outputHistogram(Y);
 
-proc computeHistogram(X: [] real, Y: [] int) {
+proc computeHistogram(X: [] real, ref Y: [] int) {
   for x in X do
     Y(1 + (x / (1.0 / numBuckets)): int) += 1;
 }

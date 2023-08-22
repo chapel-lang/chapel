@@ -67,7 +67,7 @@ proc main() {
 //
 // Scan the alphabets' probabilities to compute cut-offs
 //
-proc sumProbs(alphabet: []) {
+proc sumProbs(ref alphabet: []) {
   var p = 0.0;
   for letter in alphabet {
     ref (_,prob) = letter;

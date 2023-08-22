@@ -20,13 +20,13 @@ proc returnArrayTyped():[1..size] real {
   return X;
 }
 
-proc returnArrayArg(X) {
+proc returnArrayArg(ref X) {
   for (x,i) in zip(X, 1..size) {
     x = i;
   }
 }
 
-proc returnArrayArgTyped(X:[1..size] real) {
+proc returnArrayArgTyped(ref X:[1..size] real) {
   for (x,i) in zip(X, 1..size) {
     x = i;
   }

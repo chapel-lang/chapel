@@ -548,7 +548,7 @@ module Channel {
 
   /* Entry point for select statements */
   @chpldoc.nodoc
-  proc selectProcess(cases : [] shared SelectBaseClass, default : bool = false) : int{
+  proc selectProcess(ref cases : [] shared SelectBaseClass, default : bool = false) : int{
     var numCases = cases.domain.size;
 
     var addrCmp : Comparator;

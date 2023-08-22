@@ -45,7 +45,7 @@ proc main(args: [] string) {
 }
 
 
-proc process(data, start, end) {
+proc process(ref data, start, end) {
   const extra = (end - start) % columns,
         off = columns - extra - 1;
 

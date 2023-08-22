@@ -378,7 +378,7 @@ iter graphReaderReal(GRow, uxIDs, type VType, vCount, eCount, repfiles,
   if IOgate then IOgateSync.readFE();
 } // graphReaderReal
 
-proc readOneVertex(GRow, type VType, vCount, u, dON, dRow, dEdge, dstyle,
+proc readOneVertex(ref GRow, type VType, vCount, u, dON, dRow, dEdge, dstyle,
                    sv, ev, ww, startIxData, inout startIxCnt)
 {
   const numEdges = startIxData - startIxCnt;

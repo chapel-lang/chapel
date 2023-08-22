@@ -41,7 +41,7 @@ record WeightedParticle3D {
   var r2 : real;
 }
 
-proc generateRandom(pp : []WeightedParticle3D) {
+proc generateRandom(ref pp : []WeightedParticle3D) {
   var x,y,z : real;
   var rng = new RandomStream(eltType=real);
   for ip in pp {
@@ -61,7 +61,7 @@ proc countLines(fn : string) : int {
   return ipart;
 }
 
-proc readFile(fn : string, pp : []WeightedParticle3D)  {
+proc readFile(fn : string, ref pp : []WeightedParticle3D)  {
   const maxcols=25;
 
   var fr = openReader(fn);
@@ -69,7 +69,7 @@ proc readFile(fn : string, pp : []WeightedParticle3D)  {
   var icol=1;
   var ipart = 0;
   for iff in fr.lines() {
-   icol = 1; 
+   icol = 1;
    for col1 in iff.split(spaces) {
      if (col1.size==0) then continue;
      cols[icol] = col1 : real;
@@ -85,7 +85,7 @@ proc readFile(fn : string, pp : []WeightedParticle3D)  {
 
 proc smuAccumulate(hh : UniformBins, p1, p2 : []WeightedParticle3D, d1,d2 : domain(1), scale : real) {
   forall ii in d1 { // Loop over first set of particles
-   
+
     var x1,y1,z1,w1,r2 : real;
     var sl, s2, l1, s1, l2, mu, wprod : real;
     x1 = p1[ii].x(0); y1 = p1[ii].x(1); z1 = p1[ii].x(2); w1 = p1[ii].w; r2 = p1[ii].r2;
@@ -101,7 +101,7 @@ proc smuAccumulate(hh : UniformBins, p1, p2 : []WeightedParticle3D, d1,d2 : doma
       s1 = sqrt(s2);
       mu = sl/(s1*sqrt(l2));
       if (mu < 0) then mu = -mu;
-      
+
       hh.add((s1,mu),wprod);
     }
   }
@@ -109,7 +109,7 @@ proc smuAccumulate(hh : UniformBins, p1, p2 : []WeightedParticle3D, d1,d2 : doma
 
 
 
-proc splitOn(pp : []WeightedParticle3D, scr : []WeightedParticle3D, splitDim : int, xsplit : real) : int {
+proc splitOn(ref pp : []WeightedParticle3D, ref scr : []WeightedParticle3D, splitDim : int, xsplit : real) : int {
   var npart, lnpart : int;
   var lo = pp.domain.low;
   var hi = pp.domain.high;
@@ -150,7 +150,7 @@ class KDNode {
 }
 
 
-proc BuildTree(pp : []WeightedParticle3D, scr : []WeightedParticle3D, id : int) : owned KDNode {
+proc BuildTree(ref pp : []WeightedParticle3D, ref scr : []WeightedParticle3D, id : int) : owned KDNode {
   gtime1.start();
   var me = new owned KDNode();
   var dom = pp.domain;
@@ -185,7 +185,7 @@ proc BuildTree(pp : []WeightedParticle3D, scr : []WeightedParticle3D, id : int) 
   gtime1.start();
 
   // Find dimension to split on
-  dx = pmax - pmin; 
+  dx = pmax - pmin;
   var splitDim = 1;
   for idim in Ddim {
     if (dx(idim-1) > dx(splitDim-1)) then splitDim=idim;
@@ -215,7 +215,7 @@ proc TreeAccumulate(hh : UniformBins, p1, p2 : []WeightedParticle3D, node1, node
     return;
   }
 
-  // If one node is a leaf 
+  // If one node is a leaf
   if (node1.isLeaf()) {
     TreeAccumulate(hh, p1, p2, node1, node2.left!);
     TreeAccumulate(hh, p1, p2, node1, node2.right!);
@@ -240,7 +240,7 @@ proc TreeAccumulate(hh : UniformBins, p1, p2 : []WeightedParticle3D, node1, node
 
 }
 
-// The main code 
+// The main code
 proc doPairs() {
   var tt : stopwatch;
 
@@ -284,7 +284,7 @@ proc doPairs() {
     writef("Time to build trees : %r \n", tt.elapsed());
     writef("Time in splitOn : %r \n", gtime1.elapsed());
   }
-  
+
 
 
   // Set up the histogram

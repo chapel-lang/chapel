@@ -223,7 +223,7 @@ module ChapelDomain {
   }
 
   // definedConst is added only for interface consistency
-  proc chpl__buildDomainExpr(keys..., definedConst) {
+  proc chpl__buildDomainExpr(const keys..., definedConst) {
     param count = keys.size;
     // keyType of string literals is assumed to be type string
     type keyType = keys(0).type;
@@ -709,7 +709,7 @@ module ChapelDomain {
     // Once an interface supports it:
     // if sd.RMO && d.RMO then rowSorted = true;
 
-    sd._value.dsiBulkAdd(arr, rowSorted, true, false);
+    sd._value.dsiBulkAddNoPreserveInds(arr, rowSorted, true);
   }
 
   // TODO: Implement bulkRemove
@@ -1785,7 +1785,7 @@ module ChapelDomain {
       }
 
       @chpldoc.nodoc
-      proc _moveInitializeElement(arr, idx, in value) {
+      proc _moveInitializeElement(ref arr, idx, in value) {
         import MemMove.moveInitialize;
         ref elem = arr[idx];
         moveInitialize(elem, value);
@@ -1814,7 +1814,7 @@ module ChapelDomain {
 
         It is an error if `idx` is not a valid index in `arr`.
       */
-      proc initialize(arr: [?d], idx, in value: arr.eltType) {
+      proc initialize(ref arr: [?d], idx, in value: arr.eltType) {
         import IO.FormattedIO.string;
 
         // Check to make sure value and array element types match.
@@ -1844,9 +1844,6 @@ module ChapelDomain {
 
         if !arr.domain.contains(idx) then
           halt(try! 'Array index out of bounds: %?'.format(idx));
-
-        // Get a reference to the array slot.
-        ref elem = arr[idx];
 
         if _checks {
           if isElementInitialized(arr, idx) {
@@ -2011,11 +2008,21 @@ module ChapelDomain {
     @chpldoc.nodoc
     @unstable("bulkAdd() is subject to change in the future.")
     proc ref bulkAdd(inds: [] _value.idxType, dataSorted=false,
-        isUnique=false, preserveInds=true, addOn=nilLocale)
+        isUnique=false, addOn=nilLocale)
         where this.isSparse() && _value.rank==1 {
       if inds.isEmpty() then return 0;
 
-      return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
+      return _value.dsiBulkAdd(inds, dataSorted, isUnique, addOn);
+    }
+
+    @chpldoc.nodoc
+    @unstable("bulkAdd() is subject to change in the future.")
+    proc ref bulkAddNoPreserveInds(ref inds: [] _value.idxType, dataSorted=false,
+        isUnique=false, addOn=nilLocale)
+        where this.isSparse() && _value.rank==1 {
+      if inds.isEmpty() then return 0;
+
+      return _value.dsiBulkAddNoPreserveInds(inds, dataSorted, isUnique, addOn);
     }
 
     /*
@@ -2096,16 +2103,30 @@ module ChapelDomain {
     */
     @unstable("bulkAdd() is subject to change in the future.")
     proc ref bulkAdd(inds: [] _value.rank*_value.idxType,
-        dataSorted=false, isUnique=false, preserveInds=true, addOn=nilLocale)
+        dataSorted=false, isUnique=false, addOn=nilLocale)
         where this.isSparse() && _value.rank>1 {
       if inds.isEmpty() then return 0;
 
-      return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
+      return _value.dsiBulkAdd(inds, dataSorted, isUnique, addOn);
+    }
+
+    @unstable("bulkAddNoPreserveInds() is subject to change in the future.")
+    proc ref bulkAddNoPreserveInds(ref inds: [] _value.rank*_value.idxType,
+        dataSorted=false, isUnique=false, addOn=nilLocale)
+        where this.isSparse() && _value.rank>1 {
+      if inds.isEmpty() then return 0;
+
+      return _value.dsiBulkAddNoPreserveInds(inds, dataSorted, isUnique, addOn);
     }
 
     pragma "last resort" @chpldoc.nodoc
     proc bulkAdd(args...) {
       compilerError("incompatible argument(s) or this domain type does not support 'bulkAdd'");
+    }
+
+    pragma "last resort" @chpldoc.nodoc
+    proc bulkAddNoPreserveInds(args...) {
+      compilerError("incompatible argument(s) or this domain type does not support 'bulkAddNoPreserveInds'");
     }
 
     /* Remove index ``idx`` from this domain */
@@ -2218,7 +2239,7 @@ module ChapelDomain {
     }
 
     @chpldoc.nodoc
-    proc contains(idx: rank*_value.idxType) {
+    proc contains(const idx: rank*_value.idxType) {
       if this.isRectangular() || this.isSparse() then
         return _value.dsiMember(_makeIndexTuple(rank, idx, "index"));
       else
@@ -2229,7 +2250,7 @@ module ChapelDomain {
        For sparse domains, only indices with a value are considered
        to be contained in the domain.
      */
-    inline proc contains(idx: _value.idxType ...rank) {
+    inline proc contains(const idx: _value.idxType ...rank) {
       return contains(idx);
     }
 

@@ -49,7 +49,7 @@ proc main() {
   printResults(validAnswer, execTime);
 }
 
-proc dfft(A, W) {
+proc dfft(ref A, W) {
 
   const numElements = A.size;
   const halfLogN = (log2(numElements))/2;
@@ -146,7 +146,7 @@ proc printConfiguration() {
 }
 
 
-proc initVectors(Twiddles, z) {
+proc initVectors(ref Twiddles, ref z) {
   computeTwiddles(Twiddles);
   bitReverseShuffle(Twiddles);
 
@@ -159,7 +159,7 @@ proc initVectors(Twiddles, z) {
 }
 
 
-proc computeTwiddles(Twiddles) {
+proc computeTwiddles(ref Twiddles) {
   const numTwdls = Twiddles.size,
         delta = 2.0 * atan(1.0) / numTwdls;
 
@@ -175,7 +175,7 @@ proc computeTwiddles(Twiddles) {
 }
 
 
-proc bitReverseShuffle(Vect: [?Dom]) {
+proc bitReverseShuffle(ref Vect: [?Dom]) {
   const numBits = log2(Vect.size),
         Perm: [Dom] index(Dom) = [i in Dom] bitReverse(i, revBits = numBits),
         Temp = Vect(Perm);
@@ -191,7 +191,7 @@ proc bitReverse(val: ?valType, revBits = 64) {
 }
 
 
-proc verifyResults(z, Z, Twiddles) {
+proc verifyResults(ref z, ref Z, Twiddles) {
   if (printArrays) then writeln("After FFT, Z is: ", Z, "\n");
 
   Z = conj(Z) / m;

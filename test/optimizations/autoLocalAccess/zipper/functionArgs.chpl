@@ -7,7 +7,7 @@ var B: [D] int;
 
 // all the patterns in this test must be recognized and optimized statically
 
-proc localQueriedDomain(a: [?d] int, b: [d] int){
+proc localQueriedDomain(ref a: [?d] int, b: [d] int){
   forall (i, loopIdx) in zip(a.domain, 1..) {
     a[i] += 
       b[i] * loopIdx;
@@ -27,7 +27,7 @@ proc localQueriedDomain(a: [?d] int, b: [d] int){
   writeln(a);
 }
 
-proc globalDotDomain(a: [A.domain] int, b: [A.domain] int){
+proc globalDotDomain(ref a: [A.domain] int, b: [A.domain] int){
   forall (i, loopIdx) in zip(A.domain, 1..) {
     a[i] += 
       b[i] * loopIdx;
@@ -47,7 +47,7 @@ proc globalDotDomain(a: [A.domain] int, b: [A.domain] int){
   writeln(a);
 }
 
-proc globalDomain(a: [D] int, b: [D] int){
+proc globalDomain(ref a: [D] int, b: [D] int){
   forall (i, loopIdx) in zip(A.domain, 1..) {
     a[i] += 
       b[i] * loopIdx;

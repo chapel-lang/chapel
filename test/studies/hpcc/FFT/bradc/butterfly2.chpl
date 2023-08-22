@@ -1,5 +1,5 @@
 proc butterfly(wk1: complex, wk2: complex, wk3: complex, 
-              abcd: [?D] complex) {
+              ref abcd: [?D] complex) {
   const a = D.low,
         b = a + D.stride,
         c = b + D.stride,

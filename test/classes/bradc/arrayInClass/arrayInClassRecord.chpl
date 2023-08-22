@@ -24,7 +24,7 @@ writeln("myR is: ", myR);
 baz(myC, 20);
 writeln("myC is: ", myC);
 
-proc foo(x,y) {
+proc foo(ref x,y) {
   x(1) = y;
 }
 

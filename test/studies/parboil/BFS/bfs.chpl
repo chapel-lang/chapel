@@ -14,7 +14,7 @@ enum Color {
   white, gray, black
 }
 
-proc bfs(nodes: [] Node, edges: [] Edge, colors: [] Color, costs: [] int(32), source: int(32)) {
+proc bfs(nodes: [] Node, edges: [] Edge, ref colors: [] Color, ref costs: [] int(32), source: int(32)) {
   use Deque;
   var wavefront = new deque(int(32));
   wavefront.pushBack(source);

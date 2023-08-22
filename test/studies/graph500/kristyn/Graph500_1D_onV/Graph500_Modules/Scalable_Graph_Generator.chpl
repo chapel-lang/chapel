@@ -63,7 +63,7 @@ module Scalable_Graph_Generator
 // this to allocate additional arrays using the same distribution
 
   proc Scalable_Data_Generator ( SCALE :int, N_VERTICES : int,
-                                n_raw_edges : int, Edges:[?ArrD] )
+                                n_raw_edges : int, ref Edges:[?ArrD] )
   {
       use BlockDist;
       // use Graph500_defs;

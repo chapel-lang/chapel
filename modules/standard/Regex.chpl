@@ -735,7 +735,8 @@ record regex {
   }
 
   @chpldoc.nodoc
-  proc _handle_captures(text: exprType, matches:c_array(qio_regex_string_piece_t, ?nmatches),
+  proc _handle_captures(text: exprType,
+                        ref matches:c_array(qio_regex_string_piece_t, ?nmatches),
                         ref captures) {
     assert(nmatches >= captures.size);
     for param i in 0..captures.size-1 {

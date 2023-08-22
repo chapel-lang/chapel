@@ -4,7 +4,7 @@ use MemMove;
 // - rank-changes
 // - reindexes
 
-proc testTwo(A: [], B: []) {
+proc testTwo(ref A: [], B: []) {
   try {
     moveArrayElements(A, B);
   } catch e: IllegalArgumentError {
@@ -14,7 +14,7 @@ proc testTwo(A: [], B: []) {
   }
 }
 
-proc testFour(A: [], regionA, B: [], regionB) {
+proc testFour(ref A: [], regionA, B: [], regionB) {
   try {
     moveArrayElements(A, regionA, B, regionB);
   } catch e: IllegalArgumentError {

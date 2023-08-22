@@ -497,7 +497,7 @@ Procedures
 ----------
 */
 
-// Chapel procedures have similar syntax functions in other languages.
+// Chapel procedures have similar syntax to functions in other languages.
 proc fibonacci(n : int) : int {
   if n <= 1 then return n;
   return fibonacci(n-1) + fibonacci(n-2);
@@ -540,7 +540,7 @@ writeln(defaultsProc(y=9.876, x=13));
 // For example, taking arrays as parameters. The query operator is used to
 // determine the domain of ``A``. This is useful for defining the return type,
 // though it's not required.
-proc invertArray(A: [?D] int): [D] int{
+proc invertArray(ref A: [?D] int): [D] int{
   for a in A do a = -a;
   return A;
 }
@@ -632,7 +632,7 @@ writeln("Outside After: ", (inVar, outVar, inoutVar, refVar));
 // ``refElement`` returns a reference to an element of array.
 // This makes more practical sense for class methods where references to
 // elements in a data-structure are returned via a method or iterator.
-proc refElement(array : [?D] ?T, idx) ref : T {
+proc refElement(ref array : [?D] ?T, idx) ref : T {
   return array[idx];
 }
 

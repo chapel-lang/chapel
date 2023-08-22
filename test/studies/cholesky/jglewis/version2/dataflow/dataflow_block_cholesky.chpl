@@ -62,7 +62,7 @@ module dataflow_block_cholesky {
       transposed_block_triangular_solve,
       scalar_inner_product_cholesky;
 
-  proc dataflow_block_cholesky ( A : [] )
+  proc dataflow_block_cholesky ( ref A : [] )
 
     where ( A.domain.rank == 2 ) {
 
@@ -199,7 +199,7 @@ module dataflow_block_cholesky {
 
 
     proc compute_subdiagonal_block_launch_Schur_complement
-      ( LII_rows, LII_cols, LJlaterKI_rows, LJlaterKI_cols, A : [], later_rows ) {
+      ( LII_rows, LII_cols, LJlaterKI_rows, LJlaterKI_cols, ref A : [], later_rows ) {
 
       // block indices for offdiagonal block
 
@@ -254,7 +254,7 @@ module dataflow_block_cholesky {
     // to a diagonal subblock.
     // ====================================================
 
-    proc modify_Schur_complement_diagonal_block ( LJJ_rows, LJJ_cols, A : [] ) {
+    proc modify_Schur_complement_diagonal_block ( LJJ_rows, LJJ_cols, ref A : [] ) {
 
       // block indices for offdiagonal block
 
@@ -300,7 +300,8 @@ module dataflow_block_cholesky {
     // ====================================================
 
     proc modify_Schur_complement_off_diagonal_block
-                                             ( LKI_rows, LKI_cols, LJI_rows, LJI_cols, A : [] ) {
+                                             ( LKI_rows, LKI_cols, LJI_rows, LJI_cols,
+                                               ref A : [] ) {
 
       // block indices for pair of offdiagonal blocks
 

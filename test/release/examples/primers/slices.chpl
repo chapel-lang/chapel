@@ -125,7 +125,7 @@ iter blockIter(vec:range,blk) {
   This procedure sets each element of ``A`` to be the value of its
   row index.
 */
-proc initBlock(A) {
+proc initBlock(ref A) {
   for (i,j) in A.domain {
     A(i,j) = i;
   }
@@ -136,7 +136,7 @@ proc initBlock(A) {
   be ``{1..blk,1..blk}``.  It sets each element of ``A`` to be
   the value of its row index.
 */
-proc initBlock2(A: [1..blk,1..blk]) {
+proc initBlock2(ref A: [1..blk,1..blk]) {
   for (i,j) in A.domain {
     A(i,j) = i;
   }

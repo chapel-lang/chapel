@@ -25,7 +25,7 @@ proc h(i:int, x) : int {
   return g(i-1, x);
 }
 
-proc fset(i:int, x) : int {
+proc fset(i:int, ref x) : int {
   if i==3 then
     x[1] = 1;
   if i<=0 then
@@ -33,12 +33,12 @@ proc fset(i:int, x) : int {
   return fset(i-1, x);
 }
 
-proc gset(i:int, x) : int {
+proc gset(i:int, ref x) : int {
   if i<=0 then
     return 0;
   return hset(i-1, x);
 }
-proc hset(i:int, x) : int {
+proc hset(i:int, ref x) : int {
   if i==3 then
     x[1] = 1;
   return g(i-1, x);

@@ -27,7 +27,7 @@ proc simpleDistMultiply(
     blkSize : int,
     A : [?localesDom] WrappedArray,
     B : [localesDom] WrappedArray,
-    C : [localesDom] WrappedArray,
+    ref C : [localesDom] WrappedArray,
     myLocales : [localesDom] locale)
 {
     // Every locale needs a copy of the blocks of A in the same locale-row and

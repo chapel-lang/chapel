@@ -64,7 +64,7 @@ proc initProblemSize() {
 
 // read/compute the coordinates
 
-proc initCoordinates(XYZ) {
+proc initCoordinates(ref XYZ) {
   if (initFromFile) {
     for (x,y,z) in XYZ do
       reader.read(x, y, z);
@@ -85,7 +85,7 @@ proc initCoordinates(XYZ) {
 
 // read/compute the element-to-node mapping
 
-proc initElemToNodeMapping(elemToNode: [?D]) {
+proc initElemToNodeMapping(ref elemToNode: [?D]) {
   if (initFromFile) {
     param nodesPerElem = elemToNode[D.low].size;
     for nodelist in elemToNode do 
@@ -122,7 +122,7 @@ proc initElemToNodeMapping(elemToNode: [?D]) {
 
 // read/compute the greek variables
 
-proc initGreekVars(lxim, lxip, letam, letap, lzetam, lzetap) {
+proc initGreekVars(ref lxim, ref lxip, ref letam, ref letap, ref lzetam, ref lzetap) {
   if (initFromFile) {
     for (xm,xp,em,ep,zm,zp) in zip(lxim, lxip, letam, letap, lzetam, lzetap) do
       reader.read(xm,xp,em,ep,zm,zp);

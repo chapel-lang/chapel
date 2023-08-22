@@ -59,7 +59,7 @@ module block_bordering_cholesky {
   // block rows and columns (I+1..).
   // =========================================================================
     
-  proc block_bordering_cholesky ( A : [] )  
+  proc block_bordering_cholesky ( ref A : [] )  
 
     where ( A.domain.rank == 2 ) {
 

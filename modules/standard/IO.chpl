@@ -6753,7 +6753,7 @@ proc fileReader.readHelper(ref args ...?k, style:iostyleInternal):bool throws {
   :returns: true if the bytes were read without error.
 */
 @deprecated(notes="fileReader.readline is deprecated. Use :proc:`fileReader.readLine` instead")
-proc fileReader.readline(arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
+proc fileReader.readline(ref arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
                       amount = arg.domain.highBound - start + 1) : bool throws
                       where arg.rank == 1 && arg.isRectangular() {
   if arg.size == 0 || !arg.domain.contains(start) ||

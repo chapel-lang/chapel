@@ -181,7 +181,7 @@ proc sad4CPU(blkSad: [] uint(16), frame: [] uint(16), reference: [] uint(16), wi
   }
 }
 
-proc sad4OneMacroblock(macroblockSad: [] uint(16), frame: [] uint(16), reference: [] uint(16), framey: int, framex: int, mbWidth: int, mbHeight: int) {
+proc sad4OneMacroblock(ref macroblockSad: [] uint(16), frame: [] uint(16), reference: [] uint(16), framey: int, framex: int, mbWidth: int, mbHeight: int) {
   var pos = 0;
   var width = mbWidth * 16;
   var height = mbHeight * 16;
