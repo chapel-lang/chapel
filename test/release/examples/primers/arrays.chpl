@@ -158,9 +158,10 @@ negateAndPrintArr(B);
 
 //
 // Arrays are passed to routines by constant reference (``const ref``) by
-// default, so for the modification to ``X`` in procedure
-// ``negateAndPrintArr()`` to be legal and reflected back to the actual argument
-// ``B``  the explicit ``ref`` must be used.
+// default, which does not allow them to be modified within the routine.
+// The above procedure ``negateAndPrintArr()`` must use a non-constant
+// reference intent (``ref``) explicitly, so that its modifications of ``X``
+// are both allowed and reflected in the actual argument ``B``:
 //
 
 writeln("After calling negateAndPrintArr, B is:\n", B, "\n");

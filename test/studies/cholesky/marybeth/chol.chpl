@@ -27,7 +27,7 @@ proc main() {
 
   chol(A);
 
-writeln("Factored Matrix:");
+  writeln("Factored Matrix:");
   writelower(A);
   writeln();
 }

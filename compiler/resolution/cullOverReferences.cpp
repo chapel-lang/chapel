@@ -460,6 +460,55 @@ void markSymbolConst(Symbol* sym)
     sym->addFlag(FLAG_CONST);
   }
 }
+
+static void maybeIssueRefMaybeConstWarning(ArgSymbol* arg) {
+  bool isArgThis = arg->hasFlag(FLAG_ARG_THIS);
+  // this is still being used for tuples assignment
+  bool fromPragma = arg->hasFlag(FLAG_INTENT_REF_MAYBE_CONST_FORMAL);
+
+  bool isCompilerGenerated = false;
+
+  bool isTaskIntent = false;
+  if (FnSymbol* fn = arg->getFunction()) {
+    isTaskIntent = fn->hasEitherFlag(FLAG_COBEGIN_OR_COFORALL, FLAG_BEGIN);
+
+    isCompilerGenerated = fn->hasFlag(FLAG_COMPILER_GENERATED);
+  }
+
+  // we have full control here, but this should be ok
+  bool isOuter = arg->hasFlag(FLAG_OUTER_VARIABLE);
+
+  bool notImplementedYetOptOut = isArgThis || isTaskIntent;
+
+
+  bool shouldWarn = !notImplementedYetOptOut && !isOuter && !fromPragma && !isCompilerGenerated;
+
+  if (shouldWarn) {
+    IntentTag defaultIntent = blankIntentForType(arg->type);
+    // if default intent is not ref-maybe-const, do nothing
+    if(defaultIntent != INTENT_REF_MAYBE_CONST) shouldWarn = false;
+  }
+
+  if (shouldWarn) {
+
+    const char* argName = nullptr;
+    char argBuffer[64];
+    if (!arg->hasFlag(FLAG_EXPANDED_VARARGS)) {
+      argName = arg->name;
+    } else {
+      int varArgNum;
+      int ret = sscanf(arg->name, "_e%d_%63s", &varArgNum, argBuffer);
+      CHPL_ASSERT(ret == 2);
+      argName = argBuffer;
+    }
+
+    USR_WARN(arg,
+              "inferring a default intent to be 'ref' is deprecated "
+              "- please use an explicit intent for the argument '%s'",
+              argName);
+  }
+}
+
 static
 void markSymbolNotConst(Symbol* sym)
 {
@@ -472,54 +521,7 @@ void markSymbolNotConst(Symbol* sym)
   INT_ASSERT(!sym->qualType().isConst());
   if (arg && arg->intent == INTENT_REF_MAYBE_CONST) {
 
-    bool isArgThis = arg->hasFlag(FLAG_ARG_THIS);
-    // this is still being used for tuples assignment
-    bool fromPragma = arg->hasFlag(FLAG_INTENT_REF_MAYBE_CONST_FORMAL);
-
-    bool isCompilerGenerated = false;
-
-    bool isTaskIntent = false;
-    if (FnSymbol* fn = arg->getFunction()) {
-      isTaskIntent = fn->hasEitherFlag(FLAG_COBEGIN_OR_COFORALL, FLAG_BEGIN);
-
-      isCompilerGenerated = fn->hasFlag(FLAG_COMPILER_GENERATED);
-    }
-
-    // we have full control here, but this should be ok
-    bool isOuter = arg->hasFlag(FLAG_OUTER_VARIABLE);
-
-    bool notImplementedYetOptOut = isArgThis || isTaskIntent;
-
-
-    bool shouldWarn = !notImplementedYetOptOut && !isOuter && !fromPragma && !isCompilerGenerated;
-
-    if (shouldWarn) {
-      IntentTag defaultIntent = blankIntentForType(arg->type);
-      // if default intent is not ref-maybe-const, do nothing
-      if(defaultIntent != INTENT_REF_MAYBE_CONST) shouldWarn = false;
-    }
-
-    if (shouldWarn) {
-
-      const char* intentName = isTaskIntent ? "task" : (isArgThis ? "this" : "argument");
-
-      const char* argName = nullptr;
-      char argBuffer[64];
-      if (!arg->hasFlag(FLAG_EXPANDED_VARARGS)) {
-        argName = arg->name;
-      } else {
-        int varArgNum;
-        int ret = sscanf(arg->name, "_e%d_%63s", &varArgNum, argBuffer);
-        CHPL_ASSERT(ret == 2);
-        argName = argBuffer;
-      }
-
-      USR_WARN(arg,
-               "inferring a default %s intent to be 'ref' for '%s' is deprecated "
-               "- please use an explicit intent",
-               intentName,
-               argName);
-    }
+    maybeIssueRefMaybeConstWarning(arg);
 
     arg->intent = INTENT_REF;
   }

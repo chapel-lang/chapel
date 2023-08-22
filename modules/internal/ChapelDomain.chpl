@@ -2110,7 +2110,7 @@ module ChapelDomain {
       return _value.dsiBulkAdd(inds, dataSorted, isUnique, addOn);
     }
 
-    @unstable("bulkAdd() is subject to change in the future.")
+    @unstable("bulkAddNoPreserveInds() is subject to change in the future.")
     proc ref bulkAddNoPreserveInds(ref inds: [] _value.rank*_value.idxType,
         dataSorted=false, isUnique=false, addOn=nilLocale)
         where this.isSparse() && _value.rank>1 {

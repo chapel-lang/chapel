@@ -497,7 +497,7 @@ Procedures
 ----------
 */
 
-// Chapel procedures have similar syntax functions in other languages.
+// Chapel procedures have similar syntax to functions in other languages.
 proc fibonacci(n : int) : int {
   if n <= 1 then return n;
   return fibonacci(n-1) + fibonacci(n-2);
