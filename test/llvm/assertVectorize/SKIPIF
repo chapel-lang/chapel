@@ -2,6 +2,8 @@
 COMPOPTS <= --fast
 # throws off loop attributes
 COMPOPTS <= --baseline
+# verify should not affect opt, but test fails with it
+COMPOPTS <= --verify
 # mem libcalls throw off opt
 EXECOPTS <= --memLeaks
 # COMM throws off opt
