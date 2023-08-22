@@ -2831,6 +2831,11 @@ void runClang(const char* just_parse_filename) {
     // Need to select CUDA/AMD mode in embedded clang to
     // activate the GPU target
     splitStringWhitespace(generateClangGpuLangArgs(), clangOtherArgs);
+
+    if (gpuArches.size() == 1) {
+      std::string archFlag = std::string("--offload-arch=") + *gpuArches.begin();
+      clangOtherArgs.push_back(archFlag);
+    }
   }
 
   // Always include sys_basic because it might change the
@@ -4583,6 +4588,11 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
                                  const std::string& outFilename,
                                  const std::string& fatbinFilename)
 {
+  // Note: this is currently implemented as a loop over all the specified
+  // GPU architectures. However, at present, we don't have a good way to
+  // generate artifacts per-target to be fed to llvm-mc and clang-offload-bundler.
+  // So this loop should run exactly one iteration.
+
   std::string targets;
   std::string inputs;
   for (auto& gpuArch : gpuArches) {
