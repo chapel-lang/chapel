@@ -1507,9 +1507,13 @@ static void populateEnvMap() {
 
   // Call printchplenv and collect output into a map
   auto chplEnvResult = chpl::getChplEnv(envMap, CHPL_HOME);
-  if (auto err = chplEnvResult.getError()) {
-    USR_FATAL("failed to get output from printchplenv, error: %s",
-              err.message().c_str());
+  if (!chplEnvResult) {
+    if (auto err = chplEnvResult.getError()) {
+      USR_FATAL("failed to get output from printchplenv, error: %s",
+                err.message().c_str());
+    } else {
+      USR_FATAL("failed to get output from printchplenv");
+    }
   }
 
   // figure out if it's a Cray programing environment so we can infer
