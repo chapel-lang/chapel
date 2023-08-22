@@ -236,6 +236,7 @@ module ChapelSyncvar {
 
     :returns: The value of the ``sync`` variable.
   */
+  @unstable("'readXX' is unstable")
   proc _syncvar.readXX() {
     // Yield to allow readXX in a loop to make progress
     currentTask.yieldExecution();
@@ -260,6 +261,7 @@ module ChapelSyncvar {
 
     :arg val: New value of the ``sync`` variable.
   */
+  @unstable("'writeFF' is unstable")
   proc _syncvar.writeFF(in val : valType) {
     wrapped.writeFF(val);
   }
@@ -271,6 +273,7 @@ module ChapelSyncvar {
 
     :arg val: New value of the ``sync`` variable.
   */
+  @unstable("'writeXF' is unstable")
   proc _syncvar.writeXF(in val : valType) {
     wrapped.writeXF(val);
   }
@@ -280,6 +283,7 @@ module ChapelSyncvar {
     its type. This method is non-blocking and the state of the ``sync``
     variable is set to empty when this method completes.
   */
+  @unstable("'reset' is unstable")
   proc _syncvar.reset() {
     wrapped.reset();
   }
@@ -290,6 +294,7 @@ module ChapelSyncvar {
 
     :returns: ``true`` if the state of the ``sync`` variable is full, ``false`` if it's empty.
   */
+  @unstable("'isFull' is unstable")
   proc _syncvar.isFull {
     return wrapped.isFull;
   }
@@ -799,6 +804,7 @@ module ChapelSyncvar {
   pragma "single"
   pragma "default intent is ref"
   @chpldoc.nodoc
+  @unstable("'single' variables are unstable")
   record _singlevar {
     type valType;                              // The compiler knows this name
 
@@ -884,6 +890,7 @@ module ChapelSyncvar {
 
     :returns: The value of the ``single`` variable.
   */
+  @unstable("'single' variables are unstable")
   proc _singlevar.readFF() {
     return wrapped.readFF();
   }
@@ -899,6 +906,7 @@ module ChapelSyncvar {
 
     :returns: The value of the ``single`` variable.
   */
+  @unstable("'single' variables are unstable")
   proc _singlevar.readXX() {
     // Yield to allow readXX in a loop to make progress
     currentTask.yieldExecution();
@@ -912,6 +920,7 @@ module ChapelSyncvar {
 
     :arg val: New value of the single variable.
   */
+  @unstable("'single' variables are unstable")
   proc _singlevar.writeEF(in val : valType) {
     wrapped.writeEF(val);
   }
@@ -922,6 +931,7 @@ module ChapelSyncvar {
 
      :returns: ``true`` if the state of the ``single`` variable is full, ``false`` if it's empty.
   */
+  @unstable("'single' variables are unstable")
   proc _singlevar.isFull {
     return wrapped.isFull;
   }
