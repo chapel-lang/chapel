@@ -103,7 +103,10 @@ def check_pascal_case(node):
     return re.fullmatch(r'_?(([A-Z][a-z]+|\d+)+|[A-Z]+)\$?', name_for_linting(node))
 
 def check_reserved_prefix(node):
-    return not node.name().startswith("chpl")
+    if node.name().startswith("chpl_"):
+        path = node.location().path()
+        return ctx.is_bundled_path(path)
+    return True
 
 def check_redundant_block(node):
     return node.block_style() != "unnecessary"

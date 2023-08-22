@@ -293,8 +293,26 @@ static PyObject* ContextObject_parse(ContextObject *self, PyObject* args) {
   return topExprs;
 }
 
+static PyObject* ContextObject_is_bundled_path(ContextObject *self, PyObject* args) {
+  auto context = &self->context;
+  const char* fileName;
+  if (!PyArg_ParseTuple(args, "s", &fileName)) {
+    PyErr_BadArgument();
+    return nullptr;
+  }
+  auto pathUS = chpl::UniqueString::get(context, fileName);
+
+  bool isInternalPath =
+    chpl::parsing::filePathIsInInternalModule(context, pathUS) ||
+    chpl::parsing::filePathIsInStandardModule(context, pathUS) ||
+    chpl::parsing::filePathIsInBundledModule(context, pathUS);
+
+  return PyBool_FromLong(isInternalPath);
+}
+
 static PyMethodDef ContextObject_methods[] = {
   { "parse", (PyCFunction) ContextObject_parse, METH_VARARGS, "Parse a top-level AST node from the given file" },
+  { "is_bundled_path", (PyCFunction) ContextObject_is_bundled_path, METH_VARARGS, "Check if the given file path is within the bundled (built-in) Chapel files" },
   {NULL, NULL, 0, NULL}  /* Sentinel */
 };
 
