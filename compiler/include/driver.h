@@ -266,7 +266,7 @@ extern char fGpuArch[gpuArchNameLen+1];
 extern bool fGpuPtxasEnforceOpt;
 extern bool fGpuSpecialization;
 extern const char* gGpuSdkPath;
-extern std::unordered_set<std::string> gpuArches;
+extern std::set<std::string> gpuArches;
 
 extern char stopAfterPass[128];
 

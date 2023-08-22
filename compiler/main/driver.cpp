@@ -366,7 +366,7 @@ char fGpuArch[gpuArchNameLen+1] = "";
 bool fGpuPtxasEnforceOpt;
 bool fGpuSpecialization = false;
 const char* gGpuSdkPath = NULL;
-std::unordered_set<std::string> gpuArches;
+std::set<std::string> gpuArches;
 
 chpl::Context* gContext = nullptr;
 std::vector<std::pair<std::string, std::string>> gDynoParams;

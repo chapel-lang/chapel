@@ -2832,7 +2832,7 @@ void runClang(const char* just_parse_filename) {
     // activate the GPU target
     splitStringWhitespace(generateClangGpuLangArgs(), clangOtherArgs);
 
-    if (gpuArches.size() == 1) {
+    if (gpuArches.size() >= 1) {
       std::string archFlag = std::string("--offload-arch=") + *gpuArches.begin();
       clangOtherArgs.push_back(archFlag);
     }
