@@ -308,7 +308,7 @@ module BigInteger {
     pragma "last resort"
     @deprecated("the argument name 'str' is deprecated - please use 'x' instead")
     proc init(str: string, base: int = 0) throws where bigintInitThrows == true
-      do this.init(num);
+      do try! this.init(str, base);
 
     @deprecated(notes="bigint initializers that halt are deprecated, please set the config param :param:`bigintInitThrows` to 'true' to opt in to using the new initializer that throws")
     proc init(str: string, base: int = 0) where bigintInitThrows == false {
