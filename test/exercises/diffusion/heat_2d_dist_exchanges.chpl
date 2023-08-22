@@ -54,15 +54,15 @@ record localArray {
 }
 
 // set up an arrays of local arrays over same distribution as 'u.targetLocales'
-var LOCALE_DOM = Block.createDomain(u.targetLocales().domain);
-var uTaskLocal, unTaskLocal: [LOCALE_DOM] localArray;
+var OnePerLocale = Block.createDomain(u.targetLocales().domain);
+var uTaskLocal, unTaskLocal: [OnePerLocale] localArray;
 
 proc main() {
   if RunCommDiag then startCommDiagnostics();
 
   // solve, spawning one task for each locale
   t.start();
-  coforall (loc, (tidX, tidY)) in zip(u.targetLocales(), LOCALE_DOM) {
+  coforall (loc, (tidX, tidY)) in zip(u.targetLocales(), OnePerLocale) {
     // run initialization and computation on the task for this locale
     on loc do work(tidX, tidY);
   }
@@ -129,8 +129,8 @@ proc work(tidX: int, tidY: int) {
     // compute the FD kernel in parallel
     foreach (i, j) in localIndicesInner do
       unLocal[i, j] = uLocal[i, j] + alpha * (
-          uLocal[i-1, j] + uLocal[i+1, j] +
-          uLocal[i, j-1] + uLocal[i, j+1] -
+          uLocal[i-1, j] + uLocal[i, j-1] +
+          uLocal[i+1, j] + uLocal[i, j+1] -
           4 * uLocal[i, j]
         );
 

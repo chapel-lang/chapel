@@ -57,7 +57,7 @@ for 1..nt {
   // compute the FD kernel in parallel
   forall (i, j) in IndicesInner do
     u[i, j] = un[i, j] + alpha *
-      (un[i, j-1] + un[i-1, j] + un[i+1, j] + un[i, j+1] - 4 * un[i, j]);
+      (un[i-1, j-1] + un[i, j-1] + un[i+1, j] + un[i, j+1] - 4 * un[i, j]);
 }
 t.stop();
 
