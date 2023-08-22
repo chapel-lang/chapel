@@ -2113,3 +2113,68 @@ where !disableStencilDistBulkTransfer {
 }
 
 override proc StencilArr.doiCanBulkTransferRankChange() param do return true;
+
+
+proc StencilArr.canDoOptimizedSwap(other) {
+  var domsMatch = true;
+
+  if this.dom != other.dom { // no need to check if this is true
+    if domsMatch {
+      for param i in 0..this.dom.rank-1 {
+        if this.dom.whole.dim(i) != other.dom.whole.dim(i) {
+          domsMatch = false;
+        }
+      }
+    }
+  }
+
+  if domsMatch {
+    // distributions must be equal, too
+    return this.dom.dist.dsiEqualDMaps(other.dom.dist);
+  }
+  return false;
+}
+
+// A helper routine that will perform a pointer swap on an array
+// instead of doing a deep copy of that array. Returns true
+// if used the optimized swap, false otherwise
+//
+// TODO: stridability causes issues with RAD swap, and somehow isn't captured by
+// the formal type when we check whether this resolves.
+proc StencilArr.doiOptimizedSwap(other: this.type)
+  where this.strides == other.strides {
+
+  if(canDoOptimizedSwap(other)) {
+    if debugOptimizedSwap {
+      writeln("StencilArr doing optimized swap. Domains: ",
+              this.dom.whole, " ", other.dom.whole, " Bounding boxes: ",
+              this.dom.dist.boundingBox, " ", other.dom.dist.boundingBox);
+    }
+    coforall (locarr1, locarr2) in zip(this.locArr, other.locArr) {
+      on locarr1 {
+        locarr1.myElems <=> locarr2.myElems;
+        locarr1.locRAD <=> locarr2.locRAD;
+      }
+    }
+    return true;
+  } else {
+    if debugOptimizedSwap {
+      writeln("StencilArr doing unoptimized swap. Domains: ",
+              this.dom.whole, " ", other.dom.whole, " Bounding boxes: ",
+              this.dom.dist.boundingBox, " ", other.dom.dist.boundingBox);
+    }
+    return false;
+  }
+}
+
+
+// The purpose of this overload is to provide debugging output in the event that
+// debugOptimizedSwap is on and the main routine doesn't resolve (e.g., due to a
+// type, stridability, or rank mismatch in the other argument). When
+// debugOptimizedSwap is off, this overload will be ignored due to its where
+// clause.
+pragma "last resort"
+proc StencilArr.doiOptimizedSwap(other) where debugOptimizedSwap {
+  writeln("StencilArr doing unoptimized swap. Type mismatch");
+  return false;
+}
