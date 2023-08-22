@@ -1509,10 +1509,10 @@ static void populateEnvMap() {
   auto chplEnvResult = chpl::getChplEnv(envMap, CHPL_HOME);
   if (!chplEnvResult) {
     if (auto err = chplEnvResult.getError()) {
-      USR_FATAL("failed to get output from printchplenv, error: %s",
+      USR_FATAL("failed to get environment settings (error while running printchplenv: %s)",
                 err.message().c_str());
     } else {
-      USR_FATAL("failed to get output from printchplenv");
+      USR_FATAL("failed to get environment settings");
     }
   }
 
