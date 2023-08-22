@@ -25,15 +25,15 @@ config const nx = 256,      // number of grid points in x
              ny = 256,      // number of grid points in y
              nt = 50,       // number of time steps
              alpha = 0.25,  // diffusion constant
-             solutionStd = 0.222751; // know solution for the default parameters
+             solutionStd = 0.222751; // known solution for the default parameters
 
 // define distributed domains and block-distributed array
 const indices = {0..<nx, 0..<ny},
       indicesInner = indices.expand(-1),
       Indices = Block.createDomain(indices);
 
-// define a distributed 2D array over the above domain
-var u: [Indices] real;
+// define distributed 2D arrays over the above domain
+var u, un: [Indices] real = 1.0;
 
 // apply initial conditions
 u = 1.0;
@@ -105,51 +105,74 @@ proc work(tidX: int, tidY: int) {
         localIndicesBuffered = localIndices.expand(1),
         localIndicesInner = localIndices[indicesInner];
 
-	// declare two local arrays for computation on this locale
-  var uLocal1, uLocal2: [localIndicesBuffered] real = 1;
-
-  // populate local arrays with initial conditions from global array
-  uLocal1[localIndices] = u[localIndices];
-  uLocal2 = uLocal1;
-
-  // define constants for indexing into edges of local array
-  const WW = localIndicesBuffered.dim(1).low,
-        EE = localIndicesBuffered.dim(1).high,
-        SS = localIndicesBuffered.dim(0).high,
-        NN = localIndicesBuffered.dim(0).low;
+  // define constants for indexing into edges of this tasks's region
+  const wEdge = localIndices.dim(1).low,
+        eEdge = localIndices.dim(1).high,
+        sEdge = localIndices.dim(0).high,
+        nEdge = localIndices.dim(0).low;
 
   // iterate for 'nt' time steps
   for 1..nt {
     // store results from last iteration in neighboring task's halo buffers
-    if tidY > 0       then HaloArrays[tidX, tidY-1][E].v = uLocal2[.., WW+1];
-    if tidY < tidYMax then HaloArrays[tidX, tidY+1][W].v = uLocal2[.., EE-1];
-    if tidX > 0       then HaloArrays[tidX-1, tidY][S].v = uLocal2[NN+1, ..];
-    if tidX < tidXMax then HaloArrays[tidX+1, tidY][N].v = uLocal2[SS-1, ..];
+    if tidY > 0       then HaloArrays[tidX, tidY-1][E].v = u[.., wEdge];
+    if tidY < tidYMax then HaloArrays[tidX, tidY+1][W].v = u[.., eEdge];
+    if tidX > 0       then HaloArrays[tidX-1, tidY][S].v = u[nEdge, ..];
+    if tidX < tidXMax then HaloArrays[tidX+1, tidY][N].v = u[sEdge, ..];
 
     // synchronize with other tasks
     b.barrier();
 
-    // populate edges of local array from halo buffers
-    if tidY > 0       then uLocal2[.., WW] = HaloArrays[tidX, tidY][W].v;
-    if tidY < tidYMax then uLocal2[.., EE] = HaloArrays[tidX, tidY][E].v;
-    if tidX > 0       then uLocal2[NN, ..] = HaloArrays[tidX, tidY][N].v;
-    if tidX < tidXMax then uLocal2[SS, ..] = HaloArrays[tidX, tidY][S].v;
-
     // swap local arrays
-    uLocal1 <=> uLocal2;
+    if tidX == 0 && tidY == 0 then u <=> un;
 
     // compute the FD kernel in parallel
-    forall (i, j) in localIndicesInner do
-      uLocal2[i, j] = uLocal1[i, j] + alpha * (
-        uLocal1[i-1, j] + uLocal1[i, j-1] +
-        uLocal1[i+1, j] + uLocal1[i, j+1] -
-        4 * uLocal1[i, j]
+    forall (i, j) in localIndicesInner.expand(-1) do
+      u.localAccess[i, j] = un.localAccess[i, j] + alpha * (
+        un.localAccess[i-1, j] + un.localAccess[i, j-1] +
+        un.localAccess[i+1, j] + un.localAccess[i, j+1] -
+        4 * un.localAccess[i, j]
       );
+
+    // North
+    if tidX > 0 {
+      forall j in localIndicesInner.dim(1) do
+        u.localAccess[nEdge, j] = un.localAccess[nEdge, j] + alpha * (
+          HaloArrays[tidX, tidY][N].v[j] + un.localAccess[nEdge, j-1] +
+          un.localAccess[nEdge+1, j]     + un.localAccess[nEdge, j+1] -
+          4 * un.localAccess[nEdge, j]
+        );
+    }
+
+    // South
+    if tidX < tidXMax {
+      forall j in localIndicesInner.dim(1) do
+        u.localAccess[sEdge, j] = un.localAccess[sEdge, j] + alpha * (
+          un.localAccess[sEdge-1, j]     + un.localAccess[sEdge, j-1] +
+          HaloArrays[tidX, tidY][S].v[j] + un.localAccess[sEdge, j+1] -
+          4 * un.localAccess[sEdge, j]
+        );
+    }
+
+    // East
+    if tidY < tidYMax {
+      forall i in localIndicesInner.dim(0) do
+        u.localAccess[i, eEdge] = un.localAccess[i, eEdge] + alpha * (
+          un.localAccess[i-1, eEdge] + un.localAccess[i, eEdge-1] +
+          un.localAccess[i+1, eEdge] + HaloArrays[tidX, tidY][E].v[i] -
+          4 * un.localAccess[i, eEdge]
+        );
+    }
+
+    // West
+    if tidY > 0 {
+      forall i in localIndicesInner.dim(0) do
+        u.localAccess[i, wEdge] = un.localAccess[i, wEdge] + alpha * (
+          un.localAccess[i-1, wEdge] + HaloArrays[tidX, tidY][W].v[i] +
+          un.localAccess[i+1, wEdge] + un.localAccess[i, wEdge+1] -
+          4 * un.localAccess[i, wEdge]
+        );
+    }
 
     b.barrier();
   }
-
-  // store results in global array
-  uLocal1 <=> uLocal2;
-  u[localIndices] = uLocal1[localIndices];
 }

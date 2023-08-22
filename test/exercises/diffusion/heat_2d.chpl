@@ -19,7 +19,7 @@ config const nx = 256,      // number of grid points in x
              ny = 256,      // number of grid points in y
              nt = 50,       // number of time steps
              alpha = 0.25,  // diffusion constant
-             solutionStd = 0.222751; // know solution for the default parameters
+             solutionStd = 0.222751; // known solution for the default parameters
 
 // define a 2D domain and subdomain to describe the grid and its interior
 const indices = {0..<nx, 0..<ny},

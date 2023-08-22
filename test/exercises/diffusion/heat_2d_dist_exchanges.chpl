@@ -25,12 +25,14 @@ config const nx = 256,      // number of grid points in x
              ny = 256,      // number of grid points in y
              nt = 50,       // number of time steps
              alpha = 0.25,  // diffusion constant
-             solutionStd = 0.222751; // know solution for the default parameters
+             solutionStd = 0.222751; // known solution for the default parameters
 
 // define distributed domains and block-distributed array
 const indices = {0..<nx, 0..<ny},
       indicesInner = indices.expand(-1),
       Indices = Block.createDomain(indices);
+
+// define distributed 2D arrays over the above domain
 var u: [Indices] real;
 
 // apply initial conditions
