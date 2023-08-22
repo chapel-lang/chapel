@@ -1,6 +1,7 @@
 import chapel
 import chapel.core
 import re
+import sys
 
 def consecutive_decls(node):
     def is_relevant_decl(node):
@@ -15,6 +16,7 @@ def consecutive_decls(node):
     def recurse(node, skip_direct = False):
         consecutive = []
         last_kind = None
+        last_has_attribute = False
 
         for child in node:
             yield from recurse(child, skip_direct = isinstance(child, chapel.core.MultiDecl))
@@ -22,8 +24,11 @@ def consecutive_decls(node):
             if skip_direct: continue
 
             new_kind = is_relevant_decl(child)
-            compatible_kinds = (last_kind is None or last_kind == new_kind)
+            has_attribute = child.attribute_group() is not None
+            any_has_attribute = last_has_attribute or has_attribute
+            compatible_kinds = not any_has_attribute and (last_kind is None or last_kind == new_kind)
             last_kind = new_kind
+            last_has_attribute = has_attribute
 
             # If we ran out of compatible decls, see if we can return them.
             if not compatible_kinds:
@@ -64,7 +69,7 @@ def report_violation(node, name):
     first_line, _ = location.start()
     print("{}:{}: node violates rule {}".format(location.path(), first_line, name))
 
-def check_rule(root, rule):
+def check_basic_rule(root, rule):
     (name, nodetype, func) = rule
     for node in each(root, nodetype):
         if ignores_rule(node, name): continue
@@ -73,22 +78,52 @@ def check_rule(root, rule):
 
 IgnoreAttr = ("chplcheck.ignore", ["rule", "comment"])
 
+def check_nested_coforall(node):
+    parent = node.parent()
+    while parent is not None:
+        if isinstance(parent, chapel.core.Coforall):
+            return False
+        parent = parent.parent()
+    return True
+
+def name_for_linting(node):
+    name = node.name()
+    if name.startswith("chpl_"):
+        name = name.removeprefix("chpl_")
+    return name
+
 def check_camel_case(node):
-    return re.fullmatch(r'[a-z]+([A-Z][a-z]+)*|[A-Z]+', node.name())
+    return re.fullmatch(r'_?([a-z]+([A-Z][a-z]+|\d+)*|[A-Z]+)\$?', name_for_linting(node))
+
+def check_camel_case_var(node):
+    if node.name() == "_": return True
+    return check_camel_case(node)
+
+def check_pascal_case(node):
+    return re.fullmatch(r'_?(([A-Z][a-z]+|\d+)+|[A-Z]+)\$?', name_for_linting(node))
+
+def check_reserved_prefix(node):
+    return not node.name().startswith("chpl")
 
 def check_redundant_block(node):
     return node.block_style() != "unnecessary"
 
 Rules = [
-    ("RequireCamelCase", chapel.core.NamedDecl, check_camel_case),
-    ("KeywordAndBlock", chapel.core.Loop, check_redundant_block)
+    ("CamelCaseVariables", chapel.core.VarLikeDecl, check_camel_case_var),
+    ("CamelCaseRecords", chapel.core.Record, check_camel_case),
+    ("PascalCaseClasses", chapel.core.Class, check_pascal_case),
+    ("PascalCaseModules", chapel.core.Module, check_pascal_case),
+    ("DoKeywordAndBlock", chapel.core.Loop, check_redundant_block),
+    ("NestedCoforalls", chapel.core.Coforall, check_nested_coforall),
+    ("BoolLitInCondStmt", [chapel.core.Conditional, chapel.core.BoolLiteral, chapel.rest], lambda node: False),
+    ("ChplPrefixReserved", chapel.core.NamedDecl, check_reserved_prefix),
 ]
 
 ctx = chapel.core.Context()
-ast = ctx.parse("demo/oneplusone.chpl")
+ast = ctx.parse(sys.argv[1])
 
 for rule in Rules:
-    check_rule(ast, rule)
+    check_basic_rule(ast, rule)
 
 for group in consecutive_decls(ast):
     report_violation(group[1], "ConsecutiveDecls")
