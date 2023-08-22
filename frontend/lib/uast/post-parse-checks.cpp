@@ -1064,6 +1064,7 @@ static bool isNameReservedType(UniqueString name) {
       name == USTR("domain")    ||
       name == USTR("index")     ||
       name == USTR("locale")    ||
+      name == USTR("range")     ||
       name == USTR("nothing")   ||
       name == USTR("void"))
     return true;

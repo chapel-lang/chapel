@@ -81,6 +81,7 @@ X(tuple_         , "_tuple")
 X(uint_          , "uint")
 X(unmanaged      , "unmanaged")
 X(void_          , "void")
+X(range          , "range")
 
 X(atMark         , "@")
 X(equals         , "=")

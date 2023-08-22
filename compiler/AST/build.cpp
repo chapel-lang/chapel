@@ -1589,6 +1589,9 @@ DefExpr* buildClassDefExpr(const char*  name,
   } else if (strcmp("_locale", name) == 0) {
     ct = installInternalType(ct, dtLocale);
     ts = ct->symbol;
+  } else if (strcmp("_range", name) == 0) {
+    ct = installInternalType(ct, dtRange);
+    ts = ct->symbol;
   } else if (strcmp("_object", name) == 0) {
     ct = installInternalType(ct, dtObject);
     ts = ct->symbol;

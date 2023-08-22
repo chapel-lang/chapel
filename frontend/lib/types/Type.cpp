@@ -121,6 +121,10 @@ void Type::gatherBuiltins(Context* context,
   gatherType(context, map, "locale", localeType);
   gatherType(context, map, "_locale", localeType);
 
+  auto rangeType = CompositeType::getRangeType(context);
+  gatherType(context, map, "range", rangeType);
+  gatherType(context, map, "_range", rangeType);
+
   gatherType(context, map, "Error", CompositeType::getErrorType(context));
 
   gatherType(context, map, "domain", DomainType::getGenericDomainType(context));

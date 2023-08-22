@@ -306,6 +306,7 @@ extern AggregateType* dtObject;
 extern AggregateType* dtBytes;
 extern AggregateType* dtString;
 extern AggregateType* dtLocale;
+extern AggregateType* dtRange;
 extern AggregateType* dtOwned;
 extern AggregateType* dtShared;
 
