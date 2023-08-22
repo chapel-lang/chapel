@@ -153,66 +153,10 @@ module BigInteger {
   use OS;
   use ChplConfig only compiledForSingleLocale;
 
-
   /*
    Local copy of IO.EFORMAT as it is being phased out and is private in IO
    */
   private extern proc chpl_macro_int_EFORMAT():c_int;
-
-  @deprecated(notes="The enum Round is deprecated, please use the enum :enum:`roundingMode` instead")
-  enum Round {
-    DOWN = -1,
-    ZERO =  0,
-    UP   =  1
-  }
-
-  /* An enumeration of the different rounding strategies, for use with e.g.
-     :proc:`~BigInteger.divQ` to determine how to round the quotient when performing
-     the computation.
-
-     - ``round.down`` indicates that the quotient should be rounded down towards
-       -infinity and any remainder should have the same sign as the denominator.
-     - ``round.zero`` indicates that the quotient should be rounded towards zero
-       and any remainder should have the same sign as the numerator.
-     - ``round.up`` indicates that the quotient should be rounded up towards
-       +infinity and any remainder should have the opposite sign as the
-       denominator.
-   */
-  @deprecated(notes="enum round is deprecated - please use enum :enum:`roundingMode` instead")
-  enum round {
-    down = -1,
-    zero = 0,
-    up = 1
-  }
-
-
-  /* An enumeration of the different rounding strategies, for use with e.g.
-     :proc:`~BigInteger.div` to determine how to round the quotient when performing
-     the computation.
-
-     - ``roundingMode.down`` indicates that the quotient should be rounded down
-       towards -infinity and any remainder should have the same sign as the
-       denominator.
-     - ``roundingMode.zero`` indicates that the quotient should be rounded
-       towards zero and any remainder should have the same sign as the
-       numerator.
-     - ``roundingMode.up`` indicates that the quotient should be rounded up
-       towards +infinity and any remainder should have the opposite sign as the
-       denominator.
-   */
-  enum roundingMode {
-    down = -1,
-    zero = 0,
-    up = 1
-  }
-
-  proc chpl_roundToRoundingMode(param r) param : roundingMode {
-    use BigInteger.round;
-    if r == down then return roundingMode.down;
-    if r == zero then return roundingMode.zero;
-    if r == up then return roundingMode.up;
-    compilerError("unknown bigint rounding mode");
-  }
 
   /* A compile-time parameter to control the behavior of bigint initializers
      that take a string argument.
@@ -240,6 +184,9 @@ module BigInteger {
     @chpldoc.nodoc
     var localeId : chpl_nodeID_t;      // The locale id for the GMP state
 
+    /*
+      Initializes a :record:`bigint` to an initial value of ``0``.
+    */
     proc init() {
       this.complete();
       mpz_init(this.mpz);
@@ -247,6 +194,12 @@ module BigInteger {
       this.localeId = chpl_nodeID;
     }
 
+    /*
+      Initializes a :record:`bigint` to the value of ``x``.
+
+      :arg x: The value to be stored in the resulting :record:`bigint`.
+      :type x: :record:`bigint`, ``int``, ``uint``
+    */
     proc init(const ref x: bigint) {
       this.complete();
       if compiledForSingleLocale() || x.localeId == chpl_nodeID {
@@ -262,25 +215,7 @@ module BigInteger {
       this.localeId = chpl_nodeID;
     }
 
-    pragma "last resort"
-    @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
-    proc init(const ref num: bigint) {
-      this.complete();
-      if compiledForSingleLocale() || num.localeId == chpl_nodeID {
-        mpz_init_set(this.mpz, num.mpz);
-      } else {
-        var mpz_struct = num.getImpl();
-
-        mpz_init(this.mpz);
-
-        chpl_gmp_get_mpz(this.mpz, num.localeId, mpz_struct);
-      }
-
-      this.localeId = chpl_nodeID;
-    }
-
-    proc init=(const ref x: bigint) do this.init(x);
-
+    /* See :proc:`init` */
     proc init(x: int) {
       this.complete();
       mpz_init_set_si(this.mpz, x.safeCast(c_long));
@@ -288,15 +223,7 @@ module BigInteger {
       this.localeId = chpl_nodeID;
     }
 
-    pragma "last resort"
-    @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
-    proc init(num: int) {
-      this.complete();
-      mpz_init_set_si(this.mpz, num.safeCast(c_long));
-
-      this.localeId = chpl_nodeID;
-    }
-
+    /* See :proc:`init` */
     proc init(x: uint) {
       this.complete();
       mpz_init_set_ui(this.mpz, x.safeCast(c_ulong));
@@ -304,16 +231,84 @@ module BigInteger {
       this.localeId = chpl_nodeID;
     }
 
-    pragma "last resort"
-    @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
-    proc init(num: uint) {
+    /* Initialize a :record:`bigint` from a string and optionally a provided base
+       to use with the string.  If the string is not a correct base ``base``
+       number, will throw a :type:`~OS.BadFormatError`.
+
+       :arg x: The value to be stored in the resulting :record:`bigint`.
+       :type x: :type:`~String.string`
+       :arg base: The base to use when creating the :record:`bigint` from ``x``.
+                  May vary from ``2`` to ``62`` or be ``0``.  Defaults to ``0``,
+                  which causes the base to be read from the start of the ``x``
+                  itself (``0x`` and ``0X`` will give hexadecimal, ``0b`` and
+                  ``0B`` will give binary, ``0`` will give octal, and everything
+                  else will be interpreted as decimal).
+       :type base: ``int``
+
+       :throws BadFormatError: Thrown when ``x`` is not a correctly formatted
+                               number in base ``base``.
+
+     */
+    proc init(x: string, base: int = 0) throws where bigintInitThrows == true {
       this.complete();
-      mpz_init_set_ui(this.mpz, num.safeCast(c_ulong));
+      const ref x_ = x.localize().c_str();
+      const base_ = base.safeCast(c_int);
+
+      if mpz_init_set_str(this.mpz, x_, base_) != 0 {
+        mpz_clear(this.mpz);
+
+        throwingInitWorkaround();
+      }
 
       this.localeId = chpl_nodeID;
     }
 
+    /*
+      Copy initializes a :record:`bigint` to the value of ``x``.
+
+      :arg x: The value to be stored in the resulting :record:`bigint`.
+      :type x: :record:`bigint`, ``integral``
+    */
+    proc init=(const ref x: bigint) do this.init(x);
+
+    /* See :proc:`init=` */
     proc init=(x : integral) do this.init(x);
+
+    pragma "last resort"
+    @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
+    proc init(const ref num: bigint) do this.init(num);
+
+    pragma "last resort"
+    @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
+    proc init(num: int) do this.init(num);
+
+    pragma "last resort"
+    @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
+    proc init(num: uint) do this.init(num);
+
+    /* Initialize a :record:`bigint` from a string and optionally a provided base
+       to use with the string.  If the string is not a correct base ``base``
+       number, will throw a :type:`~OS.BadFormatError`.
+
+       :arg str: The value to be stored in the resulting :record:`bigint`.
+       :type str: `string`
+
+       :arg base: The base to use when creating the :record:`bigint` from ``str``.
+                  May vary from ``2`` to ``62`` or be ``0``.  Defaults to ``0``,
+                  which causes the base to be read from the start of the ``str``
+                  itself (``0x`` and ``0X`` will give hexadecimal, ``0b`` and
+                  ``0B`` will give binary, ``0`` will give octal, and everything
+                  else will be interpreted as decimal).
+       :type base: `int`
+
+       :throws BadFormatError: Thrown when ``str`` is not a correctly formatted
+                               number in base ``base``.
+
+     */
+    pragma "last resort"
+    @deprecated("the argument name 'str' is deprecated - please use 'x' instead")
+    proc init(str: string, base: int = 0) throws where bigintInitThrows == true
+      do this.init(num);
 
     @deprecated(notes="bigint initializers that halt are deprecated, please set the config param :param:`bigintInitThrows` to 'true' to opt in to using the new initializer that throws")
     proc init(str: string, base: int = 0) where bigintInitThrows == false {
@@ -348,73 +343,6 @@ module BigInteger {
       this.localeId = chpl_nodeID;
     }
 
-    /* Initialize a :type:`bigint` from a string and optionally a provided base
-       to use with the string.  If the string is not a correct base ``base``
-       number, will throw a :type:`~OS.BadFormatError`.
-
-       :arg x: The value to be stored in the resulting :type:`bigint`.
-       :type x: :type:`~String.string`
-
-       :arg base: The base to use when creating the :type:`bigint` from ``x``.
-                  May vary from ``2`` to ``62`` or be ``0``.  Defaults to ``0``,
-                  which causes the base to be read from the start of the ``x``
-                  itself (``0x`` and ``0X`` will give hexadecimal, ``0b`` and
-                  ``0B`` will give binary, ``0`` will give octal, and everything
-                  else will be interpreted as decimal).
-       :type base: ``int``
-
-       :throws BadFormatError: Thrown when ``x`` is not a correctly formatted
-                               number in base ``base``.
-
-     */
-    proc init(x: string, base: int = 0) throws where bigintInitThrows == true {
-      this.complete();
-      const ref x_ = x.localize().c_str();
-      const base_ = base.safeCast(c_int);
-
-      if mpz_init_set_str(this.mpz, x_, base_) != 0 {
-        mpz_clear(this.mpz);
-
-        throwingInitWorkaround();
-      }
-
-      this.localeId = chpl_nodeID;
-    }
-
-    /* Initialize a :type:`bigint` from a string and optionally a provided base
-       to use with the string.  If the string is not a correct base ``base``
-       number, will throw a :type:`~OS.BadFormatError`.
-
-       :arg str: The value to be stored in the resulting :type:`bigint`.
-       :type str: `string`
-
-       :arg base: The base to use when creating the :type:`bigint` from ``str``.
-                  May vary from ``2`` to ``62`` or be ``0``.  Defaults to ``0``,
-                  which causes the base to be read from the start of the ``str``
-                  itself (``0x`` and ``0X`` will give hexadecimal, ``0b`` and
-                  ``0B`` will give binary, ``0`` will give octal, and everything
-                  else will be interpreted as decimal).
-       :type base: `int`
-
-       :throws BadFormatError: Thrown when ``str`` is not a correctly formatted
-                               number in base ``base``.
-
-     */
-    pragma "last resort"
-    @deprecated("the argument name 'str' is deprecated - please use 'x' instead")
-    proc init(str: string, base: int = 0) throws where bigintInitThrows == true {
-      this.complete();
-      const ref str_ = str.localize().c_str();
-      const base_ = base.safeCast(c_int);
-
-      if mpz_init_set_str(this.mpz, str_, base_) != 0 {
-        mpz_clear(this.mpz);
-
-        throwingInitWorkaround();
-      }
-
-      this.localeId = chpl_nodeID;
-    }
 
     // Within a given locale, bigint assignment creates a deep copy of the
     // data and so the record "owns" the GMP data.
@@ -429,43 +357,6 @@ module BigInteger {
       }
     }
 
-    /*
-      .. warning::
-
-         bigint.size() is @deprecated
-    */
-    @deprecated(notes="bigint.size() is deprecated")
-    proc size() : c_size_t {
-      var ret: c_size_t;
-
-      if compiledForSingleLocale() {
-        ret = mpz_size(this.mpz);
-
-      } else if this.localeId == chpl_nodeID {
-        ret = mpz_size(this.mpz);
-
-      } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          ret = mpz_size(this.mpz);
-        }
-      }
-
-      return ret;
-    }
-
-    /*
-      .. warning::
-
-         bigint.sizeinbase() is deprecated, use bigint.sizeInBase() instead
-    */
-    @deprecated
-    ("bigint.sizeinbase() is deprecated, use bigint.sizeInBase() instead")
-    proc sizeinbase(base: int) : uint {
-      return sizeInBase(base).safeCast(uint);
-    }
-
     /* Determine the size of ``this`` measured in number of digits in the given
        ``base``.  The sign of ``this`` is ignored, only the absolute value is
        used.
@@ -473,13 +364,16 @@ module BigInteger {
        :arg base: The base in which to compute the number of digits used to
                   represent ``this``.  Can be between 2 and 62.
        :type base: ``int``
-
        :returns: The size of ``this`` measured in number of digits in the given
                  ``base``.  Will either be exact or 1 too big.  If ``base`` is
                  a power of 2, will always be exact.  If ``this`` is 0, will
                  always return 1.
        :rtype: ``int``
-     */
+
+       .. seealso::
+          :proc:`GMP.mpz_sizeinbase` and
+          `mpz_sizeinbase <https://gmplib.org/manual/Miscellaneous-Integer-Functions#index-mpz_005fsizeinbase>`_.
+    */
     proc sizeInBase(base: int) : int {
       const base_ = base.safeCast(c_int);
       var   ret: c_size_t;
@@ -501,17 +395,11 @@ module BigInteger {
       return ret.safeCast(int);
     }
 
-    @deprecated(notes="mpzStruct is deprecated, please use :proc:`getImpl` instead")
-    proc mpzStruct() : __mpz_struct {
-      return getImpl();
-    }
-
-    /* Return the underlying implementation of :record:`bigint`.  Currently,
-       the type returned is ``__mpz_struct``.
-
-       This method is provided as a convenience but its result may change in the
-       future.
+    /*
+      Return the underlying implementation of :record:`bigint`.  Currently,
+      the type returned is ``__mpz_struct``.
     */
+    @unstable("getImpl is provided as a convenience but its result may change in the future")
     proc getImpl(): __mpz_struct {
       var ret: __mpz_struct;
 
@@ -532,14 +420,8 @@ module BigInteger {
       return ret;
     }
 
-    @deprecated(notes="get_d_2exp is deprecated in favor of :proc:`bigint.getD2Exp`, which returns (d, exp) instead of (exp, d).  Please use that method instead")
-    proc get_d_2exp() : (uint(32), real) {
-      var (dbl, exp) = getD2Exp();
-      return (exp, dbl);
-    }
-
     /*
-      Convert ``this`` to a tuple containing a real (truncated if necessary, by
+      Convert ``this`` to a tuple containing a ``real`` (truncated if necessary, by
       rounding towards zero) and the exponent.  The returned tuple fulfills the
       condition ``d * 2^exp == this`` where ``d`` is the first value in the
       tuple and ``exp`` is the second.
@@ -551,6 +433,10 @@ module BigInteger {
                 unless ``this`` is ``0``, in which case ``d == 0.0`` and
                 ``exp == 0``.
       :rtype: ``(real, uint(32))``
+
+      .. seealso::
+         :proc:`GMP.mpz_get_d_2exp` and
+         `mpz_get_d_2exp <https://gmplib.org/manual/Converting-Integers#index-mpz_005fget_005fd_005f2exp>`_.
      */
     proc getD2Exp(): (real, uint(32)) {
       var exp: c_long;
@@ -582,17 +468,50 @@ module BigInteger {
       return (dbl: real, exp.safeCast(uint(32)));
     }
 
+    @deprecated(notes="bigint.size() is deprecated")
+    proc size() : c_size_t {
+      var ret: c_size_t;
+
+      if compiledForSingleLocale() {
+        ret = mpz_size(this.mpz);
+
+      } else if this.localeId == chpl_nodeID {
+        ret = mpz_size(this.mpz);
+
+      } else {
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+
+        on __primitive("chpl_on_locale_num", thisLoc) {
+          ret = mpz_size(this.mpz);
+        }
+      }
+
+      return ret;
+    }
+
+    @deprecated("bigint.sizeinbase is deprecated, use :proc:`bigint.sizeInBase` instead")
+    proc sizeinbase(base: int) : uint {
+      return sizeInBase(base).safeCast(uint);
+    }
+
+    @deprecated(notes="mpzStruct is deprecated, please use :proc:`getImpl` instead")
+    proc mpzStruct() : __mpz_struct {
+      return getImpl();
+    }
+
+    @deprecated(notes="get_d_2exp is deprecated in favor of :proc:`bigint.getD2Exp`, which returns (d, exp) instead of (exp, d).  Please use that method instead")
+    proc get_d_2exp() : (uint(32), real) {
+      var (dbl, exp) = getD2Exp();
+      return (exp, dbl);
+    }
+
     // private method
     @chpldoc.nodoc
     proc getStr(base: int = 10): string {
       const base_ = base.safeCast(c_int);
       var   ret: string;
 
-      if compiledForSingleLocale() {
-        var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
-        try! ret = string.createAdoptingBuffer(tmpvar);
-      }
-      else if this.localeId == chpl_nodeID {
+      if compiledForSingleLocale() || this.localeId == chpl_nodeID {
         var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
         try! ret = string.createAdoptingBuffer(tmpvar);
       } else {
@@ -609,6 +528,7 @@ module BigInteger {
     @deprecated("get_str is deprecated - please use a cast to a string or IO methods to get the string representation")
     proc get_str(base: int = 10): string do return this.getStr(base);
 
+    /* Writes this number to a :type:`~IO.fileWriter` */
     proc writeThis(writer) throws {
       var s: string;
       s = this.getStr();
@@ -616,34 +536,97 @@ module BigInteger {
     }
   }
 
-  //
-  // Cast operators
-  //
-  @chpldoc.nodoc
-  inline operator :(src: integral, type toType: bigint): bigint {
-    return new bigint(src);
+  /* An enumeration of the different rounding strategies, for use with e.g.
+     :proc:`~BigInteger.div` to determine how to round the quotient when performing
+     the computation.
+   */
+  enum roundingMode {
+    /*
+      Indicates that the quotient should be rounded down towards -infinity and
+      any remainder should have the same sign as the denominator.
+    */
+    down = -1,
+    /*
+      Indicates that the quotient should be rounded towards zero and any
+      remainder should have the same sign as the numerator.
+    */
+    zero = 0,
+    /*
+      Indicates that the quotient should be rounded up towards +infinity and any
+      remainder should have the opposite sign as the denominator.
+    */
+    up = 1
   }
 
-  @chpldoc.nodoc
-  inline operator :(src: string, type toType: bigint): bigint throws {
-    return new bigint(src);
+  proc chpl_roundToRoundingMode(param r) param : roundingMode {
+    use BigInteger.round;
+    if r == down then return roundingMode.down;
+    if r == zero then return roundingMode.zero;
+    if r == up then return roundingMode.up;
+    compilerError("unknown bigint rounding mode");
   }
 
-  @chpldoc.nodoc
+  @deprecated(notes="The enum Round is deprecated, please use the enum :enum:`roundingMode` instead")
+  enum Round {
+    DOWN = -1,
+    ZERO =  0,
+    UP   =  1
+  }
+
+  /* An enumeration of the different rounding strategies, for use with e.g.
+     :proc:`~BigInteger.divQ` to determine how to round the quotient when performing
+     the computation.
+   */
+  @deprecated(notes="enum round is deprecated - please use enum :enum:`roundingMode` instead")
+  enum round {
+    /*
+      Indicates that the quotient should be rounded down towards -infinity and
+      any remainder should have the same sign as the denominator.
+    */
+    down = -1,
+    /*
+      Indicates that the quotient should be rounded towards zero and any
+      remainder should have the same sign as the numerator.
+    */
+    zero = 0,
+    /*
+      Indicates that the quotient should be rounded up towards +infinity and any
+      remainder should have the opposite sign as the denominator.
+    */
+    up = 1
+  }
+
+  /* Constructs a new :record:`bigint` from ``x``, see :proc:`bigint.init`. */
+  inline operator :(x: integral, type t: bigint): bigint {
+    return new bigint(x);
+  }
+
+  /*
+    Constructs a new :record:`bigint` from ``x``,
+    see the :proc:`bigint.init` overload which takes a :type:`~String.string`.
+  */
+  inline operator :(x: string, type t: bigint): bigint throws {
+    return new bigint(x);
+  }
+
+  /* Constructs a new :record:`bigint` from ``x``, see :proc:`bigint.init`. */
   inline operator :(x: bool, type t: bigint): bigint throws {
     return new bigint(x:int);
   }
 
-  @chpldoc.nodoc
+  /*
+    Convert ``x`` to a signed integer. If ``x`` is larger than ``t``, the value
+    returned is the least significant part of ``x`` with the same sign as ``x``.
+
+    .. seealso::
+       :proc:`GMP.mpz_get_si` and
+       `mpz_get_si <https://gmplib.org/manual/Converting-Integers#index-mpz_005fget_005fsi>`_.
+  */
   inline operator :(const ref x: bigint, type t:numeric) where isIntType(t) {
     var ret: c_long;
 
-    if compiledForSingleLocale() {
+    if compiledForSingleLocale() || x.localeId == chpl_nodeID {
       ret = mpz_get_si(x.mpz);
-
-    } else if x.localeId == chpl_nodeID {
-        ret = mpz_get_si(x.mpz);
-
     } else {
       const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_any);
 
@@ -655,16 +638,19 @@ module BigInteger {
     return ret:t;
   }
 
-  @chpldoc.nodoc
+  /*
+    Convert ``x`` to an unsigned integer. If ``x`` is larger than ``t``, the value
+    returned is the least significant part of ``x`` ignoring the sign of ``x``.
+
+    .. seealso::
+       :proc:`GMP.mpz_get_ui` and
+       `mpz_get_ui <https://gmplib.org/manual/Converting-Integers#index-mpz_005fget_005fui>`_.
+  */
   inline operator :(const ref x: bigint, type t:numeric) where isUintType(t) {
     var ret: c_ulong;
 
-    if compiledForSingleLocale() {
+    if compiledForSingleLocale() || x.localeId == chpl_nodeID {
       ret = mpz_get_ui(x.mpz);
-
-    } else if x.localeId == chpl_nodeID {
-      ret = mpz_get_ui(x.mpz);
-
     } else {
       const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_any);
 
@@ -676,16 +662,24 @@ module BigInteger {
     return ret:t;
   }
 
-  @chpldoc.nodoc
+  /*
+    Convert ``x`` to a ``real`` with type ``t`` (truncated if necessary, by
+    rounding towards zero).
+
+    .. warning::
+       If the resulting exponent from the conversion is too big, the result is
+       system dependant. If supported, an infinity may be returned. A hardware
+       overflow trap may also occur.
+
+    .. seealso::
+       :proc:`GMP.mpz_get_d` and
+       `mpz_get_d <https://gmplib.org/manual/Converting-Integers#index-mpz_005fget_005fd>`_.
+  */
   inline operator :(const ref x: bigint, type t:numeric) where isRealType(t) {
     var ret: c_double;
 
-    if compiledForSingleLocale() {
+    if compiledForSingleLocale() || x.localeId == chpl_nodeID {
       ret = mpz_get_d(x.mpz);
-
-    } else if x.localeId == chpl_nodeID {
-      ret = mpz_get_d(x.mpz);
-
     } else {
       const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_any);
 
@@ -697,74 +691,24 @@ module BigInteger {
     return ret:t;
   }
 
-  @chpldoc.nodoc
+  /* Convert ``x`` to a string representation. */
   inline operator :(const ref x: bigint, type t: string) {
     return x.getStr();
   }
 
-  //
-  // Locale-aware assignment
-  //
-
+  /* See :proc:`bigint.set` */
   operator bigint.=(ref lhs: bigint, const ref rhs: bigint) {
-    inline proc helper() {
-      if rhs.localeId == chpl_nodeID {
-        mpz_set(lhs.mpz, rhs.mpz);
-
-      } else {
-        chpl_gmp_get_mpz(lhs.mpz, rhs.localeId, rhs.mpz[0]);
-      }
-    }
-
-    if compiledForSingleLocale() {
-      mpz_set(lhs.mpz, rhs.mpz);
-
-    } else if lhs.localeId == chpl_nodeID {
-      helper();
-
-    } else {
-      var lhsLoc = chpl_buildLocaleID(lhs.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", lhsLoc) {
-        helper();
-      }
-    }
+    lhs.set(rhs);
   }
 
+  /* See :proc:`bigint.set` */
   operator bigint.=(ref lhs: bigint, rhs: int) {
-    const rhs_ = rhs.safeCast(c_long);
-
-    if compiledForSingleLocale() {
-      mpz_set_si(lhs.mpz, rhs_);
-
-    } else if lhs.localeId == chpl_nodeID {
-      mpz_set_si(lhs.mpz, rhs_);
-
-    } else {
-      var lhsLoc = chpl_buildLocaleID(lhs.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", lhsLoc) {
-        mpz_set_si(lhs.mpz, rhs_);
-      }
-    }
+    lhs.set(rhs);
   }
 
+  /* See :proc:`bigint.set` */
   operator bigint.=(ref lhs: bigint, rhs: uint) {
-    const rhs_ = rhs.safeCast(c_ulong);
-
-    if compiledForSingleLocale() {
-      mpz_set_ui(lhs.mpz, rhs_);
-
-    } else if lhs.localeId == chpl_nodeID {
-      mpz_set_ui(lhs.mpz, rhs_);
-
-    } else {
-      var lhsLoc = chpl_buildLocaleID(lhs.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", lhsLoc) {
-        mpz_set_ui(lhs.mpz, rhs_);
-      }
-    }
+    lhs.set(rhs);
   }
 
   //
@@ -791,47 +735,47 @@ module BigInteger {
   //      Later we can use profiling to add optimizations where appropriate
   //
 
-  //
-  // Unary operators
-  //
+  /* See :proc:`bigint.init` */
   operator bigint.+(const ref a: bigint): bigint {
     return new bigint(a);
   }
 
+  /* See :proc:`~BigInteger.neg` */
   operator bigint.-(const ref a: bigint): bigint {
     var c = new bigint(a);
     BigInteger.neg(c, a);
     return c;
   }
 
+  /* See :proc:`~BigInteger.com` */
   operator bigint.~(const ref a: bigint): bigint {
     var c = new bigint(a);
     BigInteger.com(c, a);
     return c;
   }
 
-  //
-  // Binary operators
-  //
-
-  // Addition
+  /* See :proc:`~BigInteger.add` */
   operator bigint.+(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
     BigInteger.add(c, a, b);
     return c;
   }
 
+  /* See :proc:`~BigInteger.add` */
   operator bigint.+(const ref a: bigint, b: int): bigint {
     var c = new bigint();
     BigInteger.add(c, a, b);
     return c;
   }
+
+  /* See :proc:`~BigInteger.add` */
   operator bigint.+(const ref a: bigint, b: uint): bigint {
     var c = new bigint();
     BigInteger.add(c, a, b);
     return c;
   }
 
+  /* See :proc:`~BigInteger.add` */
   operator bigint.+(a: int, const ref b: bigint): bigint {
     var c = new bigint();
     BigInteger.add(c, b, a);
@@ -843,69 +787,77 @@ module BigInteger {
     return c;
   }
 
-
-
-  // Subtraction
+  /* See :proc:`~BigInteger.sub` */
   operator bigint.-(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
     BigInteger.sub(c, a, b);
     return c;
   }
 
+  /* See :proc:`~BigInteger.sub` */
   operator bigint.-(const ref a: bigint, b: int): bigint {
     var c = new bigint();
     BigInteger.sub(c, a, b);
     return c;
   }
+
+  /* See :proc:`~BigInteger.sub` */
   operator bigint.-(const ref a: bigint, b: uint): bigint {
     var c = new bigint();
     BigInteger.sub(c, a, b);
     return c;
   }
 
+  /* See :proc:`~BigInteger.sub` */
   operator bigint.-(a: int, const ref b: bigint): bigint {
     var c = new bigint();
     BigInteger.sub(c, a, b);
     return c;
   }
+
+  /* See :proc:`~BigInteger.sub` */
   operator bigint.-(a: uint, const ref b: bigint): bigint {
     var c = new bigint();
     BigInteger.sub(c, a, b);
     return c;
   }
 
-  // Multiplication
+  /* See :proc:`~BigInteger.mul` */
   operator bigint.*(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
     BigInteger.mul(c, a, b);
     return c;
   }
 
+  /* See :proc:`~BigInteger.mul` */
   operator bigint.*(const ref a: bigint, b: int): bigint {
     var c = new bigint();
     BigInteger.mul(c, a, b);
     return c;
   }
+
+  /* See :proc:`~BigInteger.mul` */
   operator bigint.*(const ref a: bigint, b: uint): bigint {
     var c = new bigint();
     BigInteger.mul(c, a, b);
     return c;
   }
 
+  /* See :proc:`~BigInteger.mul` */
   operator bigint.*(a: int, const ref b: bigint): bigint {
     var c = new bigint();
     BigInteger.mul(c, b, a);
     return c;
   }
+
+  /* See :proc:`~BigInteger.mul` */
   operator bigint.*(a: uint, const ref b: bigint): bigint {
     var c = new bigint();
     BigInteger.mul(c, b, a);
     return c;
   }
 
-
-  // Division
-  // Documented in (bigint, integral) version
+  /* See :proc:`~BigInteger.div` */
   operator bigint./(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
     BigInteger.div(c, a, b, roundingMode.zero);
@@ -913,22 +865,12 @@ module BigInteger {
     return c;
   }
 
-  /* Divide ``a`` by ``b``, returning the result.
-
-     :arg a: The numerator of the division operation
-     :type a: :record:`bigint`
-
-     :arg b: The denominator of the division operation
-     :type b: :record:`bigint` or ``integral``
-
-     :returns: The result of dividing ``a`` by ``b``
-     :rtype: :record:`bigint`
-   */
+  /* See :proc:`~BigInteger.div` */
   operator bigint./(const ref a: bigint, b: integral): bigint {
     return a / new bigint(b);
   }
 
-  // Exponentiation
+  /* See :proc:`~BigInteger.pow` */
   operator bigint.**(const ref base: bigint, const ref exp: bigint): bigint {
     var c = new bigint();
 
@@ -947,6 +889,7 @@ module BigInteger {
     return c;
   }
 
+  /* See :proc:`~BigInteger.pow` */
   operator bigint.**(const ref base: bigint, exp: int): bigint {
     var c = new bigint();
 
@@ -959,6 +902,7 @@ module BigInteger {
     return c;
   }
 
+  /* See :proc:`~BigInteger.pow` */
   operator bigint.**(const ref base: bigint, exp: uint): bigint {
     const exp_ = exp.safeCast(c_ulong);
     var   c    = new bigint();
@@ -1011,11 +955,14 @@ module BigInteger {
   }
 
 
-  /* Computes the mod operator on the two arguments, defined as
-     ``a % b = a - b * trunc(a / b)``.
+  /*
+    Computes the mod operator on the two arguments, defined as
+    ``a % b = a - b * trunc(a / b)``.
 
-     The result is always >= 0 if `a` > 0.
-     It is an error if `b` == 0.
+    The result is always >= 0 if `a` > 0.
+    It is an error if `b` == 0.
+
+    See :proc:`~BigInteger.rem`
   */
   operator bigint.%(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
@@ -1023,78 +970,68 @@ module BigInteger {
     return c;
   }
 
-  /* Computes the mod operator on the two arguments, defined as
-     ``a % b = a - b * trunc(a / b)``.
-
-     The result is always >= 0 if `a` > 0.
-     It is an error if `b` == 0.
-  */
+  /* See :proc:`bigint.%` */
   operator bigint.%(const ref a: bigint, b: int): bigint {
     var c = new bigint();
     BigInteger.modTrunc(c, a, b);
     return c;
   }
 
-  /* Computes the mod operator on the two arguments, defined as
-     ``a % b = a - b * trunc(a / b)``.
-
-     The result is always >= 0 if `a` > 0.
-     It is an error if `b` == 0.
-  */
+  /* See :proc:`bigint.%` */
   operator bigint.%(const ref a: bigint, b: uint): bigint {
     var c = new bigint();
     BigInteger.modTrunc(c, a, b);
     return c;
   }
 
-  // Bit-shift left
+  /* See :proc:`~BigInteger.shiftLeft` */
   operator bigint.<<(const ref a: bigint, b: int): bigint {
     var c = new bigint();
     BigInteger.shiftLeft(c, a, b);
     return c;
   }
+
+  /* See :proc:`~BigInteger.shiftLeft` */
   operator bigint.<<(const ref a: bigint, b: uint): bigint {
     var c = new bigint();
     BigInteger.shiftLeft(c, a, b);
     return c;
   }
 
-  // Bit-shift right
+  /* See :proc:`~BigInteger.shiftRight` */
   operator bigint.>>(const ref a: bigint, b: int): bigint {
     var c = new bigint();
     BigInteger.shiftRight(c, a, b);
     return c;
   }
+
+  /* See :proc:`~BigInteger.shiftRight` */
   operator bigint.>>(const ref a: bigint, b: uint): bigint {
     var c = new bigint();
     BigInteger.shiftRight(c, a, b);
     return c;
   }
 
-  // Bitwise and
+  /* See :proc:`~BigInteger.and` */
   operator bigint.&(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
     BigInteger.and(c, a, b);
     return c;
   }
 
-  // Bitwise or
+  /* See :proc:`~BigInteger.or` */
   operator bigint.|(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
     BigInteger.or(c, a, b);
     return c;
   }
 
-  // Bitwise xor
+  /* See :proc:`~BigInteger.xor` */
   operator bigint.^(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
     BigInteger.xor(c, a, b);
     return c;
   }
-
-  //
-  // Comparison Operations
-  //
 
   private inline proc cmp(const ref x: bigint, const ref y: bigint)
     do return x.cmp(y);
@@ -1110,238 +1047,234 @@ module BigInteger {
     do return 0 - (y.cmp(x));
 
 
-  // Equality
+  /* See :proc:`bigint.cmp` */
   operator bigint.==(const ref a: bigint, const ref b: bigint): bool
     do return BigInteger.cmp(a, b) == 0;
 
+  /* See :proc:`bigint.cmp` */
   operator bigint.==(const ref a: bigint, b: int): bool
     do return BigInteger.cmp(a, b) == 0;
+
+  /* See :proc:`bigint.cmp` */
   operator bigint.==(const ref a: bigint, b: uint): bool
     do return BigInteger.cmp(a, b) == 0;
 
+  /* See :proc:`bigint.cmp` */
   operator bigint.==(a: int, const ref b: bigint): bool
     do return BigInteger.cmp(a, b) == 0;
+
+  /* See :proc:`bigint.cmp` */
   operator bigint.==(a: uint, const ref b: bigint): bool
     do return BigInteger.cmp(a, b) == 0;
 
-
-  // Inequality
+  /* See :proc:`bigint.cmp` */
   operator bigint.!=(const ref a: bigint, const ref b: bigint): bool
     do return BigInteger.cmp(a, b) != 0;
 
+  /* See :proc:`bigint.cmp` */
   operator bigint.!=(const ref a: bigint, b: int): bool
     do return BigInteger.cmp(a, b) != 0;
+
+  /* See :proc:`bigint.cmp` */
   operator bigint.!=(const ref a: bigint, b: uint): bool
     do return BigInteger.cmp(a, b) != 0;
 
+  /* See :proc:`bigint.cmp` */
   operator bigint.!=(a: int, const ref b: bigint): bool
     do return BigInteger.cmp(a, b) != 0;
+
+  /* See :proc:`bigint.cmp` */
   operator bigint.!=(a: uint, const ref b: bigint): bool
     do return BigInteger.cmp(a, b) != 0;
 
-
-  // Greater than
+  /* See :proc:`bigint.cmp` */
   operator bigint.>(const ref a: bigint, const ref b: bigint): bool
     do return BigInteger.cmp(a, b) > 0;
 
+  /* See :proc:`bigint.cmp` */
   operator bigint.>(const ref a: bigint, b: int): bool
     do return BigInteger.cmp(a, b) > 0;
+
+  /* See :proc:`bigint.cmp` */
   operator bigint.>(const ref a: bigint, b: uint): bool
     do return BigInteger.cmp(a, b) > 0;
 
+  /* See :proc:`bigint.cmp` */
   operator bigint.>(a: int, const ref b: bigint): bool
     do return BigInteger.cmp(a, b) > 0;
+
+  /* See :proc:`bigint.cmp` */
   operator bigint.>(a: uint, const ref b: bigint): bool
     do return BigInteger.cmp(a, b) > 0;
 
-
-  // Less than
+  /* See :proc:`bigint.cmp` */
   operator bigint.<(const ref a: bigint, const ref b: bigint): bool
     do return BigInteger.cmp(a, b) < 0;
 
+  /* See :proc:`bigint.cmp` */
   operator bigint.<(const ref a: bigint, b: int): bool
     do return BigInteger.cmp(a, b) < 0;
+
+  /* See :proc:`bigint.cmp` */
   operator bigint.<(const ref a: bigint, b: uint): bool
     do return BigInteger.cmp(a, b) < 0;
 
+  /* See :proc:`bigint.cmp` */
   operator bigint.<(a: int, const ref b: bigint): bool
     do return BigInteger.cmp(a, b) < 0;
+
+  /* See :proc:`bigint.cmp` */
   operator bigint.<(a: uint, const ref b: bigint): bool
     do return BigInteger.cmp(a, b) < 0;
 
-
-  // Greater than or equal
+  /* See :proc:`bigint.cmp` */
   operator bigint.>=(const ref a: bigint, const ref b: bigint): bool
     do return BigInteger.cmp(a, b) >= 0;
 
+  /* See :proc:`bigint.cmp` */
   operator bigint.>=(const ref a: bigint, b: int): bool
     do return BigInteger.cmp(a, b) >= 0;
+
+  /* See :proc:`bigint.cmp` */
   operator bigint.>=(const ref a: bigint, b: uint): bool
     do return BigInteger.cmp(a, b) >= 0;
 
+  /* See :proc:`bigint.cmp` */
   operator bigint.>=(a: int, const ref b: bigint): bool
     do return BigInteger.cmp(a, b) >= 0;
+
+  /* See :proc:`bigint.cmp` */
   operator bigint.>=(a: uint, const ref b: bigint): bool
     do return BigInteger.cmp(a, b) >= 0;
 
-
-  // Less than or equal
+  /* See :proc:`bigint.cmp` */
   operator bigint.<=(const ref a: bigint, const ref b: bigint): bool
     do return BigInteger.cmp(a, b) <= 0;
 
+  /* See :proc:`bigint.cmp` */
   operator bigint.<=(const ref a: bigint, b: int): bool
     do return BigInteger.cmp(a, b) <= 0;
+
+  /* See :proc:`bigint.cmp` */
   operator bigint.<=(const ref a: bigint, b: uint): bool
     do return BigInteger.cmp(a, b) <= 0;
 
+  /* See :proc:`bigint.cmp` */
   operator bigint.<=(a: int, const ref b: bigint): bool
     do return BigInteger.cmp(a, b) <= 0;
+
+  /* See :proc:`bigint.cmp` */
   operator bigint.<=(a: uint, const ref b: bigint): bool
     do return BigInteger.cmp(a, b) <= 0;
 
-
-  //
-  // Compound Assignment Operations
-  //
-
-  // +=
+  /* See :proc:`~BigInteger.add` */
   operator bigint.+=(ref a: bigint, const ref b: bigint)
     do BigInteger.add(a, a, b);
 
+  /* See :proc:`~BigInteger.add` */
   operator bigint.+=(ref a: bigint, b: int)
     do BigInteger.add(a, a, b);
+
+  /* See :proc:`~BigInteger.add` */
   operator bigint.+=(ref a: bigint, b: uint)
     do BigInteger.add(a, a, b);
 
-
-
-  // -=
+  /* See :proc:`~BigInteger.sub` */
   operator bigint.-=(ref a: bigint, const ref b: bigint)
     do BigInteger.sub(a, a, b);
 
+  /* See :proc:`~BigInteger.sub` */
   operator bigint.-=(ref a: bigint, b: int)
     do BigInteger.sub(a, a, b);
+
+  /* See :proc:`~BigInteger.sub` */
   operator bigint.-=(ref a: bigint, b: uint)
     do BigInteger.sub(a, a, b);
 
-
-
-  // *=
+  /* See :proc:`~BigInteger.mul` */
   operator bigint.*=(ref a: bigint, const ref b: bigint)
     do BigInteger.mul(a, a, b);
 
+  /* See :proc:`~BigInteger.mul` */
   operator bigint.*=(ref a: bigint, b:  int)
     do BigInteger.mul(a, a, b);
+
+  /* See :proc:`~BigInteger.mul` */
   operator bigint.*=(ref a: bigint, b: uint)
     do BigInteger.mul(a, a, b);
 
-
-
-  // /=
-  // Documented in (bigint, integral) version
+  /* See :proc:`~BigInteger.div` */
   operator bigint./=(ref a: bigint, const ref b: bigint) {
     BigInteger.div(a, a, b, roundingMode.zero);
   }
 
-  /* Divide ``a`` by ``b``, storing the result in ``a``.
-
-     :arg a: The numerator of the division operation
-     :type a: :record:`bigint`
-
-     :arg b: The denominator of the division operation
-     :type b: :record:`bigint` or ``integral``
-   */
+  /* See :proc:`~BigInteger.div` */
   operator bigint./=(ref a: bigint, b: integral) {
     a /= new bigint(b);
   }
 
-
-
-  // **=
+  /* See :proc:`~BigInteger.pow` */
   operator bigint.**=(ref base: bigint, const ref exp: bigint) {
     base = base ** exp;
   }
 
+  /* See :proc:`~BigInteger.pow` */
   operator bigint.**=(ref base: bigint, exp: int) {
     BigInteger.pow(base, base, exp);
   }
 
+  /* See :proc:`~BigInteger.pow` */
   operator bigint.**=(ref base: bigint, exp: uint) {
     BigInteger.pow(base, base, exp);
   }
 
-
-
-  /* Mod ``a`` by ``b``, storing the result in ``a``.
-
-     Here, the modulo operation is defined as
-     ``a % b = a - b * trunc(a / b)``.
-
-     The result is always >= 0 if `a` > 0.
-     It is an error if `b` == 0.
-  */
+  /* See :proc:`bigint.%` */
   operator bigint.%=(ref a: bigint, const ref b: bigint)
     do BigInteger.modTrunc(a, a, b);
 
-  /* Mod ``a`` by ``b``, storing the result in ``a``.
-
-     Here, the modulo operation is defined as
-     ``a % b = a - b * trunc(a / b)``.
-
-     The result is always >= 0 if `a` > 0.
-     It is an error if `b` == 0.
-  */
+  /* See :proc:`bigint.%` */
   operator bigint.%=(ref a: bigint, b: int)
     do BigInteger.modTrunc(a, a, b);
 
-  /* Mod ``a`` by ``b``, storing the result in ``a``.
-
-     Here, the modulo operation is defined as
-     ``a % b = a - b * trunc(a / b)``.
-
-     The result is always >= 0 if `a` > 0.
-     It is an error if `b` == 0.
-  */
+  /* See :proc:`bigint.%` */
   operator bigint.%=(ref a: bigint, b: uint)
     do BigInteger.modTrunc(a, a, b);
 
+  /* See :proc:`~BigInteger.and` */
   operator bigint.&=(ref a: bigint, const ref b: bigint) {
     BigInteger.and(a, a, b);
   }
 
+  /* See :proc:`~BigInteger.or` */
   operator bigint.|=(ref a: bigint, const ref b: bigint) {
     BigInteger.or(a, a, b);
   }
 
+  /* See :proc:`~BigInteger.xor` */
   operator bigint.^=(ref a: bigint, const ref b: bigint) {
     BigInteger.xor(a, a, b);
   }
 
-
-  // <<=
+  /* See :proc:`~BigInteger.shiftLeft` */
   operator bigint.<<=(ref a: bigint, b: int)
     do BigInteger.shiftLeft(a, a, b);
+
+  /* See :proc:`~BigInteger.shiftLeft` */
   operator bigint.<<=(ref a: bigint, b: uint)
     do BigInteger.shiftLeft(a, a, b);
 
-
-
-  // >>=
+  /* See :proc:`~BigInteger.shiftRight` */
   operator bigint.>>=(ref a: bigint, b:  int)
     do BigInteger.shiftRight(a, a, b);
+
+  /* See :proc:`~BigInteger.shiftRight` */
   operator bigint.>>=(ref a: bigint, b: uint)
     do BigInteger.shiftRight(a, a, b);
 
-
-  // Swap
+  /* See :proc:`bigint.swap` */
   operator bigint.<=>(ref a: bigint, ref b: bigint) {
-    if compiledForSingleLocale() {
-      var t = a;
-
-      mpz_set(a.mpz, b.mpz);
-      mpz_set(b.mpz, t.mpz);
-
-    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
+    if compiledForSingleLocale() ||
+      (a.localeId == chpl_nodeID && b.localeId == chpl_nodeID) {
       var t = a;
 
       mpz_set(a.mpz, b.mpz);
@@ -1368,13 +1301,14 @@ module BigInteger {
   }
 
 
-  /*  Returns the Jacobi symbol ``a/b``, which is definied only when ``b`` is odd.
+  /*
+    Returns the Jacobi symbol ``a/b``, which is defined only when ``b`` is odd.
 
-      Utilizes the GMP function `mpz_jacobi
-      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+    :rtype: ``int``
 
-      :return: the Jacobi symbol
-      :rtype: ``int``
+    .. seealso::
+       :proc:`GMP.mpz_jacobi` and
+       `mpz_jacobi <https://gmplib.org/manual/Number-Theoretic-Functions#index-mpz_005fjacobi>`_.
   */
   @unstable("jacobi is unstable and may change in the future")
   proc jacobi(const ref a: bigint, const ref b: bigint) : int {
@@ -1389,13 +1323,15 @@ module BigInteger {
 
 
 
-  /*  Returns the Legendre symbol ``a/p``, which is definied only when ``p`` is an odd positive prime number.
+  /*
+    Returns the Legendre symbol ``a/p``, which is defined only when ``p`` is
+    an odd positive prime number.
 
-      Utilizes the GMP function `mpz_legendre
-      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+    :rtype: ``int``
 
-      :return: the Legendre symbol
-      :rtype: ``int``
+    .. seealso::
+       :proc:`GMP.mpz_legendre` and
+       `mpz_legendre <https://gmplib.org/manual/Number-Theoretic-Functions#index-mpz_005flegendre>`_.
   */
   @unstable("legendre is unstable and may change in the future")
   proc legendre(const ref a: bigint, const ref p: bigint) : int {
@@ -1410,16 +1346,15 @@ module BigInteger {
 
 
 
-  /*  Returns the Jacobi symbol ``a/b`` with the Kronecker extension. When
-      ``b`` is odd this is the same as the Jacobi symbol.
+  /*
+    Returns the Jacobi symbol ``a/b`` with the Kronecker extension. When
+    ``b`` is odd this is the same as the Jacobi symbol.
 
-      Utilizes the GMP function `mpz_kronecker
-      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+    :rtype: ``int``
 
-      There are overloads to make either ``a`` or ``b`` an ``int`` or ``uint`` which use the corresponding GMP functions.
-
-      :return: the Kronecker symbol
-      :rtype: ``int``
+    .. seealso::
+       :proc:`GMP.mpz_kronecker` and
+       `mpz_kronecker <https://gmplib.org/manual/Number-Theoretic-Functions#index-mpz_005fkronecker>`_.
   */
   @unstable("kronecker is unstable and may change in the future")
   proc kronecker(const ref a: bigint, const ref b: bigint) : int {
@@ -1433,7 +1368,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  @chpldoc.nodoc
+  /* See :proc:`kronecker` */
   @unstable("kronecker is unstable and may change in the future")
   proc kronecker(const ref a: bigint, b: int) : int {
     const a_ = a.localize();
@@ -1445,7 +1380,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  @chpldoc.nodoc
+  /* See :proc:`kronecker` */
   @unstable("kronecker is unstable and may change in the future")
   proc kronecker(a: int, const ref b: bigint) : int {
     const a_ = a.safeCast(c_long);
@@ -1457,7 +1392,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  @chpldoc.nodoc
+  /* See :proc:`kronecker` */
   @unstable("kronecker is unstable and may change in the future")
   proc kronecker(const ref a: bigint, b: uint) : int {
     const a_ = a.localize();
@@ -1469,7 +1404,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  @chpldoc.nodoc
+  /* See :proc:`kronecker` */
   @unstable("kronecker is unstable and may change in the future")
   proc kronecker(a: uint, const ref b: bigint) : int {
     const a_ = a.safeCast(c_ulong);
@@ -1486,7 +1421,6 @@ module BigInteger {
     :record:`bigint` instance.
 
     .. warning::
-
        ``divExact`` is optimized to handle cases where ``numer/denom`` results
        in an integer.  When ``numer/denom`` does not produce an integer, this
        method may produce incorrect results.
@@ -1500,7 +1434,7 @@ module BigInteger {
 
     .. seealso::
        :proc:`GMP.mpz_divexact` and
-       `mpz_divexact <https://gmplib.org/manual/Integer-Division>`_.
+       `mpz_divexact <https://gmplib.org/manual/Integer-Division#index-mpz_005fdivexact>`_.
   */
   proc divExact(ref result: bigint, const ref numer: bigint, const ref denom: bigint) {
     if (chpl_checkDivByZero) then
@@ -1527,19 +1461,14 @@ module BigInteger {
   proc divExact(ref result: bigint, const ref numer: bigint, denom: integral)
     do BigInteger.divExact(result, numer, new bigint(denom));
 
-
   /*
     Computes ``numer/denom`` and stores the result in ``result``, which is a
     :record:`bigint` instance.
 
     .. warning::
-
        ``divexact`` is optimized to handle cases where ``numer/denom`` results
        in an integer.  When ``numer/denom`` does not produce an integer, this
        method may produce incorrect results.
-
-    Utilizes the GMP function `mpz_divexact
-    <https://gmplib.org/manual/Integer-Division>`_.
 
     :arg result: Where the result is stored
     :type result: :record:`bigint`
@@ -1549,6 +1478,10 @@ module BigInteger {
 
     :arg denom: denominator
     :type denom: :record:`bigint` or ``integral``
+
+    .. seealso::
+       :proc:`GMP.mpz_divexact` and
+       `mpz_divexact <https://gmplib.org/manual/Integer-Division#index-mpz_005fdivexact>`_.
   */
   @deprecated("divexact is deprecated - please use :proc:`divExact` instead")
   proc divexact(ref result: bigint, const ref numer: bigint, denom: integral)
@@ -1567,26 +1500,40 @@ module BigInteger {
     :record:`bigint` instance.
 
     .. warning::
-
        ``divexact`` is optimized to handle cases where ``numer/denom`` results
        in an integer.  When ``numer/denom`` does not produce an integer, this
        method may produce incorrect results.
-
-    Utilizes the GMP function `mpz_divexact
-    <https://gmplib.org/manual/Integer-Division>`_.
 
     :arg numer: numerator
     :type numer: :record:`bigint`
 
     :arg denom: denominator
     :type denom: :record:`bigint` or ``integral``
+
+    .. seealso::
+       :proc:`GMP.mpz_divexact` and
+       `mpz_divexact <https://gmplib.org/manual/Integer-Division#index-mpz_005fdivexact>`_.
   */
   @deprecated(notes="bigint.divexact method is deprecated - please use the standalone function :proc:`~BigInteger.divExact`")
   proc bigint.divexact(const ref numer: bigint, denom: integral)
     do BigInteger.divExact(this, numer, denom);
 
-  // divisible_p
-  // documented in uint version
+  /*
+    Return ``true`` if ``this`` is exactly divisible by ``div``.  ``this`` is
+    divisible by ``div`` if there exists an integer ``q`` satisfying ``this =
+    q*div``.  Unlike the other division functions, ``0`` is an acceptable value
+    for ``div`` and only ``0`` is considered divisible by ``0``.
+
+    :arg div: number to check if ``this`` is divisible by
+    :type div: :record:`bigint`, ``int`` or ``uint``
+    :return: ``true`` if ``this`` is exactly divisible by ``div``, ``false``
+             otherwise
+    :rtype: ``bool``
+
+    .. seealso::
+       :proc:`GMP.mpz_divisible_p` and
+       `mpz_divisible_p <https://gmplib.org/manual/Integer-Division#index-mpz_005fdivisible_005fp>`_.
+   */
   proc bigint.isDivisible(const ref div: bigint) : bool {
     const t_ = this.localize();
     const div_ = div.localize();
@@ -1600,7 +1547,7 @@ module BigInteger {
       return false;
   }
 
-  // documented in uint version
+  /* See :proc:`~bigint.isDivisible` */
   proc bigint.isDivisible(div: int) : bool {
     const t_ = this.localize();
     var div_ = 0 : c_ulong;
@@ -1619,22 +1566,7 @@ module BigInteger {
       return false;
   }
 
-  /*
-    Return ``true`` if ``this`` is exactly divisible by ``div``.  ``this`` is
-    divisible by ``div`` if there exists an integer ``q`` satisfying ``this =
-    q*div``.  Unlike the other division functions, ``0`` is an acceptable value
-    for ``div`` and only ``0`` is considered divisible by ``0``.
-
-    Utilizes the GMP function `mpz_divisible_p
-    <https://gmplib.org/manual/Integer-Division>`_.
-
-    :arg div: number to check if ``this`` is divisible by
-    :type div: :record:`bigint`, ``int`` or ``uint``
-
-    :return: ``true`` if ``this`` is exactly divisible by ``div``, ``false``
-             otherwise
-    :rtype: ``bool``
-   */
+  /* See :proc:`~bigint.isDivisible` */
   proc bigint.isDivisible(div: uint) : bool {
     const t_ = this.localize();
     const div_ = div.safeCast(c_ulong);
@@ -1653,15 +1585,16 @@ module BigInteger {
     divisible by ``2^exp`` if there exists an integer ``q`` satisfying ``this =
     q*2^exp``.
 
-    Utilizes the GMP function `mpz_divisible_2exp_p
-    <https://gmplib.org/manual/Integer-Division>`_.
-
     :arg exp: power of 2 to check if ``this`` is divisible by
     :type exp: ``integral``
 
     :return: ``true`` if ``this`` is exactly divisible by ``2^exp``, ``false``
              otherwise
     :rtype: ``bool``
+
+    .. seealso::
+       :proc:`GMP.mpz_divisible_2exp_p` and
+       `mpz_divisible_2exp_p <https://gmplib.org/manual/Integer-Division#index-mpz_005fdivisible_005f2exp_005fp>`_.
    */
   proc bigint.isDivisibleBy2Pow(exp: integral) : bool {
     const t_ = this.localize();
@@ -1676,7 +1609,28 @@ module BigInteger {
       return false;
   }
 
-  // congruent_p
+  /*
+    Return ``true`` if ``this`` is congruent to ``con % mod``.  ``this`` is
+    congruent to ``con % mod`` if there exists an integer ``q`` satisfying
+    ``this = con + q*mod``.  Unlike the other division functions, ``0`` is an
+    acceptable value for ``mod``.  As a result ``this`` and ``con`` are
+    considered congruent modulo ``0`` only when exactly equal.
+
+    :arg con: number to determine if ``this`` is congruent to, modulo ``mod``
+    :type con: :record:`bigint` or ``integral``
+
+    :arg mod: divisor of ``con`` when determining if ``con`` is congruent to
+              ``this``
+    :type mod: :record:`bigint` or ``integral``
+
+    :return: ``true`` if ``this`` is congruent to ``con`` modulo ``mod``,
+             ``false`` otherwise
+    :rtype: ``bool``
+
+    .. seealso::
+       :proc:`GMP.mpz_congruent_p` and
+       `mpz_congruent_p <https://gmplib.org/manual/Integer-Division#index-mpz_005fcongruent_005fp>`_.
+   */
   proc bigint.isCongruent(const ref con: bigint, const ref mod: bigint) : bool {
     const t_ = this.localize();
     const con_ = con.localize();
@@ -1691,27 +1645,7 @@ module BigInteger {
       return false;
   }
 
-  /*
-    Return ``true`` if ``this`` is congruent to ``con % mod``.  ``this`` is
-    congruent to ``con % mod`` if there exists an integer ``q`` satisfying
-    ``this = con + q*mod``.  Unlike the other division functions, ``0`` is an
-    acceptable value for ``mod``.  As a result ``this`` and ``con`` are
-    considered congruent modulo ``0`` only when exactly equal.
-
-    Utilizes the GMP function `mpz_congruent_p
-    <https://gmplib.org/manual/Integer-Division>`_.
-
-    :arg con: number to determine if ``this`` is congruent to, modulo ``mod``
-    :type con: :record:`bigint` or ``integral``
-
-    :arg mod: divisor of ``con`` when determining if ``con`` is congruent to
-              ``this``
-    :type mod: :record:`bigint` or ``integral``
-
-    :return: ``true`` if ``this`` is congruent to ``con`` modulo ``mod``,
-             ``false`` otherwise
-    :rtype: ``bool``
-   */
+  /* See :proc:`~bigint.isCongruent` */
   proc bigint.isCongruent(con: integral, mod: integral) : bool {
     const t_ = this.localize();
     const con_ = con.safeCast(c_ulong);
@@ -1731,9 +1665,6 @@ module BigInteger {
     congruent to ``con % 2^modExp`` if there exists an integer ``q`` satisfying
     ``this = con + q*2^modExp``.
 
-    Utilizes the GMP function `mpz_congruent_2exp_p
-    <https://gmplib.org/manual/Integer-Division>`_.
-
     :arg con: number to determine if ``this`` is congruent to, modulo
               ``2^modExp``.
     :type con: :record:`bigint` or ``integral``
@@ -1745,6 +1676,10 @@ module BigInteger {
     :return: ``true`` if ``this`` is congruent to ``con`` modulo ``2^modExp``,
              ``false`` otherwise.
     :rtype: ``bool``
+
+    .. seealso::
+       :proc:`GMP.mpz_congruent_2exp_p` and
+       `mpz_congruent_2exp_p <https://gmplib.org/manual/Integer-Division#index-mpz_005fcongruent_005f2exp_005fp>`_.
    */
   proc bigint.isCongruentBy2Pow(const ref con: bigint, modExp: integral) : bool {
     const t_ = this.localize();
@@ -1760,47 +1695,51 @@ module BigInteger {
       return false;
   }
 
-  /*
-    .. warning::
-
-       bigint.powm is deprecated, use bigint.powMod instead
-  */
-  @deprecated
-  ("bigint.powm is deprecated, use bigint.powMod instead")
+  @deprecated("bigint.powm method is deprecated, please use the standalone function :proc:`~BigInteger.powMod` instead")
   proc bigint.powm(const ref base: bigint,
                    const ref exp:  bigint,
                    const ref mod:  bigint) {
     BigInteger.powMod(this, base, exp, mod);
   }
 
-  /*
-    .. warning::
-
-       bigint.powm is deprecated, use bigint.powMod instead
-  */
-  @deprecated
-  ("bigint.powm is deprecated, use bigint.powMod instead")
+  @deprecated("bigint.powm method is deprecated, please use the standalone function :proc:`~BigInteger.powMod` instead")
   proc bigint.powm(const ref base: bigint,
                              exp:  int,
                    const ref mod:  bigint) {
     BigInteger.powMod(this, base, exp, mod);
   }
 
-  /*
-    .. warning::
-
-       bigint.powm is deprecated, use bigint.powMod instead
-  */
-  @deprecated
-  ("bigint.powm is deprecated, use bigint.powMod instead")
+  @deprecated("bigint.powm method is deprecated, please use the standalone function :proc:`~BigInteger.powMod` instead")
   proc bigint.powm(const ref base: bigint,
                              exp:  uint,
                    const ref mod:  bigint) {
     BigInteger.powMod(this, base, exp, mod);
   }
 
-  // Exponentiation Functions
-  // Note: Documentation on `exp: uint` version
+
+  /*
+    Set ``result`` to the result of ``(base**exp) modulo mod``.
+
+    :arg result: Where the result is stored
+    :type result: :record:`bigint`
+    :arg base: The value to be raised to the power of ``exp`` before performing
+               a modulo operation on.
+    :type base: :record:`bigint`
+    :arg exp: The exponent to raise ``base`` to the power of prior to the
+               modulo operation.  Can be negative if the inverse (1/``base``)
+               modulo ``mod`` exists.
+    :type exp: :record:`bigint`, ``int``, or ``uint``
+    :arg mod: The divisor for the modulo operation.
+    :type mod: :record:`bigint`
+
+    .. warning::
+       The program behavior is undefined if ``exp`` is negative and the inverse
+       ``(1/base) modulo mod`` does not exist.
+
+    .. seealso::
+       :proc:`GMP.mpz_powm` and
+       `mpz_powm <https://gmplib.org/manual/Integer-Exponentiation#index-mpz_005fpowm>`_.
+  */
   proc powMod(ref result: bigint,
               const ref base: bigint,
               const ref exp: bigint,
@@ -1823,14 +1762,7 @@ module BigInteger {
     }
   }
 
-  // Exponentiation Functions
-  // Note: Documentation on `exp: uint` version
-  @deprecated(notes="bigint.powMod method is deprecated - please use the standalone function :proc:`~BigInteger.powMod`")
-  proc bigint.powMod(const ref base: bigint, const ref exp:  bigint,
-                     const ref mod:  bigint) {
-    BigInteger.powMod(this, base, exp, mod);
-  }
-
+  /* See :proc:`~BigInteger.powMod` */
   proc powMod(ref result: bigint,
               const ref base: bigint,
               exp: int,
@@ -1843,33 +1775,7 @@ module BigInteger {
     }
   }
 
-  // Note: Documentation on `exp: uint` version
-  @deprecated(notes="bigint.powMod method is deprecated - please use the standalone function :proc:`~BigInteger.powMod`")
-  proc bigint.powMod(const ref base: bigint, exp: int, const ref mod: bigint) {
-    BigInteger.powMod(this, base, exp, mod);
-  }
-
-  /* Set ``result`` to the result of (``base`` raised to ``exp``) modulo ``mod``.
-
-     :arg result: Where the result is stored
-     :type result: :record:`bigint`
-
-     :arg base: The value to be raised to the power of ``exp`` before performing
-                a modulo operation on.
-     :type base: :record:`bigint`
-
-     :arg exp: The exponent to raise ``base`` to the power of prior to the
-               modulo operation.  Can be negative if the inverse (1/``base``)
-               modulo ``mod`` exists.
-     :type exp: :record:`bigint`, ``int``, or ``uint``
-
-     :arg mod: The divisor for the modulo operation.
-     :type mod: :record:`bigint`
-
-     .. warning::
-        The program behavior is undefined if ``exp`` is negative and the inverse
-        (1/``base``) modulo ``mod`` does not exist.
-   */
+  /* See :proc:`~BigInteger.powMod` */
   proc powMod(ref result: bigint,
               const ref base: bigint,
               exp: uint,
@@ -1890,6 +1796,18 @@ module BigInteger {
         mpz_powm_ui(result.mpz, base_.mpz, exp_, mod_.mpz);
       }
     }
+  }
+
+  @deprecated(notes="bigint.powMod method is deprecated - please use the standalone function :proc:`~BigInteger.powMod`")
+  proc bigint.powMod(const ref base: bigint, const ref exp:  bigint,
+                     const ref mod:  bigint) {
+    BigInteger.powMod(this, base, exp, mod);
+  }
+
+  // Note: Documentation on `exp: uint` version
+  @deprecated(notes="bigint.powMod method is deprecated - please use the standalone function :proc:`~BigInteger.powMod`")
+  proc bigint.powMod(const ref base: bigint, exp: int, const ref mod: bigint) {
+    BigInteger.powMod(this, base, exp, mod);
   }
 
   /* Set ``this`` to the result of (``base`` raised to ``exp``) modulo ``mod``.
@@ -1942,7 +1860,20 @@ module BigInteger {
     }
   }
 
-  // Documented in uint, uint version
+  /*
+    Set ``result`` to the result of ``base`` raised to ``exp``.
+
+    :arg result: Where the result is stored
+    :type result: :record:`bigint`
+    :arg base: The value to be raised to the power of ``exp``.
+    :type base: :record:`bigint`, ``int`` or ``uint``
+    :arg exp: The exponent to raise ``base`` to the power of.
+    :type exp: ``int`` or ``uint``
+
+    .. seealso::
+       :proc:`GMP.mpz_pow_ui` and
+       `mpz_pow_ui <https://gmplib.org/manual/Integer-Exponentiation#index-mpz_005fpow_005fui>`_.
+  */
   proc pow(ref result: bigint, const ref base: bigint, exp: int) {
     if exp >= 0 {
       BigInteger.pow(result, base, exp : uint);
@@ -1962,13 +1893,7 @@ module BigInteger {
     }
   }
 
-  // Documented in uint, uint version
-  @deprecated(notes="bigint.pow method is deprecated - please use the standalone function :proc:`~BigInteger.pow`")
-  proc bigint.pow(const ref base: bigint, exp: int) {
-    BigInteger.pow(this, base, exp);
-  }
-
-  // Documented in uint, uint version
+  /* See :proc:`~BigInteger.pow` */
   proc pow(ref result: bigint, const ref base: bigint, exp: uint) {
     const exp_ = exp.safeCast(c_ulong);
     if compiledForSingleLocale() {
@@ -1985,13 +1910,7 @@ module BigInteger {
     }
   }
 
-  // Documented in uint, uint version
-  @deprecated(notes="bigint.pow method is deprecated - please use the standalone function :proc:`~BigInteger.pow`")
-  proc bigint.pow(const ref base: bigint, exp: uint) {
-    BigInteger.pow(this, base, exp);
-  }
-
-  // Documented in uint, uint version
+  /* See :proc:`~BigInteger.pow` */
   proc pow(ref result: bigint, base: int, exp: int) {
     if base >= 0 && exp >= 0 {
       BigInteger.pow(result, base : uint, exp : uint);
@@ -2006,23 +1925,7 @@ module BigInteger {
     }
   }
 
-  // Documented in uint, uint version
-  @deprecated(notes="bigint.pow method is deprecated - please use the standalone function :proc:`~BigInteger.pow`")
-  proc bigint.pow(base: int, exp: int) {
-    BigInteger.pow(this, base, exp);
-  }
-
-  /* Set ``result`` to the result of ``base`` raised to ``exp``.
-
-     :arg result: Where the result is stored
-     :type result: :record:`bigint`
-
-     :arg base: The value to be raised to the power of ``exp``.
-     :type base: :record:`bigint`, ``int`` or ``uint``
-
-     :arg exp: The exponent to raise ``base`` to the power of.
-     :type exp: ``int`` or ``uint``
-   */
+  /* See :proc:`~BigInteger.pow` */
   proc pow(ref result: bigint, base: uint, exp: uint) {
     const base_ = base.safeCast(c_ulong);
     const exp_  = exp.safeCast(c_ulong);
@@ -2037,6 +1940,24 @@ module BigInteger {
         mpz_ui_pow_ui(result.mpz, base_, exp_);
       }
     }
+  }
+
+  // Documented in uint, uint version
+  @deprecated(notes="bigint.pow method is deprecated - please use the standalone function :proc:`~BigInteger.pow`")
+  proc bigint.pow(const ref base: bigint, exp: int) {
+    BigInteger.pow(this, base, exp);
+  }
+
+  // Documented in uint, uint version
+  @deprecated(notes="bigint.pow method is deprecated - please use the standalone function :proc:`~BigInteger.pow`")
+  proc bigint.pow(const ref base: bigint, exp: uint) {
+    BigInteger.pow(this, base, exp);
+  }
+
+  // Documented in uint, uint version
+  @deprecated(notes="bigint.pow method is deprecated - please use the standalone function :proc:`~BigInteger.pow`")
+  proc bigint.pow(base: int, exp: int) {
+    BigInteger.pow(this, base, exp);
   }
 
   /* Set ``this`` to the result of ``base`` raised to ``exp``.
@@ -2222,13 +2143,7 @@ module BigInteger {
   proc bigint.sqrtrem(ref rem: bigint, const ref a: bigint)
     do BigInteger.sqrtRem(this, rem, a);
 
-  /*
-    .. warning::
-
-       bigint.perfect_power_p is deprecated, use bigint.isPerfectPower instead
-  */
-  @deprecated
-  ("bigint.perfect_power_p is deprecated, use bigint.isPerfectPower instead")
+  @deprecated("bigint.perfect_power_p is deprecated, use :proc:`bigint.isPerfectPower` instead")
   proc bigint.perfect_power_p() : int {
     return this.isPerfectPower();
   }
@@ -2241,7 +2156,12 @@ module BigInteger {
     Negative values can only be odd perfect powers.
 
     :return: ``true`` if ``this`` is a perfect power, ``false`` otherwise.
-   */
+    :rtype: ``bool``
+
+    .. seealso::
+       :proc:`GMP.mpz_perfect_power_p` and
+       `mpz_perfect_power_p <https://gmplib.org/manual/Integer-Roots#index-mpz_005fperfect_005fpower_005fp>`_.
+  */
   proc bigint.isPerfectPower () : bool {
     var t_ = this.localize();
     var ret: c_int;
@@ -2254,25 +2174,24 @@ module BigInteger {
       return false;
   }
 
-  /*
-    .. warning::
-
-       bigint.perfect_square_p is deprecated, use bigint.isPerfectSquare instead
-  */
-  @deprecated
-  ("bigint.perfect_square_p is deprecated, use bigint.isPerfectSquare instead")
+  @deprecated("bigint.perfect_square_p is deprecated, use :proc:`bigint.isPerfectSquare` instead")
   proc bigint.perfect_square_p() : int {
     return this.isPerfectSquare();
   }
 
   /*
     Return ``true`` if ``this`` is a perfect square, i.e., if the square root of
-    ``this`` is an integer.  Under this definition both ``0`` and ``1`` are
-    considered to be perfect squares.
+    ``this`` is an integer.
+
+    Under this definition both ``0`` and ``1`` are considered to be perfect squares.
 
     :return: ``true`` if ``this`` is a perfect square, ``false`` otherwise.
     :rtype: ``bool``
-   */
+
+    .. seealso::
+       :proc:`GMP.mpz_perfect_square_p` and
+       `mpz_perfect_square_p <https://gmplib.org/manual/Integer-Roots#index-mpz_005fperfect_005fsquare_005fp>`_.
+  */
   proc bigint.isPerfectSquare() : bool {
     var t_ = this.localize();
     var ret: c_int;
@@ -2289,23 +2208,25 @@ module BigInteger {
 
   // Number Theoretic Functions
 
-  /* An enumeration of the different possibilities of a number being prime, for use with e.g.
-     :proc:`~bigint.probablyPrime` to determine if a number is prime or not.
-
-     - ``primality.notPrime`` indicates that the number is not a prime.
-     - ``primality.maybePrime`` indicates that the number may or may not be a prime.
-     - ``primality.isPrime`` indicates that the number is a prime.
+  /*
+    An enumeration of the different possibilities of a number being prime, for
+    use with e.g. :proc:`~bigint.probablyPrime` to determine if a number is
+    prime or not.
    */
   enum primality {
+    /* Indicates that the number is not a prime. */
     notPrime=0,
+    /* Indicates that the number may or may not be a prime. */
     maybePrime,
+    /* Indicates that the number is a prime. */
     isPrime
   };
 
   /*
     Determine whether ``this`` is prime.  Returns one of the :enum:`primality`
-    constants - ``primality.isPrime``, ``primality.maybePrime``, or
-    ``primality.notPrime``.
+    constants - :enumconstant:`~primality.isPrime`,
+    :enumconstant:`~primality.maybePrime`, or
+    :enumconstant:`~primality.notPrime`.
 
     Performs some trial divisions, a Baillie-PSW probable prime test, and
     reps-24 Miller-Rabin probabilistic primality tests.  A higher ``reps`` value
@@ -2314,16 +2235,18 @@ module BigInteger {
     probability of less than ``4^(-reps)``.  Reasonable values of ``reps`` are
     between 15 and 50.
 
-    Utilizes the GMP function `mpz_probab_prime_p
-    <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
-
-    :arg reps: number of attempts before returning ``primality.maybePrime`` if
-               a definitive answer can't be found before then.
+    :arg reps: number of attempts before returning
+               :enumconstant:`~primality.maybePrime` if a definitive answer
+               can't be found before then.
     :type reps: ``int``
-
-    :returns: ``primality.isPrime``, ``primality.maybePrime`` or
-              ``primality.notPrime``.
+    :returns: :enumconstant:`~primality.isPrime`,
+              :enumconstant:`~primality.maybePrime`, or
+              :enumconstant:`~primality.notPrime`.
     :rtype: :enum:`primality`
+
+    .. seealso::
+       :proc:`GMP.mpz_probab_prime_p` and
+       `mpz_probab_prime_p <https://gmplib.org/manual/Number-Theoretic-Functions#index-mpz_005fprobab_005fprime_005fp>`_.
    */
   @unstable("bigint.probablyPrime is unstable and may change in the future")
   proc bigint.probablyPrime(reps: int) : primality {
@@ -2346,18 +2269,20 @@ module BigInteger {
   proc nextprime(ref result: bigint, const ref a: bigint)
     do BigInteger.nextPrime(result, a);
 
-  /*  Set ``result`` to the next prime number greater than ``x``.
+  /* Set ``result`` to the next prime number greater than ``x``.
 
-      Utilizes the GMP function `mpz_nextprime
-      <https://gmplib.org/manual/Number-Theoretic-Functions>`_. Note that this
-      is probablistic function and in an unlikely case may set ``result`` to a
-      compositie number.
+     .. note::
+        This is a probabilistic function and in an unlikely case may set
+        ``result`` to a composite number.
 
-      :arg result: return value that will contain the next prime number
-      :type result: :record:`bigint`
+     :arg result: return value that will contain the next prime number
+     :type result: :record:`bigint`
+     :arg x: the ``result`` will be a prime number bigger than this value
+     :type x: :record:`bigint`
 
-      :arg x: the ``result`` will be a prime number bigger than this value
-      :type x: :record:`bigint`
+     .. seealso::
+        :proc:`GMP.mpz_nextprime` and
+        `mpz_nextprime <https://gmplib.org/manual/Number-Theoretic-Functions#index-mpz_005fnextprime>`_.
   */
   @unstable("nextPrime is unstable and may change in the future")
   proc nextPrime(ref result: bigint, const ref x: bigint) {
@@ -2380,19 +2305,18 @@ module BigInteger {
     BigInteger.nextprime(this, a);
   }
 
-  /*  Set ``result`` to the greatest common divisor of ``a`` and ``b``
+  /* Set ``result`` to the greatest common divisor of ``a`` and ``b``
 
-      Utilizes the GMP function `mpz_gcd
-      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+     :arg result: Where the result is stored
+     :type result: :record:`bigint`
+     :arg a: One of the numbers to compute the greatest common divisor of
+     :type a: :record:`bigint`
+     :arg b: One of the numbers to compute the greatest common divisor of
+     :type b: :record:`bigint`, ``int``, ``uint``
 
-      :arg result: Where the result is stored
-      :type result: :record:`bigint`
-
-      :arg a: One of the numbers to compute the greatest common divisor of
-      :type a: :record:`bigint`
-
-      :arg b: One of the numbers to compute the greatest common divisor of
-      :type b: :record:`bigint`, ``int``, ``uint``
+     .. seealso::
+        :proc:`GMP.mpz_gcd` and
+        `mpz_gcd <https://gmplib.org/manual/Number-Theoretic-Functions#index-mpz_005fgcd>`_.
   */
   @unstable("gcd is unstable and may change in the future")
   proc gcd(ref result: bigint, const ref a: bigint, const ref b: bigint) {
@@ -2417,7 +2341,7 @@ module BigInteger {
     BigInteger.gcd(this, a, b);
   }
 
-  @chpldoc.nodoc
+  /* See :proc:`gcd` */
   @unstable("gcd is unstable and may change in the future")
   proc gcd(ref result: bigint, const ref a: bigint, b: int) {
     if b >= 0 {
@@ -2433,7 +2357,7 @@ module BigInteger {
     BigInteger.gcd(this, a, b);
   }
 
-  @chpldoc.nodoc
+  /* See :proc:`gcd` */
   @unstable("gcd is unstable and may change in the future")
   proc gcd(ref result: bigint, const ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
@@ -2463,23 +2387,20 @@ module BigInteger {
         The result stored in ``result`` is always positive, even if one or
         both of ``a`` and ``b`` are negative (or zero if both are zero).
 
-     This fulfills the same role as the GMP function `mpz_gcdext
-     <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
-
      :arg result: Where the result is stored
      :type result: :record:`bigint`
-
      :arg a: One of the numbers to compute the greatest common divisor of
      :type a: :record:`bigint`
-
      :arg b: One of the numbers to compute the greatest common divisor of
      :type b: :record:`bigint`
-
      :arg s: The returned coefficient that can be multiplied by ``a``.
      :type s: :record:`bigint`
-
      :arg t: The returned coefficient that can be multiplied by ``b``.
      :type t: :record:`bigint`
+
+     .. seealso::
+        :proc:`GMP.mpz_gcdext` and
+        `mpz_gcdext <https://gmplib.org/manual/Number-Theoretic-Functions#index-mpz_005fgcdext>`_.
    */
   @unstable("gcd is unstable and may change in the future")
   proc gcd(ref result: bigint, const ref a: bigint, const ref b: bigint,
@@ -2517,7 +2438,7 @@ module BigInteger {
         both of ``a`` and ``b`` are negative (or zero if both are zero).
 
      This fulfills the same role as the GMP function `mpz_gcdext
-     <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+     <https://gmplib.org/manual/Number-Theoretic-Functions#index-mpz_005fgcdext>`_.
 
      :arg a: One of the numbers to compute the greatest common divisor of
      :type a: :record:`bigint`
@@ -2537,19 +2458,18 @@ module BigInteger {
     BigInteger.gcd(this, a, b, s, t);
   }
 
-  /*  Set ``result`` to the least common multiple of ``a`` and ``b``
+  /* Set ``result`` to the least common multiple of ``a`` and ``b``
 
-      Utilizes the GMP function `mpz_lcm
-      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+     :arg result: Where the result is stored
+     :type result: :record:`bigint`
+     :arg a: One of the numbers to compute the least common multiple of
+     :type a: :record:`bigint`
+     :arg b: One of the numbers to compute the least common multiple of
+     :type b: :record:`bigint`, ``int``, ``uint``
 
-      :arg result: Where the result is stored
-      :type result: :record:`bigint`
-
-      :arg a: One of the numbers to compute the least common multiple of
-      :type a: :record:`bigint`
-
-      :arg b: One of the numbers to compute the least common multiple of
-      :type b: :record:`bigint`, ``int``, ``uint``
+     .. seealso::
+        :proc:`GMP.mpz_lcm` and
+        `mpz_lcm <https://gmplib.org/manual/Number-Theoretic-Functions#index-mpz_005flcm>`_.
   */
   @unstable("lcm is unstable and may change in the future")
   proc lcm(ref result: bigint, const ref a: bigint, const ref b: bigint) {
@@ -2574,7 +2494,7 @@ module BigInteger {
     BigInteger.lcm(this, a, b);
   }
 
-  @chpldoc.nodoc
+  /* See :proc:`lcm` */
   @unstable("lcm is unstable and may change in the future")
   proc lcm(ref result: bigint, const ref a: bigint, b: int) {
     if b >= 0 then
@@ -2588,7 +2508,7 @@ module BigInteger {
     BigInteger.lcm(this, a, b);
   }
 
-  @chpldoc.nodoc
+  /* See :proc:`lcm` */
   @unstable("lcm is unstable and may change in the future")
   proc lcm(ref result: bigint, const ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
@@ -2613,7 +2533,7 @@ module BigInteger {
   }
 
   /*
-   An `InversionError` is thrown if a :proc:`bigint.invert()` is attempted with
+   An :class:`InversionError` is thrown if a :proc:`bigint.invert()` is attempted with
    invalid arguments that result in a non-existent inverse. Specifically,
    if the arguments cause a divide by zero, this error notifies the caller
    that the internal value of the :record:`bigint` was left in an undefined state.
@@ -2706,14 +2626,7 @@ module BigInteger {
     BigInteger.invert(this, a, b);
   }
 
-  // remove
-    /*
-    .. warning::
-
-       bigint.remove is deprecated, use bigint.removeFactor instead
-  */
-  @deprecated
-  ("bigint.remove is deprecated, use bigint.removeFactor instead")
+  @deprecated("bigint.remove is deprecated, use :proc:`bigint.removeFactor` instead")
   proc bigint.remove(const ref a: bigint, const ref f: bigint) : uint {
     return BigInteger.removeFactor(this, a,f);
   }
@@ -2733,15 +2646,16 @@ module BigInteger {
 
     :arg result: Where the result is stored
     :type result: :record:`bigint`
-
     :arg x: The value to remove all occurrences of ``fac`` from
     :type x: :record:`bigint`
-
     :arg fac: The factor to remove from ``x``.
     :type fac: :record:`bigint`
-
     :return: The number of occurrences of ``fac`` found in ``x``.
     :rtype: ``uint``
+
+    .. seealso::
+       :proc:`GMP.mpz_remove` and
+        `mpz_remove <https://gmplib.org/manual/Number-Theoretic-Functions#index-mpz_005fremove>`_.
    */
   proc removeFactor(ref result: bigint, const ref x: bigint, const ref fac: bigint) : uint {
     var ret: c_ulong;
@@ -2784,10 +2698,17 @@ module BigInteger {
     return BigInteger.removeFactor(this, x, fac);
   }
 
-  /*  Set ``result`` to the factorial of ``a``
+  /*
+    Set ``result`` to the factorial of ``a``.
 
-      Utilizes the GMP function `mpz_fac_ui
-      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+    :arg result: Where the result is stored
+    :type result: :record:`bigint`
+    :arg a: Number to take the factorial of
+    :type a: ``integral``
+
+    .. seealso::
+       :proc:`GMP.mpz_fac_ui` and
+       `mpz_fac_ui <https://gmplib.org/manual/Number-Theoretic-Functions#index-mpz_005ffac_005fui>`_.
   */
   @unstable("fac is unstable and may change in the future")
   proc fac(ref result: bigint, a: integral) {
@@ -2809,12 +2730,19 @@ module BigInteger {
     BigInteger.fac(this, a);
   }
 
-  /*  Set ``result`` to the binomial coefficient of ``n`` over ``k``.
+  /*
+    Set ``result`` to the binomial coefficient of ``n`` over ``k``.
 
-      Utilizes the GMP function `mpz_fac_ui
-      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+    :arg result: Where the result is stored
+    :type result: :record:`bigint`
+    :arg n: Top number of the binomial
+    :type n: :record:`bigint` or ``uint``
+    :arg k: Bottom number of the binomial
+    :type k: ``integral``
 
-      ``n`` can also be a ``uint``.
+    .. seealso::
+       :proc:`GMP.mpz_bin_ui` and
+       `mpz_bin_ui <https://gmplib.org/manual/Number-Theoretic-Functions#index-mpz_005fbin_005fui>`_.
   */
   @unstable("bin is unstable and may change in the future")
   proc bin(ref result: bigint, const ref n: bigint, k: integral) {
@@ -2838,16 +2766,14 @@ module BigInteger {
     BigInteger.bin(this, n, k);
   }
 
-  @chpldoc.nodoc
+  /* See :proc:`bin` */
   @unstable("bin is unstable and may change in the future")
   proc bin(ref result: bigint, n: uint, k: integral) {
     if n >= 0 {
       const n_ = n.safeCast(c_ulong);
       const k_ = k.safeCast(c_ulong);
 
-      if compiledForSingleLocale() {
-        mpz_bin_uiui(result.mpz, n_, k_);
-      } else if result.localeId == chpl_nodeID {
+      if compiledForSingleLocale() || result.localeId == chpl_nodeID {
         mpz_bin_uiui(result.mpz, n_, k_);
       } else {
         const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
@@ -2865,24 +2791,23 @@ module BigInteger {
     BigInteger.bin(this, n, k);
   }
 
-  /*  Set ``result`` to the ``n`` th Fibonacci number.
+  /*
+    Set ``result`` to the ``n`` th Fibonacci number.
 
-      Utilizes the GMP function `mpz_fib_ui
-      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+    :arg result: return value that will contain the Fibonacci number
+    :type result: :record:`bigint`
+    :arg n: which Fibonacci number to compute for ``result``.
+    :type n: ``integral``
 
-      :arg result: return value that will contain the Fibonacci number
-      :type result: :record:`bigint`
-
-      :arg n: which Fibonacci number to compute for ``result``.
-      :type n: ``integral``
+    .. seealso::
+       :proc:`GMP.mpz_fib_ui` and
+       `mpz_fib_ui <https://gmplib.org/manual/Number-Theoretic-Functions#index-mpz_005ffib_005fui>`_.
   */
   @unstable("fib is unstable and may change in the future")
   proc fib(ref result: bigint, n: integral) {
     const n_ = n.safeCast(c_ulong);
 
-    if compiledForSingleLocale() {
-      mpz_fib_ui(result.mpz, n_);
-    } else if result.localeId == chpl_nodeID {
+    if compiledForSingleLocale() || result.localeId == chpl_nodeID {
       mpz_fib_ui(result.mpz, n_);
     } else {
       const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
@@ -2897,21 +2822,21 @@ module BigInteger {
     BigInteger.fib(this, n);
   }
 
-  /*  Set ``result`` to the ``n`` th Fibonacci number and set ``fnsub1`` to the
-      ``n-1`` th Fibonacci number.
+  /*
+    Set ``result`` to the ``n`` th Fibonacci number and set ``fnsub1`` to the
+    ``n-1`` th Fibonacci number.
 
-      Utilizes the GMP function `mpz_fib2_ui
-      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+    :arg result: return value that will contain the Fibonacci number
+    :type result: :record:`bigint`
+    :arg fnsub1: return value that will contain the previous Fibonacci number
+    :type fnsub1: :record:`bigint`
+    :arg n: which Fibonacci number to compute for ``result``. ``fnsub1`` is set
+            to the ``n-1`` Fibonacci number.
+    :type n: ``integral``
 
-      :arg result: return value that will contain the Fibonacci number
-      :type result: :record:`bigint`
-
-      :arg fnsub1: return value that will contain the previous Fibonacci number
-      :type fnsub1: :record:`bigint`
-
-      :arg n: which Fibonacci number to compute for ``result``. ``fnsub1`` is set
-              to the ``n-1`` Fibonacci number.
-      :type n: ``integral``
+    .. seealso::
+       :proc:`GMP.mpz_fib2_ui` and
+       `mpz_fib2_ui <https://gmplib.org/manual/Number-Theoretic-Functions#index-mpz_005ffib2_005fui>`_.
   */
   @unstable("fib2 is unstable and may change in the future")
   proc fib2(ref result: bigint, ref fnsub1: bigint, n: integral) {
@@ -2920,10 +2845,10 @@ module BigInteger {
     if compiledForSingleLocale() {
       mpz_fib2_ui(result.mpz, fnsub1.mpz, n_);
     } else if result.localeId == chpl_nodeID {
-        // TODO: need to revisit this in relation to Cray/chapel-private#4628
-        var fnsub1_ : bigint;
-        mpz_fib2_ui(result.mpz, fnsub1_.mpz, n_);
-        fnsub1 = fnsub1_;
+      // TODO: need to revisit this in relation to Cray/chapel-private#4628
+      var fnsub1_ : bigint;
+      mpz_fib2_ui(result.mpz, fnsub1_.mpz, n_);
+      fnsub1 = fnsub1_;
     } else {
       const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
       on __primitive("chpl_on_locale_num", resultLoc) {
@@ -2943,23 +2868,22 @@ module BigInteger {
   proc lucnum(ref result: bigint, n: integral)
     do BigInteger.lucNum(result, n);
 
-  /*  Set ``result`` to the ``n`` th Lucas number.
+  /*
+    Set ``result`` to the ``n`` th Lucas number.
 
-      Utilizes the GMP function `mpz_lucnum_ui
-      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+    :arg result: return value that will contain the Lucas number
+    :type result: :record:`bigint`
+    :arg n: which Lucas number to compute
+    :type n: ``integral``
 
-      :arg result: return value that will contain the Lucas number
-      :type result: :record:`bigint`
-
-      :arg n: which Lucas number to compute
-      :type n: ``integral``
+    .. seealso::
+       :proc:`GMP.mpz_lucnum_ui` and
+       `mpz_lucnum_ui <https://gmplib.org/manual/Number-Theoretic-Functions#index-mpz_005flucnum_005fui>`_.
   */
   @unstable("lucNum is unstable and may change in the future")
   proc lucNum(ref result: bigint, n: integral) {
     const n_ = n.safeCast(c_ulong);
-    if compiledForSingleLocale() {
-      mpz_lucnum_ui(result.mpz, n_);
-    } else if result.localeId == chpl_nodeID {
+    if compiledForSingleLocale() || result.localeId == chpl_nodeID {
       mpz_lucnum_ui(result.mpz, n_);
     } else {
       const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
@@ -2969,7 +2893,6 @@ module BigInteger {
     }
   }
 
-  // Lucas Number
   @deprecated(notes="bigint.lucnum method is deprecated - please use the standalone function :proc:`~BigInteger.lucNum`")
   proc bigint.lucnum(n: integral) do BigInteger.lucNum(this, n);
 
@@ -2977,21 +2900,21 @@ module BigInteger {
   proc lucnum2(ref result: bigint, ref fnsub1: bigint, n: integral)
     do BigInteger.lucNum2(result, fnsub1, n);
 
-  /*  Set ``result`` to the ``n`` th Lucas number and set ``fnsub1`` to the
-      ``n-1`` th Lucas number.
+  /*
+    Set ``result`` to the ``n`` th Lucas number and set ``fnsub1`` to the
+    ``n-1`` th Lucas number.
 
-      Utilizes the GMP function `mpz_lucnum2_ui
-      <https://gmplib.org/manual/Number-Theoretic-Functions>`_.
+    :arg result: return value that will contain the Lucas number
+    :type result: :record:`bigint`
+    :arg fnsub1: return value that will contain the previous Lucas number
+    :type fnsub1: :record:`bigint`
+    :arg n: which Lucas number to compute for ``result``. ``fnsub1`` is set to
+            the ``n-1`` Lucas number.
+    :type n: ``integral``
 
-      :arg result: return value that will contain the Lucas number
-      :type result: :record:`bigint`
-
-      :arg fnsub1: return value that will contain the previous Lucas number
-      :type fnsub1: :record:`bigint`
-
-      :arg n: which Lucas number to compute for ``result``. ``fnsub1`` is set
-              to the ``n-1`` Lucas number.
-      :type n: ``integral``
+    .. seealso::
+       :proc:`GMP.mpz_lucnum2_ui` and
+       `mpz_lucnum2_ui <https://gmplib.org/manual/Number-Theoretic-Functions#index-mpz_005flucnum2_005fui>`_.
   */
   @unstable("lucNum2 is unstable and may change in the future")
   proc lucNum2(ref result: bigint, ref fnsub1: bigint, n: integral) {
@@ -3031,7 +2954,7 @@ module BigInteger {
 
     .. seealso::
        :proc:`GMP.mpz_popcount` and
-       `mpz_popcount <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling>`_.
+       `mpz_popcount <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling#index-mpz_005fpopcount>`_.
   */
   proc bigint.popCount() : uint {
     const t_ = this.localize();
@@ -3045,18 +2968,20 @@ module BigInteger {
   @deprecated("bigint.hamdist is deprecated - please use :proc:`bigint.hammingDistance` instead")
   proc bigint.hamdist(const ref b: bigint): uint do return this.hammingDistance(b);
 
-  /*  Returns the number of bit positions that differ between ``this`` and
-      ``x``. If ``this`` and ``x`` have different signs, the number of bits
-      that differ is infinite and the return value is the largest possible
-      :type:`~GMP.mp_bitcnt_t`.
+  /*
+    Returns the number of bit positions that differ between ``this`` and ``x``.
+    If ``this`` and ``x`` have different signs, the number of bits that differ
+    is infinite and the return value is the largest possible
+    :type:`~GMP.mp_bitcnt_t`.
 
-      Utilizes the GMP function `mpz_hamdist <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling>`_
+    :arg x: value to compare ``this`` against
+    :type x: :record:`bigint`
+    :returns: The number of bits that differ
+    :rtype: ``uint``
 
-      :arg x: value to compare ``this`` against
-      :type x: :record:`bigint`
-
-      :returns: the number of bits that differ
-      :rtype: ``uint``
+    .. seealso::
+       :proc:`GMP.mpz_hamdist` and
+       `mpz_hamdist <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling#index-mpz_005fhamdist>`_.
   */
   @unstable("bigint.hammingDistance is unstable and may change in the future")
   proc bigint.hammingDistance(const ref x: bigint): uint {
@@ -3076,9 +3001,9 @@ module BigInteger {
 
     If the bit at ``startBitIdx`` is ``0``, will return ``startBitIdx``.
 
-    :arg startBitIdx: the index of the first bit to start searching for a ``0``
+    :arg startBitIdx: The index of the first bit to start searching for a ``0``
     :type startBitIdx: ``integral``
-    :returns: the index of the first ``0`` bit after ``startBitIdx``, inclusive
+    :returns: The index of the first ``0`` bit after ``startBitIdx``, inclusive
     :rtype: ``uint``
   */
   @deprecated("scan0 is deprecated - please use :proc:`bigint.findNext0` instead")
@@ -3092,9 +3017,9 @@ module BigInteger {
 
     If the bit at ``startBitIdx`` is ``1``, will return ``startBitIdx``.
 
-    :arg startBitIdx: the index of the first bit to start searching for a ``1``
+    :arg startBitIdx: The index of the first bit to start searching for a ``1``
     :type startBitIdx: ``integral``
-    :returns: the index of the first ``1`` bit after ``startBitIdx``, inclusive
+    :returns: The index of the first ``1`` bit after ``startBitIdx``, inclusive
     :rtype: ``uint``
   */
   @deprecated("scan1 is deprecated - please use :proc:`bigint.findNext1` instead")
@@ -3107,14 +3032,14 @@ module BigInteger {
 
     If the bit at ``startBitIdx`` is ``1``, will return ``startBitIdx``.
 
-    :arg startBitIdx: the index of the first bit to start searching for a ``0``
+    :arg startBitIdx: The index of the first bit to start searching for a ``0``
     :type startBitIdx: ``integral``
-    :returns: the index of the first ``0`` bit after ``startBitIdx``, inclusive
+    :returns: The index of the first ``0`` bit after ``startBitIdx``, inclusive
     :rtype: ``uint``
 
     .. seealso::
        :proc:`GMP.mpz_scan0` and
-       `mpz_scan0 <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling>`_.
+       `mpz_scan0 <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling#index-mpz_005fscan0>`_.
   */
   proc bigint.findNext0(startBitIdx: integral): uint {
     const t_ = this.localize();
@@ -3132,14 +3057,14 @@ module BigInteger {
 
     If the bit at ``startBitIdx`` is ``1``, will return ``startBitIdx``.
 
-    :arg startBitIdx: the index of the first bit to start searching for a ``1``
+    :arg startBitIdx: The index of the first bit to start searching for a ``1``
     :type startBitIdx: ``integral``
-    :returns: the index of the first ``1`` bit after ``startBitIdx``, inclusive
+    :returns: The index of the first ``1`` bit after ``startBitIdx``, inclusive
     :rtype: ``uint``
 
     .. seealso::
        :proc:`GMP.mpz_scan1` and
-       `mpz_scan1 <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling>`_.
+       `mpz_scan1 <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling#index-mpz_005fscan1>`_.
   */
   proc bigint.findNext1(startBitIdx: integral): uint {
     const t_ = this.localize();
@@ -3155,22 +3080,21 @@ module BigInteger {
   @deprecated("bigint.setbit is deprecated - please use :proc:`bigint.setBit`")
   proc bigint.setbit(bit_index: integral) do this.setBit(bit_index);
 
-  /*  Set the bit at ``idx`` of ``this``.
+  /*
+    Set the bit at ``idx`` of ``this``.
 
-      Utilizes the GMP function `mpz_setbit <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling>`_
+    :arg idx: The index of the bit to be set
+    :type idx: ``integral``
 
-      :arg idx: the index of the bit to be set
-      :type idx: ``integral``
+    .. seealso::
+       :proc:`GMP.mpz_setbit` and
+       `mpz_setbit <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling#index-mpz_005fsetbit>`_.
   */
   proc bigint.setBit(idx: integral) {
     const bi_ = idx.safeCast(c_ulong);
 
-    if compiledForSingleLocale() {
+    if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       mpz_setbit(this.mpz, bi_);
-
-    } else if this.localeId == chpl_nodeID {
-      mpz_setbit(this.mpz, bi_);
-
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
@@ -3183,22 +3107,21 @@ module BigInteger {
   @deprecated("bigint.clrbit is deprecated - please use :proc:`bigint.clearBit`")
   proc bigint.clrbit(bit_index: integral) do this.clearBit(bit_index);
 
-  /*  Clear the bit at ``idx`` of ``this``.
+  /*
+    Clear the bit at ``idx`` of ``this``.
 
-      Utilizes the GMP function `mpz_clrbit <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling>`_
+    :arg idx: The index of the bit to be cleared
+    :type idx: ``integral``
 
-      :arg idx: the index of the bit to be cleared
-      :type idx: ``integral``
+    .. seealso::
+       :proc:`GMP.mpz_clrbit` and
+       `mpz_clrbit <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling#index-mpz_005fclrbit>`_.
   */
   proc bigint.clearBit(idx: integral) {
     const bi_ = idx.safeCast(c_ulong);
 
-    if compiledForSingleLocale() {
+    if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       mpz_clrbit(this.mpz, bi_);
-
-    } else if this.localeId == chpl_nodeID {
-      mpz_clrbit(this.mpz, bi_);
-
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
@@ -3211,23 +3134,22 @@ module BigInteger {
   @deprecated("bigint.combit is deprecated - please use :proc:`bigint.toggleBit`")
   proc bigint.combit(bit_index: integral) do this.toggleBit(bit_index);
 
-  /*  Toggle the bit at ``idx`` of ``this``. If the bit was 1, set it to 0. If
-      the bit was 0, set it to 1.
+  /*
+    Toggle the bit at ``idx`` of ``this``. If the bit was 1, set it to 0. If
+    the bit was 0, set it to 1.
 
-      Utilizes the GMP function `mpz_combit <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling>`_
+    :arg idx: The index of the bit to be toggled
+    :type idx: ``integral``
 
-      :arg idx: the index of the bit to be toggled
-      :type idx: ``integral``
+    .. seealso::
+       :proc:`GMP.mpz_combit` and
+       `mpz_combit <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling#index-mpz_005fcombit>`_.
   */
   proc bigint.toggleBit(idx: integral) {
     const bi_ = idx.safeCast(c_ulong);
 
-    if compiledForSingleLocale() {
+    if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       mpz_combit(this.mpz, bi_);
-
-    } else if this.localeId == chpl_nodeID {
-      mpz_combit(this.mpz, bi_);
-
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
@@ -3240,15 +3162,17 @@ module BigInteger {
   @deprecated("bigint.tstbit is deprecated - please use :proc:`bigint.getBit`")
   proc bigint.tstbit(bit_index: integral): int do return this.getBit(bit_index);
 
-  /*  Get the bit at ``idx`` of ``this``.
+  /*
+    Get the bit at ``idx`` of ``this``.
 
-      Utilizes the GMP function `mpz_tstbit <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling>`_
+    :arg idx: The index of the bit to be returned
+    :type idx: ``integral``
+    :returns: The bit at index ``idx``
+    :rtype: ``int``
 
-      :arg idx: the index of the bit to be returned
-      :type idx: ``integral``
-
-      :returns: the bit at index ``idx``
-      :rtype: ``int``
+    .. seealso::
+       :proc:`GMP.mpz_tstbit` and
+       `mpz_tstbit <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling#index-mpz_005ftstbit>`_.
   */
   proc bigint.getBit(idx: integral): int {
     var t_ = this.localize();
@@ -3282,32 +3206,35 @@ module BigInteger {
         false;
   }
 
-  // Miscellaneous Functions
-  /* Test whether a :record:`bigint` will fit into
-    one of the standard integer types
+  /*
+    Test whether a :record:`bigint` will fit into one of the standard integer types.
 
     :arg t: The Integral type to check against.
-    :type t: `integral`
+    :type t: ``integral``
+    :rtype: ``bool``
+
+    .. seealso::
+       `mpz_fits_* <https://gmplib.org/manual/Miscellaneous-Integer-Functions>`_.
   */
   proc bigint.fitsInto(type t: integral): bool {
     var t_ = this.localize();
     return fits_into(t_.mpz, t);
   }
 
-  /*
-    .. warning::
-
-       bigint.even_p is deprecated, use bigint.isEven instead
-  */
-  @deprecated
-  ("bigint.even_p is deprecated, use bigint.isEven instead")
+  @deprecated("bigint.even_p is deprecated, use :proc:`bigint.isEven` instead")
   proc bigint.even_p() : int {
     return this.isEven();
   }
 
   /*
     Returns ``true`` if ``this`` is an even number, ``false`` otherwise.
-   */
+
+    :rtype: ``bool``
+
+    .. seealso::
+       :proc:`GMP.mpz_even_p` and
+       `mpz_even_p <https://gmplib.org/manual/Miscellaneous-Integer-Functions#index-mpz_005feven_005fp>`_.
+  */
   proc bigint.isEven() : bool {
     var t_ = this.localize();
     var ret: c_int;
@@ -3320,20 +3247,20 @@ module BigInteger {
       return false;
   }
 
-  /*
-    .. warning::
-
-       bigint.odd_p is deprecated, use bigint.isOdd instead
-  */
-  @deprecated
-  ("bigint.odd_p is deprecated, use bigint.isOdd instead")
+  @deprecated("bigint.odd_p is deprecated, use :proc:`bigint.isOdd` instead")
   proc bigint.odd_p() : int {
     return this.isOdd();
   }
 
   /*
     Returns ``true`` if ``this`` is an odd number, ``false`` otherwise.
-   */
+
+    :rtype: ``bool``
+
+    .. seealso::
+       :proc:`GMP.mpz_odd_p` and
+       `mpz_odd_p <https://gmplib.org/manual/Miscellaneous-Integer-Functions#index-mpz_005fodd_005fp>`_.
+  */
   proc bigint.isOdd() : bool {
     var t_ = this.localize();
     var ret: c_int;
@@ -3725,7 +3652,7 @@ module BigInteger {
      .. seealso::
         :proc:`GMP.mpz_addmul`,
         :proc:`GMP.mpz_addmul_ui`, and
-        `mpz_addmul <https://gmplib.org/manual/Integer-Arithmetic>`_.
+        `mpz_addmul <https://gmplib.org/manual/Integer-Arithmetic#index-mpz_005faddmul>`_.
   */
   proc addMul(ref result: bigint, const ref x: bigint, const ref y: bigint) {
     if compiledForSingleLocale() {
@@ -3807,7 +3734,7 @@ module BigInteger {
      .. seealso::
         :proc:`GMP.mpz_submul`,
         :proc:`GMP.mpz_submul_ui`, and
-        `mpz_submul <https://gmplib.org/manual/Integer-Arithmetic>`_.
+        `mpz_submul <https://gmplib.org/manual/Integer-Arithmetic#index-mpz_005fsub>`_.
   */
   proc subMul(ref result: bigint, const ref x: bigint, const ref y: bigint) {
     if compiledForSingleLocale() {
@@ -3869,7 +3796,7 @@ module BigInteger {
 
     .. seealso::
        :proc:`GMP.mpz_mul_2exp` and
-       `mpz_mul_2exp <https://gmplib.org/manual/Integer-Arithmetic>`_.
+       `mpz_mul_2exp <https://gmplib.org/manual/Integer-Arithmetic#index-mpz_005fmul_005f2exp>`_.
   */
   @unstable("mul2Exp is unstable and may change in the future")
   proc mul2Exp(ref result: bigint, const ref x: bigint, exp: integral) {
@@ -3934,7 +3861,7 @@ module BigInteger {
 
      :arg result: Where the result is stored
      :type result: :record:`bigint`
-     :arg x: The number to take the absoulte value of
+     :arg x: The number to take the absolute value of
      :type x: :record:`bigint`
 
      .. seealso::
@@ -3977,8 +3904,7 @@ module BigInteger {
     }
   }
 
-  @deprecated
-  ("bigint.div_q using Round is deprecated, use the standalone function :proc:`~BigInteger.div` with :enum:`roundingMode` instead")
+  @deprecated("bigint.div_q using Round is deprecated, use the standalone function :proc:`~BigInteger.div` with :enum:`roundingMode` instead")
   proc bigint.div_q(const ref n: bigint,
                               d: integral,
                     param     rounding = Round.ZERO) {
@@ -4066,7 +3992,7 @@ module BigInteger {
      :type denom: :record:`bigint`, ``integral``
      :arg rounding: The rounding style to use, see :enum:`roundingMode` for a
                     description of what the rounding styles entail.  Defaults to
-                    ``zero`` if unspecified
+                    :enumconstant:`~roundingMode.zero` if unspecified
      :type rounding: :enum:`roundingMode`
 
      .. warning::
@@ -4076,7 +4002,7 @@ module BigInteger {
         :proc:`GMP.mpz_cdiv_q`,
         :proc:`GMP.mpz_fdiv_q`,
         :proc:`GMP.mpz_tdiv_q`, and
-        `mpz_div_q <https://gmplib.org/manual/Integer-Division>`_.
+        `mpz_*div_q <https://gmplib.org/manual/Integer-Division#index-Division-functions>`_.
   */
   proc div(ref       result: bigint,
            const ref numer: bigint,
@@ -4194,21 +4120,21 @@ module BigInteger {
      :type denom: :record:`bigint`, ``integral``
      :arg rounding: The rounding style to use, see :enum:`roundingMode` for a
                     description of what the rounding styles entail.  Defaults to
-                    ``zero`` if unspecified
+                    :enumconstant:`~roundingMode.zero` if unspecified
      :type rounding: :enum:`roundingMode`
 
      .. warning::
         If the denominator is zero, the program behavior is undefined.
 
      .. note::
-        When ``rounding == roundingMode.down``, this procedure is equivalent to
-        :proc:`~BigInteger.mod`.
+        When ``rounding`` is :enumconstant:`~roundingMode.down`, this procedure
+        is equivalent to :proc:`~BigInteger.mod`.
 
      .. seealso::
         :proc:`GMP.mpz_cdiv_r`,
         :proc:`GMP.mpz_fdiv_r`,
         :proc:`GMP.mpz_tdiv_r`, and
-        `mpz_div_r <https://gmplib.org/manual/Integer-Division>`_.
+        `mpz_*div_r <https://gmplib.org/manual/Integer-Division#index-Division-functions>`_.
   */
   proc rem(ref       result: bigint,
            const ref numer: bigint,
@@ -4270,7 +4196,7 @@ module BigInteger {
      :type denom: :record:`bigint`, ``integral``
      :arg rounding: The rounding style to use, see :enum:`roundingMode` for a
                     description of what the rounding styles entail.  Defaults to
-                    ``zero`` if unspecified
+                    :enumconstant:`~roundingMode.zero` if unspecified
      :type rounding: :enum:`roundingMode`
 
      .. warning::
@@ -4280,7 +4206,7 @@ module BigInteger {
         :proc:`GMP.mpz_cdiv_qr`,
         :proc:`GMP.mpz_fdiv_qr`,
         :proc:`GMP.mpz_tdiv_qr`, and
-        `mpz_div_qr <https://gmplib.org/manual/Integer-Division>`_.
+        `mpz_*div_qr <https://gmplib.org/manual/Integer-Division#index-Division-functions>`_.
   */
   proc divRem(ref       result: bigint,
               ref       remain: bigint,
@@ -4446,7 +4372,7 @@ module BigInteger {
      ``result``.
 
      This is the same as performing a right bit shift of ``numer`` by ``exp``
-     bits when ``rounding==roundingMode.down``.
+     bits when ``rounding`` is :enumconstant:`~roundingMode.down`.
 
      :arg result: Where the result is stored
      :type result: :record:`bigint`
@@ -4457,14 +4383,14 @@ module BigInteger {
      :type exp: ``integral``
      :arg rounding: The rounding style to use, see :enum:`roundingMode` for a
                     description of what the rounding styles entail.  Defaults to
-                    ``zero`` if unspecified
+                    :enumconstant:`~roundingMode.zero` if unspecified
      :type rounding: :enum:`roundingMode`
 
      .. seealso::
         :proc:`GMP.mpz_cdiv_q_2exp`,
         :proc:`GMP.mpz_fdiv_q_2exp`,
         :proc:`GMP.mpz_tdiv_q_2exp`, and
-        `mpz_div_q_2exp <https://gmplib.org/manual/Integer-Division>`_.
+        `mpz_*div_q_2exp <https://gmplib.org/manual/Integer-Division#index-Division-functions>`_.
   */
   @unstable("div2Exp is unstable and may change in the future")
   proc div2Exp(ref       result: bigint,
@@ -4553,14 +4479,14 @@ module BigInteger {
      :type exp: ``integral``
      :arg rounding: The rounding style to use, see :enum:`roundingMode` for a
                     description of what the rounding styles entail.  Defaults to
-                    ``zero`` if unspecified
+                    :enumconstant:`~roundingMode.zero` if unspecified
      :type rounding: :enum:`roundingMode`
 
      .. seealso::
         :proc:`GMP.mpz_cdiv_r_2exp`,
         :proc:`GMP.mpz_fdiv_r_2exp`,
         :proc:`GMP.mpz_tdiv_r_2exp`, and
-        `mpz_div_r_2exp <https://gmplib.org/manual/Integer-Division>`_.
+        `mpz_*div_r_2exp <https://gmplib.org/manual/Integer-Division#index-Division-functions>`_.
   */
   @unstable("rem2Exp is unstable and may change in the future")
   proc rem2Exp(ref       result: bigint,
@@ -4623,13 +4549,12 @@ module BigInteger {
      :type n: ``integral``
 
      .. seealso::
-        :proc:`BigInteger.mul2Exp` and :proc:`BigInteger.div2Exp`
+        :proc:`~BigInteger.mul2Exp` and :proc:`~BigInteger.div2Exp`
   */
   inline proc shiftLeft(ref result: bigint, const ref x: bigint, n: integral) {
     if n >= 0
       then BigInteger.mul2Exp(result, x, n);
       else BigInteger.div2Exp(result, x, (0 - n):uint, roundingMode.down);
-
   }
 
   /* Stores ``x`` shifted right by ``n`` bits in ``result``. Negative ``n`` will
@@ -4643,7 +4568,7 @@ module BigInteger {
      :type n: ``integral``
 
      .. seealso::
-        :proc:`BigInteger.div2Exp` and :proc:`BigInteger.mul2Exp`
+        :proc:`~BigInteger.div2Exp` and :proc:`~BigInteger.mul2Exp`
   */
   inline proc shiftRight(ref result: bigint, const ref x: bigint, n: integral) {
     if n >= 0
@@ -4651,70 +4576,31 @@ module BigInteger {
       else BigInteger.mul2Exp(result, x, (0 - n):uint);
   }
 
-  /* Computes the mod operator on the two arguments, defined as
-     ``mod(a, b) = a - b * floor(a / b)``.
+  /*
+    Computes the mod operator on the two arguments, defined as
+    ``mod(x, y) = x - y * floor(x / y)``.
 
-     The result is stored in ``result``.
+    The result is always >= 0 if `y` > 0. It is an error if `y` == 0.
 
-     The result is always >= 0 if `b` > 0.
-     It is an error if `b` == 0.
-  */
-  pragma "last resort"
-  @deprecated(notes=":proc:`~BigInteger.mod` with named formals `a` and `b` is deprecated, please use the version with `x` and `y` instead")
-  proc mod(ref result: bigint, const ref a: bigint, const ref b: bigint)
-    do BigInteger.mod(result, a, b);
+    :arg result: Where the result is stored
+    :type result: :record:`bigint`
+    :arg x: The dividend
+    :type x: :record:`bigint`
+    :arg y: The divisor
+    :type y: :record:`bigint` or ``integral``
 
-  /* Computes the mod operator on the two arguments, defined as
-     ``mod(a, b) = a - b * floor(a / b)``.
+    .. note::
+       If ``y`` is a ``uint``, then fewer conditionals will be evaluated at
+       run time.
 
-     The result is stored in ``result``.
-
-     The result is always >= 0 if `b` > 0.
-     It is an error if `b` == 0.
+    .. note::
+       This procedure is equivalent to calling :proc:`~BigInteger.rem` with
+       ``rounding`` set to :enumconstant:`~roundingMode.down`.
   */
   proc mod(ref result: bigint, const ref x: bigint, const ref y: bigint)
     do BigInteger.rem(result, x, y, rounding=roundingMode.down);
 
-  /* Computes the mod operator on the two arguments, defined as
-     ``mod(a, b) = a - b * floor(a / b)``.
-
-     The result is stored in ``this``.
-
-     The result is always >= 0 if `b` > 0.
-     It is an error if `b` == 0.
-  */
-  @deprecated(notes="bigint.mod method is deprecated - please use the standalone function :proc:`~BigInteger.mod`")
-  proc bigint.mod(const ref a: bigint, const ref b: bigint) {
-    BigInteger.mod(this, a, b);
-  }
-
-  /* Computes the mod operator on the two arguments, defined as
-     ``mod(a, b) = a - b * floor(a / b)``.
-
-     If b is of an unsigned type, then
-     fewer conditionals will be evaluated at run time.
-
-     The result is stored in ``result`` and returned as an ``int``.
-
-     The result is always >= 0 if `b` > 0.
-     It is an error if `b` == 0.
-  */
-  pragma "last resort"
-  @deprecated(notes=":proc:`~BigInteger.mod` with named formals `a` and `b` is deprecated, please use the version with `x` and `y` instead")
-  proc mod(ref result: bigint, const ref a: bigint, b: integral) : int
-    do return BigInteger.mod(result, a, b);
-
-  /* Computes the mod operator on the two arguments, defined as
-     ``mod(a, b) = a - b * floor(a / b)``.
-
-     If b is of an unsigned type, then
-     fewer conditionals will be evaluated at run time.
-
-     The result is stored in ``result`` and returned as an ``int``.
-
-     The result is always >= 0 if `b` > 0.
-     It is an error if `b` == 0.
-  */
+  /* See :proc:`~BigInteger.mod` */
   proc mod(ref result: bigint, const ref x: bigint, y: integral) : int {
     if (chpl_checkDivByZero) then
       if y == 0 then
@@ -4763,6 +4649,48 @@ module BigInteger {
   /* Computes the mod operator on the two arguments, defined as
      ``mod(a, b) = a - b * floor(a / b)``.
 
+     The result is stored in ``result``.
+
+     The result is always >= 0 if `b` > 0.
+     It is an error if `b` == 0.
+  */
+  pragma "last resort"
+  @deprecated(notes=":proc:`~BigInteger.mod` with named formals `a` and `b` is deprecated, please use the version with `x` and `y` instead")
+  proc mod(ref result: bigint, const ref a: bigint, const ref b: bigint)
+    do BigInteger.mod(result, a, b);
+
+  /* Computes the mod operator on the two arguments, defined as
+     ``mod(a, b) = a - b * floor(a / b)``.
+
+     The result is stored in ``this``.
+
+     The result is always >= 0 if `b` > 0.
+     It is an error if `b` == 0.
+  */
+  @deprecated(notes="bigint.mod method is deprecated - please use the standalone function :proc:`~BigInteger.mod`")
+  proc bigint.mod(const ref a: bigint, const ref b: bigint) {
+    BigInteger.mod(this, a, b);
+  }
+
+  /* Computes the mod operator on the two arguments, defined as
+     ``mod(a, b) = a - b * floor(a / b)``.
+
+     If b is of an unsigned type, then
+     fewer conditionals will be evaluated at run time.
+
+     The result is stored in ``result`` and returned as an ``int``.
+
+     The result is always >= 0 if `b` > 0.
+     It is an error if `b` == 0.
+  */
+  pragma "last resort"
+  @deprecated(notes=":proc:`~BigInteger.mod` with named formals `a` and `b` is deprecated, please use the version with `x` and `y` instead")
+  proc mod(ref result: bigint, const ref a: bigint, b: integral) : int
+    do return BigInteger.mod(result, a, b);
+
+  /* Computes the mod operator on the two arguments, defined as
+     ``mod(a, b) = a - b * floor(a / b)``.
+
      If b is of an unsigned type, then
      fewer conditionals will be evaluated at run time.
 
@@ -4791,89 +4719,44 @@ module BigInteger {
         `mpz_cmp <https://gmplib.org/manual/Integer-Comparisons#index-mpz_005fcmp>`_.
   */
   proc bigint.cmp(const ref x: bigint) : int {
-    var ret: c_int;
+    const this_ = this.localize();
+    const x_ = x.localize();
+    var ret : c_int;
 
-    if compiledForSingleLocale() {
-      ret = mpz_cmp(this.mpz, x.mpz);
-
-    } else if this.localeId == chpl_nodeID && x.localeId == chpl_nodeID {
-      ret = mpz_cmp(this.mpz, x.mpz);
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        const x_ = x.localize();
-
-        ret = mpz_cmp(this.mpz, x_.mpz);
-      }
-    }
+    ret = mpz_cmp(this_.mpz, x_.mpz);
 
     return ret.safeCast(int);
   }
 
   /* See :proc:`~bigint.cmp` */
   proc bigint.cmp(x: int) : int {
+    const this_ = this.localize();
     const x_ = x.safeCast(c_long);
-    var   ret: c_int;
+    var ret : c_int;
 
-    if compiledForSingleLocale() {
-      ret = mpz_cmp_si(this.mpz, x_);
-
-    } else if this.localeId == chpl_nodeID {
-      ret = mpz_cmp_si(this.mpz, x_);
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        ret = mpz_cmp_si(this.mpz, x_);
-      }
-    }
+    ret = mpz_cmp_si(this_.mpz, x_);
 
     return ret.safeCast(int);
   }
 
   /* See :proc:`~bigint.cmp` */
   proc bigint.cmp(x: uint) : int {
+    const this_ = this.localize();
     const x_ = x.safeCast(c_ulong);
-    var   ret: c_int;
+    var ret : c_int;
 
-    if compiledForSingleLocale() {
-      ret = mpz_cmp_ui(this.mpz, x_);
-
-    } else if this.localeId == chpl_nodeID {
-      ret = mpz_cmp_ui(this.mpz, x_);
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        ret = mpz_cmp_ui(this.mpz, x_);
-      }
-    }
+    ret = mpz_cmp_ui(this_.mpz, x_);
 
     return ret.safeCast(int);
   }
 
   /* See :proc:`~bigint.cmp` */
   proc bigint.cmp(x: real) : int {
+    const this_ = this.localize();
     const x_ = x : c_double;
-    var   ret: c_int;
+    var ret : c_int;
 
-    if compiledForSingleLocale() {
-      ret = mpz_cmp_d(this.mpz, x_);
-
-    } else if this.localeId == chpl_nodeID {
-      ret = mpz_cmp_d(this.mpz, x_);
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        ret = mpz_cmp_d(this.mpz, x_);
-      }
-    }
+    ret = mpz_cmp_d(this_.mpz, x_);
 
     return ret.safeCast(int);
   }
@@ -4909,67 +4792,33 @@ module BigInteger {
         `mpz_cmpabs <https://gmplib.org/manual/Integer-Comparisons#index-mpz_005fcmpabs>`_.
   */
   proc bigint.cmpabs(const ref x: bigint) : int {
-    var ret: c_int;
+    const this_ = this.localize();
+    const x_ = x.localize();
+    var ret : c_int;
 
-    if compiledForSingleLocale() {
-      ret = mpz_cmpabs(this.mpz, x.mpz);
-
-    } else if this.localeId == chpl_nodeID && x.localeId == chpl_nodeID {
-      ret = mpz_cmpabs(this.mpz, x.mpz);
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        var x_ = x;
-
-        ret = mpz_cmpabs(this.mpz, x_.mpz);
-      }
-    }
-
-    return ret.safeCast(int);
-  }
-
-  /* See :proc:`~bigint.cmpabs` */
-  proc bigint.cmpabs(x: real) : int {
-    const x_ = x : c_double;
-    var   ret: c_int;
-
-    if compiledForSingleLocale() {
-      ret = mpz_cmpabs_d(this.mpz, x_);
-
-    } else if this.localeId == chpl_nodeID {
-      ret = mpz_cmpabs_d(this.mpz, x_);
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        ret = mpz_cmpabs_d(this.mpz, x_);
-      }
-    }
+    ret = mpz_cmpabs(this_.mpz, x_.mpz);
 
     return ret.safeCast(int);
   }
 
   /* See :proc:`~bigint.cmpabs` */
   proc bigint.cmpabs(x: uint) : int {
+    const this_ = this.localize();
     const x_ = x.safeCast(c_ulong);
-    var   ret: c_int;
+    var ret : c_int;
 
-    if compiledForSingleLocale() {
-      ret = mpz_cmpabs_ui(this.mpz, x_);
+    ret = mpz_cmpabs_ui(this_.mpz, x_);
 
-    } else if this.localeId == chpl_nodeID {
-      ret = mpz_cmpabs_ui(this.mpz, x_);
+    return ret.safeCast(int);
+  }
 
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+  /* See :proc:`~bigint.cmpabs` */
+  proc bigint.cmpabs(x: real) : int {
+    const this_ = this.localize();
+    const x_ = x : c_double;
+    var ret : c_int;
 
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        ret = mpz_cmpabs_ui(this.mpz, x_);
-      }
-    }
+    ret = mpz_cmpabs_d(this_.mpz, x_);
 
     return ret.safeCast(int);
   }
@@ -4997,21 +4846,10 @@ module BigInteger {
         `mpz_sgn <https://gmplib.org/manual/Integer-Comparisons#index-mpz_005fsgn>`_.
   */
   proc bigint.sgn() : int {
-    var ret: c_int;
+    const this_ = this.localize();
+    var ret : c_int;
 
-    if compiledForSingleLocale() {
-      ret = mpz_sgn(this.mpz);
-
-    } else if this.localeId == chpl_nodeID {
-      ret = mpz_sgn(this.mpz);
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        ret = mpz_sgn(this.mpz);
-      }
-    }
+    ret = mpz_sgn(this_.mpz);
 
     return ret.safeCast(int);
   }
@@ -5186,19 +5024,25 @@ module BigInteger {
        `mpz_set <https://gmplib.org/manual/Assigning-Integers#index-mpz_005fset>`_.
   */
   proc bigint.set(const ref x: bigint) {
-    if compiledForSingleLocale() {
+    // single locale or both bigints on the current locale
+    if compiledForSingleLocale() ||
+      (this.localeId == chpl_nodeID && x.localeId == chpl_nodeID) {
       mpz_set(this.mpz, x.mpz);
-
-    } else if this.localeId == chpl_nodeID && x.localeId == chpl_nodeID {
-      mpz_set(this.mpz, x.mpz);
-
-    } else {
+    } else if (this.localeId == chpl_nodeID) {
+      // `this` is on the current locale and `x` is remote
+      chpl_gmp_get_mpz(this.mpz, x.localeId, x.mpz[0]);
+    }
+    else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        const mpz_struct = x.getImpl();
-
-        chpl_gmp_get_mpz(this.mpz, x.localeId, mpz_struct);
+        if x.localeId == chpl_nodeID {
+          // both on the same locale
+          mpz_set(this.mpz, x.mpz);
+        } else {
+          // `x` is somewhere else
+          chpl_gmp_get_mpz(this.mpz, x.localeId, x.mpz[0]);
+        }
       }
     }
   }
@@ -5207,12 +5051,8 @@ module BigInteger {
   proc bigint.set(x : int) {
     const x_ = x.safeCast(c_long);
 
-    if compiledForSingleLocale() {
+    if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       mpz_set_si(this.mpz, x_);
-
-    } else if this.localeId == chpl_nodeID {
-      mpz_set_si(this.mpz, x_);
-
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
@@ -5226,12 +5066,8 @@ module BigInteger {
   proc bigint.set(x : uint) {
     const x_ = x.safeCast(c_ulong);
 
-    if compiledForSingleLocale() {
+    if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       mpz_set_ui(this.mpz, x_);
-
-    } else if this.localeId == chpl_nodeID {
-      mpz_set_ui(this.mpz, x_);
-
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
@@ -5245,12 +5081,8 @@ module BigInteger {
   proc bigint.set(x: real) {
     const x_ = x : c_double;
 
-    if compiledForSingleLocale() {
+    if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       mpz_set_d(this.mpz, x_);
-
-    } else if this.localeId == chpl_nodeID {
-      mpz_set_d(this.mpz, x_);
-
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
@@ -5264,12 +5096,8 @@ module BigInteger {
   proc bigint.set(x: string, base: int = 0) {
     const base_ = base.safeCast(c_int);
 
-    if compiledForSingleLocale() {
+    if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       mpz_set_str(this.mpz, x.localize().c_str(), base_);
-
-    } else if this.localeId == chpl_nodeID {
-      mpz_set_str(this.mpz, x.localize().c_str(), base_);
-
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
@@ -5310,12 +5138,9 @@ module BigInteger {
        `mpz_swap <https://gmplib.org/manual/Assigning-Integers#index-mpz_005fswap>`_.
   */
   proc bigint.swap(ref x: bigint) {
-    if compiledForSingleLocale() {
+    if compiledForSingleLocale() ||
+      (this.localeId == chpl_nodeID && x.localeId == chpl_nodeID) {
       mpz_swap(this.mpz, x.mpz);
-
-    } else if this.localeId == chpl_nodeID && x.localeId == chpl_nodeID {
-      mpz_swap(this.mpz, x.mpz);
-
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
@@ -5379,10 +5204,7 @@ module BigInteger {
 
   @chpldoc.nodoc
   inline proc bigint.localize() {
-    if compiledForSingleLocale() {
-      const ret = new bigintWrapper(this.mpz);
-      return ret;
-    } else if this.localeId == chpl_nodeID {
+    if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       const ret = new bigintWrapper(this.mpz);
       return ret;
     } else {
@@ -5394,12 +5216,8 @@ module BigInteger {
   @chpldoc.nodoc
   inline proc bigint.hash(): uint {
     var ret: uint = this > 0;
-    if compiledForSingleLocale() {
+    if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       hashHelper();
-
-    } else if this.localeId == chpl_nodeID {
-      hashHelper();
-
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
