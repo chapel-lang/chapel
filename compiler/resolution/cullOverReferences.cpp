@@ -491,28 +491,28 @@ static void maybeIssueRefMaybeConstWarning(ArgSymbol* arg) {
 
   if (shouldWarn) {
 
-      const char* intentName = isTaskIntent ? "task" : (isArgThis ? "this" : "argument");
+    const char* argName = nullptr;
+    char argBuffer[64];
+    if (isTaskIntent && fieldAccessArgToOriginalArg.find(arg) != fieldAccessArgToOriginalArg.end()) {
+      sprintf(argBuffer, "this");
+      argName = argBuffer;
+    } else if (arg->hasFlag(FLAG_EXPANDED_VARARGS)) {
+      int varArgNum;
+      int ret = sscanf(arg->name, "_e%d_%63s", &varArgNum, argBuffer);
+      CHPL_ASSERT(ret == 2);
+      argName = argBuffer;
+    } else {
+      argName = arg->name;
+    }
 
-      const char* argName = nullptr;
-      char argBuffer[64];
-      if (isTaskIntent && fieldAccessArgToOriginalArg.find(arg) != fieldAccessArgToOriginalArg.end()) {
-        sprintf(argBuffer, "this");
-        argName = argBuffer;
-      } else if (arg->hasFlag(FLAG_EXPANDED_VARARGS)) {
-        int varArgNum;
-        int ret = sscanf(arg->name, "_e%d_%63s", &varArgNum, argBuffer);
-        CHPL_ASSERT(ret == 2);
-        argName = argBuffer;
-      } else {
-        argName = arg->name;
-      }
+    const char* intentName = isTaskIntent ? "add an explicit task variable" : (isArgThis ? "use an explicit this intent for the method" : "use an explicit intent for the argument");
 
-      Symbol* warnSym = (isTaskIntent && arg->getFunction()) ? (Symbol*)arg->getFunction() : (Symbol*)arg;
-      USR_WARN(warnSym,
-               "inferring a default %s intent to be 'ref' for '%s' is deprecated "
-               "- please use an explicit intent",
-               intentName,
-               argName);
+    Symbol* warnSym = (isTaskIntent && arg->getFunction()) ? (Symbol*)arg->getFunction() : (Symbol*)arg;
+    USR_WARN(warnSym,
+            "inferring a default intent to be 'ref' is deprecated "
+            "- please %s '%s'",
+            intentName,
+            argName);
   }
 }
 
