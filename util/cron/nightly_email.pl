@@ -44,11 +44,13 @@ ensureSummaryExists($prevsummary);
 # status 2 means tests passed and there were some failures.
 # that shouldn't change the format of the email, so we collapse
 # the cases here.
+$email=1;
 if ($status == 2) {
   $status = 0;
 }
 
 if ($status == 0) {
+     print " \n status 0 \n";
     `cat $rawsummary | grep -v "^.END" | grep -v "^.Test Summary" | LC_ALL=C sort > $sortedsummary`;
 
     $oldsummary = `grep Summary: $prevsummary`; chomp($oldsummary);
@@ -68,8 +70,10 @@ if ($status == 0) {
 
     $summary = "Tests run: $cursucc Successes ($delsucc), $curfail Failures ($delfail)";
 } else {
-    $summary = "Tests run: failed";
+    $summary = "Tests run: failed new failures";
+    
 }
+
 
 $knownumtests = 1;
 if ($status == 0) {
@@ -81,7 +85,6 @@ if ($status == 0) {
     $numtestssummary = "unknown number of Tests";
     $knownumtests = 0;
 }
-
 
 #
 # send mail
@@ -102,59 +105,30 @@ if ($status == 0) {
 
 if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0 && $newpassingsuppress == 0) {
     print "Mailing to minimal group\n";
+    $email=0;
     $recipient = $nochangerecipient;
+
 } else {
     print "Mailing to everyone\n";
 }
 
-$mailsubject = "$subjectid $config_name";
-$mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
+# Persist the test summary to a (email.txt) in the jenkins workspace.
+# email.txt will be used by Jenkins to send emails in case of a failure.
+
 
 if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
-    print "Trying... $mailcommand\n";
-    open(MAIL, $mailcommand);
-
-    print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab, $testdirs);
-    print MAIL "$numtestssummary\n";
-    print MAIL "$summary\n";
-    print MAIL endMailHeader();
-
-    if ($status == 0) {
-        print MAIL "--- New Errors -------------------------------\n";
-        print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
-        print MAIL "\n";
-
-        print MAIL "--- Resolved Errors --------------------------\n";
-        print MAIL `LC_ALL=C comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
-        print MAIL "\n";
-
-        print MAIL "--- New Passing Future tests------------------\n";
-        print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
-        print MAIL "\n";
-
-        print MAIL "--- Passing Future tests ---------------------\n";
-        print MAIL `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
-        print MAIL "\n";
-
-        print MAIL "--- New Passing Suppress tests------------------\n";
-        print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$suppressmarker" | grep "\\[Success"`;
-        print MAIL "\n";
-
-        print MAIL "--- Passing Suppress tests ---------------------\n";
-        print MAIL `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$suppressmarker" | grep "\\[Success"`;
-        print MAIL "\n";
-
-        print MAIL "--- Unresolved Errors ------------------------\n";
-        print MAIL `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
-        print MAIL "\n";
-
-        print MAIL "--- New Failing Future tests -----------------\n";
-        print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;
-        print MAIL "\n";
+  print "\n Email:$email \n status:$status \n";
+    if ($email == 1){
+    writeEmail ($revision,
+     $starttime,
+     $endtime ,
+     $crontab ,
+     $testdirs ,
+     $numtestssummary ,
+     $summary ,
+     $prevsummary ,
+     $sortedsummary );
     }
-
-    print MAIL endMailChplenv();
-    close(MAIL);
 } else {
     print "CHPL_TEST_NOMAIL: No $mailcommand\n";
 }
@@ -167,3 +141,8 @@ if ($debug == 0) {
         system("cp -pv $sortedsummary $prevsummary");
     }
 }
+
+return(0);
+
+}
+return(1);
