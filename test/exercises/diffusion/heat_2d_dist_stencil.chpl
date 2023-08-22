@@ -28,8 +28,7 @@ config const nx = 256,      // number of grid points in x
 
 // define a distributed 2D domain and subdomain to describe the grid and its interior
 const indices = {0..<nx, 0..<ny},
-      indicesInner = indices.expand(-1),
-      Indices = indices dmapped Stencil(indicesInner, fluff=(1,1)),
+      Indices = indices dmapped Stencil(indices, fluff=(1,1)),
       IndicesInner = Indices[{1..<nx-1, 1..<ny-1}];
 
 // define a distributed 2D array over the above domain
@@ -57,7 +56,7 @@ for 1..nt {
   // compute the FD kernel in parallel
   forall (i, j) in IndicesInner do
     u[i, j] = un[i, j] + alpha *
-      (un[i-1, j-1] + un[i, j-1] + un[i+1, j] + un[i, j+1] - 4 * un[i, j]);
+      (un[i-1, j] + un[i, j-1] + un[i+1, j] + un[i, j+1] - 4 * un[i, j]);
 }
 t.stop();
 

@@ -73,15 +73,15 @@ proc main() {
     const localDom = u.localSubdomain();
 
     // allocate halo arrays
-    HaloArrays[tidX, tidY][N] = new haloArray(localDom.dim(1).expand(1));
-    HaloArrays[tidX, tidY][S] = new haloArray(localDom.dim(1).expand(1));
-    HaloArrays[tidX, tidY][E] = new haloArray(localDom.dim(0).expand(1));
-    HaloArrays[tidX, tidY][W] = new haloArray(localDom.dim(0).expand(1));
+    HaloArrays[tidX, tidY][N] = new haloArray(localDom.dim(1));
+    HaloArrays[tidX, tidY][S] = new haloArray(localDom.dim(1));
+    HaloArrays[tidX, tidY][E] = new haloArray(localDom.dim(0));
+    HaloArrays[tidX, tidY][W] = new haloArray(localDom.dim(0));
 
     // synchronize across tasks
     b.barrier();
 
-    // run the portion of the FD computation owned by this task
+    // run the portion of the FD computation owned by this locale
     work(tidX, tidY);
   }
   t.stop();
@@ -102,8 +102,7 @@ proc main() {
 proc work(tidX: int, tidY: int) {
   // define domains to describe the indices owned by this task
   const localIndices = u.localSubdomain(here),
-        localIndicesBuffered = localIndices.expand(1),
-        localIndicesInner = localIndices[indicesInner];
+        localIndicesInner = (localIndices[indicesInner]).expand(-1);
 
   // define constants for indexing into edges of this tasks's region
   const wEdge = localIndices.dim(1).low,
@@ -114,10 +113,10 @@ proc work(tidX: int, tidY: int) {
   // iterate for 'nt' time steps
   for 1..nt {
     // store results from last iteration in neighboring task's halo buffers
-    if tidY > 0       then HaloArrays[tidX, tidY-1][E].v = u[.., wEdge];
-    if tidY < tidYMax then HaloArrays[tidX, tidY+1][W].v = u[.., eEdge];
-    if tidX > 0       then HaloArrays[tidX-1, tidY][S].v = u[nEdge, ..];
-    if tidX < tidXMax then HaloArrays[tidX+1, tidY][N].v = u[sEdge, ..];
+    if tidY > 0       then HaloArrays[tidX, tidY-1][E].v = u[nEdge..sEdge, wEdge];
+    if tidY < tidYMax then HaloArrays[tidX, tidY+1][W].v = u[nEdge..sEdge, eEdge];
+    if tidX > 0       then HaloArrays[tidX-1, tidY][S].v = u[nEdge, wEdge..eEdge];
+    if tidX < tidXMax then HaloArrays[tidX+1, tidY][N].v = u[sEdge, wEdge..eEdge];
 
     // synchronize with other tasks
     b.barrier();
@@ -125,15 +124,17 @@ proc work(tidX: int, tidY: int) {
     // swap local arrays
     if tidX == 0 && tidY == 0 then u <=> un;
 
+    b.barrier();
+
     // compute the FD kernel in parallel
-    forall (i, j) in localIndicesInner.expand(-1) do
+    forall (i, j) in localIndicesInner do
       u.localAccess[i, j] = un.localAccess[i, j] + alpha * (
         un.localAccess[i-1, j] + un.localAccess[i, j-1] +
         un.localAccess[i+1, j] + un.localAccess[i, j+1] -
         4 * un.localAccess[i, j]
       );
 
-    // North
+    // North edge
     if tidX > 0 {
       forall j in localIndicesInner.dim(1) do
         u.localAccess[nEdge, j] = un.localAccess[nEdge, j] + alpha * (
@@ -143,7 +144,7 @@ proc work(tidX: int, tidY: int) {
         );
     }
 
-    // South
+    // South edge
     if tidX < tidXMax {
       forall j in localIndicesInner.dim(1) do
         u.localAccess[sEdge, j] = un.localAccess[sEdge, j] + alpha * (
@@ -153,7 +154,7 @@ proc work(tidX: int, tidY: int) {
         );
     }
 
-    // East
+    // East edge
     if tidY < tidYMax {
       forall i in localIndicesInner.dim(0) do
         u.localAccess[i, eEdge] = un.localAccess[i, eEdge] + alpha * (
@@ -163,7 +164,7 @@ proc work(tidX: int, tidY: int) {
         );
     }
 
-    // West
+    // West edge
     if tidY > 0 {
       forall i in localIndicesInner.dim(0) do
         u.localAccess[i, wEdge] = un.localAccess[i, wEdge] + alpha * (
@@ -171,6 +172,42 @@ proc work(tidX: int, tidY: int) {
           un.localAccess[i+1, wEdge] + un.localAccess[i, wEdge+1] -
           4 * un.localAccess[i, wEdge]
         );
+    }
+
+    // North West Corner
+    if tidX > 0 && tidY > 0 {
+        u.localAccess[nEdge, wEdge] = un.localAccess[nEdge, wEdge] + alpha * (
+          HaloArrays[tidX, tidY][N].v[wEdge] + HaloArrays[tidX, tidY][W].v[nEdge] +
+          un.localAccess[nEdge+1, wEdge]     + un.localAccess[nEdge, wEdge+1] -
+          4 * un.localAccess[nEdge, wEdge]
+        );
+    }
+
+    // North East Corner
+    if tidX > 0 && tidY < tidYMax {
+      u.localAccess[nEdge, eEdge] = un.localAccess[nEdge, eEdge] + alpha * (
+        HaloArrays[tidX, tidY][N].v[eEdge] + un.localAccess[nEdge, eEdge-1] +
+        un.localAccess[nEdge+1, eEdge]     + HaloArrays[tidX, tidY][E].v[nEdge] -
+        4 * un.localAccess[nEdge, eEdge]
+      );
+    }
+
+    // South West Corner
+    if tidX < tidXMax && tidY > 0 {
+      u.localAccess[sEdge, wEdge] = un.localAccess[sEdge, wEdge] + alpha * (
+        un.localAccess[sEdge-1, wEdge]     + HaloArrays[tidX, tidY][W].v[sEdge] +
+        HaloArrays[tidX, tidY][S].v[wEdge] + un.localAccess[sEdge, wEdge+1] -
+        4 * un.localAccess[sEdge, wEdge]
+      );
+    }
+
+    // South East Corner
+    if tidX < tidXMax && tidY < tidYMax {
+      u.localAccess[sEdge, eEdge] = un.localAccess[sEdge, eEdge] + alpha * (
+        un.localAccess[sEdge-1, eEdge]     + un.localAccess[sEdge, eEdge-1] +
+        HaloArrays[tidX, tidY][S].v[eEdge] + HaloArrays[tidX, tidY][E].v[sEdge] -
+        4 * un.localAccess[sEdge, eEdge]
+      );
     }
 
     b.barrier();
