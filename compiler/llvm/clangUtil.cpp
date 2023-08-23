@@ -4515,7 +4515,7 @@ static void stripPtxDebugDirective(const std::string& artifactFilename) {
 }
 
 static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
-                                  const std::string& gpuObjectFilename,
+                                  const std::string& gpuObjectFilenamePrefix,
                                   const std::string& fatbinFilename) {
   if (myshell("which ptxas > /dev/null 2>&1", "Check to see if ptxas command can be found", true)) {
     USR_FATAL("Command 'ptxas' not found\n");
@@ -4559,7 +4559,7 @@ static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
       USR_FATAL("Unrecognized CUDA arch");
     }
     std::string computeCap = std::string("compute_") + gpuArch[3] + gpuArch[4];
-    std::string gpuObject = gpuObjectFilename + "_" + gpuArch + ".o";
+    std::string gpuObject = gpuObjectFilenamePrefix + "_" + gpuArch + ".o";
 
     // Execute the assembler for this architecture
     std::string ptxCmd = std::string("ptxas -m64 --gpu-name ") + gpuArch +
@@ -4585,19 +4585,20 @@ static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
 
 static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
                                  const std::string& gpuObjFilename,
-                                 const std::string& outFilename,
+                                 const std::string& outFilenamePrefix,
                                  const std::string& fatbinFilename)
 {
   // Note: this is currently implemented as a loop over all the specified
   // GPU architectures. However, at present, we don't have a good way to
   // generate artifacts per-target to be fed to llvm-mc and clang-offload-bundler.
   // So this loop should run exactly one iteration.
+  INT_ASSERT(gpuArches.size() == 1);
 
   std::string targets;
   std::string inputs;
   for (auto& gpuArch : gpuArches) {
     std::string gpuObject = gpuObjFilename + "_" + gpuArch + ".o";
-    std::string gpuOut = outFilename + "_" + gpuArch + ".out";
+    std::string gpuOut = outFilenamePrefix + "_" + gpuArch + ".out";
 
     std::string asmCmd = findSiblingClangToolPath("llvm-mc") + " " +
                          "--filetype=obj " +
@@ -4728,8 +4729,8 @@ void makeBinaryLLVM(void) {
   std::string opt1Filename;
   std::string opt2Filename;
   std::string artifactFilename;
-  std::string gpuObjectFilename;
-  std::string outFilename;
+  std::string gpuObjectFilenamePrefix;
+  std::string outFilenamePrefix;
   std::string fatbinFilename;
 
   if (gCodegenGPU == false) {
@@ -4744,9 +4745,10 @@ void makeBinaryLLVM(void) {
     opt2Filename = genIntermediateFilename("chpl__gpu_module-opt2.bc");
     fatbinFilename = genIntermediateFilename("chpl__gpu.fatbin");
 
-    outFilename = genIntermediateFilename("chpl__gpu");
-    gpuObjectFilename = genIntermediateFilename("chpl__gpu");
-    // no .o suffix on that last two because we might generate multiple
+    outFilenamePrefix = genIntermediateFilename("chpl__gpu");
+    gpuObjectFilenamePrefix = genIntermediateFilename("chpl__gpu");
+    // no suffix on these last two because we might generate multiple, with
+    // slightly different names.
 
     // This switch may seem unnecessary, but in the past we wanted to use a
     // different "type" of intermediate file for different GPUs and we may want
@@ -4999,10 +5001,11 @@ void makeBinaryLLVM(void) {
       outputArtifactFile.close();
       switch (getGpuCodegenType()) {
         case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
-          makeBinaryLLVMForCUDA(artifactFilename, gpuObjectFilename, fatbinFilename);
+          makeBinaryLLVMForCUDA(artifactFilename, gpuObjectFilenamePrefix, fatbinFilename);
           break;
         case GpuCodegenType::GPU_CG_AMD_HIP:
-          makeBinaryLLVMForHIP(artifactFilename, gpuObjectFilename, outFilename, fatbinFilename);
+          makeBinaryLLVMForHIP(artifactFilename, gpuObjectFilenamePrefix,
+                               outFilenamePrefix, fatbinFilename);
           break;
         case GpuCodegenType::GPU_CG_CPU:
           break;
