@@ -876,6 +876,10 @@ proc type Block.createDomain(dom: domain, targetLocales: [] locale = Locales) {
   return dom dmapped Block(dom, targetLocales);
 }
 
+proc type Block.createDomain(rng: range...) {
+  return createDomain({(...rng)}, Locales);
+}
+
 proc type Block.createDomain(rng: range..., targetLocales: [] locale = Locales) {
   return createDomain({(...rng)}, targetLocales);
 }
@@ -886,7 +890,11 @@ proc type Block.createArray(dom: domain, type eltType, targetLocales: [] locale 
   return A;
 }
 
-proc type Block.createArray(rng: range..., type eltType, targetLocales: [] locale = Locales) {
+proc type Block.createArray(rng: range..., type eltType) {
+  return createArray({(...rng)}, eltType, Locales);
+}
+
+proc type Block.createArray(rng: range..., type eltType, targetLocales: [] locale) {
   return createArray({(...rng)}, eltType, targetLocales);
 }
 

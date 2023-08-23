@@ -808,18 +808,22 @@ iter StencilImpl.activeTargetLocales(const space : domain = boundingBox) {
 proc type Stencil.createDomain(
   dom: domain,
   targetLocales: [] locale = Locales,
-  fluff: dom.rank*dom.idxType = makeZero(dom.rank, dom.idxType),
+  fluff = makeZero(dom.rank, dom.idxType),
   periodic = false
 ) {
   return dom dmapped Stencil(dom, targetLocales, fluff=fluff, periodic=periodic);
 }
 
+proc type Stencil.createDomain(rng: range...?k) {
+  return createDomain({(...rng)}, Locales, makeZero(k, rng[0].idxType), false);
+}
+
 proc type Stencil.createDomain(
-  rng: range...,
+  rng: range...?k,
   targetLocales: [] locale = Locales,
-  fluff: dom.rank*dom.idxType = makeZero(dom.rank, dom.idxType),
+  fluff: ?t = makeZero(k, int),
   periodic = false
-) {
+) where isHomogeneousTupleType(t) {
   return createDomain({(...rng)}, targetLocales, fluff, periodic);
 }
 
@@ -827,7 +831,7 @@ proc type Stencil.createArray(
   dom: domain,
   type eltType,
   targetLocales: [] locale = Locales,
-  fluff: dom.rank*dom.idxType = makeZero(dom.rank, dom.idxType),
+  fluff = makeZero(dom.rank, dom.idxType),
   periodic = false
 ) {
   var D = createDomain(dom, targetLocales, fluff, periodic);
@@ -835,13 +839,17 @@ proc type Stencil.createArray(
   return A;
 }
 
+proc type Stencil.createArray(rng: range...?k, type eltType) {
+  return createArray({(...rng)}, eltType, Locales, makeZero(k, rng[0].idxType), false);
+}
+
 proc type Stencil.createArray(
-  rng: range...,
+  rng: range...?k,
   type eltType,
   targetLocales: [] locale = Locales,
-  fluff: dom.rank*dom.idxType = makeZero(dom.rank, dom.idxType),
+  fluff: ?t = makeZero(k, int),
   periodic = false
-) {
+) where isHomogeneousTupleType(t) {
   return createArray({(...rng)}, eltType, targetLocales, fluff, periodic);
 }
 

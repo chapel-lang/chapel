@@ -1386,22 +1386,30 @@ proc CyclicImpl.dsiTargetLocales() const ref {
   return targetLocs;
 }
 
-proc type Cyclic.createDomain(dom: domain) {
-  return dom dmapped CyclicImpl(startIdx=dom.lowBound);
+proc type Cyclic.createDomain(dom: domain, targetLocales: [] locale = Locales) {
+  return dom dmapped CyclicImpl(startIdx=dom.lowBound, targetLocales);
 }
 
 proc type Cyclic.createDomain(rng: range...) {
-  return createDomain({(...rng)});
+  return createDomain({(...rng)}, Locales);
 }
 
-proc type Cyclic.createArray(dom: domain, type eltType) {
-  var D = createDomain(dom);
+proc type Cyclic.createDomain(rng: range..., targetLocales: [] locale) {
+  return createDomain({(...rng)}, targetLocales);
+}
+
+proc type Cyclic.createArray(dom: domain, type eltType, targetLocales: [] locale = Locales) {
+  var D = createDomain(dom, targetLocales);
   var A: [D] eltType;
   return A;
 }
 
 proc type Cyclic.createArray(rng: range..., type eltType) {
-  return createArray({(...rng)}, eltType);
+  return createArray({(...rng)}, eltType, Locales);
+}
+
+proc type Cyclic.createArray(rng: range..., type eltType, targetLocales: [] locale) {
+  return createArray({(...rng)}, eltType, targetLocales);
 }
 
 // Cyclic subdomains are represented as a single domain
