@@ -1,7 +1,7 @@
 #
 # nightly subroutines
 #
-package nightly_email
+package nightly_email;
 
 use File::Basename;
 use Cwd;
