@@ -505,7 +505,7 @@ static void maybeIssueRefMaybeConstWarning(ArgSymbol* arg) {
       argName = arg->name;
     }
 
-    const char* intentName = isTaskIntent ? "add an explicit task variable" : (isArgThis ? "use an explicit this intent for the method" : "use an explicit intent for the argument");
+    const char* intentName = isTaskIntent ? "add an explicit task variable for" : (isArgThis ? "use an explicit this intent for the method" : "use an explicit intent for the argument");
 
     Symbol* warnSym = (isTaskIntent && arg->getFunction()) ? (Symbol*)arg->getFunction() : (Symbol*)arg;
     USR_WARN(warnSym,
