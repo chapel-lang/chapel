@@ -1,0 +1,13 @@
+#!/bin/sh 
+
+TESTNAME=$1
+OUTFILE=$2
+TMPFILE=$OUTFILE.prediff.tmp
+
+# filter out warnings from the backend that cannot be silenced
+grep -v 'library call cannot be vectorized' < $OUTFILE > $TMPFILE
+cat $TMPFILE > $OUTFILE
+grep -v 'the optimizer was unable to perform the requested transformation' < $OUTFILE > $TMPFILE
+cat $TMPFILE > $OUTFILE
+
+rm $TMPFILE
