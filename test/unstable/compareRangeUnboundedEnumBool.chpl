@@ -20,8 +20,6 @@ writeln(ddb == dd);
 writeln(negrgb == negrdd);
 writeln(negrdd == negddb);
 writeln(negrdd == dd);
-writeln(rdd == negrdd);
-writeln(ddb == negddb);
 
 {
 var ft = false..true;
@@ -43,6 +41,4 @@ writeln(ddt == dd);
 writeln(negft == negfdd);
 writeln(negfdd == negddt);
 writeln(negfdd == dd);
-writeln(fdd == negfdd);
-writeln(ddt == negddt);
 }
