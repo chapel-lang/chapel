@@ -2006,7 +2006,7 @@ proc cholesky(A: [] ?t, lower = true)
       compiler error if ``lapackImpl`` is ``off``.
 
 */
-proc eigvalsh(A: [] ?t, lower=true, param overwrite=false) throws where (A.domain.rank == 2) && (usingLAPACK) {
+proc eigvalsh(ref A: [] ?t, lower=true, param overwrite=false) throws where (A.domain.rank == 2) && (usingLAPACK) {
   if isDistributed(A) then
     compilerError("eigvalsh does not support distributed vectors/matrices");
   return eigh(A, lower=lower, overwrite=overwrite, eigvalsOnly=true);
@@ -2036,7 +2036,7 @@ proc eigvalsh(A: [] ?t, lower=true, param overwrite=false) throws where (A.domai
       compiler error if ``lapackImpl`` is ``off``.
 
 */
-proc eigh(A: [] ?t, lower=true, param eigvalsOnly=false, param overwrite=false) throws where (A.domain.rank == 2) && (usingLAPACK) {
+proc eigh(ref A: [] ?t, lower=true, param eigvalsOnly=false, param overwrite=false) throws where (A.domain.rank == 2) && (usingLAPACK) {
   if isDistributed(A) then
     compilerError("eigh does not support distributed vectors/matrices");
 
