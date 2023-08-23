@@ -1,6 +1,7 @@
 #
 # nightly subroutines
 #
+package nightly_email
 
 use File::Basename;
 use Cwd;
@@ -152,12 +153,10 @@ sub writeEmail {
     my $summary = $_[6];
     my $prevsummary = $_[7];
     my $sortedsummary = $_[8];
-    print 
     #Create a file "email.txt" in the chapel homedir. This file will be used by Jenkins to attach the test results in the email body
     my $filename = "$chplhomedir/email.txt";
     open(my $SF, '>', $filename) or die "Could not open file '$filename' $!";
-    print "Writing Test results summary... \n";
-    print "filename ... $filename \n";
+    print "Writing Test results summary to: $filename \n";
     print $SF startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab, $testdirs);
     print $SF "$numtestssummary \n";
     print $SF "$summary \n";

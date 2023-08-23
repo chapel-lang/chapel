@@ -1,5 +1,7 @@
 #!/usr/bin/env perl
 
+package nightly_email;
+
 use FindBin;
 use lib "$FindBin::Bin";
 
