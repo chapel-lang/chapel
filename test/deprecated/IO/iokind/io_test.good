@@ -1,10 +1,10 @@
 io_test.chpl:6: In function 'testio':
-io_test.chpl:6: warning: 'iokind' is deprecated, please use Serializers that support endianness instead
+io_test.chpl:6: warning: 'iokind' is deprecated, please use Serializers or Deserializers that support endianness instead
 io_test.chpl:38: In function 'testio':
-io_test.chpl:46: warning: 'iodynamic' is deprecated, please use Serializers that support endianness instead
-io_test.chpl:48: warning: 'ionative' is deprecated, please use Serializers that support endianness instead
-io_test.chpl:50: warning: 'iobig' is deprecated, please use Serializers that support endianness instead
-io_test.chpl:52: warning: 'iolittle' is deprecated, please use Serializers that support endianness instead
+io_test.chpl:46: warning: 'iodynamic' is deprecated, please use Serializers or Deserializers that support endianness instead
+io_test.chpl:48: warning: 'ionative' is deprecated, please use Serializers or Deserializers that support endianness instead
+io_test.chpl:50: warning: 'iobig' is deprecated, please use Serializers or Deserializers that support endianness instead
+io_test.chpl:52: warning: 'iolittle' is deprecated, please use Serializers or Deserializers that support endianness instead
 io_test.chpl:6: In function 'testio':
 io_test.chpl:11: warning: writer with a 'kind' argument is deprecated, please use Serializers instead
 io_test.chpl:18: warning: reader with a 'kind' argument is deprecated, please use Deserializers instead
