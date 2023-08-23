@@ -145,7 +145,7 @@ module GPU
     until completion of this asynchronous transfer
   */
   @chpldoc.nodoc
-  proc asyncGpuComm(dstArr : ?t1, srcArr : ?t2) : GpuAsyncCommHandle
+  proc asyncGpuComm(ref dstArr : ?t1, srcArr : ?t2) : GpuAsyncCommHandle
     where isArrayType(t1) && isArrayType(t2)
   {
     extern proc chpl_gpu_comm_async(dstArr : c_ptr(void), srcArr : c_ptr(void),
@@ -155,7 +155,7 @@ module GPU
       halt("Arrays passed to asyncGpuComm must have the same number of elements. ",
         "Sizes passed: ", dstArr.size, " and ", srcArr.size);
     }
-    return chpl_gpu_comm_async(c_ptrTo(dstArr), c_ptrTo(srcArr),
+    return chpl_gpu_comm_async(c_ptrTo(dstArr), c_ptrToConst(srcArr),
       dstArr.size * numBytes(dstArr.eltType));
   }
 
