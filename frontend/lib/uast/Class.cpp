@@ -44,6 +44,7 @@ owned<Class> Class::build(Builder* builder, Location loc,
   AstList lst;
   int attributeGroupChildNum = NO_CHILD;
   int parentClassChildNum = NO_CHILD;
+  int numParentClasses = 0;
   int elementsChildNum = NO_CHILD;
   int numElements = 0;
 
@@ -54,6 +55,7 @@ owned<Class> Class::build(Builder* builder, Location loc,
 
   if (parentClass.get() != nullptr) {
     parentClassChildNum = lst.size();
+    numParentClasses = 1;
     lst.push_back(std::move(parentClass));
   }
   numElements = contents.size();
@@ -66,6 +68,7 @@ owned<Class> Class::build(Builder* builder, Location loc,
 
   Class* ret = new Class(std::move(lst), attributeGroupChildNum, vis, name,
                          parentClassChildNum,
+                         numParentClasses,
                          elementsChildNum,
                          numElements);
   builder->noteLocation(ret, loc);

@@ -45,11 +45,12 @@ namespace uast {
 class Class final : public AggregateDecl {
  private:
   int parentClassChildNum_;
+  int numParentClasses_;
 
   Class(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
         UniqueString name,
         int parentClassChildNum,
-        /* int numParentClasses, */
+        int numParentClasses,
         int elementsChildNum,
         int numElements)
     : AggregateDecl(asttags::Class, std::move(children),
@@ -60,21 +61,31 @@ class Class final : public AggregateDecl {
                     name,
                     elementsChildNum,
                     numElements),
-      parentClassChildNum_(parentClassChildNum) {
-    CHPL_ASSERT(parentClassChildNum_ == NO_CHILD ||
-                isAcceptableInheritExpr(child(parentClassChildNum_)));
+      parentClassChildNum_(parentClassChildNum),
+      numParentClasses_(numParentClasses) {
+    if (parentClassChildNum_ != NO_CHILD && elementsChildNum != NO_CHILD) {
+      CHPL_ASSERT(parentClassChildNum_ + numParentClasses_ == elementsChildNum);
+    }
+
+    if (parentClassChildNum_ != NO_CHILD) {
+      for (int i = 0; i < numParentClasses_; i++) {
+        CHPL_ASSERT(isAcceptableInheritExpr(child(parentClassChildNum_ + i)));
+      }
+    }
   }
 
   Class(Deserializer& des)
     : AggregateDecl(asttags::Class, des) {
       parentClassChildNum_ = des.read<int>();
+      numParentClasses_ = des.read<int>();
      }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Class* lhs = this;
     const Class* rhs = (const Class*) other;
     return lhs->aggregateDeclContentsMatchInner(rhs) &&
-           lhs->parentClassChildNum_ == rhs->parentClassChildNum_;
+           lhs->parentClassChildNum_ == rhs->parentClassChildNum_ &&
+           lhs->numParentClasses_ == rhs->numParentClasses_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
@@ -97,17 +108,18 @@ class Class final : public AggregateDecl {
     Return the AstNode indicating the parent class or nullptr
     if there was none.
    */
-  const AstNode* parentClass() const {
-    if (parentClassChildNum_ < 0)
+  const AstNode* parentClass(int i = 0) const {
+    if (parentClassChildNum_ == NO_CHILD || i >= numParentClasses_)
       return nullptr;
 
-    auto ret = child(parentClassChildNum_);
+    auto ret = child(parentClassChildNum_ + i);
     return ret;
   }
 
   void serialize(Serializer& ser) const override {
     AggregateDecl::serialize(ser);
     ser.write(parentClassChildNum_);
+    ser.write(numParentClasses_);
   }
 
   DECLARE_STATIC_DESERIALIZE(Class);
