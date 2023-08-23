@@ -111,11 +111,21 @@ class Class final : public AggregateDecl {
     if there was none.
    */
   const AstNode* inheritExpr(int i) const {
-    if (inheritExprChildNum_ == NO_CHILD || i >= numInheritExprs_)
+    if (inheritExprChildNum_ < 0 || i >= numInheritExprs_)
       return nullptr;
 
     auto ret = child(inheritExprChildNum_ + i);
     return ret;
+  }
+
+  AstListNoCommentsIteratorPair<AstNode> inheritExprs() const {
+    if (inheritExprChildNum_ < 0)
+      return AstListNoCommentsIteratorPair<AstNode>(
+                children_.end(), children_.end());
+
+    return AstListNoCommentsIteratorPair<AstNode>(
+              children_.begin() + inheritExprChildNum_,
+              children_.begin() + inheritExprChildNum_ + numInheritExprs_);
   }
 
   void serialize(Serializer& ser) const override {

@@ -3932,11 +3932,40 @@ struct Converter {
     Expr* inherit = nullptr;
     bool inheritMarkedGeneric = false;
 
+    // Performance: we can lazily compute the selfReference
+    Symbol* selfReference = findConvertedSym(node->id());
+
+    std::vector<ImplementsStmt*> implementsStmts;
     if (auto cls = node->toClass()) {
-      const uast::Identifier* ident =
-        uast::Class::getInheritExprIdent(cls->inheritExpr(0),
-                                         inheritMarkedGeneric);
-      inherit = convertExprOrNull(ident);
+      auto r = currentResolutionResult();
+      for (auto inheritExpr : cls->inheritExprs()) {
+        bool thisOneMarkedGeneric = false;
+        const uast::Identifier* ident =
+          uast::Class::getInheritExprIdent(inheritExpr, thisOneMarkedGeneric);
+
+        if (r) {
+          if (auto rr = r->byAstOrNull(ident)) {
+            if (!rr->toId().isEmpty() &&
+                parsing::idToTag(context, rr->toId()) == uast::asttags::Interface) {
+              // It's an interface; convert it into an implements statement
+              // and don't inherit from it.
+
+              auto act = new CallExpr(PRIM_ACTUALS_LIST, new SymExpr(selfReference));
+              auto interfaceName = astr(ident->name());
+
+              implementsStmts.push_back(ImplementsStmt::build(interfaceName, act, nullptr));
+              continue;
+            }
+          }
+        }
+
+        // We fell through, so it's not an interface.
+        if (inherit) {
+          context->error(inheritExpr, "TODO");
+        }
+        inheritMarkedGeneric = thisOneMarkedGeneric;
+        inherit = new UnresolvedSymExpr(astr(ident->name()));
+      }
     }
 
     if (node->linkageName()) {
@@ -3954,22 +3983,35 @@ struct Converter {
       INT_ASSERT(externFlag == FLAG_UNKNOWN);
     }
 
-    auto ret = buildClassDefExpr(name, cname, tag, inherit,
+    auto classDefExpr = buildClassDefExpr(name, cname, tag, inherit,
                                  decls,
                                  externFlag);
-    INT_ASSERT(ret->sym);
+    INT_ASSERT(classDefExpr->sym);
 
-    attachSymbolAttributes(node, ret->sym);
-    attachSymbolVisibility(node, ret->sym);
+    attachSymbolAttributes(node, classDefExpr->sym);
+    attachSymbolVisibility(node, classDefExpr->sym);
     if (inheritMarkedGeneric) {
-      ret->sym->addFlag(FLAG_SUPERCLASS_MARKED_GENERIC);
+      classDefExpr->sym->addFlag(FLAG_SUPERCLASS_MARKED_GENERIC);
     }
 
     // Note the type is converted so we can wire up SymExprs later
-    noteConvertedSym(node, ret->sym);
+    noteConvertedSym(node, classDefExpr->sym);
 
-    popFromSymStack(node, ret->sym);
+    popFromSymStack(node, classDefExpr->sym);
 
+    if (implementsStmts.size() == 0) {
+      return classDefExpr;
+    }
+
+    // there were some implements statements generated from the inheritance
+    // expressions on this aggregate type. bundle them with the aggregate
+    // declaration.
+    auto ret = new BlockStmt(BLOCK_SCOPELESS);
+    ret->insertAtTail(classDefExpr);
+    for (auto& implementsStmt : implementsStmts) {
+      ret->insertAtTail(implementsStmt);
+    }
+    debuggerBreakHere();
     return ret;
   }
 
