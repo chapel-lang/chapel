@@ -137,7 +137,7 @@ module RadixSort {
       writeln("Pf sum: ",count);
   }
 
-  proc radixSort(inputArr: [] uint){
+  proc radixSort(ref inputArr: [] uint){
     if (noisy){
         writeln("Bits at a time: ", bitsAtATime);
         writeln("Buckets: ", buckets);
