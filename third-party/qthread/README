@@ -5,7 +5,7 @@ Qthreads README for Chapel
 This copy of Qthreads 1.17 is being released with Chapel for
 convenience and was obtained from:
 
-  https://github.com/qthreads/qthreads
+  https://github.com/sandialabs/qthreads
 
 Any Chapel issues that seem to be related to Qthreads should be directed
 to the Chapel team at https://chapel-lang.org/bugs.html.
@@ -26,7 +26,7 @@ as follows:
   order for better affinity between consecutive parallel loops.
 
 * Pulled in an upstream fix for build errors on Alpine linux
-  https://github.com/Qthreads/qthreads/pull/105
+  https://github.com/sandialabs/qthreads/pull/105
 
 * We modified the configuration to support the
   --with-hwloc-get-topology-function argument that specifies a function that

@@ -78,17 +78,17 @@ module Channel {
     var prev : unmanaged Waiter(valueType)?;
     var next : unmanaged Waiter(valueType)?;
 
-    proc init(ref value, ref process$ : single bool) {
+    proc init(ref value, ref process : single bool) {
       valueType = value.type;
       val = c_addrOf(value);
-      processPtr = c_addrOf(process$);
+      processPtr = c_addrOf(process);
       isSelect = false;
     }
 
-    proc init(ref value : c_ptr, ref process$ : single bool, ref selectDone : atomic int, caseId : int) {
+    proc init(ref value : c_ptr, ref process : single bool, ref selectDone : atomic int, caseId : int) {
       valueType = value.eltType;
       val = value;
-      processPtr = c_addrOf(process$);
+      processPtr = c_addrOf(process);
       isSelect = true;
       isSelectDone = c_addrOf(selectDone);
       selectId = caseId;
@@ -313,8 +313,8 @@ module Channel {
 
       if count == 0 && sendWaiters.isEmpty() {
         if !blocking then return false;
-        var process$ : single bool;
-        var processing = new unmanaged Waiter(val, process$);
+        var process : single bool;
+        var processing = new unmanaged Waiter(val, process);
         recvWaiters.enqueue(processing);
         unlock();
         var status = processing.suspend();
@@ -366,8 +366,8 @@ module Channel {
 
       if count == bufferSize && recvWaiters.isEmpty() {
         if !blocking then return false;
-        var process$ : single bool;
-        var processing = new unmanaged Waiter(val, process$);
+        var process : single bool;
+        var processing = new unmanaged Waiter(val, process);
 
         sendWaiters.enqueue(processing);
         unlock();
@@ -455,7 +455,7 @@ module Channel {
     proc getId() : int { return 0; }
     proc sendRecv() : bool { return true; }
     proc getAddr() : c_uintptr { return 0 : c_uintptr; }
-    proc enqueueWaiter(ref process$ : single bool, ref isDone : atomic int) { }
+    proc enqueueWaiter(ref process : single bool, ref isDone : atomic int) { }
     proc dequeueWaiter() { }
   }
 
@@ -505,8 +505,8 @@ module Channel {
       return (c_ptrTo_helper(selectChannel.channelObj) : c_uintptr);
     }
 
-    override proc enqueueWaiter(ref process$ : single bool, ref isDone : atomic int) {
-      waiter = new unmanaged Waiter(val, process$, isDone, id);
+    override proc enqueueWaiter(ref process : single bool, ref isDone : atomic int) {
+      waiter = new unmanaged Waiter(val, process, isDone, id);
       if operation == selectOperation.recv {
         selectChannel.channelObj.recvWaiters.enqueue(waiter!);
       }
@@ -548,7 +548,7 @@ module Channel {
 
   /* Entry point for select statements */
   @chpldoc.nodoc
-  proc selectProcess(cases : [] shared SelectBaseClass, default : bool = false) : int{
+  proc selectProcess(ref cases : [] shared SelectBaseClass, default : bool = false) : int{
     var numCases = cases.domain.size;
 
     var addrCmp : Comparator;
@@ -590,14 +590,14 @@ module Channel {
     channel's waiting queue and wait for other task to awaken us.
     */
     var isDone : atomic int = -1;
-    var process$ : single bool;
+    var process : single bool;
 
     for case in cases {
-      case.enqueueWaiter(process$, isDone);
+      case.enqueueWaiter(process, isDone);
     }
 
     unlockSelect(lockOrder);
-    process$.readFF();
+    process.readFF();
 
     lockSelect(lockOrder);
 

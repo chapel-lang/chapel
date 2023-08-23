@@ -1,10 +1,10 @@
-var s$: sync bool = true;
+var s: sync bool = true;
 
 iter foo() {
-  s$.readFE();
+  s.readFE();
   for i in 1..3 do
     yield i;
-  s$.writeEF(true);
+  s.writeEF(true);
 }
 
 for i in foo() do
@@ -14,9 +14,9 @@ for i in foo() do
   writeln(i);
 
 iter bar() {
-  s$.readFE();
+  s.readFE();
   var r = 1..3;
-  s$.writeEF(true);
+  s.writeEF(true);
   for i in r do
     yield i;
 }

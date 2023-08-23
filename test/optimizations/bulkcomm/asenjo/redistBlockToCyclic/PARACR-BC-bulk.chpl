@@ -18,7 +18,7 @@ proc BlockArr.copyBtoC(B)
     var dststrides:[1..#stridelevels] c_size_t;
     var srcstrides: [1..#stridelevels] c_size_t;
     var count: [1..#(stridelevels+1)] c_size_t;
-    var lid=loc.id; 
+    var lid=loc.id;
 
     var numLocales: int(32)=dom.dist.targetLocDom.dim(0).size:int(32);
     var n:int(32)=dom.dist.boundingBox.dim(0).size:int(32);
@@ -38,7 +38,7 @@ proc BlockArr.copyBtoC(B)
     //writeln("Domain: ",dom.whole.dims());
 
     //a,b: first and last global indices in each locale
-    var a: int(32)=dom.locDoms[lid].myBlock.low:int(32); 
+    var a: int(32)=dom.locDoms[lid].myBlock.low:int(32);
     var b: int(32)=dom.locDoms[lid].myBlock.high:int(32);
     var blksize=b-a+1;
     //writeln("Locale", here.id," : blksize ",blksize," subblock first index  a ",a,
@@ -81,7 +81,7 @@ proc BlockArr.copyBtoC(B)
 
 proc  BlockArr.copyCtoB(B)
 {
- 
+
   coforall loc in Locales do on loc
   {
     param stridelevels=1;
@@ -100,7 +100,7 @@ proc  BlockArr.copyCtoB(B)
     var num: int;
     var schunkini: int;
     var chunksize: int;
-    var a: int(32)=dom.locDoms[lid].myBlock.low:int(32); 
+    var a: int(32)=dom.locDoms[lid].myBlock.low:int(32);
     var b: int(32)=dom.locDoms[lid].myBlock.high:int(32);
     num=b-a+1;
 
@@ -142,7 +142,7 @@ proc  BlockArr.copyCtoB(B)
 
 
 /*********************************************************/
-/*		ParaCR algorithm in Chapel               */		
+/*		ParaCR algorithm in Chapel               */
 /*		Block to cyclic redistribution           */
 /*	Loop unrolled to avoid a deep copy of arrays     */
 /* Contributed by Juan Lopez, Alberto Sanz & Rafa Asenjo */
@@ -194,7 +194,7 @@ proc main(){
 
   /* Parallel Cyclic reduction Algorithm */
   SetExampleMatrix();
-  
+
   if(n==1) {
     X(1)=D(1)/B(1);
     writeln("Done!!. Too easy... bye");
@@ -206,12 +206,12 @@ proc main(){
   /*********************/
   /* Elimination Phase */
   /*********************/
- 
+
   /**********************/
   /* Block Distribution */
   /**********************/
-  //Unrolled loop: it does two iterations (stages) in the body 
-  for j in 1..RedistStage-1 by 2 do { 
+  //Unrolled loop: it does two iterations (stages) in the body
+  for j in 1..RedistStage-1 by 2 do {
     //  Odd stage (j)
     ComputeStage(AA,BB,CC,DD,A,B,C,D,j,Dom);
     //  Even stage (j+1)
@@ -222,27 +222,27 @@ proc main(){
     ComputeStage(AA,BB,CC,DD,A,B,C,D,RedistStage,Dom);
   }
 
-  /********************************************/    
+  /********************************************/
   /* Change from Block to Cyclic Distribution */
   /********************************************/
   if timer then t5=timeSinceEpoch().totalSeconds();
   if (RedistStage&1) then {copyBtoC(AA,P);copyBtoC(BB,Q);copyBtoC(CC,R);copyBtoC(DD,S);}
   else {copyBtoC(A,P);copyBtoC(B,Q);copyBtoC(C,R);copyBtoC(D,S);}
-  if timer then t6=timeSinceEpoch().totalSeconds(); 
+  if timer then t6=timeSinceEpoch().totalSeconds();
 
-  /********************************************/    
+  /********************************************/
   /*          Cyclic Distribution             */
   /********************************************/
 
   for j in (RedistStage+1)..stages-1 by 2 do {
-    //  Stage (j) 
-    ComputeStage(PP,QQ,RR,SS,P,Q,R,S,j,DomC);   
+    //  Stage (j)
+    ComputeStage(PP,QQ,RR,SS,P,Q,R,S,j,DomC);
     //  Stage (j+1)
     ComputeStage(P,Q,R,S,PP,QQ,RR,SS,j+1,DomC);
   }
- 
+
   if((stages-RedistStage)&1){ //If odd number of remaining stages there is one more stage missing
-    ComputeStage(PP,QQ,RR,SS,P,Q,R,S,stages,DomC);   
+    ComputeStage(PP,QQ,RR,SS,P,Q,R,S,stages,DomC);
   }
   /**********************/
   /* Substitution Phase */
@@ -255,13 +255,13 @@ proc main(){
   }
 
   if timer then t2=timeSinceEpoch().totalSeconds();
-	
+
   //writeln("Tridiagonal System Solution:");
   //PrintV(X);
   SetExampleMatrix();
   //PrintV(D);
-  Check();	 
-   
+  Check();
+
   if(error!=1)
     {
       writeln("Done!");
@@ -294,7 +294,7 @@ proc Check()
     }
 }
 
-proc ComputeStage(A,B,C,D,AA,BB,CC,DD,j,Dom, msg="")
+proc ComputeStage(ref A, ref B, ref C, ref D,AA,BB,CC,DD,j,Dom, msg="")
 {
   //  writeln("ComputeStage", msg, " j=", j);
   if timer then t3=timeSinceEpoch().totalSeconds();
@@ -310,7 +310,7 @@ proc ComputeStage(A,B,C,D,AA,BB,CC,DD,j,Dom, msg="")
 	C(i)=0;
 	D(i)=DD(i);
       } else { // Case 2: out of lower range
-	const c=CC(i),bh=BB(hi);		
+	const c=CC(i),bh=BB(hi);
 	A(i)=0;
 	B(i)=(BB(i) - (c*AA(hi)/bh));
 	C(i)=(-c*CC(hi))/bh;
@@ -318,7 +318,7 @@ proc ComputeStage(A,B,C,D,AA,BB,CC,DD,j,Dom, msg="")
       }
     }else {
       if hi>n then{ // Case 3: out of upper range
-	const a=AA(i),bl=BB(lo);	
+	const a=AA(i),bl=BB(lo);
 	A(i)=(-AA(lo)*a)/bl;
 	B(i)=(BB(i) - (CC(lo)*a/bl));
 	C(i)=0;
@@ -353,7 +353,7 @@ proc SetExampleMatrix()
     B(i)=2.0;
     C(i)=1.0;
   }
-  
+
   A(1)=0;C(n)=0;
   forall i in 1..(n+1)/2 do {
     D(i)=i;

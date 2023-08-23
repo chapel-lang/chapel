@@ -248,7 +248,7 @@ proc schurComplementRefWrapper(blk:int):void {
 proc schurComplementRef(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) {
   const replAD: domain(2, indexType) = AD,
         replBD: domain(2, indexType) = BD;
-    
+
   const replA : [replAD] elemType = Ab[replAD],
         replB : [replBD] elemType = Ab[replBD];
 
@@ -275,7 +275,7 @@ proc schurComplementRef(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domai
 //
 proc dgemmNativeInds(A: [] elemType,
                     B: [] elemType,
-                    C: [] elemType) {
+                    ref C: [] elemType) {
   for (iA, iC) in zip(A.domain.dim(0), C.domain.dim(0)) do
     for (jA, iB) in zip(A.domain.dim(1), B.domain.dim(0)) do
       for (jB, jC) in zip(B.domain.dim(1), C.domain.dim(1)) do

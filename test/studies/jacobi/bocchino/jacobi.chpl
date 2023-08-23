@@ -22,7 +22,7 @@ proc main() {
 
 // Put the stencil of X in Y
 // Return the max difference between the new and old stencils
-proc stencil(X,Y) {
+proc stencil(X,ref Y) {
   forall (i,j) in Inner {
     Y(i,j) = (X(i+1,j) + X(i-1,j) + X(i,j+1) + X(i,j-1)) / 4;
   }

@@ -1,0 +1,3 @@
+bug: compiler permits 'const ref' formals to be returned as 'ref'
+
+(resulting in the ability to change 'const' values)

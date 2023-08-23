@@ -1496,8 +1496,27 @@ module ChapelRange {
 
   @chpldoc.nodoc
   operator ==(r1: range(?), r2: range(?)) param
-    where r1.bounds != r2.bounds do
+    where r1.bounds != r2.bounds &&
+          (!isFiniteIdxType(r1.idxType) ||
+          !isFiniteIdxType(r2.idxType)) do
   return false;
+
+  @chpldoc.nodoc
+  @unstable("== between unbounded and bounded ranges is unstable and its behavior may change in the future")
+  operator ==(r1: range(?), r2: range(?)): bool
+    where r1.bounds != r2.bounds && isFiniteIdxType(r1.idxType) &&
+          isFiniteIdxType(r2.idxType)
+  {
+    const boundedr1 = if r1.bounds == boundKind.both then r1
+                       else new range(
+                          r1.idxType, boundKind.both, r1.strides,
+                          r1._low, r1._high, r1._stride, r1._alignment);
+    const boundedr2 = if r2.bounds == boundKind.both then r2
+                        else new range(
+                            r2.idxType, boundKind.both, r2.strides,
+                            r2._low, r2._high, r2._stride, r2._alignment);
+    return boundedr1 == boundedr2;
+  }
 
   @chpldoc.nodoc
   operator ==(r1: range(?), r2: range(?)): bool
@@ -1571,7 +1590,7 @@ module ChapelRange {
   {
     if r1._low != r2._low then return false;
     if r1._high != r2._high then return false;
-    // the following can be 'if none == none ...'
+    // the following can be 'if none != none ...'
         if r1._stride != r2._stride then return false;
         if r1._alignment != r2._alignment then return false;
     return true;

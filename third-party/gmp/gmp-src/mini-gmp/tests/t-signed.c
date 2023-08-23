@@ -1,6 +1,6 @@
 /* Exercise some mpz_..._si functions.
 
-Copyright 2013, 2016 Free Software Foundation, Inc.
+Copyright 2013, 2016, 2020 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library test suite.
 
@@ -197,9 +197,152 @@ try_fits_slong_p (void)
 }
 
 void
+try_fits_utype_p (void)
+{
+  mpz_t x;
+  mpz_init (x);
+  if (!mpz_fits_ulong_p (x))
+    {
+      printf ("mpz_fits_ulong_p (0) false!\n");
+      abort ();
+    }
+  if (!mpz_fits_uint_p (x))
+    {
+      printf ("mpz_fits_uint_p (0) false!\n");
+      abort ();
+    }
+  if (!mpz_fits_ushort_p (x))
+    {
+      printf ("mpz_fits_udhort_p (0) false!\n");
+      abort ();
+    }
+  mpz_set_si (x, -1);
+  if (mpz_fits_ulong_p (x))
+    {
+      printf ("mpz_fits_ulong_p (- 1) true!\n");
+      abort ();
+    }
+  if (mpz_fits_uint_p (x))
+    {
+      printf ("mpz_fits_uint_p (- 1) true!\n");
+      abort ();
+    }
+  if (mpz_fits_ushort_p (x))
+    {
+      printf ("mpz_fits_ushort_p (- 1) true!\n");
+      abort ();
+    }
+  mpz_set_ui (x, ULONG_MAX);
+  if (!mpz_fits_ulong_p (x))
+    {
+      printf ("mpz_fits_ulong_p (ULONG_MAX) false!\n");
+      abort ();
+    }
+  mpz_add_ui (x, x, 1);
+  if (mpz_fits_ulong_p (x))
+    {
+      printf ("mpz_fits_ulong_p (ULONG_MAX + 1) true!\n");
+      abort ();
+    }
+  mpz_set_ui (x, UINT_MAX);
+  if (!mpz_fits_uint_p (x))
+    {
+      printf ("mpz_fits_uint_p (UINT_MAX) false!\n");
+      abort ();
+    }
+  mpz_add_ui (x, x, 1);
+  if (mpz_fits_uint_p (x))
+    {
+      printf ("mpz_fits_uint_p (UINT_MAX + 1) true!\n");
+      abort ();
+    }
+  mpz_set_ui (x, USHRT_MAX);
+  if (!mpz_fits_ushort_p (x))
+    {
+      printf ("mpz_fits_ushort_p (USHRT_MAX) false!\n");
+      abort ();
+    }
+  mpz_add_ui (x, x, 1);
+  if (mpz_fits_ushort_p (x))
+    {
+      printf ("mpz_fits_ushort_p (USHRT_MAX + 1) true!\n");
+      abort ();
+    }
+
+  mpz_clear (x);
+}
+
+void
+try_fits_sint_p (void)
+{
+  mpz_t x;
+  mpz_init_set_si (x, INT_MAX);
+  if (!mpz_fits_sint_p (x))
+    {
+      printf ("mpz_fits_sint_p (INT_MAX) false!\n");
+      abort ();
+    }
+  mpz_add_ui (x, x, 1);
+  if (mpz_fits_sint_p (x))
+    {
+      printf ("mpz_fits_sint_p (INT_MAX + 1) true!\n");
+      abort ();
+    }
+  mpz_set_si (x, INT_MIN);
+  if (!mpz_fits_sint_p (x))
+    {
+      printf ("mpz_fits_sint_p (INT_MIN) false!\n");
+      abort ();
+    }
+  mpz_sub_ui (x, x, 1);
+  if (mpz_fits_sint_p (x))
+    {
+      printf ("mpz_fits_sint_p (INT_MIN - 1) true!\n");
+      abort ();
+    }
+
+  mpz_clear (x);
+}
+
+void
+try_fits_sshort_p (void)
+{
+  mpz_t x;
+  mpz_init_set_si (x, SHRT_MAX);
+  if (!mpz_fits_sshort_p (x))
+    {
+      printf ("mpz_fits_sshort_p (SHRT_MAX) false!\n");
+      abort ();
+    }
+  mpz_add_ui (x, x, 1);
+  if (mpz_fits_sshort_p (x))
+    {
+      printf ("mpz_fits_sshort_p (SHRT_MAX + 1) true!\n");
+      abort ();
+    }
+  mpz_set_si (x, SHRT_MIN);
+  if (!mpz_fits_sshort_p (x))
+    {
+      printf ("mpz_fits_sshort_p (SHRT_MIN) false!\n");
+      abort ();
+    }
+  mpz_sub_ui (x, x, 1);
+  if (mpz_fits_sshort_p (x))
+    {
+      printf ("mpz_fits_sshort_p (SHRT_MIN - 1) true!\n");
+      abort ();
+    }
+
+  mpz_clear (x);
+}
+
+void
 testmain (int argc, char *argv[])
 {
   try_fits_slong_p ();
+  try_fits_sint_p ();
+  try_fits_sshort_p ();
+  try_fits_utype_p ();
   try_op_si (-1);
   try_op_si (1);
 }

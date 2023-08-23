@@ -1,8 +1,9 @@
+
 /* Test for mulmod_bnm1 function.
 
    Contributed to the GNU project by Marco Bodrato.
 
-Copyright 2009 Free Software Foundation, Inc.
+Copyright 2009, 2020 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library test suite.
 
@@ -148,9 +149,10 @@ main (int argc, char **argv)
 	MPN_ZERO (ap + an - (n >> 1) , n - an);
 	MPN_COPY (bp, bp + (n >> 1), bn - (n >> 1));
 	MPN_ZERO (bp + bn - (n >> 1) , n - bn);
-	x = (n == an) ? 0 : gmp_urandomm_ui (rands, n - an);
+	x = 0;
+	/* x = (n == an) ? 0 : gmp_urandomm_ui (rands, n - an); */
 	ap[x] += gmp_urandomm_ui (rands, 3) - 1;
-	x = (n >> 1) - x % (n >> 1);
+	/* x = (n >> 1) - x % (n >> 1); */
 	bp[x] += gmp_urandomm_ui (rands, 3) - 1;
 	/* We don't propagate carry, this means that the desired condition
 	   is not triggered all the times. A few times are enough anyway. */

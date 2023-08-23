@@ -32,7 +32,7 @@ see https://www.gnu.org/licenses/.  */
 #include "gmp-impl.h"
 
 void
-mpq_clear (mpq_t x)
+mpq_clear (mpq_ptr x)
 {
   if (ALLOC (NUM(x)))
     __GMP_FREE_FUNC_LIMBS (PTR(NUM(x)), ALLOC(NUM(x)));

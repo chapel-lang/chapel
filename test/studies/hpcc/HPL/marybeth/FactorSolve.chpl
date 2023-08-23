@@ -219,7 +219,7 @@ proc computePivotRow(A:[?D]) {
 }
 
 //  The LU solve routine takes A = [L U y] and solves for x.
-proc LUSolve (A: [?ADom], x: [?xDom]) {
+proc LUSolve (A: [?ADom], ref x: [?xDom]) {
 
    var n = ADom.dim(0).size;
    var AD1 = ADom.dim(0);

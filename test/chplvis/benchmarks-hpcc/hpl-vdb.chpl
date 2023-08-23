@@ -108,8 +108,8 @@ proc main() {
 // blocked LU factorization with pivoting for matrix augmented with
 // vector of RHS values.
 //
-proc LUFactorize(n: int, Ab: [?AbD] elemType,
-                piv: [1..n] int) {
+proc LUFactorize(n: int, ref Ab: [?AbD] elemType,
+                ref piv: [1..n] int) {
   
   // Initialize the pivot vector to represent the initially unpivoted matrix.
   piv = 1..n;
@@ -189,7 +189,7 @@ proc LUFactorize(n: int, Ab: [?AbD] elemType,
 // locale only stores one copy of each block it requires for all of
 // its rows/columns.
 //
-proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) {
+proc schurComplement(ref Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) {
   //
   // Copy data into replicated arrays so every processor has a local copy
   // of the data it will need to perform a local matrix-multiply.
@@ -251,9 +251,9 @@ proc replicateD2(Ab, AD) {
 // do unblocked-LU decomposition within the specified panel, update the
 // pivot vector accordingly
 //
-proc panelSolve(Ab: [] elemType,
+proc panelSolve(ref Ab: [] elemType,
                panel: domain,
-               piv: [] int) {
+               ref piv: [] int) {
 
   for k in panel.dim(1) {             // iterate through the columns
     const col = panel[k.., k..k];
@@ -293,7 +293,7 @@ proc panelSolve(Ab: [] elemType,
 // solve a block (tl for top-left) portion of a matrix. This function
 // solves the rows to the right of the block.
 //
-proc updateBlockRow(Ab: [] elemType,
+proc updateBlockRow(ref Ab: [] elemType,
                    tl: domain,
                    tr: domain) {
 
@@ -366,7 +366,7 @@ proc printConfiguration() {
 // construct an n by n+1 matrix filled with random values and scale
 // it to be in the range -1.0..1.0
 //
-proc initAB(Ab: [] elemType) {
+proc initAB(ref Ab: [] elemType) {
   fillRandom(Ab, seed);
   Ab = Ab * 2.0 - 1.0;
 }
@@ -374,7 +374,7 @@ proc initAB(Ab: [] elemType) {
 //
 // calculate norms and residuals to verify the results
 //
-proc verifyResults(Ab, MatrixSpace, x) {
+proc verifyResults(ref Ab, MatrixSpace, x) {
   if !verify then return true;
   initAB(Ab);
 

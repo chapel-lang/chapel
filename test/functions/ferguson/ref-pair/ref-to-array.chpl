@@ -12,7 +12,7 @@ proc getter(const ref arg) const ref {
 
 
 
-proc foo(X: [] int) {
+proc foo(ref X: [] int) {
    ref Y = X;
    Y[1] = 42;
 }

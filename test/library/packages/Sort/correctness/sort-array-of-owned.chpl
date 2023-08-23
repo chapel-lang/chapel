@@ -1,7 +1,7 @@
 use Sort;
 
 config const n = 100;
-config param useKeyComparator = true; 
+config param useKeyComparator = true;
 
 class Value {
   var x: int;

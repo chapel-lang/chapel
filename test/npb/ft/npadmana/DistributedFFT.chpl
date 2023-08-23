@@ -185,7 +185,7 @@ prototype module DistributedFFT {
   */
   proc doFFT_Transposed(param ftType : FFTtype,
                         src: [?SrcDom] ?T,
-                        dst : [?DstDom] T,
+                        ref dst : [?DstDom] T,
                         signOrKind) {
     if (usePerformant) {
       doFFT_Transposed_Performant(ftType, src, dst, signOrKind);
@@ -266,7 +266,7 @@ prototype module DistributedFFT {
   @chpldoc.nodoc
   proc doFFT_Transposed_Performant(param ftType : FFTtype,
                                    Src: [?SrcDom] ?T,
-                                   Dst : [?DstDom] T,
+                                   ref Dst : [?DstDom] T,
                                    signOrKind) {
     checkDims(SrcDom, DstDom);
 

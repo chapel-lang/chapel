@@ -334,7 +334,7 @@ proc test_gemv_helper(type t){
 
     // Compute Result vector
     for i in R.domain do
-      R[i] = beta*Y[i] + alpha*(+ reduce (conjg(A[..,i])*X[..]));
+      R[i] = beta*Y[i] + alpha*(+ reduce (conj(A[..,i])*X[..]));
 
     gemv(A, X, Y, alpha, beta, opA=Op.H);
 
@@ -476,7 +476,7 @@ proc test_gerc_helper(type t){
     var alpha = rng.getNext();
 
     // Precompute result
-    for (i,j) in R.domain do R[i, j] = alpha*X[i]*conjg(Y[j]) + A[i, j];
+    for (i,j) in R.domain do R[i, j] = alpha*X[i]*conj(Y[j]) + A[i, j];
 
     gerc(A, X, Y, alpha);
 
@@ -508,7 +508,7 @@ proc test_gerc_helper(type t){
     var alpha = rng.getNext();
 
     // Precompute result
-    for (i,j) in R.domain do R[i, j] = alpha*X[i]*conjg(Y[j]) + A[i, j];
+    for (i,j) in R.domain do R[i, j] = alpha*X[i]*conj(Y[j]) + A[i, j];
 
     gerc(A[.., 0.. #n], X, Y, alpha);
 
@@ -736,7 +736,7 @@ proc test_her_helper(type t){
     makeHerm(A);
 
     // Precompute result
-    for (i,j) in R.domain do R[i, j] = alpha*X[i]*conjg(X[j]) + A[i, j];
+    for (i,j) in R.domain do R[i, j] = alpha*X[i]*conj(X[j]) + A[i, j];
 
     // Resulting 'A' is only stored in upper triangular array
     zeroTri(A);
@@ -767,7 +767,7 @@ proc test_her_helper(type t){
     makeHerm(A);
 
     // Precompute result
-    for (i,j) in R.domain do R[i, j] = alpha*X[i]*conjg(X[j]) + A[i, j];
+    for (i,j) in R.domain do R[i, j] = alpha*X[i]*conj(X[j]) + A[i, j];
 
     // Resulting 'A' is only stored in upper triangular array
     zeroTri(A, uplo=Uplo.Lower);
@@ -799,7 +799,7 @@ proc test_her_helper(type t){
     makeHerm(A[.., 0..#m]);
 
     // Precompute result
-    for (i,j) in R.domain do R[i, j] = alpha*X[i]*conjg(X[j]) + A[i, j];
+    for (i,j) in R.domain do R[i, j] = alpha*X[i]*conj(X[j]) + A[i, j];
 
     // Resulting 'A' is only stored in upper triangular array
     zeroTri(A[.., 0..#m]);
@@ -840,7 +840,7 @@ proc test_her2_helper(type t){
 
     // Precompute result
     for (i, j) in R.domain do
-      R[i, j] = alpha*X[i]*conjg(Y[j]) + conjg(alpha)*Y[i]*conjg(Y[j]) + A[i, j];
+      R[i, j] = alpha*X[i]*conj(Y[j]) + conj(alpha)*Y[i]*conj(Y[j]) + A[i, j];
 
     // A result is only stored in upper triangular array
     zeroTri(A);
@@ -872,7 +872,7 @@ proc test_her2_helper(type t){
 
     // Precompute result
     for (i, j) in R.domain do
-      R[i, j] = alpha*X[i]*conjg(Y[j]) + conjg(alpha)*Y[i]*conjg(Y[j]) + A[i, j];
+      R[i, j] = alpha*X[i]*conj(Y[j]) + conj(alpha)*Y[i]*conj(Y[j]) + A[i, j];
 
     // A result is only stored in upper triangular array
     zeroTri(A, uplo=Uplo.Lower);
@@ -905,7 +905,7 @@ proc test_her2_helper(type t){
 
     // Precompute result
     for (i, j) in R.domain do
-      R[i, j] = alpha*X[i]*conjg(Y[j]) + conjg(alpha)*Y[i]*conjg(Y[j]) + A[i, j];
+      R[i, j] = alpha*X[i]*conj(Y[j]) + conj(alpha)*Y[i]*conj(Y[j]) + A[i, j];
 
     // A result is only stored in upper triangular array
     zeroTri(A[.., 0..#m]);
@@ -1153,7 +1153,7 @@ proc test_syr_helper(type t){
 
     makeSymm(A);
 
-    for (i, j) in R.domain do R[i, j] = alpha*X[i]*conjg(X[j]) + A[i, j];
+    for (i, j) in R.domain do R[i, j] = alpha*X[i]*conj(X[j]) + A[i, j];
 
     // A result is only stored in upper triangular array
     zeroTri(R);
@@ -1183,7 +1183,7 @@ proc test_syr_helper(type t){
 
     makeSymm(A);
 
-    for (i, j) in R.domain do R[i, j] = alpha*X[i]*conjg(X[j]) + A[i, j];
+    for (i, j) in R.domain do R[i, j] = alpha*X[i]*conj(X[j]) + A[i, j];
 
     // A result is only stored in upper triangular array
     zeroTri(R, Uplo.Lower);
@@ -1214,7 +1214,7 @@ proc test_syr_helper(type t){
 
     makeSymm(A[.., 0..#m]);
 
-    for (i, j) in R.domain do R[i, j] = alpha*X[i]*conjg(X[j]) + A[i, j];
+    for (i, j) in R.domain do R[i, j] = alpha*X[i]*conj(X[j]) + A[i, j];
 
     // A result is only stored in upper triangular array
     zeroTri(R);
@@ -1256,7 +1256,7 @@ proc test_syr2_helper(type t){
     makeSymm(A);
 
     for (i, j) in R.domain do
-        R[i, j] = alpha*X[i]*conjg(Y[j]) + conjg(alpha)*Y[i]*conjg(X[j]) + A[i,j];
+        R[i, j] = alpha*X[i]*conj(Y[j]) + conj(alpha)*Y[i]*conj(X[j]) + A[i,j];
 
     // A result is only stored in upper triangular array
     zeroTri(R);
@@ -1289,7 +1289,7 @@ proc test_syr2_helper(type t){
     makeSymm(A);
 
     for (i, j) in R.domain do
-        R[i, j] = alpha*X[i]*conjg(Y[j]) + conjg(alpha)*Y[i]*conjg(X[j]) + A[i,j];
+        R[i, j] = alpha*X[i]*conj(Y[j]) + conj(alpha)*Y[i]*conj(X[j]) + A[i,j];
 
     // A result is only stored in upper triangular array
     zeroTri(R, Uplo.Lower);
@@ -1323,7 +1323,7 @@ proc test_syr2_helper(type t){
     makeSymm(A[.., 0..#m]);
 
     for (i, j) in R.domain do
-        R[i, j] = alpha*X[i]*conjg(Y[j]) + conjg(alpha)*Y[i]*conjg(X[j]) + A[i,j];
+        R[i, j] = alpha*X[i]*conj(Y[j]) + conj(alpha)*Y[i]*conj(X[j]) + A[i,j];
 
     // A result is only stored in upper triangular array
     zeroTri(R);

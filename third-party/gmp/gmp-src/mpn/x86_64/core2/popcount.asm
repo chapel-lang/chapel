@@ -166,7 +166,7 @@ L(e1):	movdqa	%xmm6, %xmm0
 	paddq	%xmm4, %xmm8
 	pshufd	$14, %xmm8, %xmm0
 	paddq	%xmm8, %xmm0
-	movq	%xmm0, %rax
+	movd	%xmm0, %rax
 	ret
 EPILOGUE()
 DEF_OBJECT(L(cnsts),16,`JUMPTABSECT')

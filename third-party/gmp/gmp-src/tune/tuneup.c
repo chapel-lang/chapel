@@ -523,13 +523,8 @@ print_define_with_speedup (const char *name, mp_size_t value,
 			   mp_size_t runner_up, double speedup)
 {
   char buf[100];
-#if __STDC_VERSION__ >= 199901L
-  snprintf (buf, sizeof buf, "%.2f%% faster than %ld",
+  snprintf (buf, sizeof(buf), "%.2f%% faster than %ld",
 	    100.0 * (speedup - 1), runner_up);
-#else
-  sprintf (buf, "%.2f%% faster than %ld",
-	    100.0 * (speedup - 1), runner_up);
-#endif
   print_define_remark (name, value, buf);
 }
 
@@ -1265,7 +1260,7 @@ fft (struct fft_param_t *p)
 void
 relspeed_div_1_vs_mul_1 (void)
 {
-#define max_opsize 100
+  const size_t max_opsize = 100;
   mp_size_t n;
   long j;
   mp_limb_t rp[max_opsize];
@@ -2070,7 +2065,7 @@ tune_powm_sec (void)
   mp_size_t itch;
   mp_bitcnt_t nbits, nbits_next, possible_nbits_cutoff;
   const int n_max = 3000 / GMP_NUMB_BITS;
-#define n_measurements  5
+  const int n_measurements = 5;
   mp_ptr rp, bp, ep, mp, tp;
   double ttab[n_measurements], tk, tkp1;
   TMP_DECL;
@@ -2258,16 +2253,18 @@ tune_div_qr_1 (void)
   if (!HAVE_NATIVE_mpn_div_qr_1n_pi1)
     {
       static struct param_t  param;
-      speed_function_t f[2] =
+      speed_function_t f[] =
 	{
 	 speed_mpn_div_qr_1n_pi1_1,
 	 speed_mpn_div_qr_1n_pi1_2,
+	 speed_mpn_div_qr_1n_pi1_3,
+	 speed_mpn_div_qr_1n_pi1_4,
 	};
 
       s.size = 10;
       s.r = randlimb_norm ();
 
-      one_method (2, f, "mpn_div_qr_1n_pi1", "DIV_QR_1N_PI1_METHOD", &param);
+      one_method (numberof(f), f, "mpn_div_qr_1n_pi1", "DIV_QR_1N_PI1_METHOD", &param);
     }
 
   {
@@ -2751,8 +2748,6 @@ speed_mpn_pre_set_str (struct speed_params *s)
   powers_t powtab[GMP_LIMB_BITS];
   mp_size_t un;
   int chars_per_limb;
-  size_t n_pows;
-  powers_t *pt;
   TMP_DECL;
 
   SPEED_RESTRICT_COND (s->size >= 1);
@@ -2781,8 +2776,8 @@ speed_mpn_pre_set_str (struct speed_params *s)
   chars_per_limb = mp_bases[base].chars_per_limb;
   un = s->size / chars_per_limb + 1;
   powtab_mem = TMP_BALLOC_LIMBS (mpn_str_powtab_alloc (un));
-  n_pows = mpn_compute_powtab (powtab, powtab_mem, un, base);
-  pt = powtab + n_pows;
+  size_t n_pows = mpn_compute_powtab (powtab, powtab_mem, un, base);
+  powers_t *pt = powtab + n_pows;
   tp = TMP_BALLOC_LIMBS (mpn_dc_set_str_itch (un));
 
   speed_starttime ();

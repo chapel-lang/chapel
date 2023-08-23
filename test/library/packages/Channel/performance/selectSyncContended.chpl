@@ -19,7 +19,8 @@ sync {
         var case2 : SelectBaseClass = new shared SelectCase(x2, myc2, selectOperation.send, 5);
         var case3 : SelectBaseClass = new shared SelectCase(x3, myc3, selectOperation.send, 6);
         var case4 : SelectBaseClass = new shared SelectCase(x4, done, selectOperation.recv, 3);
-        var idx = selectProcess([case1, case2, case3, case4]);
+        var cases = [case1, case2, case3, case4];
+        var idx = selectProcess(cases);
         if idx == 3 then break;
       }
     }
@@ -40,7 +41,8 @@ proc test() {
     var case1 : SelectBaseClass = new shared SelectCase(x1, myc1, selectOperation.recv, 0);
     var case2 : SelectBaseClass = new shared SelectCase(x2, myc2, selectOperation.recv, 1);
     var case3 : SelectBaseClass = new shared SelectCase(x3, myc3, selectOperation.recv, 2);
-    var idx = selectProcess([case1, case2, case3]);
+    var cases = [case1, case2, case3];
+    var idx = selectProcess(cases);
   }
 }
 

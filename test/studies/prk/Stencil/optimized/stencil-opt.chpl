@@ -69,8 +69,8 @@ proc main() {
   /* Domain over entire 'active' region, where Output will be updated */
    innerLocalDom = localDom.expand(-R);
 
-  const outDist   = new dmap(new Stencil(innerLocalDom));
-  const fluffDist = new dmap(new Stencil(innerLocalDom, fluff=(R,R)));
+  const outDist   = new Stencil(innerLocalDom);
+  const fluffDist = new Stencil(innerLocalDom, fluff=(R,R));
 
   const Dom = localDom dmapped fluffDist,
    innerDom = innerLocalDom dmapped fluffDist;

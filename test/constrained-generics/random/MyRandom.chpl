@@ -1039,7 +1039,7 @@ module MyRandom {
         :arg arr: The array to be filled
         :type arr: [] :type:`eltType`
       */
-      proc fillRandom(arr: [] eltType) {
+      proc fillRandom(ref arr: [] eltType) {
         if(!arr.isRectangular()) then
           compilerError("fillRandom does not support non-rectangular arrays");
 

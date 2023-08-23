@@ -3,14 +3,14 @@ use Time;
 config const numTasks = 2;
 config const numIncsPerTask = 1000;
 var t: stopwatch;
-var count$: sync int = 0;
+var count: sync int = 0;
 
 t.clear();
 t.start();
 
 coforall j in 1..numTasks do
   for i in 1..numIncsPerTask do
-    count$.writeEF(count$.readFE() + 1);
+    count.writeEF(count.readFE() + 1);
 
 t.stop();
 

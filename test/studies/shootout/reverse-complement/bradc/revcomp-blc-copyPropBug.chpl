@@ -46,7 +46,7 @@ proc main(args: [] string) {
 }
 
 
-proc revcomp(buf, in lo, hi) {
+proc revcomp(ref buf, in lo, hi) {
   param eol = "\n".toByte(),  // end-of-line, as an integer
         cols = 61,            // # of characters per full row (including '\n')
         // A 'bytes' value that stores the complement of each base at its index

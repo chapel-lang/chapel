@@ -13,7 +13,7 @@ proc main()
   }
 }
 
-proc modifyArr(arr) {
+proc modifyArr(ref arr) {
   flag.waitFor(numLocales);
   arr += 1;
   flag2.writeEF(2);

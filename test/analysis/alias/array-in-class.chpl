@@ -18,7 +18,7 @@ proc main() {
   }
 
   // Now we cannot conclude that c doesn't alias d
-  var sum = 0; 
+  var sum = 0;
   for k in 1..n {
     sum += c.A[i] + d.A[j];
     c.A[i] += 1;
@@ -32,7 +32,7 @@ proc main() {
   writeln(sum);
 }
 
-proc arrayArgs(a, b) {
+proc arrayArgs(ref a, b) {
   var sum = 0;
   for k in 1..n {
     sum += a[j] + b[j];
@@ -41,7 +41,7 @@ proc arrayArgs(a, b) {
   return sum;
 }
 
-proc innerArrayArgs(a, b) {
+proc innerArrayArgs(ref a, b) {
   var sum = 0;
   for k in 1..n {
     sum += a[j] + b[j];

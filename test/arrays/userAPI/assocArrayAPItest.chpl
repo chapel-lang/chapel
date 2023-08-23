@@ -1,6 +1,6 @@
 config param testError = 0, testDisplayRepresentation = false;
 
-proc readArray(X) {
+proc readArray(ref X) {
   X["zero"]  = 0.0;
   X["pointone"]  = 0.1;
   X["half"]  = 0.5;
@@ -16,7 +16,7 @@ proc readArray(X) {
   X["ten"]   = 10.0;
 }
 
-proc testAssocArrayAPI(X: []) {
+proc testAssocArrayAPI(ref X: []) {
   // print header
   writeln("----------------");
 

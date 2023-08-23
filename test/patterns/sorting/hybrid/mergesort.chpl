@@ -1,7 +1,7 @@
 //merges two subarrays
 //First subarray is arr[l..m]
 //Second subarray is arr[m+1..r]
-proc merge(arr, left:int, mid:int, right:int){
+proc merge(ref arr, left:int, mid:int, right:int){
 	var i, j, k: int = 0;
 	var left_length: int = mid - left + 1;
 	var right_length: int= right - mid;
@@ -60,7 +60,7 @@ proc merge(arr, left:int, mid:int, right:int){
 //parallel mergesort algorithm
 //heuristics -> When the array size becomes small such that creating a task takes more time than compute time for sorting it, then dont spawn task, rather do it sequentially.
 //Heuristic Used(https://antimatroid.wordpress.com/2012/12/01/parallel-merge-sort-in-java/): Threshold set at 256 integer elements, if size < 256 (1024 bytes) elements --> sequential, else parallel.
-proc mergesort(arr, left, right){
+proc mergesort(ref arr, left, right){
 	if (left < right){
 
 		var mid: int = left + (right-left)/2;

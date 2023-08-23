@@ -1,0 +1,8 @@
+singleMethods.chpl:1: warning: 'single' variables are unstable
+singleMethods.chpl:3: warning: 'single' variables are unstable
+singleMethods.chpl:4: warning: 'single' variables are unstable
+singleMethods.chpl:5: warning: 'single' variables are unstable
+singleMethods.chpl:6: warning: 'single' variables are unstable
+1
+1
+true

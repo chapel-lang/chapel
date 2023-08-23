@@ -235,8 +235,7 @@ module DistributedMap {
 
     // TODO: Is it necessary to lock everything?  Maybe can do something fancy
     // like figure out all the locales needed and then lock?
-    proc extend(pragma "intent ref maybe const formal"
-                m: map(keyType, valType)) {
+    proc extend(ref m: map(keyType, valType)) {
       for i in locDom {
         locks[i].lock();
       }
@@ -266,8 +265,7 @@ module DistributedMap {
       :arg m: The other map
       :type m: distributedMap with matching keyType and valType
     */
-    proc extend(pragma "intent ref maybe const formal"
-                m: distributedMap(keyType, valType)) {
+    proc extend(ref m: distributedMap(keyType, valType)) {
       for i in locDom {
         locks[i].lock();
       }

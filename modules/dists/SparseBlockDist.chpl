@@ -155,7 +155,7 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
     return max reduce ([l in locDoms] l!.mySparseBlock.last);
   }
 
-  override proc bulkAdd_help(inds: [?indsDom] index(rank,idxType),
+  override proc bulkAdd_help(ref inds: [?indsDom] index(rank,idxType),
       dataSorted=false, isUnique=false, addOn=nilLocale) {
     use Sort;
     use Search;

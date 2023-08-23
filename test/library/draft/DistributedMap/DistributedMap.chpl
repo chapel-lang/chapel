@@ -200,7 +200,7 @@ record distributedMapManager {
     this.key    = k;
   }
 
-  proc enterThis() ref {
+  proc enterContext() ref {
     // todo: optimize remote accesses here
     client = client.getPrivatizedThisOn(client.targetLocales[locIdx]);
     ref map = client.localMaps[mapIdx];
@@ -208,7 +208,7 @@ record distributedMapManager {
     return map.thisInternal(key);
   }
 
-  proc leaveThis(in err: owned Error?) throws {
+  proc exitContext(in err: owned Error?) throws {
     on client {
       client.localMaps[mapIdx]._leave();
     }

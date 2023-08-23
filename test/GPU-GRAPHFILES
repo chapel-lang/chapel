@@ -27,3 +27,5 @@ gpu/native/studies/coral/coral.graph
 gpu/native/studies/compiler-performance/transform.graph
 gpu/native/studies/compiler-performance/end-to-end.graph
 
+
+gpu/native/studies/sort/radixSortGpu.graph

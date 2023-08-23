@@ -3,10 +3,10 @@
 
 proc test1() {
   writeln("test2");
-  var b$: single int = 1;
+  var b: single int = 1;
   var c: int = 1;
 
-  var a = b$ + c; ///  warning
+  var a = b + c; ///  warning
 
   writeln("a = ", a, " : ", a.type:string);
 }
@@ -24,19 +24,19 @@ proc f(arg: int) {
 }
 proc test3() {
   writeln("test3");
-  var x$: single int = 1;
+  var x: single int = 1;
 
-  f(x$); /// warning
+  f(x); /// warning
 
-  writeln("x$ = ", x$.readFF(), " : ", x$.type:string);
+  writeln("x = ", x.readFF(), " : ", x.type:string);
 }
 test3();
 
 proc test4() {
   writeln("test4");
-  var x$: single int = 1;
+  var x: single int = 1;
 
-  var b = x$; /// warning
+  var b = x; /// warning
 
   writeln("b = ", b, " : ", b.type:string);
 }
@@ -44,79 +44,79 @@ test4();
 
 proc test5() {
   writeln("test5");
-  var a$: single int;
-  a$.isFull;
-  var b$: single int = 1;
-  b$.isFull;
+  var a: single int;
+  a.isFull;
+  var b: single int = 1;
+  b.isFull;
 
-  a$ = b$; /// warning
+  a = b; /// warning
 
-  writeln("a$ = ", a$.readFF(), " : ", a$.type:string);
-  writeln("b$ = ", b$.readFF(), " : ", b$.type:string);
+  writeln("a = ", a.readFF(), " : ", a.type:string);
+  writeln("b = ", b.readFF(), " : ", b.type:string);
 }
 test5();
 
 proc test6() {
   writeln("test6");
-  var a$: single int = 1;
+  var a: single int = 1;
 
-  var b = a$; /// warning
+  var b = a; /// warning
 
-  writeln("a$ = ", a$.readFF(), " : ", a$.type:string);
+  writeln("a = ", a.readFF(), " : ", a.type:string);
   writeln("b = ", b, " : ", b.type:string);
 }
 test6();
 
 proc test7() {
   writeln("test7");
-  var a$: single int = 1;
+  var a: single int = 1;
 
-  var b$: single int = a$; /// warning
+  var b: single int = a; /// warning
 
-  writeln("a$ = ", a$.readFF(), " : ", a$.type:string);
-  writeln("b$ = ", b$.readFF(), " : ", b$.type:string);
+  writeln("a = ", a.readFF(), " : ", a.type:string);
+  writeln("b = ", b.readFF(), " : ", b.type:string);
 }
 test7();
 
 proc test8() {
   writeln("test8");
-  var a$: single int = 1;
+  var a: single int = 1;
 
-  var b: int = a$; /// warning
+  var b: int = a; /// warning
 
-  writeln("a$ = ", a$.readFF(), " : ", a$.type:string);
+  writeln("a = ", a.readFF(), " : ", a.type:string);
   writeln("b = ", b, " : ", b.type:string);
 }
 test8();
 
 proc test9() {
   writeln("test9");
-  var a$: single int = 1;
-  a$.readFF();
+  var a: single int = 1;
+  a.readFF();
 
-  var b: int = a$; /// warning
+  var b: int = a; /// warning
 
-  writeln("a$ = ", a$.readFF(), " : ", a$.type:string);
+  writeln("a = ", a.readFF(), " : ", a.type:string);
   writeln("b = ", b, " : ", b.type:string);
 }
 test9();
 
 proc test10() {
   writeln("test10");
-  var a$: single int;
-  a$.isFull;
+  var a: single int;
+  a.isFull;
 
-  a$ = 1; /// warning
+  a = 1; /// warning
 
-  writeln("a$ = ", a$.readFF(), " : ", a$.type:string);
+  writeln("a = ", a.readFF(), " : ", a.type:string);
 }
 test10();
 
 proc test11() {
   writeln("test11");
-  var a$: single int = 1;
+  var a: single int = 1;
 
-  a$; /// warning
+  a; /// warning
 }
 test11();
 
@@ -141,9 +141,9 @@ test14();
 
 proc test15() {
   writeln("test15");
-  var s$: single bool = true;
+  var s: single bool = true;
 
-  if s$ then /// warning
+  if s then /// warning
     writeln("foo");
   else
     writeln("bar");

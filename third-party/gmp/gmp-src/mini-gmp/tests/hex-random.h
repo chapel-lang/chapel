@@ -26,7 +26,7 @@ enum hex_random_op
     OP_TDIV_Q_2,  OP_TDIV_R_2,
     OP_GCD, OP_LCM, OP_POWM, OP_AND, OP_IOR, OP_XOR,
     OP_SETBIT, OP_CLRBIT, OP_COMBIT,
-    OP_SCAN0, OP_SCAN1
+    OP_SCAN0, OP_SCAN1,
   };
 
 void hex_random_init (void);

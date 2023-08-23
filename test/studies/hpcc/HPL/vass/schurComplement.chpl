@@ -189,7 +189,7 @@ proc dgdriver(row, col) {
 
 }
 
-proc dgemm(LreplA, LreplB, LAb) {
+proc dgemm(LreplA, LreplB, ref LAb) {
   if dgemm_asserts {
     // This is because these dimensions have the same user indices
     // and are handled by the same distribution 1-d descriptors.

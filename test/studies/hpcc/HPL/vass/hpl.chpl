@@ -136,7 +136,7 @@ config var reproducible = false, verbose = false;
 // vector of RHS values.
 //
 proc LUFactorize(n: indexType,
-                piv: [1..n] indexType) {
+                ref piv: [1..n] indexType) {
   
   // Initialize the pivot vector to represent the initially unpivoted matrix.
   piv = 1..n;
@@ -258,7 +258,7 @@ proc schurComplement(AD: domain, BD: domain, Rest: domain) {
 //
 proc panelSolve(
                panel: domain,
-               piv: [] indexType) {
+               ref piv: [] indexType) {
 
   for k in panel.dim(1) {             // iterate through the columns
     const col = panel[k.., k..k];

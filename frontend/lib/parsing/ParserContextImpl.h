@@ -207,8 +207,10 @@ owned<AttributeGroup> ParserContext::buildAttributeGroup(YYLTYPE locationOfDecl)
                                 std::move(pragmaCopy),
                                 attributeGroupParts.isDeprecated,
                                 attributeGroupParts.isUnstable,
+                                attributeGroupParts.isParenfulDeprecated,
                                 attributeGroupParts.deprecationMessage,
                                 attributeGroupParts.unstableMessage,
+                                attributeGroupParts.parenfulDeprecationMessage,
                                 std::move(attrList));
   return node;
 }
@@ -291,24 +293,34 @@ void ParserContext::noteDeprecation(YYLTYPE loc, MaybeNamedActualList* actuals) 
   if (attributeGroupParts.isStable) {
     error(loc, "cannot apply both stable and deprecated attributes to the same symbol");
   }
-  attributeGroupParts.isDeprecated = true;
+
+  bool isParenfulDeprecation = false;
   AstNode* messageStr = nullptr;
   bool allActualsNamed = true;
+
   if (actuals != nullptr && actuals->size() > 0) {
     for (auto& actual : *actuals) {
       if (!(actual.name == UniqueString::get(context(), "since").podUniqueString() ||
             actual.name == UniqueString::get(context(), "notes").podUniqueString() ||
             actual.name == UniqueString::get(context(), "suggestion").podUniqueString()||
+            actual.name == UniqueString::get(context(), "parenful").podUniqueString() ||
             actual.name.isEmpty())) {
         error(loc, "unrecognized argument name '%s'. "
-                   "'@deprecated' attribute only accepts 'since', 'notes', and "
-                   "'suggestion' arguments",
+                   "'@deprecated' attribute only accepts 'since', 'notes', "
+                   "'parenful', and 'suggestion' arguments",
                    actual.name.c_str());
       }
       if (actual.name.isEmpty()) {
         allActualsNamed = false;
       }
-      if (!actual.expr->isStringLiteral()) {
+      if (actual.name == UniqueString::get(context(), "parenful").podUniqueString()) {
+        auto boolLit = actual.expr->toBoolLiteral();
+        if (!boolLit || !boolLit->value()) {
+          error(loc, "invalid value for deprecated attribute's 'parenful' "
+                     "parameter; only 'true' is supported.");
+        }
+        isParenfulDeprecation = true;
+      } else if (!actual.expr->isStringLiteral()) {
         error(loc, "deprecated attribute arguments must be string literals for now");
       }
       // TODO: Decide how this interaction should work, if we want to continue
@@ -325,10 +337,20 @@ void ParserContext::noteDeprecation(YYLTYPE loc, MaybeNamedActualList* actuals) 
   if (!allActualsNamed && actuals->size() > 1) {
     error(loc, "deprecated attribute only accepts one unnamed argument");
   }
+
+  UniqueString message;
   if (messageStr) {
     if (auto strLit = messageStr->toStringLiteral()) {
-      attributeGroupParts.deprecationMessage = strLit->value();
+      message = strLit->value();
     }
+  }
+
+  if (isParenfulDeprecation) {
+    attributeGroupParts.isParenfulDeprecated = true;
+    attributeGroupParts.parenfulDeprecationMessage = message;
+  } else {
+    attributeGroupParts.isDeprecated = true;
+    attributeGroupParts.deprecationMessage = message;
   }
 }
 
@@ -410,7 +432,7 @@ void ParserContext::resetAttributeGroupPartsState() {
   if (hasAttributeGroupParts) {
     auto& pragmas = attributeGroupParts.pragmas;
     if (pragmas) delete pragmas;
-    attributeGroupParts = {nullptr, nullptr, false, false, false, UniqueString(), UniqueString() };
+    attributeGroupParts = {nullptr, nullptr, false, false, false, false, UniqueString(), UniqueString(), UniqueString() };
     hasAttributeGroupParts = false;
   }
 
@@ -418,9 +440,11 @@ void ParserContext::resetAttributeGroupPartsState() {
   CHPL_ASSERT(attributeGroupParts.attributeList == nullptr);
   CHPL_ASSERT(!attributeGroupParts.isDeprecated);
   CHPL_ASSERT(!attributeGroupParts.isUnstable);
+  CHPL_ASSERT(!attributeGroupParts.isParenfulDeprecated);
   CHPL_ASSERT(!attributeGroupParts.isStable);
   CHPL_ASSERT(attributeGroupParts.deprecationMessage.isEmpty());
   CHPL_ASSERT(attributeGroupParts.unstableMessage.isEmpty());
+  CHPL_ASSERT(attributeGroupParts.parenfulDeprecationMessage.isEmpty());
   CHPL_ASSERT(!hasAttributeGroupParts);
 
   numAttributesBuilt = 0;

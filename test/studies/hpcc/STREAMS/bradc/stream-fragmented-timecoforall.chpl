@@ -63,7 +63,7 @@ proc printConfiguration() {
 }
 
 
-proc initVectors(B, C, ProblemSpace, print) {
+proc initVectors(ref B, ref C, ProblemSpace, print) {
   var randlist = new owned NPBRandomStream(eltType=real, seed=seed);
 
   randlist.skipToNth(B.domain.low-1);

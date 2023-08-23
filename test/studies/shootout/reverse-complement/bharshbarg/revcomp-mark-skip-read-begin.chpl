@@ -63,7 +63,7 @@ proc main(args: [] string) {
   stdoutBin.writeBinary(data);
 }
 
-proc process(data, in start, in end) {
+proc process(ref data, in start, in end) {
 
   proc advance(ref cursor, dir) {
     do { cursor += dir; } while data[cursor] == "\n".toByte();

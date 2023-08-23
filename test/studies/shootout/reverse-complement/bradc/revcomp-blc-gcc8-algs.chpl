@@ -133,7 +133,7 @@ proc main(args: [] string) {
   if readPos then revcomp(buff, readPos);
 }
 
-proc revcomp(seq, size) {
+proc revcomp(ref seq, size) {
   param chunkSize = linesPerChunk * cols; // the size of the chunks to deal out
 
   // compute how big the header is
@@ -205,7 +205,7 @@ proc revcomp(seq, size) {
   }
 }
 
-proc revcomp(in dstFront, in charAfter, spanLen, buff, seq) {
+proc revcomp(in dstFront, in charAfter, spanLen, ref buff, ref seq) {
   if spanLen%2 {
     charAfter -= 1;
     buff[dstFront] = cmpl[seq[charAfter]];
@@ -222,7 +222,7 @@ proc revcomp(in dstFront, in charAfter, spanLen, buff, seq) {
 }
 
 // check whether there's a sequence start ('>') in 'buff[low..#count]'
-proc findSeqStart(buff, inds, ref ltLoc) {
+proc findSeqStart(ref buff, inds, ref ltLoc) {
   if searchAlg == MaxLoc {
     var found: bool;
     (found, ltLoc) = maxloc reduce zip([i in inds] buff[i] == '>'.toByte(),

@@ -75,8 +75,8 @@ proc testOrderAtomicBool(a, ref i, ref b, param o: memoryOrder) {
   writeln();
 }
 
-proc asyncAdd(a) { begin { a.add(1); } }
-proc testAtomicT(a, ref i, ref b) {
+proc asyncAdd(ref a) { begin { a.add(1); } }
+proc testAtomicT(ref a, ref i, ref b) {
   type eltType = if isArray(a) then a.eltType else a.type;
   type valType = eltType.valType;
   param isInt = isIntegral(valType);
@@ -116,7 +116,7 @@ proc testAtomicT(a, ref i, ref b) {
   writeln();
 }
 
-proc testOrderAtomicT(a, ref i, ref b, param o: memoryOrder) {
+proc testOrderAtomicT(ref a, ref i, ref b, param o: memoryOrder) {
   type eltType = if isArray(a) then a.eltType else a.type;
   type valType = eltType.valType;
   param isInt = isIntegral(valType);
@@ -160,7 +160,7 @@ proc testOrderAtomicT(a, ref i, ref b, param o: memoryOrder) {
   writeln();
 }
 
-proc testUnorderedAtomicT(a, ref i, ref b) {
+proc testUnorderedAtomicT(ref a, ref i, ref b) {
   type eltType = if isArray(a) then a.eltType else a.type;
   type valType = eltType.valType;
   use UnorderedAtomics;

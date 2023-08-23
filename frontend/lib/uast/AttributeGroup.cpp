@@ -29,8 +29,10 @@ owned<AttributeGroup> AttributeGroup::build(Builder* builder, Location loc,
                                             std::set<PragmaTag> pragmas,
                                             bool isDeprecated,
                                             bool isUnstable,
+                                            bool isParenfulDeprecated,
                                             UniqueString deprecationMessage,
-                                            UniqueString unstableMessage) {
+                                            UniqueString unstableMessage,
+                                            UniqueString parenfulDeprecationMessage) {
   #ifndef NDEBUG
     for (auto tag : pragmas) {
       CHPL_ASSERT(tag >= 0 && tag < NUM_KNOWN_PRAGMAS);
@@ -39,8 +41,10 @@ owned<AttributeGroup> AttributeGroup::build(Builder* builder, Location loc,
 
   AttributeGroup* ret = new AttributeGroup(std::move(pragmas), isDeprecated,
                                            isUnstable,
+                                           isParenfulDeprecated,
                                            deprecationMessage,
-                                           unstableMessage);
+                                           unstableMessage,
+                                           parenfulDeprecationMessage);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
@@ -49,8 +53,10 @@ owned<AttributeGroup> AttributeGroup::build(Builder* builder, Location loc,
                                             std::set<PragmaTag> pragmas,
                                             bool isDeprecated,
                                             bool isUnstable,
+                                            bool isParenfulDeprecated,
                                             UniqueString deprecationMessage,
                                             UniqueString unstableMessage,
+                                            UniqueString parenfulDeprecationMessage,
                                             AstList attributes) {
   #ifndef NDEBUG
     for (auto tag : pragmas) {
@@ -60,8 +66,10 @@ owned<AttributeGroup> AttributeGroup::build(Builder* builder, Location loc,
 
   AttributeGroup* ret = new AttributeGroup(std::move(pragmas), isDeprecated,
                                            isUnstable,
+                                           isParenfulDeprecated,
                                            deprecationMessage,
                                            unstableMessage,
+                                           parenfulDeprecationMessage,
                                            std::move(attributes));
   builder->noteLocation(ret, loc);
   return toOwned(ret);

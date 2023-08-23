@@ -120,14 +120,14 @@ module ExternalArray {
     return ret;
   }
 
-  proc convertStringOrBytes(ref arr: []): chpl_external_array
+  proc convertStringOrBytes(arr: []): chpl_external_array
     where arr.eltType == string || arr.eltType == bytes {
 
     var wrapper: [arr.domain] chpl_byte_buffer;
 
     // Move existing string buffers over to a new shell.
     for i in 0..#arr.size {
-      ref item = arr[i];
+      const ref item = arr[i];
 
       // This call assumes ownership of the string's buffer.
       var val = chpl__exportRetStringOrBytes(item);
@@ -184,7 +184,7 @@ module ExternalArray {
   // can make the same function call and get the appropriate type depending on
   // the argument.  Unsupported array types are turned into opaque
   // representations
-  proc convertToExternalArray(arr: []): chpl_opaque_array
+  proc convertToExternalArray(ref arr: []): chpl_opaque_array
     where (getExternalArrayType(arr) == chpl_opaque_array) {
 
     var ret: chpl_opaque_array;

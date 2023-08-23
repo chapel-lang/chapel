@@ -1,6 +1,6 @@
 use driver_arrays;
 
-proc foo(Dom, Arr) {
+proc foo(Dom, ref Arr) {
   for e in Arr do
     e = next();
 

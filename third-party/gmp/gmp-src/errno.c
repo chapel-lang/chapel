@@ -4,7 +4,7 @@
    ONLY.  THEY'RE ALMOST CERTAIN TO BE SUBJECT TO INCOMPATIBLE CHANGES OR
    DISAPPEAR COMPLETELY IN FUTURE GNU MP RELEASES.
 
-Copyright 2000, 2001, 2003 Free Software Foundation, Inc.
+Copyright 2000, 2001, 2003, 2021 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -69,4 +69,9 @@ void
 __gmp_divide_by_zero (void)
 {
   __gmp_exception (GMP_ERROR_DIVISION_BY_ZERO);
+}
+void
+__gmp_overflow_in_mpz (void)
+{
+  __gmp_exception (GMP_ERROR_MPZ_OVERFLOW);
 }

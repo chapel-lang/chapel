@@ -6,7 +6,7 @@ proc main() {
   foo(myArr);
 }
 
-proc foo(a) {
+proc foo(ref a) {
   var b = Block.createArray({0..10}, int);
   for bb in b do bb = 1;
 

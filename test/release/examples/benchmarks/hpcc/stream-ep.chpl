@@ -152,7 +152,7 @@ proc printConfiguration() {
 //
 // Initialize vectors B and C using a random stream of values
 //
-proc initVectors(B, C) {
+proc initVectors(ref B, ref C) {
   var randlist = new RandomStream(eltType=real, seed=seed);
 
   randlist.fillRandom(B);
@@ -162,7 +162,7 @@ proc initVectors(B, C) {
 //
 // Verify that the computation is correct
 //
-proc verifyResults(A, B, C) {
+proc verifyResults(A, ref B, C) {
 
   //
   // recompute the computation, destructively storing into B to save space
