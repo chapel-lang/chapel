@@ -12,7 +12,7 @@ config param tableSize = 2**16,
 
 
 proc main(args: [] string) {
-  // Open stdin and a binary reader channel
+  // Open stdin and a non-locking fileReader
   const consoleIn = new file(0),
         fileLen = consoleIn.size,
         stdinNoLock = consoleIn.reader(locking=false);
