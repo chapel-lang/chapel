@@ -104,11 +104,13 @@ class Class final : public AggregateDecl {
                             owned<AstNode> parentClass,
                             AstList contents);
 
+  inline int numParentClasses() const { return numParentClasses_; }
+
   /**
     Return the AstNode indicating the parent class or nullptr
     if there was none.
    */
-  const AstNode* parentClass(int i = 0) const {
+  const AstNode* parentClass(int i) const {
     if (parentClassChildNum_ == NO_CHILD || i >= numParentClasses_)
       return nullptr;
 

@@ -80,7 +80,7 @@ static void test0(Parser* parser) {
   auto cls = agg->toClass();
   assert(cls);
   assert(cls->name() == "C");
-  assert(cls->parentClass() == nullptr);
+  assert(cls->parentClass(0) == nullptr);
   assert(cls->numDeclOrComments() == 0);
   assert(cls->linkage() == Decl::DEFAULT_LINKAGE);
   assert(!cls->linkageName());
@@ -93,8 +93,8 @@ static void test1(Parser* parser) {
   auto cls = agg->toClass();
   assert(cls);
   assert(cls->name() == "C");
-  assert(cls->parentClass());
-  auto parentId = cls->parentClass()->toIdentifier();
+  assert(cls->parentClass(0));
+  auto parentId = cls->parentClass(0)->toIdentifier();
   assert(parentId);
   assert(parentId->name() == "P");
   assert(cls->numDeclOrComments() == 0);
@@ -109,7 +109,7 @@ static void test2(Parser* parser) {
   auto cls = agg->toClass();
   assert(cls);
   assert(cls->name() == "C");
-  assert(cls->parentClass() == nullptr);
+  assert(cls->parentClass(0) == nullptr);
   assert(cls->numDeclOrComments() == 1);
   assert(cls->linkage() == Decl::DEFAULT_LINKAGE);
   assert(!cls->linkageName());
@@ -126,7 +126,7 @@ static void test3(Parser* parser) {
   auto cls = agg->toClass();
   assert(cls);
   assert(cls->name() == "C");
-  assert(cls->parentClass() == nullptr);
+  assert(cls->parentClass(0) == nullptr);
   assert(cls->numDeclOrComments() == 1);
   assert(cls->linkage() == Decl::DEFAULT_LINKAGE);
   assert(!cls->linkageName());
@@ -228,7 +228,7 @@ static void test8(Parser* parser) {
   auto cls = agg->toClass();
   assert(cls);
   assert(cls->name() == "C");
-  auto parentId = cls->parentClass()->toIdentifier();
+  auto parentId = cls->parentClass(0)->toIdentifier();
   assert(parentId);
   assert(parentId->name() == "P");
   assert(cls->numDeclOrComments() == 5);

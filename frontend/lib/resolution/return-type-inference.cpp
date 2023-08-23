@@ -82,16 +82,19 @@ const CompositeType* helpGetTypeForDecl(Context* context,
 
   if (const Class* c = ad->toClass()) {
     const BasicClassType* parentClassType = nullptr;
-    if (const AstNode* parentClassExpr = c->parentClass()) {
+    const AstNode* lastParentClass = nullptr;
+    for (int i = 0; i < c->numParentClasses(); i++) {
+      auto parentExpr = c->parentClass(i);
       // Resolve the parent class type expression
       ResolutionResultByPostorderID r;
       auto visitor =
         Resolver::createForParentClass(context, c,
                                        substitutions,
                                        poiScope, r);
-      parentClassExpr->traverse(visitor);
+      parentExpr->traverse(visitor);
 
-      QualifiedType qt = r.byAst(parentClassExpr).type();
+      auto& rr = r.byAst(parentExpr);
+      QualifiedType qt = rr.type();
       if (auto t = qt.type()) {
         if (auto bct = t->toBasicClassType()) {
           parentClassType = bct;
@@ -100,13 +103,27 @@ const CompositeType* helpGetTypeForDecl(Context* context,
           parentClassType = ct->basicClassType();
         }
       }
+
       if (qt.isType() && parentClassType != nullptr) {
+        // It's a valid parent class; is it the only one? (error otherwise).
+        if (lastParentClass) {
+          context->error(c, "TODO");
+        }
+        lastParentClass = parentExpr;
+
         // OK
+      } else if (!rr.toId().isEmpty() &&
+                 parsing::idToTag(context, rr.toId()) == uast::asttags::Interface) {
+        // OK, It's an interface.
       } else {
-        context->error(parentClassExpr, "invalid parent class expression");
+        context->error(parentExpr, "invalid parent class expression");
         parentClassType = BasicClassType::getObjectType(context);
       }
-    } else {
+    }
+
+    // All the parent expressions could've been interfaces, and we just
+    // inherit from object.
+    if (!parentClassType) {
       parentClassType = BasicClassType::getObjectType(context);
     }
 
@@ -123,7 +140,6 @@ const CompositeType* helpGetTypeForDecl(Context* context,
         CHPL_ASSERT(false && "unexpected instantiatedFrom type");
       }
     }
-
 
     if (!parentClassType->isObjectType() && !substitutions.empty()) {
       // recompute the parent class type with substitutions

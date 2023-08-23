@@ -555,9 +555,14 @@ struct ChplSyntaxVisitor {
   void visit(const Class* node) {
     ss_ << "class ";
     ss_ << node->name() << " ";
-    if (node->parentClass() != nullptr) {
+    if (node->numParentClasses() > 0) {
       ss_ << ": ";
-      printAst(node->parentClass());
+      bool printComma = false;
+
+      for (int i = 0; i < node->numParentClasses(); i++) {
+        if (printComma) ss_ << ", ";
+        printAst(node->parentClass(i));
+      }
       ss_ << " ";
     }
     interpose(node->decls(), "\n", "{\n", "\n}", ";", true);
