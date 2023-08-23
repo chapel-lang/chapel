@@ -48,9 +48,10 @@ class Class final : public AggregateDecl {
 
   Class(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
         UniqueString name,
+        int parentClassChildNum,
+        /* int numParentClasses, */
         int elementsChildNum,
-        int numElements,
-        int parentClassChildNum)
+        int numElements)
     : AggregateDecl(asttags::Class, std::move(children),
                     attributeGroupChildNum,
                     vis,

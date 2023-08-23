@@ -65,9 +65,9 @@ owned<Class> Class::build(Builder* builder, Location loc,
   }
 
   Class* ret = new Class(std::move(lst), attributeGroupChildNum, vis, name,
+                         parentClassChildNum,
                          elementsChildNum,
-                         numElements,
-                         parentClassChildNum);
+                         numElements);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
