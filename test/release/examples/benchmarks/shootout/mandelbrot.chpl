@@ -52,7 +52,7 @@ proc main() {
   }
 
   //
-  // Get a lock-free writer channel on 'stdout', write the file header,
+  // Get a lock-free, binary fileWriter on 'stdout', write the file header,
   // and the image array.
   //
   var w = (new file(1)).writer(locking=false,

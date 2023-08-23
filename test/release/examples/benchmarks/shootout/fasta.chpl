@@ -79,7 +79,7 @@ proc main() {
 }
 
 //
-// Redefine stdout to use lock-free binary I/O and capture a newline
+// Redefine stdout to use lock-free I/O and capture a newline
 //
 const stdout = (new file(1)).writer(locking=false);
 param newline = "\n".toByte();
