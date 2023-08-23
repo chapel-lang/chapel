@@ -801,7 +801,8 @@ void GpuKernel::buildStubOutlinedFunction(DefExpr* insertionPoint) {
 
 Symbol* GpuKernel::addKernelArgument(Symbol* symInLoop) {
   Type* symType = symInLoop->typeInfo();
-  ArgSymbol* newFormal = new ArgSymbol(INTENT_IN, symInLoop->name, symType);
+  IntentTag intent = symInLoop->isRef() ? INTENT_REF : INTENT_IN;
+  ArgSymbol* newFormal = new ArgSymbol(intent, symInLoop->name, symType);
   fn_->insertFormalAtTail(newFormal);
 
   kernelActuals_.push_back(symInLoop);
