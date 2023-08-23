@@ -12,10 +12,10 @@ config param tableSize = 2**16,
 
 
 proc main(args: [] string) {
-  // Open stdin and a binary reader channel
+  // Open stdin and a non-locking fileReader
   const consoleIn = new file(0),
         fileLen = consoleIn.size,
-        stdinNoLock = consoleIn.reader(kind=ionative, locking=false);
+        stdinNoLock = consoleIn.reader(locking=false);
 
   // Read line-by-line until we see a line beginning with '>TH'
   var buff: [1..columns] uint(8),

@@ -17,7 +17,7 @@ config const EV2_FILENAME    = "ev2_snapshot.data";
 config const START_FILENAME  = "start_snapshot.data";
 config const WEIGHT_FILENAME = "weight_snapshot.data";
 config type  IONumType       = int(64);
-config param IOendianness    = iokind.big;
+config param IOendianness    = ioendian.big;
 config const IOserial        = false;
 config const IOsingleTaskPerLocale = true;
 
@@ -325,15 +325,16 @@ iter graphReaderReal(GRow, uxIDs, type VType, vCount, eCount, repfiles,
   // channels refer to overlapping parts of a file.
   // So we read edgeStart(v1) from 'ST2' and the rest from 'STA'.
   //
-  const sta_v1 = repfiles[repfileST2].reader(kind = IOendianness,
-                                             locking = false,
-                                             region = staOffsetForVID(v1)..#staOffsetForVID(v1+1));
+  const sta_v1 = repfiles[repfileST2].reader(locking = false,
+                                             region = staOffsetForVID(v1)..#staOffsetForVID(v1+1),
+                                             deserializer=new BinaryDeserializer(IOendianness));
   const sta1 = readNum(sta_v1) + 1;
   sta_v1.close();
 
   // We read edgeStart(v2) from its own channel.
-  const sta_v2 = repfiles[repfileSTA].reader(IOendianness, false,
-                            staOffsetForVID(v2+1)..#staOffsetForVID(v2+1+1));
+  const sta_v2 = repfiles[repfileSTA].reader(false,
+                            staOffsetForVID(v2+1)..#staOffsetForVID(v2+1+1),
+                            deserializer=new BinaryDeserializer(IOendianness));
   const sta2 = readNum(sta_v2);
   sta_v2.close();
 
@@ -344,17 +345,21 @@ iter graphReaderReal(GRow, uxIDs, type VType, vCount, eCount, repfiles,
          "  edgeStart ", sta1, "..", sta2);
 
   // We access only our parts these files.
-  const sv = repfiles[repfileSV].reader(IOendianness, false,
-                        svOffsetForEID(sta1)..#svOffsetForEID(sta2+1));
-  const ev = repfiles[repfileEV].reader(IOendianness, false,
-                        svOffsetForEID(sta1)..#svOffsetForEID(sta2+1));
-  const ww = repfiles[repfileWW].reader(IOendianness, false,
-                        svOffsetForEID(sta1)..#svOffsetForEID(sta2+1));
+  const sv = repfiles[repfileSV].reader(false,
+                        svOffsetForEID(sta1)..#svOffsetForEID(sta2+1),
+                        deserializer=new BinaryDeserializer(IOendianness));
+  const ev = repfiles[repfileEV].reader(false,
+                        svOffsetForEID(sta1)..#svOffsetForEID(sta2+1),
+                        deserializer=new BinaryDeserializer(IOendianness));
+  const ww = repfiles[repfileWW].reader(false,
+                        svOffsetForEID(sta1)..#svOffsetForEID(sta2+1),
+                        deserializer=new BinaryDeserializer(IOendianness));
 
   // 'sta' covers edgeStart(v1+1..v2).
   // Do not include v1, as another process will be reading it from its 'STA'.
-  const sta = repfiles[repfileSTA].reader(IOendianness, false,
-                         staOffsetForVID(v1+1)..#staOffsetForVID(v2+1+1));
+  const sta = repfiles[repfileSTA].reader(false,
+                         staOffsetForVID(v1+1)..#staOffsetForVID(v2+1+1),
+                         deserializer=new BinaryDeserializer(IOendianness));
 
   var startIxCnt = sta1 - 1;
 
@@ -492,8 +497,8 @@ proc graphNumVertices(G) do return G.vertices.size;
 proc createGraphChannel(prefix:string, suffix:string, param forWriting:bool) {
   const f = createGraphFile(prefix, suffix, forWriting);
   const chan = if forWriting
-    then f.writer(IOendianness, false)
-    else f.reader(IOendianness, false);
+    then f.writer(false, serializer=new BinarySerializer(IOendianness))
+    else f.reader(false, deserializer=new BinaryDeserializer(IOendianness));
   return chan;
 }
 

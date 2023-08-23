@@ -26,14 +26,14 @@ record buf {
   const bufSize : int;
   var buf : [0..#bufSize] uint(8);
   var cur, cap, numLeft : int;
-  var chan : fileReader(kind=iokind.native, locking=false);
+  var chan : fileReader(locking=false, BinaryDeserializer);
 
   proc init(fi:file, bs:int) {
     this.bufSize = bs;
 
     this.complete();
 
-    chan = fi.reader(locking=false);
+    chan = fi.reader(locking=false, deserializer=new BinaryDeserializer());
     numLeft = fi.size;
   }
 
@@ -128,7 +128,7 @@ proc main(args: [] string) {
     process(data, sectionStart, data.size-2);
   }
 
-  const stdoutBin = (new file(1)).writer(iokind.native, locking=false);
+  const stdoutBin = (new file(1)).writer(serializer=new BinarySerializer(), locking=false);
   //
   // Necessary for now because list `readWriteThis` includes formatting chars,
   // while arrays do not.

@@ -334,14 +334,16 @@ module ChapelIO {
     @chpldoc.nodoc
     proc deserializeDefaultImpl(reader: fileReader, ref deserializer,
                                 ref x:?t) throws {
-      const name = __primitive("simple type name", x);
+      const name = __primitive("simple type name", x):string;
       if isClassType(t) then
         deserializer.startClass(reader, name);
       else
         deserializer.startRecord(reader, name);
 
       if isClassType(t) && _to_borrowed(t) != borrowed RootClass {
-        deserializeDefaultImpl(reader, deserializer, x.super, "super");
+        var castTmp : x.super.type = x;
+        if x.super.type != borrowed RootClass then
+          castTmp.deserialize(reader, deserializer);
       }
 
       param num_fields = __primitive("num fields", t);

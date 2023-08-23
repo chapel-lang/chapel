@@ -88,7 +88,7 @@ module MatrixMarket {
       var HEADER_LINE : string = "%%MatrixMarket matrix coordinate real general\n"; // currently the only supported MM format in this module
 
       var fd:file;
-      var fout:fileWriter(kind=iokind.dynamic, locking=true);
+      var fout:fileWriter(locking=true);
 
       var headers_written:bool;
       var last_rowno:int;
@@ -199,7 +199,7 @@ proc mmwrite(const fname:string, mat:[?Dmat] ?T) where mat.domain.rank == 2 {
 
 class MMReader {
    var fd:file;
-   var fin:fileReader(kind=iokind.dynamic, locking=true);
+   var fin:fileReader(locking=true);
    var finfo:MMInfo;
 
    proc init(const fname:string) {

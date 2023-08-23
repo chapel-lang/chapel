@@ -17,14 +17,14 @@ var ownA = new owned R(1,2,3,4,5);
 var A = ownA.borrow();
 
 {
-  var w = f.writer(kind=iobig);
+  var w = f.writer(serializer=new BinarySerializer(ioendian.big));
   writeln("Writing ", A);
   w.write(A);
   w.close();
 }
 
 {
-  var r = f.reader(kind=iobig);
+  var r = f.reader(deserializer=new BinaryDeserializer(ioendian.big));
   var ownB = new owned R(0,0,0,0,0);
   var B = ownB.borrow();
 
@@ -36,10 +36,11 @@ var A = ownA.borrow();
 
 
 {
-  var r = f.reader(kind=iobig);
+  var r = f.reader(deserializer=new BinaryDeserializer(ioendian.big));
   var ownB = new owned R(0,0,0,0,0);
   var B = ownB.borrow();
 
+  assert(r.readByte() == 1);
   assert(r.read(B.a));
   assert(r.read(B.b));
   assert(r.read(B.c));

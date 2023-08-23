@@ -12,7 +12,7 @@ config const readSize = 16 * 1024;
 
 proc main(args: [] string) {
   const stdin = new file(0);
-  var input = stdin.reader(iokind.native, locking=false,
+  var input = stdin.reader(deserializer=new BinaryDeserializer(), locking=false,
                            hints=ioHintSet.mmap(true));
   var len = stdin.size;
   var data : [0..#len] uint(8);
@@ -59,7 +59,7 @@ proc main(args: [] string) {
     }
   }
 
-  const stdoutBin = (new file(1)).writer(iokind.native, locking=false);
+  const stdoutBin = (new file(1)).writer(serializer=new BinarySerializer(), locking=false);
   stdoutBin.writeBinary(data);
 }
 

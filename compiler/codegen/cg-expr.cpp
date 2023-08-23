@@ -66,6 +66,7 @@ static void codegenAssign(GenRet to_ptr, GenRet from);
 static GenRet codegenCast(Type* t, GenRet value, bool Cparens = true);
 static GenRet codegenCastToVoidStar(GenRet value);
 static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret);
+static GenRet maybeConvertToLocalPointer(Expr* expr, GenRet& act);
 
 // These functions operate on wide pointers. There are several different
 // kinds of wide pointers:
@@ -5141,8 +5142,7 @@ DEFINE_PRIM(SET_MEMBER) {
 DEFINE_PRIM(CHECK_NIL) {
     GenRet ptr = call->get(1);
 
-    if (ptr.chplType->symbol->hasFlag(FLAG_WIDE_CLASS))
-      ptr = codegenRaddr(ptr);
+    ptr = maybeConvertToLocalPointer(call->get(1), ptr);
 
     codegenCall("chpl_check_nil",
                 ptr,

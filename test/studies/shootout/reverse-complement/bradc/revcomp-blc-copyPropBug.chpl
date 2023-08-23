@@ -8,8 +8,8 @@
 
 proc main(args: [] string) {
   use IO;
-  const stdinBin = (new file(0)).reader(iokind.native, locking=false),
-        stdoutBin = (new file(1)).writer(iokind.native, locking=false);
+  const stdinBin = (new file(0)).reader(deserializer=new BinaryDeserializer(), locking=false),
+        stdoutBin = (new file(1)).writer(serializer=new BinarySerializer(), locking=false);
 
   // read in the data using an incrementally growing buffer
   var bufLen = 8 * 1024,
