@@ -646,7 +646,7 @@ There are synonyms available for these values:
 * :proc:`iolittle` = ``iokind.little``
 
 */
-@deprecated(notes="'iokind' is deprecated, please use Serializers that support endianness instead")
+@deprecated(notes="'iokind' is deprecated, please use Serializers or Deserializers that support endianness instead")
 type iokind = _iokind;
 
 // These exist because field accessors aren't carried over for type aliases
@@ -664,16 +664,16 @@ pragma "ignore deprecated use"
 proc type iokind.little param do return _iokind.little;
 
 /* A synonym for ``iokind.dynamic``; see :type:`iokind` */
-@deprecated(notes="'iodynamic' is deprecated, please use Serializers that support endianness instead")
+@deprecated(notes="'iodynamic' is deprecated, please use Serializers or Deserializers that support endianness instead")
 param iodynamic = _iokind.dynamic;
 /* A synonym for ``iokind.native``; see :type:`iokind` */
-@deprecated(notes="'ionative' is deprecated, please use Serializers that support endianness instead")
+@deprecated(notes="'ionative' is deprecated, please use Serializers or Deserializers that support endianness instead")
 param ionative = _iokind.native;
 /* A synonym for ``iokind.big``; see :type:`iokind` */
-@deprecated(notes="'iobig' is deprecated, please use Serializers that support endianness instead")
+@deprecated(notes="'iobig' is deprecated, please use Serializers or Deserializers that support endianness instead")
 param iobig = _iokind.big;
 /* A synonym for ``iokind.little``; see :type:`iokind` */
-@deprecated(notes="'iolittle' is deprecated, please use Serializers that support endianness instead")
+@deprecated(notes="'iolittle' is deprecated, please use Serializers or Deserializers that support endianness instead")
 param iolittle = _iokind.little;
 
 /*
@@ -2530,7 +2530,7 @@ record fileReader {
      kind is an enum :type:`iokind` that allows narrowing
      this fileReader's I/O style for more efficient binary I/O.
    */
-  @deprecated(notes="'kind' is deprecated, please use Deserializers to configure endianness instead")
+  @deprecated(notes="'fileReader.kind' is deprecated, please use Deserializers to configure endianness instead")
   param kind:iokind = iokind.dynamic;
   /*
      locking is a boolean indicating whether it is safe to use this
@@ -2611,7 +2611,7 @@ record fileWriter {
      kind is an enum :type:`iokind` that allows narrowing
      this fileWriter's I/O style for more efficient binary I/O.
    */
-  @deprecated(notes="'kind' is deprecated, please use Serializers to configure endianness instead")
+  @deprecated(notes="'fileWriter.kind' is deprecated, please use Serializers to configure endianness instead")
   param kind:iokind = iokind.dynamic;
   /*
      locking is a boolean indicating whether it is safe to use this

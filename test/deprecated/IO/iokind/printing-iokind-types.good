@@ -1,7 +1,7 @@
 printing-iokind-types.chpl:4: In function 'main':
-printing-iokind-types.chpl:5: warning: 'iokind' is deprecated, please use Serializers that support endianness instead
-printing-iokind-types.chpl:6: warning: 'iokind' is deprecated, please use Serializers that support endianness instead
-printing-iokind-types.chpl:9: warning: 'iokind' is deprecated, please use Serializers that support endianness instead
+printing-iokind-types.chpl:5: warning: 'iokind' is deprecated, please use Serializers or Deserializers that support endianness instead
+printing-iokind-types.chpl:6: warning: 'iokind' is deprecated, please use Serializers or Deserializers that support endianness instead
+printing-iokind-types.chpl:9: warning: 'iokind' is deprecated, please use Serializers or Deserializers that support endianness instead
 fileReader(native,false,nothing)
 fileWriter(native,false,nothing)
 fileReader(false,nothing)
