@@ -45,7 +45,7 @@ proc main() {
   var t: stopwatch;
   t.start();
 
-  coforall locIdx in 0..#numLocales {
+  coforall locIdx in 0..#numLocales with (ref remoteVar, ref remoteVarAtomic) {
     on Locales(locIdx) {
       if locIdx > 1 {
         //
