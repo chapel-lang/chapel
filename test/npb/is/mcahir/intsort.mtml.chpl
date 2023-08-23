@@ -62,7 +62,7 @@ var passedVerifications = 0;		// verification counter
 // Set problem sizes and storage requirements
 const log2range = ClassRanges(probClass);
 const log2nkeys = ClassNkeys (probClass);
-var range:    int = 1 << log2range;	// left shift for power of 2 values
+var rang :    int = 1 << log2range;	// left shift for power of 2 values
 var nkeys:    int = 1 << log2nkeys;
 var tasksPerLocale = if dataParTasksPerLocale == 0 
                      then here.maxTaskPar
@@ -91,8 +91,8 @@ var keybuffsz:  int  = keybuff_pe:int;
 const keySpace:    domain(1)= {0..#nkeys};
 
 // mcahir: Alas, it seems a block cyclic dist array has to be 2D so ended up making countSpace a 2D domain
-const countSpace = if distType==ISDistType.block then {0..#range}
-                                                 else {0..#range, 0..0};
+const countSpace = if distType==ISDistType.block then {0..#rang}
+                                                 else {0..#rang, 0..0};
 const bucketSpace: domain(2)= {0..#npes,0..#nbuckets};
 const buffSpace:   domain(2)= {0..#nbuckets,0..#keybuffsz};
 
@@ -116,7 +116,7 @@ const countDom = if distType==ISDistType.block
                                       targetLocales=MyLocales);
 
 // Now declare the main distributed arrays
-var key:      [keyDom] int;	// random numbers between 0 and range -1
+var key:      [keyDom] int;	// random numbers between 0 and rang -1
 var rank:     [keyDom] int;	// store ranks here
 var sortkey:  [keyDom] int;	// used for verification
 var keybuff:  [buffDom]int;	// used for remote storage
@@ -167,7 +167,7 @@ proc main () {
     if (probClass != classVals.S) then writeln (iteration," Iteration ");
   
     key[iteration] = iteration;
-    key[iteration+maxIterations] = range - iteration;
+    key[iteration+maxIterations] = rang - iteration;
   
     rank_keys ( iteration );
   
@@ -223,7 +223,7 @@ proc rank_keys ( iteration ) {
   tloops(1).start();
   forall (k,i) in zip(key, keyDom) do {
     on k do {
-      var ibucket: int = k >> (log2range-log2nbuckets);  // this is equivalent to (key(i)/range)*nbuckets
+      var ibucket: int = k >> (log2range-log2nbuckets);  // this is equivalent to (key(i)/rang)*nbuckets
       var mype: int = i / nkeys_per_pe;
       if false {
         writeln("mype=",mype," i=",i," key=",k," ibucket=",ibucket);
@@ -307,7 +307,7 @@ proc rank_keys ( iteration ) {
   keycountbuf = + scan (keycount);
   /*
   if distType==ISDistType.block {
-    for i in 1..range-1 {
+    for i in 1..rang-1 {
       keycount[i] += keycount[i-1];
     }
     keycountbuf = keycount;
@@ -475,7 +475,7 @@ proc fullVerify () {
 proc gen_keys () {
   // initialize key values - do this on each rank or locale such that the key values 
   // are the same no matter how many locales or ranks are used
-  // -- come back later and see if this can be simplified w/ a local range
+  // -- come back later and see if this can be simplified w/ a local rang
  
   coforall loc in Locales with (ref key) do {
     on loc do {
@@ -490,7 +490,7 @@ proc gen_keys () {
       rs.skipToNth(first*4);
       for i in first..last {
         rs.fillRandom(tmpreals);
-        key(i) = ( (range>>2)*(+ reduce tmpreals ) ): int;
+        key(i) = ( (rang>>2)*(+ reduce tmpreals ) ): int;
       }
     }
   }
