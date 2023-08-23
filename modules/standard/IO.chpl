@@ -5257,10 +5257,11 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
 
 @deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewFileReaderRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
 proc file.reader(param kind=iokind.dynamic, param locking=true,
-                 region: range(?) = 0.., hints = ioHintSet.empty)
-  : fileReader(kind, locking) throws where (region.hasHighBound() &&
+                 region: range(?) = 0.., hints = ioHintSet.empty,
+                 in deserializer: ?dt = defaultSerializeVal(false))
+  : fileReader(kind, locking, dt) throws where (region.hasHighBound() &&
                                             !useNewFileReaderRegionBounds) {
-  return this.readerHelper(kind, locking, region, hints);
+  return this.readerHelper(kind, locking, region, hints, deserializer=deserializer);
 }
 
 // TODO: remove fromOpenReader and fromOpenUrlReader when deprecated versions
