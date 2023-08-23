@@ -120,14 +120,14 @@ module ExternalArray {
     return ret;
   }
 
-  proc convertStringOrBytes(arr: []): chpl_external_array
+  proc convertStringOrBytes(ref arr: []): chpl_external_array
     where arr.eltType == string || arr.eltType == bytes {
 
     var wrapper: [arr.domain] chpl_byte_buffer;
 
     // Move existing string buffers over to a new shell.
     for i in 0..#arr.size {
-      const ref item = arr[i];
+      ref item = arr[i];
 
       // This call assumes ownership of the string's buffer.
       var val = chpl__exportRetStringOrBytes(item);
