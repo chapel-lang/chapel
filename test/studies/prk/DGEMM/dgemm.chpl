@@ -79,7 +79,7 @@ else {
       const blockDom = {bVecRange, bVecRange};
       const localDom = matrixDom.localSubdomain();
 
-      coforall tid in 0..#nTasksPerLocale with (ref t) with (ref C) {
+      coforall tid in 0..#nTasksPerLocale with (ref t, ref C) {
         const myChunk = chunk(localDom.dim(1), nTasksPerLocale, tid);
 
         var AA: [blockDom] dtype,

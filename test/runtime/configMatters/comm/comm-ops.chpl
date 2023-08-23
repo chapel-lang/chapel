@@ -69,7 +69,7 @@ for loc in Locales do on loc {
 proc test(op: OP) {
   const iters = if op == OP.AM || op == OP.FASTAM then numIters/10 else numIters;
   startDiags();
-  coforall tid in 1..numTasks with (ref A) with (ref B) {
+  coforall tid in 1..numTasks with (ref A, ref B) {
     ref bLoc = B.localAccess[tid].val;
     ref bRem = B[tid+numTasks].val;
     ref aLoc = A.localAccess[tid].val;
