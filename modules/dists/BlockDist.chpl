@@ -264,6 +264,17 @@ domain or array.
 Note that an optional ``targetLocales`` argument can be passed to modify the
 target locales over which the domain or array will be distributed.
 
+Additionally, a non-type method ``createArray`` is available for creating an
+array from an existing `Block` distribution.
+
+  .. code-block:: chapel
+
+    use BlockDist;
+
+    const BD = new BlockDist({1..5, 1..5});
+
+    var A = BD.createArray();
+
 **Data-Parallel Iteration**
 
 A `forall` loop over a Block-distributed domain or array
@@ -872,30 +883,50 @@ iter BlockImpl.activeTargetLocales(const space : domain = boundingBox) {
   }
 }
 
-proc type Block.createDomain(dom: domain, targetLocales: [] locale = Locales) {
+// create a domain over a Block Distribution
+proc type Block.createDomain(dom: domain, targetLocales = Locales) {
   return dom dmapped Block(dom, targetLocales);
 }
 
+// create a domain over a Block Distribution constructed from a list of ranges
 proc type Block.createDomain(rng: range...) {
   return createDomain({(...rng)}, Locales);
 }
 
-proc type Block.createDomain(rng: range..., targetLocales: [] locale = Locales) {
+proc type Block.createDomain(rng: range..., targetLocales = Locales) {
   return createDomain({(...rng)}, targetLocales);
 }
 
-proc type Block.createArray(dom: domain, type eltType, targetLocales: [] locale = Locales) {
+// create an array over a Block Distribution, default initialized
+proc type Block.createArray(dom: domain, type eltType, targetLocales = Locales) {
   var D = createDomain(dom, targetLocales);
   var A: [D] eltType;
   return A;
 }
 
+// create an array over a Block Distribution, initialized with the given value
+proc type Block.createArray(dom: domain, type eltType, value: eltType, targetLocales = Locales) {
+  var D = createDomain(dom, targetLocales);
+  var A: [D] eltType = value;
+  return A;
+}
+
+// create an array over a Block Distribution constructed from a list of ranges, default initialized
 proc type Block.createArray(rng: range..., type eltType) {
   return createArray({(...rng)}, eltType, Locales);
 }
 
-proc type Block.createArray(rng: range..., type eltType, targetLocales: [] locale) {
+proc type Block.createArray(rng: range..., type eltType, targetLocales = Locales) {
   return createArray({(...rng)}, eltType, targetLocales);
+}
+
+// create an array over a Block Distribution constructed from a list of ranges, initialized with the given value
+proc type Block.createArray(rng: range..., type eltType, value: eltType) {
+  return createArray({(...rng)}, eltType, value, Locales);
+}
+
+proc type Block.createArray(rng: range..., type eltType, value: eltType, targetLocales = Locales) {
+  return createArray({(...rng)}, eltType, value, targetLocales);
 }
 
 proc chpl__computeBlock(locid, targetLocBox:domain, boundingBox:domain,

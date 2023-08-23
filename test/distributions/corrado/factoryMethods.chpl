@@ -21,29 +21,35 @@ testDom("Cyclic opts:", Cyclic.createDomain(dom, targetLocales=tls));
 testDom("Cyclic opts:", Cyclic.createDomain((...rng), targetLocales=tls));
 
 proc testDom(test: string, D: domain) {
-  writeln(test);
+  writeln("\n", test);
   var A: [D] int;
   forall a in A do a = here.id;
-  writeln(A, "\n");
+  writeln(A);
 }
 
-writeln("Arrays:");
+writeln("\nArrays:");
 
 testArray("Block:", Block.createArray(dom, int));
 testArray("Block:", Block.createArray((...rng), int));
 testArray("Block opts:", Block.createArray(dom, int, targetLocales=tls));
 testArray("Block opts:", Block.createArray((...rng), int, targetLocales=tls));
+testArray("Block value:", Block.createArray(dom, int, 5));
+testArray("Block value:", Block.createArray((...rng), int, 5));
 testArray("Stencil:", Stencil.createArray(dom, int));
 testArray("Stencil:", Stencil.createArray((...rng), int));
 testArray("Stencil opts:", Stencil.createArray(dom, int, targetLocales=tls, fluff=(2, 2), periodic=true));
 testArray("Stencil opts:", Stencil.createArray((...rng), int, targetLocales=tls, fluff=(2, 2), periodic=true));
+testArray("Stencil value:", Stencil.createArray(dom, int, 5));
+testArray("Stencil value:", Stencil.createArray((...rng), int, 5));
 testArray("Cyclic:", Cyclic.createArray(dom, int));
 testArray("Cyclic:", Cyclic.createArray((...rng), int));
 testArray("Cyclic opts:", Cyclic.createArray(dom, int, targetLocales=tls));
 testArray("Cyclic opts:", Cyclic.createArray((...rng), int, targetLocales=tls));
+testArray("Cyclic value:", Cyclic.createArray(dom, int, 5));
+testArray("Cyclic value:", Cyclic.createArray((...rng), int, 5));
 
 proc testArray(test: string, in A: [] int) {
-  writeln(test);
-  forall a in A do a = here.id;
-  writeln(A, "\n");
+  writeln("\n", test);
+  forall a in A do if here.id != 0 then a = here.id;
+  writeln(A);
 }

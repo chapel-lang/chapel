@@ -805,32 +805,35 @@ iter StencilImpl.activeTargetLocales(const space : domain = boundingBox) {
   }
 }
 
+// create a domain over a Stencil Distribution
 proc type Stencil.createDomain(
   dom: domain,
-  targetLocales: [] locale = Locales,
+  targetLocales = Locales,
   fluff = makeZero(dom.rank, dom.idxType),
   periodic = false
 ) {
   return dom dmapped Stencil(dom, targetLocales, fluff=fluff, periodic=periodic);
 }
 
+// create a domain over a Stencil Distribution constructed from a list of ranges
 proc type Stencil.createDomain(rng: range...?k) {
   return createDomain({(...rng)}, Locales, makeZero(k, rng[0].idxType), false);
 }
 
 proc type Stencil.createDomain(
   rng: range...?k,
-  targetLocales: [] locale = Locales,
+  targetLocales = Locales,
   fluff: ?t = makeZero(k, int),
   periodic = false
 ) where isHomogeneousTupleType(t) {
   return createDomain({(...rng)}, targetLocales, fluff, periodic);
 }
 
+// create an array over a Stencil Distribution, default initialized
 proc type Stencil.createArray(
   dom: domain,
   type eltType,
-  targetLocales: [] locale = Locales,
+  targetLocales = Locales,
   fluff = makeZero(dom.rank, dom.idxType),
   periodic = false
 ) {
@@ -839,6 +842,21 @@ proc type Stencil.createArray(
   return A;
 }
 
+// create an array over a Stencil Distribution, initialized with the given value
+proc type Stencil.createArray(
+  dom: domain,
+  type eltType,
+  value: eltType,
+  targetLocales = Locales,
+  fluff = makeZero(dom.rank, dom.idxType),
+  periodic = false
+) {
+  var D = createDomain(dom, targetLocales, fluff, periodic);
+  var A: [D] eltType = value;
+  return A;
+}
+
+// create an array over a Stencil Distribution constructed from a list of ranges, default initialized
 proc type Stencil.createArray(rng: range...?k, type eltType) {
   return createArray({(...rng)}, eltType, Locales, makeZero(k, rng[0].idxType), false);
 }
@@ -846,11 +864,27 @@ proc type Stencil.createArray(rng: range...?k, type eltType) {
 proc type Stencil.createArray(
   rng: range...?k,
   type eltType,
-  targetLocales: [] locale = Locales,
+  targetLocales = Locales,
   fluff: ?t = makeZero(k, int),
   periodic = false
 ) where isHomogeneousTupleType(t) {
   return createArray({(...rng)}, eltType, targetLocales, fluff, periodic);
+}
+
+// create an array over a Stencil Distribution constructed from a list of ranges, initialized with the given value
+proc type Stencil.createArray(rng: range...?k, type eltType, value: eltType) {
+  return createArray({(...rng)}, eltType, value, Locales, makeZero(k, rng[0].idxType), false);
+}
+
+proc type Stencil.createArray(
+  rng: range...?k,
+  type eltType,
+  value: eltType,
+  targetLocales = Locales,
+  fluff: ?t = makeZero(k, int),
+  periodic = false
+) where isHomogeneousTupleType(t) {
+  return createArray({(...rng)}, eltType, value, targetLocales, fluff, periodic);
 }
 
 proc chpl__computeBlock(locid, targetLocBox, boundingBox) {

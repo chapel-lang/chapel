@@ -1386,30 +1386,51 @@ proc CyclicImpl.dsiTargetLocales() const ref {
   return targetLocs;
 }
 
-proc type Cyclic.createDomain(dom: domain, targetLocales: [] locale = Locales) {
+// create a domain over a Cyclic Distribution
+proc type Cyclic.createDomain(dom: domain, targetLocales = Locales)
+{
   return dom dmapped CyclicImpl(startIdx=dom.lowBound, targetLocales);
 }
 
+// create a domain over a Cyclic Distribution constructed from a list of ranges
 proc type Cyclic.createDomain(rng: range...) {
   return createDomain({(...rng)}, Locales);
 }
 
-proc type Cyclic.createDomain(rng: range..., targetLocales: [] locale) {
+proc type Cyclic.createDomain(rng: range..., targetLocales = Locales) {
   return createDomain({(...rng)}, targetLocales);
 }
 
-proc type Cyclic.createArray(dom: domain, type eltType, targetLocales: [] locale = Locales) {
+// create an array over a Cyclic Distribution, default initialized
+proc type Cyclic.createArray(dom: domain, type eltType, targetLocales = Locales) {
   var D = createDomain(dom, targetLocales);
   var A: [D] eltType;
   return A;
 }
 
+// create an array over a Cyclic Distribution, initialized with the given value
+proc type Cyclic.createArray(dom: domain, type eltType, value: eltType, targetLocales = Locales) {
+  var D = createDomain(dom, targetLocales);
+  var A: [D] eltType = value;
+  return A;
+}
+
+// create an array over a Cyclic Distribution constructed from a list of ranges, default initialized
 proc type Cyclic.createArray(rng: range..., type eltType) {
   return createArray({(...rng)}, eltType, Locales);
 }
 
-proc type Cyclic.createArray(rng: range..., type eltType, targetLocales: [] locale) {
+proc type Cyclic.createArray(rng: range..., type eltType, targetLocales = Locales) {
   return createArray({(...rng)}, eltType, targetLocales);
+}
+
+// create an array over a Cyclic Distribution constructed from a list of ranges, initialized with the given value
+proc type Cyclic.createArray(rng: range..., type eltType, value: eltType) {
+  return createArray({(...rng)}, eltType, value, Locales);
+}
+
+proc type Cyclic.createArray(rng: range..., type eltType, value: eltType, targetLocales = Locales) {
+  return createArray({(...rng)}, eltType, value, targetLocales);
 }
 
 // Cyclic subdomains are represented as a single domain
