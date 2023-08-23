@@ -177,7 +177,7 @@ module Subprocess {
   pragma "ignore deprecated use"
   record subprocess {
     /* The kind of a subprocess is used to create the types
-       for any channels that are necessary. */
+       for stdin, stdout, or stderr. */
     @deprecated("the 'kind' field is deprecated, please use Serializers or Deserializers with stdin, stdout, and stderr channels instead. Channels can be configured with the 'fileWriter.withSerializer' or 'fileReader.withDeserializer' methods.")
     param kind:iokind = iokind.dynamic;
     /* As with kind, this value is used to create the types
