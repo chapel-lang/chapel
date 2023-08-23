@@ -1590,7 +1590,7 @@ module ChapelRange {
   {
     if r1._low != r2._low then return false;
     if r1._high != r2._high then return false;
-    // the following can be 'if none == none ...'
+    // the following can be 'if none != none ...'
         if r1._stride != r2._stride then return false;
         if r1._alignment != r2._alignment then return false;
     return true;
