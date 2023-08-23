@@ -101,7 +101,7 @@ class Class final : public AggregateDecl {
                             owned<AttributeGroup> attributeGroup,
                             Decl::Visibility vis,
                             UniqueString name,
-                            owned<AstNode> parentClass,
+                            AstList inheritExprs,
                             AstList contents);
 
   inline int numInheritExprs() const { return numInheritExprs_; }

@@ -3934,7 +3934,7 @@ struct Converter {
 
     if (auto cls = node->toClass()) {
       const uast::Identifier* ident =
-        uast::Class::getInheritExprIdent(cls->parentClass(),
+        uast::Class::getInheritExprIdent(cls->inheritExpr(0),
                                          inheritMarkedGeneric);
       inherit = convertExprOrNull(ident);
     }

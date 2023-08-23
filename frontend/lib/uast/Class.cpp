@@ -39,12 +39,12 @@ owned<Class> Class::build(Builder* builder, Location loc,
                           owned<AttributeGroup> attributeGroup,
                           Decl::Visibility vis,
                           UniqueString name,
-                          owned<AstNode> parentClass,
+                          AstList inheritExprs,
                           AstList contents) {
   AstList lst;
   int attributeGroupChildNum = NO_CHILD;
   int parentClassChildNum = NO_CHILD;
-  int numParentClasses = 0;
+  int numInheritExprs = 0;
   int elementsChildNum = NO_CHILD;
   int numElements = 0;
 
@@ -53,10 +53,12 @@ owned<Class> Class::build(Builder* builder, Location loc,
     lst.push_back(std::move(attributeGroup));
   }
 
-  if (parentClass.get() != nullptr) {
+  numInheritExprs = inheritExprs.size();
+  if (numInheritExprs > 0) {
     parentClassChildNum = lst.size();
-    numParentClasses = 1;
-    lst.push_back(std::move(parentClass));
+    for (auto & inheritExpr : inheritExprs) {
+      lst.push_back(std::move(inheritExpr));
+    }
   }
   numElements = contents.size();
   if (numElements > 0) {
@@ -68,7 +70,7 @@ owned<Class> Class::build(Builder* builder, Location loc,
 
   Class* ret = new Class(std::move(lst), attributeGroupChildNum, vis, name,
                          parentClassChildNum,
-                         numParentClasses,
+                         numInheritExprs,
                          elementsChildNum,
                          numElements);
   builder->noteLocation(ret, loc);

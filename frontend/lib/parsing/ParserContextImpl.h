@@ -2533,7 +2533,7 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
 
   auto contentsList = consumeList(contents);
 
-  owned<AstNode> inheritExpr;
+  AstList inheritExprs;
   if (optInherit != nullptr) {
     if (optInherit->size() > 0) {
       if (parts.tag == asttags::Record) {
@@ -2542,35 +2542,35 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
       } else if (parts.tag == asttags::Union) {
         error(inheritLoc, "unions cannot inherit.");
       } else {
-        if (optInherit->size() > 1)
-          error(inheritLoc, "only single inheritance is supported.");
-        AstNode* ast = (*optInherit)[0];
-        bool inheritOk = false;
-        if (ast->isIdentifier()) {
-          // inheriting from e.g. Parent is OK
-          inheritOk = true;
-        } else {
-          // inheriting from e.g. Parent(?) is OK
-          if (auto call = ast->toFnCall()) {
-            const AstNode* calledExpr = call->calledExpression();
-            if (calledExpr != nullptr && call->numActuals() == 1) {
-              if (const AstNode* actual = call->actual(0)) {
-                if (auto id = actual->toIdentifier()) {
-                  if (id->name() == USTR("?")) {
-                    inheritOk = true;
+        for (int i = 0; i < optInherit->size(); i++) {
+          AstNode* ast = (*optInherit)[i];
+          bool inheritOk = false;
+          if (ast->isIdentifier()) {
+            // inheriting from e.g. Parent is OK
+            inheritOk = true;
+          } else {
+            // inheriting from e.g. Parent(?) is OK
+            if (auto call = ast->toFnCall()) {
+              const AstNode* calledExpr = call->calledExpression();
+              if (calledExpr != nullptr && call->numActuals() == 1) {
+                if (const AstNode* actual = call->actual(0)) {
+                  if (auto id = actual->toIdentifier()) {
+                    if (id->name() == USTR("?")) {
+                      inheritOk = true;
+                    }
                   }
                 }
               }
             }
           }
-        }
 
-        if (inheritOk) {
-          inheritExpr = toOwned(ast);
-          (*optInherit)[0] = nullptr;
-        } else {
-          syntax(inheritLoc,
-                 "invalid parent class; please specify a single class name");
+          if (inheritOk) {
+            inheritExprs.push_back(toOwned(ast));
+            (*optInherit)[i] = nullptr;
+          } else {
+            syntax(inheritLoc,
+                   "invalid parent class or interface; please specify a single class or interface name");
+          }
         }
       }
     }
@@ -2590,7 +2590,7 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
                         toOwned(parts.attributeGroup),
                         parts.visibility,
                         parts.name,
-                        std::move(inheritExpr),
+                        std::move(inheritExprs),
                         std::move(contentsList)).release();
   } else if (parts.tag == asttags::Record) {
     decl = Record::build(builder, convertLocation(location),
