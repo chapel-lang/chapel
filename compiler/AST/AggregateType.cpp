@@ -3130,7 +3130,9 @@ AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
     USR_FATAL(storesName, "Illegal super class");
   }
 
-  ts->maybeGenerateDeprecationWarning(storesName);
+  if (!fDynoScopeResolve) {
+    ts->maybeGenerateDeprecationWarning(storesName);
+  }
 
   AggregateType* pt = toAggregateType(ts->type);
 
