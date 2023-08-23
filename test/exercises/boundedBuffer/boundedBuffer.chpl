@@ -60,7 +60,7 @@ proc main() {
       consCounts: [1..numConsumers] int;
 
   // spawn two tasks using a 'cobegin'
-  cobegin with (ref prodCounts, consCounts) {
+  cobegin with (ref prodCounts, ref consCounts) {
     // Task 1: run a single producer and store the number of things
     // it produces in 'prodCounts[1]'.  When it's done, write a
     // sentinel value per consumer.

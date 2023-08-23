@@ -21,7 +21,7 @@ for i in 1..n {
   const count = countSync.readFE();
   if count == 0 then
     flag.readFE();
-  count.writeEF(count + 1);
+  countSync.writeEF(count + 1);
   begin with (ref A) {
     A(i) = 3000+i;
     const count = countSync.readFE();

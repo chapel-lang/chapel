@@ -36,7 +36,7 @@ proc simpleDistMultiply(
     var colCopies : [localesDom] WrappedArray;
 
     // initialize row and col copies
-    coforall (locRow, locCol) in localesDom with (ref colCopies) with (ref rowCopies) do on myLocales[locRow,locCol] {
+    coforall (locRow, locCol) in localesDom with (ref colCopies, ref rowCopies) do on myLocales[locRow,locCol] {
         rowCopies[locRow, locCol] = new WrappedArray(
             (locRow-1)*blkSize+1, 1, blkSize, n);
         colCopies[locRow, locCol] = new WrappedArray(
