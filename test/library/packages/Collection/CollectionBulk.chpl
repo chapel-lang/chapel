@@ -19,8 +19,8 @@ var c = (
 
 // Add Bulk Test
 // We simply add a range of elements.
-var range = (if isBoundedDeque then 1..nElems + 1 else 1..nElems);
-var successfulInsertions = c.addBulk(range);
+var r = (if isBoundedDeque then 1..nElems + 1 else 1..nElems);
+var successfulInsertions = c.addBulk(r);
 assert(successfulInsertions == nElems);
 assert(c.getSize() == nElems);
 
