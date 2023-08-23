@@ -59,7 +59,7 @@ record padded {
 var A = Block.createArray(1..numTasks*2, padded(atomic int));
 var B = Block.createArray(1..numTasks*2, padded(int));
 for loc in Locales do on loc {
-  coforall tid in 1..numTasks*2 with (ref A) with (ref B) {
+  coforall tid in 1..numTasks*2 with (ref A, ref B) {
     A[tid].val.write(0);
     B[tid].val = 0;
   }
