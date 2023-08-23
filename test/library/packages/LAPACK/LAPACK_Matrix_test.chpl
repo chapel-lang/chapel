@@ -2,7 +2,7 @@ use TestHelpers;
 
 config var verbose_test: bool;
 
-proc putInto2D( arrayOfArrays: [?D1] ?t, twoArray: [?D2] ?o): void{
+proc putInto2D( arrayOfArrays: [?D1] ?t, ref twoArray: [?D2] ?o): void{
   // no check. Cannot have ragged array literals
   assert( D1.rank == 1 && D2.rank == 2  );
   var formed: domain(2) = {D1.dim(0), arrayOfArrays[D1.dim(0).low].domain.dim(0)};
@@ -16,7 +16,7 @@ proc putInto2D( arrayOfArrays: [?D1] ?t, twoArray: [?D2] ?o): void{
 }
 
 writeln( "1D row input => row" );
-var input_1_row: [1..4] real = 
+var input_1_row: [1..4] real =
   [ 3.0, 1.0, 
     4.0, 2.0 ];
 var A_1_row = new owned LAPACK_Matrix( real, 2, 2, lapack_memory_order.row_major, input_array = input_1_row  ); 
