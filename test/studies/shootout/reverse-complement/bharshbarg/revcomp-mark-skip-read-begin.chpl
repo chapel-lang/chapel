@@ -50,10 +50,10 @@ proc main(args: [] string) {
 
       if !eof {
         // '-3' to skip over '\n>'
-        begin process(data, seqOffset, nextDescOffset-3);
+        begin with (ref data) process(data, seqOffset, nextDescOffset-3);
       } else {
         // '-2' to skip over '\n'
-        begin process(data, seqOffset, len-2);
+        begin with (ref data) process(data, seqOffset, len-2);
         break;
       }
     }
