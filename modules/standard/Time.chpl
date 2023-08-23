@@ -608,12 +608,12 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* A record representing a time */
   record time {
     var chpl_hour, chpl_minute, chpl_second, chpl_microsecond: int;
+    var chpl_tz: shared Timezone?;
 
     // Timezone awareness/naivety is part of the type so we can prohibit
     // comparison of an aware vs naive time at compile-time.
     @chpldoc.nodoc
     param tz_aware : bool = false;
-    var chpl_tz: if tz_aware then (shared Timezone) else nothing;
 
     /* The hour represented by this `time` value */
     proc hour {
@@ -637,8 +637,6 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
     /* The timezone represented by this `time` value */
     proc timezone {
-      if (!tz_aware) then
-        compilerError("Can't access timezone of a naive time");
       return chpl_tz;
     }
 
@@ -672,6 +670,28 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* Initialize a new `time` value from the given `hour`, `minute`, `second`,
+     `microsecond`, and `timezone`.  All arguments are optional
+   */
+  @unstable("tz is unstable; its type may change in the future")
+  proc time.init(hour:int=0, minute:int=0, second:int=0, microsecond:int=0,
+                 in tz: shared Timezone?) {
+    if hour < 0 || hour >= 24 then
+      HaltWrappers.initHalt("hour out of range");
+    if minute < 0 || minute >= 60 then
+      HaltWrappers.initHalt("minute out of range");
+    if second < 0 || second >= 60 then
+      HaltWrappers.initHalt("second out of range");
+    if microsecond < 0 || microsecond >= 1000000 then
+      HaltWrappers.initHalt("microsecond out of range");
+    this.chpl_hour = hour;
+    this.chpl_minute = minute;
+    this.chpl_second = second;
+    this.chpl_microsecond = microsecond;
+    this.chpl_tz = tz;
+    this.tz_aware = true;
+  }
+
+  /* Initialize a new `time` value from the given `hour`, `minute`, `second`,
      `microsecond`.  All arguments are optional
    */
   proc time.init(hour:int=0, minute:int=0, second:int=0, microsecond:int=0) {
@@ -687,29 +707,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     this.chpl_minute = minute;
     this.chpl_second = second;
     this.chpl_microsecond = microsecond;
+    this.chpl_tz = nil;
     this.tz_aware = false;
-  }
-
-  /* Initialize a new `time` value from the given `hour`, `minute`, `second`,
-     `microsecond`, and `timezone`.  All arguments are optional
-   */
-  @unstable("tz is unstable; its type may change in the future")
-  proc time.init(hour:int=0, minute:int=0, second:int=0, microsecond:int=0,
-                 in tz: shared Timezone) {
-    if hour < 0 || hour >= 24 then
-      HaltWrappers.initHalt("hour out of range");
-    if minute < 0 || minute >= 60 then
-      HaltWrappers.initHalt("minute out of range");
-    if second < 0 || second >= 60 then
-      HaltWrappers.initHalt("second out of range");
-    if microsecond < 0 || microsecond >= 1000000 then
-      HaltWrappers.initHalt("microsecond out of range");
-    this.chpl_hour = hour;
-    this.chpl_minute = minute;
-    this.chpl_second = second;
-    this.chpl_microsecond = microsecond;
-    this.tz_aware = true;
-    this.chpl_tz = tz;
   }
 
   /* Initialize a new `time` value from the given `hour`, `minute`, `second`,
@@ -722,22 +721,11 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Methods on time values */
 
-  /* Get a new `time` with the same values as this one, but no timezone
-     awareness.
-   */
-  proc time.withoutTz() : time(tz_aware = false) {
-    if !tz_aware {
-      return this;
-    } else {
-      return new time(hour, minute, second, microsecond);
-    }
-  }
-
   /* Replace the `hour`, `minute`, `second`, `microsecond` in a
      `time` to create a new `time`. All arguments are optional.
    */
   proc time.replace(hour = -1, minute = -1, second = -1, microsecond = -1)
-      : time(tz_aware = false) where !tz_aware {
+      : time(tz_aware = false) {
     const newhour = if hour != -1 then hour else this.hour;
     const newminute = if minute != -1 then minute else this.minute;
     const newsecond = if second != -1 then second else this.second;
@@ -777,8 +765,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     if microsecond != 0 {
       ret = ret + "." + makeNDigits(6, microsecond);
     }
-    if tz_aware {
-      var offset = utcOffset();
+    var offset = utcOffset();
+    if timezone.borrow() != nil {
       var sign: string;
       if offset.days < 0 {
         offset = -offset;
@@ -794,21 +782,29 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Return the offset from UTC */
   proc time.utcOffset() : timeDelta {
-    if !tz_aware then compilerError("Can't get utcOffset of naive time");
-    return timezone!.utcOffset(dateTime.now());
+    if timezone.borrow() == nil {
+      return new timeDelta();
+    } else {
+      return timezone!.utcOffset(dateTime.now());
+    }
   }
 
   /* Return the daylight saving time offset */
   proc time.dst() : timeDelta {
-    if !tz_aware then compilerError("Can't get dst offset of naive time");
-    return timezone!.dst(dateTime.now());
+    if timezone.borrow() == nil {
+      return new timeDelta();
+    } else {
+      return timezone!.dst(dateTime.now());
+    }
   }
 
   /* Return the name of the timezone for this `time` value */
   @unstable("'tzname' is unstable")
   proc time.tzname() {
-    if !tz_aware then compilerError("Can't get tzname of naive time");
-    return timezone!.tzname(new dateTime(1,1,1));
+    if timezone.borrow() == nil then
+      return "";
+    else
+      return timezone!.tzname(new dateTime(1,1,1));
   }
 
   /* Return a `string` matching the `format` argument for this `time` */
@@ -1076,8 +1072,6 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
     /* The timezone represented by this `dateTime` value */
     proc timezone {
-      if (!tz_aware) then
-        compilerError("Can't access timezone of a naive dateTime");
       return chpl_time.timezone;
     }
 
@@ -1106,7 +1100,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   @unstable("tz is unstable; its type may change in the future")
   proc dateTime.init(year:int, month:int, day:int,
                      hour:int=0, minute:int=0, second:int=0, microsecond:int=0,
-                     in tz:shared Timezone) {
+                     in tz) {
     chpl_date = new date(year, month, day);
     tz_aware = true;
     chpl_time = new time(hour, minute, second, microsecond, tz);
@@ -1142,13 +1136,23 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Return a `dateTime` value representing the current time and date, in the
      given timezone */
-  proc type dateTime.now(in tz: shared Timezone) : dateTime(tz_aware=true) {
-    const timeSinceEpoch = getTimeOfDay();
-    const td = new timeDelta(seconds=timeSinceEpoch(0),
-                             microseconds=timeSinceEpoch(1));
-    const utcNow = unixEpoch + td;
+  proc type dateTime.now(in tz: shared Timezone?) : dateTime(tz_aware=true) {
+    if tz.borrow() == nil {
+      const timeSinceEpoch = getTimeOfDay();
+      const lt = getLocalTime(timeSinceEpoch);
+      return new dateTime(year=lt.tm_year+1900, month=lt.tm_mon+1,
+                          day=lt.tm_mday,       hour=lt.tm_hour,
+                          minute=lt.tm_min,     second=lt.tm_sec,
+                          microsecond=timeSinceEpoch(1),
+                          tz=nil);
+    } else {
+      const timeSinceEpoch = getTimeOfDay();
+      const td = new timeDelta(seconds=timeSinceEpoch(0),
+                               microseconds=timeSinceEpoch(1));
+      const utcNow = unixEpoch + td;
 
-    return (utcNow + tz!.utcOffset(utcNow)).replace(tz=tz);
+      return (utcNow + tz!.utcOffset(utcNow)).replace(tz=tz);
+    }
   }
 
   /* Return a `dateTime` value representing the current time and date in UTC */
@@ -1166,7 +1170,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   @deprecated(notes="'dateTime.fromTimestamp' is deprecated, please use 'dateTime.createFromTimestamp' instead")
   proc type dateTime.fromTimestamp(timestamp: real,
-                                   in tz: shared Timezone) {
+                                   in tz: shared Timezone?) {
     return dateTime.createFromTimestamp(timestamp, tz);
   }
 
@@ -1179,9 +1183,19 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* The `dateTime` that is `timestamp` seconds from the epoch */
   @unstable("tz is unstable; its type may change in the future")
   proc type dateTime.createFromTimestamp(timestamp: real,
-                                   in tz: shared Timezone) : dateTime(tz_aware=true) {
-    var dt = dateTime.createUtcFromTimestamp(timestamp);
-    return (dt + tz!.utcOffset(dt)).replace(tz=tz);
+                                   in tz: shared Timezone?) : dateTime(tz_aware=true) {
+    if tz.borrow() == nil {
+      var t = (timestamp: int, ((timestamp - timestamp: int)*1000000): int);
+      const lt = getLocalTime(t);
+      return new dateTime(year=lt.tm_year+1900, month=lt.tm_mon+1,
+                          day=lt.tm_mday,       hour=lt.tm_hour,
+                          minute=lt.tm_min,     second=lt.tm_sec,
+                          microsecond=t(1),
+                          tz=nil);
+    } else {
+      var dt = dateTime.createUtcFromTimestamp(timestamp);
+      return (dt + tz!.utcOffset(dt)).replace(tz=tz);
+    }
   }
 
   @deprecated(notes="'dateTime.utcFromTimestamp' is deprecated, please use 'dateTime.createUtcFromTimestamp' instead")
@@ -1235,54 +1249,27 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Get the `time` portion of the `dateTime` value, with `tz` = nil */
   proc dateTime.getTime() : time(tz_aware=false) {
-    if !tz_aware then
+    if chpl_time.tz_aware == false then
       return chpl_time;
     else
-      return time.withoutTz();
+      return new time(hour=hour, minute=minute,
+                      second=second, microsecond=microsecond);
   }
 
   /* Get the `time` portion of the `dateTime` value including the
      `tz` field
    */
   proc dateTime.timetz() : time(tz_aware=true) {
-    if !tz_aware then compilerError("Can't get aware time from naive dateTime");
     return chpl_time;
   }
 
-  proc dateTime.withoutTz() : dateTime(tz_aware=false) {
-    if !tz_aware {
-      return this;
-    } else {
-      return dateTime.combine(chpl_date, chpl_time.withoutTz());
-    }
-  }
-
-  /* Replace the `year`, `month`, `day`, `hour`, `minute`, `second`,
-     or `microsecond` to form a new `dateTime` object. All
-     arguments are optional.
-   */
-  proc dateTime.replace(year=-1, month=-1, day=-1,
-                        hour=-1, minute=-1, second=-1, microsecond=-1)
-                        : dateTime(tz_aware=false) where !this.tz_aware {
-    return dateTime.combine(
-      new date(if year == -1 then this.year else year,
-               if month == -1 then this.month else month,
-               if day == -1 then this.day else day),
-      new time(if hour == -1 then this.hour else hour,
-               if minute == -1 then this.minute else minute,
-               if second == -1 then this.second else second,
-               if microsecond == -1 then this.microsecond else microsecond));
-  }
-
   /* Replace the `year`, `month`, `day`, `hour`, `minute`, `second`,
      `microsecond`, or `tz` to form a new `dateTime` object. All
      arguments are optional.
    */
-  @unstable("tz is unstable; its type may change in the future")
   proc dateTime.replace(year=-1, month=-1, day=-1,
                         hour=-1, minute=-1, second=-1, microsecond=-1,
-                        in tz: shared Timezone)
-                        : dateTime(tz_aware=true) where !this.tz_aware {
+                        in tz=this.timezone) : dateTime(tz_aware=true) {
     return dateTime.combine(
       new date(if year == -1 then this.year else year,
                if month == -1 then this.month else month,
@@ -1291,29 +1278,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
                if minute == -1 then this.minute else minute,
                if second == -1 then this.second else second,
                if microsecond == -1 then this.microsecond else microsecond,
-               tz)
-      );
-  }
-
-  /* Replace the `year`, `month`, `day`, `hour`, `minute`, `second`,
-     `microsecond`, or `tz` to form a new `dateTime` object. All
-     arguments are optional.
-   */
-  @unstable("tz is unstable; its type may change in the future")
-  proc dateTime.replace(year=-1, month=-1, day=-1,
-                        hour=-1, minute=-1, second=-1, microsecond=-1,
-                        in tz: shared Timezone = this.timezone)
-                        : dateTime(tz_aware=true) where this.tz_aware {
-    return dateTime.combine(
-      new date(if year == -1 then this.year else year,
-               if month == -1 then this.month else month,
-               if day == -1 then this.day else day),
-      new time(if hour == -1 then this.hour else hour,
-               if minute == -1 then this.minute else minute,
-               if second == -1 then this.second else second,
-               if microsecond == -1 then this.microsecond else microsecond,
-               tz)
-      );
+               tz));
   }
 
   /* Return the date and time converted into the timezone in the argument */
@@ -1328,20 +1293,25 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Return the offset from UTC */
   proc dateTime.utcOffset() : timeDelta {
-    if !tz_aware then compilerError("utcOffset called on naive dateTime");
-    return timezone.utcOffset(this);
+    if timezone.borrow() == nil {
+      halt("utcOffset called on naive dateTime");
+    } else {
+      return timezone!.utcOffset(this);
+    }
   }
   /* Return the daylight saving time offset */
   proc dateTime.dst() : timeDelta {
-    if !tz_aware then compilerError("dst called on naive dateTime");
-    return timezone.dst(this);
+    if timezone.borrow() == nil then
+      halt("dst() called with nil timezone");
+    return timezone!.dst(this);
   }
 
   /* Return the name of the timezone for this `dateTime` value */
   @unstable("'tzname' is unstable")
   proc dateTime.tzname() : string {
-    if !tz_aware then compilerError("tzname called on naive dateTime");
-    return timezone.tzname(this);
+    if timezone.borrow() == nil then
+      return "";
+    return timezone!.tzname(this);
   }
 
   /* Return a filled record matching the C `struct tm` type for the given
@@ -1358,7 +1328,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     timeStruct.tm_wday = weekday(): int(32);
     timeStruct.tm_yday = (toOrdinal() - (new date(year, 1, 1)).toOrdinal() + 1): int(32);
 
-    if !tz_aware {
+    if timezone.borrow() == nil {
       timeStruct.tm_isdst = -1;
     } else if dst() == new timeDelta(0) {
       timeStruct.tm_isdst = 0;
@@ -1374,7 +1344,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
    */
   @unstable("'dateTime.utctimetuple' is unstable")
   proc dateTime.utctimetuple() {
-    if !tz_aware {
+    if timezone.borrow() == nil {
       var ret = timetuple();
       ret.tm_isdst = 0;
       return ret;
@@ -1435,7 +1405,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     }
     var micro = if microsecond > 0 then "." + zeroPad(6, microsecond) else "";
     var offset: string;
-    if tz_aware {
+    if timezone.borrow() != nil {
       var utcoff = utcOffset();
       var sign: string;
       if utcoff < new timeDelta(0) {
@@ -1487,7 +1457,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     timeStruct.tm_min = minute: int(32);
     timeStruct.tm_sec = second: int(32);
 
-    if tz_aware {
+    if timezone.borrow() != nil {
       timeStruct.tm_isdst = timezone!.dst(this).seconds: int(32);
       timeStruct.tm_gmtoff = timezone!.utcOffset(this).seconds: c_long;
       timeStruct.tm_zone = nil;
@@ -1501,15 +1471,9 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     timeStruct.tm_mon = (month-1): int(32);    // 0 based
     timeStruct.tm_mday = day: int(32);
     timeStruct.tm_wday = (weekday(): int(32) + 1) % 7; // shift Sunday to 0
-    if (tz_aware) {
-      timeStruct.tm_yday =
-        (this - (new dateTime(year, 1, 1, tz=this.timezone))).days
-          : int(32);
-    } else {
-      timeStruct.tm_yday =
-        (this - (new dateTime(year, 1, 1))).days
-          : int(32);
-    }
+    timeStruct.tm_yday =
+      (this.replace(tz=nil) - (new dateTime(year, 1, 1, tz=nil))).days
+        : int(32);
 
     // Iterate over format specifiers in strftime(), replacing %f with microseconds
     iter strftok(const ref s: string)
@@ -1694,19 +1658,19 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     if (dt1.chpl_time.tz_aware != dt2.chpl_time.tz_aware) {
       compilerError("both dateTimes must both be either naive or aware");
     }
-    if (dt1.tz_aware) {
-      if (dt1.timezone != dt2.timezone) {
-        return dt1.withoutTz() - dt2.withoutTz()
-                + dt2.utcOffset() - dt1.utcOffset();
-      }
+    if dt1.timezone == dt2.timezone {
+      const newmicro = dt1.microsecond - dt2.microsecond,
+            newsec = dt1.second - dt2.second,
+            newmin = dt1.minute - dt2.minute,
+            newhour = dt1.hour - dt2.hour,
+            newday = dt1.toOrdinal() - dt2.toOrdinal();
+      return new timeDelta(days=newday, hours=newhour, minutes=newmin,
+                           seconds=newsec, microseconds=newmicro);
+    } else {
+      return dt1.replace(tz=nil) -
+                                dt2.replace(tz=nil) +
+                                dt2.utcOffset() - dt1.utcOffset();
     }
-    const newmicro = dt1.microsecond - dt2.microsecond,
-          newsec = dt1.second - dt2.second,
-          newmin = dt1.minute - dt2.minute,
-          newhour = dt1.hour - dt2.hour,
-          newday = dt1.toOrdinal() - dt2.toOrdinal();
-    return new timeDelta(days=newday, hours=newhour, minutes=newmin,
-                         seconds=newsec, microseconds=newmicro);
   }
 
   @chpldoc.nodoc
