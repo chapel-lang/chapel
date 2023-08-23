@@ -25,7 +25,7 @@ proc BFS ( root : vertex_id, ref ParentTree, G )
 
   var Root_vertex : vertex_id = root;
 
-  coforall loc in Locales with (ref Active_Level) with (ref Next_Level) do on loc {
+  coforall loc in Locales with (ref Active_Level, ref Next_Level) do on loc {
     rcLocal(Active_Level) = new unmanaged Level_Set (Vertex_List);
     rcLocal(Active_Level)!.previous = nil;
     rcLocal(Next_Level) = new unmanaged Level_Set (Vertex_List);
