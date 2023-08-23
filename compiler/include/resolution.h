@@ -27,7 +27,6 @@
 
 #include <map>
 #include <vector>
-#include <unordered_map>
 
 class CallInfo;
 class VisibilityInfo;
