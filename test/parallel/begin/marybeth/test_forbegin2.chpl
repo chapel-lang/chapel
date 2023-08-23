@@ -9,7 +9,7 @@ config const deterministic = true;
 for i in 1..3 {
   j = i;
   var k = i;
-  begin with (ref match) with (ref a) with (ref b) {
+  begin with (ref match, ref a, ref b) {
     if (j == i) then match += 1;
     a(i) = i;
     b(i) = k;
