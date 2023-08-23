@@ -28,7 +28,7 @@ namespace uast {
 
 
 std::string Class::dumpChildLabelInner(int i) const {
-  if (i == parentClassChildNum_) {
+  if (i == inheritExprChildNum_) {
     return "parent-class";
   }
 

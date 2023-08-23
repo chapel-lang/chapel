@@ -420,12 +420,12 @@ gatherParentClassScopesForScopeResolving(Context* context, ID classDeclId) {
     if (!ast) break;
 
     auto c = ast->toClass();
-    if (!c || c->numParentClasses() == 0) break;
+    if (!c || c->numInheritExprs() == 0) break;
 
     const uast::AstNode* lastParentClass = nullptr;
-    for (int i = 0; i < c->numParentClasses(); i++) {
+    for (int i = 0; i < c->numInheritExprs(); i++) {
       // Resolve the parent class type expression
-      auto parentClassExpr = c->parentClass(i);
+      auto parentClassExpr = c->inheritExpr(i);
       ResolutionResultByPostorderID r;
       auto visitor =
         Resolver::createForParentClassScopeResolve(context, c, r);

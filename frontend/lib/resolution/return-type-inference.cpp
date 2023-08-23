@@ -83,8 +83,8 @@ const CompositeType* helpGetTypeForDecl(Context* context,
   if (const Class* c = ad->toClass()) {
     const BasicClassType* parentClassType = nullptr;
     const AstNode* lastParentClass = nullptr;
-    for (int i = 0; i < c->numParentClasses(); i++) {
-      auto parentExpr = c->parentClass(i);
+    for (int i = 0; i < c->numInheritExprs(); i++) {
+      auto parentExpr = c->inheritExpr(i);
       // Resolve the parent class type expression
       ResolutionResultByPostorderID r;
       auto visitor =

@@ -555,13 +555,13 @@ struct ChplSyntaxVisitor {
   void visit(const Class* node) {
     ss_ << "class ";
     ss_ << node->name() << " ";
-    if (node->numParentClasses() > 0) {
+    if (node->numInheritExprs() > 0) {
       ss_ << ": ";
       bool printComma = false;
 
-      for (int i = 0; i < node->numParentClasses(); i++) {
+      for (int i = 0; i < node->numInheritExprs(); i++) {
         if (printComma) ss_ << ", ";
-        printAst(node->parentClass(i));
+        printAst(node->inheritExpr(i));
       }
       ss_ << " ";
     }

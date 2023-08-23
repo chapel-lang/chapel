@@ -44,8 +44,8 @@ namespace uast {
  */
 class Class final : public AggregateDecl {
  private:
-  int parentClassChildNum_;
-  int numParentClasses_;
+  int inheritExprChildNum_;
+  int numInheritExprs_;
 
   Class(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
         UniqueString name,
@@ -61,31 +61,31 @@ class Class final : public AggregateDecl {
                     name,
                     elementsChildNum,
                     numElements),
-      parentClassChildNum_(parentClassChildNum),
-      numParentClasses_(numParentClasses) {
-    if (parentClassChildNum_ != NO_CHILD && elementsChildNum != NO_CHILD) {
-      CHPL_ASSERT(parentClassChildNum_ + numParentClasses_ == elementsChildNum);
+      inheritExprChildNum_(parentClassChildNum),
+      numInheritExprs_(numParentClasses) {
+    if (inheritExprChildNum_ != NO_CHILD && elementsChildNum != NO_CHILD) {
+      CHPL_ASSERT(inheritExprChildNum_ + numInheritExprs_ == elementsChildNum);
     }
 
-    if (parentClassChildNum_ != NO_CHILD) {
-      for (int i = 0; i < numParentClasses_; i++) {
-        CHPL_ASSERT(isAcceptableInheritExpr(child(parentClassChildNum_ + i)));
+    if (inheritExprChildNum_ != NO_CHILD) {
+      for (int i = 0; i < numInheritExprs_; i++) {
+        CHPL_ASSERT(isAcceptableInheritExpr(child(inheritExprChildNum_ + i)));
       }
     }
   }
 
   Class(Deserializer& des)
     : AggregateDecl(asttags::Class, des) {
-      parentClassChildNum_ = des.read<int>();
-      numParentClasses_ = des.read<int>();
+      inheritExprChildNum_ = des.read<int>();
+      numInheritExprs_ = des.read<int>();
      }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Class* lhs = this;
     const Class* rhs = (const Class*) other;
     return lhs->aggregateDeclContentsMatchInner(rhs) &&
-           lhs->parentClassChildNum_ == rhs->parentClassChildNum_ &&
-           lhs->numParentClasses_ == rhs->numParentClasses_;
+           lhs->inheritExprChildNum_ == rhs->inheritExprChildNum_ &&
+           lhs->numInheritExprs_ == rhs->numInheritExprs_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
@@ -104,24 +104,24 @@ class Class final : public AggregateDecl {
                             owned<AstNode> parentClass,
                             AstList contents);
 
-  inline int numParentClasses() const { return numParentClasses_; }
+  inline int numInheritExprs() const { return numInheritExprs_; }
 
   /**
     Return the AstNode indicating the parent class or nullptr
     if there was none.
    */
-  const AstNode* parentClass(int i) const {
-    if (parentClassChildNum_ == NO_CHILD || i >= numParentClasses_)
+  const AstNode* inheritExpr(int i) const {
+    if (inheritExprChildNum_ == NO_CHILD || i >= numInheritExprs_)
       return nullptr;
 
-    auto ret = child(parentClassChildNum_ + i);
+    auto ret = child(inheritExprChildNum_ + i);
     return ret;
   }
 
   void serialize(Serializer& ser) const override {
     AggregateDecl::serialize(ser);
-    ser.write(parentClassChildNum_);
-    ser.write(numParentClasses_);
+    ser.write(inheritExprChildNum_);
+    ser.write(numInheritExprs_);
   }
 
   DECLARE_STATIC_DESERIALIZE(Class);

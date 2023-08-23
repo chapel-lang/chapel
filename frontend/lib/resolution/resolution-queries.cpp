@@ -1692,8 +1692,8 @@ const TypedFnSignature* instantiateSignature(Context* context,
                                                      poiScope, r);
     // visit the parent type
     if (auto cls = ad->toClass()) {
-      for (int i = 0; i < cls->numParentClasses(); i++) {
-        cls->parentClass(i)->traverse(visitor);
+      for (int i = 0; i < cls->numInheritExprs(); i++) {
+        cls->inheritExpr(i)->traverse(visitor);
       }
     }
 
