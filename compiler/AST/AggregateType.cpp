@@ -3047,6 +3047,7 @@ void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
 
   addRootType();
 
+  Expr* firstParent = nullptr;
   // Walk the base class list, and add parents into the class hierarchy.
   for_alist(expr, inherits) {
     AggregateType* pt;
@@ -3073,6 +3074,12 @@ void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
       expr->remove();
       continue;
     }
+
+    if (firstParent) {
+      USR_FATAL(expr, "invalid use of multiple inheritance in class '%s'",
+                this->name());
+    }
+    firstParent = expr;
 
     localSeen.insert(this);
 
