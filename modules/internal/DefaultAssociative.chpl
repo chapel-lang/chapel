@@ -954,7 +954,7 @@ module DefaultAssociative {
           const k = fmt.readKey(f, dom.idxType);
 
           if !dom.dsiMember(k) {
-            // TODO: throw error
+            // TODO: throw an error. What kind of error is most appropriate?
           } else {
             arr.dsiAccess(k) = fmt.readValue(f, arr.eltType);
           }
@@ -964,6 +964,8 @@ module DefaultAssociative {
       fmt.endMap(f);
   }
 
+  // TODO: rewrite to use 'startArray' serializer API, rather than relying on
+  // reading and writing literals.
   proc chpl_serialReadWriteAssociativeHelper(f, arr, dom) throws {
     var binary = f.binary();
     var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
