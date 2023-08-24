@@ -25,18 +25,16 @@ config const nx = 256,      // number of grid points in x
              ny = 256,      // number of grid points in y
              nt = 50,       // number of time steps
              alpha = 0.25,  // diffusion constant
-             solutionStd = 0.222751; // known solution for the default parameters
+             solutionStd = 0.221167; // known solution for the default parameters
 
 // define distributed domains and block-distributed array
-const indices = {0..<nx, 0..<ny},
-      indicesInner = indices.expand(-1),
-      Indices = Block.createDomain(indices);
+const Indices = Block.createDomain(0..nx+1, 0..ny+1),
+      IndicesInner = Indices[1..nx, 1..ny];
 
 // define distributed 2D arrays over the above domain
-var u: [Indices] real;
+var u: [Indices] real = 1.0;
 
 // apply initial conditions
-u = 1.0;
 u[nx/4..nx/2, ny/4..ny/2] = 2.0;
 
 // a type for creating a "skyline" array of local arrays
@@ -44,7 +42,7 @@ record localArray {
   var d: domain(2);
   var v: [d] real;
 
-  proc init() do this.d = {0..0, 0..0};
+  proc init() do this.d = {1..0, 1..0};
   proc init(dGlobal: domain(2)) do this.d = dGlobal;
 }
 
@@ -87,7 +85,7 @@ proc work(tidX: int, tidY: int) {
   // define domains to describe the indices owned by this task
   const myGlobalIndices = u.localSubdomain(here),
         localIndicesBuffered = myGlobalIndices.expand(1),
-        localIndicesInner = myGlobalIndices[indicesInner];
+        localIndicesInner = IndicesInner.localSubdomain(here);
 
   // initialize this tasks local arrays using indices from `Block` dist.
   uTaskLocal[tidX, tidY] = new localArray(localIndicesBuffered);
