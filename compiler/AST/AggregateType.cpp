@@ -3079,10 +3079,7 @@ void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
     }
 
     if (this->isRecord()) {
-      USR_FATAL_CONT(expr, "inheritance is not currently supported for records");
-      USR_PRINT("Thoughts on what record inheritance should entail can be added to "
-                "https://github.com/chapel-lang/chapel/issues/6851.");
-      USR_STOP();
+      USR_FATAL(expr, "inheritance is not currently supported for records");
     }
 
     if (firstParent) {
