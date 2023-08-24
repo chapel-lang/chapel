@@ -475,15 +475,16 @@ static void maybeIssueRefMaybeConstWarning(ArgSymbol* arg) {
   // we have full control here, but this should be ok
   bool isOuter = arg->hasFlag(FLAG_OUTER_VARIABLE);
 
-  bool notImplementedYetOptOut = isArgThis;
-  bool shouldWarn = !notImplementedYetOptOut && !isOuter && !fromPragma && !isCompilerGenerated;
+  bool shouldWarn = !isOuter && !fromPragma && !isCompilerGenerated;
 
   // if its an outer variable but its used in a task intent, warn
   if (!shouldWarn && isOuter && isTaskIntent) {
     shouldWarn = true;
   }
 
-  if (shouldWarn) {
+  // only warn if the default intent is not INTENT_REF_MAYBE_CONST
+  // this does to apply to `this-intent`'s, always warn for them
+  if (shouldWarn && !isArgThis) {
     IntentTag defaultIntent = blankIntentForType(arg->type);
     // if default intent is not ref-maybe-const, do nothing
     if(defaultIntent != INTENT_REF_MAYBE_CONST) shouldWarn = false;
@@ -507,7 +508,7 @@ static void maybeIssueRefMaybeConstWarning(ArgSymbol* arg) {
     const char* intentName = isTaskIntent ?
       "add an explicit 'ref' task intent for" :
         (isArgThis ?
-          "use an explicit 'ref' this intent for the method" :
+          "use an explicit 'ref' this-intent for the method" :
           "use an explicit 'ref' intent for the argument");
 
     bool useFunctionForWarning = isTaskIntent && arg->getFunction();
