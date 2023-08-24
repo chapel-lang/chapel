@@ -923,6 +923,8 @@ fasta:
     - Disable enum->int casts for enums without values (#10114)
   07/14/18:
     - Optimize enum->int casts for concrete types (#10308)
+  08/23/23:
+    - Deprecate 'iokind' type and 'kind' field (#23007)
 
 fastaredux:
   01/14/14:
