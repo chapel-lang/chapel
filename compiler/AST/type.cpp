@@ -1186,7 +1186,10 @@ void initPrimitiveTypes() {
   dtCVoidPtr->symbol->addFlag(FLAG_NO_CODEGEN);
   dtCVoidPtr->defaultValue = gNil;
 
-  dtCFnPtr = createPrimitiveType("chpl__c_fn_ptr", "c_fn_ptr");
+  // Map to runtime type 'c_fn_ptr_rehook' to avoid collision with name of
+  // symbol in module ('c_fn_ptr'), when using '--no-munge-user-idents' is
+  // thrown.
+  dtCFnPtr = createPrimitiveType("chpl__c_fn_ptr", "c_fn_ptr_rehook");
   dtCFnPtr->symbol->addFlag(FLAG_NO_CODEGEN);
   dtCFnPtr->defaultValue = gNil;
 
