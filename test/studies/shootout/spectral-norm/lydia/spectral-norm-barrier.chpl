@@ -66,7 +66,7 @@ proc main() {
   u = 1.0;
   b = new owned BarrierWF(numThreads);
 
-  coforall i in 0..#numThreads {
+  coforall i in 0..#numThreads with (ref tmp, ref u, ref v) {
     const r_begin = i * chunk;
     var r_end : int;
     if (i < (numThreads - 1)) then

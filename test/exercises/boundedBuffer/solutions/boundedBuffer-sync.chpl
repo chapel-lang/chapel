@@ -34,12 +34,12 @@ proc main() {
       consCounts: [1..numConsumers] int;
 
   // spawn two tasks using a 'cobegin'
-  cobegin {
+  cobegin with (ref prodCounts, ref consCounts) {
     // Task 1: run a single producer and store the number of things
     // it produces in 'prodCounts[1]'.  When it's done, write a
     // sentinel value per consumer.
     {
-      coforall pid in 1..numProducers do
+      coforall pid in 1..numProducers with (ref prodCounts) do
         prodCounts[pid] = producer(buffer, pid);
       // We know all producers are done due to the coforall
       for i in 1..numConsumers do
@@ -48,7 +48,7 @@ proc main() {
 
     // Task 2: create a consumer and store the number of things it
     // consumers in 'consCounts[1]'.
-    coforall cid in 1..numConsumers do
+    coforall cid in 1..numConsumers with (ref consCounts) do
       consCounts[cid] = consumer(buffer, cid);
   }
 

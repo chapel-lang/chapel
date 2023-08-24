@@ -28,7 +28,7 @@ type elemType = real;
 // Configuration constants indicating the problem size (n) and the
 // block size (blkSize)
 //
-config const n = computeProblemSize(numMatrices, elemType, rank=2, 
+config const n = computeProblemSize(numMatrices, elemType, rank=2,
                                     memFraction=2),
              blkSize = 8;
 
@@ -70,7 +70,7 @@ const targetLocales = setupLocaleGrid();
 //
 proc main() {
   printConfiguration();
-  
+
   //
   // MatVectSpace is a 2D domain that represents the n x n matrix
   // adjacent to the column vector b.  MatrixSpace is a subdomain that
@@ -110,7 +110,7 @@ proc main() {
 //
 proc LUFactorize(n: int, ref Ab: [?AbD] elemType,
                 ref piv: [1..n] int) {
-  
+
   // Initialize the pivot vector to represent the initially unpivoted matrix.
   piv = 1..n;
 
@@ -151,7 +151,7 @@ proc LUFactorize(n: int, ref Ab: [?AbD] elemType,
     //
     panelSolve(Ab, l, piv);
     updateBlockRow(Ab, tl, tr);
-    
+
     //
     // update trailing submatrix (if any)
     //
@@ -174,7 +174,7 @@ proc LUFactorize(n: int, ref Ab: [?AbD] elemType,
 //     |aaaaa|.....|.....|.....|  function but called AD here.  Similarly,
 //     +-----+-----+-----+-----+  'b' was 'tr' in the calling code, but BD
 //     |aaaaa|.....|.....|.....|  here.
-//     |aaaaa|.....|.....|.....|  
+//     |aaaaa|.....|.....|.....|
 //     |aaaaa|.....|.....|.....|
 //     +-----+-----+-----+-----+
 //
@@ -222,7 +222,7 @@ proc replicateD1(Ab, BD) {
                               new BlockCyclicDim(gridCols, lowIdx=1, blkSize));
   var replB: [replBD] elemType;
 
-  coforall dest in targetLocales[.., 0] do
+  coforall dest in targetLocales[.., 0] with (ref replB) do
     on dest do
       replB = Ab[BD.dim(0), 1..n+1];
 
@@ -239,7 +239,7 @@ proc replicateD2(Ab, AD) {
                               new ReplicatedDim(gridCols));
   var replA: [replAD] elemType;
 
-  coforall dest in targetLocales[0, ..] do
+  coforall dest in targetLocales[0, ..] with (ref replA) do
     on dest do
       replA = Ab[1..n, AD.dim(1)];
 
@@ -257,10 +257,10 @@ proc panelSolve(ref Ab: [] elemType,
 
   for k in panel.dim(1) {             // iterate through the columns
     const col = panel[k.., k..k];
-    
+
     // If there are no rows below the current column return
     if col.size == 0 then return;
-    
+
     // Find the pivot, the element with the largest absolute value.
     const (_, (pivotRow, _)) = maxloc reduce zip(abs(Ab(col)), col);
 
@@ -268,7 +268,7 @@ proc panelSolve(ref Ab: [] elemType,
     // is absolute value, so it can't be used directly).
     //
     const pivotVal = Ab[pivotRow, k];
-    
+
     // Swap the current row with the pivot row and update the pivot vector
     // to reflect that
     Ab[k..k, ..] <=> Ab[pivotRow..pivotRow, ..];
@@ -276,11 +276,11 @@ proc panelSolve(ref Ab: [] elemType,
 
     if (pivotVal == 0) then
       halt("Matrix cannot be factorized");
-    
+
     // divide all values below and in the same col as the pivot by
     // the pivot value
     Ab[k+1.., k..k] /= pivotVal;
-    
+
     // update all other values below the pivot
     forall (i,j) in panel[k+1.., k+1..] do
       Ab[i,j] -= Ab[i,k] * Ab[k,j];
@@ -317,7 +317,7 @@ proc backwardSub(n: int,
   var x: [bd] elemType;
 
   for i in bd by -1 do
-    x[i] = (Ab[i,n+1] - (+ reduce [j in i+1..bd.high] (Ab[i,j] * x[j]))) 
+    x[i] = (Ab[i,n+1] - (+ reduce [j in i+1..bd.high] (Ab[i,j] * x[j])))
             / Ab[i,i];
 
   return x;
@@ -362,7 +362,7 @@ proc printConfiguration() {
   }
 }
 
-//   
+//
 // construct an n by n+1 matrix filled with random values and scale
 // it to be in the range -1.0..1.0
 //

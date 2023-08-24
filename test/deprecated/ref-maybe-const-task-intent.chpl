@@ -15,3 +15,27 @@ sync {
     w[1] = 1;
   }
 }
+
+proc bar() {
+  var x: [1..10] int;
+  proc foo() {
+    var y: [1..10] int;
+    cobegin {
+      x[1] = 1;
+      y[1] = 2;
+    }
+  }
+  foo();
+}
+bar();
+
+record R {
+  var A: [1..10] int;
+}
+proc R.foo() {
+  begin {
+    this.A[1] = 1;
+  }
+}
+var r = new R();
+r.foo();

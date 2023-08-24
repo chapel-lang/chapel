@@ -113,7 +113,7 @@ proc randomMake(desc, nuclInfo: [?nuclInds], n) {
   var randGo, outGo: [0..#numTasks] atomic int;
 
   // create tasks to pipeline the RNG, computation, and output
-  coforall tid in 0..#numTasks {
+  coforall tid in 0..#numTasks with (ref outGo, ref randGo) {
     const chunkSize = lineLength*blockSize,
           nextTid = (tid + 1) % numTasks;
 

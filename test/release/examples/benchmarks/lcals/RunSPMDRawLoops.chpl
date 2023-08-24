@@ -635,7 +635,7 @@ module RunSPMDRawLoops {
               return (i+j/25, j%25);
             }
 
-            coforall tid in 0..#nTasks with (ref isamp) {
+            coforall tid in 0..#nTasks with (ref isamp, ref atomicH) {
               while isamp < num_samples {
                 for ip in chunk(0..#len, nTasks, tid) {
                   var i1, j1, i2, j2: int;

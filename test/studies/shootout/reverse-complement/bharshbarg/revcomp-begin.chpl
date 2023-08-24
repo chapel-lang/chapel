@@ -40,7 +40,7 @@ proc main(args: [] string) {
       if data[idx] == greaterThan {
         if start == 0 then start = idx;
         else {
-          begin process(data, start, idx-2);
+          begin with (ref data) process(data, start, idx-2);
           start = idx;
         }
       }

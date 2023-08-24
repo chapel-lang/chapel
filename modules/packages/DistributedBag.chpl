@@ -1176,7 +1176,7 @@ module DistributedBag {
                     segment.releaseStatus();
                     coforall segmentIdx in 0..#here.maxTaskPar {
                       var stolenWork : [{0..#numLocales}] (int, c_ptr(eltType));
-                      coforall loc in parentHandle.targetLocalesNotHere() {
+                      coforall loc in parentHandle.targetLocalesNotHere() with (ref stolenWork) {
                         if loc != here then on loc {
                           // As we jumped to the target node, 'localBag' returns
                           // the target's bag that we are attempting to steal from.

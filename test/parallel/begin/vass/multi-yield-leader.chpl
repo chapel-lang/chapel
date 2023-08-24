@@ -32,7 +32,7 @@ iter viter(param tag: iterKind, followThis) where tag == iterKind.follower {
 proc test() {
   var AA7: [0..2] real;
   sync {
-    forall idx7 in viter() do begin {
+    forall idx7 in viter() with (ref AA7) do begin with (ref AA7) {
         AA7(idx7) = 77;
       }
   }
@@ -43,7 +43,7 @@ test();
 // now the same at the top level
 var AA9: [0..2] real;
 sync {
-  forall idx9 in viter() do begin {
+  forall idx9 in viter() with (ref AA9) do begin with (ref AA9) {
       AA9(idx9) = 99;
     }
 }

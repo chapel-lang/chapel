@@ -325,7 +325,7 @@ module SSCA2_kernels
 
         var bar = new barrier(numLocales);
 
-        coforall loc in Locales with (ref remaining, ref bar) do on loc {
+        coforall loc in Locales with (ref remaining, ref bar, ref Between_Cent$) do on loc {
           const AL = Active_Level[here.id]!;
           AL.Members.clear();
           AL.next!.Members.clear();

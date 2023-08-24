@@ -219,7 +219,7 @@ proc replicateD1(Ab, BD) {
                               new BlockCyclicDim(gridCols, lowIdx=1, blkSize));
   var replB: [replBD] elemType;
 
-  coforall dest in targetLocales[.., 0] do
+  coforall dest in targetLocales[.., 0] with (ref replB) do
     on dest {
       const (rows, _) = BD.dims();
       replB = Ab[rows, 1..n+1];
@@ -238,7 +238,7 @@ proc replicateD2(Ab, AD) {
                               new ReplicatedDim(gridCols));
   var replA: [replAD] elemType;
 
-  coforall dest in targetLocales[0, ..] do
+  coforall dest in targetLocales[0, ..] with (ref replA) do
     on dest {
       const (_, cols) = AD.dims();
       replA = Ab[1..n, cols];

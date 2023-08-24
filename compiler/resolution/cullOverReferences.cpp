@@ -467,21 +467,21 @@ static void maybeIssueRefMaybeConstWarning(ArgSymbol* arg) {
   bool fromPragma = arg->hasFlag(FLAG_INTENT_REF_MAYBE_CONST_FORMAL);
 
   bool isCompilerGenerated = false;
-
   bool isTaskIntent = false;
   if (FnSymbol* fn = arg->getFunction()) {
     isTaskIntent = fn->hasEitherFlag(FLAG_COBEGIN_OR_COFORALL, FLAG_BEGIN);
-
     isCompilerGenerated = fn->hasFlag(FLAG_COMPILER_GENERATED);
   }
-
   // we have full control here, but this should be ok
   bool isOuter = arg->hasFlag(FLAG_OUTER_VARIABLE);
 
-  bool notImplementedYetOptOut = isArgThis || isTaskIntent;
-
-
+  bool notImplementedYetOptOut = isArgThis;
   bool shouldWarn = !notImplementedYetOptOut && !isOuter && !fromPragma && !isCompilerGenerated;
+
+  // if its an outer variable but its used in a task intent, warn
+  if (!shouldWarn && isOuter && isTaskIntent) {
+    shouldWarn = true;
+  }
 
   if (shouldWarn) {
     IntentTag defaultIntent = blankIntentForType(arg->type);
@@ -493,19 +493,32 @@ static void maybeIssueRefMaybeConstWarning(ArgSymbol* arg) {
 
     const char* argName = nullptr;
     char argBuffer[64];
-    if (!arg->hasFlag(FLAG_EXPANDED_VARARGS)) {
-      argName = arg->name;
-    } else {
+    if (isTaskIntent && arg->hasFlag(FLAG_FIELD_ACCESSOR)) {
+      sprintf(argBuffer, "this");
+      argName = argBuffer;
+    } else if (arg->hasFlag(FLAG_EXPANDED_VARARGS)) {
       int varArgNum;
       int ret = sscanf(arg->name, "_e%d_%63s", &varArgNum, argBuffer);
       CHPL_ASSERT(ret == 2);
       argName = argBuffer;
+    } else {
+      argName = arg->name;
     }
 
-    USR_WARN(arg,
-              "inferring a default intent to be 'ref' is deprecated "
-              "- please use an explicit intent for the argument '%s'",
-              argName);
+    const char* intentName = isTaskIntent ?
+      "add an explicit 'ref' task intent for" :
+        (isArgThis ?
+          "use an explicit 'ref' this intent for the method" :
+          "use an explicit 'ref' intent for the argument");
+
+    bool useFunctionForWarning = isTaskIntent && arg->getFunction();
+    Symbol* warnSym =
+      useFunctionForWarning ? (Symbol*)arg->getFunction() : (Symbol*)arg;
+    USR_WARN(warnSym,
+            "inferring a default intent to be 'ref' is deprecated "
+            "- please %s '%s'",
+            intentName,
+            argName);
   }
 }
 

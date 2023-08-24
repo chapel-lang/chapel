@@ -2478,7 +2478,7 @@ module DefaultRectangular {
     var state: [rngs.domain] resType;
 
     // Take first pass over data doing per-chunk scans
-    coforall tid in rngs.domain {
+    coforall tid in rngs.domain with (ref state) {
       const current: resType;
       const myop = op.clone();
       for i in rngs[tid] {

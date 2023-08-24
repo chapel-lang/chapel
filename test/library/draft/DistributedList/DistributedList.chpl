@@ -499,7 +499,7 @@ module DistributedList {
                 BlockCyclic(startIdx=0, blocksize=this.blockSize, targetLocales=this.targetLocales);
 
             var a : [dom] this.eltType;
-            coforall (loc, locIdx) in zip(this.targetLocales, this.locDom) do on loc {
+            coforall (loc, locIdx) in zip(this.targetLocales, this.locDom) with (ref a) do on loc {
                 for (elt, blockIdx, eltIdx) in this.blockLists[locIdx].valsAndIndices() do
                     a[this.globalIndex(locIdx, blockIdx, eltIdx)] = elt;
             }

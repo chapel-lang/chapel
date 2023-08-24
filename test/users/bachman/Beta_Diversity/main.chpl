@@ -174,7 +174,7 @@ proc main(args: [] string) {
 
 //////////////////////////////////////////////////////////////////////////
 
-  coforall loc in Locales do on loc {
+  coforall loc in Locales with (ref OutputArray) do on loc {
 
     const loc_d_size = d_size;
     const loc_Mask_Size = Mask_Size;
