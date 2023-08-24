@@ -494,8 +494,7 @@ static void maybeIssueRefMaybeConstWarning(ArgSymbol* arg) {
     const char* argName = nullptr;
     char argBuffer[64];
     if (isTaskIntent && arg->hasFlag(FLAG_FIELD_ACCESSOR)) {
-      sprintf(argBuffer, "this");
-      argName = argBuffer;
+      argName = "this";
     } else if (arg->hasFlag(FLAG_EXPANDED_VARARGS)) {
       int varArgNum;
       int ret = sscanf(arg->name, "_e%d_%63s", &varArgNum, argBuffer);
