@@ -1,0 +1,184 @@
+rangeUnboundedEnumBoolFirstLast.chpl:9: In function 'testRange':
+rangeUnboundedEnumBoolFirstLast.chpl:13: warning: range.last is unstable for a range over an enum or bool if it has a positive stride and no high bound
+  rangeUnboundedEnumBoolFirstLast.chpl:33: called as testRange(r: range(color,low,one))
+rangeUnboundedEnumBoolFirstLast.chpl:9: In function 'testRange':
+rangeUnboundedEnumBoolFirstLast.chpl:12: warning: range.first is unstable for a range over an enum or bool if it has a positive stride and no low bound
+  rangeUnboundedEnumBoolFirstLast.chpl:34: called as testRange(r: range(color,high,one))
+rangeUnboundedEnumBoolFirstLast.chpl:9: In function 'testRange':
+rangeUnboundedEnumBoolFirstLast.chpl:12: warning: range.first is unstable for a range over an enum or bool if it has a positive stride and no low bound
+rangeUnboundedEnumBoolFirstLast.chpl:13: warning: range.last is unstable for a range over an enum or bool if it has a positive stride and no high bound
+  rangeUnboundedEnumBoolFirstLast.chpl:35: called as testRange(r: range(color,neither,one))
+rangeUnboundedEnumBoolFirstLast.chpl:9: In function 'testRange':
+rangeUnboundedEnumBoolFirstLast.chpl:12: warning: range.first is unstable for a range over an enum or bool if it has a negative stride and no high bound
+  rangeUnboundedEnumBoolFirstLast.chpl:37: called as testRange(r: range(color,low,negOne))
+rangeUnboundedEnumBoolFirstLast.chpl:9: In function 'testRange':
+rangeUnboundedEnumBoolFirstLast.chpl:13: warning: range.last is unstable for a range over an enum or bool if it has a negative stride and no low bound
+  rangeUnboundedEnumBoolFirstLast.chpl:38: called as testRange(r: range(color,high,negOne))
+rangeUnboundedEnumBoolFirstLast.chpl:9: In function 'testRange':
+rangeUnboundedEnumBoolFirstLast.chpl:12: warning: range.first is unstable for a range over an enum or bool if it has a negative stride and no high bound
+rangeUnboundedEnumBoolFirstLast.chpl:13: warning: range.last is unstable for a range over an enum or bool if it has a negative stride and no low bound
+  rangeUnboundedEnumBoolFirstLast.chpl:39: called as testRange(r: range(color,neither,negOne))
+rangeUnboundedEnumBoolFirstLast.chpl:9: In function 'testRange':
+rangeUnboundedEnumBoolFirstLast.chpl:13: warning: range.last is unstable for a range over an enum or bool if it has a positive stride and no high bound
+  rangeUnboundedEnumBoolFirstLast.chpl:40: called as testRange(r: range(color,low,positive))
+rangeUnboundedEnumBoolFirstLast.chpl:9: In function 'testRange':
+rangeUnboundedEnumBoolFirstLast.chpl:12: warning: range.first is unstable for a range over an enum or bool if it has a negative stride and no high bound
+  rangeUnboundedEnumBoolFirstLast.chpl:41: called as testRange(r: range(color,low,negative))
+rangeUnboundedEnumBoolFirstLast.chpl:9: In function 'testRange':
+rangeUnboundedEnumBoolFirstLast.chpl:12: warning: range.first is unstable for a range over an enum or bool if it has a positive stride and no low bound
+  rangeUnboundedEnumBoolFirstLast.chpl:42: called as testRange(r: range(color,high,positive))
+rangeUnboundedEnumBoolFirstLast.chpl:9: In function 'testRange':
+rangeUnboundedEnumBoolFirstLast.chpl:13: warning: range.last is unstable for a range over an enum or bool if it has a negative stride and no low bound
+  rangeUnboundedEnumBoolFirstLast.chpl:43: called as testRange(r: range(color,high,negative))
+rangeUnboundedEnumBoolFirstLast.chpl:9: In function 'testRange':
+rangeUnboundedEnumBoolFirstLast.chpl:13: warning: range.last is unstable for a range over an enum or bool if it has a positive stride and no high bound
+  rangeUnboundedEnumBoolFirstLast.chpl:61: called as testRange(r: range(bool,low,one))
+rangeUnboundedEnumBoolFirstLast.chpl:9: In function 'testRange':
+rangeUnboundedEnumBoolFirstLast.chpl:12: warning: range.first is unstable for a range over an enum or bool if it has a positive stride and no low bound
+  rangeUnboundedEnumBoolFirstLast.chpl:62: called as testRange(r: range(bool,high,one))
+rangeUnboundedEnumBoolFirstLast.chpl:9: In function 'testRange':
+rangeUnboundedEnumBoolFirstLast.chpl:12: warning: range.first is unstable for a range over an enum or bool if it has a positive stride and no low bound
+rangeUnboundedEnumBoolFirstLast.chpl:13: warning: range.last is unstable for a range over an enum or bool if it has a positive stride and no high bound
+  rangeUnboundedEnumBoolFirstLast.chpl:63: called as testRange(r: range(bool,neither,one))
+rangeUnboundedEnumBoolFirstLast.chpl:9: In function 'testRange':
+rangeUnboundedEnumBoolFirstLast.chpl:12: warning: range.first is unstable for a range over an enum or bool if it has a negative stride and no high bound
+  rangeUnboundedEnumBoolFirstLast.chpl:65: called as testRange(r: range(bool,low,negOne))
+rangeUnboundedEnumBoolFirstLast.chpl:9: In function 'testRange':
+rangeUnboundedEnumBoolFirstLast.chpl:13: warning: range.last is unstable for a range over an enum or bool if it has a negative stride and no low bound
+  rangeUnboundedEnumBoolFirstLast.chpl:66: called as testRange(r: range(bool,high,negOne))
+rangeUnboundedEnumBoolFirstLast.chpl:9: In function 'testRange':
+rangeUnboundedEnumBoolFirstLast.chpl:12: warning: range.first is unstable for a range over an enum or bool if it has a negative stride and no high bound
+rangeUnboundedEnumBoolFirstLast.chpl:13: warning: range.last is unstable for a range over an enum or bool if it has a negative stride and no low bound
+  rangeUnboundedEnumBoolFirstLast.chpl:67: called as testRange(r: range(bool,neither,negOne))
+rangeUnboundedEnumBoolFirstLast.chpl:9: In function 'testRange':
+rangeUnboundedEnumBoolFirstLast.chpl:13: warning: range.last is unstable for a range over an enum or bool if it has a positive stride and no high bound
+  rangeUnboundedEnumBoolFirstLast.chpl:68: called as testRange(r: range(bool,low,positive))
+rangeUnboundedEnumBoolFirstLast.chpl:9: In function 'testRange':
+rangeUnboundedEnumBoolFirstLast.chpl:12: warning: range.first is unstable for a range over an enum or bool if it has a negative stride and no high bound
+  rangeUnboundedEnumBoolFirstLast.chpl:69: called as testRange(r: range(bool,low,negative))
+rangeUnboundedEnumBoolFirstLast.chpl:9: In function 'testRange':
+rangeUnboundedEnumBoolFirstLast.chpl:12: warning: range.first is unstable for a range over an enum or bool if it has a positive stride and no low bound
+  rangeUnboundedEnumBoolFirstLast.chpl:70: called as testRange(r: range(bool,high,positive))
+rangeUnboundedEnumBoolFirstLast.chpl:9: In function 'testRange':
+rangeUnboundedEnumBoolFirstLast.chpl:13: warning: range.last is unstable for a range over an enum or bool if it has a negative stride and no low bound
+  rangeUnboundedEnumBoolFirstLast.chpl:71: called as testRange(r: range(bool,high,negative))
+red
+blue
+red
+blue
+red
+blue
+red
+blue
+red
+blue
+red
+blue
+red
+blue
+red
+blue
+blue
+red
+blue
+red
+blue
+red
+blue
+red
+blue
+red
+blue
+red
+blue
+red
+blue
+red
+red
+blue
+red
+blue
+blue
+red
+blue
+red
+red
+blue
+red
+blue
+blue
+red
+blue
+red
+false
+true
+false
+true
+false
+true
+false
+true
+false
+true
+false
+true
+false
+true
+false
+true
+true
+false
+true
+false
+true
+false
+true
+false
+true
+false
+true
+false
+true
+false
+true
+false
+false
+false
+false
+false
+true
+true
+true
+true
+false
+false
+false
+false
+true
+true
+true
+true
+rangeUnboundedEnumBoolFirstLast.chpl:33: warning: range.last is unstable for a range over an enum or bool if it has a positive stride and no high bound
+rangeUnboundedEnumBoolFirstLast.chpl:34: warning: range.first is unstable for a range over an enum or bool if it has a positive stride and no low bound
+rangeUnboundedEnumBoolFirstLast.chpl:35: warning: range.first is unstable for a range over an enum or bool if it has a positive stride and no low bound
+rangeUnboundedEnumBoolFirstLast.chpl:35: warning: range.last is unstable for a range over an enum or bool if it has a positive stride and no high bound
+rangeUnboundedEnumBoolFirstLast.chpl:37: warning: range.first is unstable for a range over an enum or bool if it has a negative stride and no high bound
+rangeUnboundedEnumBoolFirstLast.chpl:38: warning: range.last is unstable for a range over an enum or bool if it has a negative stride and no low bound
+rangeUnboundedEnumBoolFirstLast.chpl:39: warning: range.first is unstable for a range over an enum or bool if it has a negative stride and no high bound
+rangeUnboundedEnumBoolFirstLast.chpl:39: warning: range.last is unstable for a range over an enum or bool if it has a negative stride and no low bound
+rangeUnboundedEnumBoolFirstLast.chpl:40: warning: range.last is unstable for a range over an enum or bool if it has a positive stride and no high bound
+rangeUnboundedEnumBoolFirstLast.chpl:41: warning: range.first is unstable for a range over an enum or bool if it has a negative stride and no high bound
+rangeUnboundedEnumBoolFirstLast.chpl:42: warning: range.first is unstable for a range over an enum or bool if it has a positive stride and no low bound
+rangeUnboundedEnumBoolFirstLast.chpl:43: warning: range.last is unstable for a range over an enum or bool if it has a negative stride and no low bound
+rangeUnboundedEnumBoolFirstLast.chpl:61: warning: range.last is unstable for a range over an enum or bool if it has a positive stride and no high bound
+rangeUnboundedEnumBoolFirstLast.chpl:62: warning: range.first is unstable for a range over an enum or bool if it has a positive stride and no low bound
+rangeUnboundedEnumBoolFirstLast.chpl:63: warning: range.first is unstable for a range over an enum or bool if it has a positive stride and no low bound
+rangeUnboundedEnumBoolFirstLast.chpl:63: warning: range.last is unstable for a range over an enum or bool if it has a positive stride and no high bound
+rangeUnboundedEnumBoolFirstLast.chpl:65: warning: range.first is unstable for a range over an enum or bool if it has a negative stride and no high bound
+rangeUnboundedEnumBoolFirstLast.chpl:66: warning: range.last is unstable for a range over an enum or bool if it has a negative stride and no low bound
+rangeUnboundedEnumBoolFirstLast.chpl:67: warning: range.first is unstable for a range over an enum or bool if it has a negative stride and no high bound
+rangeUnboundedEnumBoolFirstLast.chpl:67: warning: range.last is unstable for a range over an enum or bool if it has a negative stride and no low bound
+rangeUnboundedEnumBoolFirstLast.chpl:68: warning: range.last is unstable for a range over an enum or bool if it has a positive stride and no high bound
+rangeUnboundedEnumBoolFirstLast.chpl:69: warning: range.first is unstable for a range over an enum or bool if it has a negative stride and no high bound
+rangeUnboundedEnumBoolFirstLast.chpl:70: warning: range.first is unstable for a range over an enum or bool if it has a positive stride and no low bound
+rangeUnboundedEnumBoolFirstLast.chpl:71: warning: range.last is unstable for a range over an enum or bool if it has a negative stride and no low bound
