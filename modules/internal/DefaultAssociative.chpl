@@ -933,31 +933,26 @@ module DefaultAssociative {
 
   proc chpl_serialReadWriteAssociativeHelper(f, arr, dom) throws
   where _usingSerializers(f) && !_isDefaultDeser(f) {
-      ref fmt = if f._writing then f.serializer else f.deserializer;
-
-      if f._writing then
-        fmt.startMap(f, dom.dsiNumIndices:uint);
-      else
-        fmt.startMap(f);
-
       if f._writing {
+        var ser = f.serializer.startMap(f, dom.dsiNumIndices:uint);
         for key in dom {
-          fmt.writeKey(f, key);
-          fmt.writeValue(f, arr.dsiAccess(key));
+          ser.writeKey(key);
+          ser.writeValue(arr.dsiAccess(key));
         }
+        ser.endMap();
       } else {
+        var des = f.deserializer.startMap(f);
         for 0..<dom.dsiNumIndices {
-          const k = fmt.readKey(f, dom.idxType);
+          const k = des.readKey(dom.idxType);
 
           if !dom.dsiMember(k) {
             // TODO: throw an error. What kind of error is most appropriate?
           } else {
-            arr.dsiAccess(k) = fmt.readValue(f, arr.eltType);
+            arr.dsiAccess(k) = des.readValue(arr.eltType);
           }
         }
+        des.endMap();
       }
-
-      fmt.endMap(f);
   }
 
   // TODO: rewrite to use 'startArray' serializer API, rather than relying on
