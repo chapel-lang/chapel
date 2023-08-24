@@ -146,7 +146,7 @@ proc Block1dom.dsiGetReprivatizeData1d() {
   return (wholeR,);
 }
 
-proc Block1dom.dsiReprivatize1d(reprivatizeData) {
+proc ref Block1dom.dsiReprivatize1d(reprivatizeData) {
   this.wholeR = reprivatizeData(0);
 }
 
@@ -219,7 +219,7 @@ proc BlockDim.dsiIndexToLocale1d(indexx): locIdT {
   return result:locIdT;
 }
 
-proc Block1dom.dsiSetIndices1d(rangeArg: rangeT): void {
+proc ref Block1dom.dsiSetIndices1d(rangeArg: rangeT): void {
   wholeR = rangeArg;
 }
 
@@ -236,7 +236,7 @@ proc Block1dom._dsiComputeMyRange(locId): rangeT {
   return chunk;
 }
 
-proc Block1locdom.dsiSetLocalIndices1d(globDD, locId: locIdT) {
+proc ref Block1locdom.dsiSetLocalIndices1d(globDD, locId: locIdT) {
   myRange = globDD._dsiComputeMyRange(locId);
   return myRange;
 }

@@ -1070,7 +1070,7 @@ record regex {
   }
 
   @chpldoc.nodoc
-  proc readThis(f) throws {
+  proc ref readThis(f) throws {
     var pattern:exprType;
     // Note -- this is wrong because we didn't quote
     // and there's no way to get the flags

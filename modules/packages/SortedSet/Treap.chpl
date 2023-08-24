@@ -365,7 +365,7 @@ module Treap {
        Used by sortedMap
      */
     @chpldoc.nodoc
-    proc _getReference(element: eltType) ref {
+    proc ref _getReference(element: eltType) ref {
       var node = _findRef(_root, element);
       if node == nil then
         boundsCheckHalt(try! "index %? out of bounds".format(element));

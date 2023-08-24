@@ -49,7 +49,7 @@ record Rec
       writeln("copying a record that has been freed!");
   }
 
-  proc deinit()
+  proc ref deinit()
   {
     if (sDebug == true) then
       writeln("Destroying   Rec       id:  ", id);

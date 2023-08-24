@@ -336,7 +336,7 @@ record MyRecord {
   var intField: int;
 }
 
-proc MyRecord.myMethod() {
+proc ref MyRecord.myMethod() {
   forall i in 1..n {
     arrField[i] = i * 2;  // beware of potential for data races
     // intField += 1;     // would cause "illegal assignment" error

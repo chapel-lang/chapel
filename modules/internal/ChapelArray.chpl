@@ -1881,7 +1881,7 @@ module ChapelArray {
 
     /* Reverse the order of the values in the array. */
     @deprecated(notes="'Array.reverse' is deprecated")
-    proc reverse() {
+    proc ref reverse() {
       if (!chpl__isDense1DArray()) then
         compilerError("reverse() is only supported on dense 1D arrays");
       const lo = this.domain.low,

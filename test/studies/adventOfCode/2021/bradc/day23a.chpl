@@ -408,14 +408,14 @@ record state {
     }
   }
 
-  proc addMonsterToLoc(loc, monster) {
+  proc ref addMonsterToLoc(loc, monster) {
     if loc < 0 then
       hallway[-loc] = monster;
     else
       room[(loc-1)/slotsPerRoom][(loc-1)%slotsPerRoom] = monster;
   }
 
-  proc removeMonsterFromLoc(loc) {
+  proc ref removeMonsterFromLoc(loc) {
     addMonsterToLoc(loc, 0);
   }
 
@@ -443,7 +443,7 @@ record state {
     return cost + (+ reduce for i in hallway.domain do optimisticPath(i));
   }
 
-  proc simulate(in depth = 0) {
+  proc ref simulate(in depth = 0) {
     if success() {
       writeln("*** Found a winning combination with score: ", cost);
       if cost < bestScore then

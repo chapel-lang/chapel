@@ -351,7 +351,7 @@ module BigInteger {
     // copy.  The localeId points back the correct locale but the mpz field
     // is meaningless.
     @chpldoc.nodoc
-    proc deinit() {
+    proc ref deinit() {
       if compiledForSingleLocale() || this.localeId == chpl_nodeID {
         mpz_clear(this.mpz);
       }
@@ -1696,14 +1696,14 @@ module BigInteger {
   }
 
   @deprecated("bigint.powm method is deprecated, please use the standalone function :proc:`~BigInteger.powMod` instead")
-  proc bigint.powm(const ref base: bigint,
+  proc ref bigint.powm(const ref base: bigint,
                    const ref exp:  bigint,
                    const ref mod:  bigint) {
     BigInteger.powMod(this, base, exp, mod);
   }
 
   @deprecated("bigint.powm method is deprecated, please use the standalone function :proc:`~BigInteger.powMod` instead")
-  proc bigint.powm(const ref base: bigint,
+  proc ref bigint.powm(const ref base: bigint,
                              exp:  int,
                    const ref mod:  bigint) {
     BigInteger.powMod(this, base, exp, mod);
@@ -2627,7 +2627,7 @@ module BigInteger {
   }
 
   @deprecated("bigint.remove is deprecated, use :proc:`bigint.removeFactor` instead")
-  proc bigint.remove(const ref a: bigint, const ref f: bigint) : uint {
+  proc ref bigint.remove(const ref a: bigint, const ref f: bigint) : uint {
     return BigInteger.removeFactor(this, a,f);
   }
 
@@ -3078,7 +3078,7 @@ module BigInteger {
 
   // Set/Clr bit
   @deprecated("bigint.setbit is deprecated - please use :proc:`bigint.setBit`")
-  proc bigint.setbit(bit_index: integral) do this.setBit(bit_index);
+  proc ref bigint.setbit(bit_index: integral) do this.setBit(bit_index);
 
   /*
     Set the bit at ``idx`` of ``this``.
@@ -3090,7 +3090,7 @@ module BigInteger {
        :proc:`GMP.mpz_setbit` and
        `mpz_setbit <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling#index-mpz_005fsetbit>`_.
   */
-  proc bigint.setBit(idx: integral) {
+  proc ref bigint.setBit(idx: integral) {
     const bi_ = idx.safeCast(c_ulong);
 
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
@@ -3105,7 +3105,7 @@ module BigInteger {
   }
 
   @deprecated("bigint.clrbit is deprecated - please use :proc:`bigint.clearBit`")
-  proc bigint.clrbit(bit_index: integral) do this.clearBit(bit_index);
+  proc ref bigint.clrbit(bit_index: integral) do this.clearBit(bit_index);
 
   /*
     Clear the bit at ``idx`` of ``this``.
@@ -3117,7 +3117,7 @@ module BigInteger {
        :proc:`GMP.mpz_clrbit` and
        `mpz_clrbit <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling#index-mpz_005fclrbit>`_.
   */
-  proc bigint.clearBit(idx: integral) {
+  proc ref bigint.clearBit(idx: integral) {
     const bi_ = idx.safeCast(c_ulong);
 
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
@@ -3132,7 +3132,7 @@ module BigInteger {
   }
 
   @deprecated("bigint.combit is deprecated - please use :proc:`bigint.toggleBit`")
-  proc bigint.combit(bit_index: integral) do this.toggleBit(bit_index);
+  proc ref bigint.combit(bit_index: integral) do this.toggleBit(bit_index);
 
   /*
     Toggle the bit at ``idx`` of ``this``. If the bit was 1, set it to 0. If
@@ -3145,7 +3145,7 @@ module BigInteger {
        :proc:`GMP.mpz_combit` and
        `mpz_combit <https://gmplib.org/manual/Integer-Logic-and-Bit-Fiddling#index-mpz_005fcombit>`_.
   */
-  proc bigint.toggleBit(idx: integral) {
+  proc ref bigint.toggleBit(idx: integral) {
     const bi_ = idx.safeCast(c_ulong);
 
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
@@ -3356,7 +3356,7 @@ module BigInteger {
     do BigInteger.add(result, a, b);
 
   @deprecated(notes="bigint.add method is deprecated - please use the standalone function :proc:`~BigInteger.add`")
-  proc bigint.add(const ref a: bigint, const ref b: bigint)
+  proc ref bigint.add(const ref a: bigint, const ref b: bigint)
     do BigInteger.add(this, a, b);
 
   pragma "last resort"
@@ -3485,7 +3485,7 @@ module BigInteger {
     do BigInteger.sub(result, a, b);
 
   @deprecated(notes="bigint.sub method is deprecated - please use the standalone function :proc:`~BigInteger.sub`")
-  proc bigint.sub(const ref a: bigint, const ref b: bigint)
+  proc ref bigint.sub(const ref a: bigint, const ref b: bigint)
     do BigInteger.sub(this, a, b);
 
   pragma "last resort"
@@ -3619,7 +3619,7 @@ module BigInteger {
     do addMul(this, a, b);
 
   @deprecated(notes="bigint.addmul method is deprecated - please use the standalone function :proc:`addMul` instead")
-  proc bigint.addmul(const ref a: bigint, b: int)
+  proc ref bigint.addmul(const ref a: bigint, b: int)
     do addMul(this, a, b);
 
   @deprecated(notes="bigint.addmul method is deprecated - please use the standalone function :proc:`addMul` instead")
@@ -3701,7 +3701,7 @@ module BigInteger {
     do subMul(this, a, b);
 
   @deprecated(notes="bigint.submul method is deprecated - please use the standalone function :proc:`subMul` instead")
-  proc bigint.submul(const ref a: bigint, b: int)
+  proc ref bigint.submul(const ref a: bigint, b: int)
     do subMul(this, a, b);
 
   @deprecated(notes="bigint.submul method is deprecated - please use the standalone function :proc:`subMul` instead")
@@ -3891,7 +3891,7 @@ module BigInteger {
   proc bigint.abs(const ref a: bigint) do BigInteger.abs(this, a);
 
   @deprecated("bigint.div_q using Round is deprecated, use the standalone function :proc:`~BigInteger.div` with :enum:`roundingMode` instead")
-  proc bigint.div_q(const ref n: bigint,
+  proc ref bigint.div_q(const ref n: bigint,
                     const ref d: bigint,
                     param     rounding = Round.ZERO) {
     use Round;
@@ -3905,7 +3905,7 @@ module BigInteger {
   }
 
   @deprecated("bigint.div_q using Round is deprecated, use the standalone function :proc:`~BigInteger.div` with :enum:`roundingMode` instead")
-  proc bigint.div_q(const ref n: bigint,
+  proc ref bigint.div_q(const ref n: bigint,
                               d: integral,
                     param     rounding = Round.ZERO) {
     use Round;
@@ -3953,7 +3953,7 @@ module BigInteger {
               do BigInteger.div(result, numer, denom, chpl_roundToRoundingMode(rounding));
 
   @deprecated(notes="bigint.divQ method is deprecated - please use the standalone function :proc:`~BigInteger.div` with :enum:`roundingMode` instead")
-  proc bigint.divQ(const ref numer: bigint,
+  proc ref bigint.divQ(const ref numer: bigint,
                    const ref denom: bigint,
                    param rounding = round.zero) {
     BigInteger.div(this, numer, denom, chpl_roundToRoundingMode(rounding));
@@ -4337,7 +4337,7 @@ module BigInteger {
     do BigInteger.divRem(this, remain, numer, denom, chpl_roundToRoundingMode(rounding));
 
   @deprecated(notes="bigint.divQR method is deprecated - please use the standalone function :proc:`~BigInteger.divRem` with :enum:`roundingMode` instead")
-  proc bigint.divQR(ref       remain: bigint,
+  proc ref bigint.divQR(ref       remain: bigint,
                     const ref numer: bigint,
                     const ref denom: bigint,
                     param     rounding = round.zero)
@@ -5023,7 +5023,7 @@ module BigInteger {
        :proc:`GMP.mpz_set` and
        `mpz_set <https://gmplib.org/manual/Assigning-Integers#index-mpz_005fset>`_.
   */
-  proc bigint.set(const ref x: bigint) {
+  proc ref bigint.set(const ref x: bigint) {
     // single locale or both bigints on the current locale
     if compiledForSingleLocale() ||
       (this.localeId == chpl_nodeID && x.localeId == chpl_nodeID) {
@@ -5048,7 +5048,7 @@ module BigInteger {
   }
 
   /* See :proc:`bigint.set` */
-  proc bigint.set(x : int) {
+  proc ref bigint.set(x : int) {
     const x_ = x.safeCast(c_long);
 
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
@@ -5063,7 +5063,7 @@ module BigInteger {
   }
 
   /* See :proc:`bigint.set` */
-  proc bigint.set(x : uint) {
+  proc ref bigint.set(x : uint) {
     const x_ = x.safeCast(c_ulong);
 
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
@@ -5078,7 +5078,7 @@ module BigInteger {
   }
 
   /* See :proc:`bigint.set` */
-  proc bigint.set(x: real) {
+  proc ref bigint.set(x: real) {
     const x_ = x : c_double;
 
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
@@ -5093,7 +5093,7 @@ module BigInteger {
   }
 
   /* See :proc:`bigint.set` */
-  proc bigint.set(x: string, base: int = 0) {
+  proc ref bigint.set(x: string, base: int = 0) {
     const base_ = base.safeCast(c_int);
 
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
@@ -5113,19 +5113,19 @@ module BigInteger {
 
   pragma "last resort"
   @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
-  proc bigint.set(num : int) do this.set(num);
+  proc ref bigint.set(num : int) do this.set(num);
 
   pragma "last resort"
   @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
-  proc bigint.set(num : uint) do this.set(num);
+  proc ref bigint.set(num : uint) do this.set(num);
 
   pragma "last resort"
   @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
-  proc bigint.set(num: real) do this.set(num);
+  proc ref bigint.set(num: real) do this.set(num);
 
   pragma "last resort"
   @deprecated("the argument name 'str' is deprecated - please use 'x' instead")
-  proc bigint.set(str: string, base: int = 0) do this.set(str, base);
+  proc ref bigint.set(str: string, base: int = 0) do this.set(str, base);
 
   /*
     Swaps ``this`` and ``x``
@@ -5137,7 +5137,7 @@ module BigInteger {
        :proc:`GMP.mpz_swap` and
        `mpz_swap <https://gmplib.org/manual/Assigning-Integers#index-mpz_005fswap>`_.
   */
-  proc bigint.swap(ref x: bigint) {
+  proc ref bigint.swap(ref x: bigint) {
     if compiledForSingleLocale() ||
       (this.localeId == chpl_nodeID && x.localeId == chpl_nodeID) {
       mpz_swap(this.mpz, x.mpz);
@@ -5176,7 +5176,7 @@ module BigInteger {
       isOwned = true;
     }
 
-    proc deinit() {
+    proc ref deinit() {
       if isOwned then
         mpz_clear(this.mpz);
     }

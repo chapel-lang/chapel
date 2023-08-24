@@ -367,7 +367,7 @@ record buffer1 {
   }
 
 
-  inline proc enqueue(i:int) {
+  inline proc ref enqueue(i:int) {
     b[cnt] = i;
     cnt += 1;
     if cnt == b.size {
@@ -411,7 +411,7 @@ record buffer2 {
     this.cnt = other.cnt;
   }
 
-  inline proc enqueue(i:int) {
+  inline proc ref enqueue(i:int) {
     b[cnt] = i;
     if cnt == b.size-1 {
       //flushBuffer(b);

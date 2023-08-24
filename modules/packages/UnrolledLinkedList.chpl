@@ -243,7 +243,7 @@ module UnrolledLinkedList {
     }
 
     @chpldoc.nodoc
-    proc _commonInitFromIterable(iterable) {
+    proc ref _commonInitFromIterable(iterable) {
       for x in iterable do
         append(x);
     }
@@ -290,7 +290,7 @@ module UnrolledLinkedList {
      by moving half of the content of p into the new one
     */
     @chpldoc.nodoc
-    proc _split(p: unmanaged _linkedNode(eltType)) {
+    proc ref _split(p: unmanaged _linkedNode(eltType)) {
       if _sanityChecks then
         assert(p.size == nodeCapacity);
       var node = new unmanaged _linkedNode(eltType, nodeCapacity);
@@ -319,7 +319,7 @@ module UnrolledLinkedList {
       Return whether it's merged
     */
     @chpldoc.nodoc
-    proc _merge(p: unmanaged _linkedNode(eltType)): bool {
+    proc ref _merge(p: unmanaged _linkedNode(eltType)): bool {
       var result = false;
 
       // Nothing to do
@@ -363,7 +363,7 @@ module UnrolledLinkedList {
       Make sure there's enough space in _tail for one element
     */
     @chpldoc.nodoc
-    proc _spareSpaceInTail() {
+    proc ref _spareSpaceInTail() {
       if _tail == nil {
         _tail = new unmanaged _linkedNode(eltType, nodeCapacity);
         _head = _tail;
@@ -380,7 +380,7 @@ module UnrolledLinkedList {
     }
 
     @chpldoc.nodoc
-    proc _append(x: eltType)
+    proc ref _append(x: eltType)
     lifetime this < x {
       _size += 1;
       _spareSpaceInTail();

@@ -81,7 +81,7 @@ module ChplFormat {
     }
 
     @chpldoc.nodoc
-    proc serializeField(writer: _writeType, name: string, const val: ?T) throws {
+    proc ref serializeField(writer: _writeType, name: string, const val: ?T) throws {
       if !_firstThing then writer.writeLiteral(", ");
       else _firstThing = false;
 
@@ -99,7 +99,7 @@ module ChplFormat {
     // - 'new G(int,real)(5, 42.0)' vs 'new G(int, real, 5, 42.0)'
     // - is the latter even possible?
     @chpldoc.nodoc
-    proc startClass(writer: _writeType, name: string, size: int) throws {
+    proc ref startClass(writer: _writeType, name: string, size: int) throws {
       if _inheritLevel == 0 {
         writer._writeLiteral("new ");
         writer._writeLiteral(_typename);
@@ -109,7 +109,7 @@ module ChplFormat {
       _inheritLevel += 1;
     }
     @chpldoc.nodoc
-    proc endClass(writer: _writeType) throws {
+    proc ref endClass(writer: _writeType) throws {
       if _inheritLevel == 1 {
         writer.writeLiteral(")");
       }
@@ -145,7 +145,7 @@ module ChplFormat {
       writer._writeLiteral("[");
     }
     @chpldoc.nodoc
-    proc writeListElement(writer: _writeType, const val: ?) throws {
+    proc ref writeListElement(writer: _writeType, const val: ?) throws {
       if !_firstThing then writer._writeLiteral(", ");
       else _firstThing = false;
 
@@ -169,7 +169,7 @@ module ChplFormat {
     }
 
     @chpldoc.nodoc
-    proc writeArrayElement(writer: _writeType, const val: ?) throws {
+    proc ref writeArrayElement(writer: _writeType, const val: ?) throws {
       writeListElement(writer, val);
     }
 
@@ -185,7 +185,7 @@ module ChplFormat {
     }
 
     @chpldoc.nodoc
-    proc writeKey(writer: _writeType, const key: ?) throws {
+    proc ref writeKey(writer: _writeType, const key: ?) throws {
       if !_firstThing then writer._writeLiteral(", ");
       else _firstThing = false;
 
@@ -269,7 +269,7 @@ module ChplFormat {
     }
 
     @chpldoc.nodoc
-    proc deserializeField(reader: _readerType, name: string, type T) throws {
+    proc ref deserializeField(reader: _readerType, name: string, type T) throws {
       if !_firstThing then reader.readLiteral(",");
       else _firstThing = false;
 
@@ -283,7 +283,7 @@ module ChplFormat {
 
     // Class helpers
     @chpldoc.nodoc
-    proc startClass(reader: _readerType, name: string) throws {
+    proc ref startClass(reader: _readerType, name: string) throws {
       // TODO: currently ignores 'name' because we can't know the name of the
       // type until it's initialized...
       if _inheritLevel == 0 {
@@ -294,7 +294,7 @@ module ChplFormat {
       _inheritLevel += 1;
     }
     @chpldoc.nodoc
-    proc endClass(reader: _readerType) throws {
+    proc ref endClass(reader: _readerType) throws {
       if _inheritLevel == 1 {
         reader.readLiteral(")");
       }
@@ -328,7 +328,7 @@ module ChplFormat {
       reader._readLiteral("[");
     }
     @chpldoc.nodoc
-    proc readListElement(reader: _readerType, type eltType) throws {
+    proc ref readListElement(reader: _readerType, type eltType) throws {
       if !_firstThing then reader._readLiteral(", ");
       else _firstThing = false;
 
@@ -352,7 +352,7 @@ module ChplFormat {
     }
 
     @chpldoc.nodoc
-    proc readArrayElement(reader: _readerType, type eltType) throws {
+    proc ref readArrayElement(reader: _readerType, type eltType) throws {
       return readListElement(reader, eltType);
     }
 
@@ -368,7 +368,7 @@ module ChplFormat {
     }
 
     @chpldoc.nodoc
-    proc readKey(reader: _readerType, type keyType) throws {
+    proc ref readKey(reader: _readerType, type keyType) throws {
       if !_firstThing then reader._readLiteral(",");
       else _firstThing = false;
 

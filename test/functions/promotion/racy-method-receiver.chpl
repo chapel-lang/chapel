@@ -35,7 +35,7 @@ record R {
   var value:int;
 }
 
-proc R.addem(a:R, b:R) {
+proc ref R.addem(a:R, b:R) {
   this.value = a.value + b.value;
 }
 

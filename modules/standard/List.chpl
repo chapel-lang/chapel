@@ -513,14 +513,14 @@ module List {
     }
 
     @chpldoc.nodoc
-    proc _commonInitFromIterable(iterable) lifetime this < iterable {
+    proc ref _commonInitFromIterable(iterable) lifetime this < iterable {
       this._firstTimeInitializeArrays();
       for x in iterable do
         pushBack(x);
     }
 
     @chpldoc.nodoc
-    proc _firstTimeInitializeArrays() {
+    proc ref _firstTimeInitializeArrays() {
       _sanity(_arrays == nil);
       _sanity(_totalCapacity == 0);
       _sanity(_size == 0);
@@ -531,7 +531,7 @@ module List {
     }
 
     @chpldoc.nodoc
-    inline proc deinit() {
+    inline proc ref deinit() {
       _fireAllDestructors();
       _freeAllArrays();
       _sanity(_totalCapacity == 0);
@@ -650,7 +650,7 @@ module List {
     }
 
     @chpldoc.nodoc
-    proc _maybeAcquireMem(amount: int) {
+    proc ref _maybeAcquireMem(amount: int) {
 
       const remaining = _totalCapacity - _size;
       _sanity(remaining >= 0);
@@ -710,7 +710,7 @@ module List {
     // This method _does not_ fire destructors!
     //
     @chpldoc.nodoc
-    proc _maybeReleaseMem(amount: int) {
+    proc ref _maybeReleaseMem(amount: int) {
 
       //
       // If we're down to one single "sub array", then there's no sense in
@@ -1392,7 +1392,7 @@ module List {
     // fired.
     //
     @chpldoc.nodoc
-    proc _fireAllDestructors() {
+    proc ref _fireAllDestructors() {
       on this {
         for i in 0..#_size {
           ref item = _getRef(i);
@@ -1404,7 +1404,7 @@ module List {
     }
 
     @chpldoc.nodoc
-    proc _freeAllArrays() {
+    proc ref _freeAllArrays() {
 
       if _arrays == nil then
         return;
@@ -1434,7 +1434,7 @@ module List {
     }
 
     @chpldoc.nodoc
-    proc _clearLocked() {
+    proc ref _clearLocked() {
       _fireAllDestructors();
       _freeAllArrays();
       _sanity(_totalCapacity == 0);
@@ -1925,7 +1925,7 @@ module List {
 
      :arg ch: A channel to read from.
      */
-    proc readThis(ch: fileReader) throws {
+    proc ref readThis(ch: fileReader) throws {
       //
       // Special handling for reading in order to handle reading an arbitrary
       // size.
@@ -1992,7 +1992,7 @@ module List {
     }
 
     @chpldoc.nodoc
-    proc _readJson(ch: fileReader) throws {
+    proc ref _readJson(ch: fileReader) throws {
       var isFirst = true;
       var hasReadEnd = false;
 
@@ -2028,7 +2028,7 @@ module List {
     }
 
     @chpldoc.nodoc
-    proc _readHelper(r: fileReader, ref des) throws {
+    proc ref _readHelper(r: fileReader, ref des) throws {
       _enter();
 
       _clearLocked();

@@ -532,13 +532,13 @@ prototype module DistributedFFT {
         }
       }
 
-      proc start() {
+      proc ref start() {
         if timeTrackFFT {
           tt.clear(); tt.start();
         }
       }
 
-      proc stop(stage) {
+      proc ref stop(stage) {
         if timeTrackFFT {
           tt.stop();
           arr[stage] += tt.elapsed();

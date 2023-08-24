@@ -793,7 +793,7 @@ module DefaultRectangular {
 
     proc hasUnitStride() param do return strides == strideKind.one;
 
-    inline proc theData ref {
+    inline proc ref theData ref {
       if ! hasUnitStride() {
         return data;
       } else {
@@ -865,14 +865,14 @@ module DefaultRectangular {
     }
   }
 
-  proc _remoteAccessData.computeFactoredOffs() {
+  proc ref _remoteAccessData.computeFactoredOffs() {
     factoredOffs = 0;
     for param i in 0..rank-1 do {
       factoredOffs = factoredOffs + blk(i) * chpl__idxToInt(off(i)):int;
     }
   }
 
-  proc _remoteAccessData.initShiftedData() {
+  proc ref _remoteAccessData.initShiftedData() {
     if earlyShiftData && hasUnitStride() {
       type idxSignedType = chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
       const shiftDist = if isIntType(idxType) then origin - factoredOffs
@@ -888,7 +888,7 @@ module DefaultRectangular {
   proc _remoteAccessData.strideAlignDown(hi, r) do
     return hi - (hi - r.lowBound) % abs(r.stride):idxType;
 
-  proc _remoteAccessData.initDataFrom(other : _remoteAccessData) {
+  proc ref _remoteAccessData.initDataFrom(other : _remoteAccessData) {
     this.data = other.data;
   }
 

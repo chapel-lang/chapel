@@ -1493,7 +1493,7 @@ module SampleSortHelp {
 
     // Build the tree from the sorted splitters
     // logBuckets does not account for equalBuckets.
-    proc build(logBuckets: int, equalBuckets: bool) {
+    proc ref build(logBuckets: int, equalBuckets: bool) {
       this.logBuckets = logBuckets;
       this.numBuckets = 1 << logBuckets;
       this.equalBuckets = equalBuckets;
@@ -1504,7 +1504,7 @@ module SampleSortHelp {
       build(0, numSplitters, 1);
     }
     // Recursively builds the tree
-    proc build(left: int, right: int, pos: int) {
+    proc ref build(left: int, right: int, pos: int) {
       var mid = left + (right - left) / 2;
       storage[pos] = sortedStorage[mid];
       if 2*pos < numBuckets {
@@ -2344,7 +2344,7 @@ module TwoArrayPartitioning {
     var globalCounts:[0..#countsSize] int;
     var globalEnds:[0..#countsSize] int;
 
-    proc postinit() {
+    proc ref postinit() {
       // Copy some vars to the compat
       for p in perLocale {
         p.compat.baseCaseSize = baseCaseSize;

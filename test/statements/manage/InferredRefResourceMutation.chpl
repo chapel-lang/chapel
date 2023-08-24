@@ -1,6 +1,6 @@
 record man {
   var x = 0;
-  proc enterContext() ref: int { return x; }
+  proc ref enterContext() ref: int { return x; }
   proc exitContext(in err: owned Error?) {
     if err then halt();
   }

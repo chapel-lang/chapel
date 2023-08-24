@@ -19,7 +19,7 @@ record RR {
     done.readFE();
   }
   // method with args
-  proc modify(ee: int, ff: int) {
+  proc ref modify(ee: int, ff: int) {
     var done: sync bool;
     on loc {
       this.xx = ee;
@@ -50,7 +50,7 @@ record QQ {
     done.readFE();
   }
   // method with no args
-  proc modify() {
+  proc ref modify() {
     var done: sync bool;
     on loc {
       this.aa = 171717;

@@ -312,7 +312,7 @@ module Vector {
     }
 
     @chpldoc.nodoc
-    proc _commonInitFromIterable(iterable) {
+    proc ref _commonInitFromIterable(iterable) {
       for x in iterable do {
         _append(x);
       }
@@ -943,7 +943,7 @@ module Vector {
     }
 
     @chpldoc.nodoc
-    proc _requestCapacity(newCap: int) {
+    proc ref _requestCapacity(newCap: int) {
       if (_capacity >= newCap) then return;
       if (_capacity == 0) {
         _capacity = _initialCapacity;
@@ -956,7 +956,7 @@ module Vector {
     }
 
     @chpldoc.nodoc
-    proc _maybeDecreaseCapacity() {
+    proc ref _maybeDecreaseCapacity() {
 
       const threshold = _capacity/2;
 

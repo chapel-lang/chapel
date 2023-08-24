@@ -400,7 +400,7 @@ implements chpl_Hashtable(chpl__hashtable(string, int));
 
     // #### iteration helpers ####
 
-    inline proc chpl_Hashtable.isSlotFull(slot: int): bool {
+    inline proc ref chpl_Hashtable.isSlotFull(slot: int): bool {
       return table[slot].status == chpl__hash_status.full;
     }
 
@@ -456,7 +456,7 @@ implements chpl_Hashtable(chpl__hashtable(string, int));
     // empty slot that may be re-used for faster addition to the domain
     //
     // This function never returns deleted slots.
-    proc chpl_Hashtable._findSlot(key: this.keyType) : (bool, int) {
+    proc ref chpl_Hashtable._findSlot(key: this.keyType) : (bool, int) {
       var firstOpen = -1;
       // inlining the iterator for: for slotNum in _lookForSlots(key)
       const baseSlot = key.hash();
@@ -512,7 +512,7 @@ implements chpl_Hashtable(chpl__hashtable(string, int));
     // or a slot that was already present with that key.
     // It can rehash the table.
     // returns (foundFullSlot, slotNum)
-    proc chpl_Hashtable.findAvailableSlot(key: this.keyType): (bool, int) {
+    proc ref chpl_Hashtable.findAvailableSlot(key: this.keyType): (bool, int) {
       var slotNum = -1;
       var foundSlot = false;
 
@@ -548,7 +548,7 @@ implements chpl_Hashtable(chpl__hashtable(string, int));
       }
     }
 
-    proc chpl_Hashtable.fillSlot(ref tableEntry: this.tableEntryType,
+    proc ref chpl_Hashtable.fillSlot(ref tableEntry: this.tableEntryType,
                   in key: this.keyType,
                   in val: this.valType) {
       if tableEntry.status == chpl__hash_status.full {
@@ -565,7 +565,7 @@ implements chpl_Hashtable(chpl__hashtable(string, int));
       _moveInit(tableEntry.key, key);
       _moveInit(tableEntry.val, val);
     }
-    proc chpl_Hashtable.fillSlot(slotNum: int,
+    proc ref chpl_Hashtable.fillSlot(slotNum: int,
                   in key: this.keyType,
                   in val: this.valType) {
       ref tableEntry = table[slotNum];
@@ -580,7 +580,7 @@ implements chpl_Hashtable(chpl__hashtable(string, int));
 
     // Finds a slot containing a key
     // returns (foundFullSlot, slotNum)
-    proc chpl_Hashtable.findFullSlot(key: this.keyType): (bool, int) {
+    proc ref chpl_Hashtable.findFullSlot(key: this.keyType): (bool, int) {
       var slotNum = -1;
       var foundSlot = false;
 
@@ -592,7 +592,7 @@ implements chpl_Hashtable(chpl__hashtable(string, int));
     // Clears a slot that is full
     // (Should not be called on empty/deleted slots)
     // Returns the key and value that were removed in the out arguments
-    proc chpl_Hashtable.clearSlot(ref tableEntry: this.tableEntryType,
+    proc ref chpl_Hashtable.clearSlot(ref tableEntry: this.tableEntryType,
                    out key: this.keyType, out val: this.valType) {
       // move the table entry into the key/val variables to be returned
       key = _moveToReturn(tableEntry.key);
@@ -605,13 +605,13 @@ implements chpl_Hashtable(chpl__hashtable(string, int));
       tableNumFullSlots -= 1;
       tableNumDeletedSlots += 1;
     }
-    proc chpl_Hashtable.clearSlot(slotNum: int, out key: this.keyType, out val: this.valType) {
+    proc ref chpl_Hashtable.clearSlot(slotNum: int, out key: this.keyType, out val: this.valType) {
       // move the table entry into the key/val variables to be returned
       ref tableEntry = table[slotNum];
       clearSlot(tableEntry, key, val);
     }
 
-    proc chpl_Hashtable.maybeShrinkAfterRemove() {
+    proc ref chpl_Hashtable.maybeShrinkAfterRemove() {
       if (tableNumFullSlots*8 < tableSize && tableSizeNum > 0) {
         resize(grow=false);
       }
@@ -657,7 +657,7 @@ implements chpl_Hashtable(chpl__hashtable(string, int));
     // newSize is the new table size
     // newSizeNum is an index into chpl__primes == newSize
     // assumes the array is already locked
-    proc chpl_Hashtable.rehash(newSizeNum:int, newSize:int) {
+    proc ref chpl_Hashtable.rehash(newSizeNum:int, newSize:int) {
       // save the old table
       var oldSize = tableSize;
       var oldTable = table;
@@ -746,7 +746,7 @@ implements chpl_Hashtable(chpl__hashtable(string, int));
       }
     }
 
-    proc chpl_Hashtable.resize(grow:bool) {
+    proc ref chpl_Hashtable.resize(grow:bool) {
       if postponeResize then return;
 
       var newSizeNum = tableSizeNum;

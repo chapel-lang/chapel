@@ -2,7 +2,7 @@
 
 record RR {
   var xx: int;
-  proc modify(ee: int) {
+  proc ref modify(ee: int) {
     begin {
       doModify(this, ee);
     }

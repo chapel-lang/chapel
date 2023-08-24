@@ -526,7 +526,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   // Exists to support some common functionality for `dateTime.readThis`
   @chpldoc.nodoc
-  proc date._readCore(f) throws {
+  proc ref date._readCore(f) throws {
     const dash = "-";
 
     chpl_year = f.read(int);
@@ -537,7 +537,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* Reads this `date` from ISO 8601 format: YYYY-MM-DD */
-  proc date.readThis(f) throws {
+  proc ref date.readThis(f) throws {
     import JSON.JsonDeserializer;
 
     const binary = f._binary(),
@@ -838,7 +838,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   // Exists to support some common functionality for `dateTime.readThis`
   @chpldoc.nodoc
-  proc time._readCore(f) throws {
+  proc ref time._readCore(f) throws {
     const colon = ":";
 
     chpl_hour = f.read(int);
@@ -851,7 +851,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* Reads this `time` from ISO format: hh:mm:ss.sss */
-  proc time.readThis(f) throws {
+  proc ref time.readThis(f) throws {
     import JSON.JsonDeserializer;
 
     const binary = f._binary(),
@@ -1503,7 +1503,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* Reads this `dateTime` from ISO format: YYYY-MM-DDThh:mm:ss.sss */
-  proc dateTime.readThis(f) throws {
+  proc ref dateTime.readThis(f) throws {
     import JSON.JsonDeserializer;
 
     const binary = f._binary(),
@@ -2095,7 +2095,7 @@ record stopwatch {
      Clears the elapsed time. If the timer is running then it is restarted
      otherwise it remains in the stopped state.
   */
-  proc clear() : void {
+  proc ref clear() : void {
     accumulated = 0.0;
 
     if running {
@@ -2104,7 +2104,7 @@ record stopwatch {
   }
 
   /* Starts the timer. A warning is emitted if the timer is already running. */
-  proc start() : void {
+  proc ref start() : void {
     if !running {
       running = true;
       time    = chpl_now_timevalue();
@@ -2114,7 +2114,7 @@ record stopwatch {
   }
 
   /* Stops the timer. A warning is emitted if the timer is not running. */
-  proc stop() : void {
+  proc ref stop() : void {
     if running {
       var time2: _timevalue = chpl_now_timevalue();
 
@@ -2126,7 +2126,7 @@ record stopwatch {
   }
 
   /* Clear the elapsed time and ensure the stopwatch is stopped */
-  proc reset() {
+  proc ref reset() {
     if running {
       stop();
     }
@@ -2134,7 +2134,7 @@ record stopwatch {
   }
 
   /* Clear the elapsed time and ensure the stopwatch is running */
-  proc restart() {
+  proc ref restart() {
     clear();
     if !running {
       start();
@@ -2210,7 +2210,7 @@ record Timer {
   }
 
   /* Starts the timer. A warning is emitted if the timer is already running. */
-  proc start() : void {
+  proc ref start() : void {
     if !running {
       running = true;
       time    = chpl_now_timevalue();
@@ -2220,7 +2220,7 @@ record Timer {
   }
 
   /* Stops the timer. A warning is emitted if the timer is not running. */
-  proc stop() : void {
+  proc ref stop() : void {
     if running {
       var time2: _timevalue = chpl_now_timevalue();
 

@@ -151,7 +151,7 @@ proc BlockCyclic1dom.dsiGetReprivatizeData1d() {
   return (wholeR, wholeRstrideAbs, storagePerCycle);
 }
 
-proc BlockCyclic1dom.dsiReprivatize1d(reprivatizeData) {
+proc ref BlockCyclic1dom.dsiReprivatize1d(reprivatizeData) {
   this.wholeR          = reprivatizeData(0);
   this.wholeRstrideAbs = reprivatizeData(1);
   this.storagePerCycle = reprivatizeData(2);
@@ -492,7 +492,7 @@ inline proc BlockCyclicDim.dsiIndexToLocale1d(ind: uint(64)): locIdT {
   return doDsiIndexToLocale1d(ind:convT);
 }
 
-proc BlockCyclic1dom.dsiSetIndices1d(rangeArg: rangeT): void {
+proc ref BlockCyclic1dom.dsiSetIndices1d(rangeArg: rangeT): void {
   // For now, require the user to provide unambiguous ranges only.
   // This requirement could potentially be avoided (as long as no arrays
   // are declared over the domain), but it simplifies/speeds up our code.

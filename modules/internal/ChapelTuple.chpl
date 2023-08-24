@@ -175,7 +175,7 @@ module ChapelTuple {
   pragma "reference to const when const this"
   pragma "star tuple accessor"
   @chpldoc.nodoc
-  proc _tuple.this(i : bool) ref {
+  proc ref _tuple.this(i : bool) ref {
     if !isHomogeneousTuple(this) then
       compilerError("invalid access of non-homogeneous tuple by runtime value");
     if boundsChecking then
