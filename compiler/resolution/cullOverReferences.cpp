@@ -501,6 +501,9 @@ static void maybeIssueRefMaybeConstWarning(ArgSymbol* arg) {
       int ret = sscanf(arg->name, "_e%d_%63s", &varArgNum, argBuffer);
       CHPL_ASSERT(ret == 2);
       argName = argBuffer;
+    } else if (isArgThis) {
+      FnSymbol* fn = arg->getFunction();
+      argName = fn ? fn->name : "<unknown-method>";
     } else {
       argName = arg->name;
     }
@@ -511,7 +514,7 @@ static void maybeIssueRefMaybeConstWarning(ArgSymbol* arg) {
           "use an explicit 'ref' this-intent for the method" :
           "use an explicit 'ref' intent for the argument");
 
-    bool useFunctionForWarning = isTaskIntent && arg->getFunction();
+    bool useFunctionForWarning = (isTaskIntent | isArgThis) && arg->getFunction();
     Symbol* warnSym =
       useFunctionForWarning ? (Symbol*)arg->getFunction() : (Symbol*)arg;
     USR_WARN(warnSym,
