@@ -1,0 +1,1 @@
+assertEof.chpl:6: warning: 'assertEOF' is unstable and may be removed or modified in a future release
