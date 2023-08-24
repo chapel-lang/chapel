@@ -3919,6 +3919,21 @@ struct Converter {
     return AGGREGATE_CLASS;
   }
 
+  template <typename Iterable>
+  AList convertInheritsExprs(const Iterable& iterable, bool& inheritMarkedGeneric) {
+    AList inherits;
+    for (auto inheritExpr : iterable) {
+      bool thisInheritMarkedGeneric = false;
+      const uast::Identifier* ident =
+        uast::Class::getInheritExprIdent(inheritExpr, thisInheritMarkedGeneric);
+      if (auto converted = convertExprOrNull(ident)) {
+        inherits.insertAtTail(converted);
+      }
+      inheritMarkedGeneric |= thisInheritMarkedGeneric;
+    }
+    return inherits;
+  }
+
   Expr* convertAggregateDecl(const uast::AggregateDecl* node) {
 
     const resolution::ResolutionResultByPostorderID* resolved = nullptr;
@@ -3929,17 +3944,13 @@ struct Converter {
 
     const char* name = astr(node->name());
     const char* cname = name;
-    AList inherits;
     bool inheritMarkedGeneric = false;
 
+    AList inherits;
     if (auto cls = node->toClass()) {
-      for (auto inheritExpr : cls->inheritExprs()) {
-        const uast::Identifier* ident =
-          uast::Class::getInheritExprIdent(inheritExpr, inheritMarkedGeneric);
-        if (auto converted = convertExprOrNull(ident)) {
-          inherits.insertAtTail(converted);
-        }
-      }
+      inherits = convertInheritsExprs(cls->inheritExprs(), inheritMarkedGeneric);
+    } else if (auto rec = node->toRecord()) {
+      inherits = convertInheritsExprs(rec->interfaceExprs(), inheritMarkedGeneric);
     }
 
     if (node->linkageName()) {

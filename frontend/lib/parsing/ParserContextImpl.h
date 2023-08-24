@@ -2536,10 +2536,7 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
   AstList inheritExprs;
   if (optInherit != nullptr) {
     if (optInherit->size() > 0) {
-      if (parts.tag == asttags::Record) {
-        CHPL_PARSER_REPORT(this, RecordInheritanceNotSupported, inheritLoc,
-                           parts.name.str());
-      } else if (parts.tag == asttags::Union) {
+      if (parts.tag == asttags::Union) {
         error(inheritLoc, "unions cannot inherit.");
       } else {
         for (int i = 0; i < optInherit->size(); i++) {

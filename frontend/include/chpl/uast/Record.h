@@ -112,7 +112,7 @@ class Record final : public AggregateDecl {
   /**
     Return the ith interface implemented as part of this record's declaration.
    */
-  const AstNode* inheritExpr(int i) const {
+  const AstNode* interfaceExpr(int i) const {
     if (interfaceExprChildNum_ < 0 || i >= numInterfaceExprs_)
       return nullptr;
 
@@ -120,7 +120,7 @@ class Record final : public AggregateDecl {
     return ret;
   }
 
-  AstListNoCommentsIteratorPair<AstNode> inheritExprs() const {
+  AstListNoCommentsIteratorPair<AstNode> interfaceExprs() const {
     if (interfaceExprChildNum_ < 0)
       return AstListNoCommentsIteratorPair<AstNode>(
                 children_.end(), children_.end());
