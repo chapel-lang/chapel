@@ -1243,6 +1243,10 @@ struct RstSignatureVisitor {
     return false;
   }
 
+  // TODO union inheritance: unions should have support for inheriting
+  // from interfaces, which means printing the interfaces for chpldoc
+  // signatures.
+
   bool enter(const Use* node) {
     node->stringify(os_, StringifyKind::CHPL_SYNTAX);
     return false;

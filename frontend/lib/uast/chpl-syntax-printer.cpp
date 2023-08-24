@@ -1264,6 +1264,8 @@ struct ChplSyntaxVisitor {
     printLinkage(node);
     ss_ << "union ";
     ss_ << node->name() << " ";
+    // TODO union inheritance: unions should have support for inheriting
+    // from interfaces, which means printing the interfaces here.
     interpose(node->decls(), "\n", "{\n", "\n}", ";", true);
   }
 

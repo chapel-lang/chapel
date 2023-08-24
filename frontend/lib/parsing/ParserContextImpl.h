@@ -2537,6 +2537,8 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
   if (optInherit != nullptr) {
     if (optInherit->size() > 0) {
       if (parts.tag == asttags::Union) {
+        // TODO union inheritance: unions should have support for inheriting
+        // from interfaces.
         error(inheritLoc, "unions cannot inherit.");
       } else {
         for (size_t i = 0; i < optInherit->size(); i++) {
