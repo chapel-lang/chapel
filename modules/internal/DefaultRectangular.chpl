@@ -1788,24 +1788,29 @@ module DefaultRectangular {
 
     ref fmt = if f._writing then f.serializer else f.deserializer;
 
+    var helper = if f._writing then
+      fmt.startArray(f, dom.dsiNumIndices:uint)
+    else
+      fmt.startArray(f);
+
     proc recursiveArrayReaderWriter(in idx: rank*idxType, dim=0, in last=false) throws {
 
       type strType = idxSignedType;
       const makeStridePositive = if dom.dsiDim(dim).stride > 0 then 1:strType else (-1):strType;
 
       if f._writing then
-        fmt.startArrayDim(f, dom.dsiDim(dim).sizeAs(uint));
+        helper.startDim(dom.dsiDim(dim).sizeAs(uint));
       else
-        fmt.startArrayDim(f);
+        helper.startDim();
 
       // The simple 1D case
       if dim == rank-1 {
         for j in dom.dsiDim(dim) by makeStridePositive {
           idx(dim) = j;
           if f._writing then
-            fmt.writeArrayElement(f, arr.dsiAccess(idx));
+            helper.writeElement(arr.dsiAccess(idx));
           else {
-            arr.dsiAccess(idx) = fmt.readArrayElement(f, arr.eltType);
+            arr.dsiAccess(idx) = helper.readElement(arr.eltType);
           }
         }
       } else {
@@ -1819,18 +1824,13 @@ module DefaultRectangular {
         }
       }
 
-      fmt.endArrayDim(f);
+      helper.endDim();
     }
-
-    if f._writing then
-      fmt.startArray(f, dom.dsiNumIndices:uint);
-    else
-      fmt.startArray(f);
 
     const zeroTup: rank*idxType;
     recursiveArrayReaderWriter(zeroTup);
 
-    fmt.endArray(f);
+    helper.endArray();
   }
 
   proc _readWriteBulk(f, arr, dom) throws {
