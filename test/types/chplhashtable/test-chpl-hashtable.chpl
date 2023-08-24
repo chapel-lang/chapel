@@ -53,7 +53,7 @@ class C {
   var xx: int = 0;
 }
 
-record R : Hashable {
+record R : hashable {
   var x: int = 0;
   var ptr: shared C = new shared C(0);
   proc init() {

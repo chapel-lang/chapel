@@ -1,6 +1,6 @@
 var r = 1.. by 2;
 
-proc f(x: Hashable) {
+proc f(x: hashable) {
 
 }
 var hash = chpl__defaultHashWrapper(r);

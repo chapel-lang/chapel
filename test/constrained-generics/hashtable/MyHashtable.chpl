@@ -3,7 +3,7 @@
   modules/internal/ChapelHashtable.chpl
 
 Contents WIP:
- interface Hashable
+ interface hashable
  early checking for record 'chpl__hashtable' using interface 'chpl_Hashtable'
 */
 
@@ -338,7 +338,7 @@ proc toString(arg): string {
 interface chpl_Hashtable(HT) {
   type keyType;
   type valType;
-  keyType implements Hashable;
+  keyType implements hashable;
   keyType implements StdOps;
   valType implements StdOps;
   // todo: change these to the ones from a standard Memory module

@@ -6,7 +6,7 @@ record Inner {
         return 0;
     }
 }
-// Inner doesn't implement Hashable explicitly and thus this should warn.
+// Inner doesn't implement hashable explicitly and thus this should warn.
 
 record Outer {
     var i: Inner;

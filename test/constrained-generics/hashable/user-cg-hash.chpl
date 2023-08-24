@@ -1,4 +1,4 @@
-proc f(x: Hashable) {}
+proc f(x: hashable) {}
 
 record R {
     proc hash(): uint {

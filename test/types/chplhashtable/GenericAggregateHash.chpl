@@ -8,12 +8,12 @@ class C2: C1(?) {
   var y: TT;
 }
 
-record r1 : Hashable {
+record r1 : hashable {
 	type T;
   var x: T;
 }
 
-record r2 : Hashable {
+record r2 : hashable {
   type T;
   var a: [0..3] T;
 }

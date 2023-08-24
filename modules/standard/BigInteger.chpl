@@ -5235,5 +5235,5 @@ module BigInteger {
       }
     }
   }
-  bigint implements Hashable;
+  bigint implements hashable;
 }

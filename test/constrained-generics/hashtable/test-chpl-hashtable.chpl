@@ -61,7 +61,7 @@ class C {
   var xx: int = 0;
 }
 
-record R : Hashable, StdOps {
+record R : hashable, StdOps {
   var x: int = 0;
   var ptr: shared C = new shared C(0);
   proc init() {

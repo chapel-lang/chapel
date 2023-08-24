@@ -1,6 +1,6 @@
 use Map;
 
-record MyRecord : Hashable {
+record MyRecord : hashable {
   var i = 1;
 
   proc hash() {

@@ -1,7 +1,7 @@
 use Sort;
 use Set;
 
-record R : Hashable {
+record R : hashable {
   var a: int;
 
   operator ==(a:R, b:R) {

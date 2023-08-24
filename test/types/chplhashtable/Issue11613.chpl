@@ -1,4 +1,4 @@
-record R : Hashable {
+record R : hashable {
 	type t;
 	var a : [1..10] t;
 }

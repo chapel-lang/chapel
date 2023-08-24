@@ -2632,7 +2632,7 @@ module String {
   inline proc string.hash(): uint {
     return getHash(this);
   }
-  string implements Hashable;
+  string implements hashable;
 
   @chpldoc.nodoc
   operator string.<=>(ref x: string, ref y: string) {

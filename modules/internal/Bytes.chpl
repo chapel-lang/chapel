@@ -1390,7 +1390,7 @@ module Bytes {
   inline proc bytes.hash(): uint {
     return getHash(this);
   }
-  bytes implements Hashable;
+  bytes implements hashable;
 
   @chpldoc.nodoc
   operator bytes.<=>(ref x: bytes, ref y: bytes) {

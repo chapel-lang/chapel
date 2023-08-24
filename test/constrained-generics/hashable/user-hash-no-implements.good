@@ -1,2 +1,2 @@
-user-hash-no-implements.chpl:15: warning: R has a hash function that is being used by the standard library. However, R does not implement Hashable. In the future, this will result in an error.
+user-hash-no-implements.chpl:15: warning: R has a hash function that is being used by the standard library. However, R does not implement hashable. In the future, this will result in an error.
 in hash

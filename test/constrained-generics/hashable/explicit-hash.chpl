@@ -1,6 +1,6 @@
 use Set;
 
-record R : Hashable {
+record R : hashable {
     var x: uint;
 
     proc hash(): uint {
