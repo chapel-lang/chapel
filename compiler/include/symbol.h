@@ -568,6 +568,7 @@ public:
 };
 
 extern InterfaceSymbol* gHashable;
+extern InterfaceSymbol* gContextManager;
 
 /************************************* | **************************************
 *                                                                             *

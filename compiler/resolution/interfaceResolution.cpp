@@ -2042,7 +2042,7 @@ static Expr* closestInterestingScopeAnchor(Expr*   callsite,
 }
 
 static bool isAutoImplementInternalInterface(InterfaceSymbol* isym) {
-  return isym == gHashable;
+  return isym == gHashable || isym == gContextManager;
 }
 
 static Expr* anchorPointForAutoImplementInterface(InterfaceSymbol* isym,

@@ -33,6 +33,7 @@
 //
 
 InterfaceSymbol* gHashable = nullptr;
+InterfaceSymbol* gContextManager = nullptr;
 
 static Symbol* isInterfaceFormalSymbol(Symbol* sym) {
   if (TypeSymbol* var = toTypeSymbol(sym))
@@ -71,6 +72,8 @@ DefExpr* InterfaceSymbol::buildDef(const char* name,
 
   if (gHashable == nullptr && name == astr("hashable")) {
     gHashable = isym;
+  } else if (gContextManager == nullptr && name == astr("contextManager")) {
+    gContextManager = isym;
   }
 
   for_alist(formal, formals->argList) {
