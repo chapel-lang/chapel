@@ -414,37 +414,58 @@ gatherParentClassScopesForScopeResolving(Context* context, ID classDeclId) {
 
   ID curId = classDeclId;
 
-  while (!curId.isEmpty()) {
-    if (auto ast = parsing::idToAst(context, curId)) {
-      if (auto c = ast->toClass()) {
-        if (const AstNode* parentClassExpr = c->parentClass()) {
-          // Resolve the parent class type expression
-          ResolutionResultByPostorderID r;
-          auto visitor =
-            Resolver::createForParentClassScopeResolve(context, c, r);
-          // Parsing excludes non-identifiers as parent class expressions.
-          //
-          // Intended to avoid calling methodReceiverScopes() recursively.
-          // Uses the empty 'savecReceiverScopes' because the class expression
-          // can't be a method anyways.
-          bool ignoredMarkedGeneric = false;
-          auto ident = Class::getInheritExprIdent(parentClassExpr,
-                                                  ignoredMarkedGeneric);
-          visitor.resolveIdentifier(ident, visitor.savedReceiverScopes);
+  bool encounteredError = false;
+  while (!curId.isEmpty() && !encounteredError) {
+    auto ast = parsing::idToAst(context, curId);
+    if (!ast) break;
+
+    auto c = ast->toClass();
+    if (!c || c->numInheritExprs() == 0) break;
+
+    const uast::AstNode* lastParentClass = nullptr;
+    for (auto inheritExpr : c->inheritExprs()) {
+      // Resolve the parent class type expression
+      ResolutionResultByPostorderID r;
+      auto visitor =
+        Resolver::createForParentClassScopeResolve(context, c, r);
+      // Parsing excludes non-identifiers as parent class expressions.
+      //
+      // Intended to avoid calling methodReceiverScopes() recursively.
+      // Uses the empty 'savecReceiverScopes' because the class expression
+      // can't be a method anyways.
+      bool ignoredMarkedGeneric = false;
+      auto ident = Class::getInheritExprIdent(inheritExpr,
+                                              ignoredMarkedGeneric);
+      visitor.resolveIdentifier(ident, visitor.savedReceiverScopes);
 
 
-          ResolvedExpression& re = r.byAst(ident);
-          if (re.toId().isEmpty()) {
-            context->error(parentClassExpr, "invalid parent class expression");
-          } else {
-            result.push_back(scopeForId(context, re.toId()));
-            curId = re.toId();
-            continue; // keep going with parent classes of that class
-          }
+      ResolvedExpression& re = r.byAst(ident);
+      if (re.toId().isEmpty()) {
+        context->error(inheritExpr, "invalid parent class expression");
+        encounteredError = true;
+        break;
+      } else if (parsing::idToTag(context, re.toId()) == uast::asttags::Interface) {
+        // this is an interface; ignore it for the purposes of parent scopes.
+      } else {
+        if (lastParentClass) {
+          reportInvalidMultipleInheritance(context, c, lastParentClass, inheritExpr);
+          encounteredError = true;
+          break;
         }
+        lastParentClass = inheritExpr;
+
+        result.push_back(scopeForId(context, re.toId()));
+        curId = re.toId();
+        // keep going through the list of parent expressions. hitting
+        // another parent expression that's a class after this point
+        // will result in an error. When we're done with other parent
+        // expressions, the loop will continue to searching for the
+        // parent classes of this parent class.
       }
     }
-    break; // stop if we get to this point
+
+    // only interfaces found, no need to look for more parents.
+    if (!lastParentClass) break;
   }
 
   return QUERY_END(result);

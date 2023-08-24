@@ -3074,11 +3074,48 @@ void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
 
   globalSeen.insert(this);
 
-  addRootType();
+  // Note: logic in the Dyno scope resolver will sometimes catch multiple inheritance,
+  // but not in every case. So for now, duplicate some checks here.
+  //
+  // TODO: what's a good way to centralize the multiple inheritance handling?
+  Expr* firstParent = nullptr;
 
   // Walk the base class list, and add parents into the class hierarchy.
   for_alist(expr, inherits) {
-    AggregateType* pt = discoverParentAndCheck(expr);
+    AggregateType* pt;
+    InterfaceSymbol* isym;
+    discoverParentAndCheck(expr, pt, isym);
+
+    // Handle class A : MyInterface and continue early.
+    if (isym) {
+      SET_LINENO(expr);
+
+      // For classes, we need to include management style in the implements
+      // statement so that it's picked up when necessary.
+      Symbol* implementFor = this->symbol;
+      if (this->isClass() && isClassLikeOrManaged(this)) {
+        Type* useType =
+          this->getDecoratedClass(ClassTypeDecorator::GENERIC_NONNIL);
+        implementFor = useType->symbol;
+      }
+
+      auto ifcActuals = new CallExpr(PRIM_ACTUALS_LIST, new SymExpr(implementFor));
+      auto istmt = ImplementsStmt::build(isym->name, ifcActuals, nullptr);
+      this->symbol->defPoint->insertAfter(istmt);
+
+      expr->remove();
+      continue;
+    }
+
+    if (this->isRecord()) {
+      USR_FATAL(expr, "inheritance is not currently supported for records");
+    }
+
+    if (firstParent) {
+      USR_FATAL(expr, "invalid use of multiple inheritance in class '%s'",
+                this->name());
+    }
+    firstParent = expr;
 
     localSeen.insert(this);
 
@@ -3135,11 +3172,19 @@ void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
     }
   }
 
+  if (!firstParent) {
+    addRootType();
+  }
+
   checkSameNameFields();
 }
 
-AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
+void AggregateType::discoverParentAndCheck(Expr* storesName,
+                                           AggregateType* &outParent,
+                                           InterfaceSymbol* &outIsym) {
   TypeSymbol*        ts  = NULL;
+  outIsym = nullptr;
+  outParent = nullptr;
 
   if (UnresolvedSymExpr* se = toUnresolvedSymExpr(storesName)) {
     Symbol* sym = lookup(se->unresolved, storesName);
@@ -3151,8 +3196,14 @@ AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
       sym = canonicalClassType(sym->type)->symbol;
     }
     ts = toTypeSymbol(sym);
+    outIsym = toInterfaceSymbol(sym);
   } else if (SymExpr* se = toSymExpr(storesName)) {
     ts = toTypeSymbol(se->symbol());
+    outIsym = toInterfaceSymbol(se->symbol());
+  }
+
+  if (outIsym != nullptr) {
+    return;
   }
 
   if (ts == NULL) {
@@ -3185,7 +3236,7 @@ AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
               pt->symbol->name);
   }
 
-  return pt;
+  outParent = pt;
 }
 
 void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {

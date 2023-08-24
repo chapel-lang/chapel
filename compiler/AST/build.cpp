@@ -1568,7 +1568,7 @@ AggregateType* installInternalType(AggregateType* ct, AggregateType* dt) {
 DefExpr* buildClassDefExpr(const char*  name,
                            const char*  cname,
                            AggregateTag tag,
-                           Expr*        inherit,
+                           AList        inherits,
                            BlockStmt*   decls,
                            Flag         externFlag) {
   bool isExtern = externFlag == FLAG_EXTERN;
@@ -1618,9 +1618,10 @@ DefExpr* buildClassDefExpr(const char*  name,
     ts->addFlag(FLAG_NO_OBJECT);
     ct->defaultValue=NULL;
 
-    if (inherit != NULL)
-      USR_FATAL_CONT(inherit,
+    if (!inherits.empty()) {
+      USR_FATAL_CONT(inherits.first(),
                      "External types do not currently support inheritance");
+    }
   }
 
   for_alist(stmt, decls->body){
@@ -1631,10 +1632,9 @@ DefExpr* buildClassDefExpr(const char*  name,
 
   ct->addDeclarations(decls);
 
-  if (inherit != NULL) {
-    ct->inherits.insertAtTail(inherit);
+  for_alist(inherit, inherits) {
+    ct->inherits.insertAtTail(inherit->remove());
   }
-
   return def;
 }
 

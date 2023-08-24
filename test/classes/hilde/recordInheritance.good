@@ -1,2 +1,1 @@
 recordInheritance.chpl:6: error: inheritance is not currently supported for records
-recordInheritance.chpl:6: note: S declared as a record here
