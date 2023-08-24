@@ -3808,6 +3808,27 @@ getCompilerGeneratedGlobals(Context* context) {
   return QUERY_END(result);
 }
 
+static const bool&
+reportInvalidMultipleInheritanceImpl(Context* context,
+                                     const uast::Class* node,
+                                     const uast::AstNode* firstParent,
+                                     const uast::AstNode* secondParent) {
+  QUERY_BEGIN(reportInvalidMultipleInheritanceImpl, context, node, firstParent, secondParent);
+  context->error(node, "TODO");
+  auto result = false;
+  return QUERY_END(result);
+}
+
+void
+reportInvalidMultipleInheritance(Context* context,
+                                 const uast::Class* node,
+                                 const uast::AstNode* firstParent,
+                                 const uast::AstNode* secondParent) {
+
+  std::ignore = reportInvalidMultipleInheritanceImpl(context, node,
+                                                     firstParent, secondParent);
+}
+
 
 } // end namespace resolution
 } // end namespace chpl

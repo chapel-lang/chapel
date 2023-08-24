@@ -448,7 +448,7 @@ gatherParentClassScopesForScopeResolving(Context* context, ID classDeclId) {
         // this is an interface; ignore it for the purposes of parent scopes.
       } else {
         if (lastParentClass) {
-          context->error(c, "TODO");
+          reportInvalidMultipleInheritance(context, c, lastParentClass, parentClassExpr);
         }
         lastParentClass = parentClassExpr;
 

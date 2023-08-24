@@ -3936,6 +3936,7 @@ struct Converter {
     Symbol* selfReference = findConvertedSym(node->id());
 
     std::vector<ImplementsStmt*> implementsStmts;
+    const uast::AstNode* lastParentExpr = nullptr;
     if (auto cls = node->toClass()) {
       auto r = currentResolutionResult();
       for (auto inheritExpr : cls->inheritExprs()) {
@@ -3960,9 +3961,13 @@ struct Converter {
         }
 
         // We fell through, so it's not an interface.
-        if (inherit) {
-          context->error(inheritExpr, "TODO");
+
+        // Is this not the first parent class we've encountered? error if so.
+        if (lastParentExpr) {
+          resolution::reportInvalidMultipleInheritance(context, cls, lastParentExpr, inheritExpr);
         }
+        lastParentExpr = inheritExpr;
+
         inheritMarkedGeneric = thisOneMarkedGeneric;
         inherit = new UnresolvedSymExpr(astr(ident->name()));
       }

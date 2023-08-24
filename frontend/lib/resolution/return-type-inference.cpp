@@ -107,7 +107,7 @@ const CompositeType* helpGetTypeForDecl(Context* context,
       if (qt.isType() && parentClassType != nullptr) {
         // It's a valid parent class; is it the only one? (error otherwise).
         if (lastParentClass) {
-          context->error(c, "TODO");
+          reportInvalidMultipleInheritance(context, c, lastParentClass, parentExpr);
         }
         lastParentClass = parentExpr;
 
