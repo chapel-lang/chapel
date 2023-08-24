@@ -292,7 +292,7 @@ record LinkedList {
 
   @chpldoc.nodoc
   proc writeThis(f) throws {
-    var binary = f.binary();
+    var binary = f._binary();
     var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
     var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
     var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
@@ -343,7 +343,7 @@ record LinkedList {
     // Special handling for reading in order to handle reading an arbitrary
     // size.
     //
-    const isBinary = f.binary();
+    const isBinary = f._binary();
     const arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
     const isSpace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !isBinary;
     const isJson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !isBinary;

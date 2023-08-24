@@ -540,7 +540,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   proc date.readThis(f) throws {
     import JSON.JsonDeserializer;
 
-    const binary = f.binary(),
+    const binary = f._binary(),
           arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
           isjson = (arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary) ||
             isSubtype(f.deserializerType, JsonDeserializer);
@@ -854,7 +854,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   proc time.readThis(f) throws {
     import JSON.JsonDeserializer;
 
-    const binary = f.binary(),
+    const binary = f._binary(),
           arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
           isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary  ||
             isSubtype(f.deserializerType, JsonDeserializer);
@@ -1506,7 +1506,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   proc dateTime.readThis(f) throws {
     import JSON.JsonDeserializer;
 
-    const binary = f.binary(),
+    const binary = f._binary(),
           arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
           isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary ||
             isSubtype(f.deserializerType, JsonDeserializer);

@@ -1872,7 +1872,7 @@ module DefaultRectangular {
 
     proc recursiveArrayReaderWriter(in idx: rank*idxType, dim=0, in last=false) throws {
 
-      var binary = f.binary();
+      var binary = f._binary();
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
       var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
       var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
@@ -1931,7 +1931,7 @@ module DefaultRectangular {
     }
 
     if arr.isDefaultRectangular() && !chpl__isArrayView(arr) &&
-       _isSimpleIoType(arr.eltType) && f.binary() &&
+       _isSimpleIoType(arr.eltType) && f._binary() &&
        isNative && arr.isDataContiguous(dom) {
 
       // If we can, we would like to read/write the array as a single write op

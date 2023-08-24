@@ -6583,7 +6583,11 @@ inline proc fileWriter.readWriteNewline() throws
 
 /* Returns `true` if this fileReader is configured for binary I/O.
  */
-proc fileReader.binary():bool {
+@deprecated(notes="'fileReader.binary()' is deprecated; check whether the fileReader is configured with a binary deserializer instead")
+proc fileReader.binary(): bool do return this._binary();
+
+@chpldoc.nodoc
+proc fileReader._binary():bool {
   var ret:uint(8);
   on this._home {
     ret = qio_channel_binary(_channel_internal);
@@ -6593,7 +6597,11 @@ proc fileReader.binary():bool {
 
 /* Returns `true` if this fileWriter is configured for binary I/O.
  */
-proc fileWriter.binary():bool {
+@deprecated(notes="'fileWriter.binary()' is deprecated; check whether the fileWriter is configured with a binary serializer instead")
+proc fileWriter.binary(): bool do return this._binary();
+
+@chpldoc.nodoc
+proc fileWriter._binary():bool {
   var ret:uint(8);
   on this._home {
     ret = qio_channel_binary(_channel_internal);
