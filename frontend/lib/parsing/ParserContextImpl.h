@@ -2541,25 +2541,8 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
       } else {
         for (size_t i = 0; i < optInherit->size(); i++) {
           AstNode* ast = (*optInherit)[i];
-          bool inheritOk = false;
-          if (ast->isIdentifier()) {
-            // inheriting from e.g. Parent is OK
-            inheritOk = true;
-          } else {
-            // inheriting from e.g. Parent(?) is OK
-            if (auto call = ast->toFnCall()) {
-              const AstNode* calledExpr = call->calledExpression();
-              if (calledExpr != nullptr && call->numActuals() == 1) {
-                if (const AstNode* actual = call->actual(0)) {
-                  if (auto id = actual->toIdentifier()) {
-                    if (id->name() == USTR("?")) {
-                      inheritOk = true;
-                    }
-                  }
-                }
-              }
-            }
-          }
+          bool inheritOk =
+            chpl::uast::AggregateDecl::isAcceptableInheritExpr(ast);
 
           if (inheritOk) {
             inheritExprs.push_back(toOwned(ast));

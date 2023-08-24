@@ -95,6 +95,8 @@ class Record final : public AggregateDecl {
     aggregateDeclMarkUniqueStringsInner(context);
   }
 
+  std::string dumpChildLabelInner(int i) const override;
+
  public:
   ~Record() override = default;
 
