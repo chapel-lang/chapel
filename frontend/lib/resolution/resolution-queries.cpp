@@ -3807,7 +3807,7 @@ reportInvalidMultipleInheritanceImpl(Context* context,
                                      const uast::AstNode* firstParent,
                                      const uast::AstNode* secondParent) {
   QUERY_BEGIN(reportInvalidMultipleInheritanceImpl, context, node, firstParent, secondParent);
-  context->error(node, "TODO");
+  CHPL_REPORT(context, MultipleInheritance, node, firstParent, secondParent);
   auto result = false;
   return QUERY_END(result);
 }
