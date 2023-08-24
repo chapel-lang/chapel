@@ -18,8 +18,7 @@
  * limitations under the License.
  */
 
-/*
- */
+/* */
 module SharedObject {
 
   use Errors, Atomics, ChapelBase;
@@ -103,14 +102,19 @@ module SharedObject {
   }
 
 
+  // Ideally, this can be marked with nodoc and the doc put at the module level
+  //   since shared isn't really a 'record' or a 'type'
+  // But that prevents us from referencing a "top-level" shared reference
+  // If we one day support :noindexentry:, that could be applied at the module
+  //   level (instead of :noindex:)
+  // And then we could do :mod:`shared <SharedObject>`
+  // For now, `fixInternalDocs.sh` will replace `record` with `type` here
   /*
+    :type:`shared` manages the deletion of a class instance in a way
+    that supports multiple owners of the class instance.
 
-     :record:`shared` manages the deletion of a class instance in a way
-     that supports multiple owners of the class instance.
-
-     This is currently implemented with task-safe reference counting.
-
-   */
+    This is currently implemented with task-safe reference counting.
+  */
   pragma "managed pointer"
   record _shared {
     type chpl_t;         // contained type (class type)
@@ -125,367 +129,371 @@ module SharedObject {
 
     pragma "owned"
     var chpl_pn:unmanaged ReferenceCount?; // reference counter
-
-    /*
-       Default-initialize a :record:`shared`.
-     */
-    pragma "leaves this nil"
-    proc init(type chpl_t) {
-      if !isClass(chpl_t) then
-        compilerError("shared only works with classes");
-
-      this.chpl_t = _to_borrowed(chpl_t);
-      this.chpl_p = nil;
-      this.chpl_pn = nil;
-    }
-
-    @chpldoc.nodoc
-    proc init(p : borrowed) {
-      compilerError("cannot initialize shared from a borrow");
-      this.init(_to_unmanaged(p));
-    }
-
-    @chpldoc.nodoc
-    proc init(pragma "nil from arg" p : unmanaged) {
-      this.chpl_t = _to_borrowed(p.type);
-
-      // Boost version default-initializes px and pn
-      // and then swaps in different values.
-
-      var rc:unmanaged ReferenceCount? = nil;
-
-      if p != nil then
-        rc = new unmanaged ReferenceCount();
-
-      this.chpl_p = _to_borrowed(p);
-      this.chpl_pn = rc;
-
-      // Boost includes a mechanism for classes inheriting from
-      // enable_shared_from_this to record a weak pointer back to the
-      // shared pointer. That would need to be handled in a Phase 2
-      // since it would refer to `this` as a whole here.
-    }
-
-    @chpldoc.nodoc
-    proc init(p: ?T)
-    where isClass(T) == false &&
-          isSubtype(T, _shared) == false &&
-          isIterator(p) == false {
-      compilerError("shared only works with classes");
-      this.chpl_t = T;
-      this.chpl_p = p;
-    }
-
-    /*
-       Initialize a :record:`shared` taking a pointer from
-       a :type:`~OwnedObject.owned`.
-
-       This :record:`shared` will take over the deletion of the class
-       instance. It is an error to directly delete the class instance
-       while it is managed by :record:`shared`.
-
-       :arg take: the owned value to take ownership from
-     */
-    proc init(pragma "nil from arg" in take:owned) {
-      var p = take.release();
-      this.chpl_t = if this.type.chpl_t == ? then _to_borrowed(p.type) else this.type.chpl_t;
-
-      if !isClass(p) then
-        compilerError("shared only works with classes");
-
-      var rc:unmanaged ReferenceCount? = nil;
-
-      if p != nil then
-        rc = new unmanaged ReferenceCount();
-
-      this.chpl_p = p;
-      this.chpl_pn = rc;
-
-      this.complete();
-    }
-
-    /* Private move-initializer for use in coercions,
-       only makes sense when `src` was already copied in in intent. */
-    @chpldoc.nodoc
-    proc init(_private: bool, type t, ref src:_shared) {
-      this.chpl_t = t;
-      this.chpl_p = _to_unmanaged(src.chpl_p):_to_nilable(_to_unmanaged(t));
-      this.chpl_pn = src.chpl_pn;
-
-      src.chpl_p = nil;
-      src.chpl_pn = nil;
-    }
-
-    /* Private initializer for casts. This one increments the reference
-       count if the stored pointer is not nil. */
-    @chpldoc.nodoc
-    proc init(_private: bool, type t, p, pn) {
-      var ptr = _to_unmanaged(p):_to_nilable(_to_unmanaged(t));
-      var count = pn;
-      if ptr != nil {
-        // increment the reference count
-        count!.retain();
-      } else {
-        // don't store a count for the nil pointer
-        count = nil;
-      }
-
-      this.chpl_t = t;
-      this.chpl_p = ptr;
-      this.chpl_pn = count;
-    }
-
-    /* Private initializer for casting from weak to shared.
-      assumes the shared reference count in 'pn' has already been incremented */
-    @chpldoc.nodoc
-    proc init(_private: bool, pragma "nil from arg" p: unmanaged, pn) {
-      this.chpl_t = _to_borrowed(p.type);
-      this.chpl_p = p;
-      this.chpl_pn = pn;
-    }
-
-    // Initialize generic 'shared' var-decl from owned:
-    //   var s : shared = ownedThing;
-    @chpldoc.nodoc
-    @deprecated(notes="assigning owned class to shared class is deprecated.")
-    proc init=(pragma "nil from arg" in take: owned) {
-      var p = take.release();
-
-      this.chpl_t = if this.type.chpl_t != ?
-                    then this.type.chpl_t
-                    else _to_borrowed(p.type);
-
-      var rc:unmanaged ReferenceCount? = nil;
-
-      if p != nil then
-        rc = new unmanaged ReferenceCount();
-
-      this.chpl_p = p;
-      this.chpl_pn = rc;
-
-      this.complete();
-
-      if isNonNilableClass(this.type) && isNilableClass(take) then
-        compilerError("cannot initialize '", this.type:string, "' from a '", take.type:string, "'");
-    }
-
-    /*
-       Copy-initializer. Creates a new :record:`shared`
-       that refers to the same class instance as `src`.
-       These will share responsibility for managing the instance.
-     */
-    proc init=(pragma "nil from arg" const ref src:_shared) {
-      this.chpl_t = if this.type.chpl_t != ?
-                    then this.type.chpl_t
-                    else _to_borrowed(src.type);
-
-      if isCoercible(src.chpl_t, this.type.chpl_t) == false then
-        compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
-
-      this.chpl_p = src.chpl_p;
-      this.chpl_pn = src.chpl_pn;
-
-      this.complete();
-
-      if this.chpl_pn != nil then
-        this.chpl_pn!.retain();
-
-      if isNonNilableClass(this.type) && isNilableClass(src) then
-        compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
-
-    }
-
-    @chpldoc.nodoc
-    proc init=(src: borrowed) {
-      compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
-
-      this.chpl_t = if this.type.chpl_t != ?
-                    then this.type.chpl_t
-                    else _to_borrowed(src.type);
-    }
-
-    @chpldoc.nodoc
-    proc init=(src: unmanaged) {
-      compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
-      this.chpl_t = if this.type.chpl_t != ?
-                    then this.type.chpl_t
-                    else _to_borrowed(src.type);
-    }
-
-    pragma "leaves this nil"
-    @chpldoc.nodoc
-    proc init=(src : _nilType) {
-      if this.type.chpl_t == ? then
-        compilerError("cannot establish type of shared when initializing with 'nil'");
-
-      this.init(this.type.chpl_t);
-
-      if isNonNilableClass(chpl_t) then
-        compilerError("cannot initialize '", this.type:string, "' from 'nil'");
-    }
-
-    @chpldoc.nodoc
-    proc ref doClear() {
-      if chpl_p != nil && chpl_pn != nil {
-        const sc = chpl_pn!.releaseStrong();
-        if sc == 0 then
-          delete _to_unmanaged(chpl_p);
-
-        const tc = chpl_pn!.releaseTotal();
-        if tc == 0 then
-          delete chpl_pn;
-      }
-      chpl_p = nil;
-      chpl_pn = nil;
-    }
-
-    // Issue a compiler error for illegal uses.
-    @chpldoc.nodoc
-    proc type adopt(source) {
-      compilerError("cannot adopt a ", source.type:string);
-    }
-
-    /*
-      Changes the memory management strategy of the argument from `owned`
-      to `shared`, taking over the ownership of the argument.
-      The result type preserves nilability of the argument type.
-      If the argument is non-nilable, it must be recognized by the compiler
-      as an expiring value.
-    */
-    inline proc type adopt(pragma "nil from arg" in obj: owned) {
-      var ptr = owned.release(obj);
-      return shared.adopt(ptr);
-    }
-
-    /*
-      Starts managing the argument class instance `obj`
-      using the `shared` memory management strategy.
-      The result type preserves nilability of the argument type.
-
-      It is an error to directly delete the class instance
-      after passing it to `shared.adopt()`.
-    */
-    inline proc type adopt(pragma "nil from arg" in obj: unmanaged) {
-      return new _shared(obj);
-    }
-
-    // Issue a compiler error for illegal uses.
-    @chpldoc.nodoc
-    proc type create(source) {
-      compilerError("cannot create a 'shared' from ", source.type:string);
-    }
-
-    /* Changes the memory management strategy of the argument from `owned`
-       to `shared`, taking over the ownership of the argument.
-       The result type preserves nilability of the argument type.
-       If the argument is non-nilable, it must be recognized by the compiler
-       as an expiring value. */
-    @deprecated(notes="shared.create from an owned is deprecated - please use :proc:`shared.adopt` with an unmanaged object instead")
-    inline proc type create(pragma "nil from arg" in take: owned) {
-      return shared.adopt(owned.release(take));
-    }
-
-    /* Creates a new `shared` class reference to the argument.
-       The result has the same type as the argument. */
-    @deprecated(notes="shared.create from a shared is deprecated - please use assignment instead")
-    inline proc type create(pragma "nil from arg" in src: shared) {
-      return src;
-    }
-
-    /* Starts managing the argument class instance `p`
-       using the `shared` memory management strategy.
-       The result type preserves nilability of the argument type.
-
-       It is an error to directly delete the class instance
-       after passing it to `shared.create()`. */
-    pragma "unsafe"
-    @deprecated(notes="shared.create from an unmanaged is deprecated - please use :proc:`shared.adopt` instead")
-    inline proc type create(pragma "nil from arg" p : unmanaged) {
-      // 'result' may have a non-nilable type
-      var result: (p.type : shared);
-      result.retain(p);
-      return result;
-    }
-
-    /*
-       The deinitializer for :record:`shared` will destroy the class
-       instance once there are no longer any copies of this
-       :record:`shared` that refer to it.
-     */
-    proc ref deinit() {
-      if isClass(chpl_p) { // otherwise, let error happen on init call
-        doClear();
-      }
-    }
-
-    /*
-       Change the instance managed by this class to `newPtr`.
-       If this record was the last :record:`shared` managing a
-       non-nil instance, that instance will be deleted.
-     */
-    @deprecated(notes="shared.retain is deprecated - please use :proc:`shared.adopt` instead")
-    proc ref retain(pragma "nil from arg" newPtr:unmanaged) {
-      if !isCoercible(newPtr.type, chpl_t) then
-        compilerError("cannot retain '" + newPtr.type:string + "' " +
-                      "(expected '" + _to_unmanaged(chpl_t):string + "')");
-
-      doClear();
-      this.chpl_p = newPtr;
-      if newPtr != nil {
-        this.chpl_pn = new unmanaged ReferenceCount();
-      }
-    }
-
-    /*
-       Empty this :record:`shared` so that it stores `nil`.
-       Deletes the managed object if this :record:`shared` is the
-       last :record:`shared` managing that object.
-       Does not return a value.
-
-       Equivalent to ``shared.retain(nil)``.
-     */
-    pragma "leaves this nil"
-    @deprecated(notes="shared.clear is deprecated - please assign `nil` to the shared object instead")
-    proc ref clear() {
-      doClear();
-    }
-
-    /*
-       Return the object managed by this :record:`shared` without
-       impacting its lifetime at all. It is an error to use the
-       value returned by this function after the last :record:`shared`
-       goes out of scope or deletes the contained class instance
-       for another reason, including calls to
-       `=`, or ``shared.retain`` when this is the last :record:`shared`
-       referring to the instance.
-       In some cases such errors are caught at compile-time.
-     */
-    pragma "nil from this"
-    proc /*const*/ borrow() {
-      if _to_nilable(chpl_t) == chpl_t {
-        return chpl_p;
-      } else {
-        return chpl_p!;
-      }
-    }
-
-    /*
-      Create a :record:`~WeakPointer.weak` reference to this object
-    */
-    @unstable("The `weak` type is experimental; expect this method to change in the future.")
-    proc downgrade() {
-      return new WeakPointer.weak(this);
-    }
-
-    // = should call retain-release
-    // copy-init should call retain
   }
 
+  /* Default-initialize a :type:`shared`. */
+  pragma "leaves this nil"
+  proc _shared.init(type chpl_t) {
+    if !isClass(chpl_t) then
+      compilerError("shared only works with classes");
+
+    this.chpl_t = _to_borrowed(chpl_t);
+    this.chpl_p = nil;
+    this.chpl_pn = nil;
+  }
+
+  @chpldoc.nodoc
+  proc _shared.init(p : borrowed) {
+    compilerError("cannot initialize shared from a borrow");
+    this.init(_to_unmanaged(p));
+  }
+
+  @chpldoc.nodoc
+  proc _shared.init(pragma "nil from arg" p : unmanaged) {
+    this.chpl_t = _to_borrowed(p.type);
+
+    // Boost version default-initializes px and pn
+    // and then swaps in different values.
+
+    var rc:unmanaged ReferenceCount? = nil;
+
+    if p != nil then
+      rc = new unmanaged ReferenceCount();
+
+    this.chpl_p = _to_borrowed(p);
+    this.chpl_pn = rc;
+
+    // Boost includes a mechanism for classes inheriting from
+    // enable_shared_from_this to record a weak pointer back to the
+    // shared pointer. That would need to be handled in a Phase 2
+    // since it would refer to `this` as a whole here.
+  }
+
+  @chpldoc.nodoc
+  proc _shared.init(p: ?T)
+  where isClass(T) == false &&
+        isSubtype(T, _shared) == false &&
+        isIterator(p) == false {
+    compilerError("shared only works with classes");
+    this.chpl_t = T;
+    this.chpl_p = p;
+  }
 
   /*
-     Assign one :record:`shared` to another.
+    Initialize a :type:`shared` taking a pointer from
+    a :type:`~OwnedObject.owned`.
+
+    This :type:`shared` will take over the deletion of the class
+    instance. It is an error to directly delete the class instance
+    while it is managed by :type:`shared`.
+
+    :arg take: the owned value to take ownership from
+  */
+  proc _shared.init(pragma "nil from arg" in take:owned) {
+    var p = take.release();
+    this.chpl_t = if this.type.chpl_t == ? then _to_borrowed(p.type) else this.type.chpl_t;
+
+    if !isClass(p) then
+      compilerError("shared only works with classes");
+
+    var rc:unmanaged ReferenceCount? = nil;
+
+    if p != nil then
+      rc = new unmanaged ReferenceCount();
+
+    this.chpl_p = p;
+    this.chpl_pn = rc;
+
+    this.complete();
+  }
+
+  /*
+    Private move-initializer for use in coercions,
+    only makes sense when `src` was already copied in in intent.
+  */
+  @chpldoc.nodoc
+  proc _shared.init(_private: bool, type t, ref src:_shared) {
+    this.chpl_t = t;
+    this.chpl_p = _to_unmanaged(src.chpl_p):_to_nilable(_to_unmanaged(t));
+    this.chpl_pn = src.chpl_pn;
+
+    src.chpl_p = nil;
+    src.chpl_pn = nil;
+  }
+
+  /* Private initializer for casts. This one increments the reference
+      count if the stored pointer is not nil. */
+  @chpldoc.nodoc
+  proc _shared.init(_private: bool, type t, p, pn) {
+    var ptr = _to_unmanaged(p):_to_nilable(_to_unmanaged(t));
+    var count = pn;
+    if ptr != nil {
+      // increment the reference count
+      count!.retain();
+    } else {
+      // don't store a count for the nil pointer
+      count = nil;
+    }
+
+    this.chpl_t = t;
+    this.chpl_p = ptr;
+    this.chpl_pn = count;
+  }
+
+  /*
+    Private initializer for casting from weak to shared.
+    assumes the shared reference count in 'pn' has already been incremented
+  */
+  @chpldoc.nodoc
+  proc _shared.init(_private: bool, pragma "nil from arg" p: unmanaged, pn) {
+    this.chpl_t = _to_borrowed(p.type);
+    this.chpl_p = p;
+    this.chpl_pn = pn;
+  }
+
+  // Initialize generic 'shared' var-decl from owned:
+  //   var s : shared = ownedThing;
+  @chpldoc.nodoc
+  @deprecated(notes="assigning owned class to shared class is deprecated.")
+  proc _shared.init=(pragma "nil from arg" in take: owned) {
+    var p = take.release();
+
+    this.chpl_t = if this.type.chpl_t != ?
+                  then this.type.chpl_t
+                  else _to_borrowed(p.type);
+
+    var rc:unmanaged ReferenceCount? = nil;
+
+    if p != nil then
+      rc = new unmanaged ReferenceCount();
+
+    this.chpl_p = p;
+    this.chpl_pn = rc;
+
+    this.complete();
+
+    if isNonNilableClass(this.type) && isNilableClass(take) then
+      compilerError("cannot initialize '", this.type:string, "' from a '", take.type:string, "'");
+  }
+
+  /*
+    Copy-initializer. Creates a new :type:`shared`
+    that refers to the same class instance as `src`.
+    These will share responsibility for managing the instance.
+  */
+  proc _shared.init=(pragma "nil from arg" const ref src:_shared) {
+    this.chpl_t = if this.type.chpl_t != ?
+                  then this.type.chpl_t
+                  else _to_borrowed(src.type);
+
+    if isCoercible(src.chpl_t, this.type.chpl_t) == false then
+      compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
+
+    this.chpl_p = src.chpl_p;
+    this.chpl_pn = src.chpl_pn;
+
+    this.complete();
+
+    if this.chpl_pn != nil then
+      this.chpl_pn!.retain();
+
+    if isNonNilableClass(this.type) && isNilableClass(src) then
+      compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
+
+  }
+
+  @chpldoc.nodoc
+  proc _shared.init=(src: borrowed) {
+    compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
+
+    this.chpl_t = if this.type.chpl_t != ?
+                  then this.type.chpl_t
+                  else _to_borrowed(src.type);
+  }
+
+  @chpldoc.nodoc
+  proc _shared.init=(src: unmanaged) {
+    compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
+    this.chpl_t = if this.type.chpl_t != ?
+                  then this.type.chpl_t
+                  else _to_borrowed(src.type);
+  }
+
+  pragma "leaves this nil"
+  @chpldoc.nodoc
+  proc _shared.init=(src : _nilType) {
+    if this.type.chpl_t == ? then
+      compilerError("cannot establish type of shared when initializing with 'nil'");
+
+    this.init(this.type.chpl_t);
+
+    if isNonNilableClass(chpl_t) then
+      compilerError("cannot initialize '", this.type:string, "' from 'nil'");
+  }
+
+  @chpldoc.nodoc
+  proc ref _shared.doClear() {
+    if chpl_p != nil && chpl_pn != nil {
+      const sc = chpl_pn!.releaseStrong();
+      if sc == 0 then
+        delete _to_unmanaged(chpl_p);
+
+      const tc = chpl_pn!.releaseTotal();
+      if tc == 0 then
+        delete chpl_pn;
+    }
+    chpl_p = nil;
+    chpl_pn = nil;
+  }
+
+  // Issue a compiler error for illegal uses.
+  @chpldoc.nodoc
+  proc type _shared.adopt(source) {
+    compilerError("cannot adopt a ", source.type:string);
+  }
+
+  /*
+    Changes the memory management strategy of the argument from `owned`
+    to `shared`, taking over the ownership of the argument.
+    The result type preserves nilability of the argument type.
+    If the argument is non-nilable, it must be recognized by the compiler
+    as an expiring value.
+  */
+  inline proc type _shared.adopt(pragma "nil from arg" in obj: owned) {
+    var ptr = owned.release(obj);
+    return shared.adopt(ptr);
+  }
+
+  /*
+    Starts managing the argument class instance `obj`
+    using the `shared` memory management strategy.
+    The result type preserves nilability of the argument type.
+
+    It is an error to directly delete the class instance
+    after passing it to `shared.adopt()`.
+  */
+  inline proc type _shared.adopt(pragma "nil from arg" in obj: unmanaged) {
+    return new _shared(obj);
+  }
+
+  // Issue a compiler error for illegal uses.
+  @chpldoc.nodoc
+  proc type _shared.create(source) {
+    compilerError("cannot create a 'shared' from ", source.type:string);
+  }
+
+  /*
+    Changes the memory management strategy of the argument from `owned`
+    to `shared`, taking over the ownership of the argument.
+    The result type preserves nilability of the argument type.
+    If the argument is non-nilable, it must be recognized by the compiler
+    as an expiring value.
+  */
+  @deprecated(notes="shared.create from an owned is deprecated - please use :proc:`shared.adopt` with an unmanaged object instead")
+  inline proc type _shared.create(pragma "nil from arg" in take: owned) {
+    return shared.adopt(owned.release(take));
+  }
+
+  /*
+    Creates a new `shared` class reference to the argument.
+    The result has the same type as the argument.
+  */
+  @deprecated(notes="shared.create from a shared is deprecated - please use assignment instead")
+  inline proc type _shared.create(pragma "nil from arg" in src: shared) {
+    return src;
+  }
+
+  /*
+    Starts managing the argument class instance `p`
+    using the `shared` memory management strategy.
+    The result type preserves nilability of the argument type.
+
+    It is an error to directly delete the class instance
+    after passing it to `shared.create()`.
+  */
+  pragma "unsafe"
+  @deprecated(notes="shared.create from an unmanaged is deprecated - please use :proc:`shared.adopt` instead")
+  inline proc type _shared.create(pragma "nil from arg" p : unmanaged) {
+    // 'result' may have a non-nilable type
+    var result: (p.type : shared);
+    result.retain(p);
+    return result;
+  }
+
+  /*
+    The deinitializer for :type:`shared` will destroy the class
+    instance once there are no longer any copies of this
+    :type:`shared` that refer to it.
+  */
+  proc _shared.deinit() {
+    if isClass(chpl_p) { // otherwise, let error happen on init call
+      doClear();
+    }
+  }
+
+  /*
+    Change the instance managed by this class to `newPtr`.
+    If this record was the last :type:`shared` managing a
+    non-nil instance, that instance will be deleted.
+  */
+  @deprecated(notes="shared.retain is deprecated - please use :proc:`shared.adopt` instead")
+  proc ref _shared.retain(pragma "nil from arg" newPtr:unmanaged) {
+    if !isCoercible(newPtr.type, chpl_t) then
+      compilerError("cannot retain '" + newPtr.type:string + "' " +
+                    "(expected '" + _to_unmanaged(chpl_t):string + "')");
+
+    doClear();
+    this.chpl_p = newPtr;
+    if newPtr != nil {
+      this.chpl_pn = new unmanaged ReferenceCount();
+    }
+  }
+
+  /*
+    Empty this :type:`shared` so that it stores `nil`.
+    Deletes the managed object if this :type:`shared` is the
+    last :type:`shared` managing that object.
+    Does not return a value.
+
+    Equivalent to ``shared.retain(nil)``.
+  */
+  pragma "leaves this nil"
+  @deprecated(notes="shared.clear is deprecated - please assign `nil` to the shared object instead")
+  proc ref _shared.clear() {
+    doClear();
+  }
+
+  /*
+    Return the object managed by this :type:`shared` without
+    impacting its lifetime at all. It is an error to use the
+    value returned by this function after the last :type:`shared`
+    goes out of scope or deletes the contained class instance
+    for another reason, including calls to
+    `=`, or ``shared.retain`` when this is the last :type:`shared`
+    referring to the instance.
+    In some cases such errors are caught at compile-time.
+  */
+  pragma "nil from this"
+  proc /*const*/ _shared.borrow() {
+    if _to_nilable(chpl_t) == chpl_t {
+      return chpl_p;
+    } else {
+      return chpl_p!;
+    }
+  }
+
+  /* Create a :record:`~WeakPointer.weak` reference to this object */
+  @unstable("The `weak` type is experimental; expect this method to change in the future.")
+  proc _shared.downgrade() {
+    return new WeakPointer.weak(this);
+  }
+
+  // = should call retain-release
+  // copy-init should call retain
+  /*
+     Assign one :type:`shared` to another.
      Deletes the object managed by ``lhs`` if there are
-     no other :record:`shared` referring to it. On return,
+     no other :type:`shared` referring to it. On return,
      ``lhs`` will refer to the same object as ``rhs``.
    */
   operator =(ref lhs:_shared, rhs: _shared)
@@ -502,9 +510,9 @@ module SharedObject {
   }
 
   /*
-     Set a :record:`shared` from a :type:`~OwnedObject.owned`.
+     Set a :type:`shared` from a :type:`~OwnedObject.owned`.
      Deletes the object managed by ``lhs`` if there are
-     no other :record:`shared` referring to it.
+     no other :type:`shared` referring to it.
      On return, ``lhs`` will refer to the object previously
      managed by ``rhs``, and ``rhs`` will refer to `nil`.
    */
@@ -522,7 +530,7 @@ module SharedObject {
   }
 
   /*
-     Swap two :record:`shared` objects.
+     Swap two :type:`shared` objects.
    */
   operator <=>(ref lhs: _shared, ref rhs: _shared) {
     lhs.chpl_pn <=> rhs.chpl_pn;
@@ -712,7 +720,7 @@ or
 
 
 This module contains the ``weak`` type, which is a smart pointer type designed
-to be used in tandem with :record:`~SharedObject.shared` objects.
+to be used in tandem with :type:`~SharedObject.shared` objects.
 
 A ``weak`` provides a reference to a ``shared`` class object without
 requiring it to stay allocated. Such a pattern is useful for implementing graph
@@ -920,7 +928,7 @@ module WeakPointer {
       If the referenced class has already been deinitialized, or is
       itself ``nil``, this cast will return a ``nil`` value.
 
-      Otherwise it will return a nilable :record:`~SharedObject.shared`
+      Otherwise it will return a nilable :type:`~SharedObject.shared`
       ``t``.
   */
   inline operator :(const ref x: weak, type t: shared class?)
@@ -957,7 +965,7 @@ module WeakPointer {
       If the referenced class has already been deinitialized, or is
       itself ``nil``, this cast will throw a :class:`~Errors.NilClassError`.
 
-      Otherwise it will return a :record:`~SharedObject.shared` ``t``.
+      Otherwise it will return a :type:`~SharedObject.shared` ``t``.
   */
   inline operator :(const ref x: weak, type t: shared class) throws
     where isSubtype(_to_nonnil(x.classType), t.chpl_t)

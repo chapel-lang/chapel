@@ -1959,7 +1959,7 @@ the memory.
 Owned Objects
 -------------
 
-Including ``owned`` (or :record:`~SharedObject.shared`) in a class type directs
+Including ``owned`` (or :type:`~SharedObject.shared`) in a class type directs
 the compiler to manage the deallocation of a class instances of that type.
 :type:`~OwnedObject.owned` is meant to be used when only one reference to an
 object needs to manage that object's storage at a time.
@@ -2099,7 +2099,7 @@ Also see the above section on :ref:`Class_Lifetime_and_Borrows`.
 Using `shared`
 ~~~~~~~~~~~~~~
 
-To use :record:`~SharedObject.shared`, allocate a class instance following this
+To use :type:`~SharedObject.shared`, allocate a class instance following this
 pattern:
 
 .. code-block:: chapel
@@ -2130,17 +2130,17 @@ Borrowing from `shared`
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 The :proc:`~SharedObject.shared.borrow` method returns the pointer managed by
-the :record:`~SharedObject.shared`. This pointer is only valid as long as the
-:record:`~SharedObject.shared` is storing that pointer. The compiler includes
+the :type:`~SharedObject.shared`. This pointer is only valid as long as the
+:type:`~SharedObject.shared` is storing that pointer. The compiler includes
 some checking for errors in this case. In these ways,
-:record:`~SharedObject.shared` is similar to :type:`~OwnedObject.owned`.
+:type:`~SharedObject.shared` is similar to :type:`~OwnedObject.owned`.
 
 See :ref:`about-owned-borrowing` for more details and examples.
 
 Coercions for `shared`
 ~~~~~~~~~~~~~~~~~~~~~~
 
-As with :type:`~OwnedObject.owned`, :record:`~SharedObject.shared` supports
+As with :type:`~OwnedObject.owned`, :type:`~SharedObject.shared` supports
 coercions to the class type as well as
 coercions from a ``shared(T)`` to ``shared(U)`` where ``T`` is a
 subclass of ``U``.
@@ -2150,7 +2150,7 @@ See :ref:`about-owned-coercions` for more details and examples.
 `shared` Default Intent
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-The default intent for :record:`~SharedObject.shared` types is ``const ref``.
+The default intent for :type:`~SharedObject.shared` types is ``const ref``.
 See more on argument intents in the :ref:`Procedures Primer <primers-procedures>`
 
 .. _Shared_Methods:
