@@ -2198,8 +2198,6 @@ tryGenerateSatisfyingIstm(CallExpr*        callsite,
                           CallExpr*        call2wf) {
   if (!isAutoImplementInternalInterface(isym)) return nullptr;
 
-  debuggerBreakHere();
-
   ImplementsStmt* bestIstm = checkInferredImplStmt(callsite, isym, call2wf,
                                                    nullptr,
                                                    /* generatedOnly */ true);
