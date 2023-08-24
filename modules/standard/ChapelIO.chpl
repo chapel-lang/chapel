@@ -307,43 +307,44 @@ module ChapelIO {
                               const x:?t) throws {
       const name = __primitive("simple type name", x);
       const numIO = __numIOFields(t);
-      if isClassType(t) then
-        serializer.startClass(writer, name, numIO);
+      var ser = if isClassType(t) then
+        serializer.startClass(writer, name, numIO)
       else
         serializer.startRecord(writer, name, numIO);
 
       if isClassType(t) && _to_borrowed(t) != borrowed RootClass {
-        serializeDefaultImpl(writer, serializer, x.super);
+        if x.super.type != borrowed RootClass then
+          x.super.serialize(writer, ser);
       }
 
       param num_fields = __primitive("num fields", t);
       for param i in 1..num_fields {
         if isIoField(x, i) {
           param name : string = __primitive("field num to name", x, i);
-          serializer.serializeField(writer, name,
-                                    __primitive("field by num", x, i));
+          ser.serializeField(name,
+                             __primitive("field by num", x, i));
         }
       }
 
       if isClassType(t) then
-        serializer.endClass(writer);
+        ser.endClass();
       else
-        serializer.endRecord(writer);
+        ser.endRecord();
     }
 
     @chpldoc.nodoc
     proc deserializeDefaultImpl(reader: fileReader, ref deserializer,
                                 ref x:?t) throws {
       const name = __primitive("simple type name", x):string;
-      if isClassType(t) then
-        deserializer.startClass(reader, name);
+      var des = if isClassType(t) then
+        deserializer.startClass(reader, name)
       else
         deserializer.startRecord(reader, name);
 
       if isClassType(t) && _to_borrowed(t) != borrowed RootClass {
         var castTmp : x.super.type = x;
         if x.super.type != borrowed RootClass then
-          castTmp.deserialize(reader, deserializer);
+          castTmp.deserialize(reader, des);
       }
 
       param num_fields = __primitive("num fields", t);
@@ -351,15 +352,15 @@ module ChapelIO {
         if isIoField(x, i) {
           param name : string = __primitive("field num to name", x, i);
           ref field = __primitive("field by num", x, i);
-          field = deserializer.deserializeField(reader, name,
-                                                __primitive("field by num", x, i).type);
+          field = des.deserializeField(name,
+                                       __primitive("field by num", x, i).type);
         }
       }
 
       if isClassType(t) then
-        deserializer.endClass(reader);
+        des.endClass();
       else
-        deserializer.endRecord(reader);
+        des.endRecord();
     }
 
     //
@@ -761,24 +762,23 @@ module ChapelIO {
 
   @chpldoc.nodoc
   proc ref _tuple.deserialize(reader, ref deserializer) throws {
-    ref des = deserializer;
-    des.startTuple(reader);
+    var des = deserializer.startTuple(reader);
     for param i in 0..<this.size {
       pragma "no auto destroy"
-      var elt = des.deserializeField(reader, "", this(i).type);
+      var elt = des.readElement(this(i).type);
       __primitive("=", this(i), elt);
     }
-    des.endTuple(reader);
+    des.endTuple();
   }
 
   @chpldoc.nodoc
   proc const _tuple.serialize(writer, ref serializer) throws {
-    serializer.startTuple(writer, this.size);
+    var ser = serializer.startTuple(writer, this.size);
     for param i in 0..<size {
       const ref elt = this(i);
-      serializer.serializeField(writer, "", elt);
+      ser.writeElement(elt);
     }
-    serializer.endTuple(writer);
+    ser.endTuple();
   }
 
   // Moved here to avoid circular dependencies in ChapelRange
