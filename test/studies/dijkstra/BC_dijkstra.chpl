@@ -12,7 +12,7 @@ module BC_dijkstra {
      for i in D1 do
       // onStack = next record on stack; -1 EOS; -2 not on stack
       // inHeap = location of this record in heap
-      new unmanaged Record(distance = INFINITY, onStack = -2, inHeap = -1,
+      new unmanaged Record(distance = inf, onStack = -2, inHeap = -1,
                       preEdge = new unmanaged PreEdge(edge = -1, next = nil));
 
     // Initialize heap

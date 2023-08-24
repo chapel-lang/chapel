@@ -44,6 +44,6 @@ checkNan(x*negnanzeros);
 checkNan(x*naninf);
 checkNan(x*negnaninf);
 
-checkPosInf(x*INFINITY);
-checkNegInf(-(x*INFINITY));
-checkNegInf(x*(-INFINITY));
+checkPosInf(x*inf);
+checkNegInf(-(x*inf));
+checkNegInf(x*(-inf));

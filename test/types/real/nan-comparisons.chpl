@@ -1,6 +1,6 @@
-var nan = NAN;
-var inf = INFINITY;
-var neginf = -INFINITY;
+var nan = AutoMath.nan;
+var inf = AutoMath.inf;
+var neginf = -AutoMath.inf;
 
 writeln("isnan(nan) ", isnan(nan));
 
