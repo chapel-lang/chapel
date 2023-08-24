@@ -980,6 +980,16 @@ AggregateType* AggregateType::generateType(CallExpr* call, const char* callStrin
       } else if (field->hasFlag(FLAG_DEPRECATED)) {
         field->maybeGenerateDeprecationWarning(ne);
       }
+      // don't allow type-constructor calls to use named-argument passing
+      // for a field that isn't 'type' or 'param'
+      if (!field->hasEitherFlag(FLAG_TYPE_VARIABLE, FLAG_PARAM)) {
+        USR_FATAL_CONT(call, "named arguments can only be used in "
+                             "type construction to set "
+                             "'type' or 'param' fields");
+        USR_PRINT(field, "field '%s' declared here is not 'type' or 'param'",
+                  field->name);
+        USR_STOP();
+      }
       map.put(field, toSymExpr(ne->actual)->symbol());
     } else {
       SymExpr* se = toSymExpr(actual);

@@ -1,0 +1,2 @@
+error-named-to-value.chpl:6: error: named arguments can only be used in type construction to set 'type' or 'param' fields
+error-named-to-value.chpl:2: note: field 'x' declared here is not 'type' or 'param'
