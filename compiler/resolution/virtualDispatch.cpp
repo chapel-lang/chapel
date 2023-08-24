@@ -234,7 +234,9 @@ static FnSymbol* getInstantiatedFunction(FnSymbol* pfn,
     // A smaller test case:
     //   types/type_variables/deitz/test_point_of_instantiation3.chpl
     //
-    fn->setInstantiationPoint(ct->symbol->instantiationPoint);
+    if (fn->instantiationPoint() == NULL) {
+      fn->setInstantiationPoint(ct->symbol->instantiationPoint);
+    }
 
     return fn;
   }
