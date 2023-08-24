@@ -709,7 +709,7 @@ record regex {
   }
 
   @chpldoc.nodoc
-  proc _deserialize(data) {
+  proc ref _deserialize(data) {
     const pattern = exprType.chpl__deserialize(data.pattern);
     qio_regex_create_compile(pattern.c_str(),
                              pattern.numBytes,

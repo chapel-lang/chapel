@@ -242,7 +242,7 @@ module Atomics {
     var _v:externT(bool);
 
     @chpldoc.nodoc
-    proc init_helper(val:bool) {
+    proc ref init_helper(val:bool) {
       pragma "fn synchronization free"
       pragma "local fn" pragma "fast-on safe extern function"
       pragma "no gpu codegen"
@@ -272,7 +272,7 @@ module Atomics {
     }
 
     @chpldoc.nodoc
-    proc deinit() {
+    proc ref deinit() {
       pragma "fn synchronization free"
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("destroy", bool, explicit=false)
@@ -297,7 +297,7 @@ module Atomics {
     /*
        Stores `val` as the new value.
     */
-    inline proc write(val:bool, param order: memoryOrder = memoryOrder.seqCst): void {
+    inline proc ref write(val:bool, param order: memoryOrder = memoryOrder.seqCst): void {
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("store", bool)
         proc atomic_store(ref obj:externT(bool), val:bool, order:memory_order): void;
@@ -308,7 +308,7 @@ module Atomics {
     /*
        Stores `val` as the new value and returns the original value.
     */
-    inline proc exchange(val:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
+    inline proc ref exchange(val:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("exchange", bool)
         proc atomic_exchange(ref obj:externT(bool), val:bool, order:memory_order): bool;
@@ -387,14 +387,14 @@ module Atomics {
     /*
        Stores `true` as the new value and returns the old value.
     */
-    inline proc testAndSet(param order: memoryOrder = memoryOrder.seqCst): bool {
+    inline proc ref testAndSet(param order: memoryOrder = memoryOrder.seqCst): bool {
       return this.exchange(true, order);
     }
 
     /*
        Stores `false` as the new value.
     */
-    inline proc clear(param order: memoryOrder = memoryOrder.seqCst): void {
+    inline proc ref clear(param order: memoryOrder = memoryOrder.seqCst): void {
       this.write(false, order);
     }
 
@@ -435,7 +435,7 @@ module Atomics {
     var _v:externT(valType);
 
     @chpldoc.nodoc
-    proc init_helper(val:valType) {
+    proc ref init_helper(val:valType) {
       pragma "fn synchronization free"
       pragma "local fn" pragma "fast-on safe extern function"
       pragma "no gpu codegen"
@@ -468,7 +468,7 @@ module Atomics {
     }
 
     @chpldoc.nodoc
-    proc deinit() {
+    proc ref deinit() {
       pragma "fn synchronization free"
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("destroy", valType, explicit=false)
@@ -493,7 +493,7 @@ module Atomics {
     /*
        Stores `val` as the new value.
     */
-    inline proc write(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
+    inline proc ref write(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("store", valType)
         proc atomic_store(ref obj:externT(valType), val:valType, order:memory_order): void;
@@ -600,7 +600,7 @@ module Atomics {
        Adds `val` to the original value and stores the result. Defined for
        integer and real atomic types.
     */
-    inline proc add(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
+    inline proc ref add(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("fetch_add", valType)
         proc atomic_fetch_add(ref obj:externT(valType), operand:valType, order:memory_order): valType;
@@ -628,7 +628,7 @@ module Atomics {
        Subtracts `val` from the original value and stores the result. Defined
        for integer and real atomic types.
     */
-    inline proc sub(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
+    inline proc ref sub(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("fetch_sub", valType)
         proc atomic_fetch_sub(ref obj:externT(valType), operand:valType, order:memory_order): valType;
