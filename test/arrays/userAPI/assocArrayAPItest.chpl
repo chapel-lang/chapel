@@ -19,12 +19,12 @@ proc readArray(ref X) {
   X["ten"]   = 10.0;
 }
 
-proc testAssocArrayAPI(ref X: [], output:fileWriter(?)=stdout) {
+proc testAssocArrayAPI(ref X: [], arrayOutput:fileWriter(?)=stdout) {
   // only write arrays in CHPL format
   proc writeln(const args ...?n) {
     for param i in 0..<n {
       if isArray(args(i)) then
-        try! output.write(args(i));
+        try! arrayOutput.write(args(i));
       else
         try! stdout.write(args(i));
     }
