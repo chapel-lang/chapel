@@ -73,7 +73,7 @@ Infinity and NaN
 ----------------
 :proc:`inf`
 :proc:`nan`
-:proc:`isfinite`
+:proc:`isFinite`
 :proc:`isinf`
 :proc:`isnan`
 
@@ -1503,14 +1503,23 @@ module AutoMath {
   @deprecated(notes="'INFINITY' has been deprecated in favor of :proc:`inf`, please use that instead")
   inline proc INFINITY param : real(64) do return inf;
 
+  /* Returns `true` if the argument `x` is a representation of a finite value;
+     `false` otherwise. */
+  inline proc isFinite(x: real(64)): bool do return chpl_macro_double_isfinite(x):bool;
 
   /* Returns `true` if the argument `x` is a representation of a finite value;
      `false` otherwise. */
-  inline proc isfinite(x: real(64)): bool do return chpl_macro_double_isfinite(x):bool;
+  inline proc isFinite(x: real(32)): bool do return chpl_macro_float_isfinite(x):bool;
 
   /* Returns `true` if the argument `x` is a representation of a finite value;
      `false` otherwise. */
-  inline proc isfinite(x: real(32)): bool do return chpl_macro_float_isfinite(x):bool;
+  @deprecated(notes="'isfinite' is deprecated in favor of :proc:`isFinite`, please use that instead")
+  inline proc isfinite(x: real(64)): bool do return isFinite(x):bool;
+
+  /* Returns `true` if the argument `x` is a representation of a finite value;
+     `false` otherwise. */
+  @deprecated(notes="'isfinite' is deprecated in favor of :proc:`isFinite`, please use that instead")
+  inline proc isfinite(x: real(32)): bool do return isFinite(x):bool;
 
 
   /* Returns `true` if the argument `x` is a representation of *infinity*;
