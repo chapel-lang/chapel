@@ -388,7 +388,7 @@ module UnrolledLinkedList {
     }
 
     @chpldoc.nodoc
-    proc _append(ref x: eltType) where isOwnedClass(x)
+    proc ref _append(ref x: eltType) where isOwnedClass(x)
     lifetime this < x {
       _size += 1;
       _spareSpaceInTail();
@@ -412,7 +412,7 @@ module UnrolledLinkedList {
     }
 
     @chpldoc.nodoc
-    proc append(ref x: eltType) where isOwnedClass(x)
+    proc ref append(ref x: eltType) where isOwnedClass(x)
     lifetime this < x {
       _enter();
       _append(x);

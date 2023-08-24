@@ -760,7 +760,7 @@ module ChapelIO {
   }
 
   @chpldoc.nodoc
-  proc _tuple.deserialize(reader, ref deserializer) throws {
+  proc ref _tuple.deserialize(reader, ref deserializer) throws {
     ref des = deserializer;
     des.startTuple(reader);
     for param i in 0..<this.size {

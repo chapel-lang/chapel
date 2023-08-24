@@ -12,7 +12,7 @@ record SubTimer {
     for n in names do D.add(n);
   }
 
-  proc this(idx:string) ref {
+  proc ref this(idx:string) ref {
     return A[idx];
   }
 

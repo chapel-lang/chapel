@@ -651,7 +651,7 @@ module Map {
     }
 
     @chpldoc.nodoc
-    proc deserialize(reader: fileReader, ref deserializer) throws {
+    proc ref deserialize(reader: fileReader, ref deserializer) throws {
       _readHelper(reader, deserializer);
     }
 

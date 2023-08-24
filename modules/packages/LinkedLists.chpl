@@ -405,7 +405,7 @@ record LinkedList {
       if isJson || isChpl then f._readLiteral("]");
   }
 
-  proc deserialize(reader: fileReader, ref deserializer) throws
+  proc ref deserialize(reader: fileReader, ref deserializer) throws
   where reader.deserializerType == IO.DefaultDeserializer {
     destroy();
 
@@ -427,7 +427,7 @@ record LinkedList {
     des.endArray(reader);
   }
 
-  proc deserialize(reader: fileReader, ref deserializer) throws {
+  proc ref deserialize(reader: fileReader, ref deserializer) throws {
     // Clear out existing elements in the list.
     destroy();
 

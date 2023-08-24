@@ -1067,14 +1067,14 @@ module Vector {
 
       :yields: A reference to one of the elements contained in this vector.
     */
-    iter these() ref {
+    iter ref these() ref {
       for i in 0..#_size {
         yield _data[i];
       }
     }
 
     @chpldoc.nodoc
-    iter these(param tag: iterKind) ref where tag == iterKind.standalone {
+    iter ref these(param tag: iterKind) ref where tag == iterKind.standalone {
       const osz = _size;
       const minChunkSize = 64;
       const hasOneChunk = osz <= minChunkSize;
@@ -1105,7 +1105,7 @@ module Vector {
     }
 
     @chpldoc.nodoc
-    iter these(param tag) ref where tag == iterKind.leader {
+    iter ref these(param tag) ref where tag == iterKind.leader {
       const osz = _size;
       const minChunkSize = 32;
       const hasOneChunk = osz <= minChunkSize;
@@ -1121,7 +1121,7 @@ module Vector {
     }
 
     @chpldoc.nodoc
-    iter these(param tag, followThis) ref where tag == iterKind.follower {
+    iter ref these(param tag, followThis) ref where tag == iterKind.follower {
       for i in followThis(0) do
         yield this[i];
     }
