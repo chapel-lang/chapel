@@ -5507,10 +5507,11 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
 
 @deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewFileWriterRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
 proc file.writer(param kind=iokind.dynamic, param locking=true,
-                 region: range(?) = 0.., hints = ioHintSet.empty):
-                 fileWriter(kind,locking) throws where (region.hasHighBound() &&
+                 region: range(?) = 0.., hints = ioHintSet.empty,
+                 in serializer:?st = defaultSerializeVal(true)):
+                 fileWriter(kind,locking,st) throws where (region.hasHighBound() &&
                                                         !useNewFileWriterRegionBounds) {
-  return this.writerHelper(kind, locking, region, hints);
+  return this.writerHelper(kind, locking, region, hints, serializer=serializer);
 }
 
 @chpldoc.nodoc
