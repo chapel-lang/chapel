@@ -269,17 +269,17 @@ private:
   void                        fieldToArg(FnSymbol*              fn,
                                          std::set<const char*>& names,
                                          SymbolMap&             fieldArgMap,
-                                         ArgSymbol*             fileReader,
-                                         ArgSymbol*             formatter);
+                                         Symbol*             formatter);
 
   void                        fieldToArgType(DefExpr*   fieldDef,
                                              ArgSymbol* arg);
 
-  bool                        handleSuperFields(FnSymbol*                    fn,
+  bool                        badParentInit();
+  void                        handleSuperFields(FnSymbol*                    fn,
                                                 const std::set<const char*>& names,
                                                 SymbolMap&                   fieldArgMap,
-                                                ArgSymbol* fileReader = nullptr,
-                                                ArgSymbol* deser = nullptr);
+                                                Symbol* fileReader,
+                                                Symbol* desHelper);
 
   std::vector<AggregateType*> instantiations;
 

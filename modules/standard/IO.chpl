@@ -2681,30 +2681,15 @@ proc fileWriter.serializer ref : serializerType {
   methods for records and classes.
 */
 record DefaultSerializer {
-  @chpldoc.nodoc
-  var _firstThing = true;
-  @chpldoc.nodoc
-  var _inheritLevel = 0;
-
-  // Array state to track position in multidimensional arrays
-  @chpldoc.nodoc
-  var _arrayDim = 0;
-  @chpldoc.nodoc
-  var _arrayMax : int;
-
-  @chpldoc.nodoc
-  var _oneTuple : bool = false;
 
   @chpldoc.nodoc
   proc _serializeClassOrPtr(writer:fileWriter, x: ?t) : void throws {
     if x == nil {
       writer._writeLiteral("nil");
     } else if isClassType(t) {
-      var alias = writer.withSerializer(new DefaultSerializer());
-      x!.serialize(writer=alias, serializer=alias.serializer);
+      x!.serialize(writer=writer, serializer=this);
     } else {
-      var alias = writer.withSerializer(new DefaultSerializer());
-      x.serialize(writer=alias, serializer=alias.serializer);
+      x.serialize(writer=writer, serializer=this);
     }
   }
 
@@ -2719,22 +2704,40 @@ record DefaultSerializer {
     } else if isUnionType(t) {
       val.writeThis(writer);
     } else {
-      var alias = writer.withSerializer(new DefaultSerializer());
-      val.serialize(writer=alias, serializer=alias.serializer);
+      val.serialize(writer=writer, serializer=this);
     }
   }
 
-  @chpldoc.nodoc
-  proc ref serializeField(writer:fileWriter, name: string, const val: ?) : void throws {
-    if !_firstThing then writer._writeLiteral(", ");
-    else _firstThing = false;
+  record AggregateSerializer {
+    var writer;
+    var _parent = false;
+    var _first : bool = true;
+    const _ending : string;
 
-    if !name.isEmpty() {
+    proc serializeField(name: string, const val: ?) throws {
+      if !_first then writer._writeLiteral(", ");
+      else _first = false;
+
       writer._writeLiteral(name);
       writer._writeLiteral(" = ");
+      writer.write(val);
     }
 
-    writer.write(val);
+    proc startClass(writer: fileWriter, name: string, size: int) throws {
+      _first = size == 0;
+      return new AggregateSerializer(writer, _parent=true);
+    }
+
+    @chpldoc.nodoc
+    proc endClass() throws {
+      if !_parent then
+        writer._writeLiteral(_ending);
+    }
+
+    @chpldoc.nodoc
+    proc endRecord() throws {
+      writer._writeLiteral(_ending);
+    }
   }
 
   // Class helpers
@@ -2742,60 +2745,101 @@ record DefaultSerializer {
   // TODO: If this is called in a nested way for inheriting classes, then we
   // can increment 'size' internally to track the total number of fields...?
   @chpldoc.nodoc
-  proc ref startClass(writer: fileWriter, name: string, size: int) throws {
-    if _inheritLevel == 0 {
-      writer._writeLiteral("{");
-    }
-    _inheritLevel += 1;
-  }
-  @chpldoc.nodoc
-  proc ref endClass(writer: fileWriter) throws {
-    if _inheritLevel == 1 {
-      writer._writeLiteral("}");
-    }
-    _inheritLevel -= 1;
+  proc startClass(writer: fileWriter, name: string, size: int) throws {
+    writer._writeLiteral("{");
+    return new AggregateSerializer(writer, _ending="}");
   }
 
   // Record helpers
   @chpldoc.nodoc
   proc startRecord(writer: fileWriter, name: string, size: int) throws {
     writer._writeLiteral("(");
+    return new AggregateSerializer(writer, _ending=")");
   }
-  @chpldoc.nodoc
-  proc endRecord(writer: fileWriter) throws {
-    writer._writeLiteral(")");
+
+  record TupleSerializer {
+    var writer;
+    const size : int;
+    var _first : bool = true;
+
+    proc writeElement(const val: ?) throws {
+      if !_first then writer._writeLiteral(", ");
+      else _first = false;
+
+      writer.write(val);
+    }
+
+    @chpldoc.nodoc
+    proc endTuple() throws {
+      if size == 1 then
+        writer._writeLiteral(",)");
+      else
+        writer._writeLiteral(")");
+    }
   }
 
   // Tuple helpers
   @chpldoc.nodoc
-  proc ref startTuple(writer: fileWriter, size: int) throws {
-    _oneTuple = size==1;
+  proc startTuple(writer: fileWriter, size: int) throws {
     writer._writeLiteral("(");
-  }
-  @chpldoc.nodoc
-  proc endTuple(writer: fileWriter) throws {
-    if _oneTuple then
-      writer._writeLiteral(",)");
-    else
-      writer._writeLiteral(")");
+    return new TupleSerializer(writer, size);
   }
 
+  record ListSerializer {
+    var writer;
+    var _first : bool = true;
+
+    proc writeElement(const val: ?) throws {
+      if !_first then writer._writeLiteral(", ");
+      else _first = false;
+
+      writer.write(val);
+    }
+
+    @chpldoc.nodoc
+    proc endList() throws {
+      writer._writeLiteral("]");
+    }
+  }
   // List helpers
   @chpldoc.nodoc
   proc ref startList(writer: fileWriter, size: uint) throws {
     writer._writeLiteral("[");
-    _firstThing = true;
+    return new ListSerializer(writer);
   }
-  @chpldoc.nodoc
-  proc ref writeListElement(writer: fileWriter, const val: ?) throws {
-    if !_firstThing then writer._writeLiteral(", ");
-    else _firstThing = false;
 
-    writer.write(val);
-  }
-  @chpldoc.nodoc
-  proc endList(writer: fileWriter) throws {
-    writer._writeLiteral("]");
+  record ArraySerializer {
+    var writer;
+    var _arrayDim : int;
+    var _arrayMax : int;
+    var _first : bool = true;
+
+    @chpldoc.nodoc
+    proc startDim(size: uint) throws {
+      _arrayDim += 1;
+
+      if _arrayMax >= _arrayDim then
+        writer.writeNewline();
+      else
+        _arrayMax = _arrayDim;
+    }
+
+    @chpldoc.nodoc
+    proc endDim() throws {
+      _arrayDim -= 1;
+      _first = true;
+    }
+
+    @chpldoc.nodoc
+    proc writeElement(const val: ?) throws {
+      if !_first then writer._writeLiteral(" ");
+      else _first = false;
+
+      writer.write(val);
+    }
+
+    @chpldoc.nodoc
+    proc endArray() throws { }
   }
 
   // Array helpers
@@ -2804,59 +2848,38 @@ record DefaultSerializer {
   // kind of weird. I'd personally lean towards writing them as a map.
   @chpldoc.nodoc
   proc startArray(writer: fileWriter, size: uint) throws {
+    return new ArraySerializer(writer);
   }
 
-  @chpldoc.nodoc
-  proc ref startArrayDim(writer: fileWriter, size: uint) throws {
-    _arrayDim += 1;
+  record MapSerializer {
+    var writer;
+    var _first : bool = true;
 
-    if _arrayMax >= _arrayDim then
-      writer.writeNewline();
-    else
-      _arrayMax = _arrayDim;
-  }
+    @chpldoc.nodoc
+    proc writeKey(const key: ?) throws {
+      if !_first then writer._writeLiteral(", ");
+      else _first = false;
 
-  @chpldoc.nodoc
-  proc ref endArrayDim(writer: fileWriter) throws {
-    _arrayDim -= 1;
-    _firstThing = true;
-  }
+      writer.write(key);
+    }
 
-  @chpldoc.nodoc
-  proc ref writeArrayElement(writer: fileWriter, const val: ?) throws {
-    if !_firstThing then writer._writeLiteral(" ");
-    else _firstThing = false;
+    @chpldoc.nodoc
+    proc writeValue(const val: ?) throws {
+      writer._writeLiteral(": ");
+      writer.write(val);
+    }
 
-    writer.write(val);
-  }
-
-  @chpldoc.nodoc
-  proc endArray(writer: fileWriter) throws {
+    @chpldoc.nodoc
+    proc endMap() throws {
+      writer._writeLiteral("}");
+    }
   }
 
   // Map helpers
   @chpldoc.nodoc
   proc startMap(writer: fileWriter, size: uint) throws {
     writer._writeLiteral("{");
-  }
-
-  @chpldoc.nodoc
-  proc ref writeKey(writer: fileWriter, const key: ?) throws {
-    if !_firstThing then writer._writeLiteral(", ");
-    else _firstThing = false;
-
-    writer.write(key);
-  }
-
-  @chpldoc.nodoc
-  proc writeValue(writer: fileWriter, const val: ?) throws {
-    writer._writeLiteral(": ");
-    writer.write(val);
-  }
-
-  @chpldoc.nodoc
-  proc endMap(writer: fileWriter) throws {
-    writer._writeLiteral("}");
+    return new MapSerializer(writer);
   }
 
   // TODO: How should we handle types that don't have a format-specific
@@ -2903,14 +2926,6 @@ record DefaultSerializer {
   'deserialize' methods and deserializing initializers for records and classes.
 */
 record DefaultDeserializer {
-  @chpldoc.nodoc
-  var _firstThing = true;
-  @chpldoc.nodoc
-  var _inheritLevel = 0;
-  @chpldoc.nodoc
-  var _arrayDim = 0;
-  @chpldoc.nodoc
-  var _arrayMax : int;
 
   proc deserializeType(reader:fileReader, type readType) : readType throws {
     if isNilableClassType(readType) {
@@ -2929,11 +2944,9 @@ record DefaultDeserializer {
       // Always run 'deserializeFrom' on arrays, for now, to work around issues
       // where a compilerError might cause 'canResolveTypeMethod' to return
       // false.
-      var alias = reader.withDeserializer(new DefaultDeserializer());
-      return readType.deserializeFrom(reader=alias, deserializer=alias.deserializer);
+      return readType.deserializeFrom(reader=reader, deserializer=this);
     } else {
-      var alias = reader.withDeserializer(new DefaultDeserializer());
-      return new readType(reader=alias, deserializer=alias.deserializer);
+      return new readType(reader=reader, deserializer=this);
     }
   }
 
@@ -2951,138 +2964,190 @@ record DefaultDeserializer {
        readType == string || readType == bytes {
       reader._readOne(reader._kind, val, here);
     } else {
-      var alias = reader.withDeserializer(new DefaultDeserializer());
-      val.deserialize(reader=alias, deserializer=alias.deserializer);
+      val.deserialize(reader=reader, deserializer=this);
     }
   }
 
-  @chpldoc.nodoc
-  proc deserializeField(reader:fileReader, name: string, type T) throws {
-    if !name.isEmpty() {
+  record AggregateDeserializer {
+    var reader;
+    var _parent : bool = false;
+
+    @chpldoc.nodoc
+    proc deserializeField(name: string, type T) throws {
       reader.readLiteral(name);
       reader.readLiteral("=");
+
+      var ret = reader.read(T);
+      reader.matchLiteral(",");
+      return ret;
     }
 
-    var ret = reader.read(T);
-    reader.matchLiteral(",");
-    return ret;
+    proc startClass(reader: fileReader, name: string) throws {
+      return new AggregateDeserializer(reader, _parent=true);
+    }
+
+    @chpldoc.nodoc
+    proc endClass() throws {
+      if !_parent then
+        reader.readLiteral("}");
+    }
+
+    @chpldoc.nodoc
+    proc endRecord() throws {
+      reader.readLiteral(")");
+    }
   }
 
   // Class helpers
   @chpldoc.nodoc
-  proc ref startClass(reader: fileReader, name: string) throws {
-    if _inheritLevel == 0 {
-      reader.readLiteral("{");
-    }
-    _inheritLevel += 1;
-  }
-  @chpldoc.nodoc
-  proc ref endClass(reader: fileReader) throws {
-    if _inheritLevel == 1 {
-      reader.readLiteral("}");
-    }
-    _inheritLevel -= 1;
+  proc startClass(reader: fileReader, name: string) throws {
+    reader.readLiteral("{");
+    return new AggregateDeserializer(reader);
   }
 
   // Record helpers
   @chpldoc.nodoc
   proc startRecord(reader: fileReader, name: string) throws {
     reader.readLiteral("(");
+    return new AggregateDeserializer(reader);
   }
-  @chpldoc.nodoc
-  proc endRecord(reader: fileReader) throws {
-    reader.readLiteral(")");
+
+  record TupleDeserializer {
+    var reader;
+
+    @chpldoc.nodoc
+    proc readElement(type T) throws {
+      var ret = reader.read(T);
+      reader.matchLiteral(",");
+      return ret;
+    }
+
+    @chpldoc.nodoc
+    proc endTuple() throws {
+      reader.readLiteral(")");
+    }
   }
 
   // Tuple helpers
   @chpldoc.nodoc
   proc startTuple(reader: fileReader) throws {
     reader.readLiteral("(");
+    return new TupleDeserializer(reader);
   }
-  @chpldoc.nodoc
-  proc endTuple(reader: fileReader) throws {
-    reader.readLiteral(")");
+
+  record ListDeserializer {
+    var reader;
+    var _first : bool = true;
+
+    @chpldoc.nodoc
+    proc readElement(type eltType) throws {
+      if !_first then reader._readLiteral(",");
+      else _first = false;
+
+      return reader.read(eltType);
+    }
+    @chpldoc.nodoc
+    proc endList() throws {
+      reader._readLiteral("]");
+    }
+
+    proc hasMore() : bool throws {
+      reader.mark();
+      defer reader.revert();
+      return !reader.matchLiteral("]");
+    }
   }
 
   // List helpers
   @chpldoc.nodoc
   proc ref startList(reader: fileReader) throws {
     reader._readLiteral("[");
-    _firstThing = true;
+    return new ListDeserializer(reader);
   }
-  @chpldoc.nodoc
-  proc ref readListElement(reader: fileReader, type eltType) throws {
-    if !_firstThing then reader._readLiteral(",");
-    else _firstThing = false;
 
-    return reader.read(eltType);
-  }
-  @chpldoc.nodoc
-  proc endList(reader: fileReader) throws {
-    reader._readLiteral("]");
+  record ArrayDeserializer {
+    var reader;
+    var _first : bool = true;
+    var _arrayDim : int;
+    var _arrayMax : int;
+
+    @chpldoc.nodoc
+    proc startDim() throws {
+      _arrayDim += 1;
+
+      if _arrayMax >= _arrayDim {
+        // use 'match' rather than 'read' to allow for reading in a non-shaped
+        // sequence of numbers into an N-D array...
+        reader.matchNewline();
+      } else {
+        _arrayMax = _arrayDim;
+      }
+    }
+
+    @chpldoc.nodoc
+    proc endDim() throws {
+      _arrayDim -= 1;
+
+      _first = true;
+    }
+
+    @chpldoc.nodoc
+    proc readElement(type eltType) throws {
+      if !_first then reader._readLiteral(" ");
+      else _first = false;
+
+      return reader.read(eltType);
+    }
+
+    @chpldoc.nodoc
+    proc endArray() throws {
+    }
   }
 
   // Array helpers
   @chpldoc.nodoc
   proc startArray(reader: fileReader) throws {
+    return new ArrayDeserializer(reader);
   }
 
-  @chpldoc.nodoc
-  proc ref startArrayDim(reader: fileReader) throws {
-    _arrayDim += 1;
+  record MapDeserializer {
+    var reader;
+    var _first : bool = true;
 
-    if _arrayMax >= _arrayDim {
-      // use 'match' rather than 'read' to allow for reading in a non-shaped
-      // sequence of numbers into an N-D array...
-      reader.matchNewline();
-    } else {
-      _arrayMax = _arrayDim;
+    @chpldoc.nodoc
+    proc readKey(type keyType) : keyType throws {
+      if !_first then reader._readLiteral(", ");
+      else _first = false;
+
+      return reader.read(keyType);
     }
-  }
 
-  @chpldoc.nodoc
-  proc ref endArrayDim(reader: fileReader) throws {
-    _arrayDim -= 1;
+    @chpldoc.nodoc
+    proc readValue(type valType) throws {
+      reader._readLiteral(": ");
 
-    _firstThing = true;
-  }
+      return reader.read(valType);
+    }
 
-  @chpldoc.nodoc
-  proc ref readArrayElement(reader: fileReader, type eltType) throws {
-    if !_firstThing then reader._readLiteral(" ");
-    else _firstThing = false;
+    @chpldoc.nodoc
+    proc endMap() throws {
+      reader._readLiteral("}");
+    }
 
-    return reader.read(eltType);
-  }
-
-  @chpldoc.nodoc
-  proc endArray(reader: fileReader) throws {
+    // Note: behavior undefined if called between readKey/readValue
+    @chpldoc.nodoc
+    proc hasMore() : bool throws {
+      reader.mark();
+      defer reader.revert();
+      return !reader.matchLiteral("}");
+    }
   }
 
   // Map helpers
   @chpldoc.nodoc
   proc startMap(reader: fileReader) throws {
     reader._readLiteral("{");
-  }
-
-  @chpldoc.nodoc
-  proc ref readKey(reader: fileReader, type keyType) : keyType throws {
-    if !_firstThing then reader._readLiteral(", ");
-    else _firstThing = false;
-
-    return reader.read(keyType);
-  }
-
-  @chpldoc.nodoc
-  proc readValue(reader: fileReader, type valType) throws {
-    reader._readLiteral(": ");
-
-    return reader.read(valType);
-  }
-
-  @chpldoc.nodoc
-  proc endMap(reader: fileReader) throws {
-    reader._readLiteral("}");
+    return new MapDeserializer(reader);
   }
 }
 
