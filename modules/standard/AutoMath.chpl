@@ -74,7 +74,7 @@ Infinity and NaN
 :proc:`inf`
 :proc:`nan`
 :proc:`isFinite`
-:proc:`isinf`
+:proc:`isInf`
 :proc:`isnan`
 
 .. _automath-comparison:
@@ -1496,10 +1496,10 @@ module AutoMath {
     return floorf(x);
   }
 
-  /* Returns a value for which :proc:`isinf` will return `true`. */
+  /* Returns a value for which :proc:`isInf` will return `true`. */
   inline proc inf param : real(64) do return chpl_INFINITY;
 
-  /* Returns a value for which :proc:`isinf` will return `true`. */
+  /* Returns a value for which :proc:`isInf` will return `true`. */
   @deprecated(notes="'INFINITY' has been deprecated in favor of :proc:`inf`, please use that instead")
   inline proc INFINITY param : real(64) do return inf;
 
@@ -1521,14 +1521,23 @@ module AutoMath {
   @deprecated(notes="'isfinite' is deprecated in favor of :proc:`isFinite`, please use that instead")
   inline proc isfinite(x: real(32)): bool do return isFinite(x):bool;
 
+  /* Returns `true` if the argument `x` is a representation of *infinity*;
+     `false` otherwise. */
+  inline proc isInf(x: real(64)): bool do return chpl_macro_double_isinf(x):bool;
 
   /* Returns `true` if the argument `x` is a representation of *infinity*;
      `false` otherwise. */
-  inline proc isinf(x: real(64)): bool do return chpl_macro_double_isinf(x):bool;
+  inline proc isInf(x: real(32)): bool do return chpl_macro_float_isinf(x):bool;
 
   /* Returns `true` if the argument `x` is a representation of *infinity*;
      `false` otherwise. */
-  inline proc isinf(x: real(32)): bool do return chpl_macro_float_isinf(x):bool;
+  @deprecated(notes="'isinf' is deprecated in favor of :proc:`isInf`, please use that instead")
+  inline proc isinf(x: real(64)): bool do return isInf(x):bool;
+
+  /* Returns `true` if the argument `x` is a representation of *infinity*;
+     `false` otherwise. */
+  @deprecated(notes="'isinf' is deprecated in favor of :proc:`isInf`, please use that instead")
+  inline proc isinf(x: real(32)): bool do return isInf(x):bool;
 
 
   /* Returns `true` if the argument `x` does not represent a valid number;
