@@ -706,6 +706,12 @@ transfer or share ownership if those arguments apply to ``owned`` or
       owned SomeClass
       true
 
+If the default intent or ``const`` intent is used for an ``owned`` or
+``shared`` argument, then the compiler is allowed to optimize the procedure
+assuming that the ``owned`` or ``shared`` actual is not changing. For example,
+the compiler could insert a ``borrowed`` temporary and replace all uses of the
+actual with it.
+
 .. _Variable_Length_Argument_Lists:
 
 Variable Number of Arguments
