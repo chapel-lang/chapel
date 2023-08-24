@@ -3047,7 +3047,12 @@ void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
 
   addRootType();
 
+  // Note: logic in the Dyno scope resolver will sometimes catch multiple inheritance,
+  // but not in every case. So for now, duplicate some checks here.
+  //
+  // TODO: what's a good way to centralize the multiple inheritance handling?
   Expr* firstParent = nullptr;
+
   // Walk the base class list, and add parents into the class hierarchy.
   for_alist(expr, inherits) {
     AggregateType* pt;
