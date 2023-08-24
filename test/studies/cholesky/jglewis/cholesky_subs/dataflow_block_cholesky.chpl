@@ -78,11 +78,11 @@ module dataflow_block_cholesky {
     //       it also serves as a lock on the critical section so that only
     //       one Schur complement modification can have access to the location
     //       at a given time.
-    //   2.  Each block has a single variable "all_schur_complement_mods_done"
+    //   2.  Each block has a sync variable "all_schur_complement_mods_done"
     //       that signals when the block is ready for its final operation.
     //       This variable is empty until the last Schur complement
     //       modification has completed.
-    //   3.  Each block has a single variable "block_computed" that signals
+    //   3.  Each block has a sync variable "block_computed" that signals
     //       that the final factorization values for this block have
     //       been stored.  In other words, the diagonal block factorization
     //       or the off-diagonal block solve has completed.
@@ -95,9 +95,9 @@ module dataflow_block_cholesky {
     var block_leading_index_domain : domain (2, strides=strideKind.positive)
       = block_leading_indices ( A.domain );
 
-    var all_schur_complement_mods_done  : [block_leading_index_domain] single
+    var all_schur_complement_mods_done  : [block_leading_index_domain] sync
                                                                         bool,
-        block_computed                  : [block_leading_index_domain] single
+        block_computed                  : [block_leading_index_domain] sync
                                                                         bool;
 
     var schur_complement_mods_to_be_done : [block_leading_index_domain] sync

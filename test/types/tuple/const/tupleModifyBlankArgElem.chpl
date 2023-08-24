@@ -44,10 +44,6 @@ proc modifyBlankArgElement(tup: (?t,)) where isAtomicType(t) {
   tup[0].write(64);
 }
 
-proc modifyBlankArgElement(tup: (?t,)) where isSingleType(t) {
-  tup[0] = 64;
-}
-
 proc modifyBlankArgElement(tup: (?t,)) where isSyncType(t) {
   tup[0] = 64;
 }
@@ -155,10 +151,6 @@ proc test() {
   // atomic, OK
   var atm: atomic int;
   run(atm);
-
-  // TODO: single (cannot currently be stored in tuples)
-  // var sng: single int;
-  // run(sng);
 
   // TODO: sync (cannot currently be stored in tuples)
   // var snc: sync int;

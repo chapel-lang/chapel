@@ -33,22 +33,3 @@ testValInitSyncReadFE
 init 1
 (x = 1, ptr = {})
 deinit 1
-testDefaultInitSingle
-testDefaultInitSingleWriteEF
-init 1
-deinit 1
-testDefaultInitSingleWriteEFReadFF
-init 1
-init= 1
-(x = 1, ptr = {})
-deinit 1
-deinit 1
-testValInitSingle
-init 1
-deinit 1
-testValInitSingleReadFF
-init 1
-init= 1
-(x = 1, ptr = {})
-deinit 1
-deinit 1

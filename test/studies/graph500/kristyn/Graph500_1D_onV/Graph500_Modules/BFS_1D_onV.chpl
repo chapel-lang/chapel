@@ -46,7 +46,7 @@ proc BFS ( root : vertex_id, ref ParentTree, G )
 
     // barrier
     var count: sync int = numLocales;
-    var barrier: single bool;
+    var barrier: sync bool;
 
     coforall loc in Locales with (ref Active_Level, ref Active_Remaining, ref Next_Level) do on loc {
       forall u in rcLocal(Active_Level)!.Members do {

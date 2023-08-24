@@ -156,7 +156,6 @@ removeUsage $file
 
 file="./ChapelSyncvar.rst"
 replace "_syncvar" "sync" $file
-replace "_singlevar" "single" $file
 removePrefixFunctions $file
 removeTitle $file
 removeUsage $file

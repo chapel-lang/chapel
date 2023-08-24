@@ -2508,7 +2508,7 @@ static Symbol* getBaseSymForConstCheck(CallExpr* call) {
 }
 
 
-// Report an error when storing a sync or single variable into a tuple.
+// Report an error when storing a sync variable into a tuple.
 // This is because currently we deallocate memory excessively in this case.
 void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn)
 {
@@ -2530,7 +2530,7 @@ void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn)
           name = aSE->symbol()->name;
 
       USR_FATAL_CONT(actual,
-                     "storing a sync or single variable %s in a tuple "
+                     "storing a sync variable %s in a tuple "
                      "is not currently implemented - "
                      "apply readFE() or readFF()",
                      name);

@@ -288,7 +288,7 @@ records     default constructed record
 ranges      1..0 (empty range)
 arrays      elements are default values
 tuples      components are default values
-sync/single base default value and *empty* status
+sync        base default value and *empty* status
 atomic      base default value
 =========== =======================================
 
@@ -299,7 +299,6 @@ Local Type Inference
 
 If the type is omitted from a variable declaration, the type of the
 variable is defined to be the type of the initialization expression.
-With the exception of sync and single expressions, the declaration
 
 
 .. code-block:: chapel
@@ -312,8 +311,7 @@ is equivalent to
 
    var v: e.type = e;
 
-for an arbitrary expression ``e``. If ``e`` is of sync or single type,
-the type of ``v`` is the base type of ``e``.
+for an arbitrary expression ``e``.
 
 .. _Multiple_Variable_Declarations:
 
@@ -410,7 +408,6 @@ follows:
    .. code-block:: chapel
 
       proc readXX(x: sync) do return x.readXX();
-      proc readXX(x: single) do return x.readXX();
       proc readXX(x) do return x;
 
    Note that the use of the helper function ``readXX()`` in this code
@@ -421,13 +418,13 @@ follows:
 
    *Rationale*.
 
-   This algorithm is complicated by the existence of *sync* and *single*
-   variables. If these did not exist, we could rewrite any
-   multi-variable declaration such that later variables were simply
-   initialized by the first variable and the first variable was defined
-   as if it appeared alone in the ``identifier-list``. However, both
-   *sync* and *single* variables require careful handling to avoid
-   unintentional changes to their *full*/*empty* state.
+   This algorithm is complicated by the existence of *sync* variables.
+   If these did not exist, we could rewrite any multi-variable
+   declaration such that later variables were simply initialized by the
+   first variable and the first variable was defined as if it appeared
+   alone in the ``identifier-list``. However, *sync* variables require
+   careful handling to avoid unintentional changes to their
+   *full*/*empty* state.
 
 .. _Module_Level_Variables:
 

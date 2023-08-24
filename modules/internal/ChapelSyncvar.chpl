@@ -68,10 +68,10 @@ module ChapelSyncvar {
 
   private proc ensureFEType(type t) {
     if isSupported(t) == false then
-      compilerError("sync/single types cannot contain type '", t : string, "'");
+      compilerError("sync types cannot contain type '", t : string, "'");
 
     if isGenericType(t) then
-      compilerError("sync/single types cannot contain generic types");
+      compilerError("sync types cannot contain generic types");
   }
 
   @chpldoc.nodoc
@@ -804,7 +804,6 @@ module ChapelSyncvar {
   pragma "single"
   pragma "default intent is ref"
   @chpldoc.nodoc
-  @unstable("'single' variables are unstable")
   record _singlevar {
     type valType;                              // The compiler knows this name
 
@@ -890,7 +889,7 @@ module ChapelSyncvar {
 
     :returns: The value of the ``single`` variable.
   */
-  @unstable("'single' variables are unstable")
+  @chpldoc.nodoc
   proc _singlevar.readFF() {
     return wrapped.readFF();
   }
@@ -906,7 +905,7 @@ module ChapelSyncvar {
 
     :returns: The value of the ``single`` variable.
   */
-  @unstable("'single' variables are unstable")
+  @chpldoc.nodoc
   proc _singlevar.readXX() {
     // Yield to allow readXX in a loop to make progress
     currentTask.yieldExecution();
@@ -920,7 +919,7 @@ module ChapelSyncvar {
 
     :arg val: New value of the single variable.
   */
-  @unstable("'single' variables are unstable")
+  @chpldoc.nodoc
   proc _singlevar.writeEF(in val : valType) {
     wrapped.writeEF(val);
   }
@@ -931,7 +930,7 @@ module ChapelSyncvar {
 
      :returns: ``true`` if the state of the ``single`` variable is full, ``false`` if it's empty.
   */
-  @unstable("'single' variables are unstable")
+  @chpldoc.nodoc
   proc _singlevar.isFull {
     return wrapped.isFull;
   }
