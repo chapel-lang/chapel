@@ -910,28 +910,27 @@ class UserMapAssocArr: AbsBaseArr(?) {
 
   proc dsiSerialWrite(f) throws where f.serializerType != nothing {
     use IO;
-    ref fmt = f.serializer;
     if f.serializerType == IO.DefaultSerializer {
-      fmt.startArray(f, dom.dsiNumIndices:uint);
-      fmt.startArrayDim(f, dom.dsiNumIndices:uint);
+      var ser = f.serializer.startArray(f, dom.dsiNumIndices:uint);
+      ser.startDim(dom.dsiNumIndices:uint);
 
       for locArr in locArrs {
-        for val in locArr!.myElems do fmt.writeArrayElement(f, val);
+        for val in locArr!.myElems do ser.writeElement(val);
       }
 
-      fmt.endArrayDim(f);
-      fmt.endArray(f);
+      ser.endDim();
+      ser.endArray();
     } else {
-      fmt.startMap(f, dom.dsiNumIndices:uint);
+      var ser = f.serializer.startMap(f, dom.dsiNumIndices:uint);
 
       for locArr in locArrs {
         for (key, val) in zip(locArr!.myElems.domain, locArr!.myElems) {
-          fmt.writeKey(f, key);
-          fmt.writeValue(f, val);
+          ser.writeKey(key);
+          ser.writeValue(val);
         }
       }
 
-      fmt.endMap(f);
+      ser.endMap();
     }
   }
 
