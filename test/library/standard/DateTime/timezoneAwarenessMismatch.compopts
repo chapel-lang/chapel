@@ -1,0 +1,6 @@
+-stzCompareOperation=\"lt\"
+-stzCompareOperation=\"gt\"
+-stzCompareOperation=\"leq\"
+-stzCompareOperation=\"geq\"
+-stzCompareOperation=\"eq\"
+-stzCompareOperation=\"neq\"
