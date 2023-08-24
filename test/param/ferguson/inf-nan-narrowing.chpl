@@ -1,18 +1,18 @@
 proc checkOne(arg: real(32)) {
-  assert(!isnan(arg));
-  assert(!isinf(arg));
+  assert(!isNan(arg));
+  assert(!isInf(arg));
   assert(signbit(arg) == false);
   assert(arg == 1);
 }
 proc checkNan(arg: real(32)) {
-  assert(isnan(arg));
+  assert(isNan(arg));
 }
 proc checkPosInf(arg: real(32)) {
-  assert(isinf(arg));
+  assert(isInf(arg));
   assert(signbit(arg) == false);
 }
 proc checkNegInf(arg: real(32)) {
-  assert(isinf(arg));
+  assert(isInf(arg));
   assert(signbit(arg) == true);
 }
 
