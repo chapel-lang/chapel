@@ -38,9 +38,9 @@ module ChapelHashing {
     if !canResolveMethod(x, "hash") then
       compilerError("No hash function found for " + x.type:string);
     else if __primitive("implements interface", x, hashable) == 2 then
-        compilerWarning(x.type:string + " has a hash function that is being ",
-                        "used by the standard library. However, " + x.type:string +
-                        " does not implement hashable. ",
+        compilerWarning("'", x.type:string + "' has a hash function that is being ",
+                        "used by the standard library. However, '" + x.type:string +
+                        "' does not implement hashable. ",
                         "In the future, this will result in an error.");
 
     return x.hash();
