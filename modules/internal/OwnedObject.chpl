@@ -404,6 +404,12 @@ module OwnedObject {
     }
   }
 
+  @chpldoc.nodoc
+  proc _owned.deserialize(reader, ref deserializer) throws {
+    var tmp = this.chpl_p! : borrowed class;
+    reader.read(tmp);
+  }
+
   // cast to owned?, no class downcast
   @chpldoc.nodoc
   inline operator :(pragma "nil from arg" in x:owned class, type t:owned class?)    where isSubtype(x.chpl_t,_to_nonnil(t.chpl_t))

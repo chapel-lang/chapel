@@ -662,7 +662,10 @@ module ChapelIO {
   }
 
   @chpldoc.nodoc
-  proc _ddata.serialize(writer, ref serializer) throws { writeThis(writer); }
+  proc _ddata.serialize(writer, ref serializer) throws {
+    compilerWarning("printing _ddata class");
+    writer.write("<_ddata class cannot be printed>");
+  }
 
   proc chpl_taskID_t.writeThis(f) throws {
     f.write(this : uint(64));
