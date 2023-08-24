@@ -18,19 +18,26 @@
  * limitations under the License.
  */
 
-/*
-  :type:`owned` manages the deletion of a class instance assuming
-  that this :type:`owned` is the only thing responsible for
-  managing the lifetime of the class instance.
-*/
+/* */
 module OwnedObject {
   use ChapelStandard;
 
+  // Ideally, this can be marked with nodoc and the doc put at the module level
+  //   since owned isn't really a 'record' or a 'type'
+  // But that prevents us from referencing a "top-level" owned reference
+  // If we one day support :noindexentry:, that could be applied at the module
+  //   level (instead of :noindex:)
+  // And then we could do :mod:`owned <OwnedObject>`
+  // For now, `fixInternalDocs.sh` will replace `record` with `type` here
+  /*
+    :type:`owned` manages the deletion of a class instance assuming
+    that this :type:`owned` is the only thing responsible for
+    managing the lifetime of the class instance.
+  */
   pragma "no copy"
   pragma "copy mutates"
   pragma "managed pointer"
-  @chpldoc.nodoc
-  record _ownedRecord {
+  record _owned {
     type chpl_t;                // contained type (class type)
 
     // contained pointer (class type)
@@ -41,10 +48,6 @@ module OwnedObject {
     // Note that the compiler also allows coercion to the borrow type.
     forwarding borrow();
   }
-
-  // This is important to make sure links to `owned` actually work
-  type _owned;
-  _owned = _ownedRecord;
 
   /*
     Default-initialize an :type:`owned` to store type `chpl_t`
