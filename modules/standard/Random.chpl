@@ -806,7 +806,7 @@ module Random {
 
     use super.RandomSupport;
     private use Random, IO;
-    private use Math only ldexp;
+    private use Math only ldExp;
     private use PCGRandomLib;
     use ChapelLocks;
 
@@ -1413,7 +1413,7 @@ module Random {
     private inline
     proc randToReal64(x: uint(64)):real(64)
     {
-      return ldexp(x:real(64), -64);
+      return ldExp(x:real(64), -64);
     }
     // returns a random number in [min, max]
     // by scaling a multiple of 2**-64 by (max-min)
@@ -1429,7 +1429,7 @@ module Random {
     private inline
     proc randToReal32(x: uint(32))
     {
-      return ldexp(x:real(32), -32);
+      return ldExp(x:real(32), -32);
     }
 
     // returns a random number in [min, max)
