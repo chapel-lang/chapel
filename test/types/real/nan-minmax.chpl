@@ -59,14 +59,14 @@ proc testNans() {
 proc testNan(in AA, idx1, idx2) {
   AA[idx1] = nan;
   AA[idx2] = nan;
-  assert(isnan(min reduce AA));
-  assert(isnan(max reduce AA));
+  assert(isNan(min reduce AA));
+  assert(isNan(max reduce AA));
 
   const minn = minloc reduce zip(AA, AA.domain);
-  assert(isnan(minn(0)));
+  assert(isNan(minn(0)));
   assert(minn(1) == min(idx1,idx2));
 
   const maxn = maxloc reduce zip(AA, AA.domain);
-  assert(isnan(maxn(0)));
+  assert(isNan(maxn(0)));
   assert(maxn(1) == min(idx1,idx2));
 }
