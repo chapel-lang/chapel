@@ -72,7 +72,7 @@ Computations Involving Complex Numbers
 Infinity and NaN
 ----------------
 :proc:`inf`
-:var:`NAN`
+:proc:`nan`
 :proc:`isfinite`
 :proc:`isinf`
 :proc:`isnan`
@@ -1932,7 +1932,7 @@ module AutoMath {
 
   /* Returns the maximum value of two arguments using the ``>`` operator
      for comparison.
-     If one of the arguments is :proc:`AutoMath.NAN`, the result is also NAN.
+     If one of the arguments is :proc:`AutoMath.nan`, the result is also NaN.
 
      :rtype: The type of `x`.
    */
@@ -2003,7 +2003,7 @@ module AutoMath {
   /* Returns the minimum value of two arguments using the ``<`` operator
      for comparison.
 
-     If one of the arguments is :proc:`AutoMath.NAN`, the result is also NAN.
+     If one of the arguments is :proc:`AutoMath.nan`, the result is also NaN.
 
      :rtype: The type of `x`.
    */
@@ -2110,9 +2110,12 @@ module AutoMath {
     return x - y*floor(x/y);
   }
 
+  /* Returns a value for which :proc:`isnan` will return `true`. */
+  inline proc nan param : real(64) do return chpl_NAN;
 
   /* Returns a value for which :proc:`isnan` will return `true`. */
-  inline proc NAN param : real(64) do return chpl_NAN;
+  @deprecated(notes="'NAN' is deprecated in favor of :proc:`nan`, please use that instead")
+  inline proc NAN param : real(64) do return nan;
 
 
   // When removing this deprecated function, be sure to remove chpl_nearbyint
