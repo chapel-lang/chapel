@@ -2539,7 +2539,7 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
       if (parts.tag == asttags::Union) {
         error(inheritLoc, "unions cannot inherit.");
       } else {
-        for (int i = 0; i < optInherit->size(); i++) {
+        for (size_t i = 0; i < optInherit->size(); i++) {
           AstNode* ast = (*optInherit)[i];
           bool inheritOk = false;
           if (ast->isIdentifier()) {

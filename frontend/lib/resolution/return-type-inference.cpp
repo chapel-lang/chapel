@@ -83,17 +83,16 @@ const CompositeType* helpGetTypeForDecl(Context* context,
   if (const Class* c = ad->toClass()) {
     const BasicClassType* parentClassType = nullptr;
     const AstNode* lastParentClass = nullptr;
-    for (int i = 0; i < c->numInheritExprs(); i++) {
-      auto parentExpr = c->inheritExpr(i);
+    for (auto inheritExpr : c->inheritExprs()) {
       // Resolve the parent class type expression
       ResolutionResultByPostorderID r;
       auto visitor =
         Resolver::createForParentClass(context, c,
                                        substitutions,
                                        poiScope, r);
-      parentExpr->traverse(visitor);
+      inheritExpr->traverse(visitor);
 
-      auto& rr = r.byAst(parentExpr);
+      auto& rr = r.byAst(inheritExpr);
       QualifiedType qt = rr.type();
       if (auto t = qt.type()) {
         if (auto bct = t->toBasicClassType()) {
@@ -107,16 +106,16 @@ const CompositeType* helpGetTypeForDecl(Context* context,
       if (qt.isType() && parentClassType != nullptr) {
         // It's a valid parent class; is it the only one? (error otherwise).
         if (lastParentClass) {
-          reportInvalidMultipleInheritance(context, c, lastParentClass, parentExpr);
+          reportInvalidMultipleInheritance(context, c, lastParentClass, inheritExpr);
         }
-        lastParentClass = parentExpr;
+        lastParentClass = inheritExpr;
 
         // OK
       } else if (!rr.toId().isEmpty() &&
                  parsing::idToTag(context, rr.toId()) == uast::asttags::Interface) {
         // OK, It's an interface.
       } else {
-        context->error(parentExpr, "invalid parent class expression");
+        context->error(inheritExpr, "invalid parent class expression");
         parentClassType = BasicClassType::getObjectType(context);
       }
     }

@@ -423,9 +423,8 @@ gatherParentClassScopesForScopeResolving(Context* context, ID classDeclId) {
     if (!c || c->numInheritExprs() == 0) break;
 
     const uast::AstNode* lastParentClass = nullptr;
-    for (int i = 0; i < c->numInheritExprs(); i++) {
+    for (auto inheritExpr : c->inheritExprs()) {
       // Resolve the parent class type expression
-      auto parentClassExpr = c->inheritExpr(i);
       ResolutionResultByPostorderID r;
       auto visitor =
         Resolver::createForParentClassScopeResolve(context, c, r);
@@ -435,22 +434,25 @@ gatherParentClassScopesForScopeResolving(Context* context, ID classDeclId) {
       // Uses the empty 'savecReceiverScopes' because the class expression
       // can't be a method anyways.
       bool ignoredMarkedGeneric = false;
-      auto ident = Class::getInheritExprIdent(parentClassExpr,
+      auto ident = Class::getInheritExprIdent(inheritExpr,
                                               ignoredMarkedGeneric);
       visitor.resolveIdentifier(ident, visitor.savedReceiverScopes);
 
 
       ResolvedExpression& re = r.byAst(ident);
       if (re.toId().isEmpty()) {
-        context->error(parentClassExpr, "invalid parent class expression");
+        context->error(inheritExpr, "invalid parent class expression");
         encounteredError = true;
+        break;
       } else if (parsing::idToTag(context, re.toId()) == uast::asttags::Interface) {
         // this is an interface; ignore it for the purposes of parent scopes.
       } else {
         if (lastParentClass) {
-          reportInvalidMultipleInheritance(context, c, lastParentClass, parentClassExpr);
+          reportInvalidMultipleInheritance(context, c, lastParentClass, inheritExpr);
+          encounteredError = true;
+          break;
         }
-        lastParentClass = parentClassExpr;
+        lastParentClass = inheritExpr;
 
         result.push_back(scopeForId(context, re.toId()));
         curId = re.toId();
