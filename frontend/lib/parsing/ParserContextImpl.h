@@ -2599,6 +2599,7 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
                          parts.linkage,
                          toOwned(parts.linkageName),
                          parts.name,
+                         std::move(inheritExprs),
                          std::move(contentsList)).release();
   } else if (parts.tag == asttags::Union) {
 

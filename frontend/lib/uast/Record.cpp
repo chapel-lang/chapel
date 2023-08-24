@@ -31,9 +31,12 @@ owned<Record> Record::build(Builder* builder, Location loc,
                             Decl::Linkage linkage,
                             owned<AstNode> linkageName,
                             UniqueString name,
+                            AstList interfaceExprs,
                             AstList contents) {
   AstList lst;
   int attributeGroupChildNum = NO_CHILD;
+  int interfaceExprChildNum = NO_CHILD;
+  int numInterfaceExprs = 0;
   int elementsChildNum = NO_CHILD;
   int numElements = contents.size();
   int linkageNameChildNum = NO_CHILD;
@@ -48,6 +51,14 @@ owned<Record> Record::build(Builder* builder, Location loc,
     lst.push_back(std::move(linkageName));
   }
 
+  numInterfaceExprs = interfaceExprs.size();
+  if (numInterfaceExprs > 0) {
+    interfaceExprChildNum = lst.size();
+    for (auto& interfaceExpr : interfaceExprs) {
+      lst.push_back(std::move(interfaceExpr));
+    }
+  }
+
   elementsChildNum = lst.size();
   for (auto& ast : contents) {
     lst.push_back(std::move(ast));
@@ -57,6 +68,8 @@ owned<Record> Record::build(Builder* builder, Location loc,
                            linkage,
                            linkageNameChildNum,
                            name,
+                           interfaceExprChildNum,
+                           numInterfaceExprs,
                            elementsChildNum,
                            numElements);
   builder->noteLocation(ret, loc);

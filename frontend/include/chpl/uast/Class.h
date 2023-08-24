@@ -135,13 +135,6 @@ class Class final : public AggregateDecl {
   }
 
   DECLARE_STATIC_DESERIALIZE(Class);
-
-  /** Returns the inherited Identifier, including considering
-      one marked generic with Superclass(?) */
-  static const Identifier* getInheritExprIdent(const AstNode* ast,
-                                               bool& markedGeneric);
-  /** Returns true if the passed inherit expression is legal */
-  static bool isAcceptableInheritExpr(const AstNode* ast);
 };
 
 
