@@ -559,9 +559,9 @@ struct ChplSyntaxVisitor {
       ss_ << ": ";
       bool printComma = false;
 
-      for (int i = 0; i < node->numInheritExprs(); i++) {
+      for (auto inheritExpr : node->inheritExprs()) {
         if (printComma) ss_ << ", ";
-        printAst(node->inheritExpr(i));
+        printAst(inheritExpr);
       }
       ss_ << " ";
     }
@@ -1128,6 +1128,18 @@ struct ChplSyntaxVisitor {
     printLinkage(node);
     ss_ << "record ";
     ss_ << node->name() << " ";
+
+    if (node->numInterfaceExprs() > 0) {
+      ss_ << ": ";
+      bool printComma = false;
+
+      for (auto interfaceExpr : node->interfaceExprs()) {
+        if (printComma) ss_ << ", ";
+        printAst(interfaceExpr);
+      }
+      ss_ << " ";
+    }
+
     interpose(node->decls(), "\n", "{\n", "\n}",";", true);
   }
 
