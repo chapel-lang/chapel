@@ -1,2 +1,5 @@
-CHPL_TARGET_PLATFORM==linux32
-CHPL_TARGET_COMPILER==gnu
+#!/usr/bin/env python3
+
+import os
+print(os.getenv("CHPL_TARGET_PLATFORM") == "linux32" and
+      os.getenv("CHPL_TARGET_COMPILER") == "gnu")
