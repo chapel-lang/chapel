@@ -178,7 +178,7 @@ module SharedObject {
 
     /*
        Initialize a :record:`shared` taking a pointer from
-       a :record:`~OwnedObject.owned`.
+       a :type:`~OwnedObject.owned`.
 
        This :record:`shared` will take over the deletion of the class
        instance. It is an error to directly delete the class instance
@@ -502,7 +502,7 @@ module SharedObject {
   }
 
   /*
-     Set a :record:`shared` from a :record:`~OwnedObject.owned`.
+     Set a :record:`shared` from a :type:`~OwnedObject.owned`.
      Deletes the object managed by ``lhs`` if there are
      no other :record:`shared` referring to it.
      On return, ``lhs`` will refer to the object previously

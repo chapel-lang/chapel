@@ -1961,7 +1961,7 @@ Owned Objects
 
 Including ``owned`` (or :record:`~SharedObject.shared`) in a class type directs
 the compiler to manage the deallocation of a class instances of that type.
-:record:`~OwnedObject.owned` is meant to be used when only one reference to an
+:type:`~OwnedObject.owned` is meant to be used when only one reference to an
 object needs to manage that object's storage at a time.
 
 Also see the above section on :ref:`Class_Lifetime_and_Borrows`.
@@ -1969,7 +1969,7 @@ Also see the above section on :ref:`Class_Lifetime_and_Borrows`.
 Using `owned`
 ~~~~~~~~~~~~~
 
-The ``new`` keyword allocates :record:`~OwnedObject.owned` classes by default.
+The ``new`` keyword allocates :type:`~OwnedObject.owned` classes by default.
 Additionally, it is possible to explicitly request an ``owned`` class instance
 
 .. code-block:: chapel
@@ -1985,7 +1985,7 @@ be deleted. It is possible to transfer the ownership to another ``owned``
 variable before that happens.
 
 Copy initializing from ``myOwnedObject`` or assigning it to another
-:record:`~OwnedObject.owned` will leave ``myOwnedObject`` storing a nil value
+:type:`~OwnedObject.owned` will leave ``myOwnedObject`` storing a nil value
 and transfer the owned class instance to the other value.
 
 .. code-block:: chapel
@@ -2015,8 +2015,8 @@ Borrowing from `owned`
 ~~~~~~~~~~~~~~~~~~~~~~
 
 The :proc:`~OwnedObject.owned.borrow` method returns the pointer managed by the
-:record:`~OwnedObject.owned`. This pointer is only valid as long as the
-:record:`~OwnedObject.owned` is storing that pointer.
+:type:`~OwnedObject.owned`. This pointer is only valid as long as the
+:type:`~OwnedObject.owned` is storing that pointer.
 
 The compiler includes a component called the lifetime checker that
 can, in many cases, check that a `borrow` does not refer to an object
@@ -2039,7 +2039,7 @@ Coercions for `owned`
 ~~~~~~~~~~~~~~~~~~~~~
 
 The compiler includes support for introducing automatic coercions
-from :record:`~OwnedObject.owned` to the borrow type. This is equivalent
+from :type:`~OwnedObject.owned` to the borrow type. This is equivalent
 to calling the :proc:`~OwnedObject.owned.borrow` method. For example:
 
 .. code-block:: chapel
@@ -2071,7 +2071,7 @@ For example:
 `owned` Default Intent
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-The default intent for :record:`~OwnedObject.owned` is ``const ref``.
+The default intent for :type:`~OwnedObject.owned` is ``const ref``.
 See more on argument intents in the :ref:`Procedures Primer <primers-procedures>`
 
 .. _Owned_Methods:
@@ -2088,9 +2088,9 @@ Methods on `owned` Classes
 Shared Objects
 --------------
 
-Including ``shared`` (or :record:`~OwnedObject.owned`) in a class type directs
+Including ``shared`` (or :type:`~OwnedObject.owned`) in a class type directs
 the compiler to manage the deallocation of a class instances of that type.
-:record:`~OwnedObject.owned` is meant to be used when many different references
+:type:`~OwnedObject.owned` is meant to be used when many different references
 will exist to the object at the same time and these references need to keep
 the object alive.
 
@@ -2133,14 +2133,14 @@ The :proc:`~SharedObject.shared.borrow` method returns the pointer managed by
 the :record:`~SharedObject.shared`. This pointer is only valid as long as the
 :record:`~SharedObject.shared` is storing that pointer. The compiler includes
 some checking for errors in this case. In these ways,
-:record:`~SharedObject.shared` is similar to :record:`~OwnedObject.owned`.
+:record:`~SharedObject.shared` is similar to :type:`~OwnedObject.owned`.
 
 See :ref:`about-owned-borrowing` for more details and examples.
 
 Coercions for `shared`
 ~~~~~~~~~~~~~~~~~~~~~~
 
-As with :record:`~OwnedObject.owned`, :record:`~SharedObject.shared` supports
+As with :type:`~OwnedObject.owned`, :record:`~SharedObject.shared` supports
 coercions to the class type as well as
 coercions from a ``shared(T)`` to ``shared(U)`` where ``T`` is a
 subclass of ``U``.
