@@ -657,14 +657,14 @@ of a map.  The user can override this default hash method (or provide
 one in cases that the compiler does not) by defining their own method
 named ``hash`` on the record which takes no arguments and returns a
 ``uint``. To make the compiler aware of the ``hash`` method, the record
-must be made to implement the ``Hashable`` interface.
+must be made to implement the ``hashable`` interface.
 
    *Example (userhash.chpl)*.
 
    .. code-block:: chapel
 
 
-      record R : Hashable {
+      record R : hashable {
         var i: uint;
 
         proc hash(): uint {
