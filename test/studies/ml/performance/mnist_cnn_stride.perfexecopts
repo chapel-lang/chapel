@@ -1,0 +1,3 @@
+--batchSize=10
+--batchSize=100
+--batchSize=500
