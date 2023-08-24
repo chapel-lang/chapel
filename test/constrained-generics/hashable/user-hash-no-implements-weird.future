@@ -1,4 +1,0 @@
-The "no hash function" has to be determined from a verbose compiler error.
-
-This is caused by compilerError being ignored in the presence of canResolve.
-https://github.com/chapel-lang/chapel/issues/21397
