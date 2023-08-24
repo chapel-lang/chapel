@@ -101,6 +101,7 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_COMM', RUNTIME | LAUNCHER | DEFAULT, 'comm'),
     ChapelEnv('  CHPL_COMM_SUBSTRATE', RUNTIME | LAUNCHER | DEFAULT),
     ChapelEnv('  CHPL_GASNET_SEGMENT', RUNTIME | LAUNCHER | DEFAULT),
+    ChapelEnv('  CHPL_GASNET_VERSION', RUNTIME | LAUNCHER),
     ChapelEnv('  CHPL_LIBFABRIC', RUNTIME | INTERNAL | DEFAULT),
     ChapelEnv('CHPL_TASKS', RUNTIME | LAUNCHER | DEFAULT, 'tasks'),
     ChapelEnv('CHPL_LAUNCHER', LAUNCHER | DEFAULT, 'launch'),
@@ -196,6 +197,7 @@ def compute_all_values():
     ENV_VALS['CHPL_COMM'] = chpl_comm.get()
     ENV_VALS['  CHPL_COMM_SUBSTRATE'] = chpl_comm_substrate.get()
     ENV_VALS['  CHPL_GASNET_SEGMENT'] = chpl_comm_segment.get()
+    ENV_VALS['  CHPL_GASNET_VERSION'] = chpl_gasnet.get_version()
     ENV_VALS['  CHPL_LIBFABRIC'] = chpl_libfabric.get()
     ENV_VALS['CHPL_TASKS'] = chpl_tasks.get()
     ENV_VALS['CHPL_LAUNCHER'] = chpl_launcher.get()
@@ -332,6 +334,8 @@ def filter_tidy(chpl_env):
     if chpl_env.name == '  CHPL_COMM_SUBSTRATE':
         return comm == 'gasnet'
     elif chpl_env.name == '  CHPL_GASNET_SEGMENT':
+        return comm == 'gasnet'
+    elif chpl_env.name == '  CHPL_GASNET_VERSION':
         return comm == 'gasnet'
     elif chpl_env.name == '  CHPL_LIBFABRIC':
         return comm == 'ofi'

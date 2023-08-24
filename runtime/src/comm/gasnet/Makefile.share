@@ -21,8 +21,13 @@ COMM_LAUNCHER_SRCS = \
         comm-gasnet-locales.c \
 
 COMM_SRCS = \
-	comm-gasnet.c \
 	comm-gasnet-locales.c \
+
+ifeq ($(CHPL_MAKE_GASNET_VERSION),ex)
+  COMM_SRCS += comm-gasnet-ex.c
+else
+  COMM_SRCS += comm-gasnet.c
+endif
 
 SRCS = \
   comm-gasnet.c \
