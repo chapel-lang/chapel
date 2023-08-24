@@ -37,7 +37,7 @@ config const singleinit = false;
 var errCount: atomic int;
 
 //showfetch(true);
-init();
+initialize();
 transpose();          
 showfetch(false);
 verify();
@@ -46,7 +46,7 @@ if errCount.read() != 0 then writeln(errCount.read(), " ERRORS");
 
 /////////////////////////////////
 
-proc init(){
+proc initialize(){
   forall (dat, (gi,gj)) in zip(Data, gridDom) {
     if singleinit {
       dat.B[2,2] = 99;
