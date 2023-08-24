@@ -71,7 +71,7 @@ Computations Involving Complex Numbers
 
 Infinity and NaN
 ----------------
-:var:`INFINITY`
+:proc:`inf`
 :var:`NAN`
 :proc:`isfinite`
 :proc:`isinf`
@@ -1496,9 +1496,12 @@ module AutoMath {
     return floorf(x);
   }
 
+  /* Returns a value for which :proc:`isinf` will return `true`. */
+  inline proc inf param : real(64) do return chpl_INFINITY;
 
   /* Returns a value for which :proc:`isinf` will return `true`. */
-  inline proc INFINITY param : real(64) do return chpl_INFINITY;
+  @deprecated(notes="'INFINITY' has been deprecated in favor of :proc:`inf`, please use that instead")
+  inline proc INFINITY param : real(64) do return inf;
 
 
   /* Returns `true` if the argument `x` is a representation of a finite value;
