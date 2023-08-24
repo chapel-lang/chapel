@@ -162,7 +162,7 @@ BlockStmt* buildVarDecls(BlockStmt* stmts,
 DefExpr*  buildClassDefExpr(const char*   name,
                             const char*   cname,
                             AggregateTag  tag,
-                            Expr*         inherit,
+                            AList       inherits,
                             BlockStmt*    decls,
                             Flag          isExtern);
 

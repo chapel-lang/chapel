@@ -2111,13 +2111,6 @@ const ResolutionResultByPostorderID& scopeResolveAggregate(Context* context,
   ResolutionResultByPostorderID result;
 
   if (ad) {
-    if (auto c = ad->toClass()) {
-      for (auto inheritExpr : c->inheritExprs()) {
-        auto res = Resolver::createForParentClassScopeResolve(context, c, result);
-        inheritExpr->traverse(res);
-      }
-    }
-
     // TODO: Use some kind of "ad->fields()" iterator
     for (auto child : ad->children()) {
       if (child->isVarLikeDecl() ||

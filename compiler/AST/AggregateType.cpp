@@ -3049,7 +3049,30 @@ void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
 
   // Walk the base class list, and add parents into the class hierarchy.
   for_alist(expr, inherits) {
-    AggregateType* pt = discoverParentAndCheck(expr);
+    AggregateType* pt;
+    InterfaceSymbol* isym;
+    discoverParentAndCheck(expr, pt, isym);
+
+    // Handle class A : MyInterface and continue early.
+    if (isym) {
+      SET_LINENO(expr);
+
+      // For classes, we need to include management style in the implements
+      // statement so that it's picked up when necessary.
+      Symbol* implementFor = this->symbol;
+      if (this->isClass() && isClassLikeOrManaged(this)) {
+        Type* useType =
+          this->getDecoratedClass(ClassTypeDecorator::GENERIC_NONNIL);
+        implementFor = useType->symbol;
+      }
+
+      auto ifcActuals = new CallExpr(PRIM_ACTUALS_LIST, new SymExpr(implementFor));
+      auto istmt = ImplementsStmt::build(isym->name, ifcActuals, nullptr);
+      this->symbol->defPoint->insertAfter(istmt);
+
+      expr->remove();
+      continue;
+    }
 
     localSeen.insert(this);
 
@@ -3109,8 +3132,12 @@ void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
   checkSameNameFields();
 }
 
-AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
+void AggregateType::discoverParentAndCheck(Expr* storesName,
+                                           AggregateType* &outParent,
+                                           InterfaceSymbol* &outIsym) {
   TypeSymbol*        ts  = NULL;
+  outIsym = nullptr;
+  outParent = nullptr;
 
   if (UnresolvedSymExpr* se = toUnresolvedSymExpr(storesName)) {
     Symbol* sym = lookup(se->unresolved, storesName);
@@ -3122,8 +3149,14 @@ AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
       sym = canonicalClassType(sym->type)->symbol;
     }
     ts = toTypeSymbol(sym);
+    outIsym = toInterfaceSymbol(sym);
   } else if (SymExpr* se = toSymExpr(storesName)) {
     ts = toTypeSymbol(se->symbol());
+    outIsym = toInterfaceSymbol(se->symbol());
+  }
+
+  if (outIsym != nullptr) {
+    return;
   }
 
   if (ts == NULL) {
@@ -3158,7 +3191,7 @@ AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
               pt->symbol->name);
   }
 
-  return pt;
+  outParent = pt;
 }
 
 void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {
