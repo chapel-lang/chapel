@@ -1,8 +1,8 @@
 use Set;
 
-record R {
+record R : Hashable {
   var a: int;
-  
+
   operator ==(a:R, b:R) {
     return true;
   }
@@ -15,7 +15,6 @@ record R {
     return 0;
   }
 }
-R implements Hashable;
 
 var s1 = new set(R);
 var s2 = new set(R);

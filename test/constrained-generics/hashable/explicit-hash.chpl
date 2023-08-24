@@ -1,6 +1,6 @@
 use Set;
 
-record R {
+record R : Hashable {
     var x: uint;
 
     proc hash(): uint {
@@ -8,7 +8,6 @@ record R {
         return x.hash();
     }
 }
-R implements Hashable;
 
 // Make sure R is usable for hashing.
 chpl__defaultHashWrapper(new R());

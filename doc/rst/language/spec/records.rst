@@ -664,7 +664,7 @@ must be made to implement the ``Hashable`` interface.
    .. code-block:: chapel
 
 
-      record R {
+      record R : Hashable {
         var i: uint;
 
         proc hash(): uint {
@@ -672,7 +672,6 @@ must be made to implement the ``Hashable`` interface.
           return i;
         }
       }
-      R implements Hashable;
 
       // Creating an associative domain with an 'idxType' of 'R'
       // invokes R.hash() as part of its implementation

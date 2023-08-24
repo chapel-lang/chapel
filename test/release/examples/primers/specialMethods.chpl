@@ -34,7 +34,7 @@ proc ExampleRecord2.secondaryMethod() { }
 
 // First we will declare a simple record with a field that is a tuple of
 // integers.  We'll add special methods and iterators to this record later.
-record R {
+record R : Hashable {
   param size: int = 10;
   var vals: size*int;
 }
@@ -127,7 +127,6 @@ proc R.hash(): uint {
   writeln("In custom hash function");
   return vals[0] : uint;
 }
-R implements Hashable;
 
 // Now that the record R has a ``hash`` method defined, Chapel's,
 // ``set``, ``map``, and associative domain types will call this

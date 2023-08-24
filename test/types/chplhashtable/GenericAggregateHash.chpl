@@ -8,12 +8,12 @@ class C2: C1(?) {
   var y: TT;
 }
 
-record r1 {
+record r1 : Hashable {
 	type T;
   var x: T;
 }
 
-record r2 {
+record r2 : Hashable {
   type T;
   var a: [0..3] T;
 }
@@ -33,8 +33,6 @@ proc r1.hash() {
   return x.hash();
 }
 
-r1 implements Hashable;
-
 operator r2.==(lhs: r2, rhs: r2) {
   return && reduce (lhs.a == rhs.a);
 }
@@ -43,7 +41,6 @@ proc r2.hash() {
   return a.hash();
 }
 
-r2 implements Hashable;
 
 class C { var x = 0; }
 

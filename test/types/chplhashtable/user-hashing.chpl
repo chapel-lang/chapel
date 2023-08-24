@@ -1,6 +1,6 @@
 use Map;
 
-record MyRecord {
+record MyRecord : Hashable {
   var i = 1;
 
   proc hash() {
@@ -8,7 +8,6 @@ record MyRecord {
     return i : uint;
   }
 }
-MyRecord implements Hashable;
 
 var m = new map(MyRecord, int);
 

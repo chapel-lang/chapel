@@ -2,7 +2,7 @@ use Set;
 
 class C { var x = 0; }
 
-record r {
+record r : Hashable {
   var c = new shared C(-1);
 
   proc init(id: int) {
@@ -16,7 +16,6 @@ record r {
 proc r.hash() {
   return this.c.x.hash();
 }
-r implements Hashable;
 
 operator r.==(lhs: r, rhs: r) {
   writeln('r==');

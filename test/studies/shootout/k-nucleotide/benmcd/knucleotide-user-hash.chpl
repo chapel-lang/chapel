@@ -3,7 +3,7 @@ use IO, Map, Sort;
 config param tableSize = 2**16,
              columns = 61;
 
-record intWrapper {
+record intWrapper : Hashable {
   var val: int;
   proc init() {
     val = 0;
@@ -15,7 +15,6 @@ record intWrapper {
     return val : uint;
   }
 }
-intWrapper implements Hashable;
 
 proc main(args: [] string) {
   // Open stdin and a binary reader channel
