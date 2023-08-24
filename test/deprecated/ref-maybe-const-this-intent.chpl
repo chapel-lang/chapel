@@ -4,8 +4,8 @@ record R {
   proc foo() {
     x = 10;
   }
-  proc bar() {
-    writeln(y);
+  proc bar() { // should not warn
+    writeln((x,y));
   }
 }
 var r = new R();
