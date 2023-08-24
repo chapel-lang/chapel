@@ -693,7 +693,7 @@ module ChapelIO {
   }
 
   @chpldoc.nodoc
-  proc _tuple.writeThis(f) throws {
+  proc ref _tuple.writeThis(f) throws {
     _readWriteHelper(f);
   }
 

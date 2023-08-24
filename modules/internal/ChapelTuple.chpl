@@ -203,7 +203,7 @@ module ChapelTuple {
   //
   pragma "reference to const when const this"
   @chpldoc.nodoc
-  iter _tuple.these() ref
+  iter ref _tuple.these() ref
   {
 
     // If we hit this error, it generally means that the compiler wasn't
@@ -225,7 +225,7 @@ module ChapelTuple {
   }
 
   @chpldoc.nodoc
-  iter _tuple.these(param tag:iterKind)
+  iter ref _tuple.these(param tag:iterKind)
       where tag == iterKind.leader
   {
 
@@ -248,7 +248,7 @@ module ChapelTuple {
 
   pragma "reference to const when const this"
   @chpldoc.nodoc
-  iter _tuple.these(param tag:iterKind, followThis: _tuple) ref
+  iter ref _tuple.these(param tag:iterKind, followThis: _tuple) ref
       where tag == iterKind.follower
   {
     if followThis.size != 1 then
