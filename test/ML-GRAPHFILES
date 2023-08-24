@@ -16,7 +16,6 @@ studies/ssca2/main/SSCA2_main.ml-time.graph
 studies/lulesh/bradc/lulesh-dense.ml-time.graph
 release/examples/benchmarks/miniMD/miniMD.ml-time.graph
 studies/isx/isx.ml-time.graph
-exercises/diffusion/heat_2d_dist.ml-perf.graph
 
 # suite: <empty>
 # suite: All (perf)
@@ -157,3 +156,4 @@ performance/array/distCreate-large-deinit.ml-perf.graph
 library/packages/Sort/performance/dist-performance.ml-perf.graph
 runtime/ferguson/cache-remote-mock-tests/mock-ra-perf.ml-time.graph
 optimizations/autoAggregation/perf/autoAggNegativeImpact.ml-perf.graph
+exercises/diffusion/heat_2d_dist.ml-perf.graph
