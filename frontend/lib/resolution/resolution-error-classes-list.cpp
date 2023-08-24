@@ -644,7 +644,8 @@ void ErrorMultipleInheritance::write(ErrorWriterBase& wr) const {
   auto secondParent = std::get<2>(info);
 
   wr.heading(kind_, type_, theClass,
-             "invalid use of multiple inheritance in class '", theClass->name(), "'.");
+             "invalid use of multiple inheritance in class '", theClass->name(),
+             "'; only single inheritance is supported.");
   wr.message("The first class being inherited from is here:");
   wr.code(justOneLine(firstParent), { firstParent });
   wr.message("The second class being inherited from is here:");

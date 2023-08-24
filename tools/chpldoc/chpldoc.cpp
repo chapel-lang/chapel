@@ -952,9 +952,15 @@ struct RstSignatureVisitor {
 
   bool enter(const Class* c) {
     os_ << c->name().c_str();
-    if (c->parentClass()) {
+    bool printComma = false;
+    if (c->numInheritExprs() > 0) {
       os_ << " : ";
-      c->parentClass()->traverse(*this);
+      for (auto inheritExpr : c->inheritExprs()) {
+        if (printComma) os_ << ", ";
+        printComma = true;
+
+        inheritExpr->traverse(*this);
+      }
     }
     return false;
   }
