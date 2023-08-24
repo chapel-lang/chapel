@@ -69,7 +69,7 @@ DefExpr* InterfaceSymbol::buildDef(const char* name,
 {
   InterfaceSymbol* isym = new InterfaceSymbol(name, body);
 
-  if (name == astr("hashable")) {
+  if (gHashable == nullptr && name == astr("hashable")) {
     gHashable = isym;
   }
 
