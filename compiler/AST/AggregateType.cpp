@@ -3045,8 +3045,6 @@ void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
 
   globalSeen.insert(this);
 
-  addRootType();
-
   // Note: logic in the Dyno scope resolver will sometimes catch multiple inheritance,
   // but not in every case. So for now, duplicate some checks here.
   //
@@ -3146,6 +3144,10 @@ void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
         }
       }
     }
+  }
+
+  if (!firstParent) {
+    addRootType();
   }
 
   checkSameNameFields();
