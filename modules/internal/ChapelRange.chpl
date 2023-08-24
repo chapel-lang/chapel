@@ -1355,7 +1355,25 @@ module ChapelRange {
      the range has no first index, the behavior is undefined.  See
      also :proc:`range.hasFirst`. */
   inline proc range.first {
+    warnUnstableFirst(this);
     return chpl_intToIdx(this.firstAsInt);
+  }
+
+  private inline proc warnUnstableFirst(r) {
+    if !chpl_warnUnstable || !isFiniteIdxType(r.idxType) then
+      return; // nothing to do
+    if !r.hasLowBound() {
+      if r.strides.isPositive() then
+        compilerWarning("range.first is unstable for a range over an enum or bool if it has a positive stride and no low bound");
+      else if r.hasPositiveStride() then
+        warning("range.first is unstable for a range over an enum or bool if it has a positive stride and no low bound");
+    }
+    if !r.hasHighBound() {
+      if r.strides.isNegative() then
+        compilerWarning("range.first is unstable for a range over an enum or bool if it has a negative stride and no high bound");
+      else if r.hasNegativeStride() then
+        warning("range.first is unstable for a range over an enum or bool if it has a negative stride and no high bound");
+    }
   }
 
   @chpldoc.nodoc
@@ -1409,7 +1427,25 @@ module ChapelRange {
      :proc:`range.hasLast`.
   */
   inline proc range.last {
+    warnUnstableLast(this);
     return chpl_intToIdx(this.lastAsInt);
+  }
+
+  private inline proc warnUnstableLast(r) {
+    if !chpl_warnUnstable || !isFiniteIdxType(r.idxType) then
+      return; // nothing to do
+    if !r.hasLowBound() {
+      if r.strides.isNegative() then
+        compilerWarning("range.last is unstable for a range over an enum or bool if it has a negative stride and no low bound");
+      else if r.hasNegativeStride() then
+        warning("range.last is unstable for a range over an enum or bool if it has a negative stride and no low bound");
+    }
+    if !r.hasHighBound() {
+      if r.strides.isPositive() then
+        compilerWarning("range.last is unstable for a range over an enum or bool if it has a positive stride and no high bound");
+      else if r.hasPositiveStride() then
+        warning("range.last is unstable for a range over an enum or bool if it has a positive stride and no high bound");
+    }
   }
 
   @chpldoc.nodoc
