@@ -1184,7 +1184,7 @@ void initPrimitiveTypes() {
   dtCVoidPtr->symbol->addFlag(FLAG_NO_CODEGEN);
   dtCVoidPtr->defaultValue = gNil;
 
-  dtCFnPtr = createPrimitiveType("c_fn_ptr", "c_fn_ptr");
+  dtCFnPtr = createPrimitiveType("chpl__c_fn_ptr", "c_fn_ptr");
   dtCFnPtr->symbol->addFlag(FLAG_NO_CODEGEN);
   dtCFnPtr->defaultValue = gNil;
 
