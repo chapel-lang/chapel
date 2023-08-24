@@ -950,8 +950,9 @@ static void checkRangeDeprecations(AggregateType* at, NamedExpr* ne,
   }
 }
 
-AggregateType* AggregateType::generateType(CallExpr* call, const char* callString) {
-
+AggregateType* AggregateType::generateType(CallExpr* call,
+                                           const char* callString,
+                                           bool allowAllNamedArgs) {
   checkNumArgsErrors(this, call, callString);
 
   if (call->numActuals() == 0 && mIsGenericWithDefaults == false) {
@@ -982,7 +983,8 @@ AggregateType* AggregateType::generateType(CallExpr* call, const char* callStrin
       }
       // don't allow type-constructor calls to use named-argument passing
       // for a field that isn't 'type' or 'param'
-      if (!field->hasEitherFlag(FLAG_TYPE_VARIABLE, FLAG_PARAM)) {
+      if (!allowAllNamedArgs &&
+          !field->hasEitherFlag(FLAG_TYPE_VARIABLE, FLAG_PARAM)) {
         USR_FATAL_CONT(call, "named arguments can only be used in "
                              "type construction to set "
                              "'type' or 'param' fields");
