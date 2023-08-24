@@ -19,17 +19,16 @@ config const nx = 256,      // number of grid points in x
              ny = 256,      // number of grid points in y
              nt = 50,       // number of time steps
              alpha = 0.25,  // diffusion constant
-             solutionStd = 0.222751; // known solution for the default parameters
+             solutionStd = 0.221167; // known solution for the default parameters
 
 // define a 2D domain and subdomain to describe the grid and its interior
-const indices = {0..<nx, 0..<ny},
-      indicesInner = {1..<nx-1, 1..<ny-1};
+const indices = {0..nx+1, 0..ny+1},
+      indicesInner = {1..nx, 1..ny};
 
 // define a 2D array over the above domain
-var u: [indices] real;
+var u: [indices] real = 1.0;
 
 // set up initial conditions
-u = 1.0;
 u[nx/4..nx/2, ny/4..ny/2] = 2.0;
 
 // create a temporary copy of 'u' to store the previous time step

@@ -25,18 +25,16 @@ config const nx = 256,      // number of grid points in x
              ny = 256,      // number of grid points in y
              nt = 50,       // number of time steps
              alpha = 0.25,  // diffusion constant
-             solutionStd = 0.222751; // known solution for the default parameters
+             solutionStd = 0.221167; // known solution for the default parameters
 
 // define distributed domains and block-distributed array
-const indices = {0..<nx, 0..<ny},
-      indicesInner = indices.expand(-1),
-      Indices = Block.createDomain(indices);
+const Indices = Block.createDomain(0..nx+1, 0..ny+1),
+      IndicesInner = Indices[1..nx, 1..ny];
 
 // define distributed 2D arrays over the above domain
 var u, un: [Indices] real = 1.0;
 
 // apply initial conditions
-u = 1.0;
 u[nx/4..nx/2, ny/4..ny/2] = 2.0;
 
 // array wrapper for creating a "skyline" array of halo buffers
@@ -70,7 +68,7 @@ proc main() {
   // solve, spawning one task for each locale
   t.start();
   forall (tidX, tidY) in OnePerLocale {
-    const localDom = u.localSubdomain();
+    const localDom = u.localSubdomain(here);
 
     // allocate halo arrays
     HaloArrays[tidX, tidY][N] = new haloArray(localDom.dim(1));
@@ -102,7 +100,7 @@ proc main() {
 proc work(tidX: int, tidY: int) {
   // define domains to describe the indices owned by this task
   const localIndices = u.localSubdomain(here),
-        localIndicesInner = (localIndices[indicesInner]).expand(-1);
+        localIndicesInner = IndicesInner.localSubdomain(here).expand(-1);
 
   // define constants for indexing into edges of this tasks's region
   const wEdge = localIndices.dim(1).low,
@@ -126,7 +124,7 @@ proc work(tidX: int, tidY: int) {
 
     b.barrier();
 
-    // compute the FD kernel in parallel
+    // compute inner portion of FD kernel in parallel
     forall (i, j) in localIndicesInner do
       u.localAccess[i, j] = un.localAccess[i, j] + alpha * (
         un.localAccess[i-1, j] + un.localAccess[i, j-1] +

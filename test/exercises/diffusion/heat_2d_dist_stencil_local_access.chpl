@@ -24,18 +24,16 @@ config const nx = 256,      // number of grid points in x
              ny = 256,      // number of grid points in y
              nt = 50,       // number of time steps
              alpha = 0.25,  // diffusion constant
-             solutionStd = 0.222751; // known solution for the default parameters
+             solutionStd = 0.221167; // known solution for the default parameters
 
 // define a distributed 2D domain and subdomain to describe the grid and its interior
-const indices = {0..<nx, 0..<ny},
-      Indices = indices dmapped Stencil(indices, fluff=(1,1)),
-      IndicesInner = Indices[{1..<nx-1, 1..<ny-1}];
+const Indices = {0..nx+1, 0..ny+1} dmapped Stencil({0..nx+1, 0..ny+1}, fluff=(1,1)),
+      IndicesInner = Indices[1..nx, 1..ny];
 
 // define a distributed 2D array over the above domain
-var u: [Indices] real;
+var u: [Indices] real = 1.0;
 
 // set up initial conditions
-u = 1.0;
 u[nx/4..nx/2, ny/4..ny/2] = 2.0;
 
 // start comm diag
@@ -62,6 +60,11 @@ for 1..nt {
       );
 }
 t.stop();
+
+if RunCommDiag {
+  stopCommDiagnostics();
+  printCommDiagnosticsTable();
+}
 
 // print final results
 const mean = (+ reduce u) / u.size,
