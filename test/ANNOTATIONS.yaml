@@ -543,6 +543,9 @@ all:
   03/16/23:
     - text: Update GPU performance tests to not count launches in perf mode (#21891)
       config: gpu
+  04/06/23:
+    - text: Make Dyno scope resolution default (#21983)
+      config: chapcs
   05/26/23:
     - text: Upgrade to llvm 15
       config: chapcs
@@ -587,6 +590,8 @@ arrayPerformance-1d:
 arrayPerformance-2d:
   10/21/16:
     - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
+  06/02/23:
+    - Rename range.stridable to range.strides strideKind (#22441)
 
 array-assign-get:
   11/13/19:
@@ -1099,6 +1104,10 @@ knucleotide: &knucleotide-base
 
 knucleotide-submitted:
   <<: *knucleotide-base
+
+large_binary_io:
+  05/02/23:
+    - IO non-buffered read optimization (#22031)
 
 LCALS-raw-short: &lcals-base
   10/20/16:
