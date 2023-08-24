@@ -98,7 +98,7 @@ writeln(r.vals);
 // An iterator named ``these`` that can accept zero arguments is automatically
 // called when a record or class instance is used in the iterator position
 // of a ``for`` loop.
-iter R.these() ref {
+iter ref R.these() ref {
   for i in vals.indices {
     yield vals[i];
   }

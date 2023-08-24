@@ -273,7 +273,7 @@ record state {
     return inOKspot;
   }
 
-  iter monsterCanMove(m: int) {
+  iter ref monsterCanMove(m: int) {
     const currentLoc = monsterloc[m];
 //    writeln("Seeing if monster ", m, " can move from ", currentLoc);
     if currentLoc > 0 {
