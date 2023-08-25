@@ -134,6 +134,7 @@ X(swap           , "<=>")
 X(chplBy         , "chpl_by")
 X(chplAlign      , "chpl_align")
 X(chpldocDot     , "chpldoc.")
+X(llvmDot        , "llvm.")
 X(deprecated     , "deprecated")
 X(unstable       , "unstable")
 
