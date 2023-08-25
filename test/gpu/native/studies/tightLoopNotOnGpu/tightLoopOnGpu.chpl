@@ -37,7 +37,7 @@ on here.gpus[0] {
 
 if validate {
   stopGpuDiagnostics();
-  assert(getGpuDiagnostics()[0].kernel_launch == 0);
+  assert(getGpuDiagnostics()[0].kernel_launch > 0);
 }
 
 if report {
