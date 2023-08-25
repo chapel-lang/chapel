@@ -5,8 +5,6 @@ config const timing = true;
 config const n = 10000000;
 config const sourcePath = "moby.txt";
 
-config const bogus = false;
-
 var mobyFile = open(sourcePath, ioMode.r);
 var mobyReader = mobyFile.reader();
 
