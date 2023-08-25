@@ -1,0 +1,14 @@
+si2 1
+sb2 true
+Launching new task
+After launching new task
+New task unblocked, si4=7
+......done
+now passing to f_withSyncIntFormal
+the value is: 28
+the value is: 28
+the value is: true
+the value is: 28
+the value is: true
+28
+28

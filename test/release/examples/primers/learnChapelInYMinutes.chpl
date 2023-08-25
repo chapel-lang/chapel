@@ -1152,25 +1152,6 @@ proc main() {
     }
   }
 
-// ``single`` vars can only be written once. A read on an unwritten ``single``
-// results in a wait, but when the variable has a value it can be read indefinitely.
-  var someSingleVar: single int;
-  sync {
-    begin { // Reader task
-      writeln("Reader: waiting to read.");
-      for i in 1..5 {
-        var read_single = someSingleVar.readFF();
-        writeln("Reader: iteration ", i,", and the value is ", read_single);
-      }
-    }
-
-    begin { // Writer task
-      writeln("Writer: will write in...");
-      countdown(3);
-      someSingleVar.writeEF(5); // first and only write ever.
-    }
-  }
-
 // Here's an example using atomics and a ``sync`` variable to create a
 // count-down mutex (also known as a multiplexer).
   var count: atomic int; // our counter

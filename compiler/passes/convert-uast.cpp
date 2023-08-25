@@ -710,6 +710,12 @@ struct Converter {
         return remap;
       }
     } else {
+      if (name == USTR("single")) {
+        if (currentModuleType == MOD_USER) {
+          USR_WARN(node->id(), "'single' variables are deprecated - please use 'sync' variables instead");
+        }
+      }
+
       if (auto remap = reservedWordRemapForIdent(name)) {
         return remap;
       }
@@ -2181,6 +2187,9 @@ struct Converter {
       if (name == USTR("atomic")) {
         ret = new UnresolvedSymExpr("chpl__atomicType");
       } else if (name == USTR("single")) {
+        if (currentModuleType == MOD_USER) {
+          USR_WARN(node->id(), "'single' variables are deprecated - please use 'sync' variables instead");
+        }
         ret = new UnresolvedSymExpr("_singlevar");
       } else if (name == USTR("subdomain")) {
         ret = new CallExpr("chpl__buildSubDomainType");

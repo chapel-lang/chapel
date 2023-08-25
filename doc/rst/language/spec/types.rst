@@ -9,8 +9,7 @@ Types
 Chapel is a statically typed language with a rich set of types. These
 include a set of predefined primitive types, enumerated types,
 structured types (classes, records, unions, tuples), data parallel types
-(ranges, domains, arrays), and synchronization types (sync, single,
-atomic).
+(ranges, domains, arrays), and synchronization types (sync, atomic).
 
 The syntax of a type is as follows:
 
@@ -535,10 +534,9 @@ The synchronization types are summarized by the following syntax:
 
    synchronization-type:
      sync-type
-     single-type
      atomic-type
 
-Sync and single types are discussed in
+The sync type is discussed in
 :ref:`Synchronization_Variables`. The atomic type is discussed
 in :ref:`Atomic_Variables`.
 

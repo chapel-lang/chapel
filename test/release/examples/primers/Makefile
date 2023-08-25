@@ -31,7 +31,7 @@ TARGETS = \
 	slices \
 	sparse \
 	specialMethods \
-	syncsingle \
+	syncs \
 	taskParallel \
 	timers \
 	tuples \

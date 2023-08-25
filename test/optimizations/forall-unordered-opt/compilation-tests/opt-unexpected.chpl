@@ -33,21 +33,6 @@ proc set_then_sync() {
 }
 set_then_sync();
 
-proc set_then_single() {
-  var A: [0..#M] int = 0..#M;
-  var rindex: [0..#N] int;
-  var tmp: [0..#N] int;
-  var x:single int;
-
-  forall i in 0..#N {
-    tmp.localAccess[i] = A[rindex.localAccess[i]];
-    x.writeEF(1); // don't optimize -- other thread could assume tmp updated
-                  // after x is set
-  }
-}
-set_then_single();
-
-
 proc histo_spin() {
   var A: [0..#M] atomic int;
   var B: [0..#M] atomic int;
@@ -327,22 +312,6 @@ proc mini_sync() {
   }
 }
 mini_sync();
-
-// similar to mini_sync
-proc mini_single() {
-  var count: atomic int;
-  var myLock: single int;
-
-  forall r in 1..M {
-    // Acquire the lock
-    myLock.writeEF(1);
-    // Release the lock
-    myLock.writeEF(0);
-    // release the lock
-    count.add(1);
-  }
-}
-mini_single();
 
 // this case uses task-local storage and so shouldn't be optimized
 proc tls_hazard_atomic_conditional() {

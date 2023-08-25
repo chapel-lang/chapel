@@ -29,7 +29,7 @@ class XmlTag : XmlElement {
   }
 }
 
-var parsedElements: [AllPairs] single unmanaged XmlElement?;
+var parsedElements: [AllPairs] sync unmanaged XmlElement?;
 
 proc main {
   forall z in AllIndices with (ref StartIndices, ref EndIndices) do {
