@@ -178,8 +178,8 @@ foreach i in r do  B[0] =  isinf(r64);   B[1] =  isinf(r64);  check(B,"isinf(r64
 foreach i in r do  B[0] =  isnan(r32);   B[1] =  isnan(r32);  check(B,"isnan(r32)");
 foreach i in r do  B[0] =  isnan(r64);   B[1] =  isnan(r64);  check(B,"isnan(r64)");
 
-foreach i in r do  R[0] = ldexp(r32,i32);   R[1] =  ldexp(r32,i32);  check(R,"ldexp(r32,i32)");
-foreach i in r do  R[0] = ldexp(r64,i32);   R[1] =  ldexp(r64,i32);  check(R,"ldexp(r64,i32)");
+foreach i in r do  R[0] = ldExp(r32,i32);   R[1] =  ldExp(r32,i32);  check(R,"ldExp(r32,i32)");
+foreach i in r do  R[0] = ldExp(r64,i32);   R[1] =  ldExp(r64,i32);  check(R,"ldExp(r64,i32)");
 
 foreach i in r do  R[0] = lgamma(r32);   R[1] =  lgamma(r32);  check(R,"lgamma(r32)");
 foreach i in r do  R[0] = lgamma(r64);   R[1] =  lgamma(r64);  check(R,"lgamma(r64)");
