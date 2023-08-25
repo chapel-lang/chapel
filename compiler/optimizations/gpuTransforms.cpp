@@ -61,7 +61,7 @@ static int indentGPUChecksLevel = 0;
 // these assumptions anyway you can turn this flag to true. And once we do
 // update things we can get just simplify things and get rid of this flag
 // altogether.
-static bool recklesslyDisregardSpecializationLimits = false;
+static bool assumeNonGpuSpecFnsAreOnCpu = false;
 
 extern int classifyPrimitive(CallExpr *call, bool inLocal);
 extern bool inLocalBlock(CallExpr *call);
@@ -69,6 +69,10 @@ extern bool inLocalBlock(CallExpr *call);
 // ----------------------------------------------------------------------------
 // Utilities
 // ----------------------------------------------------------------------------
+
+static bool isFnGpuSpecialized(FnSymbol *fn) {
+  return fn->hasFlag(FLAG_GPU_SPECIALIZATION);
+}
 
 static bool isFieldAccessPrimitive(CallExpr *call) {
   return call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
@@ -1194,8 +1198,10 @@ static void generateGpuAndNonGpuPaths(const GpuizableLoop &gpuLoop,
   // will make sure that we call the runtime support as if there's a GPU, yet
   // still executing the loop always.
 
-  if(fGpuSpecialization && (recklesslyDisregardSpecializationLimits ||
-      gpuLoop.loop()->getFunction()->hasFlag(FLAG_GPU_SPECIALIZATION)))
+  FnSymbol *fnContainingLoop = gpuLoop.loop()->getFunction();
+  bool canAssumeFnWillRunOnGpu =
+    fGpuSpecialization && (assumeNonGpuSpecFnsAreOnCpu || isFnGpuSpecialized(fnContainingLoop));
+  if(canAssumeFnWillRunOnGpu)
   {
     // If we are creating GPU specializations then we already know we're on a GPU
     // sublocale and can just generate the kernel launch call
@@ -1273,7 +1279,7 @@ static void outlineGpuKernelsInFn(FnSymbol *fn) {
 }
 
 // We need to strip any GPU specific primitives that remain
-static void cleanupForeachLoopsGauranteedToRunOnCpu(FnSymbol *fn) {
+static void cleanupForeachLoopsGuaranteedToRunOnCpu(FnSymbol *fn) {
   std::vector<BaseAST*> asts;
   collect_asts(fn, asts);
   for_vector(BaseAST, ast, asts) {
@@ -1290,19 +1296,21 @@ static void doGpuTransforms() {
 
   // Outline all eligible loops; cleanup CPU bound loops
   forv_Vec(FnSymbol*, fn, gFnSymbols) {
-    if(fGpuSpecialization && !fn->hasFlag(FLAG_GPU_SPECIALIZATION)
-     && recklesslyDisregardSpecializationLimits)
+    bool canAssumeFnWillRunOnCpu = fGpuSpecialization &&
+                                   !isFnGpuSpecialized(fn) &&
+                                   assumeNonGpuSpecFnsAreOnCpu;
+    if(canAssumeFnWillRunOnCpu)
     {
       // By definition all foreach loops in a function without this flag
       // will be run on the CPU:
-      cleanupForeachLoopsGauranteedToRunOnCpu(fn);
+      cleanupForeachLoopsGuaranteedToRunOnCpu(fn);
     } else {
       outlineGpuKernelsInFn(fn);
 
       // All eligible loops in the function will have been outlined into
       // kernels at this point so anything that remains is guaranteed to
       // run on the CPU
-      cleanupForeachLoopsGauranteedToRunOnCpu(fn);
+      cleanupForeachLoopsGuaranteedToRunOnCpu(fn);
     }
   }
 }
