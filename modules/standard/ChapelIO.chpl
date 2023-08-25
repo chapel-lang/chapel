@@ -198,7 +198,7 @@ module ChapelIO {
     @chpldoc.nodoc
     proc writeThisFieldsDefaultImpl(writer, x:?t, inout first:bool) throws {
       param num_fields = __primitive("num fields", t);
-      var isBinary = writer.binary();
+      var isBinary = writer._binary();
 
       if (isClassType(t)) {
         if _to_borrowed(t) != borrowed RootClass {
@@ -261,7 +261,7 @@ module ChapelIO {
       const st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
       const isJson = st == QIO_AGGREGATE_FORMAT_JSON;
 
-      if !writer.binary() {
+      if !writer._binary() {
         const start = if isJson then "{"
                       else if st == QIO_AGGREGATE_FORMAT_CHPL
                       then "new " + t:string + "("
@@ -274,7 +274,7 @@ module ChapelIO {
 
       writeThisFieldsDefaultImpl(writer, x, first);
 
-      if !writer.binary() {
+      if !writer._binary() {
         const end = if isJson then "}"
                     else if st == QIO_AGGREGATE_FORMAT_CHPL then ")"
                     else if isClassType(t) then "}"
@@ -409,7 +409,7 @@ module ChapelIO {
         where !isUnionType(t) {
 
       param numFields = __primitive("num fields", t);
-      var isBinary = reader.binary();
+      var isBinary = reader._binary();
 
       if isClassType(t) && _to_borrowed(t) != borrowed RootClass {
 
@@ -541,7 +541,7 @@ module ChapelIO {
         where isUnionType(t) && !isExternUnionType(t) {
 
       param numFields = __primitive("num fields", t);
-      var isBinary = reader.binary();
+      var isBinary = reader._binary();
 
 
       if isBinary {
@@ -598,7 +598,7 @@ module ChapelIO {
     proc readThisDefaultImpl(reader, x:?t) throws where isClassType(t) {
       const st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
 
-      if !reader.binary() {
+      if !reader._binary() {
         const start = if st == QIO_AGGREGATE_FORMAT_CHPL
                       then "new " + t:string + "("
                       else "{";
@@ -614,7 +614,7 @@ module ChapelIO {
       try readThisFieldsDefaultImpl(reader, t, obj, needsComma);
       try skipFieldsAtEnd(reader, needsComma);
 
-      if !reader.binary() {
+      if !reader._binary() {
         const end = if st == QIO_AGGREGATE_FORMAT_CHPL then ")"
                     else "}";
 
@@ -627,7 +627,7 @@ module ChapelIO {
       const st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
       const isJson = st ==  QIO_AGGREGATE_FORMAT_JSON;
 
-      if !reader.binary() {
+      if !reader._binary() {
         const start = if st ==  QIO_AGGREGATE_FORMAT_CHPL
                       then "new " + t:string + "("
                       else if isJson then "{"
@@ -641,7 +641,7 @@ module ChapelIO {
       try readThisFieldsDefaultImpl(reader, t, x, needsComma);
       try skipFieldsAtEnd(reader, needsComma);
 
-      if !reader.binary() {
+      if !reader._binary() {
         const end = if isJson then "}"
                     else ")";
 
@@ -702,7 +702,7 @@ module ChapelIO {
   proc _tuple._readWriteHelper(f) throws {
     const st = f.styleElement(QIO_STYLE_ELEMENT_TUPLE);
     const isJson = st == QIO_TUPLE_FORMAT_JSON;
-    const binary = f.binary();
+    const binary = f._binary();
 
     // Returns a 4-tuple containing strings representing:
     // - start of a tuple

@@ -138,7 +138,7 @@ module DefaultAssociative {
     }
 
     proc dsiSerialWrite(f) throws {
-      const binary = f.binary();
+      const binary = f._binary();
 
       if binary {
         f.write(dsiNumIndices);
@@ -159,7 +159,7 @@ module DefaultAssociative {
       }
     }
     proc dsiSerialRead(f) throws {
-      const binary = f.binary();
+      const binary = f._binary();
 
       // Clear the domain so it only contains indices read in.
       dsiClear();
@@ -729,7 +729,7 @@ module DefaultAssociative {
     }
 
     proc dsiSerialReadWrite(f /*: channel*/, in printBraces=true, inout first = true) throws {
-      var binary = f.binary();
+      var binary = f._binary();
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
       var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
       var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
@@ -967,7 +967,7 @@ module DefaultAssociative {
   // TODO: rewrite to use 'startArray' serializer API, rather than relying on
   // reading and writing literals.
   proc chpl_serialReadWriteAssociativeHelper(f, arr, dom) throws {
-    var binary = f.binary();
+    var binary = f._binary();
     var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
     var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
     var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;

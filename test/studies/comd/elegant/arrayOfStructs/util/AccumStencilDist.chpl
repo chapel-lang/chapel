@@ -1125,7 +1125,6 @@ iter AccumStencilArr.these(param tag: iterKind, followThis, param fast: bool = f
 //
 proc AccumStencilArr.dsiSerialWrite(f) {
   type strType = chpl__signedType(idxType);
-  var binary = f.binary();
   if dom.dsiNumIndices == 0 then return;
   var i : rank*idxType;
   for dim in 0..#rank do
@@ -1133,7 +1132,7 @@ proc AccumStencilArr.dsiSerialWrite(f) {
   label next while true {
     f.write(dsiAccess(i));
     if i(rank) <= (dom.dsiDim(rank).high - dom.dsiDim(rank).stride:strType) {
-      if ! binary then f.write(" ");
+      f.write(" ");
       i(rank) += dom.dsiDim(rank).stride:strType;
     } else {
       for dim in 0..rank-2 by -1 {

@@ -1855,7 +1855,7 @@ module List {
       :arg ch: A channel to write to.
     */
     proc writeThis(ch: fileWriter) throws {
-      var isBinary = ch.binary();
+      var isBinary = ch._binary();
       const isJson = ch.styleElement(QIO_STYLE_ELEMENT_AGGREGATE) == QIO_AGGREGATE_FORMAT_JSON;
 
       if isJson {
@@ -1930,7 +1930,7 @@ module List {
       // Special handling for reading in order to handle reading an arbitrary
       // size.
       //
-      const isBinary = ch.binary();
+      const isBinary = ch._binary();
       const isJson = ch.styleElement(QIO_STYLE_ELEMENT_AGGREGATE) == QIO_AGGREGATE_FORMAT_JSON;
       if isJson then {
         _readJson(ch);

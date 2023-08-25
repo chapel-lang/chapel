@@ -891,7 +891,7 @@ class UserMapAssocArr: AbsBaseArr(?) {
   proc dsiSerialWrite(f) {
     use IO;
 
-    var binary = f.binary();
+    var binary = f._binary();
     var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
     var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
     var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;

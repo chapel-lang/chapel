@@ -1692,7 +1692,7 @@ module ChapelArray {
     @chpldoc.nodoc
     proc writeThis(f) throws {
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
-      var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !f.binary();
+      var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !f._binary();
       if rank > 1 && ischpl {
         throw new owned IllegalArgumentError("Cannot perform Chapel write of multidimensional array.");
       }
@@ -1712,7 +1712,7 @@ module ChapelArray {
     @chpldoc.nodoc
     proc readThis(f) throws {
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
-      var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !f.binary();
+      var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !f._binary();
       if rank > 1 && ischpl {
         throw new owned IllegalArgumentError("Cannot perform Chapel read of multidimensional array.");
       }

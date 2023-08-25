@@ -1479,7 +1479,7 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
 //
 proc StencilArr.dsiSerialWrite(f) {
   type strType = chpl__signedType(idxType);
-  var binary = f.binary();
+  var binary = f._binary();
   if dom.dsiNumIndices == 0 then return;
   var i : rank*idxType;
   for dim in 0..rank-1 do
