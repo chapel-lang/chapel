@@ -2013,6 +2013,9 @@ static bool isParenfulFn(Symbol* sym) {
 // if it finds a variable/type/etc or a parenless function.
 // Continue searching if we have found a method.
 static bool shouldStopSearch(llvm::SmallVectorImpl<Symbol*>& symbols) {
+  // If this loop becomes a performance problem, try switching to
+  // keeping track of whether or not the search should continue
+  // with each insertion to 'symbols'.
   for (Symbol* sym : symbols) {
     if (!isParenfulFn(sym)) {
       // found parenless fn or type or var or ...
