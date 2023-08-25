@@ -80,7 +80,7 @@ proc try2() {
         const next_loc = (loc_i + loc_j + 1) % numLocales;
         const more_chunks = loc_j < numLocales-1;
 
-        cobegin with (ref next_dom) {
+        cobegin with (ref next_dom, ref next_array) {
 
           // Task 1: prefetch into 'next_array'
           if more_chunks then on Locales[next_loc] {
