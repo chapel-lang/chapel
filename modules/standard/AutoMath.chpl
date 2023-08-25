@@ -1959,7 +1959,7 @@ module AutoMath {
 
   /* Returns the maximum value of two arguments using the ``>`` operator
      for comparison.
-     If one of the arguments is :proc:`AutoMath.nan`, the result is also NaN.
+     If one of the arguments is :proc:`AutoMath.nan`, the result is also nan.
 
      :rtype: The type of `x`.
    */
@@ -2030,7 +2030,7 @@ module AutoMath {
   /* Returns the minimum value of two arguments using the ``<`` operator
      for comparison.
 
-     If one of the arguments is :proc:`AutoMath.nan`, the result is also NaN.
+     If one of the arguments is :proc:`AutoMath.nan`, the result is also nan.
 
      :rtype: The type of `x`.
    */

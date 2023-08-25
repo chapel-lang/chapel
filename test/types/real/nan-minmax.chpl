@@ -50,7 +50,7 @@ testNans();
 
 writeln("done");
 
-// min/max reductions on ARR with 1 or 2 NaNs added to it
+// min/max reductions on ARR with 1 or 2 nans added to it
 proc testNans() {
   for i1 in 1..n do
     for i2 in 1..n do
