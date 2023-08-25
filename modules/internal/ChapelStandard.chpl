@@ -72,6 +72,7 @@ module ChapelStandard {
   public use ExportWrappers;
   public use ChapelAutoAggregation;
   public use ChapelGpuSupport;
+  public use ChapelContext;
 
   // Standard modules.
   public use Types as Types;
