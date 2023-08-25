@@ -9,13 +9,12 @@ module Chai {
     }
 
     use Tensor only Tensor;
-
-    tn.seedRandom(0);
     
 
-    record Dense {
+    class Dense {
 
         var outputSize: int;
+        var inputSize_ = -1;
 
         var bias: Tensor(1);
         var weights: Tensor(2);
@@ -48,16 +47,15 @@ module Chai {
 
         proc ref initialize(input: Tensor(1)) {
             if !uninitialized then tn.err("Dense initialize: already initialized");
-            const inputSize = * reduce input.shape;
+            const (inputSize,) = input.shape;
+            inputSize_ = inputSize;
             const stddevB = sqrt(2.0 / outputSize);
             const stddevW = sqrt(2.0 / (inputSize + outputSize));
             bias = tn.randn(outputSize); // tn.randn(this.outputSize); // tn.randn(outputSize,mu=0.0,sigma=stddevB);
             weights = tn.randn(outputSize,inputSize); // this.weights = tn.randn(this.outputSize, inputSize,mu=0.0,sigma=stddevW);
-
             biasGrad = tn.zeros(outputSize);
             weightsGrad = tn.zeros(outputSize, inputSize);
             uninitialized = false;
-            writeln("Dense layer initialized (", inputSize ," -> ", outputSize, ")");
         }
 
         proc ref forwardProp(input: Tensor(1)): Tensor(1) {
@@ -65,14 +63,14 @@ module Chai {
             const activation = (this.weights * input) + this.bias;
             return activation;
         }
-        proc ref forwardProp(batch: [] Tensor(1)): [] Tensor(1) {     
+        proc ref forwardPropBatch(batch: [] Tensor(1)): [] Tensor(1) {     
             if uninitialized then initialize(batch[0]);
 
             const batchSize = batch.size;
 
             var activations: [0..#batchSize] Tensor(1,real);
             activations.reshapeDomain({0..#outputSize});
-            for i in 0..#batchSize {
+            forall i in 0..#batchSize {
                 activations[i] = (this.weights * batch[i]) + this.bias;
             }
             return activations;
@@ -86,23 +84,24 @@ module Chai {
             return newDelta;
         }
 
-        proc ref backward(deltas: [] Tensor(1), inputs: [] Tensor(1)): [] Tensor(1) {
+        proc ref backwardBatch(deltas: [] Tensor(1), inputs: [] Tensor(1)): [] Tensor(1) {
             const batchSize = deltas.size;
             var newDeltas: [0..#batchSize] Tensor(1);
+
+
 
             var biasGradient = biasGrad.data;
             var weightsGradient = weightsGrad.data;
 
-            // forall (delta,input,i) in zip(deltas,inputs,0..) with (ref this, + reduce biasGradient, + reduce weightsGradient) {
-            for (delta,input,i) in zip(deltas,inputs,0..) {
+            forall (delta,input,i) in zip(deltas,inputs,0..) with (ref this, + reduce biasGradient, + reduce weightsGradient) {
                 const newDelta = weights.transpose() * delta;
-                biasGradient    += newDelta.data;
-                weightsGradient += (newDelta * input.transpose()).data;
+                biasGradient    += delta.data;
+                const wg = input * delta.transpose();
+                weightsGradient += wg.transpose().data;
                 newDeltas[i] = newDelta;
             }
             this.biasGrad.data += biasGradient;
             this.weightsGrad.data += weightsGradient;
-
             return newDeltas;
         }
 
@@ -129,7 +128,7 @@ module Chai {
         }
     }
 
-    record Sigmoid {
+    class Sigmoid {
         proc init() { }
 
         proc forwardProp(x: Tensor(?rank)): Tensor(rank) {
@@ -137,7 +136,14 @@ module Chai {
             return activation;
         }
 
-        proc forwardProp(batch: [] Tensor) {
+        proc forwardPropBatch(batch: [] ?tensorType) where isSubtype(tensorType, Tensor) {
+            // if tensorType <= Tensor then compilerError("Sigmoid forwardPropBatch: tensorType must be a Tensor");
+            // param rank = tensorTypes.rank;
+            // var activations: [batch.domain] batch.eltType;
+            // for i in activations.domain {
+            //     activations[i] = forwardProp(batch[i]);
+            // }
+            // return activations;
             return [b in batch] forwardProp(b);
         }
 
@@ -147,7 +153,12 @@ module Chai {
             return grad; 
         }
 
-        proc backward(deltas: [] Tensor, inputs: [] Tensor) {
+        proc backwardBatch(deltas: [] ?tensorType1, inputs: [] ?tensorType2) where isSubtype(tensorType1, Tensor) && isSubtype(tensorType2, Tensor) {
+            // var grads: [inputs.domain] inputs.eltType;
+            // for i in grads.domain {
+            //     grads[i] = backward(deltas[i],inputs[i]);
+            // }
+            // return grads;
             return [(d,i) in zip(deltas,inputs)] backward(d,i);
         }
 
@@ -161,7 +172,7 @@ module Chai {
 
     }
 
-    record Conv {
+    class Conv {
 
         var numFilters: int;
         var filters: Tensor(4);
@@ -313,7 +324,7 @@ module Chai {
         }
     }
 
-    record MaxPool {
+    class MaxPool {
 
         proc forwardProp(batch: [] Tensor(3)): [] Tensor(3) {
             const batchSize = batch.size;
@@ -392,7 +403,7 @@ module Chai {
         }
     }
 
-    record ReLU {
+    class ReLU {
         var a: real = 0.0;
         proc init(a: real = 0.0) { this.a = a; }
         proc forwardProp(input: Tensor(?rank)) {
@@ -438,7 +449,7 @@ module Chai {
         }
     }
 
-    record Flatten {
+    class Flatten {
 
         proc init() { }
         proc forwardProp(input: Tensor(?inRank)): Tensor(1) {
@@ -457,7 +468,7 @@ module Chai {
         }
     }
 
-    record SoftMax {
+    class SoftMax {
 
         var weights: Tensor(2);
         var biases: Tensor(1);
@@ -615,11 +626,7 @@ module Chai {
         return forwardPropHelp(layers, n+1, xNext);
     }
 
-    proc forwardPropHelpBatch(ref layers, param n: int, xs) {
-        if n == layers.size then return xs;
-        const xNexts = layers[n].forwardProp(xs);
-        return forwardPropHelpBatch(layers, n+1, xNexts);
-    }
+
 
     proc backwardPropHelp(ref layers, param n: int, x: Tensor(?)) {
         if n == 0 then return layers[0].backward(x);
@@ -639,15 +646,21 @@ module Chai {
         return layers[n].backward(delta,x);
     }
 
-    proc backwardForwardPropHelpBatch(ref layers, param n: int, xs, lastDeltas) {
-        if n == layers.size { return lastDeltas; }
-
-        const lastInputs = layers[n].forwardProp(xs);
-        const deltas = backwardForwardPropHelpBatch(layers, n+1, lastInputs, lastDeltas);
-        return layers[n].backward(deltas,xs);
+    proc forwardPropHelpBatch(ref layers, param n: int, inputs) {
+        if n == layers.size then return inputs;
+        const nextInputs = layers[n].forwardPropBatch(inputs);
+        return forwardPropHelpBatch(layers, n+1, nextInputs);
     }
 
-    record Network {
+    proc backwardForwardPropHelpBatch(ref layers, param n: int, inputs, lastDeltas) {
+        if n == layers.size { return lastDeltas; }
+
+        const lastInputs = layers[n].forwardPropBatch(inputs);
+        const deltas = backwardForwardPropHelpBatch(layers, n+1, lastInputs, lastDeltas);
+        return layers[n].backwardBatch(deltas=deltas,inputs=inputs);
+    }
+
+    class Network {
         var _layers;
         proc ref layers ref do return this._layers;
 
@@ -656,21 +669,35 @@ module Chai {
             if this._layers[0].type == Conv then this._layers[0].isFirstLayer = true;
         }
 
-        proc ref forwardProp(x: Tensor(?)) {
-            return forwardPropHelp(this.layers, 0, x);
+        // proc ref forwardProp(x: Tensor(?)) {
+        //     return forwardPropHelp(this.layers, 0, x);
+        // }
+
+        // proc ref backwardProp(x: Tensor(?)) {
+        //     return backwardPropHelp(this.layers,this.layers.size - 1,x);
+        // }
+        // proc ref backwardProp(x: Tensor(?), delta: Tensor(?)) {
+        //     return backwardForwardPropHelp(this.layers,0,x,delta);
+        // }
+
+        proc ref forwardProp(input: Tensor(?)) {
+            const inputs = [input];
+            return this.forwardPropBatch(inputs)[0];
         }
-        proc ref forwardPropBatch(xs) {
-            return forwardPropHelpBatch(this.layers, 0, xs);
+
+        proc ref backwardProp(input: Tensor(?), delta: Tensor(?)) {
+            const inputs = [input];
+            const deltas = [delta];
+            return this.backwardPropBatch(inputs,deltas)[0];
         }
-        proc ref backwardProp(x: Tensor(?)) {
-            return backwardPropHelp(this.layers,this.layers.size - 1,x);
+
+        proc ref forwardPropBatch(inputs) {
+            return forwardPropHelpBatch(this.layers, 0, inputs);
         }
-        proc ref backwardProp(x: Tensor(?), delta: Tensor(?)) {
-            return backwardForwardPropHelp(this.layers,0,x,delta);
+        proc ref backwardPropBatch(inputs, deltas) {
+            return backwardForwardPropHelpBatch(this.layers,0,inputs=inputs,lastDeltas=deltas);
         }
-        proc ref backwardPropBatch(xs, deltas) {
-            return backwardForwardPropHelpBatch(this.layers,0,xs,deltas);
-        }
+
         proc ref optimize(mag: real) {
             for param i in 0..#(this.layers.size) {
                 this.layers[i].optimize(mag);

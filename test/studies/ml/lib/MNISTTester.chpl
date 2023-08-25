@@ -3,7 +3,6 @@ import Tensor as tn;
 use Tensor;
 import Math;
 import MNIST;
-import Random;
 import IO;
 import Time;
 

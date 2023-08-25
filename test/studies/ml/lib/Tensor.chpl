@@ -5,13 +5,16 @@ module Tensor {
     import IO.FormattedIO;
     import ChapelArray;
     import Random;
+    import AutoMath;
 
     param debugPrint = false;
 
-    var rng = new Random.RandomStream(eltType=real(64),seed=5,parSafe=false);
+    var rng = new IainsRNG(5); // new Random.NPBRandom.NPBRandomStream(eltType=real(64),seed=5,parSafe=true);
     
     proc seedRandom(seed) {
-        // rng = new Random.RandomStream(eltType=real(64),seed=seed);
+        rng = new IainsRNG(seed);
+        // rng = new Random.NPBRandom.NPBRandomStream(eltType=real(64),seed=5,parSafe=true);
+        // rng = new IainsRNG(5);
     }
 
     proc err(args...?n) {
@@ -234,6 +237,20 @@ module Tensor {
             const size = this.data.domain.size;
             return this.reshape({0..#size});
         }
+        proc degen() {this.degen("");}
+        proc degen(s... ?k) {
+            for i in this.domain {
+                const x = this[i];
+                if AutoMath.isnan(x) {
+                    writeln(this,(...s));
+                    err("NaN in tensor.");
+                }
+                if AutoMath.isinf(x) {
+                    writeln(this,(...s));
+                    err("Inf in tensor.");
+                }
+            }
+        }
 
         // Returns a tensor with argument function applied to each element
         proc fmap(fn) {
@@ -298,14 +315,16 @@ module Tensor {
 
     operator +(lhs: Tensor(?rank,?eltType), rhs: Tensor(rank,eltType)) {
         var t = new Tensor(rank=rank,eltType=eltType);
-
-        if lhs.domain.size == rhs.domain.size {
-            t.reshapeDomain(lhs.domain); // fixme. should be union.
-            t.data = lhs.data + rhs.data;
-            return t;
-        } else {
-            err("Cannot add tensors of different sizes. + ");
-        }
+        t.reshapeDomain(lhs.domain); // fixme. should be union.
+        t.data = lhs.data + rhs.data;
+        return t;
+        // if lhs.domain.size == rhs.domain.size {
+        //     t.reshapeDomain(lhs.domain); // fixme. should be union.
+        //     t.data = lhs.data + rhs.data;
+        //     return t;
+        // } else {
+        //     err("Cannot add tensors of different sizes. + ");
+        // }
 
         if lhs.domain.size < rhs.domain.size {
             t.reshapeDomain(rhs.domain);
@@ -324,12 +343,14 @@ module Tensor {
     operator +=(ref lhs: Tensor(?d), const ref rhs: Tensor(d)) {
         if lhs.domain.size == rhs.domain.size {
             lhs.data += rhs.data;
-        } if lhs.domain.size == 0 && rhs.domain.size != 0 {
-            lhs.reshapeDomain(rhs.domain);
-            lhs.data = rhs.data;
-        } else {
+        } 
+        // if lhs.domain.size == 0 && rhs.domain.size != 0 {
+        //     lhs.reshapeDomain(rhs.domain);
+        //     lhs.data = rhs.data;
+        // } 
+        else {
             // lhs.data += (lhs + rhs).data;
-            err("Cannot add tensors of different sizes. += ", lhs.domain.size, " != ", rhs.domain.size);
+            err("Cannot add tensors of different sizes. += ", lhs.domain.size, " != ", rhs.domain.size,"  [",lhs.shape," += ",rhs.shape,"]");
         }
     }
     operator +=(ref lhs: Tensor(?rank,?eltType), rhs) where (isArray(rhs) && rhs.rank == rank) || rhs.type == eltType {
@@ -488,7 +509,7 @@ module Tensor {
 
     // Shuffle a tensor in place
     proc shuffle(ref x) {
-        Random.shuffle(x,seed=0);
+        Random.shuffle(x,seed=5);
     }
 
     // Get the max value index in an array
@@ -695,6 +716,33 @@ module Tensor {
     proc crossEntropyDelta(p: Tensor(1),q: Tensor(1)) {
         return p - q;
     }
+
+
+
+
+
+
+
+    class IainsRNG {
+        var seed: int;
+        var state: int;
+
+        proc init(seed: int) {
+            this.seed = seed;
+            this.state = 0;
+            writeln("I was initialized with seed: ", seed);
+        }
+        proc getNext(): real(64) {
+            state += 1;
+
+            const x = (10 * state: real) / 1457.183;
+            const y = x + ((10 * state: real + 76.299) / 3947.64);
+            const r = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
+            return r - AutoMath.floor(r);
+        }
+    }
+
+
 
 
 

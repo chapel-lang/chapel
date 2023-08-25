@@ -6,7 +6,7 @@ import Math;
 tn.seedRandom(0);
 
 config const epochs = 10;
-config const learnRate = 0.0001;
+config const learnRate = 0.01;
 
 // var network = new shared chai.Network(
 //     (
@@ -24,14 +24,14 @@ config const learnRate = 0.0001;
 //         // new chai.ReLU(0.1)
 //     )
 // );
-var net = new chai.Network(
+var net = new shared chai.Network(
     (
-        new chai.Dense(2),
-        new chai.Sigmoid(),
-        new chai.Dense(3),
-        new chai.Sigmoid(),
-        new chai.Dense(2),
-        new chai.Sigmoid()
+        new shared chai.Dense(2),
+        new shared chai.Sigmoid(),
+        new shared chai.Dense(3),
+        new shared chai.Sigmoid(),
+        new shared chai.Dense(2),
+        new shared chai.Sigmoid()
     )
 );
 
@@ -45,9 +45,12 @@ proc forward(batch: [] (Tensor(1),Tensor(1))) {
 
     for ((input,expected),idx) in zip(batch,0..) {
         const output = net.forwardProp(input);
+        output.degen("output");
         outputs[idx] = output;
-        losses[idx] = (+ reduce ((expected.data - output.data) ** 2.0)) / output.domain.size;
+        losses[idx] = (+ reduce ((expected - output).data ** 2.0)) / output.domain.size;
+        (new Tensor(losses)).degen("losses");
         lossesGrad[idx] = expected - output;
+        lossesGrad[idx].degen("lossesGrad");
     }
     return (losses, lossesGrad, outputs);
 }
@@ -87,10 +90,29 @@ outputs[1] = [0.0,1.0];
 outputs[2] = [0.0,1.0];
 outputs[3] = [1.0,0.0];
 
+var t = tn.randn(3,2);
+writeln(t, " ",t.shape);
+writeln(t.transpose(), " ",t.transpose().shape);
+
+var dy = tn.randn(3);
+var dx = t.transpose() * dy;
+writeln(dx, " ",dx.shape);
+
+
+
+// halt(0);
 
 const batch = for a in zip(inputs,outputs) do a;
+tn.seedRandom(5);
 net.forwardPropBatch(inputs);
+
+for n in net.layers {
+    if n.type == shared chai.Dense then writeln(n.weights,n.weights.shape);
+}
+
 for e in 1..epochs {
+    tn.seedRandom(5);
+
     // {
     //     const (l,lg,o) = forward(batch);
     //     const lo = (+ reduce l) / batch.size;
