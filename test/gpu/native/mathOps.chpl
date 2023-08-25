@@ -181,8 +181,8 @@ foreach i in r do  B[0] =  isnan(r64);   B[1] =  isnan(r64);  check(B,"isnan(r64
 foreach i in r do  R[0] = ldexp(r32,i32);   R[1] =  ldexp(r32,i32);  check(R,"ldexp(r32,i32)");
 foreach i in r do  R[0] = ldexp(r64,i32);   R[1] =  ldexp(r64,i32);  check(R,"ldexp(r64,i32)");
 
-foreach i in r do  R[0] = lgamma(r32);   R[1] =  lgamma(r32);  check(R,"lgamma(r32)");
-foreach i in r do  R[0] = lgamma(r64);   R[1] =  lgamma(r64);  check(R,"lgamma(r64)");
+foreach i in r do  R[0] = lnGamma(r32);   R[1] =  lnGamma(r32);  check(R,"lnGamma(r32)");
+foreach i in r do  R[0] = lnGamma(r64);   R[1] =  lnGamma(r64);  check(R,"lnGamma(r64)");
 
 foreach i in r do  R[0] = log(r32);   R[1] =  log(r32);  check(R,"log(r32)");
 foreach i in r do  R[0] = log(r64);   R[1] =  log(r64);  check(R,"log(r64)");
@@ -281,8 +281,8 @@ foreach i in r do  R[0] =  tan(r64);   R[1] =  tan(r64);  check(R,"tan(r64)");
 foreach i in r do  R[0] =  tanh(r32);   R[1] =  tanh(r32);  check(R,"tanh(r32)");
 foreach i in r do  R[0] =  tanh(r64);   R[1] =  tanh(r64);  check(R,"tanh(r64)");
 
-foreach i in r do  R[0] =  tgamma(r32);   R[1] =  tgamma(r32);  check(R,"tgamma(r32)");
-foreach i in r do  R[0] =  tgamma(r64);   R[1] =  tgamma(r64);  check(R,"tgamma(r64)");
+foreach i in r do  R[0] =  gamma(r32);   R[1] =  gamma(r32);  check(R,"gamma(r32)");
+foreach i in r do  R[0] =  gamma(r64);   R[1] =  gamma(r64);  check(R,"gamma(r64)");
 
 foreach i in r do  R[0] =  trunc(r32);   R[1] =  trunc(r32);  check(R,"trunc(r32)");
 foreach i in r do  R[0] =  trunc(r64);   R[1] =  trunc(r64);  check(R,"trunc(r64)");
