@@ -1854,8 +1854,8 @@ void checkConflictingSymbols(llvm::SmallVectorImpl<Symbol *>& symbols,
       if (foundMethod && foundNonMethod) {
         USR_FATAL_CONT(context,
                        "currently ambiguous what '%s' refers to", name);
-        USR_PRINT(foundMethod, "and this method");
-        USR_PRINT(foundNonMethod, "found this non-method");
+        USR_PRINT(foundMethod, "found this method");
+        USR_PRINT(foundNonMethod, "and this non-method");
         USR_STOP();
       }
     } else {
