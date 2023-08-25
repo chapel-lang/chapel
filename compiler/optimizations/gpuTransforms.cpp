@@ -46,6 +46,23 @@ static bool debugPrintGPUChecks = false;
 static bool allowFnCallsFromGPU = true;
 static int indentGPUChecksLevel = 0;
 
+// Ideally, if we do gpuSpecialization, we could safely assume that any function
+// that isn't marked with FLAG_GPU_SPECIALIZE would be executed on a CPU locale.
+// Unfortunately, as of today, this isn't he case because these functions can
+// be reached by virtual dispatch and our specialization cloning isn't
+// sophisticated enough to clone these functions and update the dispatch calls
+// as appropriate.
+//
+// The good news is it's still safe to assume that anything marked with
+// FLAG_GPU_SPECIALIZE must execute on the gpu.
+//
+// Anyway, of course, our hope would be to make things handle virtual dispatch
+// properly, but, in the meantime, if you want to ignore this and make
+// these assumptions anyway you can turn this flag to true. And once we do
+// update things we can get just simplify things and get rid of this flag
+// altogether.
+static bool recklesslyDisregardSpecializationLimits = false;
+
 extern int classifyPrimitive(CallExpr *call, bool inLocal);
 extern bool inLocalBlock(CallExpr *call);
 
@@ -1177,7 +1194,9 @@ static void generateGpuAndNonGpuPaths(const GpuizableLoop &gpuLoop,
   // will make sure that we call the runtime support as if there's a GPU, yet
   // still executing the loop always.
 
-  if(fGpuSpecialization) {
+  if(fGpuSpecialization && (recklesslyDisregardSpecializationLimits ||
+      gpuLoop.loop()->getFunction()->hasFlag(FLAG_GPU_SPECIALIZATION)))
+  {
     // If we are creating GPU specializations then we already know we're on a GPU
     // sublocale and can just generate the kernel launch call
     BlockStmt* gpuBlock = new BlockStmt();
@@ -1271,7 +1290,9 @@ static void doGpuTransforms() {
 
   // Outline all eligible loops; cleanup CPU bound loops
   forv_Vec(FnSymbol*, fn, gFnSymbols) {
-    if(fGpuSpecialization && !fn->hasFlag(FLAG_GPU_SPECIALIZATION)) {
+    if(fGpuSpecialization && !fn->hasFlag(FLAG_GPU_SPECIALIZATION)
+     && recklesslyDisregardSpecializationLimits)
+    {
       // By definition all foreach loops in a function without this flag
       // will be run on the CPU:
       cleanupForeachLoopsGauranteedToRunOnCpu(fn);
