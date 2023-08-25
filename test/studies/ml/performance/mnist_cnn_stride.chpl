@@ -1,4 +1,4 @@
-import Chai as torch;
+import Chai as chai;
 import MNISTTester;
 
 var net = new chai.Network(
@@ -10,8 +10,8 @@ var net = new chai.Network(
     )
 );
 
-config const numTrainImages = 20000;
-config const numTestImages = 1000;
+config const numTrainImages = 1000;
+config const numTestImages = 100;
 
 config const learnRate = 0.03; // 0.05;
 config const batchSize = 100;

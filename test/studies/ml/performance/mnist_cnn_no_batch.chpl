@@ -1,74 +1,73 @@
-import Chai as torch;
+import Chai as chai;
 import Tensor as tn;
 use Tensor;
 import Math;
 import MNIST;
 import Random;
 import IO;
-import BinaryIO;
 import Time;
 
 tn.seedRandom(0);
 
 config const dataPath = "ml-study/performance/data";
 
-// var net = new torch.Network(
+// var net = new chai.Network(
 //     (
-//         new torch.Conv(1,20,3),
-//         new torch.MaxPool(),
-//         // new torch.SoftMax(13 * 13 * 8,10)
-//         new torch.Conv(20,10,3),
-//         new torch.MaxPool(),
-//         new torch.SoftMax(5 * 5 * 10,10)
+//         new chai.Conv(1,20,3),
+//         new chai.MaxPool(),
+//         // new chai.SoftMax(13 * 13 * 8,10)
+//         new chai.Conv(20,10,3),
+//         new chai.MaxPool(),
+//         new chai.SoftMax(5 * 5 * 10,10)
 //     )
 // );
 
-// var net = new torch.Network(
+// var net = new chai.Network(
 //     (
-//         new torch.Conv(1,6,5),   // 24
-//         new torch.MaxPool(),     // 12
-//         new torch.Conv(6,16,5),  // 8
-//         new torch.MaxPool(),     // 4
-//         new torch.SoftMax(4 * 4 * 16,10)
+//         new chai.Conv(1,6,5),   // 24
+//         new chai.MaxPool(),     // 12
+//         new chai.Conv(6,16,5),  // 8
+//         new chai.MaxPool(),     // 4
+//         new chai.SoftMax(4 * 4 * 16,10)
 //     )
 // );
 
 
 // This works
-// var net = new torch.Network(
+// var net = new chai.Network(
 //     (
-//         new torch.Conv(1,8,3),
-//         new torch.MaxPool(),
-//         new torch.SoftMax(13 * 13 * 8,10)
+//         new chai.Conv(1,8,3),
+//         new chai.MaxPool(),
+//         new chai.SoftMax(13 * 13 * 8,10)
 //     )
 // );
 
-// var net = new torch.Network(
+// var net = new chai.Network(
 //     (
-//         new torch.Conv(1,8,3),
-//         new torch.MaxPool(),
-//         new torch.Conv(8,8,3),
-//         new torch.MaxPool(),
-//         new torch.SoftMax(5 * 5 * 8,10)
+//         new chai.Conv(1,8,3),
+//         new chai.MaxPool(),
+//         new chai.Conv(8,8,3),
+//         new chai.MaxPool(),
+//         new chai.SoftMax(5 * 5 * 8,10)
 //     )
 // );
 
 // // THIS IS MY BENCHMARK
-// var net = new torch.Network(
+// var net = new chai.Network(
 //     (
-//         new torch.Conv(1,8,7),
-//         new torch.Conv(8,12,5),
-//         new torch.MaxPool(),
-//         new torch.SoftMax(10)
+//         new chai.Conv(1,8,7),
+//         new chai.Conv(8,12,5),
+//         new chai.MaxPool(),
+//         new chai.SoftMax(10)
 //     )
 // );
 
-var net = new torch.Network(
+var net = new chai.Network(
     (
-        new torch.Conv(1,8,4,stride=2),
-        new torch.Conv(8,12,5),
-        new torch.MaxPool(),
-        new torch.SoftMax(10)
+        new chai.Conv(1,8,4,stride=2),
+        new chai.Conv(8,12,5),
+        new chai.MaxPool(),
+        new chai.SoftMax(10)
     )
 );
 
@@ -105,12 +104,12 @@ proc train(data: [] (Tensor(3),int), lr: real = 0.005) {
 
 
 
-config const numTrainImages = 20000;
-config const numTestImages = 1000;
+config const numTrainImages = 1000;
+config const numTestImages = 100;
 
 config const learnRate = 0.005; // 0.05;
 config const batchSize = 10;
-config const numEpochs = 15;
+config const numEpochs = 10;
 
 
 const numImages = numTrainImages + numTestImages;

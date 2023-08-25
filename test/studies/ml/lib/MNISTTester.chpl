@@ -5,7 +5,6 @@ import Math;
 import MNIST;
 import Random;
 import IO;
-import BinaryIO;
 import Time;
 
 config param perfTest = false;
@@ -52,12 +51,12 @@ proc train(ref net, data: [] (Tensor(3),int), lr: real = 0.005) {
 
 
 
-config const numTrainImages = 50000;
-config const numTestImages = 1000;
+// config const numTrainImages = 50000;
+// config const numTestImages = 1000;
 
-config const learnRate = 0.03; // 0.05;
-config const batchSize = 50;
-config const numEpochs = 60;
+// config const learnRate = 0.03; // 0.05;
+// config const batchSize = 50;
+// config const numEpochs = 60;
 
 proc train(ref network, 
            numTrainImages: int,

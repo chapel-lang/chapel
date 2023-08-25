@@ -298,12 +298,26 @@ module Tensor {
 
     operator +(lhs: Tensor(?rank,?eltType), rhs: Tensor(rank,eltType)) {
         var t = new Tensor(rank=rank,eltType=eltType);
-        t.reshapeDomain(lhs._domain);
-        t.data = lhs.data + rhs.data;
+        if lhs.domain.size < rhs.domain.size {
+            t.reshapeDomain(rhs.domain);
+            t.data = rhs.data;
+        } else if rhs.domain.size < lhs.domain.size {
+            t.reshapeDomain(lhs.domain);
+            t.data = lhs.data;
+        } else if lhs.domain.size == rhs.domain.size {
+            t.reshapeDomain(lhs.domain); // fixme. should be union.
+            t.data = lhs.data + rhs.data;
+        } else {
+            halt("I don't know what to do here.");
+        }
         return t;
     }
     operator +=(ref lhs: Tensor(?d), const ref rhs: Tensor(d)) {
-        lhs.data += rhs.data;
+        if lhs.domain.size == rhs.domain.size {
+            lhs.data += rhs.data;
+        } else {
+            lhs.data += (lhs + rhs).data;
+        }
     }
     operator +=(ref lhs: Tensor(?rank,?eltType), rhs) where (isArray(rhs) && rhs.rank == rank) || rhs.type == eltType {
         lhs.data += rhs;
@@ -460,7 +474,7 @@ module Tensor {
     }
 
     // Shuffle a tensor in place
-    proc shuffle(x) {
+    proc shuffle(ref x) {
         Random.shuffle(x,seed=rng.seed);
     }
 

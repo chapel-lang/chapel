@@ -6,7 +6,6 @@ import Math;
 import MNIST;
 import Random;
 import IO;
-import BinaryIO;
 import MNISTTester;
 
 

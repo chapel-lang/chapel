@@ -3,7 +3,6 @@ module Chai {
     
     import Tensor as tn;
     import IO;
-    import BinaryIO;
 
     use Tensor;
     
@@ -20,6 +19,16 @@ module Chai {
 
         var uninitialized = true;
 
+        proc init=(other: Dense) {
+            writeln("init was called");
+            this.outputSize = other.outputSize;
+            this.bias = other.bias;
+            this.weights = other.weights;
+            this.biasGrad = other.biasGrad;
+            this.weightsGrad = other.weightsGrad;
+            this.uninitialized = other.uninitialized;
+        }
+
 
         proc init(outputSize: int) {
             this.outputSize = outputSize;
@@ -31,65 +40,66 @@ module Chai {
             weightsGrad = new Tensor(2,real);
         }
 
-        proc forwardProp(input: Tensor(1)): Tensor(1) {
-            if uninitialized {
+        proc ref forwardProp(input: Tensor(1)): Tensor(1) {
+            if this.uninitialized {
                 const inputSize = * reduce input.shape;
                 const stddevB = sqrt(2.0 / outputSize);
-                const stddevW = sqrt(2.0 / (inputSize + outputSize));
-                bias = tn.zeros(outputSize); // tn.randn(outputSize,mu=0.0,sigma=stddevB);
-                weights = tn.randn(outputSize, inputSize,mu=0.0,sigma=stddevW);
+                const stddevW = sqrt(2.0 / (inputSize + this.outputSize));
+                this.bias = tn.randn(this.outputSize); // tn.randn(outputSize,mu=0.0,sigma=stddevB);
+                this.weights = tn.randn(this.outputSize, inputSize,mu=0.0,sigma=stddevW);
 
-                biasGrad = tn.zeros(outputSize);
-                weightsGrad = tn.zeros(outputSize, inputSize);
-                uninitialized = false;
+                this.biasGrad = tn.randn(this.outputSize);
+                this.weightsGrad = tn.randn(this.outputSize, inputSize);
+                this.uninitialized = false;
+                writeln("i was called");
             }
-            const activation = (weights * input) + bias;
+            const activation = (this.weights * input) + this.bias;
             return activation;
         }
-        proc forwardProp(batch: [] Tensor(1)): [] Tensor(1) {
+        proc ref forwardProp(batch: [] Tensor(1)): [] Tensor(1) {            
             const batchSize = batch.size;
 
-            var activations: [0..#batchSize] Tensor(2,real);
-            activations.reshapeDomain({0..#outputSize});
-            forall i in 0..#batchSize {
-                activations[i] = forwardProp(batch[i]);
+            var activations: [0..#batchSize] Tensor(1,real);
+            activations.reshapeDomain({0..#this.outputSize});
+            for i in 0..#batchSize {
+                activations[i] = (this.weights * batch[i]) + this.bias;
             }
             return activations;
         }
 
 
-        proc backward(delta: Tensor(1), input: Tensor(1)): Tensor(1) {
+        proc ref backward(delta: Tensor(1), input: Tensor(1)): Tensor(1) {
             const newDelta = weights.transpose() * delta;
             biasGrad    += newDelta;
             weightsGrad += newDelta * input.transpose();
             return newDelta;
         }
 
-        proc backward(deltas: [] Tensor(1), inputs: [] Tensor(1)): [] Tensor(1) {
+        proc ref backward(deltas: [] Tensor(1), inputs: [] Tensor(1)): [] Tensor(1) {
             const batchSize = deltas.size;
             var newDeltas: [0..#batchSize] Tensor(1);
 
-            var biasGrad = this.biasGrad;
-            var weightsGrad = this.weightsGrad;
-            forall (delta,input,i) in zip(deltas,inputs,0..) with (+ reduce biasGrad, + reduce weightsGrad) {
-                const newDelta = weights.transpose() * delta;
-                biasGrad    += newDelta;
-                weightsGrad += newDelta * input.transpose();
+            var biasGradient = this.biasGrad;
+            var weightsGradient = this.weightsGrad;
+            forall (delta,input,i) in zip(deltas,inputs,0..) with (ref this, + reduce biasGradient, + reduce weightsGradient) {
+                const newDelta = this.weights.transpose() * delta;
+                biasGradient    += newDelta;
+                weightsGradient += newDelta * input.transpose();
                 newDeltas[i] = newDelta;
             }
-            this.biasGrad.data = biasGrad.data;
-            this.weightsGrad.data = weightsGrad.data;
+            this.biasGrad.data += biasGradient.data;
+            this.weightsGrad.data += weightsGradient.data;
 
             return newDeltas;
         }
 
-        proc optimize(mag: real(64)) {
-            bias -= mag * biasGrad;
-            weights -= mag * weightsGrad;
+        proc ref optimize(mag: real(64)) {
+            this.bias.data -= mag * this.biasGrad.data;
+            this.weights.data -= mag * this.weightsGrad.data;
         }
-        proc resetGradients() {
-            biasGrad.data = 0;
-            weightsGrad.data = 0;
+        proc ref resetGradients() {
+            this.biasGrad.data = 0;
+            this.weightsGrad.data = 0;
         }
 
         proc write(fw: IO.fileWriter) throws {
@@ -107,17 +117,25 @@ module Chai {
     }
 
     record Sigmoid {
-        proc init(size: int) { }
+        proc init() { }
 
-        proc forwardProp(x: Tensor(1)): Tensor(1) {
+        proc forwardProp(x: Tensor(?rank)): Tensor(rank) {
             const activation = tn.sigmoid(x);
             return activation;
         }
 
-        proc backward(delta: Tensor(1),lastInput: Tensor(1)): Tensor(1) {
+        proc forwardProp(batch: [] Tensor) {
+            return [b in batch] forwardProp(b);
+        }
+
+        proc backward(delta: Tensor(?rank),lastInput: Tensor(rank)): Tensor(rank) {
             const sp = tn.sigmoidPrime(lastInput);
             const grad = delta * sp;
             return grad; 
+        }
+
+        proc backward(deltas: [] Tensor, inputs: [] Tensor) {
+            return [(d,i) in zip(deltas,inputs)] backward(d,i);
         }
 
         proc optimize(mag: real) { }
@@ -373,6 +391,13 @@ module Chai {
             }
             return output;
         }
+        proc forwardProp(batch: [] Tensor) {
+            var outputs: [batch.domain] batch.eltType;
+            for i in outputs.domain {
+                outputs[i] = this.forwardProp(batch[i]);
+            }
+            return outputs;
+        }
         proc backward(delta: Tensor(?rank),input: Tensor(rank)) {
             var output = new Tensor(rank,real);
             output.reshapeDomain(input.domain);
@@ -382,6 +407,13 @@ module Chai {
                 output.data[i] = if y > 0.0 then dy else a * dy;
             }
             return output;
+        }
+        proc backward(deltas: [] Tensor, inputs: [] Tensor) {
+            var newDeltas: [inputs.domain] inputs.eltType;
+            for i in newDeltas.domain {
+                newDeltas[i] = this.backward(deltas[i],inputs[i]);
+            }
+            return newDeltas;
         }
         proc optimize(mag: real(64)) { }
         proc resetGradients() { }
@@ -603,36 +635,37 @@ module Chai {
     }
 
     record Network {
-        var layers;
+        var _layers;
+        proc ref layers ref do return this._layers;
 
         proc init(layers) {
-            this.layers = layers;
-            this.layers[0].isFirstLayer = true;
+            this._layers = layers;
+            if this._layers[0].type == Conv then this._layers[0].isFirstLayer = true;
         }
 
-        proc forwardProp(x: Tensor(?)) {
+        proc ref forwardProp(x: Tensor(?)) {
             return forwardPropHelp(this.layers, 0, x);
         }
-        proc forwardPropBatch(xs) {
+        proc ref forwardPropBatch(xs) {
             return forwardPropHelpBatch(this.layers, 0, xs);
         }
-        proc backwardProp(x: Tensor(?)) {
+        proc ref backwardProp(x: Tensor(?)) {
             return backwardPropHelp(this.layers,this.layers.size - 1,x);
         }
-        proc backwardProp(x: Tensor(?), delta: Tensor(?)) {
+        proc ref backwardProp(x: Tensor(?), delta: Tensor(?)) {
             return backwardForwardPropHelp(this.layers,0,x,delta);
         }
-        proc backwardPropBatch(xs, deltas) {
+        proc ref backwardPropBatch(xs, deltas) {
             return backwardForwardPropHelpBatch(this.layers,0,xs,deltas);
         }
-        proc optimize(mag: real) {
-            for param i in 0..#(layers.size) {
-                layers[i].optimize(mag);
+        proc ref optimize(mag: real) {
+            for param i in 0..#(this.layers.size) {
+                this.layers[i].optimize(mag);
             }
         }
-        proc resetGradients() {
-            for param i in 0..#(layers.size) {
-                layers[i].resetGradients();
+        proc ref resetGradients() {
+            for param i in 0..#(this.layers.size) {
+                this.layers[i].resetGradients();
             }
         }
 
@@ -678,7 +711,7 @@ module Chai {
 
         proc save(path: string) throws {
             var file = IO.open(path, IO.ioMode.cw);
-            var serializer = new BinaryIO.BinarySerializer(IO.ioendian.big);
+            var serializer = new IO.BinarySerializer(IO.ioendian.big);
             var fw = file.writer(serializer=serializer);
             // fw.write("[network]");
             fw.write(layers.size);
@@ -690,7 +723,7 @@ module Chai {
 
         proc load(path: string) throws {
             var file = IO.open(path, IO.ioMode.rw);
-            var deserializer = new BinaryIO.BinaryDeserializer(IO.ioendian.big);
+            var deserializer = new IO.BinaryDeserializer(IO.ioendian.big);
             var fr = file.reader(deserializer=deserializer);
             var size = fr.read(int);
             if size != layers.size then tn.err("Network load: size mismatch");
@@ -709,9 +742,6 @@ module Chai {
             sig += "]";
             return sig;
         }
-
-
-
     }
 
     proc main() {

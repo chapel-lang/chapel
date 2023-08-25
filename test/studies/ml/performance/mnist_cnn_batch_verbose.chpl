@@ -1,11 +1,10 @@
-import Chai as torch;
+import Chai as chai;
 import Tensor as tn;
 use Tensor;
 import Math;
 import MNIST;
 import Random;
 import IO;
-import BinaryIO;
 import Time;
 
 config param perfTest = false;
@@ -14,12 +13,12 @@ tn.seedRandom(0);
 
 config const dataPath = "./data";
 
-var net = new torch.Network(
+var net = new chai.Network(
     (
-        new torch.Conv(1,8,4,stride=2),
-        new torch.Conv(8,12,5),
-        new torch.MaxPool(),
-        new torch.SoftMax(10)
+        new chai.Conv(1,8,4,stride=2),
+        new chai.Conv(8,12,5),
+        new chai.MaxPool(),
+        new chai.SoftMax(10)
     )
 );
 
@@ -60,12 +59,12 @@ proc train(data: [] (Tensor(3),int), lr: real = 0.005) {
 
 
 
-config const numTrainImages = 20000;
-config const numTestImages = 1000;
+config const numTrainImages = 1000;
+config const numTestImages = 100;
 
-config const learnRate = 0.005; // 0.05;
+config const learnRate = 0.05; // 0.05;
 config const batchSize = 10;
-config const numEpochs = 15;
+config const numEpochs = 10;
 
 
 const numImages = numTrainImages + numTestImages;
