@@ -48,7 +48,7 @@ static int indentGPUChecksLevel = 0;
 
 // Ideally, if we do gpuSpecialization, we could safely assume that any function
 // that isn't marked with FLAG_GPU_SPECIALIZE would be executed on a CPU locale.
-// Unfortunately, as of today, this isn't he case because these functions can
+// Unfortunately, as of today, this isn't the case because these functions can
 // be reached by virtual dispatch and our specialization cloning isn't
 // sophisticated enough to clone these functions and update the dispatch calls
 // as appropriate.
