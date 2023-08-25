@@ -35,13 +35,19 @@ module ChapelHashing {
   proc chpl__defaultHashWrapperInner(x): uint {
     use Reflection;
 
-    if !canResolveMethod(x, "hash") then
+    if !canResolveMethod(x, "hash") {
       compilerError("No hash function found for " + x.type:string);
-    else if __primitive("implements interface", x, hashable) == 2 then
-        compilerWarning("'", x.type:string + "' has a hash function that is being ",
-                        "used by the standard library. However, '" + x.type:string +
-                        "' does not implement hashable. ",
-                        "In the future, this will result in an error.");
+    } else if __primitive("implements interface", x, hashable) == 2 {
+      compilerWarning("'", x.type:string + "' has a hash function that is being ",
+                      "used by the standard library. However, '" + x.type:string +
+                      "' does not implement hashable. ",
+                      "In the future, this will result in an error.");
+      if isRecordType(x.type) {
+        compilerWarning("to make '" + x.type:string + "' implement hashable, ",
+                        "add the interface to its declaration: 'record " + x.type:string +
+                        " : hashable'");
+      }
+    }
 
     return x.hash();
   }
