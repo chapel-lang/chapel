@@ -7,12 +7,12 @@ var d: real = 100;
 var e: real = 1000;
 
 writeln("a = ", a);
-writeln("lgamma(a) = ", lgamma(a));
+writeln("lnGamma(a) = ", lnGamma(a));
 writeln("b = ", b);
-writeln("lgamma(b) = ", lgamma(b));
+writeln("lnGamma(b) = ", lnGamma(b));
 writeln("c = ", c);
-writeln("lgamma(c) = ", lgamma(c));
+writeln("lnGamma(c) = ", lnGamma(c));
 writeln("d = ", d);
-writeln("lgamma(d) = ", lgamma(d));
+writeln("lnGamma(d) = ", lnGamma(d));
 writeln("e = ", e);
-writeln("lgamma(e) = ", lgamma(e));
+writeln("lnGamma(e) = ", lnGamma(e));
