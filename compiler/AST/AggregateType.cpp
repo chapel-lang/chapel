@@ -3113,7 +3113,7 @@ void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
 
       auto ifcActuals = new CallExpr(PRIM_ACTUALS_LIST, new SymExpr(implementFor));
       auto istmt = ImplementsStmt::build(isym->name, ifcActuals, nullptr);
-      this->symbol->defPoint->insertAfter(istmt);
+      this->symbol->getModule()->block->insertAtTail(istmt);
 
       expr->remove();
       continue;
