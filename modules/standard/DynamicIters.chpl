@@ -95,13 +95,13 @@ where tag == iterKind.leader
   //
   // If c.size (of type c.idxType) is uint(64), we can safely cast the
   // chunkSize (asserted positive above) to uint(64), and can call
-  // divceil() on two unsigned ints.
+  // divCeil() on two unsigned ints.
   //
   // Otherwise, it isn't uint(64), and we can safely cast it to
   // int(64).  Then we can call divCeilPos() with it and any chunkSize
   // type, since then we know at least one arg is signed.
   if c.idxType == uint(64) then
-    numChunks = divceil(c.sizeAs(uint(64)), chunkSize:uint(64)): int;
+    numChunks = divCeil(c.sizeAs(uint(64)), chunkSize:uint(64)): int;
   else
     numChunks = divCeilPos(c.sizeAs(int), chunkSize): int;
 

@@ -2022,8 +2022,8 @@ module SequentialInPlacePartitioning {
     // Divide the input into nTasks chunks.
     const countsSize = nTasks * nBuckets;
     const n = end_n - start_n + 1;
-    const blockSize = divceil(n, nTasks);
-    const nBlocks = divceil(n, blockSize);
+    const blockSize = divCeil(n, nTasks);
+    const nBlocks = divCeil(n, blockSize);
 
     var counts: [0..#nBuckets] int;
 
@@ -2362,8 +2362,8 @@ module TwoArrayPartitioning {
 
     // Divide the input into nTasks chunks.
     const countsSize = nTasks * nBuckets;
-    const blockSize = divceil(n, nTasks);
-    const nBlocks = divceil(n, blockSize);
+    const blockSize = divCeil(n, nTasks);
+    const nBlocks = divCeil(n, blockSize);
 
     // Count
     coforall tid in 0..#nTasks with (ref state) {
