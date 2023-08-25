@@ -8,8 +8,9 @@ module Chai {
         public use BinaryIO;
     }
 
+    use Tensor only Tensor;
 
-    use Tensor;
+    tn.seedRandom(0);
     
 
     record Dense {
@@ -45,27 +46,32 @@ module Chai {
             weightsGrad = new Tensor(2,real);
         }
 
-        proc ref forwardProp(input: Tensor(1)): Tensor(1) {
-            if this.uninitialized {
-                const inputSize = * reduce input.shape;
-                const stddevB = sqrt(2.0 / outputSize);
-                const stddevW = sqrt(2.0 / (inputSize + this.outputSize));
-                this.bias = tn.randn(this.outputSize); // tn.randn(outputSize,mu=0.0,sigma=stddevB);
-                this.weights = tn.randn(this.outputSize, inputSize,mu=0.0,sigma=stddevW);
+        proc ref initialize(input: Tensor(1)) {
+            if !uninitialized then tn.err("Dense initialize: already initialized");
+            const inputSize = * reduce input.shape;
+            const stddevB = sqrt(2.0 / outputSize);
+            const stddevW = sqrt(2.0 / (inputSize + outputSize));
+            bias = tn.randn(outputSize); // tn.randn(this.outputSize); // tn.randn(outputSize,mu=0.0,sigma=stddevB);
+            weights = tn.randn(outputSize,inputSize); // this.weights = tn.randn(this.outputSize, inputSize,mu=0.0,sigma=stddevW);
 
-                this.biasGrad = tn.randn(this.outputSize);
-                this.weightsGrad = tn.randn(this.outputSize, inputSize);
-                this.uninitialized = false;
-                writeln("i was called");
-            }
+            biasGrad = tn.zeros(outputSize);
+            weightsGrad = tn.zeros(outputSize, inputSize);
+            uninitialized = false;
+            writeln("Dense layer initialized (", inputSize ," -> ", outputSize, ")");
+        }
+
+        proc ref forwardProp(input: Tensor(1)): Tensor(1) {
+            if uninitialized then initialize(input);
             const activation = (this.weights * input) + this.bias;
             return activation;
         }
-        proc ref forwardProp(batch: [] Tensor(1)): [] Tensor(1) {            
+        proc ref forwardProp(batch: [] Tensor(1)): [] Tensor(1) {     
+            if uninitialized then initialize(batch[0]);
+
             const batchSize = batch.size;
 
             var activations: [0..#batchSize] Tensor(1,real);
-            activations.reshapeDomain({0..#this.outputSize});
+            activations.reshapeDomain({0..#outputSize});
             for i in 0..#batchSize {
                 activations[i] = (this.weights * batch[i]) + this.bias;
             }
@@ -87,7 +93,8 @@ module Chai {
             var biasGradient = biasGrad.data;
             var weightsGradient = weightsGrad.data;
 
-            forall (delta,input,i) in zip(deltas,inputs,0..) with (ref this, + reduce biasGradient, + reduce weightsGradient) {
+            // forall (delta,input,i) in zip(deltas,inputs,0..) with (ref this, + reduce biasGradient, + reduce weightsGradient) {
+            for (delta,input,i) in zip(deltas,inputs,0..) {
                 const newDelta = weights.transpose() * delta;
                 biasGradient    += newDelta.data;
                 weightsGradient += (newDelta * input.transpose()).data;

@@ -1,11 +1,12 @@
 import Chai as chai;
 import Tensor as tn;
-use Tensor;
+use Tensor only Tensor;
+import Math;
 
 tn.seedRandom(0);
 
 config const epochs = 10;
-config const learnRate = 0.01;
+config const learnRate = 0.0001;
 
 // var network = new shared chai.Network(
 //     (
@@ -26,17 +27,11 @@ config const learnRate = 0.01;
 var net = new chai.Network(
     (
         new chai.Dense(2),
-        // new chai.ReLU(0.1),
-        // new chai.Sigmoid(),
-        // new chai.Dense(3),
-        // new chai.ReLU(0.1),
         new chai.Sigmoid(),
         new chai.Dense(3),
         new chai.Sigmoid(),
         new chai.Dense(2),
         new chai.Sigmoid()
-        // new chai.Sigmoid()
-        // new chai.ReLU(0.1)
     )
 );
 
@@ -72,7 +67,7 @@ proc train(batch: [] (Tensor(1),Tensor(1)), lr:real) {
     return loss;
 }
 
-proc test(ref net, batch: [] (Tensor(1),Tensor(1))) {
+proc test(batch: [] (Tensor(1),Tensor(1))) {
     const (losses,lossesGrad, outputs) = forward( batch);
     for ((input,expected),output) in zip(batch,outputs) {
         writeln(input.data, " -> ", output.data, " [", tn.argmax(expected.data) ,"]");
@@ -94,7 +89,7 @@ outputs[3] = [1.0,0.0];
 
 
 const batch = for a in zip(inputs,outputs) do a;
-
+net.forwardPropBatch(inputs);
 for e in 1..epochs {
     // {
     //     const (l,lg,o) = forward(batch);
@@ -104,12 +99,15 @@ for e in 1..epochs {
     //     writeln("Outputs:", o);
     // }
     const (l,lg,o) = forward(batch);
+    writeln("Loss Grad:", lg.data);
+    writeln("Outputs:", o.data);
     writeln("BiasGrad: ",net.layers[2].biasGrad.data);
     writeln("Bias: ",net.layers[2].bias.data);
 
     const loss = train(batch,learnRate);
     writeln("Epoch: ", e, " Loss: ", loss);
 
-    // test(batch);
-
+    test(batch);
+    writeln(tn._sigmoid(0.0));
+    writeln(Math.exp(-0.0));
 }

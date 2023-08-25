@@ -8,10 +8,10 @@ module Tensor {
 
     param debugPrint = false;
 
-    var rng = new Random.RandomStream(eltType=real(64));
+    var rng = new Random.RandomStream(eltType=real(64),seed=5,parSafe=false);
     
     proc seedRandom(seed) {
-        rng = new Random.RandomStream(eltType=real(64),seed=seed);
+        // rng = new Random.RandomStream(eltType=real(64),seed=seed);
     }
 
     proc err(args...?n) {
@@ -488,7 +488,7 @@ module Tensor {
 
     // Shuffle a tensor in place
     proc shuffle(ref x) {
-        Random.shuffle(x,seed=rng.seed);
+        Random.shuffle(x,seed=0);
     }
 
     // Get the max value index in an array
