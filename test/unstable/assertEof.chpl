@@ -1,6 +1,34 @@
 use IO;
 
-var fr = openReader("assertEof.chpl");
-fr.readAll();
+config const filename = "asserteof.test.nums";
 
-fr.assertEOF();
+var infile = open(filename, ioMode.cwr);
+
+{
+  var writer = infile.writer();
+  writer.writeln(1);
+  writer.writeln(2);
+  writer.close();
+}
+
+{
+  var reader = infile.reader();
+  var x:int;
+  var y:int;
+  reader.read(x);
+  reader.read(y);
+  reader.assertEOF();
+  reader.close();
+}
+
+writeln("Past First Check");
+
+{
+  var reader = infile.reader();
+  var x:int;
+  reader.read(x);
+  reader.assertEOF();
+  reader.close();
+}
+
+infile.close();
