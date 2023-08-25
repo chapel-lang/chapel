@@ -15,7 +15,7 @@ proc testtype(type T) {
       var a = x:T;
       var b = y:bcdPosInt;
       verify(a, b, mod(x,y), modP2(a,b), "mod");
-      verify(a, b, divfloor(x,y), divfloorP2(a,b), "divfloor");
+      verify(a, b, divFloor(x,y), divfloorP2(a,b), "divFloor");
       verify(a, b, x * y, mulP2(a,b), "mul");
       verify(a, b, x / y, divP2(a,b), "div");
       verify(a, b, x % y, remP2(a,b), "rem");

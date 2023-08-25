@@ -58,8 +58,8 @@ proc computeHistogram(X: [] real, ref Y: [] int) {
 // outputHistogram: output histogram array
 proc outputHistogram(Y: [] int) {
   var bucketMax = max reduce Y;
-  var rowSize = divceil(bucketMax,10);
-  var numRows = divceil(bucketMax, rowSize);
+  var rowSize = divCeil(bucketMax,10);
+  var numRows = divCeil(bucketMax, rowSize);
   for i in 1..numRows by -1 {
     write(" ");
     for j in 1..numBuckets do
