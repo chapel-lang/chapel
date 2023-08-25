@@ -112,8 +112,8 @@ Rounding
 
 Gamma Functions
 ---------------
-:proc:`lgamma`
-:proc:`tgamma`
+:proc:`gamma`
+:proc:`lnGamma`
 
 .. _math-error:
 
@@ -560,15 +560,31 @@ module Math {
   /* Returns the natural logarithm of the absolute value
      of the gamma function of the argument `x`.
   */
-  inline proc lgamma(x: real(64)): real(64) {
+  inline proc lnGamma(x: real(64)): real(64) {
     return chpl_lgamma(x);
   }
 
   /* Returns the natural logarithm of the absolute value
      of the gamma function of the argument `x`.
   */
-  inline proc lgamma(x : real(32)): real(32) {
+  inline proc lnGamma(x : real(32)): real(32) {
     return chpl_lgamma(x);
+  }
+
+  /* Returns the natural logarithm of the absolute value
+     of the gamma function of the argument `x`.
+  */
+  @deprecated(notes="'lgamma' has been deprecated in favor of :proc:`lnGamma`, please use that instead")
+  inline proc lgamma(x: real(64)): real(64) {
+    return lnGamma(x);
+  }
+
+  /* Returns the natural logarithm of the absolute value
+     of the gamma function of the argument `x`.
+  */
+  @deprecated(notes="'lgamma' has been deprecated in favor of :proc:`lnGamma`, please use that instead")
+  inline proc lgamma(x : real(32)): real(32) {
+    return lnGamma(x);
   }
 
   /* Returns the natural logarithm of the argument `x`.
