@@ -1531,7 +1531,7 @@ module AutoMath {
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
   pragma "last resort"
-  @deprecated(notes="In an upcoming release 'ldexp' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  @deprecated(notes="In an upcoming release 'ldexp' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it.  Note that the version in the Math module is now named 'ldExp'")
   inline proc ldexp(x:real(64), n:int(32)):real(64) {
     return chpl_ldexp(x, n);
   }
@@ -1550,7 +1550,7 @@ module AutoMath {
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
   pragma "last resort"
-  @deprecated(notes="In an upcoming release 'ldexp' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  @deprecated(notes="In an upcoming release 'ldexp' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it.  Note that the version in the Math module is now named 'ldExp'")
   inline proc ldexp(x:real(32), n:int(32)):real(32) {
     return chpl_ldexp(x, n);
   }
