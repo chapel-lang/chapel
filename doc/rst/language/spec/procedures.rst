@@ -603,13 +603,13 @@ this is ``const`` for most types (as defined by
 from languages where everything is passed by ``in`` or ``ref`` intent
 by default.  Exceptions are made for types where modification is
 considered part of their nature, such as types used for synchronization
-(like ``atomic``) and arrays.
+(like ``atomic`` or ``sync``).
 
 Default argument passing for tuples applies the default
 argument passing strategy to each tuple component as if it
 was passed as a separate argument. See :ref:`Tuple_Argument_Intents`.
 
-The :ref:`Abstract_Intents_Table` that follows defines the default
+The :ref:`Abstract_Intents_Table` that follows defines the default
 intent for each type.
 
 .. _Abstract_Intents_Table:
@@ -623,57 +623,44 @@ type:
 .. table::
     :widths: 28 18 22 32
 
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    |                         | ``const`` intent     |                         |                                                      |
-    | Type                    | meaning              | Default intent meaning  | Notes                                                |
-    +=========================+======================+=========================+======================================================+
-    | scalar types            |  ``const in``        | ``const in``            |                                                      |
-    |                         |                      |                         |                                                      |
-    | (``bool``,              |                      |                         |                                                      |
-    | ``int``, ``uint``,      |                      |                         |                                                      |
-    | ``real``, ``imag``,     |                      |                         |                                                      |
-    | ``complex``)            |                      |                         |                                                      |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | string-like types       | ``const ref``        | ``const ref``           |                                                      |
-    |                         |                      |                         |                                                      |
-    | (``string``, ``bytes``) |                      |                         |                                                      |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | ranges                  | ``const in``         | ``const in``            |                                                      |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | domains / domain maps   | ``const ref``        | ``const ref``           |                                                      |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | arrays                  | ``const ref``        | ``ref`` / ``const ref`` | see :ref:`Default_Intent_for_Arrays_and_Record_this` |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | records                 | ``const ref``        | ``const ref``           | see :ref:`Default_Intent_for_Arrays_and_Record_this` |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | auto-managed classes    | ``const ref``        | ``const ref``           | see :ref:`Default_Intent_for_owned_and_shared`       |
-    | (``owned``, ``shared``) |                      |                         |                                                      |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | non-managed classes     | ``const in``         | ``const in``            |                                                      |
-    |                         |                      |                         |                                                      |
-    | (``borrowed``,          |                      |                         |                                                      |
-    | ``unmanaged``)          |                      |                         |                                                      |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | tuples                  | per-element          | per-element             | see :ref:`Tuple_Argument_Intents`                    |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | unions                  | ``const ref``        | ``const ref``           |                                                      |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | synchronization types   | ``const ref``        | ``ref``                 |                                                      |
-    | (``atomic``, ``sync``)  |                      |                         |                                                      |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-
-.. _Default_Intent_for_Arrays_and_Record_this:
-
-Default Intent for Arrays and Record ’this’
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The default intent for arrays and for a ``this`` argument of record
-type (see :ref:`Method_receiver_and_this`) is ``ref`` or
-``const ref``. It is ``ref`` if the formal argument is modified inside
-the function, otherwise it is ``const ref``. Note that neither of these
-cause an array or record to be copied by default. The choice between
-``ref`` and ``const ref`` is similar to and interacts with return intent
-overloads (see :ref:`Return_Intent_Overloads`).
+    +-------------------------+------------------+----------------+------------------------------------------------+
+    |                         | ``const`` intent | Default intent |                                                |
+    | Type                    | meaning          | meaning        | Notes                                          |
+    +=========================+==================+================+================================================+
+    | scalar types            |  ``const in``    |                |                                                |
+    |                         |                  |                |                                                |
+    | (``bool``,              |                  |                |                                                |
+    | ``int``, ``uint``,      |                  |                |                                                |
+    | ``real``, ``imag``,     |                  |                |                                                |
+    | ``complex``)            |                  |                |                                                |
+    +-------------------------+------------------+----------------+------------------------------------------------+
+    | string-like types       | ``const ref``    |                |                                                |
+    |                         |                  |                |                                                |
+    | (``string``, ``bytes``) |                  |                |                                                |
+    +-------------------------+------------------+----------------+------------------------------------------------+
+    | ranges                  | ``const in``     |                |                                                |
+    +-------------------------+------------------+----------------+------------------------------------------------+
+    | domains / domain maps   | ``const ref``    |                |                                                |
+    +-------------------------+------------------+----------------+------------------------------------------------+
+    | arrays                  | ``const ref``    |                |                                                |
+    +-------------------------+------------------+----------------+------------------------------------------------+
+    | records                 | ``const ref``    |                |                                                |
+    +-------------------------+------------------+----------------+------------------------------------------------+
+    | auto-managed classes    | ``const ref``    |                | see :ref:`Default_Intent_for_owned_and_shared` |
+    | (``owned``, ``shared``) |                  |                |                                                |
+    +-------------------------+------------------+----------------+------------------------------------------------+
+    | non-managed classes     | ``const in``     |                |                                                |
+    |                         |                  |                |                                                |
+    | (``borrowed``,          |                  |                |                                                |
+    | ``unmanaged``)          |                  |                |                                                |
+    +-------------------------+------------------+----------------+------------------------------------------------+
+    | tuples                  | per-element      |                | see :ref:`Tuple_Argument_Intents`              |
+    +-------------------------+------------------+----------------+------------------------------------------------+
+    | unions                  | ``const ref``    |                |                                                |
+    +-------------------------+------------------+----------------+------------------------------------------------+
+    | synchronization types   | ``const ref``    | ``ref``        |                                                |
+    | (``atomic``, ``sync``)  |                  |                |                                                |
+    +-------------------------+------------------+----------------+------------------------------------------------+
 
 .. _Default_Intent_for_owned_and_shared:
 
