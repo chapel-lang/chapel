@@ -3,7 +3,7 @@ use IO, Map, Sort;
 config param tableSize = 2**16,
              columns = 61;
 
-record intWrapper {
+record intWrapper : hashable {
   var val: int;
   proc init() {
     val = 0;
@@ -12,7 +12,7 @@ record intWrapper {
     val = i;
   }
   proc hash() {
-    return val;
+    return val : uint;
   }
 }
 

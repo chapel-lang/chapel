@@ -32,4 +32,3 @@ writeln("Past First Check");
 }
 
 infile.close();
-

@@ -1,9 +1,9 @@
 use Sort;
 use Set;
 
-record R {
+record R : hashable {
   var a: int;
-  
+
   operator ==(a:R, b:R) {
     return true;
   }

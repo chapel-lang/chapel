@@ -1,0 +1,2 @@
+wrong-return-type-implicit.chpl:7: warning: 'R' has a hash function that is being used by the standard library. However, 'R' does not implement hashable. In the future, this will result in an error.
+wrong-return-type-implicit.chpl:7: warning: to make 'R' implement hashable, add the interface to its declaration: 'record R : hashable'

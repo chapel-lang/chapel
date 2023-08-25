@@ -1692,8 +1692,8 @@ const TypedFnSignature* instantiateSignature(Context* context,
                                                      poiScope, r);
     // visit the parent type
     if (auto cls = ad->toClass()) {
-      if (auto parentClassExpr = cls->parentClass()) {
-        parentClassExpr->traverse(visitor);
+      for (int i = 0; i < cls->numInheritExprs(); i++) {
+        cls->inheritExpr(i)->traverse(visitor);
       }
     }
 
@@ -3799,6 +3799,27 @@ getCompilerGeneratedGlobals(Context* context) {
   #undef COMPILER_GLOBAL
 
   return QUERY_END(result);
+}
+
+static const bool&
+reportInvalidMultipleInheritanceImpl(Context* context,
+                                     const uast::Class* node,
+                                     const uast::AstNode* firstParent,
+                                     const uast::AstNode* secondParent) {
+  QUERY_BEGIN(reportInvalidMultipleInheritanceImpl, context, node, firstParent, secondParent);
+  CHPL_REPORT(context, MultipleInheritance, node, firstParent, secondParent);
+  auto result = false;
+  return QUERY_END(result);
+}
+
+void
+reportInvalidMultipleInheritance(Context* context,
+                                 const uast::Class* node,
+                                 const uast::AstNode* firstParent,
+                                 const uast::AstNode* secondParent) {
+
+  std::ignore = reportInvalidMultipleInheritanceImpl(context, node,
+                                                     firstParent, secondParent);
 }
 
 

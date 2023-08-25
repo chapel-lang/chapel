@@ -32,7 +32,7 @@ checkType(A1.eltType);
   class C {
     var blah = "blah";
     var blah1: string = "blah";
-    var blah2: c_ptrConst(c_char) = "blah".c_str();
+    var blah2: c_ptrConst(c_char) = "blah";
     proc checkMe() {
       checkType(blah.type);
       checkType(blah1.type);

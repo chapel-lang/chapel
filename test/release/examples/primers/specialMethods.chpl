@@ -34,7 +34,11 @@ proc ExampleRecord2.secondaryMethod() { }
 
 // First we will declare a simple record with a field that is a tuple of
 // integers.  We'll add special methods and iterators to this record later.
-record R {
+// To make the language recognize a special method, it's necessary to implement
+// the corresponding interface. For the ``hash`` method we'll see below, the
+// appropriate interface is ``hashable``. We can mark ``R`` as implementing
+// ``hashable`` by including a ``: hashable`` after its name when we declare it.
+record R : hashable {
   param size: int = 10;
   var vals: size*int;
 }
@@ -123,9 +127,9 @@ writeln(r.vals);
 
 use Map;
 
-proc R.hash(): int {
+proc R.hash(): uint {
   writeln("In custom hash function");
-  return vals[0];
+  return vals[0] : uint;
 }
 
 // Now that the record R has a ``hash`` method defined, Chapel's,

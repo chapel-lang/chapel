@@ -255,7 +255,9 @@ private:
 
   AggregateType*              getNewInstantiation(Symbol* sym, Type* symType, Expr* insnPoint = NULL);
 
-  AggregateType*              discoverParentAndCheck(Expr* storesName);
+  void                        discoverParentAndCheck(Expr* storesName,
+                                                     AggregateType* &outParent,
+                                                     InterfaceSymbol* &outIfc);
 
   bool                        isFieldInThisClass(const char* name)       const;
 

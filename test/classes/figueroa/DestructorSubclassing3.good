@@ -1,2 +1,2 @@
-DestructorSubclassing3.chpl:10: error: only single inheritance is supported
-DestructorSubclassing3.chpl:19: error: only single inheritance is supported
+DestructorSubclassing3.chpl:10: error: invalid use of multiple inheritance in class 'C'; only single inheritance is supported
+DestructorSubclassing3.chpl:19: error: invalid use of multiple inheritance in class 'E'; only single inheritance is supported

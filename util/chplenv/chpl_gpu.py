@@ -105,6 +105,11 @@ def get_arch():
     # Check if user is overriding the arch.
     arch = os.environ.get("CHPL_GPU_ARCH")
     if arch:
+        # arch might be specified in arch1,arch2 format, which is only supported
+        # on nvidia.
+        if len(arch.split(",")) > 1 and gpu_type != "nvidia":
+            error("Multi-target builds are only supported for the 'nvidia' GPU type.")
+
         return arch
 
     # Return vendor-specific default architecture

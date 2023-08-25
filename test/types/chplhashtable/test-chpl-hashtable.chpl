@@ -53,7 +53,7 @@ class C {
   var xx: int = 0;
 }
 
-record R {
+record R : hashable {
   var x: int = 0;
   var ptr: shared C = new shared C(0);
   proc init() {
@@ -91,7 +91,6 @@ proc R.hash() {
                                   this.ptr.xx.hash(),
                                   1);
 }
-
 
 printInitDeinit = false;
 var globalRone = new R(1);

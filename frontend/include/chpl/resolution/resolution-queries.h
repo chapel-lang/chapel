@@ -394,6 +394,12 @@ bool isTypeDefaultInitializable(Context* context, const types::Type* t);
 const std::unordered_map<UniqueString, types::QualifiedType>&
 getCompilerGeneratedGlobals(Context* context);
 
+void
+reportInvalidMultipleInheritance(Context* context,
+                                 const uast::Class* node,
+                                 const uast::AstNode* firstParent,
+                                 const uast::AstNode* secondParent);
+
 
 } // end namespace resolution
 } // end namespace chpl

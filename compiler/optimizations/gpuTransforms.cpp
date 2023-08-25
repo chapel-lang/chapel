@@ -230,6 +230,13 @@ std::queue<FnSymbol*> CreateGpuFunctionSpecializations::findAndCloneOnFns() {
 }
 
 void CreateGpuFunctionSpecializations::findAndCloneFnsReachableFromQueue(std::queue<FnSymbol*> &queue) {
+  // We rewrite wrap_on functions (those flagged with FLAG_ON_BLOCK) to dispatch
+  // to the either a gpu or cpu specialized "on" function, we don't need to
+  // clone these functions themselves.
+  auto shouldExemptCallToFn = [](FnSymbol *fn) {
+    return fn->hasFlag(FLAG_ON_BLOCK);
+  };
+
   while (queue.empty() == false) {
     FnSymbol* gpuReachableFn = queue.front();
     queue.pop();
@@ -238,6 +245,10 @@ void CreateGpuFunctionSpecializations::findAndCloneFnsReachableFromQueue(std::qu
     collectCallExprs(gpuReachableFn, calls);
     for_vector(CallExpr, call, calls) {
       if (FnSymbol* fn = call->resolvedFunction()) {
+        if(shouldExemptCallToFn(fn)) {
+          continue;
+        }
+
         FnSymbol* gpuFn = createGpuSpecializationOfFn(fn);
         if(gpuFn) {
           queue.push(gpuFn);
@@ -262,8 +273,7 @@ void CreateGpuFunctionSpecializations::rewriteCallToOnFnInOnBlock(CallExpr *call
                                     new_IntSymbol(0));
 
   // we can't add elseStmt later on
-  CondStmt* cond = new CondStmt(condExpr, gpuBlock,
-                                isFullGpuCodegen() ? cpuBlock : NULL);
+  CondStmt* cond = new CondStmt(condExpr, gpuBlock, cpuBlock);
 
   // first, make sure the conditional is in place
   call->insertBefore(cond);
@@ -276,8 +286,8 @@ void CreateGpuFunctionSpecializations::rewriteOnBlock(FnSymbol *fn) const {
   std::vector<CallExpr*> calls;
   collectCallExprs(fn, calls);
   for_vector(CallExpr, call, calls) {
-    if (FnSymbol* fn = call->resolvedFunction()) {
-      if(fn->hasFlag(FLAG_ON)) {
+    if (FnSymbol* callee = call->resolvedFunction()) {
+      if(callee->hasFlag(FLAG_ON)) {
         rewriteCallToOnFnInOnBlock(call);
       }
     }
@@ -1175,6 +1185,11 @@ static void generateGpuAndNonGpuPaths(const GpuizableLoop &gpuLoop,
     CallExpr* gpuCall = generateGPUCall(kernel, numThreads);
     gpuBlock->insertAtTail(gpuCall);
     gpuLoop.loop()->replace(gpuBlock);
+
+    // if not doing GPU codegen, just add cpuBlock after the conditional
+    if (!isFullGpuCodegen()) {
+      gpuBlock->insertAfter(gpuLoop.loop());
+    }
   } else {
     BlockStmt* cpuBlock = new BlockStmt();
     BlockStmt* gpuBlock = new BlockStmt();

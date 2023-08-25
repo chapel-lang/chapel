@@ -203,18 +203,6 @@ void ErrorSingleStmtReturnDeprecated::write(ErrorWriterBase& wr) const {
   wr.code(loc, { ret });
 }
 
-void ErrorRecordInheritanceNotSupported::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto recordName = std::get<std::string>(info);
-  wr.heading(kind_, type_, loc,
-             "inheritance is not currently supported for records.");
-  wr.note(loc, recordName, " declared as a record here:");
-  wr.code(loc);
-  wr.message(
-      "Thoughts on what record inheritance should entail can be added to "
-      "https://github.com/chapel-lang/chapel/issues/6851.");
-}
-
 void ErrorStringLiteralEOF::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   auto startChar = std::get<char>(info);
