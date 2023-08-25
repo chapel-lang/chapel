@@ -1843,38 +1843,21 @@ void checkConflictingSymbols(llvm::SmallVectorImpl<Symbol *>& symbols,
   //   then      assume function resolution will be applied
   //   otherwise fail
   for (Symbol* sym : symbols) {
-    bool isOperator = false;
-    bool isMethod = false;
-    bool isNonMethod = false;
     if (isParenfulFn(sym)) {
-      if (sym->hasFlag(FLAG_OPERATOR)) isOperator = true;
-      else if (sym->hasFlag(FLAG_METHOD)) isMethod = true;
-      else isNonMethod = true;
+      if (sym->hasFlag(FLAG_OPERATOR)) foundOperator = sym;
+      else if (sym->hasFlag(FLAG_METHOD)) foundMethod = sym;
+      else foundNonMethod = sym;
 
-      if ((isOperator && (foundMethod || foundNonMethod)) ||
-          (foundOperator && !isOperator)) {
+      if ((foundOperator && (foundMethod || foundNonMethod))) {
         INT_FATAL(context, "mix of operator and non-operator matches");
       }
-      if (!isOperator && !foundOperator) {
-        if (isMethod && foundNonMethod) {
-          USR_FATAL_CONT(context,
-                         "currently ambiguous what '%s' refers to", name);
-          USR_PRINT(foundNonMethod, "found this non-method");
-          USR_PRINT(sym, "and this method");
-          USR_STOP();
-        }
-        if (isNonMethod && foundMethod) {
-          USR_FATAL_CONT(context,
-                         "currently ambiguous what '%s' refers to", name);
-          USR_PRINT(foundMethod, "found this method");
-          USR_PRINT(sym, "and this non-method");
-          USR_STOP();
-        }
+      if (foundMethod && foundNonMethod) {
+        USR_FATAL_CONT(context,
+                       "currently ambiguous what '%s' refers to", name);
+        USR_PRINT(foundMethod, "and this method");
+        USR_PRINT(foundNonMethod, "found this non-method");
+        USR_STOP();
       }
-
-      if (isOperator && !foundOperator) foundOperator = sym;
-      if (isMethod && !foundMethod) foundMethod = sym;
-      if (isNonMethod && !foundNonMethod) foundNonMethod = sym;
     } else {
       if (std::count(failedUSymExprs.begin(),
                      failedUSymExprs.end(),
