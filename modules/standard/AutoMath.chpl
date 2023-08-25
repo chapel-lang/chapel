@@ -1566,7 +1566,7 @@ module AutoMath {
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
   pragma "last resort"
-  @deprecated(notes="In an upcoming release 'lgamma' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  @deprecated(notes="In an upcoming release 'lgamma' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it.  Note that the function has been renamed to 'lnGamma' there")
   inline proc lgamma(x: real(64)): real(64) {
     return chpl_lgamma(x);
   }
@@ -1585,7 +1585,7 @@ module AutoMath {
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
   pragma "last resort"
-  @deprecated(notes="In an upcoming release 'lgamma' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  @deprecated(notes="In an upcoming release 'lgamma' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it.  Note that the function has been renamed to 'lnGamma' there")
   inline proc lgamma(x : real(32)): real(32) {
     return chpl_lgamma(x);
   }
@@ -2606,7 +2606,7 @@ module AutoMath {
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
   pragma "last resort"
-  @deprecated(notes="In an upcoming release 'tgamma' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  @deprecated(notes="In an upcoming release 'tgamma' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it.  Note that the function has been renamed to 'gamma' there")
   inline proc tgamma(x: real(64)): real(64) {
     return chpl_tgamma(x);
   }
@@ -2625,7 +2625,7 @@ module AutoMath {
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
   pragma "last resort"
-  @deprecated(notes="In an upcoming release 'tgamma' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  @deprecated(notes="In an upcoming release 'tgamma' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it.  Note that the function has been renamed to 'gamma' there")
   inline proc tgamma(x : real(32)): real(32) {
     return chpl_tgamma(x);
   }
