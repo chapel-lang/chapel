@@ -718,7 +718,7 @@ static const char* getLoopName(CForLoop* loop) {
   auto filename = loop->astloc.filename();
   auto line = loop->astloc.stringLineno();
   auto moduleName = chpl::uast::Builder::filenameToModulename(filename);
-  return astr("chpl_gpu_kernel_", moduleName.c_str(), "_line_", line);
+  return astr("chpl_gpu_kernel_", moduleName.c_str(), "_line_", line, "_");
 }
 
 void GpuKernel::buildStubOutlinedFunction(DefExpr* insertionPoint) {
