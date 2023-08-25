@@ -2,12 +2,17 @@
 module Chai {
     
     import Tensor as tn;
-    import IO;
+    // import IO;
+    module IO {
+        public use IO;
+        public use BinaryIO;
+    }
+
 
     use Tensor;
     
 
-    record Dense {
+    class Dense {
 
         var outputSize: int;
 
@@ -19,15 +24,15 @@ module Chai {
 
         var uninitialized = true;
 
-        proc init=(other: Dense) {
-            writeln("init was called");
-            this.outputSize = other.outputSize;
-            this.bias = other.bias;
-            this.weights = other.weights;
-            this.biasGrad = other.biasGrad;
-            this.weightsGrad = other.weightsGrad;
-            this.uninitialized = other.uninitialized;
-        }
+        // proc init=(other: Dense) {
+        //     writeln("init was called");
+        //     this.outputSize = other.outputSize;
+        //     this.bias = other.bias;
+        //     this.weights = other.weights;
+        //     this.biasGrad = other.biasGrad;
+        //     this.weightsGrad = other.weightsGrad;
+        //     this.uninitialized = other.uninitialized;
+        // }
 
 
         proc init(outputSize: int) {
@@ -79,16 +84,17 @@ module Chai {
             const batchSize = deltas.size;
             var newDeltas: [0..#batchSize] Tensor(1);
 
-            var biasGradient = this.biasGrad;
-            var weightsGradient = this.weightsGrad;
+            var biasGradient = biasGrad.data;
+            var weightsGradient = weightsGrad.data;
+
             forall (delta,input,i) in zip(deltas,inputs,0..) with (ref this, + reduce biasGradient, + reduce weightsGradient) {
-                const newDelta = this.weights.transpose() * delta;
-                biasGradient    += newDelta;
-                weightsGradient += newDelta * input.transpose();
+                const newDelta = weights.transpose() * delta;
+                biasGradient    += newDelta.data;
+                weightsGradient += (newDelta * input.transpose()).data;
                 newDeltas[i] = newDelta;
             }
-            this.biasGrad.data += biasGradient.data;
-            this.weightsGrad.data += weightsGradient.data;
+            this.biasGrad.data += biasGradient;
+            this.weightsGrad.data += weightsGradient;
 
             return newDeltas;
         }
@@ -116,7 +122,7 @@ module Chai {
         }
     }
 
-    record Sigmoid {
+    class Sigmoid {
         proc init() { }
 
         proc forwardProp(x: Tensor(?rank)): Tensor(rank) {
@@ -148,7 +154,7 @@ module Chai {
 
     }
 
-    record Conv {
+    class Conv {
 
         var numFilters: int;
         var filters: Tensor(4);
@@ -300,7 +306,7 @@ module Chai {
         }
     }
 
-    record MaxPool {
+    class MaxPool {
 
         proc forwardProp(batch: [] Tensor(3)): [] Tensor(3) {
             const batchSize = batch.size;
@@ -379,7 +385,7 @@ module Chai {
         }
     }
 
-    record ReLU {
+    class ReLU {
         var a: real = 0.0;
         proc init(a: real = 0.0) { this.a = a; }
         proc forwardProp(input: Tensor(?rank)) {
@@ -425,7 +431,7 @@ module Chai {
         }
     }
 
-    record Flatten {
+    class Flatten {
 
         proc init() { }
         proc forwardProp(input: Tensor(?inRank)): Tensor(1) {
@@ -444,7 +450,7 @@ module Chai {
         }
     }
 
-    record SoftMax {
+    class SoftMax {
 
         var weights: Tensor(2);
         var biases: Tensor(1);
@@ -634,7 +640,7 @@ module Chai {
         return layers[n].backward(deltas,xs);
     }
 
-    record Network {
+    class Network {
         var _layers;
         proc ref layers ref do return this._layers;
 

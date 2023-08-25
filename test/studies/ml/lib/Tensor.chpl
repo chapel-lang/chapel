@@ -298,6 +298,15 @@ module Tensor {
 
     operator +(lhs: Tensor(?rank,?eltType), rhs: Tensor(rank,eltType)) {
         var t = new Tensor(rank=rank,eltType=eltType);
+
+        if lhs.domain.size == rhs.domain.size {
+            t.reshapeDomain(lhs.domain); // fixme. should be union.
+            t.data = lhs.data + rhs.data;
+            return t;
+        } else {
+            err("Cannot add tensors of different sizes. + ");
+        }
+
         if lhs.domain.size < rhs.domain.size {
             t.reshapeDomain(rhs.domain);
             t.data = rhs.data;
@@ -315,8 +324,12 @@ module Tensor {
     operator +=(ref lhs: Tensor(?d), const ref rhs: Tensor(d)) {
         if lhs.domain.size == rhs.domain.size {
             lhs.data += rhs.data;
+        } if lhs.domain.size == 0 && rhs.domain.size != 0 {
+            lhs.reshapeDomain(rhs.domain);
+            lhs.data = rhs.data;
         } else {
-            lhs.data += (lhs + rhs).data;
+            // lhs.data += (lhs + rhs).data;
+            err("Cannot add tensors of different sizes. += ", lhs.domain.size, " != ", rhs.domain.size);
         }
     }
     operator +=(ref lhs: Tensor(?rank,?eltType), rhs) where (isArray(rhs) && rhs.rank == rank) || rhs.type == eltType {
@@ -670,6 +683,20 @@ module Tensor {
         y.data /= sum;
         return y;
     }
+
+    proc crossEntropyLoss(p: Tensor(1),q: Tensor(1)) {
+        var sum = 0.0;
+        forall (a,b) in zip(p,q) with (+ reduce sum){
+            sum += a * Math.log(b);
+        }
+        return -sum;
+    }
+
+    proc crossEntropyDelta(p: Tensor(1),q: Tensor(1)) {
+        return p - q;
+    }
+
+
 
 
 

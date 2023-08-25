@@ -1,26 +1,31 @@
 import Chai as chai;
 import Tensor as tn;
 use Tensor;
-tn.seedRandom(0);
-config const epochs = 100;
-config const learnRate = 0.1;
 
-var network = new chai.Network(
+tn.seedRandom(0);
+
+config const epochs = 10;
+config const learnRate = 0.01;
+
+var network = new shared chai.Network(
     (
-        new chai.Dense(2),
+        new shared chai.Dense(2),
         // new chai.ReLU(0.1),
         // new chai.Sigmoid(),
         // new chai.Dense(3),
         // new chai.ReLU(0.1),
-        new chai.Sigmoid(),
-        new chai.Dense(3),
-        new chai.Sigmoid(),
-        new chai.Dense(2),
-        new chai.Sigmoid()
+        new shared chai.Sigmoid(),
+        new shared chai.Dense(3),
+        new shared chai.Sigmoid(),
+        new shared chai.Dense(2),
+        new shared chai.Sigmoid()
         // new chai.Sigmoid()
         // new chai.ReLU(0.1)
     )
 );
+
+
+
 
 
 proc forward(ref net, batch: [] (Tensor(1),Tensor(1))) {
