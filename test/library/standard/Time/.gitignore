@@ -1,0 +1,2 @@
+# test/library/standard/Time ignores.
+getCurrentDayOfWeek.good
