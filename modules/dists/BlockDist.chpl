@@ -31,7 +31,7 @@
 // When a distribution, domain, or array class instance is created, a
 // corresponding local class instance is created on each locale that is
 // mapped to by the distribution.
-//
+//const locLeftMaskDomain = LeftMask.domain;
 
 //
 // TO DO List
@@ -249,7 +249,7 @@ currently coordinate, but :class:`LayoutCS.CS` is an interesting alternative.
 It is common for a ``Block`` distribution to distribute its ``boundingBox``
 across all locales. In this case, a convenience function can be used to
 declare variables of block-distributed domain or array type.  These functions
-take a domain or list of ranges as arguments and return a block-distributed
+take a domain or series of ranges as arguments and return a block-distributed
 domain or array.
 
   .. code-block:: chapel
@@ -260,6 +260,20 @@ domain or array.
     var BlockArr1 = Block.createArray({1..5, 1..5}, real);
     var BlockDom2 = Block.createDomain(1..5, 1..5);
     var BlockArr2 = Block.createArray(1..5, 1..5, real);
+
+Note that an optional ``targetLocales`` argument can be passed to modify the
+target locales over which the domain or array will be distributed.
+
+Additionally, a non-type method ``createArray`` is available for creating an
+array from an existing `Block` distribution.
+
+  .. code-block:: chapel
+
+    use BlockDist;
+
+    const BD = new BlockDist({1..5, 1..5});
+
+    var A = BD.createArray();
 
 **Data-Parallel Iteration**
 
@@ -869,22 +883,50 @@ iter BlockImpl.activeTargetLocales(const space : domain = boundingBox) {
   }
 }
 
-proc type Block.createDomain(dom: domain) {
-  return dom dmapped Block(dom);
+// create a domain over a Block Distribution
+proc type Block.createDomain(dom: domain, targetLocales = Locales) {
+  return dom dmapped Block(dom, targetLocales);
 }
 
+// create a domain over a Block Distribution constructed from a list of ranges
 proc type Block.createDomain(rng: range...) {
-  return createDomain({(...rng)});
+  return createDomain({(...rng)}, Locales);
 }
 
-proc type Block.createArray(dom: domain, type eltType) {
-  var D = createDomain(dom);
+proc type Block.createDomain(rng: range..., targetLocales = Locales) {
+  return createDomain({(...rng)}, targetLocales);
+}
+
+// create an array over a Block Distribution, default initialized
+proc type Block.createArray(dom: domain, type eltType, targetLocales = Locales) {
+  var D = createDomain(dom, targetLocales);
   var A: [D] eltType;
   return A;
 }
 
+// create an array over a Block Distribution, initialized with the given value
+proc type Block.createArray(dom: domain, type eltType, value: eltType, targetLocales = Locales) {
+  var D = createDomain(dom, targetLocales);
+  var A: [D] eltType = value;
+  return A;
+}
+
+// create an array over a Block Distribution constructed from a list of ranges, default initialized
 proc type Block.createArray(rng: range..., type eltType) {
-  return createArray({(...rng)}, eltType);
+  return createArray({(...rng)}, eltType, Locales);
+}
+
+proc type Block.createArray(rng: range..., type eltType, targetLocales = Locales) {
+  return createArray({(...rng)}, eltType, targetLocales);
+}
+
+// create an array over a Block Distribution constructed from a list of ranges, initialized with the given value
+proc type Block.createArray(rng: range..., type eltType, value: eltType) {
+  return createArray({(...rng)}, eltType, value, Locales);
+}
+
+proc type Block.createArray(rng: range..., type eltType, value: eltType, targetLocales = Locales) {
+  return createArray({(...rng)}, eltType, value, targetLocales);
 }
 
 proc chpl__computeBlock(locid, targetLocBox:domain, boundingBox:domain,

@@ -157,7 +157,7 @@ proc main(args: [] string) {
   const offset = nx; // maybe needs to be +1 to account for truncation?
   const Inner = ImageSpace.expand(-offset);
   const myTargetLocales = reshape(Locales, {1..Locales.size, 1..1});
-  const D = Inner dmapped Block(Inner, targetLocales=myTargetLocales);
+  const D = Block.createDomain(Inner, targetLocales=myTargetLocales);
   var OutputArray : [D] real(64);
 
   // Create NetCDF
@@ -213,4 +213,3 @@ proc main(args: [] string) {
   if printReduce then
     writeln("Sum reduce of OutputArray: ", (+ reduce OutputArray));
 }
-
