@@ -1609,7 +1609,7 @@ module ChapelDomain {
       domain will be default-initialized. They can be set to desired
       values as usual, for example using an assignment operator.
     */
-    record unsafeAssignManager {
+    record unsafeAssignManager : contextManager {
       @chpldoc.nodoc
       var _lhsInstance;
 
