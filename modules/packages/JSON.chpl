@@ -73,13 +73,13 @@ module JSON {
       var _first : bool = true;
       const _ending : string;
 
-      proc writeField(name: string, const val: ?) throws {
+      proc writeField(name: string, const field: ?) throws {
         if !_first then writer._writeLiteral(", ");
         else _first = false;
 
         writer.write(name);
         writer._writeLiteral(":");
-        writer.write(val);
+        writer.write(field);
       }
 
       proc startClass(writer, name: string, size: int) throws {
@@ -115,11 +115,11 @@ module JSON {
       var writer;
       var _first : bool = true;
 
-      proc writeElement(const val: ?) throws {
+      proc writeElement(const element: ?) throws {
         if !_first then writer._writeLiteral(", ");
         else _first = false;
 
-        writer.write(val);
+        writer.write(element);
       }
 
       @chpldoc.nodoc
@@ -234,11 +234,11 @@ module JSON {
       }
 
       @chpldoc.nodoc
-      proc writeElement(const val: ?) throws {
+      proc writeElement(const element: ?) throws {
         if !_first then writer._writeLiteral(", ");
         else _first = false;
 
-        writer.write(val);
+        writer.write(element);
       }
 
       @chpldoc.nodoc
@@ -431,7 +431,7 @@ module JSON {
       }
 
       @chpldoc.nodoc
-      proc readField(name: string, type T) throws {
+      proc readField(name: string, type fieldType) : fieldType throws {
         if _fieldOffsets.contains(name) {
           // Use 'advance' instead of 'seek' to support reading in a marked
           // channel, which can happen during 'readf'.
@@ -446,7 +446,7 @@ module JSON {
           throw new IllegalArgumentError("field '" + name + "' not found.");
         }
 
-        var ret = reader.read(T);
+        var ret = reader.read(fieldType);
 
         // note: trailing commas not allowed in json
         reader.matchLiteral(",");
@@ -499,7 +499,7 @@ module JSON {
       var _first : bool = true;
 
       @chpldoc.nodoc
-      proc readElement(type eltType) throws {
+      proc readElement(type eltType) : eltType throws {
         if !_first then reader._readLiteral(",");
         else _first = false;
 
@@ -574,7 +574,7 @@ module JSON {
       }
 
       @chpldoc.nodoc
-      proc readElement(type eltType) throws {
+      proc readElement(type eltType) : eltType throws {
         if !_first then reader._readLiteral(", ");
         else _first = false;
 
@@ -615,7 +615,7 @@ module JSON {
       var _first : bool = true;
 
       @chpldoc.nodoc
-      proc readKey(type keyType) throws {
+      proc readKey(type keyType) : keyType throws {
         if !_first then reader._readLiteral(",");
         else _first = false;
 
@@ -634,7 +634,7 @@ module JSON {
       }
 
       @chpldoc.nodoc
-      proc readValue(type valType) throws {
+      proc readValue(type valType) : valType throws {
         reader._readLiteral(":");
         return reader.read(valType);
       }

@@ -337,9 +337,9 @@ module YAML {
     }
 
     @chpldoc.nodoc
-    proc writeField(name: string, const val: ?t) throws {
+    proc writeField(name: string, const field: ?t) throws {
       this.emitter.emitScalar(name: bytes);
-      writer.serializer.serializeValue(writer, val);
+      writer.serializer.serializeValue(writer, field);
     }
 
     @chpldoc.nodoc
@@ -400,12 +400,12 @@ module YAML {
     var context : borrowed ContextCounter;
 
     @chpldoc.nodoc
-    proc writeElement(const val) throws {
-      writer.serializer.serializeValue(writer, val);
+    proc writeElement(const element) throws {
+      writer.serializer.serializeValue(writer, element);
     }
 
     @chpldoc.nodoc
-    proc startDim(len: uint) throws {
+    proc startDim(size: uint) throws {
       this._startSequence();
     }
     @chpldoc.nodoc
@@ -569,14 +569,14 @@ module YAML {
       this._endMapping();
     }
     @chpldoc.nodoc
-    proc readKey(type t): t throws {
+    proc readKey(type keyType): keyType throws {
       if this.parser.peekFor(reader, EventType.MappingEnd)
         then throw new BadFormatError("mapping end event");
-        else return reader.read(t);
+        else return reader.read(keyType);
     }
     @chpldoc.nodoc
-    proc readValue(type t): t throws {
-      return reader.read(t);
+    proc readValue(type valType): valType throws {
+      return reader.read(valType);
     }
 
     proc hasMore() : bool throws {
@@ -585,8 +585,8 @@ module YAML {
   }
 
   @chpldoc.nodoc
-  proc YamlMapDeserializer.readField(name: string, type t): t throws {
-    if YamlVerbose then writeln("deserializing field: ", name, " of type: ", t:string);
+  proc YamlMapDeserializer.readField(name: string, type fieldType): fieldType throws {
+    if YamlVerbose then writeln("deserializing field: ", name, " of type: ", fieldType:string);
 
     if name.size > 0 {
       var foundName: string;
@@ -599,7 +599,7 @@ module YAML {
         throw new BadFormatError("unexpected field name: " + foundName + " (expected: " + name + ")");
     }
 
-    const value = reader.deserializer.deserializeType(reader, t);
+    const value = reader.deserializer.deserializeType(reader, fieldType);
     if YamlVerbose then writeln("  got value: ", value);
     return value;
   }
@@ -643,10 +643,10 @@ module YAML {
     var context: borrowed ContextCounter;
 
     @chpldoc.nodoc
-    proc readElement(type t): t throws {
+    proc readElement(type eltType): eltType throws {
       if this.parser.peekFor(reader, EventType.SequenceEnd)
         then throw new BadFormatError("sequence end event");
-        else return reader.read(t);
+        else return reader.read(eltType);
     }
 
     @chpldoc.nodoc

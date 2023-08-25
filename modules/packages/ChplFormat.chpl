@@ -78,14 +78,14 @@ module ChplFormat {
       var _first = true;
 
       @chpldoc.nodoc
-      proc writeField(name: string, const val: ?T) throws {
+      proc writeField(name: string, const field: ?T) throws {
         if !_first then writer.writeLiteral(", ");
         else _first = false;
 
         writer.writeLiteral(name);
         writer.writeLiteral(" = ");
 
-        writer.write(val);
+        writer.write(field);
       }
 
       proc startClass(writer: _writeType, name: string, size: int) throws {
@@ -130,11 +130,11 @@ module ChplFormat {
       const size : int;
       var _first : bool = true;
 
-      proc writeElement(const val: ?) throws {
+      proc writeElement(const element: ?) throws {
         if !_first then writer.writeLiteral(", ");
         else _first = false;
 
-        writer.write(val);
+        writer.write(element);
       }
 
       proc endTuple() throws {
@@ -155,11 +155,11 @@ module ChplFormat {
       var writer;
       var _first : bool = true;
 
-      proc writeElement(const val: ?) throws {
+      proc writeElement(const element: ?) throws {
         if !_first then writer._writeLiteral(", ");
         else _first = false;
 
-        writer.write(val);
+        writer.write(element);
       }
 
       @chpldoc.nodoc
@@ -182,11 +182,11 @@ module ChplFormat {
       proc endDim() throws {
       }
 
-      proc writeElement(const val: ?) throws {
+      proc writeElement(const element: ?) throws {
         if !_first then writer._writeLiteral(", ");
         else _first = false;
 
-        writer.write(val);
+        writer.write(element);
       }
       proc endArray() throws {
         writer._writeLiteral("]");
@@ -291,10 +291,10 @@ module ChplFormat {
       var _parent = false;
 
       @chpldoc.nodoc
-      proc readField(name: string, type T) throws {
+      proc readField(name: string, type fieldType) : fieldType throws {
         reader.readLiteral(name);
         reader.readLiteral("=");
-        var ret = reader.read(T);
+        var ret = reader.read(fieldType);
         reader.matchLiteral(",");
 
         return ret;
@@ -334,8 +334,8 @@ module ChplFormat {
     record TupleDeserializer {
       var reader;
 
-      proc readElement(type T) throws {
-        var ret = reader.read(T);
+      proc readElement(type eltType) : eltType throws {
+        var ret = reader.read(eltType);
         reader.matchLiteral(",");
         return ret;
       }
@@ -355,7 +355,7 @@ module ChplFormat {
       var reader;
       var _first = true;
 
-      proc readElement(type eltType) throws {
+      proc readElement(type eltType) : eltType throws {
         if !_first then reader._readLiteral(", ");
         else _first = false;
 
@@ -403,7 +403,7 @@ module ChplFormat {
       var _first = true;
 
       @chpldoc.nodoc
-      proc readKey(type keyType) throws {
+      proc readKey(type keyType) : keyType throws {
         if !_first then reader._readLiteral(",");
         else _first = false;
 
@@ -411,7 +411,7 @@ module ChplFormat {
       }
 
       @chpldoc.nodoc
-      proc readValue(type valType) throws {
+      proc readValue(type valType) : valType throws {
         reader._readLiteral("=>");
         return reader.read(valType);
       }

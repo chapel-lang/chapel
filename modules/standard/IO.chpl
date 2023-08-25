@@ -2714,13 +2714,13 @@ record DefaultSerializer {
     var _first : bool = true;
     const _ending : string;
 
-    proc writeField(name: string, const val: ?) throws {
+    proc writeField(name: string, const field: ?) throws {
       if !_first then writer._writeLiteral(", ");
       else _first = false;
 
       writer._writeLiteral(name);
       writer._writeLiteral(" = ");
-      writer.write(val);
+      writer.write(field);
     }
 
     proc startClass(writer: fileWriter, name: string, size: int) throws {
@@ -2762,11 +2762,11 @@ record DefaultSerializer {
     const size : int;
     var _first : bool = true;
 
-    proc writeElement(const val: ?) throws {
+    proc writeElement(const element: ?) throws {
       if !_first then writer._writeLiteral(", ");
       else _first = false;
 
-      writer.write(val);
+      writer.write(element);
     }
 
     @chpldoc.nodoc
@@ -2789,11 +2789,11 @@ record DefaultSerializer {
     var writer;
     var _first : bool = true;
 
-    proc writeElement(const val: ?) throws {
+    proc writeElement(const element: ?) throws {
       if !_first then writer._writeLiteral(", ");
       else _first = false;
 
-      writer.write(val);
+      writer.write(element);
     }
 
     @chpldoc.nodoc
@@ -2831,11 +2831,11 @@ record DefaultSerializer {
     }
 
     @chpldoc.nodoc
-    proc writeElement(const val: ?) throws {
+    proc writeElement(const element: ?) throws {
       if !_first then writer._writeLiteral(" ");
       else _first = false;
 
-      writer.write(val);
+      writer.write(element);
     }
 
     @chpldoc.nodoc
@@ -2973,11 +2973,11 @@ record DefaultDeserializer {
     var _parent : bool = false;
 
     @chpldoc.nodoc
-    proc readField(name: string, type T) throws {
+    proc readField(name: string, type fieldType) : fieldType throws {
       reader.readLiteral(name);
       reader.readLiteral("=");
 
-      var ret = reader.read(T);
+      var ret = reader.read(fieldType);
       reader.matchLiteral(",");
       return ret;
     }
@@ -3016,8 +3016,8 @@ record DefaultDeserializer {
     var reader;
 
     @chpldoc.nodoc
-    proc readElement(type T) throws {
-      var ret = reader.read(T);
+    proc readElement(type eltType) : eltType throws {
+      var ret = reader.read(eltType);
       reader.matchLiteral(",");
       return ret;
     }
@@ -3040,7 +3040,7 @@ record DefaultDeserializer {
     var _first : bool = true;
 
     @chpldoc.nodoc
-    proc readElement(type eltType) throws {
+    proc readElement(type eltType) : eltType throws {
       if !_first then reader._readLiteral(",");
       else _first = false;
 
@@ -3092,7 +3092,7 @@ record DefaultDeserializer {
     }
 
     @chpldoc.nodoc
-    proc readElement(type eltType) throws {
+    proc readElement(type eltType) : eltType throws {
       if !_first then reader._readLiteral(" ");
       else _first = false;
 
@@ -3123,7 +3123,7 @@ record DefaultDeserializer {
     }
 
     @chpldoc.nodoc
-    proc readValue(type valType) throws {
+    proc readValue(type valType) : valType throws {
       reader._readLiteral(": ");
 
       return reader.read(valType);
@@ -3224,8 +3224,8 @@ record BinarySerializer {
   record AggregateSerializer {
     var writer : fileWriter(false, BinarySerializer);
 
-    proc writeField(name: string, const val: ?T) throws {
-      writer.write(val);
+    proc writeField(name: string, const field: ?T) throws {
+      writer.write(field);
     }
 
     proc startClass(writer, name: string, size: int) throws {
@@ -3249,8 +3249,8 @@ record BinarySerializer {
   record TupleSerializer {
     var writer : fileWriter(false, BinarySerializer);
 
-    proc writeElement(const val: ?T) throws {
-      writer.write(val);
+    proc writeElement(const element: ?T) throws {
+      writer.write(element);
     }
     proc endTuple() throws {
     }
@@ -3263,8 +3263,8 @@ record BinarySerializer {
   record ListSerializer {
     var writer : fileWriter(false, BinarySerializer);
 
-    proc writeElement(const val: ?) throws {
-      writer.write(val);
+    proc writeElement(const element: ?) throws {
+      writer.write(element);
     }
     proc endList() throws {
     }
@@ -3285,8 +3285,8 @@ record BinarySerializer {
     proc endDim() throws {
     }
 
-    proc writeElement(const val: ?) throws {
-      writer.write(val);
+    proc writeElement(const element: ?) throws {
+      writer.write(element);
     }
 
     proc writeBulkElements(data: c_ptr(?eltType), numElements: uint) throws
@@ -3448,8 +3448,8 @@ record BinaryDeserializer {
   record AggregateDeserializer {
     var reader : fileReader(false, BinaryDeserializer);
 
-    proc readField(name: string, type T) throws {
-      return reader.read(T);
+    proc readField(name: string, type fieldType) : fieldType throws {
+      return reader.read(fieldType);
     }
     proc startClass(reader, name: string) throws {
       return this;
@@ -3471,8 +3471,8 @@ record BinaryDeserializer {
   record TupleDeserializer {
     var reader : fileReader(false, BinaryDeserializer);
 
-    proc readElement(type T) throws {
-      return reader.read(T);
+    proc readElement(type eltType) : eltType throws {
+      return reader.read(eltType);
     }
 
     proc endTuple() throws {
@@ -3487,7 +3487,7 @@ record BinaryDeserializer {
     var reader : fileReader(false, BinaryDeserializer);
     var _numElements : uint;
 
-    proc readElement(type eltType) throws {
+    proc readElement(type eltType) : eltType throws {
       if _numElements <= 0 then
         throw new BadFormatError("no more list elements remain");
 
@@ -3519,7 +3519,7 @@ record BinaryDeserializer {
     proc endDim() throws {
     }
 
-    proc readElement(type eltType) throws {
+    proc readElement(type eltType) : eltType throws {
       return reader.read(eltType);
     }
 
@@ -3548,7 +3548,7 @@ record BinaryDeserializer {
     var reader;
     var _numElements : uint;
 
-    proc readKey(type keyType) throws {
+    proc readKey(type keyType) : keyType throws {
       if _numElements <= 0 then
         throw new BadFormatError("no more map elements remain!");
 
@@ -3557,7 +3557,7 @@ record BinaryDeserializer {
       return reader.read(keyType);
     }
 
-    proc readValue(type valType) throws {
+    proc readValue(type valType) : valType throws {
       return reader.read(valType);
     }
 
