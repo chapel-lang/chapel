@@ -156,7 +156,7 @@ module RangeChunk {
         chunkSize = nElems / nChunks;
         if chunkSize * nChunks != nElems {
           chunkSize += 1;
-          nChunks = divceil(nElems, chunkSize);
+          nChunks = divCeil(nElems, chunkSize);
         }
       }
       when Mod {
@@ -222,10 +222,10 @@ module RangeChunk {
     const m = nElems * i;
     const start = if i == 0
       then 0: I
-      else divceil(m, nChunks);
+      else divCeil(m, nChunks);
     const end = if i == nChunks - 1
       then nElems - 1
-      else divceil(m + nElems, nChunks) - 1;
+      else divCeil(m + nElems, nChunks) - 1;
     return (start, end);
   }
 

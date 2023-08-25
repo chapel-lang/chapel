@@ -87,23 +87,23 @@ where tag == iterKind.leader
   // # of tasks the range can fill. (fast) ceil so all work is represented
   const numChunks: int;
 
-  // divceilpos() doesn't accept two unsigned ints.
-  // divceil() doesn't accept args of non-matching signedness.
+  // divCeilPos() doesn't accept two unsigned ints.
+  // divCeil() doesn't accept args of non-matching signedness.
   //
-  // So we need to call divceil() for the former case, and
-  // divceilpos() for the latter.
+  // So we need to call divCeil() for the former case, and
+  // divCeilPos() for the latter.
   //
   // If c.size (of type c.idxType) is uint(64), we can safely cast the
   // chunkSize (asserted positive above) to uint(64), and can call
   // divceil() on two unsigned ints.
   //
   // Otherwise, it isn't uint(64), and we can safely cast it to
-  // int(64).  Then we can call divceilpos() with it and any chunkSize
+  // int(64).  Then we can call divCeilPos() with it and any chunkSize
   // type, since then we know at least one arg is signed.
   if c.idxType == uint(64) then
     numChunks = divceil(c.sizeAs(uint(64)), chunkSize:uint(64)): int;
   else
-    numChunks = divceilpos(c.sizeAs(int), chunkSize): int;
+    numChunks = divCeilPos(c.sizeAs(int), chunkSize): int;
 
   // Check if the number of tasks is 0, in that case it returns a default value
   const nTasks = min(numChunks, defaultNumTasks(numTasks));
