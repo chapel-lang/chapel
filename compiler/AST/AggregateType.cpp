@@ -2759,7 +2759,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
                                         arg));
         } else {
           // isReaderInit == true, and we need to generate code to invoke
-          // the 'deserializeField' interface from the formatter.
+          // the 'readField' method from the deserializer.
           Expr* typeExpr = nullptr;
           if (defPoint->exprType != NULL) {
             typeExpr = defPoint->exprType->copy();
@@ -2768,7 +2768,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
           }
 
           if (typeExpr != nullptr) {
-            CallExpr* desField = new CallExpr("deserializeField", gMethodToken, desHelper,
+            CallExpr* desField = new CallExpr("readField", gMethodToken, desHelper,
                                                new CallExpr(PRIM_FIELD_NUM_TO_NAME, fn->_this, new_IntSymbol(fieldNum)),
                                                typeExpr);
             fn->insertAtTail(new CallExpr("=",

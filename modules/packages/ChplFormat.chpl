@@ -78,7 +78,7 @@ module ChplFormat {
       var _first = true;
 
       @chpldoc.nodoc
-      proc serializeField(name: string, const val: ?T) throws {
+      proc writeField(name: string, const val: ?T) throws {
         if !_first then writer.writeLiteral(", ");
         else _first = false;
 
@@ -291,7 +291,7 @@ module ChplFormat {
       var _parent = false;
 
       @chpldoc.nodoc
-      proc deserializeField(name: string, type T) throws {
+      proc readField(name: string, type T) throws {
         reader.readLiteral(name);
         reader.readLiteral("=");
         var ret = reader.read(T);

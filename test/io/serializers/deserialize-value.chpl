@@ -14,7 +14,7 @@ record R {
     writeln("IN R.init");
     ref des = deserializer;
     des.startRecord(reader, "R", 1);
-    this.x = des.deserializeField(reader, "x", int);
+    this.x = des.readField(reader, "x", int);
     des.endRecord(reader);
   }
 

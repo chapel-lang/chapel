@@ -2714,7 +2714,7 @@ record DefaultSerializer {
     var _first : bool = true;
     const _ending : string;
 
-    proc serializeField(name: string, const val: ?) throws {
+    proc writeField(name: string, const val: ?) throws {
       if !_first then writer._writeLiteral(", ");
       else _first = false;
 
@@ -2973,7 +2973,7 @@ record DefaultDeserializer {
     var _parent : bool = false;
 
     @chpldoc.nodoc
-    proc deserializeField(name: string, type T) throws {
+    proc readField(name: string, type T) throws {
       reader.readLiteral(name);
       reader.readLiteral("=");
 
@@ -3224,7 +3224,7 @@ record BinarySerializer {
   record AggregateSerializer {
     var writer : fileWriter(false, BinarySerializer);
 
-    proc serializeField(name: string, const val: ?T) throws {
+    proc writeField(name: string, const val: ?T) throws {
       writer.write(val);
     }
 
@@ -3448,7 +3448,7 @@ record BinaryDeserializer {
   record AggregateDeserializer {
     var reader : fileReader(false, BinaryDeserializer);
 
-    proc deserializeField(name: string, type T) throws {
+    proc readField(name: string, type T) throws {
       return reader.read(T);
     }
     proc startClass(reader, name: string) throws {

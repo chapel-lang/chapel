@@ -73,7 +73,7 @@ module JSON {
       var _first : bool = true;
       const _ending : string;
 
-      proc serializeField(name: string, const val: ?) throws {
+      proc writeField(name: string, const val: ?) throws {
         if !_first then writer._writeLiteral(", ");
         else _first = false;
 
@@ -312,7 +312,7 @@ module JSON {
   private extern proc qio_channel_skip_json_field(threadsafe:c_int, ch:qio_channel_ptr_t):errorCode;
 
   // Read the JSON object in ahead of time, and produce a map of field names
-  // to file offsets that we can look at later in deserializeField.
+  // to file offsets that we can look at later in readField.
   // TODO: use a proper JSON library.
   private proc outOfOrderHelper(reader: _readerType) throws {
     var m : map(string, int);
@@ -431,13 +431,13 @@ module JSON {
       }
 
       @chpldoc.nodoc
-      proc deserializeField(name: string, type T) throws {
+      proc readField(name: string, type T) throws {
         if _fieldOffsets.contains(name) {
           // Use 'advance' instead of 'seek' to support reading in a marked
           // channel, which can happen during 'readf'.
           //
           // Use 'mark' to rewind the position since 'advance' doesn't support
-          // negative values. This means that 'deserializeField' does not advance
+          // negative values. This means that 'readField' does not advance
           // the channel's position until 'endClass' or 'endRecord' are called.
           reader.mark();
           const dist =  _fieldOffsets[name] - reader.offset();

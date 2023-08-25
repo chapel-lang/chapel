@@ -321,8 +321,8 @@ module ChapelIO {
       for param i in 1..num_fields {
         if isIoField(x, i) {
           param name : string = __primitive("field num to name", x, i);
-          ser.serializeField(name,
-                             __primitive("field by num", x, i));
+          ser.writeField(name,
+                         __primitive("field by num", x, i));
         }
       }
 
@@ -352,8 +352,8 @@ module ChapelIO {
         if isIoField(x, i) {
           param name : string = __primitive("field num to name", x, i);
           ref field = __primitive("field by num", x, i);
-          field = des.deserializeField(name,
-                                       __primitive("field by num", x, i).type);
+          field = des.readField(name,
+                                __primitive("field by num", x, i).type);
         }
       }
 

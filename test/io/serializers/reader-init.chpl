@@ -13,8 +13,8 @@ record R {
 
   proc init(reader: fileReader, ref deserializer) {
     var des = deserializer.startRecord(reader, "R");
-    this.x = des.deserializeField("x", int);
-    this.y = des.deserializeField("y", real);
+    this.x = des.readField("x", int);
+    this.y = des.readField("y", real);
     des.endRecord();
   }
 
@@ -41,8 +41,8 @@ record G {
     this.A = A;
     this.B = B;
     var des = deserializer.startRecord(reader, "G");
-    this.x = des.deserializeField("x", A);
-    this.y = des.deserializeField("y", B);
+    this.x = des.readField("x", A);
+    this.y = des.readField("y", B);
     des.endRecord();
   }
 
@@ -60,13 +60,13 @@ class Parent {
   }
   proc init(reader: fileReader, ref deserializer) {
     var des = deserializer.startClass(reader, "Parent");
-    this.x = des.deserializeField("x", int);
+    this.x = des.readField("x", int);
     des.endClass();
   }
 
   override proc serialize(writer: fileWriter, ref serializer) {
     var ser = serializer.startClass(writer, "Parent", 1);
-    ser.serializeField("x", x);
+    ser.writeField("x", x);
     ser.endClass();
   }
 
@@ -85,14 +85,14 @@ class Child : Parent {
   proc init(reader: fileReader, ref deserializer) {
     var des = deserializer.startClass(reader, "Child");
     super.init(reader, des);
-    this.y = des.deserializeField("y", real);
+    this.y = des.readField("y", real);
     des.endClass();
   }
 
   override proc serialize(writer: fileWriter, ref serializer) {
     var ser = serializer.startClass(writer, "Child", 1);
     super.serialize(writer, ser);
-    ser.serializeField("y", y);
+    ser.writeField("y", y);
     ser.endClass();
   }
 

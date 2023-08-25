@@ -337,7 +337,7 @@ module YAML {
     }
 
     @chpldoc.nodoc
-    proc serializeField(name: string, const val: ?t) throws {
+    proc writeField(name: string, const val: ?t) throws {
       this.emitter.emitScalar(name: bytes);
       writer.serializer.serializeValue(writer, val);
     }
@@ -585,7 +585,7 @@ module YAML {
   }
 
   @chpldoc.nodoc
-  proc YamlMapDeserializer.deserializeField(name: string, type t): t throws {
+  proc YamlMapDeserializer.readField(name: string, type t): t throws {
     if YamlVerbose then writeln("deserializing field: ", name, " of type: ", t:string);
 
     if name.size > 0 {
