@@ -12,7 +12,7 @@ module Chai {
     use Tensor;
     
 
-    class Dense {
+    record Dense {
 
         var outputSize: int;
 
@@ -122,7 +122,7 @@ module Chai {
         }
     }
 
-    class Sigmoid {
+    record Sigmoid {
         proc init() { }
 
         proc forwardProp(x: Tensor(?rank)): Tensor(rank) {
@@ -154,7 +154,7 @@ module Chai {
 
     }
 
-    class Conv {
+    record Conv {
 
         var numFilters: int;
         var filters: Tensor(4);
@@ -306,7 +306,7 @@ module Chai {
         }
     }
 
-    class MaxPool {
+    record MaxPool {
 
         proc forwardProp(batch: [] Tensor(3)): [] Tensor(3) {
             const batchSize = batch.size;
@@ -385,7 +385,7 @@ module Chai {
         }
     }
 
-    class ReLU {
+    record ReLU {
         var a: real = 0.0;
         proc init(a: real = 0.0) { this.a = a; }
         proc forwardProp(input: Tensor(?rank)) {
@@ -431,7 +431,7 @@ module Chai {
         }
     }
 
-    class Flatten {
+    record Flatten {
 
         proc init() { }
         proc forwardProp(input: Tensor(?inRank)): Tensor(1) {
@@ -450,7 +450,7 @@ module Chai {
         }
     }
 
-    class SoftMax {
+    record SoftMax {
 
         var weights: Tensor(2);
         var biases: Tensor(1);
@@ -640,7 +640,7 @@ module Chai {
         return layers[n].backward(deltas,xs);
     }
 
-    class Network {
+    record Network {
         var _layers;
         proc ref layers ref do return this._layers;
 
