@@ -3,7 +3,7 @@ module FileHashing {
   /* SHA256Hash is a record storing a SHA256 hash value.
      It supports comparison and writeln.
    */
-  record SHA256Hash {
+  record SHA256Hash : hashable {
     /* The actual hash value */
     var hashVal: 8*uint(32);
 
