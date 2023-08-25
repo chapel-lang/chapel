@@ -50,9 +50,6 @@ proc main(){
       var triad: real;
       var bdwth: real;
 
-      on here.gpus[0] {
-        // Create the arrays in unified memory
-        var A, B, C :[0..#elemsInBlock] real(32);
 
       // Pre slice all the slices of host that we will need so the needed to slice
       // is not counted.
@@ -64,6 +61,10 @@ proc main(){
       for i in 0..#numIterations {
         hostArraysArray[i] = hos[elemsInBlock*i..#elemsInBlock];
       }
+
+      on here.gpus[0] {
+        // Create the arrays in unified memory
+        var A, B, C :[0..#elemsInBlock] real(32);
 
 
         if noisy {
