@@ -27,3 +27,12 @@ follows, assuming the CWD is $CHPL_HOME/third-party/gasnet/:
 6. update the new sources by re-applying any needed patches (see above)
    and commit
 7. PR, merge, etc.
+
+
+Chapel modifications to GASNet
+==============================
+The modifications that we have made to the official GASNet release are
+as follows:
+
+* Pulled in an upstream fix to newer PMIx versions
+   - https://bitbucket.org/berkeleylab/gasnet/commits/cd4169e7
