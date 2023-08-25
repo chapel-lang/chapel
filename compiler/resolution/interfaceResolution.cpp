@@ -79,6 +79,8 @@ static void cgprintAssocConstraint(IfcConstraint* icon) {
 #define cgprintAssocConstraint(...)
 #endif
 
+static int inImplementsInterface = 0;
+
 static void cleanupHolder(BlockStmt* holder) {
   do { holder->body.tail->remove(); } while (holder->body.tail != NULL);
 }
@@ -1382,7 +1384,8 @@ static bool checkOnePairOfFormals(ArgSymbol* tgtFml, ArgSymbol* reqFml) {
   // intent, so reqTag is 'const ref'. If tgtFml is a non-record, tgtTag
   // will be 'const in'. Allow that.
   if ((reqTag & INTENT_FLAG_REF) && (tgtTag & INTENT_FLAG_IN))
-    if (! isAggregateType(tgtFml->type) || isClass(tgtFml->type))
+    if (! isAggregateType(tgtFml->type) || isClass(tgtFml->type) ||
+        ! propagateNotPOD(tgtFml->type))
       return true;
 
   return false;
@@ -1430,6 +1433,7 @@ static bool resolveOneRequiredFn(InterfaceSymbol* isym,  ImplementsStmt*  istm,
                                  BlockStmt*     holder,  Expr*        addlSite,
                                  std::vector<FnSymbol*>  &instantiatedDefaults,
                                  const char*    indent,  bool     reportErrors,
+                                 bool generatedOnly,
                                  FnSymbol*       reqFn,  Symbol*        implFn)
 {
   INT_ASSERT(holder->body.empty());
@@ -1454,9 +1458,19 @@ static bool resolveOneRequiredFn(InterfaceSymbol* isym,  ImplementsStmt*  istm,
   callStack.add(call);
   FnSymbol* target = tryResolveCall(call);
 
-  // do not allow representatives to help satisfy a constraint
-  if ((target == NULL || target->hasFlag(FLAG_CG_REPRESENTATIVE)) &&
-      addlSite != nullptr) {
+  auto targetValid = [&](FnSymbol* tg) {
+    return tg != NULL &&
+
+           // After we switch the "implicit implements" warning to an error,
+           // uncomment the following line:
+           //
+           // (!generatedOnly || target->hasFlag(FLAG_COMPILER_GENERATED)) &&
+
+           // do not allow representatives to help satisfy a constraint
+           !target->hasFlag(FLAG_CG_REPRESENTATIVE);
+  };
+
+  if (!targetValid(target) && addlSite != nullptr) {
     // the call did not resolve at this location
     cleanupHolder(holder);
     // try resolving it at 'addlSite'
@@ -1468,7 +1482,7 @@ static bool resolveOneRequiredFn(InterfaceSymbol* isym,  ImplementsStmt*  istm,
   }
 
   // do not allow representatives to help satisfy a constraint
-  if (target != NULL && !target->hasFlag(FLAG_CG_REPRESENTATIVE)) {
+  if (targetValid(target)) {
     INT_ASSERT(target->hasFlag(FLAG_PROMOTION_WRAPPER) ||
                ! target->isGeneric());
 
@@ -1495,6 +1509,9 @@ static bool resolveOneRequiredFn(InterfaceSymbol* isym,  ImplementsStmt*  istm,
     cleanupHolder(holder);
 
     if (implFn == gDummyWitness) {
+      // reset to NULL so that this function returns "false".
+      target = nullptr;
+
       if (reportErrors) {
         USR_FATAL_CONT(istm, "when checking this implements statement");
         USR_PRINT(istm, "the required function %s is not implemented",
@@ -1561,7 +1578,8 @@ static void buildWitnessMap(InterfaceSymbol* isym, ImplementsStmt* istm,
 static bool resolveRequiredFns(InterfaceSymbol* isym,  ImplementsStmt* istm,
                                SymbolMap&    fml2act,
                                BlockStmt*     holder,  Expr*       addlSite,
-                               const char*    indent,  bool    reportErrors) {
+                               const char*    indent,  bool    reportErrors,
+                               bool generatedOnly) {
   bool rfSuccess = true;
   std::vector<FnSymbol*> instantiatedDefaults;
 
@@ -1569,7 +1587,7 @@ static bool resolveRequiredFns(InterfaceSymbol* isym,  ImplementsStmt* istm,
     if (FnSymbol* reqFn = toFnSymbol(wit.key))
       rfSuccess &= resolveOneRequiredFn(isym, istm, fml2act, holder, addlSite,
                                         instantiatedDefaults, indent,
-                                        reportErrors, reqFn, wit.value);
+                                        reportErrors, generatedOnly, reqFn, wit.value);
     else
       INT_ASSERT(isConstrainedTypeSymbol(wit.key, CT_IFC_ASSOC_TYPE));
   }
@@ -1587,6 +1605,33 @@ static bool resolveRequiredFns(InterfaceSymbol* isym,  ImplementsStmt* istm,
 }
 
 
+static void warnForImproperAutomaticImplements(InterfaceSymbol* isym,
+                                               ImplementsStmt* istm,
+                                               Expr* addlSite) {
+  if (istm->iConstraint->shouldBeGeneratedOnly) {
+    // Issue temporary warning if using non-generated methods to satisfy
+    // a generated interface.
+    for (auto& sym : istm->witnesses.symWits) {
+      if (auto fnWitness = toFnSymbol(sym.value)) {
+        if (!fnWitness->hasFlag(FLAG_COMPILER_GENERATED)) {
+          istm->iConstraint->entirelyGenerated = false;
+
+          // If we're speciulating, don't issue the warning.
+          if (tryingToResolve() || tryingToImplementInterface()) continue;
+
+          USR_WARN(fnWitness, "automatically implementing interface %s for"
+                              " type %s using user-provided procedure %s",
+                              isym->name,
+                              istm->iConstraint->consActuals.get(1)->typeInfo()->name(),
+                              fnWitness->name);
+          USR_PRINT("in future releases, user-provided procedures will not"
+                    " cause %s to be automatically implemented", isym->name);
+        }
+      }
+    }
+  }
+}
+
 //
 // Ensures this ImplementsStmt indeed implements the interface, ex.
 // * determine each associated type
@@ -1597,7 +1642,9 @@ static bool resolveRequiredFns(InterfaceSymbol* isym,  ImplementsStmt* istm,
 //
 static bool resolveImplementsStmt(FnSymbol* wrapFn, ImplementsStmt* istm,
                                   bool nested, //used only for debugging output
-                                  Expr*   addlSite, bool    reportErrors) {
+                                  Expr*   addlSite,
+                                  bool    reportErrors,
+                                  bool    generatedOnly) {
   if (istm->id == breakOnResolveID) gdbShouldBreakHere();
 
   IfcConstraint* icon = istm->iConstraint;
@@ -1612,6 +1659,8 @@ static bool resolveImplementsStmt(FnSymbol* wrapFn, ImplementsStmt* istm,
     // because wrapFn gets marked resolved before checkAssocConstraints().
     // If so, we return successful implementation, i.e. we break recursion
     // by assuming success.
+
+    warnForImproperAutomaticImplements(isym, istm, addlSite);
 
     IstmAndSuccess iss = implementsStmtForWrapperFn(wrapFn);
     // if isSuccess can legitimately be false, return it and remove the assert
@@ -1657,7 +1706,7 @@ static bool resolveImplementsStmt(FnSymbol* wrapFn, ImplementsStmt* istm,
      && checkAssocConstraints(isym, istm, fml2act, holder, callsite, addlSite,
                               reportErrors)
      && resolveRequiredFns(isym, istm, fml2act, holder, addlSite, indent,
-                              reportErrors);
+                              reportErrors, generatedOnly);
   } else {
     // no early checking of generic implements statements
     cgprint("%s  not checking due to generic type %s\n",
@@ -1678,6 +1727,9 @@ static bool resolveImplementsStmt(FnSymbol* wrapFn, ImplementsStmt* istm,
   if (!success) {
     if (reportErrors) USR_STOP();
     markImplStmtWrapFnAsFailure(wrapFn);
+  } else {
+    istm->iConstraint->shouldBeGeneratedOnly = generatedOnly;
+    warnForImproperAutomaticImplements(isym, istm, addlSite);
   }
 
   return success;
@@ -1685,7 +1737,7 @@ static bool resolveImplementsStmt(FnSymbol* wrapFn, ImplementsStmt* istm,
 
 void resolveImplementsStmt(ImplementsStmt* istm) {
   FnSymbol* wrapFn = wrapperFnForImplementsStmt(istm);
-  resolveImplementsStmt(wrapFn, istm, false, nullptr, true);
+  resolveImplementsStmt(wrapFn, istm, false, nullptr, true, false);
 }
 
 
@@ -1801,7 +1853,7 @@ static MatchResult matchingImplStm(InterfaceSymbol* isym,
     return MatchResult(nullptr, false, false); // like-named interface
 
   if (iss.isSuccess) // do we need this restriction?
-    resolveImplementsStmt(wrapFn, iss.istm, false, nullptr, true);
+    resolveImplementsStmt(wrapFn, iss.istm, false, nullptr, true, false);
 
   bool isConcrete = true;
 
@@ -1894,7 +1946,7 @@ static ImplementsStmt* useGenericImplementsStmt(Expr*           callsite,
 
   FnSymbol* wrapFn = wrapOneImplementsStatement(conIstm);
   // When checking assoc. constraints etc., also look in the scope of 'callsite'
-  bool success = resolveImplementsStmt(wrapFn, conIstm, false, callsite, true);
+  bool success = resolveImplementsStmt(wrapFn, conIstm, false, callsite, true, false);
 
   return success ? conIstm : nullptr;
 }
@@ -1988,12 +2040,25 @@ static Expr* closestInterestingScopeAnchor(Expr*   callsite,
   }
 }
 
+static bool isAutoImplementInternalInterface(InterfaceSymbol* isym) {
+  return isym == gHashable;
+}
+
+static Expr* anchorPointForAutoImplementInterface(InterfaceSymbol* isym,
+                                                  CallExpr* call2wf) {
+  auto firstArg = call2wf->get(1);
+  auto defPoint = firstArg->typeInfo()->symbol->defPoint;
+  INT_ASSERT(defPoint);
+  return defPoint;
+}
+
 // 'failureWrapFn' is the wrapFn for a negative outcome of an earlier attempt
 // to infer this constraint, if found, otherwise NULL.
 static ImplementsStmt* checkInferredImplStmt(Expr*         callsite,
                                              InterfaceSymbol*  isym,
                                              CallExpr*       call2wf,
-                                             FnSymbol* failureWrapFn) {
+                                             FnSymbol* failureWrapFn,
+                                             bool generatedOnly) {
   cgprint("checking inferred implements statement for ifc %s  %s\n",
           symstring(isym), debugLoc(callsite));
 
@@ -2001,7 +2066,12 @@ static ImplementsStmt* checkInferredImplStmt(Expr*         callsite,
     // Do not infer for an empty interface.
     return NULL;
 
-  Expr* anchor = closestInterestingScopeAnchor(callsite, failureWrapFn);
+  Expr* anchor;
+  if (isAutoImplementInternalInterface(isym)) {
+    anchor = anchorPointForAutoImplementInterface(isym, call2wf);
+  } else {
+    anchor = closestInterestingScopeAnchor(callsite, failureWrapFn);
+  }
 
   if (anchor == NULL)
     // Closer scopes do not define any functions, so the inference outcome,
@@ -2015,7 +2085,7 @@ static ImplementsStmt* checkInferredImplStmt(Expr*         callsite,
   ImplementsStmt* istm = buildInferredImplStmt(isym, call2wf);
   anchor->insertBefore(istm);
   FnSymbol* wrapFn = wrapOneImplementsStatement(istm);
-  bool success = resolveImplementsStmt(wrapFn, istm, false, callsite, false);
+  bool success = resolveImplementsStmt(wrapFn, istm, false, callsite, false, generatedOnly);
 
   return success ? istm : NULL;
 }
@@ -2024,6 +2094,19 @@ static ImplementsStmt* findSatisfyingIstm(InterfaceSymbol* isym,
                                           Expr* callsite,
                                           IfcConstraint* constraint,
                                           CallExpr* call2wf);
+
+static ImplementsStmt*
+searchForExplicitSatisfyingIstms(CallExpr* callsite,
+                                 Expr*          addlSite,
+                                 IfcConstraint* constraint,
+                                 InterfaceSymbol* isym,
+                                 CallExpr*      call2wf,
+                                 SymbolMap&     substitutions);
+static ImplementsStmt*
+tryGenerateSatisfyingIstm(CallExpr*        callsite,
+                          Expr*            addlSite,
+                          InterfaceSymbol* isym,
+                          CallExpr*        call2wf);
 
 /*
 constraintIsSatisfiedAtCallSite() checks if 'constraint' is satisfied.
@@ -2072,6 +2155,23 @@ ConstraintSat constraintIsSatisfiedAtCallSite(CallExpr*      callsite,
         return csat;
     }
 
+  ImplementsStmt* bestIstm =
+    searchForExplicitSatisfyingIstms(callsite, addlSite, constraint, isym,
+                                     call2wf, substitutions);
+  if (!bestIstm)
+    bestIstm = tryGenerateSatisfyingIstm(callsite, addlSite, isym, call2wf);
+
+  // It is resolved, if non-null.
+  return ConstraintSat(bestIstm);
+}
+
+static ImplementsStmt*
+searchForExplicitSatisfyingIstms(CallExpr* callsite,
+                                 Expr*          addlSite,
+                                 IfcConstraint* constraint,
+                                 InterfaceSymbol* isym,
+                                 CallExpr*      call2wf,
+                                 SymbolMap&     substitutions) {
   ImplementsStmt* bestIstm = findSatisfyingIstm(isym, callsite,
                                                 constraint, call2wf);
 
@@ -2088,9 +2188,51 @@ ConstraintSat constraintIsSatisfiedAtCallSite(CallExpr*      callsite,
     if (bestIstm == nullptr)
       bestIstm = findSatisfyingIstm(isym, addlSite, constraint, call2wf);
   }
+  return bestIstm;
+}
 
-  // It is resolved, if non-null.
-  return ConstraintSat(bestIstm);;
+static ImplementsStmt*
+tryGenerateSatisfyingIstm(CallExpr*        callsite,
+                          Expr*            addlSite,
+                          InterfaceSymbol* isym,
+                          CallExpr*        call2wf) {
+  if (!isAutoImplementInternalInterface(isym)) return nullptr;
+
+  ImplementsStmt* bestIstm = checkInferredImplStmt(callsite, isym, call2wf,
+                                                   nullptr,
+                                                   /* generatedOnly */ true);
+
+  if (bestIstm == nullptr && addlSite != nullptr && addlSite != callsite) {
+    // also check from the scope of the constraint actuals' types
+    // Todo: in the following, do not call findSatisfyingIstm() again
+    // if we have already checked that scope, i.e., callsite->parentExpr.
+    for_actuals(actual, call2wf) {
+      DefExpr* defPoint = actual->qualType().type()->symbol->defPoint;
+      bestIstm = checkInferredImplStmt(defPoint, isym, call2wf, nullptr,
+                                       /* generatedOnly */ true);
+      if (bestIstm != nullptr) break;
+    }
+    // also check from the additional scope
+    if (bestIstm == nullptr)
+      bestIstm = checkInferredImplStmt(addlSite, isym, call2wf, nullptr,
+                                       /* generatedOnly */ true);
+  }
+
+  return bestIstm;
+}
+
+ConstraintSat trySatisfyConstraintAtCallsite(CallExpr*      callsite,
+                                             Expr*          addlSite,
+                                             IfcConstraint* constraint,
+                                             SymbolMap&     substitutions) {
+  inImplementsInterface++;
+  auto result = constraintIsSatisfiedAtCallSite(callsite, addlSite, constraint, substitutions);
+  inImplementsInterface--;
+  return result;
+}
+
+bool tryingToImplementInterface() {
+  return inImplementsInterface > 0;
 }
 
 static ImplementsStmt* findSatisfyingIstm(InterfaceSymbol* isym,
@@ -2113,16 +2255,19 @@ static ImplementsStmt* findSatisfyingIstm(InterfaceSymbol* isym,
   FirstPick pick = pickMatchingImplementsStmts(isym, visibleFns, call2wf);
   ImplementsStmt* bestIstm = NULL;
 
-  if (ImplementsStmt* conSuccess = pick.conSuccess)
+  if (ImplementsStmt* conSuccess = pick.conSuccess) {
     // yippee, found a satisfying concrete istm
     bestIstm = conSuccess;
-
-  else if (ImplementsStmt* genSuccess = pick.genSuccess)
+  } else if (ImplementsStmt* genSuccess = pick.genSuccess) {
     // instantiate a generic istm
     bestIstm = useGenericImplementsStmt(callsite, isym, call2wf, genSuccess);
-
-  else if (fInferImplementsStmts)
-    bestIstm = checkInferredImplStmt(callsite, isym, call2wf, pick.failure);
+  } else {
+    if (fInferImplementsStmts) {
+      bestIstm = checkInferredImplStmt(callsite, isym, call2wf,
+                                       pick.failure,
+                                       /* generatedOnly */ false);
+    }
+  }
 
   cgprintCheckedConstraint(isym, constraint, callsite, bestIstm,
         pick.conSuccess != nullptr || pick.genSuccess != nullptr);
@@ -2377,7 +2522,7 @@ void resolveConstrainedGenericSymbol(Symbol* sym, bool mustBeCG) {
     if (fn->hasFlag(FLAG_IMPLEMENTS_WRAPPER)) {
       IstmAndSuccess iss = implementsStmtForWrapperFn(fn);
       INT_ASSERT(iss.isSuccess); // remove this if there is a legitimate case
-      resolveImplementsStmt(fn, iss.istm, false, nullptr, true);
+      resolveImplementsStmt(fn, iss.istm, false, nullptr, true, false);
       return;
     }
     if (fn->isConstrainedGeneric()) {

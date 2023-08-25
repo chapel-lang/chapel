@@ -2837,12 +2837,12 @@ record DefaultSerializer {
   // Map helpers
   @chpldoc.nodoc
   proc startMap(writer: fileWriter, size: uint) throws {
-    writer._writeLiteral("{ ");
+    writer._writeLiteral("{");
   }
 
   @chpldoc.nodoc
   proc writeKey(writer: fileWriter, const key: ?) throws {
-    if !_firstThing then writer._writeLiteral(" , ");
+    if !_firstThing then writer._writeLiteral(", ");
     else _firstThing = false;
 
     writer.write(key);
@@ -2850,13 +2850,13 @@ record DefaultSerializer {
 
   @chpldoc.nodoc
   proc writeValue(writer: fileWriter, const val: ?) throws {
-    writer._writeLiteral(" : ");
+    writer._writeLiteral(": ");
     writer.write(val);
   }
 
   @chpldoc.nodoc
   proc endMap(writer: fileWriter) throws {
-    writer._writeLiteral(" }");
+    writer._writeLiteral("}");
   }
 
   // TODO: How should we handle types that don't have a format-specific
@@ -2938,11 +2938,21 @@ record DefaultDeserializer {
   }
 
   proc deserializeValue(reader: fileReader, ref val: ?readType) : void throws {
-    if Reflection.canResolveMethod(val, "deserialize", reader, this) {
+    if isNilableClassType(readType) {
+      if reader.matchLiteral("nil") {
+        val = nil;
+        return;
+      } else if val == nil {
+        val = deserializeType(reader, readType);
+      }
+    }
+
+    if isNumericType(readType) || isBoolType(readType) || isEnumType(readType) ||
+       readType == string || readType == bytes {
+      reader._readOne(reader._kind, val, here);
+    } else {
       var alias = reader.withDeserializer(new DefaultDeserializer());
       val.deserialize(reader=alias, deserializer=alias.deserializer);
-    } else {
-      val = deserializeType(reader, readType);
     }
   }
 
@@ -9262,7 +9272,8 @@ proc fileWriter.flush(out error:errorCode) {
 
 /* Assert that a ``fileReader`` has reached end-of-file and that there was no
    error doing the read.
- */
+*/
+@unstable("'assertEOF' is unstable and may be removed or modified in a future release")
 proc fileReader.assertEOF(errStr: string = "- Not at EOF") {
   var isEOF = try! this.atEOF();
   if !isEOF then

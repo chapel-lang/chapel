@@ -5046,8 +5046,8 @@ DEFINE_PRIM(SETCID) {
 DEFINE_PRIM(GETCID) {
     INT_ASSERT(call->get(1)->typeInfo() != dtNil);
 
-    if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_NO_OBJECT)   == true &&
-        call->get(1)->typeInfo()->symbol->hasFlag(FLAG_OBJECT_CLASS) == false) {
+    if (call->get(1)->getValType()->typeInfo()->symbol->hasFlag(FLAG_NO_OBJECT)   == true &&
+        call->get(1)->getValType()->typeInfo()->symbol->hasFlag(FLAG_OBJECT_CLASS) == false) {
       INT_ASSERT(0);
     }
 

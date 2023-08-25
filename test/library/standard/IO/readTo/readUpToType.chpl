@@ -13,6 +13,20 @@ proc xyType.readThis(fr) throws {
   fr.matchLiteral("|");
 }
 
+proc xyType.init(x = 0, y = 0.0) {
+  this.x = x;
+  this.y = y;
+}
+
+proc xyType.init(reader, ref deserializer) {
+  this.init();
+  readThis(reader);
+}
+
+proc xyType.deserialize(reader, ref deserializer) throws {
+  readThis(reader);
+}
+
 proc xyType.writeThis(fw) throws {
   fw.write("(", this.x, ", ", this.y, ")");
 }

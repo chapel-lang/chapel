@@ -15,12 +15,15 @@ proc test(m: map) {
   {
     f.writer().withSerializer(FormatWriter).writeln(m);
   }
-  {
+  try {
     var x = f.reader().withDeserializer(FormatReader).read(m.type);
     if m != x then
       writeln("FAILURE: ", m.type:string);
     else
       writeln("SUCCESS: ", m.type:string);
+  } catch e {
+    writeln("FAILURE: ", m.type:string);
+    writeln("  ERROR: ", e.message());
   }
 }
 
