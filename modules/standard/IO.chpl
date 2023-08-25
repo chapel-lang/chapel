@@ -6583,7 +6583,7 @@ inline proc fileWriter.readWriteNewline() throws
 
 /* Returns `true` if this fileReader is configured for binary I/O.
  */
-@deprecated(notes="'fileReader.binary()' is deprecated; check whether the fileReader is configured with a binary deserializer instead")
+@deprecated(notes="'fileReader.binary()' is deprecated; please use 'fileReader.deserializerType' to check for a binary deserializer instead")
 proc fileReader.binary(): bool do return this._binary();
 
 @chpldoc.nodoc
@@ -6597,7 +6597,7 @@ proc fileReader._binary():bool {
 
 /* Returns `true` if this fileWriter is configured for binary I/O.
  */
-@deprecated(notes="'fileWriter.binary()' is deprecated; check whether the fileWriter is configured with a binary serializer instead")
+@deprecated(notes="'fileWriter.binary()' is deprecated; please use 'fileWriter.serializerType' to check for a binary serializer instead")
 proc fileWriter.binary(): bool do return this._binary();
 
 @chpldoc.nodoc
