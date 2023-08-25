@@ -1,13 +1,9 @@
 #!/usr/bin/env bash
 #
-# Configure settings for Cray CS HDR performance testing.
+# Configure settings for HPE Apollo HDR performance testing.
 
-export CHPL_LAUNCHER_PARTITION=clx24
+export CHPL_LAUNCHCMD_NUM_CPUS=144
+export CHPL_LAUNCHCMD_QUEUE=f2401THP
 export CHPL_TARGET_CPU=none
 
-# the lengths we go to, to avoid line wrap ...
-pcca=(-performance-configs gn-ibv-large:v,gn-ibv-fast:v,gn-mpi,ofi \
-      -performance \
-      -perflabel ml- \
-      -startdate 03/11/21)
-perf_cray_cs_args=${pcca[*]}
+perf_hpe_apollo_args="-performance-configs gn-ibv-large:v,gn-ibv-fast:v,gn-mpi -perflabel ml- -startdate 03/11/21"
