@@ -545,6 +545,16 @@ module Math {
     return chpl_expm1(x);
   }
 
+  /* Returns the gamma function of the argument `x`. */
+  inline proc gamma(x: real(64)): real(64) {
+    return chpl_tgamma(x);
+  }
+
+  /* Returns the gamma function of the argument `x`. */
+  inline proc gamma(x : real(32)): real(32) {
+    return chpl_tgamma(x);
+  }
+
   /* Returns the value of the argument `x` multiplied by 2 raised to the
      argument `n` power, i.e., ``x * 2**n``. */
   inline proc ldexp(x:real(64), n:int(32)):real(64) {
@@ -1004,11 +1014,13 @@ module Math {
   }
 
   /* Returns the gamma function of the argument `x`. */
+  @deprecated("'tgamma' has been deprecated in favor of :proc:`gamma`, please use that instead")
   inline proc tgamma(x: real(64)): real(64) {
     return chpl_tgamma(x);
   }
 
   /* Returns the gamma function of the argument `x`. */
+  @deprecated("'tgamma' has been deprecated in favor of :proc:`gamma`, please use that instead")
   inline proc tgamma(x : real(32)): real(32) {
     return chpl_tgamma(x);
   }
