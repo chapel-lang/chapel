@@ -203,7 +203,9 @@ inline proc initZSyms(ref ZSym) {
 inline proc initFreeSurface(ref freeSurface) {
   if (initFromFile) {
     readNodeset(freeSurface);
-    reader.assertEOF("Input file format error (extra data at EOF)");
+    var tmp: uint(8);
+    if reader.read(tmp) then
+      halt("Input file format error (extra data at EOF)");
   } else {
     for ij in DimNodeFace do
       freeSurface += node2DToIdx(freeSurface.rank, ij, X, nodesPerEdge-1);
