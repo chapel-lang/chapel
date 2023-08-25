@@ -1,4 +1,5 @@
-compiling a file adjacent to a module named "search.chpl" when importing the
-Time module causes an import ambiguity error and an internal compiler error
+Bug: Error compiling file adjacent to one named search.chpl
+#23100
 
-See #23100
+Compiling a file adjacent to a module named "search.chpl" when importing the
+Time module causes an import ambiguity error and an internal compiler error.
