@@ -43,7 +43,7 @@ module ChapelUtil {
   export proc chpl_libraryModuleLevelCleanup() {}
 
   // Deinitialization of modules and global variables will not happen.
-  proc chpl_addModule(moduleName, deinitFun: chpl__c_fn_ptr) { }
+  proc chpl_addModule(moduleName, deinitFun: chpl_c_fn_ptr) { }
 
   export proc chpl_deinitModules() { }
 }

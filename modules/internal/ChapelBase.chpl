@@ -37,7 +37,7 @@ module ChapelBase {
   // we declare it so we can mark it unstable
   @chpldoc.nodoc
   @unstable("'c_fn_ptr' is unstable, and may be replaced by first-class procedure functionality")
-  type c_fn_ptr = chpl__c_fn_ptr;
+  type c_fn_ptr = chpl_c_fn_ptr;
 
   @chpldoc.nodoc
   @unstable
@@ -3307,7 +3307,7 @@ module ChapelBase {
   // Support for module deinit functions.
   class chpl_ModuleDeinit {
     const moduleName: c_ptrConst(c_char); // for debugging; non-null, not owned
-    const deinitFun:  chpl__c_fn_ptr;          // module deinit function
+    const deinitFun:  chpl_c_fn_ptr;          // module deinit function
     const prevModule: unmanaged chpl_ModuleDeinit?; // singly-linked list / LIFO queue
     proc writeThis(ch) throws {
       try {
