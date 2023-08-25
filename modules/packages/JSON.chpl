@@ -140,7 +140,7 @@ module JSON {
     }
 
     @chpldoc.nodoc
-    proc startList(writer: _writeType, size: uint) throws {
+    proc startList(writer: _writeType, size: int) throws {
       writer.writeLiteral("[");
       return new ListSerializer(writer);
     }
@@ -159,7 +159,7 @@ module JSON {
       //  [6, 7, 8]
       // ]
       @chpldoc.nodoc
-      proc startDim(size: uint) throws {
+      proc startDim(size: int) throws {
         _arrayDim += 1;
 
         // '_arrayFirst' will be a list of bools of a size equal to the maximum
@@ -247,7 +247,7 @@ module JSON {
     }
 
     @chpldoc.nodoc
-    proc startArray(writer: _writeType, size: uint) throws {
+    proc startArray(writer: _writeType, size: int) throws {
       return new ArraySerializer(writer);
     }
 
@@ -303,7 +303,7 @@ module JSON {
     //   "day": "night"
     // }
     @chpldoc.nodoc
-    proc startMap(writer: _writeType, size: uint) throws {
+    proc startMap(writer: _writeType, size: int) throws {
       writer._writeLiteral("{");
       return new MapSerializer(writer);
     }

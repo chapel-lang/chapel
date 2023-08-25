@@ -116,7 +116,7 @@ module DefaultAssociative {
     }
 
     proc dsiSerialWrite(f) throws where _usingSerializers(f) && !_isDefaultDeser(f) {
-      var ser = f.serializer.startList(f, dsiNumIndices:uint);
+      var ser = f.serializer.startList(f, dsiNumIndices);
       for idx in this do
         ser.writeElement(idx);
       ser.endList();
@@ -674,7 +674,7 @@ module DefaultAssociative {
     proc dsiSerialReadWrite(f, in printBraces=true, inout first = true) throws
     where _usingSerializers(f) && !_isDefaultDeser(f) {
       if f._writing {
-        var ser = f.serializer.startMap(f, dom.dsiNumIndices:uint);
+        var ser = f.serializer.startMap(f, dom.dsiNumIndices);
 
         for (key, val) in zip(this.dom, this) {
           ser.writeKey(key);
@@ -702,8 +702,9 @@ module DefaultAssociative {
     proc dsiSerialReadWrite(f, in printBraces=true, inout first = true) throws
     where _isDefaultDeser(f) {
       if f._writing {
-        var ser = f.serializer.startArray(f, dom.dsiNumIndices:uint);
-        ser.startDim(dom.dsiNumIndices:uint);
+        const size = dom.dsiNumIndices:int;
+        var ser = f.serializer.startArray(f, size);
+        ser.startDim(size);
 
         for (key, val) in zip(this.dom, this) {
           ser.writeElement(val);
@@ -934,7 +935,7 @@ module DefaultAssociative {
   proc chpl_serialReadWriteAssociativeHelper(f, arr, dom) throws
   where _usingSerializers(f) && !_isDefaultDeser(f) {
       if f._writing {
-        var ser = f.serializer.startMap(f, dom.dsiNumIndices:uint);
+        var ser = f.serializer.startMap(f, dom.dsiNumIndices);
         for key in dom {
           ser.writeKey(key);
           ser.writeValue(arr.dsiAccess(key));

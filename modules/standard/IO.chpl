@@ -2803,7 +2803,7 @@ record DefaultSerializer {
   }
   // List helpers
   @chpldoc.nodoc
-  proc ref startList(writer: fileWriter, size: uint) throws {
+  proc startList(writer: fileWriter, size: int) throws {
     writer._writeLiteral("[");
     return new ListSerializer(writer);
   }
@@ -2815,7 +2815,7 @@ record DefaultSerializer {
     var _first : bool = true;
 
     @chpldoc.nodoc
-    proc startDim(size: uint) throws {
+    proc startDim(size: int) throws {
       _arrayDim += 1;
 
       if _arrayMax >= _arrayDim then
@@ -2847,7 +2847,7 @@ record DefaultSerializer {
   // BHARSH TODO: what should we do for sparse arrays? The current format is
   // kind of weird. I'd personally lean towards writing them as a map.
   @chpldoc.nodoc
-  proc startArray(writer: fileWriter, size: uint) throws {
+  proc startArray(writer: fileWriter, size: int) throws {
     return new ArraySerializer(writer);
   }
 
@@ -2877,7 +2877,7 @@ record DefaultSerializer {
 
   // Map helpers
   @chpldoc.nodoc
-  proc startMap(writer: fileWriter, size: uint) throws {
+  proc startMap(writer: fileWriter, size: int) throws {
     writer._writeLiteral("{");
     return new MapSerializer(writer);
   }
@@ -3270,7 +3270,7 @@ record BinarySerializer {
     }
   }
 
-  proc startList(writer: fileWriter(?), size: uint) throws {
+  proc startList(writer: fileWriter(?), size: int) throws {
     writer.write(size);
     return new ListSerializer(writer);
   }
@@ -3280,7 +3280,7 @@ record BinarySerializer {
     var writer : fileWriter(false, BinarySerializer);
     const endian : ioendian;
 
-    proc startDim(size: uint) throws {
+    proc startDim(size: int) throws {
     }
     proc endDim() throws {
     }
@@ -3303,7 +3303,7 @@ record BinarySerializer {
     }
   }
 
-  proc startArray(writer: fileWriter(?), size: uint) throws {
+  proc startArray(writer: fileWriter(?), size: int) throws {
     return new ArraySerializer(writer, endian);
   }
 
@@ -3322,7 +3322,7 @@ record BinarySerializer {
     }
   }
 
-  proc startMap(writer: fileWriter(?), size: uint) throws {
+  proc startMap(writer: fileWriter(?), size: int) throws {
     writer.write(size);
     return new MapSerializer(writer);
   }

@@ -168,7 +168,7 @@ module ChplFormat {
       }
     }
     @chpldoc.nodoc
-    proc startList(writer: fileWriter, size: uint) throws {
+    proc startList(writer: fileWriter, size: int) throws {
       writer._writeLiteral("[");
       return new ListSerializer(writer);
     }
@@ -177,7 +177,7 @@ module ChplFormat {
       var writer;
       var _first = true;
 
-      proc startDim(size: uint) throws {
+      proc startDim(size: int) throws {
       }
       proc endDim() throws {
       }
@@ -194,7 +194,7 @@ module ChplFormat {
     }
 
     @chpldoc.nodoc
-    proc startArray(writer: _writeType, size: uint) throws {
+    proc startArray(writer: _writeType, size: int) throws {
       writer._writeLiteral("[");
       return new ArraySerializer(writer);
     }
@@ -224,7 +224,7 @@ module ChplFormat {
     }
 
     @chpldoc.nodoc
-    proc startMap(writer: _writeType, size: uint) throws {
+    proc startMap(writer: _writeType, size: int) throws {
       writer._writeLiteral("[");
       return new MapSerializer(writer);
     }

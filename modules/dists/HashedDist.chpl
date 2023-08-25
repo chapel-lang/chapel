@@ -911,8 +911,8 @@ class UserMapAssocArr: AbsBaseArr(?) {
   proc dsiSerialWrite(f) throws where f.serializerType != nothing {
     use IO;
     if f.serializerType == IO.DefaultSerializer {
-      var ser = f.serializer.startArray(f, dom.dsiNumIndices:uint);
-      ser.startDim(dom.dsiNumIndices:uint);
+      var ser = f.serializer.startArray(f, dom.dsiNumIndices:int);
+      ser.startDim(dom.dsiNumIndices);
 
       for locArr in locArrs {
         for val in locArr!.myElems do ser.writeElement(val);
@@ -921,7 +921,7 @@ class UserMapAssocArr: AbsBaseArr(?) {
       ser.endDim();
       ser.endArray();
     } else {
-      var ser = f.serializer.startMap(f, dom.dsiNumIndices:uint);
+      var ser = f.serializer.startMap(f, dom.dsiNumIndices);
 
       for locArr in locArrs {
         for (key, val) in zip(locArr!.myElems.domain, locArr!.myElems) {

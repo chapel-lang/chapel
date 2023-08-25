@@ -1789,7 +1789,7 @@ module DefaultRectangular {
     ref fmt = if f._writing then f.serializer else f.deserializer;
 
     var helper = if f._writing then
-      fmt.startArray(f, dom.dsiNumIndices:uint)
+      fmt.startArray(f, dom.dsiNumIndices:int)
     else
       fmt.startArray(f);
 
@@ -1799,7 +1799,7 @@ module DefaultRectangular {
       const makeStridePositive = if dom.dsiDim(dim).stride > 0 then 1:strType else (-1):strType;
 
       if f._writing then
-        helper.startDim(dom.dsiDim(dim).sizeAs(uint));
+        helper.startDim(dom.dsiDim(dim).size);
       else
         helper.startDim();
 

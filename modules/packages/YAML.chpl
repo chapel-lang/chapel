@@ -174,19 +174,19 @@ module YAML {
     }
 
     @chpldoc.nodoc
-    proc startList(writer: yamlWriter, size: uint) throws {
+    proc startList(writer: yamlWriter, size: int) throws {
       var ret = new YamlSeqSerializer(writer, emitter, context);
       ret._startSequence();
       return ret;
     }
 
     @chpldoc.nodoc
-    proc startArray(writer: yamlWriter, size: uint = 0) throws {
+    proc startArray(writer: yamlWriter, size: int) throws {
       return new YamlSeqSerializer(writer, emitter, context);
     }
 
     @chpldoc.nodoc
-    proc startMap(writer: yamlWriter, size: uint) throws {
+    proc startMap(writer: yamlWriter, size: int) throws {
       var ret = new YamlMapSerializer(writer, emitter, context);
       ret._startMapping();
       return ret;
@@ -405,7 +405,7 @@ module YAML {
     }
 
     @chpldoc.nodoc
-    proc startDim(size: uint) throws {
+    proc startDim(size: int) throws {
       this._startSequence();
     }
     @chpldoc.nodoc
