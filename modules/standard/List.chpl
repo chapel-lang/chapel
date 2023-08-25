@@ -38,7 +38,7 @@
       - remove
       - pop
       - clear
-      - sort (*unstable*)
+      - sort
 
   Additionally, all references to list elements are invalidated when the list
   is deinitialized.
