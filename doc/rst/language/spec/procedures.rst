@@ -680,10 +680,10 @@ overloads (see :ref:`Return_Intent_Overloads`).
 Default Intent for ’owned’ and ’shared’
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The default intent for ``owned`` and ``shared`` arguments is
-``const ref``. Arguments can use the ``in`` or ``const in`` intents to
-transfer or share ownership if those arguments apply to ``owned`` or
-``shared`` types.
+The default intent for :type:`~OwnedObject.owned` and
+:type:`~SharedObject.shared` arguments is ``const ref``. Arguments can use the
+``in`` or ``const in`` intents to transfer or share ownership if those arguments
+apply to :type:`~OwnedObject.owned` or :type:`~SharedObject.shared` types.
 
    *Example (owned-any-intent.chpl)*.
 
@@ -706,11 +706,12 @@ transfer or share ownership if those arguments apply to ``owned`` or
       owned SomeClass
       true
 
-If the default intent or ``const`` intent is used for an ``owned`` or
-``shared`` argument, then the compiler is allowed to optimize the procedure
-assuming that the ``owned`` or ``shared`` actual is not changing. For example,
-the compiler could insert a ``borrowed`` temporary and replace all uses of the
-actual with it.
+If the default intent or ``const`` intent is used for an
+:type:`~OwnedObject.owned` or :type:`~SharedObject.shared` argument, then the
+compiler is allowed to optimize the procedure assuming that the
+:type:`~OwnedObject.owned` or :type:`~SharedObject.shared` actual is not
+changing. For example, the compiler could insert a ``borrowed`` temporary and
+replace all uses of the formal with it.
 
 .. _Variable_Length_Argument_Lists:
 
