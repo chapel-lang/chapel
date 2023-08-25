@@ -3,7 +3,7 @@
 record RR {
   var xx: int;
   proc ref modify(ee: int) {
-    begin {
+    begin with (ref this) {
       doModify(this, ee);
     }
   }

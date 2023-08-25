@@ -1489,7 +1489,7 @@ module ChapelArray {
 
     /* Yield the array elements */
     pragma "reference to const when const this"
-    iter these() ref {
+    iter ref these() ref {
       for i in _value.these() {
         yield i;
       }
@@ -1497,7 +1497,7 @@ module ChapelArray {
 
     pragma "reference to const when const this"
     @chpldoc.nodoc
-    iter these(param tag: iterKind) ref
+    iter ref these(param tag: iterKind) ref
       where tag == iterKind.standalone &&
             __primitive("resolves", _value.these(tag=tag)) {
       for i in _value.these(tag) do
@@ -1511,7 +1511,7 @@ module ChapelArray {
     }
     pragma "reference to const when const this"
     @chpldoc.nodoc
-    iter these(param tag: iterKind, followThis, param fast: bool = false) ref
+    iter ref these(param tag: iterKind, followThis, param fast: bool = false) ref
       where tag == iterKind.follower {
       if __primitive("resolves", _value.these(tag=tag, followThis, fast=fast)) {
         for i in _value.these(tag=tag, followThis, fast=fast) do

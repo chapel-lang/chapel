@@ -12,7 +12,7 @@ record RR {
     on loc {
       this.xx = 555;
     }
-    begin {
+    begin with (ref this) {
       doModify(this, 666);
       done.writeEF(true);
     }
@@ -24,7 +24,7 @@ record RR {
     on loc {
       this.xx = ee;
     }
-    begin {
+    begin with (ref this) {
       doModify(this, ff);
       done.writeEF(true);
     }
@@ -43,7 +43,7 @@ record QQ {
     on loc {
       this.aa = cc;
     }
-    begin {
+    begin with (ref this) {
       doModify(this, dd);
       done.writeEF(true);
     }
@@ -55,7 +55,7 @@ record QQ {
     on loc {
       this.aa = 171717;
     }
-    begin {
+    begin with (ref this) {
       doModify(this, 181818);
       done.writeEF(true);
     }

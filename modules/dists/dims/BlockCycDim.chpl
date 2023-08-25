@@ -255,7 +255,7 @@ proc BlockCyclicDim.dsiNewRectangularDom1d(type idxType, param strides,
 proc BlockCyclic1dom.dsiIsReplicated1d() param do return false;
 
 proc BlockCyclic1dom.dsiNewLocalDom1d(type stoIndexT, locId: locIdT) {
-  const result = new BlockCyclic1locdom(idxType = this.idxType,
+  var result = new BlockCyclic1locdom(idxType = this.idxType,
                              stoIndexT = stoIndexT,
                              locId = locId);
   return result;
@@ -568,7 +568,7 @@ inline proc BlockCyclic1dom._dsiStorageHigh(locId: locIdT): stoIndexT {
   return hiCycNo * storagePerCycle:stoIndexT + hiIdxAdj;
 }
 
-proc BlockCyclic1locdom.dsiSetLocalIndices1d(globDD, locId: locIdT): range(stoIndexT) {
+proc ref BlockCyclic1locdom.dsiSetLocalIndices1d(globDD, locId: locIdT): range(stoIndexT) {
   const stoLow = globDD._dsiStorageLow(locId);
   const stoHigh = globDD._dsiStorageHigh(locId);
 

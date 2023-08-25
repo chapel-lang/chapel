@@ -172,10 +172,32 @@ module ChapelTuple {
     return __primitive("get svec member", this, i);
   }
 
+  pragma "star tuple accessor"
+  @chpldoc.nodoc
+  proc const _tuple.this(i : integral) const ref {
+    if !isHomogeneousTuple(this) then
+      compilerError("invalid access of non-homogeneous tuple by runtime value");
+    if boundsChecking then
+      if i < 0 || i > size-1 then
+        halt("tuple access out of bounds: ", i);
+    return __primitive("get svec member", this, i);
+  }
+
   pragma "reference to const when const this"
   pragma "star tuple accessor"
   @chpldoc.nodoc
   proc ref _tuple.this(i : bool) ref {
+    if !isHomogeneousTuple(this) then
+      compilerError("invalid access of non-homogeneous tuple by runtime value");
+    if boundsChecking then
+      if i < 0 || i > size-1 then
+        halt("tuple access out of bounds: ", i);
+    return __primitive("get svec member", this, i);
+  }
+
+  pragma "star tuple accessor"
+  @chpldoc.nodoc
+  proc const _tuple.this(i : bool) const ref {
     if !isHomogeneousTuple(this) then
       compilerError("invalid access of non-homogeneous tuple by runtime value");
     if boundsChecking then
@@ -225,7 +247,7 @@ module ChapelTuple {
   }
 
   @chpldoc.nodoc
-  iter ref _tuple.these(param tag:iterKind)
+  iter _tuple.these(param tag:iterKind)
       where tag == iterKind.leader
   {
 

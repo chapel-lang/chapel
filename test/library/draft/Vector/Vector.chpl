@@ -1082,7 +1082,7 @@ module Vector {
       const chunkSize = floor(osz / numTasks):int;
       const trailing = osz - chunkSize * numTasks;
 
-      coforall tid in 0..#numTasks {
+      coforall tid in 0..#numTasks with (ref this) {
         var chunk = _computeChunk(tid, chunkSize, trailing);
         for i in chunk(0) do
           yield this[i];
