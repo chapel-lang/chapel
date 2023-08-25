@@ -2,7 +2,4 @@
 
 use Time;
 
-var s = new stopwatch();
-s.start(); s.stop(); s.elapsed();
-
 writeln("hello");
