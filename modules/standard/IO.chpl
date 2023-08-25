@@ -3289,7 +3289,7 @@ record BinarySerializer {
       writer.write(element);
     }
 
-    proc writeBulkElements(data: c_ptr(?eltType), numElements: uint) throws
+    proc writeBulkElements(data: c_ptr(?eltType), numElements: int) throws
     where isNumericType(eltType) {
       if endian == ioendian.native {
         const n = c_sizeof(eltType)*numElements;
@@ -3523,7 +3523,7 @@ record BinaryDeserializer {
       return reader.read(eltType);
     }
 
-    proc readBulkElements(data: c_ptr(?eltType), numElements: uint) throws
+    proc readBulkElements(data: c_ptr(?eltType), numElements: int) throws
     where isNumericType(eltType) {
       if endian == ioendian.native {
         const n = c_sizeof(eltType)*numElements;
