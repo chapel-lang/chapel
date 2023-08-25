@@ -1142,7 +1142,7 @@ module AutoMath {
      fewer conditionals will be evaluated at run time.
   */
   pragma "last resort"
-  @deprecated(notes="In an upcoming release 'divceil' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it.  Additionally its argument names will also change with this move")
+  @deprecated(notes="In an upcoming release 'divceil' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it.  Additionally its name and argument names will also change with this move")
   proc divceil(param m: integral, param n: integral) param do
     return chpl_divceil(m, n);
 
@@ -1164,7 +1164,7 @@ module AutoMath {
      fewer conditionals will be evaluated at run time.
   */
   pragma "last resort"
-  @deprecated(notes="In an upcoming release 'divceil' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it.  Additionally its argument names will also change with this move")
+  @deprecated(notes="In an upcoming release 'divceil' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it.  Additionally its name and argument names will also change with this move")
   proc divceil(m: integral, n: integral) do return chpl_divceil(m, n);
 
   proc chpl_divceil(m: integral, n: integral) do return
@@ -1184,7 +1184,7 @@ module AutoMath {
     (not 0) and are of a signed integer type (not `uint`).
   */
   pragma "last resort"
-  @deprecated(notes="In an upcoming release 'divceilpos' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it.  Additionally its argument names will also change with this move")
+  @deprecated(notes="In an upcoming release 'divceilpos' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it.  Additionally its name and argument names will also change with this move")
   proc divceilpos(m: integral, n: integral) {
     return chpl_divceilpos(m, n);
   }
@@ -1205,7 +1205,7 @@ module AutoMath {
      fewer conditionals will be evaluated at run time.
   */
   pragma "last resort"
-  @deprecated(notes="In an upcoming release 'divfloor' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it.  Additionally its argument names will also change with this move")
+  @deprecated(notes="In an upcoming release 'divfloor' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it.  Additionally its name and argument names will also change with this move")
   proc divfloor(param m: integral, param n: integral) param do return
     chpl_divfloor(m, n);
 
@@ -1227,7 +1227,7 @@ module AutoMath {
      fewer conditionals will be evaluated at run time.
   */
   pragma "last resort"
-  @deprecated(notes="In an upcoming release 'divfloor' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it.  Additionally its argument names will also change with this move")
+  @deprecated(notes="In an upcoming release 'divfloor' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it.  Additionally its name and argument names will also change with this move")
   proc divfloor(m: integral, n: integral) do return chpl_divfloor(m, n);
 
   proc chpl_divfloor(m: integral, n: integral) do return
@@ -1247,7 +1247,7 @@ module AutoMath {
     (not 0) and are of a signed integer type (not `uint`).
   */
   pragma "last resort"
-  @deprecated(notes="In an upcoming release 'divfloorpos' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it.  Additionally its argument names will also change with this move")
+  @deprecated(notes="In an upcoming release 'divfloorpos' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it.  Additionally its name and argument names will also change with this move")
   proc divfloorpos(m: integral, n: integral) {
     return chpl_divfloorpos(m, n);
   }
