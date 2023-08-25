@@ -33,10 +33,12 @@
 #define LAUNCH_PATH_HELP WRAP_TO_STR(LAUNCH_PATH)
 #define WRAP_TO_STR(x) TO_STR(x)
 #define TO_STR(x) #x
+#define CHPL_WALLTIME_FLAG "--walltime"
+
+static char* walltime = NULL;
 
 #define basePBSFilename ".chpl-pbs-qsub-"
 #define baseExpectFilename ".chpl-expect-"
-#define baseSysFilename ".chpl-sys-"
 
 char pbsFilename[FILENAME_MAX];
 char expectFilename[FILENAME_MAX];
@@ -94,7 +96,9 @@ static void genNumLocalesOptions(FILE* pbsFile, qsubVersion qsub,
                                  int32_t numLocales,
                                  int32_t numCoresPerLocale) {
   char* queue = getenv("CHPL_LAUNCHER_QUEUE");
-  char* walltime = getenv("CHPL_LAUNCHER_WALLTIME");
+  if (!walltime) {
+    walltime = getenv("CHPL_LAUNCHER_WALLTIME");
+  }
 
   if (queue)
     fprintf(pbsFile, "#PBS -q %s\n", queue);
@@ -232,6 +236,15 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
 
 int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
                            int32_t lineno, int32_t filename) {
+
+  if (!strcmp(argv[argNum], CHPL_WALLTIME_FLAG)) {
+    walltime = argv[argNum+1];
+    return 2;
+  } else if (!strncmp(argv[argNum], CHPL_WALLTIME_FLAG"=", strlen(CHPL_WALLTIME_FLAG))) {
+    walltime = &(argv[argNum][strlen(CHPL_WALLTIME_FLAG)+1]);
+    return 1;
+  }
+
   return 0;
 }
 
