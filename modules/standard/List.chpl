@@ -36,9 +36,9 @@
 
       - insert
       - remove
-      - sort
       - pop
       - clear
+      - sort
 
   Additionally, all references to list elements are invalidated when the list
   is deinitialized.
@@ -1563,6 +1563,7 @@ module List {
 
       :arg comparator: A comparator used to sort this list.
     */
+    @unstable("'list.sort' is unstable and may be replaced or modified in a future release")
     proc ref sort(comparator: ?rec=Sort.defaultComparator) {
       on this {
         _enter();
