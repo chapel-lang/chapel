@@ -54,16 +54,17 @@ proc main(){
         // Create the arrays in unified memory
         var A, B, C :[0..#elemsInBlock] real(32);
 
-        // Pre slice all the slices of host that we will need so the needed to slice
-        // is not counted.
+      // Pre slice all the slices of host that we will need so the needed to slice
+      // is not counted.
 
-        // Calc the number of iterations needed
-        var numIterations = maxProblemSize/ blkSize;
-        // Make array of sliceshost arrays
-        var hostArraysArray: [0..#numIterations][0..#elemsInBlock] real(32);
-        for i in 0..#numIterations {
-          hostArraysArray[i] = hos[elemsInBlock*i..#elemsInBlock];
-        }
+      // Calc the number of iterations needed
+      var numIterations = maxProblemSize/ blkSize;
+      // Make array of sliceshost arrays
+      var hostArraysArray: [0..#numIterations][0..#elemsInBlock] real(32);
+      for i in 0..#numIterations {
+        hostArraysArray[i] = hos[elemsInBlock*i..#elemsInBlock];
+      }
+
 
         if noisy {
           writeln(" >>> Executing Triad with arrays of length ", numMaxFloats,
@@ -167,7 +168,7 @@ proc main(){
   }
   else {
     stopGpuDiagnostics();
-    assertGpuDiags(kernel_launch_um=527, kernel_launch_aod=1049);
+    assertGpuDiags(kernel_launch_um=520, kernel_launch_aod=1049);
   }
 }
 

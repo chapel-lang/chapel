@@ -94,8 +94,8 @@ proc main() {
 
           kernelTimer.start();
           // Triad computation for left half
+          @assertOnGpu()
           foreach i in 0..<elemsInBlock {
-            assertOnGpu();
             C0[i] = A0[i] + alpha * B0[i];
           }
           kernelTimer.stop();
@@ -108,8 +108,8 @@ proc main() {
             gpuCommWait(ev1);
             gpuCommWait(ev2);
             kernelTimer.start();
+            @assertOnGpu()
             foreach i in 0..<elemsInBlock {
-              assertOnGpu();
               C1[i] = A1[i] + alpha * B1[i];
             }
             kernelTimer.stop();
@@ -198,7 +198,7 @@ proc main() {
   }
   else {
     stopGpuDiagnostics();
-    assertGpuDiags(kernel_launch=269, host_to_device=258, device_to_host=128,
-        device_to_device=0);
+    assertGpuDiags(kernel_launch_um=263, kernel_launch_aod=269,
+                   host_to_device=258, device_to_host=128, device_to_device=0);
   }
 }
