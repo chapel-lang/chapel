@@ -75,9 +75,9 @@ getChplEnvImpl(const InputMap& varMap,
   command += std::string(chplHome) + "/util/printchplenv --all --internal --no-tidy --simple";
 
   auto commandOutput = getCommandOutput(command);
-  if (auto err = commandOutput.getError()) {
+  if (!commandOutput) {
     // forward error code
-    return err;
+    return commandOutput.getError();
   }
   ChplEnvMap result;
   parseChplEnv(commandOutput.get(), result);

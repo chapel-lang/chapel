@@ -1,5 +1,4 @@
 warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly
 0 1 2 3 4 5 6 7 8 9
-savec_dir/chpl__gpu.o
 savec_dir/chpl__gpu.s
 savec_dir/chpl__module.o

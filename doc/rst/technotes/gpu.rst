@@ -218,6 +218,12 @@ values (see the "processor" column). For NVIDIA, see the `CUDA Programming
 Guide
 <https://docs.nvidia.com/cuda/cuda-c-programming-guide/#features-and-technical-specifications>`_.
 
+For NVIDIA, the ``CHPL_GPU_ARCH`` variable can also be set to a comma-separated
+list. This causes the Chapel compiler to generate device code for each of the
+given compute capabilities, and to bundle the different versions in a single
+executable. When the program is executed, the compute capability best suited
+for the available GPU will be loaded by the CUDA runtime. Support for this
+feature for AMD GPUs is planned, but not currently available.
 
 CPU as Device Mode
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -412,6 +418,9 @@ improvements in the future.
 * Intel GPUs are not supported, yet.
 
 * For AMD GPUs:
+
+    * It's not currently possible to compile for multiple AMD GPU architectures
+      at the same time.
 
     * Certain 64-bit math functions are unsupported. To see what does
       and doesn't work see `this test
