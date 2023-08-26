@@ -1,3 +1,6 @@
+
+config param testTryCast = false;
+
 var rb = false..true;
 tryCasts(rb);
 
@@ -36,7 +39,7 @@ proc tryCast(r, type t) {
 
   writeln("casting ", r, " to range of ", t:string);
  try {
-  var res = r: range(t);
+  var res = if testTryCast then r.tryCast(range(t)) else r: range(t);
   printRange(res);
  } catch e {
   writeln("  ", e); writeln();
@@ -44,7 +47,7 @@ proc tryCast(r, type t) {
 
   var sa   = r: range(r.idxType, strides=strideKind.any);   // always succeeds
  try {
-  var sneg = sa: range(r.idxType, strides=strideKind.negative); // alw. throws
+  var sneg = sa.tryCast(range(r.idxType, strides=strideKind.negative));//throws
   printRange(sneg);
  } catch e {
   assert(e.message() == "bad cast from stride 1 to strideKind.negative");
