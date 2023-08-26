@@ -15,7 +15,7 @@ source $CWD/common-hpe-apollo.bash
 source $CWD/common-perf-hpe-apollo-hdr.bash
 
 export CHPL_GASNET_SEGMENT=fast
-export GASNET_PHYSMEM_MAX=124G
+export GASNET_PHYSMEM_MAX="0.90"
 
 nightly_args="${nightly_args} -no-buildcheck"
 perf_args="-performance-description gn-ibv-fast -numtrials 1"
