@@ -454,6 +454,10 @@ module Tensor {
         const data = lhs.data / c;
         return new Tensor(data);
     }
+    operator -(lhs: Tensor(?d,?eltType), c: eltType) {
+        const data = lhs.data - c;
+        return new Tensor(data);
+    }
 
     // Sigmoid function
     proc _sigmoid(x: real): real {
@@ -529,7 +533,7 @@ module Tensor {
 
     // Shuffle a tensor in place
     proc shuffle(ref x) {
-        Random.shuffle(x,seed=5);
+        Random.shuffle(x,seed=(rng.getNext() * 10):int);
     }
 
     // Get the max value index in an array

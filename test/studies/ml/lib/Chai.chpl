@@ -51,8 +51,8 @@ module Chai {
             inputSize_ = inputSize;
             const stddevB = sqrt(2.0 / outputSize);
             const stddevW = sqrt(2.0 / (inputSize + outputSize));
-            bias = tn.zeros(outputSize);// tn.randn(outputSize); // tn.randn(this.outputSize); // tn.randn(outputSize,mu=0.0,sigma=stddevB);
-            weights = tn.randn(outputSize,inputSize) / outputSize; // this.weights = tn.randn(this.outputSize, inputSize,mu=0.0,sigma=stddevW);
+            bias = tn.zeros(outputSize); // (tn.randn(outputSize) - 0.5) / outputSize; // tn.randn(this.outputSize); // tn.randn(outputSize,mu=0.0,sigma=stddevB);
+            weights = tn.randn(outputSize,inputSize) / (inputSize ** 2.0); // this.weights = tn.randn(this.outputSize, inputSize,mu=0.0,sigma=stddevW);
             biasGrad = tn.zeros(outputSize);
             weightsGrad = tn.zeros(outputSize, inputSize);
             uninitialized = false;
@@ -97,9 +97,6 @@ module Chai {
                 const newDelta = weights.transpose() * delta;
                 biasGradient    += delta.data;
                 const wg =  delta * input.transpose();
-                writeln("weights: ", weights.shape);
-                writeln("wg: ", wg.shape);
-                writeln("newDelta: ", newDelta.shape);
                 weightsGradient += wg.data;
                 newDeltas[i] = newDelta;
                 // const X = input;
@@ -431,7 +428,7 @@ module Chai {
             }
             return output;
         }
-        proc forwardPropBatch(batch: [] Tensor) {
+        proc forwardPropBatch(batch: [] ?tensorType) where isSubtype(tensorType, Tensor) {
             var outputs: [batch.domain] batch.eltType;
             for i in outputs.domain {
                 outputs[i] = this.forwardProp(batch[i]);
@@ -448,7 +445,7 @@ module Chai {
             }
             return output;
         }
-        proc backwardBatch(deltas: [] Tensor, inputs: [] Tensor) {
+        proc backwardBatch(deltas: [] ?tensorType1, inputs: [] ?tensorType2) where isSubtype(tensorType1, Tensor) && isSubtype(tensorType2, Tensor) {
             var newDeltas: [inputs.domain] inputs.eltType;
             for i in newDeltas.domain {
                 newDeltas[i] = this.backward(deltas[i],inputs[i]);

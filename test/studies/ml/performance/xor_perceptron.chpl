@@ -5,8 +5,8 @@ import Math;
 
 tn.seedRandom(0);
 
-config const epochs = 1000;
-config const learnRate = 0.05;
+config const epochs = 10000;
+config const learnRate = 1.5;
 
 // var network = new shared chai.Network(
 //     (
@@ -26,11 +26,11 @@ config const learnRate = 0.05;
 // );
 var net = new shared chai.Network(
     (
-        new shared chai.Dense(3),
+        new shared chai.Dense(6),
+        // new shared chai.Sigmoid(),
+        // new shared chai.Dense(6),
         new shared chai.Sigmoid(),
-        new shared chai.Dense(4),
-        new shared chai.Sigmoid(),
-        new shared chai.Dense(2),
+        new shared chai.Dense(1),
         new shared chai.Sigmoid()
     )
 );
@@ -60,7 +60,7 @@ proc train(batch: [] (Tensor(1),Tensor(1)), lr:real) {
 
     net.resetGradients();
     net.backwardPropBatch(inputs,deltas);
-    net.optimize(lr);
+    net.optimize(-lr / batch.size);
 
     const loss = (+ reduce losses) / batch.size;
 
@@ -70,7 +70,7 @@ proc train(batch: [] (Tensor(1),Tensor(1)), lr:real) {
 proc test(batch: [] (Tensor(1),Tensor(1))) {
     const (losses,lossesGrad, outputs) = forward( batch);
     for ((input,expected),output) in zip(batch,outputs) {
-        writeln(input.data, " -> ", output.data, " [", tn.argmax(expected.data) ,"]");
+        writeln(input.data, " -> ", output.data, " [", expected.data ,"]");
     }
 }
 
@@ -81,30 +81,28 @@ inputs[1] = [0.0,1.0];
 inputs[2] = [1.0,0.0];
 inputs[3] = [1.0,1.0];
 
+for x in inputs {
+    x.data -= 0.5;
+    x.data *= 1.2;
+}
+
 var outputs: [0..#4] Tensor(1);
-outputs[0] = [1.0,0.0];
-outputs[1] = [0.0,1.0];
-outputs[2] = [0.0,1.0];
-outputs[3] = [1.0,0.0];
-
-var t = tn.randn(3,2);
-writeln(t, " ",t.shape);
-writeln(t.transpose(), " ",t.transpose().shape);
-
-var dy = tn.randn(3);
-var dx = t.transpose() * dy;
-writeln(dx, " ",dx.shape);
+outputs[0] = [0.0001];
+outputs[1] = [1.0];
+outputs[2] = [1.0];
+outputs[3] = [0.0001];
 
 
 
-// halt(0);
-
-const batch = for a in zip(inputs,outputs) do a;
+var batch = for a in zip(inputs,outputs) do a;
 net.forwardPropBatch(inputs);
 
+var batchSizes = [2,3];// [1,2,3,4];
 
 for e in 1..epochs {
-    const loss = train(batch,learnRate);
+    tn.shuffle(batch);
+    tn.shuffle(batchSizes);
+    const loss = train(batch[0..#(batchSizes[0])],learnRate);
     writeln("Epoch: ", e, " Loss: ", loss);
 }
 
