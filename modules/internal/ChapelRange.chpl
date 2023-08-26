@@ -1720,7 +1720,7 @@ proc range.safeCast(type t: range(?)) {
 proc range.tryCast(type t: range(?)) where chpl_tryCastIsSafe(this, t) {
   const r = this;
   checkBounds(t, r);
-  checkEnumIdx(t, r);
+  checkEnumBoolIdx(t, r);
 
   // todo: unify with the non-throwing overload of `operator :` ?
   // todo: also when 'r' is over fully-concrete enum, see chpl_idxCastIsSafe
@@ -1735,7 +1735,7 @@ proc range.tryCast(type t: range(?)) where chpl_tryCastIsSafe(this, t) {
 proc range.tryCast(type t: range(?)) throws where !chpl_tryCastIsSafe(this, t){
   const r = this;
   checkBounds(t, r);
-  checkEnumIdx(t, r);
+  checkEnumBoolIdx(t, r);
 
   var tmp: t;
   type srcType = r.idxType,
@@ -1857,6 +1857,12 @@ private proc checkBounds(type toType, from) {
   if toType.bounds != from.bounds then
     compilerError("cannot cast range from boundKind.",
                  from.bounds:string, " to boundKind.", toType.bounds:string);
+}
+
+private proc checkEnumBoolIdx(type toType, from) {
+  checkEnumIdx(toType, from);
+  if toType.idxType == bool && from.idxType != bool then // see #22905
+    compilerError("'tryCast' to a range type with idxType=bool is not currently supported");
 }
 
 private proc checkEnumIdx(type toType, from) {

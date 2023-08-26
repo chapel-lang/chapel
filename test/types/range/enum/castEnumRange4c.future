@@ -1,0 +1,5 @@
+bug: range.tryCast() misinterpretes enum associated values that are >max(int)
+#22842
+
+See specifically:
+https://github.com/chapel-lang/chapel/issues/22842#issuecomment-1694430574

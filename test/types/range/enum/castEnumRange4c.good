@@ -1,0 +1,16 @@
+castEnumRange4c.chpl:9: In function 'test':
+castEnumRange4c.chpl:12: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+  castEnumRange4c.chpl:18: called as test(eValue: eSigned, type idxType = int(64))
+castEnumRange4c.chpl:9: In function 'test':
+castEnumRange4c.chpl:12: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+  castEnumRange4c.chpl:19: called as test(eValue: eSigned, type idxType = uint(64))
+castEnumRange4c.chpl:9: In function 'test':
+castEnumRange4c.chpl:12: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+  castEnumRange4c.chpl:20: called as test(eValue: eUnsigned, type idxType = int(64))
+castEnumRange4c.chpl:9: In function 'test':
+castEnumRange4c.chpl:12: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+  castEnumRange4c.chpl:21: called as test(eValue: eUnsigned, type idxType = uint(64))
+-1..-1
+IllegalArgumentError: bad cast from int(64) less than 0 to uint(64)
+IllegalArgumentError: bad cast from uint(64) with a value greater than the maximum of int(64) to int(64)
+18446744073709551615..18446744073709551615

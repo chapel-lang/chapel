@@ -1,0 +1,8 @@
+localSubdomains.chpl:6: warning: 'hasSingleLocalSubdomain' on domains is unstable and may change in the future
+localSubdomains.chpl:7: warning: 'localSubdomains' on domains is unstable and may change in the future
+localSubdomains.chpl:9: warning: 'hasSingleLocalSubdomain' on arrays is unstable and may change in the future
+localSubdomains.chpl:10: warning: 'localSubdomains' on arrays is unstable and may change in the future
+true
+{1..3}
+true
+{1..3}
