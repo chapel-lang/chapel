@@ -81,16 +81,16 @@ inputs[1] = [0.0,1.0];
 inputs[2] = [1.0,0.0];
 inputs[3] = [1.0,1.0];
 
-for x in inputs {
-    x.data -= 0.5;
-    x.data *= 1.2;
-}
+// for x in inputs {
+//     x.data -= 0.5;
+//     x.data *= 2.0;
+// }
 
 var outputs: [0..#4] Tensor(1);
-outputs[0] = [0.0001];
+outputs[0] = [0.0];
 outputs[1] = [1.0];
 outputs[2] = [1.0];
-outputs[3] = [0.0001];
+outputs[3] = [0.0];
 
 
 
