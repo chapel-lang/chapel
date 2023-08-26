@@ -51,8 +51,8 @@ module Chai {
             inputSize_ = inputSize;
             const stddevB = sqrt(2.0 / outputSize);
             const stddevW = sqrt(2.0 / (inputSize + outputSize));
-            bias = tn.randn(outputSize); // tn.randn(this.outputSize); // tn.randn(outputSize,mu=0.0,sigma=stddevB);
-            weights = tn.randn(outputSize,inputSize); // this.weights = tn.randn(this.outputSize, inputSize,mu=0.0,sigma=stddevW);
+            bias = tn.zeros(outputSize);// tn.randn(outputSize); // tn.randn(this.outputSize); // tn.randn(outputSize,mu=0.0,sigma=stddevB);
+            weights = tn.randn(outputSize,inputSize) / outputSize; // this.weights = tn.randn(this.outputSize, inputSize,mu=0.0,sigma=stddevW);
             biasGrad = tn.zeros(outputSize);
             weightsGrad = tn.zeros(outputSize, inputSize);
             uninitialized = false;
@@ -96,9 +96,25 @@ module Chai {
             forall (delta,input,i) in zip(deltas,inputs,0..) with (ref this, + reduce biasGradient, + reduce weightsGradient) {
                 const newDelta = weights.transpose() * delta;
                 biasGradient    += delta.data;
-                const wg = input * delta.transpose();
-                weightsGradient += wg.transpose().data;
+                const wg =  delta * input.transpose();
+                writeln("weights: ", weights.shape);
+                writeln("wg: ", wg.shape);
+                writeln("newDelta: ", newDelta.shape);
+                weightsGradient += wg.data;
                 newDeltas[i] = newDelta;
+                // const X = input;
+                // const dL_dY = delta;
+                // const dL_dX = (weights.transpose() * dL_dY).reshape(input.domain);
+                // const dL_dW = (X.transpose().transpose() * dL_dY.transpose()).transpose();
+                // const dL_dB = dL_dY;
+
+                // if dL_dX.shape != input.shape then tn.err("Dense backwardBatch: dL_dX.shape != input.shape");
+                // if dL_dW.shape != weights.shape then tn.err("Dense backwardBatch: dL_dW.shape != weights.shape");
+                // if dL_dB.shape != bias.shape then tn.err("Dense backwardBatch: dL_dB.shape != bias.shape");
+
+                // newDeltas[i] = dL_dX;
+                // biasGradient += dL_dY.data;
+                // weightsGradient += dL_dW.data;
             }
             this.biasGrad.data += biasGradient;
             this.weightsGrad.data += weightsGradient;
@@ -106,8 +122,8 @@ module Chai {
         }
 
         proc ref optimize(mag: real(64)) {
-            this.bias.data -= mag * this.biasGrad.data;
-            this.weights.data -= mag * this.weightsGrad.data;
+            this.bias -= mag * this.biasGrad;
+            this.weights -= mag * this.weightsGrad;
         }
         proc ref resetGradients() {
             this.biasGrad.data = 0;
@@ -208,7 +224,7 @@ module Chai {
             }
         }
 
-        proc forwardProp(batch: [] Tensor(3)): [] Tensor(3) {
+        proc forwardPropBatch(batch: [] Tensor(3)): [] Tensor(3) {
             const batchSize = batch.size;
             var convs: [0..#batchSize] Tensor(3);
             forall (image,i) in zip(batch,0..) {
@@ -267,7 +283,7 @@ module Chai {
             return dL_dX;
         }
 
-        proc backward(deltas: [] Tensor(3), imagess: [] Tensor(3)): [] Tensor(3) {
+        proc backwardBatch(deltas: [] Tensor(3), imagess: [] Tensor(3)): [] Tensor(3) {
             const batchSize = deltas.size;
             var newDeltas: [0..#batchSize] Tensor(3);
             var filtersGrad = this.filtersGrad;
@@ -326,7 +342,7 @@ module Chai {
 
     class MaxPool {
 
-        proc forwardProp(batch: [] Tensor(3)): [] Tensor(3) {
+        proc forwardPropBatch(batch: [] Tensor(3)): [] Tensor(3) {
             const batchSize = batch.size;
             var pools: [0..#batchSize] Tensor(3);
             forall (convs,i) in zip(batch,0..) {
@@ -381,7 +397,7 @@ module Chai {
             return output;
         }
 
-        proc backward(deltas: [] Tensor(3), convs: [] Tensor(3)): [] Tensor(3) {
+        proc backwardBatch(deltas: [] Tensor(3), convs: [] Tensor(3)): [] Tensor(3) {
             const batchSize = deltas.size;
             var newDeltas: [0..#batchSize] Tensor(3);
             forall (delta,convs,i) in zip(deltas,convs,0..) {
@@ -415,7 +431,7 @@ module Chai {
             }
             return output;
         }
-        proc forwardProp(batch: [] Tensor) {
+        proc forwardPropBatch(batch: [] Tensor) {
             var outputs: [batch.domain] batch.eltType;
             for i in outputs.domain {
                 outputs[i] = this.forwardProp(batch[i]);
@@ -432,7 +448,7 @@ module Chai {
             }
             return output;
         }
-        proc backward(deltas: [] Tensor, inputs: [] Tensor) {
+        proc backwardBatch(deltas: [] Tensor, inputs: [] Tensor) {
             var newDeltas: [inputs.domain] inputs.eltType;
             for i in newDeltas.domain {
                 newDeltas[i] = this.backward(deltas[i],inputs[i]);
@@ -492,7 +508,7 @@ module Chai {
             this.outputSize = outputSize;
         }
 
-        proc forwardProp(batch: [] Tensor(1)): [] Tensor(1) {
+        proc forwardPropBatch(batch: [] Tensor(1)): [] Tensor(1) {
             const batchSize = batch.size;
             var outputs: [0..#batchSize] Tensor(1);
             forall (input,i) in zip(batch,0..) {
@@ -559,7 +575,7 @@ module Chai {
             return dL_dIn.reshape(input.domain);
         }
 
-        proc backward(deltas: [] Tensor(1), inputs: [] Tensor(?)): [] Tensor(1) {
+        proc backwardBatch(deltas: [] Tensor(1), inputs: [] Tensor(?)): [] Tensor(1) {
             const batchSize = deltas.size;
             var newDeltas: [0..#batchSize] Tensor(?);
             var weightsGrad = this.weightsGrad;

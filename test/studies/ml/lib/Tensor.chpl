@@ -9,11 +9,12 @@ module Tensor {
 
     param debugPrint = false;
 
-    var rng = new IainsRNG(5); // new Random.NPBRandom.NPBRandomStream(eltType=real(64),seed=5,parSafe=true);
+    // var rng = new IainsRNG(5); 
+    var rng = new Random.NPBRandom.NPBRandomStream(eltType=real(64),seed=5);
     
     proc seedRandom(seed) {
-        rng = new IainsRNG(seed);
-        // rng = new Random.NPBRandom.NPBRandomStream(eltType=real(64),seed=5,parSafe=true);
+        // rng = new IainsRNG(seed);
+        rng = new Random.NPBRandom.NPBRandomStream(eltType=real(64),seed=5);
         // rng = new IainsRNG(5);
     }
 
@@ -420,7 +421,7 @@ module Tensor {
         const (p,) = lhs.shape;
         const (m,n) = rhs.shape;
         if m != 1 then
-            err("Trying to apply a vector of shape ",lhs.shape, " to a matrix of shape ", rhs.shape);
+            err("Trying to apply a vector of shape ",lhs.shape, " to a matrix of shape ", rhs.shape, ". m needs to be 1");
         
         var b = new Tensor(rank=2,eltType=eltType);
         b.reshapeDomain({0..#p, 0..#n});
@@ -428,6 +429,25 @@ module Tensor {
             b[i,j] = lhs[i] * rhs[0,j];
         }
         return b; 
+    }
+
+    // Matrix-matrix multiplication
+    operator *(lhs: Tensor(2,?eltType), rhs: Tensor(2,eltType)): Tensor(2,eltType) {
+        const (m,n) = lhs.shape;
+        const (p,q) = rhs.shape;
+        if n != p then
+            err("Trying to apply a matrix of shape ",lhs.shape, " to a matrix of shape ", rhs.shape);
+
+        const a = lhs.data;
+        const b = rhs.data;
+        var c = new Tensor(rank=2,eltType=eltType);
+        c.reshapeDomain({0..#m, 0..#q});
+        forall (i,j) in c.domain with (ref c) {
+            const row = a[i,..];
+            const col = b[..,j];
+            c[i,j] = + reduce (row * col);
+        }
+        return c;
     }
 
     operator /(lhs: Tensor(?d,?eltType), c: eltType) {

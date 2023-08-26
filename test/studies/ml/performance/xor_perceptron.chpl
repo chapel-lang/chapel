@@ -5,8 +5,8 @@ import Math;
 
 tn.seedRandom(0);
 
-config const epochs = 10;
-config const learnRate = 0.01;
+config const epochs = 1000;
+config const learnRate = 0.05;
 
 // var network = new shared chai.Network(
 //     (
@@ -26,9 +26,9 @@ config const learnRate = 0.01;
 // );
 var net = new shared chai.Network(
     (
-        new shared chai.Dense(2),
-        new shared chai.Sigmoid(),
         new shared chai.Dense(3),
+        new shared chai.Sigmoid(),
+        new shared chai.Dense(4),
         new shared chai.Sigmoid(),
         new shared chai.Dense(2),
         new shared chai.Sigmoid()
@@ -43,14 +43,11 @@ proc forward(batch: [] (Tensor(1),Tensor(1))) {
     var losses: [0..#batch.size] real;
     var lossesGrad: [0..#batch.size] Tensor(1);
 
-    for ((input,expected),idx) in zip(batch,0..) {
+    forall ((input,expected),idx) in zip(batch,0..) with (ref net) {
         const output = net.forwardProp(input);
-        output.degen("output");
         outputs[idx] = output;
         losses[idx] = (+ reduce ((expected - output).data ** 2.0)) / output.domain.size;
-        (new Tensor(losses)).degen("losses");
         lossesGrad[idx] = expected - output;
-        lossesGrad[idx].degen("lossesGrad");
     }
     return (losses, lossesGrad, outputs);
 }
@@ -103,33 +100,12 @@ writeln(dx, " ",dx.shape);
 // halt(0);
 
 const batch = for a in zip(inputs,outputs) do a;
-tn.seedRandom(5);
 net.forwardPropBatch(inputs);
 
-for n in net.layers {
-    if n.type == shared chai.Dense then writeln(n.weights,n.weights.shape);
-}
 
 for e in 1..epochs {
-    tn.seedRandom(5);
-
-    // {
-    //     const (l,lg,o) = forward(batch);
-    //     const lo = (+ reduce l) / batch.size;
-    //     writeln(lo);
-    //     writeln("Loss Grad:", lg);
-    //     writeln("Outputs:", o);
-    // }
-    const (l,lg,o) = forward(batch);
-    writeln("Loss Grad:", lg.data);
-    writeln("Outputs:", o.data);
-    writeln("BiasGrad: ",net.layers[2].biasGrad.data);
-    writeln("Bias: ",net.layers[2].bias.data);
-
     const loss = train(batch,learnRate);
     writeln("Epoch: ", e, " Loss: ", loss);
-
-    test(batch);
-    writeln(tn._sigmoid(0.0));
-    writeln(Math.exp(-0.0));
 }
+
+test(batch);
