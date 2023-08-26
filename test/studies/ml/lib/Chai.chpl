@@ -52,7 +52,9 @@ module Chai {
             const stddevB = sqrt(2.0 / outputSize);
             const stddevW = sqrt(2.0 / (inputSize + outputSize));
             bias = tn.zeros(outputSize); // (tn.randn(outputSize) - 0.5) / outputSize; // tn.randn(this.outputSize); // tn.randn(outputSize,mu=0.0,sigma=stddevB);
-            weights = tn.randn(outputSize,inputSize) / (inputSize ** 2.0); // this.weights = tn.randn(this.outputSize, inputSize,mu=0.0,sigma=stddevW);
+            weights = tn.randn(outputSize,inputSize) ;/// (inputSize ** 2.0); // this.weights = tn.randn(this.outputSize, inputSize,mu=0.0,sigma=stddevW);
+            // bias = tn.randn(outputSize,mu=0.0,sigma=stddevB);
+            // weights = tn.randn(outputSize, inputSize,mu=0.0,sigma=stddevW);
             biasGrad = tn.zeros(outputSize);
             weightsGrad = tn.zeros(outputSize, inputSize);
             uninitialized = false;

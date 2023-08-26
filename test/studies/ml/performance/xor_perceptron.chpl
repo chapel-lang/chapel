@@ -5,8 +5,8 @@ import Math;
 
 tn.seedRandom(0);
 
-config const epochs = 10000;
-config const learnRate = 1.5;
+config const epochs = 30000;
+config const learnRate = 0.3;
 
 // var network = new shared chai.Network(
 //     (
@@ -26,9 +26,9 @@ config const learnRate = 1.5;
 // );
 var net = new shared chai.Network(
     (
-        new shared chai.Dense(6),
-        // new shared chai.Sigmoid(),
-        // new shared chai.Dense(6),
+        new shared chai.Dense(10),
+        new shared chai.Sigmoid(),
+        new shared chai.Dense(10),
         new shared chai.Sigmoid(),
         new shared chai.Dense(1),
         new shared chai.Sigmoid()
