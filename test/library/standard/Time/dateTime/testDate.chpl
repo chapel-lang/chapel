@@ -45,7 +45,7 @@ proc test_date_ordinal_conversions() {
     assert(d1 == fromord);
   }
 
-  for year in MINYEAR..MAXYEAR by 7 {
+  for year in date.min.year..date.max.year by 7 {
     var d = new date(year, 1, 1);
     var n = d.toOrdinal();
     var d2 = date.createFromOrdinal(n);

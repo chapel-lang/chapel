@@ -51,7 +51,7 @@ proc test_even_more_compare() {
   var t1 = new dateTime(1, 1, 1,
                         tz=new shared FixedOffset(1439, ""));
   // Largest possible after UTC adjustment.
-  var t2 = new dateTime(MAXYEAR, 12, 31, 23, 59, 59, 999999,
+  var t2 = new dateTime(date.max.year, 12, 31, 23, 59, 59, 999999,
                         tz=new shared FixedOffset(-1439, ""));
 
   // Make sure those compare correctly, and w/o overflow.
@@ -179,7 +179,7 @@ proc test_tz_aware_arithmetic() {
   // Try max possible difference.
   var min = new dateTime(1, 1, 1,
                          tz=new shared FixedOffset(1439, "min"));
-  var max = new dateTime(MAXYEAR, 12, 31, 23, 59, 59, 999999,
+  var max = new dateTime(date.max.year, 12, 31, 23, 59, 59, 999999,
                       tz=new shared FixedOffset(-1439, "max"));
   var maxdiff = max - min;
   assert(maxdiff == dateTime.max - dateTime.min +
@@ -330,10 +330,10 @@ proc test_utctimetuple() {
   // At the edges, UTC adjustment can normalize into years out-of-range
   // for a dateTime object.  Ensure that a correct timetuple is
   // created anyway.
-  var tiny = new dateTime(MINYEAR, 1, 1, 0, 0, 37, tz=new shared UOFS(1439));
+  var tiny = new dateTime(date.min.year, 1, 1, 0, 0, 37, tz=new shared UOFS(1439));
   // That goes back 1 minute less than a full day.
   var t = tiny.utctimetuple();
-  assert(t.tm_year == MINYEAR-1);
+  assert(t.tm_year == date.min.year-1);
   assert(t.tm_mon == 12);
   assert(t.tm_mday == 31);
   assert(t.tm_hour == 0);
@@ -342,10 +342,10 @@ proc test_utctimetuple() {
   assert(t.tm_yday == 366);    // "year 0" is a leap year
   assert(t.tm_isdst == 0);
 
-  var huge = new dateTime(MAXYEAR, 12, 31, 23, 59, 37, 999999, tz=new shared UOFS(-1439));
+  var huge = new dateTime(date.max.year, 12, 31, 23, 59, 37, 999999, tz=new shared UOFS(-1439));
   // That goes forward 1 minute less than a full day.
   t = huge.utctimetuple();
-  assert(t.tm_year == MAXYEAR+1);
+  assert(t.tm_year == date.max.year+1);
   assert(t.tm_mon == 1);
   assert(t.tm_mday == 1);
   assert(t.tm_hour == 23);

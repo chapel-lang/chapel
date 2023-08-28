@@ -76,7 +76,7 @@ proc test_tz_independent_comparing() {
   // precision to span microsecond resolution across years 1 thru 9999,
   // so comparing via timestamp necessarily calls some distinct values
   // equal).
-  dt1 = new dateTime(MAXYEAR, 12, 31, 23, 59, 59, 999998);
+  dt1 = new dateTime(date.max.year, 12, 31, 23, 59, 59, 999998);
   var us = new timeDelta(microseconds=1);
   dt2 = dt1 + us;
   assert(dt2 - dt1 == us);

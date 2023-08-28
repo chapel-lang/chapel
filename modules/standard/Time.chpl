@@ -161,9 +161,15 @@ module Time {
   /* End day-of-week enums */
 
   /* The minimum year allowed in `date` objects */
+  @deprecated("'MINYEAR' is deprecated; use `date.min.year` instead")
   param MINYEAR = 1;
   /* The maximum year allowed in `date` objects */
+  @deprecated("'MAXYEAR' is deprecated; use `date.max.year` instead")
   param MAXYEAR = 9999;
+  @chpldoc.nodoc
+  param _MINYEAR = 1;
+  @chpldoc.nodoc
+  param _MAXYEAR = 9999;
 
   private const DAYS_IN_MONTH = (-1, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31);
   private const DAYS_BEFORE_MONTH = init_days_before_month();
@@ -344,12 +350,12 @@ module Time {
 
     /* The minimum representable `date` */
     proc type min : date {
-      return new date(MINYEAR, 1, 1);
+      return new date(_MINYEAR, 1, 1);
     }
 
     /* The maximum representable `date` */
     proc type max : date {
-      return new date(MAXYEAR, 12, 31);
+      return new date(_MAXYEAR, 12, 31);
     }
 
     /* The minimum non-zero difference between two dates */
@@ -376,7 +382,7 @@ module Time {
      1 <= `day` <= the number of days in the given month and year
   */
   proc date.init(year: int, month: int, day: int) {
-    if year < MINYEAR-1 || year > MAXYEAR+1 then
+    if year < _MINYEAR-1 || year > _MAXYEAR+1 then
       HaltWrappers.initHalt("year is out of the valid range");
     if month < 1 || month > 12 then
       HaltWrappers.initHalt("month is out of the valid range");
