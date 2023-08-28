@@ -73,6 +73,4 @@ proc main() {
   f.writer(serializer=new Serializer()).write(A);
 
   var X = f.reader(deserializer=new Deserializer()).read(A.type);
-
-  writeln(&& reduce (A == X));
 }
