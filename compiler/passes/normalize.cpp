@@ -4226,9 +4226,13 @@ static void fixupCastFormals(FnSymbol* fn) {
             mod->block->insertAtTail(def);
 
             // insert the move just after we def the fromType
-            if(auto fromType = toSymExpr(typeCast->castFrom())) {
-              Symbol* fromTypeSym = toSymExpr(fromType)->symbol();
-              fromTypeSym->defPoint->insertAfter(move);
+            if(SymExpr* fromType = toSymExpr(typeCast->castFrom())) {
+              if(TypeSymbol* fromTypeSym = toTypeSymbol(fromType->symbol())) {
+                fromTypeSym->defPoint->insertAfter(move);
+              }
+              else {
+                USR_FATAL(formal, "Cannot perform a type cast on a non-type");
+              }
             } else {
               USR_FATAL(formal, "Complex expressions casted to `borrowed` in a formal type are not currently supported, consider using a helper function");
             }
