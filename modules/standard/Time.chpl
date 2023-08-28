@@ -698,6 +698,7 @@ module Time {
     }
 
     /* The timezone represented by this `time` value */
+    @unstable("timezone is unstable")
     proc timezone : shared Timezone? {
       return chpl_tz;
     }
@@ -1125,6 +1126,7 @@ module Time {
     }
 
     /* The timezone represented by this `dateTime` value */
+    @unstable("timezone is unstable")
     proc timezone : shared Timezone? {
       return chpl_time.timezone;
     }
@@ -1155,7 +1157,7 @@ module Time {
   }
 
   /* Initialize a new `dateTime` value from the given `year`, `month`, `day`,
-     `hour`, `minute`, `second`, `microsecond` and timezone.  The `year`,
+     `hour`, `minute`, `second`, and `microsecond`.  The `year`,
      `month`, and `day` arguments are required, the rest are optional.
    */
   proc dateTime.init(year:int, month:int, day:int,
@@ -1181,6 +1183,7 @@ module Time {
   }
 
   /* Return a `dateTime` value representing the current time and date */
+  @unstable("tz is unstable; its type may change in the future")
   proc type dateTime.now(in tz: shared Timezone?) : dateTime {
     if tz.borrow() == nil {
       const timeSinceEpoch = getTimeOfDay();
@@ -1299,14 +1302,33 @@ module Time {
   /* Get the `time` portion of the `dateTime` value including the
      `tz` field
    */
+  @unstable("tz is unstable; its type may change in the future")
   proc dateTime.timetz() : time {
     return chpl_time;
   }
 
   /* Replace the `year`, `month`, `day`, `hour`, `minute`, `second`,
+     or `microsecond` to form a new `dateTime` object. All
+     arguments are optional.
+   */
+  proc dateTime.replace(year=-1, month=-1, day=-1,
+                        hour=-1, minute=-1, second=-1, microsecond=-1)
+                        : dateTime {
+    return dateTime.combine(
+      new date(if year == -1 then this.year else year,
+               if month == -1 then this.month else month,
+               if day == -1 then this.day else day),
+      new time(if hour == -1 then this.hour else hour,
+               if minute == -1 then this.minute else minute,
+               if second == -1 then this.second else second,
+               if microsecond == -1 then this.microsecond else microsecond,
+               this.timezone));
+  }
+  /* Replace the `year`, `month`, `day`, `hour`, `minute`, `second`,
      `microsecond`, or `tz` to form a new `dateTime` object. All
      arguments are optional.
    */
+  @unstable("tz is unstable; its type may change in the future")
   proc dateTime.replace(year=-1, month=-1, day=-1,
                         hour=-1, minute=-1, second=-1, microsecond=-1,
                         in tz=this.timezone) : dateTime {
@@ -2035,6 +2057,7 @@ module Time {
   /* Abstract base class for time zones. This class should not be used
      directly, but concrete implementations of time zones should be
      derived from it. */
+  @unstable("Timezone functionality is unstable and may change in the future")
   class Timezone {
     /* The offset from UTC this class represents */
     proc utcOffset(dt: dateTime): timeDelta {
