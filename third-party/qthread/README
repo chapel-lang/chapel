@@ -22,18 +22,15 @@ as follows:
   from us using schedulers that don't support work stealing (nemesis)
   or running with work stealing disabled (distrib w/ QT_STEAL_RATIO=0)
 
-* We added a simple mechanism to reset the automatic task spawning
-  order for better affinity between consecutive parallel loops.
+* Pulled in an upstream fix for resetting task spawn order
+  https://github.com/sandialabs/qthreads/pull/136
 
 * Pulled in an upstream fix for build errors on Alpine linux
   https://github.com/sandialabs/qthreads/pull/105
 
-* We modified the configuration to support the
-  --with-hwloc-get-topology-function argument that specifies a function that
-  qthreads should call to get the hwloc topology, and several files to
-  support this behavior including the Makefile to pass this argument to
-  configure, and binders.c and hwloc.c to call the function.
+* Pulled in an upstream patch to get topology from an external function
+  https://github.com/sandialabs/qthreads/pull/133
 
-* We added --disable-hwloc-configure-checks to disable hwloc link checks,
-  and --disable-hwloc-has-distance to specify whether or not hwloc supports
-  distance information.
+* Pulled in upstream patches to make configure time check of hwloc optional
+  https://github.com/sandialabs/qthreads/pull/131
+  https://github.com/sandialabs/qthreads/pull/132
