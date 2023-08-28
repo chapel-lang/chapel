@@ -2,9 +2,9 @@ class MyClass {
   var val: int;
 }
 type myOwnedType = owned MyClass;
-proc getType() type do return myOwnedType;
+type myUnmanagedType = unmanaged MyClass;
 
-proc bar(x: getType():borrowed) {
+proc bar(x: myOwnedType:myUnmanagedType) {
   writeln(x.type:string);
   return x.val;
 }
