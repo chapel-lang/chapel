@@ -860,7 +860,7 @@ iter StencilImpl.activeTargetLocales(const space : domain = boundingBox) {
 // create a domain over a Stencil Distribution
 proc type Stencil.createDomain(
   dom: domain,
-  targetLocales = Locales,
+  targetLocales: [] locale = Locales,
   fluff = makeZero(dom.rank, dom.idxType),
   periodic = false
 ) {
@@ -874,7 +874,7 @@ proc type Stencil.createDomain(rng: range...?k) {
 
 proc type Stencil.createDomain(
   rng: range...?k,
-  targetLocales = Locales,
+  targetLocales: [] locale = Locales,
   fluff: ?t = makeZero(k, int),
   periodic = false
 ) where isHomogeneousTupleType(t) {
@@ -885,7 +885,7 @@ proc type Stencil.createDomain(
 proc type Stencil.createArray(
   dom: domain,
   type eltType,
-  targetLocales = Locales,
+  targetLocales: [] locale = Locales,
   fluff = makeZero(dom.rank, dom.idxType),
   periodic = false
 ) {
@@ -899,7 +899,7 @@ proc type Stencil.createArray(
   dom: domain,
   type eltType,
   initExpr: ?t,
-  targetLocales = Locales,
+  targetLocales: [] locale = Locales,
   fluff = makeZero(dom.rank, dom.idxType),
   periodic = false
 )
@@ -916,7 +916,7 @@ proc type Stencil.createArray(
   dom: domain,
   type eltType,
   initExpr: [?arrayDom] ?arrayEltType,
-  targetLocales = Locales,
+  targetLocales: [] locale = Locales,
   fluff = makeZero(dom.rank, dom.idxType),
   periodic = false
 )
@@ -938,7 +938,7 @@ proc type Stencil.createArray(rng: range...?k, type eltType) {
 proc type Stencil.createArray(
   rng: range...?k,
   type eltType,
-  targetLocales = Locales,
+  targetLocales: [] locale = Locales,
   fluff: ?f = makeZero(k, int),
   periodic = false
 ) where isHomogeneousTupleType(f) {
@@ -956,7 +956,7 @@ proc type Stencil.createArray(
   rng: range...?k,
   type eltType,
   initExpr: ?t,
-  targetLocales = Locales,
+  targetLocales: [] locale = Locales,
   fluff: ?f = makeZero(k, int),
   periodic = false
 ) where (isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)) && isHomogeneousTupleType(f)  {
@@ -978,7 +978,7 @@ proc type Stencil.createArray(
   rng: range...?k,
   type eltType,
   initExpr: [?arrayDom] ?arrayEltType,
-  targetLocales = Locales,
+  targetLocales: [] locale = Locales,
   fluff: ?f = makeZero(k, int),
   periodic = false
 )
