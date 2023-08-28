@@ -277,9 +277,8 @@ void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
   // Match some special cases:
   auto ret = invalidAst->toReturn();
   const uast::Function *blockingAstFn = blockingAst ? blockingAst->toFunction() : nullptr;
-  bool isIterWithReturn = ret && blockingAstFn && blockingAstFn->kind() == uast::Function::ITER;
-  bool isSpecialMethodWithReturn = 
-    ret && blockingAstFn && (blockingAstFn->name() == "deinit" || blockingAstFn->name() == "postinit");
+  bool isFuncWithReturn = ret && blockingAstFn;
+  bool isIterWithReturn = isFuncWithReturn && blockingAstFn->kind() == uast::Function::ITER;
   if (isIterWithReturn) {
     wr.heading(kind_, type_, ret,
                "'return' statements with values are not allowed in iterators.");
@@ -299,9 +298,10 @@ void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
       wr.message("Did you mean to use the 'yield' keyword instead of 'return'?");
     }
     return;
-  } else if(isSpecialMethodWithReturn) {
+  } else {
+    CHPL_ASSERT(isFuncWithReturn);
     wr.heading(kind_, type_, ret,
-               "'return' statements with values are not allowed in ", blockingAstFn->name(), " methods");
+               "'return' statements with values are not allowed in ", blockingAstFn->name(), ".");
     wr.message("The following 'return' statement has a value:");
     wr.code(ret, { ret->value() });
     wr.codeForLocation(blockingAstFn);
