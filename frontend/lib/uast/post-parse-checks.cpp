@@ -1292,7 +1292,8 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
       node->name() == USTR("unstable") ||
       node->name() == USTR("stable") ||
       node->name() == USTR("assertOnGpu") ||
-      node->name().startsWith(USTR("chpldoc."))) {
+      node->name().startsWith(USTR("chpldoc.")) ||
+      node->name().startsWith(USTR("llvm."))) {
       // TODO: should we match chpldoc.nodoc or anything toolspaced with chpldoc.?
       return;
   } else if (node->fullyQualifiedAttributeName().find('.') == std::string::npos) {

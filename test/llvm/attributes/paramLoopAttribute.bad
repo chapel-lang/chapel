@@ -1,3 +1,1 @@
-paramLoopAttribute.chpl:4: In function 'doSum':
-paramLoopAttribute.chpl:8: warning: Unknown attribute tool name 'llvm'
 paramLoopAttribute.chpl:8: error: Invalid value for 'llvm.metadata'
