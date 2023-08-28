@@ -188,6 +188,7 @@ The following identifiers are reserved as keywords:
    prototype
    proc
    public
+   range
    real
    record
    reduce
