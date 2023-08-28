@@ -323,7 +323,7 @@ proc PrivateArr.doiScan(op, dom) where (rank == 1) &&
 
   var localArr: [0..numLocales-1] resType;
 
-  coforall loc in Locales do on loc do
+  coforall loc in Locales with (ref localArr) do on loc do
     localArr[here.id] = if _isPrivatized(this) then chpl_getPrivatizedCopy(this.type, this.pid).data else data;
 
   var localRes = localArr._scan(op);
