@@ -4256,6 +4256,7 @@ static void fixupQueryFormals(FnSymbol* fn) {
 
       } else if (isCastToBorrowedInFormal(formal)) {
         // avoids expandQueryForGenericTypeSpecifier messing up the cast to borrowed
+        // TODO: This will still break for something like `myOwnedType:unmanaged`
       }
       else if (isQueryForGenericTypeSpecifier(formal) == true) {
         if (formal->intent == INTENT_OUT)
