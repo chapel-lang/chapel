@@ -4187,6 +4187,7 @@ static void cloneParameterizedPrimitive(FnSymbol* fn,
 
 static void replaceUsesWithPrimTypeof(FnSymbol* fn, ArgSymbol* formal);
 
+static bool isBorrowedTypeActual(Expr* expr);
 static bool isCastToBorrowedInFormal(ArgSymbol* formal);
 
 static bool isQueryForGenericTypeSpecifier(ArgSymbol* formal);
@@ -4210,7 +4211,7 @@ static void fixupCastFormals(FnSymbol* fn) {
     if (BlockStmt* typeExpr = formal->typeExpr) {
       if(typeExpr->body.length == 1) {
         if(CallExpr* typeCast = toCallExpr(typeExpr->body.tail)) {
-          if(typeCast->isCast()) {
+          if(typeCast->isCast() && isBorrowedTypeActual(typeCast->castTo())) {
             VarSymbol* tmp = newTemp("call_type_tmp");
             tmp->addFlag(FLAG_TYPE_VARIABLE);
             tmp->addFlag(FLAG_MAYBE_TYPE);
