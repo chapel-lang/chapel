@@ -69,85 +69,31 @@ private extern proc chpl_timevalue_parts(t:           _timevalue,
                                          out yday:    int(32),
                                          out isdst:   int(32));
 
-  /* Specifies the units to be used when certain functions return a time */
-  @deprecated(notes="The 'TimeUnits' type is deprecated. Please specify times in seconds in this module.")
-  enum TimeUnits { microseconds, milliseconds, seconds, minutes, hours }
+/* Specifies the units to be used when certain functions return a time */
+@deprecated(notes="The 'TimeUnits' type is deprecated. Please specify times in seconds in this module.")
+enum TimeUnits { microseconds, milliseconds, seconds, minutes, hours }
 
-  /* day-of-week enums */
-  @deprecated(notes="enum 'Day' is deprecated. Please use :enum:`dayOfWeek` instead")
-  enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday }
-  /* Specifies the day of the week */
-  @deprecated(notes="enum 'day' is deprecated. Please use :enum:`dayOfWeek` instead")
-  enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday }
+@deprecated(notes="enum 'Day' is deprecated. Please use :enum:`day` instead")
+enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday }
+/* Specifies the day of the week */
+enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday }
+  /* Days in the week, starting with `Monday` = 0 */
+  enum dayOfWeek {
+    Monday =    0,
+    Tuesday =   1,
+    Wednesday = 2,
+    Thursday =  3,
+    Friday =    4,
+    Saturday =  5,
+    Sunday =    6
+  }
+
   @chpldoc.nodoc
   proc DayOfWeek {
     compilerError("'DayOfWeek' was renamed. Please use 'dayOfWeek' instead");
   }
-  @chpldoc.nodoc
-  proc ISODayOfWeek {
-    compilerError("'ISODayOfWeek was renamed. Please use 'isoDayOfWeek' instead");
-  }
-  /* Controls whether :type:`dayOfWeek` starts with `Monday=0` or `Monday=1`.
 
-    - If true, :type:`dayOfWeek` represents Monday as day 1.
-    - If false, :type:`dayOfWeek` represents Monday as day 0. This behavior is
-      deprecated and will be removed in an upcoming release.
-
-    The deprecated behavior is on by default. To opt-in to the new behavior,
-    recompile your program with ``-scIsoDayOfWeek=true``.
-
-  */
-  config param cIsoDayOfWeek = false;
-  @chpldoc.nodoc;
-  param firstDayOfWeekNum = (if cIsoDayOfWeek then 1 else 0);
-  @chpldoc.nodoc
-  enum dayOfWeek {
-    Monday =  firstDayOfWeekNum,
-    Tuesday,
-    Wednesday,
-    Thursday,
-    Friday,
-    Saturday,
-    Sunday
-  }
-  /* Days in the week, starting with Monday.
-     Monday is represented as 0 when cIsoDayOfWeek = false (deprecated), or 1
-     otherwise (future default). */
-  proc dayOfWeek type {
-    if (!cIsoDayOfWeek) {
-      compilerWarning("in an upcoming release 'dayOfWeek' will represent " +
-          "Monday as 1 instead of 0. Recompile with '-scIsoDayOfWeek=true' " +
-          "to opt-in to the new behavior.");
-      }
-    return dayOfWeek;
-  }
-  proc type dayOfWeek.Monday param {
-    return dayOfWeek.Monday;
-  }
-  // /* Days in the week, starting with `Monday` = 0 */
-  // @chpldoc.nodoc
-  // enum _old_dayOfWeek {
-  //   Monday =    0,
-  //   Tuesday =   1,
-  //   Wednesday = 2,
-  //   Thursday =  3,
-  //   Friday =    4,
-  //   Saturday =  5,
-  //   Sunday =    6
-  // }
-  // /* Days in the week, starting with `Monday` = 1 */
-  // @chpldoc.nodoc
-  // enum _iso_dayOfWeek {
-  //   Monday =    1,
-  //   Tuesday =   2,
-  //   Wednesday = 3,
-  //   Thursday =  4,
-  //   Friday =    5,
-  //   Saturday =  6,
-  //   Sunday =    7
-  // }
   /* Days in the week, starting with `Monday` = 1 */
-@deprecated(notes="enum 'isoDayOfWeek' is deprecated. Please use :enum:`dayOfWeek` instead")
   enum isoDayOfWeek {
     Monday =    1,
     Tuesday =   2,
@@ -156,6 +102,11 @@ private extern proc chpl_timevalue_parts(t:           _timevalue,
     Friday =    5,
     Saturday =  6,
     Sunday =    7
+  }
+
+  @chpldoc.nodoc
+  proc ISODayOfWeek {
+    compilerError("'ISODayOfWeek was renamed. Please use 'isoDayOfWeek' instead");
   }
 
   /* The minimum year allowed in `date` objects */
@@ -457,23 +408,17 @@ private extern proc chpl_timevalue_parts(t:           _timevalue,
   }
 
   /* Return the day of the week as a `dayOfWeek`.
+     `Monday` == 0, `Sunday` == 6
    */
-  proc date.weekday() : dayOfWeek where cIsoDayOfWeek {
-    // January 1 0001 is a Monday
-    return try! (((toOrdinal() + 6) % 7) + 1): dayOfWeek;
-  }
-  @deprecated(notes="The version of `weekday` returning a dayOfWeek starting with Monday=0 is deprecated. Recompile with -sCIsoDayOfWeek to opt in to the new behavior of Monday=1")
-  proc date.weekday() where !cIsoDayOfWeek {
+  proc date.weekday() {
     // January 1 0001 is a Monday
     return try! ((toOrdinal() + 6) % 7): dayOfWeek;
   }
 
   /* Return the day of the week as an `isoDayOfWeek`.
      `Monday` == 1, `Sunday` == 7 */
-  @deprecated(notes="`isoWeekday` is deprecated; use `weekday` instead")
   proc date.isoWeekday() {
-    var offsetForIso = (if cIsoDayOfWeek then 0 else 1);
-    return try! (weekday(): int + offsetForIso): isoDayOfWeek;
+    return try! (weekday(): int + 1): isoDayOfWeek;
   }
 
   /* Return the ISO date as a tuple containing the ISO year, ISO week number,
@@ -1390,19 +1335,15 @@ private extern proc chpl_timevalue_parts(t:           _timevalue,
   }
 
   /* Return the day of the week as a `dayOfWeek`.
+     `Monday` == 0, `Sunday` == 6
    */
-  proc dateTime.weekday() where cIsoDayOfWeek {
-    return getDate().weekday();
-  }
-  @deprecated(notes="The version of `weekday` returning a dayOfWeek starting with Monday=0 is deprecated. Recompile with -sCIsoDayOfWeek to opt in to the new behavior of Monday=1")
-  proc dateTime.weekday() where !cIsoDayOfWeek {
+  proc dateTime.weekday() {
     return getDate().weekday();
   }
 
   /* Return the day of the week as an `isoDayOfWeek`.
      `Monday` == 1, `Sunday` == 7
    */
-  @deprecated(notes="`isoWeekday` is deprecated; use `weekday` instead")
   proc dateTime.isoWeekday() {
     return getDate().isoWeekday();
   }
@@ -2081,7 +2022,6 @@ proc getCurrentDate() {
    :returns: The current day of the week
    :rtype:   :type:`Day`
  */
-@deprecated("`getCurrentDayOfWeek` is deprecated; please use date.today().weekday()` instead")
 proc getCurrentDayOfWeek() : day {
   var now = chpl_now_timevalue();
 
