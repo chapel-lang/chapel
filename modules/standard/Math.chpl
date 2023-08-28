@@ -95,7 +95,7 @@ Exponential Functions
 :proc:`exp`
 :proc:`exp2`
 :proc:`expm1`
-:proc:`ldexp`
+:proc:`ldExp`
 
 .. _math-rounding:
 
@@ -546,15 +546,29 @@ module Math {
   }
 
   /* Returns the value of the argument `x` multiplied by 2 raised to the
-     argument `n` power, i.e., ``x * 2**n``. */
-  inline proc ldexp(x:real(64), n:int(32)):real(64) {
-    return chpl_ldexp(x, n);
+     argument `exp` power, i.e., ``x * 2**exp``. */
+  inline proc ldExp(x:real(64), exp:int(32)):real(64) {
+    return chpl_ldexp(x, exp);
+  }
+
+  /* Returns the value of the argument `x` multiplied by 2 raised to the
+     argument `exp` power, i.e., ``x * 2**exp``. */
+  inline proc ldExp(x:real(32), exp:int(32)):real(32) {
+    return chpl_ldexp(x, exp);
   }
 
   /* Returns the value of the argument `x` multiplied by 2 raised to the
      argument `n` power, i.e., ``x * 2**n``. */
+  @deprecated(notes="'ldexp' with an 'n' argument has been deprecated, please use :proc:`ldExp` with an 'exp' argument instead")
+  inline proc ldexp(x:real(64), n:int(32)):real(64) {
+    return ldExp(x, n);
+  }
+
+  /* Returns the value of the argument `x` multiplied by 2 raised to the
+     argument `n` power, i.e., ``x * 2**n``. */
+  @deprecated(notes="'ldexp' with an 'n' argument has been deprecated, please use :proc:`ldExp` with an 'exp' argument instead")
   inline proc ldexp(x:real(32), n:int(32)):real(32) {
-    return chpl_ldexp(x, n);
+    return ldExp(x, n);
   }
 
   /* Returns the natural logarithm of the absolute value
