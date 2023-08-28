@@ -1,0 +1,190 @@
+*** Cyclic ***
+simple case: everything should be optimized
+'Forward' swap
+CyclicArr doing optimized swap. Domains: PREDIFFED
+DefaultRectangular doing optimized swap. Domains: PREDIFFED
+20 20 20 20 20 20 20 20 20 20
+10 10 10 10 10 10 10 10 10 10
+
+'Backward' swap
+CyclicArr doing optimized swap. Domains: PREDIFFED
+DefaultRectangular doing optimized swap. Domains: PREDIFFED
+10 10 10 10 10 10 10 10 10 10
+20 20 20 20 20 20 20 20 20 20
+
+
+shapes match and domains are aligned with their distribions but are different. We decided not to optimized this for now
+'Forward' swap
+CyclicArr doing unoptimized swap. Domains: PREDIFFED
+20 20 20 20 20 20 20 20 20 20
+10 10 10 10 10 10 10 10 10 10
+
+'Backward' swap
+CyclicArr doing unoptimized swap. Domains: PREDIFFED
+10 10 10 10 10 10 10 10 10 10
+20 20 20 20 20 20 20 20 20 20
+
+
+arrays are not distributed the same across locales; shouldn't optimize
+'Forward' swap
+CyclicArr doing unoptimized swap. Domains: PREDIFFED
+20 20 20 20 20 20 20 20 20 20
+10 10 10 10 10 10 10 10 10 10
+
+'Backward' swap
+CyclicArr doing unoptimized swap. Domains: PREDIFFED
+10 10 10 10 10 10 10 10 10 10
+20 20 20 20 20 20 20 20 20 20
+
+
+both are offset from startIdx, but they align with each other
+'Forward' swap
+CyclicArr doing optimized swap. Domains: PREDIFFED
+DefaultRectangular doing optimized swap. Domains: PREDIFFED
+20 20 20 20 20 20 20 20 20 20
+10 10 10 10 10 10 10 10 10 10
+
+'Backward' swap
+CyclicArr doing optimized swap. Domains: PREDIFFED
+DefaultRectangular doing optimized swap. Domains: PREDIFFED
+10 10 10 10 10 10 10 10 10 10
+20 20 20 20 20 20 20 20 20 20
+
+
+Alignment is circumstantial / non-obvious / specific to two locales
+'Forward' swap
+CyclicArr doing unoptimized swap. Domains: PREDIFFED
+20 20 20 20 20 20 20 20 20 20
+10 10 10 10 10 10 10 10 10 10
+
+'Backward' swap
+CyclicArr doing unoptimized swap. Domains: PREDIFFED
+10 10 10 10 10 10 10 10 10 10
+20 20 20 20 20 20 20 20 20 20
+
+
+both are strided and aligned
+'Forward' swap
+CyclicArr doing optimized swap. Domains: PREDIFFED
+DefaultRectangular doing optimized swap. Domains: PREDIFFED
+20 20 20 20 20
+10 10 10 10 10
+
+'Backward' swap
+CyclicArr doing optimized swap. Domains: PREDIFFED
+DefaultRectangular doing optimized swap. Domains: PREDIFFED
+10 10 10 10 10
+20 20 20 20 20
+
+
+both are strided, have same number of elements but not aligned, shouldn't optimize
+'Forward' swap
+CyclicArr doing unoptimized swap. Domains: PREDIFFED
+20 20 20 20 20
+10 10 10 10 10
+
+'Backward' swap
+CyclicArr doing unoptimized swap. Domains: PREDIFFED
+10 10 10 10 10
+20 20 20 20 20
+
+
+both are strided and misaligned
+'Forward' swap
+CyclicArr doing unoptimized swap. Domains: PREDIFFED
+20 20 20 20 20
+10 10 10 10 10
+
+'Backward' swap
+CyclicArr doing unoptimized swap. Domains: PREDIFFED
+10 10 10 10 10
+20 20 20 20 20
+
+
+
+*** Cross type ***
+Cross type swaps shouldn't be optimized
+'Forward' swap
+CyclicArr doing unoptimized swap. Type mismatch
+20 20 20 20 20 20 20 20 20 20
+10 10 10 10 10 10 10 10 10 10
+
+'Backward' swap
+DefaultRectangularArr doing unoptimized swap. Type mismatch
+10 10 10 10 10 10 10 10 10 10
+20 20 20 20 20 20 20 20 20 20
+
+
+Cross type swaps shouldn't be optimized
+'Forward' swap
+CyclicArr doing unoptimized swap. Type mismatch
+20 20 20 20 20 20 20 20 20 20
+10 10 10 10 10 10 10 10 10 10
+
+'Backward' swap
+DefaultRectangularArr doing unoptimized swap. Type mismatch
+10 10 10 10 10 10 10 10 10 10
+20 20 20 20 20 20 20 20 20 20
+
+
+Cross type swaps shouldn't be optimized
+'Forward' swap
+CyclicArr doing unoptimized swap. Type mismatch
+20 20 20 20 20 20 20 20 20 20
+10 10 10 10 10 10 10 10 10 10
+
+'Backward' swap
+DefaultRectangularArr doing unoptimized swap. Type mismatch
+10 10 10 10 10 10 10 10 10 10
+20 20 20 20 20 20 20 20 20 20
+
+
+Cross type swaps shouldn't be optimized
+'Forward' swap
+CyclicArr doing unoptimized swap. Type mismatch
+20 20 20 20 20
+10 10 10 10 10
+
+'Backward' swap
+DefaultRectangularArr doing unoptimized swap. Type mismatch
+10 10 10 10 10
+20 20 20 20 20
+
+
+Cross type swaps shouldn't be optimized
+'Forward' swap
+CyclicArr doing unoptimized swap. Type mismatch
+20 20 20 20 20
+10 10 10 10 10
+
+'Backward' swap
+DefaultRectangularArr doing unoptimized swap. Type mismatch
+10 10 10 10 10
+20 20 20 20 20
+
+
+both are strided, have same number of elements but not aligned, shouldn't optimize
+'Forward' swap
+CyclicArr doing unoptimized swap. Type mismatch
+20 20 20 20 20
+10 10 10 10 10
+
+'Backward' swap
+DefaultRectangularArr doing unoptimized swap. Type mismatch
+10 10 10 10 10
+20 20 20 20 20
+
+
+both are strided and misaligned
+'Forward' swap
+CyclicArr doing unoptimized swap. Type mismatch
+20 20 20 20 20
+10 10 10 10 10
+
+'Backward' swap
+DefaultRectangularArr doing unoptimized swap. Type mismatch
+10 10 10 10 10
+20 20 20 20 20
+
+
+
