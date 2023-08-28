@@ -9,5 +9,5 @@ proc bar(x: myOwnedType:unmanaged) {
   return x.val;
 }
 
-var x = new MyClass(17);
+var x = new unmanaged MyClass(17);
 writeln(bar(x));

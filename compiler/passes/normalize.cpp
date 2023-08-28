@@ -4307,7 +4307,7 @@ static void replaceUsesWithPrimTypeof(FnSymbol* fn, ArgSymbol* formal) {
 static bool isBorrowedTypeActual(Expr* expr) {
   if (SymExpr* se = toSymExpr(expr)) {
     if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
-      auto decoratorType = classTypeDecorator(canonicalClassType(ts->type));
+      auto decoratorType = classTypeDecorator(canonicalDecoratedClassType(ts->type));
       return isDecoratorBorrowed(decoratorType);
     }
   }
