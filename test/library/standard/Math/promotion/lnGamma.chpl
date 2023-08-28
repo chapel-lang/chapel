@@ -1,4 +1,4 @@
-// tgamma.chpl
+// lnGamma.chpl
 // 
 // AUTO-GENERATED, DO NOT EDIT.  See generate_tests/ directory.
 // 
@@ -19,7 +19,7 @@ var s = (7.0 - -6.5) / n;
 var m = -6.5;
 A = [i in D] s * i + m;
 A = roundIfClose(A);
-B = tgamma(A);
+B = lnGamma(A);
 A = roundIfClose(A);
 B = roundIfClose(B);
 writeln(A);

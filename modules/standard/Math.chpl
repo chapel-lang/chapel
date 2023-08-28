@@ -112,8 +112,8 @@ Rounding
 
 Gamma Functions
 ---------------
-:proc:`lgamma`
-:proc:`tgamma`
+:proc:`gamma`
+:proc:`lnGamma`
 
 .. _math-error:
 
@@ -545,6 +545,16 @@ module Math {
     return chpl_expm1(x);
   }
 
+  /* Returns the gamma function of the argument `x`. */
+  inline proc gamma(x: real(64)): real(64) {
+    return chpl_tgamma(x);
+  }
+
+  /* Returns the gamma function of the argument `x`. */
+  inline proc gamma(x : real(32)): real(32) {
+    return chpl_tgamma(x);
+  }
+
   /* Returns the value of the argument `x` multiplied by 2 raised to the
      argument `exp` power, i.e., ``x * 2**exp``. */
   inline proc ldExp(x:real(64), exp:int(32)):real(64) {
@@ -574,15 +584,31 @@ module Math {
   /* Returns the natural logarithm of the absolute value
      of the gamma function of the argument `x`.
   */
-  inline proc lgamma(x: real(64)): real(64) {
+  inline proc lnGamma(x: real(64)): real(64) {
     return chpl_lgamma(x);
   }
 
   /* Returns the natural logarithm of the absolute value
      of the gamma function of the argument `x`.
   */
-  inline proc lgamma(x : real(32)): real(32) {
+  inline proc lnGamma(x : real(32)): real(32) {
     return chpl_lgamma(x);
+  }
+
+  /* Returns the natural logarithm of the absolute value
+     of the gamma function of the argument `x`.
+  */
+  @deprecated(notes="'lgamma' has been deprecated in favor of :proc:`lnGamma`, please use that instead")
+  inline proc lgamma(x: real(64)): real(64) {
+    return lnGamma(x);
+  }
+
+  /* Returns the natural logarithm of the absolute value
+     of the gamma function of the argument `x`.
+  */
+  @deprecated(notes="'lgamma' has been deprecated in favor of :proc:`lnGamma`, please use that instead")
+  inline proc lgamma(x : real(32)): real(32) {
+    return lnGamma(x);
   }
 
   /* Returns the natural logarithm of the argument `x`.
@@ -1002,11 +1028,13 @@ module Math {
   }
 
   /* Returns the gamma function of the argument `x`. */
+  @deprecated("'tgamma' has been deprecated in favor of :proc:`gamma`, please use that instead")
   inline proc tgamma(x: real(64)): real(64) {
     return chpl_tgamma(x);
   }
 
   /* Returns the gamma function of the argument `x`. */
+  @deprecated("'tgamma' has been deprecated in favor of :proc:`gamma`, please use that instead")
   inline proc tgamma(x : real(32)): real(32) {
     return chpl_tgamma(x);
   }
