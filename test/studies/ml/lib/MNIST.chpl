@@ -1,7 +1,7 @@
 
 
 use IO;
-
+use BinaryIO;
 
 proc loadImages(num: int, fileName: string = "week2/emnist/data/train-images-idx3-ubyte") {
 

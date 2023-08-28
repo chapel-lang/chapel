@@ -506,8 +506,25 @@ module Chai {
         proc init(outputSize: int) {
             this.outputSize = outputSize;
         }
+
+        proc initialize(input: Tensor(?)) {
+            const inputSize = * reduce input.shape;
+            if inputSize < 1 then tn.err("Softmax input size must be > 0");
+
+            const stddev = sqrt(2.0 / (inputSize + outputSize));
+            // weights = tn.randn(outputSize,inputSize,mu=0.0,sigma=stddev);
+            weights = tn.randn(outputSize,inputSize) / (inputSize: real);
+            biases = tn.zeros(outputSize);// tn.randn(outputSize) / (outputSize: real);
+
+            weightsGrad = tn.zeros(outputSize,inputSize);
+            biasesGrad = tn.zeros(outputSize);
+
+            uninitialized = false;
+        }
         
         proc forwardPropBatch(batch: [] ?tensorType): [] Tensor(1) where isSubtype(tensorType, Tensor) {
+            if uninitialized then initialize(batch[0]);
+
             const batchSize = batch.size;
             var outputs: [0..#batchSize] Tensor(1);
             forall (input,i) in zip(batch,0..) with (ref this) {
@@ -520,20 +537,7 @@ module Chai {
         proc forwardProp(input: Tensor(?)): Tensor(1) {
             tn.debugWrite("[enter softmax forward]");
 
-            if uninitialized {
-                const inputSize = * reduce input.shape;
-                if inputSize < 1 then tn.err("Softmax input size must be > 0");
-
-                const stddev = sqrt(2.0 / (inputSize + outputSize));
-                // weights = tn.randn(outputSize,inputSize,mu=0.0,sigma=stddev);
-                weights = tn.randn(outputSize,inputSize) / (inputSize: real);
-                biases = tn.zeros(outputSize);// tn.randn(outputSize) / (outputSize: real);
-
-                weightsGrad = tn.zeros(outputSize,inputSize);
-                biasesGrad = tn.zeros(outputSize);
-
-                uninitialized = false;
-            }
+            if uninitialized then initialize(input);
 
             const flattened = input.flatten();
             const z = (weights * flattened) + biases;
@@ -577,9 +581,11 @@ module Chai {
         proc backwardBatch(deltas: [] Tensor(1), inputs: [] ?tensorType2) : [] tensorType2 where isSubtype(tensorType2, Tensor) {
             const batchSize = deltas.size;
             var newDeltas: [0..#batchSize] tensorType2;
+            newDeltas.reshapeDomain(inputs[0].domain);
+
             var weightsGrad = this.weightsGrad;
             var biasesGrad = this.biasesGrad;
-            forall (delta,input,idx) in zip(deltas,inputs,0..) with (+ reduce weightsGrad, + reduce biasesGrad) {
+            forall (delta,input,idx) in zip(deltas,inputs,newDeltas.domain) with (ref this, ref deltas, ref inputs, ref newDeltas, + reduce weightsGrad, + reduce biasesGrad) {
                 // Coppied from above
                 const flattened = input.flatten();
                 const Z = (weights * flattened) + biases;
@@ -601,7 +607,7 @@ module Chai {
                 const dL_dIn: Tensor(1) = dZ_dIn.transpose() * dL_dZ;
                 weightsGrad += dL_dW;
                 biasesGrad += dL_dB;
-                newDeltas[idx] = dL_dIn.reshape(input.domain);
+                newDeltas[idx] = dL_dIn.reshape(input.domain);;
             }
             this.weightsGrad.data = weightsGrad.data;
             this.biasesGrad.data = biasesGrad.data;

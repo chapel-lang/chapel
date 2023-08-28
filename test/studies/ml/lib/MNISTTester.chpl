@@ -80,6 +80,9 @@ proc train(ref network,
     var trainingData = labeledImages[0..#numTrainImages];
     var testingData = labeledImages[numTrainImages..#numTestImages];
 
+    network.forwardProp(trainingData[0][0]);
+    writeln("network initialized.");
+
     var t = new Time.stopwatch();
     t.start();
 

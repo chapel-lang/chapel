@@ -98,8 +98,11 @@ module Tensor {
         forwarding data only this;
         forwarding data only these;
 
-        proc reshapeDomain(d: this._domain.type) do
+        proc reshapeDomain(d: this._domain.type) {
             this._domain = d;
+            var D = this.data.domain;
+            D = d;
+        }
 
         proc init(param rank: int, type eltType) {
             this.rank = rank;
@@ -206,7 +209,7 @@ module Tensor {
             const (m,n) = this.shape;
             var M = new Tensor(2,eltType);
             M.reshapeDomain({0..#n,0..#m});
-            foreach (i,j) in M.domain {
+            forall (i,j) in M.domain with (ref M, ref this) {
                 M.data[i,j] = this.data[j,i];
             }
             return M;
@@ -220,7 +223,8 @@ module Tensor {
         }
 
         // Retruns new tensor with provided domain
-        proc reshape(dom) {
+        proc reshape(dom_) {
+            const dom = domainFromShape((...dom_.shape));
             var t = new Tensor(dom.rank,eltType);
             t.reshapeDomain(dom);
             t.data = for (i,a) in zip(t.domain,this.data) do a;
@@ -313,12 +317,27 @@ module Tensor {
         }
     }
     
+    inline proc SumReduceScanOp.accumulate(x: Tensor(?)) {
+        if this.value.domain.size == 0 then this.value.reshapeDomain(x.domain);
+        this.value += x;
+    }
+    inline proc SumReduceScanOp.combine(x: SumReduceScanOp(Tensor(?))) {
+        if this.value.domain.size == 0 then this.value.reshapeDomain(x.value.domain);
+        this.value += x.value;
+    }
+    inline proc SumReduceScanOp.accumulateOntoState(ref state: Tensor(?d), x: Tensor(d)) {
+        if state.domain.size == 0 then state.reshapeDomain(x.domain);
+        state += x;
+    }
 
     operator +(lhs: Tensor(?rank,?eltType), rhs: Tensor(rank,eltType)) {
         var t = new Tensor(rank=rank,eltType=eltType);
 
 
-        t.reshapeDomain(lhs.domain); // fixme. should be union.
+        // t.reshapeDomain(lhs.domain); // fixme. should be union.
+        if lhs.domain.size != rhs.domain.size then
+            err("Cannot add tensors of different sizes. + ", lhs.domain.size, " != ", rhs.domain.size,"  [",lhs.shape," + ",rhs.shape,"]");
+        t.reshapeDomain(lhs.domain);
         t.data = lhs.data + rhs.data;
         return t;
 
@@ -349,9 +368,12 @@ module Tensor {
         if lhs.domain.size == rhs.domain.size {
             lhs.data += rhs.data;
         } 
-        else if lhs.domain.size == 0 {
+        else if lhs.domain.size == 0 && rhs.domain.size != 0 {
             lhs.reshapeDomain(rhs.domain);
             lhs.data = rhs.data;
+        }
+        else if lhs.domain.size != 0 && rhs.domain.size == 0 {
+            // do nothing
         }
         // if lhs.domain.size == 0 && rhs.domain.size != 0 {
         //     lhs.reshapeDomain(rhs.domain);
