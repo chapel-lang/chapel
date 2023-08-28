@@ -4227,8 +4227,8 @@ static void fixupCastFormals(FnSymbol* fn) {
 
             // insert the move just after we def the fromType
             if(SymExpr* fromType = toSymExpr(typeCast->castFrom())) {
-              if(TypeSymbol* fromTypeSym = toTypeSymbol(fromType->symbol())) {
-                fromTypeSym->defPoint->insertAfter(move);
+              if(fromType->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+                fromType->symbol()->defPoint->insertAfter(move);
               }
               else {
                 USR_FATAL(formal, "Cannot perform a type cast on a non-type");
