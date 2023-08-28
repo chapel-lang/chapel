@@ -274,49 +274,37 @@ void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
   auto blockingAst = std::get<1>(info);
   auto allowingAst = std::get<2>(info);
 
-  // The error for value-having return in an iterator is so specific that it's
-  // easiest to special case it.
-  if (auto ret = invalidAst->toReturn()) {
-    if (blockingAst && blockingAst->isFunction() &&
-        blockingAst->toFunction()->kind() == uast::Function::ITER)
-    {
-      auto fn = blockingAst->toFunction();
-      wr.heading(kind_, type_, ret,
-                 "'return' statements with values are not allowed in iterators.");
-      wr.message("The following 'return' statement has a value:");
-      wr.code(ret, { ret->value() });
-      wr.note(locationOnly(fn), "'", fn->name(),
-                                "' is declared as an iterator here:");
-      wr.codeForLocation(fn);
-      if (allowingAst != nullptr) {
-        auto allowingFn = allowingAst->toFunction();
-        CHPL_ASSERT(allowingFn);
-        // There _was_ a function that allowed a return, but it must be further
-        // out.
-        wr.note(locationOnly(allowingFn), "'", fn->name(), "' is declared inside '",
-                allowingFn->name(), "', but returning from '", allowingFn->name(), "' here is not allowed.");
-      } else {
-        wr.message("Did you mean to use the 'yield' keyword instead of 'return'?");
-      }
-      return;
+  // Match some special cases:
+  auto ret = invalidAst->toReturn();
+  const uast::Function *fn = blockingAst ? blockingAst->toFunction() : nullptr;
+  bool isIterWithReturn = ret && fn && fn->kind() == uast::Function::ITER;
+  bool isSpecialMethodWithReturn = ret && fn && (fn->name() == "deinit" || fn->name() == "postinit");
+  if (isIterWithReturn) {
+    wr.heading(kind_, type_, ret,
+               "'return' statements with values are not allowed in iterators.");
+    wr.message("The following 'return' statement has a value:");
+    wr.code(ret, { ret->value() });
+    wr.note(locationOnly(fn), "'", fn->name(),
+                              "' is declared as an iterator here:");
+    wr.codeForLocation(fn);
+    if (allowingAst != nullptr) {
+      auto allowingFn = allowingAst->toFunction();
+      CHPL_ASSERT(allowingFn);
+      // There _was_ a function that allowed a return, but it must be further
+      // out.
+      wr.note(locationOnly(allowingFn), "'", fn->name(), "' is declared inside '",
+              allowingFn->name(), "', but returning from '", allowingFn->name(), "' here is not allowed.");
+    } else {
+      wr.message("Did you mean to use the 'yield' keyword instead of 'return'?");
     }
-  }
-
-  // We also special case return statements in special methods that don't allow
-  // returns with values
-  if (auto ret = invalidAst->toReturn()) {
-    if(blockingAst) {
-      if (auto fn = blockingAst->toFunction()) {
-        if((fn->name() == "deinit") || (fn->name() == "postinit")) {
-          wr.heading(kind_, type_, ret,
-                     "'return' statements with values are not allowed in ", fn->name(), " methods");
-          wr.message("The following 'return' statement has a value:");
-          wr.code(ret, { ret->value() });
-          wr.codeForLocation(fn);
-          return;
-        }
-      }
-    }
+    return;
+  } else if(isSpecialMethodWithReturn) {
+    wr.heading(kind_, type_, ret,
+               "'return' statements with values are not allowed in ", fn->name(), " methods");
+    wr.message("The following 'return' statement has a value:");
+    wr.code(ret, { ret->value() });
+    wr.codeForLocation(fn);
+    return;
   }
 
   std::string astType = "";
