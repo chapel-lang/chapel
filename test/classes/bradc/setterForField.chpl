@@ -1,13 +1,17 @@
 class C {
-  var x: int = 1;
+  var x_field: int = 1;
+
+  proc init(x: int) {
+    this.x_field = x;
+  }
 
   proc x ref {
-    return x;
+    return x_field;
   }
   proc x {
-    if x < 0 then
+    if x_field < 0 then
       halt("x accessed when negative");
-    return x;
+    return x_field;
   }
 
 }

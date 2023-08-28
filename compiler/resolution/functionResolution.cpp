@@ -1985,8 +1985,11 @@ computeVisibilityDistanceInternal(BlockStmt* block, FnSymbol* fn,
 // Returns a distance measure used to compare the visibility
 // of two functions.
 //
-// Returns -1 if the function is not found here
+// Returns -1 if the function is a method or if the function is not found
 static int computeVisibilityDistance(Expr* expr, FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_METHOD))
+    return -1;
+
   //
   // call helper function with visited set to avoid infinite recursion
   //
@@ -6346,8 +6349,36 @@ static void discardWorseWhereClauses(Vec<ResolutionCandidate*>&   candidates,
   }
 }
 
+// Returns 'true' if the candidates include both non-operator methods
+// and non-operator non-methods.
+static
+bool mixesNonOpMethodsAndFunctions(Vec<ResolutionCandidate*>&   candidates,
+                                   const DisambiguationContext& DC,
+                                   std::vector<bool>&           discarded) {
+
+  int nMethodsNotOperators = 0;
+  int nFunctionsNotOperators = 0;
+  for (int i = 0; i < candidates.n; i++) {
+    if (discarded[i]) {
+      continue;
+    }
+
+    ResolutionCandidate* candidate = candidates.v[i];
+    if (!candidate->fn->hasFlag(FLAG_OPERATOR)) {
+      if (candidate->fn->hasFlag(FLAG_METHOD)) {
+        nMethodsNotOperators++;
+      } else {
+        nFunctionsNotOperators++;
+      }
+    }
+  }
+
+  return nMethodsNotOperators > 0 && nFunctionsNotOperators > 0;
+}
+
 // Discard candidates with further visibility distance
 // than other candidates.
+// This check does not consider methods or operator methods.
 static void discardWorseVisibility(Vec<ResolutionCandidate*>&   candidates,
                                    const DisambiguationContext& DC,
                                    std::vector<bool>&           discarded) {
@@ -6360,14 +6391,17 @@ static void discardWorseVisibility(Vec<ResolutionCandidate*>&   candidates,
     }
 
     ResolutionCandidate* candidate = candidates.v[i];
+
     int distance = computeVisibilityDistance(DC.scope, candidate->fn);
     candidate->visibilityDistance = distance;
 
-    if (distance < minDistance) {
-      minDistance = distance;
-    }
-    if (distance > maxDistance) {
-      maxDistance = distance;
+    if (distance >= 0) {
+      if (distance < minDistance) {
+        minDistance = distance;
+      }
+      if (distance > maxDistance) {
+        maxDistance = distance;
+      }
     }
   }
 
@@ -6379,7 +6413,7 @@ static void discardWorseVisibility(Vec<ResolutionCandidate*>&   candidates,
 
       ResolutionCandidate* candidate = candidates.v[i];
       int distance = candidate->visibilityDistance;
-      if (distance > minDistance) {
+      if (distance > 0 && distance > minDistance) {
         EXPLAIN("X: Fn %d has further visibility distance\n", i);
         discarded[i] = true;
       }
@@ -6524,6 +6558,10 @@ static void disambiguateDiscarding(Vec<ResolutionCandidate*>&   candidates,
                                    const DisambiguationContext& DC,
                                    bool                         ignoreWhere,
                                    std::vector<bool>&           discarded) {
+
+  if (mixesNonOpMethodsAndFunctions(candidates, DC, discarded)) {
+    return;
+  }
 
   if (!DC.useOldVisibility && !DC.isMethodCall) {
     // If some candidates are less visible than other candidates,

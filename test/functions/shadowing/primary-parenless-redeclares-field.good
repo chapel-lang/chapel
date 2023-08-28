@@ -1,0 +1,1 @@
+primary-parenless-redeclares-field.chpl:3: error: parenless proc redeclares the field 'field'

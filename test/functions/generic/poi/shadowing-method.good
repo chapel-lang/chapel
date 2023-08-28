@@ -1,3 +1,4 @@
-<The desired output should indicate an ambiguous error
-between MyRecord.method definitions on Lines 4 and 17.
-Maybe even an Overloading Sets error.>
+shadowing-method.chpl:21: In method 'genericMethod':
+shadowing-method.chpl:22: warning: in Library.MyRecord.method
+  shadowing-method.chpl:10: called as MyRecord.genericMethod(type t = int(64))
+shadowing-method.chpl:9: error: in Main.main, done
