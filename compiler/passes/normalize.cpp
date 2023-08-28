@@ -69,6 +69,7 @@ static void        fixupArrayFormals(FnSymbol* fn);
 static bool        includesParameterizedPrimitive(FnSymbol* fn);
 static void        replaceFunctionWithInstantiationsOfPrimitive(FnSymbol* fn);
 static void        fixupQueryFormals(FnSymbol* fn);
+static void        fixupCastFormals(FnSymbol* fn);
 
 static void        updateInitMethod (FnSymbol* fn);
 
@@ -165,6 +166,8 @@ void normalize() {
         updateInitMethod(fn);
       }
     }
+
+    fixupCastFormals(fn);
   }
 
   normalizeBase(theProgram, true);
@@ -4184,6 +4187,8 @@ static void cloneParameterizedPrimitive(FnSymbol* fn,
 
 static void replaceUsesWithPrimTypeof(FnSymbol* fn, ArgSymbol* formal);
 
+static bool isCastToBorrowedInFormal(ArgSymbol* formal);
+
 static bool isQueryForGenericTypeSpecifier(ArgSymbol* formal);
 
 static void fixDecoratedTypePrimitives(FnSymbol* fn, ArgSymbol* formal);
@@ -4200,6 +4205,39 @@ static void addToWhereClause(FnSymbol*  fn,
                              ArgSymbol* formal,
                              Expr*      test);
 
+static void fixupCastFormals(FnSymbol* fn) {
+  for_formals(formal, fn) {
+    if (BlockStmt* typeExpr = formal->typeExpr) {
+      if(typeExpr->body.length == 1) {
+        if(CallExpr* typeCast = toCallExpr(typeExpr->body.tail)) {
+          if(typeCast->isCast()) {
+            VarSymbol* tmp = newTemp("call_type_tmp");
+            tmp->addFlag(FLAG_TYPE_VARIABLE);
+            tmp->addFlag(FLAG_MAYBE_TYPE);
+            tmp->addFlag(FLAG_EXPR_TEMP);
+
+            SymExpr* tmpSe = new SymExpr(tmp);
+            typeCast->replace(tmpSe);
+
+            auto mod = fn->getModule();
+            auto def = new DefExpr(tmp);
+            auto move = new CallExpr(PRIM_MOVE, tmp, typeCast);
+            mod->block->insertAtTail(def);
+
+            // insert the move just after we def the fromType
+            if(auto fromType = toSymExpr(typeCast->castFrom())) {
+              Symbol* fromTypeSym = toSymExpr(fromType)->symbol();
+              fromTypeSym->defPoint->insertAfter(move);
+            } else {
+              USR_FATAL(formal, "Complex expressions casted to `borrowed` in a formal type are not currently supported, consider using a helper function");
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 static void fixupQueryFormals(FnSymbol* fn) {
   if (fn->isConstrainedGeneric()) {
     introduceConstrainedTypes(fn);
@@ -4215,7 +4253,10 @@ static void fixupQueryFormals(FnSymbol* fn) {
 
         replaceUsesWithPrimTypeof(fn, formal);
 
-      } else if (isQueryForGenericTypeSpecifier(formal) == true) {
+      } else if (isCastToBorrowedInFormal(formal)) {
+        // avoids expandQueryForGenericTypeSpecifier messing up the cast to borrowed
+      }
+      else if (isQueryForGenericTypeSpecifier(formal) == true) {
         if (formal->intent == INTENT_OUT)
           outFormalQueryError(formal);
 
@@ -4256,6 +4297,30 @@ static void replaceUsesWithPrimTypeof(FnSymbol* fn, ArgSymbol* formal) {
 
   formal->type = dtAny;
 }
+
+static bool isBorrowedTypeActual(Expr* expr) {
+  if (SymExpr* se = toSymExpr(expr)) {
+    if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
+      Type* canonicalType = canonicalDecoratedClassType(ts->type);
+      if (canonicalType == dtBorrowed) return true;
+    }
+  }
+
+  return false;
+}
+
+static bool isCastToBorrowedInFormal(ArgSymbol* formal) {
+  bool retval = false;
+
+  if(formal->typeExpr->body.length == 1) {
+    if (CallExpr* call = toCallExpr(formal->typeExpr->body.tail)) {
+      retval = call->isCast() && isBorrowedTypeActual(call->castTo());
+    }
+  }
+
+  return retval;
+}
+
 
 static bool isGenericActual(Expr* expr) {
   if (isDefExpr(expr))
