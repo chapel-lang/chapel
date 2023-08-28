@@ -244,7 +244,7 @@ proc replicateB(abIx) {
 }
 
 proc targetLocalesIndexForAbIndex(param dim, abIx) do
-  return (divceilpos(abIx, blkSize) - 1) % (if dim == 1 then tl1 else tl2);
+  return (divCeilPos(abIx, blkSize) - 1) % (if dim == 1 then tl1 else tl2);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -323,7 +323,7 @@ proc computeNfromNRest(nRest) {
 }
 proc computeNfromNRestRaw(nRestRaw, param needMultiple = false) {
   const multiple = blkSize * (if tl2 == tl1 || tl2 == 2*tl1 then tl2 else tl1*tl2);
-  const nRest = divceil(nRestRaw, multiple) * multiple;
+  const nRest = divCeil(nRestRaw, multiple) * multiple;
   const nResult = computeNfromNRest(nRest);
 
 //writeln("nRestRaw ", nRestRaw, "  multiple ", multiple, "  nRest ", nRest);
