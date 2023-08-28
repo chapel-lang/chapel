@@ -1370,31 +1370,7 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
 // output array
 //
 proc StencilArr.dsiSerialWrite(f) {
-  type strType = chpl__signedType(idxType);
-  var binary = f.binary();
-  if dom.dsiNumIndices == 0 then return;
-  var i : rank*idxType;
-  for dim in 0..rank-1 do
-    i(dim) = dom.dsiDim(dim).lowBound;
-  label next while true {
-    f.write(do_dsiAccess(true, i));
-    if i(rank-1) <= (dom.dsiDim(rank-1).highBound - dom.dsiDim(rank-1).stride:strType) {
-      if ! binary then f.write(" ");
-      i(rank-1) += dom.dsiDim(rank-1).stride:strType;
-    } else {
-      for dim in 0..rank-2 by -1 {
-        if i(dim) <= (dom.dsiDim(dim).highBound - dom.dsiDim(dim).stride:strType) {
-          i(dim) += dom.dsiDim(dim).stride:strType;
-          for dim2 in dim+1..rank-1 {
-            f.writeln();
-            i(dim2) = dom.dsiDim(dim2).lowBound;
-          }
-          continue next;
-        }
-      }
-      break;
-    }
-  }
+  chpl_serialReadWriteRectangular(f, this);
 }
 
 pragma "no copy return"
