@@ -225,6 +225,10 @@ static ControlFlowModifier nodeAllowsReturn(const AstNode* node,
       return ControlFlowModifier::BLOCKS;
     }
 
+    // The 'init' method is handled separately by the initializerRules pass.
+    // If we handle it here it also erroneously picks up the use of 'return'
+    // in 'lifetime return' statements (which isn't a concern for deinit
+    // and postinit).
     if(fn->name() == USTR("deinit") ||
        fn->name() == USTR("postinit"))
     {
