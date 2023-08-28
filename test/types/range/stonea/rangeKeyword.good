@@ -1,0 +1,5 @@
+rangeKeyword.chpl:2: error: attempt to redefine reserved type 'range'
+rangeKeyword.chpl:3: error: attempt to redefine reserved type 'range'
+rangeKeyword.chpl:4: error: attempt to redefine reserved type 'range'
+rangeKeyword.chpl:5: error: attempt to redefine reserved type 'range'
+rangeKeyword.chpl:6: error: attempt to redefine reserved type 'range'
