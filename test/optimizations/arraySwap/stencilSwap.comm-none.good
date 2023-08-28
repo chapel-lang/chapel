@@ -25,7 +25,7 @@ StencilArr doing unoptimized swap. Domains: PREDIFFED
 20 20 20 20 20 20 20 20 20 20
 
 
-one array is unevenly distributed. block shouldn't optimize
+one array is unevenly distributed. shouldn't optimize
 'Forward' swap
 StencilArr doing unoptimized swap. Domains: PREDIFFED
 20 20 20 20 20 20 20 20 20 20
@@ -51,7 +51,7 @@ DefaultRectangular doing optimized swap. Domains: PREDIFFED
 20 20 20 20 20 20 20 20 20 20
 
 
-One of the domains are strided
+One of the domains is strided
 'Forward' swap
 StencilArr doing unoptimized swap. Type mismatch
 20 20 20 20 20
@@ -77,7 +77,7 @@ DefaultRectangular doing optimized swap. Domains: PREDIFFED
 20 20 20 20 20
 
 
-both are strided, have same number of elements but not aligned, block shouldn't optimize
+both are strided, have same number of elements but not aligned, shouldn't optimize
 'Forward' swap
 StencilArr doing unoptimized swap. Domains: PREDIFFED
 20 20 20 20 20
@@ -163,7 +163,7 @@ DefaultRectangularArr doing unoptimized swap. Type mismatch
 20 20 20 20 20
 
 
-both are strided, have same number of elements but not aligned, block shouldn't optimize
+both are strided, have same number of elements but not aligned, shouldn't optimize
 'Forward' swap
 StencilArr doing unoptimized swap. Type mismatch
 20 20 20 20 20

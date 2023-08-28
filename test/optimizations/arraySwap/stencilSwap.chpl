@@ -43,7 +43,7 @@ writeln("*** Stencil ***");
 
 
 {
-  writeln("one array is unevenly distributed. block shouldn't optimize");
+  writeln("one array is unevenly distributed. shouldn't optimize");
   var d1 = {0..9} dmapped Stencil({1..10});
   var d2 = {1..10} dmapped Stencil({1..10});
 
@@ -65,7 +65,7 @@ writeln("*** Stencil ***");
 {
   // this case can technically be optimized but it isn't today, mostly because
   // abundance of caution
-  writeln("One of the domains are strided");
+  writeln("One of the domains is strided");
   var d1 = {0..9 by 2} dmapped Stencil({1..10});
   var d2 = {0..4} dmapped Stencil({1..10});
 
@@ -85,7 +85,7 @@ writeln("*** Stencil ***");
 }
 
 {
-  writeln("both are strided, have same number of elements but not aligned, block shouldn't optimize");
+  writeln("both are strided, have same number of elements but not aligned, shouldn't optimize");
   var d1 = {0..9 by 2} dmapped Stencil({1..10});
   var d2 = {1..10 by 2} dmapped Stencil({1..10});
 
@@ -160,7 +160,7 @@ writeln("*** Cross type ***");
 }
 
 {
-  writeln("both are strided, have same number of elements but not aligned, block shouldn't optimize");
+  writeln("both are strided, have same number of elements but not aligned, shouldn't optimize");
   var d1 = {0..9 by 2} dmapped Stencil({1..10});
   var d2 = {1..10 by 2};
 
