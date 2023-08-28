@@ -298,10 +298,9 @@ void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
       wr.message("Did you mean to use the 'yield' keyword instead of 'return'?");
     }
     return;
-  } else {
-    CHPL_ASSERT(isFuncWithReturn);
+  } else if (isFuncWithReturn) {
     wr.heading(kind_, type_, ret,
-               "'return' statements with values are not allowed in ", blockingAstFn->name(), ".");
+               "'return' statements with values are not allowed in ", blockingAstFn->name());
     wr.message("The following 'return' statement has a value:");
     wr.code(ret, { ret->value() });
     wr.codeForLocation(blockingAstFn);

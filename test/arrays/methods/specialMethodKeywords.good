@@ -5,6 +5,6 @@ specialMethodKeywords.chpl:38: error: attempt to redefine reserved word 'postini
 specialMethodKeywords.chpl:41: error: attempt to redefine reserved word 'init'
 specialMethodKeywords.chpl:42: error: attempt to redefine reserved word 'postinit'
 specialMethodKeywords.chpl:71: In method 'deinit':
-specialMethodKeywords.chpl:71: error: 'return' statements with values are not allowed in deinit methods
+specialMethodKeywords.chpl:71: error: 'return' statements with values are not allowed in deinit
 specialMethodKeywords.chpl:72: In method 'postinit':
-specialMethodKeywords.chpl:72: error: 'return' statements with values are not allowed in postinit methods
+specialMethodKeywords.chpl:72: error: 'return' statements with values are not allowed in postinit
