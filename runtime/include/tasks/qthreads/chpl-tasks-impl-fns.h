@@ -216,7 +216,9 @@ chpl_bool chpl_task_impl_hasFixedNumThreads(void);
 
 #define CHPL_TASK_IMPL_IS_FIXED_THREAD() (qthread_shep() != NO_SHEPHERD)
 
-#define CHPL_TASK_IMPL_CAN_MIGRATE_THREADS() CHPL_QTHREAD_TASKS_CAN_MIGRATE_THREADS
+// Even if CHPL_QTHREAD_TASKS_CAN_MIGRATE_THREADS returns true, we mark tasks
+// as unstealable once they've started, so running tasks can't migrate
+#define CHPL_TASK_IMPL_CAN_MIGRATE_THREADS() false
 
 #ifdef __cplusplus
 } // end extern "C"
