@@ -11,7 +11,7 @@ module Chai {
     use Tensor only Tensor;
     
 
-    class Dense {
+    record Dense {
 
         var outputSize: int;
         var inputSize_ = -1;
@@ -143,7 +143,7 @@ module Chai {
         }
     }
 
-    class Sigmoid {
+    record Sigmoid {
         proc init() { }
 
         proc forwardProp(x: Tensor(?rank)): Tensor(rank) {
@@ -187,7 +187,7 @@ module Chai {
 
     }
 
-    class Conv {
+    record Conv {
 
         var numFilters: int;
         var filters: Tensor(4);
@@ -282,11 +282,11 @@ module Chai {
             return dL_dX;
         }
 
-        proc backwardBatch(deltas: [] Tensor(3), imagess: [] Tensor(3)): [] Tensor(3) {
+        proc backwardBatch(deltas: [] Tensor(3), inputs: [] Tensor(3)): [] Tensor(3) {
             const batchSize = deltas.size;
             var newDeltas: [0..#batchSize] Tensor(3);
             var filtersGrad = this.filtersGrad;
-            forall (delta,images,i) in zip(deltas,imagess,0..) with (+ reduce filtersGrad) {
+            forall (delta,images,i) in zip(deltas,inputs,0..) with (+ reduce filtersGrad) {
                 // coppied from above
                 const (h,w,channels) = images.shape;
                 const (outChannels,kh,kw,inChannels) = filters.shape;
@@ -339,7 +339,7 @@ module Chai {
         }
     }
 
-    class MaxPool {
+    record MaxPool {
 
         proc forwardPropBatch(batch: [] Tensor(3)): [] Tensor(3) {
             const batchSize = batch.size;
@@ -396,11 +396,11 @@ module Chai {
             return output;
         }
 
-        proc backwardBatch(deltas: [] Tensor(3), convs: [] Tensor(3)): [] Tensor(3) {
+        proc backwardBatch(deltas: [] Tensor(3), inputs: [] Tensor(3)): [] Tensor(3) {
             const batchSize = deltas.size;
             var newDeltas: [0..#batchSize] Tensor(3);
-            forall (delta,convs,i) in zip(deltas,convs,0..) {
-                newDeltas[i] = backward(delta,convs);
+            forall (delta,inputs,i) in zip(deltas,inputs,0..) {
+                newDeltas[i] = backward(delta,inputs);
             }
             return newDeltas;
         }
@@ -418,7 +418,7 @@ module Chai {
         }
     }
 
-    class ReLU {
+    record ReLU {
         var a: real = 0.0;
         proc init(a: real = 0.0) { this.a = a; }
         proc forwardProp(input: Tensor(?rank)) {
@@ -464,7 +464,7 @@ module Chai {
         }
     }
 
-    class Flatten {
+    record Flatten {
 
         proc init() { }
         proc forwardProp(input: Tensor(?inRank)): Tensor(1) {
@@ -483,7 +483,7 @@ module Chai {
         }
     }
 
-    class SoftMax {
+    record SoftMax {
 
         var weights: Tensor(2);
         var biases: Tensor(1);
@@ -506,11 +506,11 @@ module Chai {
         proc init(outputSize: int) {
             this.outputSize = outputSize;
         }
-
-        proc forwardPropBatch(batch: [] Tensor(1)): [] Tensor(1) {
+        
+        proc forwardPropBatch(batch: [] ?tensorType): [] Tensor(1) where isSubtype(tensorType, Tensor) {
             const batchSize = batch.size;
             var outputs: [0..#batchSize] Tensor(1);
-            forall (input,i) in zip(batch,0..) {
+            forall (input,i) in zip(batch,0..) with (ref this) {
                 outputs[i] = forwardProp(input);
             }
             return outputs;
@@ -574,9 +574,9 @@ module Chai {
             return dL_dIn.reshape(input.domain);
         }
 
-        proc backwardBatch(deltas: [] Tensor(1), inputs: [] Tensor(?)): [] Tensor(1) {
+        proc backwardBatch(deltas: [] Tensor(1), inputs: [] ?tensorType2) : [] tensorType2 where isSubtype(tensorType2, Tensor) {
             const batchSize = deltas.size;
-            var newDeltas: [0..#batchSize] Tensor(?);
+            var newDeltas: [0..#batchSize] tensorType2;
             var weightsGrad = this.weightsGrad;
             var biasesGrad = this.biasesGrad;
             forall (delta,input,idx) in zip(deltas,inputs,0..) with (+ reduce weightsGrad, + reduce biasesGrad) {
@@ -675,7 +675,7 @@ module Chai {
         return layers[n].backwardBatch(deltas=deltas,inputs=inputs);
     }
 
-    class Network {
+    record Network {
         var _layers;
         proc ref layers ref do return this._layers;
 

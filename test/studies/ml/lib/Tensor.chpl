@@ -316,9 +316,13 @@ module Tensor {
 
     operator +(lhs: Tensor(?rank,?eltType), rhs: Tensor(rank,eltType)) {
         var t = new Tensor(rank=rank,eltType=eltType);
+
+
         t.reshapeDomain(lhs.domain); // fixme. should be union.
         t.data = lhs.data + rhs.data;
         return t;
+
+
         // if lhs.domain.size == rhs.domain.size {
         //     t.reshapeDomain(lhs.domain); // fixme. should be union.
         //     t.data = lhs.data + rhs.data;
@@ -345,6 +349,10 @@ module Tensor {
         if lhs.domain.size == rhs.domain.size {
             lhs.data += rhs.data;
         } 
+        else if lhs.domain.size == 0 {
+            lhs.reshapeDomain(rhs.domain);
+            lhs.data = rhs.data;
+        }
         // if lhs.domain.size == 0 && rhs.domain.size != 0 {
         //     lhs.reshapeDomain(rhs.domain);
         //     lhs.data = rhs.data;
