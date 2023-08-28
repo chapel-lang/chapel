@@ -13652,36 +13652,13 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
         }
       }
     } else if (isGenericField) {
-
-      bool hasCompilerGeneratedInitializer = root->wantsDefaultInitializer();
-
-      if (hasCompilerGeneratedInitializer && hasDefault == false) {
-        // Create a temporary to pass for typeless generic fields
-        // e.g. for
-        //   record R { var x; }
-        //   var myR: R(int);
-        // convert the  default initialization into
-        //   var default_field_tmp: int;
-        //   var myR = new R(x=default_field_tmp)
-        VarSymbol* temp = newTemp("default_field_temp", value->typeInfo());
-        CallExpr* tempCall = new CallExpr(PRIM_DEFAULT_INIT_VAR, temp, value);
-
-        call->insertBefore(new DefExpr(temp));
-        call->insertBefore(tempCall);
-        resolveExpr(tempCall->get(2));
-        resolveExpr(tempCall);
-        appendExpr = new SymExpr(temp);
-
-      } else {
-        USR_FATAL_CONT(call, "default initialization with type '%s' "
-                             "is not yet supported", toString(at));
-        USR_PRINT(field, "field '%s' is a generic value",
-                         field->name);
-        USR_PRINT(field, "consider separately declaring a type field for it "
-                         "or using a 'new' call");
-        USR_STOP();
-      }
-
+      USR_FATAL_CONT(call, "default initialization with type '%s' "
+                           "is not yet supported", toString(at));
+      USR_PRINT(field, "field '%s' is a generic value",
+                       field->name);
+      USR_PRINT(field, "consider separately declaring a type field for it "
+                       "or using a 'new' call");
+      USR_STOP();
     } else {
       INT_FATAL("Unhandled case for default-init");
     }
