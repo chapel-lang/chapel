@@ -2391,7 +2391,7 @@ module HDF5 {
     }
 
     extern record H5F_info2_t {
-      var sup : unnamedStruct1;
+      extern "super" var super_ : unnamedStruct1;
       var free : unnamedStruct2;
       var sohm : unnamedStruct3;
     }
