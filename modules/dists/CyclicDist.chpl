@@ -153,7 +153,7 @@ They must match the rank and index type of the domains
 It is common for a ``Cyclic`` distribution to distribute its indices
 across all locales. In this case, a convenience function can be used to
 declare variables of cyclic-distributed domain or array type.  These functions
-take a domain or list of ranges as arguments and return a cyclic-distributed
+take a domain or series of ranges as arguments and return a cyclic-distributed
 domain or array.
 
   .. code-block:: chapel
@@ -165,8 +165,56 @@ domain or array.
     var CyclicDom2 = Cyclic.createDomain(1..5, 1..5);
     var CyclicArr2 = Cyclic.createArray(1..5, 1..5, real);
 
-Note that an optional ``targetLocales`` argument can be passed to modify the
-target locales over which the domain or array will be distributed.
+The helper methods on ``Cyclic`` have the following signatures:
+
+  .. function:: proc type Cyclic.createDomain(dom: domain, targetLocales = Locales)
+
+    Create a domain over a Cyclic Distribution.
+
+  .. function:: proc type Cyclic.createDomain(rng: range(?)..., targetLocales = Locales)
+
+    Create a domain over a Cyclic Distribution constructed from a series of
+    ranges.
+
+  .. function:: proc type Cyclic.createArray(dom: domain, type eltType, targetLocales = Locales)
+
+    Create a default initialized array over a Cyclic Distribution using the
+    given domain.
+
+  .. function:: proc type Cyclic.createArray(rng: range(?)..., type eltType, targetLocales = Locales)
+
+    Create a default initialized array over a Cyclic Distribution using a
+    domain constructed from the series of ranges.
+
+  .. function:: proc type Cyclic.createArray(dom: domain, type eltType, initExpr, targetLocales = Locales)
+
+    Create an array over a Cyclic Distribution using the given domain.
+
+    The array's values are initialized using ``initExpr`` which can be any of
+    the following:
+
+    * a value coercible to ``eltType`` — all elements of the array will have this value
+    * an iterator expression that yields values of type ``eltType`` — the iterator
+      will be assigned into the array
+    * an array whose size matches ``dom``'s size in each dimension, and whose element
+      type can be coerced to ``eltType`` — the given array will be assigned into the
+      distributed array
+
+  .. function:: proc type Cyclic.createArray(rng: range(?)..., type eltType, initExpr, targetLocales = Locales)
+
+    Create an array over a Cyclic Distribution using a domain constructed from
+    the series of ranges.
+
+    The array's values are initialized using ``initExpr`` which can be any of
+    the following:
+
+    * a value coercible to ``eltType`` — all elements of the array will have this value
+    * an iterator expression that yields values of type ``eltType`` — the iterator
+      will be assigned into the array
+    * an array whose size matches ``dom``'s size in each dimension, and whose element
+      type can be coerced to ``eltType`` — the given array will be assigned into the
+      distributed array
+
 
 **Data-Parallel Iteration**
 
@@ -1393,11 +1441,11 @@ proc type Cyclic.createDomain(dom: domain, targetLocales = Locales)
 }
 
 // create a domain over a Cyclic Distribution constructed from a list of ranges
-proc type Cyclic.createDomain(rng: range...) {
+proc type Cyclic.createDomain(rng: range(?)...) {
   return createDomain({(...rng)}, Locales);
 }
 
-proc type Cyclic.createDomain(rng: range..., targetLocales = Locales) {
+proc type Cyclic.createDomain(rng: range(?)..., targetLocales = Locales) {
   return createDomain({(...rng)}, targetLocales);
 }
 
@@ -1410,7 +1458,7 @@ proc type Cyclic.createArray(dom: domain, type eltType, targetLocales = Locales)
 
 // create an array over a Cyclic Distribution, initialized with the given value or iterator
 proc type Cyclic.createArray(dom: domain, type eltType, initExpr: ?t, targetLocales = Locales)
-  where isSubtype(t, _iteratorRecord) || t == eltType
+  where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
 {
   var D = createDomain(dom, targetLocales);
   var A: [D] eltType;
@@ -1419,7 +1467,11 @@ proc type Cyclic.createArray(dom: domain, type eltType, initExpr: ?t, targetLoca
 }
 
 // create an array over a Cyclic Distribution, initialized from the given array
-proc type Cyclic.createArray(initExpr: [?dom] ?eltType, targetLocales = Locales) {
+proc type Cyclic.createArray(dom: domain, type eltType, initExpr: [?arrayDom] ?arrayEltType, targetLocales = Locales)
+  where dom.rank == arrayDom.rank && isCoercible(arrayEltType, eltType)
+{
+  for (d, ad, i) in zip(dom.dims(), arrayDom.dims(), 0..) do
+    if d.size != ad.size then halt("Domain size mismatch in 'Cyclic.createArray' dimension " + i:string);
   var D = createDomain(dom, targetLocales);
   var A: [D] eltType;
   A = initExpr;
@@ -1427,23 +1479,36 @@ proc type Cyclic.createArray(initExpr: [?dom] ?eltType, targetLocales = Locales)
 }
 
 // create an array over a Cyclic Distribution constructed from a list of ranges, default initialized
-proc type Cyclic.createArray(rng: range..., type eltType) {
-  return createArray({(...rng)}, eltType, Locales);
+proc type Cyclic.createArray(rng: range(?)..., type eltType) {
+  return createArray({(...rng)}, eltType);
 }
 
-proc type Cyclic.createArray(rng: range..., type eltType, targetLocales = Locales) {
+proc type Cyclic.createArray(rng: range(?)..., type eltType, targetLocales = Locales) {
   return createArray({(...rng)}, eltType, targetLocales);
 }
 
 // create an array over a Cyclic Distribution constructed from a list of ranges, initialized with the given value or iterator
-proc type Cyclic.createArray(rng: range..., type eltType, initExpr: ?t)
-  where isSubtype(t, _iteratorRecord) || t == eltType
+proc type Cyclic.createArray(rng: range(?)..., type eltType, initExpr: ?t)
+  where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
 {
-  return createArray({(...rng)}, eltType, initExpr, Locales);
+  return createArray({(...rng)}, eltType, initExpr);
 }
 
-proc type Cyclic.createArray(rng: range..., type eltType, initExpr: ?t, targetLocales = Locales)
-  where isSubtype(t, _iteratorRecord) || t == eltType
+proc type Cyclic.createArray(rng: range(?)..., type eltType, initExpr: ?t, targetLocales = Locales)
+  where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
+{
+  return createArray({(...rng)}, eltType, initExpr, targetLocales);
+}
+
+// create an array over a Cyclic Distribution constructed from a list of ranges, initialized from the given array
+proc type Cyclic.createArray(rng: range(?)...?k, type eltType, initExpr: [?arrayDom] ?arrayEltType)
+  where k == arrayDom.rank && isCoercible(arrayEltType, eltType)
+{
+  return createArray({(...rng)}, eltType, initExpr);
+}
+
+proc type Cyclic.createArray(rng: range(?)...?k, type eltType, initExpr: [?arrayDom] ?arrayEltType, targetLocales = Locales)
+  where k == arrayDom.rank && isCoercible(arrayEltType, eltType)
 {
   return createArray({(...rng)}, eltType, initExpr, targetLocales);
 }
