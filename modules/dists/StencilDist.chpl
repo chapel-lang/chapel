@@ -842,17 +842,32 @@ proc type Stencil.createArray(
   return A;
 }
 
-// create an array over a Stencil Distribution, initialized with the given value
+// create an array over a Stencil Distribution, initialized with the given value or iterator
 proc type Stencil.createArray(
   dom: domain,
   type eltType,
-  value: eltType,
+  initExpr: ?t,
+  targetLocales = Locales,
+  fluff = makeZero(dom.rank, dom.idxType),
+  periodic = false
+) where isSubtype(t, _iteratorRecord) || t == eltType
+{
+  var D = createDomain(dom, targetLocales, fluff, periodic);
+  var A: [D] eltType;
+  A = initExpr;
+  return A;
+}
+
+// create an array over a Stencil Distribution, initialized from the given array
+proc type Stencil.createArray(
+  initExpr: [?dom] ?eltType,
   targetLocales = Locales,
   fluff = makeZero(dom.rank, dom.idxType),
   periodic = false
 ) {
   var D = createDomain(dom, targetLocales, fluff, periodic);
-  var A: [D] eltType = value;
+  var A: [D] eltType;
+  A = initExpr;
   return A;
 }
 
@@ -865,26 +880,28 @@ proc type Stencil.createArray(
   rng: range...?k,
   type eltType,
   targetLocales = Locales,
-  fluff: ?t = makeZero(k, int),
+  fluff: ?f = makeZero(k, int),
   periodic = false
-) where isHomogeneousTupleType(t) {
+) where isHomogeneousTupleType(f) {
   return createArray({(...rng)}, eltType, targetLocales, fluff, periodic);
 }
 
-// create an array over a Stencil Distribution constructed from a list of ranges, initialized with the given value
-proc type Stencil.createArray(rng: range...?k, type eltType, value: eltType) {
-  return createArray({(...rng)}, eltType, value, Locales, makeZero(k, rng[0].idxType), false);
+// create an array over a Stencil Distribution constructed from a list of ranges, initialized with the given value or iterator
+proc type Stencil.createArray(rng: range...?k, type eltType, initExpr: ?t)
+  where isSubtype(t, _iteratorRecord) || t == eltType
+{
+  return createArray({(...rng)}, eltType, initExpr, Locales, makeZero(k, rng[0].idxType), false);
 }
 
 proc type Stencil.createArray(
   rng: range...?k,
   type eltType,
-  value: eltType,
+  initExpr: ?t,
   targetLocales = Locales,
-  fluff: ?t = makeZero(k, int),
+  fluff: ?f = makeZero(k, int),
   periodic = false
-) where isHomogeneousTupleType(t) {
-  return createArray({(...rng)}, eltType, value, targetLocales, fluff, periodic);
+) where (isSubtype(t, _iteratorRecord) || t == eltType) && isHomogeneousTupleType(f)  {
+  return createArray({(...rng)}, eltType, initExpr, targetLocales, fluff, periodic);
 }
 
 proc chpl__computeBlock(locid, targetLocBox, boundingBox) {

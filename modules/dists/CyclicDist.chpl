@@ -1408,10 +1408,21 @@ proc type Cyclic.createArray(dom: domain, type eltType, targetLocales = Locales)
   return A;
 }
 
-// create an array over a Cyclic Distribution, initialized with the given value
-proc type Cyclic.createArray(dom: domain, type eltType, value: eltType, targetLocales = Locales) {
+// create an array over a Cyclic Distribution, initialized with the given value or iterator
+proc type Cyclic.createArray(dom: domain, type eltType, initExpr: ?t, targetLocales = Locales)
+  where isSubtype(t, _iteratorRecord) || t == eltType
+{
   var D = createDomain(dom, targetLocales);
-  var A: [D] eltType = value;
+  var A: [D] eltType;
+  A = initExpr;
+  return A;
+}
+
+// create an array over a Cyclic Distribution, initialized from the given array
+proc type Cyclic.createArray(initExpr: [?dom] ?eltType, targetLocales = Locales) {
+  var D = createDomain(dom, targetLocales);
+  var A: [D] eltType;
+  A = initExpr;
   return A;
 }
 
@@ -1424,13 +1435,17 @@ proc type Cyclic.createArray(rng: range..., type eltType, targetLocales = Locale
   return createArray({(...rng)}, eltType, targetLocales);
 }
 
-// create an array over a Cyclic Distribution constructed from a list of ranges, initialized with the given value
-proc type Cyclic.createArray(rng: range..., type eltType, value: eltType) {
-  return createArray({(...rng)}, eltType, value, Locales);
+// create an array over a Cyclic Distribution constructed from a list of ranges, initialized with the given value or iterator
+proc type Cyclic.createArray(rng: range..., type eltType, initExpr: ?t)
+  where isSubtype(t, _iteratorRecord) || t == eltType
+{
+  return createArray({(...rng)}, eltType, initExpr, Locales);
 }
 
-proc type Cyclic.createArray(rng: range..., type eltType, value: eltType, targetLocales = Locales) {
-  return createArray({(...rng)}, eltType, value, targetLocales);
+proc type Cyclic.createArray(rng: range..., type eltType, initExpr: ?t, targetLocales = Locales)
+  where isSubtype(t, _iteratorRecord) || t == eltType
+{
+  return createArray({(...rng)}, eltType, initExpr, targetLocales);
 }
 
 // Cyclic subdomains are represented as a single domain
