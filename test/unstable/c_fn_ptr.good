@@ -1,0 +1,1 @@
+c_fn_ptr.chpl:1: warning: 'c_fn_ptr' is unstable, and may be replaced by first-class procedure functionality

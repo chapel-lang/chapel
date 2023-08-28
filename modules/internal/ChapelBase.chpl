@@ -31,6 +31,30 @@ module ChapelBase {
   @deprecated(notes="the type 'c_string' is deprecated; please 'import CTypes' and use 'c_ptrConst(c_char)' instead")
   type c_string = chpl_c_string;
 
+  // c_fn_ptr stuff
+
+  // although it can just be a compiler-inserted primitive,
+  // we declare it so we can mark it unstable
+  @chpldoc.nodoc
+  @unstable("'c_fn_ptr' is unstable, and may be replaced by first-class procedure functionality")
+  type c_fn_ptr = chpl_c_fn_ptr;
+
+  @chpldoc.nodoc
+  @unstable
+  inline operator c_fn_ptr.=(ref a:c_fn_ptr, b:c_fn_ptr) {
+    __primitive("=", a, b);
+  }
+  @chpldoc.nodoc
+  @unstable
+  proc c_fn_ptr.this() {
+    compilerError("Can't call a C function pointer within Chapel");
+  }
+  @chpldoc.nodoc
+  @unstable
+  proc c_fn_ptr.this(args...) {
+    compilerError("Can't call a C function pointer within Chapel");
+  }
+
   pragma "locale private"
   @chpldoc.nodoc
   var rootLocaleInitialized: bool = false;
@@ -3283,7 +3307,7 @@ module ChapelBase {
   // Support for module deinit functions.
   class chpl_ModuleDeinit {
     const moduleName: c_ptrConst(c_char); // for debugging; non-null, not owned
-    const deinitFun:  c_fn_ptr;          // module deinit function
+    const deinitFun:  chpl_c_fn_ptr;          // module deinit function
     const prevModule: unmanaged chpl_ModuleDeinit?; // singly-linked list / LIFO queue
     proc writeThis(ch) throws {
       try {
@@ -3433,19 +3457,5 @@ module ChapelBase {
 
   inline proc chpl_field_gt(a, b) where !isArrayType(a.type) {
     return a > b;
-  }
-
-  // c_fn_ptr stuff
-  @chpldoc.nodoc
-  inline operator c_fn_ptr.=(ref a:c_fn_ptr, b:c_fn_ptr) {
-    __primitive("=", a, b);
-  }
-  @chpldoc.nodoc
-  proc c_fn_ptr.this() {
-    compilerError("Can't call a C function pointer within Chapel");
-  }
-  @chpldoc.nodoc
-  proc c_fn_ptr.this(args...) {
-    compilerError("Can't call a C function pointer within Chapel");
   }
 }
