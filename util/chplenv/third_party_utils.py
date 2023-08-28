@@ -108,7 +108,9 @@ def filter_libs(bundled_libs, system_libs):
 @memoize
 def pkgconfig_get_system_compile_args(pkg):
     # check that pkg-config knows about the package in question
-    run_command(['pkg-config', '--exists', pkg])
+    exists, returncode, my_stdout, my_stderr = try_run_command(['pkg-config', '--exists', pkg])
+    if returncode:
+        return (None, None)
     # run pkg-config to get the cflags
     cflags_line = run_command(['pkg-config', '--cflags'] + [pkg]);
     cflags = cflags_line.split()
@@ -168,7 +170,9 @@ def pkgconfig_default_static():
 @memoize
 def pkgconfig_get_system_link_args(pkg, static=pkgconfig_default_static()):
     # check that pkg-config knows about the package in question
-    run_command(['pkg-config', '--exists', pkg])
+    exists, returncode, my_stdout, my_stderr = try_run_command(['pkg-config', '--exists', pkg])
+    if returncode:
+        return (None, None)
     # run pkg-config to get the link flags
     static_arg = [ ]
     if static:
