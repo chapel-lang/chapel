@@ -482,6 +482,16 @@ static void maybeIssueRefMaybeConstWarning(ArgSymbol* arg) {
     shouldWarn = true;
   }
 
+  // should not warn if a method is marked pragma "reference to const when const this"
+  // this messes up a number of tests
+  if (shouldWarn && isArgThis) {
+    if (FnSymbol* fn = arg->getFunction()) {
+      if (fn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS)) {
+        shouldWarn = false;
+      }
+    }
+  }
+
   // only warn if the default intent is not INTENT_REF_MAYBE_CONST
   // this does to apply to `this-intent`'s, always warn for them
   if (shouldWarn && !isArgThis) {
