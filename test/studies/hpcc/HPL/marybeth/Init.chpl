@@ -176,7 +176,7 @@ record HPLparams {
   }
 }
 
-proc init(A:[?D]) {
+proc initialize(A:[?D]) {
 //  Rather than initialize A = [Asquare | b] with one call to 
 //  fillRandom, Asquare is initialized first, followed by b.
 //  This is to match the previous version of benchmark where
