@@ -48,11 +48,11 @@ class USTimeZone: Timezone {
 
     // Find first Sunday in April.
     var start = first_sunday_on_or_after(DSTSTART.replace(year=dt.year, tz=DSTSTART.timezone));
-    assert(start.weekday():int == 6 && start.month == 4 && start.day <= 7);
+    assert(start.weekday():int == 7 && start.month == 4 && start.day <= 7);
 
     // Find last Sunday in October.
     var end = first_sunday_on_or_after(DSTEND.replace(year=dt.year, tz=DSTEND.timezone));
-    assert(end.weekday():int == 6 && end.month == 10 && end.day >= 25);
+    assert(end.weekday():int == 7 && end.month == 10 && end.day >= 25);
 
     // Can't compare naive to aware objects, so strip the timezone from
     // dt first.
@@ -107,7 +107,7 @@ class FixedOffset: Timezone {
 }
 
 proc first_sunday_on_or_after(in dt) {
-  var days_to_go = 6 - dt.weekday():int;
+  var days_to_go = 7 - dt.weekday():int;
   if days_to_go > 0 {
     dt += new timeDelta(days_to_go);
   }

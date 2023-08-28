@@ -154,10 +154,8 @@ proc test_date_today() {
 
 proc test_date_weekday() {
   for i in 0..#7 {
-    assert((new date(2002, 3, 4+i)).weekday(): int == i);
-    assert((new date(2002, 3, 4+i)).isoWeekday(): int == i+1);
-    assert((new date(1956, 1, 2+i)).weekday(): int == i);
-    assert((new date(1956, 1, 2+i)).isoWeekday(): int == i+1);
+    assert((new date(2002, 3, 4+i)).weekday(): int == i+1);
+    assert((new date(1956, 1, 2+i)).weekday(): int == i+1);
   }
 }
 

@@ -322,7 +322,7 @@ proc test_utctimetuple() {
     assert(11 == t.tm_hour); // 20mm + 53mm = 1hn + 13mm
     assert(13 == t.tm_min);
     assert(d.second == t.tm_sec);
-    assert(d.weekday():int == t.tm_wday);
+    assert((d.weekday():int - 1) == t.tm_wday);
     assert(d.toOrdinal() - (new date(1, 1, 1)).toOrdinal() + 1 == t.tm_yday);
     assert(0 == t.tm_isdst);
   }
@@ -543,7 +543,7 @@ proc test_mixed_compare() {
 }
 
 proc first_sunday_on_or_after(in dt) {
-  var days_to_go = 6 - dt.weekday():int;
+  var days_to_go = 7 - dt.weekday():int;
   if days_to_go != 0 then
     dt += new timeDelta(days_to_go);
   return dt;
