@@ -874,6 +874,12 @@ static void checkFormalType(const FnSymbol* enclosingFn, ArgSymbol* formal) {
           USR_FATAL_CONT(typeExp, "The declared type of the formal "
           "%s is given by non-type function '%s'", formal->name, target->name);
     }
+
+    if (formal->type->symbol->hasFlag(FLAG_GENERIC) &&
+        !formal->hasFlag(FLAG_MARKED_GENERIC) &&
+        formal->defPoint->getModule()->modTag == MOD_USER) {
+      USR_WARN(formal, "need ? on generic formal type");
+    }
   }
 }
 
