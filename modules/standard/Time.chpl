@@ -2089,8 +2089,9 @@ proc getCurrentDate() {
 
 /*
    :returns: The current day of the week
-   :rtype:   :type:`Day`
+   :rtype:   :type:`day`
  */
+@deprecated("`getCurrentDayOfWeek` is deprecated; please use `date.today().weekday()` instead")
 proc getCurrentDayOfWeek() : day {
   var now = chpl_now_timevalue();
 

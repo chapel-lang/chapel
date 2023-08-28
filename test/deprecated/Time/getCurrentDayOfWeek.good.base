@@ -1,0 +1,9 @@
+getCurrentDayOfWeek.chpl:3: warning: enum 'day' is deprecated. Please use dayOfWeek instead
+getCurrentDayOfWeek.chpl:6: warning: enum 'day' is deprecated. Please use dayOfWeek instead
+getCurrentDayOfWeek.chpl:7: warning: enum 'day' is deprecated. Please use dayOfWeek instead
+getCurrentDayOfWeek.chpl:8: warning: enum 'day' is deprecated. Please use dayOfWeek instead
+getCurrentDayOfWeek.chpl:9: warning: enum 'day' is deprecated. Please use dayOfWeek instead
+getCurrentDayOfWeek.chpl:10: warning: enum 'day' is deprecated. Please use dayOfWeek instead
+getCurrentDayOfWeek.chpl:11: warning: enum 'day' is deprecated. Please use dayOfWeek instead
+getCurrentDayOfWeek.chpl:12: warning: enum 'day' is deprecated. Please use dayOfWeek instead
+getCurrentDayOfWeek.chpl:3: warning: `getCurrentDayOfWeek` is deprecated; please use `date.today().weekday()` instead
