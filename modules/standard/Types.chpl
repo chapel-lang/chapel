@@ -1016,28 +1016,28 @@ proc isCoercible(type from, type to) param {
   return __primitive("is_coercible", from, to);
 }
 
-/* Returns ``true`` if the type ``sub`` is a subtype of the type ``super``.
+/* Returns ``true`` if the type ``sub`` is a subtype of the type ``sup``.
    See also :ref:`Subtype`.
 
    In particular, returns ``true`` in any of these cases:
 
-     * ``sub`` is the same type as ``super``
-     * ``sub`` is an instantiation of a generic type ``super``
-     * ``sub`` is a class type inheriting from ``super``
-     * ``sub`` is non-nilable class type and ``super`` is the nilable version of the
+     * ``sub`` is the same type as ``sup``
+     * ``sub`` is an instantiation of a generic type ``sup``
+     * ``sub`` is a class type inheriting from ``sup``
+     * ``sub`` is non-nilable class type and ``sup`` is the nilable version of the
        same class type
    */
 pragma "docs only"
-proc isSubtype(type sub, type super) param {
-  return __primitive("is_subtype", super, sub);
+proc isSubtype(type sub, type sup) param {
+  return __primitive("is_subtype", sup, sub);
 }
 
 /* Similar to :proc:`isSubtype` but returns ``false`` if
-   ``sub`` and ``super`` refer to the same type.
+   ``sub`` and ``sup`` refer to the same type.
    */
 pragma "docs only"
-proc isProperSubtype(type sub, type super) param {
-  return __primitive("is_proper_subtype", super, sub);
+proc isProperSubtype(type sub, type sup) param {
+  return __primitive("is_proper_subtype", sup, sub);
 }
 
 /* :returns: isProperSubtype(a,b) */

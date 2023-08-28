@@ -1100,6 +1100,7 @@ bool Visitor::isNameReservedWord(const NamedDecl* node) {
   if (name == "none") return true;
   if (name == "false") return true;
   if (name == "true") return true;
+  if (name == "super") return true;
   return false;
 }
 
