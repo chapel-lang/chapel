@@ -276,23 +276,24 @@ void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
 
   // Match some special cases:
   auto ret = invalidAst->toReturn();
-  const uast::Function *fn = blockingAst ? blockingAst->toFunction() : nullptr;
-  bool isIterWithReturn = ret && fn && fn->kind() == uast::Function::ITER;
-  bool isSpecialMethodWithReturn = ret && fn && (fn->name() == "deinit" || fn->name() == "postinit");
+  const uast::Function *blockingAstFn = blockingAst ? blockingAst->toFunction() : nullptr;
+  bool isIterWithReturn = ret && blockingAstFn && blockingAstFn->kind() == uast::Function::ITER;
+  bool isSpecialMethodWithReturn = 
+    ret && blockingAstFn && (blockingAstFn->name() == "deinit" || blockingAstFn->name() == "postinit");
   if (isIterWithReturn) {
     wr.heading(kind_, type_, ret,
                "'return' statements with values are not allowed in iterators.");
     wr.message("The following 'return' statement has a value:");
     wr.code(ret, { ret->value() });
-    wr.note(locationOnly(fn), "'", fn->name(),
+    wr.note(locationOnly(blockingAstFn), "'", blockingAstFn->name(),
                               "' is declared as an iterator here:");
-    wr.codeForLocation(fn);
+    wr.codeForLocation(blockingAstFn);
     if (allowingAst != nullptr) {
       auto allowingFn = allowingAst->toFunction();
       CHPL_ASSERT(allowingFn);
       // There _was_ a function that allowed a return, but it must be further
       // out.
-      wr.note(locationOnly(allowingFn), "'", fn->name(), "' is declared inside '",
+      wr.note(locationOnly(allowingFn), "'", blockingAstFn->name(), "' is declared inside '",
               allowingFn->name(), "', but returning from '", allowingFn->name(), "' here is not allowed.");
     } else {
       wr.message("Did you mean to use the 'yield' keyword instead of 'return'?");
@@ -300,10 +301,10 @@ void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
     return;
   } else if(isSpecialMethodWithReturn) {
     wr.heading(kind_, type_, ret,
-               "'return' statements with values are not allowed in ", fn->name(), " methods");
+               "'return' statements with values are not allowed in ", blockingAstFn->name(), " methods");
     wr.message("The following 'return' statement has a value:");
     wr.code(ret, { ret->value() });
-    wr.codeForLocation(fn);
+    wr.codeForLocation(blockingAstFn);
     return;
   }
 
