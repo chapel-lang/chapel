@@ -188,6 +188,8 @@ GPU
   from print-module-resolution.ChapelStandard.ChapelGpuSupport.GPU
 ChapelGpuSupport
   from print-module-resolution.ChapelStandard.ChapelGpuSupport
+ChapelContext
+  from print-module-resolution.ChapelStandard.ChapelContext
 stopInitCommDiags
   from print-module-resolution.ChapelStandard.stopInitCommDiags
 ChapelStandard
