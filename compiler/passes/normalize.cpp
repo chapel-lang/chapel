@@ -3447,7 +3447,12 @@ static void hack_resolve_types(ArgSymbol* arg) {
         if (type != dtUnknown && type != dtAny) {
           // This test ensures that we are making progress.
 
+          bool genericWithDefaults = false;
+          if (AggregateType* at = toAggregateType(type))
+            genericWithDefaults = at->isGenericWithDefaults();
+
           if (type->symbol->hasFlag(FLAG_GENERIC) &&
+              !genericWithDefaults &&
               !arg->hasFlag(FLAG_MARKED_GENERIC) &&
               arg->defPoint->getModule()->modTag == MOD_USER) {
             if (type->symbol->hasFlag(FLAG_ARRAY)) {

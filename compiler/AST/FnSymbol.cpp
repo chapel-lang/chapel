@@ -875,7 +875,12 @@ static void checkFormalType(const FnSymbol* enclosingFn, ArgSymbol* formal) {
           "%s is given by non-type function '%s'", formal->name, target->name);
     }
 
+    bool genericWithDefaults = false;
+    if (AggregateType* at = toAggregateType(formal->type))
+      genericWithDefaults = at->isGenericWithDefaults();
+
     if (formal->type->symbol->hasFlag(FLAG_GENERIC) &&
+        !genericWithDefaults &&
         !formal->hasFlag(FLAG_MARKED_GENERIC) &&
         formal->defPoint->getModule()->modTag == MOD_USER) {
       if (formal->type->symbol->hasFlag(FLAG_ARRAY)) {
