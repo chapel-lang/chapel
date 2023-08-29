@@ -117,7 +117,7 @@ module Bytes {
 
   /*
     Creates a new :type:`bytes` which borrows the memory allocated for a
-    `c_ptrConst`. If the buffer is freed before the :type:`bytes` returned
+    :class:`~CTypes.c_ptrConst`. If the buffer is freed before the :type:`bytes` returned
     from this function, accessing it is undefined behavior.
 
     :arg x: `c_ptrConst` to borrow as a buffer
@@ -251,7 +251,7 @@ module Bytes {
 
     /*
     Creates a new :type:`bytes` which takes ownership of the memory
-    allocated for a `c_ptrConst`. The buffer will be freed when the
+    allocated for a :class:`~CTypes.c_ptrConst`. The buffer will be freed when the
     :type:`bytes` is deinitialized.
 
     :arg x: The `c_ptrConst` to take ownership of
@@ -347,7 +347,7 @@ module Bytes {
   /*
     Creates a new :type:`bytes` by creating a copy of a buffer
 
-    :arg x: The `c_ptrConst` to copy
+    :arg x: The :class:`~CTypes.c_ptrConst` to copy
     :type x: `c_ptrConst(uint(8))` or `c_ptrConst(int(8))`
 
     :arg length: Length of buffer `x`, excluding the terminating null byte. Defaults to the number of bytes in x before the terminating null byte.
