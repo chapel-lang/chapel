@@ -4353,14 +4353,14 @@ private inline proc markHelper(fileRW) throws {
 }
 
 /*
-   *Mark* a ``fileReader`` - that is, save the current offset of the
+   *Mark* a :record:`fileReader` - that is, save the current offset of the
    ``fileReader`` on its *mark stack*.
 
    The *mark stack* stores several file offsets. The ``fileReader`` will keep
    the region of the file between its minimum and maximum *mark stack* values
    buffered in memory so that IO operations can be undone. As a result, it is
-   possible to perform *I/O transactions* on a fileReader. The basic steps for
-   an *I/O transaction* are:
+   possible to perform *I/O transactions* on a ``fileReader``. The basic steps
+   for an *I/O transaction* are:
 
     * *mark* the current offset with :proc:`fileReader.mark`
     * do something speculative (e.g. try to read 200 bytes of anything followed
@@ -4372,8 +4372,8 @@ private inline proc markHelper(fileRW) throws {
       as though nothing happened.
 
    If a fileReader has ``locking==true``, :proc:`~fileReader.mark` should only
-   be called only once it has been locked with :proc:`~fileReader.lock`. The
-   fileReader should not be unlocked with :proc:`~fileReader.unlock` until
+   be called once it has been locked with :proc:`fileReader.lock`. The
+   fileReader should not be unlocked with :proc:`fileReader.unlock` until
    after the mark has been committed with :proc:`~fileReader.commit` or reverted
    with :proc:`~fileReader.revert`.
 
@@ -4388,21 +4388,21 @@ private inline proc markHelper(fileRW) throws {
   :throws SystemError: if marking the ``fileReader`` failed
  */
 proc fileReader.mark() throws do return markHelper(this);
-// In the future, we'd like to support IO transactions using context managers.
-// Under this proposal, entering a transaction context would mark the channel,
-// leaving the context normally would commit, and leaving via throwing an error
-// would revert.
+// TODO (8/29/23): In the future, we'd like to support IO transactions using
+// context managers. Under this proposal, entering a transaction context would
+// mark the channel, leaving the context normally would commit, and leaving via
+// throwing an error would revert.
 // See: #19611
 
 /*
-   *Mark* a ``fileWriter`` - that is, save the current offset of the
+   *Mark* a :record:`fileWriter` - that is, save the current offset of the
    ``fileWriter`` on its *mark stack*.
 
    The *mark stack* stores several file offsets. The ``fileWriter`` will keep
    the region of the file between its minimum and maximum *mark stack* values
    buffered in memory so that IO operations can be undone. As a result, it
-   is possible to perform *I/O transactions* on a fileWriter. The basic steps
-   for an *I/O transaction* are:
+   is possible to perform *I/O transactions* on a ``fileWriter``. The basic
+   steps for an *I/O transaction* are:
 
     * *mark* the current offset with :proc:`fileWriter.mark`
     * do something speculative (e.g. try to write 200 bytes)
@@ -4413,8 +4413,8 @@ proc fileReader.mark() throws do return markHelper(this);
       as though nothing happened.
 
    If a fileWriter has ``locking==true``, :proc:`~fileWriter.mark` should only
-   be called only once it has been locked with :proc:`~fileWriter.lock`. The
-   fileWriter should not be unlocked with :proc:`~fileWriter.unlock` until
+   be called once it has been locked with :proc:`fileWriter.lock`. The
+   fileWriter should not be unlocked with :proc:`fileWriter.unlock` until
    after the mark has been committed with :proc:`~fileWriter.commit` or reverted
    with :proc:`~fileWriter.revert`.
 
@@ -4429,10 +4429,10 @@ proc fileReader.mark() throws do return markHelper(this);
   :throws SystemError: if marking the ``fileWriter`` failed
  */
 proc fileWriter.mark() throws do return markHelper(this);
-// In the future, we'd like to support IO transactions using context managers.
-// Under this proposal, entering a transaction context would mark the channel,
-// leaving the context normally would commit, and leaving via throwing an error
-// would revert.
+// TODO (8/29/23): In the future, we'd like to support IO transactions using
+// context managers. Under this proposal, entering a transaction context would
+// mark the channel, leaving the context normally would commit, and leaving via
+// throwing an error would revert.
 // See: #19611
 
 /*
@@ -4465,8 +4465,8 @@ inline proc fileWriter.revert() {
 
 /*
    Commit an *I/O transaction* by popping from the ``fileReader``'s *mark stack*
-   and leaving its position unchanged. See :proc:`fileReader.mark` for a full
-   description of an *I/O transaction*.
+   and leaving its position in the file unchanged. See :proc:`fileReader.mark` for
+   a full description of an *I/O transaction*.
 
    This routine should only be called on a fileReader that has already
    been marked. If called on a fileReader with ``locking=true``, the fileReader
@@ -4479,8 +4479,8 @@ inline proc fileReader.commit() {
 
 /*
    Commit an *I/O transaction* by popping from the ``fileWriter``'s *mark stack*
-   and leaving its position unchanged. See :proc:`fileWriter.mark` for a full
-   description of an *I/O transaction*.
+   and leaving its position in the file unchanged. See :proc:`fileWriter.mark` for
+   a full description of an *I/O transaction*.
 
    This routine should only be called on a fileWriter that has already
    been marked. If called on a fileWriter with ``locking=true``, the fileWriter
