@@ -162,6 +162,7 @@ struct Visitor {
 
   // Warnings.
   void warnUnstableUnions(const Union* node);
+  void warnUnstableForeachLoops(const Foreach* node);
   void warnUnstableSymbolNames(const NamedDecl* node);
 
   // Visitors.
@@ -175,6 +176,7 @@ struct Visitor {
   void visit(const Continue* node);
   void visit(const CStringLiteral* node);
   void visit(const ExternBlock* node);
+  void visit(const Foreach* node);
   void visit(const FnCall* node);
   void visit(const Function* node);
   void visit(const FunctionSignature* node);
@@ -1195,6 +1197,12 @@ void Visitor::warnUnstableUnions(const Union* node) {
              "in ways that will break their current uses.");
 }
 
+void Visitor::warnUnstableForeachLoops(const Foreach* node) {
+  if (!shouldEmitUnstableWarning(node)) return;
+  warn(node, "foreach loops are currently unstable and are expected to change "
+             "in ways that may break some of their current uses.");
+}
+
 void Visitor::warnUnstableSymbolNames(const NamedDecl* node) {
   if (!shouldEmitUnstableWarning(node)) return;
   if (!isUserCode()) return;
@@ -1394,6 +1402,10 @@ void Visitor::visit(const FunctionSignature* node) {
 
 void Visitor::visit(const Union* node) {
   warnUnstableUnions(node);
+}
+
+void Visitor::visit(const Foreach* node) {
+  warnUnstableForeachLoops(node);
 }
 
 void Visitor::visit(const Use* node) {
