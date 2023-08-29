@@ -157,7 +157,7 @@ use IO; // required for file operations
 
 config const filename = "tempfile.txt";
 
-proc R.writeThis(ch: fileWriter) throws {
+proc R.writeThis(ch: fileWriter(?)) throws {
   ch.write("*", vals, "*");
 }
 
@@ -172,7 +172,7 @@ proc R.writeThis(ch: fileWriter) throws {
 // The ``readThis`` method defines how to read an instance of R from a
 // channel. We'll read the ``vals`` tuple between asterisks like how it
 // was written above.
-proc R.readThis(ch: fileReader) throws {
+proc R.readThis(ch: fileReader(?)) throws {
   ch.readLiteral("*");
   ch.read(vals);
   ch.readLiteral("*");

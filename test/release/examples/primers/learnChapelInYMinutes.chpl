@@ -849,7 +849,7 @@ class MyClass {
 
   // We can define an operator on our class as well, but
   // the definition has to be outside the class definition.
-  operator MyClass.+(A : MyClass, B : MyClass) : owned MyClass {
+  operator MyClass.+(A : borrowed MyClass, B : borrowed MyClass) : owned MyClass {
     return
       new MyClass(memberInt = A.getMemberInt() + B.getMemberInt(),
                   memberBool = A.getMemberBool() || B.getMemberBool());
