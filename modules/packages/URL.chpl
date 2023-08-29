@@ -56,6 +56,15 @@ module URL {
   }
 
   pragma "last resort"
+  @deprecated("openUrlReader with a 'kind' argument is deprecated")
+  proc openUrlReader(url:string,
+                     param kind=iokind.dynamic, param locking=true,
+                     start:int(64) = 0, end:int(64) = max(int(64)))
+                    : fileReader(kind, locking) throws {
+    return openUrlReaderHelper(url, kind, locking, start..end);
+  }
+
+  pragma "last resort"
   @deprecated(notes="openUrlReader with a start and/or end argument is deprecated. Please use the new region argument instead.")
   proc openUrlReader(url:string,
                      param kind=iokind.dynamic, param locking=true,
@@ -69,10 +78,6 @@ module URL {
   Open a fileReader from a particular URL.
 
   :arg url: which url to open (for example, "http://example.com").
-  :arg kind: :type:`~IO.iokind` compile-time argument to determine the
-              corresponding parameter of the :record:`~IO.fileReader` type.
-              Defaults to ``iokind.dynamic``, meaning that the associated
-              :record:`~IO.iostyle` controls the formatting choices.
   :arg locking: compile-time argument to determine whether or not the
                 channel should use locking; sets the
                 corresponding parameter of the :record:`~IO.fileReader` type.
@@ -85,16 +90,15 @@ module URL {
 
   :throws SystemError: Thrown if a fileReader could not be returned.
    */
-  proc openUrlReader(url:string,
-                     param kind=iokind.dynamic, param locking=true,
+  proc openUrlReader(url:string, param locking=true,
                      region: range(?) = 0..)
-                    : fileReader(kind, locking) throws {
-    return openUrlReaderHelper(url, kind, locking, region);
+                    : fileReader(locking) throws {
+    return openUrlReaderHelper(url, _iokind.dynamic, locking, region);
   }
 
   private
   proc openUrlReaderHelper(url:string,
-                           param kind=iokind.dynamic, param locking=true,
+                           param kind=_iokind.dynamic, param locking=true,
                            region: range(?) = 0..,
                            style:iostyleInternal = defaultIOStyleInternal())
     : fileReader(kind, locking) throws {
@@ -120,6 +124,16 @@ module URL {
   }
 
   pragma "last resort"
+  @chpldoc.nodoc
+  @deprecated("openUrlWriter with a 'kind' argument is deprecated")
+  proc openUrlWriter(url:string,
+                 param kind=iokind.dynamic, param locking=true,
+                 start:int(64) = 0, end:int(64) = max(int(64)))
+                : fileWriter(kind, locking) throws {
+    return openUrlWriterHelper(url, kind, locking, start..end);
+  }
+
+  pragma "last resort"
   @deprecated(notes="openUrlWriter with a start and/or end argument is deprecated. Please use the new region argument instead.")
   proc openUrlWriter(url:string,
                  param kind=iokind.dynamic, param locking=true,
@@ -133,10 +147,6 @@ module URL {
   Open a fileWriter to a particular URL.
 
   :arg path: which file to open (for example, "ftp://127.0.0.1/upload/test.txt")
-  :arg kind: :type:`~IO.iokind` compile-time argument to determine the
-             corresponding parameter of the :record:`~IO.fileWriter` type.
-             Defaults to ``iokind.dynamic``, meaning that the associated
-             :record:`~IO.iostyle` controls the formatting choices.
   :arg locking: compile-time argument to determine whether or not the
                 fileWriter should use locking; sets the
                 corresponding parameter of the :record:`~IO.fileWriter` type.
@@ -149,15 +159,14 @@ module URL {
 
   :throws SystemError: Thrown if a fileWriter could not be returned.
   */
-  proc openUrlWriter(url:string,
-                 param kind=iokind.dynamic, param locking=true,
+  proc openUrlWriter(url:string, param locking=true,
                  region: range(?) = 0..)
-                : fileWriter(kind, locking) throws {
-    return openUrlWriterHelper(url, kind, locking, region);
+                : fileWriter(locking) throws {
+    return openUrlWriterHelper(url, _iokind.dynamic, locking, region);
   }
 
   private proc openUrlWriterHelper(url:string,
-                                   param kind=iokind.dynamic,
+                                   param kind=_iokind.dynamic,
                                    param locking=true,
                                    region: range(?) = 0..,
                                    style:iostyleInternal = defaultIOStyleInternal())
