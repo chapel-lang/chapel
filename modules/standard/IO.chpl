@@ -2683,7 +2683,7 @@ proc fileWriter.serializer ref : serializerType {
 record DefaultSerializer {
 
   @chpldoc.nodoc
-  proc _serializeClassOrPtr(writer:fileWriter, x: ?t) : void throws {
+  proc ref _serializeClassOrPtr(writer:fileWriter, x: ?t) : void throws {
     if x == nil {
       writer._writeLiteral("nil");
     } else if isClassType(t) {
@@ -2693,7 +2693,7 @@ record DefaultSerializer {
     }
   }
 
-  proc serializeValue(writer: fileWriter, const val: ?t) : void throws {
+  proc ref serializeValue(writer: fileWriter, const val: ?t) : void throws {
     if isNumericType(t) || isBoolType(t) || isEnumType(t) ||
        t == string || t == bytes {
       writer._writeOne(writer._kind, val, writer.getLocaleOfIoRequest());
@@ -2714,7 +2714,7 @@ record DefaultSerializer {
     var _first : bool = true;
     const _ending : string;
 
-    proc writeField(name: string, const field: ?) throws {
+    proc ref writeField(name: string, const field: ?) throws {
       if !_first then writer._writeLiteral(", ");
       else _first = false;
 
@@ -2723,7 +2723,7 @@ record DefaultSerializer {
       writer.write(field);
     }
 
-    proc startClass(writer: fileWriter, name: string, size: int) throws {
+    proc ref startClass(writer: fileWriter, name: string, size: int) throws {
       _first = size == 0;
       return new AggregateSerializer(writer, _parent=true);
     }
@@ -2762,7 +2762,7 @@ record DefaultSerializer {
     const size : int;
     var _first : bool = true;
 
-    proc writeElement(const element: ?) throws {
+    proc ref writeElement(const element: ?) throws {
       if !_first then writer._writeLiteral(", ");
       else _first = false;
 
@@ -2789,7 +2789,7 @@ record DefaultSerializer {
     var writer;
     var _first : bool = true;
 
-    proc writeElement(const element: ?) throws {
+    proc ref writeElement(const element: ?) throws {
       if !_first then writer._writeLiteral(", ");
       else _first = false;
 
@@ -2815,7 +2815,7 @@ record DefaultSerializer {
     var _first : bool = true;
 
     @chpldoc.nodoc
-    proc startDim(size: int) throws {
+    proc ref startDim(size: int) throws {
       _arrayDim += 1;
 
       if _arrayMax >= _arrayDim then
@@ -2825,13 +2825,13 @@ record DefaultSerializer {
     }
 
     @chpldoc.nodoc
-    proc endDim() throws {
+    proc ref endDim() throws {
       _arrayDim -= 1;
       _first = true;
     }
 
     @chpldoc.nodoc
-    proc writeElement(const element: ?) throws {
+    proc ref writeElement(const element: ?) throws {
       if !_first then writer._writeLiteral(" ");
       else _first = false;
 
@@ -2856,7 +2856,7 @@ record DefaultSerializer {
     var _first : bool = true;
 
     @chpldoc.nodoc
-    proc writeKey(const key: ?) throws {
+    proc ref writeKey(const key: ?) throws {
       if !_first then writer._writeLiteral(", ");
       else _first = false;
 
@@ -2927,7 +2927,7 @@ record DefaultSerializer {
 */
 record DefaultDeserializer {
 
-  proc deserializeType(reader:fileReader, type readType) : readType throws {
+  proc ref deserializeType(reader:fileReader, type readType) : readType throws {
     if isNilableClassType(readType) {
       if reader.matchLiteral("nil") {
         return nil:readType;
@@ -2950,7 +2950,7 @@ record DefaultDeserializer {
     }
   }
 
-  proc deserializeValue(reader: fileReader, ref val: ?readType) : void throws {
+  proc ref deserializeValue(reader: fileReader, ref val: ?readType) : void throws {
     if isNilableClassType(readType) {
       if reader.matchLiteral("nil") {
         val = nil;
@@ -3040,7 +3040,7 @@ record DefaultDeserializer {
     var _first : bool = true;
 
     @chpldoc.nodoc
-    proc readElement(type eltType) : eltType throws {
+    proc ref readElement(type eltType) : eltType throws {
       if !_first then reader._readLiteral(",");
       else _first = false;
 
@@ -3072,7 +3072,7 @@ record DefaultDeserializer {
     var _arrayMax : int;
 
     @chpldoc.nodoc
-    proc startDim() throws {
+    proc ref startDim() throws {
       _arrayDim += 1;
 
       if _arrayMax >= _arrayDim {
@@ -3085,14 +3085,14 @@ record DefaultDeserializer {
     }
 
     @chpldoc.nodoc
-    proc endDim() throws {
+    proc ref endDim() throws {
       _arrayDim -= 1;
 
       _first = true;
     }
 
     @chpldoc.nodoc
-    proc readElement(type eltType) : eltType throws {
+    proc ref readElement(type eltType) : eltType throws {
       if !_first then reader._readLiteral(" ");
       else _first = false;
 
@@ -3115,7 +3115,7 @@ record DefaultDeserializer {
     var _first : bool = true;
 
     @chpldoc.nodoc
-    proc readKey(type keyType) : keyType throws {
+    proc ref readKey(type keyType) : keyType throws {
       if !_first then reader._readLiteral(", ");
       else _first = false;
 
@@ -3191,7 +3191,7 @@ record BinarySerializer {
     :arg writer: the ``fileWriter`` to which the serialized output will be written.
     :arg val: the value to be serialized.
   */
-  proc serializeValue(writer: fileWriter(serializerType=BinarySerializer, locking=false, ?),
+  proc ref serializeValue(writer: fileWriter(serializerType=BinarySerializer, locking=false, ?),
                       const val:?t) throws {
     if isNumericType(t) {
       select endian {
@@ -3388,7 +3388,7 @@ record BinaryDeserializer {
     :arg reader: the ``fileReader`` whose input will be used to deserialize the value.
     :arg readType: the type to be deserialized.
   */
-  proc deserializeType(reader:fileReader(?), type readType) : readType throws {
+  proc ref deserializeType(reader:fileReader(?), type readType) : readType throws {
     if isClassType(readType) {
       var isNil = _checkClassNil(reader, readType);
       if isNilableClassType(readType) && isNil then
@@ -3430,7 +3430,7 @@ record BinaryDeserializer {
     :arg reader: the ``fileReader`` whose input will be used to deserialize the value.
     :arg val: the value to be deserialized in-place.
   */
-  proc deserializeValue(reader: fileReader(?), ref val: ?readType) : void throws {
+  proc ref deserializeValue(reader: fileReader(?), ref val: ?readType) : void throws {
     if isClassType(readType) {
       var isNil = _checkClassNil(reader, readType);
       if isNilableClassType(readType) && isNil then
@@ -3487,7 +3487,7 @@ record BinaryDeserializer {
     var reader : fileReader(false, BinaryDeserializer);
     var _numElements : uint;
 
-    proc readElement(type eltType) : eltType throws {
+    proc ref readElement(type eltType) : eltType throws {
       if _numElements <= 0 then
         throw new BadFormatError("no more list elements remain");
 
@@ -3548,7 +3548,7 @@ record BinaryDeserializer {
     var reader;
     var _numElements : uint;
 
-    proc readKey(type keyType) : keyType throws {
+    proc ref readKey(type keyType) : keyType throws {
       if _numElements <= 0 then
         throw new BadFormatError("no more map elements remain!");
 

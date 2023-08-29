@@ -11,7 +11,7 @@ use Types;
 record Serializer {
   var def : IO.BinarySerializer;
 
-  proc serializeValue(writer, const val) {
+  proc ref serializeValue(writer, const val) {
     if isArrayType(val.type) {
       val.serialize(writer, this);
     } else {
@@ -40,7 +40,7 @@ record Serializer {
 record Deserializer {
   var def : IO.BinaryDeserializer;
 
-  proc deserializeType(reader, type valType) {
+  proc ref deserializeType(reader, type valType) {
     if isArrayType(valType) {
       return valType.deserializeFrom(reader, this);
     } else {

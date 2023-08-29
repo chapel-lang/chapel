@@ -126,7 +126,7 @@ module YAML {
     // ------- fileWriter API -------
 
     /* called by a ``fileWriter`` to emit a value */
-    proc serializeValue(writer: yamlWriter, const val: ?t) throws {
+    proc ref serializeValue(writer: yamlWriter, const val: ?t) throws {
       if context.isBase && (_isPrimitiveYamlType(t) || (isClassType(t) && val == nil)){
         // simply translate the value to it's YAML representation
         // e.g., true => Yes, nil => ~, 5.5 => 5.5, etc.
@@ -232,7 +232,7 @@ module YAML {
     // ------- fileReader API -------
 
     /* called by a ``fileReader`` to parse into an existing Chapel value */
-    proc deserializeValue(reader: yamlReader, ref val: ?t) throws {
+    proc ref deserializeValue(reader: yamlReader, ref val: ?t) throws {
       if YamlVerbose then writeln("deserializing into: ", val);
 
       // TODO: full implementation
@@ -241,7 +241,7 @@ module YAML {
     }
 
     /* called by a ``fileReader`` to parse into a new Chapel value */
-    proc deserializeType(reader: yamlReader, type t): t throws {
+    proc ref deserializeType(reader: yamlReader, type t): t throws {
       if YamlVerbose then writeln("deserializing type: ", t:string);
 
       if context.isBase && _isIoPrimitiveType(t) {
@@ -262,12 +262,10 @@ module YAML {
         return this.speculativeParseNilableClass(reader, t);
       } else if canResolveTypeMethod(t, "deserializeFrom", reader, this) || isArrayType(t) {
         // attempt to call the 'deserializeFrom' type-method
-        var r = reader.withDeserializer(new YamlDeserializer(this.parser, this.context, this.strictTypeChecking));
-        return t.deserializeFrom(reader=r, deserializer=r.deserializer);
+        return t.deserializeFrom(reader=reader, deserializer=this);
       } else {
         // attempt to call the deserializing constructor
-        var r = reader.withDeserializer(new YamlDeserializer(this.parser, this.context, this.strictTypeChecking));
-        return new t(reader=r, deserializer=r.deserializer);
+        return new t(reader=reader, deserializer=this);
       }
     }
 

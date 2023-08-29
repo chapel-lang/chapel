@@ -50,7 +50,7 @@ module JSON {
       dc._writeOne(dc._kind, val, here);
     }
 
-    proc serializeValue(writer: _writeType, const val:?t) throws {
+    proc ref serializeValue(writer: _writeType, const val:?t) throws {
       if t == string  || isEnumType(t) || t == bytes {
         // for quotes around things
         _oldWrite(writer, val);
@@ -73,7 +73,7 @@ module JSON {
       var _first : bool = true;
       const _ending : string;
 
-      proc writeField(name: string, const field: ?) throws {
+      proc ref writeField(name: string, const field: ?) throws {
         if !_first then writer._writeLiteral(", ");
         else _first = false;
 
@@ -82,7 +82,7 @@ module JSON {
         writer.write(field);
       }
 
-      proc startClass(writer, name: string, size: int) throws {
+      proc ref startClass(writer, name: string, size: int) throws {
         _first = size == 0;
         return new AggregateSerializer(writer, _parent=true);
       }
@@ -115,7 +115,7 @@ module JSON {
       var writer;
       var _first : bool = true;
 
-      proc writeElement(const element: ?) throws {
+      proc ref writeElement(const element: ?) throws {
         if !_first then writer._writeLiteral(", ");
         else _first = false;
 
@@ -159,7 +159,7 @@ module JSON {
       //  [6, 7, 8]
       // ]
       @chpldoc.nodoc
-      proc startDim(size: int) throws {
+      proc ref startDim(size: int) throws {
         _arrayDim += 1;
 
         // '_arrayFirst' will be a list of bools of a size equal to the maximum
@@ -195,7 +195,7 @@ module JSON {
       }
 
       @chpldoc.nodoc
-      proc endDim() throws {
+      proc ref endDim() throws {
         // For all but the 'last' dimension, we want the closing square bracket
         // to be on a newline to match the opening bracket. For example:
         /*
@@ -234,7 +234,7 @@ module JSON {
       }
 
       @chpldoc.nodoc
-      proc writeElement(const element: ?) throws {
+      proc ref writeElement(const element: ?) throws {
         if !_first then writer._writeLiteral(", ");
         else _first = false;
 
@@ -256,7 +256,7 @@ module JSON {
       var _first : bool = true;
 
       @chpldoc.nodoc
-      proc writeKey(const key: ?) throws {
+      proc ref writeKey(const key: ?) throws {
         if !_first {
           writer._writeLiteral(", ");
           writer.writeNewline();
@@ -371,7 +371,7 @@ module JSON {
       dc._readOne(dc._kind, val, here);
     }
 
-    proc deserializeType(reader:_readerType, type readType) : readType throws {
+    proc ref deserializeType(reader:_readerType, type readType) : readType throws {
       if isNilableClassType(readType) && reader.matchLiteral("null") {
         return nil:readType;
       }
@@ -402,7 +402,7 @@ module JSON {
       }
     }
 
-    proc deserializeValue(reader: _readerType, ref val: ?readType) : void throws {
+    proc ref deserializeValue(reader: _readerType, ref val: ?readType) : void throws {
       if canResolveMethod(val, "deserialize", reader, this) {
         val.deserialize(reader=reader, deserializer=this);
       } else {
@@ -458,7 +458,8 @@ module JSON {
         return ret;
       }
 
-      proc startClass(reader, name: string) {
+      proc ref startClass(reader, name: string) {
+        // TODO: 'ref' intent probably required by use of 'map' field...
         return new AggregateDeserializer(reader, _fieldOffsets, _lastPos, _parent=true);
       }
 
@@ -499,7 +500,7 @@ module JSON {
       var _first : bool = true;
 
       @chpldoc.nodoc
-      proc readElement(type eltType) : eltType throws {
+      proc ref readElement(type eltType) : eltType throws {
         if !_first then reader._readLiteral(",");
         else _first = false;
 
@@ -553,7 +554,7 @@ module JSON {
 
       // See comments in writing case for explanation
       @chpldoc.nodoc
-      proc startDim() throws {
+      proc ref startDim() throws {
         _arrayDim += 1;
         if _arrayFirst.size < _arrayDim {
           _arrayFirst.pushBack(true);
@@ -574,7 +575,7 @@ module JSON {
       }
 
       @chpldoc.nodoc
-      proc readElement(type eltType) : eltType throws {
+      proc ref readElement(type eltType) : eltType throws {
         if !_first then reader._readLiteral(", ");
         else _first = false;
 
@@ -582,7 +583,7 @@ module JSON {
       }
 
       @chpldoc.nodoc
-      proc endDim() throws {
+      proc ref endDim() throws {
         if _arrayDim < _arrayMax {
           reader.readNewline();
           reader._readLiteral(" " * (_arrayDim-1));
@@ -615,7 +616,7 @@ module JSON {
       var _first : bool = true;
 
       @chpldoc.nodoc
-      proc readKey(type keyType) : keyType throws {
+      proc ref readKey(type keyType) : keyType throws {
         if !_first then reader._readLiteral(",");
         else _first = false;
 

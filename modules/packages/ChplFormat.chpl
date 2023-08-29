@@ -54,7 +54,7 @@ module ChplFormat {
       dc._writeOne(dc._kind, val, here);
     }
 
-    proc serializeValue(writer: _writeType, const val:?t) throws {
+    proc ref serializeValue(writer: _writeType, const val:?t) throws {
       if t == string  || isEnumType(t) || t == bytes {
         _oldWrite(writer, val);
       } else if isNumericType(t) || isBoolType(t) {
@@ -78,7 +78,7 @@ module ChplFormat {
       var _first = true;
 
       @chpldoc.nodoc
-      proc writeField(name: string, const field: ?T) throws {
+      proc ref writeField(name: string, const field: ?T) throws {
         if !_first then writer.writeLiteral(", ");
         else _first = false;
 
@@ -88,7 +88,7 @@ module ChplFormat {
         writer.write(field);
       }
 
-      proc startClass(writer: _writeType, name: string, size: int) throws {
+      proc ref startClass(writer: _writeType, name: string, size: int) throws {
         _first = size == 0;
         return new AggregateSerializer(this.writer, _parent=true);
       }
@@ -130,7 +130,7 @@ module ChplFormat {
       const size : int;
       var _first : bool = true;
 
-      proc writeElement(const element: ?) throws {
+      proc ref writeElement(const element: ?) throws {
         if !_first then writer.writeLiteral(", ");
         else _first = false;
 
@@ -155,7 +155,7 @@ module ChplFormat {
       var writer;
       var _first : bool = true;
 
-      proc writeElement(const element: ?) throws {
+      proc ref writeElement(const element: ?) throws {
         if !_first then writer._writeLiteral(", ");
         else _first = false;
 
@@ -182,7 +182,7 @@ module ChplFormat {
       proc endDim() throws {
       }
 
-      proc writeElement(const element: ?) throws {
+      proc ref writeElement(const element: ?) throws {
         if !_first then writer._writeLiteral(", ");
         else _first = false;
 
@@ -204,7 +204,7 @@ module ChplFormat {
       var _first = true;
 
       @chpldoc.nodoc
-      proc writeKey(const key: ?) throws {
+      proc ref writeKey(const key: ?) throws {
         if !_first then writer._writeLiteral(", ");
         else _first = false;
 
@@ -249,7 +249,7 @@ module ChplFormat {
       dc._readOne(dc._kind, val, here);
     }
 
-    proc deserializeType(reader:_readerType, type readType) : readType throws {
+    proc ref deserializeType(reader:_readerType, type readType) : readType throws {
       if isNilableClassType(readType) && reader.matchLiteral("nil") {
         return nil:readType;
       }
@@ -275,7 +275,7 @@ module ChplFormat {
       }
     }
 
-    proc deserializeValue(reader: _readerType, ref val: ?readType) : void throws {
+    proc ref deserializeValue(reader: _readerType, ref val: ?readType) : void throws {
       if canResolveMethod(val, "deserialize", reader, this) {
         if isArrayType(readType) && val.rank > 1 then
           throw new IllegalArgumentError("ChplSerializer does not support multidimensional arrays");
@@ -355,7 +355,7 @@ module ChplFormat {
       var reader;
       var _first = true;
 
-      proc readElement(type eltType) : eltType throws {
+      proc ref readElement(type eltType) : eltType throws {
         if !_first then reader._readLiteral(", ");
         else _first = false;
 
@@ -403,7 +403,7 @@ module ChplFormat {
       var _first = true;
 
       @chpldoc.nodoc
-      proc readKey(type keyType) : keyType throws {
+      proc ref readKey(type keyType) : keyType throws {
         if !_first then reader._readLiteral(",");
         else _first = false;
 
