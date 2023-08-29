@@ -2550,7 +2550,7 @@ record fileReader {
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
 
   @chpldoc.nodoc
-  var _deserializer : unmanaged _serializeWrapper?(deserializerType);
+  var _deserializer : shared _serializeWrapper?(deserializerType);
 
   // The member variable _readWriteThisFromLocale is used to support
   // writeThis needing to know where the I/O started. It is a member
@@ -2631,7 +2631,7 @@ record fileWriter {
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
 
   @chpldoc.nodoc
-  var _serializer : unmanaged _serializeWrapper?(serializerType);
+  var _serializer : shared _serializeWrapper?(serializerType);
 
   // The member variable _readWriteThisFromLocale is used to support
   // writeThis needing to know where the I/O started. It is a member
@@ -3585,16 +3585,12 @@ operator fileReader.=(ref lhs:fileReader, rhs:fileReader) {
 
   on lhs._home {
     qio_channel_release(lhs._channel_internal);
-    if lhs._deserializer != nil {
-      delete lhs._deserializer;
-      lhs._deserializer = nil;
-    }
   }
 
   lhs._home = rhs._home;
   lhs._channel_internal = rhs._channel_internal;
   if rhs._deserializer != nil then
-    lhs._deserializer = new unmanaged _serializeWrapper(rhs.deserializerType, rhs.deserializer);
+    lhs._deserializer = new shared _serializeWrapper(rhs.deserializerType, rhs.deserializer);
 }
 
 @chpldoc.nodoc
@@ -3606,16 +3602,12 @@ operator fileWriter.=(ref lhs:fileWriter, rhs:fileWriter) {
 
   on lhs._home {
     qio_channel_release(lhs._channel_internal);
-    if lhs._serializer != nil {
-      delete lhs._serializer;
-      lhs._serializer = nil;
-    }
   }
 
   lhs._home = rhs._home;
   lhs._channel_internal = rhs._channel_internal;
   if rhs._serializer != nil then
-    lhs._serializer = new unmanaged _serializeWrapper(rhs.serializerType, rhs._serializer!.member);
+    lhs._serializer = new shared _serializeWrapper(rhs.serializerType, rhs._serializer!.member);
 }
 
 @chpldoc.nodoc
@@ -3643,7 +3635,7 @@ proc fileReader.init=(x: fileReader) {
   this.deserializerType = x.deserializerType;
   this._home = x._home;
   this._channel_internal = x._channel_internal;
-  this._deserializer = new unmanaged _serializeWrapper(deserializerType, x._deserializer!.member);
+  this._deserializer = new shared _serializeWrapper(deserializerType, x._deserializer!.member);
   this._readWriteThisFromLocale = x._readWriteThisFromLocale;
   this.complete();
   on x._home {
@@ -3662,7 +3654,7 @@ proc fileWriter.init=(x: fileWriter) {
   this.serializerType = x.serializerType;
   this._home = x._home;
   this._channel_internal = x._channel_internal;
-  this._serializer = new unmanaged _serializeWrapper(serializerType, x._serializer!.member);
+  this._serializer = new shared _serializeWrapper(serializerType, x._serializer!.member);
   this._readWriteThisFromLocale = x._readWriteThisFromLocale;
   this.complete();
   on x._home {
@@ -3686,7 +3678,7 @@ operator :(rhs: fileWriter, type t: fileWriter) {
 proc fileReader.init(param kind:_iokind, param locking:bool,
                      home: locale, _channel_internal:qio_channel_ptr_t,
                      _readWriteThisFromLocale: locale,
-                     _deserializer: unmanaged _serializeWrapper?(?dt)) {
+                     _deserializer: shared _serializeWrapper?(?dt)) {
   this.kind = kind;
   this.locking = locking;
   this.deserializerType = dt;
@@ -3703,7 +3695,7 @@ proc fileReader.init(param kind:_iokind, param locking:bool, in deserializer:?,
                      in local_style:iostyleInternal) {
   this.init(kind, locking, deserializer.type);
   on f._home {
-    this._deserializer = new unmanaged _serializeWrapper(deserializer.type, deserializer);
+    this._deserializer = new shared _serializeWrapper(deserializer.type, deserializer);
     this._home = f._home;
     if kind != _iokind.dynamic {
       local_style.binary = true;
@@ -3722,7 +3714,7 @@ proc fileReader.init(param kind:_iokind, param locking:bool, in deserializer:?,
 proc fileWriter.init(param kind:_iokind, param locking:bool,
                      home: locale, _channel_internal:qio_channel_ptr_t,
                      _readWriteThisFromLocale: locale,
-                     _serializer: unmanaged _serializeWrapper(?st)?) {
+                     _serializer: shared _serializeWrapper(?st)?) {
   this.kind = kind;
   this.locking = locking;
   this.serializerType = st;
@@ -3739,7 +3731,7 @@ proc fileWriter.init(param kind:_iokind, param locking:bool, in serializer:?,
                      in local_style:iostyleInternal) {
   this.init(kind, locking, serializer.type);
   on f._home {
-    this._serializer = new unmanaged _serializeWrapper(serializer.type, serializer);
+    this._serializer = new shared _serializeWrapper(serializer.type, serializer);
     this._home = f._home;
     if kind != _iokind.dynamic {
       local_style.binary = true;
@@ -3758,7 +3750,6 @@ proc ref fileReader.deinit() {
   on this._home {
     qio_channel_release(_channel_internal);
     this._channel_internal = QIO_CHANNEL_PTR_NULL;
-    if _deserializer != nil then delete _deserializer;
   }
 }
 
@@ -3767,7 +3758,6 @@ proc ref fileWriter.deinit() {
   on this._home {
     qio_channel_release(_channel_internal);
     this._channel_internal = QIO_CHANNEL_PTR_NULL;
-    if _serializer != nil then delete _serializer;
   }
 }
 
@@ -3782,7 +3772,7 @@ proc fileReader.withDeserializer(type deserializerType) :
 @chpldoc.nodoc
 proc fileReader.withDeserializer(in deserializer: ?dt) : fileReader(this._kind, this.locking, dt) {
   var ret = new fileReader(this._kind, this.locking, dt);
-  ret._deserializer = new unmanaged _serializeWrapper(dt, deserializer);
+  ret._deserializer = new shared _serializeWrapper(dt, deserializer);
   ret._channel_internal = this._channel_internal;
   ret._home = _home;
   ret._readWriteThisFromLocale = _readWriteThisFromLocale;
@@ -3803,7 +3793,7 @@ proc fileWriter.withSerializer(type serializerType) :
 @chpldoc.nodoc
 proc fileWriter.withSerializer(in serializer: ?st) : fileWriter(this._kind, this.locking, st) {
   var ret = new fileWriter(this._kind, this.locking, st);
-  ret._serializer = new unmanaged _serializeWrapper(st, serializer);
+  ret._serializer = new shared _serializeWrapper(st, serializer);
   ret._channel_internal = this._channel_internal;
   ret._home = _home;
   ret._readWriteThisFromLocale = _readWriteThisFromLocale;
@@ -5992,13 +5982,12 @@ proc fileWriter._constructIoErrorMsg(param kind: _iokind, const x:?t): string {
 proc fileReader._deserializeOne(type readType, loc:locale) throws {
   // TODO: Investigate overhead of initializer when in a loop.
   pragma "no init"
+  pragma "no auto destroy"
   var reader: fileReader(_iokind.dynamic, locking=false, deserializerType);
   reader._channel_internal = _channel_internal;
-  reader._deserializer = _deserializer;
+  __primitive("=", reader._deserializer, _deserializer);
   reader._home = _home;
   reader._readWriteThisFromLocale = loc;
-  defer { reader._channel_internal = QIO_CHANNEL_PTR_NULL;
-          reader._deserializer = nil; }
 
   return reader.deserializer.deserializeType(reader, readType);
 }
@@ -6007,13 +5996,12 @@ proc fileReader._deserializeOne(type readType, loc:locale) throws {
 proc fileReader._deserializeOne(ref x:?t, loc:locale) throws {
   // TODO: Investigate overhead of initializer when in a loop.
   pragma "no init"
+  pragma "no auto destroy"
   var reader: fileReader(_iokind.dynamic, locking=false, deserializerType);
   reader._channel_internal = _channel_internal;
-  reader._deserializer = _deserializer;
+  __primitive("=", reader._deserializer, _deserializer);
   reader._home = _home;
   reader._readWriteThisFromLocale = loc;
-  defer { reader._channel_internal = QIO_CHANNEL_PTR_NULL;
-          reader._deserializer = nil; }
 
   if t == chpl_ioLiteral || t == chpl_ioNewline || t == _internalIoBits || t == _internalIoChar {
     reader._readOne(reader._kind, x, reader.getLocaleOfIoRequest());
@@ -6048,18 +6036,16 @@ private proc escapedNonUTF8ErrorMessage() : string {
 @chpldoc.nodoc
 proc fileWriter._serializeOne(const x:?t, loc:locale) throws {
   // TODO: Investigate overhead of initializer when in a loop.
+  //
+  // TODO: provide a way to get a non-locking alias
+  // (it shouldn't release anything since it's a local copy).
   pragma "no init"
+  pragma "no auto destroy"
   var writer : fileWriter(_iokind.dynamic, locking=false, serializerType);
   writer._channel_internal = _channel_internal;
-  writer._serializer = _serializer;
+  __primitive("=", writer._serializer, _serializer);
   writer._home = _home;
   writer._readWriteThisFromLocale = loc;
-
-  // Set the fileWriter pointer to NULL to make the
-  // destruction of the local writer record safe
-  // (it shouldn't release anything since it's a local copy).
-  defer { writer._channel_internal = QIO_CHANNEL_PTR_NULL;
-          writer._serializer = nil; }
 
   if t == chpl_ioLiteral || t == chpl_ioNewline || t == _internalIoBits || t == _internalIoChar {
     writer._writeOne(writer._kind, x, writer.getLocaleOfIoRequest());
@@ -6182,7 +6168,7 @@ private proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
   // Create a new fileReader that borrows the pointer in the
   // existing fileReader so we can avoid locking (because we
   // already have the lock)
-  var temp : unmanaged _serializeWrapper?(nothing);
+  var temp : shared _serializeWrapper?(nothing);
   var reader = new fileReader(_iokind.dynamic, locking=false,
                               _deserializer=temp,
                               home=here,
@@ -6235,7 +6221,7 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
   // Create a new fileWriter that borrows the pointer in the
   // existing fileWriter so we can avoid locking (because we
   // already have the lock)
-  var temp : unmanaged _serializeWrapper?(nothing);
+  var temp : shared _serializeWrapper?(nothing);
   var writer = new fileWriter(_iokind.dynamic, locking=false,
                               _serializer=temp,
                               home=here,

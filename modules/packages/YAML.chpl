@@ -323,8 +323,8 @@ module YAML {
 
   record YamlMapSerializer {
     var writer;
-    var emitter : borrowed LibYamlEmitter;
-    var context : borrowed ContextCounter;
+    var emitter : shared LibYamlEmitter;
+    var context : shared ContextCounter;
 
     @chpldoc.nodoc
     proc startClass(writer: yamlWriter, name: string, size: int) throws {
@@ -394,8 +394,8 @@ module YAML {
 
   record YamlSeqSerializer {
     var writer;
-    var emitter : borrowed LibYamlEmitter;
-    var context : borrowed ContextCounter;
+    var emitter : shared LibYamlEmitter;
+    var context : shared ContextCounter;
 
     @chpldoc.nodoc
     proc writeElement(const element) throws {
@@ -534,9 +534,9 @@ module YAML {
     @chpldoc.nodoc
     var reader;
     @chpldoc.nodoc
-    var parser: borrowed LibYamlParser;
+    var parser: shared LibYamlParser;
     @chpldoc.nodoc
-    var context: borrowed ContextCounter;
+    var context: shared ContextCounter;
 
     @chpldoc.nodoc
     proc startClass(reader: yamlReader, name: string) throws {
@@ -636,9 +636,9 @@ module YAML {
     @chpldoc.nodoc
     var reader;
     @chpldoc.nodoc
-    var parser: borrowed LibYamlParser;
+    var parser: shared LibYamlParser;
     @chpldoc.nodoc
-    var context: borrowed ContextCounter;
+    var context: shared ContextCounter;
 
     @chpldoc.nodoc
     proc readElement(type eltType): eltType throws {
