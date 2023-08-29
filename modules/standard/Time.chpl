@@ -2106,6 +2106,7 @@ proc getCurrentTime(unit: TimeUnits = TimeUnits.seconds) : real(64) do
    The month is in the range 1 to 12.
    The day   is in the range 1 to 31
 */
+@deprecated(notes="'getCurrentDate' is deprecated; access the individual fields of 'date.today()' as needed instead")
 proc getCurrentDate() : (int, int, int) {
   var now = chpl_now_timevalue();
 
