@@ -9,13 +9,10 @@ module Tensor {
 
     param debugPrint = false;
 
-    // var rng = new IainsRNG(5); 
     var rng = new Random.NPBRandom.NPBRandomStream(eltType=real(64),seed=5);
     
     proc seedRandom(seed) {
-        // rng = new IainsRNG(seed);
         rng = new Random.NPBRandom.NPBRandomStream(eltType=real(64),seed=5);
-        // rng = new IainsRNG(5);
     }
 
     proc err(args...?n) {
@@ -137,6 +134,11 @@ module Tensor {
             this._domain = d;
             this.data = data;
         }
+        proc init(dom: ?d,type eltType) where isDomainType(d) {
+            this.rank = dom.rank;
+            this.eltType = eltType;
+            this._domain = dom;
+        }
         proc init(dom: ?d) where isDomainType(d) {
             this.rank = dom.rank;
             this.eltType = real;
@@ -166,8 +168,7 @@ module Tensor {
         }
 
         proc init=(rhs: [?d] eltType) where d.rank == rank {
-            this.init(d.rank,eltType);
-            this.reshapeDomain(d);
+            this.init(d,eltType);
             this.data = rhs;
         }
 
@@ -238,8 +239,7 @@ module Tensor {
         // Retruns new tensor with provided domain
         proc reshape(dom_) {
             const dom = domainFromShape((...dom_.shape));
-            var t = new Tensor(dom.rank,eltType);
-            t.reshapeDomain(dom);
+            var t = new Tensor(dom,eltType);
             t.data = for (i,a) in zip(t.domain,this.data) do a;
             return t;
         }
@@ -255,25 +255,10 @@ module Tensor {
             const size = this.data.domain.size;
             return this.reshape({0..#size});
         }
-        proc degen() {this.degen("");}
-        proc degen(s... ?k) {
-            for i in this.domain {
-                const x = this[i];
-                if AutoMath.isnan(x) {
-                    writeln(this,(...s));
-                    err("NaN in tensor.");
-                }
-                if AutoMath.isinf(x) {
-                    writeln(this,(...s));
-                    err("Inf in tensor.");
-                }
-            }
-        }
 
         // Returns a tensor with argument function applied to each element
         proc fmap(fn) {
-            var t = new Tensor(rank,eltType);
-            t.reshapeDomain(this.domain);
+            var t = new Tensor(this.domain,eltType);
             t.data = fn(this.data);
             return t;
         }
@@ -344,10 +329,9 @@ module Tensor {
     }
 
     operator +(lhs: Tensor(?rank,?eltType), rhs: Tensor(rank,eltType)) {
-        var t = new Tensor(rank=rank,eltType=eltType);
         if lhs.domain.size != rhs.domain.size then
             err("Cannot add tensors of different sizes. + ", lhs.domain.size, " != ", rhs.domain.size,"  [",lhs.shape," + ",rhs.shape,"]");
-        t.reshapeDomain(lhs.domain);
+        var t = new Tensor(lhs.domain,eltType=eltType);
         t.data = lhs.data + rhs.data;
         return t;
     }
@@ -370,8 +354,7 @@ module Tensor {
         lhs.data += rhs;
     }
     operator -(lhs: Tensor(?rank,?eltType), rhs: Tensor(rank,eltType)) {
-        var t = new Tensor(rank=rank,eltType=eltType);
-        t.reshapeDomain(lhs._domain);
+        var t = new Tensor(lhs._domain,eltType=eltType);
         t.data = lhs.data - rhs.data;
         return t;
     }
@@ -382,21 +365,18 @@ module Tensor {
         lhs.data -= rhs;
     }
     operator *(c: ?eltType, rhs: Tensor(?rank,eltType)) {
-        var t = new Tensor(rank=rank,eltType=eltType);
-        t.reshapeDomain(rhs._domain);
+        var t = new Tensor(rhs.domain,eltType=eltType);
         t.data = c * rhs.data;
         return t;
     }
     operator *(lhs: Tensor(?rank,?eltType), c: eltType) {
-        var t = new Tensor(rank=rank,eltType=eltType);
-        t.reshapeDomain(lhs._domain);
+        var t = new Tensor(lhs.domain,eltType=eltType);
         t.data = lhs.data * c;
         return t;
     }
     operator *(lhs: Tensor(?rank,?eltType), rhs: Tensor(rank,eltType)) {
         // Hermitian product, not composition
-        var t = new Tensor(rank=rank,eltType=eltType);
-        t.reshapeDomain(lhs._domain);
+        var t = new Tensor(lhs.domain,eltType=eltType);
         t.data = lhs.data * rhs.data;
         return t;
     }
@@ -416,11 +396,11 @@ module Tensor {
 
         const a = lhs.data;
         const v = rhs.data;
-        var w = new Tensor(rank=1,eltType=eltType);
-        w.reshapeDomain({0..#m});
+        var w = new Tensor({0..#m});
         forall i in 0..#m with (ref w) {
-            const row = a[i,..];
-            w[i] = + reduce (row * v);
+            for j in 0..#n {
+                w[i] += a[i, j] * v[j];
+            }
         }
         return w;
     }
@@ -432,8 +412,7 @@ module Tensor {
         if m != 1 then
             err("Trying to apply a vector of shape ",lhs.shape, " to a matrix of shape ", rhs.shape, ". m needs to be 1");
         
-        var b = new Tensor(rank=2,eltType=eltType);
-        b.reshapeDomain({0..#p, 0..#n});
+        var b = new Tensor({0..#p, 0..#n},eltType=eltType);
         foreach (i,j) in {0..#p, 0..#n} {
             b[i,j] = lhs[i] * rhs[0,j];
         }
@@ -449,8 +428,7 @@ module Tensor {
 
         const a = lhs.data;
         const b = rhs.data;
-        var c = new Tensor(rank=2,eltType=eltType);
-        c.reshapeDomain({0..#m, 0..#q});
+        var c = new Tensor({0..#m, 0..#q},eltType=eltType);
         forall (i,j) in c.domain with (ref c) {
             const row = a[i,..];
             const col = b[..,j];
@@ -460,12 +438,14 @@ module Tensor {
     }
 
     operator /(lhs: Tensor(?d,?eltType), c: eltType) {
-        const data = lhs.data / c;
-        return new Tensor(data);
+        var t = lhs;
+        t.data /= c;
+        return t;
     }
     operator -(lhs: Tensor(?d,?eltType), c: eltType) {
-        const data = lhs.data - c;
-        return new Tensor(data);
+        var t = lhs;
+        t.data -= c;
+        return t;
     }
 
     // Sigmoid function
@@ -497,7 +477,7 @@ module Tensor {
     // Apply exponential function to each element of tensor
     proc exp(t: Tensor(?d)): Tensor(d) {
         var y = new Tensor(t.domain);
-        foreach i in t.domain do
+        forall i in t.domain do
             y.data[i] = Math.exp(t.data[i]);
         return y;
     }
@@ -558,18 +538,16 @@ module Tensor {
 
     // Return a matrix padded by `padding` zeros on each side
     proc pad(const ref x: Tensor(2), padding: int) {
-        var t = new Tensor(2,real);
         const (h,w) = x.shape;
-        t.reshapeDomain({0..#(h + 2 * padding),0..#(w + 2 * padding)});
+        var t = new Tensor({0..#(h + 2 * padding),0..#(w + 2 * padding)},real);
         t.data[padding..#h, padding..#w] = x.data;
         return t;
     }
 
     // Given a volume with shape (m,n,c), return a volume with shape (m + 2 * padding, n + 2 * padding, c)
     proc pad(const ref x: Tensor(3), padding: int) {
-        var t = new Tensor(3,real);
         const (h,w,c) = x.shape;
-        t.reshapeDomain({0..#(h + 2 * padding),0..#(w + 2 * padding),0..#c});
+        var t = new Tensor({0..#(h + 2 * padding),0..#(w + 2 * padding),0..#c},real);
         forall (i,j,c) in x.data.domain with (ref t) {
             t[i + padding,j + padding,c] = x[i,j,c];
         }
@@ -599,8 +577,7 @@ module Tensor {
         if kh != kw then err("Correlation only works with square filters.", kh, " != ", kw);
 
         const (outH,outW): 2*int = correlateShape((kh,kw),(nh,nw),stride,padding);
-        var corr = new Tensor(2,real);
-        corr.reshapeDomain({0..#outH,0..#outW});
+        var corr = new Tensor({0..#outH,0..#outW},real);
 
         forall (x,y) in corr.data.domain with (ref corr) {
             var sum = 0.0;
@@ -622,8 +599,7 @@ module Tensor {
         // const (outH,outW): 2*int = ((nh - kh + padding + stride) / stride,(nw - kw + padding + stride) / stride);
         const (outH,outW): 2*int = correlateShape((kh,kw),(nh,nw),stride,padding);
 
-        var corr = new Tensor(2,real);
-        corr.reshapeDomain({0..#outH,0..#outW});
+        var corr = new Tensor({0..#outH,0..#outW},real);
 
         forall (x,y) in corr.data.domain with (ref corr) {
             var sum = 0.0;
@@ -645,9 +621,8 @@ module Tensor {
     // Dialate a filter
     proc dialate(const ref filter: Tensor(2), stride: int = 1) {
         const (kh,kw) = filter.shape;
-        var d = new Tensor(2,real);
         const (dh,dw) = (kh + (stride * (kh - 1)), kw + (stride * (kw - 1)));
-        d.reshapeDomain({0..#dh,0..#dw});
+        var d = new Tensor({0..#dh,0..#dw},real);
         forall (i,j) in filter.data.domain with (ref d) {
             d[i * stride, j * stride] = filter[i,j];
             // d[i + i * stride,j + j * stride] = filter[i,j];
@@ -658,9 +633,8 @@ module Tensor {
     // Dialate a volume of filters
     proc dialate(const ref filter: Tensor(3), stride: int = 1) {
         const (kh,kw,kc) = filter.shape;
-        var d = new Tensor(3,real);
         const (dh,dw) = (kh + (stride * (kh - 1)), kw + (stride * (kw - 1)));
-        d.reshapeDomain({0..#dh,0..#dw,0..#kc});
+        var d = new Tensor({0..#dh,0..#dw,0..#kc},real);
         forall (i,j,c) in filter.data.domain with (ref d) {
             d[i * stride,j * stride,c] = filter[i,j,c];
 
@@ -782,144 +756,9 @@ module Tensor {
         forall (region,i) in zip(regions,0..#dY.domain.size) with (+ reduce data) {
             data += X[region] * dY[indexInShape(dY.shape,i)];
         }
-        var dK = new Tensor(2,real);
-        dK.reshapeDomain({0..#k,0..#k});
+        var dK = new Tensor({0..#k,0..#k},real);
         dK.data = data;
         return dK;
     }
-
-
-
-
-
-
-    class IainsRNG {
-        var seed: int;
-        var state: int;
-
-        proc init(seed: int) {
-            this.seed = seed;
-            this.state = 0;
-            writeln("I was initialized with seed: ", seed);
-        }
-        proc getNext(): real(64) {
-            state += 1;
-
-            const x = (10 * state: real) / 1457.183;
-            const y = x + ((10 * state: real + 76.299) / 3947.64);
-            const r = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
-            return r - AutoMath.floor(r);
-        }
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* these functions were not needed for my final implementation. they are also wrong, but I would like to see the most efficient implementation of them in chapel. */
-
-    proc convolve(kernel: [?dk] ?eltType, X: [?dx] eltType) where dx.rank == 2 && dk.rank == 2 {
-        const (h,w) = X.shape;
-        const (kh,kw) = kernel.shape;
-        const newH = h - (kh - 1);
-        const newW = w - (kw - 1);
-        var Y: [0..#newH,0..#newW] eltType;
-        // forall (i,j) in Y.domain with (var region: [0..#kh,0..#kw] eltType) {
-        //     region = X[i..#kh, j..#kw];
-        //     Y[i,j] = + reduce (region * kernel);
-        // }
-
-        forall (i,j) in Y.domain {
-            var sum = 0.0;
-            forall (k,l) in kernel.domain with (+ reduce sum) {
-                sum += X[i + k, j + l] * kernel[k,l];
-            }
-            Y[i,j] = sum;
-        }
-        return Y;
-    }
-
-
-    proc convolveRotateRefPadding(const ref kernel: [?dk] ?eltType, const ref X: [?dx] eltType, ref Y: [?dy] eltType) where dx.rank == 2 && dk.rank == 2 {
-        const (h,w) = X.shape;
-        const (kh,kw) = kernel.shape;
-        const newH = h - (kh - 1);
-        const newW = w - (kw - 1);
-        // var Y: [0..#newH,0..#newW] eltType;
-        
-        forall (i,j) in Y.domain {
-            var sum = 0.0;
-            forall (k,l) in kernel.domain with (+ reduce sum) {
-                sum += X[h - i - k - 1, h - j - l - 1] * kernel[k,l];
-            }
-            Y[i,j] = sum;
-        }
-        // return Y;
-    }
-
-    proc convolveRotate(kernel: [?dk] ?eltType, X: [?dx] eltType) where dx.rank == 2 && dk.rank == 2 {
-        const (h,w) = X.shape;
-        const (kh,kw) = kernel.shape;
-        const newH = h - (kh - 1);
-        const newW = w - (kw - 1);
-        var Y: [0..#newH,0..#newW] eltType;
-        
-        forall (i,j) in Y.domain {
-            var sum = 0.0;
-            forall (k,l) in kernel.domain with (+ reduce sum) {
-                sum += X[i + k, j + l] * kernel[kh - k - 1, kw - l - 1];
-            }
-            Y[i,j] = sum;
-        }
-        return Y;
-    }
-
-    proc convolve(kernel: Tensor(2), X: Tensor(2)): Tensor(2) {
-        return new Tensor(convolve(kernel.data,X.data));
-    }
-
-    proc rotate180(kernel: [?d] ?eltType) where d.rank == 2 {
-        const (kh,kw) = kernel.shape;
-        var ker: [0..#kh,0..#kw] eltType;
-        forall (i,j) in ker.domain {
-            ker[i,j] = kernel[kh - i - 1, kw - j - 1];
-        }
-        return ker;
-    }
-
-    proc rotate180(kernel: Tensor(2)): Tensor(2) {
-        return new Tensor(rotate180(kernel.data));
-    }
-
-    proc fullConvolve(kernel: [?dk] ?eltType, X: [?dx] eltType) where dx.rank == 2 && dk.rank == 2 {
-        const (h,w) = X.shape;
-        const (kh,kw) = kernel.shape;
-        const (paddingH,paddingW) = (kh - 1,kw - 1);
-        const newH = h + 2 * paddingH;
-        const newW = w + 2 * paddingW;
-        var Y: [0..#newH,0..#newW] eltType;
-        Y = 0.0;
-        Y[paddingH..#h, paddingW..#w] = X;
-        return convolve(kernel,Y);
-    }
-
-    proc fullConvolve(kernel: Tensor(2), X: Tensor(2)): Tensor(2) {
-        return new Tensor(fullConvolve(kernel.data,X.data));
-    }
-
 }
 
