@@ -5,7 +5,7 @@ dayOfWeek.chpl:5: warning: enum 'isoDayOfWeek' is deprecated. Please use dayOfWe
 dayOfWeek.chpl:10: warning: The version of 'date.weekday' returning a dayOfWeek starting with `Monday = 0` is deprecated. Recompile with ``-sCIsoDayOfWeek=true`` to opt in to the new behavior of `Monday = 1`
 dayOfWeek.chpl:11: warning: 'date.isoWeekday' is deprecated; use date.weekday instead
 dayOfWeek.chpl:15: warning: The version of 'dateTime.weekday' returning a dayOfWeek starting with `Monday = 0` is deprecated. Recompile with ``-sCIsoDayOfWeek=true`` to opt in to the new behavior of `Monday = 1`
-dayOfWeek.chpl:16: warning: 'dateTime.isoWeekday' is deprecated; use dateTime.weekday instead
+dayOfWeek.chpl:16: warning: `dateTime.isoWeekday` is deprecated; use `dateTime.getDate().weekday()` instead
 0
 1
 false

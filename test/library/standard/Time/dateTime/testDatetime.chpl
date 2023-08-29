@@ -168,8 +168,8 @@ proc test_more_timetuple() {
   assert(tt.tm_hour == t.hour);
   assert(tt.tm_min == t.minute);
   assert(tt.tm_sec == t.second);
-  assert(tt.tm_wday == (t.weekday(): int(32)) - 1);
-  assert(tt.tm_yday == t.toOrdinal() -
+  assert(tt.tm_wday == (t.getDate().weekday(): int(32)) - 1);
+  assert(tt.tm_yday == t.getDate().toOrdinal() -
                        (new date(t.year, 1, 1)).toOrdinal() + 1);
   assert(tt.tm_isdst == -1);
 }

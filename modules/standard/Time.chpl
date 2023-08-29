@@ -1411,8 +1411,9 @@ module Time {
     timeStruct.tm_mday = day: int(32);
     timeStruct.tm_mon = month: int(32);
     timeStruct.tm_year = year: int(32);
-    timeStruct.tm_wday = _old_weekday(): int(32);
-    timeStruct.tm_yday = (toOrdinal() - (new date(year, 1, 1)).toOrdinal() + 1): int(32);
+    timeStruct.tm_wday = getDate()._old_weekday(): int(32);
+    timeStruct.tm_yday = (getDate().toOrdinal() -
+        (new date(year, 1, 1)).toOrdinal() + 1): int(32);
 
     if timezone.borrow() == nil {
       timeStruct.tm_isdst = -1;
@@ -1443,12 +1444,14 @@ module Time {
   }
 
   /* Return the number of days since 1-1-0001 this `dateTime` represents */
+  @deprecated(notes="`dateTime.toOrdinal` is deprecated; use `dateTime.getDate().toOrdinal()` instead")
   proc dateTime.toOrdinal() : int {
     return getDate().toOrdinal();
   }
 
   /* Return the day of the week.
    */
+  @deprecated(notes="`dateTime.weekday` is deprecated; use `dateTime.getDate().weekday()` instead")
   proc dateTime.weekday() : dayOfWeek where cIsoDayOfWeek {
     return getDate().weekday();
   }
@@ -1456,21 +1459,17 @@ module Time {
   proc dateTime.weekday() : dayOfWeek where !cIsoDayOfWeek {
     return getDate().weekday();
   }
-  @chpldoc.nodoc
-  proc dateTime._old_weekday() : _old_dayOfWeek {
-    return getDate()._old_weekday();
-  }
 
   /* Return the day of the week as an `isoDayOfWeek`.
      `Monday` == 1, `Sunday` == 7
    */
-  @deprecated(notes="'dateTime.isoWeekday' is deprecated; use :proc:`dateTime.weekday` instead")
+  @deprecated(notes="`dateTime.isoWeekday` is deprecated; use `dateTime.getDate().weekday()` instead")
   proc dateTime.isoWeekday() : isoDayOfWeek {
     return getDate().isoWeekday();
   }
 
   @chpldoc.nodoc
-  @deprecated(notes="'isoweekday' is deprecated, please use 'isoWeekday' instead")
+  @deprecated(notes="`dateTime.isoweekday` is deprecated, please use `dateTime.getDate().weekday()` instead")
   proc dateTime.isoweekday() : isoDayOfWeek {
     return isoWeekday();
   }
@@ -1478,12 +1477,13 @@ module Time {
   /* Return the ISO date as a tuple containing the ISO year, ISO week number,
      and ISO day of the week
    */
+  @deprecated(notes="`dateTime.isoCalendar` is deprecated; use `dateTime.getDate().isoWeekDate()` instead")
   proc dateTime.isoCalendar() : (int, int, int) {
     return getDate().isoCalendar();
   }
 
   @chpldoc.nodoc
-  @deprecated(notes="'isocalendar' is deprecated, please use 'isoCalendar' instead")
+  @deprecated(notes="`dateTime.isocalendar` is deprecated, please use `dateTime.getDate().isoWeekDate()` instead")
   proc dateTime.isocalendar() : (int, int, int) {
     return getDate().isoCalendar();
   }
@@ -1601,7 +1601,7 @@ module Time {
     timeStruct.tm_year = (year-1900): int(32); // 1900 based
     timeStruct.tm_mon = (month-1): int(32);    // 0 based
     timeStruct.tm_mday = day: int(32);
-    timeStruct.tm_wday = (this._old_weekday(): int(32) + 1) % 7; // shift Sunday to 0
+    timeStruct.tm_wday = (this.getDate()._old_weekday(): int(32) + 1) % 7; // shift Sunday to 0
     timeStruct.tm_yday = (this.replace(tz=nil) - new dateTime(year, 1, 1)).days: int(32);
 
     // Iterate over format specifiers in strftime(), replacing %f with microseconds
@@ -1773,7 +1773,7 @@ module Time {
             newsec = dt1.second - dt2.second,
             newmin = dt1.minute - dt2.minute,
             newhour = dt1.hour - dt2.hour,
-            newday = dt1.toOrdinal() - dt2.toOrdinal();
+            newday = dt1.getDate().toOrdinal() - dt2.getDate().toOrdinal();
       return new timeDelta(days=newday, hours=newhour, minutes=newmin,
                            seconds=newsec, microseconds=newmicro);
     } else {

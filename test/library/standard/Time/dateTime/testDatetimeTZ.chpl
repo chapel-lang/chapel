@@ -324,8 +324,9 @@ proc test_utctimetuple() {
     assert(11 == t.tm_hour); // 20mm + 53mm = 1hn + 13mm
     assert(13 == t.tm_min);
     assert(d.second == t.tm_sec);
-    assert((d.weekday():int - 1) == t.tm_wday);
-    assert(d.toOrdinal() - (new date(1, 1, 1)).toOrdinal() + 1 == t.tm_yday);
+    assert((d.getDate().weekday():int - 1) == t.tm_wday);
+    assert(d.getDate().toOrdinal() - (new date(1, 1, 1)).toOrdinal() + 1 ==
+        t.tm_yday);
     assert(0 == t.tm_isdst);
   }
 
