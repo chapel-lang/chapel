@@ -2,8 +2,7 @@ use IO;
 
 var f = openTempFile();
 var style = defaultIOStyleInternal();
-param typ:iokind = iokind.native;
-var ch = f.writer(typ, style=style);
+var ch = f.writer(style=style);
 ch.close();
-var ch2 = f.reader(typ, style=style);
+var ch2 = f.reader(style=style);
 ch2.close();

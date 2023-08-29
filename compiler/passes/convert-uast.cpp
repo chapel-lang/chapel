@@ -48,6 +48,7 @@
 #include "parser.h"
 #include "resolution.h"
 #include "ResolveScope.h"
+#include "metadata.h"
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/global-strings.h"
@@ -110,6 +111,20 @@ struct ConvertedSymbolsMap {
   }
 
   void applyFixups(Context* context, const uast::AstNode* inAst, bool trace);
+};
+
+struct LoopAttributeInfo {
+  // LLVM metadata from various @llvm attributes.
+  LLVMMetadataList llvmMetadata;
+  // The @assertOnGpu attribute, if one is provided by the user.
+  const uast::Attribute* assertOnGpuAttr = nullptr;
+
+  void insertGpuEligibilityAssertion(BlockStmt* body) {
+    if (assertOnGpuAttr) {
+      body->insertAtHead(new CallExpr(PRIM_ASSERT_ON_GPU,
+                                      new SymExpr(gTrue)));
+    }
+  }
 };
 
 // TODO: replace this global variable with a field in Converter
@@ -314,6 +329,87 @@ struct Converter {
     return nullptr;
   }
 
+  LLVMMetadataPtr tupleToLLVMMetadata(const uast::Tuple* node) {
+    if (node->numActuals() != 1 && node->numActuals() != 2) return nullptr;
+
+    if (!node->actual(0)->isStringLiteral()) return nullptr;
+    auto attrName = node->actual(0)->toStringLiteral()->value().astr(context);
+
+    if (node->numActuals() == 1) {
+      return LLVMMetadata::construct(attrName);
+    } else {
+      auto attrVal = node->actual(1);
+
+      if (auto str = attrVal->toStringLiteral())
+        return LLVMMetadata::constructString(attrName, str->value().astr(context));
+      else if (auto int_ = attrVal->toIntLiteral())
+        return LLVMMetadata::constructInt(attrName, int_->value());
+      else if (auto bool_ = attrVal->toBoolLiteral())
+        return LLVMMetadata::constructBool(attrName, bool_->value());
+      else if (auto tup = attrVal->toTuple()) {
+        auto v = tupleToLLVMMetadata(tup);
+        if (v == nullptr) return nullptr;
+        return LLVMMetadata::constructMetadata(attrName, v);
+      }
+      else return nullptr;
+    }
+  }
+
+  LLVMMetadataPtr nodeToLLVMMetadata(const uast::AstNode* node) {
+    if (node->isTuple()) {
+      return tupleToLLVMMetadata(node->toTuple());
+    } else if (node->isStringLiteral()) {
+      auto attrName = node->toStringLiteral()->value().astr(context);
+      return LLVMMetadata::construct(attrName);
+    } else {
+      return nullptr;
+    }
+  }
+
+  LLVMMetadataList buildLLVMMetadataList(const uast::Attribute* node) {
+    LLVMMetadataList llvmAttrs;
+
+    for (auto act: node->actuals()) {
+      auto attr = nodeToLLVMMetadata(act);
+      if (attr != nullptr) {
+        llvmAttrs.push_back(attr);
+      } else {
+        auto loc = chpl::parsing::locateId(context, node->id());
+        std::string msg = "Invalid value for '" + node->name().str() + "'";
+        auto err = GeneralError::get(ErrorBase::ERROR, loc, msg);
+        context->report(std::move(err));
+      }
+    }
+    return llvmAttrs;
+  }
+
+  LLVMMetadataPtr buildAssertVectorize(const uast::Attribute* node) {
+    auto attrName = astr("chpl.loop.assertvectorized");
+    return LLVMMetadata::constructBool(attrName, true);
+  }
+
+  LoopAttributeInfo buildLoopAttributes(const uast::Loop* node) {
+    auto attrs = node->attributeGroup();
+    if (attrs == nullptr) return {};
+
+    auto llvmMetadata = UniqueString::get(context, "llvm.metadata");
+    auto assertVectorized = UniqueString::get(context, "llvm.assertVectorized");
+    auto assertOnGpu = UniqueString::get(context, "assertOnGpu");
+
+    LoopAttributeInfo toReturn;
+
+    if (auto a = attrs->getAttributeNamed(llvmMetadata)) {
+      auto userAttrs = buildLLVMMetadataList(a);
+      toReturn.llvmMetadata.insert(toReturn.llvmMetadata.end(), userAttrs.begin(), userAttrs.end());
+    }
+    if (auto a = attrs->getAttributeNamed(assertVectorized)) {
+      toReturn.llvmMetadata.push_back(buildAssertVectorize(a));
+    }
+    toReturn.assertOnGpuAttr = attrs->getAttributeNamed(assertOnGpu);
+
+    return toReturn;
+  }
+
   Expr* visit(const uast::AttributeGroup* node) {
     INT_FATAL("Should not be called directly!");
     return nullptr;
@@ -346,10 +442,6 @@ struct Converter {
 
     if (!attr) return;
 
-    if (!attr->isDeprecated()) {
-      INT_ASSERT(attr->deprecationMessage().isEmpty());
-    }
-
     if (attr->isDeprecated()) {
       INT_ASSERT(!sym->hasFlag(FLAG_DEPRECATED));
       sym->addFlag(FLAG_DEPRECATED);
@@ -358,10 +450,8 @@ struct Converter {
       if (!msg.isEmpty()) {
         sym->deprecationMsg = astr(msg);
       }
-    }
-
-    if (!attr->isUnstable()) {
-      INT_ASSERT(attr->unstableMessage().isEmpty());
+    } else {
+      INT_ASSERT(attr->deprecationMessage().isEmpty());
     }
 
     if (attr->isUnstable()) {
@@ -372,6 +462,25 @@ struct Converter {
       if (!msg.isEmpty()) {
         sym->unstableMsg = astr(msg);
       }
+    } else {
+      INT_ASSERT(attr->unstableMessage().isEmpty());
+    }
+
+    if (attr->isParenfulDeprecated()) {
+      auto fnSym = toFnSymbol(sym);
+      // post-parse checks have ensured that decl is a parenless function,
+      // so the resulting symbol is a FnSymbol.
+      INT_ASSERT(fnSym);
+
+      INT_ASSERT(!sym->hasFlag(FLAG_DEPRECATED_PARENFUL));
+      sym->addFlag(FLAG_DEPRECATED_PARENFUL);
+
+      auto msg = attr->parenfulDeprecationMessage();
+      if (!msg.isEmpty()) {
+        fnSym->parenfulDeprecationMsg = astr(msg);
+      }
+    } else {
+      INT_ASSERT(attr->parenfulDeprecationMessage().isEmpty());
     }
 
     for (auto pragma : attr->pragmas()) {
@@ -601,6 +710,12 @@ struct Converter {
         return remap;
       }
     } else {
+      if (name == USTR("single")) {
+        if (currentModuleType == MOD_USER) {
+          USR_WARN(node->id(), "'single' variables are deprecated - please use 'sync' variables instead");
+        }
+      }
+
       if (auto remap = reservedWordRemapForIdent(name)) {
         return remap;
       }
@@ -1568,7 +1683,10 @@ struct Converter {
   BlockStmt* visit(const uast::DoWhile* node) {
     Expr* condExpr = toExpr(convertAST(node->condition()));
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
-    return DoWhileStmt::build(condExpr, body);
+    auto loopAttributes = buildLoopAttributes(node);
+    if (loopAttributes.assertOnGpuAttr)
+      CHPL_REPORT(context, InvalidGpuAssertion, node, loopAttributes.assertOnGpuAttr);
+    return DoWhileStmt::build(condExpr, body, std::move(loopAttributes.llvmMetadata));
   }
 
   BlockStmt* visit(const uast::While* node) {
@@ -1583,7 +1701,10 @@ struct Converter {
       condExpr = toExpr(convertAST(node->condition()));
     }
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
-    return WhileDoStmt::build(condExpr, body);
+    auto loopAttributes = buildLoopAttributes(node);
+    if (loopAttributes.assertOnGpuAttr)
+      CHPL_REPORT(context, InvalidGpuAssertion, node, loopAttributes.assertOnGpuAttr);
+    return WhileDoStmt::build(condExpr, body, std::move(loopAttributes.llvmMetadata));
   }
 
   /// IndexableLoops ///
@@ -1693,6 +1814,8 @@ struct Converter {
         INT_ASSERT(intents);
       }
 
+      auto loopAttributes = buildLoopAttributes(node);
+      loopAttributes.insertGpuEligibilityAssertion(body);
       return ForallStmt::build(indices, iterator, intents, body, zippered,
                                serialOK);
     }
@@ -1767,8 +1890,11 @@ struct Converter {
       BlockStmt* block = toBlockStmt(body);
       INT_ASSERT(block);
 
+      auto loopAttributes = buildLoopAttributes(node);
+      if (loopAttributes.assertOnGpuAttr)
+        CHPL_REPORT(context, InvalidGpuAssertion, node, loopAttributes.assertOnGpuAttr);
       ret = ForLoop::buildForLoop(index, iteratorExpr, block, zippered,
-                                  isForExpr);
+                                  isForExpr, std::move(loopAttributes.llvmMetadata));
     }
 
     INT_ASSERT(ret != nullptr);
@@ -1824,6 +1950,8 @@ struct Converter {
       bool zippered = node->iterand()->isZip();
       bool serialOK = false;
 
+      auto loopAttributes = buildLoopAttributes(node);
+      loopAttributes.insertGpuEligibilityAssertion(body);
       return ForallStmt::build(indices, iterator, intents, body, zippered,
                                serialOK);
     }
@@ -1849,9 +1977,11 @@ struct Converter {
     // convert these for now, despite the error, so that symbols are converted.
     convertWithClause(node->withClause(), node);
 
+    auto loopAttributes = buildLoopAttributes(node);
+    loopAttributes.insertGpuEligibilityAssertion(body);
     auto ret = ForLoop::buildForeachLoop(indices, iteratorExpr, body,
                                          zippered,
-                                         isForExpr);
+                                         isForExpr, std::move(loopAttributes.llvmMetadata));
 
     return ret;
   }
@@ -2057,6 +2187,9 @@ struct Converter {
       if (name == USTR("atomic")) {
         ret = new UnresolvedSymExpr("chpl__atomicType");
       } else if (name == USTR("single")) {
+        if (currentModuleType == MOD_USER) {
+          USR_WARN(node->id(), "'single' variables are deprecated - please use 'sync' variables instead");
+        }
         ret = new UnresolvedSymExpr("_singlevar");
       } else if (name == USTR("subdomain")) {
         ret = new CallExpr("chpl__buildSubDomainType");
@@ -3795,6 +3928,21 @@ struct Converter {
     return AGGREGATE_CLASS;
   }
 
+  template <typename Iterable>
+  void convertInheritsExprs(const Iterable& iterable,
+                            std::vector<Expr*>& inherits,
+                            bool& inheritMarkedGeneric) {
+    for (auto inheritExpr : iterable) {
+      bool thisInheritMarkedGeneric = false;
+      const uast::Identifier* ident =
+        uast::Class::getInheritExprIdent(inheritExpr, thisInheritMarkedGeneric);
+      if (auto converted = convertExprOrNull(ident)) {
+        inherits.push_back(converted);
+      }
+      inheritMarkedGeneric |= thisInheritMarkedGeneric;
+    }
+  }
+
   Expr* convertAggregateDecl(const uast::AggregateDecl* node) {
 
     const resolution::ResolutionResultByPostorderID* resolved = nullptr;
@@ -3805,14 +3953,13 @@ struct Converter {
 
     const char* name = astr(node->name());
     const char* cname = name;
-    Expr* inherit = nullptr;
     bool inheritMarkedGeneric = false;
 
+    std::vector<Expr*> inherits;
     if (auto cls = node->toClass()) {
-      const uast::Identifier* ident =
-        uast::Class::getInheritExprIdent(cls->parentClass(),
-                                         inheritMarkedGeneric);
-      inherit = convertExprOrNull(ident);
+      convertInheritsExprs(cls->inheritExprs(), inherits, inheritMarkedGeneric);
+    } else if (auto rec = node->toRecord()) {
+      convertInheritsExprs(rec->interfaceExprs(), inherits, inheritMarkedGeneric);
     }
 
     if (node->linkageName()) {
@@ -3830,7 +3977,8 @@ struct Converter {
       INT_ASSERT(externFlag == FLAG_UNKNOWN);
     }
 
-    auto ret = buildClassDefExpr(name, cname, tag, inherit,
+    auto ret = buildClassDefExpr(name, cname, tag,
+                                 inherits,
                                  decls,
                                  externFlag);
     INT_ASSERT(ret->sym);

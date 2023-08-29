@@ -543,6 +543,19 @@ all:
   03/16/23:
     - text: Update GPU performance tests to not count launches in perf mode (#21891)
       config: gpu
+  04/06/23:
+    - text: Make Dyno scope resolution default (#21983)
+      config: chapcs
+  05/26/23:
+    - text: Upgrade to llvm 15
+      config: chapcs
+  06/01/23:
+    - text: Remove calls to codegenInvariantStart (#22439)
+      config: chapcs
+  08/09/23:
+    - text: Deprecate c_string in user facing modules (#22622)
+      config: chapcs
+
 # End all
 
 allocate:
@@ -577,6 +590,8 @@ arrayPerformance-1d:
 arrayPerformance-2d:
   10/21/16:
     - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
+  06/02/23:
+    - Rename range.stridable to range.strides strideKind (#22441)
 
 array-assign-get:
   11/13/19:
@@ -908,6 +923,8 @@ fasta:
     - Disable enum->int casts for enums without values (#10114)
   07/14/18:
     - Optimize enum->int casts for concrete types (#10308)
+  08/23/23:
+    - Deprecate 'iokind' type and 'kind' field (#23007)
 
 fastaredux:
   01/14/14:
@@ -1089,6 +1106,10 @@ knucleotide: &knucleotide-base
 
 knucleotide-submitted:
   <<: *knucleotide-base
+
+large_binary_io:
+  05/02/23:
+    - IO non-buffered read optimization (#22031)
 
 LCALS-raw-short: &lcals-base
   10/20/16:
@@ -2346,7 +2367,17 @@ arkouda: &arkouda-base
     - Upgrade Arkouda release testing from 1.29 to 1.30 (#21969)
   03/30/23:
     - Bump bigint groupby benchmark problem size (Bears-R-Us/arkouda#2326)
-  07/05/23:
+  04/07/23:
+    - Fix BigInteger issue with a result parameter used as an argument (#22039)
+  04/08/23:
+    - Fix regression in BigInteger with ref arguments (#22075)
+  05/25/23:
+    - Revert SegArray to Client Side (Bears-R-Us/arkouda#2439)
+  07/22/23:
+    - new format specifier (#22766)
+  08/05/23:
+    - Resolve Arkouda deprecation warnings for 1.32 to date (Bears-R-Us/arkouda#2632)
+  07/06/23:
     - Upgrade Arkouda release testing from 1.30 to 1.31 (#22669)
 
 
@@ -2391,10 +2422,6 @@ arkouda-comp:
 shoc-triad-bw-lg:
   11/10/22:
     - Ensure we time mem transfer in SHOC Triad (#20961)
-
-triadAodBw1:
-  02/28/23:
-    - Include chpl-env in files that use CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE  macro (#21699)
 
 sort:
   02/24/23:

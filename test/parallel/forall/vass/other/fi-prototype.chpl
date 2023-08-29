@@ -33,16 +33,16 @@ that coforall. After inlining it in the 'forall' loop, we'd get:
   { // start inlined leader iterator
     ...
     coforall ... {
-  
+
       // yield XYZ; - replaced with the body of the leader loop
       {
         followThis = XYZ;
         for ... in followIterator(followThis) {
-  
+
           // the body of the original forall loop goes here
   	writeln(i);
           i = 6;
-  
+
         }
       }
     }
@@ -144,19 +144,19 @@ iter ITR(numIters:int, param tag: iterKind, followThis: range)
 proc nocapture() {
   writeln("A%start nocapture()");
   var i: int = 1;
-  var s$: sync bool;
-  var q$: single bool;
+  var s: sync bool;
+  var q: sync bool;
 
   cobegin with (ref i) {
     {
-      s$.readFE();
+      s.readFE();
       i = 5;
-      q$.writeEF(true);
+      q.writeEF(true);
     }
     {
       forall j in ITR(3) with (ref i) {
-        s$.writeXF(true);
-        q$.readFF();
+        s.writeXF(true);
+        q.readFF();
         writeln("A-", j, "  i=", i);
       }
     }
@@ -167,20 +167,20 @@ proc nocapture() {
 proc captureManually() {
   writeln("B%start captureManually()");
   var i: int = 1;
-  var s$: sync bool;
-  var q$: single bool;
+  var s: sync bool;
+  var q: sync bool;
 
   cobegin with (ref i) {
     {
-      s$.readFE();
+      s.readFE();
       i = 5;
-      q$.writeEF(true);
+      q.writeEF(true);
     }
     {
       var iCapture = i;
       forall j in ITR(3) {
-        s$.writeXF(true);
-        q$.readFF();
+        s.writeXF(true);
+        q.readFF();
         writeln("B-", j, "  i=", iCapture);
       }
     }
@@ -191,22 +191,22 @@ proc captureManually() {
 proc noCaptureWithIntent() {
   writeln("C%start noCaptureWithIntent()");
   var i: int = 1;
-  var s$: sync bool;
-  var q$: single bool;
+  var s: sync bool;
+  var q: sync bool;
 
   cobegin with (ref i) {
     {
-      s$.readFE();
+      s.readFE();
       i = 5;
-      q$.writeEF(true);
+      q.writeEF(true);
     }
     {
       // Convert 'forall' into leader+follower, like what the parser does.
       for followThis in ITR(3, tag=iterKind.leader) {
         for j in ITR(3, tag=iterKind.follower, followThis) {
 
-          s$.writeXF(true);
-          q$.readFF();
+          s.writeXF(true);
+          q.readFF();
           writeln("C-", j, "  i=", i);
 
         }  // follower
@@ -219,14 +219,14 @@ proc noCaptureWithIntent() {
 proc captureWithIntent() {
   writeln("D%start captureWithIntent()");
   var i: int = 1;
-  var s$: sync bool;
-  var q$: single bool;
+  var s: sync bool;
+  var q: sync bool;
 
   cobegin with (ref i) {
     {
-      s$.readFE();
+      s.readFE();
       i = 5;
-      q$.writeEF(true);
+      q.writeEF(true);
     }
     {
       // Convert 'forall' into leader+follower, like what the parser does.
@@ -236,8 +236,8 @@ proc captureWithIntent() {
       for (followThis, iCapture) in ITRcapture(3, tag=iterKind.leader, i) {
         for j in ITR(3, tag=iterKind.follower, followThis) {
 
-          s$.writeXF(true);
-          q$.readFF();
+          s.writeXF(true);
+          q.readFF();
           writeln("D-", j, "  i=", iCapture);
 
         }  // follower

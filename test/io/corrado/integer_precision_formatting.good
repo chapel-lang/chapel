@@ -1,0 +1,8 @@
+'.3i': 1.000
+'.3u': 1.000
+'.3n': 1.000
+'.3r': 1.000
+'.3n' of '1.0': 1.000
+'.3r' of '1.0': 1.000
+integer_precision_formatting.chpl:2: warning: Setting precision for integer format specifiers is not supported; use '%n' instead
+integer_precision_formatting.chpl:3: warning: Setting precision for integer format specifiers is not supported; use '%n' instead

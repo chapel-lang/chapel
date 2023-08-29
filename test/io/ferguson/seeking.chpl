@@ -13,14 +13,12 @@ if bufsz > 0 {
 }
 
 proc writer() {
-  use BinaryIO;
   var f = open(path, ioMode.cw);
   var w = f.writer(locking=false, serializer=new BinarySerializer());
   return w;
 }
 
 proc reader() {
-  use BinaryIO;
   var f = open(path, ioMode.r);
   var r = f.reader(locking=false, deserializer=new BinaryDeserializer());
   return r;

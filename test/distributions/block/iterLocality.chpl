@@ -9,7 +9,7 @@ SD += (6,);
 SD += (8,);
 var AS: [SD] real;
 
-proc exercise(desc, Dom, Arr) {
+proc exercise(desc, Dom, ref Arr) {
   writeln(desc, ": Dom");
   forall i in Dom do
     Arr[i] = here.id;

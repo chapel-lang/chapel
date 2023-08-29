@@ -1,6 +1,6 @@
 /* Shared speed subroutines.
 
-Copyright 1999-2006, 2008-2017, 2019 Free Software Foundation, Inc.
+Copyright 1999-2006, 2008-2017, 2019-2022 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -546,6 +546,13 @@ speed_mpn_addmul_8 (struct speed_params *s)
 }
 #endif
 
+#if HAVE_NATIVE_mpn_addaddmul_1msb0
+double
+speed_mpn_addaddmul_1msb0 (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_ADDADDMUL1_MSB0 (mpn_addaddmul_1msb0);
+}
+#endif
 double
 speed_mpn_mul_1 (struct speed_params *s)
 {
@@ -717,6 +724,16 @@ double
 speed_mpn_div_qr_1n_pi1_2 (struct speed_params *s)
 {
   SPEED_ROUTINE_MPN_DIV_QR_1N_PI1 (mpn_div_qr_1n_pi1_2);
+}
+double
+speed_mpn_div_qr_1n_pi1_3 (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_DIV_QR_1N_PI1 (mpn_div_qr_1n_pi1_3);
+}
+double
+speed_mpn_div_qr_1n_pi1_4 (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_DIV_QR_1N_PI1 (mpn_div_qr_1n_pi1_4);
 }
 
 double
@@ -1581,6 +1598,58 @@ speed_mpn_sqrmod_bnm1 (struct speed_params *s)
 }
 
 double
+speed_mpn_mulmod_bknp1 (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_MULMOD_BNP1_CALL (mpn_mulmod_bknp1 (wp, s->xp, s->yp, nk, k, tp),1);
+}
+
+double
+speed_mpn_sqrmod_bknp1 (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_MULMOD_BNP1_CALL (mpn_sqrmod_bknp1 (wp, s->xp, nk, k, tp),1);
+}
+
+static void
+mpn_bc_mulmod_bnp1 (mp_ptr rp, mp_srcptr ap, mp_srcptr bp, mp_size_t n,
+		    unsigned k, mp_ptr tp)
+{
+  if (k > 2)
+    mpn_mulmod_bknp1 (rp, ap, bp, n, k, tp);
+  else
+    {
+      n *= k;
+      mpn_mul_n (tp, ap, bp, n);
+      mpn_sub_n (rp, tp, tp + n, n);
+    }
+}
+
+static void
+mpn_bc_sqrmod_bnp1 (mp_ptr rp, mp_srcptr ap, mp_size_t n,
+		    unsigned k, mp_ptr tp)
+{
+  if (k > 2)
+    mpn_sqrmod_bknp1 (rp, ap, n, k, tp);
+  else
+    {
+      n *= k;
+      mpn_sqr (tp, ap, n);
+      mpn_sub_n (rp, tp, tp + n, n);
+    }
+}
+
+double
+speed_mpn_mulmod_bnp1 (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_MULMOD_BNP1_CALL (mpn_bc_mulmod_bnp1 (wp, s->xp, s->yp, nk, k, tp),0);
+}
+
+double
+speed_mpn_sqrmod_bnp1 (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPN_MULMOD_BNP1_CALL (mpn_bc_sqrmod_bnp1 (wp, s->xp, nk, k, tp),0);
+}
+
+double
 speed_mpn_matrix22_mul (struct speed_params *s)
 {
   /* Speed params only includes 2 inputs, so we have to invent the
@@ -1764,9 +1833,33 @@ speed_mpn_gcd_22 (struct speed_params *s)
 }
 
 double
+speed_gmp_primesieve (struct speed_params *s)
+{
+  SPEED_ROUTINE_GMP_PRIMESIEVE (gmp_primesieve);
+}
+
+double
 speed_mpz_nextprime (struct speed_params *s)
 {
   SPEED_ROUTINE_MPZ_NEXTPRIME (mpz_nextprime);
+}
+
+double
+speed_mpz_nextprime_1 (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPZ_UNARY_1 (mpz_nextprime);
+}
+
+double
+speed_mpz_prevprime (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPZ_NEXTPRIME (mpz_prevprime);
+}
+
+double
+speed_mpz_prevprime_1 (struct speed_params *s)
+{
+  SPEED_ROUTINE_MPZ_UNARY_1 (mpz_prevprime);
 }
 
 double

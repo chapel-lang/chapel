@@ -40,7 +40,7 @@ main (int argc, char **argv)
 {
   mpz_t base, exp, mod;
   mpz_t r1, r2, t1, t2;
-  mp_size_t base_size, exp_size, mod_size;
+  mp_size_t exp_size, mod_size;
   int i, res;
   int reps = 1000;
   long Q;

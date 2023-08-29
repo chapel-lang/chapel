@@ -1,9 +1,512 @@
-2020-11-13 Marco Bodrato <bodrato@mail.dm.unipi.it>
+2023-07-29  Torbjörn Granlund  <tg@gmplib.org>
 
-	* Version 6.2.1 released.
+	* Version 6.3.0 released.
 
-	* gmp-h.in (__GNU_MP_VERSION_PATCHLEVEL): Bump version info.
-	* Makefile.am (LIBGMP_LT_*, LIBGMPXX_LT_*): Bump revision info.
+	* mpn/s390_64/z13/mul_basecase.asm: Rewrite, using new addmul_1.asm.
+
+	* mpn/s390_64/z13/mul_1.asm: Rewrite.
+	* mpn/s390_64/z13/addmul_1.asm: Likewise.
+	* mpn/s390_64/z13/submul_1.asm: Likewise.
+
+2023-07-27  Niels Möller  <nisse@lysator.liu.se>
+
+	Update DIV_QR_1N_PI1_METHOD to use method 3 or 4.
+	* mpn/arm64/applem1/gmp-mparam.h: Update DIV_QR_1N_PI1_METHOD.
+	* mpn/arm64/cora57/gmp-mparam.h: Likewise.
+	* mpn/arm64/xgene1/gmp-mparam.h: Likewise.
+	* mpn/powerpc64/mode64/p7/gmp-mparam.h: Likewise.
+	* mpn/powerpc64/mode64/p8/gmp-mparam.h: Likewise.
+	* mpn/powerpc64/mode64/p9/gmp-mparam.h: Likewise.
+	* mpn/sparc64/ultrasparct45/gmp-mparam.h: Likewise.
+	* mpn/x86/coreihwl/gmp-mparam.h: Likewise.
+	* mpn/x86/k7/gmp-mparam.h: Likewise.
+
+2023-07-26  Niels Möller  <nisse@lysator.liu.se>
+
+	* tune/speed.h (mpn_hgcd_appr_lehmer): Fix declaration to use
+	correct return type.
+
+2023-07-26  Torbjörn Granlund  <tg@gmplib.org>
+
+	* mpn/s390_64/z13/submul_1.asm: New file.
+	* mpn/s390_64/z13/popcount.asm: New file.
+	* mpn/s390_64/z13/hamdist.asm: New file.
+
+2023-07-25  Torbjörn Granlund  <tg@gmplib.org>
+
+	* mpn/s390_64/z13/addmul_2.asm: New file.
+	* mpn/s390_64/z13/addmul_1.asm: New file.
+	* mpn/s390_64/z13/addmul_2.asm: New file.
+	* mpn/s390_64/z13/mul_1.asm: New file.
+	* mpn/s390_64/z13/mul_2.asm: New file.
+	* mpn/s390_64/z13/mul_basecase.asm: New file.
+	* mpn/s390_64/z13/sqr_basecase.c: New file.
+
+2023-07-20  Torbjörn Granlund  <tg@gmplib.org>
+
+	* config.guess: Generalise sparc patterns.
+
+2023-07-19  Torbjörn Granlund  <tg@gmplib.org>
+
+	* mpn/generic/div_qr_1n_pi2.c, mpn/generic/div_qr_1n_pi1.c,
+	mpn/generic/mod_1_1.c, mpn/generic/div_qr_1u_pi2.c,
+	mpn/generic/div_qr_2.c: Get arm64 asm contraints right for adcs.
+
+2023-07-18  Torbjörn Granlund  <tg@gmplib.org>
+
+	* configure.ac: Suppress any -flto flags for running GMP_ASM_*.
+
+2023-07-15  Torbjörn Granlund  <tg@gmplib.org>
+
+	* configure.ac: Pass -mcpu= instead of -mtune= consistently for ibm power.
+
+	* mpn/riscv/64: Improve Risc V asm support.
+	* mpn/loongarch/64: Provide basic Loongarch asm support.
+
+2023-07-06  Marc Glisse  <marc.glisse@inria.fr>
+
+	* doc/gmp.texi: Mention snapshots in bug report instructions.
+
+	* configfsf.guess: Updated to version 2023-06-23, from gnulib.
+	* configfsf.sub: Updated to version 2023-06-26, from gnulib.
+
+2023-06-29  Torbjörn Granlund  <tg@gmplib.org>
+
+	* configure.ac: Make sparc -mptr64 argument optional.
+
+	* configure.ac, config.guess, config.sub, acinclude.m4: Handle power10.
+
+2023-06-23 Marius Hillenbrand <mhillen@linux.ibm.com>
+	   Stefan Liebler <stli@linux.ibm.com>
+
+	* mpn/s390_64/z13/addmul_1.c: New file.
+	* mpn/s390_64/z13/aormul_2.c: New file.
+	* mpn/s390_64/z13/common-vec.h: New file.
+	* mpn/s390_64/z13/gmp-mparam.h: New file.
+	* mpn/s390_64/z13/mul_1.c: New file.
+	* mpn/s390_64/z13/mul_basecase.c: New file.
+
+2022-11-02  Torbjörn Granlund  <tg@gmplib.org>
+
+	* mpn/x86_64/bd1/popcount.asm: Prefer movd to movq for register moves.
+	* mpn/x86_64/bd1/hamdist.asm: Likewise.
+	* mpn/x86_64/core2/hamdist.asm: Likewise.
+	* mpn/x86_64/core2/popcount.asm: Likewise.
+
+2022-10-28 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* mpz/nextprime.c (findnext): Use TMP_ALLOC_TYPE to allocate
+	composite array (tx: Jiayi Lin)
+
+2022-09-30  Marc Glisse  <marc.glisse@inria.fr>
+
+	* doc/projects.html: Update URL for MPFR.
+	* doc/gmp.texi: Likewise.
+
+2022-08-11 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* mpz/primorial_ui.c: Rename some variables and add comments.
+
+2022-06-19 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* mpz/millerrabin.c: Use mp_bitcnt_t.
+	* mpz/stronglucas.c: Skip some impossible values searching for D.
+
+2022-05-14 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* mpz/nextprime.c: Smaller operand for mpz_sqrt.
+	* tests/mpz/t-nextprime.c: Exit on error.
+	* tests/mpz/t-pprime_p.c: More cases to trigger unlikely branches.
+
+	* tests/mpz/t-aorsmul.c: Test the (r,x,x) case.
+	* mpz/aorsmul.c: Speed-up the (r,x,x) case (tx:Fredrik Johansson).
+
+2022-04-24  Torbjörn Granlund  <tg@gmplib.org>
+
+	* mpn/arm/v5/gcd_22.asm: New file.
+
+2022-04-18  Marc Glisse  <marc.glisse@inria.fr>
+
+	* gmpxx.h (mpz_class): Do not use mp directly.
+
+2022-03-30  Torbjörn Granlund  <tg@gmplib.org>
+
+	* configure.ac, config.guess, config.sub, acinclude.m4: Handle Intel
+	tremont separately.
+
+	* longlong.h (loongarch64 umul_ppmm): New #define.
+
+2022-03-18 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* tests/mpz/t-lucm.c: Remove an unused var.
+	* tests/mpq/io.c: Use a random size.
+	* tests/mpz/t-gcd.c: Do not assume a limb fits for _ui functions.
+
+2022-03-15 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* mpn/generic/mul_fft.c: Use _bknp1. Not when tuning, to avoid "noise".
+
+2022-03-09  Torbjörn Granlund  <tg@gmplib.org>
+
+	* mpn/x86_64/alderlake/submul_1.asm: New file.
+
+2022-03-08 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* mpn/generic/mulmod_bnm1.c: Use mulmod_bknp1, on the bnp1 side.
+	* mpn/generic/sqrmod_bnm1.c: Likewise.
+
+	* mpn/generic/mul_fft.c: Remove a branch and improve carry propagation.
+
+2022-03-03  Torbjörn Granlund  <tg@gmplib.org>
+
+	* mpn/x86_64/alderlake/mul_basecase.asm: New file.
+	* mpn/x86_64/alderlake/addmul_1.asm: New file.
+
+2022-02-21  Torbjörn Granlund  <tg@gmplib.org>
+
+	* configure.ac: Handle alderlake specifically, as it lacks avx512.
+
+2022-02-15 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* mpn/generic/strongfibo.c: Correct condition in #if.
+
+	* mpn/generic/mulmod_bknp1.c: New file, with mpn_{mul,sqr}mod_bknp1.
+	* configure.ac (gmp_mpn_functions): Add new file.
+	* gmp-impl.h: Declare new functions.
+	* gmp-impl.h (MPN_{MUL,SQR}MOD_BKNP1_USABLE): Support new functions.
+
+	* tests/mpn/t-{mul,sqr}mod_bknp1.c: New tests for mpn_{mul,sqr}mod_bknp1.
+	* tests/mpn/Makefile.am: Add new tests.
+
+	* tune/speed.c: Recognise new functions: mpn_{mul,sqr}mod_bknp1.
+	* tune/speed.h: Declare new speed_ functions to measure them.
+	* tune/common.c: Implement speed_ functions.
+
+2022-02-14  Torbjörn Granlund  <tg@gmplib.org>
+
+	* config.guess: Recognize Tremont CPU variants.
+
+2022-02-01 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* mpz/aorsmul_i.c: Use MPZ_NEWALLOC when the operand is overwritten.
+	* mpz/import.c: Reorder branches.
+	* mpz/{init2.c,realloc.c,realloc2.c}: Remove unneeded #includes.
+
+2022-01-20  Marc Glisse  <marc.glisse@inria.fr>
+
+	* doc/gmp.texi: Clarify C++ includes and library.
+
+2022-01-05 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* gen-sieve.c: Generate masks depending on bit size.
+	* primesieve.c: Remove fixed size (32 and 64 only) masks.
+
+	* tune/speed.c: Add FLAG_NODATA for gmp_primesieve.
+
+2021-12-11 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* mpn/generic/toom3_sqr.c: Use a shorter mul when it's simple.
+	* mpn/generic/toom4_sqr.c: Likewise.
+	* mpn/generic/toom33_mul.c: Likewise.
+	* mpn/generic/toom44_mul.c: Likewise.
+
+	* gmp-h.in (GMP_ERROR_MPZ_OVERFLOW): New enum value.
+	* errno.c (__gmp_overflow_in_mpz): New function.
+	* gmp-impl.h (MPZ_OVERFLOW): New macro calling it.
+	* mpz/init2.c: Use the new macro to rise the overflow error.
+	* mpz/realloc.c: Likewise.
+	* mpz/realloc2.c: Likewise.
+
+	* mpz/tdiv_r.c: Special code for divisor with low zero limbs.
+	* mpz/tdiv_qr.c: Likewise.
+
+2021-11-14  Torbjörn Granlund  <tg@gmplib.org>
+
+	* configure.ac: Adapt to acinclude.m4 change.
+
+	* mpn/riscv/64/aors_n.asm: Accept 4th CMPCY operand, allowing for
+	2 c/l mpn_sub_n (mpn_add_n cannot beat 3 c/l with RISC V's ISA).
+
+	* configure.ac (S390_PATTERN): Rewrite to handle path inheritance.
+
+	* acinclude.m4 (GMP_ASM_SPARC_GDOP): Renamed GMP_ASM_SPARC_GOTDATA.
+
+	* mpn/sparc32/sparc-defs.m4 (LEA64): Remove misguided assert.
+	* mpn/sparc32/sparc-defs.m4 (LEA64): Allow PIC withot gdop_*.
+
+	* mpn/sparc64/gcd_11.asm: Optimise out annulled shift insn in loop.
+
+2021-11-07  Torbjörn Granlund  <tg@gmplib.org>
+
+	* mpn/generic/sec_tabselect.c: Make recently added code actually work.
+	(Thanks Marco!)
+
+	* mpn/s390_32/sec_tabselect.asm: New file.
+
+	* mpn/s390_64/sec_tabselect.asm: Avoid "slfi" for portability.
+
+2021-11-02  Torbjörn Granlund  <tg@gmplib.org>
+
+	* mpn/s390_64/sec_tabselect.asm: Rewrite.
+
+	* mpn/generic/sec_tabselect.c: Provide alternative function.
+
+2021-10-31  Torbjörn Granlund  <tg@gmplib.org>
+
+	* mpn/riscv/64/sec_tabselect.asm: New file.
+	* mpn/s390_64/sec_tabselect.asm: New file.
+	* mpn/x86/sec_tabselect.asm: Streamline.
+
+2021-10-31 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* mpz/fac_ui.c: Save half the products for small values.
+
+2021-10-29  Torbjörn Granlund  <tg@gmplib.org>
+
+	* mpn/generic/sec_tabselect.c: Rewrite.
+
+2021-10-16  Torbjörn Granlund  <tg@gmplib.org>
+
+	* configure.ac, config.guess, config.sub, acinclude.m4: Recognise more
+	icelake CPUs, and initial alderlake CPUs.
+
+	* mpn/powerpc64/mode64/p9/addaddmul_1msb0.asm: New file.
+
+	* mpn/arm64/applem1/addaddmul_1msb0.asm: New file.
+
+2021-10-10  Torbjörn Granlund  <tg@gmplib.org>
+
+	* mpn/x86_64/k8/addaddmul_1msb0.asm: Moved from "..".
+
+2021-10-08  Niels Möller  <nisse@lysator.liu.se>
+
+	* tests/mpn/t-addaddmul.c: Unit test for mpn_addaddmul_1msb0.
+
+2021-10-07  Niels Möller  <nisse@lysator.liu.se>
+
+	* tune/speed.h (SPEED_ROUTINE_MPN_ADDADDMUL1_MSB0): New macro.
+	* tune/common.c (speed_mpn_addaddmul_1msb0): New function.
+	* tune/speed.c (routine): Add mpn_addaddmul_1msb0 to list.
+
+2021-10-01 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* gen-sieve.c: New file to generate a small presieved array.
+	* primesieve.c (first_block_primesieve): Use the presieved array.
+	* gmp-impl.h: #include output of gen-sieve.
+	* Makefile.am: Add rules for gen-sieve and sieve_table.h.
+
+	* mpn/x86_64/addaddmul_1msb0.asm: Support DOS ABI, reorder branches.
+
+2021-09-26  Torbjörn Granlund  <tg@gmplib.org>
+
+	* configure.ac (s390): Make sure to always include main asm directory.
+
+	* longlong.h (umul_ppmm): Correct Risc V operand order.
+
+2021-09-25 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* mpz/import.c: Use MPN_BSWAP_REVERSE, reorder branches.
+	* mpz/inp_raw.c: Avoid bit size overflows.
+
+2021-09-22  Torbjörn Granlund  <tg@gmplib.org>
+
+	* config.sub: Update powerpc pattern.
+
+	* longlong.h: Change tested predef for Risc V.
+
+2021-08-21 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* mpz/primorial_ui.c: Simpler loop on sieved primes.
+	* mpz/nextprime.c: Likewise.
+
+2021-09-14  Torbjörn Granlund  <tg@gmplib.org>
+
+	* mpn/asm-defs.m4: Remove quotes around PIC_ALWAYS.  Reported by
+	George Koehler.
+
+2021-07-01  Niels Möller  <nisse@lysator.liu.se>
+
+	* mpn/generic/div_qr_1n_pi1.c (mpn_div_qr_1n_pi1): New variants,
+	DIV_QR_1N_METHOD 3 and 4.
+
+	* tune/div_qr_1n_pi1_3.c: New file.
+	* tune/div_qr_1n_pi1_4.c: New file.
+	* tune/Makefile.am (libspeed_la_SOURCES): Add new files.
+	* tune/div_qr_1_tune.c (__gmpn_div_qr_1n_pi1): Handle new values
+	of div_qr_1n_pi1_method.
+	* tune/common.c (speed_mpn_div_qr_1n_pi1_3)
+	(speed_mpn_div_qr_1n_pi1_4): New functions.
+	* tune/speed.c (routine): Add mpn_div_qr_1n_pi1_3 and
+	mpn_div_qr_1n_pi1_3 to list.
+	* tune/speed.h: Declare new functions.
+	* tune/tuneup.c (tune_div_qr_1): Extend tuning of
+	DIV_QR_1N_PI1_METHOD.
+
+2021-06-20  Marc Glisse  <marc.glisse@inria.fr>
+
+	* gmpxx.h (mpq_class(mpz_class&&)): New constructor.
+
+2021-06-20  Niels Möller  <nisse@lysator.liu.se>
+
+	* doc/gmp.texi: Document foo_ptr and foo_srcptr.
+
+2021-06-06  Paul Eggert  <eggert@cs.ucla.edu>
+
+	* configure.ac (AC_INIT): Avoid comma in BUG-REPORT field.
+
+2021-06-06  Marc Glisse  <marc.glisse@inria.fr>
+
+	* gmp-h.in (gmp_randstate_ptr, gmp_randstate_srcptr): Move declaration
+	from gmp-impl.h.
+	(gmp_randinit, gmp_randinit_default, gmp_randinit_lc_2exp,
+	gmp_randinit_lc_2exp_size, gmp_randinit_mt, gmp_randinit_set,
+	gmp_randseed, gmp_randseed_ui, gmp_randclear, gmp_urandomb_ui,
+	gmp_urandomm_ui, mpz_rrandomb, mpz_urandomb, mpz_urandomm,
+	mpf_urandomb): Replace gmp_randstate_t with gmp_randstate_ptr.
+	* gmp-impl.h (gmp_randstate_ptr, gmp_randstate_srcptr): Move
+	declaration to gmp-h.in.
+	(gmp_randfnptr_t, __gmp_randinit_mt_noseed): Replace gmp_randstate_t
+	with gmp_randstate_ptr.
+	* mpf/reldiff.c: Replace mpf_t with mpf_ptr.
+	* mpf/set_q.c: Likewise.
+	* mpf/urandomb.c: Likewise.
+	* mpq/canonicalize.c: Replace mpq_t with mpq_ptr.
+	* mpq/clear.c: Likewise.
+	* mpq/init.c: Likewise.
+	* mpq/set_si.c: Likewise.
+	* mpq/set_ui.c: Likewise.
+	* mpz/rrandomb.c: Replace gmp_randstate_t with gmp_randstate_ptr.
+	* mpz/urandomb.c: Likewise.
+	* mpz/urandomm.c: Likewise.
+	* rand/rand.c: Likewise.
+	* rand/randclr.c: Likewise.
+	* rand/randdef.c: Likewise.
+	* rand/randlc2s.c: Likewise.
+	* rand/randlc2x.c: Likewise.
+	* rand/randmt.c: Likewise.
+	* rand/randmt.h: Likewise.
+	* rand/randmts.c: Likewise.
+	* rand/randsd.c: Likewise.
+	* rand/randsdui.c: Likewise.
+
+	* gmp-impl.h: Include stdint.h even if we have inttypes.h.
+	* printf/doprnt.c: Likewise.
+	* printf/repl-vsnprintf.c: Likewise.
+	* scanf/doscan.c: Likewise.
+	* tests/misc/t-printf.c: Likewise.
+	* tests/misc/t-scanf.c: Likewise.
+
+2021-06-03  Niels Möller  <nisse@lysator.liu.se>
+
+	* mpn/generic/div_qr_1n_pi1.c (mpn_div_qr_1n_pi1): Micro-optimize
+	method 2, and document the main idea of the algorithm.
+
+2021-05-25 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* mpn/generic/sec_powm.c (sec_binvert_limb): New static function.
+
+	* mpn/generic/powm.c (win_size): Remove the unused value from array.
+	* mpn/generic/sec_powm.c (win_size): Likewise.
+
+2021-05-08  Marc Glisse  <marc.glisse@inria.fr>
+
+	* doc/gmp.texi: Mention shifts in bit manipulation.
+
+2021-05-02  Torbjörn Granlund  <tg@gmplib.org>
+
+	* configure.ac, config.guess, config.sub: Recognise CPUs icelake,
+	tigerlake, and rocketlake.
+
+	* configure.ac: Clean up handling of several Intel CPUs.
+
+2021-03-11  Torbjörn Granlund  <tg@gmplib.org>
+
+	* longlong.h: Disable s390 patterns which makes clang barf.
+
+2021-03-09  Torbjörn Granlund  <tg@gmplib.org>
+
+	With Marius Hillenbrand:
+	* configure.ac, config.guess, config.sub, acinclude.m4:
+	Recognise CPUs z13-z15.
+
+2021-03-08  Torbjörn Granlund  <tg@gmplib.org>
+
+	* longlong.h (68000 umul_ppmm): Add an early-clobber &.
+
+2021-01-18  Torbjörn Granlund  <tg@gmplib.org>
+
+	* mpn/x86_64/zen3/sbpi1_bdiv_r.asm: New grabber file.
+
+2021-01-17  Torbjörn Granlund  <tg@gmplib.org>
+
+	* mpn/x86_64/coreibwl/sbpi1_bdiv_r.asm: New file.
+
+2021-01-01  Torbjörn Granlund  <tg@gmplib.org>
+
+	* configure.ac: Handle zen3 different from zen2.
+
+	* mpn/x86_64/zen3/addmul_1.asm: New grabber file.
+	* mpn/x86_64/zen3/mul_basecase.asm: Likewise.
+	* mpn/x86_64/zen3/sqr_basecase.asm: Likewise.
+
+	* mpn/x86_64/zen3/mul_1.asm: New file.
+
+2020-12-25  Torbjörn Granlund  <tg@gmplib.org>
+
+	* mpn/arm64/applem1/sqr_basecase.asm: New file, do 2x and limb squaring
+	in main loop.
+
+2020-12-21  Torbjörn Granlund  <tg@gmplib.org>
+
+	* mpn/arm64/applem1/aorsmul_1.asm: Provide addmul_1c entry point.
+
+2020-12-20  Torbjörn Granlund  <tg@gmplib.org>
+
+	* mpn/arm64/copyi.asm: Rewrite to use scalar regs.
+	* mpn/arm64/copyd.asm: Likewise.
+
+2020-12-12  Marc Glisse  <marc.glisse@inria.fr>
+
+	* gmp-h.in (_GMP_H_HAVE_FILE): Test also _STDIO (for HPE NonStop).
+
+2020-12-04  Torbjörn Granlund  <tg@gmplib.org>
+
+	* mpn/arm64/applem1/gmp-mparam.h: New file.
+
+	* mpn/generic/mod_1_1.c: Provide add_mssaaaa for arm64.
+	* mpn/generic/div_qr_1n_pi1.c: Likewise.
+
+	* mpn/arm64/divrem_1.asm: Use sub insn for subtracting constants.
+
+2020-11-29  Torbjörn Granlund  <tg@gmplib.org>
+
+	* mpn/arm64/divrem_1.asm: New file.
+	* mpn/arm64/applem1/aorsmul_1.asm: New file.
+
+	* configure.ac, config.guess, config.sub: Recognise CPU "applem1".
+
+	* mpn/arm64: Avoid the x18 register since it is reserved on Darwin.
+
+2020-11-28 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* tests/mpz/t-pprime_p.c (check_fermat_mersenne): Check return
+	value.
+
+	* tests/devel/primes.c: Correctly use n_cto_bit or n_fto_bit.
+	* primesieve.c: Differentiate n_to_bit into floor and ceil.
+
+2020-11-23 Seth Troisi <sethtroisi@google.com>
+
+	* mpz/nextprime.c (mpz_prevprime): New function.
+	* gmp-h.in: Declare it.
+	* doc/gmp.texi: Document it.
+	* tests/mpz/t-nextprime.c: Test it.
+
+	* tests/mpz/t-pprime_p.c (check_small): Check return value.
+
+	* tune/common.c (speed_mpz_prevprime{,_1}): New functions.
+	* tune/speed.h: Declare them.
+	* tune/speed.c (routine): Add mpz_nextprime{,_1}.
 
 2020-11-10 Marco Bodrato <bodrato@mail.dm.unipi.it>
 
@@ -30,12 +533,26 @@
 	* tests/mpf/t-trunc.c: Use mpf_size.
 
 	* tests/mpf/t-conv.c: Some more tests on zero.
+	* mpn/generic/mod_1.c (mpn_mod_1_unnorm): Compare r<d before shifting.
+	* mpf/mul.c: Use macros.
+
+2020-10-29 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* mpz/aors_ui.h: REALLOC with extra limb only when needed.
+
+	* mpz/bin_uiui.c (limb_apprsqrt): Slightly faster formula.
+	* mpz/oddfac_1.c (limb_apprsqrt): Likewise.
+	* mpz/stronglucas.c (limb_apprsqrt): Likewise.
 
 2020-10-25 Marco Bodrato <bodrato@mail.dm.unipi.it>
 
 	* configfsf.guess: Updated to version 2020-10-22, from gnulib.
+	* configfsf.sub: Updated to version 2020-10-13, from gnulib.
 
 2020-10-17 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* bootstrap.c (mpz_invert_2exp): Simplify.
+	* mpz/stronglucas.c (mpz_oddjacobi_ui): New helper function.
 
 	* tests/devel/Makefile.am: Remove redundancies.
 
@@ -50,9 +567,6 @@
 
 	* doc/gmp.texi (Number sequences): Remove redundancy. (spotted: TonyMcC)
 
-	* configfsf.sub: Updated to version 2020-10-13, from gnulib.
-	* configfsf.guess: Updated to version 2020-09-19, from gnulib.
-
 2020-10-06  Niels Möller  <nisse@lysator.liu.se>
 
 	* Makefile.am: Better support for make check-mini-gmp on wine or cygwin.
@@ -63,10 +577,6 @@
 
 	* longlong.h (x86 umul_ppmm): Fix typo.
 
-2020-09-21  Torbjörn Granlund  <tg@gmplib.org>
-
-	* mpz/n_pow_ui.c: Detect and report overflow.
-
 2020-07-04  Torbjörn Granlund  <tg@gmplib.org>
 
 	* mpn/arm64/bdiv_q_1.asm: Use LEA_HI/LEA_LO
@@ -76,19 +586,9 @@
 	* mpn/arm64/darwin.m4: New file.
 	* configure.ac: Use arm64/arm64-defs.m4 and arm64/darwin.m4.
 
-2020-06-20  Torbjörn Granlund  <tg@gmplib.org>
+2020-06-11  Torbjörn Granlund  <tg@gmplib.org>
 
-	* longlong.h (add_sssaaaa arm32/arm64): Generalise allowed operands
-	when using adds for sub and subs for add, while disallowing 0.
-	(sub_ddmmss ppc64): Disallow 0 when using addic.  Also disallow
-	constants for register-only middle addic operand.
-	(C add_sssaaaa and sub_ddmmss): Use more temps to make operation more
-	well-defined.
-
-2020-06-18  Torbjörn Granlund  <tg@gmplib.org>
-
-	* tests/devel/gen-test-longlong_h.c: New file.
-	* tests/devel/Makefile.am: Compile and use gen-test-longlong_h.c.
+	* mpn/powerpc32/powerpc-defs.m4 (aese,aeselst): New macros.
 
 2020-06-10  Torbjörn Granlund  <tg@gmplib.org>
 
@@ -102,37 +602,11 @@
 	* tests/cxx/t-rand.cc: Likewise.
 	* tests/cxx/t-do-exceptions-work-at-all-with-this-compiler.cc: Likewise.
 
-	* tune/speed.c: Undo 2020-05-24 _POSIX_C_SOURCE change, it breaks on
-	many broken systems.
-	* tune/freq.c: Likewise.
-	* tune/time.c: Likewise.
-	* tune/tuneup.c: Likewise.
-
-	* tests/devel/try.c: Revert 2020-05-24 changes.
-
 2020-05-21  Torbjörn Granlund  <tg@gmplib.org>
 
-	* tune/freq.c (_POSIX_C_SOURCE): Define.
-
-	* tune/tuneup.c (print_define_with_speedup): Fall back from snprintf to
-	sprintf for C90.
-	(_POSIX_C_SOURCE): Define.
-	(max_opsize): Set by #define instead of const size_t to please C90.
-	(n_measurements): Likewise.
-	(speed_mpn_pre_set_str): Adhere to C90 declaration rules.
-
-	* tune/tune-gcd-p.c: Back out 2020-01-10 change to comply to C90.
-
 	* tune/time.c (speed_endtime): Cast printf args to right type.
-	(_POSIX_C_SOURCE): Define.
-
-	* tune/speed.h (CACHE_LINE_SIZE): Do #undef before defining.
-	(SPEED_ROUTINE_MPN_GCD_1): Provide dummy first argument for standard
-	compliance.
-	(SPEED_ROUTINE_MPN_HGCD2): Adhere to C90 declaration rules.
 
 	* tune/speed.c (main): Cast printf args to right type.
-	(_POSIX_C_SOURCE): Define.
 
 	* tests/mpz/reuse.c: Avoid using non-standard function fileno().
 	* tests/spinner.c: Likewise.
@@ -140,48 +614,16 @@
 	* tests/mpz/convert.c (str_casecmp): New function.
 	(main): Use it instead of non-standard strcasecmp.
 
-	* tests/misc.c (tests_start): Fall back from snprintf to sprintf for
-	C90.
-
-	* tests/devel/try.c: Avoid getpagesize and use POSIX sysconf instead.
-	(_POSIX_C_SOURCE): Define.
-
-	* mpn/generic/mod_1_1.c: Don't use C++ comments.
-
 	* mpn/generic/get_d.c: Add clarifying parens.
-
-2020-05-18  Torbjörn Granlund  <tg@gmplib.org>
-
-	* mpn/generic/toom_interpolate_12pts.c (DO_mpn_addlsh_n): Define only
-	when needed.
-	* mpn/generic/toom_interpolate_16pts.c: Likewise.
 
 2020-05-17 Marco Bodrato <bodrato@mail.dm.unipi.it>
 
-	* mpz/cmp.c: Avoid overflow on int even for huge sizes.
-	* mpq/cmp.c: Likewise.
-
-	* mpn/generic/mul_fft.c (mpn_fft_mul_modF_K):
-	Fully handle carry propagation in basecase multiplication.
-
-2020-05-16  Torbjörn Granlund  <tg@gmplib.org>
-
-	* mpn/generic/hgcd2.c (tabp): Combine several undefined tabp
-	variable definitions with a macro.
-
-	* mpn/generic/gcd_22.c: Avoid C99 constructs.
+	* mpq/cmp.c: Avoid overflow on int even for huge sizes.
 
 2020-05-12  Torbjörn Granlund  <tg@gmplib.org>
 
-	* mpn/generic/compute_powtab.c: Avoid C99 constructs.
-	* mpn/generic/get_str.c: Likewise.
-	* mpn/generic/set_str.c: Likewise.
-
-	* gmp-impl.h (memset): Move ASSERT to before decls.
-	* tests/refmpn.c: Likewise.
-
-	* mpn/generic/hgcd2.c (tabp): Combine several undefined tabp variable
-	definitions with a macro.
+	* mpn/generic/hgcd2-div.h (tabp): Combine several undefined tabp
+	variable definitions with a macro.
 
 	* mpn/generic/strongfibo.c: Avoid defining helper function when unused.
 
@@ -198,6 +640,61 @@
 
 	* tests/mpz/reuse.c (realloc_if_reducing): New function.
 	(INVOKE_RRS, etc): Use realloc_if_reducing.
+
+2020-03-10 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* mpn/generic/mulmod_bnm1.c (mpn_bc_mulmod_bnp1):
+	Simplify special cases.
+	* mpz/bin_ui.c (rek_raising_fac4): Reduce allocations.
+	(mpz_bin_ui): Siplify special cases.
+	* tests/mpz/t-bin.c: Use divexact.
+
+	* mpn/generic/mul_fft.c (mpn_fft_mul_modF_K):
+	Fully handle carry propagation in basecase multiplication.
+
+2020-02-12 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* mpz/cmp.c: Avoid overflow on int even for huge sizes.
+	* mpz/cmpabs.c: Likewise.
+
+2020-02-09 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* mpn/generic/sqrmod_bnm1.c (mpn_bc_sqrmod_bnp1):
+	Shorter mpn_sqr.
+	* mpn/generic/mulmod_bnm1.c (mpn_bc_mulmod_bnp1):
+	Shorter mpn_mul_n.
+
+	* tests/mpn/t-mulmod_bnm1.c: Trigger special cases more often.
+	* tests/mpn/t-sqrmod_bnm1.c: Likewise.
+
+2020-02-09 Seth Troisi <sethtroisi@google.com>
+
+	* tests/mpz/t-nextprime.c: Split into sub-tests.
+
+2020-02-02 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* mpn/generic/powm.c: Better handling of current window-size.
+	* mpn/generic/powlo.c: Likewise.
+
+	* mpn/generic/jacbase.c (mpn_jacobi_base): Optimise _METHOD 4.
+	* mpz/aors.h: Branches optimisation.
+
+2020-01-31 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* mpn/generic/powm.c (MPN_REDC_0): Subtractive redc
+	(mpn_2powm): New, static, function
+	* tests/mpz/t-powm.c: More tests for the base=2 case.
+
+2020-01-24  Niels Möller  <nisse@lysator.liu.se>
+
+	* mpn/generic/hgcd2_jacobi.c (div1, div2): Deleted. Instead,
+	include hgcd2-div.h, to reuse the tuned implementations for hgcd2.
+	(mpn_hgcd2_jacobi): Adapt to different return value for div1. Also
+	other small changes to make it identical to mpn_hgcd2, except for
+	the updates of the jacobi-related state.
+
+	* mpn/generic/hgcd2.c (div1, div2): Move inline functions...
+	* mpn/generic/hgcd2-div.h: ... to a separate file.
 
 2020-01-17  Torbjörn Granlund  <tg@gmplib.org>
 

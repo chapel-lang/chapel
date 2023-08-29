@@ -504,7 +504,7 @@ proc CalcElemVolume(xyz) {
   return volume / 12.0;
 }
 
-proc InitStressTermsForElems(p, q, sigxxyyzz) {
+proc InitStressTermsForElems(p, q, ref sigxxyyzz) {
   forall i in sigxxyyzz.domain {
     const pq = -p[i] - q[i];
     sigxxyyzz[i] = (pq, pq, pq);
@@ -707,7 +707,7 @@ proc CalcElemVelocityGradient(xyzvel, pfxyz, detJ, ref d3: 3*real) {
 }
 
 
-proc CalcPressureForElems(p_new: [?D] real, bvc, pbvc, 
+proc CalcPressureForElems(ref p_new: [?D] real, ref bvc, ref pbvc, 
                           e_old, compression, vnewc,
                           pmin: real, p_cut: real, eosvmax: real) {
 
@@ -884,7 +884,7 @@ proc CalcVolumeForceForElems() {
 }
 
 
-proc IntegrateStressForElems(sigxxyyzz, determ) {
+proc IntegrateStressForElems(sigxxyyzz, ref determ) {
   forall k in Elems {
     var b_xyz: 8*(3*real);
     var xyz_local: 8*(3*real);
@@ -911,7 +911,7 @@ proc IntegrateStressForElems(sigxxyyzz, determ) {
 
 var dvdxyz, xyz8n: [Elems] 8*(3*real);
 
-proc CalcHourglassControlForElems(determ) {
+proc CalcHourglassControlForElems(ref determ) {
 
   forall eli in Elems {
     /* Collect domain nodes to elem nodes */
@@ -1072,7 +1072,7 @@ proc CalcLagrangeElements() {
 }
 
 
-proc CalcKinematicsForElems(dxxyyzz, const dt: real) {
+proc CalcKinematicsForElems(ref dxxyyzz, const dt: real) {
   // loop over all elements
   forall k in Elems {
     var b_xyz: 8*(3*real),
@@ -1182,8 +1182,8 @@ proc UpdateVolumesForElems() {
 }
 
 
-proc CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta, 
-                                     delx_xi, delx_eta, delx_zeta) {
+proc CalcMonotonicQGradientsForElems(ref delv_xi, ref delv_eta, ref delv_zeta, 
+                                     ref delx_xi, ref delx_eta, ref delx_zeta) {
   forall eli in Elems {
     const ptiny = 1.0e-36;
     var xyzl: 8*(3*real);
@@ -1426,7 +1426,7 @@ proc EvalEOSForElems(vnewc) {
 
   var pHalfStep: [MatElems] real;
 
-proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
+proc CalcEnergyForElems(ref p_new, ref e_new, ref q_new, ref bvc, ref pbvc,
                         p_old, e_old, q_old, compression, compHalfStep, 
                         vnewc, work, delvc, qq_old, ql_old) {
   // TODO: might need to move these consts into foralls or global

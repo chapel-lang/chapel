@@ -532,7 +532,7 @@
 
 %type <commentsAndStmt> stmt tryable_stmt stmt_base attribute_receiver
 %type <blockOrDo> do_stmt
-%type <commentsAndStmt> if_stmt loop_stmt
+%type <commentsAndStmt> if_stmt loop_stmt loop_stmt_base
 %type <commentsAndStmt> select_stmt
 %type <commentsAndStmt> manage_stmt
 %type <exprList> manager_expr_ls
@@ -598,8 +598,8 @@
 %type <exprList> lifetime_components_expr
 %type <expr> lifetime_expr lifetime_ident
 %type <lifetimeAndWhere> opt_lifetime_where
-%type <expr> ident_expr for_expr cond_expr nil_expr new_expr
-%type <expr> bracket_loop_expr
+%type <expr> ident_expr for_expr for_expr_base cond_expr nil_expr new_expr
+%type <expr> bracket_loop_expr bracket_loop_expr_base
 %type <expr> let_expr ifvar
 %type <uniqueStr> reduce_scan_op_expr
 %type <expr> reduce_expr scan_expr opt_init_expr
@@ -861,9 +861,18 @@ decl_base:
 | class_level_stmt
 ;
 
+collect_attributes:
+  {
+    auto attributeGroup = context->buildAttributeGroup(@$);
+    if (attributeGroup != nullptr) {
+      context->resetAttributeGroupPartsState();
+    }
+    context->loopAttributes.push_back(std::move(attributeGroup));
+  }
+;
+
 attribute_receiver:
-  loop_stmt
-  | decl_base
+    decl_base
   | block_stmt
 ;
 
@@ -1576,7 +1585,14 @@ extern_block_stmt:
   }
 ;
 
+no_loop_attributes: { context->loopAttributes.push_back(nullptr); }
+
 loop_stmt:
+  attribute_group collect_attributes loop_stmt_base { $$ = $3; }
+| no_loop_attributes loop_stmt_base { $$ = $2; }
+;
+
+loop_stmt_base:
   TDO stmt TWHILE expr TSEMI
   {
     std::vector<ParserComment>* comments;
@@ -1591,7 +1607,8 @@ loop_stmt:
     auto body = context->consumeToBlock(@1, exprLst);
     auto node = DoWhile::build(BUILDER, LOC(@$), blockStyle,
                                std::move(body),
-                               toOwned($4));
+                               toOwned($4),
+                               context->popLoopAttributeGroup());
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
   }
@@ -1604,7 +1621,8 @@ loop_stmt:
     auto body = context->consumeToBlock(@3, exprLst);
     auto node = While::build(BUILDER, LOC(@1), toOwned($2),
                              blockStyle,
-                             std::move(body));
+                             std::move(body),
+                             context->popLoopAttributeGroup());
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
   }
@@ -1617,7 +1635,8 @@ loop_stmt:
     auto body = context->consumeToBlock(@3, exprLst);
     auto node = While::build(BUILDER, LOC(@1), toOwned($2),
                              blockStyle,
-                             std::move(body));
+                             std::move(body),
+                             context->popLoopAttributeGroup());
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
   }
@@ -1664,7 +1683,7 @@ loop_stmt:
                            std::move(body),
                            /*isExpressionLevel*/ false,
                            /*isParam*/ true,
-                           context->buildAttributeGroup(@$));
+                           context->popLoopAttributeGroup());
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     context->resetAttributeGroupPartsState();
     $$ = context->finishStmt(cs);
@@ -2060,10 +2079,11 @@ when_stmt:
     BlockOrDo blockOrDo = { .cs=$2, .usesDo=false };
     $$ = context->buildWhenStmt(@$, nullptr, blockOrDo);
   }
-| TOTHERWISE TDO stmt
+| TOTHERWISE no_loop_attributes TDO stmt
   {
-    BlockOrDo blockOrDo = { .cs=$3, .usesDo=true };
+    BlockOrDo blockOrDo = { .cs=$4, .usesDo=true };
     $$ = context->buildWhenStmt(@$, nullptr, blockOrDo);
+    context->popLoopAttributeGroup();
   }
 ;
 
@@ -3042,6 +3062,10 @@ sub_type_level_expr:
 ;
 
 for_expr:
+  no_loop_attributes for_expr_base { $$ = $2; }
+;
+
+for_expr_base:
   TFOR expr TIN expr TDO expr %prec TFOR
   {
     auto index = context->buildLoopIndexDecl(@2, toOwned($2));
@@ -3050,8 +3074,7 @@ for_expr:
                     context->consumeToBlock(@6, $6),
                     /*isExpressionLevel*/ true,
                     /*isParam*/ false,
-                    context->buildAttributeGroup(@$)).release();
-    context->resetAttributeGroupPartsState();
+                    context->popLoopAttributeGroup()).release();
   }
 | TFOR expr TIN zippered_iterator TDO expr %prec TFOR
   {
@@ -3061,8 +3084,7 @@ for_expr:
                     context->consumeToBlock(@6, $6),
                     /*isExpressionLevel*/ true,
                     /*isParam*/ false,
-                    context->buildAttributeGroup(@$)).release();
-                    context->resetAttributeGroupPartsState();
+                    context->popLoopAttributeGroup()).release();
   }
 | TFOR expr TDO expr %prec TFOR
   {
@@ -3071,8 +3093,7 @@ for_expr:
                     context->consumeToBlock(@4, $4),
                     /*isExpressionLevel*/ true,
                     /*isParam*/ false,
-                    context->buildAttributeGroup(@$)).release();
-                    context->resetAttributeGroupPartsState();
+                    context->popLoopAttributeGroup()).release();
   }
 | TFOR expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
   {
@@ -3087,8 +3108,7 @@ for_expr:
                     context->consumeToBlock(ifLoc, ifExpr.release()),
                     /*isExpressionLevel*/ true,
                     /*isParam*/ false,
-                    context->buildAttributeGroup(@$)).release();
-                    context->resetAttributeGroupPartsState();
+                    context->popLoopAttributeGroup()).release();
   }
 | TFOR expr TIN zippered_iterator TDO TIF expr TTHEN expr %prec TNOELSE
   {
@@ -3103,8 +3123,7 @@ for_expr:
                     context->consumeToBlock(ifLoc, ifExpr.release()),
                     /*isExpressionLevel*/ true,
                     /*isParam*/ false,
-                    context->buildAttributeGroup(@$)).release();
-                    context->resetAttributeGroupPartsState();
+                    context->popLoopAttributeGroup()).release();
   }
 | TFOR expr TDO TIF expr TTHEN expr %prec TNOELSE
   {
@@ -3119,8 +3138,7 @@ for_expr:
                     context->consumeToBlock(ifLoc, ifExpr.release()),
                     /*isExpressionLevel*/ true,
                     /*isParam*/ false,
-                    context->buildAttributeGroup(@$)).release();
-                    context->resetAttributeGroupPartsState();
+                    context->popLoopAttributeGroup()).release();
   }
 | TFORALL expr TIN expr TDO expr %prec TFOR
   {
@@ -3129,7 +3147,8 @@ for_expr:
                        /*withClause*/ nullptr,
                        BlockStyle::IMPLICIT,
                        context->consumeToBlock(@6, $6),
-                       /*isExpressionLevel*/ true).release();
+                       /*isExpressionLevel*/ true,
+                       context->popLoopAttributeGroup()).release();
   }
 | TFORALL expr TIN zippered_iterator TDO expr %prec TFOR
   {
@@ -3138,7 +3157,8 @@ for_expr:
                        /*withClause*/ nullptr,
                        BlockStyle::IMPLICIT,
                        context->consumeToBlock(@6, $6),
-                       /*isExpressionLevel*/ true).release();
+                       /*isExpressionLevel*/ true,
+                       context->popLoopAttributeGroup()).release();
   }
 | TFORALL expr TDO expr %prec TFOR
   {
@@ -3146,7 +3166,8 @@ for_expr:
                        /*withClause*/ nullptr,
                        BlockStyle::IMPLICIT,
                        context->consumeToBlock(@4, $4),
-                       /*isExpressionLevel*/ true).release();
+                       /*isExpressionLevel*/ true,
+                       context->popLoopAttributeGroup()).release();
   }
 | TFORALL expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
   {
@@ -3160,7 +3181,8 @@ for_expr:
                        /*withClause*/ nullptr,
                        BlockStyle::IMPLICIT,
                        context->consumeToBlock(ifLoc, ifExpr.release()),
-                       /*isExpressionLevel*/ true).release();
+                       /*isExpressionLevel*/ true,
+                       context->popLoopAttributeGroup()).release();
   }
 | TFORALL expr TIN zippered_iterator TDO TIF expr TTHEN expr %prec TNOELSE
   {
@@ -3174,7 +3196,8 @@ for_expr:
                       /*withClause*/ nullptr,
                       BlockStyle::IMPLICIT,
                       context->consumeToBlock(ifLoc, ifExpr.release()),
-                      /*isExpressionLevel*/ true).release();
+                      /*isExpressionLevel*/ true,
+                      context->popLoopAttributeGroup()).release();
   }
 | TFORALL expr TDO TIF expr TTHEN expr %prec TNOELSE
   {
@@ -3188,11 +3211,16 @@ for_expr:
                        /*withClause*/ nullptr,
                        BlockStyle::IMPLICIT,
                        context->consumeToBlock(ifLoc, ifExpr.release()),
-                       /*isExpressionLevel*/ true).release();
+                       /*isExpressionLevel*/ true,
+                       context->popLoopAttributeGroup()).release();
   }
 ;
 
-bracket_loop_expr:
+bracket_loop_expr :
+  no_loop_attributes bracket_loop_expr_base { $$ = $2; context->popLoopAttributeGroup(); }
+;
+
+bracket_loop_expr_base:
   TLSBR TRSBR
   {
     $$ = context->buildBracketLoopExpr(@$);
@@ -3644,21 +3672,25 @@ literal_expr:
     $$ = Domain::build(BUILDER, LOC(@$), true,
                        context->consumeList($2)).release();
   }
-| TLSBR expr_ls TRSBR
+| no_loop_attributes TLSBR expr_ls TRSBR
   {
-    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2)).release();
+    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($3)).release();
+    context->popLoopAttributeGroup();
   }
-| TLSBR expr_ls TCOMMA TRSBR
+| no_loop_attributes TLSBR expr_ls TCOMMA TRSBR
   {
-    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2), true).release();
+    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($3), true).release();
+    context->popLoopAttributeGroup();
   }
-| TLSBR assoc_expr_ls TRSBR
+| no_loop_attributes TLSBR assoc_expr_ls TRSBR
   {
-    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2), false, true).release();
+    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($3), false, true).release();
+    context->popLoopAttributeGroup();
   }
-| TLSBR assoc_expr_ls TCOMMA TRSBR
+| no_loop_attributes TLSBR assoc_expr_ls TCOMMA TRSBR
   {
-    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2), true, true).release();
+    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($3), true, true).release();
+    context->popLoopAttributeGroup();
   }
 
 ;

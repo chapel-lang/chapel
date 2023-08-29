@@ -274,8 +274,8 @@ class DimensionalDist2D : BaseDist {
 // helper for locDdescType: any of storage index ranges can be stridable
 private proc stoStridableDom(type stoIndexT, dom1, dom2) param {
   proc stoStridable1d(dom1d) param {
-    const dummy = dom1d.dsiNewLocalDom1d(stoIndexT, 0:locIdT)
-      .dsiSetLocalIndices1d(dom1d, 0:locIdT);
+    var dummy1 = dom1d.dsiNewLocalDom1d(stoIndexT, 0:locIdT);
+    const dummy = dummy1.dsiSetLocalIndices1d(dom1d, 0:locIdT);
     return dummy.strides;
   }
   return chpl_strideUnion(stoStridable1d(dom1), stoStridable1d(dom2));
@@ -286,7 +286,8 @@ private proc locDescTypeHelper(param rank : int, type idxType, dom1, dom2) type 
   type d2type = dom2.dsiNewLocalDom1d(idxType, 0).type;
 
   proc strideHelper(dom1d) param {
-    const dummy = dom1d.dsiNewLocalDom1d(idxType, 0).dsiSetLocalIndices1d(dom1d, 0);
+    var dummy1 = dom1d.dsiNewLocalDom1d(idxType, 0);
+    const dummy = dummy1.dsiSetLocalIndices1d(dom1d, 0);
     return dummy.strides;
   }
 
@@ -635,19 +636,19 @@ private proc _CurrentLocaleToLocIDs(targetLocales, desiredLocale)
 {
   var result: targetLocales.rank * locIdT;
   // guard updates to 'result' to ensure atomicity of updates
-  var gotresult$: sync bool = false;
+  var gotresult: sync bool = false;
   forall (lls, loc) in zip(targetLocales.domain, targetLocales) with (ref result) do
     if loc == desiredLocale {
       // if we get multiple matches, we do not specify which is returned
-      // could add a pre-test if it were cheap: if !gotresult$.readXX()
-      gotresult$.readFE();
+      // could add a pre-test if it were cheap: if !gotresult.readXX()
+      gotresult.readFE();
       result = lls;
-      gotresult$.writeEF(true);
+      gotresult.writeEF(true);
     }
   // instead of crashing right away, return a flag
-  //if !gotresult$.readXX() then halt("DimensionalDist2D: the current locale ", desiredLocale, " is not among the target locales ", targetLocales);
+  //if !gotresult.readXX() then halt("DimensionalDist2D: the current locale ", desiredLocale, " is not among the target locales ", targetLocales);
 
-  return (result, gotresult$.readXX());
+  return (result, gotresult.readXX());
 }
 
 // How we usually invoke _CurrentLocaleToLocIDs().

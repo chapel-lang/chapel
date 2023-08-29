@@ -34,6 +34,16 @@ module DefaultAssociative {
 
   config param defaultAssociativeSupportsAutoLocalAccess = true;
 
+  private proc _usingSerializers(f) param : bool {
+    if f._writing then return f.serializerType != nothing;
+    else return f.deserializerType != nothing;
+  }
+
+  private proc _isDefaultDeser(f) param : bool {
+    if f._writing then return f.serializerType == IO.DefaultSerializer;
+    else return f.deserializerType == IO.DefaultDeserializer;
+  }
+
   // helps to move around array elements when rehashing the domain
   class DefaultAssociativeDomRehashHelper : chpl__rehashHelpers {
     var dom: unmanaged DefaultAssociativeDom(?);
@@ -105,8 +115,30 @@ module DefaultAssociative {
                                                  initElts=initElts);
     }
 
+    proc dsiSerialWrite(f) throws where _usingSerializers(f) && !_isDefaultDeser(f) {
+      ref ser = f.serializer;
+      ser.startList(f, dsiNumIndices:uint);
+      for idx in this do
+        ser.writeListElement(f, idx);
+      ser.endList(f);
+    }
+
+    proc dsiSerialRead(f) throws where _usingSerializers(f) && !_isDefaultDeser(f) {
+      dsiClear();
+      ref des = f.deserializer;
+      des.startList(f);
+      while true {
+        try {
+          dsiAdd(des.readListElement(f, idxType));
+        } catch {
+          break;
+        }
+      }
+      des.endList(f);
+    }
+
     proc dsiSerialWrite(f) throws {
-      const binary = f.binary();
+      const binary = f._binary();
 
       if binary {
         f.write(dsiNumIndices);
@@ -127,7 +159,7 @@ module DefaultAssociative {
       }
     }
     proc dsiSerialRead(f) throws {
-      const binary = f.binary();
+      const binary = f._binary();
 
       // Clear the domain so it only contains indices read in.
       dsiClear();
@@ -641,11 +673,6 @@ module DefaultAssociative {
       }
     }
 
-    proc _usingSerializers(f) param : bool {
-      if f._writing then return f.serializerType != nothing;
-      else return f.deserializerType != nothing;
-    }
-
     proc dsiSerialReadWrite(f, in printBraces=true, inout first = true) throws
     where _usingSerializers(f) && !_isDefaultDeser(f) {
       ref fmt = if f._writing then f.serializer else f.deserializer;
@@ -675,11 +702,6 @@ module DefaultAssociative {
       fmt.endMap(f);
     }
 
-    proc _isDefaultDeser(f) param : bool {
-      if f._writing then return f.serializerType == IO.DefaultSerializer;
-      else return f.deserializerType == IO.DefaultDeserializer;
-    }
-
     proc dsiSerialReadWrite(f, in printBraces=true, inout first = true) throws
     where _isDefaultDeser(f) {
       ref fmt = if f._writing then f.serializer else f.deserializer;
@@ -707,7 +729,7 @@ module DefaultAssociative {
     }
 
     proc dsiSerialReadWrite(f /*: channel*/, in printBraces=true, inout first = true) throws {
-      var binary = f.binary();
+      var binary = f._binary();
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
       var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
       var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
@@ -913,8 +935,39 @@ module DefaultAssociative {
     }
   }
 
+  proc chpl_serialReadWriteAssociativeHelper(f, arr, dom) throws
+  where _usingSerializers(f) && !_isDefaultDeser(f) {
+      ref fmt = if f._writing then f.serializer else f.deserializer;
+
+      if f._writing then
+        fmt.startMap(f, dom.dsiNumIndices:uint);
+      else
+        fmt.startMap(f);
+
+      if f._writing {
+        for key in dom {
+          fmt.writeKey(f, key);
+          fmt.writeValue(f, arr.dsiAccess(key));
+        }
+      } else {
+        for 0..<dom.dsiNumIndices {
+          const k = fmt.readKey(f, dom.idxType);
+
+          if !dom.dsiMember(k) {
+            // TODO: throw an error. What kind of error is most appropriate?
+          } else {
+            arr.dsiAccess(k) = fmt.readValue(f, arr.eltType);
+          }
+        }
+      }
+
+      fmt.endMap(f);
+  }
+
+  // TODO: rewrite to use 'startArray' serializer API, rather than relying on
+  // reading and writing literals.
   proc chpl_serialReadWriteAssociativeHelper(f, arr, dom) throws {
-    var binary = f.binary();
+    var binary = f._binary();
     var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
     var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
     var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;

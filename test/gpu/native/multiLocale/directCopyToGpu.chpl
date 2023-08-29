@@ -11,7 +11,7 @@ B = 1;
 C = 2;
 
 startGpuDiagnostics();
-coforall (l,lid) in zip(Locales, LocaleSpace) do on l {
+coforall (l,lid) in zip(Locales, LocaleSpace) with (ref A) do on l {
   const perLocSize = n/numLocales;
   const locStart = lid*perLocSize;
   const locChunk = locStart..#perLocSize;
@@ -21,7 +21,7 @@ coforall (l,lid) in zip(Locales, LocaleSpace) do on l {
                                   // sublocale is the sublocale. Should it be?
                                   // Probably. But maybe we need a way to query
                                   // number of siblings from a sublocale
-  coforall (g,gid) in zip(here.gpus, here.gpus.domain) do on g {
+  coforall (g,gid) in zip(here.gpus, here.gpus.domain) with (ref A) do on g {
     const perGPUSize = perLocSize/numGPUs;
     const gpuStart = locStart+gid*perGPUSize;
     const gpuChunk = gpuStart..#perGPUSize;

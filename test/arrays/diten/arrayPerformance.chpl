@@ -30,7 +30,7 @@ proc main {
   }
 }
 
-proc initialize(B) {
+proc initialize(ref B) {
   use Random;
   var rnd = new RandomStream(eltType=real, seed=randSeed);
   rnd.fillRandom(B);

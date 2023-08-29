@@ -25,7 +25,7 @@ proc main(args: [] string) {
 
         // spawn a task to process the previous sequence, if there was one
         if start then
-          begin process(data, start, idx-2);     // -2 == rewind past "\n>"
+          begin with (ref data) process(data, start, idx-2);     // -2 == rewind past "\n>"
 
         // capture the start of this sequence
         start = idx + numRead;
@@ -40,12 +40,12 @@ proc main(args: [] string) {
       process(data, start, idx-2);
   }
 
-  const stdoutBin = (new file(1)).writer(iokind.native, locking=false);
+  const stdoutBin = (new file(1)).writer(locking=false);
   stdoutBin.writeBinary(data);
 }
 
 
-proc process(data, start, end) {
+proc process(ref data, start, end) {
   const extra = (end - start) % columns,
         off = columns - extra - 1;
 

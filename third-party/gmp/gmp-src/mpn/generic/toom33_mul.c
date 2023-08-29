@@ -8,7 +8,7 @@
    SAFE TO REACH IT THROUGH DOCUMENTED INTERFACES.  IN FACT, IT IS ALMOST
    GUARANTEED THAT IT WILL CHANGE OR DISAPPEAR IN A FUTURE GNU MP RELEASE.
 
-Copyright 2006-2008, 2010, 2012, 2015 Free Software Foundation, Inc.
+Copyright 2006-2008, 2010, 2012, 2015, 2021 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -262,7 +262,8 @@ mpn_toom33_mul (mp_ptr pp,
     cy += mpn_add_n (vm1 + n, vm1 + n, asm1, n);
   vm1[2 * n] = cy;
 #else
-  TOOM33_MUL_N_REC (vm1, asm1, bsm1, n + 1, scratch_out);
+  vm1[2 * n] = 0;
+  TOOM33_MUL_N_REC (vm1, asm1, bsm1, n + (bsm1[n] | asm1[n]), scratch_out);
 #endif
 
   TOOM33_MUL_N_REC (v2, as2, bs2, n + 1, scratch_out);	/* v2, 2n+1 limbs */

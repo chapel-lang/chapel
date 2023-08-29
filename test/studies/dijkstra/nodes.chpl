@@ -26,7 +26,7 @@ module Nodes {
 
     proc createNode(i) {
       const node = new unmanaged Node(id = i, NeighborD = {0..(counts[i] - 1)}, EdgeIndexD = {0..(counts[i] - 1)}, nodeType = 2);
-      node.vb$.writeEF(0.0);
+      node.vb.writeEF(0.0);
       return node;
     }
 

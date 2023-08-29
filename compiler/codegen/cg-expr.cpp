@@ -66,6 +66,7 @@ static void codegenAssign(GenRet to_ptr, GenRet from);
 static GenRet codegenCast(Type* t, GenRet value, bool Cparens = true);
 static GenRet codegenCastToVoidStar(GenRet value);
 static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret);
+static GenRet maybeConvertToLocalPointer(Expr* expr, GenRet& act);
 
 // These functions operate on wide pointers. There are several different
 // kinds of wide pointers:
@@ -4354,7 +4355,8 @@ DEFINE_PRIM(REF_TO_STRING) {
 
 DEFINE_PRIM(CLASS_NAME_BY_ID) {
     GenRet cid = codegenValue(call->get(1));
-    ret = codegenGlobalArrayElement("chpl_classNames", "c_string", cid);
+    const char* eltType = dtStringC->symbol->cname;
+    ret = codegenGlobalArrayElement("chpl_classNames", eltType, cid);
 }
 
 DEFINE_PRIM(RETURN) {
@@ -5044,8 +5046,8 @@ DEFINE_PRIM(SETCID) {
 DEFINE_PRIM(GETCID) {
     INT_ASSERT(call->get(1)->typeInfo() != dtNil);
 
-    if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_NO_OBJECT)   == true &&
-        call->get(1)->typeInfo()->symbol->hasFlag(FLAG_OBJECT_CLASS) == false) {
+    if (call->get(1)->getValType()->typeInfo()->symbol->hasFlag(FLAG_NO_OBJECT)   == true &&
+        call->get(1)->getValType()->typeInfo()->symbol->hasFlag(FLAG_OBJECT_CLASS) == false) {
       INT_ASSERT(0);
     }
 
@@ -5140,8 +5142,7 @@ DEFINE_PRIM(SET_MEMBER) {
 DEFINE_PRIM(CHECK_NIL) {
     GenRet ptr = call->get(1);
 
-    if (ptr.chplType->symbol->hasFlag(FLAG_WIDE_CLASS))
-      ptr = codegenRaddr(ptr);
+    ptr = maybeConvertToLocalPointer(call->get(1), ptr);
 
     codegenCall("chpl_check_nil",
                 ptr,
@@ -5410,15 +5411,6 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
       if (curArg->typeInfo()->symbol->hasFlag(FLAG_REF)) {
         localAddr = codegenDeref(localAddr);
       }
-
-      // c_ptr/ddata are already addresses, so dereference one level.
-      if (dt->hasFlag(FLAG_DATA_CLASS)) {
-        USR_WARN(call,
-                "put/get primitive special behavior for "
-                "c_ptr/_ddata will be removed -- please pass a ref "
-                "to the primitive");
-        localAddr = codegenValue(localAddr);
-      }
     }
 
     localAddr = codegenCastToVoidStar(localAddr);
@@ -5459,18 +5451,10 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
                        curArg->getValType()->symbol->hasFlag(FLAG_DATA_CLASS));
 
     GenRet   remoteAddr = curArg;
-    TypeSymbol *t = curArg->typeInfo()->symbol;
 
 
     if        (curArg->isWideRef()   == true)  {
       remoteAddr = codegenRaddr(remoteAddr);
-
-    } else if (t->hasFlag(FLAG_DATA_CLASS) == true)  {
-      USR_WARN(call,
-                "put/get primitive special behavior for "
-                "c_ptr/_ddata will be removed -- please pass a ref "
-                "to the primitive");
-      remoteAddr = codegenValue(remoteAddr);
 
     } else if (curArg->isRef()        == false) {
       remoteAddr = codegenAddrOf(remoteAddr);
@@ -5934,7 +5918,13 @@ DEFINE_BASIC_PRIM(RT_ERROR)
 DEFINE_BASIC_PRIM(RT_WARNING)
 DEFINE_BASIC_PRIM(START_RMEM_FENCE)
 DEFINE_BASIC_PRIM(FINISH_RMEM_FENCE)
-DEFINE_BASIC_PRIM(ASSERT_ON_GPU)
+
+DEFINE_PRIM(ASSERT_ON_GPU) {
+  // Remove the string argument to the GPU primitive.
+  call->get(1)->remove();
+
+  ret = call->codegenBasicPrimitiveExpr();
+}
 
 DEFINE_PRIM(NEW_PRIV_CLASS) {
     GenRet arg = call->get(1);

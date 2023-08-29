@@ -355,7 +355,7 @@ module Curl {
 
   // extern QIO functions
   private extern proc sys_iov_total_bytes(iov:c_ptr(qiovec_t), iovcnt:c_int):int(64);
-  private extern proc qio_strdup(s: c_string): c_string;
+  private extern proc qio_strdup(s: c_ptrConst(c_char)): c_ptrConst(c_char);
   private extern proc qio_mkerror_errno():errorCode;
   private extern proc qio_int_to_err(a:int(32)):errorCode;
   private extern proc qio_channel_nbytes_available_unlocked(ch:qio_channel_ptr_t):int(64);
@@ -503,7 +503,7 @@ module Curl {
   extern proc curl_multi_cleanup(curlm:c_ptr(CURLM)):CURLcode;
 
   /* See https://curl.haxx.se/libcurl/c/curl_slist_append.html */
-  extern proc curl_slist_append(csl: c_ptr(curl_slist), char: c_string)
+  extern proc curl_slist_append(csl: c_ptr(curl_slist), char: c_ptrConst(c_char))
     : c_ptr(curl_slist);
   /* See https://curl.haxx.se/libcurl/c/curl_slist_free_all.html */
   extern proc curl_slist_free_all(csl: c_ptr(curl_slist));
@@ -523,7 +523,7 @@ module Curl {
 
     class CurlFile : QioPluginFile {
 
-      var url_c: c_string;     // Path/URL
+      var url_c: c_ptrConst(c_char);     // Path/URL
       var length: c_ssize_t;    // length of what we are reading, -1 if we can't get
 
       var seekable: bool;
@@ -547,9 +547,9 @@ module Curl {
         length = this.length;
         return 0;
       }
-      override proc getpath(out path:c_string, out len:int(64)):errorCode {
-        path = qio_strdup(this.url_c);
-        len = url_c.size;
+      override proc getpath(out path:c_ptr(uint(8)), out len:int(64)):errorCode {
+        path = qio_strdup(this.url_c):c_ptr(uint(8));
+        len = strLen(url_c):int(64);
         return 0;
       }
 
@@ -560,7 +560,7 @@ module Curl {
         return ENOSYS;
       }
       override proc getLocalesForRegion(start:int(64), end:int(64), out
-          localeNames:c_ptr(c_string), ref nLocales:int(64)):errorCode {
+          localeNames:c_ptr(c_ptrConst(c_char)), ref nLocales:int(64)):errorCode {
         return ENOSYS;
       }
 
@@ -709,10 +709,10 @@ module Curl {
     }
 
 
-    private proc startsWith(haystack:c_string, needle:c_string) {
-      extern proc strncmp(s1:c_string, s2:c_string, n:c_size_t):c_int;
-
-      return strncmp(haystack, needle, needle.size:c_size_t) == 0;
+    private proc startsWith(haystack:c_ptrConst(c_char), needle:c_ptrConst(c_char)) {
+      extern proc strncmp(s1: c_ptrConst(c_char), s2: c_ptrConst(c_char), n:c_size_t):c_int;
+      const len = strLen(needle):c_size_t;
+      return strncmp(haystack, needle, len) == 0;
     }
 
     private proc curl_write_string(contents: c_ptr(void), size:c_size_t, nmemb:c_size_t, userp: c_ptr(void)) {
@@ -769,9 +769,9 @@ module Curl {
 
         curl_easy_perform(curl);
 
-        extern proc strstr(haystack:c_string, needle:c_string):c_string;
+        extern proc strstr(haystack:c_ptrConst(c_char), needle:c_ptrConst(c_char)):c_ptrConst(c_char);
         // Does this URL accept range requests?
-        if strstr(buf.mem:c_string, c"Accept-Ranges: bytes"):c_ptr(void) == nil:c_ptr(void) {
+        if strstr(buf.mem:c_ptrConst(c_char), "Accept-Ranges: bytes"):c_ptr(void) == nil:c_ptr(void) {
           ret = false;
         } else {
           ret = true;
@@ -828,9 +828,10 @@ module Curl {
         // Set the function to get the data to send
         err = curl_easy_setopt_long(curl, CURLOPT_UPLOAD, 1);
         if err then return EINVAL;
-        err =curl_easy_setopt_ptr(curl, CURLOPT_READFUNCTION, c_ptrTo(curl_read_buffered):c_ptr(void));
+        err =curl_easy_setopt_ptr(curl, CURLOPT_READFUNCTION,
+            c_ptrTo(curl_read_buffered):c_ptr(void));
         if err then return EINVAL;
-        err = curl_easy_setopt_ptr(curl, CURLOPT_READDATA, cc:c_ptr(void));
+        err = curl_easy_setopt_ptr(curl, CURLOPT_READDATA, c_ptrToConst_helper(cc));
         if err then return EINVAL;
 
         // TODO -- is this necessary?
@@ -841,7 +842,8 @@ module Curl {
         // Set the function to process the received data
         err = curl_easy_setopt_ptr(curl, CURLOPT_WRITEFUNCTION, c_ptrTo(curl_write_received):c_ptr(void));
         if err then return EINVAL;
-        err = curl_easy_setopt_ptr(curl, CURLOPT_WRITEDATA, cc:c_ptr(void));
+        err = curl_easy_setopt_ptr(curl, CURLOPT_WRITEDATA,
+            c_ptrToConst_helper(cc));
         if err then return EINVAL;
       }
       // If it's seekable, start at the right offset
@@ -1154,7 +1156,7 @@ module Curl {
       var url_c = allocate(uint(8), url.size:c_size_t+1, clear=true);
       memcpy(url_c:c_ptr(void), url.localize().c_str():c_ptr(void), url.size.safeCast(c_size_t));
 
-      fl.url_c = url_c:c_string;
+      fl.url_c = url_c:c_ptrConst(c_char);
 
       // Read the header in order to get the length of the thing we are reading
       // If we are writing, we can't really get this information (even if we try

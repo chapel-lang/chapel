@@ -1,10 +1,10 @@
 var A: [1..1] int;
 ref refA = A[1];
-var s$: sync bool;
+var s: sync bool;
 
-begin { A[1] = 1; s$.writeEF(true); }
+begin with (ref A) { A[1] = 1; s.writeEF(true); }
 
-s$.readFE();
+s.readFE();
 
 while refA == 0 { /* spin wait */ }
 

@@ -1,0 +1,2 @@
+-s testTryCast=false  # casts-2.notry.good
+-s testTryCast=true   # casts-2.good

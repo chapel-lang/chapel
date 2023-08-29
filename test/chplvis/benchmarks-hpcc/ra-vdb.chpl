@@ -178,7 +178,7 @@ proc printConfiguration() {
 //
 // Verify that the computation is correct
 //
-proc verifyResults(T) {
+proc verifyResults(ref T) {
   if (!verify) then return true;
   //
   // We protect against errors in verification by using locks to
@@ -257,10 +257,10 @@ record vlock {
   proc init=(other: vlock) {
     this.l = other.l.read();
   }
-  proc lock() {
-    on this do while l.testAndSet() != false do chpl_task_yield();
+  proc ref lock() {
+    on this do while l.testAndSet() != false do currentTask.yieldExecution();
   }
-  proc unlock() {
+  proc ref unlock() {
     l.write(false);
   }
 }

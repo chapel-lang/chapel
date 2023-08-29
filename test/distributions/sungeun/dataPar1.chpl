@@ -8,7 +8,7 @@ const Space = {1:myIntType..n,
                1:myIntType..n,
                1:myIntType..n};
 
-proc dit(D, A, B, C) {
+proc dit(D, ref A, ref B, ref C) {
   forall i in D {
     var (i0,i1,i2,i3,i4,i5) = (i);
     A(i) = (i0+i1)/i2:real;
@@ -65,12 +65,12 @@ var BA, BB, BC: [BDom] real;
 dit(BDom, BA, BB, BC);
 checkdit("Block", BA, BB, BC);
 
-const CDom = Space dmapped new dmap(new Cyclic(startIdx=(1:myIntType,
+const CDom = Space dmapped new Cyclic(startIdx=(1:myIntType,
                                                          1:myIntType,
                                                          1:myIntType,
                                                          1:myIntType,
                                                          1:myIntType,
-                                                         1:myIntType)));
+                                                         1:myIntType));
 var CA, CB, CC: [CDom] real;
 dit(CDom, CA, CB, CC);
 checkdit("Cyclic", CA, CB, CC);

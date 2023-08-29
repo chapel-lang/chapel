@@ -1,0 +1,3 @@
+# Test/memory/shannon ignores.
+/jacobi.log
+/configVarFile.log

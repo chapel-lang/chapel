@@ -10,16 +10,16 @@ proc getter() const ref {
 }
 
 
-proc refIdentity(arg) ref {
+proc refIdentity(ref arg) ref {
   arg[1] += 1;
   return arg;
 }
 
-proc ifexpr(a, b, c) ref {
+proc ifexpr(a, ref b, ref c) ref {
    return if a[1] == 1 then refIdentity(b) else refIdentity(c);
 }
 
-proc ifexpr(a, b, c) const ref {
+proc ifexpr(a, ref b, ref c) const ref {
    return if a[1] == 1 then refIdentity(b) else refIdentity(c);
 }
 

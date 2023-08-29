@@ -364,9 +364,9 @@ std::vector<std::string> gDynoPrependStandardModulePaths;
 int fGPUBlockSize = 0;
 char fGpuArch[gpuArchNameLen+1] = "";
 bool fGpuPtxasEnforceOpt;
-bool fGpuSpecialization = false;
+bool fGpuSpecialization = true;
 const char* gGpuSdkPath = NULL;
-char gpuArch[gpuArchNameLen+1] = "";
+std::set<std::string> gpuArches;
 
 chpl::Context* gContext = nullptr;
 std::vector<std::pair<std::string, std::string>> gDynoParams;
@@ -1000,6 +1000,10 @@ static void setLogPass(const ArgumentDescription* desc, const char* arg) {
   logSelectPass(arg);
 }
 
+static void setLogModule(const ArgumentDescription* desc, const char* arg) {
+  log_modules.insert(std::string(arg));
+}
+
 static void setPrintPassesFile(const ArgumentDescription* desc, const char* fileName) {
   printPassesFile = fopen(fileName, "w");
 
@@ -1230,7 +1234,7 @@ static ArgumentDescription arg_desc[] = {
  {"log", ' ', NULL, "Dump IR in text format.", "F", &fLog, "CHPL_LOG", NULL},
  {"log-dir", ' ', "<path>", "Specify log directory", "P", log_dir, "CHPL_LOG_DIR", setLogDir},
  {"log-ids", ' ', NULL, "[Don't] include BaseAST::ids in log files", "N", &fLogIds, "CHPL_LOG_IDS", NULL},
- {"log-module", ' ', "<module-name>", "Restrict IR dump to the named module", "S256", log_module, "CHPL_LOG_MODULE", NULL},
+ {"log-module", ' ', "<module-name>", "Restrict IR dump to the named module. Can be specified multiple times", "S", NULL, "CHPL_LOG_MODULE", setLogModule},
  {"log-pass", ' ', "<passname>", "Restrict IR dump to the named pass. Can be specified multiple times", "S", NULL, "CHPL_LOG_PASS", setLogPass},
 // {"log-symbol", ' ', "<symbol-name>", "Restrict IR dump to the named symbol(s)", "S256", log_symbol, "CHPL_LOG_SYMBOL", NULL}, // This doesn't work yet.
  {"llvm-print-ir", ' ', "<name>", "Dump LLVM Intermediate Representation of given function to stdout", "S", NULL, "CHPL_LLVM_PRINT_IR", &setPrintIr},
@@ -1503,9 +1507,13 @@ static void populateEnvMap() {
 
   // Call printchplenv and collect output into a map
   auto chplEnvResult = chpl::getChplEnv(envMap, CHPL_HOME);
-  if (auto err = chplEnvResult.getError()) {
-    USR_FATAL("failed to get output from printchplenv, error: %s",
-              err.message().c_str());
+  if (!chplEnvResult) {
+    if (auto err = chplEnvResult.getError()) {
+      USR_FATAL("failed to get environment settings (error while running printchplenv: %s)",
+                err.message().c_str());
+    } else {
+      USR_FATAL("failed to get environment settings");
+    }
   }
 
   // figure out if it's a Cray programing environment so we can infer
@@ -1691,6 +1699,20 @@ static void setPrintCppLineno() {
   if (developer && !userSetCppLineno) printCppLineno = false;
 }
 
+static void populateGpuArches(const char* from) {
+  // using memcpy and setting the null byte to avoid errors from older
+  // GCCs
+  char buffer[gpuArchNameLen+1];
+  memcpy(buffer, from, gpuArchNameLen);
+  buffer[gpuArchNameLen] = '\0';
+
+  std::vector<std::string> into;
+  splitString(std::string(buffer), into, ",");
+  for (auto& str : into){
+    gpuArches.insert(str);
+  }
+}
+
 static void setGPUFlags() {
   if(usingGpuLocaleModel()) {
     if (fWarnUnstable) {
@@ -1715,9 +1737,7 @@ static void setGPUFlags() {
     //
     // set up gpuArch
     if (strlen(fGpuArch) > 0) {
-      // using memcpy and setting the null byte to avoid errors from older GCCs
-      memcpy(gpuArch, fGpuArch, gpuArchNameLen);
-      gpuArch[gpuArchNameLen] = 0;
+      populateGpuArches(fGpuArch);
     }
     else {
       if (CHPL_GPU_ARCH != nullptr && strlen(CHPL_GPU_ARCH) == 0) {
@@ -1726,10 +1746,7 @@ static void setGPUFlags() {
                   "for more information");
       }
       else {
-        // using memcpy and setting the null byte to avoid errors from older
-        // GCCs
-        memcpy(gpuArch, CHPL_GPU_ARCH, gpuArchNameLen);
-        gpuArch[gpuArchNameLen] = 0;
+        populateGpuArches(CHPL_GPU_ARCH);
       }
     }
   }

@@ -1,8 +1,4 @@
 functionAndMethodWithSameNameBug.chpl:5: In method 'foo':
-functionAndMethodWithSameNameBug.chpl:7: error: unresolved call 'R.foo(int(64), 10)'
-functionAndMethodWithSameNameBug.chpl:5: note: this candidate did not match: R.foo(arg1)
-functionAndMethodWithSameNameBug.chpl:7: note: because call includes 2 arguments
-functionAndMethodWithSameNameBug.chpl:5: note: but function can only accept 1 argument
-functionAndMethodWithSameNameBug.chpl:7: note: other candidates are:
-functionAndMethodWithSameNameBug.chpl:1: note:   foo(arg1, arg2)
-  functionAndMethodWithSameNameBug.chpl:11: called as R.foo(arg1: int(64))
+functionAndMethodWithSameNameBug.chpl:7: error: currently ambiguous what 'foo' refers to
+functionAndMethodWithSameNameBug.chpl:5: note: found this method
+functionAndMethodWithSameNameBug.chpl:1: note: and this non-method

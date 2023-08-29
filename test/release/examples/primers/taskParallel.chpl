@@ -124,8 +124,8 @@ construct gets its own set of shadow variables, one per outer variable.
 The default argument intent (:ref:`The_Default_Intent`) is used by default.
 For numeric types, this implies capturing the value of the outer
 variable by the time the task starts executing. Arrays are passed by
-reference, as are sync, single, and atomic variables
-(:ref:`primers-syncsingle`, :ref:`primers-atomics`).
+reference, as are sync  and atomic variables
+(:ref:`primers-syncs`, :ref:`primers-atomics`).
 For ``begin`` statements, for example, this means that the captured
 value of an outer numeric variable can be accessed even after its
 scope exits, while an outer array variable cannot.

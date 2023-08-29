@@ -3,7 +3,7 @@ record history_real {
   var h : size*real;
   var f : real;
 
-  proc add(r : real) {
+  proc ref add(r : real) {
     for i in 1..size-1 by -1 do
       h(i) = h(i-1);
     h(0) = f;

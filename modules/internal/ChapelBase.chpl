@@ -23,6 +23,38 @@
 
 module ChapelBase {
 
+  // We deprecate in the module code so that we don't have to modify dyno
+  // to teach it about the 'c_string' type. We perform the deprecation in
+  // ChapelBase so that you don't have to 'import CTypes' to see the type
+  // 'c_string' (which could break a lot of programs). This is OK because
+  // after the deprecation period we can just remove 'c_string' entirely.
+  @deprecated(notes="the type 'c_string' is deprecated; please 'import CTypes' and use 'c_ptrConst(c_char)' instead")
+  type c_string = chpl_c_string;
+
+  // c_fn_ptr stuff
+
+  // although it can just be a compiler-inserted primitive,
+  // we declare it so we can mark it unstable
+  @chpldoc.nodoc
+  @unstable("'c_fn_ptr' is unstable, and may be replaced by first-class procedure functionality")
+  type c_fn_ptr = chpl_c_fn_ptr;
+
+  @chpldoc.nodoc
+  @unstable
+  inline operator c_fn_ptr.=(ref a:c_fn_ptr, b:c_fn_ptr) {
+    __primitive("=", a, b);
+  }
+  @chpldoc.nodoc
+  @unstable
+  proc c_fn_ptr.this() {
+    compilerError("Can't call a C function pointer within Chapel");
+  }
+  @chpldoc.nodoc
+  @unstable
+  proc c_fn_ptr.this(args...) {
+    compilerError("Can't call a C function pointer within Chapel");
+  }
+
   pragma "locale private"
   @chpldoc.nodoc
   var rootLocaleInitialized: bool = false;
@@ -38,8 +70,8 @@ module ChapelBase {
   config param enablePostfixBangChecks = false;
 
   // These two are called by compiler-generated code.
-  extern proc chpl_config_has_value(name:c_string, module_name:c_string): bool;
-  extern proc chpl_config_get_value(name:c_string, module_name:c_string): c_string;
+  extern proc chpl_config_has_value(name:c_ptrConst(c_char), module_name:c_ptrConst(c_char)): bool;
+  extern proc chpl_config_get_value(name:c_ptrConst(c_char), module_name:c_ptrConst(c_char)): c_ptrConst(c_char);
 
   // the default low bound to use for arrays, tuples, etc.
   config param defaultLowBound = 0;
@@ -1562,31 +1594,37 @@ module ChapelBase {
 
   pragma "llvm return noalias"
   proc _ddata_allocate_noinit(type eltType, size: integral,
-                                     out callPostAlloc: bool,
-                                     subloc = c_sublocid_none) {
+                              out callPostAlloc: bool,
+                              subloc = c_sublocid_none,
+                              haltOnOom:bool = true) {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc chpl_mem_array_alloc(nmemb: c_size_t, eltSize: c_size_t,
                                      subloc: chpl_sublocID_t,
-                                     ref callPostAlloc: bool): c_ptr(void);
+                                     ref callPostAlloc: bool,
+                                     haltOnOom: bool): c_ptr(void);
     var ret: _ddata(eltType);
     ret = chpl_mem_array_alloc(size:c_size_t, _ddata_sizeof_element(ret),
-                               subloc, callPostAlloc):ret.type;
+                               subloc, callPostAlloc, haltOnOom):ret.type;
     return ret;
   }
 
-  pragma "llvm return noalias"
-  proc _ddata_allocate_noinit_nocheck(type eltType, size: integral,
-                                     out callPostAlloc: bool,
-                                     subloc = c_sublocid_none) {
-    pragma "fn synchronization free"
-    pragma "insert line file info"
-    extern proc chpl_mem_array_alloc_no_check(nmemb: c_size_t, eltSize: c_size_t,
-                                              subloc: chpl_sublocID_t,
-                                              ref callPostAlloc: bool): c_ptr(void);
+  inline proc _try_ddata_allocate(type eltType, size: integral,
+                                  subloc = c_sublocid_none) throws {
+    var callPostAlloc: bool;
     var ret: _ddata(eltType);
-    ret = chpl_mem_array_alloc_no_check(size:c_size_t, _ddata_sizeof_element(ret),
-                               subloc, callPostAlloc):ret.type;
+
+    ret = _ddata_allocate_noinit(eltType, size, callPostAlloc, subloc, false);
+
+    if ret == nil then
+      throw new ArrayOomError();
+
+    init_elts(ret, size, eltType);
+
+    if callPostAlloc {
+      _ddata_allocate_postalloc(ret, size);
+    }
+
     return ret;
   }
 
@@ -1764,6 +1802,12 @@ module ChapelBase {
     var _val;
   }
 
+  module currentTask {
+    inline proc yieldExecution() {
+      extern proc chpl_task_yield();
+      chpl_task_yield();
+    }
+  }
   //
   // data structures for naive implementation of end used for
   // sync statements and for joining coforall and cobegin tasks
@@ -1802,14 +1846,14 @@ module ChapelBase {
   record endCountDiagsManager {
     var taskInfo: c_ptr(chpl_task_infoChapel_t);
     var prevDiagsDisabledVal: bool;
-    inline proc enterThis() : void {
+    inline proc ref enterContext() : void {
       if !commDiagsTrackEndCounts {
         taskInfo = chpl_task_getInfoChapel();
         prevDiagsDisabledVal = chpl_task_data_setCommDiagsTemporarilyDisabled(taskInfo, true);
       }
     }
 
-    inline proc leaveThis(in unused: owned Error?) {
+    inline proc exitContext(in unused: owned Error?) {
       if !commDiagsTrackEndCounts {
         chpl_task_data_setCommDiagsTemporarilyDisabled(taskInfo, prevDiagsDisabledVal);
       }
@@ -2144,7 +2188,7 @@ module ChapelBase {
     return __primitive("cast", t, x);
 
   @unstable("enum-to-bool casts are likely to be deprecated in the future")
-  inline operator :(x:enum, type t:chpl_anybool) throws {
+  inline operator :(x: enum, type t:chpl_anybool) throws {
     return x: int: bool;
   }
   // operator :(x: enum, type t:integral)
@@ -2526,7 +2570,7 @@ module ChapelBase {
 
   // implements 'delete' statement
   pragma "no borrow convert"
-  proc chpl__delete(arg) {
+  proc chpl__delete(const arg) {
 
     if chpl_isDdata(arg.type) then
       compilerError("cannot delete data class");
@@ -2553,13 +2597,13 @@ module ChapelBase {
     }
   }
 
-  proc chpl__delete(arr: []) {
+  proc chpl__delete(const arr: []) {
     forall a in arr do
       chpl__delete(a);
   }
 
   // delete two or more things
-  proc chpl__delete(arg, args...) {
+  proc chpl__delete(arg, const args...) {
     chpl__delete(arg);
     for param i in 0..args.size-1 do
       chpl__delete(args(i));
@@ -3262,8 +3306,8 @@ module ChapelBase {
 
   // Support for module deinit functions.
   class chpl_ModuleDeinit {
-    const moduleName: c_string;          // for debugging; non-null, not owned
-    const deinitFun:  c_fn_ptr;          // module deinit function
+    const moduleName: c_ptrConst(c_char); // for debugging; non-null, not owned
+    const deinitFun:  chpl_c_fn_ptr;          // module deinit function
     const prevModule: unmanaged chpl_ModuleDeinit?; // singly-linked list / LIFO queue
     proc writeThis(ch) throws {
       try {
@@ -3413,19 +3457,5 @@ module ChapelBase {
 
   inline proc chpl_field_gt(a, b) where !isArrayType(a.type) {
     return a > b;
-  }
-
-  // c_fn_ptr stuff
-  @chpldoc.nodoc
-  inline operator c_fn_ptr.=(ref a:c_fn_ptr, b:c_fn_ptr) {
-    __primitive("=", a, b);
-  }
-  @chpldoc.nodoc
-  proc c_fn_ptr.this() {
-    compilerError("Can't call a C function pointer within Chapel");
-  }
-  @chpldoc.nodoc
-  proc c_fn_ptr.this(args...) {
-    compilerError("Can't call a C function pointer within Chapel");
   }
 }

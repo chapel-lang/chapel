@@ -1,0 +1,2 @@
+not-parenless.chpl:2: In function 'f':
+not-parenless.chpl:2: error: the '@deprecated' attribute with 'parenful=true' can only be applied to parenless functions

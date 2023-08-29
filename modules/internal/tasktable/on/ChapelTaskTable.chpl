@@ -158,8 +158,8 @@ module ChapelTaskTable {
 
   export proc chpldev_taskTable_print()
   {
-    use IO;
-    extern proc chpl_lookupFilename(idx: int(32)): c_string;
+    use IO, CTypes;
+    extern proc chpl_lookupFilename(idx: int(32)): c_ptrConst(c_char);
 
     if (chpldev_taskTable == nil) then return;
 

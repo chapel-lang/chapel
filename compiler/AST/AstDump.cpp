@@ -68,7 +68,16 @@ AstDump::~AstDump() {
 
 void AstDump::view(const char* passName, int passNum) {
   forv_Vec(ModuleSymbol, module, allModules) {
-    if (log_module[0] == '\0' || strcmp(log_module, module->name) == 0) {
+
+    // log if no explicit module names OR if module matches one of the names
+    // written this way to avoid extra string init in the common `--log` case
+    bool shouldLog = log_modules.empty();
+    if (!shouldLog) {
+      std::string moduleName = module->name;
+      shouldLog = log_modules.count(moduleName) > 0;
+    }
+
+    if (shouldLog) {
       AstDump logger;
 
       if (logger.open(module, passName, passNum) == true) {
@@ -477,6 +486,8 @@ void AstDump::exitBlockStmt(BlockStmt* node) {
 bool AstDump::enterForallStmt(ForallStmt* node) {
   newline();
   write("Forall");
+  if (fLogIds)
+    fprintf(mFP, "[%d]", node->id);
   write("{");
   ++mIndent;
   newline();
@@ -977,6 +988,10 @@ void AstDump::printLoopStmtDetails(LoopStmt* loop) {
     write("hazard");
   if (loop->isOrderIndependent())
     write("order-independent");
+  if (loop->hasAdditionalLLVMMetadata("chpl.loop.assertvectorized"))
+    write("assert-vectorized");
+  if (loop->hasAdditionalLLVMMetadata())
+    write("additional-llvm-metadata");
 }
 
 void AstDump::newline() {

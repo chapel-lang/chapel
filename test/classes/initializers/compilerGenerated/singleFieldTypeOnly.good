@@ -1,2 +1,0 @@
-singleFieldTypeOnly.chpl:1: warning: compiler generated default initializers for classes with 'single' fields are deprecated, please supply an 'init' method
-false

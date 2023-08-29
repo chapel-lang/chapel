@@ -35,9 +35,11 @@ struct AttributeGroupParts {
   std::set<PragmaTag>* pragmas;
   bool isDeprecated;
   bool isUnstable;
+  bool isParenfulDeprecated;
   bool isStable;
   UniqueString deprecationMessage;
   UniqueString unstableMessage;
+  UniqueString parenfulDeprecationMessage;
 };
 
 struct ParserContext {
@@ -70,6 +72,7 @@ struct ParserContext {
   AttributeGroupParts attributeGroupParts;
   bool hasAttributeGroupParts;
   int numAttributesBuilt;
+  std::vector<owned<AttributeGroup>> loopAttributes;
   YYLTYPE declStartLocation;
 
   // this type and stack helps the parser know if a function
@@ -102,7 +105,7 @@ struct ParserContext {
     this->varDeclKind             = Variable::VAR;
     this->isBuildingFormal        = false;
     this->isVarDeclConfig         = false;
-    this->attributeGroupParts     = {nullptr, nullptr, false, false, false, UniqueString(), UniqueString() };
+    this->attributeGroupParts     = {nullptr, nullptr, false, false, false, false, UniqueString(), UniqueString(), UniqueString() };
     this->hasAttributeGroupParts  = false;
     this->numAttributesBuilt      = 0;
     YYLTYPE emptyLoc = {0};
@@ -139,6 +142,7 @@ struct ParserContext {
                                   bool usedParens,
                                   ParserExprList* toolspace,
                                   MaybeNamedActualList* actuals);
+  owned<AttributeGroup> popLoopAttributeGroup();
 
   // If attributes do not exist yet, returns nullptr.
   owned<AttributeGroup> buildAttributeGroup(YYLTYPE locationOfDecl);
@@ -479,6 +483,7 @@ struct ParserContext {
                                       AstNode* iterandExpr,
                                       WithClause* withClause,
                                       BlockOrDo blockOrDo);
+                                      // AttributeGroup* attributeGroup);
 
   CommentsAndStmt buildForeachLoopStmt(YYLTYPE locForeach,
                                        YYLTYPE locIndex,
@@ -487,6 +492,7 @@ struct ParserContext {
                                        AstNode* iterandExpr,
                                        WithClause* withClause,
                                        BlockOrDo blockOrDo);
+                                      //  AttributeGroup* attributeGroup);
 
   CommentsAndStmt buildForLoopStmt(YYLTYPE locFor,
                                    YYLTYPE locIndex,
@@ -494,6 +500,7 @@ struct ParserContext {
                                    AstNode* indexExpr,
                                    AstNode* iterandExpr,
                                    BlockOrDo blockOrDo);
+                                  //  AttributeGroup* attributeGroup);
 
   CommentsAndStmt buildCoforallLoopStmt(YYLTYPE locCoforall,
                                         YYLTYPE locIndex,
@@ -502,6 +509,7 @@ struct ParserContext {
                                         AstNode* iterandExpr,
                                         WithClause* withClause,
                                         BlockOrDo blockOrDo);
+                                        // AttributeGroup* attributeGroup);
 
   CommentsAndStmt buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
                                        YYLTYPE locThenBodyAnchor,

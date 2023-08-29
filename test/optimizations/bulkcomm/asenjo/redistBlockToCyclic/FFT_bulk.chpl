@@ -247,7 +247,7 @@ proc main() {
   initVectors(Twiddles, z);            // initialize twiddles and input vector z
   var t1,t2,T1,T2,T3,T4: real;
   const startTime = timeSinceEpoch().totalSeconds();  // capture the start time
-  [(a,b) in zip(Zblk, z)] a = conjg(b);      // store the conjugate of z in Zblk
+  [(a,b) in zip(Zblk, z)] a = conj(b);      // store the conjugate of z in Zblk
 
   //Comm y tieme bitReverse
   t1=timeSinceEpoch().totalSeconds();
@@ -298,7 +298,7 @@ proc main() {
 // compute the discrete fast Fourier transform of a vector A declared
 // over domain ADom using twiddle vector W
 //
-proc dfft(A: [?ADom], W, cyclicPhase) {
+proc dfft(ref A: [?ADom], W, cyclicPhase) {
   const numElements = A.size;
   //
   // loop over the phases of the DFT sequentially using custom
@@ -378,7 +378,7 @@ proc dfft(A: [?ADom], W, cyclicPhase) {
 // this is the radix-4 butterfly routine that takes multipliers wk1,
 // wk2, and wk3 and a 4-element array (slice) A.
 //
-proc butterfly(wk1, wk2, wk3, X:[?D]) {
+proc butterfly(wk1, wk2, wk3, ref X:[?D]) {
   const i0 = D.lowBound,
         i1 = i0 + D.stride,
         i2 = i1 + D.stride,
@@ -427,7 +427,7 @@ proc printConfiguration() {
 // Initialize the twiddle vector and random input vector and
 // optionally print them to the console
 //
-proc initVectors(Twiddles, z) {
+proc initVectors(ref Twiddles, ref z) {
   computeTwiddles(Twiddles);
   bitReverseShuffle(Twiddles);
 
@@ -442,7 +442,7 @@ proc initVectors(Twiddles, z) {
 //
 // Compute the twiddle vector values
 //
-proc computeTwiddles(Twiddles) {
+proc computeTwiddles(ref Twiddles) {
   const numTwdls = Twiddles.size,
     delta = 2.0 * atan(1.0) / numTwdls;
 
@@ -461,7 +461,7 @@ proc computeTwiddles(Twiddles) {
 // Perform a permutation of the argument vector by reversing the bits
 // of the indices
 //
-proc bitReverseShuffle(Vect: [?Dom]) {
+proc bitReverseShuffle(ref Vect: [?Dom]) {
   const numBits = log2(Vect.size),
     Perm: [Dom] Vect.eltType = [i in Dom] Vect(bitReverse(i, revBits=numBits));
   Vect = Perm;
@@ -486,10 +486,10 @@ proc log4(x) do return logBasePow2(x, 2);
 	     // verify that the results are correct by reapplying the dfft and then
 	     // calculating the maximum error, comparing against epsilon
 	     //
-	     proc verifyResults(z, Zblk, Zcyc, Twiddles) {
+	     proc verifyResults(ref z, ref Zblk, ref Zcyc, Twiddles) {
 	       if (printArrays) then writeln("After FFT, Z is: ", Zblk, "\n");
 
-	       [z in Zblk] z = conjg(z) / m;
+	       [z in Zblk] z = conj(z) / m;
 	       bitReverseShuffle(Zblk);
 	       dfft(Zblk, Twiddles, cyclicPhase=false);
 	       forall (b, c) in zip(Zblk, Zcyc) do

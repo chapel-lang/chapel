@@ -992,13 +992,13 @@ in a manage statement.
         var x: int;
       }
 
-      proc IntWrapper.enterThis() ref: int {
+      proc ref IntWrapper.enterContext() ref: int {
         writeln('entering');
         writeln(this);
         return this.x;
       }
 
-      proc IntWrapper.leaveThis(in error: owned Error?) throws {
+      proc IntWrapper.exitContext(in error: owned Error?) throws {
         if error then throw error;
         writeln('leaving');
         writeln(this);
@@ -1019,21 +1019,21 @@ in a manage statement.
       leaving
       (x = 8)
 
-The ``enterThis()`` special method is called on the manager expression
+The ``enterContext()`` special method is called on the manager expression
 before executing the managed block (in the above example the manager
 expression is ``wrapper``). The method may return a type or value, or
 it may return ``void``.
 
-The resource returned by ``enterThis()`` can be captured by name so
+The resource returned by ``enterContext()`` can be captured by name so
 that it can be referred to within the scope of the managed block
 (in the above example the captured resource is ``val``).
 
 Capturing a returned resource is optional, and the syntax may be
 omitted. It is an error to try to capture a resource if
-``enterThis()`` returns ``void``.
+``enterContext()`` returns ``void``.
 
 The storage of a captured resource may also be omitted, in which
-case it will be inferred from the return intent of the ``enterThis()``
+case it will be inferred from the return intent of the ``enterContext()``
 method (in the above example the storage of ``val`` is inferred
 to be ``ref``).
 
@@ -1049,13 +1049,13 @@ Resource storage may also be specified explicitly.
         var x: int;
       }
 
-      proc IntWrapper.enterThis() ref: int {
+      proc ref IntWrapper.enterContext() ref: int {
         writeln('entering');
         writeln(this);
         return this.x;
       }
 
-      proc IntWrapper.leaveThis(in error: owned Error?) throws {
+      proc IntWrapper.exitContext(in error: owned Error?) throws {
         if error then throw error;
         writeln('leaving');
         writeln(this);
@@ -1081,26 +1081,26 @@ Resource storage may also be specified explicitly.
       (x = 0)
 
 Because the storage of ``val`` was specified as ``var``, the integer
-field of ``wrapper`` was not modified even though ``enterThis()``
+field of ``wrapper`` was not modified even though ``enterContext()``
 returns by ``ref``.
 
 .. note::
 
   *Open issue:*
 
-    The ``enterThis()`` special method does not currently support the
+    The ``enterContext()`` special method does not currently support the
     use of return intent overloading (see :ref:`Return_Intent_Overloads`)
     when the storage of a resource is omitted. Adding such support would
     require additional disambiguation rules, and the value of doing so
     is unclear at this time.
 
-Participating types must also define the ``leaveThis()`` method,
+Participating types must also define the ``exitContext()`` method,
 which is called implicitly when the scope of the managed block
 is exited.
 
-The ``leaveThis()`` method takes an ``Error?`` by ``in`` intent. If
+The ``exitContext()`` method takes an ``Error?`` by ``in`` intent. If
 the error is not ``nil``,  it may be handled within the method. It
-can also be propagated by annotating ``leaveThis()`` with the
+can also be propagated by annotating ``exitContext()`` with the
 ``throws`` tag and throwing the error.
 
 Multiple manager expressions may be present in a single manage
@@ -1116,13 +1116,13 @@ statement.
         var x: int;
       }
 
-      proc IntWrapper.enterThis() ref: int {
+      proc ref IntWrapper.enterContext() ref: int {
         writeln('entering');
         writeln(this);
         return this.x;
       }
 
-      proc IntWrapper.leaveThis(in error: owned Error?) throws {
+      proc IntWrapper.exitContext(in error: owned Error?) throws {
         if error then throw error;
         writeln('leaving');
         writeln(this);
@@ -1154,7 +1154,7 @@ statement.
       (x = -1)
 
 Before executing the code in the body of the manage statement, the
-``enterThis()`` method is called on each manager from left to right.
-Upon exiting the managed scope, the ``leaveThis()`` method is called
+``enterContext()`` method is called on each manager from left to right.
+Upon exiting the managed scope, the ``exitContext()`` method is called
 on each manager from right to left.
 

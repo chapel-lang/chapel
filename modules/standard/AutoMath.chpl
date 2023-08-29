@@ -64,18 +64,18 @@ Rounding
 Computations Involving Complex Numbers
 --------------------------------------
 :proc:`carg`
-:proc:`conjg`
+:proc:`conj`
 :proc:`cproj`
 
 .. _automath-inf-nan:
 
 Infinity and NaN
 ----------------
-:var:`INFINITY`
-:var:`NAN`
-:proc:`isfinite`
-:proc:`isinf`
-:proc:`isnan`
+:proc:`inf`
+:proc:`nan`
+:proc:`isFinite`
+:proc:`isInf`
+:proc:`isNan`
 
 .. _automath-comparison:
 
@@ -893,7 +893,7 @@ module AutoMath {
 
      :rtype: A complex number of the same type as `x`.
   */
-  inline proc conjg(x: complex(?w)) {
+  inline proc conj(x: complex(?w)) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc conjf(x: complex(64)): complex(64);
@@ -910,7 +910,7 @@ module AutoMath {
 
      :rtype: An imaginary number of the same type as `x`.
   */
-  inline proc conjg(x: imag(?w)) {
+  inline proc conj(x: imag(?w)) {
     return -x;
   }
 
@@ -918,15 +918,15 @@ module AutoMath {
 
      :rtype: A number that is not complex or imaginary of the same type as `x`.
   */
-  inline proc conjg(x: int(?w)) {
+  inline proc conj(x: int(?w)) {
     return x;
   }
 
-  inline proc conjg(x: uint(?w)) {
+  inline proc conj(x: uint(?w)) {
     return x;
   }
 
-  inline proc conjg(x: real(?w)) {
+  inline proc conj(x: real(?w)) {
     return x;
   }
 
@@ -934,42 +934,37 @@ module AutoMath {
 
      :rtype: A complex number of the same type as `z`.
   */
-  pragma "last resort"
-  @deprecated("The argument name 'z' is deprecated for 'conjg', please use 'x' instead")
+  @deprecated("'conjg' with a 'z' argument has been deprecated, please use 'conj' with an 'x' argument instead")
   inline proc conjg(z: complex(?w)) {
-    return conjg(z);
+    return conj(z);
   }
 
   /* Returns the complex conjugate of the imaginary argument `z`.
 
      :rtype: An imaginary number of the same type as `z`.
   */
-  pragma "last resort"
-  @deprecated("The argument name 'z' is deprecated for 'conjg', please use 'x' instead")
+  @deprecated("'conjg' with a 'z' argument has been deprecated, please use 'conj' with an 'x' argument instead")
   inline proc conjg(z: imag(?w)) {
-    return conjg(z);
+    return conj(z);
   }
 
   /* Returns the argument `z`.
 
      :rtype: A number that is not complex or imaginary of the same type as `z`.
   */
-  pragma "last resort"
-  @deprecated("The argument name 'z' is deprecated for 'conjg', please use 'x' instead")
+  @deprecated("'conjg' with a 'z' argument has been deprecated, please use 'conj' with an 'x' argument instead")
   inline proc conjg(z: int(?w)) {
-    return conjg(z);
+    return conj(z);
   }
 
-  pragma "last resort"
-  @deprecated("The argument name 'z' is deprecated for 'conjg', please use 'x' instead")
+  @deprecated("'conjg' with a 'z' argument has been deprecated, please use 'conj' with an 'x' argument instead")
   inline proc conjg(z: uint(?w)) {
-    return conjg(z);
+    return conj(z);
   }
 
-  pragma "last resort"
-  @deprecated("The argument name 'z' is deprecated for 'conjg', please use 'x' instead")
+  @deprecated("'conjg' with a 'z' argument has been deprecated, please use 'conj' with an 'x' argument instead")
   inline proc conjg(z: real(?w)) {
-    return conjg(z);
+    return conj(z);
   }
 
   /* Returns the projection of `x` on a Riemann sphere. */
@@ -1501,42 +1496,72 @@ module AutoMath {
     return floorf(x);
   }
 
+  /* Returns a value for which :proc:`isInf` will return `true`. */
+  inline proc inf param : real(64) do return chpl_INFINITY;
 
-  /* Returns a value for which :proc:`isinf` will return `true`. */
-  inline proc INFINITY param : real(64) do return chpl_INFINITY;
-
-
-  /* Returns `true` if the argument `x` is a representation of a finite value;
-     `false` otherwise. */
-  inline proc isfinite(x: real(64)): bool do return chpl_macro_double_isfinite(x):bool;
+  /* Returns a value for which :proc:`isInf` will return `true`. */
+  @deprecated(notes="'INFINITY' has been deprecated in favor of :proc:`inf`, please use that instead")
+  inline proc INFINITY param : real(64) do return inf;
 
   /* Returns `true` if the argument `x` is a representation of a finite value;
      `false` otherwise. */
-  inline proc isfinite(x: real(32)): bool do return chpl_macro_float_isfinite(x):bool;
+  inline proc isFinite(x: real(64)): bool do return chpl_macro_double_isfinite(x):bool;
 
+  /* Returns `true` if the argument `x` is a representation of a finite value;
+     `false` otherwise. */
+  inline proc isFinite(x: real(32)): bool do return chpl_macro_float_isfinite(x):bool;
+
+  /* Returns `true` if the argument `x` is a representation of a finite value;
+     `false` otherwise. */
+  @deprecated(notes="'isfinite' is deprecated in favor of :proc:`isFinite`, please use that instead")
+  inline proc isfinite(x: real(64)): bool do return isFinite(x):bool;
+
+  /* Returns `true` if the argument `x` is a representation of a finite value;
+     `false` otherwise. */
+  @deprecated(notes="'isfinite' is deprecated in favor of :proc:`isFinite`, please use that instead")
+  inline proc isfinite(x: real(32)): bool do return isFinite(x):bool;
 
   /* Returns `true` if the argument `x` is a representation of *infinity*;
      `false` otherwise. */
-  inline proc isinf(x: real(64)): bool do return chpl_macro_double_isinf(x):bool;
+  inline proc isInf(x: real(64)): bool do return chpl_macro_double_isinf(x):bool;
 
   /* Returns `true` if the argument `x` is a representation of *infinity*;
      `false` otherwise. */
-  inline proc isinf(x: real(32)): bool do return chpl_macro_float_isinf(x):bool;
+  inline proc isInf(x: real(32)): bool do return chpl_macro_float_isinf(x):bool;
 
+  /* Returns `true` if the argument `x` is a representation of *infinity*;
+     `false` otherwise. */
+  @deprecated(notes="'isinf' is deprecated in favor of :proc:`isInf`, please use that instead")
+  inline proc isinf(x: real(64)): bool do return isInf(x):bool;
+
+  /* Returns `true` if the argument `x` is a representation of *infinity*;
+     `false` otherwise. */
+  @deprecated(notes="'isinf' is deprecated in favor of :proc:`isInf`, please use that instead")
+  inline proc isinf(x: real(32)): bool do return isInf(x):bool;
 
   /* Returns `true` if the argument `x` does not represent a valid number;
      `false` otherwise. */
-  inline proc isnan(x: real(64)): bool do return chpl_macro_double_isnan(x):bool;
+  inline proc isNan(x: real(64)): bool do return chpl_macro_double_isnan(x):bool;
 
   /* Returns `true` if the argument `x` does not represent a valid number;
      `false` otherwise. */
-  inline proc isnan(x: real(32)): bool do return chpl_macro_float_isnan(x):bool;
+  inline proc isNan(x: real(32)): bool do return chpl_macro_float_isnan(x):bool;
+
+  /* Returns `true` if the argument `x` does not represent a valid number;
+     `false` otherwise. */
+  @deprecated(notes="'isnan' is deprecated in favor of :proc:`isNan`, please use that instead")
+  inline proc isnan(x: real(64)): bool do return isNan(x):bool;
+
+  /* Returns `true` if the argument `x` does not represent a valid number;
+     `false` otherwise. */
+  @deprecated(notes="'isnan' is deprecated in favor of :proc:`isNan`, please use that instead")
+  inline proc isnan(x: real(32)): bool do return isNan(x):bool;
 
   // When removing this deprecated function, be sure to remove chpl_ldexp and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
   pragma "last resort"
-  @deprecated(notes="In an upcoming release 'ldexp' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  @deprecated(notes="In an upcoming release 'ldexp' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it.  Note that the version in the Math module is now named 'ldExp'")
   inline proc ldexp(x:real(64), n:int(32)):real(64) {
     return chpl_ldexp(x, n);
   }
@@ -1555,7 +1580,7 @@ module AutoMath {
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
   pragma "last resort"
-  @deprecated(notes="In an upcoming release 'ldexp' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  @deprecated(notes="In an upcoming release 'ldexp' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it.  Note that the version in the Math module is now named 'ldExp'")
   inline proc ldexp(x:real(32), n:int(32)):real(32) {
     return chpl_ldexp(x, n);
   }
@@ -1571,7 +1596,7 @@ module AutoMath {
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
   pragma "last resort"
-  @deprecated(notes="In an upcoming release 'lgamma' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  @deprecated(notes="In an upcoming release 'lgamma' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it.  Note that the function has been renamed to 'lnGamma' there")
   inline proc lgamma(x: real(64)): real(64) {
     return chpl_lgamma(x);
   }
@@ -1590,7 +1615,7 @@ module AutoMath {
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
   pragma "last resort"
-  @deprecated(notes="In an upcoming release 'lgamma' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  @deprecated(notes="In an upcoming release 'lgamma' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it.  Note that the function has been renamed to 'lnGamma' there")
   inline proc lgamma(x : real(32)): real(32) {
     return chpl_lgamma(x);
   }
@@ -1904,9 +1929,9 @@ module AutoMath {
   inline proc max(x: uint(64), y: uint(64)) do return if x > y then x else y;
 
   @chpldoc.nodoc
-  inline proc max(x: real(32), y: real(32)) do return if (x > y) | isnan(x) then x else y;
+  inline proc max(x: real(32), y: real(32)) do return if (x > y) | isNan(x) then x else y;
   @chpldoc.nodoc
-  inline proc max(x: real(64), y: real(64)) do return if (x > y) | isnan(x) then x else y;
+  inline proc max(x: real(64), y: real(64)) do return if (x > y) | isNan(x) then x else y;
 
   @chpldoc.nodoc
   inline proc max(x: int(8), y: uint(8)) do return if x > y then x : uint(8) else y;
@@ -1934,7 +1959,7 @@ module AutoMath {
 
   /* Returns the maximum value of two arguments using the ``>`` operator
      for comparison.
-     If one of the arguments is :proc:`AutoMath.NAN`, the result is also NAN.
+     If one of the arguments is :proc:`AutoMath.nan`, the result is also nan.
 
      :rtype: The type of `x`.
    */
@@ -1973,9 +1998,9 @@ module AutoMath {
   inline proc min(x: uint(64), y: uint(64)) do return if x < y then x else y;
 
   @chpldoc.nodoc
-  inline proc min(x: real(32), y: real(32)) do return if (x < y) | isnan(x) then x else y;
+  inline proc min(x: real(32), y: real(32)) do return if (x < y) | isNan(x) then x else y;
   @chpldoc.nodoc
-  inline proc min(x: real(64), y: real(64)) do return if (x < y) | isnan(x) then x else y;
+  inline proc min(x: real(64), y: real(64)) do return if (x < y) | isNan(x) then x else y;
 
   @chpldoc.nodoc
   inline proc min(x: int(8), y: uint(8)) do return if x < y then x else y : int(8);
@@ -2005,7 +2030,7 @@ module AutoMath {
   /* Returns the minimum value of two arguments using the ``<`` operator
      for comparison.
 
-     If one of the arguments is :proc:`AutoMath.NAN`, the result is also NAN.
+     If one of the arguments is :proc:`AutoMath.nan`, the result is also nan.
 
      :rtype: The type of `x`.
    */
@@ -2112,9 +2137,12 @@ module AutoMath {
     return x - y*floor(x/y);
   }
 
+  /* Returns a value for which :proc:`isNan` will return `true`. */
+  inline proc nan param : real(64) do return chpl_NAN;
 
-  /* Returns a value for which :proc:`isnan` will return `true`. */
-  inline proc NAN param : real(64) do return chpl_NAN;
+  /* Returns a value for which :proc:`isNan` will return `true`. */
+  @deprecated(notes="'NAN' is deprecated in favor of :proc:`nan`, please use that instead")
+  inline proc NAN param : real(64) do return nan;
 
 
   // When removing this deprecated function, be sure to remove chpl_nearbyint
@@ -2611,7 +2639,7 @@ module AutoMath {
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
   pragma "last resort"
-  @deprecated(notes="In an upcoming release 'tgamma' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  @deprecated(notes="In an upcoming release 'tgamma' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it.  Note that the function has been renamed to 'gamma' there")
   inline proc tgamma(x: real(64)): real(64) {
     return chpl_tgamma(x);
   }
@@ -2630,7 +2658,7 @@ module AutoMath {
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
   pragma "last resort"
-  @deprecated(notes="In an upcoming release 'tgamma' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  @deprecated(notes="In an upcoming release 'tgamma' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it.  Note that the function has been renamed to 'gamma' there")
   inline proc tgamma(x : real(32)): real(32) {
     return chpl_tgamma(x);
   }

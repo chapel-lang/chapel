@@ -348,17 +348,17 @@ record BackoffSpinLock {
     this.maxLockAttempts = other.maxLockAttempts;
   }
 
-  inline proc lock() {
+  inline proc ref lock() {
     while l.testAndSet() {
       lockAttempts += 1;
       if (lockAttempts & maxLockAttempts) == 0 {
         maxLockAttempts >>= 1;
-        chpl_task_yield();
+        currentTask.yieldExecution();
       }
     }
   }
 
-  inline proc unlock() {
+  inline proc ref unlock() {
     l.clear();
   }
 }
@@ -370,7 +370,7 @@ var recordSolutionLock: BackoffSpinLock;
 //
 // Recursively add pieces to the board, and check solution when filled
 //
-proc searchLinear(in board, in pos, used, placed, currentSolution) {
+proc searchLinear(in board, in pos, used, placed, ref currentSolution) {
 
   if placed == numPieces {
     recordSolutionLock.lock();

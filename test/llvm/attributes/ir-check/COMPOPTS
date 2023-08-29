@@ -1,0 +1,1 @@
+--llvm-print-ir=loops --llvm-print-ir-stage basic # empty.good

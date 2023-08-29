@@ -46,7 +46,7 @@ module cholesky_scalar_algorithms {
   // the factorization.  
   // =========================================================================
     
-  proc scalar_row_major_outer_product_cholesky ( A : [] )
+  proc scalar_row_major_outer_product_cholesky ( ref A : [] )
 
     where ( A.domain.rank == 2 ) 
 
@@ -94,7 +94,7 @@ module cholesky_scalar_algorithms {
 
   }
 
-  proc scalar_row_major_outer_product_no_vector_cholesky ( A : [] )
+  proc scalar_row_major_outer_product_no_vector_cholesky ( ref A : [] )
 
     where ( A.domain.rank == 2 ) 
 
@@ -148,7 +148,7 @@ module cholesky_scalar_algorithms {
 
   }
 
-  proc scalar_row_major_bounded_outer_product_cholesky ( A : [] )
+  proc scalar_row_major_bounded_outer_product_cholesky ( ref A : [] )
 
     where ( A.domain.rank == 2 ) 
 
@@ -198,7 +198,7 @@ module cholesky_scalar_algorithms {
 
   }
 
-  proc scalar_row_major_temp_outer_product_cholesky ( A : [] )
+  proc scalar_row_major_temp_outer_product_cholesky ( ref A : [] )
 
     where ( A.domain.rank == 2 ) 
 
@@ -250,7 +250,7 @@ module cholesky_scalar_algorithms {
 
   }
 
-  proc scalar_column_major_outer_product_cholesky ( A : [] )
+  proc scalar_column_major_outer_product_cholesky ( ref A : [] )
 
     where ( A.domain.rank == 2 ) 
 
@@ -307,7 +307,7 @@ module cholesky_scalar_algorithms {
   // matrix-vector product form.
   // =========================================================================
     
-  proc scalar_inner_product_cholesky ( A : [] ) 
+  proc scalar_inner_product_cholesky ( ref A : [] ) 
 
     where ( A.domain.rank == 2 ) 
     {
@@ -371,7 +371,7 @@ module cholesky_scalar_algorithms {
   // rows and columns (i+1..).
   // =========================================================================
     
-  proc scalar_bordering_cholesky ( A : [] )  
+  proc scalar_bordering_cholesky ( ref A : [] )  
 
     where ( A.domain.rank == 2 ) {
 

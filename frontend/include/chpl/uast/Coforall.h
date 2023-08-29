@@ -49,7 +49,8 @@ class Coforall final : public IndexableLoop {
            int8_t iterandChildNum,
            int8_t withClauseChildNum,
            BlockStyle blockStyle,
-           int loopBodyChildNum)
+           int loopBodyChildNum,
+           int attributeGroupChildNum)
     : IndexableLoop(asttags::Coforall, std::move(children),
                     indexChildNum,
                     iterandChildNum,
@@ -57,7 +58,7 @@ class Coforall final : public IndexableLoop {
                     blockStyle,
                     loopBodyChildNum,
                     /*isExpressionLevel*/ false,
-                    /*attributeGroup*/ NO_CHILD) {
+                    attributeGroupChildNum) {
   }
 
   Coforall(Deserializer& des) : IndexableLoop(asttags::Coforall, des) { }
@@ -81,7 +82,8 @@ class Coforall final : public IndexableLoop {
                                owned<AstNode> iterand,
                                owned<WithClause> withClause,
                                BlockStyle blockStyle,
-                               owned<Block> body);
+                               owned<Block> body,
+                               owned<AttributeGroup> attributeGroup = nullptr);
 
   void serialize(Serializer& ser) const override {
     IndexableLoop::serialize(ser);

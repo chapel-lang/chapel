@@ -1,0 +1,4 @@
+ # assertVectorized-baseline.good
+--fast --no-ieee-float --ccflags '-fno-math-errno -fno-finite-math-only'
+-g # assertVectorized-debug.good
+-g --fast --no-ieee-float --ccflags '-fno-math-errno -fno-finite-math-only'

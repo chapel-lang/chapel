@@ -9,7 +9,7 @@ proc update(ref x)
   x[3] = 3;
 }
 
-proc test(A, B) {
+proc test(ref A, ref B) {
   update( if useA then A else B );
 
   writeln(A);

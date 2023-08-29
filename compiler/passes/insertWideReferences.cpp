@@ -918,7 +918,8 @@ static void addKnownWides() {
     Symbol* defParent = var->defPoint->parentSymbol;
 
     if (usingGpuLocaleModel()) {
-      if (var->type->symbol->hasFlag(FLAG_DATA_CLASS)) {
+      if (var->type->symbol->hasFlag(FLAG_DATA_CLASS)
+          && !var->type->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
         if (FnSymbol* fn = usedInOn(var)) {
           debug(var, "GPU variable used in on-statement\n");
           if (typeCanBeWide(var)) {

@@ -63,7 +63,7 @@ module Scalable_Graph_Generator
 // this to allocate additional arrays using the same distribution
 
   proc Scalable_Data_Generator ( SCALE :int, N_VERTICES : int,
-                                n_raw_edges : int, Edges:[?ArrD] )
+                                n_raw_edges : int, ref Edges:[?ArrD] )
   {
       use BlockDist;
       // use Graph500_defs;
@@ -100,7 +100,7 @@ module Scalable_Graph_Generator
       var   Unif_Random  : [ArrD] real;
       var   Unif_Random2 : [ArrD] real;
 
-      var   Edge_lock$   : [ArrD] sync bool = true;
+      var   Edge_lock   : [ArrD] sync bool = true;
 
       var   graph_gen_time: stopwatch;
 
@@ -115,7 +115,7 @@ module Scalable_Graph_Generator
       graph_gen_time.clear();
       graph_gen_time.start();
 
-      var permutation$ : [vertex_range] sync int = vertex_range;
+      var permutation : [vertex_range] sync int = vertex_range;
 
       for i in 1..SCALE do {
          var   skip : real;
@@ -139,13 +139,13 @@ module Scalable_Graph_Generator
 
 //            Lock locations in permutation array
 
-              var label1 = permutation$ (ndx1).readFE () : int;
-              var label2 = permutation$ (ndx2).readFE () : int;
+              var label1 = permutation (ndx1).readFE () : int;
+              var label2 = permutation (ndx2).readFE () : int;
 
 //            Swap labels
 
-              permutation$ (ndx1).writeEF (label2);
-              permutation$ (ndx2).writeEF (label1);
+              permutation (ndx1).writeEF (label2);
+              permutation (ndx2).writeEF (label1);
             };
 
           };
@@ -250,8 +250,8 @@ module Scalable_Graph_Generator
    graph_gen_time.start();
 
    forall e in ArrD do {
-      Edges(e).start = permutation$ (Edges(e).start).readFF();
-      Edges(e).end   = permutation$ (Edges(e).end  ).readFF();
+      Edges(e).start = permutation (Edges(e).start).readFF();
+      Edges(e).end   = permutation (Edges(e).end  ).readFF();
    };
    graph_gen_time.stop();
    if (PRINT_TIMING_STATISTICS) {
@@ -286,8 +286,8 @@ module Scalable_Graph_Generator
 
 //       Lock Edge Pairs
 
-         Edge_lock$ (ndx1).readFE();
-         Edge_lock$ (ndx2).readFE();
+         Edge_lock (ndx1).readFE();
+         Edge_lock (ndx2).readFE();
          var label1 = Edges (ndx1).start : int;
          var label2 = Edges (ndx1).end : int;
          var label3 = Edges (ndx2).start : int;
@@ -299,8 +299,8 @@ module Scalable_Graph_Generator
          Edges (ndx1).end = label4;
          Edges (ndx2).start = label1;
          Edges (ndx2).end = label2;
-         Edge_lock$ (ndx1).writeEF(true);
-         Edge_lock$ (ndx2).writeEF(true);
+         Edge_lock (ndx1).writeEF(true);
+         Edge_lock (ndx2).writeEF(true);
        };
      };
      }

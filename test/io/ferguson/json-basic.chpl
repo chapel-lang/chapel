@@ -1,13 +1,15 @@
 
-use IO;
+use IO, JSON;
 
 record MyRecord {
   var a: int;
   var b: int;
 }
 
-writef("testing default stdout: %t\n", new MyRecord(1,2));
-writef("testing json stdout: %jt\n", new MyRecord(1,2));
+writef("testing default stdout: %?\n", new MyRecord(1,2));
+stdout
+  .withSerializer(JsonSerializer)
+  .writef("testing json stdout: %?\n", new MyRecord(1,2));
 
 var f = openTempFile();
 
@@ -20,11 +22,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var r:MyRecord;
 
-  var got = reader.readf("%jt", r);
+  var got = reader.readf("%?", r);
 
   writeln("got is ", got);
   writeln("Read: ", r);
@@ -41,11 +43,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var r:MyRecord;
 
-  var got = reader.readf("%jt", r);
+  var got = reader.readf("%?", r);
 
   writeln("got is ", got);
   writeln("Read: ", r);
@@ -63,15 +65,15 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var r:MyRecord;
   var got: bool;
 
   try! {
-    got = reader.readf("%~jt", r);
-  } catch e: BadFormatError {
-    writeln("bad format error");
+    got = reader.readf("%?", r);
+  } catch e: IllegalArgumentError {
+    writeln("illegal argument error");
   }
   writeln("got is ", got);
   writeln("Read: ", r);
@@ -88,11 +90,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var r:MyRecord;
 
-  reader.readf("%jt", r);
+  reader.readf("%?", r);
 
   writeln("Read: ", r);
 
@@ -108,11 +110,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var r:MyRecord;
 
-  reader.readf("%jt", r);
+  reader.readf("%?", r);
 
   writeln("Read: ", r);
 
@@ -129,11 +131,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var r:MyRecord;
 
-  reader.readf("%jt", r);
+  reader.readf("%?", r);
 
   writeln("Read: ", r);
 
@@ -150,11 +152,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var r:MyRecord;
 
-  reader.readf("%~jt", r);
+  reader.readf("%?", r);
 
   writeln("Read: ", r);
 
@@ -170,11 +172,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var r:MyRecord;
 
-  reader.readf("%~jt", r);
+  reader.readf("%?", r);
 
   writeln("Read: ", r);
 
@@ -192,11 +194,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var r:MyRecord;
 
-  reader.readf("%~jt", r);
+  reader.readf("%?", r);
 
   writeln("Read: ", r);
 
@@ -213,11 +215,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var r:MyRecord;
 
-  reader.readf("%~jt", r);
+  reader.readf("%?", r);
 
   writeln("Read: ", r);
 
@@ -233,11 +235,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var r:MyRecord;
 
-  reader.readf("%~jt", r);
+  reader.readf("%?", r);
 
   writeln("Read: ", r);
 
@@ -253,11 +255,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var r:MyRecord;
 
-  reader.readf("%~jt", r);
+  reader.readf("%?", r);
 
   writeln("Read: ", r);
 
@@ -273,11 +275,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var r:MyRecord;
 
-  reader.readf("%~jt", r);
+  reader.readf("%?", r);
 
   writeln("Read: ", r);
 

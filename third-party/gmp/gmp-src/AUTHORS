@@ -62,7 +62,7 @@ Marco Bodrato		mpn/generic/toom44_mul.c, toom4_sqr.c, toom53_mul.c,
 			toom8h_mul.c, toom8_sqr.c, toom_interpolate_16pts.c,
 			mulmod_bnm1.c, sqrmod_bnm1.c, nussbaumer_mul.c,
 			toom_eval_pm2.c, toom_eval_pm2rexp.c,
-			fib2m.c, strongfibo.c,
+			fib2m.c, strongfibo.c, mulmod_bknp1.c,
 			mullo_n.c, sqrlo.c, invert.c, invertappr.c;
 			mpn/x86/atom/aors_n.asm, aorslshC_n.asm,
 			aorrlsh{1,2,C}_n.asm, aorsmul_1.asm, logops_n.asm,
@@ -104,3 +104,7 @@ Ulrich Weigand		Changes to support powerpc64le:
 			mpn/powerpc64/mode64/p7/gcd_1.asm,
 			mpn/powerpc64/p6/{lshift,lshiftc,rshift}.asm,
 			mpn/powerpc64/vmx/popcount.asm.
+
+Seth Troisi		mpz/nextprime.c general speed-up and prevprime.
+
+Marius Hillenbrand	mpn/s390_64/z13/*.c (later used as basis for asm code)

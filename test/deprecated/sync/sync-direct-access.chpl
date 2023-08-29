@@ -3,10 +3,10 @@
 
 proc test1() {
   writeln("test2");
-  var b$: sync int = 1;
+  var b: sync int = 1;
   var c: int = 1;
 
-  var a = b$ + c; /// warning
+  var a = b + c; /// warning
 
   writeln("a = ", a, " : ", a.type:string);
 }
@@ -14,11 +14,11 @@ test1();
 
 proc test2() {
   writeln("test2");
-  var x$: sync int = 1;
+  var x: sync int = 1;
 
-  x$ += 2; /// warning
+  x += 2; /// warning
 
-  writeln("x$ = ", x$.readFF(), " : ", x$.type:string);
+  writeln("x = ", x.readFF(), " : ", x.type:string);
 }
 test2();
 
@@ -32,20 +32,20 @@ proc f(arg: int) {
 }
 proc test3() {
   writeln("test3");
-  var x$: sync int = 1;
+  var x: sync int = 1;
 
-  f(x$); /// warning
+  f(x); /// warning
 
-  x$.writeEF(1);
-  writeln("x$ = ", x$.readFF(), " : ", x$.type:string);
+  x.writeEF(1);
+  writeln("x = ", x.readFF(), " : ", x.type:string);
 }
 test3();
 
 proc test4() {
   writeln("test4");
-  var x$: sync int = 1;
+  var x: sync int = 1;
 
-  var b = x$; /// warning
+  var b = x; /// warning
 
   writeln("b = ", b, " : ", b.type:string);
 }
@@ -53,84 +53,84 @@ test4();
 
 proc test5() {
   writeln("test5");
-  var a$: sync int = 1;
-  a$.readFE();
-  var b$: sync int = 1;
+  var a: sync int = 1;
+  a.readFE();
+  var b: sync int = 1;
 
-  a$ = b$; /// warning
+  a = b; /// warning
 
-  b$.writeEF(1);
-  writeln("a$ = ", a$.readFF(), " : ", a$.type:string);
-  writeln("b$ = ", b$.readFF(), " : ", b$.type:string);
+  b.writeEF(1);
+  writeln("a = ", a.readFF(), " : ", a.type:string);
+  writeln("b = ", b.readFF(), " : ", b.type:string);
 }
 test5();
 
 proc test6() {
   writeln("test6");
-  var a$: sync int = 1;
+  var a: sync int = 1;
 
-  var b = a$; /// warning
+  var b = a; /// warning
 
-  a$ = 1;
-  writeln("a$ = ", a$.readFF(), " : ", a$.type:string);
+  a = 1;
+  writeln("a = ", a.readFF(), " : ", a.type:string);
   writeln("b = ", b, " : ", b.type:string);
 }
 test6();
 
 proc test7() {
   writeln("test7");
-  var a$: sync int = 1;
+  var a: sync int = 1;
 
-  var b$: sync int = a$; /// warning
+  var b: sync int = a; /// warning
 
-  a$.writeEF(1);
-  writeln("a$ = ", a$.readFF(), " : ", a$.type:string);
-  writeln("b$ = ", b$.readFF(), " : ", b$.type:string);
+  a.writeEF(1);
+  writeln("a = ", a.readFF(), " : ", a.type:string);
+  writeln("b = ", b.readFF(), " : ", b.type:string);
 }
 test7();
 
 proc test8() {
   writeln("test8");
-  var a$: sync int = 1;
+  var a: sync int = 1;
 
-  var b: int = a$; /// warning
+  var b: int = a; /// warning
 
-  a$.writeEF(1);
-  writeln("a$ = ", a$.readFF(), " : ", a$.type:string);
+  a.writeEF(1);
+  writeln("a = ", a.readFF(), " : ", a.type:string);
   writeln("b = ", b, " : ", b.type:string);
 }
 test8();
 
 proc test9() {
   writeln("test9");
-  var a$: sync int = 1;
-  a$.readFE();
-  a$.writeEF(1);
+  var a: sync int = 1;
+  a.readFE();
+  a.writeEF(1);
 
-  var b: int = a$; /// warning
+  var b: int = a; /// warning
 
-  a$.writeEF(1);
-  writeln("a$ = ", a$.readFF(), " : ", a$.type:string);
+  a.writeEF(1);
+  writeln("a = ", a.readFF(), " : ", a.type:string);
   writeln("b = ", b, " : ", b.type:string);
 }
 test9();
 
 proc test10() {
   writeln("test10");
-  var a$: sync int = 1;
-  a$.readFE();
+  var a: sync int = 1;
+  a.readFE();
 
-  a$ = 1; /// warning
+  a = 1; /// warning
 
-  writeln("a$ = ", a$.readFF(), " : ", a$.type:string);
+  writeln("a = ", a.readFF(), " : ", a.type:string);
 }
 test10();
 
 proc test11() {
   writeln("test11");
-  var a$: sync int = 1;
+  var a: sync int = 1;
 
-  a$; /// warning
+  a; /// warning
 }
 test11();
 
@@ -161,9 +161,9 @@ test14();
 
 proc test15() {
   writeln("test15");
-  var s$: sync bool = true;
+  var s: sync bool = true;
 
-  if s$ then /// warning
+  if s then /// warning
     writeln("foo");
   else
     writeln("bar");

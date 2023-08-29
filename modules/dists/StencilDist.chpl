@@ -56,6 +56,7 @@ config param stencilDistAllowPackedUpdateFluff = true;
 
 config param disableStencilDistBulkTransfer = false;
 
+private config param allowDuplicateTargetLocales = false;
 // Instructs the _packedUpdate method to only perform the optimized buffer
 // packing if the number of GETs/PUTs would be greater than or equal to the
 // value in this config const.
@@ -246,7 +247,108 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
     compile if the array element is not an array or a class.
 
 */
-class Stencil : BaseDist {
+pragma "ignore noinit"
+record Stencil {
+  param rank: int;
+  type idxType = int;
+  param ignoreFluff = false;
+
+  forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(unmanaged StencilImpl(rank, idxType, ignoreFluff));
+
+  proc init(boundingBox: domain,
+            targetLocales: [] locale = Locales,
+            dataParTasksPerLocale=getDataParTasksPerLocale(),
+            dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
+            dataParMinGranularity=getDataParMinGranularity(),
+            param rank = boundingBox.rank,
+            type idxType = boundingBox.idxType,
+            fluff: rank*idxType = makeZero(rank, idxType),
+            periodic: bool = false,
+            param ignoreFluff = false) {
+    const value = new unmanaged StencilImpl(boundingBox, targetLocales,
+                                          dataParTasksPerLocale,
+                                          dataParIgnoreRunningTasks,
+                                          dataParMinGranularity,
+                                          rank, idxType, fluff, periodic,
+                                          ignoreFluff);
+    this.rank = rank;
+    this.idxType = idxType;
+    this.ignoreFluff = ignoreFluff;
+    this.chpl_distHelp = new chpl_PrivatizedDistHelper(
+                          if _isPrivatized(value)
+                            then _newPrivatizedClass(value)
+                            else nullPid,
+                          value);
+  }
+
+    proc init(_pid : int, _instance, _unowned : bool) {
+      this.rank = _instance.rank;
+      this.idxType = _instance.idxType;
+      this.ignoreFluff = _instance.ignoreFluff;
+      this.chpl_distHelp = new chpl_PrivatizedDistHelper(_pid,
+                                                         _instance,
+                                                         _unowned);
+    }
+
+    proc init(value) {
+      this.rank = value.rank;
+      this.idxType = value.idxType;
+      this.ignoreFluff = value.ignoreFluff;
+      this.chpl_distHelp = new chpl_PrivatizedDistHelper(
+                             if _isPrivatized(value)
+                               then _newPrivatizedClass(value)
+                               else nullPid,
+                             _to_unmanaged(value));
+    }
+
+    // Note: This does not handle the case where the desired type of 'this'
+    // does not match the type of 'other'. That case is handled by the compiler
+    // via coercions.
+    proc init=(const ref other : Stencil(?)) {
+      this.init(other._value.dsiClone());
+    }
+
+    proc clone() {
+      return new Stencil(this._value.dsiClone());
+    }
+
+  @chpldoc.nodoc
+  inline operator ==(d1: Stencil(?), d2: Stencil(?)) {
+    if (d1._value == d2._value) then
+      return true;
+    return d1._value.dsiEqualDMaps(d2._value);
+  }
+
+  @chpldoc.nodoc
+  inline operator !=(d1: Stencil(?), d2: Stencil(?)) {
+    return !(d1 == d2);
+  }
+
+  proc writeThis(x) {
+    chpl_distHelp.writeThis(x);
+  }
+}
+
+
+@chpldoc.nodoc
+@unstable(category="experimental", reason="assignment between distributions is currently unstable due to lack of testing")
+operator =(ref a: Stencil(?), b: Stencil(?)) {
+  if a._value == nil {
+    __primitive("move", a, chpl__autoCopy(b.clone(), definedConst=false));
+  } else {
+    if a._value.type != b._value.type then
+      compilerError("type mismatch in distribution assignment");
+    if a._value == b._value {
+      // do nothing
+    } else
+        a._value.dsiAssign(b._value);
+    if _isPrivatized(a._instance) then
+      _reprivatize(a._value);
+  }
+}
+
+
+class StencilImpl : BaseDist {
   param rank: int;
   type idxType = int;
   param ignoreFluff: bool;
@@ -264,8 +366,8 @@ class Stencil : BaseDist {
 //
 // Local Stencil Distribution Class
 //
-// rank : generic rank that matches Stencil.rank
-// idxType: generic index type that matches Stencil.idxType
+// rank : generic rank that matches StencilImpl.rank
+// idxType: generic index type that matches StencilImpl.idxType
 // myChunk: a non-distributed domain that defines this locale's indices
 //
 class LocStencil {
@@ -286,7 +388,7 @@ class LocStencil {
 //
 class StencilDom: BaseRectangularDom(?) {
   param ignoreFluff : bool;
-  const dist: unmanaged Stencil(rank, idxType, ignoreFluff);
+  const dist: unmanaged StencilImpl(rank, idxType, ignoreFluff);
   var locDoms: [dist.targetLocDom] unmanaged LocStencilDom(rank, idxType,
                                                            strides);
   var whole: domain(rank=rank, idxType=idxType, strides=strides);
@@ -429,7 +531,7 @@ private proc makeZero(param rank : int, type idxType) {
 //
 // Stencil initializer for clients of the Stencil distribution
 //
-proc Stencil.init(boundingBox: domain,
+proc StencilImpl.init(boundingBox: domain,
                   targetLocales: [] locale = Locales,
                   dataParTasksPerLocale=getDataParTasksPerLocale(),
                   dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
@@ -451,6 +553,15 @@ proc Stencil.init(boundingBox: domain,
   this.boundingBox = boundsBox(boundingBox);
   this.fluff = fluff;
 
+  if !allowDuplicateTargetLocales {
+    var checkArr: [LocaleSpace] bool;
+    for loc in targetLocales {
+      if checkArr[loc.id] then
+        halt("StencilDist does not allow duplicate targetLocales");
+      checkArr[loc.id] = true;
+    }
+  }
+
   // can't have periodic if there's no fluff
   this.periodic = periodic && !isZeroTuple(fluff);
 
@@ -462,7 +573,7 @@ proc Stencil.init(boundingBox: domain,
   const dummyLS = new unmanaged LocStencil(rank, idxType, dummy=true);
   var locDistTemp: [targetLocDom] unmanaged LocStencil(rank, idxType) = dummyLS;
 
-  coforall locid in targetLocDom do
+  coforall locid in targetLocDom with (ref locDistTemp) do
     on this.targetLocales(locid) do
       locDistTemp(locid) = new unmanaged LocStencil(rank, idxType, locid,
                                                     boundingBox, targetLocDom);
@@ -486,7 +597,7 @@ proc Stencil.init(boundingBox: domain,
   }
 }
 
-proc Stencil.dsiAssign(other: this.type) {
+proc StencilImpl.dsiAssign(other: this.type) {
   coforall locid in targetLocDom do
     on targetLocales(locid) do
       delete locDist(locid);
@@ -509,7 +620,7 @@ proc Stencil.dsiAssign(other: this.type) {
 // Stencil distributions are equivalent if they share the same bounding
 // box and target locale set.
 //
-proc Stencil.dsiEqualDMaps(that: Stencil(?)) {
+proc StencilImpl.dsiEqualDMaps(that: StencilImpl(?)) {
   return (this.boundingBox == that.boundingBox &&
           this.targetLocales.equals(that.targetLocales) &&
           this.fluff == that.fluff &&
@@ -517,27 +628,27 @@ proc Stencil.dsiEqualDMaps(that: Stencil(?)) {
 }
 
 
-proc Stencil.dsiEqualDMaps(that) param {
+proc StencilImpl.dsiEqualDMaps(that) param {
   return false;
 }
 
 
 
-proc Stencil.dsiClone() {
-  return new unmanaged Stencil(boundingBox, targetLocales,
+proc StencilImpl.dsiClone() {
+  return new unmanaged StencilImpl(boundingBox, targetLocales,
                    dataParTasksPerLocale, dataParIgnoreRunningTasks,
                    dataParMinGranularity, fluff=fluff, periodic=periodic,
                    ignoreFluff=this.ignoreFluff);
 }
 
-override proc Stencil.dsiDestroyDist() {
+override proc StencilImpl.dsiDestroyDist() {
   coforall ld in locDist do {
     on ld do
       delete ld;
   }
 }
 
-override proc Stencil.dsiDisplayRepresentation() {
+override proc StencilImpl.dsiDisplayRepresentation() {
   writeln("boundingBox = ", boundingBox);
   writeln("targetLocDom = ", targetLocDom);
   writeln("targetLocales = ", for tl in targetLocales do tl.id);
@@ -548,7 +659,7 @@ override proc Stencil.dsiDisplayRepresentation() {
     writeln("locDist[", tli, "].myChunk = ", locDist[tli].myChunk);
 }
 
-override proc Stencil.dsiNewRectangularDom(param rank: int, type idxType,
+override proc StencilImpl.dsiNewRectangularDom(param rank: int, type idxType,
                                            param strides: strideKind, inds) {
   if idxType != this.idxType then
     compilerError("Stencil domain index type does not match distribution's");
@@ -558,7 +669,7 @@ override proc Stencil.dsiNewRectangularDom(param rank: int, type idxType,
   const dummyLSD = new unmanaged LocStencilDom(rank, idxType, strides);
   var locDomsTemp: [this.targetLocDom]
                   unmanaged LocStencilDom(rank, idxType, strides) = dummyLSD;
-  coforall localeIdx in this.targetLocDom do
+  coforall localeIdx in this.targetLocDom with (ref locDomsTemp) do
     on this.targetLocales(localeIdx) do
       locDomsTemp(localeIdx) =
         new unmanaged LocStencilDom(rank, idxType, strides,
@@ -580,7 +691,7 @@ override proc Stencil.dsiNewRectangularDom(param rank: int, type idxType,
 //
 // output distribution
 //
-proc Stencil.writeThis(x) throws {
+proc StencilImpl.writeThis(x) throws {
   x.writeln("Stencil");
   x.writeln("-------");
   x.writeln("distributes: ", boundingBox);
@@ -592,11 +703,11 @@ proc Stencil.writeThis(x) throws {
       " owns chunk: ", locDist(locid).myChunk);
 }
 
-proc Stencil.dsiIndexToLocale(ind: idxType) where rank == 1 {
+proc StencilImpl.dsiIndexToLocale(ind: idxType) where rank == 1 {
   return targetLocales(targetLocsIdx(ind));
 }
 
-proc Stencil.dsiIndexToLocale(ind: rank*idxType) where rank > 1 {
+proc StencilImpl.dsiIndexToLocale(ind: rank*idxType) where rank > 1 {
   return targetLocales(targetLocsIdx(ind));
 }
 
@@ -604,7 +715,7 @@ proc Stencil.dsiIndexToLocale(ind: rank*idxType) where rank > 1 {
 // compute what chunk of inds is owned by a given locale -- assumes
 // it's being called on the locale in question
 //
-proc Stencil.getChunk(inds, locid) {
+proc StencilImpl.getChunk(inds, locid) {
   // use domain slicing to get the intersection between what the
   // locale owns and the domain's index set
   //
@@ -629,11 +740,11 @@ proc Stencil.getChunk(inds, locid) {
 //
 // get the index into the targetLocales array for a given distributed index
 //
-proc Stencil.targetLocsIdx(ind: idxType) where rank == 1 {
+proc StencilImpl.targetLocsIdx(ind: idxType) where rank == 1 {
   return targetLocsIdx((ind,));
 }
 
-proc Stencil.targetLocsIdx(ind: rank*idxType) {
+proc StencilImpl.targetLocsIdx(ind: rank*idxType) {
   var result: rank*int;
   for param i in 0..rank-1 do
     result(i) = max(0, min((targetLocDom.dim(i).sizeAs(int)-1):int,
@@ -644,7 +755,7 @@ proc Stencil.targetLocsIdx(ind: rank*idxType) {
 }
 
 // TODO: This will not trigger the bounded-coforall optimization
-iter Stencil.activeTargetLocales(const space : domain = boundingBox) {
+iter StencilImpl.activeTargetLocales(const space : domain = boundingBox) {
   const locSpace = {(...space.dims())}; // make a local domain in case 'space' is distributed
   const low = chpl__tuplify(targetLocsIdx(locSpace.first));
   const high = chpl__tuplify(targetLocsIdx(locSpace.last));
@@ -704,6 +815,13 @@ proc LocStencil.init(param rank: int,
 proc LocStencil.init(param rank, type idxType, param dummy: bool) where dummy {
   this.rank = rank;
   this.idxType = idxType;
+}
+
+proc StencilDom.dsiGetDist() {
+  if _isPrivatized(dist) then
+    return new Stencil(dist.pid, dist, _unowned=true);
+  else
+    return new Stencil(nullPid, dist, _unowned=true);
 }
 
 override proc StencilDom.dsiDisplayRepresentation() {
@@ -808,7 +926,7 @@ iter StencilDom.these(param tag: iterKind, followThis) where tag == iterKind.fol
     var low  = wholeDim.orderToIndex(followDim.low);
     var high = wholeDim.orderToIndex(followDim.high);
     if wholeDim.hasNegativeStride() then low <=> high;
-    t(i) = try! (low..high by (wholeDim.stride*followDim.stride)) : t(i).type;
+    t(i) = (low..high by (wholeDim.stride*followDim.stride)) : t(i).type;
   }
   for i in {(...t)} {
     yield i;
@@ -829,7 +947,7 @@ proc StencilDom.dsiBuildArray(type eltType, param initElts:bool) {
   var myLocArrTemp: unmanaged LocStencilArr(eltType, rank, idxType, strides)?;
 
   // formerly in StencilArr.setup()
-  coforall localeIdx in dom.dist.targetLocDom with (ref myLocArrTemp) {
+  coforall localeIdx in dom.dist.targetLocDom with (ref locArrTemp, ref myLocArrTemp) {
     on dom.dist.targetLocales(localeIdx) {
       const LSA = new unmanaged LocStencilArr(eltType, rank, idxType, strides,
                                               dom.getLocDom(localeIdx),
@@ -1171,7 +1289,8 @@ override proc StencilArr.dsiDestroyArr(deinitElts:bool) {
 
 
 inline proc StencilArr.dsiLocalAccess(i: rank*idxType) ref {
-  return _to_nonnil(myLocArr).this(i);
+  return if allowDuplicateTargetLocales then this.dsiAccess(i)
+                                        else _to_nonnil(myLocArr).this(i);
 }
 
 //
@@ -1309,7 +1428,7 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
     writeln((if fast then "fast" else "regular") + " follower invoked for Stencil array");
 
   var myFollowThis: rank*range(idxType=idxType, strides=chpl_strideProduct(
-                                      strides, chpl_strideUnion(followThis)));
+                                     strides, chpl_strideUnion(followThis)));
   var lowIdx: rank*idxType;
 
   for param i in 0..rank-1 {
@@ -1317,7 +1436,8 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
     // NOTE: Not bothering to check to see if these can fit into idxType
     var low = followThis(i).lowBound * abs(stride):idxType;
     var high = followThis(i).highBound * abs(stride):idxType;
-    myFollowThis(i) = try! ((low..high by stride) + dom.whole.dim(i).low by followThis(i).stride) : myFollowThis(i).type;
+    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).low
+                       by followThis(i).stride) : myFollowThis(i).type;
     lowIdx(i) = myFollowThis(i).lowBound;
   }
 
@@ -1360,7 +1480,7 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
 //
 proc StencilArr.dsiSerialWrite(f) {
   type strType = chpl__signedType(idxType);
-  var binary = f.binary();
+  var binary = f._binary();
   if dom.dsiNumIndices == 0 then return;
   var i : rank*idxType;
   for dim in 0..rank-1 do
@@ -1539,7 +1659,7 @@ iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standa
 //
 pragma "no copy return"
 proc StencilArr.noFluffView() {
-  var tempDist = new unmanaged Stencil(dom.dist.boundingBox, dom.dist.targetLocales,
+  var tempDist = new unmanaged StencilImpl(dom.dist.boundingBox, dom.dist.targetLocales,
                              dom.dist.dataParTasksPerLocale, dom.dist.dataParIgnoreRunningTasks,
                              dom.dist.dataParMinGranularity, ignoreFluff=true);
   pragma "no auto destroy" var newDist = new _distribution(tempDist);
@@ -1749,7 +1869,7 @@ override proc StencilDom.dsiSupportsAutoLocalAccess() param { return true; }
 //
 // Privatization
 //
-proc Stencil.init(other: Stencil, privateData,
+proc StencilImpl.init(other: StencilImpl, privateData,
                   param rank = other.rank,
                   type idxType = other.idxType,
                   param ignoreFluff = other.ignoreFluff) {
@@ -1767,21 +1887,21 @@ proc Stencil.init(other: Stencil, privateData,
   dataParMinGranularity = privateData(4);
 }
 
-override proc Stencil.dsiSupportsPrivatization() param do return true;
+override proc StencilImpl.dsiSupportsPrivatization() param do return true;
 
-proc Stencil.dsiGetPrivatizeData() {
+proc StencilImpl.dsiGetPrivatizeData() {
   return (boundingBox.dims(), targetLocDom.dims(),
           dataParTasksPerLocale, dataParIgnoreRunningTasks, dataParMinGranularity,
           fluff, periodic);
 }
 
-proc Stencil.dsiPrivatize(privatizeData) {
-  return new unmanaged Stencil(_to_unmanaged(this), privatizeData);
+proc StencilImpl.dsiPrivatize(privatizeData) {
+  return new unmanaged StencilImpl(_to_unmanaged(this), privatizeData);
 }
 
-proc Stencil.dsiGetReprivatizeData() do return boundingBox.dims();
+proc StencilImpl.dsiGetReprivatizeData() do return boundingBox.dims();
 
-proc Stencil.dsiReprivatize(other, reprivatizeData) {
+proc StencilImpl.dsiReprivatize(other, reprivatizeData) {
   boundingBox = {(...reprivatizeData)};
   targetLocDom = other.targetLocDom;
   targetLocales = other.targetLocales;
@@ -1893,11 +2013,11 @@ proc StencilDom.dsiTargetLocales() const ref {
   return dist.targetLocales;
 }
 
-proc Stencil.dsiTargetLocales() const ref {
+proc StencilImpl.dsiTargetLocales() const ref {
   return targetLocales;
 }
 
-proc Stencil.chpl__locToLocIdx(loc: locale) {
+proc StencilImpl.chpl__locToLocIdx(loc: locale) {
   for locIdx in targetLocDom do
     if (targetLocales[locIdx] == loc) then
       return (true, locIdx);
@@ -1906,8 +2026,8 @@ proc Stencil.chpl__locToLocIdx(loc: locale) {
 
 // Stencil subdomains are continuous
 
-proc StencilArr.dsiHasSingleLocalSubdomain() param do return true;
-proc StencilDom.dsiHasSingleLocalSubdomain() param do return true;
+proc StencilArr.dsiHasSingleLocalSubdomain() param do return !allowDuplicateTargetLocales;
+proc StencilDom.dsiHasSingleLocalSubdomain() param do return !allowDuplicateTargetLocales;
 
 // returns the current locale's subdomain
 

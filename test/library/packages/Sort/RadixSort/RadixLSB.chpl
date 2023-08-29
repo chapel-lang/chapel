@@ -65,7 +65,7 @@
     return place;
   } 
 
-  proc radixSort(array:[] int) {
+  proc radixSort(ref array:[] int) {
 
    var j: int;
    var place = findPlace(array);

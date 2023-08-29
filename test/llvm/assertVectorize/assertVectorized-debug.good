@@ -1,0 +1,4 @@
+assertVectorized.chpl:5: warning: loop on line 9 was marked 'assertVectorized' but did not vectorize
+assertVectorized.chpl:16: warning: loop on line 20 was marked 'assertVectorized' but did not vectorize
+result 131328
+result 7734.6

@@ -81,7 +81,7 @@ module ExportWrappers {
   }
 
   proc chpl__exportArg(cp: bool, val: chpl_byte_buffer, type rt: string): rt {
-    var data = val.data:c_string;
+    var data = val.data:c_ptrConst(c_char);
     var size = val.size.safeCast(int);
     try! {
       if cp then return string.createCopyingBuffer(data, size);
@@ -90,7 +90,7 @@ module ExportWrappers {
   }
 
   proc chpl__exportArg(cp: bool, val: chpl_byte_buffer, type rt: bytes): rt {
-    var data = val.data:c_string;
+    var data = val.data:c_ptrConst(c_char);
     var size = val.size.safeCast(int);
     try! {
       if cp then return bytes.createCopyingBuffer(data, size);

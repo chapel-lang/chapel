@@ -325,12 +325,8 @@ record Block {
   param rank: int;
   type idxType = int;
   type sparseLayoutType = unmanaged DefaultDist;
-  var _pid:int;  // only used when privatized
-  pragma "owned"
-  var _instance: unmanaged BlockImpl(rank, idxType, _to_unmanaged(sparseLayoutType));
-  var _unowned:bool; // 'true' for the result of 'getDistribution',
-                     // in which case, the record destructor should
-                     // not attempt to delete the _instance.
+
+  forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(unmanaged BlockImpl(rank, idxType, _to_unmanaged(sparseLayoutType)));
 
   proc init(boundingBox: domain,
             targetLocales: [] locale = Locales,
@@ -348,157 +344,42 @@ record Block {
     this.rank = rank;
     this.idxType = idxType;
     this.sparseLayoutType = _to_unmanaged(sparseLayoutType);
-    this._pid = if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid;
-    this._instance = value;
+    this.chpl_distHelp = new chpl_PrivatizedDistHelper(
+                          if _isPrivatized(value)
+                            then _newPrivatizedClass(value)
+                            else nullPid,
+                          value);
   }
 
     proc init(_pid : int, _instance, _unowned : bool) {
       this.rank = _instance.rank;
       this.idxType = _instance.idxType;
       this.sparseLayoutType = _instance.sparseLayoutType;
-      this._pid      = _pid;
-      this._instance = _instance;
-      this._unowned  = _unowned;
+      this.chpl_distHelp = new chpl_PrivatizedDistHelper(_pid,
+                                                         _instance,
+                                                         _unowned);
     }
 
     proc init(value) {
       this.rank = value.rank;
       this.idxType = value.idxType;
       this.sparseLayoutType = value.sparseLayoutType;
-      this._pid = if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid;
-      this._instance = _to_unmanaged(value);
+      this.chpl_distHelp = new chpl_PrivatizedDistHelper(
+                             if _isPrivatized(value)
+                               then _newPrivatizedClass(value)
+                               else nullPid,
+                             _to_unmanaged(value));
     }
 
     // Note: This does not handle the case where the desired type of 'this'
     // does not match the type of 'other'. That case is handled by the compiler
     // via coercions.
     proc init=(const ref other : Block(?)) {
-      /*
-      this.init(other.rank, other.idxType, other.sparseLayoutType, other_value.dsiClone()
-      this.rank = other.rank;
-      this.idxtype = other.idxType;
-      this.sparseLayoutType = other.sparseLayoutType;
-      */
-      var value = other._value.dsiClone();
-      this.init(value);
-    }
-
-    inline proc _value {
-      if _isPrivatized(_instance) {
-        return chpl_getPrivatizedCopy(_instance.type, _pid);
-      } else {
-        return _instance;
-      }
-    }
-
-    forwarding _value except targetLocales;
-
-    inline proc _do_destroy() {
-      if ! _unowned && ! _instance.singleton() {
-        on _instance {
-          // Count the number of domains that refer to this distribution.
-          // and mark the distribution to be freed when that number reaches 0.
-          // If the number is 0, .remove() returns the distribution
-          // that should be freed.
-          var distToFree = _instance.remove();
-          if distToFree != nil {
-            _delete_dist(distToFree!, _isPrivatized(_instance));
-          }
-        }
-      }
-    }
-
-    proc deinit() {
-      _do_destroy();
+      this.init(other._value.dsiClone());
     }
 
     proc clone() {
-      return new Block(_value.dsiClone());
-    }
-
-    /* This is a workaround for an internal failure I experienced when
-       this code was part of newRectangularDom() and relied on split init:
-       var x;
-       if __prim(...) then x = ...;
-       else if __prim(...) then x = ...;
-       else compilerError(...); */
-    proc chpl_dsiNRDhelp(param rank, type idxType, param strides, ranges) {
-
-      // Due to a bug, see library/standard/Reflection/primitives/ResolvesDmap
-      // we use "method call resolves" instead of just "resolves".
-      if __primitive("method call resolves", _value, "dsiNewRectangularDom",
-                     rank, idxType, strides, ranges) {
-        return _value.dsiNewRectangularDom(rank, idxType, strides, ranges);
-      }
-
-      // The following supports deprecation by Vass in 1.31 to implement #17131
-      // Once range.stridable is removed, replace chpl_dsiNRDhelp() with
-      //   var x = _value.dsiNewRectangularDom(..., strides, ranges);
-      // and uncomment proc dsiNewRectangularDom() in ChapelDistribution.chpl
-
-      param stridable = strides.toStridable();
-      const ranges2 = chpl_convertRangeTuple(ranges, stridable);
-      if __primitive("method call resolves", _value, "dsiNewRectangularDom",
-                     rank, idxType, stridable, ranges2) {
-
-        compilerWarning("the domain map '", _value.type:string,
-          "' needs to be updated from 'stridable: bool' to",
-          " 'strides: strideKind' because 'stridable' is deprecated");
-
-        return _value.dsiNewRectangularDom(rank, idxType, stridable, ranges2);
-      }
-
-      compilerError("rectangular domains are not supported by",
-                    " the distribution ", this.type:string);
-    }
-
-    proc newRectangularDom(param rank: int, type idxType,
-                           param strides: strideKind,
-                           ranges: rank*range(idxType, boundKind.both, strides),
-                           definedConst: bool = false) {
-      var x = chpl_dsiNRDhelp(rank, idxType, strides, ranges);
-
-      x.definedConst = definedConst;
-
-      if x.linksDistribution() {
-        _value.add_dom(x);
-      }
-      return x;
-    }
-
-    proc newRectangularDom(param rank: int, type idxType,
-                           param strides: strideKind,
-                           definedConst: bool = false) {
-      var ranges: rank*range(idxType, boundKind.both, strides);
-      return newRectangularDom(rank, idxType, strides, ranges, definedConst);
-    }
-
-    proc newSparseDom(param rank: int, type idxType, dom: domain) {
-      var x = _value.dsiNewSparseDom(rank, idxType, dom);
-      if x.linksDistribution() {
-        _value.add_dom(x);
-      }
-      return x;
-    }
-
-    proc idxToLocale(ind) do return _value.dsiIndexToLocale(ind);
-
-    proc writeThis(f) throws {
-      f.write(_value);
-    }
-
-    @chpldoc.nodoc
-    proc serialize(writer, ref serializer) throws {
-      writer.write(_value);
-    }
-
-    proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
-
-    /*
-       Return an array of locales over which this distribution was declared.
-    */
-    proc targetLocales() const ref {
-      return _value.dsiTargetLocales();
+      return new Block(this._value.dsiClone());
     }
 
   @chpldoc.nodoc
@@ -512,8 +393,11 @@ record Block {
   inline operator !=(d1: Block(?), d2: Block(?)) {
     return !(d1 == d2);
   }
-}
 
+  proc writeThis(x) {
+    chpl_distHelp.writeThis(x);
+  }
+}
 
 
 @chpldoc.nodoc
@@ -1155,7 +1039,7 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
     var low  = wholeDim.orderToIndex(followDim.low);
     var high = wholeDim.orderToIndex(followDim.high);
     if wholeDim.hasNegativeStride() then low <=> high;
-    t(i) = try! (low..high by (wholeDim.stride*followDim.stride)) : t(i).type;
+    t(i) = (low..high by (wholeDim.stride*followDim.stride)) : t(i).type;
   }
   for i in {(...t)} {
     yield i;
@@ -1216,19 +1100,7 @@ proc BlockDom.doiTryCreateArray(type eltType) throws {
            with (ref myLocArrTemp) {
     on loc {
       const locSize = locDomsElt.myBlock.size;
-      var callPostAlloc = false;
-      var data = _ddata_allocate_noinit_nocheck(eltType, locSize, callPostAlloc);
-
-      // TODO: Add a more distinguishable error type
-      if data == nil then
-        throw new Error("Could not allocate memory");
-
-      init_elts(data, locSize, eltType);
-
-      if callPostAlloc {
-        _ddata_allocate_postalloc(data, locSize);
-        callPostAlloc = false;
-      }
+      var data = _try_ddata_allocate(eltType, locSize);
 
       const LBA = new unmanaged LocBlockArr(eltType, rank, idxType, strides,
                                             locDomsElt, data=data, size=locSize);
@@ -1272,7 +1144,6 @@ proc BlockDom.dsiSerialWrite(x) { x.write(whole); }
 proc BlockDom.dsiLocalSlice(param strides, ranges) do return whole((...ranges));
 override proc BlockDom.dsiIndexOrder(i) do              return whole.indexOrder(i);
 override proc BlockDom.dsiMyDist() do                   return dist;
-override proc BlockDom.isBlock() param do return true;
 
 //
 // INTERFACE NOTES: Could we make dsiSetIndices() for a rectangular
@@ -1529,7 +1400,8 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
     // NOTE: Not bothering to check to see if these can fit into idxType
     var low = followThis(i).lowBound * abs(stride):idxType;
     var high = followThis(i).highBound * abs(stride):idxType;
-    myFollowThis(i) = try! ((low..high by stride) + dom.whole.dim(i).low by followThis(i).stride) : myFollowThis(i).type;
+    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).low
+                       by followThis(i).stride) : myFollowThis(i).type;
     lowIdx(i) = myFollowThis(i).lowBound;
   }
 
@@ -2135,7 +2007,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
   const sameDynamicDist = sameStaticDist && dsiDynamicFastFollowCheck(res);
 
   // Fire up tasks per participating locale
-  coforall locid in targetLocs.domain {
+  coforall locid in targetLocs.domain with (ref res, ref elemPerLoc, ref outputReady) {
     on targetLocs[locid] {
       const myop = op.clone(); // this will be deleted by doiScan()
 

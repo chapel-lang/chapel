@@ -1,5 +1,5 @@
 
-proc chooseArray(A:[] int, B:[] int, chooseA:bool) ref
+proc chooseArray(ref A:[] int, ref B:[] int, chooseA:bool) ref
 {
   ref AA = A;
   ref BB = B;

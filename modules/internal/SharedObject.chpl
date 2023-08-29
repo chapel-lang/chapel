@@ -412,7 +412,7 @@ module SharedObject {
        instance once there are no longer any copies of this
        :record:`shared` that refer to it.
      */
-    proc deinit() {
+    proc ref deinit() {
       if isClass(chpl_p) { // otherwise, let error happen on init call
         doClear();
       }
@@ -867,12 +867,12 @@ module WeakPointer {
       If there are no other references (weak or strong), the backing pointer
       is freed.
     */
-    proc deinit() {
+    proc ref deinit() {
       this.doClear();
     }
 
     @chpldoc.nodoc
-    proc doClear() {
+    proc ref doClear() {
       if this.chpl_p != nil {
           const totalCount = this.chpl_pn!.releaseWeak();
           if totalCount == 0 then delete this.chpl_pn;

@@ -144,7 +144,7 @@ testmain (int argc, char **argv)
   char *ap;
   char *bp;
   char *rp;
-  size_t rn, arn;
+  size_t rn;
 
   mpq_t a, b;
 
@@ -185,7 +185,6 @@ testmain (int argc, char **argv)
 	    }
 
 	  rn = strlen (rp);
-	  arn = rn - (rp[0] == '-');
 
 	  bp = mpq_get_str (NULL, (i&1 || base > 36) ? base: -base, a);
 	  if (strcmp (bp, rp))
@@ -256,7 +255,7 @@ testmain (int argc, char **argv)
 
 	  free (ap);
 	  free (rp);
-	  testfree (bp);
+	  testfree (bp, strlen(bp) + 1);
 	}
     }
   mpq_clear (a);

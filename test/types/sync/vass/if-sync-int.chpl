@@ -2,5 +2,5 @@
 // in all ways with respect to its value. So it should be coercible
 // to a bool within an if.
 
-var i$: sync int = 5;
-if i$.readFE() then writeln("yes");
+var i: sync int = 5;
+if i.readFE() then writeln("yes");

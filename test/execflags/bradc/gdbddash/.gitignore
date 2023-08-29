@@ -1,0 +1,2 @@
+# Test/execflags/bradc/gdbddash ignores.
+/.gdb_history

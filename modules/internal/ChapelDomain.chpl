@@ -86,6 +86,7 @@ module ChapelDomain {
   }
 
   pragma "runtime type init fn"
+  @unstable("Associative domains are unstable and their behavior may change in the future")
   proc chpl__buildDomainRuntimeType(dist, type idxType,
                                     param parSafe: bool = true) type {
     if isDomainType(idxType) then
@@ -223,7 +224,8 @@ module ChapelDomain {
   }
 
   // definedConst is added only for interface consistency
-  proc chpl__buildDomainExpr(keys..., definedConst) {
+  @unstable("Associative domains are unstable and their behavior may change in the future")
+  proc chpl__buildDomainExpr(const keys..., definedConst) {
     param count = keys.size;
     // keyType of string literals is assumed to be type string
     type keyType = keys(0).type;
@@ -709,7 +711,7 @@ module ChapelDomain {
     // Once an interface supports it:
     // if sd.RMO && d.RMO then rowSorted = true;
 
-    sd._value.dsiBulkAdd(arr, rowSorted, true, false);
+    sd._value.dsiBulkAddNoPreserveInds(arr, rowSorted, true);
   }
 
   // TODO: Implement bulkRemove
@@ -1537,15 +1539,17 @@ module ChapelDomain {
       memory to satisfy the allocation, which will then fail with a bus
       error when attempting to access the array.
 
-      This method is currently supported on both default rectangular
-      and block domains.
+      This method can be called on all domains that implement a
+      'doiTryCreateArray' method.
+
+      Throws an `ArrayOomError` when out of memory allocating elements.
     */
     pragma "no copy return"
     @unstable("tryCreateArray() is subject to change in the future.")
     proc tryCreateArray(type eltType) throws {
-      if !this.isDefaultRectangular() && !this.isBlock() then
-        compilerError("'tryCreateArray' is only supported on " +
-                      "default rectangular and block domains");
+      if !(__primitive("resolves", _value.doiTryCreateArray(eltType))) then
+        compilerError("cannot call 'tryCreateArray' on domains that do not" +
+                      " support a 'doiTryCreateArray' method.");
 
       chpl_checkEltType(eltType);
       chpl_checkNegativeStride();
@@ -1759,7 +1763,7 @@ module ChapelDomain {
       }
 
       @chpldoc.nodoc
-      proc _ensureNoLongerManagingThis() {
+      proc ref _ensureNoLongerManagingThis() {
         if !_isActiveManager then return; else _isActiveManager = false;
 
         // Possible runtime checks, reset the resize policy of owned arrays.
@@ -1773,7 +1777,7 @@ module ChapelDomain {
       }
 
       @chpldoc.nodoc
-      proc deinit() {
+      proc ref deinit() {
         _ensureNoLongerManagingThis();
       }
 
@@ -1783,7 +1787,7 @@ module ChapelDomain {
       }
 
       @chpldoc.nodoc
-      proc _moveInitializeElement(arr, idx, in value) {
+      proc _moveInitializeElement(ref arr, idx, in value) {
         import MemMove.moveInitialize;
         ref elem = arr[idx];
         moveInitialize(elem, value);
@@ -1812,7 +1816,7 @@ module ChapelDomain {
 
         It is an error if `idx` is not a valid index in `arr`.
       */
-      proc initialize(arr: [?d], idx, in value: arr.eltType) {
+      proc initialize(ref arr: [?d], idx, in value: arr.eltType) {
         import IO.FormattedIO.string;
 
         // Check to make sure value and array element types match.
@@ -1843,9 +1847,6 @@ module ChapelDomain {
         if !arr.domain.contains(idx) then
           halt(try! 'Array index out of bounds: %?'.format(idx));
 
-        // Get a reference to the array slot.
-        ref elem = arr[idx];
-
         if _checks {
           if isElementInitialized(arr, idx) {
             halt(try! "Element at array index '%?' is already initialized".format(idx));
@@ -1856,7 +1857,7 @@ module ChapelDomain {
       }
 
       @chpldoc.nodoc
-      proc enterThis() ref {
+      proc ref enterContext() ref {
 
         // TODO: Is it possible to nest unsafe assignments? Future work...
         if _isActiveManager {
@@ -1910,7 +1911,7 @@ module ChapelDomain {
       }
 
       @chpldoc.nodoc
-      proc leaveThis(in err: owned Error?) throws {
+      proc ref exitContext(in err: owned Error?) throws {
         _ensureNoLongerManagingThis();
         if err then throw err;
       }
@@ -2009,11 +2010,21 @@ module ChapelDomain {
     @chpldoc.nodoc
     @unstable("bulkAdd() is subject to change in the future.")
     proc ref bulkAdd(inds: [] _value.idxType, dataSorted=false,
-        isUnique=false, preserveInds=true, addOn=nilLocale)
+        isUnique=false, addOn=nilLocale)
         where this.isSparse() && _value.rank==1 {
       if inds.isEmpty() then return 0;
 
-      return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
+      return _value.dsiBulkAdd(inds, dataSorted, isUnique, addOn);
+    }
+
+    @chpldoc.nodoc
+    @unstable("bulkAdd() is subject to change in the future.")
+    proc ref bulkAddNoPreserveInds(ref inds: [] _value.idxType, dataSorted=false,
+        isUnique=false, addOn=nilLocale)
+        where this.isSparse() && _value.rank==1 {
+      if inds.isEmpty() then return 0;
+
+      return _value.dsiBulkAddNoPreserveInds(inds, dataSorted, isUnique, addOn);
     }
 
     /*
@@ -2094,16 +2105,30 @@ module ChapelDomain {
     */
     @unstable("bulkAdd() is subject to change in the future.")
     proc ref bulkAdd(inds: [] _value.rank*_value.idxType,
-        dataSorted=false, isUnique=false, preserveInds=true, addOn=nilLocale)
+        dataSorted=false, isUnique=false, addOn=nilLocale)
         where this.isSparse() && _value.rank>1 {
       if inds.isEmpty() then return 0;
 
-      return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
+      return _value.dsiBulkAdd(inds, dataSorted, isUnique, addOn);
+    }
+
+    @unstable("bulkAddNoPreserveInds() is subject to change in the future.")
+    proc ref bulkAddNoPreserveInds(ref inds: [] _value.rank*_value.idxType,
+        dataSorted=false, isUnique=false, addOn=nilLocale)
+        where this.isSparse() && _value.rank>1 {
+      if inds.isEmpty() then return 0;
+
+      return _value.dsiBulkAddNoPreserveInds(inds, dataSorted, isUnique, addOn);
     }
 
     pragma "last resort" @chpldoc.nodoc
     proc bulkAdd(args...) {
       compilerError("incompatible argument(s) or this domain type does not support 'bulkAdd'");
+    }
+
+    pragma "last resort" @chpldoc.nodoc
+    proc bulkAddNoPreserveInds(args...) {
+      compilerError("incompatible argument(s) or this domain type does not support 'bulkAddNoPreserveInds'");
     }
 
     /* Remove index ``idx`` from this domain */
@@ -2216,7 +2241,7 @@ module ChapelDomain {
     }
 
     @chpldoc.nodoc
-    proc contains(idx: rank*_value.idxType) {
+    proc contains(const idx: rank*_value.idxType) {
       if this.isRectangular() || this.isSparse() then
         return _value.dsiMember(_makeIndexTuple(rank, idx, "index"));
       else
@@ -2227,7 +2252,7 @@ module ChapelDomain {
        For sparse domains, only indices with a value are considered
        to be contained in the domain.
      */
-    inline proc contains(idx: _value.idxType ...rank) {
+    inline proc contains(const idx: _value.idxType ...rank) {
       return contains(idx);
     }
 
@@ -2713,6 +2738,7 @@ module ChapelDomain {
 
     /* Return true if the local subdomain can be represented as a single
        domain. Otherwise return false. */
+    @unstable("'hasSingleLocalSubdomain' on domains is unstable and may change in the future")
     proc hasSingleLocalSubdomain() param {
       return _value.dsiHasSingleLocalSubdomain();
     }
@@ -2726,7 +2752,7 @@ module ChapelDomain {
     */
     proc localSubdomain(loc: locale = here) {
       if !_value.dsiHasSingleLocalSubdomain() then
-        compilerError("Domain's local domain is not a single domain");
+        compilerError("the domain may have multiple local subdomains");
 
       return _value.dsiLocalSubdomain(loc);
     }
@@ -2738,6 +2764,7 @@ module ChapelDomain {
                  place (defaults to `here`)
        :type loc: locale
     */
+    @unstable("'localSubdomains' on domains is unstable and may change in the future")
     iter localSubdomains(loc: locale = here) {
       if _value.dsiHasSingleLocalSubdomain() {
         yield localSubdomain(loc);
@@ -2754,6 +2781,51 @@ module ChapelDomain {
     @chpldoc.nodoc
     proc iteratorYieldsLocalElements() param {
       return _value.dsiIteratorYieldsLocalElements();
+    }
+
+    /* Cast a rectangular domain to a new rectangular domain type.
+       Throw an IllegalArgumentError when the original bounds and/or stride(s)
+       do not fit in the new idxType or when the original stride(s)
+       are not legal for the new `strides` parameter.
+     */
+    proc tryCast(type t: domain)
+      where chpl__isRectangularDomType(t) && this.isRectangular()
+        &&  this.chpl_domainTryCastIsSafe(t)
+    do
+      return try! this.chpl_domainTryCastHelper(t);
+
+    // This overload catches unsupported cases.
+    @chpldoc.nodoc
+    proc tryCast(type t: domain) throws
+    do
+      if ! chpl__isRectangularDomType(t) || ! this.isRectangular() then
+        compilerError("tryCast() from ", this.type:string, " to ",
+                      t:string, " is not available");
+      else
+        return this.chpl_domainTryCastHelper(t);
+
+    // identical to chpl_domainCastHelper except uses tryCast instead of ':'
+    inline proc chpl_domainTryCastHelper(type t:_domain) throws {
+      var tmpD: t;
+      const ref d = this;
+      if tmpD.rank != d.rank then
+        compilerError("rank mismatch in tryCast()");
+      else {
+        var inds = d.getIndices();
+        var newInds: tmpD.getIndices().type;
+        for param i in 0..tmpD.rank-1 {
+          newInds(i) = inds(i).tryCast( newInds(i).type );
+        }
+        tmpD.setIndices(newInds);
+        return tmpD;
+      }
+    }
+
+    proc chpl_domainTryCastIsSafe(type t: domain) param {
+      var dst: t;
+      // this is implemented only for rectangular domains
+      compilerAssert(this.isRectangular() && dst.isRectangular());
+      return chpl_tryCastIsSafe(this.dim(0), dst.dim(0).type);
     }
 
     /* Cast a rectangular domain to a new rectangular domain type.

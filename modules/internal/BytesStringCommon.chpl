@@ -87,13 +87,13 @@ module BytesStringCommon {
 
   // 2019/8/22 Engin: This proc needs to be inlined to avoid an Intel compiler
   // issue (#448 chapel-private)
-  inline proc getCStr(const ref x: ?t): c_string {
+  inline proc getCStr(const ref x: ?t): c_ptrConst(c_char) {
     assertArgType(t, "getCStr");
     if !compiledForSingleLocale() && x.locale_id != chpl_nodeID then
-      halt("Cannot call .c_str() on a remote " + t:string);
+      halt("Cannot call '.c_str()' on a remote " + t:string);
 
     var buff: bufferType = x.buff;
-    var asCString = __primitive("cast", c_string, buff);
+    var asCString = __primitive("cast", c_ptrConst(c_char), buff);
     return asCString;
   }
 
@@ -235,19 +235,19 @@ module BytesStringCommon {
     pragma "fn synchronization free"
     extern proc qio_decode_char_buf(ref chr:int(32),
                                     ref nBytes:c_int,
-                                    buf:c_string,
+                                    buf:c_ptr(c_uchar),
                                     buflen:c_ssize_t): errorCode;
     pragma "fn synchronization free"
     extern proc qio_decode_char_buf_esc(ref chr:int(32),
                                         ref nBytes:c_int,
-                                        buf:c_string,
+                                        buf:c_ptr(c_uchar),
                                         buffLen:c_ssize_t): errorCode;
     // esc chooses between qio_decode_char_buf_esc and
     // qio_decode_char_buf as a single wrapper function
     var chr: int(32);
     var nBytes: c_int;
     var start = offset:c_int;
-    var multibytes = (buff + start): c_string;
+    var multibytes = (buff + start): c_ptr(c_uchar);
     var maxbytes = (buffLen - start): c_ssize_t;
     var decodeRet: errorCode;
     if(allowEsc) then

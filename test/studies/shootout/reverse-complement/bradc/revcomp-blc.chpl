@@ -25,8 +25,8 @@ param eol = '\n'.toByte(),  // end-of-line, as an integer
 var pairCmpl: [0..<join(maxChars, maxChars)] uint(16);
 
 // channels for doing efficient console I/O
-var stdinBin = (new file(0)).reader(iokind.native, locking=false),
-    stdoutBin = (new file(1)).writer(iokind.native, locking=false);
+var stdinBin = (new file(0)).reader(deserializer=new BinaryDeserializer(), locking=false),
+    stdoutBin = (new file(1)).writer(serializer=new BinarySerializer(), locking=false);
 
 proc main(args: [] string) {
   // set up the 'pairCmpl' map
@@ -75,7 +75,7 @@ proc main(args: [] string) {
   if readPos then revcomp(buff, readPos);
 }
 
-proc revcomp(seq, size) {
+proc revcomp(ref seq, size) {
   param chunkSize = linesPerChunk * cols; // the size of the chunks to deal out
 
   // compute how big the header is
@@ -141,7 +141,7 @@ proc revcomp(seq, size) {
   }
 }
 
-proc revcomp(in dstFront, in charAfter, spanLen, buff, seq) {
+proc revcomp(in dstFront, in charAfter, spanLen, ref buff, ref seq) {
   if spanLen%2 {
     charAfter -= 1;
     buff[dstFront] = cmpl[seq[charAfter]];

@@ -43,11 +43,11 @@ proc setupDistributions(param DT : DistType) {
   }
   if DT == DistType.cyclic {
     return (
-            new dmap(new Cyclic(startIdx=0)),
-            new dmap(new Cyclic(startIdx=(0,0))),
-            new dmap(new Cyclic(startIdx=(0,0,0))),
-            new dmap(new Cyclic(startIdx=(0,0,0,0))),
-            new dmap(new Cyclic(startIdx=(0:int(32), 0:int(32))))
+            new Cyclic(startIdx=0),
+            new Cyclic(startIdx=(0,0)),
+            new Cyclic(startIdx=(0,0,0)),
+            new Cyclic(startIdx=(0,0,0,0)),
+            new Cyclic(startIdx=(0:int(32), 0:int(32)))
            );
   }
   if DT == DistType.blockcyclic {
@@ -61,11 +61,11 @@ proc setupDistributions(param DT : DistType) {
   }
   if DT == DistType.replicated {
     return (
-            new dmap(new Replicated()),
-            new dmap(new Replicated()),
-            new dmap(new Replicated()),
-            new dmap(new Replicated()),
-            new dmap(new Replicated())
+            new Replicated(),
+            new Replicated(),
+            new Replicated(),
+            new Replicated(),
+            new Replicated()
            );
   }
   if DT == DistType.stencil {

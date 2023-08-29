@@ -347,16 +347,16 @@ module CTypes {
 
     /* Print the elements */
     proc writeThis(ch) throws {
-      ch.readWriteLiteral("[");
+      ch.writeLiteral("[");
       var first = true;
       for i in 0..#size {
 
         ch.write(this(i));
 
         if i != size-1 then
-          ch.readWriteLiteral(", ");
+          ch.writeLiteral(", ");
       }
-      ch.readWriteLiteral("]");
+      ch.writeLiteral("]");
     }
 
     proc const serialize(writer, ref serializer) throws {
@@ -462,10 +462,10 @@ module CTypes {
         // if from and to are both pointer types themselves, recurse into their
         // respective pointee types (strip a layer of indirection)
         return pointeeCastStrictAliasingAllowed(from.eltType, to.eltType);
-      } else if (from == c_string) {
+      } else if (from == chpl_c_string) {
         // a c_string can be interpreted as a pointer to c_char for this purpose
         return pointeeCastStrictAliasingAllowed(c_char, to.eltType);
-      } else if (to == c_string) {
+      } else if (to == chpl_c_string) {
         return pointeeCastStrictAliasingAllowed(from.eltType, c_char);
       }
     }
@@ -548,22 +548,50 @@ module CTypes {
   @chpldoc.nodoc
   inline operator :(const ref x:c_array, type t:c_ptrConst(?e))
       where x.eltType == e {
-    return c_ptrTo(x[0]):c_ptrConst(e);
+    return c_ptrToConst(x[0]);
   }
   @chpldoc.nodoc
   inline operator :(ref x:c_array, type t:c_ptr(void)) {
     return c_ptrTo(x[0]):c_ptr(void);
   }
   @chpldoc.nodoc
+  inline operator :(x:c_ptr, type t:c_ptr(void)) {
+    return __primitive("cast", t, x);
+  }
+  @chpldoc.nodoc
+  inline operator :(x:c_ptr, type t:c_ptrConst(void)) {
+    return __primitive("cast", t, x);
+  }
+  @chpldoc.nodoc
+  inline operator :(x:c_ptrConst, type t:c_ptr(void)) {
+    return __primitive("cast", t, x);
+  }
+  @chpldoc.nodoc
+  inline operator :(x:c_ptrConst, type t:c_ptrConst(void)) {
+    return __primitive("cast", t, x);
+  }
+  @chpldoc.nodoc
+  inline operator :(x:c_ptr(void), type t:c_ptr) {
+    return __primitive("cast", t, x);
+  }
+  @chpldoc.nodoc
+  inline operator :(x:c_ptr(void), type t:c_ptrConst) {
+    return __primitive("cast", t, x);
+  }
+  @chpldoc.nodoc
+  inline operator :(x:c_ptrConst(void), type t:c_ptrConst) {
+    return __primitive("cast", t, x);
+  }
+  @chpldoc.nodoc
   inline operator c_ptr.:(x:c_ptr, type t:string) {
     try! {
-      return string.createAdoptingBuffer(__primitive("ref to string", x));
+      return string.createAdoptingBuffer(__primitive("ref to string", x):c_ptrConst(c_char));
     }
   }
   @chpldoc.nodoc
   inline operator c_ptrConst.:(x:c_ptrConst, type t:string) {
     try! {
-      return string.createAdoptingBuffer(__primitive("ref to string", x));
+      return string.createAdoptingBuffer(__primitive("ref to string", x):c_ptrConst(c_char));
     }
   }
   pragma "last resort"
@@ -588,10 +616,12 @@ module CTypes {
   }
 
   @chpldoc.nodoc
+  @deprecated(notes="Casting from class types directly to c_ptr(void) is deprecated. Please use c_ptrTo/c_ptrToConst (with '-s cPtrToLogicalValue=true') instead.")
   inline operator :(x:borrowed, type t:c_ptr(void)) {
     return __primitive("cast", t, x);
   }
   @chpldoc.nodoc
+  @deprecated(notes="Casting from class types directly to c_ptr(void) is deprecated. Please use c_ptrTo/c_ptrToConst (with '-s cPtrToLogicalValue=true') instead.")
   inline operator :(x:unmanaged, type t:c_ptr(void)) {
     return __primitive("cast", t, x);
   }
@@ -768,7 +798,7 @@ module CTypes {
     :arg arr: the array for which a pointer should be returned
     :returns: a pointer to the array's elements
   */
-  inline proc c_ptrTo(arr: []): c_ptr(arr.eltType) {
+  inline proc c_ptrTo(ref arr: []): c_ptr(arr.eltType) {
     if (!arr.isRectangular() || !arr.domain.distribution._value.dsiIsLayout()) then
       compilerError("Only single-locale rectangular arrays support c_ptrTo() at present");
 
@@ -872,6 +902,85 @@ module CTypes {
     return c_addrOfConst(s);
   }
 
+  /****************************************************************************
+    Temporary helper functions while deprecating c_ptr(string) etc
+  *****************************************************************************/
+  @chpldoc.nodoc
+  inline proc c_ptrTo_helper(ref s: string): c_ptr(c_uchar)
+  {
+    if _local == false && s.locale_id != chpl_nodeID then
+      halt("Cannot call c_ptrTo() on a remote string");
+    if boundsChecking {
+      if (s.buffLen == 0) {
+        return nil;
+      }
+    }
+    return c_pointer_return(s.buff[0]);
+  }
+
+  @chpldoc.nodoc
+  inline proc c_ptrToConst_helper(const ref s: string): c_ptrConst(c_uchar)
+  {
+    if _local == false && s.locale_id != chpl_nodeID then
+      halt("Cannot call c_ptrToConst() on a remote string");
+    if boundsChecking {
+      if (s.buffLen == 0) {
+        return nil;
+      }
+    }
+    return c_pointer_return_const(s.buff[0]);
+  }
+
+  @chpldoc.nodoc
+  inline proc c_ptrToConst_helper(const ref b: bytes): c_ptrConst(c_uchar)
+  {
+    if _local == false && b.locale_id != chpl_nodeID then
+      halt("Cannot call c_ptrToConst() on a remote bytes");
+    if boundsChecking {
+      if (b.buffLen == 0) {
+        return nil;
+      }
+    }
+    return c_pointer_return_const(b.buff[0]);
+  }
+
+  @chpldoc.nodoc
+  inline proc c_ptrTo_helper(ref b: bytes): c_ptr(c_uchar)
+  {
+    if _local == false && b.locale_id != chpl_nodeID then
+      halt("Cannot call c_ptrTo() on a remote bytes");
+    if boundsChecking {
+      if (b.buffLen == 0) {
+        return nil;
+      }
+    }
+    return c_pointer_return(b.buff[0]);
+  }
+
+  @chpldoc.nodoc
+  inline proc c_ptrTo_helper(c: class): c_ptr(void)
+  {
+    return __primitive("cast", c_ptr(void), c.borrow());
+  }
+  @chpldoc.nodoc
+  inline proc c_ptrTo_helper(c: class?): c_ptr(void)
+  {
+    return __primitive("cast", c_ptr(void), c.borrow());
+  }
+  @chpldoc.nodoc
+  inline proc c_ptrToConst_helper(const c: class): c_ptr(void)
+  {
+    return __primitive("cast", c_ptr(void), c.borrow());
+  }
+  @chpldoc.nodoc
+  inline proc c_ptrToConst_helper(const c: class?): c_ptr(void)
+  {
+    return __primitive("cast", c_ptr(void), c.borrow());
+  }
+  /****************************************************************************
+    End of temporary helper functions while deprecating c_ptr(string) etc
+  *****************************************************************************/
+
   /*
     Returns a :type:`c_ptr` to the underlying buffer of a :type:`~Bytes.bytes`
 
@@ -926,15 +1035,15 @@ module CTypes {
     lifetime of the instance.  The returned pointer will be invalid if the
     instance is freed or even reallocated.
   */
-  inline proc c_ptrTo(ref c: class): c_ptr(void)
+  inline proc c_ptrTo(c: class): c_ptr(void)
     where cPtrToLogicalValue == true
   {
-    return c : c_ptr(void);
+    return __primitive("cast", c_ptr(void), c.borrow());
   }
-  inline proc c_ptrTo(ref c: class?): c_ptr(void)
+  inline proc c_ptrTo(c: class?): c_ptr(void)
     where cPtrToLogicalValue == true
   {
-    return c : c_ptr(void);
+    return __primitive("cast", c_ptr(void), c.borrow());
   }
 
   @deprecated(notes="The c_ptrTo(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOf' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
@@ -953,15 +1062,15 @@ module CTypes {
   /*
    Like :proc:`c_ptrTo` for class types, but also accepts ``const`` data.
    */
-  inline proc c_ptrToConst(const ref c: class): c_ptr(void)
+  inline proc c_ptrToConst(const c: class): c_ptr(void)
     where cPtrToLogicalValue == true
   {
-    return c : c_ptr(void);
+    return __primitive("cast", c_ptr(void), c.borrow());
   }
-  inline proc c_ptrToConst(const ref c: class?): c_ptr(void)
+  inline proc c_ptrToConst(const c: class?): c_ptr(void)
     where cPtrToLogicalValue == true
   {
-    return c : c_ptr(void);
+    return __primitive("cast", c_ptr(void), c.borrow());
   }
 
   @deprecated(notes="The c_ptrToConst(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
@@ -1017,7 +1126,7 @@ module CTypes {
     Note that the existence of this :type:`c_ptr` has no impact on the lifetime
     of the array. The returned pointer will be invalid if the array is freed.
   */
-  inline proc c_addrOf(arr: []) {
+  inline proc c_addrOf(ref arr: []) {
     if (!arr.isRectangular() || !arr.domain.distribution._value.dsiIsLayout()) then
       compilerError("Only single-locale rectangular arrays support c_addrOf() at present");
 
@@ -1034,7 +1143,7 @@ module CTypes {
    Like :proc:`c_addrOf` for arrays, but returns a :type:`c_ptrConst` which
    disallows direct modification of the pointee.
   */
-  inline proc c_addrOfConst(arr: []) {
+  inline proc c_addrOfConst(const arr: []) {
     if (!arr.isRectangular() || !arr.domain.distribution._value.dsiIsLayout()) then
       compilerError("Only single-locale rectangular arrays support c_addrOfConst() at present");
 
@@ -1385,5 +1494,32 @@ module CTypes {
     extern proc memset(s: c_ptr(void), c: c_int, n: c_size_t) : c_ptr(void);
     memset(s, c.safeCast(c_int), n.safeCast(c_size_t));
     return s;
+  }
+
+
+  /*
+    Get the number of bytes in a c_ptr(int(8)) or c_ptr(uint(8)), excluding the
+    terminating null.
+
+    :arg x: c_ptr(int(8)) or c_ptr(uint(8)) to get length of
+
+    :returns: the number of bytes in x, excluding the terminating null
+   */
+  @unstable("the strLen function is unstable and may change or go away in a future release")
+  inline proc strLen(x:c_ptr(?t)) : int {
+     return __primitive("string_length_bytes", x).safeCast(int);
+  }
+
+  /*
+    Get the number of bytes in a c_ptrConst(int(8)) or c_ptrConst(uint(8)), excluding the
+    terminating null.
+
+    :arg x: c_ptrConst(int(8)) or c_ptrConst(uint(8)) to get length of
+
+    :returns: the number of bytes in x, excluding the terminating null
+   */
+  @unstable("the strLen function is unstable and may change or go away in a future release")
+  inline proc strLen(x:c_ptrConst(?t)): int {
+     return __primitive("string_length_bytes", x).safeCast(int);
   }
 }

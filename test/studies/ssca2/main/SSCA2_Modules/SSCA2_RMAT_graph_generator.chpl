@@ -52,7 +52,7 @@ record directed_vertex_pair {
 // Quadrant selection algorithm
 // ============================
 
-inline proc directed_vertex_pair.assign_quadrant
+inline proc ref directed_vertex_pair.assign_quadrant
   (u: real, a: real, b: real, c: real, d: real, bit: int)
   {
     // ---------------------------------------------------------------------
@@ -215,7 +215,7 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
     rndPos += n_raw_edges;
 
     if parEG {
-      var permutation$ : [vertex_domain] sync int = vertex_range;
+      var permutationSync : [vertex_domain] sync int = vertex_range;
 
       serial(SERIAL_GRAPH_GEN) {
         forall (v, rnd) in zip(vertex_domain,
@@ -223,27 +223,27 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
         {
           const u = floor (1 + rnd * N_VERTICES) : int;
           if u != v {
-            // All this does is permutation$(u) <=> permutation$(v).
+            // All this does is permutationSync(u) <=> permutationSync(v).
             // Implementation notes:
             // * Lock the smaller index first, to ensure progress.
             // * Access each of the two sync vars on its locale.
             // * Factors out the 'on's that are implicit in
             //   the accesses to the sync variables into explicit 'on's.
-            // * Factors out indexing into permutation$ using
+            // * Factors out indexing into permutationSync using
             //   by-reference argument passing.
 
             const (ix1, ix2) = if v <= u then (v, u) else (u, v);
-            swapTwo(permutation$(ix1), permutation$(ix2));
+            swapTwo(permutationSync(ix1), permutationSync(ix2));
 
-            proc swapTwo(p1$: sync int, p2$: sync int): void {
-              on p1$ {
-                const label1 = p1$.readFE();
+            proc swapTwo(p1: sync int, p2: sync int): void {
+              on p1 {
+                const label1 = p1.readFE();
                 var label2: int;
-                on p2$ {
-                  label2 = p2$.readFE();
-                  p2$.writeEF(label1);
+                on p2 {
+                  label2 = p2.readFE();
+                  p2.writeEF(label1);
                 }
-                p1$.writeEF(label2);
+                p1.writeEF(label2);
               }
             }  // proc swapTwo
           }
@@ -251,8 +251,8 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
       }
       rndPos += N_VERTICES;
 
-      forall (pm, pm$) in zip(permutation, permutation$) {
-        pm = pm$.readXX();
+      forall (pm, pmSync) in zip(permutation, permutationSync) {
+        pm = pmSync.readXX();
       }
 
     } else {  // !parEG
@@ -414,7 +414,7 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
     // wins) or also use += instead of = (to sum duplicates' weights).
     // ----------------------------------------------------------
 
-    var firstAvailNeighbor$: [vertex_domain] sync int = initialFirstAvail;
+    var firstAvailNeighbor: [vertex_domain] sync int = initialFirstAvail;
 
     writeln("Starting Graph Generation ",
             if parGC then "in parallel" else "serially");
@@ -438,7 +438,7 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
           // TODO: possibly compute how many neighbors the vertex has, first.
           // Then allocate that big of a neighbor list right away.
           // That way there will be no need for a sync, just an atomic.
-          G.Row[u].addEdgeOnVertex(u, v, w, firstAvailNeighbor$[u]);
+          G.Row[u].addEdgeOnVertex(u, v, w, firstAvailNeighbor[u]);
         }
       }
     }
@@ -458,14 +458,14 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
         const w = Edge_Weight(e);
         // Both the vertex and firstAvail must be passed by reference.
         // TODO: skip locking in this serial version.
-        G.Row[u].addEdgeOnVertex(u, v, w, firstAvailNeighbor$[u]);
+        G.Row[u].addEdgeOnVertex(u, v, w, firstAvailNeighbor[u]);
       }
     }
 
   } // if parGC
 
-    forall (vx, firstAvail$) in zip(G.Row, firstAvailNeighbor$) do
-      vx.tidyNeighbors(firstAvail$);
+    forall (vx, firstAvail) in zip(G.Row, firstAvailNeighbor) do
+      vx.tidyNeighbors(firstAvail);
 
     if PRINT_TIMING_STATISTICS then {
       sw.stop ();

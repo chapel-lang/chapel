@@ -1,4 +1,4 @@
-var n: single int;
+var n: sync int;
 serial {
   on Locales(1) {
     n.writeEF(here.id);

@@ -6,7 +6,7 @@ use Time, Random;
 // radix and nbits toggles how many keys are generated and processed per pass.
 
 // assert indices for Values starts at 0
-proc radix_sort(Values, Permute, radix:int(64), nbits:int(64)): void {
+proc radix_sort(Values, ref Permute, radix:int(64), nbits:int(64)): void {
 
     var nelem:int(64) = Values.size;
     var nbuckets:int(64) = 1 << radix;   // Number of keys in counting sort
@@ -24,7 +24,7 @@ proc radix_sort(Values, Permute, radix:int(64), nbits:int(64)): void {
 
     for pass in (0..(npasses-1)) {
       var Index: [D1] int(64);           // Index
-      var Offsets: [D2] atomic int(64);    // Starting offset of 
+      var Offsets: [D2] atomic int(64);    // Starting offset of
                                          // histogrammed values
       var Offsets_old: [D2] int(64);     // Old offsets
       var Histogram: [D2] atomic int(64);  // Histogram for counting sort

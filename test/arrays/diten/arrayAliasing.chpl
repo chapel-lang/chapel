@@ -64,7 +64,7 @@ proc main {
   }
 }
 
-proc reset(A: [] int) {
+proc reset(ref A: [] int) {
   [i in A.domain] A(i) = i;
 }
 

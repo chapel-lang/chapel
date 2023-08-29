@@ -18,7 +18,7 @@ proc remoteTestBasic(b, numRemoteTasks) {
   { // block keeps above variables alive
     resetCommDiagnostics();
     startCommDiagnostics();
-    coforall t in barSpace do on A.domain.distribution.idxToLocale(t) {
+    coforall t in barSpace with (ref B) do on A.domain.distribution.idxToLocale(t) {
       B[t] = A[t];
       b.barrier();
     }
@@ -35,7 +35,7 @@ proc remoteTestSplitPhase(b: barrier, numRemoteTasks) {
   { // block keeps above variables alive
     resetCommDiagnostics();
     startCommDiagnostics();
-    coforall t in barSpace do on A.domain.distribution.idxToLocale(t) {
+    coforall t in barSpace with (ref B) do on A.domain.distribution.idxToLocale(t) {
       B[t] = A[t];
       b.notify();
       b.wait();

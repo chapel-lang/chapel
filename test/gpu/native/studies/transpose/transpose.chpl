@@ -28,16 +28,16 @@ config param blockSize = 16;
 config param blockPadding = 1;
 config type dataType = real(32);
 
-inline proc transposeNaive(original, output) {
+inline proc transposeNaive(original, ref output) {
+  @assertOnGpu
   foreach (x,y) in original.domain {
-    assertOnGpu();
     output[y,x] = original[x,y];
   }
 }
 
-inline proc transposeClever(original, output) {
+inline proc transposeClever(original, ref output) {
+  @assertOnGpu
   foreach 0..<original.size {
-    assertOnGpu();
     setBlockSize(blockSize * blockSize);
     param paddedBlockSize = blockSize + blockPadding;
     var smArrPtr = createSharedArray(dataType, paddedBlockSize*blockSize);
@@ -108,12 +108,12 @@ export proc transposeMatrix(odata: c_ptr(dataType), idata: c_ptr(dataType), widt
   }
 }
 
-inline proc transposeLowLevel(original, output) {
+inline proc transposeLowLevel(original, ref output) {
   __primitive("gpu kernel launch",
-          c"transposeMatrix",
+          "transposeMatrix":chpl_c_string,
           /* grid size */  sizeX / blockSize, sizeY / blockSize, 1,
           /* block size */ blockSize, blockSize, 1,
-          /* kernel args */ c_ptrTo(output), c_ptrTo(original), sizeX, sizeY);
+          /* kernel args */ c_ptrTo(output), c_ptrToConst(original), sizeX, sizeY);
 }
 
 var originalHost: [0..#sizeX, 0..#sizeY] dataType;

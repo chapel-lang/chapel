@@ -1,0 +1,3 @@
+user-hash-no-implements.chpl:15: warning: 'R' has a hash function that is being used by the standard library. However, 'R' does not implement hashable. In the future, this will result in an error.
+user-hash-no-implements.chpl:15: warning: to make 'R' implement hashable, add the interface to its declaration: 'record R : hashable'
+in hash

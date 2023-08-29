@@ -20,7 +20,7 @@ writeln("\nsigned:");
 writeBytesArray(a_signed, num_b_s);
 
 // helper to recreate original text from bytes arrays
-proc writeBytesArray(a: [], nb: int) {
+proc writeBytesArray(ref a: [], nb: int) {
     const s = string.createBorrowingBuffer(c_ptrTo(a), length=nb, size=a.size);
     writeln(s);
 }

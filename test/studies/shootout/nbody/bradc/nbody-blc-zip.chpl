@@ -15,7 +15,7 @@ record body {
   var v: 3*real;
   var mass: real;
 
-  proc offsetMomentum(p) {
+  proc ref offsetMomentum(p) {
     v = -p / solarMass;
   }
 }
@@ -65,14 +65,14 @@ record NBodySystem {
   var bodies = [sun, jupiter, saturn, uranus, neptune];
   const numbodies = bodies.size;
 
-  proc postinit() {
+  proc ref postinit() {
     var p: 3*real;
     for b in bodies do
       p += b.v * b.mass;
     bodies[0].offsetMomentum(p);
   }
 
-  proc advance(dt) {
+  proc ref advance(dt) {
     for (b1, i) in zip(bodies, bodies.domain.low..) {
       for j in i+1..<numbodies {
         var b2 = bodies[j];  // TODO: add ref support (?)

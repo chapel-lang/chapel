@@ -5,7 +5,7 @@ operator Foo.+(lhs: Foo, rhs: Foo) {
   return new Foo(lhs.x + rhs.x);
 }
 
-proc Foo.someMethod(scalarAdd: int) {
+proc ref Foo.someMethod(scalarAdd: int) {
   x = x + scalarAdd;
 }
 

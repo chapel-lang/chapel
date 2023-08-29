@@ -461,10 +461,6 @@ long __MPN(count_leading_zeros) (UDItype);
       __asm__ ("rsbs\t%1, %5, %4\n\tsbc\t%0, %2, %3"			\
 	       : "=r" (sh), "=&r" (sl)					\
 	       : "r" (ah), "rI" (bh), "rI" (al), "r" (bl) __CLOBBER_CC); \
-    else if (__builtin_constant_p (bl))					\
-      __asm__ ("subs\t%1, %4, %5\n\tsbc\t%0, %2, %3"			\
-	       : "=r" (sh), "=&r" (sl)					\
-	       : "r" (ah), "rI" (bh), "r" (al), "rI" (bl) __CLOBBER_CC); \
     else								\
       __asm__ ("subs\t%1, %4, %5\n\tsbc\t%0, %2, %3"			\
 	       : "=r" (sh), "=&r" (sl)					\
@@ -500,10 +496,6 @@ long __MPN(count_leading_zeros) (UDItype);
 		   : "=r" (sh), "=&r" (sl)				\
 		   : "rI" (ah), "r" (bh), "rI" (al), "r" (bl) __CLOBBER_CC); \
       }									\
-    else if (__builtin_constant_p (bl))					\
-      __asm__ ("subs\t%1, %4, %5\n\tsbc\t%0, %2, %3"			\
-	       : "=r" (sh), "=&r" (sl)					\
-	       : "r" (ah), "rI" (bh), "r" (al), "rI" (bl) __CLOBBER_CC); \
     else								\
       __asm__ ("subs\t%1, %4, %5\n\tsbc\t%0, %2, %3"			\
 	       : "=r" (sh), "=&r" (sl)					\
@@ -868,6 +860,7 @@ extern UWtype __MPN(udiv_qrnnd) (UWtype *, UWtype, UWtype, UWtype);
 	     : "0" ((UDItype)(ah)), "r" ((UDItype)(bh)),		\
 	       "1" ((UDItype)(al)), "r" ((UDItype)(bl)) __CLOBBER_CC);	\
   } while (0)
+#if !defined (__clang__)
 #define umul_ppmm(xh, xl, m0, m1)					\
   do {									\
     union {unsigned int __attribute__ ((mode(TI))) __ll;		\
@@ -889,6 +882,7 @@ extern UWtype __MPN(udiv_qrnnd) (UWtype *, UWtype, UWtype, UWtype);
 	     : "0" (__x.__ll), "r" ((UDItype)(d)));			\
     (q) = __x.__i.__l; (r) = __x.__i.__h;				\
   } while (0)
+#endif
 #if 0 /* FIXME: Enable for z10 (?) */
 #define count_leading_zeros(cnt, x)					\
   do {									\
@@ -1162,6 +1156,17 @@ extern UWtype __MPN(udiv_qrnnd) (UWtype *, UWtype, UWtype, UWtype);
 #endif /* i960mx */
 #endif /* i960 */
 
+
+#if defined (__loongarch64) && W_TYPE_SIZE == 64
+#define umul_ppmm(w1, w0, u, v) \
+  do {									\
+    UDItype __u = (u), __v = (v);					\
+    (w0) = __u * __v;							\
+    (w1) = (unsigned __int128__) __u * __v >> 64;			\
+  } while (0)
+#endif
+
+
 #if (defined (__mc68000__) || defined (__mc68020__) || defined(mc68020) \
      || defined (__m68k__) || defined (__mc5200__) || defined (__mc5206e__) \
      || defined (__mc5307__)) && W_TYPE_SIZE == 32
@@ -1219,7 +1224,7 @@ extern UWtype __MPN(udiv_qrnnd) (UWtype *, UWtype, UWtype, UWtype);
 "	addx%.l	%2,%0\n"						\
 "	| End inlined umul_ppmm"					\
 	      : "=&d" (xh), "=&d" (xl),					\
-		"=d" (__umul_tmp1), "=&d" (__umul_tmp2)			\
+		"=&d" (__umul_tmp1), "=&d" (__umul_tmp2)			\
 	      : "%2" ((USItype)(a)), "d" ((USItype)(b)));		\
   } while (0)
 #endif /* not mc68020 */
@@ -1658,12 +1663,12 @@ extern UWtype __MPN(udiv_qrnnd) (UWtype *, UWtype, UWtype, UWtype);
   } while (0)
 #endif /* RT/ROMP */
 
-#if defined (__riscv64) && W_TYPE_SIZE == 64
+#if defined (__riscv) && defined (__riscv_mul) && W_TYPE_SIZE == 64
 #define umul_ppmm(ph, pl, u, v) \
   do {									\
     UDItype __u = (u), __v = (v);					\
     (pl) = __u * __v;							\
-    __asm__ ("mulhu\t%2, %1, %0" : "=r" (ph) : "%r" (__u), "r" (__v));	\
+    __asm__ ("mulhu\t%0, %1, %2" : "=r" (ph) : "%r" (__u), "r" (__v));	\
   } while (0)
 #endif
 

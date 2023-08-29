@@ -42,7 +42,7 @@ proc main() {
 
   writeln("Calling sync begin do_array() with global:");
   m1 = memoryUsed();
-  serial do sync begin do_array(A);
+  serial do sync begin with (ref A) do_array(A);
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
   if printMemStats then printMemAllocs();
@@ -52,7 +52,7 @@ proc main() {
   serial do sync {
     const D = {1..n};
     var A: [D] int;
-    begin do_array(A);
+    begin with (ref A) do_array(A);
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
@@ -137,7 +137,7 @@ proc do_local_array() {
   var A_reindex = A.reindex(4..n+3); // create new descriptor, ref count
 }
 
-proc do_array(A:[]) {
+proc do_array(ref A:[]) {
   if printProgress then writeln("Creating A_copy");
   var A_copy = A;                      // create nw array, ref count
 

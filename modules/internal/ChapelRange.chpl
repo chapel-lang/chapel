@@ -1355,7 +1355,25 @@ module ChapelRange {
      the range has no first index, the behavior is undefined.  See
      also :proc:`range.hasFirst`. */
   inline proc range.first {
+    warnUnstableFirst(this);
     return chpl_intToIdx(this.firstAsInt);
+  }
+
+  private inline proc warnUnstableFirst(r) {
+    if !chpl_warnUnstable || !isFiniteIdxType(r.idxType) then
+      return; // nothing to do
+    if !r.hasLowBound() {
+      if r.strides.isPositive() then
+        compilerWarning("range.first is unstable for a range over an enum or bool if it has a positive stride and no low bound");
+      else if r.hasPositiveStride() then
+        warning("range.first is unstable for a range over an enum or bool if it has a positive stride and no low bound");
+    }
+    if !r.hasHighBound() {
+      if r.strides.isNegative() then
+        compilerWarning("range.first is unstable for a range over an enum or bool if it has a negative stride and no high bound");
+      else if r.hasNegativeStride() then
+        warning("range.first is unstable for a range over an enum or bool if it has a negative stride and no high bound");
+    }
   }
 
   @chpldoc.nodoc
@@ -1409,7 +1427,25 @@ module ChapelRange {
      :proc:`range.hasLast`.
   */
   inline proc range.last {
+    warnUnstableLast(this);
     return chpl_intToIdx(this.lastAsInt);
+  }
+
+  private inline proc warnUnstableLast(r) {
+    if !chpl_warnUnstable || !isFiniteIdxType(r.idxType) then
+      return; // nothing to do
+    if !r.hasLowBound() {
+      if r.strides.isNegative() then
+        compilerWarning("range.last is unstable for a range over an enum or bool if it has a negative stride and no low bound");
+      else if r.hasNegativeStride() then
+        warning("range.last is unstable for a range over an enum or bool if it has a negative stride and no low bound");
+    }
+    if !r.hasHighBound() {
+      if r.strides.isPositive() then
+        compilerWarning("range.last is unstable for a range over an enum or bool if it has a positive stride and no high bound");
+      else if r.hasPositiveStride() then
+        warning("range.last is unstable for a range over an enum or bool if it has a positive stride and no high bound");
+    }
   }
 
   @chpldoc.nodoc
@@ -1496,8 +1532,27 @@ module ChapelRange {
 
   @chpldoc.nodoc
   operator ==(r1: range(?), r2: range(?)) param
-    where r1.bounds != r2.bounds do
+    where r1.bounds != r2.bounds &&
+          (!isFiniteIdxType(r1.idxType) ||
+          !isFiniteIdxType(r2.idxType)) do
   return false;
+
+  @chpldoc.nodoc
+  @unstable("== between unbounded and bounded ranges is unstable and its behavior may change in the future")
+  operator ==(r1: range(?), r2: range(?)): bool
+    where r1.bounds != r2.bounds && isFiniteIdxType(r1.idxType) &&
+          isFiniteIdxType(r2.idxType)
+  {
+    const boundedr1 = if r1.bounds == boundKind.both then r1
+                       else new range(
+                          r1.idxType, boundKind.both, r1.strides,
+                          r1._low, r1._high, r1._stride, r1._alignment);
+    const boundedr2 = if r2.bounds == boundKind.both then r2
+                        else new range(
+                            r2.idxType, boundKind.both, r2.strides,
+                            r2._low, r2._high, r2._stride, r2._alignment);
+    return boundedr1 == boundedr2;
+  }
 
   @chpldoc.nodoc
   operator ==(r1: range(?), r2: range(?)): bool
@@ -1571,7 +1626,7 @@ module ChapelRange {
   {
     if r1._low != r2._low then return false;
     if r1._high != r2._high then return false;
-    // the following can be 'if none == none ...'
+    // the following can be 'if none != none ...'
         if r1._stride != r2._stride then return false;
         if r1._alignment != r2._alignment then return false;
     return true;
@@ -1592,7 +1647,7 @@ module ChapelRange {
   // Range Casts
   //
 
-// Todo: (1..4 by 2) is 1..4 or 1..3 ?  Currently it is the latter.
+// Todo: for (1..4 by 2), return 1..4 or 1..3 ?  Currently it is the latter.
 // BlockDist uses the former, see boundsBox(). The latter makes this fail:
 //   test/optimizations/bulkcomm/block/blockToBlock.chpl
 @chpldoc.nodoc proc range.boundingBox() {
@@ -1658,12 +1713,16 @@ proc range.safeCast(type t: range(?)) {
   return tmp;
 }
 
-/* Cast a range to a new range type.  The overload below throws when
-   the original bounds and/or stride do not fit in the new type or 'strides'.
-   TODO: should we allow 't' to be generic?
+/* Cast a range to a new range type. Throw an IllegalArgumentError when
+   the original bounds and/or stride do not fit in the new idxType
+   or when the original stride is not legal for the new `strides` parameter.
  */
-@chpldoc.nodoc
-operator :(r: range(?), type t: range(?)) where chpl_castIsSafe(r, t) {
+proc range.tryCast(type t: range(?)) where chpl_tryCastIsSafe(this, t) {
+  const r = this;
+  checkBounds(t, r);
+  checkEnumBoolIdx(t, r);
+
+  // todo: unify with the non-throwing overload of `operator :` ?
   // todo: also when 'r' is over fully-concrete enum, see chpl_idxCastIsSafe
   param useR = !( t.idxType == int && isBCPindex(r.idxType) );
   var result: t = if useR then r
@@ -1673,27 +1732,15 @@ operator :(r: range(?), type t: range(?)) where chpl_castIsSafe(r, t) {
 }
 
 @chpldoc.nodoc
-operator :(r: range(?), type t: range(?)) throws where !chpl_castIsSafe(r, t) {
+proc range.tryCast(type t: range(?)) throws where !chpl_tryCastIsSafe(this, t){
+  const r = this;
+  checkBounds(t, r);
+  checkEnumBoolIdx(t, r);
+
   var tmp: t;
   type srcType = r.idxType,
        dstType = t.idxType,
     dstIntType = tmp.chpl_integralIdxType;
-
-  // Generate a warning when casting between ranges and one of them is an
-  // enum type (and they're not both the same enum type); see #22406 for
-  // more information
-  if chpl_warnUnstable &&
-     ((isEnumType(srcType) || isEnumType(dstType)) && srcType != dstType) then
-    compilerWarning("Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually");
-
-  if tmp.bounds != r.bounds {
-    compilerError("cannot cast range from boundKind.",
-                  r.bounds:string, " to boundKind.", tmp.bounds:string);
-  }
-
-  if chpl_assignStrideIsUnsafe(t.strides, r.strides) then
-    compilerError("cannot cast range from strideKind.",
-                  r.strides:string, " to strideKind.", tmp.strides:string);
 
   tmp._low = if !r.hasLowBound() then r._low: dstIntType
              else chpl__idxToInt( chpl_throwingCast(dstType, r.lowBound) );
@@ -1701,17 +1748,8 @@ operator :(r: range(?), type t: range(?)) throws where !chpl_castIsSafe(r, t) {
   tmp._high = if !r.hasHighBound() then r._high: dstIntType
              else chpl__idxToInt( chpl_throwingCast(dstType, r.highBound) );
 
-  var needThrow = false;
-  select t.strides {
-    when strideKind.one      do needThrow = (r.stride != 1);
-    when strideKind.negOne   do needThrow = (r.stride != -1);
-    when strideKind.positive do needThrow = (r.stride < 0);
-    when strideKind.negative do needThrow = (r.stride > 0);
-    when strideKind.any      do; // any stride is OK
-  }
-  if needThrow then
-    throw new IllegalArgumentError("bad cast from stride " +
-      r.stride:string + " to strideKind." + t.strides:string);
+  var error = r.chpl_checkStrides(t);
+  if error != nil then throw error;
 
   if ! tmp.hasParamStrideAltvalAld() {
     tmp._stride = chpl_throwingCast(tmp.strType, r.stride);
@@ -1721,6 +1759,76 @@ operator :(r: range(?), type t: range(?)) throws where !chpl_castIsSafe(r, t) {
 
   return tmp;
 }
+
+/* Cast a range to a new range type.  The overload below throws when
+   the original bounds and/or stride do not fit in the new type or 'strides'.
+   TODO: should we allow 't' to be generic?
+ */
+@chpldoc.nodoc
+operator :(r: range(?), type t: range(?)) where chpl_castIsSafe(r, t) {
+  // note: the implementation is duplicated with the throwing overload
+  checkBounds(t, r);
+  checkEnumIdx(t, r);
+
+  var tmp: t;
+  type srcType = r.idxType,
+       dstType = t.idxType,
+    dstIntType = tmp.chpl_integralIdxType;
+
+  tmp._low  = ( if r.hasLowBound() then chpl__idxToInt(r.lowBound:dstType)
+                else r._low ): tmp.chpl_integralIdxType;
+
+  tmp._high = ( if r.hasHighBound() then chpl__idxToInt(r.highBound:dstType)
+                else r._high ): tmp.chpl_integralIdxType;
+
+  if boundsChecking then
+    if const error = r.chpl_checkStrides(t) then
+      HaltWrappers.boundsCheckHalt(error.message());
+
+  if ! tmp.hasParamStrideAltvalAld() {
+    // see github.com/chapel-lang/chapel/issues/19269#issuecomment-1683228068
+    tmp._stride = r.stride.safeCast(tmp.strType);
+
+    tmp._alignment = if isNothingValue(r._alignment) then 0
+                     else r._alignment: tmp.strType;
+  }
+
+  return tmp;
+}
+
+@chpldoc.nodoc
+operator :(r: range(?), type t: range(?)) throws where !chpl_castIsSafe(r, t) {
+  // note: the implementation is duplicated with the non-throwing overload
+  checkBounds(t, r);
+  checkEnumIdx(t, r);
+
+  var tmp: t;
+  type srcType = r.idxType,
+       dstType = t.idxType,
+    dstIntType = tmp.chpl_integralIdxType;
+
+  tmp._low  = ( if r.hasLowBound() then chpl__idxToInt(r.lowBound:dstType)
+                else r._low ): tmp.chpl_integralIdxType;
+
+  tmp._high = ( if r.hasHighBound() then chpl__idxToInt(r.highBound:dstType)
+                else r._high ): tmp.chpl_integralIdxType;
+
+  if boundsChecking then
+    if const error = r.chpl_checkStrides(t) then
+      HaltWrappers.boundsCheckHalt(error.message());
+
+  if ! tmp.hasParamStrideAltvalAld() {
+    // see github.com/chapel-lang/chapel/issues/19269#issuecomment-1683228068
+    tmp._stride = r.stride.safeCast(tmp.strType);
+
+    tmp._alignment = if isNothingValue(r._alignment) then 0
+                     else r._alignment: tmp.strType;
+  }
+
+  return tmp;
+}
+
+/////////// helpers for operator : and tryCast ///////////
 
 /* cast 'from' to 'to', throwing an error if it does not fit */
 inline proc chpl_throwingCast(type toType, from) throws {
@@ -1745,16 +1853,73 @@ inline proc chpl_throwingCast(type toType, from)
   where chpl_idxCastIsSafe(toType, from.type)
 do return from: toType;
 
-proc chpl_castIsSafe(r: range(?), type t: range(?)) param do
-  return t.bounds == r.bounds
-     &&  chpl_assignStrideIsSafe(t.strides, r.strides)
+private proc checkBounds(type toType, from) {
+  if toType.bounds != from.bounds then
+    compilerError("cannot cast range from boundKind.",
+                 from.bounds:string, " to boundKind.", toType.bounds:string);
+}
+
+private proc checkEnumBoolIdx(type toType, from) {
+  checkEnumIdx(toType, from);
+  if toType.idxType == bool && from.idxType != bool then // see #22905
+    compilerError("'tryCast' to a range type with idxType=bool is not currently supported");
+}
+
+private proc checkEnumIdx(type toType, from) {
+  type srcType = from.idxType,
+       dstType = toType.idxType;
+
+  // Generate a warning when casting between ranges and one of them is an
+  // enum type (and they're not both the same enum type); see #22406 for
+  // more information
+  if chpl_warnUnstable &&
+     ((isEnumType(srcType) || isEnumType(dstType)) && srcType != dstType) then
+    compilerWarning("Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually");
+}
+
+/* Return 'nil' if 'this.stride' fits into 'toType.strides',
+   an IllegalArgumentError otherwise. */
+proc range.chpl_checkStrides(type toType): owned IllegalArgumentError? {
+  if chpl_assignStrideIsUnsafe(toType.strides, this.strides) then
+    compilerError("cannot cast range from strideKind.", this.strides:string,
+                                     " to strideKind.", toType.strides:string);
+
+  var needThrow = false;
+  select toType.strides {
+    when strideKind.one      do needThrow = (this.stride != 1);
+    when strideKind.negOne   do needThrow = (this.stride != -1);
+    when strideKind.positive do needThrow = (this.stride < 0);
+    when strideKind.negative do needThrow = (this.stride > 0);
+    when strideKind.any      do; // any stride is OK
+  }
+
+  if needThrow then
+    return new IllegalArgumentError("bad cast from stride " +
+      this.stride:string + " to strideKind." + toType.strides:string);
+  else
+    return nil;
+}
+
+// "safe" means "does not throw"
+proc chpl_tryCastIsSafe(r: range(?), type t: range(?)) param do
+  return chpl_assignStrideIsSafe(t.strides, r.strides)
      &&  chpl_idxCastIsSafe(to=t.idxType, from=r.idxType);
+
+proc chpl_castIsSafe(r: range(?), type t: range(?)) param do
+  // unsuitable r.stride causes halt, not throw => no chpl_assignStrideIsSafe
+  return ! chpl_idxCastThrows(to=t.idxType, from=r.idxType);
 
 proc chpl_idxCastIsSafe(type to, type from) param do
   return ( !( isUint(to) && isInt(from) ) //'aUint=anInt' is unsafe yet allowed
            && assignmentIsLegal(to, from, boundKind.both) )
      ||  ( to == int && isBCPindex(from) );
      // todo: allow also to==int && 'from' is a fully-concrete enum
+
+proc chpl_idxCastThrows(type to, type from) param do
+  // Todo: fine-tune when `to :from` throws.
+  // Some enum-related casts in ChapelBase also need such refinement.
+  // This motivates the proposals in #23006.
+  return ( to != from ) && ( isEnumType(to) || isEnumType(from) );
 
 private proc isBCPindex(type t) param do
   return t == byteIndex || t == codepointIndex;
@@ -1778,7 +1943,7 @@ private proc isBCPindex(type t) param do
       if _low > _high then return false;
     }
 
-    if ! this.isAligned() || ! other.isAligned()
+    if ! this.isAligned()
       then return false;
 
     return true;
@@ -1786,17 +1951,44 @@ private proc isBCPindex(type t) param do
 
   inline proc range.chpl_boundsCheck(other: range(?e,?b,?s))
   {
-    if ! this.isAligned() || ! other.isAligned()
+    if ! this.isAligned()
       then return false;
 
-    var boundedOther = new range(
+    var boundedOther = if other.isAligned() then
+                        new range(
                           idxType, boundKind.both, other.strides,
                           if other.hasLowBound() then other._low else _low,
                           if other.hasHighBound() then other._high else _high,
-                          other._stride, other._alignment);
+                          other._stride, other._alignment)
+                      // If 'other' is not aligned, we want to create an
+                      // aligned range to pass it to contains() below, because
+                      // otherwise it will always return false. For that, we
+                      // copy alignment from 'this'.
+                      // If 'this' is unit-stride, the alignment is zero,
+                      // otherwise this.alignment potentially needs to be
+                      // normalized w.r.t. other.stride.
+                      else if this.hasPosNegUnitStride() then
+                        new range(
+                          idxType, boundKind.both, other.strides,
+                          if other.hasLowBound() then other._low else _low,
+                          if other.hasHighBound() then other._high else _high,
+                          other._stride, 0:chpl__rangeStrideType(idxType))
+                      else
+                        new range(
+                          idxType, boundKind.both, other.strides,
+                          if other.hasLowBound() then other._low else _low,
+                          if other.hasHighBound() then other._high else _high,
+                          other._stride, this._alignment, true);
+                          // Note: we don't really know why the strategy of
+                          // copying the alignment from 'this' is correct.
+                          // But we haven't been able to produce a counterexample
+                          // where it doesn't work.
+                          // If someone can prove or disprove this method that
+                          // would be useful to know.
 
     return (boundedOther.sizeAs(uint) == 0) || contains(boundedOther);
   }
+
   /* Returns ``true`` if ``other`` is contained in this range and ``false``
      otherwise. */
   @deprecated("range.boundsCheck() is deprecated, please use range.contains() instead")

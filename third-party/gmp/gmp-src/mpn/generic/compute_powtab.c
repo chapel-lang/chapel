@@ -70,8 +70,6 @@ mpn_compute_powtab_mul (powers_t *powtab, mp_ptr powtab_mem, mp_size_t un,
   mp_limb_t cy;
   long start_idx;
   int c;
-  mp_size_t shift;
-  long pi;
 
   mp_limb_t big_base = mp_bases[base].big_base;
   int chars_per_limb = mp_bases[base].chars_per_limb;
@@ -99,7 +97,7 @@ mpn_compute_powtab_mul (powers_t *powtab, mp_ptr powtab_mem, mp_size_t un,
   c = t[0] == 0;
   t += c;
   n -= c;
-  shift = c;
+  mp_size_t shift = c;
 
   SET_powers_t (pt[0], t, n, digits_in_base, base, shift);
   p = t;
@@ -141,7 +139,7 @@ mpn_compute_powtab_mul (powers_t *powtab, mp_ptr powtab_mem, mp_size_t un,
       start_idx = n_pows - 3;
     }
 
-  for (pi = start_idx; pi >= 0; pi--)
+  for (long pi = start_idx; pi >= 0; pi--)
     {
       t = powtab_mem_ptr;
       powtab_mem_ptr += 2 * n + 2;
@@ -216,10 +214,6 @@ mpn_compute_powtab_div (powers_t *powtab, mp_ptr powtab_mem, mp_size_t un,
 
   powers_t *pt = powtab;
 
-  mp_size_t n = 1;
-  mp_size_t shift = 0;
-  long pi;
-
   p = powtab_mem_ptr;
   powtab_mem_ptr += 1;
   p[0] = big_base;
@@ -227,7 +221,9 @@ mpn_compute_powtab_div (powers_t *powtab, mp_ptr powtab_mem, mp_size_t un,
   SET_powers_t (pt[0], p, 1, digits_in_base, base, 0);
   pt++;
 
-  for (pi = n_pows - 1; pi >= 0; pi--)
+  mp_size_t n = 1;
+  mp_size_t shift = 0;
+  for (long pi = n_pows - 1; pi >= 0; pi--)
     {
       t = powtab_mem_ptr;
       powtab_mem_ptr += 2 * n;
@@ -275,7 +271,7 @@ mpn_compute_powtab_div (powers_t *powtab, mp_ptr powtab_mem, mp_size_t un,
 
   /* Strip any remaining low zero limbs.  */
   pt -= n_pows + 1;
-  for (pi = n_pows; pi >= 0; pi--)
+  for (long pi = n_pows; pi >= 0; pi--)
     {
       mp_ptr t = pt[pi].p;
       mp_size_t shift = pt[pi].shift;
@@ -297,8 +293,7 @@ powtab_decide (size_t *exptab, size_t un, int base)
 {
   int chars_per_limb = mp_bases[base].chars_per_limb;
   long n_pows = 0;
-  size_t pn;
-  for (pn = (un + 1) >> 1; pn != 1; pn = (pn + 1) >> 1)
+  for (size_t pn = (un + 1) >> 1; pn != 1; pn = (pn + 1) >> 1)
     {
       exptab[n_pows] = pn * chars_per_limb;
       n_pows++;
@@ -306,13 +301,11 @@ powtab_decide (size_t *exptab, size_t un, int base)
   exptab[n_pows] = chars_per_limb;
 
 #if HAVE_mpn_compute_powtab_mul && HAVE_mpn_compute_powtab_div
-  {
   size_t pn = un - 1;
   size_t xn = (un + 1) >> 1;
   unsigned mcost = 1;
   unsigned dcost = 1;
-  long i;
-  for (i = n_pows - 2; i >= 0; i--)
+  for (long i = n_pows - 2; i >= 0; i--)
     {
       size_t pow = (pn >> (i + 1)) + 1;
 
@@ -339,7 +332,6 @@ powtab_decide (size_t *exptab, size_t un, int base)
     return n_pows;
   else
     return -n_pows;
-  }
 #elif HAVE_mpn_compute_powtab_mul
   return n_pows;
 #elif HAVE_mpn_compute_powtab_div

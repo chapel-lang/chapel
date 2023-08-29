@@ -4,8 +4,8 @@ config const verbose=false;
 proc doit(a:locale, b:locale, c:locale)
 {
   use CTypes;
-  extern proc printf(fmt: c_string, vals...?numvals): int;
- 
+  extern proc printf(fmt: c_ptrConst(c_char), vals...?numvals): int;
+
   on a {
     if verbose then printf("on %d\n", here.id:c_int);
     var A: [1..10] int = [1,2,3,4,5,6,7,8,9,10];
@@ -13,7 +13,7 @@ proc doit(a:locale, b:locale, c:locale)
       for i in 1..10 {
         A[i] = 3*i;
       }
-      coforall i in 1..10 {
+      coforall i in 1..10 with (ref A) {
         assert( A[i] == 3*i );
         A[i] = 2*i;
         assert( A[i] == 2*i );

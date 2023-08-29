@@ -42,7 +42,7 @@ proc Launcher(exec: string) {
                       "--memLeaks=" + memLeaks:string],
                      executable=exec);
 
-  var workers: [1..numWorkers] subprocess(kind=iokind.dynamic, locking=true);
+  var workers: [1..numWorkers] subprocess(locking=true);
   coforall (worker,i,zipc) in zip(workers, workers.domain,
                                   zipcodes(numWorkers)) do
     worker = spawn(["worker%i".format(i), "--mode=Worker",

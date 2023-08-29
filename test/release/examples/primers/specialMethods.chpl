@@ -34,7 +34,11 @@ proc ExampleRecord2.secondaryMethod() { }
 
 // First we will declare a simple record with a field that is a tuple of
 // integers.  We'll add special methods and iterators to this record later.
-record R {
+// To make the language recognize a special method, it's necessary to implement
+// the corresponding interface. For the ``hash`` method we'll see below, the
+// appropriate interface is ``hashable``. We can mark ``R`` as implementing
+// ``hashable`` by including a ``: hashable`` after its name when we declare it.
+record R : hashable {
   param size: int = 10;
   var vals: size*int;
 }
@@ -68,7 +72,7 @@ record R {
 
 // The ``this`` method gives the record the ability to be accessed like an
 // array.  Here we use the argument as an index to choose a tuple element.
-proc R.this(n: int) ref {
+proc ref R.this(n: int) ref {
   if !vals.indices.contains(n) then
     halt("index out of bounds accessing R");
   return vals[n];
@@ -94,7 +98,7 @@ writeln(r.vals);
 // An iterator named ``these`` that can accept zero arguments is automatically
 // called when a record or class instance is used in the iterator position
 // of a ``for`` loop.
-iter R.these() ref {
+iter ref R.these() ref {
   for i in vals.indices {
     yield vals[i];
   }
@@ -123,9 +127,9 @@ writeln(r.vals);
 
 use Map;
 
-proc R.hash(): int {
+proc R.hash(): uint {
   writeln("In custom hash function");
-  return vals[0];
+  return vals[0] : uint;
 }
 
 // Now that the record R has a ``hash`` method defined, Chapel's,
@@ -168,11 +172,10 @@ proc R.writeThis(ch: fileWriter) throws {
 // The ``readThis`` method defines how to read an instance of R from a
 // channel. We'll read the ``vals`` tuple between asterisks like how it
 // was written above.
-proc R.readThis(ch: fileReader) throws {
-  var star = new ioLiteral("*");
-  ch.read(star);
+proc ref R.readThis(ch: fileReader) throws {
+  ch.readLiteral("*");
   ch.read(vals);
-  ch.read(star);
+  ch.readLiteral("*");
 }
 
 {

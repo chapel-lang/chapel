@@ -5,7 +5,7 @@ record G {
 proc test(param name, type t, param p) {
   param q = p:t;
   var g = new G(q);
-  writef("%-8s param type: %-8s g type: %s\n",
+  writef("%<8s param type: %<8s g type: %s\n",
          name, t:string, g.type:string);
 }
 

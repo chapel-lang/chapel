@@ -38,7 +38,7 @@ Task Parallelism
    :maxdepth: 1
 
    Task Parallelism <taskParallel>
-   Sync / Singles <syncsingle>
+   Syncs <syncs>
    Atomics <atomics>
 
 Locality

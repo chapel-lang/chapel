@@ -163,14 +163,14 @@ am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/tests/libtests.la $(top_builddir)/libgmp.la
 am_libspeed_la_OBJECTS = common.lo divrem1div.lo divrem1inv.lo \
 	divrem2div.lo divrem2inv.lo div_qr_1n_pi1_1.lo \
-	div_qr_1n_pi1_2.lo div_qr_1_tune.lo freq.lo gcdext_single.lo \
-	gcdext_double.lo gcdextod.lo gcdextos.lo hgcd_lehmer.lo \
-	hgcd_appr_lehmer.lo hgcd_reduce_1.lo hgcd_reduce_2.lo \
-	jacbase1.lo jacbase2.lo jacbase3.lo jacbase4.lo hgcd2-1.lo \
-	hgcd2-2.lo hgcd2-3.lo hgcd2-4.lo hgcd2-5.lo mod_1_div.lo \
-	mod_1_inv.lo mod_1_1-1.lo mod_1_1-2.lo modlinv.lo noop.lo \
-	powm_mod.lo powm_redc.lo pre_divrem_1.lo set_strb.lo \
-	set_strs.lo set_strp.lo time.lo
+	div_qr_1n_pi1_2.lo div_qr_1n_pi1_3.lo div_qr_1n_pi1_4.lo \
+	div_qr_1_tune.lo freq.lo gcdext_single.lo gcdext_double.lo \
+	gcdextod.lo gcdextos.lo hgcd_lehmer.lo hgcd_appr_lehmer.lo \
+	hgcd_reduce_1.lo hgcd_reduce_2.lo jacbase1.lo jacbase2.lo \
+	jacbase3.lo jacbase4.lo hgcd2-1.lo hgcd2-2.lo hgcd2-3.lo \
+	hgcd2-4.lo hgcd2-5.lo mod_1_div.lo mod_1_inv.lo mod_1_1-1.lo \
+	mod_1_1-2.lo modlinv.lo noop.lo powm_mod.lo powm_redc.lo \
+	pre_divrem_1.lo set_strb.lo set_strs.lo set_strp.lo time.lo
 libspeed_la_OBJECTS = $(am_libspeed_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -475,7 +475,8 @@ noinst_HEADERS = speed.h
 EXTRA_LTLIBRARIES = libspeed.la
 libspeed_la_SOURCES = \
   common.c divrem1div.c divrem1inv.c divrem2div.c divrem2inv.c		\
-  div_qr_1n_pi1_1.c div_qr_1n_pi1_2.c div_qr_1_tune.c			\
+  div_qr_1n_pi1_1.c div_qr_1n_pi1_2.c div_qr_1n_pi1_3.c 		\
+  div_qr_1n_pi1_4.c div_qr_1_tune.c					\
   freq.c								\
   gcdext_single.c gcdext_double.c gcdextod.c gcdextos.c			\
   hgcd_lehmer.c hgcd_appr_lehmer.c hgcd_reduce_1.c hgcd_reduce_2.c	\

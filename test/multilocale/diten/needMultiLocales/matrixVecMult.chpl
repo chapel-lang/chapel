@@ -14,10 +14,10 @@ var resultVec: [ColumnDom] real;
 
 var matrix: [DistColumnDom] [RowDom] real;
 
-proc init(X) { /* ... */ }
+proc initIt(X) { /* ... */ }
 
-init(matrix);
-init(vec);
+initIt(matrix);
+initIt(vec);
 
 forall i in DistColumnDom {
   var result = 0.0;

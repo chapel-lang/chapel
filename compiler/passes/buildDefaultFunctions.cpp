@@ -1670,7 +1670,7 @@ static void buildRecordHashFunction(AggregateType *ct) {
             field->hasFlag(FLAG_PARAM))) {
         CallExpr *field_access = new CallExpr(field->name, gMethodToken, arg);
         if (first) {
-          call = new CallExpr("hash", gMethodToken, field_access);
+          call = new CallExpr("chpl__defaultHashWrapperInner", field_access);
           first = false;
         } else {
           call = new CallExpr("chpl__defaultHashCombine",
@@ -1830,7 +1830,8 @@ static FnSymbol* buildReadThisFnSymbol(AggregateType* ct, ArgSymbol** filearg, c
 
   fn->cname = astr("_auto_", ct->symbol->name, "_", name);
 
-  fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
+  auto thisIntent = isDeserialize ? INTENT_REF : INTENT_BLANK;
+  fn->_this = new ArgSymbol(thisIntent, "this", ct);
   fn->_this->addFlag(FLAG_ARG_THIS);
 
   ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, isDeserialize ? "reader" : "f", dtAny);

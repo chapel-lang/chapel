@@ -37,7 +37,7 @@ proc matrixMult_ijk(
     const n : int,
     const A : [?AD] int,
     const B : [?BD] int,
-    C : [?CD] int)
+    ref C : [?CD] int)
 {
     for (ai,ci) in zip(AD.dim(0), CD.dim(0)) {
         for (bj,cj) in zip(BD.dim(1), CD.dim(1)) {
@@ -55,7 +55,7 @@ proc matrixMult_ijk_clever(
     const n : int,
     const A : [?AD] int,
     const B : [?BD] int,
-    C : [?CD] int)
+    ref C : [?CD] int)
 {
     for (ai,ci) in zip(AD.dim(0), CD.dim(0)) {
         for (bj,cj) in zip(BD.dim(1), CD.dim(1)) {
@@ -70,7 +70,7 @@ proc matrixMult_kij_clever(
     const n : int,
     const A : [?AD] int,
     const B : [?BD] int,
-    C : [?CD] int)
+    ref C : [?CD] int)
 {
     C = 0;
 
@@ -87,7 +87,7 @@ proc matrixMult_tensored(
     const n : int,
     const A : [1..m, 1..p] int,
     const B : [1..p, 1..n] int,
-    C : [1..m, 1..n] int)
+    ref C : [1..m, 1..n] int)
 {
     C = 0;
 
@@ -101,7 +101,7 @@ proc matrixMult_tensored(
 proc matrixMult_tensored_no_indices_no_reindexing(
     const A : [] int,
     const B : [] int,
-    C : [] int)
+    ref C : [] int)
     where
         A.domain.rank == 2 && B.domain.rank == 2 && C.domain.rank == 2
 {
@@ -127,7 +127,7 @@ proc matrixMult_tensored_no_indices_no_reindexing(
 proc matrixMult_tensored_no_indices(
     const A : [] int,
     const B : [] int,
-    C : [] int)
+    ref C : [] int)
     where
         A.domain.rank == 2 && B.domain.rank == 2 && C.domain.rank == 2
 {

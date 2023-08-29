@@ -32,7 +32,7 @@ proc main() {
   
   for trial in 1..numTrials {
     const startTime = timeSinceEpoch().totalSeconds();
-    coforall loc in Locales {
+    coforall loc in Locales with (ref allValidAnswer) {
       on loc {
         const MyProblemSpace: domain(1, indexType) 
                             = BlockPartition(ProblemSpace, here.id, numLocales);
@@ -63,7 +63,7 @@ proc printConfiguration() {
 }
 
 
-proc initVectors(B, C, ProblemSpace, print) {
+proc initVectors(ref B, ref C, ProblemSpace, print) {
   var randlist = new owned NPBRandomStream(eltType=real, seed=seed);
 
   randlist.skipToNth(B.domain.low-1);

@@ -17,7 +17,16 @@ config const window_size : real(32);
 config const dx : real(32) = 5.0;
 config const printReduce = true;
 
-proc convolve_and_calculate(Image: [] int(8), centerPoints : ?, LeftMaskDomain : ?, CenterMaskDomain : ?, RightMaskDomain : ?, dissimilarity : [] real(64), Output: [] real(64), d_size : int, Mask_Size : int,  t: stopwatch) : [] {
+proc convolve_and_calculate(Image: [] int(8),
+                            centerPoints : ?,
+                            LeftMaskDomain : ?,
+                            CenterMaskDomain : ?,
+                            RightMaskDomain : ?,
+                            dissimilarity : [] real(64),
+                            ref Output: [] real(64),
+                            d_size : int,
+                            Mask_Size : int,
+                            t: stopwatch) : [] {
 
   // This 'eps' makes sure that we differentiate between land points (zero) and ocean points (nonzero), even
   // if the beta diversity at the ocean point is zero.
@@ -132,7 +141,7 @@ proc main(args: [] string) {
   // Read in array
   //var f = open(in_array, ioMode.r);
   var f = open(in_name + "_" + map_type + ".bin", ioMode.r);
-  var r = f.reader(kind=ionative);
+  var r = f.reader(deserializer=new BinaryDeserializer());
 
   // Read in dissimilarity coefficients
   var dissimilarity_file = map_type + ".txt";
@@ -165,7 +174,7 @@ proc main(args: [] string) {
 
 //////////////////////////////////////////////////////////////////////////
 
-  coforall loc in Locales do on loc {
+  coforall loc in Locales with (ref OutputArray) do on loc {
 
     const loc_d_size = d_size;
     const loc_Mask_Size = Mask_Size;
@@ -177,7 +186,7 @@ proc main(args: [] string) {
     // Read in array
     var f = open(in_name + "_" + map_type + ".bin", ioMode.r);
     var first_point = locD_plus.first[0]*locD_plus.shape[1] + locD_plus.first[1];
-    var r = f.reader(kind=ionative, region=first_point..);
+    var r = f.reader(deserializer=new BinaryDeserializer(), region=first_point..);
 
     for i in locD_plus.first[0]..locD_plus.last[0] {
       for j in locD_plus.first[1]..locD_plus.last[1] {

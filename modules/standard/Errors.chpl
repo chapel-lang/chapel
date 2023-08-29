@@ -158,6 +158,14 @@ module Errors {
     }
   }
 
+  @unstable("`ArrayOomError` is unstable; expect this error to change in the future.")
+  class ArrayOomError: Error {
+    @chpldoc.nodoc
+    override proc message() {
+      return "out of memory allocating array elements";
+    }
+  }
+
   @deprecated(notes=":class:`CodepointSplittingError` is deprecated; please use :class:`CodepointSplitError` instead")
   type CodepointSplittingError = CodepointSplitError;
 
@@ -171,7 +179,7 @@ module Errors {
     var _head: unmanaged Error? = nil;
     var _errorsLock: chpl_LocalSpinlock;
 
-    proc append(err: unmanaged Error) {
+    proc ref append(err: unmanaged Error) {
       on this {
         _errorsLock.lock();
         var tmp = _head;
@@ -414,10 +422,10 @@ module Errors {
 
   proc chpl_error_type_name(err: borrowed Error) : string {
     var cid =  __primitive("getcid", err);
-    var nameC: c_string = __primitive("class name by id", cid);
+    var nameC = __primitive("class name by id", cid);
     var nameS: string;
     try! {
-      nameS = string.createCopyingBuffer(nameC);
+      nameS = string.createCopyingBuffer(nameC:c_ptrConst(c_char));
     }
     return nameS;
   }
@@ -502,21 +510,21 @@ module Errors {
   pragma "insert line file info"
   pragma "always propagate line file info"
   proc chpl_uncaught_error(err: unmanaged Error) {
-    extern proc chpl_error_preformatted(c_string);
+    extern proc chpl_error_preformatted(ptr:c_ptrConst(c_char));
 
-    const myFileC:c_string = __primitive("chpl_lookupFilename",
+    const myFileC = __primitive("chpl_lookupFilename",
                                          __primitive("_get_user_file"));
     var myFileS: string;
     try! {
-      myFileS = string.createCopyingBuffer(myFileC);
+      myFileS = string.createCopyingBuffer(myFileC:c_ptrConst(c_char));
     }
     const myLine = __primitive("_get_user_line");
 
-    const thrownFileC:c_string = __primitive("chpl_lookupFilename",
+    const thrownFileC = __primitive("chpl_lookupFilename",
                                              err.thrownFileId);
     var thrownFileS: string;
     try! {
-      thrownFileS = string.createCopyingBuffer(thrownFileC);
+      thrownFileS = string.createCopyingBuffer(thrownFileC:c_ptrConst(c_char));
     }
     const thrownLine = err.thrownLine;
 
@@ -597,7 +605,7 @@ module Errors {
   pragma "always propagate line file info"
   proc assert(test: bool) {
     if !test then
-      __primitive("chpl_error", c"assert failed");
+      __primitive("chpl_error", "assert failed".c_str());
   }
 
 
@@ -732,7 +740,7 @@ module Errors {
   pragma "function terminates program"
   pragma "always propagate line file info"
   proc halt() {
-    __primitive("chpl_error", c"halt reached");
+    __primitive("chpl_error", "halt reached".c_str());
   }
 
   pragma "function terminates program"

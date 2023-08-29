@@ -1,5 +1,5 @@
 const colWidth = 20;
-const fmt = ("%-"+colWidth:string+"s|")*3+"\n";
+const fmt = ("%<"+colWidth:string+"s|")*3+"\n";
 
 proc writeHeader(header) {
   writeln();

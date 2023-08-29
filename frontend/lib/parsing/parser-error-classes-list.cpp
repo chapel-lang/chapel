@@ -203,18 +203,6 @@ void ErrorSingleStmtReturnDeprecated::write(ErrorWriterBase& wr) const {
   wr.code(loc, { ret });
 }
 
-void ErrorRecordInheritanceNotSupported::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto recordName = std::get<std::string>(info);
-  wr.heading(kind_, type_, loc,
-             "inheritance is not currently supported for records.");
-  wr.note(loc, recordName, " declared as a record here:");
-  wr.code(loc);
-  wr.message(
-      "Thoughts on what record inheritance should entail can be added to "
-      "https://github.com/chapel-lang/chapel/issues/6851.");
-}
-
 void ErrorStringLiteralEOF::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   auto startChar = std::get<char>(info);
@@ -274,30 +262,37 @@ void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
   auto blockingAst = std::get<1>(info);
   auto allowingAst = std::get<2>(info);
 
-  // The error for value-having return in an iterator is so specific that it's
-  // easiest to special case it.
-  if (auto ret = invalidAst->toReturn()) {
-    if (blockingAst && blockingAst->isFunction()) {
-      auto fn = blockingAst->toFunction();
-      wr.heading(kind_, type_, ret,
-                 "'return' statements with values are not allowed in iterators.");
-      wr.message("The following 'return' statement has a value:");
-      wr.code(ret, { ret->value() });
-      wr.note(locationOnly(fn), "'", fn->name(),
-                                "' is declared as an iterator here:");
-      wr.codeForLocation(fn);
-      if (allowingAst != nullptr) {
-        auto allowingFn = allowingAst->toFunction();
-        CHPL_ASSERT(allowingFn);
-        // There _was_ a function that allowed a return, but it must be further
-        // out.
-        wr.note(locationOnly(allowingFn), "'", fn->name(), "' is declared inside '",
-                allowingFn->name(), "', but returning from '", allowingFn->name(), "' here is not allowed.");
-      } else {
-        wr.message("Did you mean to use the 'yield' keyword instead of 'return'?");
-      }
-      return;
+  // Match some special cases:
+  auto ret = invalidAst->toReturn();
+  const uast::Function *blockingAstFn = blockingAst ? blockingAst->toFunction() : nullptr;
+  bool isFuncWithReturn = ret && blockingAstFn;
+  bool isIterWithReturn = isFuncWithReturn && blockingAstFn->kind() == uast::Function::ITER;
+  if (isIterWithReturn) {
+    wr.heading(kind_, type_, ret,
+               "'return' statements with values are not allowed in iterators.");
+    wr.message("The following 'return' statement has a value:");
+    wr.code(ret, { ret->value() });
+    wr.note(locationOnly(blockingAstFn), "'", blockingAstFn->name(),
+                              "' is declared as an iterator here:");
+    wr.codeForLocation(blockingAstFn);
+    if (allowingAst != nullptr) {
+      auto allowingFn = allowingAst->toFunction();
+      CHPL_ASSERT(allowingFn);
+      // There _was_ a function that allowed a return, but it must be further
+      // out.
+      wr.note(locationOnly(allowingFn), "'", blockingAstFn->name(), "' is declared inside '",
+              allowingFn->name(), "', but returning from '", allowingFn->name(), "' here is not allowed.");
+    } else {
+      wr.message("Did you mean to use the 'yield' keyword instead of 'return'?");
     }
+    return;
+  } else if (isFuncWithReturn) {
+    wr.heading(kind_, type_, ret,
+               "'return' statements with values are not allowed in ", blockingAstFn->name());
+    wr.message("The following 'return' statement has a value:");
+    wr.code(ret, { ret->value() });
+    wr.codeForLocation(blockingAstFn);
+    return;
   }
 
   std::string astType = "";
@@ -416,6 +411,56 @@ void ErrorIllegalUseImport::write(ErrorWriterBase& wr) const {
              "Illegal expression in '", useOrImport, "' statement");
   wr.code(clause);
   wr.note(clause, "only identifiers and 'dot' expressions are supported");
+}
+
+void ErrorInvalidGpuAssertion::write(ErrorWriterBase& wr) const {
+  auto node = std::get<const uast::AstNode*>(info);
+  // auto attr = std::get<const uast::Attribute*>(info);
+
+  const char* loopTypes = nullptr;
+  if (node->isFor()) {
+    loopTypes = "for";
+  } else if (node->isWhile()) {
+    loopTypes = "while";
+  } else if (node->isDoWhile()) {
+    loopTypes = "do-while";
+  } else if (node->isCoforall()) {
+    loopTypes = "coforall";
+  }
+
+  const char* whatIsAffected = "statement";
+  if (loopTypes) {
+    wr.heading(kind_, type_, node, "loop marked with @assertOnGpu, but '", loopTypes, "' loops don't support GPU execution.");
+    whatIsAffected = "loop";
+  } else if (node->isFunction()) {
+    wr.heading(kind_, type_, node, "functions do not currently support the @assertOnGpu attribute.");
+    whatIsAffected = "function";
+  } else {
+    wr.heading(kind_, type_, node, "statement does not support the @assertOnGpu attribute.");
+  }
+
+  wr.message("The affected ", whatIsAffected, " is here:");
+  wr.codeForLocation(node);
+
+  // For now, attribute locations aren't correctly computed, so this is unhelpful.
+  // wr.note(attr, "marked for GPU execution here:");
+  // wr.codeForLocation(attr);
+}
+
+void ErrorInvalidParenfulDeprecation::write(ErrorWriterBase& wr) const {
+  auto attributeGroup = std::get<const uast::AttributeGroup*>(info);
+  auto appliedTo = std::get<const uast::AstNode*>(info);
+
+  wr.heading(kind_, type_, attributeGroup, "the '@deprecated' attribute with 'parenful=true' can only be applied to parenless functions.");
+  wr.message("It is used to indicate that a parenless function used to be callable with parentheses.");
+
+  if (auto fn = appliedTo->toFunction()) {
+    wr.message("The attribute is applied to a non-parenless function here:");
+    wr.codeForDef(fn);
+  } else {
+    wr.message("the attribute is applied to a non-function here:");
+    wr.codeForLocation(appliedTo);
+  }
 }
 
 void ErrorMultipleManagementStrategies::write(ErrorWriterBase& wr) const {

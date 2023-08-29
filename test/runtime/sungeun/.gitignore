@@ -1,0 +1,3 @@
+# Test/runtime/sungeun ignores.
+/chpl-env-gen.h
+/chpl-env-gen.test.gen.c

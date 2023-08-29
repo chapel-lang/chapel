@@ -61,7 +61,7 @@ proc main() {
   // twiddle values and is a 1D domain indexed by 64-bit ints from 0
   // to m/4-1.  Twiddles is the vector of twiddle values.
   //
-  //const TwiddleDist = new dmap(new Cyclic(startIdx=0:idxType, tasksPerLocale=tasksPerLocale));
+  //const TwiddleDist = new Cyclic(startIdx=0:idxType, tasksPerLocale=tasksPerLocale);
   const TwiddleDist = new Block(rank=1, idxType=idxType, boundingBox={0..m/4-1}, targetLocales=Locales);
   const TwiddleDom: domain(1, int(64)) dmapped TwiddleDist = {0..m/4-1};
   var Twiddles: [TwiddleDom] elemType;
@@ -79,9 +79,9 @@ proc main() {
   const BlkDom: domain(1, int(64)) dmapped BlkDist = {0..m-1};
   var Z, z: [BlkDom] elemType;
 
-  const CycDist = new dmap(new Cyclic(startIdx=0:idxType, targetLocales=Locales,
-                                      dataParTasksPerLocale=tasksPerLocale,
-                                      dataParIgnoreRunningTasks=true));
+  const CycDist = new Cyclic(startIdx=0:idxType, targetLocales=Locales,
+                             dataParTasksPerLocale=tasksPerLocale,
+                             dataParIgnoreRunningTasks=true);
   const CycDom: domain(1, int(64)) dmapped CycDist = {0..m-1};
   var Zcyc: [CycDom] elemType;
 
@@ -89,7 +89,7 @@ proc main() {
 
   const startTime = timeSinceEpoch().totalSeconds();  // capture the start time
 
-  Z = conjg(z);                        // store the conjugate of z in Z
+  Z = conj(z);                        // store the conjugate of z in Z
   bitReverseShuffle(Z);                // permute Z
   dfft(Z, Twiddles, 0);   // compute the Fourier transform block phase
   forall (b, c) in zip(Z, Zcyc) do
@@ -108,7 +108,7 @@ proc main() {
 // compute the discrete fast Fourier transform of a vector A declared
 // over domain ADom using twiddle vector W
 //
-proc dfft(A: [?ADom], W, phase) {
+proc dfft(ref A: [?ADom], W, phase) {
   const numElements = A.size;
   //
   // loop over the phases of the DFT sequentially using custom
@@ -191,7 +191,7 @@ proc dfft(A: [?ADom], W, phase) {
 // this is the radix-4 butterfly routine that takes multipliers wk1,
 // wk2, and wk3 and a 4-element array (slice) A.
 //
-proc butterfly(wk1, wk2, wk3, X:[?D]) {
+proc butterfly(wk1, wk2, wk3, ref X:[?D]) {
   const i0 = D.lowBound,
         i1 = i0 + D.stride,
         i2 = i1 + D.stride,
@@ -210,7 +210,7 @@ proc butterfly(wk1, wk2, wk3, X:[?D]) {
   X(i3) = wk3 * x0;
 }
 
-proc butterfly(wk1, wk2, wk3, A, rng) {
+proc butterfly(wk1, wk2, wk3, ref A, rng) {
   var X: [0..#radix] elemType;
   for (x,r) in zip(X, rng) do
     x = A(r);
@@ -257,7 +257,7 @@ proc makeSizeAssertions() {
 // Initialize the twiddle vector and random input vector and
 // optionally print them to the console
 //
-proc initVectors(Twiddles, z) {
+proc initVectors(ref Twiddles, ref z) {
   computeTwiddles(Twiddles);
   bitReverseShuffle(Twiddles);
 
@@ -272,7 +272,7 @@ proc initVectors(Twiddles, z) {
 //
 // Compute the twiddle vector values
 //
-proc computeTwiddles(Twiddles) {
+proc computeTwiddles(ref Twiddles) {
   const numTwdls = Twiddles.size,
         delta = 2.0 * atan(1.0) / numTwdls;
 
@@ -291,7 +291,7 @@ proc computeTwiddles(Twiddles) {
 // Perform a permutation of the argument vector by reversing the bits
 // of the indices
 //
-proc bitReverseShuffle(Vect: [?Dom]) {
+proc bitReverseShuffle(ref Vect: [?Dom]) {
   const numBits = log2(Vect.size),
         Perm: [Dom] Vect.eltType = [i in Dom] Vect(bitReverse(i, revBits=numBits));
   Vect = Perm;
@@ -316,10 +316,10 @@ proc log4(x) do return logBasePow2(x, 2);
 // verify that the results are correct by reapplying the dfft and then
 // calculating the maximum error, comparing against epsilon
 //
-proc verifyResults(z, Z, Cyc, Twiddles) {
+proc verifyResults(ref z, ref Z, ref Cyc, Twiddles) {
   if (printArrays) then writeln("After FFT, Z is: ", Z, "\n");
 
-  Z = conjg(Z) / m;
+  Z = conj(Z) / m;
   bitReverseShuffle(Z);
   dfft(Z, Twiddles, 0);
   forall (b, c) in zip(Z, Cyc) do

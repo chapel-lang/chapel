@@ -1,5 +1,5 @@
 // Copy matrix B's transpose into matrix A
-proc transposeCopy(A: [] real, B: [] real) where A.rank == 2 && B.rank == 2 {
+proc transposeCopy(ref A: [] real, B: [] real) where A.rank == 2 && B.rank == 2 {
     forall (i, j) in A.domain do
         A[i, j] = B[j, i];
 }

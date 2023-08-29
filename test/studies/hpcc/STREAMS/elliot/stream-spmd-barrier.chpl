@@ -44,7 +44,7 @@ proc main() {
     var agate: atomic int;
 
     const startTime = timeSinceEpoch().totalSeconds();
-    coforall tid in 0..#numTasks {
+    coforall tid in 0..#numTasks with (ref A) {
       // do a basic hand-coded barrier using either syncs or atomics
       var c = count.fetchSub(1);
       if c == 1 {
@@ -73,7 +73,7 @@ proc printConfiguration() {
 }
 
 
-proc initVectors(B, C) {
+proc initVectors(ref B, ref C) {
   var randlist = new NPBRandomStream(eltType=real, seed=seed);
 
   randlist.fillRandom(B);

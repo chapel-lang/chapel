@@ -38,14 +38,14 @@ module GPU
   use ChplConfig;
 
   pragma "codegen for CPU and GPU"
-  extern proc chpl_gpu_write(const str : c_string) : void;
+  extern proc chpl_gpu_write(const str : c_ptrConst(c_char)) : void;
 
   pragma "codegen for CPU and GPU"
   extern proc chpl_gpu_clock() : uint;
 
   pragma "codegen for CPU and GPU"
   extern proc chpl_gpu_printTimeDelta(
-    msg : c_string, start : uint, stop : uint) : void;
+    msg : c_ptrConst(c_char), start : uint, stop : uint) : void;
 
   pragma "codegen for CPU and GPU"
   extern proc chpl_gpu_device_clock_rate(devNum : int(32)) : uint;
@@ -57,15 +57,16 @@ module GPU
      Currently using :proc:`~ChapelIO.write` to send output to ``stdout`` will
      make a loop ineligible for GPU execution; use :proc:`gpuWrite` instead.
 
-     Currently this function will only work if values of type ``c_string`` are
-     passed.
+     Currently this function will only work if values of type
+     ``c_ptrConst(c_char)`` are passed.
 
      On NVIDIA GPUs the written values will be flushed to the terminal after
      the kernel has finished executing.  Note that there is a 1MB limit on the
      size of this buffer.
    */
   proc gpuWrite(const args ...?k) {
-    // Right now this function will only work if passed in c_strings.
+    // Right now this function will only work if passed argumets are of type
+    // c_ptrConst(c_char).
     // I would prefer to do some string processing within the
     // function so I could pass in arguments other than C types.
     //
@@ -91,7 +92,7 @@ module GPU
      Pass arguments to :proc:`gpuWrite` and follow with a newline.
   */
   proc gpuWriteln(const args ...?k) {
-    gpuWrite((...args), "\n".c_str());
+    gpuWrite((...args), "\n":c_ptrConst(c_char));
   }
 
   /*
@@ -101,8 +102,9 @@ module GPU
   */
   pragma "insert line file info"
   pragma "always propagate line file info"
+  @deprecated(notes="the functional form of assertOnGpu() is deprecated. Please use the @assertOnGpu loop attribute instead.")
   inline proc assertOnGpu() {
-    __primitive("chpl_assert_on_gpu");
+    __primitive("chpl_assert_on_gpu", false);
   }
 
   /*
@@ -120,7 +122,7 @@ module GPU
     To convert to seconds divide by 'gpuClocksPerSec()'
   */
   @chpldoc.nodoc
-  proc gpuPrintTimeDelta(msg : c_string, start : uint, stop : uint) : void {
+  proc gpuPrintTimeDelta(msg : c_ptrConst(c_char), start : uint, stop : uint) : void {
     chpl_gpu_printTimeDelta(msg, start, stop);
   }
 
@@ -143,7 +145,7 @@ module GPU
     until completion of this asynchronous transfer
   */
   @chpldoc.nodoc
-  proc asyncGpuComm(dstArr : ?t1, srcArr : ?t2) : GpuAsyncCommHandle
+  proc asyncGpuComm(ref dstArr : ?t1, srcArr : ?t2) : GpuAsyncCommHandle
     where isArrayType(t1) && isArrayType(t2)
   {
     extern proc chpl_gpu_comm_async(dstArr : c_ptr(void), srcArr : c_ptr(void),
@@ -153,7 +155,7 @@ module GPU
       halt("Arrays passed to asyncGpuComm must have the same number of elements. ",
         "Sizes passed: ", dstArr.size, " and ", srcArr.size);
     }
-    return chpl_gpu_comm_async(c_ptrTo(dstArr), c_ptrTo(srcArr),
+    return chpl_gpu_comm_async(c_ptrTo(dstArr), c_ptrToConst(srcArr),
       dstArr.size * numBytes(dstArr.eltType));
   }
 
@@ -334,10 +336,10 @@ module GPU
     checkValidGpuAtomicOp(opName, rtName, T);
 
     pragma "codegen for GPU"
-    extern rtName proc chpl_atomicBinOp(x, val);
+    extern rtName proc chpl_atomicBinOp(x, val) : T;
 
-    assertOnGpu();
-    chpl_atomicBinOp(c_ptrTo(x), val);
+    __primitive("chpl_assert_on_gpu", false);
+    return chpl_atomicBinOp(c_ptrTo(x), val);
   }
 
   private inline proc gpuAtomicTernOp(param opName : string, ref x : ?T, cmp : T, val : T) {
@@ -345,39 +347,46 @@ module GPU
     checkValidGpuAtomicOp(opName, rtName, T);
 
     pragma "codegen for GPU"
-    extern rtName proc chpl_atomicTernOp(x, cmp, val);
+    extern rtName proc chpl_atomicTernOp(x, cmp, val) : T;
 
-    assertOnGpu();
-    chpl_atomicTernOp(c_ptrTo(x), cmp, val);
+    __primitive("chpl_assert_on_gpu", false);
+    return chpl_atomicTernOp(c_ptrTo(x), cmp, val);
   }
 
-  /* When run on a GPU, atomically add 'val' to 'x' (result is stored in 'x'). */
-  inline proc gpuAtomicAdd(  ref x : ?T, val : T) : void { gpuAtomicBinOp("add", x, val); }
-  /* When run on a GPU, atomically subtract 'val' from 'x' (result is stored in 'x'). */
-  inline proc gpuAtomicSub(  ref x : ?T, val : T) : void { gpuAtomicBinOp("sub", x, val); }
-  @chpldoc.nodoc
-  inline proc gpuAtomicExch( ref x : ?T, val : T) : void { gpuAtomicBinOp("exch", x, val); }
-  /* When run on a GPU, atomically compare 'x' and 'val' and store the minimum in 'x'. */
-  inline proc gpuAtomicMin(  ref x : ?T, val : T) : void { gpuAtomicBinOp("min", x, val); }
-  /* When run on a GPU, atomically compare 'x' and 'val' and store the maximum in 'x'. */
-  inline proc gpuAtomicMax(  ref x : ?T, val : T) : void { gpuAtomicBinOp("max", x, val); }
+  /* When run on a GPU, atomically add 'val' to 'x' and store the result in 'x'.
+     The operation returns the old value of x. */
+  inline proc gpuAtomicAdd(  ref x : ?T, val : T) : T { return gpuAtomicBinOp("add", x, val); }
+  /* When run on a GPU, atomically subtract 'val' from 'x' and store the result in 'x'.
+     The operation returns the old value of x. */
+  inline proc gpuAtomicSub(  ref x : ?T, val : T) : T { return gpuAtomicBinOp("sub", x, val); }
+  /* When run on a GPU, atomically exchange the value stored in 'x' with 'val'.
+     The operation returns the old value of x. */
+  inline proc gpuAtomicExch( ref x : ?T, val : T) : T { return gpuAtomicBinOp("exch", x, val); }
+  /* When run on a GPU, atomically compare 'x' and 'val' and store the minimum in 'x'.
+     The operation returns the old value of x. */
+  inline proc gpuAtomicMin(  ref x : ?T, val : T) : T { return gpuAtomicBinOp("min", x, val); }
+  /* When run on a GPU, atomically compare 'x' and 'val' and store the maximum in 'x'.
+     The operation returns the old value of x. */
+  inline proc gpuAtomicMax(  ref x : ?T, val : T) : T { return gpuAtomicBinOp("max", x, val); }
   /* When run on a GPU, atomically increments x if the original value of x is
-     greater-than or equal to val, if so the result is stored in 'x'. */
-  inline proc gpuAtomicInc(  ref x : ?T, val : T) : void { gpuAtomicBinOp("inc", x, val); }
+     greater-than or equal to val, if so the result is stored in 'x'. Otherwise x is set to 0.
+     The operation returns the old value of x. */
+  inline proc gpuAtomicInc(  ref x : ?T, val : T) : T { return gpuAtomicBinOp("inc", x, val); }
   /* When run on a GPU, atomically determine if 'x' equals 0 or is greater than 'val'.
-     If so store 'val' in 'x' otherwise decrement 'x' by 1. */
-  inline proc gpuAtomicDec(  ref x : ?T, val : T) : void { gpuAtomicBinOp("dec", x, val); }
+     If so store 'val' in 'x' otherwise decrement 'x' by 1. Otherwise x is set to val.
+     The operation returns the old value of x. */
+  inline proc gpuAtomicDec(  ref x : ?T, val : T) : T { return gpuAtomicBinOp("dec", x, val); }
   /* When run on a GPU, atomically perform a bitwise 'and' operation on 'x' and 'val' and store
-     the result in 'x'. */
-  inline proc gpuAtomicAnd(  ref x : ?T, val : T) : void { gpuAtomicBinOp("and", x, val); }
+     the result in 'x'. The operation returns the old value of x. */
+  inline proc gpuAtomicAnd(  ref x : ?T, val : T) : T { return gpuAtomicBinOp("and", x, val); }
   /* When run on a GPU, atomically perform a bitwise 'or' operation on 'x' and 'val' and store
-     the result in 'x'.  */
-  inline proc gpuAtomicOr(   ref x : ?T, val : T) : void { gpuAtomicBinOp("or", x, val); }
+     the result in 'x'. The operation returns the old value of x. */
+  inline proc gpuAtomicOr(   ref x : ?T, val : T) : T { return gpuAtomicBinOp("or", x, val); }
   /* When run on a GPU, atomically perform a bitwise 'xor' operation on 'x' and 'val' and store
-     the result in 'x'. */
-  inline proc gpuAtomicXor(  ref x : ?T, val : T) : void { gpuAtomicBinOp("xor", x, val); }
+     the result in 'x'. The operation returns the old value of x. */
+  inline proc gpuAtomicXor(  ref x : ?T, val : T) : T { return gpuAtomicBinOp("xor", x, val); }
 
   /* When run on a GPU, atomically compare the value in 'x' and 'cmp', if they
-     are equal store 'val' in 'x'.  */
-  inline proc gpuAtomicCAS(  ref x : ?T, cmp : T, val : T) : void { gpuAtomicTernOp("CAS", x, cmp, val); }
+     are equal store 'val' in 'x'. The operation returns the old value of x. */
+  inline proc gpuAtomicCAS(  ref x : ?T, cmp : T, val : T) : T { return gpuAtomicTernOp("CAS", x, cmp, val); }
 }

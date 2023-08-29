@@ -1,12 +1,12 @@
 config param testError = 0, testDisplayRepresentation = false;
 
-proc readArray(X) {
+proc readArray(ref X) {
   use IO;
 
   open("realValues.txt", ioMode.r).reader().read(X);
 }
 
-proc testArrayAPI1D(lbl, X: [], sliceDom, reindexDom) {
+proc testArrayAPI1D(lbl, ref X: [], sliceDom, reindexDom) {
   // print header
   writeln(lbl);
   writeln("----------------");
@@ -96,7 +96,7 @@ proc testArrayAPI1D(lbl, X: [], sliceDom, reindexDom) {
     writeln("IRV is: ", X.IRV);
 }
 
-proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
+proc testArrayAPI2D(lbl, ref X: [], sliceDom, reindexDom) {
   // print header
   writeln(lbl);
   writeln("----------------");

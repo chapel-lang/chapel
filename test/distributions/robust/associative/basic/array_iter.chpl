@@ -61,7 +61,7 @@ if doString {
   testParallel(AString, D, ArithString, ArithStringRef);
 }
 
-proc testSerial(AAssoc, D, Arr, ArrRef) {
+proc testSerial(AAssoc, D, ref Arr, ArrRef) {
   type idxType = AAssoc.idxType;
   for aa in AAssoc {
     if idxType != string {
@@ -87,7 +87,7 @@ proc testSerial(AAssoc, D, Arr, ArrRef) {
 }
 
 // could probably use serial true on testSerial
-proc testParallel(AAssoc, D, Arr, ArrRef) {
+proc testParallel(AAssoc, D, ref Arr, ArrRef) {
   type idxType = AAssoc.idxType;
   forall aa in AAssoc {
     if idxType != string {

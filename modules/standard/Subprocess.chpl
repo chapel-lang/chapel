@@ -134,9 +134,9 @@ module Subprocess {
   use CTypes;
   use OS.POSIX;
 
-  private extern proc qio_openproc(argv:c_ptr(c_string),
-                                   env:c_ptr(c_string),
-                                   executable:c_string,
+  private extern proc qio_openproc(argv:c_ptr(c_ptrConst(c_char)),
+                                   env:c_ptr(c_ptrConst(c_char)),
+                                   executable:c_ptrConst(c_char),
                                    ref stdin_fd:c_int,
                                    ref stdout_fd:c_int,
                                    ref stderr_fd:c_int,
@@ -155,10 +155,10 @@ module Subprocess {
   // So, we have here some functions that work with
   // the C allocator instead of the Chapel one.
 
-  private extern proc qio_spawn_strdup(str: c_string): c_string;
-  private extern proc qio_spawn_allocate_ptrvec(count: c_size_t): c_ptr(c_string);
-  private extern proc qio_spawn_free_ptrvec(args: c_ptr(c_string));
-  private extern proc qio_spawn_free_str(str: c_string);
+  private extern proc qio_spawn_strdup(str: c_ptrConst(c_char)): c_ptrConst(c_char);
+  private extern proc qio_spawn_allocate_ptrvec(count: c_size_t): c_ptr(c_ptrConst(c_char));
+  private extern proc qio_spawn_free_ptrvec(args: c_ptr(c_ptrConst(c_char)));
+  private extern proc qio_spawn_free_str(str: c_ptrConst(c_char));
 
   /*
      This record represents a subprocess.
@@ -174,10 +174,12 @@ module Subprocess {
      generally not needed since the channels will be closed when the
      subprocess record is automatically destroyed.
    */
+  pragma "ignore deprecated use"
   record subprocess {
     /* The kind of a subprocess is used to create the types
-       for any channels that are necessary. */
-    param kind:iokind;
+       for stdin, stdout, or stderr. */
+    @deprecated("the 'kind' field is deprecated, please use Serializers or Deserializers with stdin, stdout, and stderr channels instead. Channels can be configured with the 'fileWriter.withSerializer' or 'fileReader.withDeserializer' methods.")
+    param kind:iokind = iokind.dynamic;
     /* As with kind, this value is used to create the types
        for any channels that are necessary. */
     param locking:bool;
@@ -223,19 +225,19 @@ module Subprocess {
     @chpldoc.nodoc
     var stdin_buffering:bool;
     @chpldoc.nodoc
-    var stdin_channel:fileWriter(kind=kind, locking=locking);
+    var stdin_channel:fileWriter(kind, locking=locking);
     @chpldoc.nodoc
     var stdout_pipe:bool;
     @chpldoc.nodoc
     var stdout_file:file;
     @chpldoc.nodoc
-    var stdout_channel:fileReader(kind=kind, locking=locking);
+    var stdout_channel:fileReader(kind, locking=locking);
     @chpldoc.nodoc
     var stderr_pipe:bool;
     @chpldoc.nodoc
     var stderr_file:file;
     @chpldoc.nodoc
-    var stderr_channel:fileReader(kind=kind, locking=locking);
+    var stderr_channel:fileReader(kind, locking=locking);
 
     // Ideally we don't have the _file versions, but they
     // are there now because of issues with when the reference counts
@@ -245,7 +247,7 @@ module Subprocess {
     var spawn_error:errorCode;
 
     @chpldoc.nodoc
-    proc _stop_stdin_buffering() {
+    proc ref _stop_stdin_buffering() {
       if this.stdin_buffering && this.stdin_pipe {
         this.stdin_channel.commit();
         this.stdin_buffering = false; // Don't commit again on close again
@@ -432,11 +434,6 @@ module Subprocess {
                   ``pipeStyle.pipe``, ``pipeStyle.stdout``, or a file
                   descriptor number to use. Defaults to ``pipeStyle.forward``.
 
-     :arg kind: What kind of channels should be created when
-                ``pipeStyle.pipe`` is used. This argument is used to set
-                :attr:`subprocess.kind` in the resulting subprocess.
-                Defaults to :type:`IO.iokind` ``iokind.dynamic``.
-
      :arg locking: Should channels created use locking?
                    This argument is used to set :attr:`subprocess.locking`
                    in the resulting subprocess. Defaults to `true`.
@@ -449,10 +446,28 @@ module Subprocess {
   proc spawn(args:[] string, env:[] string=Subprocess.empty_env, executable="",
              stdin:?t = pipeStyle.forward, stdout:?u = pipeStyle.forward,
              stderr:?v = pipeStyle.forward,
+             param locking=true) throws
+  {
+    return spawnHelper(args, env, executable, stdin, stdout, stderr, _iokind.dynamic, locking);
+  }
+
+  pragma "last resort"
+  @deprecated("'spawn' with a 'kind' is deprecated")
+  proc spawn(args:[] string, env:[] string=Subprocess.empty_env, executable="",
+             stdin:?t = pipeStyle.forward, stdout:?u = pipeStyle.forward,
+             stderr:?v = pipeStyle.forward,
              param kind=iokind.dynamic, param locking=true) throws
   {
+    return spawnHelper(args, env, executable, stdin, stdout, stderr, kind, locking);
+  }
+
+  private proc spawnHelper(args:[] string, env:[] string=Subprocess.empty_env, executable="",
+             stdin:?t = pipeStyle.forward, stdout:?u = pipeStyle.forward,
+             stderr:?v = pipeStyle.forward,
+             param kind=_iokind.dynamic, param locking=true) throws
+  {
     use ChplConfig;
-    extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
+    extern proc sys_getenv(name:c_ptrConst(c_char), ref string_out:c_ptrConst(c_char)):c_int;
 
     var stdin_fd:c_int = QIO_FD_FORWARD;
     var stdout_fd:c_int = QIO_FD_FORWARD;
@@ -488,9 +503,9 @@ module Subprocess {
     if CHPL_COMM == "ugni" {
       if stdin != pipeStyle.forward || stdout != pipeStyle.forward || stderr != pipeStyle.forward then
         if numLocales > 1 {
-          var env_c_str:c_string;
+          var env_c_str:c_ptrConst(c_char);
           var env_str:string;
-          if sys_getenv(c"PE_PRODUCT_LIST", env_c_str)==1 {
+          if sys_getenv("PE_PRODUCT_LIST", env_c_str)==1 {
             env_str = string.createCopyingBuffer(env_c_str);
             if env_str.count("HUGETLB") > 0 then
               throw createSystemError(
@@ -515,7 +530,7 @@ module Subprocess {
     for (a,i) in zip(args, 0..) {
       use_args[i] = qio_spawn_strdup(a.c_str());
     }
-    var use_env:c_ptr(c_string) = nil;
+    var use_env:c_ptr(c_ptrConst(c_char)) = nil;
     if env.size != 0 {
       var nenv = env.size + 1;
       use_env = qio_spawn_allocate_ptrvec( nenv.safeCast(c_size_t) );
@@ -665,12 +680,6 @@ module Subprocess {
      :arg shellarg: An argument to pass to the shell before
                     the command string. By default this is "-c".
 
-     :arg kind: What kind of channels should be created when
-                :type:`pipeStyle` ``pipeStyle.pipe`` is used. This
-                argument is used to set :attr:`subprocess.kind` in
-                the resulting subprocess.  Defaults to
-                :type:`IO.iokind` ``iokind.dynamic``.
-
      :arg locking: Should channels created use locking?
                    This argument is used to set :attr:`subprocess.locking`
                    in the resulting subprocess. Defaults to `true`.
@@ -684,7 +693,27 @@ module Subprocess {
                   stdin:?t = pipeStyle.forward, stdout:?u = pipeStyle.forward,
                   stderr:?v = pipeStyle.forward,
                   executable="/bin/sh", shellarg="-c",
+                  param locking=true) throws
+  {
+    return spawnshellHelper(command, env, stdin, stdout, stderr, executable, shellarg, _iokind.dynamic, locking);
+  }
+
+  pragma "last resort"
+  @deprecated("'spawnshell' with a 'kind' argument is deprecated")
+  proc spawnshell(command:string, env:[] string=Subprocess.empty_env,
+                  stdin:?t = pipeStyle.forward, stdout:?u = pipeStyle.forward,
+                  stderr:?v = pipeStyle.forward,
+                  executable="/bin/sh", shellarg="-c",
                   param kind=iokind.dynamic, param locking=true) throws
+  {
+    return spawnshellHelper(command, env, stdin, stdout, stderr, executable, shellarg, _iokind.dynamic, locking);
+  }
+
+  proc spawnshellHelper(command:string, env:[] string=Subprocess.empty_env,
+                  stdin:?t = pipeStyle.forward, stdout:?u = pipeStyle.forward,
+                  stderr:?v = pipeStyle.forward,
+                  executable="/bin/sh", shellarg="-c",
+                  param kind=_iokind.dynamic, param locking=true) throws
   {
     if command.isEmpty() then
       throw new owned IllegalArgumentError('command cannot be an empty string');
@@ -692,7 +721,7 @@ module Subprocess {
     var args = if shellarg == "" then [executable, command]
         else [executable, shellarg, command];
 
-    return spawn(args, env, executable,
+    return spawnHelper(args, env, executable,
                  stdin=stdin, stdout=stdout, stderr=stderr,
                  kind=kind, locking=locking);
   }
@@ -707,7 +736,7 @@ module Subprocess {
      :throws SystemError: if something else has gone wrong when polling the
                           subprocess.
    */
-  proc subprocess.poll() throws {
+  proc ref subprocess.poll() throws {
     try _throw_on_launch_error();
 
     var err:errorCode = 0;
@@ -762,7 +791,7 @@ module Subprocess {
                          stdin, or something else went wrong when
                          shutting down the subprocess.
    */
-  proc subprocess.wait(buffer=true) throws {
+  proc ref subprocess.wait(buffer=true) throws {
     try _throw_on_launch_error();
 
     if buffer {
@@ -882,7 +911,7 @@ module Subprocess {
     :throws SystemError: when something went wrong when shutting down the
                          subprocess
    */
-  proc subprocess.communicate() throws {
+  proc ref subprocess.communicate() throws {
     try _throw_on_launch_error();
 
     if !running {
@@ -925,7 +954,7 @@ module Subprocess {
     generally not necessary to call this function since these channels will be
     closed when the subprocess record goes out of scope.
    */
-  proc subprocess.close() throws {
+  proc ref subprocess.close() throws {
     // TODO: see subprocess.wait() for more on this error handling approach
     var err: errorCode = 0;
 

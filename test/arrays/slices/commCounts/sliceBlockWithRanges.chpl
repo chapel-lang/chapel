@@ -61,7 +61,7 @@ proc main() {
       writeln("\nA is:\n", A);
   }
 
-  proc increment(X, D) {
+  proc increment(ref X, D) {
     writeln("Incrementing in routine by access");
     writeln("---------------------------------");
 
@@ -71,7 +71,7 @@ proc main() {
     stopTrial();
   }
 
-  proc increment(X) {
+  proc increment(ref X) {
     writeln("Incrementing in routine by iteration");
     writeln("------------------------------------");
 

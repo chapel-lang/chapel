@@ -3,7 +3,7 @@ use IO;
 var f = open("test.txt", ioMode.r);
 
 {
-  var r = f.reader(kind=ionative);
+  var r = f.reader(deserializer=new BinaryDeserializer());
   var str:string;
   r.readString(str, 21);
   writeln("Read (binary 21)\n", str);

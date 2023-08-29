@@ -41,6 +41,7 @@ pragma "unsafe"
 module ChapelIteratorSupport {
   private use ChapelStandard;
   private use Reflection;
+  private use CTypes only c_ptr;
 
   //
   // module support for iterators
@@ -433,7 +434,7 @@ module ChapelIteratorSupport {
   }
 
   inline proc _freeIterator(ic: _iteratorClass) {
-    chpl_here_free(__primitive("cast_to_void_star", ic));
+    chpl_here_free(__primitive("cast", c_ptr(void), ic));
   }
 
   inline proc _freeIterator(x: _tuple) {
@@ -443,13 +444,13 @@ module ChapelIteratorSupport {
 
   pragma "fn returns iterator"
   pragma "no implicit copy"
-  inline proc _toLeader(ir: _iteratorRecord)
+  inline proc _toLeader(const ir: _iteratorRecord)
     where __primitive("has leader", ir) do
     return chpl__autoCopy(__primitive("to leader", ir), definedConst=false);
 
   pragma "suppress lvalue error"
   pragma "fn returns iterator"
-  inline proc _toLeader(x)
+  inline proc _toLeader(const x)
     where !isSubtype(x.type, _iteratorRecord) && __primitive("has leader", x.these()) do
     return _toLeader(x.these());
 

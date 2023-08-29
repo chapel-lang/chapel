@@ -6,7 +6,7 @@ proc histo_fence() {
   var B: [0..#M] atomic int;
   var rindex: [0..#N] int;
 
-  cobegin {
+  cobegin with (ref A, ref B) {
     {
       on Locales[numLocales-1] {
         forall r in rindex {

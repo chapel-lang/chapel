@@ -36,7 +36,7 @@ proc main() {
 
   const startTime = timeSinceEpoch().totalSeconds();
 
-  Z = conjg(z);
+  Z = conj(z);
   bitReverseShuffle(Z);
   dfft(Z, Twiddles);
 
@@ -52,7 +52,7 @@ proc printConfiguration() {
 }
 
 
-proc initVectors(Twiddles, z) {
+proc initVectors(ref Twiddles, ref z) {
   computeTwiddles(Twiddles);
   bitReverseShuffle(Twiddles);
 
@@ -65,7 +65,7 @@ proc initVectors(Twiddles, z) {
 }
 
 
-proc computeTwiddles(Twiddles) {
+proc computeTwiddles(ref Twiddles) {
   const numTwdls = Twiddles.size,
         delta = 2.0 * atan(1.0) / numTwdls;
 
@@ -81,7 +81,7 @@ proc computeTwiddles(Twiddles) {
 }
 
 
-proc bitReverseShuffle(Vect: [?Dom]) {
+proc bitReverseShuffle(ref Vect: [?Dom]) {
   const numBits = log2(Vect.size),
         Perm: [Dom] Vect.eltType = [i in Dom] Vect(bitReverse(i, revBits=numBits));
   Vect = Perm;
@@ -96,7 +96,7 @@ proc bitReverse(val: ?valType, revBits = 64) {
 }
 
 
-proc dfft(A: [?ADom], W) {
+proc dfft(ref A: [?ADom], W) {
   const numElements = A.size;
 
   for (str, span) in genDFTPhases(numElements, radix) {
@@ -167,10 +167,10 @@ proc butterfly(wk1, wk2, wk3, inout A:[?D]) {
 proc log4(x) do return logBasePow2(x, 2);
 
 
-proc verifyResults(z, Z, Twiddles) {
+proc verifyResults(ref z, ref Z, Twiddles) {
   if (printArrays) then writeln("After FFT, Z is: ", Z, "\n");
 
-  Z = conjg(Z) / m;
+  Z = conj(Z) / m;
   bitReverseShuffle(Z);
   dfft(Z, Twiddles);
 

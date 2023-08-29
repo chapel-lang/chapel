@@ -86,7 +86,7 @@ proc main() {
   // *** Fragment control so that we have a single task running on
   // *** every locale.
   //
-  coforall loc in Locales do on loc {
+  coforall loc in Locales with (ref minTimes, ref validAnswers) do on loc {
 
     var execTime: [1..numTrials] real;
 
@@ -152,7 +152,7 @@ proc printConfiguration() {
 //
 // Initialize vectors B and C using a random stream of values
 //
-proc initVectors(B, C) {
+proc initVectors(ref B, ref C) {
   var randlist = new RandomStream(eltType=real, seed=seed);
 
   randlist.fillRandom(B);
@@ -162,7 +162,7 @@ proc initVectors(B, C) {
 //
 // Verify that the computation is correct
 //
-proc verifyResults(A, B, C) {
+proc verifyResults(A, ref B, C) {
 
   //
   // recompute the computation, destructively storing into B to save space
