@@ -4353,15 +4353,14 @@ private inline proc markHelper(fileRW) throws {
 }
 
 /*
-   *Mark* a fileReader - that is, save the current offset of the fileReader
-   on its *mark stack*.
+   *Mark* a ``fileReader`` - that is, save the current offset of the
+   ``fileReader`` on its *mark stack*.
 
-   The *mark stack* stores several fileReader offsets. For any fileReader offset
-   that is between the minimum and maximum value in the *mark stack*, I/O
-   operations on the fileReader will keep that region of the file buffered in
-   memory so that those operations can be undone. As a result, it is possible to
-   perform *I/O transactions* on a fileReader. The basic steps for an *I/O
-   transaction* are:
+   The *mark stack* stores several file offsets. The ``fileReader`` will keep
+   the region of the file between its minimum and maximum *mark stack* values
+   buffered in memory so that IO operations can be undone. As a result, it is
+   possible to perform *I/O transactions* on a fileReader. The basic steps for
+   an *I/O transaction* are:
 
     * *mark* the current offset with :proc:`fileReader.mark`
     * do something speculative (e.g. try to read 200 bytes of anything followed
@@ -4372,11 +4371,11 @@ private inline proc markHelper(fileRW) throws {
       calling :proc:`fileReader.revert`. Subsequent I/O operations will work
       as though nothing happened.
 
-   If a fileReader has ``locking==true``, :proc:`fileReader.mark` should be
-   called only once the fileReader has been locked with
-   :proc:`fileReader.lock`.  The fileReader should not be unlocked with
-   :proc:`fileReader.unlock` until after the mark has been committed with
-   :proc:`fileReader.commit` or reverted with :proc:`fileReader.revert`.
+   If a fileReader has ``locking==true``, :proc:`~fileReader.mark` should only
+   be called only once it has been locked with :proc:`~fileReader.lock`. The
+   fileReader should not be unlocked with :proc:`~fileReader.unlock` until
+   after the mark has been committed with :proc:`~fileReader.commit` or reverted
+   with :proc:`~fileReader.revert`.
 
   .. note::
 
@@ -4386,35 +4385,38 @@ private inline proc markHelper(fileRW) throws {
     memory space requirements.
 
   :returns: The offset that was marked
-  :throws SystemError: if marking the fileReader failed
+  :throws SystemError: if marking the ``fileReader`` failed
  */
 proc fileReader.mark() throws do return markHelper(this);
+// In the future, we'd like to support IO transactions using context managers.
+// Under this proposal, entering a transaction context would mark the channel,
+// leaving the context normally would commit, and leaving via throwing an error
+// would revert.
+// See: #19611
 
 /*
-   *Mark* a fileWriter - that is, save the current offset of the fileWriter
-   on its *mark stack*.
+   *Mark* a ``fileWriter`` - that is, save the current offset of the
+   ``fileWriter`` on its *mark stack*.
 
-   The *mark stack* stores several fileWriter offsets. For any fileWriter offset
-   that is between the minimum and maximum value in the *mark stack*, I/O
-   operations on the fileWriter will keep that region of the file buffered in
-   memory so that those operations can be undone. As a result, it is possible to
-   perform *I/O transactions* on a fileWriter. The basic steps for an *I/O
-   transaction* are:
+   The *mark stack* stores several file offsets. The ``fileWriter`` will keep
+   the region of the file between its minimum and maximum *mark stack* values
+   buffered in memory so that IO operations can be undone. As a result, it
+   is possible to perform *I/O transactions* on a fileWriter. The basic steps
+   for an *I/O transaction* are:
 
     * *mark* the current offset with :proc:`fileWriter.mark`
-    * do something speculative (e.g. try to write 200 bytes of anything followed
-      by a 'B')
+    * do something speculative (e.g. try to write 200 bytes)
     * if the speculative operation was successful, commit the changes by
       calling :proc:`fileWriter.commit`
     * if the speculative operation was not successful, go back to the *mark* by
       calling :proc:`fileWriter.revert`. Subsequent I/O operations will work
       as though nothing happened.
 
-   If a fileWriter has ``locking==true``, :proc:`fileWriter.mark` should be
-   called only once the fileWriter has been locked with
-   :proc:`fileWriter.lock`.  The fileWriter should not be unlocked with
-   :proc:`fileWriter.unlock` until after the mark has been committed with
-   :proc:`fileWriter.commit` or reverted with :proc:`fileWriter.revert`.
+   If a fileWriter has ``locking==true``, :proc:`~fileWriter.mark` should only
+   be called only once it has been locked with :proc:`~fileWriter.lock`. The
+   fileWriter should not be unlocked with :proc:`~fileWriter.unlock` until
+   after the mark has been committed with :proc:`~fileWriter.commit` or reverted
+   with :proc:`~fileWriter.revert`.
 
   .. note::
 
@@ -4424,57 +4426,66 @@ proc fileReader.mark() throws do return markHelper(this);
     memory space requirements.
 
   :returns: The offset that was marked
-  :throws SystemError: if marking the fileWriter failed
+  :throws SystemError: if marking the ``fileWriter`` failed
  */
 proc fileWriter.mark() throws do return markHelper(this);
+// In the future, we'd like to support IO transactions using context managers.
+// Under this proposal, entering a transaction context would mark the channel,
+// leaving the context normally would commit, and leaving via throwing an error
+// would revert.
+// See: #19611
 
 /*
-   Abort an *I/O transaction*. See :proc:`fileReader.mark`. This function
-   will pop the last element from the *mark stack* and then leave the
-   previous fileReader offset unchanged.
+   Abort an *I/O transaction* by popping from the ``fileReader``'s *mark stack*
+   and adjusting its position to that offset. See :proc:`fileReader.mark` for a
+   full description of an *I/O transaction*.
 
-   This function should only be called on a fileReader that has already been
-   marked. If called on a fileReader with ``locking==true``, the fileReader
-   should have already been locked.
+   This routine should only be called on a fileReader that has already
+   been marked. If called on a fileReader with ``locking=true``, the fileReader
+   should have already been locked manually with :proc:`~fileReader.lock` before
+   :proc:`~fileReader.mark` was called.
 */
 inline proc fileReader.revert() {
   qio_channel_revert_unlocked(_channel_internal);
 }
 
 /*
-   Abort an *I/O transaction*. See :proc:`fileWriter.mark`. This function
-   will pop the last element from the *mark stack* and then leave the
-   previous fileWriter offset unchanged.
+   Abort an *I/O transaction* by popping from the ``fileWriter``'s *mark stack*
+   and adjusting its position to that offset. See :proc:`fileWriter.mark` for a
+   full description of an *I/O transaction*.
 
-   This function should only be called on a fileWriter that has already been
-   marked. If called on a fileWriter with ``locking==true``, the fileWriter
-   should have already been locked.
+   This routine should only be called on a fileWriter that has already
+   been marked. If called on a fileWriter with ``locking=true``, the fileWriter
+   should have already been locked manually with :proc:`~fileWriter.lock` before
+   :proc:`~fileWriter.mark` was called.
 */
 inline proc fileWriter.revert() {
   qio_channel_revert_unlocked(_channel_internal);
 }
 
 /*
-   Commit an *I/O transaction*. See :proc:`fileReader.mark`.  This
-   function will pop the last element from the *mark stack* and then
-   set the fileReader offset to the popped offset.
+   Commit an *I/O transaction* by popping from the ``fileReader``'s *mark stack*
+   and leaving its position unchanged. See :proc:`fileReader.mark` for a full
+   description of an *I/O transaction*.
 
-   This function should only be called on a fileReader that has already been
-   marked. If called on a fileReader with ``locking==true``, the fileReader
-   should have already been locked.
+   This routine should only be called on a fileReader that has already
+   been marked. If called on a fileReader with ``locking=true``, the fileReader
+   should have already been locked manually with :proc:`~fileReader.lock` before
+   :proc:`~fileReader.mark` was called.
 */
 inline proc fileReader.commit() {
   qio_channel_commit_unlocked(_channel_internal);
 }
 
 /*
-   Commit an *I/O transaction*. See :proc:`fileWriter.mark`.  This
-   function will pop the last element from the *mark stack* and then
-   set the fileWriter offset to the popped offset.
+   Commit an *I/O transaction* by popping from the ``fileWriter``'s *mark stack*
+   and leaving its position unchanged. See :proc:`fileWriter.mark` for a full
+   description of an *I/O transaction*.
 
-   This function should only be called on a fileWriter that has already been
-   marked. If called on a fileWriter with ``locking==true``, the fileWriter
-   should have already been locked.
+   This routine should only be called on a fileWriter that has already
+   been marked. If called on a fileWriter with ``locking=true``, the fileWriter
+   should have already been locked manually with :proc:`~fileWriter.lock` before
+   :proc:`~fileWriter.mark` was called.
 */
 inline proc fileWriter.commit() {
   qio_channel_commit_unlocked(_channel_internal);
