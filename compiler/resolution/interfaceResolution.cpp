@@ -970,7 +970,6 @@ static bool resolveOneAssocType(InterfaceSymbol* isym,  ImplementsStmt*   istm,
   cleanupHolder(holder);
 
   if (implAT == nullptr && shouldInfer) {
-    debuggerBreakHere();
     Type* inferredAT = inferAssociatedType(isym, istm, fml2act, holder, indent, ifcAT);
     if (!inferredAT && reportIfCannotInfer) {
       USR_FATAL_CONT(istm, "when checking this implements statement");
@@ -990,8 +989,6 @@ static bool resolveOneAssocType(InterfaceSymbol* isym,  ImplementsStmt*   istm,
                      " runtime type '%s', which is currently not implemented",
                      ifcAT->symbol->name, toString(implAT));
   }
-
-  debuggerBreakHere();
 
   return implAT != nullptr;
 }
