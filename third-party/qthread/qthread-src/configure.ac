@@ -114,7 +114,7 @@ AC_ARG_WITH([default-stack-size],
             [AS_HELP_STRING([--with-default-stack-size=[[bytes]]],
                             [Specify the number of bytes to use for stacks, by
                              default (i.e. when the environment variable
-                             QT_STACK_SIZE is unset). Default: 4096 (4k).
+                             QT_STACK_SIZE is unset). Default: 16384 (16k).
                              Depending on your OS, standard Pthread threads may
                              get anywhere from 2MB to 10MB default stacks.])])
 
@@ -298,7 +298,7 @@ AC_ARG_WITH([topology],
             [AS_IF([test "x$with_topology" = xyes],
                    [with_topology=none_specified])
              case "$with_topology" in
-                 hwloc|hwloc_via_chapel|binders|hwloc_v2|lgrp|libnuma|libnumaV2|mach|no|plpa|sys|tilera) ;;
+                 hwloc|binders|hwloc_v2|lgrp|libnuma|libnumaV2|mach|no|plpa|sys|tilera) ;;
                  none_specified) ;;
                  *)
                  AC_MSG_ERROR([Unsupported topology library ($with_topology)])
@@ -937,17 +937,8 @@ int main() {
 
 AS_IF([test "x$with_default_stack_size" != "x"],
       [qthread_cv_stack_size=$with_default_stack_size],
-      [case "$host" in
-         powerpc-apple-darwin*)
-           AC_CHECK_SIZEOF([void*])
-           AS_IF([test "x$ac_cv_sizeof_voidp" = "x8"],
-                 [qthread_cv_stack_size=8192],
-                 [qthread_cv_stack_size=4096])
-           ;;
-         *)
-           qthread_cv_stack_size=4096
-           ;;
-       esac])
+      [qthread_cv_stack_size=16384])
+
 AC_DEFINE_UNQUOTED([QTHREAD_DEFAULT_STACK_SIZE],[$qthread_cv_stack_size], [What size stacks to use by default])
 
 AS_IF([test "x$enable_thread_count" = "xyes"],
@@ -983,8 +974,8 @@ AS_IF([test "x$qthread_topo" != xno],
       [AS_IF([test "x$qthread_topo" = "xnone_specified"],
              [qthread_topo=no])
        # First, check for hwloc, since it gives me the most portable/flexible/reliable/detailed information.
-       AS_IF([test "x$qthread_topo" = xno -o "x$qthread_topo" = xbinders -o "x$qthread_topo" = xhwloc -o "x$qthread_topo" = xhwloc_via_chapel -o "x$qthread_topo" = xhwloc_v2],
-             [QTHREAD_CHECK_HWLOC([AS_IF([test "x$qthread_topo" != xhwloc -a "x$qthread_topo" != xhwloc_via_chapel -a "x$qthread_topo" != xhwloc_v2 -a "x$qthread_topo" != xbinders],
+       AS_IF([test "x$qthread_topo" = xno -o "x$qthread_topo" = xbinders -o "x$qthread_topo" = xhwloc -o "x$qthread_topo" = xhwloc_v2],
+             [QTHREAD_CHECK_HWLOC([AS_IF([test "x$qthread_topo" != xhwloc -a "x$qthread_topo" != xhwloc_v2 -a "x$qthread_topo" != xbinders],
                                          [qthread_topo=hwloc])],
                                   [AS_IF([test "x$qthread_topo" != xno],
                                          [AC_MSG_ERROR([Specified topology library ($qthread_topo) does not work.])])])])
