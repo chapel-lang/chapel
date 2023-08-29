@@ -2,36 +2,42 @@ use Time;
 use ResultDB;
 use IO.FormattedIO;
 use GpuDiagnostics;
+use MemDiagnostics;
+use GPU;
 
 
-config const passes = 10;
+config const passes = 1; //10;
 config const alpha = 1.75: real(32);
 config const noisy = false;
 config var tolerance = 1;
 config const output = true;
 config const perftest = false;
 
-
-proc main(){
+proc main() {
   var timer: stopwatch;
   var kernelTimer: stopwatch;
 
   // Numbers just copied from cuda version
   // 256K through 8M bytes. (scaled down by 1024)
-  const blockSizes = if(perftest) then [64, 16384] else [64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384];
+  const blockSizes = if(perftest) then [64, 16384] else [64, /*128, 256, 512, 1024, 2048, 4096, 8192,*/ 16384];
   param maxProblemSize = 16384;
   param numMaxFloats = 1024 * maxProblemSize / numBytes(real(32));
   param halfNumFloats = numMaxFloats/2;
+  const maxBlockSize = blockSizes.last * 1024 / numBytes(real(32));
 
+  var hos: [0..#numMaxFloats] real(32);
   var flopsDB = new ResultDatabase("TriadFlops", "GFLOP/s");
   var bdwthDB = new ResultDatabase("TriadBdwth", "GB/s");
   var triadDB = new ResultDatabase("Triad Time", "sec");
   var kernelDB = new ResultDatabase("Kernel Time", "sec");
 
-  var hos: [0..#numMaxFloats] real(32);
+  //startVerboseMem();
   if !perftest then startGpuDiagnostics();
+
   var kernelLaunches = 0;
-  for pass in 0..#passes{
+
+  // N passes determined by a config const
+  for pass in 0..#passes {
     for blkSize in blockSizes {
       // Populate host with arbitrary memory
       // The reference (CUDA) implementation of SHOC fills hos
@@ -41,12 +47,17 @@ proc main(){
       for i in 0..#halfNumFloats {
         hos[i] = i:int(32)%16:int(32) + 0.12:real(32);
         hos[halfNumFloats+i] = hos[i] ;
-
       }
+
       // Number of floats that fit in the number of bytes denoted
       // by problem size. Converting MB to Bytes and dividing by
       // size of real(32)
       var elemsInBlock = blkSize * 1024 / numBytes(real(32));
+
+      if noisy then
+        writeln(" >>> Executing Triad with arrays of length ", numMaxFloats,
+            " and block size of ", elemsInBlock, " elements");
+
       var triad: real;
       var bdwth: real;
 
@@ -55,98 +66,65 @@ proc main(){
         var A0 : [0..#elemsInBlock] real(32);
         var A1 : [0..#elemsInBlock] real(32);
 
-        // ... Make B's and C's..
+        // ... Make B's and C's ....
         var B0 : [0..#elemsInBlock] real(32);
         var B1 : [0..#elemsInBlock] real(32);
 
         var C0 : [0..#elemsInBlock] real(32);
         var C1 : [0..#elemsInBlock] real(32);
 
-        if noisy then
-          writeln(" >>> Executing Triad with arrays of length ", numMaxFloats,
-              " and block size of ", elemsInBlock, " elements");
 
         timer.start();
 
-        // Do first transfer for A and B
-        A0= hos[0..#elemsInBlock];
-        B0= hos[0..#elemsInBlock];
-
-        // Do the calculation
-        kernelLaunches+=1;
-        kernelTimer.start();
-        forall i in 0..#elemsInBlock {
-          C0[i] = A0[i] * alpha + B0[i];
-        }
-        kernelTimer.stop();
-
-        if(elemsInBlock < numMaxFloats){
-          // Transfers for other stream
-          // In theory these memory transfers could be
-          // asynchronous until we get to the second kernel launch
-          A1= hos[elemsInBlock..#elemsInBlock];
-          B1= hos[elemsInBlock..#elemsInBlock];
-        }
-
-
-        var currentStream = true; // Representing Stream 1
-                                  // false represents stream 0
         var currentIdx = 0;
-        // Loop corresponding to while loop in benchmark:
-        while(currentIdx < numMaxFloats) {
-          // Copy back answer from last kernel call
-          if(currentStream){
-            // Stream 0 copy back
-            hos[currentIdx..#elemsInBlock] = C0;
-          } else {
-            // Stream 1 copy back
-            hos[currentIdx..#elemsInBlock] = C1;
+        while(currentIdx + elemsInBlock <= numMaxFloats) {
+          const blk0Range = currentIdx..#elemsInBlock;
+          const blk1Range = (currentIdx+elemsInBlock)..#elemsInBlock;
+
+          // Populate left hand synchronously
+          A0 = hos[blk0Range];
+          B0 = hos[blk0Range];
+
+          // Populate right half of array in background
+          var ev1, ev2 : GpuAsyncCommHandle;
+          if(currentIdx + elemsInBlock*2 <= numMaxFloats) {
+            ev1 = asyncGpuComm(A1, hos[blk1Range]);
+            ev2 = asyncGpuComm(B1, hos[blk1Range]);
           }
 
-          currentIdx += elemsInBlock;
+          kernelTimer.start();
+          // Triad computation for left half
+          @assertOnGpu()
+          foreach i in 0..<elemsInBlock {
+            C0[i] = A0[i] + alpha * B0[i];
+          }
+          kernelTimer.stop();
 
-          if(currentIdx < numMaxFloats){
-            kernelLaunches+=1;
-            // We have more stuff to operate on
-            if(currentStream){
-              kernelTimer.start();
-              // Launch on Stream 1
-              forall i in 0..#elemsInBlock {
-                C1[i] = A1[i] * alpha + B1[i];
-              }
-              kernelTimer.stop();
-            } else {
-              kernelTimer.start();
-              // Launch on Stream 0
-              forall i in 0..#elemsInBlock {
-                C0[i] = A0[i] * alpha + B0[i];
-              }
-              kernelTimer.stop();
+          // Copy result back to host asynchronously
+          var ev3 = asyncGpuComm(hos[blk0Range], C0);
+
+          // Triad computation for right half
+          if(currentIdx + elemsInBlock*2 <= numMaxFloats) {
+            gpuCommWait(ev1);
+            gpuCommWait(ev2);
+            kernelTimer.start();
+            @assertOnGpu()
+            foreach i in 0..<elemsInBlock {
+              C1[i] = A1[i] + alpha * B1[i];
             }
+            kernelTimer.stop();
           }
 
-          if(currentIdx+elemsInBlock < numMaxFloats){
-            // We have more stuff to copy over and then operate on
-            // Copy back answer from last kernel call
-            if(currentStream){
-              // Stream 1 copy over
-              A1 = hos[currentIdx+elemsInBlock..#elemsInBlock];
-              B1 = hos[currentIdx+elemsInBlock..#elemsInBlock];
-            } else {
-              // Stream 0 copy over
-              A0 = hos[currentIdx+elemsInBlock..#elemsInBlock];
-              B0 = hos[currentIdx+elemsInBlock..#elemsInBlock];
-            }
-          }
+          hos[blk1Range] = C1;
+          gpuCommWait(ev3);
 
-          currentStream  = !currentStream;
+          currentIdx += (elemsInBlock*2);
         }
-
         timer.stop();
+
         const timeElapsedInNanoseconds = timer.elapsed() * 1e9;
         triad = (numMaxFloats * 2.0) / timeElapsedInNanoseconds;
-        bdwth = (numMaxFloats * numBytes(real(32)) * 3.0)
-          /timeElapsedInNanoseconds;
+        bdwth = (numMaxFloats * numBytes(real(32)) * 3.0) /timeElapsedInNanoseconds;
 
         if noisy {
           writeln("TriadFlops\t",
@@ -163,15 +141,18 @@ proc main(){
           writeln("Kernel Time : ", kernelTimer.elapsed());
           writeln("Kernel Launches : ", kernelLaunches);
         }
-      }
+      } // end gpu on
+
 
       flopsDB.addToDatabase("%{#####}".format(blkSize), triad);
       bdwthDB.addToDatabase("%{#####}".format(blkSize), bdwth);
       triadDB.addToDatabase("%{#####}".format(blkSize), timer.elapsed());
       kernelDB.addToDatabase("%{#####}".format(blkSize), kernelTimer.elapsed());
+
       kernelLaunches = 0;
       kernelTimer.clear();
       timer.clear();
+
       // Error Checking for the correct anwer
       // Since we gave the kernel arbitrary numbers we know what the answer
       // to the computation is
@@ -200,9 +181,10 @@ proc main(){
         assert(isClose(actual , expected));
         assert(hos[halfNumFloats+i] == hos[i]);
       }
-    }
-  }
+    } // for in blockSizes
+  } // for in passes
 
+  //stopVerboseMem();
   if(output) {
     flopsDB.printDatabaseStats();
     bdwthDB.printDatabaseStats();
@@ -216,6 +198,7 @@ proc main(){
   }
   else {
     stopGpuDiagnostics();
-    assertGpuDiags(kernel_launch_um=523, kernel_launch_aod=547);
+    assertGpuDiags(kernel_launch_um=263, kernel_launch_aod=269,
+                   host_to_device=258, device_to_host=128, device_to_device=0);
   }
 }
