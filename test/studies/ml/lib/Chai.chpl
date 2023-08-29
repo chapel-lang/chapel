@@ -30,19 +30,19 @@ module Chai {
         try! throw new Error(s);
     }
 
+
+    /*
+        Dense layer is a fully connected layer that represents an affine transformation.
+        The input and output dimensions are both 1, and the output size (neurons) is specified in the initializer.
+    */
     record Dense {
 
         var outputSize: int;
-        var inputSize_ = -1;
-
         var bias: Tensor(1);
         var weights: Tensor(2);
-
         var biasGrad: Tensor(1);
         var weightsGrad: Tensor(2);
-
         var uninitialized = true;
-
 
         proc init(outputSize: int) {
             this.outputSize = outputSize;
@@ -57,7 +57,7 @@ module Chai {
         proc ref initialize(input: Tensor(1)) {
             if !uninitialized then err("Dense initialize: already initialized");
             const (inputSize,) = input.shape;
-            inputSize_ = inputSize;
+
             const stddevB = sqrt(2.0 / outputSize);
             const stddevW = sqrt(2.0 / (inputSize + outputSize));
 
@@ -76,6 +76,7 @@ module Chai {
             const activation = (this.weights * input) + this.bias;
             return activation;
         }
+
         proc ref forwardPropBatch(batch: [] Tensor(1)): [] Tensor(1) {     
             if uninitialized then initialize(batch[0]);
 
@@ -88,7 +89,6 @@ module Chai {
             }
             return activations;
         }
-
 
         proc ref backward(delta: Tensor(1), input: Tensor(1)): Tensor(1) {
             const newDelta = weights.transpose() * delta;
@@ -120,6 +120,7 @@ module Chai {
             this.bias -= mag * this.biasGrad;
             this.weights -= mag * this.weightsGrad;
         }
+
         proc ref resetGradients() {
             this.biasGrad.data = 0;
             this.weightsGrad.data = 0;
@@ -129,17 +130,25 @@ module Chai {
             bias.write(fw);
             weights.write(fw);
         }
+
         proc read(fr: IO.fileReader) throws {
             bias.read(fr);
             weights.read(fr);
             uninitialized = false;
         }
+
         proc signature(): string {
             return "Dense(" + outputSize + ")";
         }
     }
 
+    /*
+        Sigmoid layer is a non-linear activation function.
+        It is used to introduce non-linearity into the network.
+        The input and output dimensions are both are the same, and can be arbitrary. 
+    */
     record Sigmoid {
+
         proc init() { }
 
         proc forwardProp(x: Tensor(?rank)): Tensor(rank) {
@@ -162,18 +171,24 @@ module Chai {
         }
 
         proc optimize(mag: real) { }
+
         proc resetGradients() { }
 
-        proc write(fw: IO.fileWriter) throws {
-            // fw.write("[sigmoid]");
-        }
+        proc write(fw: IO.fileWriter) throws { }
+
         proc read(fr: IO.fileReader) throws { }
 
-        proc signature(): string {
+        proc signature(): string do
             return "Sigmoid()";
-        }
     }
 
+
+    /*
+        Conv is a convolutional layer. Its input and output dimensions are both 3.
+        The input is a 3D tensor of shape (height,width,inChannels).
+        The output is a 3D tensor of shape (height',width',outChannels).
+        The input and output channels are specified in the initializer, along with the kernel size, stride, and padding.
+    */
     record Conv {
 
         var numFilters: int;
@@ -227,7 +242,6 @@ module Chai {
             convs.data /= (inChannels:real);
             return convs;
         }
-    
 
         proc backward(delta: Tensor(3), images: Tensor(3)): Tensor(3) {
             const (h,w,channels) = images.shape;
@@ -291,8 +305,8 @@ module Chai {
 
         proc optimize(mag: real(64)) {
             filters -= mag * filtersGrad;
-
         }
+
         proc resetGradients() {
             filtersGrad.data = 0.0;
         }
@@ -313,6 +327,13 @@ module Chai {
             return "Conv(" + inChannels:string + "," + outChannels:string + ",kernel=" + kw:string + ",stride=" + stride:string + ",padding=" + padding:string + ")";
         }
     }
+
+    /*
+        MaxPool is a max pooling layer. Its input and output dimensions are both 3.
+        The input is a 3D tensor of shape (height,width,inChannels).
+        The output is a 3D tensor of shape (height / 2,width / 2,inChannels).
+        In the future, it would be easy to add a parameter to specify the pooling size.
+    */
 
     record MaxPool {
 
@@ -381,21 +402,29 @@ module Chai {
         }
 
         proc optimize(mag: real(64)) { }
+
         proc resetGradients() { }
 
-        proc write(fw: IO.fileWriter) throws {
-            // fw.write("[maxpool]");
-        }
+        proc write(fw: IO.fileWriter) throws { }
+
         proc read(fr: IO.fileReader) throws { }
 
-        proc signature(): string {
+        proc signature(): string do
             return "MaxPool()";
-        }
     }
 
+    /*
+        ReLU (leaky) is a non-linear activation function.
+        It is used to introduce non-linearity into the network.
+        The input and output dimensions are both are the same, and can be arbitrary.
+        The initializer takes one argument, which is the slope of the negative part of the function.
+    */
     record ReLU {
         var a: real = 0.0;
-        proc init(a: real = 0.0) { this.a = a; }
+
+        proc init(a: real = 0.0) do
+            this.a = a;
+
         proc forwardProp(input: Tensor(?rank)) {
             var output = new Tensor(rank,real);
             output.reshapeDomain(input.domain);
@@ -405,6 +434,7 @@ module Chai {
             }
             return output;
         }
+
         proc forwardPropBatch(batch: [] ?tensorType) where isSubtype(tensorType, Tensor) {
             var outputs: [batch.domain] batch.eltType;
             for i in outputs.domain {
@@ -412,6 +442,7 @@ module Chai {
             }
             return outputs;
         }
+
         proc backward(delta: Tensor(?rank),input: Tensor(rank)) {
             var output = new Tensor(rank,real);
             output.reshapeDomain(input.domain);
@@ -422,6 +453,7 @@ module Chai {
             }
             return output;
         }
+
         proc backwardBatch(deltas: [] ?tensorType1, inputs: [] ?tensorType2) where isSubtype(tensorType1, Tensor) && isSubtype(tensorType2, Tensor) {
             var newDeltas: [inputs.domain] inputs.eltType;
             for i in newDeltas.domain {
@@ -429,35 +461,50 @@ module Chai {
             }
             return newDeltas;
         }
+
         proc optimize(mag: real(64)) { }
+
         proc resetGradients() { }
+
         proc write(fw: IO.fileWriter) throws { }
+
         proc read(fr: IO.fileReader) throws { }
 
-        proc signature(): string {
+        proc signature(): string do
             return "ReLU(" + a:string + ")";
-        }
     }
 
+    /*
+        Flatten is a layer that flattens the input into a 1D tensor.
+        The input dimension can be arbitrary, but the output dimension is always 1.
+    */
     record Flatten {
 
         proc init() { }
-        proc forwardProp(input: Tensor(?inRank)): Tensor(1) {
+
+        proc forwardProp(input: Tensor(?inRank)): Tensor(1) do
             return input.flatten();
-        }
-        proc backward(delta: Tensor(1), input: Tensor(?inRank)): Tensor(inRank) {
+
+        proc backward(delta: Tensor(1), input: Tensor(?inRank)): Tensor(inRank) do
             return delta.reshape(input.domain);
-        }
+
         proc optimize(mag: real(64)) { }
+
         proc resetGradients() { }
+
         proc write(fw: IO.fileWriter) throws { }
+
         proc read(fr: IO.fileReader) throws { }
 
-        proc signature(): string {
+        proc signature(): string do
             return "Flatten()";
-        }
     }
 
+    /*
+        SoftMax is a layer that normalizes the input into a probability distribution.
+        The input dimension can be arbitrary, but the output dimension is always 1.
+        The initializer takes one argument, which is the number of output neurons.
+    */
     record SoftMax {
 
         var weights: Tensor(2);
@@ -469,18 +516,8 @@ module Chai {
         var uninitialized: bool = true;
         var outputSize: int = 0;
 
-        proc init(inputLength: int, nodes: int) {
-            weights = tn.randn(nodes,inputLength);// / inputLength;
-            biases = tn.randn(nodes);
-
-            weightsGrad = tn.zeros(nodes,inputLength);
-            biasesGrad = tn.zeros(nodes);
-            uninitialized = false;
-        }
-
-        proc init(outputSize: int) {
+        proc init(outputSize: int) do
             this.outputSize = outputSize;
-        }
 
         proc initialize(input: Tensor(?)) {
             const inputSize = * reduce input.shape;
@@ -508,7 +545,6 @@ module Chai {
             }
             return outputs;
         }
-
 
         proc forwardProp(input: Tensor(?)): Tensor(1) {
             tn.debugWrite("[enter softmax forward]");
@@ -594,6 +630,7 @@ module Chai {
             weights.data -= mag * weightsGrad.data;
             biases.data -= mag * biasesGrad.data;
         }
+
         proc resetGradients() {
             weightsGrad.data = 0.0;
             biasesGrad.data = 0.0;
@@ -603,22 +640,16 @@ module Chai {
             weights.write(fw);
             biases.write(fw);
         }
+        
         proc read(fr: IO.fileReader) throws {
             weights.read(fr);
             biases.read(fr);
             uninitialized = false;
         }
 
-        proc signature(): string {
+        proc signature(): string do
             return "SoftMax(" + outputSize:string + ")";
-        }
-
     }
-
-
-
-
-
 
     // Helper function that feeds the inputs through the layers and returns the outputs.
     // This is needed because the layer inputs and outputs are not all the same type.
@@ -638,6 +669,11 @@ module Chai {
         return layers[n].backwardBatch(deltas=deltas,inputs=inputs);
     }
 
+    /*
+        Network is a record that contains a list of layers.
+        It has methods for forward and backward propagation.
+        It also has methods for saving/loading.
+    */
     record Network {
         var _layers;
         proc ref layers ref do return this._layers;
@@ -675,50 +711,11 @@ module Chai {
                 this.layers[i].optimize(mag);
             }
         }
+
         proc ref resetGradients() {
             for param i in 0..#(this.layers.size) {
                 this.layers[i].resetGradients();
             }
-        }
-
-        proc cost(x: Tensor(?), y: Tensor(?)) {
-            const z = this.forwardProp(x);
-            return tn.frobeniusNormPowTwo(y - z);
-        }
-
-        proc optimize(x: Tensor(?),y: Tensor(?),mag: real) {
-            const z = this.forwardProp(x);
-            const delta = z - y;
-            backwardForwardPropHelp(this.layers,0,x,delta);
-            // this.optimize(mag);
-        }
-
-
-
-        proc train(data, learningRate: real) {
-            var cost = 0.0;
-            forall ((x,y),i) in zip(data,0..) with (ref this, ref cost) {
-                // this.optimize(x,y,learningRate);
-                const z = this.forwardProp(x);
-                const delta = z - y;
-                cost += tn.frobeniusNormPowTwo(delta);
-                backwardForwardPropHelp(this.layers,0,x,delta);
-                if i % ((data.size / 100):int + 1) == 0 {
-                    // try! IO.stderr.write(">");
-                    write(">");
-                    try! IO.stdout.flush();
-                }
-
-            }
-            // try! IO.stderr.writeln();
-            writeln();
-            cost /= data.size;
-            writeln("Optimizing...");
-            for param i in 0..#(layers.size) {
-                layers[i].optimize(learningRate / data.size);
-            }
-
-            return cost;
         }
 
         proc save(path: string) throws {
@@ -754,25 +751,5 @@ module Chai {
             sig += "]";
             return sig;
         }
-    }
-
-    proc main() {
-
-        // Don't expect this to work
-
-        var n2 = new Network(
-            (
-                new Conv(1,8,3),
-                new MaxPool(),
-                new Conv(8,12,3),
-                new MaxPool(),
-                new SoftMax(5 * 5 * 12, 10)
-            )
-        );
-        const image = tn.randn(28,28,1);
-        writeln(image);
-        const convs = n2.forwardProp(image);
-        writeln(convs);
-
     }
 }
