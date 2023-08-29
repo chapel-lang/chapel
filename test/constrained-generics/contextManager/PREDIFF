@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+command='\|CHPL_HOME/modules|s/:[0-9:]*:/:nnnn:/'
+
+cp "$2" $2.tmp
+cat $2.tmp | sed "$command" > $2
+rm $2.tmp
+
