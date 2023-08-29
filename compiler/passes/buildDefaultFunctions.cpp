@@ -1796,8 +1796,7 @@ FnSymbol* buildWriteThisFnSymbol(AggregateType* ct, ArgSymbol** filearg, const c
 
   // Create the arg here so that caller doesn't have to.
   if (isSerialize) {
-    CallExpr* initExpr = new CallExpr(".", fileArg, new_StringSymbol("serializerType"));
-    ArgSymbol* serializer = new ArgSymbol(INTENT_REF, "serializer", dtUnknown, initExpr);
+    ArgSymbol* serializer = new ArgSymbol(INTENT_REF, "serializer", dtAny);
     fn->insertFormalAtTail(serializer);
   }
 

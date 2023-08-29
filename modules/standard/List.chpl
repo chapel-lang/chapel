@@ -1912,10 +1912,10 @@ module List {
     proc serialize(writer: fileWriter(?), ref serializer) throws {
       _enter();
 
-      serializer.startList(writer, this._size);
+      var ser = serializer.startList(writer, this._size);
       for i in 0..<this._size do
-        serializer.writeListElement(writer, _getRef(i));
-      serializer.endList(writer);
+        ser.writeElement(_getRef(i));
+      ser.endList();
 
       _leave();
     }
@@ -2028,26 +2028,22 @@ module List {
     }
 
     @chpldoc.nodoc
-    proc ref _readHelper(r: fileReader, ref des) throws {
+    proc ref _readHelper(r: fileReader, ref deserializer) throws {
       _enter();
 
       _clearLocked();
 
-      des.startList(r);
+      var des = deserializer.startList(r);
 
       var done = false;
-      while !done {
-        try {
-          pragma "no auto destroy"
-          var elt = des.readListElement(r, eltType);
-          // read an element
-          _appendByRef(elt);
-        } catch e: BadFormatError {
-          done = true;
-        }
+      while des.hasMore() {
+        pragma "no auto destroy"
+        var elt = des.readElement(eltType);
+        // read an element
+        _appendByRef(elt);
       }
 
-      des.endList(r);
+      des.endList();
 
       _leave();
     }

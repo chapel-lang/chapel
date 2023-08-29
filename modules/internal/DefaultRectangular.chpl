@@ -1772,21 +1772,14 @@ module DefaultRectangular {
 
   proc chpl_serialReadWriteRectangularHelper(f, arr, dom) throws
   where _supportsSerializers(f) {
-    if arr.isDefaultRectangular() && !chpl__isArrayView(arr) &&
-       _isSimpleIoType(arr.eltType) && _supportsBulkElements(f, arr) &&
-       arr.isDataContiguous(dom) {
-      _readWriteBulk(f, arr, dom);
-    } else {
-      _readWriteHelper(f, arr, dom);
-    }
-  }
-
-  proc _readWriteHelper(f, arr, dom) throws {
     param rank = arr.rank;
     type idxType = arr.idxType;
     type idxSignedType = chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
 
-    ref fmt = if f._writing then f.serializer else f.deserializer;
+    var helper = if f._writing then
+      f.serializer.startArray(f, dom.dsiNumIndices:int)
+    else
+      f.deserializer.startArray(f);
 
     proc recursiveArrayReaderWriter(in idx: rank*idxType, dim=0, in last=false) throws {
 
@@ -1794,18 +1787,18 @@ module DefaultRectangular {
       const makeStridePositive = if dom.dsiDim(dim).stride > 0 then 1:strType else (-1):strType;
 
       if f._writing then
-        fmt.startArrayDim(f, dom.dsiDim(dim).sizeAs(uint));
+        helper.startDim(dom.dsiDim(dim).size);
       else
-        fmt.startArrayDim(f);
+        helper.startDim();
 
       // The simple 1D case
       if dim == rank-1 {
         for j in dom.dsiDim(dim) by makeStridePositive {
           idx(dim) = j;
           if f._writing then
-            fmt.writeArrayElement(f, arr.dsiAccess(idx));
+            helper.writeElement(arr.dsiAccess(idx));
           else {
-            arr.dsiAccess(idx) = fmt.readArrayElement(f, arr.eltType);
+            arr.dsiAccess(idx) = helper.readElement(arr.eltType);
           }
         }
       } else {
@@ -1819,37 +1812,31 @@ module DefaultRectangular {
         }
       }
 
-      fmt.endArrayDim(f);
+      helper.endDim();
     }
 
-    if f._writing then
-      fmt.startArray(f, dom.dsiNumIndices:uint);
-    else
-      fmt.startArray(f);
+    use Reflection;
+    var ptr = c_addrOf(arr.dsiAccess(dom.dsiFirst));
 
-    const zeroTup: rank*idxType;
-    recursiveArrayReaderWriter(zeroTup);
+    param canResolveBulkElements = Reflection.canResolveMethod(helper, "writeBulkElements", ptr, 0) ||
+                                   Reflection.canResolveMethod(helper, "readBulkElements", ptr, 0);
+    param useBulkElements = canResolveBulkElements &&
+                            arr.isDefaultRectangular() &&
+                            !chpl__isArrayView(arr) &&
+                            _isSimpleIoType(arr.eltType);
 
-    fmt.endArray(f);
-  }
-
-  proc _readWriteBulk(f, arr, dom) throws {
-    ref fmt = if f._writing then f.serializer else f.deserializer;
-
-    const len = dom.dsiNumIndices:uint;
-    if f._writing then
-      fmt.startArray(f, len);
-    else
-      fmt.startArray(f);
-
-    var ptr = c_ptrTo(arr.dsiAccess(dom.dsiFirst));
-    if f._writing {
-      fmt.writeBulkElements(f, ptr, len);
+    if useBulkElements && arr.isDataContiguous(dom) {
+      if f._writing then
+        helper.writeBulkElements(ptr, dom.dsiNumIndices:int);
+      else
+        helper.readBulkElements(ptr, dom.dsiNumIndices:int);
     } else {
-      fmt.readBulkElements(f, ptr, len);
+      // Otherwise, recursively read or write the array
+      const zeroTup: rank*idxType;
+      recursiveArrayReaderWriter(zeroTup);
     }
 
-    fmt.endArray(f);
+    helper.endArray();
   }
 
   proc chpl_serialReadWriteRectangularHelper(f, arr, dom) throws {

@@ -633,21 +633,17 @@ module Map {
     }
 
     @chpldoc.nodoc
-    proc ref _readHelper(r: fileReader, ref des) throws {
+    proc ref _readHelper(r: fileReader, ref deserializer) throws {
       _enter(); defer _leave();
 
-      des.startMap(r);
+      var des = deserializer.startMap(r);
 
       var done = false;
-      while !done {
-        try {
-          add(des.readKey(r, keyType), des.readValue(r, valType));
-        } catch e: BadFormatError {
-          done = true;
-        }
+      while des.hasMore() {
+        add(des.readKey(keyType), des.readValue(valType));
       }
 
-      des.endMap(r);
+      des.endMap();
     }
 
     @chpldoc.nodoc
@@ -717,18 +713,17 @@ module Map {
     proc serialize(writer: fileWriter(?), ref serializer) throws {
       _enter(); defer _leave();
 
-      ref ser = serializer;
-      ser.startMap(writer, _size);
+      var ser = serializer.startMap(writer, _size);
 
       for slot in table.allSlots() {
         if table.isSlotFull(slot) {
           ref tabEntry = table.table[slot];
-          ser.writeKey(writer, tabEntry.key);
-          ser.writeValue(writer, tabEntry.val);
+          ser.writeKey(tabEntry.key);
+          ser.writeValue(tabEntry.val);
         }
       }
 
-      ser.endMap(writer);
+      ser.endMap();
     }
 
     @chpldoc.nodoc
