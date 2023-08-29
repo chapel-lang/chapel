@@ -1422,7 +1422,7 @@ shouldWarnUnstableForPath(Context* context, UniqueString filepath) {
     return isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE);
 }
 
-static bool
+bool
 shouldWarnUnstableForId(Context* context, const ID& id) {
   UniqueString filepath;
   bool found = context->filePathForId(id, filepath);

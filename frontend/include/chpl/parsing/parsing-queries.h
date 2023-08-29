@@ -518,6 +518,12 @@ void reportDeprecationWarningForId(Context* context, ID idMention,
 bool shouldWarnUnstableForPath(Context* context, UniqueString filepath);
 
 /**
+  Returns the state of --warn-unstable or -internal or -standard
+  depending on which of these applies to 'id'.
+*/
+bool shouldWarnUnstableForId(Context* context, const ID& id);
+
+/**
   Given an ID 'idMention' representing a mention of a symbol, and an
   ID 'idTarget' representing the symbol, determine if an unstable
   warning should be produced for 'idTarget' at 'idMention'. If so,
