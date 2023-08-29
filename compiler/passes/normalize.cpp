@@ -3412,7 +3412,6 @@ static void hack_resolve_types(ArgSymbol* arg) {
           se = toSymExpr(arg->defaultExpr->body.tail);
         if (!se || se->symbol() != gTypeDefaultToken) {
           SET_LINENO(arg->defaultExpr);
-          // white lie: `typeExpr` should be a type, not a value
           arg->typeExprFromDefaultExpr = true;
           arg->typeExpr = arg->defaultExpr->copy();
           insert_help(arg->typeExpr, NULL, arg);
@@ -3421,9 +3420,9 @@ static void hack_resolve_types(ArgSymbol* arg) {
     } else {
       INT_ASSERT(arg->typeExpr);
 
-      // If there is a simple type expression, and its type is something more specific than
-      // dtUnknown or dtAny, then replace the type expression with that type.
-      // hilde sez: don't we lose information here?
+      // If there is a simple type expression, and its type is something more
+      // specific than dtUnknown or dtAny, then replace the type expression
+      // with that type.
       if (arg->typeExpr->body.length == 1) {
         Expr* only = arg->typeExpr->body.only();
         Type* type = only->typeInfo();
@@ -3450,6 +3449,22 @@ static void hack_resolve_types(ArgSymbol* arg) {
 
         if (type != dtUnknown && type != dtAny) {
           // This test ensures that we are making progress.
+
+          bool genericWithDefaults = false;
+          if (AggregateType* at = toAggregateType(type))
+            genericWithDefaults = at->isGenericWithDefaults();
+
+          if (type->symbol->hasFlag(FLAG_GENERIC) &&
+              !genericWithDefaults &&
+              !arg->hasFlag(FLAG_MARKED_GENERIC) &&
+              arg->defPoint->getModule()->modTag == MOD_USER) {
+            if (type->symbol->hasFlag(FLAG_ARRAY)) {
+              // don't worry about it for array types for now
+            } else {
+              USR_WARN(arg->typeExpr, "need ? on generic formal type");
+            }
+          }
+
           arg->type = type;
           arg->typeExpr->remove();
         }

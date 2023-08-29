@@ -874,6 +874,21 @@ static void checkFormalType(const FnSymbol* enclosingFn, ArgSymbol* formal) {
           USR_FATAL_CONT(typeExp, "The declared type of the formal "
           "%s is given by non-type function '%s'", formal->name, target->name);
     }
+
+    bool genericWithDefaults = false;
+    if (AggregateType* at = toAggregateType(formal->type))
+      genericWithDefaults = at->isGenericWithDefaults();
+
+    if (formal->type->symbol->hasFlag(FLAG_GENERIC) &&
+        !genericWithDefaults &&
+        !formal->hasFlag(FLAG_MARKED_GENERIC) &&
+        formal->defPoint->getModule()->modTag == MOD_USER) {
+      if (formal->type->symbol->hasFlag(FLAG_ARRAY)) {
+        // don't worry about it for array types for now
+      } else {
+        USR_WARN(formal, "need ? on generic formal type");
+      }
+    }
   }
 }
 
