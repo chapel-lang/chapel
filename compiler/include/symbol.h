@@ -565,6 +565,11 @@ public:
   //  - to itself, if there is a default implementation
   //  - to gDummyWitness, otherwise
   SymbolMap  requiredFns;
+
+  // Set to true if this interface has an "eny intent" function; such interfaces
+  // cannot be used in CG functions, because the resulting intent of the call to
+  // the witness cannot be known.
+  bool hasAnyIntentFn = false;
 };
 
 extern InterfaceSymbol* gHashable;

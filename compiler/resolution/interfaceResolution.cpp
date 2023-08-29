@@ -353,6 +353,9 @@ static void resolveISymRequiredFun(InterfaceSymbol* isym, FnSymbol* fn) {
     USR_FATAL_CONT(fn->where, "the interface function %s%s", fn->name,
           " contains a where clause, which is currently not supported");
 
+  if (fn->hasFlag(FLAG_IFC_ANY_RETURN_INTENT))
+    isym->hasAnyIntentFn = true;
+
   if (fn->isConstrainedGeneric() && ! fn->hasFlag(FLAG_NO_FN_BODY)) {
     resolveConstrainedGenericFun(fn);
   } else {
@@ -740,6 +743,14 @@ void resolveConstrainedGenericFun(FnSymbol* fn) {
   if (fn->isResolved()) return;
   InterfaceInfo* ifcInfo = fn->interfaceInfo;
   if (ifcInfo == NULL) return;  // not a CG
+
+  for_alist(iconExpr, ifcInfo->interfaceConstraints) {
+    auto icon = toIfcConstraint(iconExpr);
+    if (icon->ifcSymbol()->hasAnyIntentFn) {
+      USR_FATAL(fn, "the interface '%s' cannot be used in a constrained-generic "
+                    "function.", icon->ifcSymbol()->name);
+    }
+  }
 
   cgprint("resolving CG function early %s  %s {\n",
           symstring(fn), debugLoc(fn));
