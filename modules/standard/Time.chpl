@@ -402,21 +402,21 @@ module Time {
     const td = new timeDelta(seconds=timeSinceEpoch(0),
                              microseconds=timeSinceEpoch(1));
 
-    return unixEpoch.getDate() + td;
+    return unixEpoch.date() + td;
   }
 
-  @deprecated(notes="'date.fromTimestamp' is deprecated, please use 'dateTime.createUtcFromTimestamp().getDate()' instead")
+  @deprecated(notes="'date.fromTimestamp' is deprecated, please use 'dateTime.createUtcFromTimestamp().date()' instead")
   proc type date.fromTimestamp(timestamp) : date {
     return date.createFromTimestamp(timestamp);
   }
 
   /* The date that is `timestamp` seconds from the epoch */
-  @deprecated(notes="'date.createFromTimestamp' is deprecated, please use 'dateTime.createUtcFromTimestamp().getDate()' instead")
+  @deprecated(notes="'date.createFromTimestamp' is deprecated, please use 'dateTime.createUtcFromTimestamp().date()' instead")
   proc type date.createFromTimestamp(timestamp: real) : date {
     const sec = timestamp: int;
     const us = ((timestamp-sec) * 1000000 + 0.5): int;
     const td = new timeDelta(seconds=sec, microseconds=us);
-    return unixEpoch.getDate() + td;
+    return unixEpoch.date() + td;
   }
 
   @deprecated(notes="'date.fromOrdinal' is deprecated, please use 'date.createFromOrdinal' instead")
@@ -1306,13 +1306,17 @@ module Time {
 
   /* Methods on dateTime values */
 
-  @deprecated(notes="'dateTime.getdate' is deprecated. Please use :proc:`dateTime.getDate` instead")
+  @deprecated(notes="'dateTime.getdate' is deprecated. Please use :proc:`dateTime.date` instead")
   proc dateTime.getdate() : date {
     return chpl_date;
   }
-
   /* Get the `date` portion of the `dateTime` value */
+  @deprecated(notes="'dateTime.getDate' is deprecated. Please use :proc:`dateTime.date` instead")
   proc dateTime.getDate() : date {
+    return date();
+  }
+  /* Get the `date` portion of the `dateTime` value */
+  proc dateTime.date() : date {
     return chpl_date;
   }
 
@@ -1324,9 +1328,16 @@ module Time {
       return new time(hour=hour, minute=minute,
                       second=second, microsecond=microsecond);
   }
-
   /* Get the `time` portion of the `dateTime` value, with `tz` = nil */
+  @deprecated(notes="'dateTime.getTime' is deprecated. Please use :proc:`dateTime.time` instead")
   proc dateTime.getTime() : time {
+    return time();
+  }
+  /* Get the `time` portion of the `dateTime` value, with ``tz=nil``.
+     The behavior of this method with respect to timezones may change in the
+     future.
+   */
+  proc dateTime.time() : time {
     if chpl_time.timezone.borrow() == nil then
       return chpl_time;
     else
@@ -1444,21 +1455,21 @@ module Time {
 
   /* Return the number of days since 1-1-0001 this `dateTime` represents */
   proc dateTime.toOrdinal() : int {
-    return getDate().toOrdinal();
+    return date().toOrdinal();
   }
 
   /* Return the day of the week.
    */
   proc dateTime.weekday() : dayOfWeek where cIsoDayOfWeek {
-    return getDate().weekday();
+    return date().weekday();
   }
   @deprecated(notes="The version of 'dateTime.weekday' returning a :type:`dayOfWeek` starting with `Monday = 0` is deprecated. Recompile with ``-sCIsoDayOfWeek=true`` to opt in to the new behavior of `Monday = 1`")
   proc dateTime.weekday() : dayOfWeek where !cIsoDayOfWeek {
-    return getDate().weekday();
+    return date().weekday();
   }
   @chpldoc.nodoc
   proc dateTime._old_weekday() : _old_dayOfWeek {
-    return getDate()._old_weekday();
+    return date()._old_weekday();
   }
 
   /* Return the day of the week as an `isoDayOfWeek`.
@@ -1466,7 +1477,7 @@ module Time {
    */
   @deprecated(notes="'dateTime.isoWeekday' is deprecated; use :proc:`dateTime.weekday` instead")
   proc dateTime.isoWeekday() : isoDayOfWeek {
-    return getDate().isoWeekday();
+    return date().isoWeekday();
   }
 
   @chpldoc.nodoc
@@ -1479,13 +1490,13 @@ module Time {
      and ISO day of the week
    */
   proc dateTime.isoCalendar() : (int, int, int) {
-    return getDate().isoCalendar();
+    return date().isoCalendar();
   }
 
   @chpldoc.nodoc
   @deprecated(notes="'isocalendar' is deprecated, please use 'isoCalendar' instead")
   proc dateTime.isocalendar() : (int, int, int) {
-    return getDate().isoCalendar();
+    return date().isoCalendar();
   }
 
   /* Get a `string` representation of this `dateTime` in ISO format
@@ -1715,7 +1726,7 @@ module Time {
     var adddays = td.days + newhour / 24;
     newhour %= 24;
 
-    return dateTime.combine(date.createFromOrdinal(dt.getDate().toOrdinal()+adddays),
+    return dateTime.combine(date.createFromOrdinal(dt.date().toOrdinal()+adddays),
                             new time(hour=newhour, minute=newmin,
                                      second=newsec, microsecond=newmicro,
                                      tz=dt.timezone));
@@ -1756,7 +1767,7 @@ module Time {
       subDays += 1;
       newhour += 24;
     }
-    return dateTime.combine(date.createFromOrdinal(dt.getDate().toOrdinal()-subDays),
+    return dateTime.combine(date.createFromOrdinal(dt.date().toOrdinal()-subDays),
                             new time(hour=newhour, minute=newmin,
                                      second=newsec, microsecond=newmicro,
                                      tz=dt.timezone));
@@ -1789,10 +1800,10 @@ module Time {
       halt("Cannot compare naive dateTime to aware dateTime");
     } else if dt1.timezone == dt2.timezone {
       // just ignore timezone
-      var d1: date = dt1.replace(tz=nil).getDate(),
-          d2: date = dt2.replace(tz=nil).getDate();
-      var t1: time = dt1.replace(tz=nil).getTime(),
-          t2: time = dt2.replace(tz=nil).getTime();
+      var d1: date = dt1.replace(tz=nil).date(),
+          d2: date = dt2.replace(tz=nil).date();
+      var t1: time = dt1.replace(tz=nil).time(),
+          t2: time = dt2.replace(tz=nil).time();
 
       return d1.year == d2.year && d1.month == d2.month && d1.day == d2.day &&
                         t1.hour == t2.hour && t1.minute == t2.minute &&
@@ -1815,11 +1826,11 @@ module Time {
         (dt1.timezone.borrow() == nil && dt2.timezone.borrow() != nil) {
       halt("both dateTimes must both be either naive or aware");
     } else if dt1.timezone == dt2.timezone {
-      const date1 = dt1.getDate(),
-            date2 = dt2.getDate();
+      const date1 = dt1.date(),
+            date2 = dt2.date();
       if date1 < date2 then return true;
       else if date2 < date1 then return false;
-      else return dt1.getTime() < dt2.getTime();
+      else return dt1.time() < dt2.time();
     } else {
       return (dt1.replace(tz=nil) - dt1.timezone!.utcOffset(dt1)) <
              (dt2.replace(tz=nil) - dt2.timezone!.utcOffset(dt2));
@@ -1832,11 +1843,11 @@ module Time {
         (dt1.timezone.borrow() == nil && dt2.timezone.borrow() != nil) {
       halt("both dateTimes must both be either naive or aware");
     } else if dt1.timezone == dt2.timezone {
-      const date1 = dt1.getDate(),
-            date2 = dt2.getDate();
+      const date1 = dt1.date(),
+            date2 = dt2.date();
       if date1 < date2 then return true;
       else if date2 < date1 then return false;
-      else return dt1.getTime() <= dt2.getTime();
+      else return dt1.time() <= dt2.time();
     } else {
       return (dt1.replace(tz=nil) - dt1.timezone!.utcOffset(dt1)) <=
              (dt2.replace(tz=nil) - dt2.timezone!.utcOffset(dt2));
@@ -1849,11 +1860,11 @@ module Time {
         (dt1.timezone.borrow() == nil && dt2.timezone.borrow() != nil) {
       halt("both dateTimes must both be either naive or aware");
     } else if dt1.timezone == dt2.timezone {
-      const date1 = dt1.getDate(),
-            date2 = dt2.getDate();
+      const date1 = dt1.date(),
+            date2 = dt2.date();
       if date1 > date2 then return true;
       else if date2 > date1 then return false;
-      else return dt1.getTime() > dt2.getTime();
+      else return dt1.time() > dt2.time();
     } else {
       return (dt1.replace(tz=nil) - dt1.timezone!.utcOffset(dt1)) >
              (dt2.replace(tz=nil) - dt2.timezone!.utcOffset(dt2));
@@ -1866,11 +1877,11 @@ module Time {
         (dt1.timezone.borrow() == nil && dt2.timezone.borrow() != nil) {
       halt("both dateTimes must both be either naive or aware");
     } else if dt1.timezone == dt2.timezone {
-      const date1 = dt1.getDate(),
-            date2 = dt2.getDate();
+      const date1 = dt1.date(),
+            date2 = dt2.date();
       if date1 > date2 then return true;
       else if date2 > date1 then return false;
-      else return dt1.getTime() >= dt2.getTime();
+      else return dt1.time() >= dt2.time();
     } else {
       return (dt1.replace(tz=nil) - dt1.timezone!.utcOffset(dt1)) >=
              (dt2.replace(tz=nil) - dt2.timezone!.utcOffset(dt2));
