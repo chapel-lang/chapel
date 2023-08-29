@@ -85,6 +85,18 @@ module Tensor {
         return filled;
     }
 
+    proc indexInShape(shape: ?rank*int, in n: int): rank*int {
+        var idxs: rank*int;
+        const size = * reduce shape;
+        if n > size then err("Error in indexInShape: ", n," is too large for shape.");
+        for param i in 0..#rank {
+            const dim = shape[rank - i - 1];
+            idxs[rank - i - 1] = n % dim;
+            n = Math.divfloor(n,dim);
+        }
+        return idxs;
+    }
+
     record Tensor {
         param rank: int;
         type eltType = real(64);
@@ -793,6 +805,27 @@ module Tensor {
         return p - q;
     }
 
+    iter convolutionRegions(dom: domain(2,int), k: int, stride: int) {
+        const (h,w) = correlateShape((k,k),dom.shape,stride,padding=0);
+        for (i,j) in {0..#h,0..#w} {
+            yield dom[i * stride..#k,j * stride..#k];
+        }
+    }
+
+    proc kernelGradient(X: Tensor(2), dY: Tensor(2),kernelSize: int,stride: int = 1) {
+        const k = kernelSize;
+        const (outH,outW) = correlateShape((k,k),X.shape,stride,padding=0);
+
+        var data: [0..#k,0..#k] real;
+        const regions = convolutionRegions(X.domain,k,stride);
+        forall (region,i) in zip(regions,0..#dY.domain.size) with (+ reduce data) {
+            data += X[region] * dY[indexInShape(dY.shape,i)];
+        }
+        var dK = new Tensor(2,real);
+        dK.reshapeDomain({0..#k,0..#k});
+        dK.data = data;
+        return dK;
+    }
 
 
 
