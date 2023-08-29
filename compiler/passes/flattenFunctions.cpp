@@ -301,6 +301,7 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
 
       SET_LINENO(sym);
       ArgSymbol* arg = new ArgSymbol(intent, sym->name, type);
+      if(arg->id == 2002632) gdbShouldBreakHere();
       if (sym->hasFlag(FLAG_ARG_THIS))
           arg->addFlag(FLAG_ARG_THIS);
       if (sym->hasFlag(FLAG_REF_TO_IMMUTABLE))
@@ -311,6 +312,8 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
           arg->addFlag(FLAG_COFORALL_INDEX_VAR);
       if (sym->hasFlag(FLAG_NO_RVF))
           arg->addFlag(FLAG_NO_RVF);
+      if(sym->hasFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST))
+          arg->addFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST);
       arg->addFlag(FLAG_OUTER_VARIABLE);
 
       fn->insertFormalAtTail(new DefExpr(arg));

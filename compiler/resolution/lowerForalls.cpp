@@ -871,9 +871,17 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* callToTFn, FnSymbol* taskF
   int numOrigActuals = callToTFn->numActuals();
   int ix = 0;
 
-  for_shadow_vars(svar, temp, EV->forall)
+  for_shadow_vars(svar, temp, EV->forall) {
     expandShadowVarTaskFn(cloneTaskFn, callToTFn, aInit, aFini,
                           numOrigActuals, iMap, map, svar, ++ix);
+  }
+  std::vector<SymExpr*> allSymExpr;
+  collectSymExprs(EV->forall, allSymExpr);
+  for(auto symExpr: allSymExpr) {
+    if(symExpr->symbol()->hasFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST)) {
+      std::cerr << "IN LOWER fs " << EV->forall->id << " is ref-maybe-const due to " << symExpr->symbol()->name << "[" << symExpr->id << "][" << symExpr->symbol()->id << "]\n";
+    }
+  }
 
   aInit->remove();
   aFini->remove();
@@ -886,6 +894,39 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* callToTFn, FnSymbol* taskF
   fixupErrorHandlingExits(cloneTaskFn->body, addErrorArgToCall);
   if (addErrorArgToCall)
     addDummyErrorArgumentToCall(callToTFn);
+
+
+  std::vector<SymExpr*> allIterandSymExprs;
+  for_alist(expr, EV->forall->iteratedExpressions()) {
+    collectSymExprs(expr, allIterandSymExprs);
+  }
+  if(CallExpr* zipCall = EV->forall->zipCall()) {
+    collectSymExprs(zipCall, allIterandSymExprs);
+  }
+
+    allSymExpr.clear();
+  collectSymExprs(cloneTaskFn, allSymExpr);
+  for(auto symExpr: allSymExpr) {
+    if(symExpr->symbol()->hasFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST)) {
+      // if it is used in the iterand, unmark it
+      const char* symName = symExpr->symbol()->name;
+      auto it =
+          std::find_if(allIterandSymExprs.begin(), allIterandSymExprs.end(),
+                       [symName](auto iterSym) -> bool {
+                         return strcmp(iterSym->symbol()->name,
+                                       symName) == 0;
+                       });
+      if (it != allIterandSymExprs.end()) {
+        std::cerr << "removing iter expr " << symExpr->symbol()->name << "["
+          << symExpr->id << "][" << symExpr->symbol()->id << "]\n";
+symExpr->symbol()->removeFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST);
+      }else
+                       std::cerr
+          << "IN LOWER cloned " << cloneTaskFn->id
+          << " is ref-maybe-const due to " << symExpr->symbol()->name << "["
+          << symExpr->id << "][" << symExpr->symbol()->id << "]\n";
+    }
+  }
 
   // If we don't flatten it right away, we get non-global taskFns
   // in expandTaskFn(). That may cause issues with scoping.

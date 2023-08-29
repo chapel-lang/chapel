@@ -7465,7 +7465,10 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
    case INTENT_CONST:
    case INTENT_PARAM:
    case INTENT_TYPE:
+    // not checking them here
+    break;
    case INTENT_REF_MAYBE_CONST:
+   if(call->getModule()->modTag == MOD_USER) std::cout << "REF_MAYBE_CONST\n";
     // not checking them here
     break;
 

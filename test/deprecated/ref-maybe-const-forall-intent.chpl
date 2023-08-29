@@ -1,7 +1,18 @@
-var x: [1..10] int;
-forall i in 1..10 {
-  x[i] = i;
+var myArray1: [1..10] int;
+forall i in 1..10 { // should warn
+  myArray1[i] = i;
 }
+
+var myArray2: [1..10] int;
+forall i in 1..10 with (ref myArray2) { // should not warn
+  myArray2[i] = i;
+}
+
+var myArray3: [1..10] int;
+forall i in 1..10 { // should not warn
+  write(myArray3[i], " ");
+}
+writeln();
 
 // should not warn
 var A: [1..10] int;
@@ -31,14 +42,14 @@ var c: [1..10] int;
 [cc in c] cc = 1;
 
 // should warn
-var d: [1..10] int;
-[i in 1..10] d(i) = i;
+var myArrayD: [1..10] int;
+[i in 1..10] myArrayD(i) = i;
 // should not warn
-d = [i in 1..10] i;
+myArrayD = [i in 1..10] i;
 // should not warn
-[(i,dd) in zip(1..10, d)] dd = i;
+[(i,dd) in zip(1..10, myArrayD)] dd = i;
 // should not warn
-forall i in 1..10 with (ref d) do d(i) = i;
+forall i in 1..10 with (ref myArrayD) do myArrayD(i) = i;
 
 
 {

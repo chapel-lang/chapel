@@ -715,7 +715,9 @@ Potential culprits:
 // It is done on an already-existing, explicit shadow variable
 // or before an implicit shadow variable is to be created.
 //
-static void resolveShadowVarTypeIntent(Type*& type, ForallIntentTag& intent,
+static void resolveShadowVarTypeIntent(Symbol* sym,
+                                       Type*& type,
+                                       ForallIntentTag& intent,
                                        bool& prune)
 {
   switch (intent) {
@@ -733,7 +735,12 @@ static void resolveShadowVarTypeIntent(Type*& type, ForallIntentTag& intent,
       }
 
       IntentTag argInt = (intent == TFI_DEFAULT) ? INTENT_BLANK : INTENT_CONST;
-      intent = forallIntentForArgIntent(concreteIntent(argInt, valType));
+      argInt = concreteIntent(argInt, valType);
+      intent = forallIntentForArgIntent(argInt);
+
+      if(argInt == INTENT_REF_MAYBE_CONST && intent == TFI_REF){
+        sym->addFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST);
+      }
 
       break;
     }
@@ -850,7 +857,7 @@ static void doImplicitShadowVars(ForallStmt* fs, BlockStmt* block,
     bool  prune = false;
     if (sym->type == dtUnknown)
       USR_FATAL(se, "'%s' appears to be used before it is defined", sym->name);
-    resolveShadowVarTypeIntent(type, intent, prune); // updates the args
+    resolveShadowVarTypeIntent(sym, type, intent, prune); // updates the args
 
     if (prune) {                      // do not convert to shadow var
       assertNotRecordReceiver(sym, se);
@@ -919,7 +926,7 @@ static void resolveAndPruneExplicitShadowVars(ForallStmt* fs,
   {
     Type* type  = ovarOrSvarType(svar);
     bool  prune = false;
-    resolveShadowVarTypeIntent(type, svar->intent, prune); // updates the args
+    resolveShadowVarTypeIntent(svar, type, svar->intent, prune); // updates the args
 
     // Ensure the svar is retained for a `this` with an explicit intent,
     // see convertFieldsOfRecordThis().
@@ -994,7 +1001,7 @@ static ShadowVarSymbol* createSVforFieldAccess(ForallStmt* fs, Symbol* ovar,
   Type*           svarType   = field->type;
   ForallIntentTag svarIntent = isConst ? TFI_CONST : TFI_DEFAULT;
   bool            pruneDummy = false;
-  resolveShadowVarTypeIntent(svarType, svarIntent, pruneDummy);
+  resolveShadowVarTypeIntent(field, svarType, svarIntent, pruneDummy);
 
   ShadowVarSymbol* svar = new ShadowVarSymbol(svarIntent,
                                               astr(field->name, "_svar"),
@@ -1165,4 +1172,32 @@ void setupAndResolveShadowVars(ForallStmt* fs)
   // passed by the default intent.
   //
   convertFieldsOfRecordReceiver(fs);
+
+//
+  // identify any svar with intent REF_MAYBE_CONST, throw a warning, and
+  // make it REF
+  //
+
+  // std::vector<SymExpr*> allIterandSymExprs;
+  // for_alist(expr, fs->iteratedExpressions()) {
+  //   collectSymExprs(expr, allIterandSymExprs);
+  // }
+  // if(fs->zipCall() != nullptr) {
+  //   collectSymExprs(fs->zipCall(), allIterandSymExprs);
+  // }
+
+  // if any iterand has the marker, mark as an iterand the marker
+  // for(auto symExpr: allIterandSymExprs) {
+  //   symExpr->symbol()->removeFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST);
+  // }
+
+  // now collect all syms from the forall, if any of them are ref-maybe-const, mark the forall
+  std::vector<SymExpr*> allSymExpr;
+  collectSymExprs(fs, allSymExpr);
+  for(auto symExpr: allSymExpr) {
+    if(symExpr->symbol()->hasFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST)) {
+      std::cerr << "fs " << fs->id << " is ref-maybe-const due to " << symExpr->symbol()->name << "[" << symExpr->id << "][" << symExpr->symbol()->id << "]\n";
+    }
+  }
+
 }
