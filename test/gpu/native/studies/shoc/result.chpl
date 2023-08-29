@@ -33,7 +33,7 @@ module ResultDB {
             this.homeLocale = here;
         }
 
-        proc addToDatabase(blockSize: string, value: real){
+        proc ref addToDatabase(blockSize: string, value: real){
             on homeLocale {
                 // Since the [] Access adds the mapping if it does not
                 // exist we do not have to initialize a new list when one

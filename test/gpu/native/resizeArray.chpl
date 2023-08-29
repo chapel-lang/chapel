@@ -5,7 +5,7 @@ record innerArray {
   var D = {0..-1};
   forwarding var A: [D] t;
 
-  proc resize(size: int) {
+  proc ref resize(size: int) {
     this.D = {0..#size};
   }
 }
