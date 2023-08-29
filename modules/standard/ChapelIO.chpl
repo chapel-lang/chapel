@@ -688,18 +688,18 @@ module ChapelIO {
   proc nothing.serialize(writer, ref serializer) {}
 
   @chpldoc.nodoc
-  proc _tuple.readThis(f) throws {
+  proc ref _tuple.readThis(f) throws {
     _readWriteHelper(f);
   }
 
   @chpldoc.nodoc
-  proc _tuple.writeThis(f) throws {
+  proc ref _tuple.writeThis(f) throws {
     _readWriteHelper(f);
   }
 
   // Moved here to avoid circular dependencies in ChapelTuple.
   @chpldoc.nodoc
-  proc _tuple._readWriteHelper(f) throws {
+  proc ref _tuple._readWriteHelper(f) throws {
     const st = f.styleElement(QIO_STYLE_ELEMENT_TUPLE);
     const isJson = st == QIO_TUPLE_FORMAT_JSON;
     const binary = f._binary();
@@ -760,7 +760,7 @@ module ChapelIO {
   }
 
   @chpldoc.nodoc
-  proc _tuple.deserialize(reader, ref deserializer) throws {
+  proc ref _tuple.deserialize(reader, ref deserializer) throws {
     ref des = deserializer;
     des.startTuple(reader);
     for param i in 0..<this.size {

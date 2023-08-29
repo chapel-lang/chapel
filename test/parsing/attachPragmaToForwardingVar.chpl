@@ -1,7 +1,7 @@
 record A {
   var x: int;
 
-  proc assignX(){
+  proc ref assignX(){
     this.x = 1;
     writeln(this.x);
   }

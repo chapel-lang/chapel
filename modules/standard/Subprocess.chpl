@@ -247,7 +247,7 @@ module Subprocess {
     var spawn_error:errorCode;
 
     @chpldoc.nodoc
-    proc _stop_stdin_buffering() {
+    proc ref _stop_stdin_buffering() {
       if this.stdin_buffering && this.stdin_pipe {
         this.stdin_channel.commit();
         this.stdin_buffering = false; // Don't commit again on close again
@@ -736,7 +736,7 @@ module Subprocess {
      :throws SystemError: if something else has gone wrong when polling the
                           subprocess.
    */
-  proc subprocess.poll() throws {
+  proc ref subprocess.poll() throws {
     try _throw_on_launch_error();
 
     var err:errorCode = 0;
@@ -791,7 +791,7 @@ module Subprocess {
                          stdin, or something else went wrong when
                          shutting down the subprocess.
    */
-  proc subprocess.wait(buffer=true) throws {
+  proc ref subprocess.wait(buffer=true) throws {
     try _throw_on_launch_error();
 
     if buffer {
@@ -911,7 +911,7 @@ module Subprocess {
     :throws SystemError: when something went wrong when shutting down the
                          subprocess
    */
-  proc subprocess.communicate() throws {
+  proc ref subprocess.communicate() throws {
     try _throw_on_launch_error();
 
     if !running {
@@ -954,7 +954,7 @@ module Subprocess {
     generally not necessary to call this function since these channels will be
     closed when the subprocess record goes out of scope.
    */
-  proc subprocess.close() throws {
+  proc ref subprocess.close() throws {
     // TODO: see subprocess.wait() for more on this error handling approach
     var err: errorCode = 0;
 

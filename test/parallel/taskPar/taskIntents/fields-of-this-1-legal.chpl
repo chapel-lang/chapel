@@ -19,18 +19,18 @@ record QQ {
   }
 }
 
-proc QQ.w1(factor: int) {
+proc ref QQ.w1(factor: int) {
   coforall i in RNG with (ref this) {
     data[i] = i * factor;
     writeln(number, pointer.fieldd);
   }
 }
 
-proc QQ.w2() {
+proc ref QQ.w2() {
   w1(100);
 }
 
-proc QQ.w3() {
+proc ref QQ.w3() {
   coforall i in RNG with (ref this) {
     data[i] = i;
   }
@@ -53,7 +53,7 @@ rec2.w3();
 rec2.r1(100);
 writeln();
 
-proc QQ.bgn() {
+proc ref QQ.bgn() {
   begin with (ref this) {
     data[2] = 234;
     writeln(number, pointer.fieldd);
@@ -67,7 +67,7 @@ s.readFE();
 writeln(rec3);
 writeln();
 
-proc QQ.cob() {
+proc ref QQ.cob() {
   cobegin with (ref this) {
     data[1] = 123;
     data[3] = 321;

@@ -52,7 +52,7 @@ record directed_vertex_pair {
 // Quadrant selection algorithm
 // ============================
 
-inline proc directed_vertex_pair.assign_quadrant
+inline proc ref directed_vertex_pair.assign_quadrant
   (u: real, a: real, b: real, c: real, d: real, bit: int)
   {
     // ---------------------------------------------------------------------

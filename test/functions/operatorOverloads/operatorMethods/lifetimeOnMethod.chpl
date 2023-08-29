@@ -5,7 +5,7 @@ record Foo {
     return lhs.x < rhs.x;
   }
 
-  proc otherMethod(arg1: Other) lifetime this < arg1 {
+  proc ref otherMethod(arg1: Other) lifetime this < arg1 {
     x += arg1.y;
   }
 }

@@ -16,7 +16,7 @@ config const debug = true;
 // Note that fileName not exist or have no contents
 var f = open(fileName, ioMode.cwr);
 
-proc MyRecord.readThis(r: fileReader) throws {
+proc ref MyRecord.readThis(r: fileReader) throws {
   i = r.read(int);
   r.readNewline();
 }

@@ -203,7 +203,7 @@ module Buffers {
   }
 
   @chpldoc.nodoc
-  proc byteBuffer.deinit() {
+  proc ref byteBuffer.deinit() {
     on this.home {
       qbytes_release(this._bytes_internal);
       this._bytes_internal = QBYTES_PTR_NULL;
@@ -438,7 +438,7 @@ module Buffers {
 
 
   @chpldoc.nodoc
-  proc buffer.deinit() {
+  proc ref buffer.deinit() {
     on this.home {
       qbuffer_release(this._buf_internal);
       this._buf_internal = QBUFFER_PTR_NULL;

@@ -348,7 +348,7 @@ record BackoffSpinLock {
     this.maxLockAttempts = other.maxLockAttempts;
   }
 
-  inline proc lock() {
+  inline proc ref lock() {
     while l.testAndSet() {
       lockAttempts += 1;
       if (lockAttempts & maxLockAttempts) == 0 {
@@ -358,7 +358,7 @@ record BackoffSpinLock {
     }
   }
 
-  inline proc unlock() {
+  inline proc ref unlock() {
     l.clear();
   }
 }

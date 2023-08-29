@@ -1,5 +1,5 @@
 record R { var x: int; }
-proc R.mod()   { x = 5; }
+proc ref R.mod()   { x = 5; }
 proc R.nomod() { writeln(x); }
 
 var r1: R;

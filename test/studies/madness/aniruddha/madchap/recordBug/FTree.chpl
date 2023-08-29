@@ -47,7 +47,7 @@ record LocTree {
         middle of the tree you will short circuit a whole subtree!
 
      */
-    proc this(lvl: int, idx: int) ref {
+    proc ref this(lvl: int, idx: int) ref {
         if !locIndices.contains((lvl, idx)) {
             locIndices += ((lvl, idx));
             locNodes[(lvl, idx)] = new Coeff(coeffDom);
@@ -106,7 +106,7 @@ record LocTree {
     /** Remove an element from the associative domain.  If the element
         does not exist, it is ignored.
      */
-    proc remove(lvl: int, idx: int) {
+    proc ref remove(lvl: int, idx: int) {
         if locIndices.contains((lvl, idx)) then locIndices.remove((lvl, idx));
     }
 

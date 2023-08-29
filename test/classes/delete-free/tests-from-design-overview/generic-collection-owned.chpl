@@ -12,7 +12,7 @@ record Collection {
   }
 }
 
-proc Collection.addElement(in arg: owned) {
+proc ref Collection.addElement(in arg: owned) {
   element = arg;
 }
 

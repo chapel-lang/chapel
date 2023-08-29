@@ -12,6 +12,12 @@ const testDatFile = "\"%s/%s\"".format(here.cwd(), tempDat);
 
 copy(origDat, tempDat);
 var command = "cd %s && python3 -c 'import updateDatFiles; updateDatFiles.test(%s)'".format(develPath, testDatFile);
-spawnshell(command).wait();
-spawnshell("cat %s".format(tempDat)).wait();
+{
+  var p = spawnshell(command);
+  p.wait();
+}
+{
+  var p = spawnshell("cat %s".format(tempDat));
+  p.wait();
+}
 remove(tempDat);

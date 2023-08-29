@@ -235,7 +235,7 @@ module Map {
         Clearing the contents of this map will invalidate all existing
         references to the elements contained in this map.
     */
-    proc clear() {
+    proc ref clear() {
       _enter(); defer _leave();
       for slot in table.allSlots() {
         if table.isSlotFull(slot) {
@@ -294,7 +294,7 @@ module Map {
       :arg m: The other map
       :type m: map(keyType, valType)
     */
-    proc extend(ref m: map(keyType, valType, parSafe)) {
+    proc ref extend(ref m: map(keyType, valType, parSafe)) {
       _enter(); defer _leave();
 
       if !isCopyableType(keyType) || !isCopyableType(valType) then
@@ -519,7 +519,7 @@ module Map {
 
     /* Remove the element at position `k` from the map and return its value
      */
-    proc getAndRemove(k: keyType) {
+    proc ref getAndRemove(k: keyType) {
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found then
@@ -602,7 +602,7 @@ module Map {
 
       :arg ch: A channel to read from.
     */
-    proc readThis(ch: fileReader) throws {
+    proc ref readThis(ch: fileReader) throws {
       const isJson = ch.styleElement(QIO_STYLE_ELEMENT_AGGREGATE) == QIO_AGGREGATE_FORMAT_JSON;
       if isJson then
         _readJson(ch);
@@ -611,7 +611,7 @@ module Map {
     }
 
     @chpldoc.nodoc
-    proc _readJson(ch: fileReader) throws {
+    proc ref _readJson(ch: fileReader) throws {
       _enter(); defer _leave();
       var first = true;
 
@@ -633,7 +633,7 @@ module Map {
     }
 
     @chpldoc.nodoc
-    proc _readHelper(r: fileReader, ref des) throws {
+    proc ref _readHelper(r: fileReader, ref des) throws {
       _enter(); defer _leave();
 
       des.startMap(r);
@@ -651,7 +651,7 @@ module Map {
     }
 
     @chpldoc.nodoc
-    proc deserialize(reader: fileReader, ref deserializer) throws {
+    proc ref deserialize(reader: fileReader, ref deserializer) throws {
       _readHelper(reader, deserializer);
     }
 
@@ -771,7 +771,7 @@ module Map {
                `false` otherwise.
      :rtype: bool
     */
-    proc add(in k: keyType, in v: valType): bool lifetime this < v {
+    proc ref add(in k: keyType, in v: valType): bool lifetime this < v {
       _enter(); defer _leave();
       var (found, slot) = table.findAvailableSlot(k);
       if found {
@@ -784,7 +784,7 @@ module Map {
     }
 
     @deprecated(notes="'map.set' is deprecated. Please use 'map.replace' instead.")
-    proc set(k: keyType, in v: valType): bool {
+    proc ref set(k: keyType, in v: valType): bool {
       return this.replace(k, v);
     }
 
@@ -802,7 +802,7 @@ module Map {
                `false` otherwise.
      :rtype: bool
     */
-    proc replace(k: keyType, in v: valType): bool {
+    proc ref replace(k: keyType, in v: valType): bool {
       _enter(); defer _leave();
       var (found, slot) = table.findAvailableSlot(k);
       if !found {
@@ -818,14 +818,14 @@ module Map {
        set it to `v`. If the map already contains a value at position
        `k`, update it to the value `v`.
     */
-    proc addOrReplace(in k: keyType, in v: valType) {
+    proc ref addOrReplace(in k: keyType, in v: valType) {
       _enter(); defer _leave();
       var (found, slot) = table.findAvailableSlot(k);
       table.fillSlot(slot, k, v);
     }
 
     @deprecated(notes="'map.addOrSet' is deprecated. Please use 'map.addOrReplace' instead.")
-    proc addOrSet(in k: keyType, in v: valType) {
+    proc ref addOrSet(in k: keyType, in v: valType) {
       addOrReplace(k, v);
     }
 
@@ -838,7 +838,7 @@ module Map {
      :returns: `false` if `k` was not in the map.  `true` if it was and removed.
      :rtype: bool
     */
-    proc remove(k: keyType): bool {
+    proc ref remove(k: keyType): bool {
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found {

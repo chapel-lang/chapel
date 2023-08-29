@@ -1763,7 +1763,7 @@ module ChapelDomain {
       }
 
       @chpldoc.nodoc
-      proc _ensureNoLongerManagingThis() {
+      proc ref _ensureNoLongerManagingThis() {
         if !_isActiveManager then return; else _isActiveManager = false;
 
         // Possible runtime checks, reset the resize policy of owned arrays.
@@ -1777,7 +1777,7 @@ module ChapelDomain {
       }
 
       @chpldoc.nodoc
-      proc deinit() {
+      proc ref deinit() {
         _ensureNoLongerManagingThis();
       }
 
@@ -1857,7 +1857,7 @@ module ChapelDomain {
       }
 
       @chpldoc.nodoc
-      proc enterContext() ref {
+      proc ref enterContext() ref {
 
         // TODO: Is it possible to nest unsafe assignments? Future work...
         if _isActiveManager {
@@ -1911,7 +1911,7 @@ module ChapelDomain {
       }
 
       @chpldoc.nodoc
-      proc exitContext(in err: owned Error?) throws {
+      proc ref exitContext(in err: owned Error?) throws {
         _ensureNoLongerManagingThis();
         if err then throw err;
       }

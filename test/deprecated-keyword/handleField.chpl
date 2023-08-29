@@ -11,7 +11,7 @@ record ReplaceVarConcrete2 {
   var newName: int;
 
   @deprecated(notes="The field 'oldName' is deprecated, please use 'newName'")
-  proc oldName ref: int {
+  proc ref oldName ref: int {
     return this.newName;
   }
 }
@@ -83,7 +83,7 @@ record ReplaceVarGeneric2 {
   var newName;
 
   @deprecated(notes="The field 'oldName' is deprecated, please use 'newName'")
-  proc oldName ref{
+  proc ref oldName ref{
     return this.newName;
   }
 }

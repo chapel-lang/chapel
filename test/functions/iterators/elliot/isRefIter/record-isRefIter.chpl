@@ -9,21 +9,21 @@ record R {
   var i: int;
 
   iter myValIter()                                                { yield i; }
-  iter myRefIter() ref                                            { yield i; }
+  iter ref myRefIter() ref                                            { yield i; }
 
   iter myValIter(param tag: iterKind)
     where tag==iterKind.standalone                                { yield i; }
-  iter myRefIter(param tag: iterKind) ref
+  iter ref myRefIter(param tag: iterKind) ref
     where tag==iterKind.standalone                                { yield i; }
 
   iter myValIter(param tag: iterKind)
     where tag==iterKind.leader                                    { yield i; }
-  iter myRefIter(param tag: iterKind) ref
+  iter ref myRefIter(param tag: iterKind) ref
     where tag==iterKind.leader                                    { yield i; }
 
   iter myValIter(param tag: iterKind, followThis)
     where tag==iterKind.follower                                  { yield i; }
-  iter myRefIter(param tag: iterKind, followThis) ref
+  iter ref myRefIter(param tag: iterKind, followThis) ref
     where tag==iterKind.follower                                  { yield i; }
 }
 

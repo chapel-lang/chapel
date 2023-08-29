@@ -35,7 +35,7 @@ proc testAddSub(type t) {
 }
 
 enum ExchangeType {cmpxchg, cmpxchgW, cas};
-inline proc AtomicT.loopAdd(val: valType, param exchangeType: ExchangeType) {
+inline proc ref AtomicT.loopAdd(val: valType, param exchangeType: ExchangeType) {
   var oldValue = this.read();
   select (exchangeType) {
     when ExchangeType.cmpxchgW {

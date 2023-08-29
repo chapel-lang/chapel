@@ -76,7 +76,7 @@ module Graph500_defs
          return false;
       }
 */
-      proc add_self_edge () {
+      proc ref add_self_edge () {
          self_edges.add(1);
       }
 
@@ -84,7 +84,7 @@ module Graph500_defs
          duplicates.add(1);
       }
 
-      proc add_Neighbor (new_vertex_ID: vertex_id) {
+      proc ref add_Neighbor (new_vertex_ID: vertex_id) {
          var ID: vertex_id = new_vertex_ID;
 /* different approach
 //       Check again to make sure another thread did not recently
