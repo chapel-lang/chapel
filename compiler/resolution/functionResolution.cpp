@@ -703,18 +703,10 @@ isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual,
 
 
 // Is this a legal actual argument for a 'const ref' formal?
-// At present, params cannot be passed to 'const ref'.
+// At present, anything can be passed to 'const ref'
 static bool
 isLegalConstRefActualArg(ArgSymbol* formal, Expr* actual) {
-  bool retval = true;
-
-  if (SymExpr* se = toSymExpr(actual))
-    if (se->symbol()->isParameter()                   ==  true &&
-        isString(se->symbol())                        == false &&
-        isBytes(se->symbol())                         == false)
-      retval = false;
-
-  return retval;
+  return true;
 }
 
 /* If we have a generic parent, e.g.:
@@ -1985,8 +1977,11 @@ computeVisibilityDistanceInternal(BlockStmt* block, FnSymbol* fn,
 // Returns a distance measure used to compare the visibility
 // of two functions.
 //
-// Returns -1 if the function is not found here
+// Returns -1 if the function is a method or if the function is not found
 static int computeVisibilityDistance(Expr* expr, FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_METHOD))
+    return -1;
+
   //
   // call helper function with visited set to avoid infinite recursion
   //
@@ -6346,8 +6341,36 @@ static void discardWorseWhereClauses(Vec<ResolutionCandidate*>&   candidates,
   }
 }
 
+// Returns 'true' if the candidates include both non-operator methods
+// and non-operator non-methods.
+static
+bool mixesNonOpMethodsAndFunctions(Vec<ResolutionCandidate*>&   candidates,
+                                   const DisambiguationContext& DC,
+                                   std::vector<bool>&           discarded) {
+
+  int nMethodsNotOperators = 0;
+  int nFunctionsNotOperators = 0;
+  for (int i = 0; i < candidates.n; i++) {
+    if (discarded[i]) {
+      continue;
+    }
+
+    ResolutionCandidate* candidate = candidates.v[i];
+    if (!candidate->fn->hasFlag(FLAG_OPERATOR)) {
+      if (candidate->fn->hasFlag(FLAG_METHOD)) {
+        nMethodsNotOperators++;
+      } else {
+        nFunctionsNotOperators++;
+      }
+    }
+  }
+
+  return nMethodsNotOperators > 0 && nFunctionsNotOperators > 0;
+}
+
 // Discard candidates with further visibility distance
 // than other candidates.
+// This check does not consider methods or operator methods.
 static void discardWorseVisibility(Vec<ResolutionCandidate*>&   candidates,
                                    const DisambiguationContext& DC,
                                    std::vector<bool>&           discarded) {
@@ -6360,14 +6383,17 @@ static void discardWorseVisibility(Vec<ResolutionCandidate*>&   candidates,
     }
 
     ResolutionCandidate* candidate = candidates.v[i];
+
     int distance = computeVisibilityDistance(DC.scope, candidate->fn);
     candidate->visibilityDistance = distance;
 
-    if (distance < minDistance) {
-      minDistance = distance;
-    }
-    if (distance > maxDistance) {
-      maxDistance = distance;
+    if (distance >= 0) {
+      if (distance < minDistance) {
+        minDistance = distance;
+      }
+      if (distance > maxDistance) {
+        maxDistance = distance;
+      }
     }
   }
 
@@ -6379,7 +6405,7 @@ static void discardWorseVisibility(Vec<ResolutionCandidate*>&   candidates,
 
       ResolutionCandidate* candidate = candidates.v[i];
       int distance = candidate->visibilityDistance;
-      if (distance > minDistance) {
+      if (distance > 0 && distance > minDistance) {
         EXPLAIN("X: Fn %d has further visibility distance\n", i);
         discarded[i] = true;
       }
@@ -6524,6 +6550,10 @@ static void disambiguateDiscarding(Vec<ResolutionCandidate*>&   candidates,
                                    const DisambiguationContext& DC,
                                    bool                         ignoreWhere,
                                    std::vector<bool>&           discarded) {
+
+  if (mixesNonOpMethodsAndFunctions(candidates, DC, discarded)) {
+    return;
+  }
 
   if (!DC.useOldVisibility && !DC.isMethodCall) {
     // If some candidates are less visible than other candidates,
@@ -13652,36 +13682,13 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
         }
       }
     } else if (isGenericField) {
-
-      bool hasCompilerGeneratedInitializer = root->wantsDefaultInitializer();
-
-      if (hasCompilerGeneratedInitializer && hasDefault == false) {
-        // Create a temporary to pass for typeless generic fields
-        // e.g. for
-        //   record R { var x; }
-        //   var myR: R(int);
-        // convert the  default initialization into
-        //   var default_field_tmp: int;
-        //   var myR = new R(x=default_field_tmp)
-        VarSymbol* temp = newTemp("default_field_temp", value->typeInfo());
-        CallExpr* tempCall = new CallExpr(PRIM_DEFAULT_INIT_VAR, temp, value);
-
-        call->insertBefore(new DefExpr(temp));
-        call->insertBefore(tempCall);
-        resolveExpr(tempCall->get(2));
-        resolveExpr(tempCall);
-        appendExpr = new SymExpr(temp);
-
-      } else {
-        USR_FATAL_CONT(call, "default initialization with type '%s' "
-                             "is not yet supported", toString(at));
-        USR_PRINT(field, "field '%s' is a generic value",
-                         field->name);
-        USR_PRINT(field, "consider separately declaring a type field for it "
-                         "or using a 'new' call");
-        USR_STOP();
-      }
-
+      USR_FATAL_CONT(call, "default initialization with type '%s' "
+                           "is not yet supported", toString(at));
+      USR_PRINT(field, "field '%s' is a generic value",
+                       field->name);
+      USR_PRINT(field, "consider separately declaring a type field for it "
+                       "or using a 'new' call");
+      USR_STOP();
     } else {
       INT_FATAL("Unhandled case for default-init");
     }

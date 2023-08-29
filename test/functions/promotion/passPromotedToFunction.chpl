@@ -1,4 +1,4 @@
-record R { var x; }
+record R { type xType; var x: xType; }
 proc testit(ref r: R) { r.x += 1; }
 
 var A: [1..1] R(int);

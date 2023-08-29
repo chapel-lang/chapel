@@ -1,0 +1,12 @@
+bug: the compiler omits an expected warning
+
+The compiler needs to generate an unstable warning
+upon each cast from a range of ints to a range of enums.
+Currently this warning is generated only the first time
+the range cast is instantiated for a given pair of (source, target)
+range types.
+
+This is due to the warning getting factored out into a helper function,
+checkEnumIdx(), in #23099. As a workaround, we could undo the factoring
+at the cost of replicating the warning code 4x.
+

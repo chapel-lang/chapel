@@ -2423,10 +2423,6 @@ shoc-triad-bw-lg:
   11/10/22:
     - Ensure we time mem transfer in SHOC Triad (#20961)
 
-triadAodBw1:
-  02/28/23:
-    - Include chpl-env in files that use CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE  macro (#21699)
-
 sort:
   02/24/23:
     - Improve SHOC-Sort implementation (#21610)

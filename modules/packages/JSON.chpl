@@ -83,7 +83,7 @@ module JSON {
     }
 
     @chpldoc.nodoc
-    proc serializeField(writer: _writeType, name: string, const val: ?T) throws {
+    proc ref serializeField(writer: _writeType, name: string, const val: ?T) throws {
       if !_firstThing then
         writer.writeLiteral(", ");
 
@@ -98,7 +98,7 @@ module JSON {
 
     // Class helpers
     @chpldoc.nodoc
-    proc startClass(writer: _writeType, name: string, size: int) throws {
+    proc ref startClass(writer: _writeType, name: string, size: int) throws {
       if _inheritLevel == 0 {
         writer.writeLiteral("{");
       }
@@ -106,7 +106,7 @@ module JSON {
       _inheritLevel += 1;
     }
     @chpldoc.nodoc
-    proc endClass(writer: _writeType) throws {
+    proc ref endClass(writer: _writeType) throws {
       if _inheritLevel == 1 {
         writer.writeLiteral("}");
       }
@@ -136,12 +136,12 @@ module JSON {
 
     // List helpers
     @chpldoc.nodoc
-    proc startList(writer: _writeType, size: uint) throws {
+    proc ref startList(writer: _writeType, size: uint) throws {
       writer._writeLiteral("[");
       _firstThing = true;
     }
     @chpldoc.nodoc
-    proc writeListElement(writer: _writeType, const val: ?) throws {
+    proc ref writeListElement(writer: _writeType, const val: ?) throws {
       if !_firstThing then writer._writeLiteral(", ");
       else _firstThing = false;
 
@@ -164,7 +164,7 @@ module JSON {
     //  [6, 7, 8]
     // ]
     @chpldoc.nodoc
-    proc startArrayDim(writer: _writeType, size: uint) throws {
+    proc ref startArrayDim(writer: _writeType, size: uint) throws {
       _arrayDim += 1;
 
       // '_arrayFirst' will be a list of bools of a size equal to the maximum
@@ -200,7 +200,7 @@ module JSON {
     }
 
     @chpldoc.nodoc
-    proc endArrayDim(writer: _writeType) throws {
+    proc ref endArrayDim(writer: _writeType) throws {
       // For all but the 'last' dimension, we want the closing square bracket
       // to be on a newline to match the opening bracket. For example:
       /*
@@ -239,7 +239,7 @@ module JSON {
     }
 
     @chpldoc.nodoc
-    proc writeArrayElement(writer: _writeType, const val: ?) throws {
+    proc ref writeArrayElement(writer: _writeType, const val: ?) throws {
       if !_firstThing then writer._writeLiteral(", ");
       else _firstThing = false;
 
@@ -265,7 +265,7 @@ module JSON {
     }
 
     @chpldoc.nodoc
-    proc writeKey(writer: _writeType, const key: ?) throws {
+    proc ref writeKey(writer: _writeType, const key: ?) throws {
       if !_firstThing {
         writer._writeLiteral(", ");
         writer.writeNewline();
@@ -466,21 +466,21 @@ module JSON {
 
     // Class helpers
     @chpldoc.nodoc
-    proc startClass(reader: _readerType, name: string) throws {
+    proc ref startClass(reader: _readerType, name: string) throws {
       _startComposite(reader, true);
     }
     @chpldoc.nodoc
-    proc endClass(reader: _readerType) throws {
+    proc ref endClass(reader: _readerType) throws {
       _endComposite(reader, true);
     }
 
     // Record helpers
     @chpldoc.nodoc
-    proc startRecord(reader: _readerType, name: string) throws {
+    proc ref startRecord(reader: _readerType, name: string) throws {
       _startComposite(reader);
     }
     @chpldoc.nodoc
-    proc endRecord(reader: _readerType) throws {
+    proc ref endRecord(reader: _readerType) throws {
       _endComposite(reader);
     }
 
@@ -495,7 +495,7 @@ module JSON {
     }
 
     @chpldoc.nodoc
-    proc _startComposite(reader: _readerType, isClass = false) throws {
+    proc ref _startComposite(reader: _readerType, isClass = false) throws {
       if !isClass || _inheritLevel == 0 {
         //
         // TODO: When should we try to do this? Use of '_startComposite', etc.
@@ -518,7 +518,7 @@ module JSON {
     }
 
     @chpldoc.nodoc
-    proc _endComposite(reader: _readerType, isClass = false) throws {
+    proc ref _endComposite(reader: _readerType, isClass = false) throws {
       if !isClass || _inheritLevel == 1 {
         const dist =  _lastPos - reader.offset();
         reader.advance(dist);
@@ -533,7 +533,7 @@ module JSON {
       reader._readLiteral("[");
     }
     @chpldoc.nodoc
-    proc readListElement(reader: _readerType, type eltType) throws {
+    proc ref readListElement(reader: _readerType, type eltType) throws {
       if !_firstThing then reader._readLiteral(",");
       else _firstThing = false;
 
@@ -567,7 +567,7 @@ module JSON {
 
     // See comments in writing case for explanation
     @chpldoc.nodoc
-    proc startArrayDim(reader: _readerType) throws {
+    proc ref startArrayDim(reader: _readerType) throws {
       _arrayDim += 1;
       if _arrayFirst.size < _arrayDim {
         _arrayFirst.pushBack(true);
@@ -588,7 +588,7 @@ module JSON {
     }
 
     @chpldoc.nodoc
-    proc readArrayElement(reader: _readerType, type eltType) throws {
+    proc ref readArrayElement(reader: _readerType, type eltType) throws {
       if !_firstThing then reader._readLiteral(", ");
       else _firstThing = false;
 
@@ -596,7 +596,7 @@ module JSON {
     }
 
     @chpldoc.nodoc
-    proc endArrayDim(reader: _readerType) throws {
+    proc ref endArrayDim(reader: _readerType) throws {
       if _arrayDim < _arrayMax {
         reader.readNewline();
         reader._readLiteral(" " * (_arrayDim-1));
@@ -625,7 +625,7 @@ module JSON {
     }
 
     @chpldoc.nodoc
-    proc readKey(reader: _readerType, type keyType) throws {
+    proc ref readKey(reader: _readerType, type keyType) throws {
       if !_firstThing then reader._readLiteral(",");
       else _firstThing = false;
 

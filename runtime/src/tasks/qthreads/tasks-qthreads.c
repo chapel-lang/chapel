@@ -813,6 +813,9 @@ static aligned_t chapel_wrapper(void *arg)
 
     wrap_callbacks(chpl_task_cb_event_kind_begin, bundle);
 
+    // "Migrate" to ourself to mark the task as unstealable
+    qthread_migrate_to(qthread_shep());
+
     (bundle->requested_fn)(arg);
 
     wrap_callbacks(chpl_task_cb_event_kind_end, bundle);

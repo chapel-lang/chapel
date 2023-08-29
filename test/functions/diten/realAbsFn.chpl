@@ -1,7 +1,7 @@
 var x: real = 2.0;
 
 // create a number big enough that squaring it will be infinity
-while !isinf(x*x) do
+while !isInf(x*x) do
   x *= x;
 
 extern proc fabs(x: real(64)): real(64);

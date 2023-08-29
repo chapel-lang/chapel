@@ -13,19 +13,19 @@ var A: [1..n,1..m] real;
 
 writeln("n=", n, " m=", m);
 
-enum testTypes {init, lhs, rhs, both};
+enum testTypes {initial, lhs, rhs, both};
 
 proc dit (ref A, param ttype: testTypes) {
   for loc in Locales do
     on loc {
       var B: [1..n,1..m] real;
-      if ttype != testTypes.init then B = loc.id+1;
+      if ttype != testTypes.initial then B = loc.id+1;
       if loc.id != 0 then
         l[loc.id].readFE();
       if doCommDiag then startCommDiagnostics();
       var st = timeSinceEpoch().totalSeconds();
       select ttype {
-        when testTypes.init do A = loc.id+1;
+        when testTypes.initial do A = loc.id+1;
         when testTypes.lhs do A = B;
         when testTypes.rhs do B = A;
         when testTypes.both do compilerError("Both is stupid.\n");
@@ -55,7 +55,7 @@ proc dit (ref A, param ttype: testTypes) {
 }
 
 A = -1;
-dit(A, testTypes.init);
+dit(A, testTypes.initial);
 
 A = -1;
 dit(A, testTypes.lhs);

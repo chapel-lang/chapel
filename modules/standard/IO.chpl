@@ -2725,7 +2725,7 @@ record DefaultSerializer {
   }
 
   @chpldoc.nodoc
-  proc serializeField(writer:fileWriter, name: string, const val: ?) : void throws {
+  proc ref serializeField(writer:fileWriter, name: string, const val: ?) : void throws {
     if !_firstThing then writer._writeLiteral(", ");
     else _firstThing = false;
 
@@ -2742,14 +2742,14 @@ record DefaultSerializer {
   // TODO: If this is called in a nested way for inheriting classes, then we
   // can increment 'size' internally to track the total number of fields...?
   @chpldoc.nodoc
-  proc startClass(writer: fileWriter, name: string, size: int) throws {
+  proc ref startClass(writer: fileWriter, name: string, size: int) throws {
     if _inheritLevel == 0 {
       writer._writeLiteral("{");
     }
     _inheritLevel += 1;
   }
   @chpldoc.nodoc
-  proc endClass(writer: fileWriter) throws {
+  proc ref endClass(writer: fileWriter) throws {
     if _inheritLevel == 1 {
       writer._writeLiteral("}");
     }
@@ -2768,7 +2768,7 @@ record DefaultSerializer {
 
   // Tuple helpers
   @chpldoc.nodoc
-  proc startTuple(writer: fileWriter, size: int) throws {
+  proc ref startTuple(writer: fileWriter, size: int) throws {
     _oneTuple = size==1;
     writer._writeLiteral("(");
   }
@@ -2782,12 +2782,12 @@ record DefaultSerializer {
 
   // List helpers
   @chpldoc.nodoc
-  proc startList(writer: fileWriter, size: uint) throws {
+  proc ref startList(writer: fileWriter, size: uint) throws {
     writer._writeLiteral("[");
     _firstThing = true;
   }
   @chpldoc.nodoc
-  proc writeListElement(writer: fileWriter, const val: ?) throws {
+  proc ref writeListElement(writer: fileWriter, const val: ?) throws {
     if !_firstThing then writer._writeLiteral(", ");
     else _firstThing = false;
 
@@ -2807,7 +2807,7 @@ record DefaultSerializer {
   }
 
   @chpldoc.nodoc
-  proc startArrayDim(writer: fileWriter, size: uint) throws {
+  proc ref startArrayDim(writer: fileWriter, size: uint) throws {
     _arrayDim += 1;
 
     if _arrayMax >= _arrayDim then
@@ -2817,13 +2817,13 @@ record DefaultSerializer {
   }
 
   @chpldoc.nodoc
-  proc endArrayDim(writer: fileWriter) throws {
+  proc ref endArrayDim(writer: fileWriter) throws {
     _arrayDim -= 1;
     _firstThing = true;
   }
 
   @chpldoc.nodoc
-  proc writeArrayElement(writer: fileWriter, const val: ?) throws {
+  proc ref writeArrayElement(writer: fileWriter, const val: ?) throws {
     if !_firstThing then writer._writeLiteral(" ");
     else _firstThing = false;
 
@@ -2841,7 +2841,7 @@ record DefaultSerializer {
   }
 
   @chpldoc.nodoc
-  proc writeKey(writer: fileWriter, const key: ?) throws {
+  proc ref writeKey(writer: fileWriter, const key: ?) throws {
     if !_firstThing then writer._writeLiteral(", ");
     else _firstThing = false;
 
@@ -2970,14 +2970,14 @@ record DefaultDeserializer {
 
   // Class helpers
   @chpldoc.nodoc
-  proc startClass(reader: fileReader, name: string) throws {
+  proc ref startClass(reader: fileReader, name: string) throws {
     if _inheritLevel == 0 {
       reader.readLiteral("{");
     }
     _inheritLevel += 1;
   }
   @chpldoc.nodoc
-  proc endClass(reader: fileReader) throws {
+  proc ref endClass(reader: fileReader) throws {
     if _inheritLevel == 1 {
       reader.readLiteral("}");
     }
@@ -3006,12 +3006,12 @@ record DefaultDeserializer {
 
   // List helpers
   @chpldoc.nodoc
-  proc startList(reader: fileReader) throws {
+  proc ref startList(reader: fileReader) throws {
     reader._readLiteral("[");
     _firstThing = true;
   }
   @chpldoc.nodoc
-  proc readListElement(reader: fileReader, type eltType) throws {
+  proc ref readListElement(reader: fileReader, type eltType) throws {
     if !_firstThing then reader._readLiteral(",");
     else _firstThing = false;
 
@@ -3028,7 +3028,7 @@ record DefaultDeserializer {
   }
 
   @chpldoc.nodoc
-  proc startArrayDim(reader: fileReader) throws {
+  proc ref startArrayDim(reader: fileReader) throws {
     _arrayDim += 1;
 
     if _arrayMax >= _arrayDim {
@@ -3041,14 +3041,14 @@ record DefaultDeserializer {
   }
 
   @chpldoc.nodoc
-  proc endArrayDim(reader: fileReader) throws {
+  proc ref endArrayDim(reader: fileReader) throws {
     _arrayDim -= 1;
 
     _firstThing = true;
   }
 
   @chpldoc.nodoc
-  proc readArrayElement(reader: fileReader, type eltType) throws {
+  proc ref readArrayElement(reader: fileReader, type eltType) throws {
     if !_firstThing then reader._readLiteral(" ");
     else _firstThing = false;
 
@@ -3066,7 +3066,7 @@ record DefaultDeserializer {
   }
 
   @chpldoc.nodoc
-  proc readKey(reader: fileReader, type keyType) : keyType throws {
+  proc ref readKey(reader: fileReader, type keyType) : keyType throws {
     if !_firstThing then reader._readLiteral(", ");
     else _firstThing = false;
 
@@ -3426,11 +3426,11 @@ record BinaryDeserializer {
 
   // List helpers
   @chpldoc.nodoc
-  proc startList(reader: _readerType) throws {
+  proc ref startList(reader: _readerType) throws {
     _numElements = reader.read(uint);
   }
   @chpldoc.nodoc
-  proc readListElement(reader: _readerType, type eltType) throws {
+  proc ref readListElement(reader: _readerType, type eltType) throws {
     if _numElements <= 0 then
       throw new BadFormatError("no more list elements remain");
 
@@ -3457,13 +3457,13 @@ record BinaryDeserializer {
   }
 
   @chpldoc.nodoc
-  proc readArrayElement(reader: _readerType, type eltType) throws {
+  proc ref readArrayElement(reader: _readerType, type eltType) throws {
     _numElements -= 1;
     return reader.read(eltType);
   }
 
   @chpldoc.nodoc
-  proc readBulkElements(reader: _readerType, data: c_ptr(?eltType), numElements: uint) throws
+  proc ref readBulkElements(reader: _readerType, data: c_ptr(?eltType), numElements: uint) throws
   where isNumericType(eltType) {
     if endian == ioendian.native {
       const n = c_sizeof(eltType)*numElements;
@@ -3482,12 +3482,12 @@ record BinaryDeserializer {
 
   // Map helpers
   @chpldoc.nodoc
-  proc startMap(reader: _readerType) throws {
+  proc ref startMap(reader: _readerType) throws {
     _numElements = reader.read(uint);
   }
 
   @chpldoc.nodoc
-  proc readKey(reader: _readerType, type keyType) throws {
+  proc ref readKey(reader: _readerType, type keyType) throws {
     if _numElements <= 0 then
       throw new BadFormatError("no more map elements remain!");
 
@@ -12262,7 +12262,7 @@ private inline proc _searchHelp(ref fr: fileReader,
 
 // documented in the version with captures
 @chpldoc.nodoc
-proc fileReader.search(re:regex(?)):regexMatch throws
+proc ref fileReader.search(re:regex(?)):regexMatch throws
 {
   var e:errorCode = 0;
   var dummy:int;
@@ -12286,7 +12286,7 @@ proc fileReader.search(re:regex(?)):regexMatch throws
                    in the regular expression.
     :returns: the region of the fileReader that matched
  */
-proc fileReader.search(re:regex(?), ref captures ...?k): regexMatch throws
+proc ref fileReader.search(re:regex(?), ref captures ...?k): regexMatch throws
 {
   var e:errorCode = 0;
   var ret = _searchHelp(this, re, e, captures.size + 1, true, captures);

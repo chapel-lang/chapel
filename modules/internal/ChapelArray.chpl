@@ -1781,6 +1781,7 @@ module ChapelArray {
 
     /* Return true if the local subdomain can be represented as a single
        domain. Otherwise return false. */
+    @unstable("'hasSingleLocalSubdomain' on arrays is unstable and may change in the future")
     proc hasSingleLocalSubdomain() param {
       return _value.dsiHasSingleLocalSubdomain();
     }
@@ -1794,7 +1795,7 @@ module ChapelArray {
     */
     proc localSubdomain(loc: locale = here) {
       if !_value.dsiHasSingleLocalSubdomain() then
-        compilerError("Domain's local domain is not a single domain");
+        compilerError("the array may have multiple local subdomains");
 
       return _value.dsiLocalSubdomain(loc);
     }
@@ -1806,6 +1807,7 @@ module ChapelArray {
                  place (defaults to `here`)
        :type loc: locale
     */
+    @unstable("'localSubdomains' on arrays is unstable and may change in the future")
     iter localSubdomains(loc: locale = here) {
       if _value.dsiHasSingleLocalSubdomain() {
         yield localSubdomain(loc);
@@ -1881,7 +1883,7 @@ module ChapelArray {
 
     /* Reverse the order of the values in the array. */
     @deprecated(notes="'Array.reverse' is deprecated")
-    proc reverse() {
+    proc ref reverse() {
       if (!chpl__isDense1DArray()) then
         compilerError("reverse() is only supported on dense 1D arrays");
       const lo = this.domain.low,

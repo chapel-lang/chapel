@@ -582,7 +582,8 @@ static Type* instantiateOneAggregateType(SymbolMap &fml2act,
     genCall->insertAtTail(new NamedExpr(elem.key->name, new SymExpr(instSym)));
   }
 
-  AggregateType* instT = atgen->generateType(genCall, "<internal error>");
+  AggregateType* instT = atgen->generateType(genCall, "<internal error>",
+                                             /* allowAllNamedArgs */ true);
   genCall->remove();
   if (markRm) cgInstantiations.insert(instT);
   fml2act.put(at->symbol, instT->symbol);

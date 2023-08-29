@@ -200,7 +200,7 @@ record distributedMapManager {
     this.key    = k;
   }
 
-  proc enterContext() ref {
+  proc ref enterContext() ref {
     // todo: optimize remote accesses here
     client = client.getPrivatizedThisOn(client.targetLocales[locIdx]);
     ref map = client.localMaps[mapIdx];
@@ -231,7 +231,7 @@ proc ref map.thisInternal(k: keyType) ref { //private
 
 // an addition to map's interface
 // primarily for use by an aggregator
-proc map.bulkUpdate(keysToUpdate, updater, filter) {
+proc ref map.bulkUpdate(keysToUpdate, updater, filter) {
   _enter(); defer _leave();
 
   for k in keysToUpdate {

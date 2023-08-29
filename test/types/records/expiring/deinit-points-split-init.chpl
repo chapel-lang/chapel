@@ -3,7 +3,7 @@ record R {
   proc init() {
     writeln("init");
   }
-  proc deinit() {
+  proc ref deinit() {
     assert(x == 0);
     x = 99;
     writeln("deinit");

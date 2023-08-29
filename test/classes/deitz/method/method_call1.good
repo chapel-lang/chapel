@@ -1,3 +1,4 @@
-function foo called
-method foo called
-method foo called
+method_call1.chpl:9: In method 'goo':
+method_call1.chpl:10: error: currently ambiguous what 'foo' refers to
+method_call1.chpl:6: note: found this method
+method_call1.chpl:1: note: and this non-method

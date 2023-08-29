@@ -1,7 +1,7 @@
 
 record R {
   var x : int;
-  proc poke() {
+  proc ref poke() {
     this.x += 100;
   }
 }

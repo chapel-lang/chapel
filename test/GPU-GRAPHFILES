@@ -5,9 +5,6 @@ gpu/native/studies/shoc/shoc-triad-bw-lg.graph
 gpu/native/studies/shoc/triad2.graph
 gpu/native/studies/shoc/kernel2.graph
 
-gpu/native/array_on_device/studies/shoc/triadAodBw1.graph
-gpu/native/array_on_device/studies/shoc/triadAodBw2.graph
-
 gpu/native/studies/shoc/sort.graph
 
 gpu/native/streamPrototype/gpuStream.graph
@@ -15,6 +12,7 @@ gpu/native/studies/multiGpuStream/multiGpuStream.graph
 
 gpu/native/studies/kernelLaunch/emptyKernelLaunch.graph
 gpu/native/studies/tightLoopNotOnGpu/tightLoopNotOnGpu.graph
+gpu/native/studies/tightLoopNotOnGpu/tightLoopOnGpu.graph
 gpu/native/studies/gpuArrayOps/gpuArrayOps.graph
 
 gpu/native/studies/transpose/transpose-throughput.graph

@@ -242,7 +242,7 @@ module Atomics {
     var _v:externT(bool);
 
     @chpldoc.nodoc
-    proc init_helper(val:bool) {
+    proc ref init_helper(val:bool) {
       pragma "fn synchronization free"
       pragma "local fn" pragma "fast-on safe extern function"
       pragma "no gpu codegen"
@@ -272,7 +272,7 @@ module Atomics {
     }
 
     @chpldoc.nodoc
-    proc deinit() {
+    proc ref deinit() {
       pragma "fn synchronization free"
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("destroy", bool, explicit=false)
@@ -297,7 +297,7 @@ module Atomics {
     /*
        Stores `val` as the new value.
     */
-    inline proc write(val:bool, param order: memoryOrder = memoryOrder.seqCst): void {
+    inline proc ref write(val:bool, param order: memoryOrder = memoryOrder.seqCst): void {
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("store", bool)
         proc atomic_store(ref obj:externT(bool), val:bool, order:memory_order): void;
@@ -308,7 +308,7 @@ module Atomics {
     /*
        Stores `val` as the new value and returns the original value.
     */
-    inline proc exchange(val:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
+    inline proc ref exchange(val:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("exchange", bool)
         proc atomic_exchange(ref obj:externT(bool), val:bool, order:memory_order): bool;
@@ -323,10 +323,10 @@ module Atomics {
        equal to `expected`. Returns `true` if `desired` was stored, otherwise
        updates `expected` to the original value.
      */
-    inline proc compareExchange(ref expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
+    inline proc ref compareExchange(ref expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
       return this.compareExchange(expected, desired, order, readableOrder(order));
     }
-    inline proc compareExchange(ref expected:bool, desired:bool, param success: memoryOrder, param failure: memoryOrder): bool {
+    inline proc ref compareExchange(ref expected:bool, desired:bool, param success: memoryOrder, param failure: memoryOrder): bool {
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("compare_exchange_strong", bool)
         proc atomic_compare_exchange_strong(ref obj:externT(bool), ref expected:bool, desired:bool, succ:memory_order, fail:memory_order): bool;
@@ -349,10 +349,10 @@ module Atomics {
        compareExchange is already in a loop, it can offer better
        performance on some platforms.
     */
-    inline proc compareExchangeWeak(ref expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
+    inline proc ref compareExchangeWeak(ref expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
       return this.compareExchangeWeak(expected, desired, order, readableOrder(order));
     }
-    inline proc compareExchangeWeak(ref expected:bool, desired:bool, param success: memoryOrder, param failure: memoryOrder) {
+    inline proc ref compareExchangeWeak(ref expected:bool, desired:bool, param success: memoryOrder, param failure: memoryOrder) {
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("compare_exchange_weak", bool)
         proc atomic_compare_exchange_weak(ref obj:externT(bool), ref expected:bool, desired:bool, succ:memory_order, fail:memory_order): bool;
@@ -371,7 +371,7 @@ module Atomics {
        equal to `expected`. Returns `true` if `desired` was stored.
     */
     @unstable("'compareAndSwap' is unstable")
-    inline proc compareAndSwap(expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
+    inline proc ref compareAndSwap(expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("compare_exchange_strong", bool)
         proc atomic_compare_exchange_strong(ref obj:externT(bool), ref expected:bool, desired:bool, succ:memory_order, fail:memory_order): bool;
@@ -387,14 +387,14 @@ module Atomics {
     /*
        Stores `true` as the new value and returns the old value.
     */
-    inline proc testAndSet(param order: memoryOrder = memoryOrder.seqCst): bool {
+    inline proc ref testAndSet(param order: memoryOrder = memoryOrder.seqCst): bool {
       return this.exchange(true, order);
     }
 
     /*
        Stores `false` as the new value.
     */
-    inline proc clear(param order: memoryOrder = memoryOrder.seqCst): void {
+    inline proc ref clear(param order: memoryOrder = memoryOrder.seqCst): void {
       this.write(false, order);
     }
 
@@ -435,7 +435,7 @@ module Atomics {
     var _v:externT(valType);
 
     @chpldoc.nodoc
-    proc init_helper(val:valType) {
+    proc ref init_helper(val:valType) {
       pragma "fn synchronization free"
       pragma "local fn" pragma "fast-on safe extern function"
       pragma "no gpu codegen"
@@ -468,7 +468,7 @@ module Atomics {
     }
 
     @chpldoc.nodoc
-    proc deinit() {
+    proc ref deinit() {
       pragma "fn synchronization free"
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("destroy", valType, explicit=false)
@@ -493,7 +493,7 @@ module Atomics {
     /*
        Stores `val` as the new value.
     */
-    inline proc write(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
+    inline proc ref write(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("store", valType)
         proc atomic_store(ref obj:externT(valType), val:valType, order:memory_order): void;
@@ -504,7 +504,7 @@ module Atomics {
     /*
        Stores `val` as the new value and returns the original value.
     */
-    inline proc exchange(val:valType, param order: memoryOrder = memoryOrder.seqCst): valType {
+    inline proc ref exchange(val:valType, param order: memoryOrder = memoryOrder.seqCst): valType {
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("exchange", valType)
         proc atomic_exchange(ref obj:externT(valType), val:valType, order:memory_order): valType;
@@ -519,10 +519,10 @@ module Atomics {
        equal to `expected`. Returns `true` if `desired` was stored, otherwise
        updates `expected` to the original value.
      */
-    inline proc compareExchange(ref expected:valType, desired:valType, param order: memoryOrder = memoryOrder.seqCst): bool {
+    inline proc ref compareExchange(ref expected:valType, desired:valType, param order: memoryOrder = memoryOrder.seqCst): bool {
       return this.compareExchange(expected, desired, order, readableOrder(order));
     }
-    inline proc compareExchange(ref expected:valType, desired:valType, param success: memoryOrder, param failure: memoryOrder): bool {
+    inline proc ref compareExchange(ref expected:valType, desired:valType, param success: memoryOrder, param failure: memoryOrder): bool {
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("compare_exchange_strong", valType)
         proc atomic_compare_exchange_strong(ref obj:externT(valType), ref expected:valType, desired:valType, succ:memory_order, fail:memory_order): bool;
@@ -545,10 +545,10 @@ module Atomics {
        compareExchange is already in a loop, it can offer better
        performance on some platforms.
     */
-    inline proc compareExchangeWeak(ref expected:valType, desired:valType, param order: memoryOrder = memoryOrder.seqCst): bool {
+    inline proc ref compareExchangeWeak(ref expected:valType, desired:valType, param order: memoryOrder = memoryOrder.seqCst): bool {
       return this.compareExchangeWeak(expected, desired, order, readableOrder(order));
     }
-    inline proc compareExchangeWeak(ref expected:valType, desired:valType, param success: memoryOrder, param failure: memoryOrder): bool {
+    inline proc ref compareExchangeWeak(ref expected:valType, desired:valType, param success: memoryOrder, param failure: memoryOrder): bool {
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("compare_exchange_weak", valType)
         proc atomic_compare_exchange_weak(ref obj:externT(valType), ref expected:valType, desired:valType, succ:memory_order, fail:memory_order): bool;
@@ -567,7 +567,7 @@ module Atomics {
        equal to `expected`. Returns `true` if `desired` was stored.
     */
     @unstable("'compareAndSwap' is unstable")
-    inline proc compareAndSwap(expected:valType, desired:valType, param order: memoryOrder = memoryOrder.seqCst): bool {
+    inline proc ref compareAndSwap(expected:valType, desired:valType, param order: memoryOrder = memoryOrder.seqCst): bool {
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("compare_exchange_strong", valType)
         proc atomic_compare_exchange_strong(ref obj:externT(valType), ref expected:valType, desired:valType, succ:memory_order, fail:memory_order): bool;
@@ -586,7 +586,7 @@ module Atomics {
        Adds `val` to the original value and stores the result. Defined for
        integer and real atomic types.
     */
-    inline proc fetchAdd(val:valType, param order: memoryOrder = memoryOrder.seqCst): valType {
+    inline proc ref fetchAdd(val:valType, param order: memoryOrder = memoryOrder.seqCst): valType {
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("fetch_add", valType)
         proc atomic_fetch_add(ref obj:externT(valType), operand:valType, order:memory_order): valType;
@@ -600,7 +600,7 @@ module Atomics {
        Adds `val` to the original value and stores the result. Defined for
        integer and real atomic types.
     */
-    inline proc add(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
+    inline proc ref add(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("fetch_add", valType)
         proc atomic_fetch_add(ref obj:externT(valType), operand:valType, order:memory_order): valType;
@@ -614,7 +614,7 @@ module Atomics {
        Subtracts `val` from the original value and stores the result. Defined
        for integer and real atomic types.
     */
-    inline proc fetchSub(val:valType, param order: memoryOrder = memoryOrder.seqCst): valType {
+    inline proc ref fetchSub(val:valType, param order: memoryOrder = memoryOrder.seqCst): valType {
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("fetch_sub", valType)
         proc atomic_fetch_sub(ref obj:externT(valType), operand:valType, order:memory_order): valType;
@@ -628,7 +628,7 @@ module Atomics {
        Subtracts `val` from the original value and stores the result. Defined
        for integer and real atomic types.
     */
-    inline proc sub(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
+    inline proc ref sub(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("fetch_sub", valType)
         proc atomic_fetch_sub(ref obj:externT(valType), operand:valType, order:memory_order): valType;
@@ -644,7 +644,7 @@ module Atomics {
 
        Only defined for integer atomic types.
     */
-    inline proc fetchOr(val:valType, param order: memoryOrder = memoryOrder.seqCst): valType {
+    inline proc ref fetchOr(val:valType, param order: memoryOrder = memoryOrder.seqCst): valType {
       if !isIntegral(valType) then compilerError("fetchOr is only defined for integer atomic types");
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("fetch_or", valType)
@@ -661,7 +661,7 @@ module Atomics {
 
        Only defined for integer atomic types.
     */
-    inline proc or(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
+    inline proc ref or(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
       if !isIntegral(valType) then compilerError("or is only defined for integer atomic types");
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("fetch_or", valType)
@@ -678,7 +678,7 @@ module Atomics {
 
        Only defined for integer atomic types.
     */
-    inline proc fetchAnd(val:valType, param order: memoryOrder = memoryOrder.seqCst): valType {
+    inline proc ref fetchAnd(val:valType, param order: memoryOrder = memoryOrder.seqCst): valType {
       if !isIntegral(valType) then compilerError("fetchAnd is only defined for integer atomic types");
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("fetch_and", valType)
@@ -695,7 +695,7 @@ module Atomics {
 
        Only defined for integer atomic types.
     */
-    inline proc and(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
+    inline proc ref and(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
       if !isIntegral(valType) then compilerError("and is only defined for integer atomic types");
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("fetch_and", valType)
@@ -712,7 +712,7 @@ module Atomics {
 
        Only defined for integer atomic types.
     */
-    inline proc fetchXor(val:valType, param order: memoryOrder = memoryOrder.seqCst): valType {
+    inline proc ref fetchXor(val:valType, param order: memoryOrder = memoryOrder.seqCst): valType {
       if !isIntegral(valType) then compilerError("fetchXor is only defined for integer atomic types");
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("fetch_xor", valType)
@@ -729,7 +729,7 @@ module Atomics {
 
        Only defined for integer atomic types.
     */
-    inline proc xor(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
+    inline proc ref xor(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
       if !isIntegral(valType) then compilerError("xor is only defined for integer atomic types");
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("fetch_xor", valType)

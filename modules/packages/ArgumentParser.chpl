@@ -735,7 +735,7 @@ module ArgumentParser {
         return rows.size;
       }
 
-      proc append(item) {
+      proc ref append(item) {
         rows.pushBack(item);
       }
 
@@ -1014,7 +1014,7 @@ module ArgumentParser {
 
     // setup automatic help handling on -h or --help
     @chpldoc.nodoc
-    proc addHelpFlag(name="ArgumentParserAddedHelp",
+    proc ref addHelpFlag(name="ArgumentParserAddedHelp",
                      opts:[?optsD]=["-h","--help"]) throws {
       _helpFlags.pushBack(opts);
       return addFlag(name, opts, defaultValue=false, help="Display this message and exit");
@@ -1064,7 +1064,7 @@ module ArgumentParser {
                of strings.
 
     */
-    proc addArgument(name:string,
+    proc ref addArgument(name:string,
                      numArgs=1,
                      defaultValue:?t=none,
                      help="",
@@ -1122,7 +1122,7 @@ module ArgumentParser {
              * `numArgs` is neither low-bound nor fully-bound
 
     */
-    proc addArgument(name:string,
+    proc ref addArgument(name:string,
                      numArgs:range(?),
                      defaultValue:?t=none,
                      help="",
@@ -1208,7 +1208,7 @@ module ArgumentParser {
                of strings.
 
     */
-    proc addOption(name:string,
+    proc ref addOption(name:string,
                    opts:[]string=_processNameToOpts(name),
                    numArgs=1,
                    required=false,
@@ -1285,7 +1285,7 @@ module ArgumentParser {
              * `numArgs` does not have a low-bound
 
     */
-    proc addOption(name:string,
+    proc ref addOption(name:string,
                    opts:[]string=_processNameToOpts(name),
                    numArgs:range(?),
                    required=false,
@@ -1383,7 +1383,7 @@ module ArgumentParser {
               * values in `opts` do not begin with a dash ``-``
 
     */
-    proc addFlag(name:string,
+    proc ref addFlag(name:string,
                  opts:[?optsD]=_processNameToOpts(name),
                  required=false, defaultValue:?t=none, flagInversion=false,
                  numArgs=0,
@@ -1467,7 +1467,7 @@ module ArgumentParser {
              * values in `opts` do not begin with a dash ``-``
 
     */
-    proc addFlag(name:string,
+    proc ref addFlag(name:string,
                  opts:[?optsD]=_processNameToOpts(name),
                  required=false, defaultValue:?t=none, flagInversion=false,
                  numArgs:range,
@@ -1555,7 +1555,7 @@ module ArgumentParser {
     :throws: `ArgumentError` if `cmd` is already defined for this parser
 
     */
-    proc addSubCommand(cmd:string, help="",
+    proc ref addSubCommand(cmd:string, help="",
                        visible=true) : shared Argument throws {
       var argHelp = new argumentHelp(help, visible, cmd);
       var handler = new owned SubCommand(cmd, argHelp);
@@ -1589,7 +1589,7 @@ module ArgumentParser {
     :throws: `ArgumentError` if `delimiter` is already defined for this parser
 
     */
-    proc addPassThrough(delimiter="--") : shared Argument throws {
+    proc ref addPassThrough(delimiter="--") : shared Argument throws {
       // remove the dummyHandler first
       if delimiter == "--" then _removeHandler("dummyDashHandler", ["--"]);
       var argHelp = new argumentHelp(visible=false,
@@ -1638,7 +1638,7 @@ module ArgumentParser {
              `exitOnError=false`, and invalid or undefined command line
              arguments are found in `arguments`.
     */
-    proc parseArgs(arguments:[?argsD] string) throws {
+    proc ref parseArgs(arguments:[?argsD] string) throws {
       // normal operation is to catch parsing error, write help message,
       // and exit. User may choose to handle errors themselves though.
       if _addHelp {
@@ -1664,7 +1664,7 @@ module ArgumentParser {
     }
 
     @chpldoc.nodoc
-    proc _tryParseArgs(arguments:[?argsD] string) throws {
+    proc ref _tryParseArgs(arguments:[?argsD] string) throws {
       // TODO: Find out why the in intent is breaking here
       compilerAssert(argsD.rank==1, "parseArgs requires 1D array");
       var k = 0;
@@ -1835,7 +1835,7 @@ module ArgumentParser {
     }
 
     @chpldoc.nodoc
-    proc _checkAndSaveOpts(opts:[?optsD], name:string) throws {
+    proc ref _checkAndSaveOpts(opts:[?optsD], name:string) throws {
       // validate supplied opt vals have valid prefix and don't conflict
       // then collect them
       for i in optsD {
@@ -1854,7 +1854,7 @@ module ArgumentParser {
     }
 
     @chpldoc.nodoc
-    proc _addHandler(in handler : ArgumentHandler) throws {
+    proc ref _addHandler(in handler : ArgumentHandler) throws {
 
       // ensure option names are unique
       if _handlers.contains(handler._name) {
@@ -1873,7 +1873,7 @@ module ArgumentParser {
 
     // remove a handler for an option or flag
     @chpldoc.nodoc
-    proc _removeHandler(name:string, opts:[?optsD]string) {
+    proc ref _removeHandler(name:string, opts:[?optsD]string) {
       if _result.remove(name) {
         _handlers.remove(name);
         for opt in opts do _options.remove(opt);

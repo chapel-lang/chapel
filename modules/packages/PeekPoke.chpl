@@ -58,7 +58,7 @@ module PeekPoke {
   /*
      Non-atomically writes `val`.
   */
-  inline proc AtomicBool.poke(val:bool): void {
+  inline proc ref AtomicBool.poke(val:bool): void {
     this.write(val, order=memoryOrder.relaxed);
   }
   @chpldoc.nodoc
@@ -82,7 +82,7 @@ module PeekPoke {
   /*
      Non-atomically writes `val`.
   */
-  inline proc AtomicT.poke(val:valType): void {
+  inline proc ref AtomicT.poke(val:valType): void {
     this.write(val, order=memoryOrder.relaxed);
   }
   @chpldoc.nodoc

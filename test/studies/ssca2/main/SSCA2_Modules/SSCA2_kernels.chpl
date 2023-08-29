@@ -561,7 +561,7 @@ module SSCA2_kernels
     }
 
     // This function should only be called using unique vertices
-    proc add_child ( new_child: vertex ) {
+    proc ref add_child ( new_child: vertex ) {
       var c = child_count.fetchAdd(1)+1;
       Row_Children[c] = new_child;
     }

@@ -1565,12 +1565,12 @@ AggregateType* installInternalType(AggregateType* ct, AggregateType* dt) {
   return dt;
 }
 
-DefExpr* buildClassDefExpr(const char*  name,
-                           const char*  cname,
-                           AggregateTag tag,
-                           AList        inherits,
-                           BlockStmt*   decls,
-                           Flag         externFlag) {
+DefExpr* buildClassDefExpr(const char*               name,
+                           const char*               cname,
+                           AggregateTag              tag,
+                           const std::vector<Expr*>& inherits,
+                           BlockStmt*                decls,
+                           Flag                      externFlag) {
   bool isExtern = externFlag == FLAG_EXTERN;
   AggregateType* ct = NULL;
   TypeSymbol* ts = NULL;
@@ -1619,7 +1619,7 @@ DefExpr* buildClassDefExpr(const char*  name,
     ct->defaultValue=NULL;
 
     if (!inherits.empty()) {
-      USR_FATAL_CONT(inherits.first(),
+      USR_FATAL_CONT(inherits.front(),
                      "External types do not currently support inheritance");
     }
   }
@@ -1632,8 +1632,8 @@ DefExpr* buildClassDefExpr(const char*  name,
 
   ct->addDeclarations(decls);
 
-  for_alist(inherit, inherits) {
-    ct->inherits.insertAtTail(inherit->remove());
+  for (auto inherit : inherits) {
+    ct->inherits.insertAtTail(inherit);
   }
   return def;
 }

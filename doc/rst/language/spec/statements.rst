@@ -992,7 +992,7 @@ in a manage statement.
         var x: int;
       }
 
-      proc IntWrapper.enterContext() ref: int {
+      proc ref IntWrapper.enterContext() ref: int {
         writeln('entering');
         writeln(this);
         return this.x;
@@ -1049,7 +1049,7 @@ Resource storage may also be specified explicitly.
         var x: int;
       }
 
-      proc IntWrapper.enterContext() ref: int {
+      proc ref IntWrapper.enterContext() ref: int {
         writeln('entering');
         writeln(this);
         return this.x;
@@ -1116,7 +1116,7 @@ statement.
         var x: int;
       }
 
-      proc IntWrapper.enterContext() ref: int {
+      proc ref IntWrapper.enterContext() ref: int {
         writeln('entering');
         writeln(this);
         return this.x;

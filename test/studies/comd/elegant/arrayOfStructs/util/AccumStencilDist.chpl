@@ -673,7 +673,7 @@ iter AccumStencilDom.these(param tag: iterKind, followThis) where tag == iterKin
     var low  = wholeDim.orderToIndex(followDim.low);
     var high = wholeDim.orderToIndex(followDim.high);
     if wholeDim.hasNegativeStride() then low <=> high;
-    t(i) = try! (low..high by (wholeDim.stride*followDim.stride)) : t(i).type;
+    t(i) = (low..high by (wholeDim.stride*followDim.stride)) : t(i).type;
   }
   for i in {(...t)} {
     yield i;
@@ -1071,7 +1071,7 @@ iter AccumStencilArr.these(param tag: iterKind, followThis, param fast: bool = f
     writeln((if fast then "fast" else "regular") + " follower invoked for AccumStencil array");
 
   var myFollowThis: rank*range(idxType=idxType, strides=chpl_strideProduct(
-                                      strides, chpl_strideUnion(followThis)));
+                                     strides, chpl_strideUnion(followThis)));
   var lowIdx: rank*idxType;
 
   for param i in 0..rank-1 {
@@ -1079,7 +1079,8 @@ iter AccumStencilArr.these(param tag: iterKind, followThis, param fast: bool = f
     // NOTE: Not bothering to check to see if these can fit into idxType
     var low = followThis(i).lowBound * abs(stride):idxType;
     var high = followThis(i).highBound * abs(stride):idxType;
-    myFollowThis(i) = try! ((low..high by stride) + dom.whole.dim(i).low by followThis(i).stride) : myFollowThis(i).type;
+    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).low
+                       by followThis(i).stride) : myFollowThis(i).type;
     lowIdx(i) = myFollowThis(i).lowBound;
   }
 

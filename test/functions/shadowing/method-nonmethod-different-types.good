@@ -1,0 +1,4 @@
+method-nonmethod-different-types.chpl:6: In method 'foo':
+method-nonmethod-different-types.chpl:8: error: currently ambiguous what 'bar' refers to
+method-nonmethod-different-types.chpl:4: note: found this method
+method-nonmethod-different-types.chpl:5: note: and this non-method

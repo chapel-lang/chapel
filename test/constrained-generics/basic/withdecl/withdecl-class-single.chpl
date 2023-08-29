@@ -9,4 +9,4 @@ class R: Bla {
 proc f(b: Bla) {
   writeln("The value of the bla is: ", b.bla());
 }
-f(new unmanaged R());
+f(new R());

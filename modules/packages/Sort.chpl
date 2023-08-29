@@ -1493,7 +1493,7 @@ module SampleSortHelp {
 
     // Build the tree from the sorted splitters
     // logBuckets does not account for equalBuckets.
-    proc build(logBuckets: int, equalBuckets: bool) {
+    proc ref build(logBuckets: int, equalBuckets: bool) {
       this.logBuckets = logBuckets;
       this.numBuckets = 1 << logBuckets;
       this.equalBuckets = equalBuckets;
@@ -1504,7 +1504,7 @@ module SampleSortHelp {
       build(0, numSplitters, 1);
     }
     // Recursively builds the tree
-    proc build(left: int, right: int, pos: int) {
+    proc ref build(left: int, right: int, pos: int) {
       var mid = left + (right - left) / 2;
       storage[pos] = sortedStorage[mid];
       if 2*pos < numBuckets {
@@ -2257,7 +2257,8 @@ module TwoArrayPartitioning {
                       else here.maxTaskPar;
     var countsSize:int = nTasks*maxBuckets;
 
-    var bucketizer; // contains e.g. sample
+    type bucketizerType;
+    var bucketizer: bucketizerType; // contains e.g. sample
 
     // globalCounts stores counts like this:
     //   count for bin 0, task 0
@@ -2286,6 +2287,21 @@ module TwoArrayPartitioning {
     var baseCaseSize:int = 16;
     var sequentialSizePerTask:int = 4096;
     var endbit:int = max(int);
+
+    proc init(type bucketizerType) {
+      this.bucketizerType = bucketizerType;
+    }
+
+    proc init(in bucketizer,
+              baseCaseSize: int = 16,
+              sequentialSizePerTask: int = 4096,
+              endbit: int = max(int)) {
+      this.bucketizerType = bucketizer.type;
+      this.bucketizer = bucketizer;
+      this.baseCaseSize = baseCaseSize;
+      this.sequentialSizePerTask = sequentialSizePerTask;
+      this.endbit = endbit;
+    }
   }
 
   record TwoArrayDistributedBucketizerStatePerLocale {
@@ -2328,7 +2344,7 @@ module TwoArrayPartitioning {
     var globalCounts:[0..#countsSize] int;
     var globalEnds:[0..#countsSize] int;
 
-    proc postinit() {
+    proc ref postinit() {
       // Copy some vars to the compat
       for p in perLocale {
         p.compat.baseCaseSize = baseCaseSize;

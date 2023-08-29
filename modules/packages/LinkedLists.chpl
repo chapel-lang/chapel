@@ -117,7 +117,7 @@ record LinkedList {
   /*
     Append `e` to the list.
    */
-  proc append(e : eltType) {
+  proc ref append(e : eltType) {
     if _last {
       _last!.next = new unmanaged listNode(eltType, e);
       _last = _last!.next;
@@ -130,14 +130,14 @@ record LinkedList {
   /*
      Synonym for append.
    */
-  inline proc push_back(e : eltType) {
+  inline proc ref push_back(e : eltType) {
     append(e);
   }
 
   /*
     Append all of the supplied arguments to the list.
    */
-  proc append(e: eltType, es: eltType ...?k) {
+  proc ref append(e: eltType, es: eltType ...?k) {
     //TODO: merge the append overloads
     append(e);
     for param i in 0..k-1 do
@@ -147,7 +147,7 @@ record LinkedList {
   /*
     Prepend `e` to the list.
    */
-  proc prepend(e : eltType) {
+  proc ref prepend(e : eltType) {
     _first = new unmanaged listNode(eltType, e, _first);
     if _last == nil then
       _last = _first;
@@ -165,7 +165,7 @@ record LinkedList {
   /*
     Append all the elements in `l` to the end of the list.
    */
-  proc concat(l: LinkedList(eltType)) {
+  proc ref concat(l: LinkedList(eltType)) {
     for e in l do
       append(e);
   }
@@ -174,7 +174,7 @@ record LinkedList {
     Remove the first encountered instance of `x` from the list.
     Does nothing if `x` is not present in the list.
    */
-  proc remove(x: eltType) {
+  proc ref remove(x: eltType) {
     var tmp = _first,
         prev: _first.type = nil;
     while tmp != nil && tmp!.data != x {
@@ -197,7 +197,7 @@ record LinkedList {
      Remove the first element from the list and return it.
      It is an error to call this function on an empty list.
    */
-   proc pop_front():eltType {
+   proc ref pop_front():eltType {
      import HaltWrappers;
      if boundsChecking && size < 1 {
        HaltWrappers.boundsCheckHalt("pop_front on empty list");
@@ -270,7 +270,7 @@ record LinkedList {
   /*
     Delete every node in the list.
    */
-  proc destroy() {
+  proc ref destroy() {
     var current = _first;
     while (current != nil) {
       var next = current!.next;
@@ -286,7 +286,7 @@ record LinkedList {
     Destructor
    */
   @chpldoc.nodoc
-  proc deinit(){
+  proc ref deinit(){
     destroy();
   }
 
@@ -336,7 +336,7 @@ record LinkedList {
   }
 
   @chpldoc.nodoc
-  proc readThis(f) throws {
+  proc ref readThis(f) throws {
     use OS;
 
     //
@@ -405,7 +405,7 @@ record LinkedList {
       if isJson || isChpl then f._readLiteral("]");
   }
 
-  proc deserialize(reader: fileReader, ref deserializer) throws
+  proc ref deserialize(reader: fileReader, ref deserializer) throws
   where reader.deserializerType == IO.DefaultDeserializer {
     destroy();
 
@@ -427,7 +427,7 @@ record LinkedList {
     des.endArray(reader);
   }
 
-  proc deserialize(reader: fileReader, ref deserializer) throws {
+  proc ref deserialize(reader: fileReader, ref deserializer) throws {
     // Clear out existing elements in the list.
     destroy();
 

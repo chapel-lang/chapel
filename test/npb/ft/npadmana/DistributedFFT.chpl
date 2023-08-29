@@ -127,11 +127,11 @@ prototype module DistributedFFT {
     }
 
     inline proc execute(ref arr1 : ?T, ref arr2 : T) where (T != c_ptr(?)) {
-      execute(c_ptrTo(arr1), c_ptrTo(arr2));
+      this.execute(c_ptrTo(arr1), c_ptrTo(arr2));
     }
 
     inline proc execute(ref arr1 : ?T) where (T != c_ptr(?)) {
-      execute(arr1, arr1);
+      this.execute(arr1, arr1);
     }
 
     proc isValid : bool {
@@ -397,7 +397,7 @@ prototype module DistributedFFT {
        we could implement FFTWplan.init=() to either duplicate or borrow
        the fftw_plan object that FFTWplan points at. */
     pragma "do not unref for yields"
-    iter batch(param tag : iterKind) where (tag==iterKind.standalone) {
+    iter ref batch(param tag : iterKind) where (tag==iterKind.standalone) {
       coforall chunk in chunks(parRange, numTasks) {
         if chunk.size == batchSizeSm then yield (planSm, chunk);
         if chunk.size == batchSizeLg then yield (planLg, chunk);
@@ -532,13 +532,13 @@ prototype module DistributedFFT {
         }
       }
 
-      proc start() {
+      proc ref start() {
         if timeTrackFFT {
           tt.clear(); tt.start();
         }
       }
 
-      proc stop(stage) {
+      proc ref stop(stage) {
         if timeTrackFFT {
           tt.stop();
           arr[stage] += tt.elapsed();

@@ -13,7 +13,7 @@ real(64)       nanzeros        nan          nan
 real(64)    negnanzeros        nan          nan
 real(64)         naninf        nan          nan
 real(64)      negnaninf        nan          nan
-real(64)            NAN        nan          nan
-real(64)           -NAN        nan         -nan negative
-real(64)       INFINITY        inf          inf
-real(64)      -INFINITY       -inf         -inf negative
+real(64)            nan        nan          nan
+real(64)           -nan        nan         -nan negative
+real(64)            inf        inf          inf
+real(64)           -inf       -inf         -inf negative
