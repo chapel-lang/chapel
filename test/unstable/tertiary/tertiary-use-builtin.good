@@ -1,0 +1,3 @@
+tertiary-use-builtin.chpl:6: In module 'M2':
+tertiary-use-builtin.chpl:7: warning: using a type's name ('string' in this case) in a 'use' statement to access its tertiary methods is an unstable feature
+(hello)
