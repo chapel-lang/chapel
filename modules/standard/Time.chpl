@@ -1288,14 +1288,15 @@ module Time {
     return unixEpoch + new timeDelta(seconds=timestamp: int, microseconds=((timestamp-timestamp: int)*1000000): int);
   }
 
-  @deprecated(notes="'dateTime.fromOrdinal' is deprecated, please use 'dateTime.createFromOrdinal' instead")
+  @deprecated(notes="'dateTime.fromOrdinal' is deprecated, please use 'new dateTime(date.createFromOrdinal(ordinal))' instead")
   proc type dateTime.fromOrdinal(ordinal) : dateTime {
     return dateTime.createFromOrdinal(ordinal);
   }
 
   /* The `dateTime` that is `ordinal` days from 1-1-0001 */
+  @deprecated(notes="'dateTime.createFromOrdinal' is deprecated; use 'new dateTime(date.createFromOrdinal(ordinal))' instead")
   proc type dateTime.createFromOrdinal(ordinal: int) : dateTime {
-    return new dateTime(date.createFromOrdinal(ordinal), new time());
+    return new dateTime(date.createFromOrdinal(ordinal));
   }
 
   /* Form a `dateTime` value from a given `date` and `time` */
