@@ -62,7 +62,7 @@ module PeekPoke {
     this.write(val, order=memoryOrder.relaxed);
   }
   @chpldoc.nodoc
-  inline proc RAtomicBool.poke(val:bool): void {
+  inline proc ref RAtomicBool.poke(val:bool): void {
     _v = val:int(64);
   }
 
@@ -86,7 +86,7 @@ module PeekPoke {
     this.write(val, order=memoryOrder.relaxed);
   }
   @chpldoc.nodoc
-  inline proc RAtomicT.poke(val:valType): void {
+  inline proc ref RAtomicT.poke(val:valType): void {
     _v = val;
   }
 }
