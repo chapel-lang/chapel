@@ -1,4 +1,4 @@
-record man1 {
+record man1 : contextManager {
   var x = 0;
   proc enterContext() const ref: int { return x; }
   proc exitContext(in err: owned Error?) {
@@ -6,7 +6,7 @@ record man1 {
   }
 }
 
-record man2 {
+record man2 : contextManager {
   var x = 0;
   proc enterContext(): int { return x; }
   proc enterContext() const ref: int { return x; }

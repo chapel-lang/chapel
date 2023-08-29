@@ -1,4 +1,4 @@
-record man {
+record man : contextManager {
   var x = 0;
   proc enterContext(): int { return x; }
   proc enterContext() const ref: int { return x; }

@@ -23,7 +23,7 @@ var globalRes = new res();
 
 // Multiple overloads of 'enterContext()' can exist, that just means that the
 // resource storage cannot be inferred.
-record man {
+record man : contextManager {
   var x = new r();
 
   proc enterContext() ref {

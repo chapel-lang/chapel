@@ -1,7 +1,7 @@
 // TODO: Change me to standard module when we create one.
 use ChapelLocks;
 
-record spinlock {
+record spinlock : contextManager {
   type T;
   var _resource: T;
   var _lock: chpl_LocalSpinlock;
