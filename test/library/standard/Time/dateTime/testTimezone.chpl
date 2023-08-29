@@ -53,17 +53,17 @@ proc test_zones() {
   assert(t4.timezone.borrow() == nil);
   assert(t5.timezone == utc);
 
-  assert(t1.timezone!.utcOffset(dateTime.now()) == new timeDelta(minutes=-300));
-  assert(t2.timezone!.utcOffset(dateTime.now()) == new timeDelta(minutes=0));
-  assert(t3.timezone!.utcOffset(dateTime.now()) == new timeDelta(minutes=60));
+  assert(t1.utcOffset() == new timeDelta(minutes=-300));
+  assert(t2.utcOffset() == new timeDelta(minutes=0));
+  assert(t3.utcOffset() == new timeDelta(minutes=60));
 
-  assert(t1.timezone!.tzname(dateTime.now()) == "EST");
-  assert(t2.timezone!.tzname(dateTime.now()) == "UTC");
-  assert(t3.timezone!.tzname(dateTime.now()) == "MET");
+  assert(t1.tzname() == "EST");
+  assert(t2.tzname() == "UTC");
+  assert(t3.tzname() == "MET");
 
-  assert(t1.timezone!.dst(dateTime.now()) == new timeDelta(minutes=1));
-  assert(t2.timezone!.dst(dateTime.now()) == new timeDelta(minutes=-2));
-  assert(t3.timezone!.dst(dateTime.now()) == new timeDelta(minutes=3));
+  assert(t1.dst() == new timeDelta(minutes=1));
+  assert(t2.dst() == new timeDelta(minutes=-2));
+  assert(t3.dst() == new timeDelta(minutes=3));
 
   assert(t1 == t2);
   assert(t1 == t3);
@@ -131,10 +131,10 @@ proc test_replace() {
   }
 
   // Ensure we can get rid of a tz.
-  assert(base.timezone!.tzname(dateTime.now()) == "+100");
+  assert(base.tzname() == "+100");
   var base2 = base.replace(tz=nil);
   assert(base2.timezone.borrow() == nil);
-  // assert(base2.timezone!.tzname(dateTime.now()) == ""); // nil timezone, halt
+  assert(base2.tzname() == "");
 
   // Ensure we can add one.
   var base3 = base2.replace(tz=z100);
@@ -172,8 +172,8 @@ proc test_mixed_compare() {
   var v = new shared Varies();
   t1 = t2.replace(tz=v);
   t2 = t2.replace(tz=v);
-  assert(t1.timezone!.utcOffset(dateTime.now()) == new timeDelta(minutes=23));
-  assert(t2.timezone!.utcOffset(dateTime.now()) == new timeDelta(minutes=24));
+  assert(t1.utcOffset() == new timeDelta(minutes=23));
+  assert(t2.utcOffset() == new timeDelta(minutes=24));
   assert(t1 == t2);
 
   // But if they're not identical, it isn't ignored.

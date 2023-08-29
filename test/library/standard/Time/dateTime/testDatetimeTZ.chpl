@@ -25,11 +25,11 @@ class FixedOffset: Timezone {
     return dstoffset;
   }
   override proc fromUtc(dt: dateTime) {
-    var dtoff = dt.timezone!.utcOffset(dt);
-    var dtdst = dt.timezone!.dst(dt);
+    var dtoff = dt.utcOffset();
+    var dtdst = dt.dst();
     var delta = dtoff - dtdst;
     var dt2 = dt + delta;
-    dtdst = dt2.timezone!.dst(dt2);
+    dtdst = dt2.dst();
     return dt2 + dtdst;
   }
 }
@@ -102,12 +102,12 @@ proc test_zones() {
   assert(t1.timezone == est);
   assert(t2.timezone == utc);
   assert(t3.timezone == met);
-  assert(t1.timezone!.utcOffset(t1) == new timeDelta(minutes=-300));
-  assert(t2.timezone!.utcOffset(t2) == new timeDelta(minutes=0));
-  assert(t3.timezone!.utcOffset(t3) == new timeDelta(minutes=60));
-  assert(t1.timezone!.tzname(t1) == "EST");
-  assert(t2.timezone!.tzname(t2) == "UTC");
-  assert(t3.timezone!.tzname(t3) == "MET");
+  assert(t1.utcOffset() == new timeDelta(minutes=-300));
+  assert(t2.utcOffset() == new timeDelta(minutes=0));
+  assert(t3.utcOffset() == new timeDelta(minutes=60));
+  assert(t1.tzname() == "EST");
+  assert(t2.tzname() == "UTC");
+  assert(t3.tzname() == "MET");
   assert(t1 == t2);
   assert(t1 == t3);
   assert(t2 == t3);
@@ -173,9 +173,7 @@ proc test_tz_aware_arithmetic() {
   //            (nowaware base - nowawareplus base) +
   //            (nowawareplus offset - nowaware offset) =
   //            -delta + nowawareplus offset - nowaware offset
-  var expected = nowawareplus.timezone!.utcOffset(nowawareplus) -
-    nowaware.timezone!.utcOffset(nowaware)
-    - delta;
+  var expected = nowawareplus.utcOffset() - nowaware.utcOffset() - delta;
   assert(got == expected);
 
   // Try max possible difference.
@@ -196,7 +194,7 @@ proc test_tzinfo_now() {
   var another = dateTime.now(off42);
   var again = dateTime.now(tz=off42);
   assert(another.timezone == again.timezone);
-  assert(another.timezone!.utcOffset(another) == new timeDelta(minutes=42));
+  assert(another.utcOffset() == new timeDelta(minutes=42));
 
   // We don't know which time zone we're in, and don't have a tz
   // class to represent it, so seeing whether a tz argument actually
@@ -242,7 +240,7 @@ proc test_tzinfo_fromtimestamp() {
   var another = dateTime.createFromTimestamp(ts, off42);
   var again = dateTime.createFromTimestamp(ts, tz=off42);
   assert(another.timezone == again.timezone);
-  assert(another.timezone!.utcOffset(another) == new timeDelta(minutes=42));
+  assert(another.utcOffset() == new timeDelta(minutes=42));
 
   // Try to make sure tz= actually does some conversion.
   var timestamp = 1000000000;
@@ -368,7 +366,7 @@ proc test_tzinfo_tostring() {
     for us in (0, 987001) {
       var d = new dateTime(1, 2, 3, 4, 5, 59, us, tz=ofs);
       var timestr = '04:05:59' + if us != 0 then '.987001' else '';
-      var ofsstr = d.timezone!.tzname(d);
+      var ofsstr = d.tzname();
       var tailstr = timestr + ofsstr;
       var iso = d:string;
       assert(iso == datestr + 'T' + tailstr);
@@ -421,7 +419,7 @@ proc test_replace() {
   }
 
   // Ensure we can get rid of a tz.
-  assert(base.timezone!.tzname(base) == "+100");
+  assert(base.tzname() == "+100");
   var base2 = base.replace(tz=nil);
   assert(base2.timezone.borrow() == nil);
 
@@ -448,8 +446,8 @@ proc test_more_astimezone() {
   // Replacing with different tz does adjust.
   var got = dt.astimezone(fm5h);
   assert(got.timezone == fm5h);
-  assert(got.timezone!.utcOffset(got) == new timeDelta(hours=-5));
-  var expected = dt - dt.timezone!.utcOffset(dt);  // in effect, convert to UTC
+  assert(got.utcOffset() == new timeDelta(hours=-5));
+  var expected = dt - dt.utcOffset();  // in effect, convert to UTC
   expected += fm5h.utcOffset(dt);  // and from there to local time
   expected = expected.replace(tz=fm5h); // and attach new tz
   assert(got.getDate() == expected.getDate());
@@ -533,8 +531,8 @@ proc test_mixed_compare() {
   var v = new shared Varies();
   t1 = t2.replace(tz=v);
   t2 = t2.replace(tz=v);
-  assert(t1.timezone!.utcOffset(t1) == new timeDelta(minutes=23));
-  assert(t2.timezone!.utcOffset(t2) == new timeDelta(minutes=24));
+  assert(t1.utcOffset() == new timeDelta(minutes=23));
+  assert(t2.utcOffset() == new timeDelta(minutes=24));
   assert(t1 == t2);
 
   // But if they're not identical, it isn't ignored.

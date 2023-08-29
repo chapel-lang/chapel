@@ -842,8 +842,8 @@ module Time {
     if x.microsecond != 0 {
       ret = ret + "." + makeNDigits(6, x.microsecond);
     }
+    var offset = x.utcOffset();
     if x.timezone.borrow() != nil {
-      var offset = x.timezone!.utcOffset(dateTime.now());
       var sign: string;
       if offset.days < 0 {
         offset = -offset;
@@ -863,7 +863,6 @@ module Time {
   }
 
   /* Return the offset from UTC */
-  @deprecated(notes="`time.utcOffset` is deprecated; use `time.timezone.utcOffset` instead")
   proc time.utcOffset() : timeDelta {
     if timezone.borrow() == nil {
       return new timeDelta();
@@ -871,8 +870,8 @@ module Time {
       return timezone!.utcOffset(dateTime.now());
     }
   }
+
   /* Return the daylight saving time offset */
-  @deprecated(notes="`time.dst` is deprecated; use `time.timezone.dst` instead")
   proc time.dst() : timeDelta {
     if timezone.borrow() == nil {
       return new timeDelta();
@@ -880,8 +879,9 @@ module Time {
       return timezone!.dst(dateTime.now());
     }
   }
+
   /* Return the name of the timezone for this `time` value */
-  @deprecated(notes="`time.tzname` is deprecated; use `time.timezone.tzname` instead")
+  @unstable("'tzname' is unstable")
   proc time.tzname() : string {
     if timezone.borrow() == nil then
       return "";
@@ -908,11 +908,9 @@ module Time {
     timeStruct.tm_yday = 0;
 
     if timezone.borrow() != nil {
-      timeStruct.tm_gmtoff = (timezone!.utcOffset(dateTime.now())).abs().seconds: c_long;
-      timeStruct.tm_zone =
-        __primitive("cast", tm_zoneType,
-            timezone!.tzname(dateTime.now()).c_str());
-      timeStruct.tm_isdst = timezone!.dst(dateTime.now()).seconds: int(32);
+      timeStruct.tm_gmtoff = utcOffset().abs().seconds: c_long;
+      timeStruct.tm_zone = __primitive("cast", tm_zoneType, tzname().c_str());
+      timeStruct.tm_isdst = dst().seconds: int(32);
     } else {
       timeStruct.tm_gmtoff = 0;
       timeStruct.tm_zone = __primitive("cast", tm_zoneType, "".c_str());
@@ -1023,8 +1021,8 @@ module Time {
       const dt1 = new dateTime(new date(1900, 1, 1), t1);
       const dt2 = new dateTime(new date(1900, 1, 1), t2);
       return dt1 < dt2;
-      //return (t1.replace(tz=nil) - t1.timezone!.utcOffset(dateTime.now())) <
-      //       (t2.replace(tz=nil) - t2.timezone!.utcOffset(dateTime.now()));
+      //return (t1.replace(tz=nil) - t1.utcOffset()) <
+      //       (t2.replace(tz=nil) - t2.utcOffset());
     }
   }
 
@@ -1376,12 +1374,11 @@ module Time {
     if timezone == tz {
       return this;
     }
-    const utc = (this - this.timezone!.utcOffset(this)).replace(tz=tz);
+    const utc = (this - this.utcOffset()).replace(tz=tz);
     return tz.borrow().fromUtc(utc);
   }
 
   /* Return the offset from UTC */
-  @deprecated(notes="`dateTime.utcOffset` is deprecated; use `dateTime.timezone.utcOffset` instead")
   proc dateTime.utcOffset() : timeDelta {
     if timezone.borrow() == nil {
       halt("utcOffset called on naive dateTime");
@@ -1390,14 +1387,14 @@ module Time {
     }
   }
   /* Return the daylight saving time offset */
-  @deprecated(notes="`dateTime.dst` is deprecated; use `dateTime.timezone.dst` instead")
   proc dateTime.dst() : timeDelta {
     if timezone.borrow() == nil then
       halt("dst() called with nil timezone");
     return timezone!.dst(this);
   }
+
   /* Return the name of the timezone for this `dateTime` value */
-  @deprecated(notes="`dateTime.tzname` is deprecated; use `dateTime.timezone.tzname` instead")
+  @unstable("'tzname' is unstable")
   proc dateTime.tzname() : string {
     if timezone.borrow() == nil then
       return "";
@@ -1421,7 +1418,7 @@ module Time {
 
     if timezone.borrow() == nil {
       timeStruct.tm_isdst = -1;
-    } else if timezone!.dst(this) == new timeDelta(0) {
+    } else if dst() == new timeDelta(0) {
       timeStruct.tm_isdst = 0;
     } else {
       timeStruct.tm_isdst = 1;
@@ -1440,7 +1437,7 @@ module Time {
       ret.tm_isdst = 0;
       return ret;
     } else {
-      const utc = this.replace(tz=nil) - timezone!.utcOffset(this);
+      const utc = this.replace(tz=nil) - utcOffset();
       var ret = utc.timetuple();
       ret.tm_isdst = 0;
       return ret;
@@ -1506,7 +1503,7 @@ module Time {
     var micro = if x.microsecond > 0 then "." + zeroPad(6, x.microsecond) else "";
     var offset: string;
     if x.timezone.borrow() != nil {
-      var utcoff = x.timezone!.utcOffset(x);
+      var utcoff = x.utcOffset();
       var sign: string;
       if utcoff < new timeDelta(0) {
         sign = '-';
@@ -1541,7 +1538,7 @@ module Time {
     var micro = if microsecond > 0 then "." + zeroPad(6, microsecond) else "";
     var offset: string;
     if timezone.borrow() != nil {
-      var utcoff = timezone!.utcOffset(this);
+      var utcoff = utcOffset();
       var sign: string;
       if utcoff < new timeDelta(0) {
         sign = '-';
@@ -1781,8 +1778,9 @@ module Time {
       return new timeDelta(days=newday, hours=newhour, minutes=newmin,
                            seconds=newsec, microseconds=newmicro);
     } else {
-      return (dt1.replace(tz=nil) - dt2.replace(tz=nil)) +
-             (dt2.timezone!.utcOffset(dt2) - dt1.timezone!.utcOffset(dt1));
+      return dt1.replace(tz=nil) -
+                                dt2.replace(tz=nil) +
+                                dt2.utcOffset() - dt1.utcOffset();
     }
   }
 
@@ -1803,8 +1801,8 @@ module Time {
                         t1.second == t2.second &&
                         t1.microsecond == t2.microsecond;
     } else {
-      return (dt1.replace(tz=nil) - dt1.timezone!.utcOffset(dt1)) ==
-             (dt2.replace(tz=nil) - dt2.timezone!.utcOffset(dt2));
+      return (dt1.replace(tz=nil) - dt1.utcOffset()) ==
+             (dt2.replace(tz=nil) - dt2.utcOffset());
     }
   }
 
@@ -1825,8 +1823,8 @@ module Time {
       else if date2 < date1 then return false;
       else return dt1.getTime() < dt2.getTime();
     } else {
-      return (dt1.replace(tz=nil) - dt1.timezone!.utcOffset(dt1)) <
-             (dt2.replace(tz=nil) - dt2.timezone!.utcOffset(dt2));
+      return (dt1.replace(tz=nil) - dt1.utcOffset()) <
+             (dt2.replace(tz=nil) - dt2.utcOffset());
     }
   }
 
@@ -1842,8 +1840,8 @@ module Time {
       else if date2 < date1 then return false;
       else return dt1.getTime() <= dt2.getTime();
     } else {
-      return (dt1.replace(tz=nil) - dt1.timezone!.utcOffset(dt1)) <=
-             (dt2.replace(tz=nil) - dt2.timezone!.utcOffset(dt2));
+      return (dt1.replace(tz=nil) - dt1.utcOffset()) <=
+             (dt2.replace(tz=nil) - dt2.utcOffset());
     }
   }
 
@@ -1859,8 +1857,8 @@ module Time {
       else if date2 > date1 then return false;
       else return dt1.getTime() > dt2.getTime();
     } else {
-      return (dt1.replace(tz=nil) - dt1.timezone!.utcOffset(dt1)) >
-             (dt2.replace(tz=nil) - dt2.timezone!.utcOffset(dt2));
+      return (dt1.replace(tz=nil) - dt1.utcOffset()) >
+             (dt2.replace(tz=nil) - dt2.utcOffset());
     }
   }
 
@@ -1876,8 +1874,8 @@ module Time {
       else if date2 > date1 then return false;
       else return dt1.getTime() >= dt2.getTime();
     } else {
-      return (dt1.replace(tz=nil) - dt1.timezone!.utcOffset(dt1)) >=
-             (dt2.replace(tz=nil) - dt2.timezone!.utcOffset(dt2));
+      return (dt1.replace(tz=nil) - dt1.utcOffset()) >=
+             (dt2.replace(tz=nil) - dt2.utcOffset());
     }
   }
 
