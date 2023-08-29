@@ -359,6 +359,23 @@ bool callSetsSymbol(Symbol* sym, CallExpr* call)
   return false;
 }
 
+static
+void maybeIssueRefMaybeConstWarning(ArgSymbol* arg) {
+  // need to do some heuristics to determine if arg gets modified
+  if (arg->hasFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST)) {
+    std::vector<CallExpr*> allCalls;
+    collectCallExprs(arg->getFunction(), allCalls);
+    for (auto ce: allCalls) {
+      if (callSetsSymbol(arg, ce)) {
+        USR_WARN(arg->getFunction(),
+                  "inferring a default intent to be 'ref' is deprecated - "
+                  "please add an explicit 'ref' forall intent for '%s'",
+                  arg->name);
+      }
+    }
+  }
+}
+
 //
 // Returns 'true' if 'sym' is (or should be) a const-ref.
 // If 'sym' can be a const-ref, but is not, this function will change either
@@ -473,16 +490,7 @@ static bool inferConstRef(Symbol* sym) {
       INT_ASSERT(info->finalizedConstness == false);
       if (ArgSymbol* arg = toArgSymbol(sym)) {
 
-        // need to do some heuristics to determine if arg gets modified
-        if (arg->hasFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST)) {
-          std::vector<CallExpr*> allCalls;
-          collectCallExprs(arg->getFunction(), allCalls);
-          for (auto ce: allCalls) {
-            if (callSetsSymbol(arg, ce)) {
-              USR_WARN(arg, "I AM DEPRECATED");
-            }
-          }
-        }
+        maybeIssueRefMaybeConstWarning(arg);
 
         arg->intent = INTENT_CONST_REF;
       } else {
