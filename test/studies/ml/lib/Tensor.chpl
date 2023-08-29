@@ -109,8 +109,6 @@ module Tensor {
 
         proc reshapeDomain(d: this._domain.type) {
             this._domain = d;
-            var D = this.data.domain;
-            D = d;
         }
 
         proc init(param rank: int, type eltType) {
