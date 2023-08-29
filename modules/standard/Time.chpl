@@ -433,12 +433,13 @@ module Time {
 
   /* Methods on date values */
 
-  /* Replace the `year`, `month` and/or `day` in a date to create a
-     new `date` */
-  proc date.replace(year=0, month=0, day=0) : date {
-    const newYear = if year > 0 then year else this.year;
-    const newMonth = if month > 0 then month else this.month;
-    const newDay = if day > 0 then day else this.day;
+  /* Get a new `date` based on this one, optionally with the `year`, `month`
+     and/or `day` replaced.
+  */
+  proc date.replace(year=-1, month=-1, day=-1) : date {
+    const newYear = if year != -1 then year else this.year;
+    const newMonth = if month != -1 then month else this.month;
+    const newDay = if day != -1 then day else this.day;
     return new date(newYear, newMonth, newDay);
   }
 
@@ -778,9 +779,9 @@ module Time {
 
   /* Methods on time values */
 
-  /* Replace the `hour`, `minute`, `second`, `microsecond` in a
-     `time` to create a new `time`. All arguments are optional.
-   */
+  /* Get a new `time` based on this one, optionally with the `hour` `minute`,
+     `second`, and/or `microsecond` replaced.
+  */
   proc time.replace(hour=-1, minute=-1, second=-1, microsecond=-1) : time {
     const newhour = if hour != -1 then hour else this.hour;
     const newminute = if minute != -1 then minute else this.minute;
@@ -790,9 +791,9 @@ module Time {
     return new time(newhour, newminute, newsecond, newmicrosecond);
   }
 
-  /* Replace the `hour`, `minute`, `second`, `microsecond` and `tz` in a
-     `time` to create a new `time`. All arguments are optional.
-   */
+  /* Get a new `time` based on this one, optionally with the `hour` `minute`,
+     `second`, `microsecond` and/or `tz` replaced.
+  */
   @unstable("tz is unstable; its type may change in the future")
   proc time.replace(hour=-1, minute=-1, second=-1, microsecond=-1,
                     in tz) : time {
@@ -1309,40 +1310,28 @@ module Time {
     return chpl_time;
   }
 
-  /* Replace the `year`, `month`, `day`, `hour`, `minute`, `second`,
-     or `microsecond` to form a new `dateTime` object. All
-     arguments are optional.
-   */
+  /* Get a new `time` based on this one, optionally with the `year`, `month`,
+     `day`, `hour` `minute`, `second`, and/or `microsecond` replaced.
+  */
   proc dateTime.replace(year=-1, month=-1, day=-1,
                         hour=-1, minute=-1, second=-1, microsecond=-1)
                         : dateTime {
     return dateTime.combine(
-      new date(if year == -1 then this.year else year,
-               if month == -1 then this.month else month,
-               if day == -1 then this.day else day),
-      new time(if hour == -1 then this.hour else hour,
-               if minute == -1 then this.minute else minute,
-               if second == -1 then this.second else second,
-               if microsecond == -1 then this.microsecond else microsecond,
-               this.timezone));
+        chpl_date.replace(year, month, day),
+        chpl_time.replace(hour, minute, second, microsecond)
+    );
   }
-  /* Replace the `year`, `month`, `day`, `hour`, `minute`, `second`,
-     `microsecond`, or `tz` to form a new `dateTime` object. All
-     arguments are optional.
-   */
+  /* Get a new `time` based on this one, optionally with the `year`, `month`,
+     `day`, `hour` `minute`, `second`, `microsecond` and/or `tz` replaced.
+  */
   @unstable("tz is unstable; its type may change in the future")
   proc dateTime.replace(year=-1, month=-1, day=-1,
                         hour=-1, minute=-1, second=-1, microsecond=-1,
                         in tz=this.timezone) : dateTime {
     return dateTime.combine(
-      new date(if year == -1 then this.year else year,
-               if month == -1 then this.month else month,
-               if day == -1 then this.day else day),
-      new time(if hour == -1 then this.hour else hour,
-               if minute == -1 then this.minute else minute,
-               if second == -1 then this.second else second,
-               if microsecond == -1 then this.microsecond else microsecond,
-               tz));
+        chpl_date.replace(year, month, day),
+        chpl_time.replace(hour, minute, second, microsecond, tz)
+    );
   }
 
   /* Return the date and time converted into the timezone in the argument */
