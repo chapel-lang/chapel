@@ -10,7 +10,6 @@ export CHPL_GPU_ARCH=gfx906
 export CHPL_LLVM=bundled
 export CHPL_COMM=none
 export CHPL_LAUNCHER_PARTITION=amdMI60
-export CHPL_GPU_MEM_STRATEGY=array_on_device
 module load rocm
 
 
