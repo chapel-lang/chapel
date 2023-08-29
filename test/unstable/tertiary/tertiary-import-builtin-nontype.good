@@ -1,0 +1,2 @@
+tertiary-import-builtin-nontype.chpl:2: In module 'M2':
+tertiary-import-builtin-nontype.chpl:3: error: cannot 'import' symbol 'boundsChecking' as it is not defined in 'M1'
