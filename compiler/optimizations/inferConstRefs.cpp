@@ -359,8 +359,6 @@ bool callSetsSymbol(Symbol* sym, CallExpr* call)
   return false;
 }
 
-#include "view.h"
-
 //
 // Returns 'true' if 'sym' is (or should be) a const-ref.
 // If 'sym' can be a const-ref, but is not, this function will change either
@@ -475,13 +473,12 @@ static bool inferConstRef(Symbol* sym) {
       INT_ASSERT(info->finalizedConstness == false);
       if (ArgSymbol* arg = toArgSymbol(sym)) {
 
+        // need to do some heuristics to determine if arg gets modified
         if (arg->hasFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST)) {
-          gdbShouldBreakHere();
           std::vector<CallExpr*> allCalls;
           collectCallExprs(arg->getFunction(), allCalls);
           for (auto ce: allCalls) {
             if (callSetsSymbol(arg, ce)) {
-              gdbShouldBreakHere();
               USR_WARN(arg, "I AM DEPRECATED");
             }
           }
@@ -775,7 +772,6 @@ static bool inferRefToConst(Symbol* sym) {
 // 2) QUAL_CONST_REF / INTENT_CONST_REF
 // 3) FLAG_REF_TO_IMMUTABLE
 //
-#include "AstDump.h"
 void inferConstRefs() {
   // Build a map from Symbols to ConstInfo. This is somewhat like
   // buildDefUseMaps, except we don't want to put defs and uses in different
@@ -799,11 +795,8 @@ void inferConstRefs() {
     info->todo.push_back(se);
   }
 
-   AstDump::view("test", 84);
-
   for (ConstInfoIter it = infoMap.begin(); it != infoMap.end(); ++it) {
     Symbol* sym = it->first;
-    if( sym->hasFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST)) gdbShouldBreakHere();
     if (sym->isRef()) {
       inferConstRef(sym);
     } else {
@@ -811,15 +804,11 @@ void inferConstRefs() {
     }
   }
 
-   AstDump::view("test", 85);
-
   for (ConstInfoIter it = infoMap.begin(); it != infoMap.end(); ++it) {
     if (it->first->isRef()) {
       inferRefToConst(it->first);
     }
   }
-
-   AstDump::view("test", 86);
 
   // Free the ConstInfo maps and clear the infoMap in case this function is
   // called again.

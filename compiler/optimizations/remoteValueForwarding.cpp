@@ -72,13 +72,11 @@ static void computeUsesDotLocale();
 * pre-condition: the call graph is computed                                   *
 *                                                                             *
 ************************************** | *************************************/
-#include "AstDump.h"
+
 void remoteValueForwarding() {
-  AstDump::view("test", 80);
+
   if (fNoInferConstRefs == false)
     inferConstRefs();
-
-  AstDump::view("test", 90);
 
   if (fNoRemoteValueForwarding == false && requireOutlinedOn()) {
     computeUsesDotLocale();

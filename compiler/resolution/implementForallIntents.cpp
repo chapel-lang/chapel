@@ -738,7 +738,8 @@ static void resolveShadowVarTypeIntent(Symbol* sym,
       argInt = concreteIntent(argInt, valType);
       intent = forallIntentForArgIntent(argInt);
 
-      if(argInt == INTENT_REF_MAYBE_CONST && intent == TFI_REF){
+      // mark all ref-maybe-const shadow variables
+      if (argInt == INTENT_REF_MAYBE_CONST && intent == TFI_REF) {
         sym->addFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST);
       }
 
@@ -1172,32 +1173,4 @@ void setupAndResolveShadowVars(ForallStmt* fs)
   // passed by the default intent.
   //
   convertFieldsOfRecordReceiver(fs);
-
-//
-  // identify any svar with intent REF_MAYBE_CONST, throw a warning, and
-  // make it REF
-  //
-
-  // std::vector<SymExpr*> allIterandSymExprs;
-  // for_alist(expr, fs->iteratedExpressions()) {
-  //   collectSymExprs(expr, allIterandSymExprs);
-  // }
-  // if(fs->zipCall() != nullptr) {
-  //   collectSymExprs(fs->zipCall(), allIterandSymExprs);
-  // }
-
-  // if any iterand has the marker, mark as an iterand the marker
-  // for(auto symExpr: allIterandSymExprs) {
-  //   symExpr->symbol()->removeFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST);
-  // }
-
-  // now collect all syms from the forall, if any of them are ref-maybe-const, mark the forall
-  std::vector<SymExpr*> allSymExpr;
-  collectSymExprs(fs, allSymExpr);
-  for(auto symExpr: allSymExpr) {
-    if(symExpr->symbol()->hasFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST)) {
-      std::cerr << "fs " << fs->id << " is ref-maybe-const due to " << symExpr->symbol()->name << "[" << symExpr->id << "][" << symExpr->symbol()->id << "]\n";
-    }
-  }
-
 }

@@ -871,17 +871,9 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* callToTFn, FnSymbol* taskF
   int numOrigActuals = callToTFn->numActuals();
   int ix = 0;
 
-  for_shadow_vars(svar, temp, EV->forall) {
+  for_shadow_vars(svar, temp, EV->forall)
     expandShadowVarTaskFn(cloneTaskFn, callToTFn, aInit, aFini,
                           numOrigActuals, iMap, map, svar, ++ix);
-  }
-  std::vector<SymExpr*> allSymExpr;
-  collectSymExprs(EV->forall, allSymExpr);
-  for(auto symExpr: allSymExpr) {
-    if(symExpr->symbol()->hasFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST)) {
-      std::cerr << "IN LOWER fs " << EV->forall->id << " is ref-maybe-const due to " << symExpr->symbol()->name << "[" << symExpr->id << "][" << symExpr->symbol()->id << "]\n";
-    }
-  }
 
   aInit->remove();
   aFini->remove();
@@ -904,27 +896,21 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* callToTFn, FnSymbol* taskF
     collectSymExprs(zipCall, allIterandSymExprs);
   }
 
-    allSymExpr.clear();
-  collectSymExprs(cloneTaskFn, allSymExpr);
-  for(auto symExpr: allSymExpr) {
-    if(symExpr->symbol()->hasFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST)) {
-      // if it is used in the iterand, unmark it
-      const char* symName = symExpr->symbol()->name;
+  std::vector<SymExpr*> allClonedTaskFnSymExpr;
+  collectSymExprs(cloneTaskFn, allClonedTaskFnSymExpr);
+  for(auto symExpr: allClonedTaskFnSymExpr) {
+    auto sym = symExpr->symbol();
+    if(sym->hasFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST)) {
+      // if symbol is used in the iterand, unmark it
+      const char* symName = sym->name;
       auto it =
           std::find_if(allIterandSymExprs.begin(), allIterandSymExprs.end(),
-                       [symName](auto iterSym) -> bool {
-                         return strcmp(iterSym->symbol()->name,
-                                       symName) == 0;
+                       [symName](auto iterSe) {
+                         return strcmp(iterSe->symbol()->name, symName) == 0;
                        });
       if (it != allIterandSymExprs.end()) {
-        std::cerr << "removing iter expr " << symExpr->symbol()->name << "["
-          << symExpr->id << "][" << symExpr->symbol()->id << "]\n";
-symExpr->symbol()->removeFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST);
-      }else
-                       std::cerr
-          << "IN LOWER cloned " << cloneTaskFn->id
-          << " is ref-maybe-const due to " << symExpr->symbol()->name << "["
-          << symExpr->id << "][" << symExpr->symbol()->id << "]\n";
+        sym->removeFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST);
+      }
     }
   }
 

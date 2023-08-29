@@ -301,7 +301,6 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
 
       SET_LINENO(sym);
       ArgSymbol* arg = new ArgSymbol(intent, sym->name, type);
-      if(arg->id == 2002632) gdbShouldBreakHere();
       if (sym->hasFlag(FLAG_ARG_THIS))
           arg->addFlag(FLAG_ARG_THIS);
       if (sym->hasFlag(FLAG_REF_TO_IMMUTABLE))
