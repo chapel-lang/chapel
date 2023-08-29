@@ -602,7 +602,8 @@ module Tensor {
         const (kh,kw) = filterShape;
         const (nh,nw) = inputShape;
         if kh != kw then err("Correlation only works with square filters.", kh, " != ", kw);
-        return ((nh - kh + padding + stride) / stride,(nw - kw + padding + stride) / stride);
+        return (AutoMath.floor((nh - kh + 2* padding):real / stride:real):int + 1, AutoMath.floor((nw - kw + 2 * padding):real / stride:real):int + 1);
+        // return (AutoMath.floor(((nh - kh + padding + stride):real) / (stride:real)):int,AutoMath.floor(((nw - kw + padding + stride):real) / (stride:real)):int);
     }
 
     // Compute the resulting tensor shape of a cross correlation
@@ -617,8 +618,8 @@ module Tensor {
         const (kh,kw) = filter.shape;
         const (nh,nw) = input.shape;
         if kh != kw then err("Correlation only works with square filters.", kh, " != ", kw);
-        const (outH,outW): 2*int = ((nh - kh + padding + stride) / stride,(nw - kw + padding + stride) / stride);
-
+        // const (outH,outW): 2*int = ((nh - kh + padding + stride) / stride,(nw - kw + padding + stride) / stride);
+        const (outH,outW): 2*int = correlateShape((kh,kw),(nh,nw),stride,padding);
         var corr = new Tensor(2,real);
         corr.reshapeDomain({0..#outH,0..#outW});
 
@@ -639,7 +640,8 @@ module Tensor {
         if kh != kw then err("Correlation only works with square filters.", kh, " != ", kw);
         if cIn != nc then err("Correlation only works with filters and inputs of the same depth.", cIn, " != ", nc);
 
-        const (outH,outW): 2*int = ((nh - kh + padding + stride) / stride,(nw - kw + padding + stride) / stride);
+        // const (outH,outW): 2*int = ((nh - kh + padding + stride) / stride,(nw - kw + padding + stride) / stride);
+        const (outH,outW): 2*int = correlateShape((kh,kw),(nh,nw),stride,padding);
 
         var corr = new Tensor(2,real);
         corr.reshapeDomain({0..#outH,0..#outW});
@@ -668,7 +670,8 @@ module Tensor {
         const (dh,dw) = (kh + (stride * (kh - 1)), kw + (stride * (kw - 1)));
         d.reshapeDomain({0..#dh,0..#dw});
         forall (i,j) in filter.data.domain with (ref d) {
-            d[i + i * stride,j + j * stride] = filter[i,j];
+            d[i * stride, j * stride] = filter[i,j];
+            // d[i + i * stride,j + j * stride] = filter[i,j];
         }
         return d;
     }
@@ -680,7 +683,9 @@ module Tensor {
         const (dh,dw) = (kh + (stride * (kh - 1)), kw + (stride * (kw - 1)));
         d.reshapeDomain({0..#dh,0..#dw,0..#kc});
         forall (i,j,c) in filter.data.domain with (ref d) {
-            d[i + i * stride,j + j * stride,c] = filter[i,j,c];
+            d[i * stride,j * stride,c] = filter[i,j,c];
+
+            // d[i + i * stride,j + j * stride,c] = filter[i,j,c];
         }
         return d;
     }
@@ -694,13 +699,30 @@ module Tensor {
     // Compute the gradient of a loss with respect to a volume of filters
     proc filterGradient(const ref input: Tensor(3), const ref delta: Tensor(3), stride: int = 1, padding: int = 0,kernelSize: int) {
         const (inH,inW,inC) = input.shape;
+        // writeln("input: ", input.shape);
+        // writeln("delta: ", delta.shape);
         const (outH,outW,outC) = delta.shape;
 
         const (dkh,dkw) = dialateShape((outH,outW),stride - 1);
+        // writeln("(dkh,dkw): ", (dkh,dkw));
         const (kh,kw) = correlateShape((dkh,dkw),(inH,inW),stride=1,padding);
+        // writeln("(kh,kw): ", (kh,kw));
 
         var grad = new Tensor(4,real);
+        if kh != kernelSize {
+            grad.reshapeDomain({0..#outC,0..#kernelSize,0..#kernelSize,0..#inC});
+            // writeln("grad: ", grad.shape);
+            forall (ci,co) in {0..#inC,0..#outC} with (ref grad, var del = zeros(outH,outW), var img = zeros(inH,inW)) {
+                del = delta[..,..,co];
+                img = input[..,..,ci];
+                const d = dialate(del,stride - 1);
+                grad[co,..,..,ci] = correlate(d,img,stride=1,padding=padding)[0..#kernelSize,0..#kernelSize];
+            }
+            return grad;
+        }
+
         grad.reshapeDomain({0..#outC,0..#kh,0..#kw,0..#inC});
+        // writeln("grad: ", grad.shape);
         forall (ci,co) in {0..#inC,0..#outC} with (ref grad, var del = zeros(outH,outW), var img = zeros(inH,inW)) {
             del = delta[..,..,co];
             img = input[..,..,ci];

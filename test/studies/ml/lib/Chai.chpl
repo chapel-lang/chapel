@@ -294,6 +294,7 @@ module Chai {
                 if dc != outChannels then tn.err("Conv backward: outChannels mismatch");
                 if channels != inChannels then tn.err("Conv backward: inChannels mismatch");
                 const dL_dF = tn.filterGradient(images,delta,stride,padding,kh);
+                // writeln("dL_dF: ", dL_dF[0,..,..,0]);
                 filtersGrad += dL_dF;
                 var dL_dX = new Tensor(3,real);
                 dL_dX.reshapeDomain({0..#h, 0..#w, 0..#inChannels});
