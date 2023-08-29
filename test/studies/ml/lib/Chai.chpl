@@ -1,15 +1,34 @@
-
+/*
+  Each layer must have the following methods:
+    forwardPropBatch(batch: [] Tensor): [] Tensor;
+        - Feeds each input in the batch through the layer and returns the outputs.
+    backwardBatch(deltas: [] Tensor, inputs: [] Tensor): [] Tensor;
+        - Computes the gradient of the loss with respect to the inputs and returns it.
+    optimize(mag: real);
+        - Updates the parameters of the layer using the gradients.
+    resetGradients();
+        - Resets the gradients to zero.
+    write(fw: IO.fileWriter) throws;
+        - Writes the parameters of the layer to the file.
+    read(fr: IO.fileReader) throws;
+        - Reads the parameters of the layer from the file.
+    signature(): string;
+        - Returns a string that uniquely identifies the layer and its hyperparameters parameters.
+*/
 module Chai {
     
     import Tensor as tn;
-
-    module IO {
-        public use IO;
-        public use BinaryIO;
-    }
-
     use Tensor only Tensor;
-    
+
+    import IO;
+
+    proc err(args...?n) {
+        var s = "";
+        for param i in 0..<n {
+            s += args(i): string;
+        }
+        try! throw new Error(s);
+    }
 
     record Dense {
 
@@ -36,7 +55,7 @@ module Chai {
         }
 
         proc ref initialize(input: Tensor(1)) {
-            if !uninitialized then tn.err("Dense initialize: already initialized");
+            if !uninitialized then err("Dense initialize: already initialized");
             const (inputSize,) = input.shape;
             inputSize_ = inputSize;
             const stddevB = sqrt(2.0 / outputSize);
@@ -62,8 +81,8 @@ module Chai {
 
             const batchSize = batch.size;
 
-            var activations: [0..#batchSize] Tensor(1,real);
-            activations.reshapeDomain({0..#outputSize});
+            var activations: [0..#batchSize] Tensor(1,real) = new Tensor({0..#outputSize});
+
             forall i in 0..#batchSize {
                 activations[i] = (this.weights * batch[i]) + this.bias;
             }
@@ -150,6 +169,9 @@ module Chai {
         }
         proc read(fr: IO.fileReader) throws { }
 
+        proc signature(): string {
+            return "Sigmoid()";
+        }
     }
 
     record Conv {
@@ -192,7 +214,7 @@ module Chai {
             if channels != inChannels {
                 writeln("input: ", images.shape);
                 writeln("filters: ", filters.shape);
-                tn.err("Conv forwardProp: inChannels mismatch");
+                err("Conv forwardProp: inChannels mismatch");
             }
 
             var convs = new Tensor(3,real);
@@ -213,8 +235,8 @@ module Chai {
             const (dh,dw,dc) = delta.shape;
 
 
-            if dc != outChannels then tn.err("Conv backward: outChannels mismatch");
-            if channels != inChannels then tn.err("Conv backward: inChannels mismatch");
+            if dc != outChannels then err("Conv backward: outChannels mismatch");
+            if channels != inChannels then err("Conv backward: inChannels mismatch");
 
             const dL_dF = tn.filterGradient(images,delta,stride,padding,kh);
             filtersGrad += dL_dF;
@@ -244,8 +266,8 @@ module Chai {
                 const (h,w,channels) = images.shape;
                 const (outChannels,kh,kw,inChannels) = filters.shape;
                 const (dh,dw,dc) = delta.shape;
-                if dc != outChannels then tn.err("Conv backward: outChannels mismatch");
-                if channels != inChannels then tn.err("Conv backward: inChannels mismatch");
+                if dc != outChannels then err("Conv backward: outChannels mismatch");
+                if channels != inChannels then err("Conv backward: inChannels mismatch");
                 const dL_dF = tn.filterGradient(images,delta,stride,padding,kh);
                 filtersGrad += dL_dF;
                 var dL_dX = new Tensor(3,real);
@@ -282,7 +304,7 @@ module Chai {
 
         proc read(fr: IO.fileReader) throws {
             var nf = fr.read(int);
-            if nf != numFilters then tn.err("Conv read: numFilters mismatch");
+            if nf != numFilters then err("Conv read: numFilters mismatch");
             filters.read(fr);
         }
 
@@ -462,7 +484,7 @@ module Chai {
 
         proc initialize(input: Tensor(?)) {
             const inputSize = * reduce input.shape;
-            if inputSize < 1 then tn.err("Softmax input size must be > 0");
+            if inputSize < 1 then err("Softmax input size must be > 0");
 
             const stddev = sqrt(2.0 / (inputSize + outputSize));
             // Alternative intializations
@@ -509,7 +531,7 @@ module Chai {
             for i in delta.data.domain do
                 if delta[i] != 0.0 { nonZeroIdx = i; break; }
             
-            if nonZeroIdx == -1 then tn.err("Softmax backward: delta is zero vector");
+            if nonZeroIdx == -1 then err("Softmax backward: delta is zero vector");
             const i = nonZeroIdx;
 
             var dOut_dZ: Tensor(1) = (- exp[i]) * (exp / (expSum ** 2.0));
@@ -548,7 +570,7 @@ module Chai {
                 var nonZeroIdx: int = -1;
                 for i in delta.data.domain do
                     if delta[i] != 0.0 { nonZeroIdx = i; break; }
-                if nonZeroIdx == -1 then tn.err("Softmax backward: delta is zero vector");
+                if nonZeroIdx == -1 then err("Softmax backward: delta is zero vector");
                 const i = nonZeroIdx;
                 var dOut_dZ: Tensor(1) = (- exp[i]) * (exp / (expSum ** 2.0));
                 dOut_dZ[i] = exp[i] * (expSum - exp[i]) / (expSum ** 2.0);
@@ -594,39 +616,20 @@ module Chai {
     }
 
 
-    proc forwardPropHelp(ref layers, param n: int, x: Tensor(?)) {
-        if n == layers.size then return x;
-
-        const xNext = layers[n].forwardProp(x);
-        return forwardPropHelp(layers, n+1, xNext);
-    }
 
 
 
-    proc backwardPropHelp(ref layers, param n: int, x: Tensor(?)) {
-        if n == 0 then return layers[0].backward(x);
 
-        const xNext = layers[n].backward(x);
-        return backwardPropHelp(layers, n-1, xNext);
-    }
-
-    proc backwardForwardPropHelp(ref layers, param n: int, x: Tensor(?), lastDelta: Tensor(?)) {
-
-        if n == layers.size - 1 {
-            return layers[n].backward(lastDelta,x);
-        }
-
-        const lastInput = layers[n].forwardProp(x);
-        const delta = backwardForwardPropHelp(layers, n+1, lastInput, lastDelta);
-        return layers[n].backward(delta,x);
-    }
-
+    // Helper function that feeds the inputs through the layers and returns the outputs.
+    // This is needed because the layer inputs and outputs are not all the same type.
     proc forwardPropHelpBatch(ref layers, param n: int, inputs) {
         if n == layers.size then return inputs;
         const nextInputs = layers[n].forwardPropBatch(inputs);
         return forwardPropHelpBatch(layers, n+1, nextInputs);
     }
 
+    // Helper function that computes the gradients of the loss with respect to the inputs.
+    // This is needed because the layer inputs and outputs are not all the same type.
     proc backwardForwardPropHelpBatch(ref layers, param n: int, inputs, lastDeltas) {
         if n == layers.size { return lastDeltas; }
 
@@ -735,7 +738,7 @@ module Chai {
             var deserializer = new IO.BinaryDeserializer(IO.ioendian.big);
             var fr = file.reader(deserializer=deserializer);
             var size = fr.read(int);
-            if size != layers.size then tn.err("Network load: size mismatch");
+            if size != layers.size then err("Network load: size mismatch");
             for param i in 0..#(layers.size) {
                 layers[i].read(fr);
             }
