@@ -1066,9 +1066,9 @@ used to recursively hold tables and respective values
         when fieldReal do return val.re:string;
         when fieldString do return ('"' + val.s + '"');
         when fieldEmpty do return ""; // empty
-        when fieldDate do return val.ld.isoFormat();
-        when fieldTime do return val.ti.isoFormat();
-        when fieldDateTime do return val.dt.isoFormat();
+        when fieldDate do return val.ld:string;
+        when fieldTime do return val.ti:string;
+        when fieldDateTime do return val.dt:string;
         otherwise {
           throw new owned TomlError("Error in printing " + val.s);
           return val.s;

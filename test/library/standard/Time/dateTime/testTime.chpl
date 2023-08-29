@@ -50,30 +50,30 @@ proc test_comparing() {
   }
 }
 
-proc test_isoformat() {
+proc test_tostring() {
   var t = new time(4, 5, 1, 123);
-  assert(t.isoFormat() == "04:05:01.000123");
+  assert(t:string == "04:05:01.000123");
 
   t = new time();
-  assert(t.isoFormat() == "00:00:00");
+  assert(t:string == "00:00:00");
 
   t = new time(microsecond=1);
-  assert(t.isoFormat() == "00:00:00.000001");
+  assert(t:string == "00:00:00.000001");
 
   t = new time(microsecond=10);
-  assert(t.isoFormat() == "00:00:00.000010");
+  assert(t:string == "00:00:00.000010");
 
   t = new time(microsecond=100);
-  assert(t.isoFormat() == "00:00:00.000100");
+  assert(t:string == "00:00:00.000100");
 
   t = new time(microsecond=1000);
-  assert(t.isoFormat() == "00:00:00.001000");
+  assert(t:string == "00:00:00.001000");
 
   t = new time(microsecond=10000);
-  assert(t.isoFormat() == "00:00:00.010000");
+  assert(t:string == "00:00:00.010000");
 
   t = new time(microsecond=100000);
-  assert(t.isoFormat() == "00:00:00.100000");
+  assert(t:string == "00:00:00.100000");
 }
 
 proc test_strftime() {
@@ -124,7 +124,7 @@ proc test_replace() {
 test_basic_attributes();
 test_basic_attributes_nonzero();
 test_comparing();
-test_isoformat();
+test_tostring();
 test_strftime();
 test_resolution_info();
 test_replace();

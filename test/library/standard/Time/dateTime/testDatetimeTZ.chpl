@@ -355,7 +355,7 @@ proc test_utctimetuple() {
   assert(t.tm_isdst == 0);
 }
 
-proc test_tzinfo_isoformat() {
+proc test_tzinfo_tostring() {
   var zero = new shared FixedOffset(0, "+00:00");
   var plus = new shared FixedOffset(220, "+03:40");
   var minus = new shared FixedOffset(-231, "-03:51");
@@ -367,11 +367,8 @@ proc test_tzinfo_isoformat() {
       var timestr = '04:05:59' + if us != 0 then '.987001' else '';
       var ofsstr = d.tzname();
       var tailstr = timestr + ofsstr;
-      var iso = d.isoFormat();
+      var iso = d:string;
       assert(iso == datestr + 'T' + tailstr);
-      assert(iso == d.isoFormat('T'));
-      assert(d.isoFormat('k') == datestr + 'k' + tailstr);
-      //assert(str(d) == datestr + ' ' + tailstr);
     }
   }
 }
@@ -559,7 +556,7 @@ test_tzinfo_now();
 test_tzinfo_fromtimestamp();
 test_tzinfo_timetuple();
 test_utctimetuple();
-test_tzinfo_isoformat();
+test_tzinfo_tostring();
 test_replace();
 test_more_astimezone();
 test_aware_subtract();

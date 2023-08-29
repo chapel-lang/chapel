@@ -24,20 +24,11 @@ proc test_basic_attributes_nonzero() {
   assert(dt.microsecond == 8000);
 }
 
-proc test_isoformat() {
+proc test_tostring() {
   var t = new dateTime(2, 3, 2, 4, 5, 1, 123);
-  assert(t.isoFormat() == "0002-03-02T04:05:01.000123");
-  assert(t.isoFormat('T') == "0002-03-02T04:05:01.000123");
-  assert(t.isoFormat(' ') == "0002-03-02 04:05:01.000123");
-  // str is ISO format with the separator forced to a blank.
-  //assert(str(t) == "0002-03-02 04:05:01.000123");
-
+  assert(t:string == "0002-03-02T04:05:01.000123");
   t = new dateTime(2, 3, 2);
-  assert(t.isoFormat() == "0002-03-02T00:00:00");
-  assert(t.isoFormat('T') == "0002-03-02T00:00:00");
-  assert(t.isoFormat(' ') == "0002-03-02 00:00:00");
-  // str is ISO format with the separator forced to a blank.
-  //assert(str(t) == "0002-03-02 00:00:00");
+  assert(t:string == "0002-03-02T00:00:00");
 }
 
 proc test_more_ctime() {
@@ -260,7 +251,7 @@ proc test_replace() {
 
 test_basic_attributes();
 test_basic_attributes_nonzero();
-test_isoformat();
+test_tostring();
 test_more_ctime();
 test_tz_independent_comparing();
 test_computations();

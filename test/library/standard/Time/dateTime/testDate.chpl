@@ -204,9 +204,9 @@ proc test_date_iso_long_years() {
   }
 }
 
-proc test_date_isoformat() {
+proc test_date_tostring() {
   var t = new date(2, 3, 2);
-  assert(t.isoFormat() == "0002-03-02");
+  assert(t:string == "0002-03-02");
 }
 
 proc test_date_ctime() {
@@ -333,7 +333,7 @@ test_date_today();
 test_date_weekday();
 test_date_isocalendar();
 test_date_iso_long_years();
-test_date_isoformat();
+test_date_tostring();
 test_date_ctime();
 test_date_strftime();
 test_date_resolution_info();

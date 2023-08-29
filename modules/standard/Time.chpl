@@ -520,25 +520,33 @@ module Time {
     return (y, 1+delta.days/7, (_old_weekday(): int) + 1);
   }
 
-  /* Return the date as a `string` in ISO 8601 format: "YYYY-MM-DD" */
-  proc date.isoFormat() : string {
-    var yearstr = year: string;
-    var monthstr = month: string;
-    var daystr = day: string;
+  /* Get a `string` representation of this `date` in ISO format
+     ``YYYY-MM-DD``.
+  */
+  operator date.:(x: date, type t: string) {
+    var yearstr = x.year: string;
+    var monthstr = x.month: string;
+    var daystr = x.day: string;
 
-    if year < 10 then
+    if x.year < 10 then
       yearstr = "000" + yearstr;
-    else if year < 100 then
+    else if x.year < 100 then
       yearstr = "00" + yearstr;
-    else if year < 1000 then
+    else if x.year < 1000 then
       yearstr = "0" + yearstr;
 
-    if month < 10 then
+    if x.month < 10 then
       monthstr = "0" + monthstr;
-    if day < 10 then
+    if x.day < 10 then
       daystr = "0" + daystr;
 
     return yearstr + "-" + monthstr + "-" + daystr;
+  }
+
+  /* Return the date as a `string` in ISO 8601 format: "YYYY-MM-DD" */
+  @deprecated(notes="`date.isoFormat` is deprecated; use cast to string instead")
+  proc date.isoFormat() : string {
+    return this:string;
   }
 
   /* Return a `string` representing the date */
@@ -589,9 +597,9 @@ module Time {
   @chpldoc.nodoc
   proc date._chpldoc_workaround() { }
 
-  /* Writes this `date` in ISO 8601 format: YYYY-MM-DD */
+  /* Writes this `date` in format equivalent to cast to string */
   proc date.writeThis(f) throws {
-    f.write(isoFormat());
+    f.write(this:string);
   }
 
   // Exists to support some common functionality for `dateTime.readThis`
@@ -606,7 +614,8 @@ module Time {
     chpl_day = f.read(int);
   }
 
-  /* Reads this `date` from ISO 8601 format: YYYY-MM-DD */
+  /* Reads this `date` from format corresponding to
+     :proc:`date.writeThis` */
   proc ref date.readThis(f) throws {
     import JSON.JsonDeserializer;
 
@@ -806,8 +815,10 @@ module Time {
     return new time(newhour, newminute, newsecond, newmicrosecond, tz);
   }
 
-  /* Return a `string` representing the `time` in ISO format */
-  proc time.isoFormat() : string {
+  /* Get a `string` representation of this `time` in ISO format
+     ``hh:mm:ss.ssssss``, followed by ``±hh:mm`` if a timezone is specified.
+  */
+  operator time.:(x: time, type t: string) {
     proc makeNDigits(n, d) {
       var ret = d: string;
       while ret.size < n {
@@ -816,15 +827,15 @@ module Time {
       return ret;
     }
 
-    var ret = makeNDigits(2, hour) + ":" +
-              makeNDigits(2, minute) + ":" +
-              makeNDigits(2, second);
+    var ret = makeNDigits(2, x.hour) + ":" +
+              makeNDigits(2, x.minute) + ":" +
+              makeNDigits(2, x.second);
 
-    if microsecond != 0 {
-      ret = ret + "." + makeNDigits(6, microsecond);
+    if x.microsecond != 0 {
+      ret = ret + "." + makeNDigits(6, x.microsecond);
     }
-    var offset = utcOffset();
-    if timezone.borrow() != nil {
+    var offset = x.utcOffset();
+    if x.timezone.borrow() != nil {
       var sign: string;
       if offset.days < 0 {
         offset = -offset;
@@ -836,6 +847,11 @@ module Time {
                          makeNDigits(2, offset.seconds % (60*60) / 60);
     }
     return ret;
+  }
+
+  @deprecated(notes="`time.isoFormat` is deprecated; use cast to string instead")
+  proc time.isoFormat() : string {
+    return this:string;
   }
 
   /* Return the offset from UTC */
@@ -902,9 +918,9 @@ module Time {
     return str;
   }
 
-  /* Writes this `time` in ISO format: hh:mm:ss.sss */
+  /* Writes this `time` in format equivalent to cast to string */
   proc time.writeThis(f) throws {
-    f.write(isoFormat());
+    f.write(this:string);
   }
 
   // Exists to support some common functionality for `dateTime.readThis`
@@ -921,7 +937,8 @@ module Time {
     chpl_microsecond = f.read(int);
   }
 
-  /* Reads this `time` from ISO format: hh:mm:ss.sss */
+  /* Reads this `time` from format corresponding to
+     :proc:`time.writeThis` */
   proc ref time.readThis(f) throws {
     import JSON.JsonDeserializer;
 
@@ -1460,7 +1477,44 @@ module Time {
     return getDate().isoCalendar();
   }
 
+  /* Get a `string` representation of this `dateTime` in ISO format
+     ``<date>T<time>``.
+  */
+  operator dateTime.:(x: dateTime, type t: string) {
+    proc zeroPad(nDigits: int, i: int) {
+      var numStr = i: string;
+      for i in 1..nDigits-numStr.size {
+        numStr = "0" + numStr;
+      }
+      return numStr;
+    }
+    var micro = if x.microsecond > 0 then "." + zeroPad(6, x.microsecond) else "";
+    var offset: string;
+    if x.timezone.borrow() != nil {
+      var utcoff = x.utcOffset();
+      var sign: string;
+      if utcoff < new timeDelta(0) {
+        sign = '-';
+        utcoff = abs(utcoff);
+      } else {
+        sign = '+';
+      }
+      var hours = utcoff.seconds / (60*60);
+      var minutes = (utcoff.seconds % (60*60)) / 60;
+      offset = sign +
+               (if hours < 10 then "0" + hours: string else hours: string) +
+               ":" +
+               (if minutes < 10 then "0" + minutes: string else minutes: string);
+    }
+
+    // on our Linux64 systems, the "%Y" format doesn't zero-pad to 4
+    // characters on its own, so do it manually.
+    var year = zeroPad(4, try! x.strftime("%Y"):int);
+    return x.strftime(year + "-%m-%d" + "T" + "%H:%M:%S" + micro + offset);
+  }
+
   /* Return the `dateTime` as a `string` in ISO format */
+  @deprecated(notes="`dateTime.isoFormat` is deprecated; use cast to string instead")
   proc dateTime.isoFormat(sep="T") : string {
     proc zeroPad(nDigits: int, i: int) {
       var numStr = i: string;
@@ -1590,12 +1644,13 @@ module Time {
     return this.strftime("%a %b %e %T %Y");
   }
 
-  /* Writes this `dateTime` in ISO format: YYYY-MM-DDThh:mm:ss.sss */
+  /* Writes this `dateTime` in format equivalent to cast to string */
   proc dateTime.writeThis(f) throws {
-    f.write(isoFormat());
+    f.write(this:string);
   }
 
-  /* Reads this `dateTime` from ISO format: YYYY-MM-DDThh:mm:ss.sss */
+  /* Reads this `dateTime` from format corresponding to
+     :proc:`dateTime.writeThis` */
   proc ref dateTime.readThis(f) throws {
     import JSON.JsonDeserializer;
 
