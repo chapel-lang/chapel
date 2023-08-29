@@ -1,0 +1,2 @@
+timezones.chpl:3: warning: Timezone functionality is unstable and may change in the future
+timezones.chpl:27: warning: tz is unstable; its type may change in the future

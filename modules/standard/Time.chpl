@@ -368,6 +368,7 @@ module Time {
   /* initializers/factories for date values */
 
   @chpldoc.nodoc
+  @unstable("initializing a 'date' without arguments is unstable; it may become illegal or be replaced with a specific uninitialized 'date' sentinel value in the future")
   proc date.init() {
   }
 
@@ -1141,6 +1142,7 @@ module Time {
   /* initializers/factories for dateTime values */
 
   @chpldoc.nodoc
+  @unstable("initializing a 'dateTime' without arguments is unstable; it may become illegal or be replaced with a specific uninitialized 'dateTime' sentinel value in the future")
   proc dateTime.init() {
   }
 
