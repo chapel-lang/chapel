@@ -1409,6 +1409,8 @@ static bool checkReturnType(InterfaceSymbol* isym,  ImplementsStmt* istm,
 static bool checkReturnIntent(InterfaceSymbol* isym,  ImplementsStmt* istm,
                               FnSymbol*      target,  FnSymbol*      reqFn,
                               bool   reportErrors) {
+  if (reqFn->hasFlag(FLAG_IFC_ANY_RETURN_INTENT)) return true;
+
   if (target->retTag == reqFn->retTag)
     return true;
 

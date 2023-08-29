@@ -28,6 +28,7 @@ module ChapelContext {
   interface contextManager {
       type contextReturnType;
 
+      pragma "ifc any return intent"
       proc Self.enterContext() ref : contextReturnType;
       proc Self.exitContext(in error: owned Error?);
   }
