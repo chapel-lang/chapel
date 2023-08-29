@@ -491,10 +491,10 @@ module Time {
     return try! (weekday(): int + offsetForIso): isoDayOfWeek;
   }
 
-  /* Return the ISO date as a tuple containing the ISO year, ISO week number,
-     and ISO day of the week
+  /* Return the ISO week date as a tuple containing the ISO week-numbering year,
+     ISO week number, and ISO weekday number.
    */
-  proc date.isoCalendar() : (int, int, int) {
+  proc date.isoWeekDate() : (int, int, int) {
     proc findThursday(d: date) {
       var wd = d._old_weekday();
       return d + new timeDelta(days = (_old_dayOfWeek.Thursday:int - wd:int));
@@ -518,6 +518,14 @@ module Time {
     const delta = this - firstDay;
 
     return (y, 1+delta.days/7, (_old_weekday(): int) + 1);
+  }
+
+  /* Return the ISO week date as a tuple containing the ISO week-numbering year,
+     ISO week number, and ISO weekday number.
+   */
+  @deprecated(notes="`date.isoCalendar` is deprecated; use :proc:`date.isoWeekDate` instead")
+  proc date.isoCalendar() : (int, int, int) {
+    return this.isoWeekDate();
   }
 
   /* Get a `string` representation of this `date` in ISO format

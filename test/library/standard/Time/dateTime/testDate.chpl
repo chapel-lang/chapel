@@ -159,21 +159,33 @@ proc test_date_weekday() {
   }
 }
 
-proc test_date_isocalendar() {
+proc test_date_isoweekdate() {
+  var d : date;
   for i in 0..#7 {
-    var d = new date(2003, 12, 22+i);
-    assert(d.isoCalendar() == (2003, 52, i+1));
+    d = new date(2003, 12, 22+i);
+    assert(d.isoWeekDate() == (2003, 52, i+1));
     d = new date(2003, 12, 29) + new timeDelta(i);
-    assert(d.isoCalendar() == (2004, 1, i+1));
+    assert(d.isoWeekDate() == (2004, 1, i+1));
     d = new date(2004, 1, 5+i);
-    assert(d.isoCalendar() == (2004, 2, i+1));
+    assert(d.isoWeekDate() == (2004, 2, i+1));
     d = new date(2009, 12, 21+i);
-    assert(d.isoCalendar() == (2009, 52, i+1));
+    assert(d.isoWeekDate() == (2009, 52, i+1));
     d = new date(2009, 12, 28) + new timeDelta(i);
-    assert(d.isoCalendar() == (2009, 53, i+1));
+    assert(d.isoWeekDate() == (2009, 53, i+1));
     d = new date(2010, 1, 4+i);
-    assert(d.isoCalendar() == (2010, 1, i+1));
+    assert(d.isoWeekDate() == (2010, 1, i+1));
   }
+
+  d = new date(1976, 12, 31);
+  assert(d.isoWeekDate() == (1976, 53, 5));
+  d = new date(1977, 1, 1);
+  assert(d.isoWeekDate() == (1976, 53, 6));
+  d = new date(1977, 1, 2);
+  assert(d.isoWeekDate() == (1976, 53, 7));
+  d = new date(1977, 1, 3);
+  assert(d.isoWeekDate() == (1977, 1, 1));
+  d = new date(1977, 1, 4);
+  assert(d.isoWeekDate() == (1977, 1, 2));
 }
 
 proc test_date_iso_long_years() {
@@ -192,9 +204,9 @@ proc test_date_iso_long_years() {
   for i in 0..#400 {
     var d = new date(2000+i, 12, 31);
     var d1 = new date(1600+i, 12, 31);
-    assert(d.isoCalendar()(1) == d1.isoCalendar()(1) &&
-           d.isoCalendar()(2) == d1.isoCalendar()(2));
-    if d.isoCalendar()(1) == 53 then
+    assert(d.isoWeekDate()(1) == d1.isoWeekDate()(1) &&
+           d.isoWeekDate()(2) == d1.isoWeekDate()(2));
+    if d.isoWeekDate()(1) == 53 then
       L.pushBack(i);
   }
 
@@ -331,7 +343,7 @@ test_date_computations();
 test_date_fromtimestamp();
 test_date_today();
 test_date_weekday();
-test_date_isocalendar();
+test_date_isoweekdate();
 test_date_iso_long_years();
 test_date_tostring();
 test_date_ctime();
