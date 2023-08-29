@@ -209,7 +209,7 @@ proc test_tzinfo_now() {
     assert(now.timezone == weirdtz);
     var utcnow = dateTime.utcNow().replace(tz=utc);
     var now2 = utcnow.astimezone(weirdtz);
-    if abs(now - now2) < new timeDelta(seconds=30) {
+    if (now - now2).abs() < new timeDelta(seconds=30) {
       break;
     // Else the code is broken, or more than 30 seconds passed between
     // calls; assuming the latter, just try again.

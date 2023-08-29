@@ -908,7 +908,7 @@ module Time {
     timeStruct.tm_yday = 0;
 
     if timezone.borrow() != nil {
-      timeStruct.tm_gmtoff = abs(timezone!.utcOffset(dateTime.now())).seconds: c_long;
+      timeStruct.tm_gmtoff = (timezone!.utcOffset(dateTime.now())).abs().seconds: c_long;
       timeStruct.tm_zone =
         __primitive("cast", tm_zoneType,
             timezone!.tzname(dateTime.now()).c_str());
@@ -1506,7 +1506,7 @@ module Time {
       var sign: string;
       if utcoff < new timeDelta(0) {
         sign = '-';
-        utcoff = abs(utcoff);
+        utcoff = utcoff.abs();
       } else {
         sign = '+';
       }
@@ -1541,7 +1541,7 @@ module Time {
       var sign: string;
       if utcoff < new timeDelta(0) {
         sign = '-';
-        utcoff = abs(utcoff);
+        utcoff = utcoff.abs();
       } else {
         sign = '+';
       }
@@ -2068,14 +2068,22 @@ module Time {
     return lhs < rhs || lhs == rhs;
   }
 
+  /* Return the absolute value of this `timeDelta`. If is negative, then returns
+     its negation, else returns it as-is.
+   */
+  proc timeDelta.abs() : timeDelta {
+    if this.days < 0 then
+      return -this;
+    else
+      return this;
+  }
+
   /* Return the absolute value of `t`.  If `t` is negative, then returns `-t`,
      else returns `t`.
    */
+  @deprecated(notes="`abs` as a free function is deprecated; use :proc:`timeDelta.abs` instead")
   proc abs(t: timeDelta) : timeDelta {
-    if t.days < 0 then
-      return -t;
-    else
-      return t;
+    return t.abs();
   }
 
   @chpldoc.nodoc
