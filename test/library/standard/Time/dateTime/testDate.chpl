@@ -133,7 +133,7 @@ proc test_date_fromtimestamp() {
   var delta = d1 - unixEpoch.getDate();
   var ts = delta.days * 60 * 60 * 24 + delta.seconds;
 
-  var d = date.createFromTimestamp(ts);
+  var d = dateTime.createUtcFromTimestamp(ts).getDate();
   assert(d.year == year);
   assert(d.month == month);
   assert(d.day == day);
@@ -145,7 +145,7 @@ proc test_date_today() {
     tday = date.today();
     var delta = tday - unixEpoch.getDate();
     var ts = delta.days * 60 * 60 * 24 + delta.seconds;
-    tdayAgain = date.createFromTimestamp(ts);
+    tdayAgain = dateTime.createUtcFromTimestamp(ts).getDate();
     if tday == tdayAgain then
       break;
   }

@@ -405,12 +405,13 @@ module Time {
     return unixEpoch.getDate() + td;
   }
 
-  @deprecated(notes="'date.fromTimestamp' is deprecated, please use 'date.createFromTimestamp' instead")
+  @deprecated(notes="'date.fromTimestamp' is deprecated, please use 'dateTime.createUtcFromTimestamp().getDate()' instead")
   proc type date.fromTimestamp(timestamp) : date {
     return date.createFromTimestamp(timestamp);
   }
 
   /* The date that is `timestamp` seconds from the epoch */
+  @deprecated(notes="'date.createFromTimestamp' is deprecated, please use 'dateTime.createUtcFromTimestamp().getDate()' instead")
   proc type date.createFromTimestamp(timestamp: real) : date {
     const sec = timestamp: int;
     const us = ((timestamp-sec) * 1000000 + 0.5): int;
@@ -1175,7 +1176,9 @@ module Time {
     chpl_time = t;
   }
 
-  /* Return a `dateTime` value representing the current time and date */
+  /* Return a `dateTime` value representing the current time and date,
+     in naive local time.
+  */
   proc type dateTime.now() : dateTime {
     const timeSinceEpoch = getTimeOfDay();
     const lt = getLocalTime(timeSinceEpoch);
@@ -1224,7 +1227,9 @@ module Time {
     return dateTime.createFromTimestamp(timestamp, tz);
   }
 
-  /* The `dateTime` that is `timestamp` seconds from the epoch */
+  /* The `dateTime` that is `timestamp` seconds from the epoch,
+     in naive local time.
+  */
   proc type dateTime.createFromTimestamp(timestamp: real) : dateTime {
     return dateTime.createFromTimestamp(timestamp, nil);
   }
