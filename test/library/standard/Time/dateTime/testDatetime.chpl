@@ -194,19 +194,24 @@ proc test_extract() {
   assert(dt.getTime() == new time(18, 45, 3, 1234));
 }
 
-proc test_combine() {
+proc test_init_combine() {
   var d = new date(2002, 3, 4);
   var t = new time(18, 45, 3, 1234);
   var expected = new dateTime(2002, 3, 4, 18, 45, 3, 1234);
-  var dt = dateTime.combine(d, t);
+  var dt = new dateTime(d, t);
   assert(dt == expected);
 
-  dt = dateTime.combine(t=t, d=d);
+  dt = new dateTime(t=t, d=d);
   assert(dt == expected);
 
   assert(d == dt.getDate());
   assert(t == dt.getTime());
-  assert(dt == dateTime.combine(dt.getDate(), dt.getTime()));
+  assert(dt == new dateTime(dt.getDate(), dt.getTime()));
+
+  dt = new dateTime(d); // no time
+  var zeroTime = new time();
+  assert(d == dt.getDate());
+  assert(zeroTime == dt.getTime());
 }
 
 proc test_replace() {
@@ -263,5 +268,5 @@ test_more_timetuple();
 test_strftime();
 test_more_strftime();
 test_extract();
-test_combine();
+test_init_combine();
 test_replace();

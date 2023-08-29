@@ -980,8 +980,8 @@ module Time {
 
   @chpldoc.nodoc
   operator time.==(t1: time, t2: time): bool {
-    var dt1 = dateTime.combine(d=new date(2000, 1, 1), t=t1);
-    var dt2 = dateTime.combine(d=new date(2000, 1, 1), t=t2);
+    var dt1 = new dateTime(d=new date(2000, 1, 1), t=t1);
+    var dt2 = new dateTime(d=new date(2000, 1, 1), t=t2);
     return dt1 == dt2;
   }
 
@@ -1020,8 +1020,8 @@ module Time {
       //
       // This compares the time on a specific date, and factors in the
       // time zones.
-      const dt1 = dateTime.combine(new date(1900, 1, 1), t1);
-      const dt2 = dateTime.combine(new date(1900, 1, 1), t2);
+      const dt1 = new dateTime(new date(1900, 1, 1), t1);
+      const dt2 = new dateTime(new date(1900, 1, 1), t2);
       return dt1 < dt2;
       //return (t1.replace(tz=nil) - t1.timezone!.utcOffset(dateTime.now())) <
       //       (t2.replace(tz=nil) - t2.timezone!.utcOffset(dateTime.now()));
@@ -1045,8 +1045,8 @@ module Time {
       else
         return false;
     } else {
-      const dt1 = dateTime.combine(new date(1900, 1, 1), t1);
-      const dt2 = dateTime.combine(new date(1900, 1, 1), t2);
+      const dt1 = new dateTime(new date(1900, 1, 1), t1);
+      const dt2 = new dateTime(new date(1900, 1, 1), t2);
       return dt1 <= dt2;
     }
   }
@@ -1068,8 +1068,8 @@ module Time {
       else
         return false;
     } else {
-      const dt1 = dateTime.combine(new date(1900, 1, 1), t1);
-      const dt2 = dateTime.combine(new date(1900, 1, 1), t2);
+      const dt1 = new dateTime(new date(1900, 1, 1), t1);
+      const dt2 = new dateTime(new date(1900, 1, 1), t2);
       return dt1 > dt2;
     }
   }
@@ -1091,8 +1091,8 @@ module Time {
       else
         return false;
     } else {
-      const dt1 = dateTime.combine(new date(1900, 1, 1), t1);
-      const dt2 = dateTime.combine(new date(1900, 1, 1), t2);
+      const dt1 = new dateTime(new date(1900, 1, 1), t1);
+      const dt2 = new dateTime(new date(1900, 1, 1), t2);
       return dt1 >= dt2;
     }
   }
@@ -1107,12 +1107,12 @@ module Time {
 
     /* The minimum representable `date` and `time` */
     proc type min : dateTime {
-      return this.combine(date.min, time.min);
+      return new dateTime(date.min, time.min);
     }
 
     /* The maximum representable `date` and `time` */
     proc type max : dateTime {
-      return this.combine(date.max, time.max);
+      return new dateTime(date.max, time.max);
     }
 
     /* The minimum non-zero difference between two dateTimes */
@@ -1198,7 +1198,7 @@ module Time {
   }
 
   /* Initialize a new `dateTime` value from the given `date` and `time` */
-  proc dateTime.init(d: date, t: time) {
+  proc dateTime.init(d: date, t: time = new time()) {
     chpl_date = d;
     chpl_time = t;
   }
@@ -1295,13 +1295,13 @@ module Time {
 
   /* The `dateTime` that is `ordinal` days from 1-1-0001 */
   proc type dateTime.createFromOrdinal(ordinal: int) : dateTime {
-    return dateTime.combine(date.createFromOrdinal(ordinal), new time());
+    return new dateTime(date.createFromOrdinal(ordinal), new time());
   }
 
   /* Form a `dateTime` value from a given `date` and `time` */
+  @deprecated(notes="`dateTime.combine` is deprecated; use `new dateTime` taking a `date` and `time` argument instead")
   proc type dateTime.combine(d: date, t: time) : dateTime {
-    return new dateTime(d.year, d.month, d.day,
-                        t.hour, t.minute, t.second, t.microsecond, t.timezone);
+    return new dateTime(d, t);
   }
 
   /* Methods on dateTime values */
@@ -1348,7 +1348,7 @@ module Time {
   proc dateTime.replace(year=-1, month=-1, day=-1,
                         hour=-1, minute=-1, second=-1, microsecond=-1)
                         : dateTime {
-    return dateTime.combine(
+    return new dateTime(
         chpl_date.replace(year, month, day),
         chpl_time.replace(hour, minute, second, microsecond)
     );
@@ -1360,7 +1360,7 @@ module Time {
   proc dateTime.replace(year=-1, month=-1, day=-1,
                         hour=-1, minute=-1, second=-1, microsecond=-1,
                         in tz=this.timezone) : dateTime {
-    return dateTime.combine(
+    return new dateTime(
         chpl_date.replace(year, month, day),
         chpl_time.replace(hour, minute, second, microsecond, tz)
     );
@@ -1715,7 +1715,7 @@ module Time {
     var adddays = td.days + newhour / 24;
     newhour %= 24;
 
-    return dateTime.combine(date.createFromOrdinal(dt.getDate().toOrdinal()+adddays),
+    return new dateTime(date.createFromOrdinal(dt.getDate().toOrdinal()+adddays),
                             new time(hour=newhour, minute=newmin,
                                      second=newsec, microsecond=newmicro,
                                      tz=dt.timezone));
@@ -1756,7 +1756,7 @@ module Time {
       subDays += 1;
       newhour += 24;
     }
-    return dateTime.combine(date.createFromOrdinal(dt.getDate().toOrdinal()-subDays),
+    return new dateTime(date.createFromOrdinal(dt.getDate().toOrdinal()-subDays),
                             new time(hour=newhour, minute=newmin,
                                      second=newsec, microsecond=newmicro,
                                      tz=dt.timezone));

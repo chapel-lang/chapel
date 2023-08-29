@@ -113,11 +113,11 @@ proc test_zones() {
   assert(t2 == t3);
 }
 
-proc test_combine() {
+proc test_init_combine() {
   var met = new shared FixedOffset(60, "MET");
   var d = new date(2002, 3, 4);
   var tz = new time(18, 45, 3, 1234, tz=met);
-  var dt = dateTime.combine(d, tz);
+  var dt = new dateTime(d, tz);
   assert(dt == new dateTime(2002, 3, 4, 18, 45, 3, 1234,
                           tz=met));
 }
@@ -137,7 +137,7 @@ proc test_tz_aware_arithmetic() {
   var now = dateTime.now();
   var tz55 = new shared FixedOffset(-330, "west 5:30");
   var timeaware = now.getTime().replace(tz=tz55);
-  var nowaware = dateTime.combine(now.getDate(), timeaware);
+  var nowaware = new dateTime(now.getDate(), timeaware);
   assert(nowaware.timezone == tz55);
   assert(nowaware.timetz() == timeaware);
 
@@ -551,7 +551,7 @@ proc first_sunday_on_or_after(in dt) {
 test_trivial();
 test_even_more_compare();
 test_zones();
-test_combine();
+test_init_combine();
 test_extract();
 test_tz_aware_arithmetic();
 test_tzinfo_now();
