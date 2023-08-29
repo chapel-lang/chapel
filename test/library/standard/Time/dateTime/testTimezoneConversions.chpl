@@ -64,11 +64,11 @@ class USTimeZone: Timezone {
   }
 
   override proc fromUtc(dt: dateTime) {
-    var dtoff = dt.utcOffset();
-    var dtdst = dt.dst();
+    var dtoff = dt.timezone!.utcOffset(dt);
+    var dtdst = dt.timezone!.dst(dt);
     var delta = dtoff - dtdst;
     var dt2 = dt + delta;
-    dtdst = dt2.dst();
+    dtdst = dt2.timezone!.dst(dt2);
     return dt2 + dtdst;
   }
 
@@ -97,11 +97,11 @@ class FixedOffset: Timezone {
   }
 
   override proc fromUtc(dt: dateTime) {
-    var dtoff = dt.utcOffset();
-    var dtdst = dt.dst();
+    var dtoff = dt.timezone!.utcOffset(dt);
+    var dtdst = dt.timezone!.dst(dt);
     var delta = dtoff - dtdst;
     var dt2 = dt + delta;
-    dtdst = dt2.dst();
+    dtdst = dt2.timezone!.dst(dt2);
     return dt2 + dtdst;
   }
 }
@@ -126,7 +126,7 @@ var dston = new dateTime(2002, 4, 7, 2);
 var dstoff = new dateTime(2002, 10, 27, 1);
 
 proc checkinside(dt, tz:shared, utc:shared, dston, dstoff) {
-  assert(dt.dst() == HOUR);
+  assert(dt.timezone!.dst(dt) == HOUR);
 
   // Conversion to our own timezone is always an identity.
   assert(dt.astimezone(tz) == dt);
@@ -148,7 +148,7 @@ proc checkinside(dt, tz:shared, utc:shared, dston, dstoff) {
     assert(there_and_back + HOUR == dt);
     // Although during was considered to be in daylight
     // time, there_and_back is not.
-    assert(there_and_back.dst() == ZERO);
+    assert(there_and_back.timezone!.dst(there_and_back) == ZERO);
     // They're the same times in UTC.
     assert(there_and_back.astimezone(utc) == dt.astimezone(utc));
   } else {
@@ -179,7 +179,7 @@ proc checkinside(dt, tz:shared, utc:shared, dston, dstoff) {
 }
 
 proc checkoutside(dt, tz:shared, utc:shared) {
-  assert(dt.dst() == ZERO);
+  assert(dt.timezone!.dst(dt) == ZERO);
 
   // Conversion to our own timezone is always an identity.
   assert(dt.astimezone(tz) == dt);

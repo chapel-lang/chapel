@@ -1,0 +1,10 @@
+dateTimeTimezoneMethods.chpl:7: warning: `time.utcOffset` is deprecated; use `time.timezone.utcOffset` instead
+dateTimeTimezoneMethods.chpl:8: warning: `time.dst` is deprecated; use `time.timezone.dst` instead
+dateTimeTimezoneMethods.chpl:9: warning: `time.tzname` is deprecated; use `time.timezone.tzname` instead
+dateTimeTimezoneMethods.chpl:15: warning: `dateTime.tzname` is deprecated; use `dateTime.timezone.tzname` instead
+dateTimeTimezoneMethods.chpl:57: warning: `time.utcOffset` is deprecated; use `time.timezone.utcOffset` instead
+dateTimeTimezoneMethods.chpl:58: warning: `time.dst` is deprecated; use `time.timezone.dst` instead
+dateTimeTimezoneMethods.chpl:59: warning: `time.tzname` is deprecated; use `time.timezone.tzname` instead
+dateTimeTimezoneMethods.chpl:66: warning: `dateTime.utcOffset` is deprecated; use `dateTime.timezone.utcOffset` instead
+dateTimeTimezoneMethods.chpl:67: warning: `dateTime.dst` is deprecated; use `dateTime.timezone.dst` instead
+dateTimeTimezoneMethods.chpl:68: warning: `dateTime.tzname` is deprecated; use `dateTime.timezone.tzname` instead
