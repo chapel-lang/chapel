@@ -18,7 +18,7 @@ type eltType = uint(bitsPerElt);   // element type used to store the image
 
 
 proc main() {
-  const xdim = 0..#divceilpos(n, bitsPerElt);  // the compacted x dimension
+  const xdim = 0..#divCeilPos(n, bitsPerElt);  // the compacted x dimension
 
   var image : [0..#n, xdim] eltType;           // the compacted bitmap image
 

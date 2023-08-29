@@ -101,10 +101,10 @@ Exponential Functions
 
 Rounding
 --------
-:proc:`divceil`
-:proc:`divceilpos`
-:proc:`divfloor`
-:proc:`divfloorpos`
+:proc:`divCeil`
+:proc:`divCeilPos`
+:proc:`divFloor`
+:proc:`divFloorPos`
 :proc:`nearbyint`
 :proc:`rint`
 
@@ -425,7 +425,7 @@ module Math {
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divceil(param x: integral, param y: integral) param do
+  proc divCeil(param x: integral, param y: integral) param do
     return chpl_divceil(x, y);
 
   /* Returns :proc:`~AutoMath.ceil`\(`x`/`y`),
@@ -434,15 +434,15 @@ module Math {
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divceil(x: integral, y: integral) do return chpl_divceil(x, y);
+  proc divCeil(x: integral, y: integral) do return chpl_divceil(x, y);
 
   /*
-    A variant of :proc:`divceil` that performs no runtime checks.
+    A variant of :proc:`divCeil` that performs no runtime checks.
     The user must ensure that both arguments are strictly positive
     (not 0) and are of a signed integer type (not `uint`).
   */
-  @unstable("divceilpos is unstable due to questions about its utility.  If you find this function valuable, please let us know!")
-  proc divceilpos(x: integral, y: integral) {
+  @unstable("divCeilPos is unstable due to questions about its utility.  If you find this function valuable, please let us know!")
+  proc divCeilPos(x: integral, y: integral) {
     return chpl_divceilpos(x, y);
   }
 
@@ -452,7 +452,7 @@ module Math {
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divfloor(param x: integral, param y: integral) param do return
+  proc divFloor(param x: integral, param y: integral) param do return
     chpl_divfloor(x, y);
 
   /* Returns :proc:`~AutoMath.floor`\(`x`/`y`),
@@ -461,15 +461,15 @@ module Math {
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divfloor(x: integral, y: integral) do return chpl_divfloor(x, y);
+  proc divFloor(x: integral, y: integral) do return chpl_divfloor(x, y);
 
   /*
-    A variant of :proc:`divfloor` that performs no runtime checks.
+    A variant of :proc:`divFloor` that performs no runtime checks.
     The user must ensure that both arguments are strictly positive
     (not 0) and are of a signed integer type (not `uint`).
   */
-  @unstable("divfloorpos is unstable due to questions about its utility.  If you find this function valuable, please let us know!")
-  proc divfloorpos(x: integral, y: integral) {
+  @unstable("divFloorPos is unstable due to questions about its utility.  If you find this function valuable, please let us know!")
+  proc divFloorPos(x: integral, y: integral) {
     return chpl_divfloorpos(x, y);
   }
 

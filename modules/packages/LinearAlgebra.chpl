@@ -989,7 +989,7 @@ proc inner(const ref A: [?Adom] ?eltType, const ref B: [?Bdom]) {
       const maxThreads = if dataParTasksPerLocale==0
                          then here.maxTaskPar else dataParTasksPerLocale;
       const localDomain = A.localSubdomain();
-      const iterPerThread = divceil(localDomain.size, maxThreads);
+      const iterPerThread = divCeil(localDomain.size, maxThreads);
       var localResult: eltType = 0;
       var threadResults: [0..#maxThreads] eltType = 0;
 

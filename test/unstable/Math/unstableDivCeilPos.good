@@ -1,7 +1,7 @@
-unstableDivCeilPos.chpl:3: warning: divceilpos is unstable due to questions about its utility.  If you find this function valuable, please let us know!
-unstableDivCeilPos.chpl:4: warning: divceilpos is unstable due to questions about its utility.  If you find this function valuable, please let us know!
-unstableDivCeilPos.chpl:5: warning: divceilpos is unstable due to questions about its utility.  If you find this function valuable, please let us know!
-unstableDivCeilPos.chpl:6: warning: divceilpos is unstable due to questions about its utility.  If you find this function valuable, please let us know!
+unstableDivCeilPos.chpl:3: warning: divCeilPos is unstable due to questions about its utility.  If you find this function valuable, please let us know!
+unstableDivCeilPos.chpl:4: warning: divCeilPos is unstable due to questions about its utility.  If you find this function valuable, please let us know!
+unstableDivCeilPos.chpl:5: warning: divCeilPos is unstable due to questions about its utility.  If you find this function valuable, please let us know!
+unstableDivCeilPos.chpl:6: warning: divCeilPos is unstable due to questions about its utility.  If you find this function valuable, please let us know!
 2
 4
 2
