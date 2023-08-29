@@ -454,6 +454,8 @@ static void setupPythonTypeMap() {
   pythonNames[dtReal[FLOAT_SIZE_64]->symbol] = std::make_pair("double", "float");
   pythonNames[dtBool->symbol] = std::make_pair("bint", "bint");
   pythonNames[dtStringC->symbol] = std::make_pair("const char *", "bytes");
+  // TODO: what's the proper symbol map for c_ptrConst(c_char) to replace c_string?
+
   pythonNames[dtComplex[COMPLEX_SIZE_64]->symbol] =
               std::make_pair("float complex", "numpy.complex64");
   pythonNames[dtComplex[COMPLEX_SIZE_128]->symbol] =
@@ -475,6 +477,11 @@ static void setupPythonTypeMap() {
 // Otherwise, use the normal cname
 std::string getPythonTypeName(Type* type, PythonFileType pxd) {
   std::pair<std::string, std::string> tNames = pythonNames[type->symbol];
+  // TODO: maybe try to just return the proper name here by matching "isCPtrConstChar()"?
+  // if (tNames.first=="" && isCPtrConstChar(type)) {
+  //   if (pxd == C_PXD) return "int8_t *";//pythonNames[dtStringC->symbol].first;
+  //   if (pxd == PYTHON_PYX) return "int8_t *";  //pythonNames[dtStringC->symbol].second;
+  // }
   if (pxd == C_PXD && tNames.first != "") {
     return tNames.first;
   } else if (pxd == PYTHON_PYX && tNames.second != "") {
@@ -787,7 +794,7 @@ static void makeOpaqueArrayClass() {
   fprintf(outfile, "\t\tself.val = val\n\n");
 
   fprintf(outfile, "\tdef cleanup(self):\n");
-  fprintf(outfile, "\t\tcleanupOpaqueArray(&self.val);\n\n");
+  fprintf(outfile, "\t\tcleanupOpaqueArray(&self.val)\n\n");
 
   // Allows the Python type to be created and cleaned up appropriately in a
   // Python "with" clause
