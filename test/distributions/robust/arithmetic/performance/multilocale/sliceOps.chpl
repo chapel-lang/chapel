@@ -91,14 +91,14 @@ proc startTrial() {
   if doVerboseComm then startVerboseComm();
 }
 
-proc stopTrial(B, str, skipVerify=true) {
+proc stopTrial(ref B, str, skipVerify=true) {
   if doVerboseComm then stopVerboseComm();
   stopCommDiagnostics();
   writeln(str, ":\n", getCommDiagnostics());
   if !skipVerify then
     for i in Dom4D do if B[i]!=i then writeln("ERROR: B[", i, "]==", B[i]);
   B = (0,0,0,0);
-}  
+}
 
 proc foo(a: A.eltType) {
 }

@@ -469,18 +469,19 @@ module ChapelDistribution {
     }
 
     override proc dsiBulkAdd(inds: [] index(rank, idxType),
-        dataSorted=false, isUnique=false, preserveInds=true, addOn=nilLocale){
+        dataSorted=false, isUnique=false, addOn=nilLocale){
 
-      if !dataSorted && preserveInds {
-        var _inds = inds;
-        return bulkAdd_help(_inds, dataSorted, isUnique, addOn);
-      }
-      else {
-        return bulkAdd_help(inds, dataSorted, isUnique, addOn);
-      }
+      var inds_ = inds;
+      return bulkAdd_help(inds_, dataSorted, isUnique, addOn);
     }
 
-    proc bulkAdd_help(inds: [?indsDom] index(rank, idxType),
+    override proc dsiBulkAddNoPreserveInds(ref inds: [] index(rank, idxType),
+        dataSorted=false, isUnique=false, addOn=nilLocale){
+
+      return bulkAdd_help(inds, dataSorted, isUnique, addOn);
+    }
+
+    proc bulkAdd_help(ref inds: [?indsDom] index(rank, idxType),
         dataSorted=false, isUnique=false, addOn=nilLocale){
       halt("Helper function called on the BaseSparseDomImpl");
 
@@ -544,7 +545,7 @@ module ChapelDistribution {
     // (1) sorts indices if !dataSorted
     // (2) verifies the flags are set correctly if boundsChecking
     // (3) checks OOB if boundsChecking
-    proc bulkAdd_prepareInds(inds, dataSorted, isUnique, cmp) {
+    proc bulkAdd_prepareInds(ref inds, dataSorted, isUnique, cmp) {
       use Sort;
       if !dataSorted then sort(inds, comparator=cmp);
 
@@ -639,11 +640,11 @@ module ChapelDistribution {
       bufDom = {0..#size};
     }
 
-    proc deinit() {
+    proc ref deinit() {
       commit();
     }
 
-    proc add(idx: idxType) {
+    proc ref add(idx: idxType) {
       buf[cur] = idx;
       cur += 1;
 
@@ -651,7 +652,7 @@ module ChapelDistribution {
         commit();
     }
 
-    proc commit() {
+    proc ref commit() {
       if cur >= 1 then
         obj.dsiBulkAdd(buf[..cur-1]);
       cur = 0;
@@ -685,7 +686,15 @@ module ChapelDistribution {
     }
 
     proc dsiBulkAdd(inds: [] index(rank, idxType),
-        dataSorted=false, isUnique=false, preserveInds=true,
+        dataSorted=false, isUnique=false,
+        addOn=nilLocale): int {
+
+      halt("Bulk addition is not supported by this sparse domain");
+      return 0;
+    }
+
+    proc dsiBulkAddNoPreserveInds(ref inds: [] index(rank, idxType),
+        dataSorted=false, isUnique=false,
         addOn=nilLocale): int {
 
       halt("Bulk addition is not supported by this sparse domain");

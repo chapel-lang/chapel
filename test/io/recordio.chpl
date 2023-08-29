@@ -88,7 +88,7 @@ var B: [0..#3] MyRecord;
    - the compiler will generate readThis/writeThis for you if you don't
      provide one
  */
-proc MyRecord.readThis(fr: fileReader) throws {
+proc ref MyRecord.readThis(fr: fileReader) throws {
   i = fr.read(int);
   fr.readLiteral("\t");
   r = fr.read(real);

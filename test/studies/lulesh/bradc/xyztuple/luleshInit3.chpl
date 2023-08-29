@@ -29,7 +29,7 @@ if initFromFile {
 // Helper variables for reading from a file
 
 var infile: file;
-var reader: fileReader(iokind.dynamic, true);
+var reader: fileReader(true);
 
 if initFromFile {
   infile = open(filename, ioMode.r);
@@ -64,7 +64,7 @@ proc initProblemSize() {
 
 // read/compute the coordinates
 
-proc initCoordinates(XYZ) {
+proc initCoordinates(ref XYZ) {
   if (initFromFile) {
     for (x,y,z) in XYZ do
       reader.read(x, y, z);
@@ -85,7 +85,7 @@ proc initCoordinates(XYZ) {
 
 // read/compute the element-to-node mapping
 
-proc initElemToNodeMapping(elemToNode: [?D]) {
+proc initElemToNodeMapping(ref elemToNode: [?D]) {
   if (initFromFile) {
     param nodesPerElem = elemToNode[D.low].size;
     for nodelist in elemToNode do 
@@ -122,7 +122,7 @@ proc initElemToNodeMapping(elemToNode: [?D]) {
 
 // read/compute the greek variables
 
-proc initGreekVars(lxim, lxip, letam, letap, lzetam, lzetap) {
+proc initGreekVars(ref lxim, ref lxip, ref letam, ref letap, ref lzetam, ref lzetap) {
   if (initFromFile) {
     for (xm,xp,em,ep,zm,zp) in zip(lxim, lxip, letam, letap, lzetam, lzetap) do
       reader.read(xm,xp,em,ep,zm,zp);
@@ -202,11 +202,14 @@ inline proc initZSyms(ref ZSym) {
 inline proc initFreeSurface(ref freeSurface) {
   if (initFromFile) {
     readNodeset(freeSurface);
-    reader.assertEOF("Input file format error (extra data at EOF)");
+
+    var tmp: uint(8);
+    if reader.read(tmp) then
+      halt("Input file format error (extra data at EOF)");
   } else {
     for ij in DimNodeFace do
       freeSurface += nodeIdx2DTo1D(ij, X, nodesPerEdge-1);
-                  
+
     for ij in DimNodeFace do
       freeSurface += nodeIdx2DTo1D(ij, Y, nodesPerEdge-1);
 

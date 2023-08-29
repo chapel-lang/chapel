@@ -45,7 +45,7 @@ proc main(args:[] string)
     var mdArray:[0..19] uint(8);
     var data:string;
     var f = open(path, ioMode.r);
-    f.reader(kind=iokind.native).readAll(data);
+    f.reader(deserializer=new BinaryDeserializer()).readAll(data);
     // The extern block above included everything in openssl/sha.h,
     // including the SHA1 function. But, in order to call it, we
     // need to create C types from some Chapel data.

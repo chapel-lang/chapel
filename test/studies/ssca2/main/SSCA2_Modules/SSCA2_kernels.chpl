@@ -180,7 +180,7 @@ module SSCA2_kernels
   // ==================================================================
 
   proc approximate_betweenness_centrality ( G, starting_vertices,
-                                            Between_Cent : [] real,
+                                            ref Between_Cent : [] real,
                                             out Sum_Min_Dist : real )
 
     // -----------------------------------------------------------------------
@@ -284,7 +284,7 @@ module SSCA2_kernels
         const tpv = TPVM.getTPV(tid);
         ref BCaux = tpv.BCaux;
         pragma "dont disable remote value forwarding"
-        inline proc f1(BCaux, v) {
+        inline proc f1(ref BCaux, v) {
           BCaux[v].path_count$.write(0.0);
         }
         forall v in vertex_domain do {
@@ -319,13 +319,13 @@ module SSCA2_kernels
         //
         ref Active_Level = tpv.Active_Level;
         pragma "dont disable remote value forwarding"
-        inline proc f2(BCaux, s) {
+        inline proc f2(ref BCaux, s) {
           BCaux[s].path_count$.write(1.0);
         }
 
         var bar = new barrier(numLocales);
 
-        coforall loc in Locales with (ref remaining, ref bar) do on loc {
+        coforall loc in Locales with (ref remaining, ref bar, ref Between_Cent$) do on loc {
           const AL = Active_Level[here.id]!;
           AL.Members.clear();
           AL.next!.Members.clear();
@@ -355,7 +355,7 @@ module SSCA2_kernels
             // coforall loop.
             const current_distance_c = current_distance;
             pragma "dont disable remote value forwarding"
-            inline proc f3(BCaux, v, u, current_distance_c, Active_Level, ref dist_temp) {
+            inline proc f3(ref BCaux, v, u, current_distance_c, Active_Level, ref dist_temp) {
 
                   // --------------------------------------------
                   // add any unmarked neighbors to the next level
@@ -442,7 +442,7 @@ module SSCA2_kernels
                         "  is ", graph_diameter );
 
           pragma "dont disable remote value forwarding"
-          inline proc f4(BCaux, Between_Cent$, u) {
+          inline proc f4(ref BCaux, ref Between_Cent$, u) {
             BCaux[u].depend = + reduce [v in BCaux[u].children_list.Row_Children[1..BCaux[u].children_list.child_count.read()]]
               ( BCaux[u].path_count$.read() /
                 BCaux[v].path_count$.read() )      *
@@ -561,7 +561,7 @@ module SSCA2_kernels
     }
 
     // This function should only be called using unique vertices
-    proc add_child ( new_child: vertex ) {
+    proc ref add_child ( new_child: vertex ) {
       var c = child_count.fetchAdd(1)+1;
       Row_Children[c] = new_child;
     }

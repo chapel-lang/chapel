@@ -426,6 +426,27 @@ static void setRecordDefaultValueFlags(AggregateType* at) {
             }
           }
         }
+
+        // default initialization is not currently allowed
+        // for records like 'record R { var x; }'
+        if (!at->symbol->hasFlag(FLAG_TUPLE)) {
+          AggregateType* root = at->getRootInstantiation();
+          for (auto elem: sortedSymbolMapElts(at->substitutions)) {
+            const char* keyName = elem.key->name;
+
+            Symbol* field = root->getField(keyName);
+            bool hasDefault = false;
+            bool isGenericField = root->fieldIsGeneric(field, hasDefault);
+
+            if (field->isParameter() || field->hasFlag(FLAG_TYPE_VARIABLE)) {
+              // OK, it's a param or type field
+            } else if (isGenericField) {
+              failsDefaultInit = true;
+              break;
+            }
+          }
+        }
+
         if (failsDefaultInit) {
           ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
           return;
@@ -970,6 +991,55 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     break;
   } // PRIM_CALL_RESOLVES, PRIM_METHOD_CALL_RESOLVES
+
+  case PRIM_IMPLEMENTS_INTERFACE: {
+    Expr* typeExpr = call->get(1);
+    Expr* interfaceExpr = call->get(2);
+
+    TypeSymbol* type = nullptr;
+    InterfaceSymbol* interface = nullptr;
+    if (auto se = toSymExpr(typeExpr)) {
+      type = se->typeInfo()->symbol;
+      INT_ASSERT(type);
+    }
+
+    if (auto se = toSymExpr(interfaceExpr)) {
+      interface = toInterfaceSymbol(se->symbol());
+      INT_ASSERT(interface);
+    }
+
+    auto newConstraint =
+      IfcConstraint::build(interface, new CallExpr(PRIM_ACTUALS_LIST, type));
+    SymbolMap substitutions;
+    auto cs = trySatisfyConstraintAtCallsite(call, nullptr, newConstraint,
+                                             substitutions);
+
+    // return one of three values:
+    // 0 - found a user-specified interface
+    // 1 - found a compiler-generated interface
+    // 2 - did not find an interface at all (or shouldn't)
+
+    int val;
+    if (cs.istm) {
+      if (!cs.istm->iConstraint->entirelyGenerated) {
+        // implicit interface using user-provided witnesses: bad.
+        val = 2;
+      } else if (cs.istm->iConstraint->shouldBeGeneratedOnly) {
+        // impliit interface using compiler-provided witnesses; fine.
+        val = 1;
+      } else {
+        // explicit interface.
+        val = 0;
+      }
+    } else {
+      val = 2;
+    }
+
+    retval = new SymExpr(new_IntSymbol(val));
+    call->replace(retval);
+
+    break;
+  }
 
   case PRIM_DEREF: {
     // remove deref if arg is already a value

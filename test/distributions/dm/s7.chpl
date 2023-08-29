@@ -94,7 +94,7 @@ writeln();
 writeln(Ab);
 writeln("DONE");
 
-proc test(X, Y, Z) {
+proc test(ref X, Y, Z) {
   for (x, y, z) in zip(X, Y, Z) do x = y + z;
 }
 

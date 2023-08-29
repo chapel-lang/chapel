@@ -16,7 +16,7 @@ record WrappedArray {
         dom = {row..row+numRows-1, col..col+numCols-1};
     }
 
-    proc this(i,j : int) ref { return data[i,j]; }
+    proc ref this(i,j : int) ref { return data[i,j]; }
 
     var dom : domain(2);
     var data : [dom] int;
@@ -27,7 +27,7 @@ proc simpleDistMultiply(
     blkSize : int,
     A : [?localesDom] WrappedArray,
     B : [localesDom] WrappedArray,
-    C : [localesDom] WrappedArray,
+    ref C : [localesDom] WrappedArray,
     myLocales : [localesDom] locale)
 {
     // Every locale needs a copy of the blocks of A in the same locale-row and
@@ -36,7 +36,7 @@ proc simpleDistMultiply(
     var colCopies : [localesDom] WrappedArray;
 
     // initialize row and col copies
-    coforall (locRow, locCol) in localesDom do on myLocales[locRow,locCol] {
+    coforall (locRow, locCol) in localesDom with (ref colCopies, ref rowCopies) do on myLocales[locRow,locCol] {
         rowCopies[locRow, locCol] = new WrappedArray(
             (locRow-1)*blkSize+1, 1, blkSize, n);
         colCopies[locRow, locCol] = new WrappedArray(
@@ -98,7 +98,7 @@ proc main() {
     var B : [myLocales.domain] WrappedArray;
     var C : [myLocales.domain] WrappedArray;
     forall (i,j) in myLocales.domain do on myLocales[i,j] {
-        cobegin {
+        cobegin with (ref A, ref B, ref C) {
             A[i,j] = new WrappedArray(
                 (i-1)*blkSize+1, (j-1)*blkSize+1, blkSize, blkSize);
             B[i,j] = new WrappedArray(
@@ -108,7 +108,7 @@ proc main() {
         }
 
         forall (locRow, locCol) in A[i,j].dom {
-            cobegin {
+            cobegin with (ref A, ref B) {
                 A[i,j][locRow, locCol] = locRow + locCol;
                 B[i,j][locRow, locCol] = locRow * locCol;
             }

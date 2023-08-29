@@ -1,0 +1,4 @@
+feature request: use an arbitrary cast expression in a formal type
+#22994
+
+this gets messed up by fixupQueryFormals in normalize.cpp

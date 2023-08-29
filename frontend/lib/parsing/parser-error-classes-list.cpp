@@ -203,18 +203,6 @@ void ErrorSingleStmtReturnDeprecated::write(ErrorWriterBase& wr) const {
   wr.code(loc, { ret });
 }
 
-void ErrorRecordInheritanceNotSupported::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto recordName = std::get<std::string>(info);
-  wr.heading(kind_, type_, loc,
-             "inheritance is not currently supported for records.");
-  wr.note(loc, recordName, " declared as a record here:");
-  wr.code(loc);
-  wr.message(
-      "Thoughts on what record inheritance should entail can be added to "
-      "https://github.com/chapel-lang/chapel/issues/6851.");
-}
-
 void ErrorStringLiteralEOF::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   auto startChar = std::get<char>(info);
@@ -274,30 +262,37 @@ void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
   auto blockingAst = std::get<1>(info);
   auto allowingAst = std::get<2>(info);
 
-  // The error for value-having return in an iterator is so specific that it's
-  // easiest to special case it.
-  if (auto ret = invalidAst->toReturn()) {
-    if (blockingAst && blockingAst->isFunction()) {
-      auto fn = blockingAst->toFunction();
-      wr.heading(kind_, type_, ret,
-                 "'return' statements with values are not allowed in iterators.");
-      wr.message("The following 'return' statement has a value:");
-      wr.code(ret, { ret->value() });
-      wr.note(locationOnly(fn), "'", fn->name(),
-                                "' is declared as an iterator here:");
-      wr.codeForLocation(fn);
-      if (allowingAst != nullptr) {
-        auto allowingFn = allowingAst->toFunction();
-        CHPL_ASSERT(allowingFn);
-        // There _was_ a function that allowed a return, but it must be further
-        // out.
-        wr.note(locationOnly(allowingFn), "'", fn->name(), "' is declared inside '",
-                allowingFn->name(), "', but returning from '", allowingFn->name(), "' here is not allowed.");
-      } else {
-        wr.message("Did you mean to use the 'yield' keyword instead of 'return'?");
-      }
-      return;
+  // Match some special cases:
+  auto ret = invalidAst->toReturn();
+  const uast::Function *blockingAstFn = blockingAst ? blockingAst->toFunction() : nullptr;
+  bool isFuncWithReturn = ret && blockingAstFn;
+  bool isIterWithReturn = isFuncWithReturn && blockingAstFn->kind() == uast::Function::ITER;
+  if (isIterWithReturn) {
+    wr.heading(kind_, type_, ret,
+               "'return' statements with values are not allowed in iterators.");
+    wr.message("The following 'return' statement has a value:");
+    wr.code(ret, { ret->value() });
+    wr.note(locationOnly(blockingAstFn), "'", blockingAstFn->name(),
+                              "' is declared as an iterator here:");
+    wr.codeForLocation(blockingAstFn);
+    if (allowingAst != nullptr) {
+      auto allowingFn = allowingAst->toFunction();
+      CHPL_ASSERT(allowingFn);
+      // There _was_ a function that allowed a return, but it must be further
+      // out.
+      wr.note(locationOnly(allowingFn), "'", blockingAstFn->name(), "' is declared inside '",
+              allowingFn->name(), "', but returning from '", allowingFn->name(), "' here is not allowed.");
+    } else {
+      wr.message("Did you mean to use the 'yield' keyword instead of 'return'?");
     }
+    return;
+  } else if (isFuncWithReturn) {
+    wr.heading(kind_, type_, ret,
+               "'return' statements with values are not allowed in ", blockingAstFn->name());
+    wr.message("The following 'return' statement has a value:");
+    wr.code(ret, { ret->value() });
+    wr.codeForLocation(blockingAstFn);
+    return;
   }
 
   std::string astType = "";

@@ -9,7 +9,7 @@ record sps33 {
 
   var data:[-1..1, 0..1] real;
 
-  proc this(i, j) ref {
+  proc ref this(i, j) ref {
     if (i == j) {
       return irv;
     } else if (i==-1) {
@@ -19,7 +19,7 @@ record sps33 {
     }
   }
 
-  proc this(ij: 2*int) ref {
+  proc ref this(ij: 2*int) ref {
     return this(ij(0), ij(1));
   }
 }

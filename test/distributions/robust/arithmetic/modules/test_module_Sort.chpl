@@ -65,7 +65,7 @@ if !isSorted(aR1D) then writeln('heapSort failed');
 
 
 writeln("Sort reindexed array");
-proc doSort(D: domain, A: [D], st: SortType) {
+proc doSort(D: domain, ref A: [D], st: SortType) {
   select st {
     when SortType.BUBBLE {
       BubbleSort.bubbleSort(A);

@@ -12,7 +12,7 @@ var foundIdx: int;
 var idx = n1/2+1;
 var elem: real;
 
-proc reset(A) {
+proc reset(ref A) {
   rng.fillRandom(A);
   sort(A);
   elem = A[idx];

@@ -89,8 +89,8 @@ proc main() {
 // blocked LU factorization with pivoting for matrix augmented with
 // vector of RHS values.
 //
-proc LUFactorize(n: indexType, Ab: [?AbD] elemType,
-                piv: [1..n] indexType) {
+proc LUFactorize(n: indexType, ref Ab: [?AbD] elemType,
+                ref piv: [1..n] indexType) {
   
   // Initialize the pivot vector to represent the initially unpivoted matrix.
   piv = 1..n;
@@ -213,7 +213,7 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
 //
 proc dgemmNativeInds(A: [] elemType,
                     B: [] elemType,
-                    C: [] elemType) {
+                    ref C: [] elemType) {
   for (iA, iC) in zip(A.domain.dim(0), C.domain.dim(0)) do
     for (jA, iB) in zip(A.domain.dim(1), B.domain.dim(0)) do
       for (jB, jC) in zip(B.domain.dim(1), C.domain.dim(1)) do
@@ -247,9 +247,9 @@ proc dgemmIdeal(A: [1.., 1..] elemType,
 // do unblocked-LU decomposition within the specified panel, update the
 // pivot vector accordingly
 //
-proc panelSolve(Ab: [] elemType,
+proc panelSolve(ref Ab: [] elemType,
                panel: domain,
-               piv: [] indexType) {
+               ref piv: [] indexType) {
 
   //
   // TODO: Use on clause here (or avoid using a range?
@@ -294,7 +294,7 @@ proc panelSolve(Ab: [] elemType,
 // solve a block (tl for top-left) portion of a matrix. This function
 // solves the rows to the right of the block.
 //
-proc updateBlockRow(Ab: [] elemType,
+proc updateBlockRow(ref Ab: [] elemType,
                    tl: domain,
                    tr: domain) {
 
@@ -339,7 +339,7 @@ proc printConfiguration() {
 // construct an n by n+1 matrix filled with random values and scale
 // it to be in the range -1.0..1.0
 //
-proc initAB(Ab: [] elemType) {
+proc initAB(ref Ab: [] elemType) {
   fillRandom(Ab, seed);
   Ab = Ab * 2.0 - 1.0;
 }
@@ -347,7 +347,7 @@ proc initAB(Ab: [] elemType) {
 //
 // calculate norms and residuals to verify the results
 //
-proc verifyResults(Ab, MatrixSpace, x) {
+proc verifyResults(ref Ab, MatrixSpace, x) {
   ref A = Ab[MatrixSpace],
       b = Ab[.., n+1];
 

@@ -131,7 +131,7 @@ proc printConfiguration() {
 // We substitute less expensive test matrices that are still likely
 // to detect any addressing errors.
 //
-proc initArrays(A, C) {
+proc initArrays(ref A, ref C) {
   forall (i,j) in A.domain do
     A[i,j] = erf(i:eltType) * cos(j:eltType);
 

@@ -1162,6 +1162,8 @@ initPrimitive() {
   prim_def(PRIM_METHOD_CALL_AND_FN_RESOLVES, "method call and fn resolves", returnInfoBool);
   prim_def(PRIM_RESOLVES, "resolves", returnInfoBool);
 
+  prim_def(PRIM_IMPLEMENTS_INTERFACE, "implements interface", returnInfoInt64);
+
   prim_def(PRIM_START_RMEM_FENCE, "chpl_rmem_consist_acquire", returnInfoVoid, true, true);
   prim_def(PRIM_FINISH_RMEM_FENCE, "chpl_rmem_consist_release", returnInfoVoid, true, true);
 

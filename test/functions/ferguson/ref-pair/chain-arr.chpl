@@ -31,15 +31,15 @@ proc setit(ref x) {
   x = 1;
 }
 
-proc setX(x) {
+proc setX(ref x) {
   setit(x);
 }
 
-proc setElement(x) {
+proc setElement(ref x) {
   x[1] = 1;
 }
 
-proc setArray(x) {
+proc setArray(ref x) {
   x = 1;
 }
 

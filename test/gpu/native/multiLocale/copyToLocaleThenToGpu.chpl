@@ -9,7 +9,7 @@ B = 1;
 C = 2;
 
 startGpuDiagnostics();
-coforall (l,lid) in zip(Locales, LocaleSpace) do on l {
+coforall (l,lid) in zip(Locales, LocaleSpace) with (ref A) do on l {
   const perLocSize = n/numLocales;
   const locStart = lid*perLocSize;
   const locChunk = locStart..#perLocSize;
@@ -18,7 +18,7 @@ coforall (l,lid) in zip(Locales, LocaleSpace) do on l {
   var Bl = B[locChunk], Cl = C[locChunk];
 
   const numGPUs = here.gpus.size;
-  coforall (g,gid) in zip(here.gpus, here.gpus.domain) do on g {
+  coforall (g,gid) in zip(here.gpus, here.gpus.domain) with (ref A) do on g {
     const perGPUSize = perLocSize/numGPUs;
     const gpuStart = locStart+gid*perGPUSize;
     const gpuChunk = gpuStart..#perGPUSize;

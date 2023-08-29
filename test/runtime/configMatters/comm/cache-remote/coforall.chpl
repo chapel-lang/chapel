@@ -10,7 +10,7 @@ proc doit(a:locale, b:locale, c:locale)
     if verbose then printf("on %d\n", here.id:c_int);
     var A: [1..10] int = [1,2,3,4,5,6,7,8,9,10];
     on b {
-      coforall i in 1..10 {
+      coforall i in 1..10 with (ref A) {
         A[i] = 2*i;
       }
     }

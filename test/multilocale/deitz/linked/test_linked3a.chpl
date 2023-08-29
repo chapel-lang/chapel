@@ -6,7 +6,7 @@ record C {
 
 var cs: [0..numLocales-1] C;
 
-coforall i in 0..numLocales-1 do 
+coforall i in 0..numLocales-1 with (ref cs) do 
   on Locales(i) do
     cs[i] = new C(i);
 

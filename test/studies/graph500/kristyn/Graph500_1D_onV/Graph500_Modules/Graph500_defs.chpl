@@ -75,19 +75,19 @@ module Graph500_defs
          return is_member;
       }
 
-      proc add_self_edge () {
+      proc ref add_self_edge () {
          vlock.readFE();
          self_edges += 1;
          vlock.writeEF(true);
       }
 
-      proc add_duplicate () {
+      proc ref add_duplicate () {
          vlock.readFE();
          duplicates += 1;
          vlock.writeEF(true);
       }
 
-      proc add_Neighbor (new_vertex_ID: vertex_id) {
+      proc ref add_Neighbor (new_vertex_ID: vertex_id) {
          vlock.readFE();
          var ID: vertex_id = new_vertex_ID;
 //       Check again to make sure another thread did not recently

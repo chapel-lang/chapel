@@ -12,8 +12,8 @@ const Dspace = space dmapped Block (boundingBox=space);
 
 startVdebug("E4");
 
-var go: [Dspace] single bool;
-var done: [Dspace] single bool;
+var go: [Dspace] sync bool;
+var done: [Dspace] sync bool;
 
 // Start a begin task on all locales.  The task will start and then block.
 coforall loc in Locales do

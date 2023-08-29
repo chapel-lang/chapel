@@ -76,7 +76,9 @@ class C { var x: int; }
 record R { var y: int; }
 enum MyEnum { val }
 
-record GenericRecord { var x; }
+record GenericRecord { type xType; var x: xType; }
+
+record GenericRecordTypeless { var x; }
 
 record GenericRecordDefault { type t = int; var z: t; }
 
@@ -90,7 +92,8 @@ proc main() {
   var unmanagedCQ = new unmanaged C?();
 
   var at: atomic int;
-  var genericR = new GenericRecord(1);
+  var genericR = new GenericRecord(int, 1);
+  var genericRT = new GenericRecordTypeless(2);
   var genericRD: GenericRecordDefault;
 
   checkNormal(int, 1);
@@ -116,6 +119,7 @@ proc main() {
 
   checkNormal(atomic int, at);
   checkNormal(GenericRecord(int), genericR);
+  checkNormalNoDefault(GenericRecordTypeless(int), genericRT);
   checkNormal(GenericRecordDefault, genericRD);
 
   delete unmanagedCQ;

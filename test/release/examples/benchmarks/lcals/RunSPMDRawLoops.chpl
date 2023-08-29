@@ -626,7 +626,7 @@ module RunSPMDRawLoops {
 
             // initialize the array of atomics to match the 'h' array so
             // it can be updated in parallel
-            for (aH, init) in zip(atomicH, h) do aH.write(init);
+            for (aH, initial) in zip(atomicH, h) do aH.write(initial);
             proc overIndexMapper(i,j) {
               /* The reference version of this kernel is over-indexing a
                  logical Nx25 array using indices like (16,26).  With bounds
@@ -635,7 +635,7 @@ module RunSPMDRawLoops {
               return (i+j/25, j%25);
             }
 
-            coforall tid in 0..#nTasks with (ref isamp) {
+            coforall tid in 0..#nTasks with (ref isamp, ref atomicH) {
               while isamp < num_samples {
                 for ip in chunk(0..#len, nTasks, tid) {
                   var i1, j1, i2, j2: int;

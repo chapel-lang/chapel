@@ -148,7 +148,7 @@ proc main(){
 
 // return true if the current end state is the same as the
 // stencil applied to the original state, in serial iteration.
-proc verifyResult(space: [] Cell, lowerBound: int, upperBound: int,
+proc verifyResult(ref space: [] Cell, lowerBound: int, upperBound: int,
              verbose: bool = true ): bool {
 
   var totalSpaceRange = lowerBound - 1 .. upperBound + 1;

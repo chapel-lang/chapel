@@ -1,4 +1,4 @@
-myC is: {x = 2}
-myC is: {x = 3}
-myC is: {x = -1}
-setterForField.chpl:9: error: halt reached - x accessed when negative
+myC is: {x_field = 2}
+myC is: {x_field = 3}
+myC is: {x_field = -1}
+setterForField.chpl:13: error: halt reached - x accessed when negative

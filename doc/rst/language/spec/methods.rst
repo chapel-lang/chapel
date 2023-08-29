@@ -509,3 +509,6 @@ keyword (see :ref:`Overriding_Base_Class_Methods`).
 Note that class methods without parentheses that return with ``type`` or
 ``param`` intent use a generic type for the ``this`` argument. See
 :ref:`Class_Methods` for more details.
+
+It is a redeclaration error to define a method without parentheses with
+the same name as a field.

@@ -462,7 +462,7 @@ extern record sys_sockaddr_t {
                                 `host` and `family`.
   */
   @chpldoc.nodoc
-  proc set(host: c_ptrConst(c_char), port: c_uint, family: c_int) throws {
+  proc ref set(host: c_ptrConst(c_char), port: c_uint, family: c_int) throws {
     var err_out = sys_set_sys_sockaddr_t(this, host, port, family);
     if err_out != 1 {
       throw new IllegalArgumentError("Incompatible Address and Family");
@@ -482,7 +482,7 @@ extern record sys_sockaddr_t {
   :type port: `c_uint`
   */
   @chpldoc.nodoc
-  proc set(host: sys_in_addr_t, port: c_uint) {
+  proc ref set(host: sys_in_addr_t, port: c_uint) {
     sys_set_sys_sockaddr_in_t(this, host, port);
   }
 

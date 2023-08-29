@@ -7,7 +7,7 @@ module symmetric_blas {
   // ============================================
 
   proc transposed_block_triangular_solve ( L_diag    : [],
-					  L_offdiag : [] ) {
+					  ref L_offdiag : [] ) {
     
     // ------------------------------------------------------
     // Solve the block equation
@@ -43,7 +43,7 @@ module symmetric_blas {
   // ===============================================
 
   proc transposed_2D_block_triangular_solve ( L_diag    : [],
-					     L_offdiag : [] ) {
+					     ref L_offdiag : [] ) {
     
     // ------------------------------------------------------
     // Solve the block equation
@@ -85,7 +85,7 @@ module symmetric_blas {
   // in Block Bordering Cholesky codes
   // ===================================
 
-  proc block_transposed_block_triangular_solve ( L : [], A : [] )
+  proc block_transposed_block_triangular_solve ( L : [], ref A : [] )
     where ( A.domain.rank == 2  && L.domain.rank == 2 ) {
 
     // -----------------------------------------------------------
@@ -133,7 +133,7 @@ module symmetric_blas {
   // in Block Bordering Cholesky codes
   // ======================================
 
-  proc block_2D_transposed_block_triangular_solve ( L : [], A : [] )
+  proc block_2D_transposed_block_triangular_solve ( L : [], ref A : [] )
     where ( A.domain.rank == 2  && L.domain.rank == 2 ) {
 
     // -----------------------------------------------------------
@@ -255,7 +255,7 @@ module symmetric_blas {
   // Symmetric Block Outer Product Modification for a single diagonal block
   // ======================================================================
 
-  proc symmetric_diagonal_low_rank_modification ( L : [], A : [] ) {
+  proc symmetric_diagonal_low_rank_modification ( L : [], ref A : [] ) {
 
     // -----------------------------------------------------------
     // form diagonal block A (K,K) = A (K,K) - L (K,J) L^T (J,K) 
@@ -280,7 +280,7 @@ module symmetric_blas {
   // Symmetric Block Outer Product Modification for a single offdiagonal block
   // =========================================================================
 
-  proc symmetric_offdiagonal_low_rank_modification ( L : [], A : [] ) {
+  proc symmetric_offdiagonal_low_rank_modification ( L : [], ref A : [] ) {
 
     // -------------------------------------------------------------
     // Form a single offdiagonal block 
@@ -300,7 +300,7 @@ module symmetric_blas {
   // Symmetric Block Inner Product for a Single Block Column
   // =======================================================
 
-  proc block_inner_product ( L : [] , A : [] )
+  proc block_inner_product ( L : [] , ref A : [] )
 
     where ( A.domain.rank == 2 && L.domain.rank == 2) {
 
@@ -341,7 +341,7 @@ module symmetric_blas {
   // Column for a 2D Block Distributed Matrix
   // ================================================
 
-  proc block_2D_inner_product ( L : [] , A : [] )
+  proc block_2D_inner_product ( L : [] , ref A : [] )
 
     where ( A.domain.rank == 2 && L.domain.rank == 2) {
 

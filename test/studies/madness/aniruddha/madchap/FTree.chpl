@@ -190,7 +190,7 @@ class FTree {
         this.coeffDom = {0..order-1};
 
         var tree: [LocaleSpace] unmanaged LocTree?;
-        coforall loc in Locales do
+        coforall loc in Locales with (ref tree) do
             on loc do tree[loc.id] = new unmanaged LocTree(coeffDom);
         this.tree = tree!;
     }

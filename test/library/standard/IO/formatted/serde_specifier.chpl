@@ -7,7 +7,7 @@ record R {
     fw.write("<", x, ">");
   }
 
-  proc readThis(fr: fileReader) throws {
+  proc ref readThis(fr: fileReader) throws {
     fr.readLiteral("<");
     this.x = fr.read(int);
     fr.readLiteral(">");

@@ -793,7 +793,7 @@ module DefaultRectangular {
 
     proc hasUnitStride() param do return strides == strideKind.one;
 
-    inline proc theData ref {
+    inline proc ref theData ref {
       if ! hasUnitStride() {
         return data;
       } else {
@@ -865,14 +865,14 @@ module DefaultRectangular {
     }
   }
 
-  proc _remoteAccessData.computeFactoredOffs() {
+  proc ref _remoteAccessData.computeFactoredOffs() {
     factoredOffs = 0;
     for param i in 0..rank-1 do {
       factoredOffs = factoredOffs + blk(i) * chpl__idxToInt(off(i)):int;
     }
   }
 
-  proc _remoteAccessData.initShiftedData() {
+  proc ref _remoteAccessData.initShiftedData() {
     if earlyShiftData && hasUnitStride() {
       type idxSignedType = chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
       const shiftDist = if isIntType(idxType) then origin - factoredOffs
@@ -888,7 +888,7 @@ module DefaultRectangular {
   proc _remoteAccessData.strideAlignDown(hi, r) do
     return hi - (hi - r.lowBound) % abs(r.stride):idxType;
 
-  proc _remoteAccessData.initDataFrom(other : _remoteAccessData) {
+  proc ref _remoteAccessData.initDataFrom(other : _remoteAccessData) {
     this.data = other.data;
   }
 
@@ -1872,7 +1872,7 @@ module DefaultRectangular {
 
     proc recursiveArrayReaderWriter(in idx: rank*idxType, dim=0, in last=false) throws {
 
-      var binary = f.binary();
+      var binary = f._binary();
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
       var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
       var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
@@ -1931,7 +1931,7 @@ module DefaultRectangular {
     }
 
     if arr.isDefaultRectangular() && !chpl__isArrayView(arr) &&
-       _isSimpleIoType(arr.eltType) && f.binary() &&
+       _isSimpleIoType(arr.eltType) && f._binary() &&
        isNative && arr.isDataContiguous(dom) {
 
       // If we can, we would like to read/write the array as a single write op
@@ -2463,7 +2463,7 @@ module DefaultRectangular {
   // task, and the scanned results of each task's scan.  This is
   // broken out into a helper function in order to be made use of by
   // distributed array scans.
-  proc DefaultRectangularArr.chpl__preScan(op, res: [] ?resType, dom) {
+  proc DefaultRectangularArr.chpl__preScan(op, ref res: [] ?resType, dom) {
     import RangeChunk;
     // Compute who owns what
     const rng = dom.dim(0);
@@ -2478,7 +2478,7 @@ module DefaultRectangular {
     var state: [rngs.domain] resType;
 
     // Take first pass over data doing per-chunk scans
-    coforall tid in rngs.domain {
+    coforall tid in rngs.domain with (ref state) {
       const current: resType;
       const myop = op.clone();
       for i in rngs[tid] {
@@ -2513,7 +2513,7 @@ module DefaultRectangular {
   // the result vector adding the prefix state computed by the earlier
   // tasks.  This is broken out into a helper function in order to be
   // made use of by distributed array scans.
-  proc DefaultRectangularArr.chpl__postScan(op, res, numTasks, rngs, state) {
+  proc DefaultRectangularArr.chpl__postScan(op, ref res, numTasks, rngs, state) {
     coforall tid in rngs.domain {
       const myadjust = state[tid];
       for i in rngs[tid] {

@@ -28,3 +28,13 @@ config var n = 10;
   const Dist2: dmap(Replicated) = new Replicated();
   writeln(Dist2.type:string);
 }
+
+{
+  use StencilDist;
+  var Dist = new dmap(new Stencil({1..n}));
+  var Dom = {1..n} dmapped Dist;
+  var A: [Dom] real;
+  writeln(A);
+  const Dist2: dmap(Stencil(1)) = new Stencil({1..n});
+  writeln(Dist2.type:string);
+}

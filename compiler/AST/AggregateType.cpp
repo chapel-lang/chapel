@@ -950,8 +950,9 @@ static void checkRangeDeprecations(AggregateType* at, NamedExpr* ne,
   }
 }
 
-AggregateType* AggregateType::generateType(CallExpr* call, const char* callString) {
-
+AggregateType* AggregateType::generateType(CallExpr* call,
+                                           const char* callString,
+                                           bool allowAllNamedArgs) {
   checkNumArgsErrors(this, call, callString);
 
   if (call->numActuals() == 0 && mIsGenericWithDefaults == false) {
@@ -977,6 +978,19 @@ AggregateType* AggregateType::generateType(CallExpr* call, const char* callStrin
         USR_PRINT(call, "type specifier did not match: %s", typeSignature);
         USR_PRINT(call, "type '%s' does not contain a field named '%s'", symbol->name, ne->name);
         USR_STOP();
+      } else if (field->hasFlag(FLAG_DEPRECATED)) {
+        field->maybeGenerateDeprecationWarning(ne);
+      }
+      // don't allow type-constructor calls to use named-argument passing
+      // for a field that isn't 'type' or 'param'
+      if (!allowAllNamedArgs &&
+          !field->hasEitherFlag(FLAG_TYPE_VARIABLE, FLAG_PARAM)) {
+        USR_FATAL_CONT(call, "named arguments can only be used in "
+                             "type construction to set "
+                             "'type' or 'param' fields");
+        USR_PRINT(field, "field '%s' declared here is not 'type' or 'param'",
+                  field->name);
+        USR_STOP();
       }
       map.put(field, toSymExpr(ne->actual)->symbol());
     } else {
@@ -992,6 +1006,20 @@ AggregateType* AggregateType::generateType(CallExpr* call, const char* callStrin
   // place positional args in a map based on remaining unspecified fields
   for_vector(Symbol, field, genericFields) {
     if (substitutionForField(field, map) == NULL && notNamed.size() > 0) {
+      if (getModule()->modTag == MOD_STANDARD &&
+          field->hasFlag(FLAG_DEPRECATED) &&
+          strcmp(field->name, "kind") == 0) {
+        std::string typeName = notNamed.front()->type->symbol->name;
+        if (typeName != "iokind" && typeName != "_iokind") {
+          // If trying to pass a type other than iokind to 'kind' field,
+          // assume user is ignoring the deprecated field.
+          //
+          // TODO: How can we write this to apply more generally to any
+          // deprecated field?
+          continue;
+        }
+      }
+
       map.put(field, notNamed.front());
       notNamed.pop();
     }
@@ -1620,6 +1648,20 @@ static bool buildFieldNames(AggregateType* at, std::string& str, bool cname) {
       // A fully instantiated type
       bool isFirst = true;
       for_vector(Symbol, field, root->genericFields) {
+        Symbol* newField = at->getField(field->name);
+        const char* valStr = buildValueName(newField, cname);
+
+        bool isFileReaderWriter = root->getModule() == ioModule &&
+                                  (strcmp(root->symbol->name, "fileReader") == 0 ||
+                                   strcmp(root->symbol->name, "fileWriter") == 0);
+        bool isSubprocess = root->getModule()->modTag == MOD_STANDARD &&
+                            strcmp(root->getModule()->name, "Subprocess") == 0 &&
+                            strcmp(root->symbol->name, "subprocess") == 0;
+        if ((isFileReaderWriter || isSubprocess) &&
+            strcmp(field->name, "kind") == 0 &&
+            strcmp(valStr, "dynamic") == 0) {
+          continue;
+        }
 
         if (isFirst) {
           isFirst = false;
@@ -1632,8 +1674,7 @@ static bool buildFieldNames(AggregateType* at, std::string& str, bool cname) {
           str += "=";
         }
 
-        Symbol* newField = at->getField(field->name);
-        str += buildValueName(newField, cname);
+        str += valStr;
       }
     } else {
       // A partial instantiation
@@ -3045,11 +3086,48 @@ void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
 
   globalSeen.insert(this);
 
-  addRootType();
+  // Note: logic in the Dyno scope resolver will sometimes catch multiple inheritance,
+  // but not in every case. So for now, duplicate some checks here.
+  //
+  // TODO: what's a good way to centralize the multiple inheritance handling?
+  Expr* firstParent = nullptr;
 
   // Walk the base class list, and add parents into the class hierarchy.
   for_alist(expr, inherits) {
-    AggregateType* pt = discoverParentAndCheck(expr);
+    AggregateType* pt;
+    InterfaceSymbol* isym;
+    discoverParentAndCheck(expr, pt, isym);
+
+    // Handle class A : MyInterface and continue early.
+    if (isym) {
+      SET_LINENO(expr);
+
+      // For classes, we need to include management style in the implements
+      // statement so that it's picked up when necessary.
+      Symbol* implementFor = this->symbol;
+      if (this->isClass() && isClassLikeOrManaged(this)) {
+        Type* useType =
+          this->getDecoratedClass(ClassTypeDecorator::GENERIC_NONNIL);
+        implementFor = useType->symbol;
+      }
+
+      auto ifcActuals = new CallExpr(PRIM_ACTUALS_LIST, new SymExpr(implementFor));
+      auto istmt = ImplementsStmt::build(isym->name, ifcActuals, nullptr);
+      this->symbol->defPoint->insertAfter(istmt);
+
+      expr->remove();
+      continue;
+    }
+
+    if (this->isRecord()) {
+      USR_FATAL(expr, "inheritance is not currently supported for records");
+    }
+
+    if (firstParent) {
+      USR_FATAL(expr, "invalid use of multiple inheritance in class '%s'",
+                this->name());
+    }
+    firstParent = expr;
 
     localSeen.insert(this);
 
@@ -3106,11 +3184,19 @@ void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
     }
   }
 
+  if (!firstParent) {
+    addRootType();
+  }
+
   checkSameNameFields();
 }
 
-AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
+void AggregateType::discoverParentAndCheck(Expr* storesName,
+                                           AggregateType* &outParent,
+                                           InterfaceSymbol* &outIsym) {
   TypeSymbol*        ts  = NULL;
+  outIsym = nullptr;
+  outParent = nullptr;
 
   if (UnresolvedSymExpr* se = toUnresolvedSymExpr(storesName)) {
     Symbol* sym = lookup(se->unresolved, storesName);
@@ -3122,8 +3208,14 @@ AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
       sym = canonicalClassType(sym->type)->symbol;
     }
     ts = toTypeSymbol(sym);
+    outIsym = toInterfaceSymbol(sym);
   } else if (SymExpr* se = toSymExpr(storesName)) {
     ts = toTypeSymbol(se->symbol());
+    outIsym = toInterfaceSymbol(se->symbol());
+  }
+
+  if (outIsym != nullptr) {
+    return;
   }
 
   if (ts == NULL) {
@@ -3156,7 +3248,7 @@ AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
               pt->symbol->name);
   }
 
-  return pt;
+  outParent = pt;
 }
 
 void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {

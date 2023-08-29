@@ -82,7 +82,7 @@ var numIters: atomic int;
 
 var b = new barrier(LocaleGridDom.size);
 
-coforall (lr,lc) in LocaleGridDom {
+coforall (lr,lc) in LocaleGridDom with (ref LocalDomArrs) {
   on LocaleGrid[lr,lc] {
     //
     // What I own; and extended to include overlap with neighbors ("fluff")

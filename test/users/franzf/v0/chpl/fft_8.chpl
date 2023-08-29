@@ -39,7 +39,7 @@ proc init_fft8() {
 
 }
 
-proc fft8(Y: [] complex, X: [] complex) {
+proc fft8(ref Y: [] complex, X: [] complex) {
   var a5612, s2192, s2193, s2194, s2195, t5438, t5439, t5440, t5441, t5442, t5443, t5444, t5445, t5446, t5447, t5448:complex;
   t5438 = (X(0) + X(4));
   t5439 = (X(0) - X(4));

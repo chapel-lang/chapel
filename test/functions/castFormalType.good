@@ -1,0 +1,3 @@
+({val = 1}, {val = 2}, {val = 3}, {val = 4})
+(borrowed MyClass, borrowed MyClass, borrowed MyClass, borrowed MyClass)
+{val = 10}

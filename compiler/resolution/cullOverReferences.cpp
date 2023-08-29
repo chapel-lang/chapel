@@ -30,6 +30,7 @@
 #include "loopDetails.h"
 #include "postFold.h"
 #include "resolution.h"
+#include "resolveIntents.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "symbol.h"
@@ -459,6 +460,81 @@ void markSymbolConst(Symbol* sym)
     sym->addFlag(FLAG_CONST);
   }
 }
+
+static void maybeIssueRefMaybeConstWarning(ArgSymbol* arg) {
+  bool isArgThis = arg->hasFlag(FLAG_ARG_THIS);
+  // this is still being used for tuples assignment
+  bool fromPragma = arg->hasFlag(FLAG_INTENT_REF_MAYBE_CONST_FORMAL);
+
+  bool isCompilerGenerated = false;
+  bool isTaskIntent = false;
+  if (FnSymbol* fn = arg->getFunction()) {
+    isTaskIntent = fn->hasEitherFlag(FLAG_COBEGIN_OR_COFORALL, FLAG_BEGIN);
+    isCompilerGenerated = fn->hasFlag(FLAG_COMPILER_GENERATED);
+  }
+  // we have full control here, but this should be ok
+  bool isOuter = arg->hasFlag(FLAG_OUTER_VARIABLE);
+
+  bool shouldWarn = !isOuter && !fromPragma && !isCompilerGenerated;
+
+  // if its an outer variable but its used in a task intent, warn
+  if (!shouldWarn && isOuter && isTaskIntent) {
+    shouldWarn = true;
+  }
+
+  // should not warn if a method is marked pragma "reference to const when const this"
+  // this messes up a number of tests
+  if (shouldWarn && isArgThis) {
+    if (FnSymbol* fn = arg->getFunction()) {
+      if (fn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS)) {
+        shouldWarn = false;
+      }
+    }
+  }
+
+  // only warn if the default intent is not INTENT_REF_MAYBE_CONST
+  // this does to apply to `this-intent`'s, always warn for them
+  if (shouldWarn && !isArgThis) {
+    IntentTag defaultIntent = blankIntentForType(arg->type);
+    // if default intent is not ref-maybe-const, do nothing
+    if(defaultIntent != INTENT_REF_MAYBE_CONST) shouldWarn = false;
+  }
+
+  if (shouldWarn) {
+
+    const char* argName = nullptr;
+    char argBuffer[64];
+    if (isTaskIntent && arg->hasFlag(FLAG_FIELD_ACCESSOR)) {
+      argName = "this";
+    } else if (arg->hasFlag(FLAG_EXPANDED_VARARGS)) {
+      int varArgNum;
+      int ret = sscanf(arg->name, "_e%d_%63s", &varArgNum, argBuffer);
+      CHPL_ASSERT(ret == 2);
+      argName = argBuffer;
+    } else if (isArgThis) {
+      FnSymbol* fn = arg->getFunction();
+      argName = fn ? fn->name : "<unknown-method>";
+    } else {
+      argName = arg->name;
+    }
+
+    const char* intentName = isTaskIntent ?
+      "add an explicit 'ref' task intent for" :
+        (isArgThis ?
+          "use an explicit 'ref' this-intent for the method" :
+          "use an explicit 'ref' intent for the argument");
+
+    bool useFunctionForWarning = (isTaskIntent | isArgThis) && arg->getFunction();
+    Symbol* warnSym =
+      useFunctionForWarning ? (Symbol*)arg->getFunction() : (Symbol*)arg;
+    USR_WARN(warnSym,
+            "inferring a default intent to be 'ref' is deprecated "
+            "- please %s '%s'",
+            intentName,
+            argName);
+  }
+}
+
 static
 void markSymbolNotConst(Symbol* sym)
 {
@@ -469,8 +545,12 @@ void markSymbolNotConst(Symbol* sym)
   // ref-with-unknown-constness and ref-not-const,
   // so we can just leave it alone.
   INT_ASSERT(!sym->qualType().isConst());
-  if (arg && arg->intent == INTENT_REF_MAYBE_CONST)
+  if (arg && arg->intent == INTENT_REF_MAYBE_CONST) {
+
+    maybeIssueRefMaybeConstWarning(arg);
+
     arg->intent = INTENT_REF;
+  }
 
   if (sym->hasFlag(FLAG_REF_IF_MODIFIED)) {
     sym->removeFlag(FLAG_REF_IF_MODIFIED);

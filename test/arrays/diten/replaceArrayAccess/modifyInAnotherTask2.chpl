@@ -4,7 +4,7 @@ var s: sync bool;
 proc f(i) do
   return i;
 
-begin {
+begin with (ref A) {
   for i in 1..4 {
     A[i] = i;
     s = true;

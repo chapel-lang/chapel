@@ -213,7 +213,7 @@ in :ref:`Formal_Arguments_of_Generic_Type`.
 
    .. code-block:: chapel
 
-      proc foo(x: ?t, y: [?D] t) {
+      proc foo(x: ?t, ref y: [?D] t) {
         for i in D do
           y[i] = x;
       }
@@ -242,7 +242,7 @@ in :ref:`Formal_Arguments_of_Generic_Type`.
 
    .. code-block:: chapel
 
-      proc foo(x, y: [] x.type) {
+      proc foo(x, ref y: [] x.type) {
         for i in y.domain do
           y[i] = x;
       }
@@ -406,7 +406,6 @@ Precedence and Associativity
 | | ``[ ]``          |                | | forall expression                  |
 | | ``for do``       |                | | for expression                     |
 | | ``sync``         |                | | sync type modifier                 |
-| | ``single``       |                | | single type modifier               |
 | | ``atomic``       |                | | atomic type modifier               |
 |                    |                |                                      |
 +--------------------+----------------+--------------------------------------+

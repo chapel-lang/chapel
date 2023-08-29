@@ -59,8 +59,9 @@ proc main() {
     image[y, xelt] = pixval;
   }
 
-  // Get a lock-free writer channel on 'stdout'
-  var w = (new file(1)).writer(iokind.native, locking=false);
+  // Get a lock-free, binary fileWriter on 'stdout'
+  var w = (new file(1)).writer(locking=false,
+                               serializer=new BinarySerializer());
 
   // Write the file header and the image array.
   w.writef("P4\n");

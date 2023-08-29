@@ -49,8 +49,8 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   While ibv-conduit may work on Intel Omni-Path (OPA) HCAs, we instead
   recommend use of ofi-conduit with the psm2 provider on such systems.
 
-  While ibv-conduit may work on InfiniPath HCAs from Pathscale/QLogic and
-  TrueScale HCAs from Intel, we instead recommend use of mpi-conduit on such
+  While ibv-conduit may work on InfiniPath HCAs from PathScale/QLogic and
+  True Scale HCAs from Intel, we instead recommend use of mpi-conduit on such
   systems.
 
   The performance of ibv-conduit relative to others on the same hardware
@@ -255,7 +255,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   wish to set environment variables to identify the correct HCAs and Ports.
   Or, you may wish to use non-default values for configuring connections.
   These parameters are permitted to take different values on each process.
-  However, please see bug 4314 if process-specifc values are needed.
+  However, please see bug 4314 if process-specific values are needed.
     https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4314
 
   See "Build-time Configuration", above, for information on enabling
@@ -358,7 +358,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   + GASNET_IBV_PORTS_VERBOSE
     This integer setting controls the detail of any warnings printed when there
     are non-fatal issues related to the selection of HCAs and ports to be used.
-    A value of 0 supresses the warnings entirely.
+    A value of 0 suppresses the warnings entirely.
     A value of 1 (the default) or higher will warn if one or more HCAs are
     excluded from consideration other than due to failure to match
     GASNET_IBV_PORTS (or the numerically suffixed variants).  In particular, a
@@ -371,7 +371,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
 
   + GASNET_IBV_LIST_PORTS
     The value is a boolean: "0" to disable or "1" to enable the reporting of
-    all detectable HCAs and and the status of their ports.
+    all detectable HCAs and the status of their ports.
     See 'GASNET_IBV_LIST_PORTS_NODES' for how to limit which nodes report.
     The default is "0" (no report).
 
@@ -808,7 +808,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   + GASNET_ODP_VERBOSE
     This integer setting controls the detail of the warning printed when ODP
     support is enabled but is not present on one or more HCAs in the job.
-    A value of 0 supresses the warning entirely.
+    A value of 0 suppresses the warning entirely.
     A value of 1 will report a count of processes lacking support.
     Values of 2 or higher give increasing levels of detail concerning the
     missing support.
@@ -1124,7 +1124,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
    appear to be available despite having either the required software or
    hardware.  If you are using Mellanox Connect4-X HCAs or newer and
    ibv-conduit warns about missing ODP support, we recommend that you
-   install the latest "Mellenox OFED" (aka MLNX_OFED) distribution,
+   install the latest "Mellanox OFED" (aka MLNX_OFED) distribution,
    available for download from Mellanox.  Mellanox provides documentation
    on installing the software and upgrading the HCA firmware (if needed).
 

@@ -122,7 +122,8 @@ public:
   AggregateType*              getInstantiationParent(AggregateType* pt);
 
   AggregateType*              generateType(CallExpr* call,
-                                           const char* callString);
+                                           const char* callString,
+                                           bool allowAllNamedArgs=false);
   AggregateType*              generateType(SymbolMap& subs,
                                            CallExpr* call,
                                            const char* callString,
@@ -255,7 +256,9 @@ private:
 
   AggregateType*              getNewInstantiation(Symbol* sym, Type* symType, Expr* insnPoint = NULL);
 
-  AggregateType*              discoverParentAndCheck(Expr* storesName);
+  void                        discoverParentAndCheck(Expr* storesName,
+                                                     AggregateType* &outParent,
+                                                     InterfaceSymbol* &outIfc);
 
   bool                        isFieldInThisClass(const char* name)       const;
 

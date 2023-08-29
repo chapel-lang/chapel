@@ -12,7 +12,7 @@ config param filename = "write_no_flush.tmp";
 
 proc main {
   var f = open(filename, ioMode.cw);
-  var w = f.writer(kind=ionative);
+  var w = f.writer(serializer=new BinarySerializer());
   for i in 1..5000 {
     write32u(w, i:uint(32));
   }

@@ -891,7 +891,7 @@ class UserMapAssocArr: AbsBaseArr(?) {
   proc dsiSerialWrite(f) {
     use IO;
 
-    var binary = f.binary();
+    var binary = f._binary();
     var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
     var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
     var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
@@ -906,6 +906,33 @@ class UserMapAssocArr: AbsBaseArr(?) {
     }
     if printBraces then f._writeLiteral("]");
 
+  }
+
+  proc dsiSerialWrite(f) throws where f.serializerType != nothing {
+    use IO;
+    ref fmt = f.serializer;
+    if f.serializerType == IO.DefaultSerializer {
+      fmt.startArray(f, dom.dsiNumIndices:uint);
+      fmt.startArrayDim(f, dom.dsiNumIndices:uint);
+
+      for locArr in locArrs {
+        for val in locArr!.myElems do fmt.writeArrayElement(f, val);
+      }
+
+      fmt.endArrayDim(f);
+      fmt.endArray(f);
+    } else {
+      fmt.startMap(f, dom.dsiNumIndices:uint);
+
+      for locArr in locArrs {
+        for (key, val) in zip(locArr!.myElems.domain, locArr!.myElems) {
+          fmt.writeKey(f, key);
+          fmt.writeValue(f, val);
+        }
+      }
+
+      fmt.endMap(f);
+    }
   }
 
   override proc dsiDisplayRepresentation() {

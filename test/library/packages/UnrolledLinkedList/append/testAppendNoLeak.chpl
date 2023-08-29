@@ -8,7 +8,7 @@ use UnrolledLinkedList;
 record WrappedList {
   var List: unrolledLinkedList(int);
 
-  proc append(node) {
+  proc ref append(node) {
     this.List.append(node);
   }
 }

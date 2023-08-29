@@ -5,7 +5,7 @@ record Collection {
   var element: elementType;
 }
 
-proc Collection.addElement(in arg: elementType) lifetime this < arg {
+proc ref Collection.addElement(in arg: elementType) lifetime this < arg {
   element = arg;
 }
 

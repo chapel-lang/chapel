@@ -31,6 +31,30 @@ module ChapelBase {
   @deprecated(notes="the type 'c_string' is deprecated; please 'import CTypes' and use 'c_ptrConst(c_char)' instead")
   type c_string = chpl_c_string;
 
+  // c_fn_ptr stuff
+
+  // although it can just be a compiler-inserted primitive,
+  // we declare it so we can mark it unstable
+  @chpldoc.nodoc
+  @unstable("'c_fn_ptr' is unstable, and may be replaced by first-class procedure functionality")
+  type c_fn_ptr = chpl_c_fn_ptr;
+
+  @chpldoc.nodoc
+  @unstable
+  inline operator c_fn_ptr.=(ref a:c_fn_ptr, b:c_fn_ptr) {
+    __primitive("=", a, b);
+  }
+  @chpldoc.nodoc
+  @unstable
+  proc c_fn_ptr.this() {
+    compilerError("Can't call a C function pointer within Chapel");
+  }
+  @chpldoc.nodoc
+  @unstable
+  proc c_fn_ptr.this(args...) {
+    compilerError("Can't call a C function pointer within Chapel");
+  }
+
   pragma "locale private"
   @chpldoc.nodoc
   var rootLocaleInitialized: bool = false;
@@ -1822,7 +1846,7 @@ module ChapelBase {
   record endCountDiagsManager {
     var taskInfo: c_ptr(chpl_task_infoChapel_t);
     var prevDiagsDisabledVal: bool;
-    inline proc enterContext() : void {
+    inline proc ref enterContext() : void {
       if !commDiagsTrackEndCounts {
         taskInfo = chpl_task_getInfoChapel();
         prevDiagsDisabledVal = chpl_task_data_setCommDiagsTemporarilyDisabled(taskInfo, true);
@@ -2164,7 +2188,7 @@ module ChapelBase {
     return __primitive("cast", t, x);
 
   @unstable("enum-to-bool casts are likely to be deprecated in the future")
-  inline operator :(x:enum, type t:chpl_anybool) throws {
+  inline operator :(x: enum, type t:chpl_anybool) throws {
     return x: int: bool;
   }
   // operator :(x: enum, type t:integral)
@@ -2546,7 +2570,7 @@ module ChapelBase {
 
   // implements 'delete' statement
   pragma "no borrow convert"
-  proc chpl__delete(arg) {
+  proc chpl__delete(const arg) {
 
     if chpl_isDdata(arg.type) then
       compilerError("cannot delete data class");
@@ -2573,13 +2597,13 @@ module ChapelBase {
     }
   }
 
-  proc chpl__delete(arr: []) {
+  proc chpl__delete(const arr: []) {
     forall a in arr do
       chpl__delete(a);
   }
 
   // delete two or more things
-  proc chpl__delete(arg, args...) {
+  proc chpl__delete(arg, const args...) {
     chpl__delete(arg);
     for param i in 0..args.size-1 do
       chpl__delete(args(i));
@@ -3283,7 +3307,7 @@ module ChapelBase {
   // Support for module deinit functions.
   class chpl_ModuleDeinit {
     const moduleName: c_ptrConst(c_char); // for debugging; non-null, not owned
-    const deinitFun:  c_fn_ptr;          // module deinit function
+    const deinitFun:  chpl_c_fn_ptr;          // module deinit function
     const prevModule: unmanaged chpl_ModuleDeinit?; // singly-linked list / LIFO queue
     proc writeThis(ch) throws {
       try {
@@ -3433,19 +3457,5 @@ module ChapelBase {
 
   inline proc chpl_field_gt(a, b) where !isArrayType(a.type) {
     return a > b;
-  }
-
-  // c_fn_ptr stuff
-  @chpldoc.nodoc
-  inline operator c_fn_ptr.=(ref a:c_fn_ptr, b:c_fn_ptr) {
-    __primitive("=", a, b);
-  }
-  @chpldoc.nodoc
-  proc c_fn_ptr.this() {
-    compilerError("Can't call a C function pointer within Chapel");
-  }
-  @chpldoc.nodoc
-  proc c_fn_ptr.this(args...) {
-    compilerError("Can't call a C function pointer within Chapel");
   }
 }

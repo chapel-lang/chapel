@@ -6,7 +6,7 @@ var A: [D] real;
 
 fill(A);
 
-proc fill(X: [?D]) {
+proc fill(ref X: [?D]) {
   forall (i,j) in D do
     X[i,j] = i + j / 10.0;
 }

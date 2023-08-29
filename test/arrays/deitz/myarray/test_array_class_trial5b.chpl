@@ -3,7 +3,7 @@ record array1d {
   var x1 : t;
   var x2 : t;
   var x3 : t;
-  proc this(i : int) ref : t {
+  proc ref this(i : int) ref : t {
     write("[Write on ", i, "]");
     select i {
       when 1 do return x1;
@@ -36,10 +36,10 @@ writeln(a(1), a(2), a(3));
 record array2d {
   type t;
   var data : array1d(t);
-  proc this(i : int, j : int) ref : t {
+  proc ref this(i : int, j : int) ref : t {
     return data((i - 1) * 2 + j);
   }
-  proc this(i : int, j : int) : t {
+  proc ref this(i : int, j : int) : t {
     return data((i - 1) * 2 + j);
   }
 

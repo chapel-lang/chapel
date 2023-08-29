@@ -212,7 +212,7 @@ module meteor {
   }
 
   /* Convenience function to quickly calculate all of the indices for a piece */
-  proc calcCellIndices(cell: [] int(8), piece: int, indx: int(8) ) {
+  proc calcCellIndices(ref cell: [] int(8), piece: int, indx: int(8) ) {
     cell[0] = indx;
     cell[1] = shift(cell[0], pieceDef[piece][0]);
     cell[2] = shift(cell[1], pieceDef[piece][1]);
@@ -276,7 +276,7 @@ module meteor {
   /* Fill the entire board going cell by cell.  If any cells are "trapped"
    * they will be left alone.
    */
-  proc fillContiguousSpace(board: [] int(8), indx: int(8)) {
+  proc fillContiguousSpace(ref board: [] int(8), indx: int(8)) {
     if(board[indx] == 1) then
       return;
     board[indx] = 1;

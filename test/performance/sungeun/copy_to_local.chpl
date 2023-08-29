@@ -18,7 +18,7 @@ forall a in A do
 if printOutput then writeln(A);
 
 var st = timeSinceEpoch().totalSeconds();
-coforall loc in Locales do on loc {
+coforall loc in Locales with (ref A) do on loc {
   const l = (here.id+1)%numLocales;
   var myA: [D] int(64);
   ref Aalias = A[l];

@@ -91,7 +91,7 @@ proc printConfig() {
   }
 }
 
-proc initData(testArray) {
+proc initData(ref testArray) {
   testArray = 2;
   return 2 * testArray.size;
 }

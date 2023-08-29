@@ -710,6 +710,12 @@ struct Converter {
         return remap;
       }
     } else {
+      if (name == USTR("single")) {
+        if (currentModuleType == MOD_USER) {
+          USR_WARN(node->id(), "'single' variables are deprecated - please use 'sync' variables instead");
+        }
+      }
+
       if (auto remap = reservedWordRemapForIdent(name)) {
         return remap;
       }
@@ -2181,6 +2187,9 @@ struct Converter {
       if (name == USTR("atomic")) {
         ret = new UnresolvedSymExpr("chpl__atomicType");
       } else if (name == USTR("single")) {
+        if (currentModuleType == MOD_USER) {
+          USR_WARN(node->id(), "'single' variables are deprecated - please use 'sync' variables instead");
+        }
         ret = new UnresolvedSymExpr("_singlevar");
       } else if (name == USTR("subdomain")) {
         ret = new CallExpr("chpl__buildSubDomainType");
@@ -3919,6 +3928,21 @@ struct Converter {
     return AGGREGATE_CLASS;
   }
 
+  template <typename Iterable>
+  void convertInheritsExprs(const Iterable& iterable,
+                            std::vector<Expr*>& inherits,
+                            bool& inheritMarkedGeneric) {
+    for (auto inheritExpr : iterable) {
+      bool thisInheritMarkedGeneric = false;
+      const uast::Identifier* ident =
+        uast::Class::getInheritExprIdent(inheritExpr, thisInheritMarkedGeneric);
+      if (auto converted = convertExprOrNull(ident)) {
+        inherits.push_back(converted);
+      }
+      inheritMarkedGeneric |= thisInheritMarkedGeneric;
+    }
+  }
+
   Expr* convertAggregateDecl(const uast::AggregateDecl* node) {
 
     const resolution::ResolutionResultByPostorderID* resolved = nullptr;
@@ -3929,14 +3953,13 @@ struct Converter {
 
     const char* name = astr(node->name());
     const char* cname = name;
-    Expr* inherit = nullptr;
     bool inheritMarkedGeneric = false;
 
+    std::vector<Expr*> inherits;
     if (auto cls = node->toClass()) {
-      const uast::Identifier* ident =
-        uast::Class::getInheritExprIdent(cls->parentClass(),
-                                         inheritMarkedGeneric);
-      inherit = convertExprOrNull(ident);
+      convertInheritsExprs(cls->inheritExprs(), inherits, inheritMarkedGeneric);
+    } else if (auto rec = node->toRecord()) {
+      convertInheritsExprs(rec->interfaceExprs(), inherits, inheritMarkedGeneric);
     }
 
     if (node->linkageName()) {
@@ -3954,7 +3977,8 @@ struct Converter {
       INT_ASSERT(externFlag == FLAG_UNKNOWN);
     }
 
-    auto ret = buildClassDefExpr(name, cname, tag, inherit,
+    auto ret = buildClassDefExpr(name, cname, tag,
+                                 inherits,
                                  decls,
                                  externFlag);
     INT_ASSERT(ret->sym);

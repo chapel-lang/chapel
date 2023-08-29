@@ -27,7 +27,7 @@ config const verbose_gpu = false;
 //var bs = 1;
 //var be = 5;
 
-proc convolve_and_calculate(Array: [] real(32), const in centerPoints : ?, locL : ?, locC : ?, locR : ?, Output: [] real(64), t: stopwatch) : [] {
+proc convolve_and_calculate(Array: [] real(32), const in centerPoints : ?, locL : ?, locC : ?, locR : ?, ref Output: [] real(64), t: stopwatch) : [] {
 
   param bs = 1;
   param be = 5;
@@ -134,7 +134,7 @@ proc main(args: [] string) {
     // Read in array
     if inputSize == -1 {
       var f = open(in_array, ioMode.r);
-      var r = f.reader(kind=ionative);
+      var r = f.reader(deserializer=new BinaryDeserializer());
       for i in 1..5 {
         for j in 1..x {
           for k in 1..y {
