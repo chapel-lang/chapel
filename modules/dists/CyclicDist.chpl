@@ -1488,7 +1488,7 @@ proc CyclicArr.doiOptimizedSwap(other: this.type)
     if debugOptimizedSwap {
       writeln("CyclicArr doing optimized swap. Domains: ",
               this.dom.whole, " ", other.dom.whole, " Bounding boxes: ",
-              this.dom.dist.boundingBox, " ", other.dom.dist.boundingBox);
+              this.dom.dist.startIdx, " ", other.dom.dist.startIdx);
     }
     coforall (locarr1, locarr2) in zip(this.locArr, other.locArr) {
       on locarr1 {
@@ -1501,7 +1501,7 @@ proc CyclicArr.doiOptimizedSwap(other: this.type)
     if debugOptimizedSwap {
       writeln("CyclicArr doing unoptimized swap. Domains: ",
               this.dom.whole, " ", other.dom.whole, " Bounding boxes: ",
-              this.dom.dist.boundingBox, " ", other.dom.dist.boundingBox);
+              this.dom.dist.startIdx, " ", other.dom.dist.startIdx);
     }
     return false;
   }
