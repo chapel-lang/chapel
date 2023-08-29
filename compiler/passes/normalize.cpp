@@ -3450,7 +3450,11 @@ static void hack_resolve_types(ArgSymbol* arg) {
           if (type->symbol->hasFlag(FLAG_GENERIC) &&
               !arg->hasFlag(FLAG_MARKED_GENERIC) &&
               arg->defPoint->getModule()->modTag == MOD_USER) {
-            USR_WARN(arg->typeExpr, "need ? on generic formal type");
+            if (type->symbol->hasFlag(FLAG_ARRAY)) {
+              // don't worry about it for array types for now
+            } else {
+              USR_WARN(arg->typeExpr, "need ? on generic formal type");
+            }
           }
 
           arg->type = type;

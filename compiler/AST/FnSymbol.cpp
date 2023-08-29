@@ -878,7 +878,11 @@ static void checkFormalType(const FnSymbol* enclosingFn, ArgSymbol* formal) {
     if (formal->type->symbol->hasFlag(FLAG_GENERIC) &&
         !formal->hasFlag(FLAG_MARKED_GENERIC) &&
         formal->defPoint->getModule()->modTag == MOD_USER) {
-      USR_WARN(formal, "need ? on generic formal type");
+      if (formal->type->symbol->hasFlag(FLAG_ARRAY)) {
+        // don't worry about it for array types for now
+      } else {
+        USR_WARN(formal, "need ? on generic formal type");
+      }
     }
   }
 }
