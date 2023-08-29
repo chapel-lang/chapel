@@ -367,10 +367,12 @@ void maybeIssueRefMaybeConstWarning(ArgSymbol* arg) {
     collectCallExprs(arg->getFunction(), allCalls);
     for (auto ce: allCalls) {
       if (callSetsSymbol(arg, ce)) {
-        USR_WARN(arg->getFunction(),
+        USR_WARN(arg,
                   "inferring a default intent to be 'ref' is deprecated - "
                   "please add an explicit 'ref' forall intent for '%s'",
                   arg->name);
+        // remove flag once we have warned for it
+        arg->removeFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST);
       }
     }
   }
