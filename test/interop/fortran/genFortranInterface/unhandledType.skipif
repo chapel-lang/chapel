@@ -1,2 +1,0 @@
-# This doesn't play well with multi-locale libraries quite yet.
-CHPL_COMM != none
