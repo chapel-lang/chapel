@@ -1773,11 +1773,9 @@ proc BlockArr.canDoOptimizedSwap(other) {
   var domsMatch = true;
 
   if this.dom != other.dom { // no need to check if this is true
-    if domsMatch {
-      for param i in 0..this.dom.rank-1 {
-        if this.dom.whole.dim(i) != other.dom.whole.dim(i) {
-          domsMatch = false;
-        }
+    for param i in 0..this.dom.rank-1 {
+      if this.dom.whole.dim(i) != other.dom.whole.dim(i) {
+        domsMatch = false;
       }
     }
   }
