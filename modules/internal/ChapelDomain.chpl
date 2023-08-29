@@ -2738,6 +2738,7 @@ module ChapelDomain {
 
     /* Return true if the local subdomain can be represented as a single
        domain. Otherwise return false. */
+    @unstable("'hasSingleLocalSubdomain' on domains is unstable and may change in the future")
     proc hasSingleLocalSubdomain() param {
       return _value.dsiHasSingleLocalSubdomain();
     }
@@ -2751,7 +2752,7 @@ module ChapelDomain {
     */
     proc localSubdomain(loc: locale = here) {
       if !_value.dsiHasSingleLocalSubdomain() then
-        compilerError("Domain's local domain is not a single domain");
+        compilerError("the domain may have multiple local subdomains");
 
       return _value.dsiLocalSubdomain(loc);
     }
@@ -2763,6 +2764,7 @@ module ChapelDomain {
                  place (defaults to `here`)
        :type loc: locale
     */
+    @unstable("'localSubdomains' on domains is unstable and may change in the future")
     iter localSubdomains(loc: locale = here) {
       if _value.dsiHasSingleLocalSubdomain() {
         yield localSubdomain(loc);

@@ -36,16 +36,19 @@ proc tryCasts(r) {
   
 proc tryCast(r, type t) {
   if isBool(r.idxType) && isEnum(t) then return; // not castable
+  // tryCast() into range(bool) is disabled, see #22905
+  param runTryCast = testTryCast && (!isBool(t) || isBool(r.idxType));
 
   writeln("casting ", r, " to range of ", t:string);
  try {
-  var res = if testTryCast then r.tryCast(range(t)) else r: range(t);
+  var res = if runTryCast then r.tryCast(range(t)) else r: range(t);
   printRange(res);
  } catch e {
   writeln("  ", e); writeln();
  }
 
   var sa   = r: range(r.idxType, strides=strideKind.any);   // always succeeds
+  var sa2  = r.tryCast( range(r.idxType, strides=strideKind.any) );  // "
  try {
   var sneg = sa.tryCast(range(r.idxType, strides=strideKind.negative));//throws
   printRange(sneg);
