@@ -7,7 +7,7 @@ record myManager : contextManager {
 
     proc contextReturnType type do return int;
 
-    proc enterContext() ref {
+    proc ref enterContext() ref {
         writeln("entering context, resource = ", myResource);
         return myResource;
     }

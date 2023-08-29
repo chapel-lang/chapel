@@ -2,7 +2,7 @@ record Outer {
   record Inner : contextManager {
     var x: int;
 
-    proc enterContext() ref {
+    proc ref enterContext() ref {
       writeln("entering, x = ", x);
       return x;
     }
