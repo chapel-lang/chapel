@@ -176,21 +176,22 @@ module Tensor {
             return t;
         }
         
-        // Wasnt sure what to do with these
-        // operator =(ref lhs: Tensor(?rank,?eltType), in rhs: ?it) where (isRefIterType(it) || (isArray(rhs) && rhs.eltType == eltType)) && rhs.rank == rank {
-        //     lhs.reshapeDomain(rhs.domain);
-        //     lhs.data = rhs;
-        // }
-        // proc init=(in rhs: ?it) where isRefIterType(it) || isArray(rhs) {
-        //     this.init(rank,eltType);
-        //     this.reshapeDomain(rhs.domain);
-        //     this.data = rhs;
-        // }
-        // operator :(in from: ?it, type toType: Tensor(?rank,?eltType)) where (isRefIterType(it) || (isArray(from) && from.eltType == eltType)) && from.rank == rank {
-        //     // compilerError("Cannot convert from ",from.type:string," to ",toType:string);
-        //     var t: Tensor(rank,eltType) = from;
-        //     return t;
-        // }
+        // ------------ Wasnt sure what to do with these   ----------------
+
+        /*operator =(ref lhs: Tensor(?rank,?eltType), in rhs: ?it) where (isRefIterType(it) || (isArray(rhs) && rhs.eltType == eltType)) && rhs.rank == rank {
+            lhs.reshapeDomain(rhs.domain);
+            lhs.data = rhs;
+        }
+        proc init=(in rhs: ?it) where isRefIterType(it) || isArray(rhs) {
+            this.init(rank,eltType);
+            this.reshapeDomain(rhs.domain);
+            this.data = rhs;
+        }
+        operator :(in from: ?it, type toType: Tensor(?rank,?eltType)) where (isRefIterType(it) || (isArray(from) && from.eltType == eltType)) && from.rank == rank {
+            // compilerError("Cannot convert from ",from.type:string," to ",toType:string);
+            var t: Tensor(rank,eltType) = from;
+            return t;
+        }*/
 
         operator =(ref lhs: Tensor(?rank,?eltType), itr) where itr.type:string == "promoted expression" || itr.type:string == "iterator" {
             lhs.reshapeDomain(itr.domain);
@@ -344,55 +345,21 @@ module Tensor {
 
     operator +(lhs: Tensor(?rank,?eltType), rhs: Tensor(rank,eltType)) {
         var t = new Tensor(rank=rank,eltType=eltType);
-
-
-        // t.reshapeDomain(lhs.domain); // fixme. should be union.
         if lhs.domain.size != rhs.domain.size then
             err("Cannot add tensors of different sizes. + ", lhs.domain.size, " != ", rhs.domain.size,"  [",lhs.shape," + ",rhs.shape,"]");
         t.reshapeDomain(lhs.domain);
         t.data = lhs.data + rhs.data;
         return t;
-
-
-        // if lhs.domain.size == rhs.domain.size {
-        //     t.reshapeDomain(lhs.domain); // fixme. should be union.
-        //     t.data = lhs.data + rhs.data;
-        //     return t;
-        // } else {
-        //     err("Cannot add tensors of different sizes. + ");
-        // }
-
-        if lhs.domain.size < rhs.domain.size {
-            t.reshapeDomain(rhs.domain);
-            t.data = rhs.data;
-        } else if rhs.domain.size < lhs.domain.size {
-            t.reshapeDomain(lhs.domain);
-            t.data = lhs.data;
-        } else if lhs.domain.size == rhs.domain.size {
-            t.reshapeDomain(lhs.domain); // fixme. should be union.
-            t.data = lhs.data + rhs.data;
-        } else {
-            halt("I don't know what to do here.");
-        }
-        return t;
     }
     operator +=(ref lhs: Tensor(?d), const ref rhs: Tensor(d)) {
         if lhs.domain.size == rhs.domain.size {
             lhs.data += rhs.data;
-        } 
-        else if lhs.domain.size == 0 && rhs.domain.size != 0 {
+        } else if lhs.domain.size == 0 && rhs.domain.size != 0 {
             lhs.reshapeDomain(rhs.domain);
             lhs.data = rhs.data;
-        }
-        else if lhs.domain.size != 0 && rhs.domain.size == 0 {
+        } else if lhs.domain.size != 0 && rhs.domain.size == 0 {
             // do nothing
-        }
-        // if lhs.domain.size == 0 && rhs.domain.size != 0 {
-        //     lhs.reshapeDomain(rhs.domain);
-        //     lhs.data = rhs.data;
-        // } 
-        else {
-            // lhs.data += (lhs + rhs).data;
+        } else {
             err("Cannot add tensors of different sizes. += ", lhs.domain.size, " != ", rhs.domain.size,"  [",lhs.shape," += ",rhs.shape,"]");
         }
     }
@@ -630,7 +597,7 @@ module Tensor {
         const (kh,kw) = filter.shape;
         const (nh,nw) = input.shape;
         if kh != kw then err("Correlation only works with square filters.", kh, " != ", kw);
-        // const (outH,outW): 2*int = ((nh - kh + padding + stride) / stride,(nw - kw + padding + stride) / stride);
+
         const (outH,outW): 2*int = correlateShape((kh,kw),(nh,nw),stride,padding);
         var corr = new Tensor(2,real);
         corr.reshapeDomain({0..#outH,0..#outW});
@@ -711,19 +678,14 @@ module Tensor {
     // Compute the gradient of a loss with respect to a volume of filters
     proc filterGradient(const ref input: Tensor(3), const ref delta: Tensor(3), stride: int = 1, padding: int = 0,kernelSize: int) {
         const (inH,inW,inC) = input.shape;
-        // writeln("input: ", input.shape);
-        // writeln("delta: ", delta.shape);
         const (outH,outW,outC) = delta.shape;
 
         const (dkh,dkw) = dialateShape((outH,outW),stride - 1);
-        // writeln("(dkh,dkw): ", (dkh,dkw));
         const (kh,kw) = correlateShape((dkh,dkw),(inH,inW),stride=1,padding);
-        // writeln("(kh,kw): ", (kh,kw));
 
         var grad = new Tensor(4,real);
         if kh != kernelSize {
             grad.reshapeDomain({0..#outC,0..#kernelSize,0..#kernelSize,0..#inC});
-            // writeln("grad: ", grad.shape);
             forall (ci,co) in {0..#inC,0..#outC} with (ref grad, var del = zeros(outH,outW), var img = zeros(inH,inW)) {
                 del = delta[..,..,co];
                 img = input[..,..,ci];
@@ -734,7 +696,6 @@ module Tensor {
         }
 
         grad.reshapeDomain({0..#outC,0..#kh,0..#kw,0..#inC});
-        // writeln("grad: ", grad.shape);
         forall (ci,co) in {0..#inC,0..#outC} with (ref grad, var del = zeros(outH,outW), var img = zeros(inH,inW)) {
             del = delta[..,..,co];
             img = input[..,..,ci];

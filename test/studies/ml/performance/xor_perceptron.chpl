@@ -8,30 +8,14 @@ tn.seedRandom(0);
 config const epochs = 30000;
 config const learnRate = 0.3;
 
-// var network = new shared chai.Network(
-//     (
-//         new shared chai.Dense(2),
-//         // new chai.ReLU(0.1),
-//         // new chai.Sigmoid(),
-//         // new chai.Dense(3),
-//         // new chai.ReLU(0.1),
-//         new shared chai.Sigmoid(),
-//         new shared chai.Dense(3),
-//         new shared chai.Sigmoid(),
-//         new shared chai.Dense(2),
-//         new shared chai.Sigmoid()
-//         // new chai.Sigmoid()
-//         // new chai.ReLU(0.1)
-//     )
-// );
-var net = new shared chai.Network(
+var net = new chai.Network(
     (
-        new shared chai.Dense(10),
-        new shared chai.Sigmoid(),
-        new shared chai.Dense(10),
-        new shared chai.Sigmoid(),
-        new shared chai.Dense(1),
-        new shared chai.Sigmoid()
+        new chai.Dense(10),
+        new chai.Sigmoid(),
+        new chai.Dense(10),
+        new chai.Sigmoid(),
+        new chai.Dense(1),
+        new chai.Sigmoid()
     )
 );
 
@@ -81,10 +65,6 @@ inputs[1] = [0.0,1.0];
 inputs[2] = [1.0,0.0];
 inputs[3] = [1.0,1.0];
 
-// for x in inputs {
-//     x.data -= 0.5;
-//     x.data *= 2.0;
-// }
 
 var outputs: [0..#4] Tensor(1);
 outputs[0] = [0.0];
@@ -97,7 +77,7 @@ outputs[3] = [0.0];
 var batch = for a in zip(inputs,outputs) do a;
 net.forwardPropBatch(inputs);
 
-var batchSizes = [2,3];// [1,2,3,4];
+var batchSizes = [2,3];
 
 for e in 1..epochs {
     tn.shuffle(batch);

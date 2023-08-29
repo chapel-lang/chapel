@@ -2,7 +2,7 @@
 module Chai {
     
     import Tensor as tn;
-    // import IO;
+
     module IO {
         public use IO;
         public use BinaryIO;
@@ -24,16 +24,6 @@ module Chai {
 
         var uninitialized = true;
 
-        // proc init=(other: Dense) {
-        //     writeln("init was called");
-        //     this.outputSize = other.outputSize;
-        //     this.bias = other.bias;
-        //     this.weights = other.weights;
-        //     this.biasGrad = other.biasGrad;
-        //     this.weightsGrad = other.weightsGrad;
-        //     this.uninitialized = other.uninitialized;
-        // }
-
 
         proc init(outputSize: int) {
             this.outputSize = outputSize;
@@ -51,8 +41,10 @@ module Chai {
             inputSize_ = inputSize;
             const stddevB = sqrt(2.0 / outputSize);
             const stddevW = sqrt(2.0 / (inputSize + outputSize));
-            bias = tn.zeros(outputSize); // (tn.randn(outputSize) - 0.5) / outputSize; // tn.randn(this.outputSize); // tn.randn(outputSize,mu=0.0,sigma=stddevB);
-            weights = tn.randn(outputSize,inputSize) ;/// (inputSize ** 2.0); // this.weights = tn.randn(this.outputSize, inputSize,mu=0.0,sigma=stddevW);
+
+            // These are some alternatives for initialization. I am not sure which one is best. 
+            bias = tn.zeros(outputSize);
+            weights = tn.randn(outputSize,inputSize);
             // bias = tn.randn(outputSize,mu=0.0,sigma=stddevB);
             // weights = tn.randn(outputSize, inputSize,mu=0.0,sigma=stddevW);
             biasGrad = tn.zeros(outputSize);
@@ -90,8 +82,6 @@ module Chai {
             const batchSize = deltas.size;
             var newDeltas: [0..#batchSize] Tensor(1);
 
-
-
             var biasGradient = biasGrad.data;
             var weightsGradient = weightsGrad.data;
 
@@ -101,19 +91,6 @@ module Chai {
                 const wg =  delta * input.transpose();
                 weightsGradient += wg.data;
                 newDeltas[i] = newDelta;
-                // const X = input;
-                // const dL_dY = delta;
-                // const dL_dX = (weights.transpose() * dL_dY).reshape(input.domain);
-                // const dL_dW = (X.transpose().transpose() * dL_dY.transpose()).transpose();
-                // const dL_dB = dL_dY;
-
-                // if dL_dX.shape != input.shape then tn.err("Dense backwardBatch: dL_dX.shape != input.shape");
-                // if dL_dW.shape != weights.shape then tn.err("Dense backwardBatch: dL_dW.shape != weights.shape");
-                // if dL_dB.shape != bias.shape then tn.err("Dense backwardBatch: dL_dB.shape != bias.shape");
-
-                // newDeltas[i] = dL_dX;
-                // biasGradient += dL_dY.data;
-                // weightsGradient += dL_dW.data;
             }
             this.biasGrad.data += biasGradient;
             this.weightsGrad.data += weightsGradient;
@@ -152,13 +129,6 @@ module Chai {
         }
 
         proc forwardPropBatch(batch: [] ?tensorType) where isSubtype(tensorType, Tensor) {
-            // if tensorType <= Tensor then compilerError("Sigmoid forwardPropBatch: tensorType must be a Tensor");
-            // param rank = tensorTypes.rank;
-            // var activations: [batch.domain] batch.eltType;
-            // for i in activations.domain {
-            //     activations[i] = forwardProp(batch[i]);
-            // }
-            // return activations;
             return [b in batch] forwardProp(b);
         }
 
@@ -169,11 +139,6 @@ module Chai {
         }
 
         proc backwardBatch(deltas: [] ?tensorType1, inputs: [] ?tensorType2) where isSubtype(tensorType1, Tensor) && isSubtype(tensorType2, Tensor) {
-            // var grads: [inputs.domain] inputs.eltType;
-            // for i in grads.domain {
-            //     grads[i] = backward(deltas[i],inputs[i]);
-            // }
-            // return grads;
             return [(d,i) in zip(deltas,inputs)] backward(d,i);
         }
 
@@ -209,18 +174,6 @@ module Chai {
             this.filtersGrad = tn.zeros(numFilters,kernelSize,kernelSize,inChannels);
             this.stride = stride;
             this.padding = padding;
-        }
-        iter regions(images: Tensor(3)) {
-
-        }
-        iter regions(image: Tensor(2)) {
-            const (h,w) = image.shape;
-            for i in 0..#(h-2) {
-                for j in 0..#(w-2) {
-                    var region = image[i..i+3, j..j+3];
-                    yield (region,i,j);
-                }
-            }
         }
 
         proc forwardPropBatch(batch: [] Tensor(3)): [] Tensor(3) {
@@ -294,7 +247,6 @@ module Chai {
                 if dc != outChannels then tn.err("Conv backward: outChannels mismatch");
                 if channels != inChannels then tn.err("Conv backward: inChannels mismatch");
                 const dL_dF = tn.filterGradient(images,delta,stride,padding,kh);
-                // writeln("dL_dF: ", dL_dF[0,..,..,0]);
                 filtersGrad += dL_dF;
                 var dL_dX = new Tensor(3,real);
                 dL_dX.reshapeDomain({0..#h, 0..#w, 0..#inChannels});
@@ -513,6 +465,7 @@ module Chai {
             if inputSize < 1 then tn.err("Softmax input size must be > 0");
 
             const stddev = sqrt(2.0 / (inputSize + outputSize));
+            // Alternative intializations
             // weights = tn.randn(outputSize,inputSize,mu=0.0,sigma=stddev);
             weights = tn.randn(outputSize,inputSize) / (inputSize: real);
             biases = tn.zeros(outputSize);// tn.randn(outputSize) / (outputSize: real);
@@ -686,21 +639,15 @@ module Chai {
         var _layers;
         proc ref layers ref do return this._layers;
 
-        proc init(layers) {
+        proc init(layers ...) {
             this._layers = layers;
             if this._layers[0].type == Conv then this._layers[0].isFirstLayer = true;
         }
 
-        // proc ref forwardProp(x: Tensor(?)) {
-        //     return forwardPropHelp(this.layers, 0, x);
-        // }
-
-        // proc ref backwardProp(x: Tensor(?)) {
-        //     return backwardPropHelp(this.layers,this.layers.size - 1,x);
-        // }
-        // proc ref backwardProp(x: Tensor(?), delta: Tensor(?)) {
-        //     return backwardForwardPropHelp(this.layers,0,x,delta);
-        // }
+        proc init(layers) where isTuple(layers) {
+            this._layers = layers;
+            if this._layers[0].type == Conv then this._layers[0].isFirstLayer = true;
+        }
 
         proc ref forwardProp(input: Tensor(?)) {
             const inputs = [input];
