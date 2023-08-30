@@ -1,9 +1,11 @@
 import sys
 import os
+import re
+import argparse
 
 num_replaced = 0
 
-def replaceSingleInstance(line, from_string, to_string, files_to_update):
+def replaceSingleInstance(line, from_string, to_string, files_to_update, regex):
   # Extract the file path and line number
   file_path, line_number = line.split(':')[:2]
   # Check if the line number is actually a number or a letter line nnn
@@ -30,7 +32,10 @@ def replaceSingleInstance(line, from_string, to_string, files_to_update):
     old_line = lines[line_number - 1]
 
   # Replace the word with another word
-  new_line = old_line.replace(from_string, to_string)
+  if regex:
+    new_line = re.sub(from_string, to_string, old_line)
+  else:
+    new_line = old_line.replace(from_string, to_string)
   # Check if the line was actually replaced
   # If it was, increment the number of replacements
   if old_line != new_line:
@@ -44,29 +49,35 @@ def replaceSingleInstance(line, from_string, to_string, files_to_update):
     f.writelines(lines)
 
 
-def replaceAllInstances(lines_file, from_string, to_string, files_to_update):
+def replaceAllInstances(lines_file, from_string, to_string, files_to_update,
+                        regex):
   # Read the warning lines from the file
   with open(lines_file, 'r') as f:
     lines = f.readlines()
     # Replace
     for line in lines:
-      replaceSingleInstance(line, from_string, to_string, files_to_update)
+      replaceSingleInstance(line, from_string, to_string, files_to_update, regex)
     
 def main():
-  # Print usage if the user does not provide the correct number of arguments
-  if len(sys.argv) < 4:
-    print("Usage: python3 replaceDeprecatedLines.py <from_string> <to_string> <lines_file> [files_to_update...]")
-    exit(1)
+  parser = argparse.ArgumentParser()
+
+  parser.add_argument("from_string")
+  parser.add_argument("to_string")
+  parser.add_argument("lines_file")
+  parser.add_argument("-r", "--regex", action="store_true")
+
+  # files_to_update: If specified, only carry on the replacement operation in
+  # the specified files
+  args, files_to_update = parser.parse_known_args()
   
   # Take in command line arguments
-  from_string = sys.argv[1]
-  to_string = sys.argv[2]
-  lines_file = sys.argv[3]
-  # If specified, only carry on the replacement operation in the specified files
-  files_to_update = sys.argv[4:]
+  from_string = args.from_string
+  to_string = args.to_string
+  lines_file = args.lines_file
+  regex = args.regex
   
   # Replace all instances of deprecated with replacement
-  replaceAllInstances(lines_file, from_string, to_string, files_to_update)
+  replaceAllInstances(lines_file, from_string, to_string, files_to_update, regex)
   print("Replaced ", num_replaced, " instances of ", from_string, " with ", to_string)
 if __name__ == "__main__":
   main()

@@ -167,14 +167,14 @@ record _SPA {
       ls: list(int);      // indices
 
   /* Reset w, b, and ls to empty */
-  proc reset() {
+  proc ref reset() {
     b = false;
     w = 0;
     ls.clear();
   }
 
   /* Accumulate nonzeros in SPA */
-  proc scatter(const value, const pos) {
+  proc ref scatter(const value, const pos) {
     if this.b[pos] == 0 {
       this.w[pos] = value;
       this.b[pos] = true;
@@ -184,7 +184,7 @@ record _SPA {
     }
   }
 
-  proc gather(ref C: [?Cdom], i) {
+  proc ref gather(ref C: [?Cdom], i) {
     const nzcur = C.IR[i];
     var nzi = 0;
     this.ls.sort();
