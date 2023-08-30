@@ -3460,8 +3460,10 @@ static void hack_resolve_types(ArgSymbol* arg) {
               arg->defPoint->getModule()->modTag == MOD_USER) {
             if (type->symbol->hasFlag(FLAG_ARRAY)) {
               // don't worry about it for array types for now
+            } else if (type == dtIntegral || type == dtTuple) {
+              // nor integral nor _tuple
             } else {
-              USR_WARN(arg->typeExpr, "need ? on generic formal type");
+              USR_WARN(arg->typeExpr, "need ? on generic formal type '%s'", type->symbol->name);
             }
           }
 
