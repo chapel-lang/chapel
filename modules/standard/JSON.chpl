@@ -440,9 +440,6 @@ module JSON {
       }
     }
 
-    /*
-      A helper type returned by calls to 
-    */
     record AggregateDeserializer {
       var reader;
       var _fieldOffsets : map(string, int);
