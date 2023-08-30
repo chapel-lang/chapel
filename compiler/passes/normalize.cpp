@@ -3366,6 +3366,14 @@ static void  restoreShadowVarForNormalize(DefExpr* def, Expr* svarMark) {
 *                                                                             *
 ************************************** | *************************************/
 
+static bool isGenericClassIgnoringManagement(TypeSymbol* ts) {
+  Type* canonicalType = canonicalDecoratedClassType(ts->type);
+  if (AggregateType* at = toAggregateType(canonicalType))
+    return (at->isGeneric() && !at->isGenericWithDefaults());
+  else
+    return false;
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -3454,14 +3462,19 @@ static void hack_resolve_types(ArgSymbol* arg) {
           if (AggregateType* at = toAggregateType(type))
             genericWithDefaults = at->isGenericWithDefaults();
 
+          USR_WARN(arg->typeExpr, "considering %s: (%d, %d, %d)", type->symbol->name, type->symbol->hasFlag(FLAG_GENERIC), !genericWithDefaults, !arg->hasFlag(FLAG_MARKED_GENERIC));
           if (type->symbol->hasFlag(FLAG_GENERIC) &&
               !genericWithDefaults &&
               !arg->hasFlag(FLAG_MARKED_GENERIC) &&
               arg->defPoint->getModule()->modTag == MOD_USER) {
+            USR_WARN(arg->typeExpr, "really considering %s", type->symbol->name);
             if (type->symbol->hasFlag(FLAG_ARRAY)) {
               // don't worry about it for array types for now
             } else if (type == dtIntegral || type == dtTuple) {
               // nor integral nor _tuple
+            } else if (!isGenericClassIgnoringManagement(type->symbol)) {
+              USR_WARN(arg->typeExpr, "skipping due to non-generic class w/ generic management");
+              // skip over cases that are only generic due to no class mgmt
             } else {
               USR_WARN(arg->typeExpr, "need ? on generic formal type '%s'", type->symbol->name);
             }
@@ -4345,6 +4358,7 @@ static bool isCastToBorrowedInFormal(ArgSymbol* formal) {
 }
 
 
+
 static bool isGenericActual(Expr* expr) {
   if (isDefExpr(expr))
     return true;
@@ -4352,10 +4366,8 @@ static bool isGenericActual(Expr* expr) {
     if (se->symbol() == gUninstantiated) {
       return true;
     } else if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
-      Type* canonicalType = canonicalDecoratedClassType(ts->type);
-      if (AggregateType* at = toAggregateType(canonicalType))
-        if (at->isGeneric() && !at->isGenericWithDefaults())
-          return true;
+      if (isGenericClassIgnoringManagement(ts))
+        return true;
       if (ts->hasFlag(FLAG_GENERIC))
         return true;
     }
