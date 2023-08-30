@@ -43,14 +43,14 @@ module Map {
 
   @chpldoc.nodoc
   class _LockWrapper {
-    var lock$ = new _lockType();
+    var lock = new _lockType();
 
     inline proc lock() {
-      lock$.lock();
+      lock.lock();
     }
 
     inline proc unlock() {
-      lock$.unlock();
+      lock.unlock();
     }
   }
 
@@ -102,18 +102,18 @@ module Map {
     var table: chpl__hashtable(keyType, valType);
 
     @chpldoc.nodoc
-    var _lock$ = if parSafe then new _LockWrapper() else none;
+    var _lock = if parSafe then new _LockWrapper() else none;
 
     @chpldoc.nodoc
     inline proc _enter() {
       if parSafe then
-        _lock$.lock();
+        _lock.lock();
     }
 
     @chpldoc.nodoc
     inline proc _leave() {
       if parSafe then
-        _lock$.unlock();
+        _lock.unlock();
     }
 
 
