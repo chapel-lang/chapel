@@ -148,7 +148,7 @@ proc main(){
 
   if e then writeln("Hey man!!!!... double check it! There was an ERROR!");
 
-  proc LocaleDistribution(X:[] , Dom_: domain){
+  proc LocaleDistribution(X:[] , Dom_: domain(?)){
     for i in Dom_ do{
       write(X[i].locale," ");
     }

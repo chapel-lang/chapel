@@ -14,7 +14,7 @@ module M {
         writeln("processArr 2");
     }
 
-    proc processDom(dom: domain) where dom.rank == 2 {
+    proc processDom(dom: domain(?)) where dom.rank == 2 {
         writeln("processDom 1");
     }
 
@@ -39,8 +39,8 @@ module M {
         writeln("operator +");
     }
 
-    inline operator <<(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                               isCoercible(t, (y(0).type)) {
+    inline operator <<(x: ?t, y: _tuple(?)) where isHomogeneousTuple(y) &&
+                                                  isCoercible(t, (y(0).type)) {
     }
 
     inline operator :(x: c_string, type t:c_ptrConst(?eltType))

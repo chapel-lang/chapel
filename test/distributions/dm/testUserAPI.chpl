@@ -18,7 +18,7 @@ const BlBc = new dmap(new DimensionalDist2D(mylocs, bl1, bc2, "bl1,bc2"));
 const BcBl = new dmap(new DimensionalDist2D(mylocs, bc1, bl2, "bc1,bl2"));
 const BcBc = new dmap(new DimensionalDist2D(mylocs, bc1, bc2, "bc1,bc2"));
 
-proc testDomainAPI2D(param lbl, DR: domain, idx, OOBidx1, OOBidx2, intDom) {
+proc testDomainAPI2D(param lbl, DR: domain(?), idx, OOBidx1, OOBidx2, intDom) {
   inline proc help(dd) {
     write("### ", dd.name, " ");
     doTestDomainAPI2D(lbl, DR dmapped dd, idx, OOBidx1, OOBidx2, intDom);

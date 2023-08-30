@@ -6,11 +6,11 @@ var DCyc: domain(1) dmapped Cyclic(startIdx=1) = {1..10};
 var ABlk: [DBlk] real;
 var ACyc: [DCyc] real;
 
-proc domproc(D: domain) where isSubtype(D.distribution.type, Block) {
+proc domproc(D: domain(?)) where isSubtype(D.distribution.type, Block) {
   writeln("In the domproc() for Block");
 }
 
-proc domproc(D: domain) where isSubtype(D.distribution.type, Cyclic) {
+proc domproc(D: domain(?)) where isSubtype(D.distribution.type, Cyclic) {
   writeln("In the domproc() for Cyclic");
 }
 

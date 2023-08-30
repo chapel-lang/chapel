@@ -185,7 +185,7 @@ proc LUFactorize(n: int, ref Ab: [?AbD] elemType,
 // locale only stores one copy of each block it requires for all of
 // its rows/columns.
 //
-proc schurComplement(ref Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) {
+proc schurComplement(ref Ab: [?AbD] elemType, AD: domain(?), BD: domain(?), Rest: domain(?)) {
   //
   // Copy data into replicated arrays so every processor has a local copy
   // of the data it will need to perform a local matrix-multiply.
@@ -253,7 +253,7 @@ proc replicateD2(Ab, AD) {
 // pivot vector accordingly
 //
 proc panelSolve(ref Ab: [] elemType,
-               panel: domain,
+               panel: domain(?),
                ref piv: [] int) {
 
   const (_, cols) = panel.dims();
@@ -296,8 +296,8 @@ proc panelSolve(ref Ab: [] elemType,
 // solves the rows to the right of the block.
 //
 proc updateBlockRow(ref Ab: [] elemType,
-                   tl: domain,
-                   tr: domain) {
+                   tl: domain(?),
+                   tr: domain(?)) {
 
   const (rows, _) = tr.dims();
   for row in rows {

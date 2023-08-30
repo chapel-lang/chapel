@@ -217,7 +217,7 @@ proc LUFactorize(n: indexType,
 // locale only stores one copy of each block it requires for all of
 // its rows/columns.
 //
-proc schurComplement(AD: domain, BD: domain, Rest: domain) {
+proc schurComplement(AD: domain(?), BD: domain(?), Rest: domain(?)) {
 
   // Prevent replication of unequal-sized slices
   if Rest.size == 0 then return;
@@ -257,7 +257,7 @@ proc schurComplement(AD: domain, BD: domain, Rest: domain) {
 // pivot vector accordingly
 //
 proc panelSolve(
-               panel: domain,
+               panel: domain(?),
                ref piv: [] indexType) {
 
   for k in panel.dim(1) {             // iterate through the columns
@@ -299,8 +299,8 @@ proc panelSolve(
 // solves the rows to the right of the block.
 //
 proc updateBlockRow(
-                   tl: domain,
-                   tr: domain) {
+                   tl: domain(?),
+                   tr: domain(?)) {
 
   for row in tr.dim(0) {
     const activeRow = tr[row..row, ..],

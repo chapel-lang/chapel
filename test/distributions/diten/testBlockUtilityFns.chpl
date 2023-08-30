@@ -15,7 +15,7 @@ printLocales(BD2);
 writeln();
 printLocales(BA2);
 
-proc printLocales(D: domain) {
+proc printLocales(D: domain(?)) {
   var A: [D] int;
   forall i in D do A[i] = here.id;
   writeln(A);

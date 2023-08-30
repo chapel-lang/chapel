@@ -4,7 +4,7 @@ config const debug = false;
 
 config const maxFluff = 2;
 
-proc test(dom : domain) {
+proc test(dom : domain(?)) {
   for i in 1..maxFluff {
     var halo : dom.rank * int;
     for j in 0..dom.rank-1 do halo(j) = i;
@@ -12,7 +12,7 @@ proc test(dom : domain) {
   }
 }
 
-proc test(dom : domain, halo : dom.rank * int) {
+proc test(dom : domain(?), halo : dom.rank * int) {
   param rank = dom.rank;
 
   if debug then writeln("Testing domain ", dom, " with halo ", halo);

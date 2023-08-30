@@ -48,7 +48,7 @@ if case == "associative domain with string keys" {
   test(assocDom, "associative domain with string keys");
 }
 
-proc test(dom:domain, name) {
+proc test(dom:domain(?), name) {
   writeln("Testing ", name);
 
   var arr: [dom] int;

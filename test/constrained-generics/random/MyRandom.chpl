@@ -229,7 +229,7 @@ module MyRandom {
 
   @chpldoc.nodoc
   /* Actual implementation of choice() */
-  proc _choice(stream, X: domain, size: ?sizeType, replace: bool, prob: ?probType)
+  proc _choice(stream, X: domain(?), size: ?sizeType, replace: bool, prob: ?probType)
     throws
   {
     if X.rank != 1 {
@@ -278,7 +278,7 @@ module MyRandom {
 
   @chpldoc.nodoc
   /* _choice branch for uniform distribution */
-  proc _choiceUniform(stream, X: domain, size: ?sizeType, replace: bool) throws
+  proc _choiceUniform(stream, X: domain(?), size: ?sizeType, replace: bool) throws
   {
 
     const low = X.low,
@@ -340,7 +340,7 @@ module MyRandom {
 
   @chpldoc.nodoc
   /* _choice branch for distribution defined by probabilities array */
-  proc _choiceProbabilities(stream, X:domain, size:?sizeType, replace, prob:?probType) throws
+  proc _choiceProbabilities(stream, X:domain(?), size:?sizeType, replace, prob:?probType) throws
   {
     import Search;
     import Sort;
@@ -646,7 +646,7 @@ module MyRandom {
                                    if ``size < 1 || size.size < 1``,
                                    if ``replace=false`` and ``size > x.size || size.size > x.size``.
      */
-     proc choice(x: domain, size:?sizeType=none, replace=true, prob:?probType=none) throws
+     proc choice(x: domain(?), size:?sizeType=none, replace=true, prob:?probType=none) throws
      {
        compilerError("RandomStreamInterface.choice called");
      }
@@ -667,7 +667,7 @@ module MyRandom {
        :return: an iterable expression yielding random `resultType` values
 
      */
-    proc iterate(D: domain, type resultType=eltType) {
+    proc iterate(D: domain(?), type resultType=eltType) {
       compilerError("RandomStreamInterface.iterate called");
     }
 
@@ -1153,7 +1153,7 @@ module MyRandom {
                                    if ``size < 1 || size.size < 1``,
                                    if ``replace=false`` and ``size > x.size || size.size > x.size``.
      */
-      proc choice(x: domain, size:?sizeType=none, replace=true, prob:?probType=none)
+      proc choice(x: domain(?), size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
         return _choice(this, x, size=size, replace=replace, prob=prob);
@@ -1256,7 +1256,7 @@ module MyRandom {
 
        */
       pragma "fn returns iterator"
-      proc iterate(D: domain, type resultType=eltType) {
+      proc iterate(D: domain(?), type resultType=eltType) {
         _lock();
         const start = PCGRandomStreamPrivate_count;
         PCGRandomStreamPrivate_count += D.size.safeCast(int(64));
@@ -1268,7 +1268,7 @@ module MyRandom {
       // Forward the leader iterator as well.
       pragma "fn returns iterator"
       @chpldoc.nodoc
-      proc iterate(D: domain, type resultType=eltType, param tag)
+      proc iterate(D: domain(?), type resultType=eltType, param tag)
         where tag == iterKind.leader
       {
         // Note that proc iterate() for the serial case (i.e. the one above)
@@ -1566,7 +1566,7 @@ module MyRandom {
     //
     pragma "not order independent yielding loops"
     @chpldoc.nodoc
-    iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
+    iter PCGRandomPrivate_iterate(type resultType, D: domain(?), seed: int(64),
                                start: int(64)) {
       var cursor = randlc_skipto(resultType, seed, start);
       for i in D do
@@ -1574,7 +1574,7 @@ module MyRandom {
     }
 
     @chpldoc.nodoc
-    iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
+    iter PCGRandomPrivate_iterate(type resultType, D: domain(?), seed: int(64),
                                start: int(64), param tag: iterKind)
           where tag == iterKind.leader {
       for block in D.these(tag=iterKind.leader) do
@@ -1583,7 +1583,7 @@ module MyRandom {
 
     pragma "not order independent yielding loops"
     @chpldoc.nodoc
-    iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
+    iter PCGRandomPrivate_iterate(type resultType, D: domain(?), seed: int(64),
                  start: int(64), param tag: iterKind, followThis)
           where tag == iterKind.follower {
       use DSIUtil;
@@ -2667,7 +2667,7 @@ module MyRandom {
       }
 
       @chpldoc.nodoc
-      proc choice(x: domain, size:?sizeType=none, replace=true, prob:?probType=none)
+      proc choice(x: domain(?), size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
         compilerError("NPBRandomStream.choice() is not supported.");
@@ -2689,7 +2689,7 @@ module MyRandom {
 
        */
       pragma "fn returns iterator"
-      proc iterate(D: domain, type resultType=real) {
+      proc iterate(D: domain(?), type resultType=real) {
         _lock();
         const start = NPBRandomStreamPrivate_count;
         NPBRandomStreamPrivate_count += D.size.safeCast(int(64));
@@ -2701,7 +2701,7 @@ module MyRandom {
       // Forward the leader iterator as well.
       pragma "fn returns iterator"
       @chpldoc.nodoc
-      proc iterate(D: domain, type resultType=real, param tag)
+      proc iterate(D: domain(?), type resultType=real, param tag)
         where tag == iterKind.leader
       {
         // Note that proc iterate() for the serial case (i.e. the one above)
@@ -2843,7 +2843,7 @@ module MyRandom {
     //
     pragma "not order independent yielding loops"
     @chpldoc.nodoc
-    iter NPBRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
+    iter NPBRandomPrivate_iterate(type resultType, D: domain(?), seed: int(64),
                          start: int(64)) {
       var cursor = randlc_skipto(seed, start);
       for i in D do
@@ -2851,7 +2851,7 @@ module MyRandom {
     }
 
     @chpldoc.nodoc
-    iter NPBRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
+    iter NPBRandomPrivate_iterate(type resultType, D: domain(?), seed: int(64),
                          start: int(64), param tag: iterKind)
           where tag == iterKind.leader {
       // forward to the domain D's iterator
@@ -2861,7 +2861,7 @@ module MyRandom {
 
     pragma "not order independent yielding loops"
     @chpldoc.nodoc
-    iter NPBRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
+    iter NPBRandomPrivate_iterate(type resultType, D: domain(?), seed: int(64),
                  start: int(64), param tag: iterKind, followThis)
           where tag == iterKind.follower {
       use DSIUtil;

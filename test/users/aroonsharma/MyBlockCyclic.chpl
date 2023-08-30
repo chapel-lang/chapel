@@ -464,7 +464,7 @@ proc MyBlockCyclicDom.dsiStride return whole.stride;
 // INTERFACE NOTES: Could we make setIndices() for a rectangular
 // domain take a domain rather than something else?
 //
-proc MyBlockCyclicDom.dsiSetIndices(x: domain) {
+proc MyBlockCyclicDom.dsiSetIndices(x: domain(?)) {
   if x.rank != rank then
     compilerError("rank mismatch in domain assignment");
   if x._value.idxType != idxType then
