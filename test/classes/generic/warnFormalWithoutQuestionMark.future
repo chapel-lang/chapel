@@ -1,0 +1,6 @@
+future: warn about owned/shared generic not having question mark
+
+It seems we attach FLAG_MARKED_GENERIC to 'owned G' and 'shared G'
+even if they don't have a '(?)' after the 'G'?
+
+This also locks in the cases that are working correctly.
