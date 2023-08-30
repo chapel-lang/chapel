@@ -251,5 +251,14 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
 
 
 const argDescTuple_t* chpl_launch_get_help(void) {
-  return NULL;
+
+  static const
+    argDescTuple_t args[] =
+    {
+      { CHPL_WALLTIME_FLAG " <HH:MM:SS>",
+        "specify a wallclock time limit"
+      },
+      { NULL, NULL },
+    };
+  return args;
 }
