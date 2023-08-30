@@ -2491,8 +2491,10 @@ static void propagateMarkedGeneric(Symbol* var, Expr* typeExpr) {
   if (SymExpr* se = toSymExpr(typeExpr)) {
     Symbol* sym = se->symbol();
     if (sym == gUninstantiated ||
-        (sym->hasFlag(FLAG_MARKED_GENERIC) && sym->hasFlag(FLAG_TEMP)))
+        (sym->hasFlag(FLAG_MARKED_GENERIC) && sym->hasFlag(FLAG_TEMP))) {
       var->addFlag(FLAG_MARKED_GENERIC);
+      //      printf("(A) Adding FLAG_MARKED_GENERIC to %s\n", sym->name);
+    }
   } else if (CallExpr* call = toCallExpr(typeExpr)) {
     if (call->baseExpr)
       propagateMarkedGeneric(var, call->baseExpr);
@@ -3462,21 +3464,23 @@ static void hack_resolve_types(ArgSymbol* arg) {
           if (AggregateType* at = toAggregateType(type))
             genericWithDefaults = at->isGenericWithDefaults();
 
-          USR_WARN(arg->typeExpr, "considering %s: (%d, %d, %d)", type->symbol->name, type->symbol->hasFlag(FLAG_GENERIC), !genericWithDefaults, !arg->hasFlag(FLAG_MARKED_GENERIC));
+          //          if (arg->defPoint->getModule()->modTag == MOD_USER) {
+            //            USR_WARN(arg->typeExpr, "considering %s: (%d, %d, %d)", type->symbol->name, type->symbol->hasFlag(FLAG_GENERIC), !genericWithDefaults, !arg->hasFlag(FLAG_MARKED_GENERIC));
+          //          }
           if (type->symbol->hasFlag(FLAG_GENERIC) &&
               !genericWithDefaults &&
               !arg->hasFlag(FLAG_MARKED_GENERIC) &&
               arg->defPoint->getModule()->modTag == MOD_USER) {
-            USR_WARN(arg->typeExpr, "really considering %s", type->symbol->name);
+            //            USR_WARN(arg->typeExpr, "really considering %s", type->symbol->name);
             if (type->symbol->hasFlag(FLAG_ARRAY)) {
               // don't worry about it for array types for now
             } else if (type == dtIntegral || type == dtTuple) {
               // nor integral nor _tuple
             } else if (!isGenericClassIgnoringManagement(type->symbol)) {
-              USR_WARN(arg->typeExpr, "skipping due to non-generic class w/ generic management");
+              //              USR_WARN(arg->typeExpr, "skipping due to non-generic class w/ generic management");
               // skip over cases that are only generic due to no class mgmt
             } else {
-              USR_WARN(arg->typeExpr, "need ? on generic formal type '%s'", type->symbol->name);
+              //              USR_WARN(arg->typeExpr, "need ? on generic formal type '%s'", type->symbol->name);
             }
           }
 
@@ -4479,6 +4483,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
 
   formal->typeExpr->replace(new BlockStmt(usetype));
 
+  //  printf("(B) Adding FLAG_MARKED_GENERIC to %s\n", formal->name);
   formal->addFlag(FLAG_MARKED_GENERIC);
 }
 
