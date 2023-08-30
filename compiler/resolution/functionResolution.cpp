@@ -11285,7 +11285,7 @@ static void checkSpeciallyNamedMethods() {
 
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
     if (!fn->isMethod()) continue;
-    if (fn->isCompilerGenerated()) continue;
+    if (fn->isCompilerGenerated() || fn->hasFlag(FLAG_FIELD_ACCESSOR)) continue;
 
     auto reservedIter = reservedNames.find(fn->name);
     if (reservedIter == reservedNames.end()) continue;
