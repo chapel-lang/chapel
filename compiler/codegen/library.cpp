@@ -454,6 +454,8 @@ static void setupPythonTypeMap() {
   pythonNames[dtReal[FLOAT_SIZE_64]->symbol] = std::make_pair("double", "float");
   pythonNames[dtBool->symbol] = std::make_pair("bint", "bint");
   pythonNames[dtStringC->symbol] = std::make_pair("const char *", "bytes");
+  // TODO: what're the proper map values for c_ptrConst(c_char) to replace c_string?
+  // 08/30/2023
   pythonNames[dtComplex[COMPLEX_SIZE_64]->symbol] =
               std::make_pair("float complex", "numpy.complex64");
   pythonNames[dtComplex[COMPLEX_SIZE_128]->symbol] =
@@ -787,7 +789,7 @@ static void makeOpaqueArrayClass() {
   fprintf(outfile, "\t\tself.val = val\n\n");
 
   fprintf(outfile, "\tdef cleanup(self):\n");
-  fprintf(outfile, "\t\tcleanupOpaqueArray(&self.val);\n\n");
+  fprintf(outfile, "\t\tcleanupOpaqueArray(&self.val)\n\n");
 
   // Allows the Python type to be created and cleaned up appropriately in a
   // Python "with" clause
