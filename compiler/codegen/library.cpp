@@ -455,7 +455,7 @@ static void setupPythonTypeMap() {
   pythonNames[dtBool->symbol] = std::make_pair("bint", "bint");
   pythonNames[dtStringC->symbol] = std::make_pair("const char *", "bytes");
   // TODO: what're the proper map values for c_ptrConst(c_char) to replace c_string?
-
+  // 08/30/2023
   pythonNames[dtComplex[COMPLEX_SIZE_64]->symbol] =
               std::make_pair("float complex", "numpy.complex64");
   pythonNames[dtComplex[COMPLEX_SIZE_128]->symbol] =
