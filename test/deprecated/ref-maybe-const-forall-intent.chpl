@@ -3,6 +3,10 @@ forall i in 1..10 { // should warn
   myArray1[i] = i;
 }
 
+forall i in 1..10 with (ref myArray1) { // should not warn
+  myArray1[i] = i;
+}
+
 var myArray2: [1..10] int;
 forall i in 1..10 with (ref myArray2) { // should not warn
   myArray2[i] = i;
@@ -21,7 +25,6 @@ forall (i, a) in zip(1..10, A) {
 }
 
 // should warn for B only
-// currently warns twice at the same spot. bothersome but not the worst thing
 {
   var A: [1..10] int = 17;
   var B: A.type;
@@ -58,5 +61,13 @@ forall i in 1..10 with (ref myArrayD) do myArrayD(i) = i;
   var A: [1..10] int;
   forall a in A {
     a = 1;
+  }
+}
+
+{
+  // should warn
+  var A: [1..10] int;
+  forall i in A.domain {
+    A[i] = i;
   }
 }
