@@ -424,7 +424,7 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
 
   if parGC {
 
-    var self_edges$: atomic int;
+    var self_edges: atomic int;
     serial(SERIAL_GRAPH_GEN) {
       forall (e, w) in zip(Edges, Edge_Weight) with (ref firstAvailNeighbor) do {
         const u = e.start;
@@ -432,7 +432,7 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
 
         if ( v == u ) then {
           // self-edge, ignore
-          self_edges$.add(1);
+          self_edges.add(1);
         } else {
           // Both the vertex and firstAvail must be passed by reference.
           // TODO: possibly compute how many neighbors the vertex has, first.
@@ -443,7 +443,7 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
       }
     }
 
-    self_edges = self_edges$.read();
+    self_edges = self_edges.read();
 
   } else {  // !parGC
 
