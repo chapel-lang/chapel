@@ -11269,13 +11269,19 @@ struct SpeciallyNamedMethodInfo {
 };
 
 using SpeciallyNamedMethodKey = std::pair<AggregateType*, InterfaceSymbol*>;
+using SpecialMethodMap = std::map<SpeciallyNamedMethodKey, SpeciallyNamedMethodInfo>;
 
 static void checkSpeciallyNamedMethods() {
   static const std::unordered_map<std::string, InterfaceSymbol*> reservedNames = {
     { "hash", gHashable },
   };
 
-  std::map<SpeciallyNamedMethodKey, SpeciallyNamedMethodInfo> flagged;
+  SpecialMethodMap flagged;
+
+  // TODO: for now, this will simply not warn for classes, because all classe
+  // implement hashable, and because overriding hash should be allowed. When
+  // other special methods are converted, this logic will need to be updated
+  // to handle them.
 
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
     if (!fn->isMethod()) continue;
@@ -11286,7 +11292,7 @@ static void checkSpeciallyNamedMethods() {
     auto receiverType = fn->getReceiverType();
 
     auto at = toAggregateType(receiverType);
-    if (!at) continue;
+    if (!at || !at->isRecord()) continue;
 
     while (at->instantiatedFrom) at = at->instantiatedFrom;
     auto key = SpeciallyNamedMethodKey(at, reservedIter->second);
@@ -11297,7 +11303,7 @@ static void checkSpeciallyNamedMethods() {
     auto se = toSymExpr(istm->iConstraint->consActuals.get(1));
     auto ts = toTypeSymbol(se->symbol());
     auto at = toAggregateType(ts->type);
-    if (!at) continue;
+    if (!at || !at->isRecord()) continue;
 
     while (at->instantiatedFrom) at = at->instantiatedFrom;
     auto isym = istm->iConstraint->ifcSymbol();
