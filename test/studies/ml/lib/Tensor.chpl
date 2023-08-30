@@ -12,7 +12,7 @@ module Tensor {
     var rng = new Random.NPBRandom.NPBRandomStream(eltType=real(64),seed=5);
     
     proc seedRandom(seed) {
-        rng = new Random.NPBRandom.NPBRandomStream(eltType=real(64),seed=5);
+        rng = new Random.NPBRandom.NPBRandomStream(eltType=real(64),seed=(2 * seed + 1));
     }
 
     proc err(args...?n) {
@@ -142,7 +142,7 @@ module Tensor {
             this.eltType = real;
             this._domain = dom;
         }
-        proc init(itr) where itr.type:string == "promoted expression" || itr.type:string == "iterator" {
+        proc init(itr) where itr.type:string == "promoted expression" || isSubtype(itr.type, _iteratorRecord) {
             const A = itr;
             this.init(A);
             writeln("init(iter)");
@@ -444,6 +444,21 @@ module Tensor {
         var t = lhs;
         t.data -= c;
         return t;
+    }
+
+    proc transposeMultiply(M: Tensor(2), v: Tensor(1)) {
+        const (m,n) = M.shape;
+        const (p,) = v.shape;
+        if m != p then
+            err("Trying to apply a matrix of shape ",(n,m), " to a vector of shape ", v.shape);
+
+        var w = new Tensor({0..#n});
+        forall i in 0..#n with (ref w) {
+            for j in 0..#m {
+                w[i] += M[j, i] * v[j];
+            }
+        }
+        return w;
     }
 
     // Sigmoid function

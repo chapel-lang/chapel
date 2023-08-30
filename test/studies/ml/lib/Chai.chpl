@@ -91,7 +91,7 @@ module Chai {
         }
 
         proc ref backward(delta: Tensor(1), input: Tensor(1)): Tensor(1) {
-            const newDelta = weights.transpose() * delta;
+            const newDelta = tn.transposeMultiply(weights,delta);// weights.transpose() * delta;
             biasGrad    += newDelta;
             weightsGrad += newDelta * input.transpose();
             return newDelta;
@@ -104,10 +104,12 @@ module Chai {
             var biasGradient = biasGrad.data;
             var weightsGradient = weightsGrad.data;
 
+            const weightsT = weights.transpose();
+
             forall (delta,input,i) in zip(deltas,inputs,0..) with (ref this, + reduce biasGradient, + reduce weightsGradient) {
-                const newDelta = weights.transpose() * delta;
-                biasGradient    += delta.data;
-                const wg =  delta * input.transpose();
+                const newDelta = weightsT * delta;
+                biasGradient += delta.data;
+                const wg = delta * input.transpose();
                 weightsGradient += wg.data;
                 newDeltas[i] = newDelta;
             }
@@ -588,7 +590,7 @@ module Chai {
 
             const dL_dW: Tensor(2) = dL_dZ * dZ_dW.transpose(); // This should be dL_dW * dL_dZ.transpose();
             const dL_dB: Tensor(1) = dL_dZ * dZ_dB;
-            const dL_dIn: Tensor(1) = dZ_dIn.transpose() * dL_dZ; // this is the problem
+            const dL_dIn: Tensor(1) = tn.transposeMultiply(dZ_dIn,dL_dZ); // dZ_dIn.transpose() * dL_dZ; 
 
             weightsGrad += dL_dW;
             biasesGrad += dL_dB;
@@ -622,7 +624,7 @@ module Chai {
                 const dL_dZ: Tensor(1) = dL_dOut[i] * dOut_dZ;
                 const dL_dW: Tensor(2) = dL_dZ * dZ_dW.transpose();
                 const dL_dB: Tensor(1) = dL_dZ * dZ_dB;
-                const dL_dIn: Tensor(1) = dZ_dIn.transpose() * dL_dZ;
+                const dL_dIn: Tensor(1) = tn.transposeMultiply(dZ_dIn,dL_dZ); // dZ_dIn.transpose() * dL_dZ;
                 weightsGrad += dL_dW;
                 biasesGrad += dL_dB;
                 newDeltas[idx] = dL_dIn.reshape(input.domain);;
