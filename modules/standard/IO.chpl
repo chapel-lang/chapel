@@ -8557,7 +8557,10 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
     try this.lock(); defer { this.unlock(); }
     const tSize = c_sizeof(t) : c_ssize_t;
 
-    if endian == ioendian.native && data.locale == this._home && data.isDefaultRectangular() {
+    // Allow either DefaultRectangular arrays or dense slices of DR arrays
+    const denseDR = chpl__isDROrDRView(data) &&
+                    data._value.isDataContiguous(d._value);
+    if endian == ioendian.native && data.locale == this._home && denseDR {
       e = try qio_channel_write_amt(false, this._channel_internal, data[d.low], data.size:c_ssize_t * tSize);
 
       if e != 0 then
