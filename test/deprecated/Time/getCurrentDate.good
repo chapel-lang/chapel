@@ -1,0 +1,4 @@
+getCurrentDate.chpl:3: warning: 'getCurrentDate' is deprecated; access the individual fields of 'date.today()' as needed instead
+true
+true
+true

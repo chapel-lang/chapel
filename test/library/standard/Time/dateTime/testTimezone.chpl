@@ -77,11 +77,11 @@ proc test_zones() {
   assert(str(t5) == "00:00:00.000040+00:00");
 */
 
-  assert(t1.isoFormat() == "07:47:00-05:00");
-  assert(t2.isoFormat() == "12:47:00+00:00");
-  assert(t3.isoFormat() == "13:47:00+01:00");
-  assert(t4.isoFormat() == "00:00:00.000040");
-  assert(t5.isoFormat() == "00:00:00.000040+00:00");
+  assert(t1:string == "07:47:00-05:00");
+  assert(t2:string == "12:47:00+00:00");
+  assert(t3:string == "13:47:00+01:00");
+  assert(t4:string == "00:00:00.000040");
+  assert(t5:string == "00:00:00.000040+00:00");
 
   // %z conversion uses local timezone instead of the one in the tz
   //assert(t1.strftime("%H:%M:%S %%Z=%Z %%z=%z") ==

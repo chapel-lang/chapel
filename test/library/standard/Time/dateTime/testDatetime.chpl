@@ -24,20 +24,11 @@ proc test_basic_attributes_nonzero() {
   assert(dt.microsecond == 8000);
 }
 
-proc test_isoformat() {
+proc test_tostring() {
   var t = new dateTime(2, 3, 2, 4, 5, 1, 123);
-  assert(t.isoFormat() == "0002-03-02T04:05:01.000123");
-  assert(t.isoFormat('T') == "0002-03-02T04:05:01.000123");
-  assert(t.isoFormat(' ') == "0002-03-02 04:05:01.000123");
-  // str is ISO format with the separator forced to a blank.
-  //assert(str(t) == "0002-03-02 04:05:01.000123");
-
+  assert(t:string == "0002-03-02T04:05:01.000123");
   t = new dateTime(2, 3, 2);
-  assert(t.isoFormat() == "0002-03-02T00:00:00");
-  assert(t.isoFormat('T') == "0002-03-02T00:00:00");
-  assert(t.isoFormat(' ') == "0002-03-02 00:00:00");
-  // str is ISO format with the separator forced to a blank.
-  //assert(str(t) == "0002-03-02 00:00:00");
+  assert(t:string == "0002-03-02T00:00:00");
 }
 
 proc test_more_ctime() {
@@ -76,7 +67,7 @@ proc test_tz_independent_comparing() {
   // precision to span microsecond resolution across years 1 thru 9999,
   // so comparing via timestamp necessarily calls some distinct values
   // equal).
-  dt1 = new dateTime(MAXYEAR, 12, 31, 23, 59, 59, 999998);
+  dt1 = new dateTime(date.max.year, 12, 31, 23, 59, 59, 999998);
   var us = new timeDelta(microseconds=1);
   dt2 = dt1 + us;
   assert(dt2 - dt1 == us);
@@ -177,8 +168,8 @@ proc test_more_timetuple() {
   assert(tt.tm_hour == t.hour);
   assert(tt.tm_min == t.minute);
   assert(tt.tm_sec == t.second);
-  assert(tt.tm_wday == t.weekday(): int(32));
-  assert(tt.tm_yday == t.toOrdinal() -
+  assert(tt.tm_wday == (t.getDate().weekday(): int(32)) - 1);
+  assert(tt.tm_yday == t.getDate().toOrdinal() -
                        (new date(t.year, 1, 1)).toOrdinal() + 1);
   assert(tt.tm_isdst == -1);
 }
@@ -203,19 +194,24 @@ proc test_extract() {
   assert(dt.getTime() == new time(18, 45, 3, 1234));
 }
 
-proc test_combine() {
+proc test_init_combine() {
   var d = new date(2002, 3, 4);
   var t = new time(18, 45, 3, 1234);
   var expected = new dateTime(2002, 3, 4, 18, 45, 3, 1234);
-  var dt = dateTime.combine(d, t);
+  var dt = new dateTime(d, t);
   assert(dt == expected);
 
-  dt = dateTime.combine(t=t, d=d);
+  dt = new dateTime(t=t, d=d);
   assert(dt == expected);
 
   assert(d == dt.getDate());
   assert(t == dt.getTime());
-  assert(dt == dateTime.combine(dt.getDate(), dt.getTime()));
+  assert(dt == new dateTime(dt.getDate(), dt.getTime()));
+
+  dt = new dateTime(d); // no time
+  var zeroTime = new time();
+  assert(d == dt.getDate());
+  assert(zeroTime == dt.getTime());
 }
 
 proc test_replace() {
@@ -260,7 +256,7 @@ proc test_replace() {
 
 test_basic_attributes();
 test_basic_attributes_nonzero();
-test_isoformat();
+test_tostring();
 test_more_ctime();
 test_tz_independent_comparing();
 test_computations();
@@ -272,5 +268,5 @@ test_more_timetuple();
 test_strftime();
 test_more_strftime();
 test_extract();
-test_combine();
+test_init_combine();
 test_replace();

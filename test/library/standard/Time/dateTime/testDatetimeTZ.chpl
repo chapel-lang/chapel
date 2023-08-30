@@ -51,7 +51,7 @@ proc test_even_more_compare() {
   var t1 = new dateTime(1, 1, 1,
                         tz=new shared FixedOffset(1439, ""));
   // Largest possible after UTC adjustment.
-  var t2 = new dateTime(MAXYEAR, 12, 31, 23, 59, 59, 999999,
+  var t2 = new dateTime(date.max.year, 12, 31, 23, 59, 59, 999999,
                         tz=new shared FixedOffset(-1439, ""));
 
   // Make sure those compare correctly, and w/o overflow.
@@ -113,11 +113,11 @@ proc test_zones() {
   assert(t2 == t3);
 }
 
-proc test_combine() {
+proc test_init_combine() {
   var met = new shared FixedOffset(60, "MET");
   var d = new date(2002, 3, 4);
   var tz = new time(18, 45, 3, 1234, tz=met);
-  var dt = dateTime.combine(d, tz);
+  var dt = new dateTime(d, tz);
   assert(dt == new dateTime(2002, 3, 4, 18, 45, 3, 1234,
                           tz=met));
 }
@@ -137,7 +137,7 @@ proc test_tz_aware_arithmetic() {
   var now = dateTime.now();
   var tz55 = new shared FixedOffset(-330, "west 5:30");
   var timeaware = now.getTime().replace(tz=tz55);
-  var nowaware = dateTime.combine(now.getDate(), timeaware);
+  var nowaware = new dateTime(now.getDate(), timeaware);
   assert(nowaware.timezone == tz55);
   assert(nowaware.timetz() == timeaware);
 
@@ -179,7 +179,7 @@ proc test_tz_aware_arithmetic() {
   // Try max possible difference.
   var min = new dateTime(1, 1, 1,
                          tz=new shared FixedOffset(1439, "min"));
-  var max = new dateTime(MAXYEAR, 12, 31, 23, 59, 59, 999999,
+  var max = new dateTime(date.max.year, 12, 31, 23, 59, 59, 999999,
                       tz=new shared FixedOffset(-1439, "max"));
   var maxdiff = max - min;
   assert(maxdiff == dateTime.max - dateTime.min +
@@ -207,7 +207,7 @@ proc test_tzinfo_now() {
     assert(now.timezone == weirdtz);
     var utcnow = dateTime.utcNow().replace(tz=utc);
     var now2 = utcnow.astimezone(weirdtz);
-    if abs(now - now2) < new timeDelta(seconds=30) {
+    if (now - now2).abs() < new timeDelta(seconds=30) {
       break;
     // Else the code is broken, or more than 30 seconds passed between
     // calls; assuming the latter, just try again.
@@ -322,18 +322,19 @@ proc test_utctimetuple() {
     assert(11 == t.tm_hour); // 20mm + 53mm = 1hn + 13mm
     assert(13 == t.tm_min);
     assert(d.second == t.tm_sec);
-    assert(d.weekday():int == t.tm_wday);
-    assert(d.toOrdinal() - (new date(1, 1, 1)).toOrdinal() + 1 == t.tm_yday);
+    assert((d.getDate().weekday():int - 1) == t.tm_wday);
+    assert(d.getDate().toOrdinal() - (new date(1, 1, 1)).toOrdinal() + 1 ==
+        t.tm_yday);
     assert(0 == t.tm_isdst);
   }
 
   // At the edges, UTC adjustment can normalize into years out-of-range
   // for a dateTime object.  Ensure that a correct timetuple is
   // created anyway.
-  var tiny = new dateTime(MINYEAR, 1, 1, 0, 0, 37, tz=new shared UOFS(1439));
+  var tiny = new dateTime(date.min.year, 1, 1, 0, 0, 37, tz=new shared UOFS(1439));
   // That goes back 1 minute less than a full day.
   var t = tiny.utctimetuple();
-  assert(t.tm_year == MINYEAR-1);
+  assert(t.tm_year == date.min.year-1);
   assert(t.tm_mon == 12);
   assert(t.tm_mday == 31);
   assert(t.tm_hour == 0);
@@ -342,10 +343,10 @@ proc test_utctimetuple() {
   assert(t.tm_yday == 366);    // "year 0" is a leap year
   assert(t.tm_isdst == 0);
 
-  var huge = new dateTime(MAXYEAR, 12, 31, 23, 59, 37, 999999, tz=new shared UOFS(-1439));
+  var huge = new dateTime(date.max.year, 12, 31, 23, 59, 37, 999999, tz=new shared UOFS(-1439));
   // That goes forward 1 minute less than a full day.
   t = huge.utctimetuple();
-  assert(t.tm_year == MAXYEAR+1);
+  assert(t.tm_year == date.max.year+1);
   assert(t.tm_mon == 1);
   assert(t.tm_mday == 1);
   assert(t.tm_hour == 23);
@@ -355,7 +356,7 @@ proc test_utctimetuple() {
   assert(t.tm_isdst == 0);
 }
 
-proc test_tzinfo_isoformat() {
+proc test_tzinfo_tostring() {
   var zero = new shared FixedOffset(0, "+00:00");
   var plus = new shared FixedOffset(220, "+03:40");
   var minus = new shared FixedOffset(-231, "-03:51");
@@ -367,11 +368,8 @@ proc test_tzinfo_isoformat() {
       var timestr = '04:05:59' + if us != 0 then '.987001' else '';
       var ofsstr = d.tzname();
       var tailstr = timestr + ofsstr;
-      var iso = d.isoFormat();
+      var iso = d:string;
       assert(iso == datestr + 'T' + tailstr);
-      assert(iso == d.isoFormat('T'));
-      assert(d.isoFormat('k') == datestr + 'k' + tailstr);
-      //assert(str(d) == datestr + ' ' + tailstr);
     }
   }
 }
@@ -543,7 +541,7 @@ proc test_mixed_compare() {
 }
 
 proc first_sunday_on_or_after(in dt) {
-  var days_to_go = 6 - dt.weekday():int;
+  var days_to_go = 7 - dt.weekday():int;
   if days_to_go != 0 then
     dt += new timeDelta(days_to_go);
   return dt;
@@ -552,14 +550,14 @@ proc first_sunday_on_or_after(in dt) {
 test_trivial();
 test_even_more_compare();
 test_zones();
-test_combine();
+test_init_combine();
 test_extract();
 test_tz_aware_arithmetic();
 test_tzinfo_now();
 test_tzinfo_fromtimestamp();
 test_tzinfo_timetuple();
 test_utctimetuple();
-test_tzinfo_isoformat();
+test_tzinfo_tostring();
 test_replace();
 test_more_astimezone();
 test_aware_subtract();
