@@ -4922,6 +4922,10 @@ void llvmOptimizeAndCodegen(void) {
   INT_ASSERT(clangInfo);
   LLVMGenFilenames* filenames = &info->llvmGenFilenames;
 
+  if (gCodegenGPU) {
+    linkGpuDeviceLibraries();
+  }
+
   {
     std::error_code tmpErr;
     // Save the generated LLVM before optimization.
@@ -5190,7 +5194,6 @@ void llvmOptimizeAndCodegen(void) {
         case GpuCodegenType::GPU_CG_CPU:
           break;
       }
-      linkGpuDeviceLibraries();
     }
   }
 }
