@@ -1,3 +1,9 @@
+/*
+  This program is used to train a number of different networks on the MNIST. It generates
+    a number of different networks, trains them, and saves them to disk. The networks are
+    then used by the MNISTTester program to test their accuracy, later in the correctness tests. 
+*/
+
 import Chai as chai;
 import Tensor as tn;
 use Tensor;
