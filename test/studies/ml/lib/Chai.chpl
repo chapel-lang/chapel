@@ -138,7 +138,7 @@ module Chai {
         }
 
         proc signature(): string {
-            return "Dense(" + outputSize + ")";
+            return "Dense(" + outputSize:string + ")";
         }
     }
 
@@ -485,8 +485,14 @@ module Chai {
         proc forwardProp(input: Tensor(?inRank)): Tensor(1) do
             return input.flatten();
 
+        proc forwardPropBatch(batch: [] ?tensorType): [] Tensor(1) where isSubtype(tensorType,Tensor) do
+            return [b in batch] forwardProp(b);
+
         proc backward(delta: Tensor(1), input: Tensor(?inRank)): Tensor(inRank) do
             return delta.reshape(input.domain);
+
+        proc backwardBatch(deltas: [] Tensor(1), inputs: [] ?tensorType): [] tensorType where isSubtype(tensorType,Tensor) do
+            return [(d,i) in zip(deltas,inputs)] backward(d,i);
 
         proc optimize(mag: real(64)) { }
 
