@@ -53,6 +53,7 @@ module OwnedObject {
     Default-initialize an :type:`owned` to store type `chpl_t`
   */
   pragma "leaves this nil"
+  @chpldoc.nodoc // hide init/record impl details
   proc _owned.init(type chpl_t) {
     if !isClass(chpl_t) then
       compilerError("owned only works with classes");

@@ -133,6 +133,7 @@ module SharedObject {
 
   /* Default-initialize a :type:`shared`. */
   pragma "leaves this nil"
+  @chpldoc.nodoc // hide init/record impl details
   proc _shared.init(type chpl_t) {
     if !isClass(chpl_t) then
       compilerError("shared only works with classes");
@@ -189,6 +190,8 @@ module SharedObject {
 
     :arg take: the owned value to take ownership from
   */
+  // this init is not user facing
+  @chpldoc.nodoc
   proc _shared.init(pragma "nil from arg" in take:owned) {
     var p = take.release();
     this.chpl_t = if this.type.chpl_t == ? then _to_borrowed(p.type) else this.type.chpl_t;
