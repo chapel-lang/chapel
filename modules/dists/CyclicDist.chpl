@@ -193,12 +193,12 @@ The helper methods on ``Cyclic`` have the following signatures:
     The array's values are initialized using ``initExpr`` which can be any of
     the following:
 
-    * a value coercible to ``eltType`` — all elements of the array will have this value
-    * an iterator expression that yields values of type ``eltType`` — the iterator
-      will be assigned into the array
-    * an array whose size matches ``dom``'s size in each dimension, and whose element
-      type can be coerced to ``eltType`` — the given array will be assigned into the
-      distributed array
+    * a value coercible to ``eltType`` — all elements of the array will be
+      assigned with this value
+    * an iterator expression with compatible size and type — the array elements
+      will be initialized with the values yielded by the iterator
+    * an array of compatible size and type — the array will be assigned into
+      the distributed array
 
   .. function:: proc type Cyclic.createArray(rng: range(?)..., type eltType, initExpr, targetLocales = Locales)
 
@@ -208,12 +208,12 @@ The helper methods on ``Cyclic`` have the following signatures:
     The array's values are initialized using ``initExpr`` which can be any of
     the following:
 
-    * a value coercible to ``eltType`` — all elements of the array will have this value
-    * an iterator expression that yields values of type ``eltType`` — the iterator
-      will be assigned into the array
-    * an array whose size matches ``dom``'s size in each dimension, and whose element
-      type can be coerced to ``eltType`` — the given array will be assigned into the
-      distributed array
+    * a value coercible to ``eltType`` — all elements of the array will be
+      assigned with this value
+    * an iterator expression with compatible size and type — the array elements
+      will be initialized with the values yielded by the iterator
+    * an array of compatible size and type — the array will be assigned into
+      the distributed array
 
 
 **Data-Parallel Iteration**
