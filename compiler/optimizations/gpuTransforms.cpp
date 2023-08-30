@@ -1314,15 +1314,9 @@ static void outlineGpuKernelsInFn(FnSymbol *fn) {
 
     auto foundLoop = eligibleLoops.find(loop);
     if (foundLoop != eligibleLoops.end()) {
-      // The loops originally in eligibleLoops should be in non-specialized
-      // procs, and thus, should not ever be encountered during outlining.
-      INT_ASSERT(!fGpuSpecialization);
-
-      // The GPU branches we create for eligible loops are always if-else,
-      // not if-fallthrough. Make them fall through if necessary (that is,
-      // if we're in CPU-as-device mode).
+      // Even though the original eligible loops are not in the GPU specialized
+      // copies, they need to be outlined to account for virtual dispatch.
       auto& eligibleLoop = foundLoop->second;
-      eligibleLoop.fixupNonGpuPath();
       outlineEligibleLoop(fn, eligibleLoop);
     } else if (fGpuSpecialization && getGpuEligibleMarker(loop)) {
       // Even if this wasn't a loop originally marked eligible, it could
@@ -1353,18 +1347,6 @@ static void cleanupForeachLoopsGuaranteedToRunOnCpu(FnSymbol *fn) {
 static void doGpuTransforms() {
   if(fGpuSpecialization) {
     CreateGpuFunctionSpecializations().doit();
-  }
-
-
-  if (fGpuSpecialization) {
-    for (auto& eligible : eligibleLoops) {
-      // For each loop in "eligibleLoops", immediately perform cleanup,
-      // since we found these loops before GPU specialization. Thus, they
-      // are in the original, non-specialized copies of the functions,
-      // and by definition won't run on the GPU.
-      eligible.second.makeCpuOnly();
-    }
-    eligibleLoops.clear();
   }
 
   // Outline all eligible loops; cleanup CPU bound loops
