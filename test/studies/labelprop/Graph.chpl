@@ -219,7 +219,7 @@ module Graph {
                                   edgeWeightType = r.weight.type,
                                   vertices = vertices,
                                   initialLastAvail=0);
-      var next$: [vertices] atomic int = G.initialFirstAvail;
+      var next: [vertices] atomic int = G.initialFirstAvail;
 
       // Pass 1: count.
       forall trip in triples with (ref next$) {
@@ -228,18 +228,18 @@ module Graph {
         var w = trip.weight;
         // edge from u to v will be represented in both u and v's edge
         // lists
-        next$[u].add(1, memoryOrder.relaxed);
-        next$[v].add(1, memoryOrder.relaxed);
+        next[u].add(1, memoryOrder.relaxed);
+        next[v].add(1, memoryOrder.relaxed);
       }
       // resize the edge lists
       forall v in vertices {
         var min = G.initialFirstAvail;
-        var max = next$[v].read(memoryOrder.relaxed) - 1;
+        var max = next[v].read(memoryOrder.relaxed) - 1;
         G.Row[v].ndom = {min..max};
       }
       // reset all of the counters.
       forall x in next$ with (ref next$) {
-        next$.write(G.initialFirstAvail, memoryOrder.relaxed);
+        next.write(G.initialFirstAvail, memoryOrder.relaxed);
       }
       // Pass 2: populate.
       forall trip in triples with (ref next$) {
@@ -248,8 +248,8 @@ module Graph {
         var w = trip.weight;
         // edge from u to v will be represented in both u and v's edge
         // lists
-        var uslot = next$[u].fetchAdd(1, memoryOrder.relaxed);
-        var vslot = next$[v].fetchAdd(1, memoryOrder.relaxed);
+        var uslot = next[u].fetchAdd(1, memoryOrder.relaxed);
+        var vslot = next[v].fetchAdd(1, memoryOrder.relaxed);
         G.Row[u].neighborList[uslot] = (v,);
         G.Row[v].neighborList[vslot] = (u,);
       }

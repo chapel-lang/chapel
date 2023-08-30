@@ -43,14 +43,14 @@ module Map {
 
   @chpldoc.nodoc
   class _LockWrapper {
-    var lock = new _lockType();
+    var lockVar = new _lockType();
 
     inline proc lock() {
-      lock.lock();
+      lockVar.lock();
     }
 
     inline proc unlock() {
-      lock.unlock();
+      lockVar.unlock();
     }
   }
 

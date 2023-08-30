@@ -206,8 +206,8 @@ module SSCA2_kernels
       // probably be more efficient.
       type Sparse_Vertex_List = domain(index(vertex_domain));
 
-      var Between_Cent$ : [vertex_domain] atomic real;
-      var Sum_Min_Dist$ : atomic real;
+      var Between_Cent : [vertex_domain] atomic real;
+      var Sum_Min_Dist : atomic real;
 
       //
       // Throughout kernel 4, we use distributed arrays that are
@@ -325,7 +325,7 @@ module SSCA2_kernels
 
         var bar = new barrier(numLocales);
 
-        coforall loc in Locales with (ref remaining, ref bar, ref Between_Cent$) do on loc {
+        coforall loc in Locales with (ref remaining, ref bar, ref Between_Cent) do on loc {
           const AL = Active_Level[here.id]!;
           AL.Members.clear();
           AL.next!.Members.clear();
@@ -426,7 +426,7 @@ module SSCA2_kernels
 
           if VALIDATE_BC then
             if here.id==0 then
-              Sum_Min_Dist$.add(Lcl_Sum_Min_Dist.read());
+              Sum_Min_Dist.add(Lcl_Sum_Min_Dist.read());
 
           // -------------------------------------------------------------
           // compute the dependencies recursively, traversing the vertices
@@ -442,12 +442,12 @@ module SSCA2_kernels
                         "  is ", graph_diameter );
 
           pragma "dont disable remote value forwarding"
-          inline proc f4(ref BCaux, ref Between_Cent$, u) {
+          inline proc f4(ref BCaux, ref Between_Cent, u) {
             BCaux[u].depend = + reduce [v in BCaux[u].children_list.Row_Children[1..BCaux[u].children_list.child_count.read()]]
               ( BCaux[u].path_count$.read() /
                 BCaux[v].path_count$.read() )      *
               ( 1.0 + BCaux[v].depend );
-            Between_Cent$(u).add(BCaux[u].depend);
+            Between_Cent(u).add(BCaux[u].depend);
           }
 
           // back up to last level
@@ -457,7 +457,7 @@ module SSCA2_kernels
             curr_Level = curr_Level.previous!;
 
             for u in curr_Level.Members do on vertex_domain.distribution.idxToLocale(u) {
-                f4(BCaux, Between_Cent$, u);
+                f4(BCaux, Between_Cent, u);
             }
 
             bar.barrier();
@@ -490,9 +490,9 @@ module SSCA2_kernels
       }
 
       if VALIDATE_BC then
-        Sum_Min_Dist = Sum_Min_Dist$.read();
+        Sum_Min_Dist = Sum_Min_Dist.read();
 
-      Between_Cent = Between_Cent$.read();
+      Between_Cent = Between_Cent.read();
 
       if DELETE_KERNEL4_DS {
         coforall tpvElem in TPV do on tpvElem {
