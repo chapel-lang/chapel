@@ -867,18 +867,19 @@ proc type Stencil.createDomain(
   return dom dmapped Stencil(dom, targetLocales, fluff=fluff, periodic=periodic);
 }
 
-// create a domain over a Stencil Distribution constructed from a list of ranges
-proc type Stencil.createDomain(rng: range...?k) {
-  return createDomain({(...rng)}, fluff = makeZero(k, rng[0].idxType));
-}
-
+// create a domain over a Stencil Distribution constructed from a series of ranges
 proc type Stencil.createDomain(
   rng: range...?k,
   targetLocales: [] locale = Locales,
   fluff: ?t = makeZero(k, int),
   periodic = false
-) where isHomogeneousTupleType(t) {
+) where isHomogeneousTupleType(t)
+{
   return createDomain({(...rng)}, targetLocales, fluff, periodic);
+}
+
+proc type Stencil.createDomain(rng: range...?k) {
+  return createDomain({(...rng)}, fluff = makeZero(k, rng[0].idxType));
 }
 
 // create an array over a Stencil Distribution, default initialized
@@ -902,8 +903,7 @@ proc type Stencil.createArray(
   targetLocales: [] locale = Locales,
   fluff = makeZero(dom.rank, dom.idxType),
   periodic = false
-)
-  where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
+) where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
 {
   var D = createDomain(dom, targetLocales, fluff, periodic);
   var A: [D] eltType;
@@ -919,8 +919,7 @@ proc type Stencil.createArray(
   targetLocales: [] locale = Locales,
   fluff = makeZero(dom.rank, dom.idxType),
   periodic = false
-)
-  where dom.rank == arrayDom.rank && isCoercible(arrayEltType, eltType)
+) where dom.rank == arrayDom.rank && isCoercible(arrayEltType, eltType)
 {
   for (d, ad, i) in zip(dom.dims(), arrayDom.dims(), 0..) do
     if d.size != ad.size then halt("Domain size mismatch in 'Stencil.createArray' dimension " + i:string);
@@ -930,11 +929,7 @@ proc type Stencil.createArray(
   return A;
 }
 
-// create an array over a Stencil Distribution constructed from a list of ranges, default initialized
-proc type Stencil.createArray(rng: range...?k, type eltType) {
-  return createArray({(...rng)}, eltType, fluff = makeZero(k, rng[0].idxType));
-}
-
+// create an array over a Stencil Distribution constructed from a series of ranges, default initialized
 proc type Stencil.createArray(
   rng: range...?k,
   type eltType,
@@ -945,7 +940,11 @@ proc type Stencil.createArray(
   return createArray({(...rng)}, eltType, targetLocales, fluff, periodic);
 }
 
-// create an array over a Stencil Distribution constructed from a list of ranges, initialized with the given value or iterator
+proc type Stencil.createArray(rng: range...?k, type eltType) {
+  return createArray({(...rng)}, eltType, fluff = makeZero(k, rng[0].idxType));
+}
+
+// create an array over a Stencil Distribution constructed from a series of ranges, initialized with the given value or iterator
 proc type Stencil.createArray(rng: range...?k, type eltType, initExpr: ?t)
   where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
 {
@@ -963,13 +962,12 @@ proc type Stencil.createArray(
   return createArray({(...rng)}, eltType, initExpr, targetLocales, fluff, periodic);
 }
 
-// create an array over a Cyclic Distribution constructed from a list of ranges, initialized from the given array
+// create an array over a Cyclic Distribution constructed from a series of ranges, initialized from the given array
 proc type Stencil.createArray(
   rng: range...?k,
   type eltType,
   initExpr: [?arrayDom] ?arrayEltType
-)
-  where k == arrayDom.rank && isCoercible(arrayEltType, eltType)
+) where k == arrayDom.rank && isCoercible(arrayEltType, eltType)
 {
   return createArray({(...rng)}, eltType, initExpr);
 }
@@ -981,8 +979,7 @@ proc type Stencil.createArray(
   targetLocales: [] locale = Locales,
   fluff: ?f = makeZero(k, int),
   periodic = false
-)
-  where k == arrayDom.rank && isCoercible(arrayEltType, eltType) && isHomogeneousTupleType(f)
+) where k == arrayDom.rank && isCoercible(arrayEltType, eltType) && isHomogeneousTupleType(f)
 {
   return createArray({(...rng)}, eltType, initExpr, targetLocales, fluff, periodic);
 }

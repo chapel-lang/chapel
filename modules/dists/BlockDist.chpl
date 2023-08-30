@@ -924,25 +924,33 @@ proc type Block.createDomain(dom: domain, targetLocales: [] locale = Locales) {
   return dom dmapped Block(dom, targetLocales);
 }
 
-// create a domain over a Block Distribution constructed from a list of ranges
-proc type Block.createDomain(rng: range...) {
-  return createDomain({(...rng)});
-}
-
+// create a domain over a Block Distribution constructed from a series of ranges
 proc type Block.createDomain(rng: range..., targetLocales: [] locale = Locales) {
   return createDomain({(...rng)}, targetLocales);
 }
 
+proc type Block.createDomain(rng: range...) {
+  return createDomain({(...rng)});
+}
+
 // create an array over a Block Distribution, default initialized
-proc type Block.createArray(dom: domain, type eltType, targetLocales: [] locale = Locales) {
+proc type Block.createArray(
+  dom: domain,
+  type eltType,
+  targetLocales: [] locale = Locales
+) {
   var D = createDomain(dom, targetLocales);
   var A: [D] eltType;
   return A;
 }
 
 // create an array over a Block Distribution, initialized with the given value or iterator
-proc type Block.createArray(dom: domain, type eltType, initExpr: ?t, targetLocales: [] locale = Locales)
-  where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
+proc type Block.createArray(
+  dom: domain,
+  type eltType,
+  initExpr: ?t,
+  targetLocales: [] locale = Locales
+) where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
 {
   var D = createDomain(dom, targetLocales);
   var A: [D] eltType;
@@ -951,8 +959,12 @@ proc type Block.createArray(dom: domain, type eltType, initExpr: ?t, targetLocal
 }
 
 // create an array over a Block Distribution, initialized from the given array
-proc type Block.createArray(dom: domain, type eltType, initExpr: [?arrayDom] ?arrayEltType, targetLocales: [] locale = Locales)
-  where dom.rank == arrayDom.rank && isCoercible(arrayEltType, eltType)
+proc type Block.createArray(
+  dom: domain,
+  type eltType,
+  initExpr: [?arrayDom] ?arrayEltType,
+  targetLocales: [] locale = Locales
+) where dom.rank == arrayDom.rank && isCoercible(arrayEltType, eltType)
 {
   for (d, ad, i) in zip(dom.dims(), arrayDom.dims(), 0..) do
     if d.size != ad.size then halt("Domain size mismatch in 'Block.createArray' dimension " + i:string);
@@ -962,39 +974,54 @@ proc type Block.createArray(dom: domain, type eltType, initExpr: [?arrayDom] ?ar
   return A;
 }
 
-// create an array over a Block Distribution constructed from a list of ranges, default initialized
+// create an array over a Block Distribution constructed from a series of ranges, default initialized
+proc type Block.createArray(
+  rng: range...,
+  type eltType,
+  targetLocales: [] locale = Locales
+) {
+  return createArray({(...rng)}, eltType, targetLocales);
+}
+
 proc type Block.createArray(rng: range..., type eltType) {
   return createArray({(...rng)}, eltType);
 }
 
-proc type Block.createArray(rng: range..., type eltType, targetLocales: [] locale = Locales) {
-  return createArray({(...rng)}, eltType, targetLocales);
+// create an array over a Block Distribution constructed from a series of ranges, initialized with the given value or iterator
+proc type Block.createArray(
+  rng: range...?k,
+  type eltType, initExpr: ?t,
+  targetLocales: [] locale = Locales
+) where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
+{
+  return createArray({(...rng)}, eltType, initExpr, targetLocales);
 }
 
-// create an array over a Block Distribution constructed from a list of ranges, initialized with the given value or iterator
 proc type Block.createArray(rng: range...?k, type eltType, initExpr: ?t)
   where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
 {
   return createArray({(...rng)}, eltType, initExpr);
 }
 
-proc type Block.createArray(rng: range...?k, type eltType, initExpr: ?t, targetLocales: [] locale = Locales)
-  where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
+
+// create an array over a Block Distribution constructed from a series of ranges, initialized from the given array
+proc type Block.createArray(
+  rng: range(?)...?k,
+  type eltType,
+  initExpr: [?arrayDom] ?arrayEltType,
+  targetLocales: [] locale = Locales
+) where k == arrayDom.rank && isCoercible(arrayEltType, eltType)
 {
   return createArray({(...rng)}, eltType, initExpr, targetLocales);
 }
 
-// create an array over a Block Distribution constructed from a list of ranges, initialized from the given array
-proc type Block.createArray(rng: range(?)...?k, type eltType, initExpr: [?arrayDom] ?arrayEltType)
-  where k == arrayDom.rank && isCoercible(arrayEltType, eltType)
+proc type Block.createArray(
+  rng: range(?)...?k,
+  type eltType,
+  initExpr: [?arrayDom] ?arrayEltType
+) where k == arrayDom.rank && isCoercible(arrayEltType, eltType)
 {
   return createArray({(...rng)}, eltType, initExpr);
-}
-
-proc type Block.createArray(rng: range(?)...?k, type eltType, initExpr: [?arrayDom] ?arrayEltType, targetLocales: [] locale = Locales)
-  where k == arrayDom.rank && isCoercible(arrayEltType, eltType)
-{
-  return createArray({(...rng)}, eltType, initExpr, targetLocales);
 }
 
 

@@ -1440,25 +1440,34 @@ proc type Cyclic.createDomain(dom: domain, targetLocales: [] locale = Locales)
   return dom dmapped CyclicImpl(startIdx=dom.lowBound, targetLocales);
 }
 
-// create a domain over a Cyclic Distribution constructed from a list of ranges
-proc type Cyclic.createDomain(rng: range(?)...) {
-  return createDomain({(...rng)});
-}
-
+// create a domain over a Cyclic Distribution constructed from a series of ranges
 proc type Cyclic.createDomain(rng: range(?)..., targetLocales: [] locale = Locales) {
   return createDomain({(...rng)}, targetLocales);
 }
 
+proc type Cyclic.createDomain(rng: range(?)...) {
+  return createDomain({(...rng)});
+}
+
+
 // create an array over a Cyclic Distribution, default initialized
-proc type Cyclic.createArray(dom: domain, type eltType, targetLocales: [] locale = Locales) {
+proc type Cyclic.createArray(
+  dom: domain,
+  type eltType,
+  targetLocales: [] locale = Locales
+) {
   var D = createDomain(dom, targetLocales);
   var A: [D] eltType;
   return A;
 }
 
 // create an array over a Cyclic Distribution, initialized with the given value or iterator
-proc type Cyclic.createArray(dom: domain, type eltType, initExpr: ?t, targetLocales: [] locale = Locales)
-  where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
+proc type Cyclic.createArray(
+  dom: domain,
+  type eltType,
+  initExpr: ?t,
+  targetLocales: [] locale = Locales
+) where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
 {
   var D = createDomain(dom, targetLocales);
   var A: [D] eltType;
@@ -1467,8 +1476,12 @@ proc type Cyclic.createArray(dom: domain, type eltType, initExpr: ?t, targetLoca
 }
 
 // create an array over a Cyclic Distribution, initialized from the given array
-proc type Cyclic.createArray(dom: domain, type eltType, initExpr: [?arrayDom] ?arrayEltType, targetLocales: [] locale = Locales)
-  where dom.rank == arrayDom.rank && isCoercible(arrayEltType, eltType)
+proc type Cyclic.createArray(
+  dom: domain,
+  type eltType,
+  initExpr: [?arrayDom] ?arrayEltType,
+  targetLocales: [] locale = Locales
+) where dom.rank == arrayDom.rank && isCoercible(arrayEltType, eltType)
 {
   for (d, ad, i) in zip(dom.dims(), arrayDom.dims(), 0..) do
     if d.size != ad.size then halt("Domain size mismatch in 'Cyclic.createArray' dimension " + i:string);
@@ -1478,39 +1491,54 @@ proc type Cyclic.createArray(dom: domain, type eltType, initExpr: [?arrayDom] ?a
   return A;
 }
 
-// create an array over a Cyclic Distribution constructed from a list of ranges, default initialized
+// create an array over a Cyclic Distribution constructed from a series of ranges, default initialized
+proc type Cyclic.createArray(
+  rng: range(?)...,
+  type eltType,
+  targetLocales: [] locale = Locales
+) {
+  return createArray({(...rng)}, eltType, targetLocales);
+}
+
 proc type Cyclic.createArray(rng: range(?)..., type eltType) {
   return createArray({(...rng)}, eltType);
 }
 
-proc type Cyclic.createArray(rng: range(?)..., type eltType, targetLocales: [] locale = Locales) {
-  return createArray({(...rng)}, eltType, targetLocales);
+// create an array over a Cyclic Distribution constructed from a series of ranges, initialized with the given value or iterator
+proc type Cyclic.createArray(
+  rng: range(?)...,
+  type eltType,
+  initExpr: ?t,
+  targetLocales: [] locale = Locales
+) where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
+{
+  return createArray({(...rng)}, eltType, initExpr, targetLocales);
 }
 
-// create an array over a Cyclic Distribution constructed from a list of ranges, initialized with the given value or iterator
 proc type Cyclic.createArray(rng: range(?)..., type eltType, initExpr: ?t)
   where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
 {
   return createArray({(...rng)}, eltType, initExpr);
 }
 
-proc type Cyclic.createArray(rng: range(?)..., type eltType, initExpr: ?t, targetLocales: [] locale = Locales)
-  where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
+// create an array over a Cyclic Distribution constructed from a series of ranges, initialized from the given array
+proc type Cyclic.createArray(
+  rng: range(?)...?k,
+  type eltType,
+  initExpr: [?arrayDom] ?arrayEltType,
+  targetLocales: [] locale = Locales
+) where k == arrayDom.rank && isCoercible(arrayEltType, eltType)
 {
   return createArray({(...rng)}, eltType, initExpr, targetLocales);
 }
 
-// create an array over a Cyclic Distribution constructed from a list of ranges, initialized from the given array
-proc type Cyclic.createArray(rng: range(?)...?k, type eltType, initExpr: [?arrayDom] ?arrayEltType)
-  where k == arrayDom.rank && isCoercible(arrayEltType, eltType)
+proc type Cyclic.createArray(
+  rng: range(?)...?k,
+  type eltType,
+  initExpr: [?arrayDom] ?arrayEltType
+) where k == arrayDom.rank && isCoercible(arrayEltType, eltType)
 {
   return createArray({(...rng)}, eltType, initExpr);
-}
-
-proc type Cyclic.createArray(rng: range(?)...?k, type eltType, initExpr: [?arrayDom] ?arrayEltType, targetLocales: [] locale = Locales)
-  where k == arrayDom.rank && isCoercible(arrayEltType, eltType)
-{
-  return createArray({(...rng)}, eltType, initExpr, targetLocales);
 }
 
 // Cyclic subdomains are represented as a single domain
