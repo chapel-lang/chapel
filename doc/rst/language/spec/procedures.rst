@@ -681,13 +681,13 @@ Default Intent for ’owned’ and ’shared’
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The default intent for :type:`~OwnedObject.owned` and
-:type:`~SharedObject.shared` arguments is ``const ref``. Arguments can use the
+:type:`~SharedObject.shared` arguments is ``const``. Arguments can use the
 ``in`` or ``const in`` intents to transfer or share ownership if those arguments
 apply to :type:`~OwnedObject.owned` or :type:`~SharedObject.shared` types.
 
    *Example (owned-any-intent.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
