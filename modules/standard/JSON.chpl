@@ -359,7 +359,7 @@ module JSON {
   /*
     A JSON format deserializer to be used by :record:`~IO.fileReader`.
 
-    Implements the ``deserializeTyp`` and ``deserializeValue`` methods which are
+    Implements the ``deserializeType`` and ``deserializeValue`` methods which are
     called by a ``fileReader`` to deserialize a serialized representation of
     a type or value in JSON format.
 
