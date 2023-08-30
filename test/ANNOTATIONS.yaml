@@ -2423,7 +2423,7 @@ shoc-triad-bw-lg:
   11/10/22:
     - Ensure we time mem transfer in SHOC Triad (#20961)
 
-sort:
+shoc-sort:
   02/24/23:
     - Improve SHOC-Sort implementation (#21610)
 
