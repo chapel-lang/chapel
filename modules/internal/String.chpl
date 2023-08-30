@@ -1383,9 +1383,11 @@ module String {
         :type:`string`. The returned `c_ptrConst(c_char)` is only valid when used
         on the same locale as the string.
    */
-  @unstable("'string.c_str()' is unstable and may change in a future release")
+  pragma "last resort"
+  @deprecated("'string.c_str()'' has moved to 'CTypes'. Please 'use CTypes' to access the replacement")
   inline proc string.c_str() : c_ptrConst(c_char) {
-    return getCStr(this);
+    use CTypes only c_str;
+    return this.c_str();
   }
 
   /*

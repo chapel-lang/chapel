@@ -608,9 +608,11 @@ module Bytes {
         :type:`bytes`. The returned `c_ptrConst(c_char)` is only valid when used
         on the same locale as the bytes.
    */
-  @unstable("'bytes.c_str()' is unstable and may change in a future release")
+  pragma "last resort"
+  @deprecated("'bytes.c_str()' has moved to 'CTypes'. Please 'use CTypes' to access the replacement")
   inline proc bytes.c_str(): c_ptrConst(c_char) {
-    return getCStr(this);
+    use CTypes only c_str;
+    return this.c_str();
   }
 
   /*

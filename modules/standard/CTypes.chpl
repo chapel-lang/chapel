@@ -1523,4 +1523,66 @@ module CTypes {
   inline proc strLen(x:c_ptrConst(?t)): int {
      return __primitive("string_length_bytes", x).safeCast(int);
   }
+
+  /*
+    Get a `c_ptrConst(c_char)` from a :type:`string`. The returned `c_ptrConst(c_char)`
+    shares the buffer with the :type:`string`.
+
+    .. warning::
+
+        This can only be called safely on a :type:`string` whose home is
+        the current locale.  This property can be enforced by calling
+        :proc:`string.localize()` before :proc:`string.c_str()`. If the
+        string is remote, the program will halt.
+
+    For example:
+
+    .. code-block:: chapel
+
+      var my_string = "Hello!";
+      on different_locale {
+        printf("%s", my_string.localize().c_str());
+      }
+
+    :returns:
+        A `c_ptrConst(c_char)` that points to the underlying buffer used by this
+        :type:`string`. The returned `c_ptrConst(c_char)` is only valid when used
+        on the same locale as the string.
+   */
+  @unstable("'string.c_str()' is unstable and may change in a future release")
+  inline proc string.c_str() : c_ptrConst(c_char) {
+    use BytesStringCommon only getCStr;
+    return getCStr(this);
+  }
+
+ /*
+    Gets a `c_ptrConst(c_char)` from a :type:`bytes`. The returned `c_ptrConst(c_char)`
+    shares the buffer with the :type:`bytes`.
+
+    .. warning::
+
+      This can only be called safely on a :type:`bytes` whose home is
+      the current locale.  This property can be enforced by calling
+      :proc:`bytes.localize()` before :proc:`~bytes.c_str()`. If the
+      bytes is remote, the program will halt.
+
+    For example:
+
+    .. code-block:: chapel
+
+        var myBytes = b"Hello!";
+        on different_locale {
+          printf("%s", myBytes.localize().c_str());
+        }
+
+    :returns: A `c_ptrConst(c_char)` that points to the underlying buffer used by this
+        :type:`bytes`. The returned `c_ptrConst(c_char)` is only valid when used
+        on the same locale as the bytes.
+   */
+  @unstable("'bytes.c_str()' is unstable and may change in a future release")
+  inline proc bytes.c_str(): c_ptrConst(c_char) {
+    use BytesStringCommon only getCStr;
+    return getCStr(this);
+  }
+
 }
