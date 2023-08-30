@@ -53,6 +53,7 @@ ForallStmt::ForallStmt(BlockStmt* body):
   fRequireSerialIterator(false),
   fVectorizationHazard(false),
   fIsForallExpr(false),
+  fHasRefMaybeConst(false),
   fContinueLabel(NULL),
   fErrorHandlerLabel(NULL),
   fRecIterIRdef(NULL),
@@ -89,6 +90,7 @@ ForallStmt* ForallStmt::copyInner(SymbolMap* map) {
   _this->fRequireSerialIterator = fRequireSerialIterator;
   _this->fVectorizationHazard   = fVectorizationHazard;
   _this->fIsForallExpr          = fIsForallExpr;
+  _this->fHasRefMaybeConst      = fHasRefMaybeConst;
   // todo: fContinueLabel, fErrorHandlerLabel
 
   _this->fRecIterIRdef        = COPY_INT(fRecIterIRdef);
@@ -716,6 +718,13 @@ void ForallStmt::setHasVectorizationHazard(bool v) {
 
 bool ForallStmt::isForallExpr() const {
   return fIsForallExpr;
+}
+
+bool ForallStmt::hasRefMaybeConst() const {
+  return fHasRefMaybeConst;
+}
+void ForallStmt::setRefMaybeConst(bool v) {
+  fHasRefMaybeConst = v;
 }
 
 static void gatherFollowerLoopBodies(BlockStmt* block,

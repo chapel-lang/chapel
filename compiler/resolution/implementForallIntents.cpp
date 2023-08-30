@@ -715,7 +715,8 @@ Potential culprits:
 // It is done on an already-existing, explicit shadow variable
 // or before an implicit shadow variable is to be created.
 //
-static void resolveShadowVarTypeIntent(Symbol* sym,
+static void resolveShadowVarTypeIntent(ForallStmt* fs,
+                                       Symbol* sym,
                                        Type*& type,
                                        ForallIntentTag& intent,
                                        bool& prune)
@@ -741,6 +742,7 @@ static void resolveShadowVarTypeIntent(Symbol* sym,
       // mark all ref-maybe-const shadow variables
       if (argInt == INTENT_REF_MAYBE_CONST && intent == TFI_REF) {
         sym->addFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST);
+        fs->setRefMaybeConst(true);
       }
 
       break;
@@ -858,7 +860,7 @@ static void doImplicitShadowVars(ForallStmt* fs, BlockStmt* block,
     bool  prune = false;
     if (sym->type == dtUnknown)
       USR_FATAL(se, "'%s' appears to be used before it is defined", sym->name);
-    resolveShadowVarTypeIntent(sym, type, intent, prune); // updates the args
+    resolveShadowVarTypeIntent(fs, sym, type, intent, prune); // updates the args
 
     if (prune) {                      // do not convert to shadow var
       assertNotRecordReceiver(sym, se);
@@ -927,7 +929,7 @@ static void resolveAndPruneExplicitShadowVars(ForallStmt* fs,
   {
     Type* type  = ovarOrSvarType(svar);
     bool  prune = false;
-    resolveShadowVarTypeIntent(svar, type, svar->intent, prune); // updates the args
+    resolveShadowVarTypeIntent(fs, svar, type, svar->intent, prune); // updates the args
 
     // Ensure the svar is retained for a `this` with an explicit intent,
     // see convertFieldsOfRecordThis().
@@ -1002,7 +1004,7 @@ static ShadowVarSymbol* createSVforFieldAccess(ForallStmt* fs, Symbol* ovar,
   Type*           svarType   = field->type;
   ForallIntentTag svarIntent = isConst ? TFI_CONST : TFI_DEFAULT;
   bool            pruneDummy = false;
-  resolveShadowVarTypeIntent(field, svarType, svarIntent, pruneDummy);
+  resolveShadowVarTypeIntent(fs, field, svarType, svarIntent, pruneDummy);
 
   ShadowVarSymbol* svar = new ShadowVarSymbol(svarIntent,
                                               astr(field->name, "_svar"),

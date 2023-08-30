@@ -134,6 +134,10 @@ public:
   // indicates a forall expression (vs a forall statement)
   bool isForallExpr() const;
 
+  // supports deprecation
+  bool hasRefMaybeConst() const;
+  void setRefMaybeConst(bool v);
+
   ForallOptimizationInfo optInfo;
 
   void insertZipSym(Symbol *sym);
@@ -152,6 +156,7 @@ private:
   bool           fRequireSerialIterator;
   bool           fVectorizationHazard;
   bool           fIsForallExpr;
+  bool           fHasRefMaybeConst;
 
   // constructor
   ForallStmt(BlockStmt* body);
