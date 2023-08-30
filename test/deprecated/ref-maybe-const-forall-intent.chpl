@@ -25,7 +25,7 @@ forall (i, a) in zip(1..10, A) {
 }
 
 // should warn for B only
-{
+{ // note that the warning for B is thrown twice. I don't know why, but we might just have to live with it for now
   var A: [1..10] int = 17;
   var B: A.type;
   forall (a,i) in zip(A, A.domain) {
@@ -70,4 +70,11 @@ forall i in 1..10 with (ref myArrayD) do myArrayD(i) = i;
   forall i in A.domain {
     A[i] = i;
   }
+}
+
+
+{ // this should warn or error
+  var B = [1, 3, 4, 3];
+  var A: [1..5] int = 10;
+  A[B] += 3;
 }
