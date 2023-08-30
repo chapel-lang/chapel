@@ -2,22 +2,22 @@ use Time;
 
 class zone: Timezone {
   /* The offset from UTC this class represents */
-  proc utcoffset(dt: dateTime): timeDelta {
+  override proc utcOffset(dt: dateTime): timeDelta {
     return new timeDelta();
   }
 
   /* The `timeDelta` for daylight saving time */
-  proc dst(dt: dateTime): timeDelta {
+  override proc dst(dt: dateTime): timeDelta {
     return new timeDelta();
   }
 
   /* The name of this time zone */
-  proc tzname(dt: dateTime): string {
+  override proc tzname(dt: dateTime): string {
     return "ZONE";
   }
 
   /* Convert a `time` in UTC to this time zone */
-  proc fromutc(dt: dateTime): dateTime {
+  override proc fromUtc(dt: dateTime): dateTime {
     return new dateTime(0,0,0);
   }
 }
@@ -25,3 +25,12 @@ class zone: Timezone {
 const TZ = new shared zone?();
 
 var t = new time(1,2,3,4,TZ);
+var dt = dateTime.now(TZ);
+
+// unstable timezone convenience methods
+t.utcOffset();
+t.dst();
+t.tzname();
+dt.utcOffset();
+dt.dst();
+dt.tzname();

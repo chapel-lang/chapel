@@ -862,6 +862,7 @@ module Time {
   }
 
   /* Return the offset from UTC */
+  @unstable("'utcOffset' is unstable")
   proc time.utcOffset() : timeDelta {
     if timezone.borrow() == nil {
       return new timeDelta();
@@ -871,6 +872,7 @@ module Time {
   }
 
   /* Return the daylight saving time offset */
+  @unstable("'dst' is unstable")
   proc time.dst() : timeDelta {
     if timezone.borrow() == nil {
       return new timeDelta();
@@ -1376,6 +1378,7 @@ module Time {
   }
 
   /* Return the offset from UTC */
+  @unstable("'utcOffset' is unstable")
   proc dateTime.utcOffset() : timeDelta {
     if timezone.borrow() == nil {
       halt("utcOffset called on naive dateTime");
@@ -1384,6 +1387,7 @@ module Time {
     }
   }
   /* Return the daylight saving time offset */
+  @unstable("'dst' is unstable")
   proc dateTime.dst() : timeDelta {
     if timezone.borrow() == nil then
       halt("dst() called with nil timezone");
