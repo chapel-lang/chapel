@@ -1435,7 +1435,7 @@ proc CyclicImpl.dsiTargetLocales() const ref {
 }
 
 // create a domain over a Cyclic Distribution
-proc type Cyclic.createDomain(dom: domain, targetLocales: [] locale = Locales)
+proc type Cyclic.createDomain(dom: domain(?), targetLocales: [] locale = Locales)
 {
   return dom dmapped CyclicImpl(startIdx=dom.lowBound, targetLocales);
 }
@@ -1452,7 +1452,7 @@ proc type Cyclic.createDomain(rng: range(?)...) {
 
 // create an array over a Cyclic Distribution, default initialized
 proc type Cyclic.createArray(
-  dom: domain,
+  dom: domain(?),
   type eltType,
   targetLocales: [] locale = Locales
 ) {
@@ -1463,7 +1463,7 @@ proc type Cyclic.createArray(
 
 // create an array over a Cyclic Distribution, initialized with the given value or iterator
 proc type Cyclic.createArray(
-  dom: domain,
+  dom: domain(?),
   type eltType,
   initExpr: ?t,
   targetLocales: [] locale = Locales
@@ -1477,7 +1477,7 @@ proc type Cyclic.createArray(
 
 // create an array over a Cyclic Distribution, initialized from the given array
 proc type Cyclic.createArray(
-  dom: domain,
+  dom: domain(?),
   type eltType,
   initExpr: [?arrayDom] ?arrayEltType,
   targetLocales: [] locale = Locales
@@ -1523,20 +1523,20 @@ proc type Cyclic.createArray(rng: range(?)..., type eltType, initExpr: ?t)
 
 // create an array over a Cyclic Distribution constructed from a series of ranges, initialized from the given array
 proc type Cyclic.createArray(
-  rng: range(?)...?k,
+  rng: range(?)...,
   type eltType,
   initExpr: [?arrayDom] ?arrayEltType,
   targetLocales: [] locale = Locales
-) where k == arrayDom.rank && isCoercible(arrayEltType, eltType)
+) where rng.size == arrayDom.rank && isCoercible(arrayEltType, eltType)
 {
   return createArray({(...rng)}, eltType, initExpr, targetLocales);
 }
 
 proc type Cyclic.createArray(
-  rng: range(?)...?k,
+  rng: range(?)...,
   type eltType,
   initExpr: [?arrayDom] ?arrayEltType
-) where k == arrayDom.rank && isCoercible(arrayEltType, eltType)
+) where rng.size == arrayDom.rank && isCoercible(arrayEltType, eltType)
 {
   return createArray({(...rng)}, eltType, initExpr);
 }
