@@ -49,7 +49,8 @@ char expectFilename[FILENAME_MAX];
 #define launcherAccountEnvvar "CHPL_LAUNCHER_ACCOUNT"
 
 typedef enum {
-  pbspro,
+  pbspro_mpp,
+  pbspro_select,
   nccs,
   torque,
   unknown
@@ -70,8 +71,10 @@ static qsubVersion determineQsubVersion(void) {
 
   if (strstr(version, "NCCS")) {
     return nccs;
-  } else if (strstr(version, "pbs_version") || strstr(version, "PBSPro")) {
-    return pbspro;
+  } else if (strstr(version, "pbs_version")) {
+    return pbspro_select;
+  } else if (strstr(version, "PBSPro")) {
+    return pbspro_mpp;
   } else if (strstr(version, "version:") || strstr(version, "Version:")) {
     return torque;
   } else {
@@ -105,26 +108,32 @@ static void genNumLocalesOptions(FILE* pbsFile, qsubVersion qsub,
   if (walltime)
     fprintf(pbsFile, "#PBS -l walltime=%s\n", walltime);
   switch (qsub) {
-  case pbspro:
-  case unknown:
-    if (numCoresPerLocale) {
-      fprintf(pbsFile, "#PBS -l place=scatter,select=%d:ncpus=%d\n",
-              numLocales, numCoresPerLocale);
-    } else {
-      fprintf(pbsFile, "#PBS -l place=scatter,select=%d\n",numLocales);
-    }
-    break;
-  case torque:
-    fprintf(pbsFile, "#PBS -l nodes=%d\n", numLocales);
-    break;
-  case nccs:
-    if (!queue && !walltime)
-      chpl_error("An execution time must be specified for the NCCS launcher if no queue is\n"
-                 "specified -- use the CHPL_LAUNCHER_WALLTIME and/or CHPL_LAUNCHER_QUEUE\n"
-                 "environment variables", 0, 0);
-    if (numCoresPerLocale)
+    case pbspro_select:
+    case unknown:
+      if (numCoresPerLocale) {
+        fprintf(pbsFile, "#PBS -l place=scatter,select=%d:ncpus=%d\n",
+                numLocales, numCoresPerLocale);
+      } else {
+        fprintf(pbsFile, "#PBS -l place=scatter,select=%d\n",numLocales);
+      }
+      break;
+    case pbspro_mpp:
+      fprintf(pbsFile, "#PBS -l mppwidth=%d\n", numLocales);
+      fprintf(pbsFile, "#PBS -l mppnppn=%d\n", procsPerNode);
+      if (numCoresPerLocale)
+        fprintf(pbsFile, "#PBS -l mppdepth=%d\n", numCoresPerLocale);
+      break;
+    case torque:
       fprintf(pbsFile, "#PBS -l nodes=%d\n", numLocales);
-    break;
+      break;
+    case nccs:
+      if (!queue && !walltime)
+        chpl_error("An execution time must be specified for the NCCS launcher if no queue is\n"
+                   "specified -- use the CHPL_LAUNCHER_WALLTIME and/or CHPL_LAUNCHER_QUEUE\n"
+                   "environment variables", 0, 0);
+      if (numCoresPerLocale)
+        fprintf(pbsFile, "#PBS -l nodes=%d\n", numLocales);
+      break;
   }
 }
 
