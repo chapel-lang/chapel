@@ -124,7 +124,7 @@ proc train(ref network,
 
 }
 
-proc test(ref network, numImages: int, modelPath: string) {
+proc classificationEval(ref network, numImages: int, modelPath: string) {
 
     network.load(modelPath);
 

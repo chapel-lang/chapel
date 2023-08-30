@@ -11,7 +11,6 @@ import MNISTTester;
 
 config param networkNum = 1;
 
-tn.seedRandom(0);
 
 config const modelDir = "../lib/models/";
 config const numImages = 30000;
@@ -26,7 +25,7 @@ if networkNum == 1 {
         )
     );
 
-    MNISTTester.test(
+    MNISTTester.classificationEval(
         network=net1,
         numImages=numImages,
         modelPath= modelDir + "mnist" + net1.signature() + ".model"
@@ -43,13 +42,13 @@ if networkNum == 2 {
         )
     );
 
-    MNISTTester.test(
+    MNISTTester.classificationEval(
         network=net2,
         numImages=numImages,
         modelPath=modelDir + "mnist" + net2.signature() + ".model" // this is the lenet output
     );
 
-    MNISTTester.test(
+    MNISTTester.classificationEval(
         network=net2,
         numImages=numImages,
         modelPath=modelDir + "mnist_cnn_epoch_60.model" // this is the lenet output
@@ -69,7 +68,7 @@ if networkNum == 3 {
         )
     );
 
-    MNISTTester.test(
+    MNISTTester.classificationEval(
         network=net3,
         numImages=numImages,
         modelPath=modelDir + "mnist" + net3.signature() + ".model"
@@ -88,7 +87,7 @@ if networkNum == 4 {
         )
     );
 
-    MNISTTester.test(
+    MNISTTester.classificationEval(
         network=net4,
         numImages=numImages,
         modelPath=modelDir + "mnist" + net4.signature() + ".model"
@@ -108,7 +107,7 @@ if networkNum == 5 {
         )
     );
 
-    MNISTTester.test(
+    MNISTTester.classificationEval(
         network=net5,
         numImages=numImages,
         modelPath=modelDir + "mnist" + net5.signature() + ".model"
