@@ -1,4 +1,4 @@
 #!/bin/bash
 
-sed -E "s/0x[0-9a-f]*/prediffed/" <$2 >$2.predifftmp
+sed -E "s/.*string copy data.*/string copy data/" <$2 >$2.predifftmp
 mv $2.predifftmp $2

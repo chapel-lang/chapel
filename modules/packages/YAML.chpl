@@ -244,7 +244,7 @@ module YAML {
     proc ref deserializeType(reader: yamlReader, type t): t throws {
       if YamlVerbose then writeln("deserializing type: ", t:string);
 
-      if context.isBase && _isIoPrimitiveType(t) {
+      if _isIoPrimitiveType(t) && context.isBase {
         // parse primitive without context
         if isBoolType(t) {
           // TODO: make this more robust
