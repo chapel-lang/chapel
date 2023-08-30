@@ -1324,10 +1324,7 @@ module Time {
                       second=second, microsecond=microsecond);
   }
 
-  /* Get the `time` portion of the `dateTime` value, with ``tz=nil``.
-     In the future `timezone` interactions with extracting the :type:`time`
-     component of a :type:`dateTime` may change.
-  */
+  /* Get the `time` portion of the `dateTime` value, with `tz` = nil */
   proc dateTime.getTime() : time {
     if chpl_time.timezone.borrow() == nil then
       return chpl_time;
