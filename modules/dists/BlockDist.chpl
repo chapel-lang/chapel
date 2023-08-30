@@ -919,6 +919,10 @@ iter BlockImpl.activeTargetLocales(const space : domain = boundingBox) {
   }
 }
 
+proc Block.createDomain(dom: domain(?)) {
+  return dom dmapped this;
+}
+
 // create a domain over a Block Distribution
 proc type Block.createDomain(dom: domain(?), targetLocales: [] locale = Locales) {
   return dom dmapped Block(dom, targetLocales);
