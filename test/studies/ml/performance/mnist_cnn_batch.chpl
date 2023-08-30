@@ -14,7 +14,7 @@ config const numTrainImages = 1000;
 config const numTestImages = 100;
 
 config const learnRate = 0.005;
-config const batchSize = 1;
+config const batchSize = 200;
 config const numEpochs = 10;
 
 
