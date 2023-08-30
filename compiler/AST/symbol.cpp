@@ -472,20 +472,33 @@ void Symbol::maybeGenerateDeprecationWarning(Expr* context) {
   Symbol* contextParent = context->parentSymbol;
   bool parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
   bool compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
+  bool ignoreUsage = contextParent->hasFlag(FLAG_IGNORE_DEPRECATED_USE);
+
+  // Ignore initialization of deprecated fields in initializers.
+  if (FnSymbol* fn = toFnSymbol(contextParent)) {
+    bool isField = isTypeSymbol(this->defPoint->parentSymbol) ||
+                   this->hasFlag(FLAG_FIELD_ACCESSOR);
+    bool isInit = (fn->isInitializer() || fn->isCopyInit());
+    if (isField && isInit) {
+      return;
+    }
+  }
 
   // Traverse until we find a deprecated parent symbol, a compiler generated
   // parent symbol, or until we reach the highest outer scope
   while (contextParent != NULL && contextParent->defPoint != NULL &&
          contextParent->defPoint->parentSymbol != NULL &&
-         parentDeprecated != true && compilerGenerated != true) {
+         parentDeprecated != true && compilerGenerated != true &&
+         ignoreUsage != true) {
     contextParent = contextParent->defPoint->parentSymbol;
     parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
     compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
+    ignoreUsage = contextParent->hasFlag(FLAG_IGNORE_DEPRECATED_USE);
   }
 
   // Only generate the warning if the location with the reference is not
   // created by the compiler or also deprecated.
-  if (!compilerGenerated && !parentDeprecated) {
+  if (!compilerGenerated && !parentDeprecated && !ignoreUsage) {
     USR_WARN(context, "%s", getSanitizedMsg(getDeprecationMsg()));
   }
 }
@@ -2083,12 +2096,16 @@ const char* astrSlt = NULL;
 const char* astrSlte = NULL;
 const char* astrSswap = NULL;
 const char* astrScolon = NULL;
+const char* astrScomma = NULL;
+const char* astrSstar = NULL;
+const char* astrSstarstar = NULL;
 const char* astr_defaultOf = NULL;
 const char* astrInit = NULL;
 const char* astrInitEquals = NULL;
 const char* astrNew = NULL;
 const char* astrDeinit = NULL;
 const char* astrPostinit = NULL;
+const char* astrBuildTuple = NULL;
 const char* astrTag = NULL;
 const char* astrThis = NULL;
 const char* astrSuper = NULL;
@@ -2120,12 +2137,16 @@ void initAstrConsts() {
   astrSlte = astr("<=");
   astrSswap = astr("<=>");
   astrScolon = astr(":");
+  astrScomma = astr(",");
+  astrSstar = astr("*");
+  astrSstarstar = astr("**");
   astr_defaultOf = astr("_defaultOf");
   astrInit    = astr("init");
   astrInitEquals = astr("init=");
   astrNew     = astr("_new");
   astrDeinit  = astr("deinit");
   astrPostinit  = astr("postinit");
+  astrBuildTuple = astr("_build_tuple");
   astrTag     = astr("tag");
   astrThis    = astr("this");
   astrSuper   = astr("super");

@@ -4,7 +4,7 @@ use IO;
 record R {
   var x : int;
 
-  proc readThis(f) {
+  proc ref readThis(f) {
     writeln("in readThis");
     this.x = f.read(int);
   }

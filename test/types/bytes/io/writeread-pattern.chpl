@@ -34,15 +34,14 @@ proc test(byteRange) {
   {
     // write them to a channel
     var bytesWriter = bytesChannel.writer();
-    bytesWriter.writef("%ht", randomBytes);
+    bytesWriter.write(randomBytes);
     bytesWriter.close();
   }
 
   {
     // read them into a different object
     var bytesReader = bytesChannel.reader();
-    var readBytes = b"";
-    bytesReader.readf("%ht", readBytes);
+    var readBytes = bytesReader.readAll(bytes);
     bytesReader.close();
     // compare
     if readBytes == randomBytes {

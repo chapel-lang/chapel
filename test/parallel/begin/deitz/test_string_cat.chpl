@@ -13,7 +13,7 @@ writeln(b);
 
 var a: [1..8] string;
 
-cobegin {
+cobegin with (ref a) {
   a[1] = foo();
   a[2] = foo();
   a[3] = foo();

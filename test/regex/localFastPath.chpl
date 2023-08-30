@@ -30,7 +30,7 @@ proc searchR(param rvf=true) {
   on locales1 {
     if !rvf then preventRvf(r);
     var match = r.search(s, a, b);
-    writef("searchR(rvf=%t)\n", rvf);
+    writef("searchR(rvf=%?)\n", rvf);
     writeln(match);
     writeln(a);
     writeln(b);
@@ -52,7 +52,7 @@ proc splitR(param rvf=true) {
   var r = new regex("(a+)":t);
   on locales1 {
     if !rvf then preventRvf(r);
-    writef("splitR(rvf=%t)\n", rvf);
+    writef("splitR(rvf=%?)\n", rvf);
     for match in r.split(s) do
       writeln(match);
     writeln();
@@ -73,7 +73,7 @@ proc matchesR(param rvf=true) {
   var r = new regex("(a+)(b)":t);
   on locales1 {
     if !rvf then preventRvf(r);
-    writef("matchesR(rvf=%t)\n", rvf);
+    writef("matchesR(rvf=%?)\n", rvf);
     for match in r.matches(s, numCaptures=2) do
       writeln(match);
     writeln();
@@ -93,7 +93,7 @@ proc subR(param rvf=true) {
   var r = new regex("a+":t);
   on locales1 {
     if !rvf then preventRvf(r);
-    writef("subR(rvf=%t)\n", rvf);
+    writef("subR(rvf=%?)\n", rvf);
     writeln(s.replace(r, "A":t));
     writeln();
   }

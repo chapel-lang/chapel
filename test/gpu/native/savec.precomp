@@ -1,0 +1,9 @@
+#!/bin/bash
+gpuArch=$($CHPL_HOME/util/printchplenv --all --internal --simple | grep CHPL_GPU_ARCH | cut -d '=' -f 2)
+cp $1.base.good $1.good
+rm -f $1.gen.good
+for arch in ${gpuArch//,/ }; do
+    echo "savec_dir/chpl__gpu_$arch.o" >> $1.gen.good
+done
+sort < $1.gen.good >> $1.good
+rm $1.gen.good

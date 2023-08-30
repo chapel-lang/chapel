@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+use ChplConfig only compiledForSingleLocale;
+
 //
 // Private Distribution, Domain, and Array
 //  Defines PrivateSpace, an instance of PrivateDom
@@ -93,7 +95,7 @@ class Private: BaseDist {
   override proc singleton() param do return true;
 }
 
-class PrivateDom: BaseRectangularDom {
+class PrivateDom: BaseRectangularDom(?) {
   var dist: unmanaged Private;
 
   iter these() { for i in 0..numLocales-1 do yield i; }
@@ -168,7 +170,7 @@ private proc checkCanMakeDefaultValue(type eltType) param {
   var default: eltType;
 }
 
-class PrivateArr: BaseRectangularArr {
+class PrivateArr: BaseRectangularArr(?) {
 
   var dom: unmanaged PrivateDom(rank, idxType, strides);
 
@@ -241,7 +243,7 @@ override proc PrivateArr.dsiDestroyArr(deinitElts:bool) {
     param needsDestroy = __primitive("needs auto destroy", eltType);
 
     if needsDestroy {
-      if _local {
+      if compiledForSingleLocale() {
         chpl__autoDestroy(data);
       } else {
         const pid = this.pid;
@@ -267,7 +269,7 @@ proc PrivateArr.dsiPrivatize(privatizeData) {
 }
 
 proc PrivateArr.dsiAccess(i: idxType) ref {
-  if _local then
+  if compiledForSingleLocale() then
     return data;
   else if i == here.id then
     return data;
@@ -321,7 +323,7 @@ proc PrivateArr.doiScan(op, dom) where (rank == 1) &&
 
   var localArr: [0..numLocales-1] resType;
 
-  coforall loc in Locales do on loc do
+  coforall loc in Locales with (ref localArr) do on loc do
     localArr[here.id] = if _isPrivatized(this) then chpl_getPrivatizedCopy(this.type, this.pid).data else data;
 
   var localRes = localArr._scan(op);

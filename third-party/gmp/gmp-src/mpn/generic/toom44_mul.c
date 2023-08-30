@@ -50,7 +50,7 @@ see https://www.gnu.org/licenses/.  */
   v1  = ( a0+ a1+ a2+ a3)*( b0+ b1+ b2+ b3) #    A(1)*B(1)      ah  <= 3   bh  <= 3
   vm1 = ( a0- a1+ a2- a3)*( b0- b1+ b2- b3) #   A(-1)*B(-1)    |ah| <= 1  |bh| <= 1
   v2  = ( a0+2a1+4a2+8a3)*( b0+2b1+4b2+8b3) #    A(2)*B(2)      ah  <= 14  bh  <= 14
-  vm2 = ( a0-2a1+4a2-8a3)*( b0-2b1+4b2-8b3) #    A(2)*B(2)      ah  <= 9  |bh| <= 9
+  vm2 = ( a0-2a1+4a2-8a3)*( b0-2b1+4b2-8b3) #   A(-2)*B(-2)    |ah| <= 9  |bh| <= 9
   vh  = (8a0+4a1+2a2+ a3)*(8b0+4b1+2b2+ b3) #  A(1/2)*B(1/2)    ah  <= 14  bh  <= 14
   vinf=               a3 *          b2      #  A(inf)*B(inf)
 */
@@ -221,7 +221,11 @@ mpn_toom44_mul (mp_ptr pp,
   /* Compute bpx = b0 + b1 + b2 + b3 and bmx = b0 - b1 + b2 - b3.  */
   flags = (enum toom7_flags) (flags ^ (toom7_w3_neg & mpn_toom_eval_dgr3_pm1 (bpx, bmx, bp, n, t, tp)));
 
-  TOOM44_MUL_N_REC (vm1, amx, bmx, n + 1, tp);	/* vm1,  2n+1 limbs */
+  ASSERT (amx[n] <= 1);
+  ASSERT (bmx[n] <= 1);
+
+  vm1 [2 * n] = 0;
+  TOOM44_MUL_N_REC (vm1, amx, bmx, n + (bmx[n] | amx[n]), tp);	/* vm1,  2n+1 limbs */
   /* Clobbers amx, bmx. */
   TOOM44_MUL_N_REC (v1, apx, bpx, n + 1, tp);	/* v1,  2n+1 limbs */
 

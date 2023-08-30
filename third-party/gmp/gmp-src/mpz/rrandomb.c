@@ -32,10 +32,10 @@ see https://www.gnu.org/licenses/.  */
 
 #include "gmp-impl.h"
 
-static void gmp_rrandomb (mp_ptr, gmp_randstate_t, mp_bitcnt_t);
+static void gmp_rrandomb (mp_ptr, gmp_randstate_ptr, mp_bitcnt_t);
 
 void
-mpz_rrandomb (mpz_ptr x, gmp_randstate_t rstate, mp_bitcnt_t nbits)
+mpz_rrandomb (mpz_ptr x, gmp_randstate_ptr rstate, mp_bitcnt_t nbits)
 {
   mp_size_t nl;
   mp_ptr xp;
@@ -60,7 +60,7 @@ mpz_rrandomb (mpz_ptr x, gmp_randstate_t rstate, mp_bitcnt_t nbits)
 #endif
 
 static void
-gmp_rrandomb (mp_ptr rp, gmp_randstate_t rstate, mp_bitcnt_t nbits)
+gmp_rrandomb (mp_ptr rp, gmp_randstate_ptr rstate, mp_bitcnt_t nbits)
 {
   mp_bitcnt_t bi;
   mp_limb_t ranm;		/* buffer for random bits */

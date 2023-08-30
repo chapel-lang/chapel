@@ -1,5 +1,5 @@
 module unitTest {
-  use main;
+  use main, CTypes;
 
   proc concatAll(type t, useExpr=false) {
     inline proc fLocal(x) {
@@ -202,7 +202,7 @@ module unitTest {
     const m0 = allMemoryUsed();
     {
       const s: t = "s";
-      const cs: c_string = "0";
+      const cs: c_ptrConst(c_char) = "0";
       try! {
         if useExpr {
           writeMe(s+string.createCopyingBuffer(cs));
@@ -219,7 +219,7 @@ module unitTest {
     writeln("=== concat: c_string + string");
     const m0 = allMemoryUsed();
     {
-      const cs: c_string = "s";
+      const cs: c_ptrConst(c_char) = "s";
       const s: t = "0";
       try! {
         if useExpr {
@@ -239,7 +239,7 @@ module unitTest {
     {
       const s: t = "s";
       on Locales[numLocales-1] {
-        const cs: c_string = "r";
+        const cs: c_ptrConst(c_char) = "r";
         try! {
           if useExpr {
             writeMe(s+string.createCopyingBuffer(cs));
@@ -259,7 +259,83 @@ module unitTest {
     {
       const s: t = "0";
       on Locales[numLocales-1] {
-        const cs: c_string = "s";
+        const cs: c_ptrConst(c_char) = "s";
+        try! {
+          if useExpr {
+            writeMe(string.createCopyingBuffer(cs)+s);
+          } else {
+            const css = string.createCopyingBuffer(cs)+s;
+            writeMe(css);
+          }
+        }
+      }
+    }
+    checkMemLeaks(m0);
+  }
+
+  proc concat_c_ptr0(type t, useExpr=false) {
+    writeln("=== concat: string + c_ptrConst(c_char)");
+    const m0 = allMemoryUsed();
+    {
+      const s: t = "s";
+      const cs: c_ptrConst(c_char) = "0";
+      try! {
+        if useExpr {
+          writeMe(s+string.createCopyingBuffer(cs));
+        } else {
+          const scs = s+string.createCopyingBuffer(cs);
+          writeMe(scs);
+        }
+      }
+    }
+    checkMemLeaks(m0);
+  }
+
+  proc concat_c_ptr1(type t, useExpr=false) {
+    writeln("=== concat: c_ptrConst(c_char) + string");
+    const m0 = allMemoryUsed();
+    {
+      const cs: c_ptrConst(c_char) = "s";
+      const s: t = "0";
+      try! {
+        if useExpr {
+          writeMe(string.createCopyingBuffer(cs)+s);
+        } else {
+          const css = string.createCopyingBuffer(cs)+s;
+          writeMe(css);
+        }
+      }
+    }
+    checkMemLeaks(m0);
+  }
+
+  proc concat_c_ptr2(type t, useExpr=false) {
+    writeln("=== concat: remote string + c_ptrConst(c_char)");
+    const m0 = allMemoryUsed();
+    {
+      const s: t = "s";
+      on Locales[numLocales-1] {
+        const cs: c_ptrConst(c_char) = "r";
+        try! {
+          if useExpr {
+            writeMe(s+string.createCopyingBuffer(cs));
+          } else {
+            const scs = s+string.createCopyingBuffer(cs);
+            writeMe(scs);
+          }
+        }
+      }
+    }
+    checkMemLeaks(m0);
+  }
+
+  proc concat_c_ptr3(type t, useExpr=false) {
+    writeln("=== concat: c_ptrConst(c_char) + remote string");
+    const m0 = allMemoryUsed();
+    {
+      const s: t = "0";
+      on Locales[numLocales-1] {
+        const cs: c_ptrConst(c_char) = "s";
         try! {
           if useExpr {
             writeMe(string.createCopyingBuffer(cs)+s);
@@ -284,6 +360,11 @@ module unitTest {
     concat_c_string1(t); concat_c_string1(t, true);
     concat_c_string2(t); concat_c_string2(t, true);
     concat_c_string3(t); concat_c_string3(t, true);
+
+    concat_c_ptr0(t); concat_c_ptr0(t, true);
+    concat_c_ptr1(t); concat_c_ptr1(t, true);
+    concat_c_ptr2(t); concat_c_ptr2(t, true);
+    concat_c_ptr3(t); concat_c_ptr3(t, true);
   }
 
 }

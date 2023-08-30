@@ -14,7 +14,7 @@ proc writeit(ref x) {
   x = 1;
 }
 
-proc writeCoforallZip(A, B) {
+proc writeCoforallZip(ref A, B) {
   coforall (a,b) in zip(A,B) {
     a = b;
   }

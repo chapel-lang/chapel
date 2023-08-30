@@ -3,7 +3,7 @@
  * See other examples under doc/examples/ in the source tree
  * for more details.
  *
- * Copyright © 2009-2015 Inria.  All rights reserved.
+ * Copyright © 2009-2016 Inria.  All rights reserved.
  * Copyright © 2009-2011 Université Bordeaux
  * Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -11,12 +11,13 @@
  * hwloc-hello.c
  */
 
-#include <hwloc.h>
+#include "hwloc.h"
+
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
 
-static void print_children(hwloc_topology_t topology, hwloc_obj_t obj, 
+static void print_children(hwloc_topology_t topology, hwloc_obj_t obj,
                            int depth)
 {
     char type[32], attr[1024];
@@ -43,6 +44,7 @@ int main(void)
     int levels;
     char string[128];
     int topodepth;
+    void *m;
     hwloc_topology_t topology;
     hwloc_cpuset_t cpuset;
     hwloc_obj_t obj;
@@ -51,7 +53,7 @@ int main(void)
     hwloc_topology_init(&topology);
 
     /* ... Optionally, put detection configuration here to ignore
-       some objects types, define a synthetic topology, etc....  
+       some objects types, define a synthetic topology, etc....
 
        The default is to detect all the objects of the machine that
        the caller is allowed to access.  See Configure Topology
@@ -71,7 +73,7 @@ int main(void)
      *****************************************************************/
     for (depth = 0; depth < topodepth; depth++) {
         printf("*** Objects at level %d\n", depth);
-        for (i = 0; i < hwloc_get_nbobjs_by_depth(topology, depth); 
+        for (i = 0; i < hwloc_get_nbobjs_by_depth(topology, depth);
              i++) {
             hwloc_obj_type_snprintf(string, sizeof(string),
 				    hwloc_get_obj_by_depth(topology, depth, i), 0);
@@ -108,11 +110,11 @@ int main(void)
     for (obj = hwloc_get_obj_by_type(topology, HWLOC_OBJ_PU, 0);
          obj;
          obj = obj->parent)
-      if (obj->type == HWLOC_OBJ_CACHE) {
+      if (hwloc_obj_type_is_cache(obj->type)) {
         levels++;
         size += obj->attr->cache.size;
       }
-    printf("*** Logical processor 0 has %d caches totaling %luKB\n", 
+    printf("*** Logical processor 0 has %d caches totaling %luKB\n",
            levels, size / 1024);
 
     /*****************************************************************
@@ -153,22 +155,19 @@ int main(void)
      * Allocate some memory on the last NUMA node, bind some existing
      * memory to the last NUMA node.
      *****************************************************************/
-    /* Get last node. */
+    /* Get last node. There's always at least one. */
     n = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_NUMANODE);
-    if (n) {
-        void *m;
-        size = 1024*1024;
+    obj = hwloc_get_obj_by_type(topology, HWLOC_OBJ_NUMANODE, n - 1);
 
-        obj = hwloc_get_obj_by_type(topology, HWLOC_OBJ_NUMANODE, n - 1);
-        m = hwloc_alloc_membind_nodeset(topology, size, obj->nodeset,
-                HWLOC_MEMBIND_BIND, 0);
-        hwloc_free(topology, m, size);
+    size = 1024*1024;
+    m = hwloc_alloc_membind(topology, size, obj->nodeset,
+                            HWLOC_MEMBIND_BIND, HWLOC_MEMBIND_BYNODESET);
+    hwloc_free(topology, m, size);
 
-        m = malloc(size);
-        hwloc_set_area_membind_nodeset(topology, m, size, obj->nodeset,
-                HWLOC_MEMBIND_BIND, 0);
-        free(m);
-    }
+    m = malloc(size);
+    hwloc_set_area_membind(topology, m, size, obj->nodeset,
+                           HWLOC_MEMBIND_BIND, HWLOC_MEMBIND_BYNODESET);
+    free(m);
 
     /* Destroy topology object. */
     hwloc_topology_destroy(topology);

@@ -265,7 +265,7 @@ proc main() {
 }
 
 
-proc build_sieve(s: [] sieve_t) {
+proc build_sieve(ref s: [] sieve_t) {
   const n = s.sizeAs(s.idxType)*2,
         m = sqrt(n): c_long;
 

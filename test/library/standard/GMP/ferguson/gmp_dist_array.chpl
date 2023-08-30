@@ -40,7 +40,7 @@ writeln(sum.sizeInBase(10));
 
 var modulus = new bigint("10000000000000000000000000000000000000000");
 
-nextprime(modulus, modulus);
+nextPrime(modulus, modulus);
 
 writeln(modulus);
 

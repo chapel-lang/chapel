@@ -13,7 +13,7 @@ proc dgemm(p: indexType,       // number of rows in A
           r: indexType,       // number of cols in B
           A: [1..p, 1..q] ?t,
           B: [1..q, 1..r] t,
-          C: [1..p, 1..r] t) {
+          ref C: [1..p, 1..r] t) {
   // Calculate (i,j) using a dot product of a row of A and a column of B.
   const st = timeSinceEpoch().totalSeconds();
   for i in 1..p do

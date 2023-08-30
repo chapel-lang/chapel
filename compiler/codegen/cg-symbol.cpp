@@ -1139,8 +1139,12 @@ static std::string getFortranTypeName(Type* type, Symbol* sym) {
 
   if (typeName.empty()) {
     if (warnedSymbols.count(sym) == 0) {
+      std::string cTypeName = type->symbol->cname;
+      if (type->symbol->type == dtStringC) {
+        cTypeName = "c_string";
+      }
       // TODO: Maybe issue an error instead?
-      USR_WARN(sym->defPoint, "Unknown Fortran type generating interface for C type: %s", type->symbol->cname);
+      USR_WARN(sym->defPoint, "Unknown Fortran type generating interface for C type: %s", cTypeName.c_str());
       warnedSymbols.insert(sym);
     }
     return type->symbol->cname;
@@ -1155,8 +1159,12 @@ static std::string getFortranKindName(Type* type, Symbol* sym) {
 
   if (kindName.empty()) {
     if (warnedSymbols.count(sym) == 0) {
+      std::string typeName = type->symbol->cname;
+      if (type->symbol->type == dtStringC) {
+        typeName = "c_string";
+      }
       // TODO: Maybe issue an error instead?
-      USR_WARN(sym->defPoint, "Unknown Fortran KIND generating interface for C type: %s", type->symbol->cname);
+      USR_WARN(sym->defPoint, "Unknown Fortran KIND generating interface for C type: %s", typeName.c_str());
       warnedSymbols.insert(sym);
     }
     return type->symbol->cname;

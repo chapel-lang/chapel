@@ -11,7 +11,7 @@ forall i in classSizes[0]..classSizes[1]-1 {
 // concurrently add some additional values, while reading all the old ones
 for classNum in 1..classSizes.size-2 {
   var arr: [classSizes[0]..classSizes[classNum]-1] int;
-  cobegin {
+  cobegin with (ref arr) {
 
     {
       for i in classSizes[classNum]..classSizes[classNum+1]-1 {
@@ -21,7 +21,7 @@ for classNum in 1..classSizes.size-2 {
     }
 
     {
-      coforall 1..#here.maxTaskPar-1 {
+      coforall 1..#here.maxTaskPar-1 with (ref arr) {
         for i in classSizes[0]..classSizes[classNum]-1 {
           arr[i] = getPrivatized(i).i;
         }

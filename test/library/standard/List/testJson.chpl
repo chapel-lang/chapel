@@ -2,6 +2,7 @@
 use IO;
 use List;
 use Map;
+use JSON;
 
 record R {
   var x : int;
@@ -18,18 +19,18 @@ proc testList(orig: list(?)) {
   writeln(header);
   var f = openMemFile();
   {
-    f.writer().writef("%jt", orig);
+    f.writer(serializer = new JsonSerializer()).writef("%?", orig);
     writeln("Writing list: ");
     writeln(orig);
     writeln();
     writeln("Wrote JSON: ");
-    writef("%jt\n", orig);
+    stdout.withSerializer(JsonSerializer).writef("%?\n", orig);
     writeln();
   }
   {
-    var r = f.reader();
+    var r = f.reader(deserializer = new JsonDeserializer());
     var li : orig.type;
-    r.readf("%jt", li);
+    r.readf("%?", li);
     writeln("Read ", li.type:string, ": ");
     writeln(li);
     writeln("Equals original: ", li == orig);

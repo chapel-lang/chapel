@@ -1,0 +1,1 @@
+badDomainType.chpl:5: error: 'tryCreateArray' is only supported on default rectangular and block domains

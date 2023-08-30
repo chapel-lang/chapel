@@ -9,11 +9,11 @@ class GrandParent {
   type idxType;
 }
 
-class Parent : GrandParent {
+class Parent : GrandParent(?) {
   var x : int;
 }
 
-class Child : Parent {
+class Child : Parent(?) {
   var indices : index(rank, idxType);
 }
 

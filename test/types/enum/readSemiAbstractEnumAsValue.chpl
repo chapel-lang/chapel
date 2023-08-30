@@ -8,7 +8,7 @@ proc trybad(fmt, ref val) {
 }
 
 proc readit(ref x) {
-  readf("%t\n", x);
+  readf("%?\n", x);
   writeln(x);
   readf("%s\n", x);
   writeln(x);

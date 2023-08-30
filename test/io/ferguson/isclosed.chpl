@@ -12,7 +12,7 @@ assert(w.isClosed());
 
 // Try a channel that was not initialized.
 {
-  var ch:fileReader(kind=iokind.dynamic, locking=true);
+  var ch:fileReader(locking=true);
   assert(ch.isClosed());
 }
 

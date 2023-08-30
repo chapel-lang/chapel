@@ -72,7 +72,7 @@ writeln("B is: ", b);
 proc SetAPar (id: int = 0) {
    var child = id * 2 + 1;
 
-   cobegin {
+   cobegin with (ref a) {
       if child < numLocales then
         on Locales[child] do SetAPar (child);
       if child+1 < numLocales then
@@ -199,7 +199,7 @@ iter cubeiter2 ( param tag: iterKind, n: int, id: int=0, off: int = -1) : int
    yield id;
 
    coforall (ccid, shift) in id2com(id,offset) do
-     if ccid < n then 
+     if ccid < n then
        on Locales[ccid] do
           for z in cubeiter2(n, ccid, offset >> shift, tag=iterKind.standalone)
              do yield z;

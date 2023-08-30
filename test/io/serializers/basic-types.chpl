@@ -3,7 +3,6 @@ use IO;
 use List;
 
 use JSON;
-use BinaryIO;
 use FormatHelper;
 
 //

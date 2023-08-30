@@ -4,6 +4,7 @@
 use Sort;
 use Random;
 use Time;
+use CTypes;
 
 config const printStats = true;
 config const minSize = 1;
@@ -21,7 +22,7 @@ config const seed = SeedGenerator.oddCurrentTime;
 var methods = ["default", "msbRadixSort", "quickSort", "mergeSort",
                "twoArraySample", "twoArrayRadix", "timSort"];
 
-proc testsort(input, method, parallel, cmp) {
+proc testsort(ref input, method, parallel, cmp) {
 
   if method == "default" {
     if parallel == false {
@@ -71,11 +72,11 @@ proc testsort(input, method, parallel, cmp) {
 }
 
 proc doString() param {
-  return eltType == string || eltType == c_string;
+  return eltType == string || eltType == c_ptrConst(c_char);
 }
 proc makeInput(array, inputStrings) {
   if doString() {
-    if eltType == c_string {
+    if eltType == c_ptrConst(c_char) {
       var result = forall a in inputStrings do a.c_str();
       return result;
     } else {

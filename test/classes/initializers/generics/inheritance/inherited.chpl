@@ -16,7 +16,7 @@ class Child1 {
   }
 }
 
-class Child2 : Child1 {
+class Child2 : Child1(?) {
   type  t2;
 
   proc init(type _t1, param _p1, type _t2) {

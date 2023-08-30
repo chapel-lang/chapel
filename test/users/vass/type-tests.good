@@ -28,13 +28,9 @@ type-tests.chpl:17: warning: record is a union:  false
 type-tests.chpl:18: warning: union is a class:  false
 type-tests.chpl:18: warning: union is a record: false
 type-tests.chpl:18: warning: union is a union:  true
-type-tests.chpl:19: warning: dist is a class:  true
-type-tests.chpl:19: warning: dist is a record: false
+type-tests.chpl:19: warning: dist is a class:  false
+type-tests.chpl:19: warning: dist is a record: true
 type-tests.chpl:19: warning: dist is a union:  false
-type-tests.chpl:20: warning: dmap is a class:  false
-type-tests.chpl:20: warning: dmap is a record: false
-type-tests.chpl:20: warning: dmap is a union:  false
-type-tests.chpl:20: warning: dmap is a dmap
 type-tests.chpl:21: warning: domain is a class:  false
 type-tests.chpl:21: warning: domain is a record: false
 type-tests.chpl:21: warning: domain is a union:  false
@@ -67,11 +63,7 @@ type-tests.chpl:28: warning: sync is a class:  false
 type-tests.chpl:28: warning: sync is a record: false
 type-tests.chpl:28: warning: sync is a union:  false
 type-tests.chpl:28: warning: sync is a sync
-type-tests.chpl:29: warning: single is a class:  false
-type-tests.chpl:29: warning: single is a record: false
-type-tests.chpl:29: warning: single is a union:  false
-type-tests.chpl:29: warning: single is a single
-type-tests.chpl:30: warning: owned class is a class:  true
-type-tests.chpl:30: warning: owned class is a record: false
-type-tests.chpl:30: warning: owned class is a union:  false
-type-tests.chpl:31: error: done
+type-tests.chpl:29: warning: owned class is a class:  true
+type-tests.chpl:29: warning: owned class is a record: false
+type-tests.chpl:29: warning: owned class is a union:  false
+type-tests.chpl:30: error: done

@@ -1,1 +1,0 @@
-More single-related tests are in:  $CHPL_HOME/test/types/single

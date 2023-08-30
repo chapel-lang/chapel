@@ -161,7 +161,7 @@ module LockFreeQueue {
         else {
           _tail.compareAndSwap(curr_tail, next);
         }
-        chpl_task_yield();
+        currentTask.yieldExecution();
       }
       tok.unpin();
     }
@@ -189,7 +189,7 @@ module LockFreeQueue {
             return (true, ret_val);
           }
         }
-        chpl_task_yield();
+        currentTask.yieldExecution();
       }
 
       tok.unpin();

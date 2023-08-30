@@ -128,7 +128,7 @@ if example == 0 || example == 2 {
 
   {
     // Get a binary writing channel for the start of the file.
-    var w = f.writer(kind=ionative);
+    var w = f.writer(serializer=new BinarySerializer());
 
     for i in 0..#num {
       var tmp:uint(64) = i:uint(64);
@@ -145,7 +145,7 @@ if example == 0 || example == 2 {
 // Note: This could be a forall loop to do I/O in parallel!
   for i in 0..#num by -1 {
     var start = 8*i;
-    var r = f.reader(kind=ionative, region=start..#8);
+    var r = f.reader(deserializer=new BinaryDeserializer(), region=start..#8);
     var tmp:uint(64);
     r.read(tmp);
     assert(tmp == i:uint(64));
@@ -178,7 +178,7 @@ if example == 0 || example == 3 {
 
     // When we create the writer, supplying locking=false will do unlocked I/O.
     // That's fine as long as the channel is not shared between tasks.
-    var w = f.writer(kind=ionative, locking=false);
+    var w = f.writer(serializer=new BinarySerializer(), locking=false);
 
     for i in 0..#num {
       var tmp:uint(64) = i:uint(64);
@@ -202,7 +202,7 @@ if example == 0 || example == 3 {
       // When we create the reader, supplying locking=false will do unlocked I/O.
       // That's fine as long as the channel is not shared between tasks;
       // here it's just used as a local variable, so we are O.K.
-      var r = f.reader(kind=ionative, locking=false, region=start..#8);
+      var r = f.reader(deserializer=new BinaryDeserializer(), locking=false, region=start..#8);
       var tmp:uint(64);
       r.read(tmp);
       assert(tmp == i:uint(64));
@@ -338,7 +338,7 @@ if example == 0 || example == 7 {
   var f = open(testfile, ioMode.cwr);
 
   {
-    var w = f.writer(kind=ionative);
+    var w = f.writer(serializer=new BinarySerializer());
 
     // Write 011 0110 011110000
     w.writeBits(0b011, 3);
@@ -349,7 +349,7 @@ if example == 0 || example == 7 {
 
   // Try reading it back the way we wrote it.
   {
-    var r = f.reader(kind=ionative);
+    var r = f.reader(deserializer=new BinaryDeserializer());
     var tmp:uint(64);
 
     r.readBits(tmp, 3);
@@ -367,7 +367,7 @@ if example == 0 || example == 7 {
   // Try reading it back all as one big chunk.
   // Read 01101100 11110000
   {
-    var r = f.reader(kind=ionative);
+    var r = f.reader(deserializer=new BinaryDeserializer());
     var tmp:uint(8);
 
     r.read(tmp);

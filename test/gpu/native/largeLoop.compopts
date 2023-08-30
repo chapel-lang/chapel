@@ -1,0 +1,4 @@
+# this test has a very long running loop that causes timeouts. Even though this
+# isn't a performance test, I am throwing `--fast` to make sure that test
+# finishes quickly.
+--fast

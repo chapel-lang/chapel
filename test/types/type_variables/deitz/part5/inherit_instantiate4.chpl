@@ -3,7 +3,7 @@ class C {
   var x : real;
 }
 
-class D : C {
+class D : C(?) {
   var y : int;
 }
 

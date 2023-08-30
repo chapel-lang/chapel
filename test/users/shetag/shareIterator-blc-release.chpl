@@ -9,7 +9,7 @@ var currIndex: sync int = 1;
 
 iter count() {
   var done = false;
-    
+
   while (!done) {
     const myLocIndex = currIndex.readFE();  // read currIndex, leave empty;
     currIndex.writeEF(myLocIndex + 1);    // write currIndex, leave full;
@@ -21,7 +21,7 @@ iter count() {
 }
 
 
-cobegin {
+cobegin with (ref A) {
   for i in count() do A(i) = 1;
   for i in count() do A(i) = 2;
 }

@@ -1,8 +1,8 @@
-.TH "hwlocality_disc_components" 3 "Mon Jun 3 2019" "Version 1.11.13" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_disc_components" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-hwlocality_disc_components
+hwlocality_disc_components \- Components and Plugins: Discovery components
 .SH SYNOPSIS
 .br
 .PP
@@ -13,47 +13,16 @@ hwlocality_disc_components
 .RI "struct \fBhwloc_disc_component\fP"
 .br
 .in -1c
-.SS "Typedefs"
-
-.in +1c
-.ti -1c
-.RI "typedef enum \fBhwloc_disc_component_type_e\fP \fBhwloc_disc_component_type_t\fP"
-.br
-.in -1c
-.SS "Enumerations"
-
-.in +1c
-.ti -1c
-.RI "enum \fBhwloc_disc_component_type_e\fP { \fBHWLOC_DISC_COMPONENT_TYPE_CPU\fP, \fBHWLOC_DISC_COMPONENT_TYPE_GLOBAL\fP, \fBHWLOC_DISC_COMPONENT_TYPE_MISC\fP }"
-.br
-.in -1c
 .SH "Detailed Description"
 .PP 
 
-.SH "Typedef Documentation"
-.PP 
-.SS "typedef enum \fBhwloc_disc_component_type_e\fP  \fBhwloc_disc_component_type_t\fP"
+.PP
+\fBNote\fP
+.RS 4
+These structures and functions may change when \fBHWLOC_COMPONENT_ABI\fP is modified\&. 
+.RE
+.PP
 
-.PP
-Discovery component type\&. 
-.SH "Enumeration Type Documentation"
-.PP 
-.SS "enum \fBhwloc_disc_component_type_e\fP"
-
-.PP
-Discovery component type\&. 
-.PP
-\fBEnumerator\fP
-.in +1c
-.TP
-\fB\fIHWLOC_DISC_COMPONENT_TYPE_CPU \fP\fP
-CPU-only discovery through the OS, or generic no-OS support\&. 
-.TP
-\fB\fIHWLOC_DISC_COMPONENT_TYPE_GLOBAL \fP\fP
-xml, synthetic or custom, platform-specific components such as bgq\&. Anything the discovers CPU and everything else\&. No misc backend is expected to complement a global component\&. 
-.TP
-\fB\fIHWLOC_DISC_COMPONENT_TYPE_MISC \fP\fP
-OpenCL, Cuda, etc\&. 
 .SH "Author"
 .PP 
 Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code\&.

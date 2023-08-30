@@ -50,7 +50,7 @@ writeln("Histogram computed in ", timer.elapsed(), " seconds\n");
 if printHistogram then
   outputHistogram(Y);
 
-proc computeHistogram(X: [] real, Y: [] int) {
+proc computeHistogram(X: [] real, ref Y: [] int) {
   for x in X do
     Y(1 + (x / (1.0 / numBuckets)): int) += 1;
 }
@@ -58,8 +58,8 @@ proc computeHistogram(X: [] real, Y: [] int) {
 // outputHistogram: output histogram array
 proc outputHistogram(Y: [] int) {
   var bucketMax = max reduce Y;
-  var rowSize = divceil(bucketMax,10);
-  var numRows = divceil(bucketMax, rowSize);
+  var rowSize = divCeil(bucketMax,10);
+  var numRows = divCeil(bucketMax, rowSize);
   for i in 1..numRows by -1 {
     write(" ");
     for j in 1..numBuckets do

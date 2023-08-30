@@ -1,4 +1,4 @@
-use LinkedLists, IO;
+use LinkedLists, IO, JSON;
 
 {
   var mylist = new LinkedList(int);
@@ -7,7 +7,7 @@ use LinkedLists, IO;
   mylist.append(2);
   mylist.append(3);
 
-  writef("testing json write: %jt\n", mylist);
+  stdout.withSerializer(JsonSerializer).writef("testing json write: %?\n", mylist);
 
   mylist.destroy();
 }
@@ -22,11 +22,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var mylist:LinkedList(int);
 
-  reader.readf("%jt", mylist);
+  reader.readf("%?", mylist);
 
   writeln("Read: ", mylist);
 
@@ -45,11 +45,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var mylist:LinkedList(int);
 
-  reader.readf("%jt", mylist);
+  reader.readf("%?", mylist);
 
   writeln("Read: ", mylist);
 
@@ -69,11 +69,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var mylist:LinkedList(int);
 
-  reader.readf("%jt", mylist);
+  reader.readf("%?", mylist);
 
   writeln("Read: ", mylist);
 
@@ -92,11 +92,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var mylist:LinkedList(int);
 
-  reader.readf("%jt", mylist);
+  reader.readf("%?", mylist);
 
   writeln("Read: ", mylist);
 
@@ -115,11 +115,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var mylist:LinkedList(int);
 
-  reader.readf("%jt", mylist);
+  reader.readf("%?", mylist);
 
   writeln("Read: ", mylist);
 
@@ -127,4 +127,3 @@ var f = openTempFile();
 
   mylist.destroy();
 }
-

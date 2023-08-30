@@ -160,7 +160,7 @@ on declLocale {
 }
 
 
-proc assignMe(A, B) {
+proc assignMe(ref A, B) {
   var st, dt: real;
   select ttype {
     when testType.localGet {

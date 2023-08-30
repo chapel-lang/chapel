@@ -1,5 +1,5 @@
 .\" -*- nroff -*-
-.\" Copyright © 2010-2018 Inria.  All rights reserved.
+.\" Copyright © 2010-2021 Inria.  All rights reserved.
 .\" Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
 .\" See COPYING in top-level directory.
 .TH HWLOC-PS "1" "%HWLOC_DATE%" "%PACKAGE_VERSION%" "%PACKAGE_NAME%"
@@ -33,6 +33,12 @@ Only show processes whose name contains \fI<name>\fR,
 even if they are not bound to any specific part of the machine.
 This is not supported on all operating systems.
 .TP
+\fB\-\-uid <uid>\fR
+Only show processes of the user whose UID is \fI<uid>\fR,
+or processes of all users if \fIall\fR is given.
+By default, only processes of the current user are displayed.
+This is currently only supported on Linux.
+.TP
 \fB\-p\fR \fB\-\-physical\fR
 Report OS/physical indexes instead of logical indexes
 .TP
@@ -49,20 +55,53 @@ Otherwise, show all threads inside each process where at least one
 thread is bound.
 This is currently only supported on Linux.
 .TP
+\fB\-\-single\-ancestor\fR
+When the object is bound to different objects,
+report their common ancestor (even if it may be larger than the actual binding).
+.TP
 \fB\-e\fR \fB\-\-get\-last\-cpu\-location\fR
 Report  the last processors where the process/thread ran.
 Note that the result may already be outdated when reported
 since the operating system may move the tasks to other processors
 at any time according to the binding.
 .TP
-\fB\-\-whole\-system\fR
-Do not consider administration limitations.
+\fB\-\-disallowed\fR
+Include objects disallowed by administrative limitations.
 .TP
 \fB\-\-pid\-cmd <cmd>\fR
 Append the output of the given command to each PID line.
 For each displayed process ID, execute the command \fI<cmd> <pid>\fR
 and append \fBthe first line\fR of its output to the regular hwloc-ps
 line.
+.TP
+\fB\-\-pid\-cmd env=<name>\fR
+On Linux, try to read the value of environment variable \fIname\fR
+in each process and display it at the end of the line.
+.TP
+\fB\-\-pid\-cmd mpirank\fR
+On Linux, try to find the process MPI rank (by querying some widespread
+environment variables) and display it at the end of the line.
+
+.TP
+\fB\-\-json\-server\fR
+Run the tool as a JSON server that waits for other process' requests
+on a port and sends back binding information.
+See contrib/hwloc-ps.www/ for details.
+.TP
+\fB\-\-json\-port <port>\fR
+Use the given port number instead of the default 8888.
+.TP
+\fB\-v\fR \fB\-\-verbose\fR
+Increase verbosity of the JSON server.
+.TP
+\fB\-\-short\-name\fR
+Show only the process short name instead of the path.
+.TP
+\fB\-\-version\fR
+Report version and exit.
+.TP
+\fB\-h\fR \fB\-\-help\fR
+Display help message and exit.
 .
 .\" **************************
 .\"    Description Section
@@ -80,7 +119,7 @@ binding.  The binding may be reported as objects or cpusets.
 .PP
 By default, process bindings are restricted to the currently available
 topology. If some processes are bound to processors that are not available
-to the current process, they are ignored unless \fB\-\-whole\-system\fR
+to the current process, they are ignored unless \fB\-\-disallowed\fR
 is given.
 .
 .PP
@@ -103,34 +142,66 @@ processes, if desired.
 .PP
 If a process is bound, it appears in the default output:
 
-    $ utils/hwloc-ps
+    $ hwloc-ps
     4759	Core:0		myprogram
+
+If a process is bound on two cores of a larger package,
+the output will show these cores.
+Option \-\-single\-ancestor will rather return the package
+even if it is actually larger than the binding here
+(the process is not bound to Core:0 of Package:0):
+
+    $ hwloc-ps
+    4863        Core:1 Core:2   myprogram
+    $ hwloc-ps --single-ancestor
+    4863        Package:0       myprogram
 
 If a process is not bound but 3 of his 4 threads are bound,
 it only appears in the thread-aware output (or if explicitly selected):
 
-    $ utils/hwloc-ps
+    $ hwloc-ps
 
-    $ utils/hwloc-ps -t
+    $ hwloc-ps -t
     4759	Machine:0		myprogram
      4759	Machine:0
      4761	PU:0
      4762	PU:2
      4765	PU:1
 
-    $ utils/hwloc-ps --pid 4759
+    $ hwloc-ps --pid 4759
     4759	Machine:0		myprogram
 
-To display the binding of already running MPI processes (launched by
-Open MPI) and append their MPI rank (in MPI_COMM_WORLD) to each line:
+On Linux, hwloc-ps may also display some process specific environment
+variable at the end of the line. This is for instance useful
+for identify MPI ranks among processes:
 
-    $ utils/hwloc-ps --pid-cmd myscript
-    29093	L1dCache:0	myprogram	OMPI_COMM_WORLD_RANK=0
-    29094	L1dCache:2	myprogram	OMPI_COMM_WORLD_RANK=1
-    29095	L1dCache:1	myprogram	OMPI_COMM_WORLD_RANK=2
-    29096	L1dCache:3	myprogram	OMPI_COMM_WORLD_RANK=3
+    $ hwloc-ps --pid-cmd env=OMPI_COMM_WORLD_RANK
+    29093	PU:0	myprogram	OMPI_COMM_WORLD_RANK=0
+    29094	PU:2	myprogram	OMPI_COMM_WORLD_RANK=1
+    29095	PU:1	myprogram	OMPI_COMM_WORLD_RANK=2
+    29096	PU:3	myprogram	OMPI_COMM_WORLD_RANK=3
 
-where \fBmyscript\fR is a bash script doing:
+Some widespread MPI specific environment variables
+(OMPI_COMM_WORLD_RANK, PMIX_RANK, PMI_RANK and SLURM_PROCID)
+are actually directly recognized by hwloc-ps when requesting the \fImpirank\fR command:
+
+    $ hwloc-ps --pid-cmd mpirank
+    29093	PU:0	myprogram	PMIX_RANK=0
+    29094	PU:2	myprogram	PMIX_RANK=1
+    29095	PU:1	myprogram	PMIX_RANK=2
+    29096	PU:3	myprogram	PMIX_RANK=3
+
+Beside reading environment variables, hwloc-ps may also append
+the output of a custom program. Again, for reading the Open MPI
+process rank:
+
+    $ hwloc-ps --pid-cmd myscript
+    29093	PU:0	myprogram	OMPI_COMM_WORLD_RANK=0
+    29094	PU:2	myprogram	OMPI_COMM_WORLD_RANK=1
+    29095	PU:1	myprogram	OMPI_COMM_WORLD_RANK=2
+    29096	PU:3	myprogram	OMPI_COMM_WORLD_RANK=3
+
+where \fBmyscript\fR is a shell script doing:
 
     #!/bin/sh
     cat /proc/$1/environ 2>/dev/null | xargs --null --max-args=1 echo | grep OMPI_COMM_WORLD_RANK
@@ -141,5 +212,5 @@ where \fBmyscript\fR is a bash script doing:
 .SH SEE ALSO
 .
 .ft R
-hwloc(7), lstopo(1), hwloc-calc(1), hwloc-distrib(1)
+hwloc(7), lstopo(1), hwloc-calc(1), hwloc-distrib(1), and hwloc-ps.www/README
 .sp

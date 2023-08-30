@@ -2405,19 +2405,6 @@ void API_FUNC qthread_flushsc(void)
  */
 #define QTHREAD_SPAWN_MASK_TEAMS (QTHREAD_SPAWN_NEW_TEAM | QTHREAD_SPAWN_NEW_SUBTEAM)
 
-void API_FUNC qthread_chpl_reset_spawn_order(void) {
-    assert(qthread_library_initialized);
-    qthread_t            *me = qthread_internal_self();
-
-    if (me) {
-        assert(me->rdata);
-        me->rdata->shepherd_ptr->sched_shepherd = 0;
-    } else {
-        qlib->sched_shepherd = 0;
-        MACHINE_FENCE;
-    }
-}
-
 int API_FUNC qthread_spawn(qthread_f             f,
                            const void           *arg,
                            size_t                arg_size,
@@ -3002,6 +2989,19 @@ int API_FUNC qthread_migrate_to(const qthread_shepherd_id_t shepherd)
         return QTHREAD_BADARGS;
     }
 }                      /*}}} */
+
+void API_FUNC qthread_reset_target_shep(void) {
+    assert(qthread_library_initialized);
+    qthread_t *me = qthread_internal_self();
+
+    if (me) {
+        assert(me->rdata);
+        me->rdata->shepherd_ptr->sched_shepherd = 0;
+    } else {
+        qlib->sched_shepherd = 0;
+        MACHINE_FENCE;
+    }
+}
 
 
 /* These are just accessor functions */

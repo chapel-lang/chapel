@@ -1,4 +1,4 @@
-.TH "hwloc_obj_attr_u" 3 "Mon Jun 3 2019" "Version 1.11.13" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwloc_obj_attr_u" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -21,6 +21,9 @@ hwloc_obj_attr_u
 .RI "struct \fBhwloc_group_attr_s\fP"
 .br
 .ti -1c
+.RI "struct \fBhwloc_numanode_attr_s\fP"
+.br
+.ti -1c
 .RI "struct \fBhwloc_osdev_attr_s\fP"
 .br
 .ti -1c
@@ -30,6 +33,9 @@ hwloc_obj_attr_u
 .SS "Data Fields"
 
 .in +1c
+.ti -1c
+.RI "struct \fBhwloc_obj_attr_u::hwloc_numanode_attr_s\fP \fBnumanode\fP"
+.br
 .ti -1c
 .RI "struct \fBhwloc_obj_attr_u::hwloc_cache_attr_s\fP \fBcache\fP"
 .br
@@ -51,15 +57,17 @@ hwloc_obj_attr_u
 Object type-specific Attributes\&. 
 .SH "Field Documentation"
 .PP 
-.SS "struct \fBhwloc_obj_attr_u::hwloc_bridge_attr_s\fP  hwloc_obj_attr_u::bridge"
+.SS "struct \fBhwloc_obj_attr_u::hwloc_bridge_attr_s\fP hwloc_obj_attr_u::bridge"
 
-.SS "struct \fBhwloc_obj_attr_u::hwloc_cache_attr_s\fP  hwloc_obj_attr_u::cache"
+.SS "struct \fBhwloc_obj_attr_u::hwloc_cache_attr_s\fP hwloc_obj_attr_u::cache"
 
-.SS "struct \fBhwloc_obj_attr_u::hwloc_group_attr_s\fP  hwloc_obj_attr_u::group"
+.SS "struct \fBhwloc_obj_attr_u::hwloc_group_attr_s\fP hwloc_obj_attr_u::group"
 
-.SS "struct \fBhwloc_obj_attr_u::hwloc_osdev_attr_s\fP  hwloc_obj_attr_u::osdev"
+.SS "struct \fBhwloc_obj_attr_u::hwloc_numanode_attr_s\fP hwloc_obj_attr_u::numanode"
 
-.SS "struct \fBhwloc_obj_attr_u::hwloc_pcidev_attr_s\fP  hwloc_obj_attr_u::pcidev"
+.SS "struct \fBhwloc_obj_attr_u::hwloc_osdev_attr_s\fP hwloc_obj_attr_u::osdev"
+
+.SS "struct \fBhwloc_obj_attr_u::hwloc_pcidev_attr_s\fP hwloc_obj_attr_u::pcidev"
 
 
 .SH "Author"

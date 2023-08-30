@@ -13,3 +13,6 @@ writeln(B[r]);
 writeln(B[r2]);
 writeln(B[r3]);
 
+var rr = ..5 by 2;
+writeln(A[rr]);
+writeln(B[rr]);

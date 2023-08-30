@@ -5,7 +5,7 @@ class GenericParentClass {
     this.t = t;
   }
 }
-class ChildClass: GenericParentClass {}
+class ChildClass: GenericParentClass(?) {}
 
 class ParentClass {}
 class ChildClass2: ParentClass {}

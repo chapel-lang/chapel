@@ -1,0 +1,1 @@
+constRefArgRefReturn.chpl:1: error: Cannot return a const expression as a non-const reference.

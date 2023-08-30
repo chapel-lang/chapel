@@ -126,7 +126,7 @@ module Random {
     :arg algorithm: A param indicating which algorithm to use. Defaults to :param:`defaultRNG`.
     :type algorithm: :type:`RNG`
   */
-  proc fillRandom(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param
+  proc fillRandom(ref arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param
       algorithm=defaultRNG)
     where isSupportedNumericType(arr.eltType) {
     var randNums = createRandomStream(seed=seed,
@@ -137,7 +137,7 @@ module Random {
   }
 
   @chpldoc.nodoc
-  proc fillRandom(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param
+  proc fillRandom(ref arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param
       algorithm=defaultRNG) {
     compilerError("Random.fillRandom is only defined for numeric arrays");
   }
@@ -164,7 +164,7 @@ module Random {
     :type seed: `int(64)`
 
   */
-  proc fillRandom(arr: [], min: arr.eltType, max: arr.eltType,
+  proc fillRandom(ref arr: [], min: arr.eltType, max: arr.eltType,
       seed: int(64) = SeedGenerator.oddCurrentTime)
     where isSupportedNumericType(arr.eltType) {
     var randNums = createRandomStream(seed=seed,
@@ -175,7 +175,7 @@ module Random {
   }
 
   @chpldoc.nodoc
-  proc fillRandom(arr: [], min, max, seed: int(64) = SeedGenerator.oddCurrentTime) {
+  proc fillRandom(ref arr: [], min, max, seed: int(64) = SeedGenerator.oddCurrentTime) {
     compileError("Random.fillRandom is only defined for numeric arrays");
   }
 
@@ -187,7 +187,7 @@ module Random {
      :arg algorithm: A param indicating which algorithm to use. Defaults to PCG.
      :type algorithm: :type:`RNG`
    */
-  proc shuffle(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG) {
+  proc shuffle(ref arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG) {
 
     if(algorithm==RNG.NPB) then
       compilerError("Cannot use NPB Random number generator for array shuffling");
@@ -210,7 +210,7 @@ module Random {
      :arg algorithm: A param indicating which algorithm to use. Defaults to PCG.
      :type algorithm: :type:`RNG`
    */
-  proc permutation(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG) {
+  proc permutation(ref arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG) {
     if(algorithm==RNG.NPB) then
       compilerError("Cannot use NPB Random number generator for array permutation");
 
@@ -588,12 +588,12 @@ module Random {
       :arg arr: The array to be filled
       :type arr: [] :type:`eltType`
      */
-    proc fillRandom(arr: [] eltType) {
+    proc fillRandom(ref arr: [] eltType) {
       compilerError("RandomStreamInterface.fillRandom called");
     }
 
     @chpldoc.nodoc
-    proc fillRandom(arr: []) {
+    proc fillRandom(ref arr: []) {
       compilerError("RandomStreamInterface.fillRandom called");
     }
 
@@ -625,7 +625,7 @@ module Random {
                                    if ``size < 1 || size.size < 1``,
                                    if ``replace=false`` and ``size > x.size || size.size > x.size``
      */
-     proc choice(x: [], size:?sizeType=none, replace=true, prob:?probType=none) throws
+     proc choice(const x: [], size:?sizeType=none, replace=true, prob:?probType=none) throws
      {
        compilerError("RandomStreamInterface.choice called");
      }
@@ -806,7 +806,7 @@ module Random {
 
     use super.RandomSupport;
     private use Random, IO;
-    private use Math only ldexp;
+    private use Math only ldExp;
     private use PCGRandomLib;
     use ChapelLocks;
 
@@ -1081,7 +1081,7 @@ module Random {
         :arg arr: The array to be filled
         :type arr: `[] T`
       */
-      proc fillRandom(arr: []) {
+      proc fillRandom(ref arr: []) {
         if(!arr.isRectangular()) then
           compilerError("fillRandom does not support non-rectangular arrays");
 
@@ -1099,7 +1099,7 @@ module Random {
         :arg arr: The array to be filled
         :type arr: `[] T`
       */
-      proc fillRandom(arr: [], min: arr.eltType, max:arr.eltType) {
+      proc fillRandom(ref arr: [], min: arr.eltType, max:arr.eltType) {
         if(!arr.isRectangular()) then
           compilerError("fillRandom does not support non-rectangular arrays");
 
@@ -1137,7 +1137,7 @@ module Random {
                                    if ``size < 1 || size.size < 1``,
                                    if ``replace=false`` and ``size > x.size || size.size > x.size``
      */
-      proc choice(x: [?dom], size:?sizeType=none, replace=true, prob:?probType=none)
+      proc choice(const x: [?dom], size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
         var idx = _choice(this, dom, size=size, replace=replace, prob=prob);
@@ -1217,7 +1217,7 @@ module Random {
       }
 
       /* Randomly shuffle a 1-D array. */
-      proc shuffle(arr: [?D] ?eltType ) {
+      proc shuffle(ref arr: [?D] ?eltType ) {
 
         if(!arr.isRectangular()) then
           compilerError("shuffle does not support non-rectangular arrays");
@@ -1255,7 +1255,7 @@ module Random {
          The resulting array will include each value from low..high
          exactly once, where low and high refer to the array's domain.
          */
-      proc permutation(arr: [] eltType) {
+      proc permutation(ref arr: [] eltType) {
 
         if(!arr.isRectangular()) then
           compilerError("permutation does not support non-rectangular arrays");
@@ -1413,7 +1413,7 @@ module Random {
     private inline
     proc randToReal64(x: uint(64)):real(64)
     {
-      return ldexp(x:real(64), -64);
+      return ldExp(x:real(64), -64);
     }
     // returns a random number in [min, max]
     // by scaling a multiple of 2**-64 by (max-min)
@@ -1429,7 +1429,7 @@ module Random {
     private inline
     proc randToReal32(x: uint(32))
     {
-      return ldexp(x:real(32), -32);
+      return ldExp(x:real(32), -32);
     }
 
     // returns a random number in [min, max)
@@ -1927,7 +1927,7 @@ module Random {
          :arg seed: The initial internal state.
          :arg inc: The sequence constant.
        */
-      inline proc srandom(seed:uint(64), inc:uint(64))
+      inline proc ref srandom(seed:uint(64), inc:uint(64))
       {
         // this is pcg_setseq_64_srandom_r
 
@@ -1945,7 +1945,7 @@ module Random {
          :arg inc: The sequence constant (same as passed to `srandom`)
          :returns: 32 bits generated by the RNG.
        */
-      inline proc random(inc:uint(64)):uint(32)
+      inline proc ref random(inc:uint(64)):uint(32)
       {
         // this is pcg_setseq_64_xsh_rr_32_random_r
         const oldstate:uint(64) = state;
@@ -1964,7 +1964,7 @@ module Random {
          :returns: a random number in [0,bound).
        */
       inline
-      proc bounded_random(inc:uint(64), bound:uint(32))
+      proc ref bounded_random(inc:uint(64), bound:uint(32))
       {
             // This comment is from pcg32_boundedrand_r:
             // To avoid bias, we need to make the range of the RNG a multiple of
@@ -2035,7 +2035,7 @@ module Random {
          :returns: a random number in [0,bound).
        */
       inline
-      proc bounded_random_vary_inc(inc:uint(64), bound:uint(32),
+      proc ref bounded_random_vary_inc(inc:uint(64), bound:uint(32),
                                    seed:uint(64), skip:uint(64),
                                    next_inc:uint(64),
                                    inc_increment:uint(64))
@@ -2106,7 +2106,7 @@ module Random {
          :arg delta: The number of steps to jump ahead
        */
       inline
-      proc advance(inc:uint(64), delta:uint(64))
+      proc ref advance(inc:uint(64), delta:uint(64))
       {
         // this is pcg_setseq_64_advance_r
         state = pcg_advance_lcg(64, state, delta, PCG_DEFAULT_MULTIPLIER_64, inc);
@@ -2327,7 +2327,7 @@ module Random {
          :arg seed: The initial internal state.
          :arg inc: The sequence constant
        */
-      inline proc srandom(seed:uint(8), inc:uint(8))
+      inline proc ref srandom(seed:uint(8), inc:uint(8))
       {
         // this is pcg_setseq_8_srandom_r
 
@@ -2341,7 +2341,7 @@ module Random {
          :arg inc: The sequence constant (same as passed to `srandom`)
          :returns: 16 bits generated by the RNG.
        */
-      inline proc random(inc:uint(8)):uint(8)
+      inline proc ref random(inc:uint(8)):uint(8)
       {
         // this is pcg_setseq_8_rxs_m_xs_8_random_r
         const oldstate:uint(8) = state;
@@ -2434,7 +2434,7 @@ module Random {
       // zero all but the bottom N bits of state
       @chpldoc.nodoc
       inline
-      proc mask_state() {
+      proc ref mask_state() {
         state = normalize(N, state);
       }
 
@@ -2443,7 +2443,7 @@ module Random {
          :arg seed: The initial internal state.
          :arg inc: The sequence constant
        */
-      inline proc srandom(seed:uint, inc:uint)
+      inline proc ref srandom(seed:uint, inc:uint)
       {
         state = inc + seed;
         if N <= 8 {
@@ -2469,7 +2469,7 @@ module Random {
          :arg inc: The sequence constant (same as passed to `srandom`)
          :returns: N bits generated by the RNG.
        */
-      inline proc random(inc:uint):uint
+      inline proc ref random(inc:uint):uint
       {
         if N <= 8 {
           var tmpstate = state:uint(8);
@@ -2778,7 +2778,7 @@ module Random {
         :arg arr: The array to be filled
         :type arr: [] :type:`eltType`
       */
-      proc fillRandom(arr: [] eltType) {
+      proc fillRandom(ref arr: [] eltType) {
         if(!arr.isRectangular()) then
           compilerError("fillRandom does not support non-rectangular arrays");
 
@@ -2787,13 +2787,13 @@ module Random {
       }
 
       @chpldoc.nodoc
-      proc fillRandom(arr: []) {
+      proc fillRandom(ref arr: []) {
         compilerError("NPBRandomStream(eltType=", eltType:string,
                       ") can only be used to fill arrays of ", eltType:string);
       }
 
       @chpldoc.nodoc
-      proc choice(x: [], size:?sizeType=none, replace=true, prob:?probType=none)
+      proc choice(const x: [], size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
         compilerError("NPBRandomStream.choice() is not supported.");

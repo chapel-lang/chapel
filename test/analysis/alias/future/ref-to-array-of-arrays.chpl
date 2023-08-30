@@ -1,6 +1,6 @@
 config const n = 10;
 
-proc kernel(A) {
+proc kernel(ref A) {
   // This pattern comes up in LCALS
   ref A1 = A[1];
   ref A2 = A[2];

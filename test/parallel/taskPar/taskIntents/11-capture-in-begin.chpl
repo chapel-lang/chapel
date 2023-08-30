@@ -63,9 +63,9 @@ var dom1: DomType1;
 var dom2: DomType2;
 var arr1: ArrType1;
 var arr2: ArrType2;
-var s1$, s2$: sync int;
+var s1, s2: sync int;
 begin {
-  s1$.readFE();
+  s1.readFE();
   writeln("starting in begin");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -93,7 +93,7 @@ writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
 writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
-  s2$.writeEF(1);
+  s2.writeEF(1);
 }
 // assign to all the variables
 b0 = true;
@@ -148,8 +148,8 @@ writeln("dom2", " ", dom2);
 writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
 writeln("finished outside begin");
-s1$.writeEF(1);
-s2$.readFE();
+s1.writeEF(1);
+s2.readFE();
 /////////////////////////////////////////////////////////////////////////////
 writeln("=== in a function ===");
 proc test() {
@@ -182,9 +182,9 @@ var dom1: DomType1;
 var dom2: DomType2;
 var arr1: ArrType1;
 var arr2: ArrType2;
-var s1$, s2$: sync int;
+var s1, s2: sync int;
 begin {
-  s1$.readFE();
+  s1.readFE();
   writeln("starting in begin");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -212,7 +212,7 @@ writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
 writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
-  s2$.writeEF(1);
+  s2.writeEF(1);
 }
 // assign to all the variables
 b0 = true;
@@ -267,13 +267,13 @@ writeln("dom2", " ", dom2);
 writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
 writeln("finished outside begin");
-s1$.writeEF(1);
-s2$.readFE();
+s1.writeEF(1);
+s2.readFE();
 }
 test();
 /////////////////////////////////////////////////////////////////////////////
 writeln("=== in a begin ===");
-var sbegin$: sync int;
+var sbegin: sync int;
 begin {
 // Verify that values are captured upon a 'begin'.
 // This needs #include "support-decls.cpp".
@@ -304,9 +304,9 @@ var dom1: DomType1;
 var dom2: DomType2;
 var arr1: ArrType1;
 var arr2: ArrType2;
-var s1$, s2$: sync int;
+var s1, s2: sync int;
 begin {
-  s1$.readFE();
+  s1.readFE();
   writeln("starting in begin");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -334,7 +334,7 @@ writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
 writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
-  s2$.writeEF(1);
+  s2.writeEF(1);
 }
 // assign to all the variables
 b0 = true;
@@ -389,11 +389,11 @@ writeln("dom2", " ", dom2);
 writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
 writeln("finished outside begin");
-s1$.writeEF(1);
-s2$.readFE();
-  sbegin$.writeEF(1);
+s1.writeEF(1);
+s2.readFE();
+  sbegin.writeEF(1);
 }
-sbegin$.readFE();
+sbegin.readFE();
 /////////////////////////////////////////////////////////////////////////////
 writeln("=== in a cobegin ===");
 cobegin {
@@ -428,9 +428,9 @@ var dom1: DomType1;
 var dom2: DomType2;
 var arr1: ArrType1;
 var arr2: ArrType2;
-var s1$, s2$: sync int;
+var s1, s2: sync int;
 begin {
-  s1$.readFE();
+  s1.readFE();
   writeln("starting in begin");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -458,7 +458,7 @@ writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
 writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
-  s2$.writeEF(1);
+  s2.writeEF(1);
 }
 // assign to all the variables
 b0 = true;
@@ -513,8 +513,8 @@ writeln("dom2", " ", dom2);
 writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
 writeln("finished outside begin");
-s1$.writeEF(1);
-s2$.readFE();
+s1.writeEF(1);
+s2.readFE();
   }
 }
 /////////////////////////////////////////////////////////////////////////////
@@ -550,9 +550,9 @@ var dom1: DomType1;
 var dom2: DomType2;
 var arr1: ArrType1;
 var arr2: ArrType2;
-var s1$, s2$: sync int;
+var s1, s2: sync int;
 begin {
-  s1$.readFE();
+  s1.readFE();
   writeln("starting in begin");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -580,7 +580,7 @@ writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
 writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
-  s2$.writeEF(1);
+  s2.writeEF(1);
 }
 // assign to all the variables
 b0 = true;
@@ -635,8 +635,8 @@ writeln("dom2", " ", dom2);
 writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
 writeln("finished outside begin");
-s1$.writeEF(1);
-s2$.readFE();
+s1.writeEF(1);
+s2.readFE();
   }
 }
 /////////////////////////////////////////////////////////////////////////////

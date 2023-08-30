@@ -1,5 +1,5 @@
 const colWidth = 12;
-const fmt = "%-"+colWidth:string+"s|%-"+colWidth:string+"s\n";
+const fmt = "%<"+colWidth:string+"s|%<"+colWidth:string+"s\n";
 
 // this is const ref -- note that if you pass a var domain, we don't set it
 //                      const

@@ -69,6 +69,7 @@ static void        fixupArrayFormals(FnSymbol* fn);
 static bool        includesParameterizedPrimitive(FnSymbol* fn);
 static void        replaceFunctionWithInstantiationsOfPrimitive(FnSymbol* fn);
 static void        fixupQueryFormals(FnSymbol* fn);
+static void        fixupCastFormals(FnSymbol* fn);
 
 static void        updateInitMethod (FnSymbol* fn);
 
@@ -165,6 +166,8 @@ void normalize() {
         updateInitMethod(fn);
       }
     }
+
+    fixupCastFormals(fn);
   }
 
   normalizeBase(theProgram, true);
@@ -1127,7 +1130,7 @@ static void processSyntacticDistributions(CallExpr* call) {
     if (CallExpr* type = toCallExpr(call->get(1))) {
       if (SymExpr* base = toSymExpr(type->baseExpr)) {
         if (base->symbol()->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == true) {
-          const char* name = "chpl__buildDistValue";
+          const char* name = "chpl__buildDistDMapValue";
 
           type->baseExpr->replace(new UnresolvedSymExpr(name));
 
@@ -1146,6 +1149,12 @@ static void processSyntacticDistributions(CallExpr* call) {
                 new NamedExpr(astr_chpl_manager,
                               new SymExpr(dtUnmanaged->symbol)),
                 distCall->remove());
+
+            call->insertAtHead(new CallExpr("chpl__buildDistValue", newExpr));
+
+            processManagedNew(newExpr);
+          } else {  // handle new cases where we use a record instead
+            CallExpr* newExpr = new CallExpr(PRIM_NEW, distCall->remove());
 
             call->insertAtHead(new CallExpr("chpl__buildDistValue", newExpr));
 
@@ -1315,7 +1324,7 @@ static void destructureTupleAssignment(CallExpr* assign, CallExpr* lhsCall);
 static void processSyntacticTupleAssignment(CallExpr* call) {
   if (call->isNamedAstr(astrSassign)) {
     if (CallExpr* lhsCall = toCallExpr(call->get(1))) {
-      if (lhsCall->isNamed("_build_tuple")) {
+      if (lhsCall->isNamedAstr(astrBuildTuple)) {
         destructureTupleAssignment(call, lhsCall);
       }
     }
@@ -1360,7 +1369,7 @@ static void insertDestructureStatements(Expr*     S1,
       CallExpr* nextLHS = toCallExpr(expr);
       Expr*     nextRHS = new CallExpr(rhs->copy(), new_IntSymbol(index));
 
-      if (nextLHS != NULL && nextLHS->isNamed("_build_tuple") == true) {
+      if (nextLHS != NULL && nextLHS->isNamedAstr(astrBuildTuple) == true) {
         insertDestructureStatements(S1, S2, nextLHS, nextRHS);
 
       } else {
@@ -1887,11 +1896,18 @@ static void fixupExportedArrayReturns(FnSymbol* fn) {
     CallExpr* retCall = toCallExpr(fn->body->body.tail);
     INT_ASSERT(retCall && retCall->isPrimitive(PRIM_RETURN));
 
-    // This appears to be prior to any insertion of call temps, etc, so it seems
-    // okay for now to just insert the conversion call around the function call.
-    CallExpr* transformRet = new CallExpr("convertToExternalArray",
-                                          retCall->get(1)->remove());
-    retCall->insertAtTail(transformRet);
+    // if return value is a call expr, explicitly expand and suppress lvalue
+    // errors from `convertToExternalArray`
+    // otherwise, just use the value directly and let the normal call temp
+    // insertion take care of it
+    Expr* retVal = retCall->get(1);
+    if(CallExpr* callVal = toCallExpr(retVal)) {
+      Symbol* retSym = insertCallTempsWithStmt(callVal, retCall);
+      retSym->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
+      retVal = new SymExpr(retSym);
+    }
+    CallExpr* transformRet = new CallExpr("convertToExternalArray", retVal);
+    retCall->get(1)->replace(transformRet);
   }
 }
 
@@ -2469,6 +2485,24 @@ static void insertCallTemps(CallExpr* call) {
   }
 }
 
+// adds FLAG_MARKED_GENERIC to 'var' if the type contains a ?
+// actual or an actual that is a temp marked with that flag.
+static void propagateMarkedGeneric(Symbol* var, Expr* typeExpr) {
+  if (SymExpr* se = toSymExpr(typeExpr)) {
+    Symbol* sym = se->symbol();
+    if (sym == gUninstantiated ||
+        (sym->hasFlag(FLAG_MARKED_GENERIC) && sym->hasFlag(FLAG_TEMP)))
+      var->addFlag(FLAG_MARKED_GENERIC);
+  } else if (CallExpr* call = toCallExpr(typeExpr)) {
+    if (call->baseExpr)
+      propagateMarkedGeneric(var, call->baseExpr);
+
+    for_actuals(actual, call) {
+      propagateMarkedGeneric(var, actual);
+    }
+  }
+}
+
 // returns the added call temp's symbol
 static Symbol *insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
   SET_LINENO(call);
@@ -2515,6 +2549,10 @@ static Symbol *insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
     // attempt to access the method on the super type.
     tmp->addFlag(FLAG_SUPER_TEMP);
   }
+
+  // Set FLAG_MARKED_GENERIC if there was a (?) argument here or
+  // one of the nested calls used one.
+  propagateMarkedGeneric(tmp, call);
 
   call->replace(new SymExpr(tmp));
 
@@ -2610,7 +2648,7 @@ static void evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp) {
   //   A better long term solution would be preferred
   if (call->isNamedAstr(astr_initCopy)     == true &&
       parentCall                          != NULL &&
-      parentCall->isNamed("_build_tuple") == true) {
+      parentCall->isNamedAstr(astrBuildTuple) == true) {
     tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
   }
 
@@ -2660,6 +2698,8 @@ static bool moveMakesTypeAlias(CallExpr* call) {
 ************************************** | *************************************/
 
 static void emitTypeAliasInit(Expr* after, Symbol* var, Expr* init) {
+  propagateMarkedGeneric(var, init);
+
   // Generate a type constructor call for generic-with-defaults types
   // (Note, this does not work correctly during resolution).
   // TODO: get it working in resolution
@@ -4066,6 +4106,7 @@ static void cloneParameterizedPrimitive(FnSymbol* fn,
                                         int       width) {
   SymbolMap map;
   FnSymbol* newFn = fn->copy(&map);
+  ArgSymbol* newFormal = toArgSymbol(map.get(formal));
 
   if (DefExpr* def = toDefExpr(query)) {
     Symbol* newSym = map.get(def->sym);
@@ -4079,10 +4120,13 @@ static void cloneParameterizedPrimitive(FnSymbol* fn,
         se->setSymbol(new_IntSymbol(width));
     }
   } else {
-    ArgSymbol* newFormal = toArgSymbol(map.get(formal));
     CallExpr* typeSpecifier = toCallExpr(newFormal->typeExpr->body.tail);
     typeSpecifier->get(1)->replace(new SymExpr(new_IntSymbol(width)));
   }
+
+  // add a flag to the new formal created to cause a warning
+  // if implicit conversions are used when passing to it
+  newFormal->addFlag(FLAG_DEPRECATED_IMPLICIT_CONVERSION);
 
   fn->defPoint->insertAfter(new DefExpr(newFn));
 }
@@ -4143,6 +4187,9 @@ static void cloneParameterizedPrimitive(FnSymbol* fn,
 
 static void replaceUsesWithPrimTypeof(FnSymbol* fn, ArgSymbol* formal);
 
+static bool isBorrowedTypeActual(Expr* expr);
+static bool isCastToBorrowedInFormal(ArgSymbol* formal);
+
 static bool isQueryForGenericTypeSpecifier(ArgSymbol* formal);
 
 static void fixDecoratedTypePrimitives(FnSymbol* fn, ArgSymbol* formal);
@@ -4159,6 +4206,43 @@ static void addToWhereClause(FnSymbol*  fn,
                              ArgSymbol* formal,
                              Expr*      test);
 
+static void fixupCastFormals(FnSymbol* fn) {
+  for_formals(formal, fn) {
+    if (BlockStmt* typeExpr = formal->typeExpr) {
+      if(typeExpr->body.length == 1) {
+        if(CallExpr* typeCast = toCallExpr(typeExpr->body.tail)) {
+          if(typeCast->isCast() && isBorrowedTypeActual(typeCast->castTo())) {
+            VarSymbol* tmp = newTemp("call_type_tmp");
+            tmp->addFlag(FLAG_TYPE_VARIABLE);
+            tmp->addFlag(FLAG_MAYBE_TYPE);
+            tmp->addFlag(FLAG_EXPR_TEMP);
+
+            SymExpr* tmpSe = new SymExpr(tmp);
+            typeCast->replace(tmpSe);
+
+            auto mod = fn->getModule();
+            auto def = new DefExpr(tmp);
+            auto move = new CallExpr(PRIM_MOVE, tmp, typeCast);
+            mod->block->insertAtTail(def);
+
+            // insert the move just after we def the fromType
+            if(SymExpr* fromType = toSymExpr(typeCast->castFrom())) {
+              if(fromType->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+                fromType->symbol()->defPoint->insertAfter(move);
+              }
+              else {
+                USR_FATAL(formal, "Cannot perform a type cast on a non-type");
+              }
+            } else {
+              USR_FATAL(formal, "Complex expressions casted to `borrowed` in a formal type are not currently supported, consider using a helper function");
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 static void fixupQueryFormals(FnSymbol* fn) {
   if (fn->isConstrainedGeneric()) {
     introduceConstrainedTypes(fn);
@@ -4174,7 +4258,11 @@ static void fixupQueryFormals(FnSymbol* fn) {
 
         replaceUsesWithPrimTypeof(fn, formal);
 
-      } else if (isQueryForGenericTypeSpecifier(formal) == true) {
+      } else if (isCastToBorrowedInFormal(formal)) {
+        // avoids expandQueryForGenericTypeSpecifier messing up the cast to borrowed
+        // TODO: This will still break for something like `myOwnedType:unmanaged`
+      }
+      else if (isQueryForGenericTypeSpecifier(formal) == true) {
         if (formal->intent == INTENT_OUT)
           outFormalQueryError(formal);
 
@@ -4215,6 +4303,30 @@ static void replaceUsesWithPrimTypeof(FnSymbol* fn, ArgSymbol* formal) {
 
   formal->type = dtAny;
 }
+
+static bool isBorrowedTypeActual(Expr* expr) {
+  if (SymExpr* se = toSymExpr(expr)) {
+    if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
+      auto decoratorType = classTypeDecorator(canonicalDecoratedClassType(ts->type));
+      return isDecoratorBorrowed(decoratorType);
+    }
+  }
+
+  return false;
+}
+
+static bool isCastToBorrowedInFormal(ArgSymbol* formal) {
+  bool retval = false;
+
+  if(formal->typeExpr->body.length == 1) {
+    if (CallExpr* call = toCallExpr(formal->typeExpr->body.tail)) {
+      retval = call->isCast() && isBorrowedTypeActual(call->castTo());
+    }
+  }
+
+  return retval;
+}
+
 
 static bool isGenericActual(Expr* expr) {
   if (isDefExpr(expr))
@@ -4342,7 +4454,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
 }
 
 static TypeSymbol* getTypeForSpecialConstructor(CallExpr* call) {
-  if (call->isNamed("_build_tuple") || call->isNamed("*")) {
+  if (call->isNamedAstr(astrBuildTuple) || call->isNamedAstr(astrSstar)) {
     INT_ASSERT(!call->isPrimitive(PRIM_MULT));
     return dtTuple->symbol;
   }
@@ -4455,7 +4567,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
   int position = 1;
   bool isTuple = false;
 
-  if (call->isNamed("_build_tuple")) {
+  if (call->isNamedAstr(astrBuildTuple)) {
     isTuple = true;
     Expr*     actual = new SymExpr(new_IntSymbol(call->numActuals()));
     CallExpr* query  = makePrimQuery(queried, new_CStringSymbol("size"));
@@ -4467,7 +4579,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
 
     position = position + 1; // tuple size is technically 1st param/type
 
-  } else if (call->isNamed("*")) {
+  } else if (call->isNamedAstr(astrSstar)) {
     // it happens to be that 1st actual == size so that will be checked below
     addToWhereClause(fn, formal,
                      new CallExpr(PRIM_IS_STAR_TUPLE_TYPE, queried->copy()));

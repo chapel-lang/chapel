@@ -7,7 +7,7 @@ use BlockDist;
 
 config const n=10 :uint;
 const S = {1..n};
-const BDist = new dmap(new Block(idxType=uint, boundingBox=S));
+const BDist = new Block(idxType=uint, boundingBox=S);
 const BDom : domain(1, uint) dmapped BDist=S;
 
 //var A : [[1..n] dmapped Block(rank=1,boundingBox=[1..n])] int;
@@ -169,7 +169,7 @@ if (Dom2.size == Dom1.size)
 }
 
 const R = {n/2+1..3*n/2};
-const BRDist = new dmap(new Block(boundingBox=R));
+const BRDist = new Block(boundingBox=R);
 const BRDom : domain(1, uint) dmapped BRDist=R;
 
 var C : [BRDom] uint;
@@ -219,7 +219,7 @@ if (Dom4.size == Dom3.size)
 }
 
 const T = {n/2+1..5*n/2};
-const BTDist = new dmap(new Block(boundingBox=T));
+const BTDist = new Block(boundingBox=T);
 const BTDom : domain(1, uint) dmapped BTDist=T;
 
 var E : [BTDom] uint;

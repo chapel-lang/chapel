@@ -10,7 +10,7 @@ class Parent {
   }
 }
 
-class Child : Parent {
+class Child : Parent(?) {
   param p2: bool;
   var y: int;
 

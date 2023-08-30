@@ -47,12 +47,33 @@ static bool debugPrintGPUChecks = false;
 static bool allowFnCallsFromGPU = true;
 static int indentGPUChecksLevel = 0;
 
+// Ideally, if we do gpuSpecialization, we could safely assume that any function
+// that isn't marked with FLAG_GPU_SPECIALIZE would be executed on a CPU locale.
+// Unfortunately, as of today, this isn't the case because these functions can
+// be reached by virtual dispatch and our specialization cloning isn't
+// sophisticated enough to clone these functions and update the dispatch calls
+// as appropriate.
+//
+// The good news is it's still safe to assume that anything marked with
+// FLAG_GPU_SPECIALIZE must execute on the gpu.
+//
+// Anyway, of course, our hope would be to make things handle virtual dispatch
+// properly, but, in the meantime, if you want to ignore this and make
+// these assumptions anyway you can turn this flag to true. And once we do
+// update things we can get just simplify things and get rid of this flag
+// altogether.
+static bool assumeNonGpuSpecFnsAreOnCpu = false;
+
 extern int classifyPrimitive(CallExpr *call, bool inLocal);
 extern bool inLocalBlock(CallExpr *call);
 
 // ----------------------------------------------------------------------------
 // Utilities
 // ----------------------------------------------------------------------------
+
+static bool isFnGpuSpecialized(FnSymbol *fn) {
+  return fn->hasFlag(FLAG_GPU_SPECIALIZATION);
+}
 
 static bool isFieldAccessPrimitive(CallExpr *call) {
   return call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
@@ -242,6 +263,13 @@ std::queue<FnSymbol*> CreateGpuFunctionSpecializations::findAndCloneOnFns() {
 }
 
 void CreateGpuFunctionSpecializations::findAndCloneFnsReachableFromQueue(std::queue<FnSymbol*> &queue) {
+  // We rewrite wrap_on functions (those flagged with FLAG_ON_BLOCK) to dispatch
+  // to the either a gpu or cpu specialized "on" function, we don't need to
+  // clone these functions themselves.
+  auto shouldExemptCallToFn = [](FnSymbol *fn) {
+    return fn->hasFlag(FLAG_ON_BLOCK);
+  };
+
   while (queue.empty() == false) {
     FnSymbol* gpuReachableFn = queue.front();
     queue.pop();
@@ -250,6 +278,10 @@ void CreateGpuFunctionSpecializations::findAndCloneFnsReachableFromQueue(std::qu
     collectCallExprs(gpuReachableFn, calls);
     for_vector(CallExpr, call, calls) {
       if (FnSymbol* fn = call->resolvedFunction()) {
+        if(shouldExemptCallToFn(fn)) {
+          continue;
+        }
+
         FnSymbol* gpuFn = createGpuSpecializationOfFn(fn);
         if(gpuFn) {
           queue.push(gpuFn);
@@ -274,8 +306,7 @@ void CreateGpuFunctionSpecializations::rewriteCallToOnFnInOnBlock(CallExpr *call
                                     new_IntSymbol(0));
 
   // we can't add elseStmt later on
-  CondStmt* cond = new CondStmt(condExpr, gpuBlock,
-                                isFullGpuCodegen() ? cpuBlock : NULL);
+  CondStmt* cond = new CondStmt(condExpr, gpuBlock, cpuBlock);
 
   // first, make sure the conditional is in place
   call->insertBefore(cond);
@@ -288,8 +319,8 @@ void CreateGpuFunctionSpecializations::rewriteOnBlock(FnSymbol *fn) const {
   std::vector<CallExpr*> calls;
   collectCallExprs(fn, calls);
   for_vector(CallExpr, call, calls) {
-    if (FnSymbol* fn = call->resolvedFunction()) {
-      if(fn->hasFlag(FLAG_ON)) {
+    if (FnSymbol* callee = call->resolvedFunction()) {
+      if(callee->hasFlag(FLAG_ON)) {
         rewriteCallToOnFnInOnBlock(call);
       }
     }
@@ -343,7 +374,8 @@ class GpuizableLoop {
   Symbol* upperBound_ = nullptr;
   std::vector<Symbol*> loopIndices_;
   std::vector<Symbol*> lowerBounds_;
-  bool shouldErrorIfNotGpuizable_;
+  std::vector<CallExpr*> gpuAssertions_;
+  CallExpr* compileTimeGpuAssertion_;
   const char* reason = nullptr;
 
   CondStmt* gpuCond_ = nullptr;
@@ -399,8 +431,10 @@ public:
   void fixupNonGpuPath() const;
 
 private:
-  bool determineIfShouldErrorIfNotGpuizable();
+  CallExpr* findCompileTimeGpuAssertions();
+  void printNonGpuizableError(CallExpr* assertion, Expr* loc);
   bool evaluateLoop();
+  void cleanupAssertGpuizable();
   bool isAlreadyInGpuKernel();
   bool parentFnAllowsGpuization();
   bool callsInBodyAreGpuizable();
@@ -421,7 +455,7 @@ GpuizableLoop::GpuizableLoop(BlockStmt *blk) {
 
   this->loop_ = toCForLoop(blk);
   this->parentFn_ = toFnSymbol(blk->getFunction());
-  this->shouldErrorIfNotGpuizable_ = determineIfShouldErrorIfNotGpuizable();
+  this->compileTimeGpuAssertion_ = findCompileTimeGpuAssertions();
   this->isEligible_ = evaluateLoop();
 
   // Ideally we should error out earlier than this with a more specific
@@ -429,12 +463,15 @@ GpuizableLoop::GpuizableLoop(BlockStmt *blk) {
   // There's one use case we want to exempt, which is failure to
   // gpuize a nested loop. In this case if there was a failure to gpuize
   // the outer loop we already would have errored.
-  if(this->shouldErrorIfNotGpuizable_ &&
+  if(this->compileTimeGpuAssertion_ &&
     !this->isEligible_ &&
     !isAlreadyInGpuKernel())
   {
-    USR_FATAL(blk, "Loop containing assertOnGpu() is not gpuizable");
+    printNonGpuizableError(this->compileTimeGpuAssertion_, blk);
+    USR_STOP();
   }
+
+  cleanupAssertGpuizable();
 }
 
 // Given --report-gpu we don't want to report on all 'for' loops, just those
@@ -459,7 +496,7 @@ bool GpuizableLoop::isReportWorthy() {
   return true;
 }
 
-bool GpuizableLoop::determineIfShouldErrorIfNotGpuizable() {
+CallExpr* GpuizableLoop::findCompileTimeGpuAssertions() {
   CForLoop *cfl = this->loop_;
   INT_ASSERT(cfl);
 
@@ -473,11 +510,22 @@ bool GpuizableLoop::determineIfShouldErrorIfNotGpuizable() {
   for_alist(expr, cfl->body) {
     CallExpr *call = toCallExpr(expr);
     if (call && call->isPrimitive(PRIM_ASSERT_ON_GPU)) {
-      return true;
+      return call;
     }
   }
 
-  return false;
+  return nullptr;
+}
+
+void GpuizableLoop::printNonGpuizableError(CallExpr* assertion, Expr* loc) {
+    debuggerBreakHere();
+    const char* reason = "contains assertOnGpu()";
+    auto isAttributeSym = toSymExpr(assertion->get(1));
+    INT_ASSERT(isAttributeSym);
+    if (isAttributeSym->symbol() == gTrue) {
+      reason = "is marked with @assertOnGpu";
+    }
+    USR_FATAL_CONT(loc, "Loop %s but is not eligible for execution on a GPU", reason);
 }
 
 bool GpuizableLoop::isAlreadyInGpuKernel() {
@@ -489,6 +537,15 @@ bool GpuizableLoop::evaluateLoop() {
          parentFnAllowsGpuization() &&
          callsInBodyAreGpuizable() &&
          attemptToExtractLoopInformation();
+}
+
+void GpuizableLoop::cleanupAssertGpuizable() {
+  // Remove the string reasons passed to the primitive (they don't go to
+  // the runtime).
+  for (auto call : gpuAssertions_) {
+    if (call->numActuals())
+      call->get(1)->remove();
+  }
 }
 
 bool GpuizableLoop::parentFnAllowsGpuization() {
@@ -654,8 +711,8 @@ bool GpuizableLoop::extractUpperBound() {
 
 void GpuizableLoop::reportNotGpuizable(const BaseAST* ast, const char *msg) {
   this->reason = msg;
-  if(this->shouldErrorIfNotGpuizable_) {
-    USR_FATAL_CONT(loop_, "Loop containing assertOnGpu() is not eligible for execution on a GPU");
+  if(this->compileTimeGpuAssertion_) {
+    printNonGpuizableError(this->compileTimeGpuAssertion_, loop_);
     USR_PRINT(ast, "%s", msg);
     USR_STOP();
   }
@@ -723,7 +780,7 @@ static const char* getLoopName(CForLoop* loop) {
   auto filename = loop->astloc.filename();
   auto line = loop->astloc.stringLineno();
   auto moduleName = chpl::uast::Builder::filenameToModulename(filename);
-  return astr("chpl_gpu_kernel_", moduleName.c_str(), "_line_", line);
+  return astr("chpl_gpu_kernel_", moduleName.c_str(), "_line_", line, "_");
 }
 
 void GpuKernel::buildStubOutlinedFunction(DefExpr* insertionPoint) {
@@ -860,9 +917,10 @@ void GpuKernel::determineBlockSize() {
 }
 
 bool GpuKernel::isCallToPrimitiveWeShouldNotCopyIntoKernel(CallExpr *call) {
-  return call &&
-    (call->isPrimitive(PRIM_ASSERT_ON_GPU) ||
-     call->isPrimitive(PRIM_GPU_SET_BLOCKSIZE));
+  if (!call) return false;
+
+  return call->isPrimitive(PRIM_ASSERT_ON_GPU) ||
+         call->isPrimitive(PRIM_GPU_SET_BLOCKSIZE);
 }
 
 void GpuKernel::populateBody(FnSymbol *outlinedFunction) {
@@ -1194,8 +1252,23 @@ static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
   VarSymbol *numThreads = generateNumThreads(gpuBlock, gpuLoop);
   CallExpr* gpuCall = generateGPUCall(kernel, numThreads);
   gpuBlock->insertAtTail(gpuCall);
-
   gpuLoop.gpuLoop()->replace(gpuBlock);
+
+  FnSymbol *fnContainingLoop = gpuBlock->getFunction();
+  bool canAssumeFnWillRunOnGpu =
+    fGpuSpecialization && (assumeNonGpuSpecFnsAreOnCpu || isFnGpuSpecialized(fnContainingLoop));
+
+  if(canAssumeFnWillRunOnGpu) {
+    // If we are creating GPU specializations then we already know we're on a GPU
+    // sublocale and can just generate the kernel launch call (or, in the case
+    // of CPU-as-device, a kernel launch followed by the CPU loop).
+    gpuLoop.makeGpuOnly();
+  } else {
+    // we don't know if we're in a specialization, so we need to keep
+    // the conditional.
+    gpuLoop.fixupNonGpuPath();
+  }
+
 }
 
 static CallExpr* getGpuEligibleMarker(CForLoop* loop) {
@@ -1223,6 +1296,7 @@ static void outlineEligibleLoop(FnSymbol *fn, GpuizableLoop &gpuLoop) {
     generateGPUKernelCall(gpuLoop, kernel);
   } else {
     kernel.fn()->defPoint->remove();
+    gpuLoop.makeCpuOnly();
   }
 }
 
@@ -1260,7 +1334,6 @@ static void outlineGpuKernelsInFn(FnSymbol *fn) {
       auto gpuLoop = GpuizableLoop::fromEligibleClone(loop);
       if (gpuLoop.isEligible()) {
         outlineEligibleLoop(fn, gpuLoop);
-        gpuLoop.makeGpuOnly();
       } else {
         gpuLoop.makeCpuOnly();
       }
@@ -1269,7 +1342,7 @@ static void outlineGpuKernelsInFn(FnSymbol *fn) {
 }
 
 // We need to strip any GPU specific primitives that remain
-static void cleanupForeachLoopsGauranteedToRunOnCpu(FnSymbol *fn) {
+static void cleanupForeachLoopsGuaranteedToRunOnCpu(FnSymbol *fn) {
   std::vector<CForLoop*> asts;
   collectCForLoopStmtsPreorder(fn, asts);
   for_vector(CForLoop, loop, asts) {
@@ -1296,17 +1369,21 @@ static void doGpuTransforms() {
 
   // Outline all eligible loops; cleanup CPU bound loops
   forv_Vec(FnSymbol*, fn, gFnSymbols) {
-    if(fGpuSpecialization && !fn->hasFlag(FLAG_GPU_SPECIALIZATION)) {
+    bool canAssumeFnWillRunOnCpu = fGpuSpecialization &&
+                                   !isFnGpuSpecialized(fn) &&
+                                   assumeNonGpuSpecFnsAreOnCpu;
+    if(canAssumeFnWillRunOnCpu)
+    {
       // By definition all foreach loops in a function without this flag
       // will be run on the CPU:
-      cleanupForeachLoopsGauranteedToRunOnCpu(fn);
+      cleanupForeachLoopsGuaranteedToRunOnCpu(fn);
     } else {
       outlineGpuKernelsInFn(fn);
 
       // All eligible loops in the function will have been outlined into
       // kernels at this point so anything that remains is guaranteed to
       // run on the CPU
-      cleanupForeachLoopsGauranteedToRunOnCpu(fn);
+      cleanupForeachLoopsGuaranteedToRunOnCpu(fn);
     }
   }
 }
@@ -1465,8 +1542,17 @@ void GpuizableLoop::makeCpuOnly() const {
 }
 
 void GpuizableLoop::makeGpuOnly() const {
+  cpuBlock_->remove();
   gpuBlock_->remove();
   gpuCond_->replace(gpuBlock_);
+
+  if (!isFullGpuCodegen()) {
+    // put the CPU loop right after where the kernel launch would
+    // be to make CPU-as-device work.
+    gpuBlock_->insertAfter(cpuBlock_);
+    cpuBlock_->flattenAndRemove();
+  }
+
   gpuBlock_->flattenAndRemove();
 }
 

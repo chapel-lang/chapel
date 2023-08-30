@@ -1,8 +1,8 @@
 /*
  * Copyright © 2009, 2011, 2012 CNRS.  All rights reserved.
- * Copyright © 2009-2018 Inria.  All rights reserved.
+ * Copyright © 2009-2021 Inria.  All rights reserved.
  * Copyright © 2009, 2011, 2012, 2015 Université Bordeaux.  All rights reserved.
- * Copyright © 2009 Cisco Systems, Inc.  All rights reserved.
+ * Copyright © 2009-2020 Cisco Systems, Inc.  All rights reserved.
  * $COPYRIGHT$
  *
  * Additional copyrights may follow
@@ -206,12 +206,6 @@
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1
 
-/* Define to 1 if we have -lmyriexpress */
-/* #undef HAVE_MYRIEXPRESS */
-
-/* Define to 1 if you have the <myriexpress.h> header file. */
-/* #undef HAVE_MYRIEXPRESS_H */
-
 /* Define to 1 if you have the `nl_langinfo' function. */
 /* #undef HAVE_NL_LANGINFO */
 
@@ -295,10 +289,6 @@
 
 /* Define to '1' if sysctlbyname is present and usable */
 /* #undef HAVE_SYSCTLBYNAME */
-
-/* Define to 1 if the system has the type
-   `SYSTEM_LOGICAL_PROCESSOR_INFORMATION'. */
-#define HAVE_SYSTEM_LOGICAL_PROCESSOR_INFORMATION 1
 
 /* Define to 1 if the system has the type
    `SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX'. */
@@ -496,12 +486,6 @@
 /* Define to 1 if building the Linux PCI component */
 /* #undef HWLOC_HAVE_LINUXPCI */
 
-/* Define to 1 if mbind is available. */
-/* #undef HWLOC_HAVE_MBIND */
-
-/* Define to 1 if migrate_pages is available. */
-/* #undef HWLOC_HAVE_MIGRATE_PAGES */
-
 /* Define to 1 if you have the `NVML' library. */
 /* #undef HWLOC_HAVE_NVML */
 
@@ -525,9 +509,6 @@
 /* Define to 1 if glibc provides a prototype of sched_setaffinity() */
 #define HWLOC_HAVE_SCHED_SETAFFINITY 1
 
-/* Define to 1 if set_mempolicy is available. */
-/* #undef HWLOC_HAVE_SET_MEMPOLICY */
-
 /* Define to 1 if you have the <stdint.h> header file. */
 #define HWLOC_HAVE_STDINT_H 1
 
@@ -543,17 +524,11 @@
 /* Define to 1 on HP-UX */
 /* #undef HWLOC_HPUX_SYS */
 
-/* Define to 1 on Irix */
-/* #undef HWLOC_IRIX_SYS */
-
 /* Define to 1 on Linux */
 /* #undef HWLOC_LINUX_SYS */
 
 /* Define to 1 on *NETBSD */
 /* #undef HWLOC_NETBSD_SYS */
-
-/* Define to 1 on OSF */
-/* #undef HWLOC_OSF_SYS */
 
 /* The size of `unsigned int', as computed by sizeof */
 #define HWLOC_SIZEOF_UNSIGNED_INT 4
@@ -596,7 +571,7 @@
 #define PACKAGE "hwloc"
 
 /* Define to the address where bug reports for this package should be sent. */
-#define PACKAGE_BUGREPORT "http://www.open-mpi.org/projects/hwloc/"
+#define PACKAGE_BUGREPORT "https://www.open-mpi.org/projects/hwloc/"
 
 /* Define to the full name of this package. */
 #define PACKAGE_NAME "hwloc"
@@ -665,7 +640,6 @@
 
 
 /* Version number of package */
-#define HWLOC_VERSION "1.11.13"
 #define VERSION HWLOC_VERSION
 
 /* Define to 1 if the X Window System is missing or not being used. */
@@ -689,6 +663,10 @@
 
 /* Define this to the thread ID type */
 #define hwloc_thread_t HANDLE
+
+/* Define to 1 if you have the declaration of `GetModuleFileName', and to 0 if
+   you don't. */
+#define HAVE_DECL_GETMODULEFILENAME 1
 
 
 #endif /* HWLOC_CONFIGURE_H */

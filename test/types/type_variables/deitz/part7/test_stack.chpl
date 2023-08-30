@@ -9,7 +9,7 @@ record stack {
 
   var  top : unmanaged stack_elt(eltType)?;
 
-  proc deinit() {
+  proc ref deinit() {
     while top != nil {
       var t = top;
 
@@ -23,11 +23,11 @@ record stack {
 proc stack.empty do
   return top == nil;
 
-proc stack.push(v : eltType) {
+proc ref stack.push(v : eltType) {
   top = new unmanaged stack_elt(eltType, v, top);
 }
 
-proc stack.pop() : eltType {
+proc ref stack.pop() : eltType {
   var t = top;
   var v = top!.value;
 

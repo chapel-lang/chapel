@@ -1,7 +1,8 @@
 use BlockDist;
 
 proc Block.printBB() {
-  writeln("boundingBox = ", boundingBox);
+  // The use of 'this.' in the following is a workaround for #22656/#5979
+  writeln("boundingBox = ", this.boundingBox);
 }
 
 proc DefaultAssociativeDom.printTableSize() {
@@ -11,8 +12,8 @@ proc DefaultAssociativeDom.printTableSize() {
 proc main() {
   var DR = {1..20};
   var BD = DR dmapped Block(DR);
-  writeln(BD.dist.type:string, ".printBB()");
-  BD.dist.printBB();
+  writeln(BD.distribution.type:string, ".printBB()");
+  BD.distribution.printBB();
   writeln();
 
   var DA = {1, 3, 5, 6, 7, 42};

@@ -4,7 +4,7 @@
    CERTAIN TO BE SUBJECT TO INCOMPATIBLE CHANGES OR DISAPPEAR COMPLETELY IN
    FUTURE GNU MP RELEASES.
 
-Copyright 2001, 2002, 2005, 2012, 2015, 2020 Free Software Foundation, Inc.
+Copyright 2001, 2002, 2005, 2012, 2015 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -32,8 +32,6 @@ You should have received copies of the GNU General Public License and the
 GNU Lesser General Public License along with the GNU MP Library.  If not,
 see https://www.gnu.org/licenses/.  */
 
-#include <stdlib.h>
-#include <stdio.h>
 #include "gmp-impl.h"
 #include "longlong.h"
 
@@ -172,7 +170,6 @@ mpz_n_pow_ui (mpz_ptr r, mp_srcptr bp, mp_size_t bsize, unsigned long int e)
 #else
   mp_limb_t      b_twolimbs[2];
 #endif
-  mp_limb_t ovfl;
   TMP_DECL;
 
   TRACE (printf ("mpz_n_pow_ui rp=0x%lX bp=0x%lX bsize=%ld e=%lu (0x%lX)\n",
@@ -216,14 +213,7 @@ mpz_n_pow_ui (mpz_ptr r, mp_srcptr bp, mp_size_t bsize, unsigned long int e)
   /* Strip low zero bits from b. */
   count_trailing_zeros (btwos, blimb);
   blimb >>= btwos;
-
-  umul_ppmm (ovfl, rtwos_bits, e, btwos);
-  if (ovfl)
-    {
-      fprintf (stderr, "gmp: overflow in mpz type\n");
-      abort ();
-    }
-
+  rtwos_bits = e * btwos;
   rtwos_limbs += rtwos_bits / GMP_NUMB_BITS;
   rtwos_bits %= GMP_NUMB_BITS;
   TRACE (printf ("trailing zero btwos=%d rtwos_limbs=%ld rtwos_bits=%lu\n",
@@ -378,15 +368,7 @@ mpz_n_pow_ui (mpz_ptr r, mp_srcptr bp, mp_size_t bsize, unsigned long int e)
 
   ASSERT (blimb != 0);
   count_leading_zeros (cnt, blimb);
-
-  umul_ppmm (ovfl, ralloc, (bsize*GMP_NUMB_BITS - cnt + GMP_NAIL_BITS), e);
-  if (ovfl)
-    {
-      fprintf (stderr, "gmp: overflow in mpz type\n");
-      abort ();
-    }
-  ralloc = ralloc / GMP_NUMB_BITS + 5;
-
+  ralloc = (bsize*GMP_NUMB_BITS - cnt + GMP_NAIL_BITS) * e / GMP_NUMB_BITS + 5;
   TRACE (printf ("ralloc %ld, from bsize=%ld blimb=0x%lX cnt=%d\n",
 		 ralloc, bsize, blimb, cnt));
   rp = MPZ_NEWALLOC (r, ralloc + rtwos_limbs);

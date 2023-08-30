@@ -1051,7 +1051,7 @@ dnl  Normally PIC is defined (or not) by libtool, but it doesn't set it on
 dnl  systems which are always PIC.  PIC_ALWAYS established in config.m4
 dnl  identifies these for us.
 
-ifelse(`PIC_ALWAYS',`yes',`define(`PIC')')
+ifelse(PIC_ALWAYS,`yes',`define(`PIC')')
 
 
 dnl  Various possible defines passed from the Makefile that are to be tested

@@ -31,7 +31,7 @@ class A {
   var x : T;
 }
 
-class B : A {
+class B : A(?) {
   type U;
   var y : U;
 }

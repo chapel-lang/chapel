@@ -14,13 +14,13 @@ class GrandParent {
   }
 }
 
-class Parent : GrandParent {
+class Parent : GrandParent(?) {
   proc init(param rank : int, type idxType) {
     super.init(rank, idxType);
   }
 }
 
-class Child : Parent {
+class Child : Parent(?) {
   var indices : index(rank, idxType);
 
   proc init(param rank : int, type idxType) {

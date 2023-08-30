@@ -34,7 +34,7 @@
 #include <sys/stat.h>
 
 char             log_dir   [FILENAME_MAX + 1]           = "./log";
-char             log_module[FILENAME_MAX + 1]           =      "";
+std::set<std::string> log_modules;
 
 bool             fLog                                   =    false;
 bool             fLogDir                                =    false;
@@ -104,7 +104,7 @@ void logSelectPass(const char* arg) {
 
 void setupLogfiles() {
   // Enable logging if --log-module is passed.
-  if (log_module[0] != '\0')
+  if (!log_modules.empty())
     fLog = true;
   // Enable logging if --log-pass is used
   if (logOnlyName.size() > 0)

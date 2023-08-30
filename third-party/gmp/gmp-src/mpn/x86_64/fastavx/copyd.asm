@@ -36,19 +36,28 @@ C	     cycles/limb     cycles/limb     cycles/limb      good
 C              aligned	      unaligned	      best seen	     for cpu?
 C AMD K8,K9	n/a
 C AMD K10	n/a
-C AMD bull	n/a
-C AMD pile	 4.87		 4.87				N
-C AMD steam	 ?		 ?
-C AMD bobcat	n/a
-C AMD jaguar	n/a
+C AMD bd1	n/a
+C AMD bd2	 4.87		 4.87				N
+C AMD bd3	 ?		 ?
+C AMD bd4	0.53		 ?
+C AMD zn1	0.51		 ?
+C AMD zn2	0.25		 ?				Y
+C AMD zn3	0.25		 ?				Y
+C AMD bt1	n/a
+C AMD bt2	n/a
 C Intel P4	n/a
-C Intel core	n/a
+C Intel CNR	n/a
+C Intel PNR	n/a
 C Intel NHM	n/a
+C Intel WSM	n/a
 C Intel SBR	 0.50		 0.91				N
 C Intel IBR	 0.50		 0.65				N
 C Intel HWL	 0.25		 0.30				Y
 C Intel BWL	 0.28		 0.37				Y
+C Intel SKL	 0.27		 ?				Y
 C Intel atom	n/a
+C Intel SLM	n/a
+C Intel GLM	n/a
 C VIA nano	n/a
 
 C We try to do as many 32-byte operations as possible.  The top-most and

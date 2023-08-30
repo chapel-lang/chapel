@@ -326,7 +326,7 @@ prototype module AtomicObjects {
     // faster compression method so we need to decompress it in the same way...
     var locId = descr >> compressedLocIdOffset;
     var addr = descr & compressedAddrMask;
-    if _local || locId == here.id then return castToObj(objType, addr);
+    if compiledForSingleLocale() || locId == here.id then return castToObj(objType, addr);
 
     // We've created the wide pointer, but unfortunately Chapel does not support
     // the ability to cast it to the actual object, so we have to do some
@@ -464,7 +464,7 @@ prototype module AtomicObjects {
     param hasGlobalSupport : bool;
     var atomicVar : if hasABASupport then _ddata(_ABAInternal(objType?)) else atomic uint(64);
 
-    proc init(type objType, param hasABASupport = false, param hasGlobalSupport = !_local) {
+    proc init(type objType, param hasABASupport = false, param hasGlobalSupport = !compiledForSingleLocale()) {
       if !isUnmanagedClass(objType) {
         compilerError ("LocalAtomicObject must take a 'unmanaged' type, not ", objType : string);
       }
@@ -481,7 +481,7 @@ prototype module AtomicObjects {
       }
     }
 
-    proc init(type objType, defaultValue : objType, param hasABASupport = false, param hasGlobalSupport = !_local) {
+    proc init(type objType, defaultValue : objType, param hasABASupport = false, param hasGlobalSupport = !compiledForSingleLocale()) {
       init(objType, hasABASupport, hasGlobalSupport);
       var ptr : uint(64);
       if hasGlobalSupport {
@@ -522,9 +522,9 @@ prototype module AtomicObjects {
         return compress(obj);
       } else {
         // Check if an object is non-local when 'hasGlobalSupport' is false
-        // Note: Both `_local` and `boundsChecking` are compile-time constants
-        // and will compile this away.
-        if !_local && boundsChecking {
+        // Note: Both `compiledForSingleLocale()` and `boundsChecking` are
+        // compile-time constants and will compile this away.
+        if !compiledForSingleLocale() && boundsChecking {
           localityCheck(obj);
         }
         return getAddr(obj);

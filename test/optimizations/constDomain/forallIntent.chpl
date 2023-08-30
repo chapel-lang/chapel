@@ -1,5 +1,5 @@
 const colWidth = 12;
-const fmt = "%-"+colWidth:string+"s|%-"+colWidth:string+"s\n";
+const fmt = "%<"+colWidth:string+"s|%<"+colWidth:string+"s\n";
 
 {
   writeln("Passing var domain");

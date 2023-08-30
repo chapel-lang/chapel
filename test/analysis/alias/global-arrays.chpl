@@ -7,7 +7,7 @@ B = 0;
 test(A, B);
 writeln(A);
 
-proc test(a, b) {
+proc test(ref a, b) {
   for i in 1..n {
     a[1] += b[1];
   }

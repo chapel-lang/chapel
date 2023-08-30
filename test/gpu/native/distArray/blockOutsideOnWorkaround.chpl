@@ -1,15 +1,6 @@
 use BlockDist;
 use GpuDiagnostics;
 
-proc verifyLaunches() {
-  use ChplConfig;
-  const expected = if CHPL_GPU_MEM_STRATEGY == "unified_memory"
-                      then here.maxTaskPar else here.maxTaskPar+1;
-  const actual = getGpuDiagnostics()[0].kernel_launch;
-  assert(actual == expected,
-         "observed ", actual, " launches instead of ", expected);
-}
-
 
 config const n = here.maxTaskPar*2;
 
@@ -29,4 +20,5 @@ stopGpuDiagnostics();
 var sum = 0;
 for a in arr do sum += a;
 assert(sum == n);
-verifyLaunches();
+assertGpuDiags(kernel_launch_um=here.maxTaskPar,
+               kernel_launch_aod=here.maxTaskPar+1);

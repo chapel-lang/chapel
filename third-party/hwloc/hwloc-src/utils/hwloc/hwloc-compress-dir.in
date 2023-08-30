@@ -2,10 +2,11 @@
 #-*-sh-*-
 
 #
-# Copyright © 2013 Inria.  All rights reserved.
+# Copyright © 2013-2021 Inria.  All rights reserved.
 # See COPYING in top-level directory.
 #
 
+HWLOC_VERSION="@HWLOC_VERSION@"
 HWLOC_top_builddir="@HWLOC_top_builddir@"
 prefix="@prefix@"
 exec_prefix="@exec_prefix@"
@@ -24,14 +25,16 @@ error()
 
 usage()
 {
-	echo "$0 [options] <inputdir> <outputdir>"
+	echo `basename $0`" [options] <inputdir> <outputdir>"
 	echo "  Compress topologies from <inputdir> into <outputdir>"
 	echo "Options:"
 	echo "  -R --reverse        Uncompress instead of compressing"
 	echo "  -v --verbose        Display verbose messages"
+	echo "  --version           Report version and exit"
+	echo "  -h --help           Show this usage"
 }
 
-while test $# -gt 2 ; do
+while test $# -gt 0 ; do
 	case "$1" in
 	-R|--reverse)
 		reverse=1
@@ -39,7 +42,11 @@ while test $# -gt 2 ; do
 	-v|--verbose)
 		verbose=1
 		;;
-	-h)
+	--version)
+	    echo `basename $0`" $HWLOC_VERSION"
+	    exit 0
+	    ;;
+	-h|--help)
 		usage
 		exit 0
 		;;
@@ -47,6 +54,9 @@ while test $# -gt 2 ; do
 		error "Unrecognized option: $1"
 		usage
 		exit 1
+		;;
+	*)
+		break
 		;;
 	esac
 	shift

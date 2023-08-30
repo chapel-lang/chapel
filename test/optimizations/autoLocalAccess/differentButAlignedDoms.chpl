@@ -27,7 +27,7 @@ var A: [D] int;
 {
   writeln("Local subdomain patterns");
 
-  coforall l in Locales do on l {
+  coforall l in Locales with (ref A) do on l {
 
     forall i in D.localSubdomain() {
       A[i] = i;

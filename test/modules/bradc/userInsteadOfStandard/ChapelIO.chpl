@@ -4,8 +4,8 @@
 use IO;
 
   proc chpl_stringify_wrapper(const args ...):string {
-    use IO only stringify;
-    return stringify((...args));
+    use IO only chpl_stringify;
+    return chpl_stringify((...args));
   }
 
   /* Equivalent to ``try! stdout.write``. See :proc:`IO.fileWriter.write` */
@@ -39,4 +39,3 @@ use IO;
 proc testchapelio() {
   writeln("In my ChapelIO!");
 }
-

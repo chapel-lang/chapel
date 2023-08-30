@@ -43,8 +43,6 @@ varList = [
 
   ("syInt",  "sync int"),
   ("syReal", "sync real"),
-  ("siInt",  "single int"),
-  ("siReal", "single real"),
   ("aInt",   "atomic int"),
   ("aReal",  "atomic real"),
 ]
@@ -67,7 +65,6 @@ predList = [
   "isDomain",
   "isArray",
   "isSync",
-  "isSingle",
   "isAtomic",
 ]
 

@@ -11,13 +11,13 @@ proc getter() const ref {
   return globalArray;
 }
 
-proc tupleIndexFor(A, B) {
+proc tupleIndexFor(ref A, B) {
   for tup in zip(A, B) {
     tup(0) = 1;
   }
 }
 
-proc tupleIndexForall(A, B) {
+proc tupleIndexForall(ref A, B) {
   forall tup in zip(A, B) {
     tup(0) = 1;
   }

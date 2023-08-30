@@ -45,7 +45,7 @@ const localDom = {0..#order, 0..#order};
 var tiledLocalDom = {0..#order by tileSize, 0..#order by tileSize};
 
 
-const blockDist = new dmap(new Block(localDom));
+const blockDist = new Block(localDom);
 const Dist =  if useBlockDist then blockDist
                               else defaultDist;
 

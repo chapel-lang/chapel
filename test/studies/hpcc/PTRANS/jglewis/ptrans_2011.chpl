@@ -35,17 +35,17 @@ module HPCC_PTRANS {
     // declare distribution rules for matrix and transpose
 
     const Matrix_Block_Dist 
-      = new unmanaged Block ( boundingBox = { 1..n_rows, 1..n_cols } );
+      = new Block ( boundingBox = { 1..n_rows, 1..n_cols } );
 
     const Transpose_Block_Dist 
-      = new unmanaged Block ( boundingBox = { 1..n_cols, 1..n_rows } );
+      = new Block ( boundingBox = { 1..n_cols, 1..n_rows } );
 
     // declare domains (index sets) for matrix and transpose
 
-    const matrix_domain     : domain (2) dmapped new dmap (
-                              Matrix_Block_Dist) = { 1..n_rows, 1..n_cols },
-          transpose_domain  : domain (2) dmapped new dmap (
-                              Transpose_Block_Dist) = { 1..n_cols, 1..n_rows };
+    const matrix_domain     : domain (2) dmapped
+                              Matrix_Block_Dist = { 1..n_rows, 1..n_cols },
+          transpose_domain  : domain (2) dmapped
+                              Transpose_Block_Dist = { 1..n_cols, 1..n_rows };
 
     var A                  : [matrix_domain   ] real, 
         C                  : [transpose_domain] real,
@@ -162,7 +162,7 @@ module HPCC_PTRANS {
   //  =====================================================
 
   proc Chapel_PTRANS ( A : [?A_domain] real, 
-                       C : [?C_domain] real, 
+                       ref C : [?C_domain] real, 
                        beta : real ) : bool
     where ( A.rank == 2 ) && ( C.rank == 2 )
     {
@@ -203,7 +203,7 @@ module HPCC_PTRANS {
   //  =====================================================
 
   proc Chapel_blocked_PTRANS_v1 ( A : [?A_domain] real, 
-                                  C : [?C_domain] real, 
+                                  ref C : [?C_domain] real, 
                                   beta : real           ) : bool
     where ( A.rank == 2 ) && ( C.rank == 2 )
     {
@@ -252,7 +252,7 @@ module HPCC_PTRANS {
   //  =====================================================
 
   proc Chapel_blocked_PTRANS_v2 ( A : [?A_domain] real, 
-                                  C : [?C_domain] real, 
+                                  ref C : [?C_domain] real, 
                                   beta : real           ) : bool
     where ( A.rank == 2 ) && ( C.rank == 2 )
     {
@@ -273,7 +273,7 @@ module HPCC_PTRANS {
     // processor grid from A's distribution
     // --------------------------------------------
 
-    const C_locale_grid = C.domain.dist.targetLocales(); // block version
+    const C_locale_grid = C.domain.distribution.targetLocales(); // block version
     const C_grid_domain = C_locale_grid.domain,
           n_processors  = C_grid_domain.size;
 

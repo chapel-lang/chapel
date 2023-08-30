@@ -151,7 +151,7 @@ proc BlockCyclic1dom.dsiGetReprivatizeData1d() {
   return (wholeR, wholeRstrideAbs, storagePerCycle);
 }
 
-proc BlockCyclic1dom.dsiReprivatize1d(reprivatizeData) {
+proc ref BlockCyclic1dom.dsiReprivatize1d(reprivatizeData) {
   this.wholeR          = reprivatizeData(0);
   this.wholeRstrideAbs = reprivatizeData(1);
   this.storagePerCycle = reprivatizeData(2);
@@ -255,7 +255,7 @@ proc BlockCyclicDim.dsiNewRectangularDom1d(type idxType, param strides,
 proc BlockCyclic1dom.dsiIsReplicated1d() param do return false;
 
 proc BlockCyclic1dom.dsiNewLocalDom1d(type stoIndexT, locId: locIdT) {
-  const result = new BlockCyclic1locdom(idxType = this.idxType,
+  var result = new BlockCyclic1locdom(idxType = this.idxType,
                              stoIndexT = stoIndexT,
                              locId = locId);
   return result;
@@ -492,7 +492,7 @@ inline proc BlockCyclicDim.dsiIndexToLocale1d(ind: uint(64)): locIdT {
   return doDsiIndexToLocale1d(ind:convT);
 }
 
-proc BlockCyclic1dom.dsiSetIndices1d(rangeArg: rangeT): void {
+proc ref BlockCyclic1dom.dsiSetIndices1d(rangeArg: rangeT): void {
   // For now, require the user to provide unambiguous ranges only.
   // This requirement could potentially be avoided (as long as no arrays
   // are declared over the domain), but it simplifies/speeds up our code.
@@ -568,7 +568,7 @@ inline proc BlockCyclic1dom._dsiStorageHigh(locId: locIdT): stoIndexT {
   return hiCycNo * storagePerCycle:stoIndexT + hiIdxAdj;
 }
 
-proc BlockCyclic1locdom.dsiSetLocalIndices1d(globDD, locId: locIdT): range(stoIndexT) {
+proc ref BlockCyclic1locdom.dsiSetLocalIndices1d(globDD, locId: locIdT): range(stoIndexT) {
   const stoLow = globDD._dsiStorageLow(locId);
   const stoHigh = globDD._dsiStorageHigh(locId);
 

@@ -322,7 +322,7 @@ module ChapelRange {
     param bounds  = if this.type.bounds  == ? then b else this.type.bounds;
     param strides = if this.type.strides == ? then s else this.type.strides;
 
-    if ! assignIdxIsLegal(idxType, i, b) then
+    if ! assignmentIsLegal(idxType, i, b) then
       compilerError("initializing a range with idxType ", idxType:string,
                            " from a range with idxType ", i:string);
     if bounds != b then
@@ -331,6 +331,11 @@ module ChapelRange {
     if ! chpl_assignStrideIsSafe(strides, s) then
       compilerError("initializing a range with strideKind.", strides:string,
                            " from a range with strideKind.", s:string);
+
+    if isDeprecatedUnboundedAssignment(idxType, other.idxType, bounds) then
+      compilerWarning("initializing an unbounded range with idxType ",
+             idxType:string, " from an unbounded range with idxType ",
+       other.idxType:string, " is deprecated");
 
     param isEnumBool = isFiniteIdxType(idxType);
     type bt = other.chpl_integralIdxType;
@@ -984,11 +989,20 @@ module ChapelRange {
     return lhs.isPositive() && rhs.isNegative() ||
            lhs.isNegative() && rhs.isPositive();
 
-  private proc assignIdxIsLegal(type to, type from, param fromBounds) param {
-    if fromBounds == boundKind.neither then
-      return true; // can assign between `..` ranges of any idxType
+  private proc assignmentIsLegal(type to, type from, param fromBounds) param {
+    if to == from then return true;
+    // can assign between `..` ranges of any idxType (deprecated)
+    if fromBounds == boundKind.neither then return true;
     var toVar: to, fromVar: from;
     return canResolve("=", toVar, fromVar);
+  }
+
+  private proc isDeprecatedUnboundedAssignment(type to, type from,
+                                               param bounds) param {
+    // an assignment may be deprecated only between unbounded ranges
+    if bounds != boundKind.neither then return false;
+    // assignment is deprecated if it would be illegal between bounded ranges
+    return !assignmentIsLegal(to, from, boundKind.both);
   }
 
   private proc verifyAppropriateStide(param strides, stride) {
@@ -1068,7 +1082,7 @@ module ChapelRange {
   }
 
   inline proc range.chpl_alignedLowAsIntForIter {
-    if !hasUnitStride() && !hasLowBound() && isFiniteIndexType() {
+    if !hasUnitStride() && !hasLowBound() && isFiniteIdxType(idxType) {
       return helpAlignLow(chpl__idxToInt(lowBoundForIter(this)), _alignment, stride);
     } else {
       return alignedLowAsInt;
@@ -1341,7 +1355,25 @@ module ChapelRange {
      the range has no first index, the behavior is undefined.  See
      also :proc:`range.hasFirst`. */
   inline proc range.first {
+    warnUnstableFirst(this);
     return chpl_intToIdx(this.firstAsInt);
+  }
+
+  private inline proc warnUnstableFirst(r) {
+    if !chpl_warnUnstable || !isFiniteIdxType(r.idxType) then
+      return; // nothing to do
+    if !r.hasLowBound() {
+      if r.strides.isPositive() then
+        compilerWarning("range.first is unstable for a range over an enum or bool if it has a positive stride and no low bound");
+      else if r.hasPositiveStride() then
+        warning("range.first is unstable for a range over an enum or bool if it has a positive stride and no low bound");
+    }
+    if !r.hasHighBound() {
+      if r.strides.isNegative() then
+        compilerWarning("range.first is unstable for a range over an enum or bool if it has a negative stride and no high bound");
+      else if r.hasNegativeStride() then
+        warning("range.first is unstable for a range over an enum or bool if it has a negative stride and no high bound");
+    }
   }
 
   @chpldoc.nodoc
@@ -1395,7 +1427,25 @@ module ChapelRange {
      :proc:`range.hasLast`.
   */
   inline proc range.last {
+    warnUnstableLast(this);
     return chpl_intToIdx(this.lastAsInt);
+  }
+
+  private inline proc warnUnstableLast(r) {
+    if !chpl_warnUnstable || !isFiniteIdxType(r.idxType) then
+      return; // nothing to do
+    if !r.hasLowBound() {
+      if r.strides.isNegative() then
+        compilerWarning("range.last is unstable for a range over an enum or bool if it has a negative stride and no low bound");
+      else if r.hasNegativeStride() then
+        warning("range.last is unstable for a range over an enum or bool if it has a negative stride and no low bound");
+    }
+    if !r.hasHighBound() {
+      if r.strides.isPositive() then
+        compilerWarning("range.last is unstable for a range over an enum or bool if it has a positive stride and no high bound");
+      else if r.hasPositiveStride() then
+        warning("range.last is unstable for a range over an enum or bool if it has a positive stride and no high bound");
+    }
   }
 
   @chpldoc.nodoc
@@ -1482,8 +1532,27 @@ module ChapelRange {
 
   @chpldoc.nodoc
   operator ==(r1: range(?), r2: range(?)) param
-    where r1.bounds != r2.bounds do
+    where r1.bounds != r2.bounds &&
+          (!isFiniteIdxType(r1.idxType) ||
+          !isFiniteIdxType(r2.idxType)) do
   return false;
+
+  @chpldoc.nodoc
+  @unstable("== between unbounded and bounded ranges is unstable and its behavior may change in the future")
+  operator ==(r1: range(?), r2: range(?)): bool
+    where r1.bounds != r2.bounds && isFiniteIdxType(r1.idxType) &&
+          isFiniteIdxType(r2.idxType)
+  {
+    const boundedr1 = if r1.bounds == boundKind.both then r1
+                       else new range(
+                          r1.idxType, boundKind.both, r1.strides,
+                          r1._low, r1._high, r1._stride, r1._alignment);
+    const boundedr2 = if r2.bounds == boundKind.both then r2
+                        else new range(
+                            r2.idxType, boundKind.both, r2.strides,
+                            r2._low, r2._high, r2._stride, r2._alignment);
+    return boundedr1 == boundedr2;
+  }
 
   @chpldoc.nodoc
   operator ==(r1: range(?), r2: range(?)): bool
@@ -1557,7 +1626,7 @@ module ChapelRange {
   {
     if r1._low != r2._low then return false;
     if r1._high != r2._high then return false;
-    // the following can be 'if none == none ...'
+    // the following can be 'if none != none ...'
         if r1._stride != r2._stride then return false;
         if r1._alignment != r2._alignment then return false;
     return true;
@@ -1577,10 +1646,22 @@ module ChapelRange {
   //////////////////////////////////////////////////////////////////////////////////
   // Range Casts
   //
+
+// Todo: for (1..4 by 2), return 1..4 or 1..3 ?  Currently it is the latter.
+// BlockDist uses the former, see boundsBox(). The latter makes this fail:
+//   test/optimizations/bulkcomm/block/blockToBlock.chpl
+@chpldoc.nodoc proc range.boundingBox() {
+  compilerAssert(this.bounds == boundKind.both); // otherwise need to implement
+  if this.strides.isOne() then return this;
+  return new range(this.idxType, this.bounds, strideKind.one,
+                   this.alignedLowAsInt, this.alignedHighAsInt, none, none);
+}
+
 /* Cast a range to another range type. If the old type is stridable and the
    new type is not stridable, ensure at runtime that the old stride was 1.
  */
 @chpldoc.nodoc
+@deprecated("range.safeCast() is deprecated; instead consider using a cast ':'")
 proc range.safeCast(type t: range(?)) {
 
   // safeCast is used in domain assignment, so we need to support enums:
@@ -1632,40 +1713,161 @@ proc range.safeCast(type t: range(?)) {
   return tmp;
 }
 
-/* Cast a range to a new range type.  If the old type was stridable and the
-   new type is not stridable, then force the new stride to be 1.  This cast
-   will throw if casts from the original ``idxType`` to the new one do
-   (for devs: using the overload just below).
+/* Cast a range to a new range type. Throw an IllegalArgumentError when
+   the original bounds and/or stride do not fit in the new idxType
+   or when the original stride is not legal for the new `strides` parameter.
  */
-@chpldoc.nodoc
-operator :(r: range(?), type t: range(?)) {
-  // If the 'where' clause on the 'throw'ing overload just below is
-  // correct, we should never catch an error here, because the type
-  // signatures handled by this overload should never throw when using
-  // the ':' operators in 'rangeCastHelper()'.  If we find cases where
-  // this is incorrect, the where clause should be expanded to handle
-  // them.
-  try! {
-    return rangeCastHelper(r, t);
-  }
+proc range.tryCast(type t: range(?)) where chpl_tryCastIsSafe(this, t) {
+  const r = this;
+  checkBounds(t, r);
+  checkEnumBoolIdx(t, r);
+
+  // todo: unify with the non-throwing overload of `operator :` ?
+  // todo: also when 'r' is over fully-concrete enum, see chpl_idxCastIsSafe
+  param useR = !( t.idxType == int && isBCPindex(r.idxType) );
+  var result: t = if useR then r
+                  else new range(int, r.bounds, r.strides,
+                                 r._low, r._high, r._stride, r._alignment);
+  return result;
 }
 
-// This is an overload that throws due to the use of the ':' in the
-// low/high computations of rangeCastHelper()
 @chpldoc.nodoc
-operator :(r: range(?), type t: range(?)) throws
-  where isEnumType(t.idxType) ||
-    (isBoolType(t.idxType) && isEnumType(r.idxType))
-{
-  return rangeCastHelper(r, t);
-}
+proc range.tryCast(type t: range(?)) throws where !chpl_tryCastIsSafe(this, t){
+  const r = this;
+  checkBounds(t, r);
+  checkEnumBoolIdx(t, r);
 
-// This is a helper routine to avoid duplicating the code in each of
-// the ':' overloads just above
-private inline proc rangeCastHelper(r, type t) throws {
   var tmp: t;
   type srcType = r.idxType,
-       dstType = t.idxType;
+       dstType = t.idxType,
+    dstIntType = tmp.chpl_integralIdxType;
+
+  tmp._low = if !r.hasLowBound() then r._low: dstIntType
+             else chpl__idxToInt( chpl_throwingCast(dstType, r.lowBound) );
+
+  tmp._high = if !r.hasHighBound() then r._high: dstIntType
+             else chpl__idxToInt( chpl_throwingCast(dstType, r.highBound) );
+
+  var error = r.chpl_checkStrides(t);
+  if error != nil then throw error;
+
+  if ! tmp.hasParamStrideAltvalAld() {
+    tmp._stride = chpl_throwingCast(tmp.strType, r.stride);
+    tmp._alignment = if isNothingValue(r._alignment) then 0
+                     else r._alignment: tmp.strType;
+  }
+
+  return tmp;
+}
+
+/* Cast a range to a new range type.  The overload below throws when
+   the original bounds and/or stride do not fit in the new type or 'strides'.
+   TODO: should we allow 't' to be generic?
+ */
+@chpldoc.nodoc
+operator :(r: range(?), type t: range(?)) where chpl_castIsSafe(r, t) {
+  // note: the implementation is duplicated with the throwing overload
+  checkBounds(t, r);
+  checkEnumIdx(t, r);
+
+  var tmp: t;
+  type srcType = r.idxType,
+       dstType = t.idxType,
+    dstIntType = tmp.chpl_integralIdxType;
+
+  tmp._low  = ( if r.hasLowBound() then chpl__idxToInt(r.lowBound:dstType)
+                else r._low ): tmp.chpl_integralIdxType;
+
+  tmp._high = ( if r.hasHighBound() then chpl__idxToInt(r.highBound:dstType)
+                else r._high ): tmp.chpl_integralIdxType;
+
+  if boundsChecking then
+    if const error = r.chpl_checkStrides(t) then
+      HaltWrappers.boundsCheckHalt(error.message());
+
+  if ! tmp.hasParamStrideAltvalAld() {
+    // see github.com/chapel-lang/chapel/issues/19269#issuecomment-1683228068
+    tmp._stride = r.stride.safeCast(tmp.strType);
+
+    tmp._alignment = if isNothingValue(r._alignment) then 0
+                     else r._alignment: tmp.strType;
+  }
+
+  return tmp;
+}
+
+@chpldoc.nodoc
+operator :(r: range(?), type t: range(?)) throws where !chpl_castIsSafe(r, t) {
+  // note: the implementation is duplicated with the non-throwing overload
+  checkBounds(t, r);
+  checkEnumIdx(t, r);
+
+  var tmp: t;
+  type srcType = r.idxType,
+       dstType = t.idxType,
+    dstIntType = tmp.chpl_integralIdxType;
+
+  tmp._low  = ( if r.hasLowBound() then chpl__idxToInt(r.lowBound:dstType)
+                else r._low ): tmp.chpl_integralIdxType;
+
+  tmp._high = ( if r.hasHighBound() then chpl__idxToInt(r.highBound:dstType)
+                else r._high ): tmp.chpl_integralIdxType;
+
+  if boundsChecking then
+    if const error = r.chpl_checkStrides(t) then
+      HaltWrappers.boundsCheckHalt(error.message());
+
+  if ! tmp.hasParamStrideAltvalAld() {
+    // see github.com/chapel-lang/chapel/issues/19269#issuecomment-1683228068
+    tmp._stride = r.stride.safeCast(tmp.strType);
+
+    tmp._alignment = if isNothingValue(r._alignment) then 0
+                     else r._alignment: tmp.strType;
+  }
+
+  return tmp;
+}
+
+/////////// helpers for operator : and tryCast ///////////
+
+/* cast 'from' to 'to', throwing an error if it does not fit */
+inline proc chpl_throwingCast(type toType, from) throws {
+  type fromType = from.type;
+  // integral casts do not perform checking
+  if isIntegral(fromType) && isIntegral(toType) {
+    var error = from.chpl_checkValue(toType);
+    if error != nil then throw error;
+  }
+  if isEnum(fromType) && isIntegral(toType) && toType != int {
+    const e2i = from: int;
+    return chpl_throwingCast(toType, e2i);
+  }
+
+  // in the cases not checked above, `:` will throw when needed
+  // currently this arises only for integral --> enum
+  return from: toType;
+}
+
+// avoid the overhead of throwing if it is not needed
+inline proc chpl_throwingCast(type toType, from)
+  where chpl_idxCastIsSafe(toType, from.type)
+do return from: toType;
+
+private proc checkBounds(type toType, from) {
+  if toType.bounds != from.bounds then
+    compilerError("cannot cast range from boundKind.",
+                 from.bounds:string, " to boundKind.", toType.bounds:string);
+}
+
+private proc checkEnumBoolIdx(type toType, from) {
+  checkEnumIdx(toType, from);
+  if toType.idxType == bool && from.idxType != bool then // see #22905
+    compilerError("'tryCast' to a range type with idxType=bool is not currently supported");
+}
+
+private proc checkEnumIdx(type toType, from) {
+  type srcType = from.idxType,
+       dstType = toType.idxType;
 
   // Generate a warning when casting between ranges and one of them is an
   // enum type (and they're not both the same enum type); see #22406 for
@@ -1673,24 +1875,54 @@ private inline proc rangeCastHelper(r, type t) throws {
   if chpl_warnUnstable &&
      ((isEnumType(srcType) || isEnumType(dstType)) && srcType != dstType) then
     compilerWarning("Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually");
-
-  if tmp.bounds != r.bounds {
-    compilerError("cannot cast range from boundKind.",
-                  r.bounds:string, " to boundKind.", tmp.bounds:string);
-  }
-
-  if ! tmp.hasParamStrideAltvalAld() {
-    tmp._stride = r.stride: tmp.strType;
-    tmp._alignment = if isNothingValue(r._alignment) then 0
-                     else r._alignment: tmp.strType;
-  }
-
-  tmp._low = (if r.hasLowBound() then chpl__idxToInt(r.lowBound:dstType) else r._low): tmp.chpl_integralIdxType;
-  tmp._high = (if r.hasHighBound() then chpl__idxToInt(r.highBound:dstType) else r._high): tmp.chpl_integralIdxType;
-
-  return tmp;
 }
 
+/* Return 'nil' if 'this.stride' fits into 'toType.strides',
+   an IllegalArgumentError otherwise. */
+proc range.chpl_checkStrides(type toType): owned IllegalArgumentError? {
+  if chpl_assignStrideIsUnsafe(toType.strides, this.strides) then
+    compilerError("cannot cast range from strideKind.", this.strides:string,
+                                     " to strideKind.", toType.strides:string);
+
+  var needThrow = false;
+  select toType.strides {
+    when strideKind.one      do needThrow = (this.stride != 1);
+    when strideKind.negOne   do needThrow = (this.stride != -1);
+    when strideKind.positive do needThrow = (this.stride < 0);
+    when strideKind.negative do needThrow = (this.stride > 0);
+    when strideKind.any      do; // any stride is OK
+  }
+
+  if needThrow then
+    return new IllegalArgumentError("bad cast from stride " +
+      this.stride:string + " to strideKind." + toType.strides:string);
+  else
+    return nil;
+}
+
+// "safe" means "does not throw"
+proc chpl_tryCastIsSafe(r: range(?), type t: range(?)) param do
+  return chpl_assignStrideIsSafe(t.strides, r.strides)
+     &&  chpl_idxCastIsSafe(to=t.idxType, from=r.idxType);
+
+proc chpl_castIsSafe(r: range(?), type t: range(?)) param do
+  // unsuitable r.stride causes halt, not throw => no chpl_assignStrideIsSafe
+  return ! chpl_idxCastThrows(to=t.idxType, from=r.idxType);
+
+proc chpl_idxCastIsSafe(type to, type from) param do
+  return ( !( isUint(to) && isInt(from) ) //'aUint=anInt' is unsafe yet allowed
+           && assignmentIsLegal(to, from, boundKind.both) )
+     ||  ( to == int && isBCPindex(from) );
+     // todo: allow also to==int && 'from' is a fully-concrete enum
+
+proc chpl_idxCastThrows(type to, type from) param do
+  // Todo: fine-tune when `to :from` throws.
+  // Some enum-related casts in ChapelBase also need such refinement.
+  // This motivates the proposals in #23006.
+  return ( to != from ) && ( isEnumType(to) || isEnumType(from) );
+
+private proc isBCPindex(type t) param do
+  return t == byteIndex || t == codepointIndex;
 
   //////////////////////////////////////////////////////////////////////////////////
   // Bounds checking
@@ -1700,36 +1932,72 @@ private inline proc rangeCastHelper(r, type t) throws {
      ``false`` otherwise.  Returns ``false`` if either range is
      ambiguously aligned.
    */
+  @deprecated("range.boundsCheck() is deprecated, consider using range.contains() instead")
   inline proc range.boundsCheck(other: range(?e,?b,?s))
+    do return this.chpl_boundsCheck(other);
+
+  inline proc range.chpl_boundsCheck(other: range(?e,?b,?s))
     where b == boundKind.neither
   {
     if chpl__singleValIdxType(idxType) {
       if _low > _high then return false;
     }
 
-    if ! this.isAligned() || ! other.isAligned()
+    if ! this.isAligned()
       then return false;
 
     return true;
   }
 
-  @chpldoc.nodoc
-  inline proc range.boundsCheck(other: range(?e,?b,?s))
+  inline proc range.chpl_boundsCheck(other: range(?e,?b,?s))
   {
-    if ! this.isAligned() || ! other.isAligned()
+    if ! this.isAligned()
       then return false;
 
-    var boundedOther = new range(
+    var boundedOther = if other.isAligned() then
+                        new range(
                           idxType, boundKind.both, other.strides,
                           if other.hasLowBound() then other._low else _low,
                           if other.hasHighBound() then other._high else _high,
-                          other._stride, other._alignment);
+                          other._stride, other._alignment)
+                      // If 'other' is not aligned, we want to create an
+                      // aligned range to pass it to contains() below, because
+                      // otherwise it will always return false. For that, we
+                      // copy alignment from 'this'.
+                      // If 'this' is unit-stride, the alignment is zero,
+                      // otherwise this.alignment potentially needs to be
+                      // normalized w.r.t. other.stride.
+                      else if this.hasPosNegUnitStride() then
+                        new range(
+                          idxType, boundKind.both, other.strides,
+                          if other.hasLowBound() then other._low else _low,
+                          if other.hasHighBound() then other._high else _high,
+                          other._stride, 0:chpl__rangeStrideType(idxType))
+                      else
+                        new range(
+                          idxType, boundKind.both, other.strides,
+                          if other.hasLowBound() then other._low else _low,
+                          if other.hasHighBound() then other._high else _high,
+                          other._stride, this._alignment, true);
+                          // Note: we don't really know why the strategy of
+                          // copying the alignment from 'this' is correct.
+                          // But we haven't been able to produce a counterexample
+                          // where it doesn't work.
+                          // If someone can prove or disprove this method that
+                          // would be useful to know.
 
     return (boundedOther.sizeAs(uint) == 0) || contains(boundedOther);
   }
+
   /* Returns ``true`` if ``other`` is contained in this range and ``false``
      otherwise. */
+  @deprecated("range.boundsCheck() is deprecated, please use range.contains() instead")
   inline proc range.boundsCheck(other: idxType) do
+    return contains(other);
+
+  // used in checkRankChange(args) where each args(i) can be
+  // either a range or an individual index
+  inline proc range.chpl_boundsCheck(other: idxType) do
     return contains(other);
 
 
@@ -1776,6 +2044,7 @@ private inline proc rangeCastHelper(r, type t) throws {
        (0..10 by 2).indexOrder(4) == 2
        (3..5 by 2).indexOrder(4) == -1
    */
+  @unstable("range.indexOrder() is unstable and its behavior may change in the future")
   proc range.indexOrder(ind: idxType)
   {
     if boundsChecking && ! this.isAligned() then
@@ -1809,6 +2078,7 @@ private inline proc rangeCastHelper(r, type t) throws {
        3..5.orderToIndex(1)  == 4
        0..10 by 2.orderToIndex(2) == 4
    */
+  @unstable("range.orderToIndex() is unstable and its behavior may change in the future")
   proc range.orderToIndex(ord: integral): idxType
   {
     if boundsChecking {
@@ -1856,6 +2126,7 @@ private inline proc rangeCastHelper(r, type t) throws {
        0..9.translate(-1) == -1..8
        0..9.translate(-2) == -2..7
    */
+   @unstable("range.translate() is unstable and its behavior may change in the future")
   inline proc range.translate(offset: integral) do
     return this + offset;
 
@@ -1898,6 +2169,7 @@ private inline proc rangeCastHelper(r, type t) throws {
      the result is :math:`(l-i,h+i,s,a)`.  If the operand range is
      ambiguously aligned, then so is the resulting range.
   */
+  @unstable("range.expand() is unstable and its behavior may change in the future")
   proc range.expand(offset: integral)
   {
     const i = offset.safeCast(chpl__signedType(chpl_integralIdxType));
@@ -1948,6 +2220,7 @@ private inline proc rangeCastHelper(r, type t) throws {
      bounds of the resulting range. If the operand range is
      ambiguously aligned, then so is the resulting range.
    */
+   @unstable("range.interior() is unstable and its behavior may change in the future")
   proc range.interior(offset: integral)
   {
     if boundsChecking then
@@ -2000,6 +2273,7 @@ private inline proc rangeCastHelper(r, type t) throws {
      If the operand range is ambiguously aligned, then so is the resulting
      range.
    */
+  @unstable("range.exterior() is unstable and its behavior may change in the future")
   proc range.exterior(offset: integral)
   {
     const i = (abs(offset)).safeCast(chpl_integralIdxType);
@@ -2034,7 +2308,7 @@ private inline proc rangeCastHelper(r, type t) throws {
   @chpldoc.nodoc
   inline operator =(ref r1: range(?), r2: range(?))
   {
-    if ! assignIdxIsLegal(r1.idxType, r2.idxType, r2.bounds) then
+    if ! assignmentIsLegal(r1.idxType, r2.idxType, r2.bounds) then
       compilerError("assigning to a range with idxType ", r1.idxType:string,
                            " from a range with idxType ", r2.idxType:string,
                            " without an explicit cast");
@@ -2046,6 +2320,12 @@ private inline proc rangeCastHelper(r, type t) throws {
       compilerError("assigning to a range with strideKind.", r1.strides:string,
                            " from a range with strideKind.", r2.strides:string,
                            " without an explicit cast");
+
+    if isDeprecatedUnboundedAssignment(r1.idxType, r2.idxType, r2.bounds) then
+      compilerWarning("assignment to an unbounded range with idxType ",
+           r1.idxType:string, " from an unbounded range with idxType ",
+           r2.idxType:string, " is deprecated");
+
     r1._low = r2._low: r1.chpl_integralIdxType;
     r1._high = r2._high: r1.chpl_integralIdxType;
 
@@ -2056,13 +2336,14 @@ private inline proc rangeCastHelper(r, type t) throws {
     }
   }
 
-  //////////////////////////////////////////////////////////////////////////////////
-  // Range arithmetic.
+  /////////// operators + and - ///////////
+
   //
   // Shifts and entire range to the right or left.
   // The alignment shifts along with the range.
   //
   @chpldoc.nodoc
+  @unstable("'+' on ranges is unstable and may change in the future")
   inline operator +(r: range(?e, ?b, ?s), i: integral)
   {
     return new range(e, b, s,
@@ -2075,16 +2356,19 @@ private inline proc rangeCastHelper(r, type t) throws {
 
   // TODO can this be removed?
   @chpldoc.nodoc
+  @unstable("'+=' on ranges is unstable and may change in the future")
   inline operator +=(ref r: range(?e, ?b, ?s), offset: integral)
   {
     r = r + offset;
   }
 
   @chpldoc.nodoc
+  @unstable("'+' on ranges is unstable and may change in the future")
   inline operator +(i:integral, r: range(?e,?b,?s)) do
     return r + i;
 
   @chpldoc.nodoc
+  @unstable("'-' on ranges is unstable and may change in the future")
   inline operator -(r: range(?e,?b,?s), i: integral)
   {
     return new range(e, b, s,
@@ -2097,10 +2381,13 @@ private inline proc rangeCastHelper(r, type t) throws {
 
   // TODO can this be removed?
   @chpldoc.nodoc
+  @unstable("'-=' on ranges is unstable and may change in the future")
   inline operator -=(ref r: range(?e, ?b, ?s), offset: integral)
   {
     r = r - offset;
   }
+
+  /////////// operators 'by', 'align', '#' ///////////
 
   inline proc chpl_check_step_integral(step) {
     if !isIntegral(step.type) then
@@ -2236,6 +2523,7 @@ private inline proc rangeCastHelper(r, type t) throws {
   /* Returns a range whose alignment is this range's first index plus ``offset``.
      If the range has no first index, a runtime error is generated.
    */
+  @unstable("range.offset() is unstable and its behavior may change in the future")
   proc range.offset(in offset: integral)
   {
     if (chpl__singleValIdxType(idxType)) {
@@ -3581,10 +3869,9 @@ private inline proc rangeCastHelper(r, type t) throws {
       }
       else
       {
-        const r = if newStrides.isNegOne() then ..first by -1
-                  else ( ..first by stride:strType )
-                       // without this cast, it would be strideKind.any
-                       : range(idxType, boundKind.high, strideKind.negative);
+        var r: range(idxType, boundKind.high, if newStrides.isNegOne()
+                       then strideKind.negOne else strideKind.negative);
+        r.chpl_setFields(/*dummy*/0:idxType, first, stride);
 
         if debugChapelRange then
           chpl_debug_writeln("Expanded range = ",r);
@@ -3809,7 +4096,7 @@ private inline proc rangeCastHelper(r, type t) throws {
       // integer idxTypes are their own integer idxType
       return idxType;
     } else {
-      // other types (bool, enum, ...) use 'int'
+      // other types (bool, enum, byteIndex, codepointIndex, ...) use 'int'
       return int;
     }
   }

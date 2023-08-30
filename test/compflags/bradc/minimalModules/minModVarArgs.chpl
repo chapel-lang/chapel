@@ -1,6 +1,6 @@
 // Varargs work out of the box in limited cases.
 
-extern proc printf(f:c_string, args...);
+extern proc printf(f, args...);
 
 proc hello(args...) {
   printf(c"Hello %s #%d with %d varargs and #%d\n",

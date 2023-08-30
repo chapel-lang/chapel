@@ -25,8 +25,10 @@ proc t1(A:[]) where true {
 t1(A);
 
 record R {
-  var x;
-  var y;
+  type xType;
+  type yType;
+  var x: xType;
+  var y: yType;
 }
 
 proc t2(r:R(int, ?)) {

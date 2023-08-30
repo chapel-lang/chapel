@@ -2,6 +2,9 @@ use BlockDist;
 use CyclicDist;
 use BlockCycDist;
 use IO;
+use JSON;
+
+var jsonOut = stdout.withSerializer(JsonSerializer);
 
 var expect = "[1, 2, 3, 4, 5]";
 
@@ -16,14 +19,14 @@ var expectfile = openMemFile();
   var A:[1..5] int;
   A = 1..5;
 
-  writef("%jt\n", A);
-  var got = "%jt".format(A);
+  jsonOut.writef("%?\n", A);
+  var got = jsonify(A);
   assert(got == expect);
 
   A = 0;
-  expectfile.reader().readf("%jt\n", A);
-  writef("%jt\n", A);
-  var got2 = "%jt".format(A);
+  expectfile.reader(deserializer = new JsonDeserializer()).readf("%?\n", A);
+  jsonOut.writef("%?\n", A);
+  var got2 = jsonify(A);
   assert(got2 == expect);
 }
 
@@ -32,14 +35,14 @@ var expectfile = openMemFile();
   var A = Block.createArray({1..5}, int);
   A = 1..5;
 
-  writef("%jt\n", A);
-  var got = "%jt".format(A);
+  jsonOut.writef("%?\n", A);
+  var got = jsonify(A);
   assert(got == expect);
-  
+
   A = 0;
-  expectfile.reader().readf("%jt\n", A);
-  writef("%jt\n", A);
-  var got2 = "%jt".format(A);
+  expectfile.reader(deserializer = new JsonDeserializer()).readf("%?\n", A);
+  jsonOut.writef("%?\n", A);
+  var got2 = jsonify(A);
   assert(got2 == expect);
 }
 
@@ -48,14 +51,14 @@ var expectfile = openMemFile();
   var A = Cyclic.createArray({1..5}, int);
   A = 1..5;
 
-  writef("%jt\n", A);
-  var got = "%jt".format(A);
+  jsonOut.writef("%?\n", A);
+  var got = jsonify(A);
   assert(got == expect);
-  
+
   A = 0;
-  expectfile.reader().readf("%jt\n", A);
-  writef("%jt\n", A);
-  var got2 = "%jt".format(A);
+  expectfile.reader(deserializer = new JsonDeserializer()).readf("%?\n", A);
+  jsonOut.writef("%?\n", A);
+  var got2 = jsonify(A);
   assert(got2 == expect);
 }
 
@@ -66,13 +69,19 @@ var expectfile = openMemFile();
   var A:[D] int;
   A = 1..5;
 
-  writef("%jt\n", A);
-  var got = "%jt".format(A);
+  jsonOut.writef("%?\n", A);
+  var got = jsonify(A);
   assert(got == expect);
-  
+
   A = 0;
-  expectfile.reader().readf("%jt\n", A);
-  writef("%jt\n", A);
-  var got2 = "%jt".format(A);
+  expectfile.reader(deserializer = new JsonDeserializer()).readf("%?\n", A);
+  jsonOut.writef("%?\n", A);
+  var got2 = jsonify(A);
   assert(got2 == expect);
+}
+
+proc jsonify(A): string throws {
+  var f = openMemFile();
+  f.writer(serializer = new JsonSerializer()).write(A);
+  return f.reader().readAll(string);
 }

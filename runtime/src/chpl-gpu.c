@@ -37,6 +37,7 @@ int chpl_gpu_num_devices = -1;
 #include "chpl-linefile-support.h"
 #include "chpl-env-gen.h"
 #include "chpl-env.h"
+#include "chpl-comm-compiler-macros.h"
 
 void chpl_gpu_init(void) {
   chpl_gpu_impl_init(&chpl_gpu_num_devices);
@@ -78,32 +79,10 @@ void chpl_gpu_init(void) {
 }
 
 void chpl_gpu_support_module_finished_initializing(void) {
-  // The standard module has some memory that we allocate when we  are "on" a
-  // GPU sublocale when in fact we want to allocate it on the device. (As of
-  // the writing of this comment this is in `helpSetupLocaleGPU` in
-  // `LocaleModelHelpSetup`).
-  //
-  // Basically during the setup of the locale model we need to be "on" a given
-  // sublocale when we instantiate the object for it (the expectation is that
-  // the wide pointer for a sublocale appears to be on that sublocale),
-  // but in practice we don't actually want the data for the GPU sublocale
-  // object to be on the GPU).
-  //
-  // It's a bit of a hack but to handle this we start off setting
-  // `chpl_gpu_device_alloc` to false indicating that we shouldn't actually
-  // do any allocations on the device. Once the standard modules have finished
-  // loading this callback function
-  // (`chpl_gpu_impl_on_std_modules_finished_initializing`) gets called and we
-  // flip the flag.
-  chpl_gpu_impl_support_module_finished_initializing();
+  // we can't use `CHPL_GPU_DEBUG` before the support module is finished
+  // initializing. This call back is used to signal the runtime that that module
+  // has finished initializing.
 
-  // this function is something that we're not proud of already. The following
-  // adds the function more meaning and I am not happy about it. It looks like
-  // when we call chpl_gpu_init during runtime initialization, chpl_gpu_debug
-  // isn't setup properly yet. So, even if you use --debugGpu, you don't see the
-  // output from these. On a quick look at the runtime initialization
-  // code, I can't explain why that's the case. But moving these here makes the
-  // output show up as expected.
   CHPL_GPU_DEBUG("GPU layer initialized.\n");
   CHPL_GPU_DEBUG("  Memory allocation strategy for ---\n");
   #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
@@ -132,6 +111,8 @@ inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
 
   va_list args;
   va_start(args, nargs);
+
+  chpl_gpu_impl_use_device(chpl_task_getRequestedSubloc());
 
   chpl_gpu_diags_verbose_launch(ln, fn, chpl_task_getRequestedSubloc(),
                                 blk_dim_x, blk_dim_y, blk_dim_z);
@@ -167,6 +148,8 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
                  nargs,
                  num_threads);
 
+  chpl_gpu_impl_use_device(chpl_task_getRequestedSubloc());
+
   va_list args;
   va_start(args, nargs);
 
@@ -186,15 +169,118 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
                  name);
 }
 
-void* chpl_gpu_memmove(void* dst, const void* src, size_t n) {
-  // CHPL_GPU_DEBUG output here is too much. So, I'm commenting for now.
+extern void chpl_gpu_comm_on_put(c_sublocid_t dst_subloc, void *addr,
+                                 c_nodeid_t src_node, c_sublocid_t src_subloc,
+                                 void* raddr, size_t size);
 
-  // CHPL_GPU_DEBUG("Doing GPU memmove of %zu bytes from %p to %p.\n", n, src, dst);
+extern void chpl_gpu_comm_on_get(c_sublocid_t src_subloc, void* addr,
+                                 c_nodeid_t dst_node, c_sublocid_t dst_subloc,
+                                 void* raddr, size_t size);
 
-  void* ret = chpl_gpu_impl_memmove(dst, src, n);
 
-  // CHPL_GPU_DEBUG("chpl_gpu_memmove successful\n");
-  return ret;
+void chpl_gpu_comm_put(c_nodeid_t dst_node, c_sublocid_t dst_subloc, void *dst,
+                       c_sublocid_t src_subloc, void *src,
+                       size_t size, int32_t commID, int ln, int32_t fn)
+{
+  void* src_data = src;
+  c_sublocid_t src_data_subloc = src_subloc;
+  if (src_subloc >= 0) {
+    // source is on device, we can't pass device pointers to comm layer. We'll
+    // create a copy of the source on the local host.
+    src_data = chpl_malloc(size);
+    src_data_subloc = c_sublocid_any;
+
+    chpl_gpu_memcpy(src_data_subloc, src_data, src_subloc, src, size, commID,
+                    ln, fn);
+  }
+
+  if (dst_subloc >= 0) {
+    // destination is on device, we can't write to remote GPU memory yet. So,
+    // we'll use on+get instead
+    chpl_gpu_comm_on_get(src_data_subloc, src_data, dst_node, dst_subloc, dst,
+                         size);
+  }
+  else {
+    // destination is on the host, we can do a direct put
+    chpl_gen_comm_put(src_data, dst_node, dst, size, commID, ln, fn);
+  }
+
+  if (src_subloc >= 0) {
+    chpl_free(src_data);
+  }
+}
+
+void chpl_gpu_comm_get(c_sublocid_t dst_subloc, void *dst,
+                       c_nodeid_t src_node, c_sublocid_t src_subloc, void *src,
+                       size_t size, int32_t commID, int ln, int32_t fn)
+{
+  void* dst_buff = dst;
+  c_sublocid_t dst_buff_subloc = dst_subloc;
+  if (dst_subloc >= 0) {
+    // destination is on device, we can't pass device pointers to comm layer.
+    // We'll create a buffer on the local host.
+    dst_buff = chpl_malloc(size);
+    dst_buff_subloc = c_sublocid_any;
+  }
+
+  if (src_subloc >= 0) {
+    // source is on device, we can't read from remote GPU memory yet. So,
+    // we'll use on+put instead
+    chpl_gpu_comm_on_put(dst_buff_subloc, dst_buff, src_node, src_subloc, src,
+                         size);
+  }
+  else {
+    // source is on the host, we can do a direct put
+    chpl_gen_comm_get(dst_buff, src_node, src, size, commID, ln, fn);
+  }
+
+  if (dst_subloc >= 0) {
+    chpl_gpu_memcpy(dst_subloc, dst, dst_buff_subloc, dst_buff, size,
+                    commID, ln, fn);
+    chpl_free(dst_buff);
+  }
+}
+
+
+void chpl_gpu_memcpy(c_sublocid_t dst_subloc, void* dst,
+                     c_sublocid_t src_subloc, const void* src, size_t n,
+                     int32_t commID, int ln, int32_t fn) {
+  #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
+  if (dst_subloc < 0 && src_subloc < 0) {
+    chpl_memmove(dst, src, n);
+  }
+  else {
+    bool dst_on_host = chpl_gpu_impl_is_host_ptr(dst);
+    bool src_on_host = chpl_gpu_impl_is_host_ptr(src);
+
+    if (!dst_on_host && !src_on_host) {
+      chpl_gpu_copy_device_to_device(dst_subloc, dst, src_subloc, src, n,
+                                     commID, ln, fn);
+    }
+    else if (!dst_on_host) {
+      chpl_gpu_copy_host_to_device(dst_subloc, dst, src, n, commID, ln, fn);
+    }
+    else if (!src_on_host) {
+      chpl_gpu_copy_device_to_host(dst, src_subloc, src, n, commID, ln, fn);
+    }
+    else {
+      // Note: this is the case where both source and destination have been
+      // created on a GPU sublocale. Therefore, the wide pointers that refer to
+      // them have non-negative sublocale. However, not everything created on a
+      // GPU sublocale is allocated on the GPU memory. Think of this as a copy
+      // between two ints that happen to hav been created on a GPU sublocale.
+      assert(dst_on_host && src_on_host);
+      memmove(dst, src, n);
+    }
+  }
+  #else
+
+  // for unified memory strategy we don't want to generate calls to copy
+  // data from the device to host (since it can just be accessed directly)
+  // TODO however, the code path above could be more efficient.
+  memmove(dst, src, n);
+  #endif
+
 }
 
 void* chpl_gpu_memset(void* addr, const uint8_t val, size_t n) {
@@ -207,20 +293,53 @@ void* chpl_gpu_memset(void* addr, const uint8_t val, size_t n) {
   return ret;
 }
 
-void chpl_gpu_copy_device_to_host(void* dst, const void* src, size_t n) {
+void chpl_gpu_copy_device_to_device(c_sublocid_t dst_dev, void* dst,
+                                    c_sublocid_t src_dev, const void* src,
+                                    size_t n, int32_t commID, int ln,
+                                    int32_t fn) {
   assert(chpl_gpu_is_device_ptr(src));
 
   CHPL_GPU_DEBUG("Copying %zu bytes from device to host\n", n);
+
+  chpl_gpu_impl_use_device(dst_dev);
+
+  chpl_gpu_diags_verbose_device_to_device_copy(ln, fn, dst_dev, src_dev, n,
+                                               commID);
+  chpl_gpu_diags_incr(device_to_device);
+
+  chpl_gpu_impl_copy_device_to_device(dst, src, n);
+
+  CHPL_GPU_DEBUG("Copy successful\n");
+}
+
+void chpl_gpu_copy_device_to_host(void* dst, c_sublocid_t src_dev,
+                                  const void* src, size_t n, int32_t commID,
+                                  int ln, int32_t fn) {
+  assert(chpl_gpu_is_device_ptr(src));
+
+  CHPL_GPU_DEBUG("Copying %zu bytes from device to host\n", n);
+
+  chpl_gpu_impl_use_device(src_dev);
+
+  chpl_gpu_diags_verbose_device_to_host_copy(ln, fn, src_dev, n, commID);
+  chpl_gpu_diags_incr(device_to_host);
 
   chpl_gpu_impl_copy_device_to_host(dst, src, n);
 
   CHPL_GPU_DEBUG("Copy successful\n");
 }
 
-void chpl_gpu_copy_host_to_device(void* dst, const void* src, size_t n) {
+void chpl_gpu_copy_host_to_device(c_sublocid_t dst_dev, void* dst,
+                                  const void* src, size_t n, int32_t commID,
+                                  int ln, int32_t fn) {
   assert(chpl_gpu_is_device_ptr(dst));
 
   CHPL_GPU_DEBUG("Copying %zu bytes from host to device\n", n);
+
+  chpl_gpu_impl_use_device(dst_dev);
+
+  chpl_gpu_diags_verbose_host_to_device_copy(ln, fn, dst_dev, n, commID);
+  chpl_gpu_diags_incr(host_to_device);
 
   chpl_gpu_impl_copy_host_to_device(dst, src, n);
 
@@ -251,6 +370,8 @@ void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
 
   void *ptr = NULL;
   if (size > 0) {
+    chpl_gpu_impl_use_device(chpl_task_getRequestedSubloc());
+
     chpl_memhook_malloc_pre(1, size, description, lineno, filename);
     ptr = chpl_gpu_impl_mem_alloc(size);
     chpl_memhook_malloc_post((void*)ptr, 1, size, description, lineno, filename);
@@ -264,8 +385,32 @@ void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
   return ptr;
 }
 
+void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
+                               int32_t lineno, int32_t filename) {
+  CHPL_GPU_DEBUG("chpl_gpu_mem_array_alloc called. Size:%zu file:%s line:%d\n",
+                 size, chpl_lookupFilename(filename), lineno);
+
+  chpl_gpu_impl_use_device(chpl_task_getRequestedSubloc());
+
+  void* ptr = 0;
+  if (size > 0) {
+    chpl_memhook_malloc_pre(1, size, description, lineno, filename);
+    ptr = chpl_gpu_impl_mem_array_alloc(size);
+    chpl_memhook_malloc_post((void*)ptr, 1, size, description, lineno, filename);
+
+    CHPL_GPU_DEBUG("chpl_gpu_mem_array_alloc returning %p\n", (void*)ptr);
+  }
+  else {
+    CHPL_GPU_DEBUG("chpl_gpu_mem_array_alloc returning NULL (size was 0)\n");
+  }
+
+  return ptr;
+}
+
 void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
   CHPL_GPU_DEBUG("chpl_gpu_mem_free is called. Ptr %p\n", memAlloc);
+
+  chpl_gpu_impl_use_device(chpl_task_getRequestedSubloc());
 
   chpl_memhook_free_pre(memAlloc, 0, lineno, filename);
   chpl_gpu_impl_mem_free(memAlloc);
@@ -292,6 +437,9 @@ void* chpl_gpu_mem_calloc(size_t number, size_t size,
     void *host_mem = chpl_mem_calloc(number, size, description, lineno,
                                      filename);
 
+    c_sublocid_t dev_id = chpl_task_getRequestedSubloc();
+    chpl_gpu_impl_use_device(dev_id);
+
     chpl_memhook_malloc_pre(1, total_size, description, lineno, filename);
     ptr = chpl_gpu_impl_mem_alloc(total_size);
     chpl_memhook_malloc_post((void*)ptr, 1, total_size, description, lineno, filename);
@@ -316,6 +464,9 @@ void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
   CHPL_GPU_DEBUG("chpl_gpu_mem_realloc called. Size:%d\n", size);
 
   assert(chpl_gpu_is_device_ptr(memAlloc));
+
+  c_sublocid_t dev_id = chpl_task_getRequestedSubloc();
+  chpl_gpu_impl_use_device(dev_id);
 
 #ifdef GPU_RUNTIME_CPU
     return chpl_mem_realloc(memAlloc, size, description, lineno, filename);

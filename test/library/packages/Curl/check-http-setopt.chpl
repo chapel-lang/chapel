@@ -99,8 +99,7 @@ module CheckHttpSetOpt {
   proc write_callback(ptr: c_ptr(c_char), size: c_size_t,
 		      nmemb: c_size_t, userdata: c_ptr(void)) {
     writeln("callback called");
-    var str = try! string.createBorrowingBuffer(ptr:c_string,
-                                                  (size * nmemb):int);
+    var str = try! string.createBorrowingBuffer(ptr, (size * nmemb):int);
     write(str);
     return size * nmemb;
   }

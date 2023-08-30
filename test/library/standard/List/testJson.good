@@ -58,7 +58,13 @@ Writing list:
 [{A: 1, B: 2}, {Y: 4, X: 3}]
 
 Wrote JSON: 
-[{"A": 1, "B": 2}, {"Y": 4, "X": 3}]
+[{
+  "A": 1, 
+  "B": 2
+}, {
+  "Y": 4, 
+  "X": 3
+}]
 
 Read list(map(string,int(64),false),false): 
 [{A: 1, B: 2}, {Y: 4, X: 3}]

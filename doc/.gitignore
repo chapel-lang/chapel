@@ -1,3 +1,4 @@
+# Doc ignores.
 html
 doctrees
 
@@ -10,3 +11,21 @@ doctrees
 
 man.rst
 /rst/tools/chplvis/examples
+
+/**/*.aux
+/**/*.log
+/developer/chips/html
+/developer/chips/tmp
+/developer/compilerOverview/compiler.pdf
+/developer/compilerOverview/compiler.dvi
+/developer/compilerOverview/compiler.toc
+/quickReference/*.dvi
+/quickReference/*.pdf
+/quickReference/*.ps
+/tutorial/workbooks/boundedBuffer.pdf
+/tutorial/workbooks/histogram.pdf
+/tutorial/workbooks/life.pdf
+/tutorial/workbooks/*.dvi
+/tutorial/workbooks/*.bbl
+/tutorial/workbooks/*.blg
+/sphinx/build

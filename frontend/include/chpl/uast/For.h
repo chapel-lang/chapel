@@ -103,7 +103,7 @@ class For final : public IndexableLoop {
                           owned<Block> body,
                           bool isExpressionLevel,
                           bool isParam,
-                          owned<AttributeGroup> attributeGroup);
+                          owned<AttributeGroup> attributeGroup = nullptr);
 
   /**
     Returns true if this for loop is param.

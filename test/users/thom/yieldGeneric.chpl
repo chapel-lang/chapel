@@ -17,7 +17,7 @@ delete fooo;
 
 // a subclass
 
-class D: C {
+class D: C(?) {
   var m;
 }
 

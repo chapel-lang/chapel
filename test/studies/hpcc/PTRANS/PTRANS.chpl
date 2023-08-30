@@ -33,10 +33,10 @@ module HPCC_PTRANS {
     // declare distribution rules for matrix and transpose
 
     const Matrix_Block_Dist 
-      = new dmap(new Block(rank=2,idxType=int(64),boundingBox={1..n_rows, 1..n_cols}));
+      = new Block(rank=2,idxType=int(64),boundingBox={1..n_rows, 1..n_cols});
 
     const Transpose_Block_Dist 
-      = new dmap(new Block(rank=2,idxType=int(64),boundingBox={1..n_cols, 1..n_rows}));
+      = new Block(rank=2,idxType=int(64),boundingBox={1..n_cols, 1..n_rows});
 
     // declare domains (index sets) for matrix and transpose
 
@@ -173,7 +173,7 @@ module HPCC_PTRANS {
   //  =====================================================
 
   proc Chapel_PTRANS ( A : [?A_domain] real, 
-		      C : [?C_domain] real, 
+		      ref C : [?C_domain] real, 
 		      beta : real ) : bool
     where ( A.rank == 2 ) && ( C.rank == 2 )
     {

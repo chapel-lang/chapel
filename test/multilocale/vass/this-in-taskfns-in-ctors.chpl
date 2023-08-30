@@ -8,27 +8,27 @@ record RR {
   // the default initializer
   proc init() {
     this.complete();
-    var done$: sync bool;
+    var done: sync bool;
     on loc {
       this.xx = 555;
     }
-    begin {
+    begin with (ref this) {
       doModify(this, 666);
-      done$.writeEF(true);
+      done.writeEF(true);
     }
-    done$.readFE();
+    done.readFE();
   }
   // method with args
-  proc modify(ee: int, ff: int) {
-    var done$: sync bool;
+  proc ref modify(ee: int, ff: int) {
+    var done: sync bool;
     on loc {
       this.xx = ee;
     }
-    begin {
+    begin with (ref this) {
       doModify(this, ff);
-      done$.writeEF(true);
+      done.writeEF(true);
     }
-    done$.readFE();
+    done.readFE();
   }
 } // record RR
 
@@ -39,27 +39,27 @@ record QQ {
   // non-default initializer
   proc init(cc: int, dd: int) {
     this.complete();
-    var done$: sync bool;
+    var done: sync bool;
     on loc {
       this.aa = cc;
     }
-    begin {
+    begin with (ref this) {
       doModify(this, dd);
-      done$.writeEF(true);
+      done.writeEF(true);
     }
-    done$.readFE();
+    done.readFE();
   }
   // method with no args
-  proc modify() {
-    var done$: sync bool;
+  proc ref modify() {
+    var done: sync bool;
     on loc {
       this.aa = 171717;
     }
-    begin {
+    begin with (ref this) {
       doModify(this, 181818);
-      done$.writeEF(true);
+      done.writeEF(true);
     }
-    done$.readFE();
+    done.readFE();
   }
 } // record QQ
 

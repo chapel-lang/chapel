@@ -49,7 +49,7 @@ proc main() {
   var c = start; // inferred type
   writeln(c.type:string, " ", c);
   
-  var d:R = start; // specified generic type
+  var d:R(?) = start; // specified generic type
   writeln(d.type:string, " ", d);
 
   var e:R(true, ?) = start; // specified partial type

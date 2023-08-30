@@ -2,7 +2,7 @@ class C {
   var c;
 }
 
-class D : C {
+class D : C(?) {
   var d;
 }
 

@@ -1,1 +1,4 @@
-in Variant plus
+shadowing-method-method.chpl:23: In function 'main':
+shadowing-method-method.chpl:28: error: ambiguous call '+(R, R)'
+shadowing-method-method.chpl:5: note: candidates are: R.+(a: R, b: R)
+shadowing-method-method.chpl:14: note:                 R.+(a: R, b: R)

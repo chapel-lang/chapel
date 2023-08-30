@@ -451,7 +451,7 @@ proc getRuntimeComm() throws {
 }
 
 proc runUnitTest(ref cmdLineCompopts: list(string), show: bool) {
-  var comm_c: c_string;
+  var comm_c: c_ptrConst(c_char);
   try! {
     var checkChpl = spawn(["which","chpl"],stdout = pipeStyle.pipe);
     checkChpl.wait();

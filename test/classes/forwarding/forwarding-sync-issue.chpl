@@ -20,7 +20,7 @@ record ForwardingWrapper {
 
 class C {
   type eltType;
-  var lock$ : sync bool;
+  var lock : sync bool;
   proc init(type eltType) {
     this.eltType = eltType;
   }
@@ -28,6 +28,6 @@ class C {
 
 var wrapper : ForwardingWrapper(int);
 
-writeln(wrapper.lock$.isFull);
+writeln(wrapper.lock.isFull);
 
 delete global;

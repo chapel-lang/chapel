@@ -21,7 +21,7 @@ record Planet {
   var mass : real;
 }
 
-proc advance(B: [] Planet, dt: real) {
+proc advance(ref B: [] Planet, dt: real) {
   for (b1, i) in zip(B, 0..) {
     for b2 in B[i+1..] {
       var d : [vecLen] real = b1.coord_vector - b2.coord_vector;
@@ -51,7 +51,7 @@ proc energy(B : [] Planet) : real {
   return e;
 }
 
-proc offset_momentum(B : [] Planet) {
+proc offset_momentum(ref B : [] Planet) {
   var p : [vecLen] real;
   for b in B do
     p += b.vel_vector * b.mass;

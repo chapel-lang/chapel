@@ -7,7 +7,7 @@ class Foo {
   }
 }
 
-class Bar : Foo {
+class Bar : Foo(?) {
   var x: int;
 
   proc init(xVal) {

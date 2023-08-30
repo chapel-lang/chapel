@@ -1,0 +1,3 @@
+$CHPL_HOME/modules/packages/ReplicatedVar.chpl:166: In function 'rcRemote':
+$CHPL_HOME/modules/packages/ReplicatedVar.chpl:170: error: illegal expression to return by ref
+  rcRemote.chpl:5: called as rcRemote(replicatedVar: [ReplicatedDom(1,int(64),one)] int(64), remoteLoc: locale)

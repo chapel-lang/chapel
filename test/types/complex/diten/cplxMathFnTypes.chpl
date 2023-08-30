@@ -7,7 +7,7 @@ proc testTypes(x: complex(?w)) {
   const res2 = carg(x);
   assert(res2.type == real(w/2));
 
-  const res3 = conjg(x);
+  const res3 = conj(x);
   assert(res3.type == complex(w));
 
   const res4 = cproj(x);

@@ -22,7 +22,7 @@ module Structure {
 
   }
 
-  class SubParent : Parent {
+  class SubParent : Parent(?) {
     type eltType;
   }
 
@@ -63,7 +63,7 @@ module Structure {
 module Impl {
   use Structure;
 
-  class Child : SubParent {
+  class Child : SubParent(?) {
     var x:eltType;
     
     override proc foo( arg: rank*range(idxType, boundKind.both, strides) ) {

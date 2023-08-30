@@ -1,0 +1,5 @@
+$CHPL_HOME/modules/standard/Set.chpl:nnnn: In method '_addElem':
+$CHPL_HOME/modules/standard/Set.chpl:nnnn: warning: 'R' has a hash function that is being used by the standard library. However, 'R' does not implement hashable. In the future, this will result in an error.
+$CHPL_HOME/modules/standard/Set.chpl:nnnn: warning: to make 'R' implement hashable, add the interface to its declaration: 'record R : hashable'
+  $CHPL_HOME/modules/standard/Set.chpl:nnnn: called as (set(R,false))._addElem(elem: R) from method 'init='
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: called as (set(R,false)).init=(other: set(R,false))

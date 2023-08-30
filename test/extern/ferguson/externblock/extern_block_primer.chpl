@@ -76,7 +76,7 @@ if !quiet {
   if result == 0 {
     writeln("gethostname returned:");
     // write out the hostname too
-    puts(hostname_ptr:c_string);
+    puts(hostname_ptr:c_ptrConst(c_char));
     writeln("\n");
   } else {
     writeln("gethostname returned an error");
@@ -85,24 +85,6 @@ if !quiet {
 
 // Demonstrate allocate and deallocate
 deallocate(hostname_ptr);
-
-
-
-
-// The following two routines are currently required in this module
-// but should be in the standard modules.
-
-// allow casts from c_ptr(c_char) to c_string
-@chpldoc.nodoc
-inline operator :(x, type t) where isSubtype(t,c_string) && isSubtype(x.type,c_ptr(c_char)) {
-    return __primitive("cast", t, x);
-}
-
-// allow casts from c_string to c_ptr(c_char)
-@chpldoc.nodoc
-inline operator :(x, type t) where isSubtype(t,c_ptr(c_char)) && isSubtype(x.type,c_string) {
-    return __primitive("cast", t, x);
-}
 
 
 

@@ -1,0 +1,2 @@
+inherit-generic-q.chpl:4: warning: missing '(?)' after a generic parent class
+inherit-generic-q.chpl:8: error: '(?)' after a concrete parent class

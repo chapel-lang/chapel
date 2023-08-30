@@ -1,16 +1,16 @@
 use BigInteger;
 
 {
-  write("divexact ");
+  write("divExact ");
   var a = new bigint(12);
   var b = new bigint(6);
-  divexact(a, a, b);
+  divExact(a, a, b);
   writeln(a);
 }
 {
-  write("divexact ");
+  write("divExact ");
   var a = new bigint(12);
-  divexact(a, a, 6);
+  divExact(a, a, 6);
   writeln(a);
 }
 {
@@ -70,17 +70,17 @@ use BigInteger;
   writeln(a);
 }
 {
-  write("rootrem ");
+  write("rootRem ");
   var a = new bigint(5);
   var b: bigint;
-  rootrem(a, b, a, 2:uint);
+  rootRem(a, b, a, 2:uint);
   writeln(a, " ", b);
 }
 {
-  write("rootrem ");
+  write("rootRem ");
   var a = new bigint(5);
   var b: bigint;
-  rootrem(b, a, a, 2:uint);
+  rootRem(b, a, a, 2:uint);
   writeln(b, " ", a);
 }
 {
@@ -90,23 +90,23 @@ use BigInteger;
   writeln(a);
 }
 {
-  write("sqrtrem ");
+  write("sqrtRem ");
   var a = new bigint(10);
   var b: bigint;
-  sqrtrem(a, b, a);
+  sqrtRem(a, b, a);
   writeln(a, " ", b);
 }
 {
-  write("sqrtrem ");
+  write("sqrtRem ");
   var a = new bigint(10);
   var b: bigint;
-  sqrtrem(b, a, a);
+  sqrtRem(b, a, a);
   writeln(b, " ", a);
 }
 {
-  write("nextprime ");
+  write("nextPrime ");
   var a = new bigint(16);
-  nextprime(a, a);
+  nextPrime(a, a);
   writeln(a);
 }
 {
@@ -294,49 +294,49 @@ use BigInteger;
   writeln(a);
 }
 {
-  write("addmul ");
+  write("addMul ");
   var a = new bigint(5);
   var b = new bigint(6);
-  addmul(a, a, b);
+  addMul(a, a, b);
   writeln(a);
 }
 {
-  write("addmul ");
+  write("addMul ");
   var a = new bigint(5);
   var b = new bigint(6);
-  addmul(b, a, b);
+  addMul(b, a, b);
   writeln(b);
 }
 {
-  write("addmul ");
+  write("addMul ");
   var a = new bigint(5);
-  addmul(a, a, 6:uint);
+  addMul(a, a, 6:uint);
   writeln(a);
 }
 {
-  write("submul ");
+  write("subMul ");
   var a = new bigint(5);
   var b = new bigint(6);
-  submul(a, a, b);
+  subMul(a, a, b);
   writeln(a);
 }
 {
-  write("submul ");
+  write("subMul ");
   var a = new bigint(5);
   var b = new bigint(6);
-  submul(b, a, b);
+  subMul(b, a, b);
   writeln(b);
 }
 {
-  write("submul ");
+  write("subMul ");
   var a = new bigint(5);
-  submul(a, a, 6:uint);
+  subMul(a, a, 6:uint);
   writeln(a);
 }
 {
-  write("mul_2exp ");
+  write("mul2Exp ");
   var a = new bigint(5);
-  mul_2exp(a, a, 2);
+  mul2Exp(a, a, 2);
   writeln(a);
 }
 {
@@ -352,58 +352,58 @@ use BigInteger;
   writeln(a);
 }
 {
-  write("divQ ");
+  write("div ");
   var a = new bigint(10);
   var b = new bigint(2);
-  divQ(a, a, b);
+  div(a, a, b);
   writeln(a);
 }
 {
-  write("divQ ");
+  write("div ");
   var a = new bigint(10);
   var b = new bigint(2);
-  divQ(b, a, b);
+  div(b, a, b);
   writeln(b);
 }
 
 {
-  write("divR ");
+  write("rem ");
   var a = new bigint(10);
   var b = new bigint(2);
-  divR(a, a, b);
+  rem(a, a, b);
   writeln(a);
 }
 {
-  write("divR ");
+  write("rem ");
   var a = new bigint(10);
   var b = new bigint(2);
-  divR(b, a, b);
+  rem(b, a, b);
   writeln(b);
 }
 {
-  write("divQR ");
+  write("divRem ");
   var a = new bigint(10);
   var b = new bigint(2);
-  divQR(a, b, a, b);
+  divRem(a, b, a, b);
   writeln(a, " ", b);
 }
 {
-  write("divQR ");
+  write("divRem ");
   var a = new bigint(10);
   var b = new bigint(2);
-  divQR(b, a, a, b);
+  divRem(b, a, a, b);
   writeln(b, " ", a);
 }
 {
-  write("divQ2Exp ");
+  write("div2Exp ");
   var a = new bigint(3);
-  divQ2Exp(a, a, 1);
+  div2Exp(a, a, 1);
   writeln(a);
 }
 {
-  write("divR2Exp ");
+  write("rem2Exp ");
   var a = new bigint(3);
-  divR2Exp(a, a, 1);
+  rem2Exp(a, a, 1);
   writeln(a);
 }
 {
@@ -441,25 +441,25 @@ use BigInteger;
   writeln(b);
 }
 {
-  write("ior ");
+  write("or ");
   var a = new bigint(5);
   var b = new bigint(6);
-  ior(a, a, b);
+  or(a, a, b);
   writeln(a);
 }
 {
-  write("ior ");
+  write("or ");
   var a = new bigint(5);
   var b = new bigint(6);
-  ior(b, a, b);
+  or(b, a, b);
   writeln(b);
 }
 {
   // test the swap behavior where op2 has more limbs than op1
-  write("ior ");
+  write("or ");
   var a = new bigint(10);
   var b = new bigint("1267650600228229401496703205376"); // 2**100
-  ior(a, a, b);
+  or(a, a, b);
   writeln(a);
 }
 {

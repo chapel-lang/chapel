@@ -3,10 +3,8 @@ use IO;
 class mything {
   var x:int;
   var y:int;
-  proc writeThis(w: Writer) throws {
-    w & x;
-    w & new ioLiteral(" ");
-    w & y;
+  proc writeThis(w: fileWriter) throws {
+    w.writeln(x, " ", y);
   }
   // no readThis. Expect a compile-time error
 }
@@ -33,4 +31,3 @@ class mything {
 
   assert(a.x == b.x);
 }
-

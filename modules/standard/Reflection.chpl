@@ -23,18 +23,8 @@
    Functions for reflecting about language elements, such as fields,
    functions, and methods.
 
-   .. note ::
-
-     There are several ways in which this module could be improved:
-
-       * the methods here might be better as type methods,
-         so you could use `R.numFields()` instead of `numFields(R)`.
-       * :proc:`getField` does not yet return a mutable value.
-
-   .. note ::
-
-     For reflecting about aspects of the compilation process, see
-     :mod:`ChplConfig`.
+   For reflecting about aspects of the compilation process, see
+   :mod:`ChplConfig`.
 */
 module Reflection {
 
@@ -58,11 +48,17 @@ private proc checkQueryT(type t) type {
 /* Return the number of fields in a class or record as a param.
    The count of fields includes types and param fields.
  */
-proc numFields(type t) param : int do
+proc getNumFields(type t) param : int do
   return __primitive("num fields", checkQueryT(t));
 
+/* Return the number of fields in a class or record as a param.
+   The count of fields includes types and param fields.
+ */
+@deprecated(notes="'numFields' is deprecated - please use 'getNumFields' instead")
+proc numFields(type t) param : int do return getNumFields(t);
+
 /* Get the name of the field at `idx` in a class or record.
-   Causes a compilation error if `idx` is not in 0..<numFields(t).
+   Causes a compilation error if `idx` is not in 0..<getNumFields(t).
 
    :arg t: a class or record type
    :arg idx: which field to get the name of
@@ -75,14 +71,14 @@ proc getFieldName(type t, param idx:int) param : string do
 // over the const ref one.
 /* Get the field at `idx` in a class or record. When the field at `idx`
    is a `param`, this overload will be chosen to return a `param`.
-   Causes a compilation error if `idx` is not in 0..<numFields(t).
+   Causes a compilation error if `idx` is not in 0..<getNumFields(t).
 
    :arg obj: a class or record
    :arg idx: which field to get
    :returns: the `param` that field represents
 */
 proc getField(const ref obj:?t, param idx: int) param
-  where idx >= 0 && idx < numFields(t) &&
+  where idx >= 0 && idx < getNumFields(t) &&
         isParam(__primitive("field by num", obj, idx+1)) {
 
   return __primitive("field by num", obj, idx+1);
@@ -92,20 +88,20 @@ proc getField(const ref obj:?t, param idx: int) param
 // over the const ref one.
 /* Get the field at `idx` in a class or record. When the field at `idx`
    is a `type` variable, this overload will be chosen to return a type.
-   Causes a compilation error if `idx` is not in 0..<numFields(t).
+   Causes a compilation error if `idx` is not in 0..<getNumFields(t).
 
    :arg obj: a class or record
    :arg idx: which field to get
    :returns: the type that field represents
 */
 proc getField(const ref obj:?t, param idx: int) type
-  where idx >= 0 && idx < numFields(t) &&
+  where idx >= 0 && idx < getNumFields(t) &&
         isType(__primitive("field by num", obj, idx+1)) {
   return __primitive("field by num", obj, idx+1);
 }
 
 /* Get the field at `idx` in a class or record.
-   Causes a compilation error if `idx` is not in 0..<numFields(t).
+   Causes a compilation error if `idx` is not in 0..<getNumFields(t).
 
    :arg obj: a class or record
    :arg idx: which field to get
@@ -200,7 +196,7 @@ proc getImplementationField(const ref x:?t, param i:int) const ref {
 }
 
 /* Get a mutable ref to the ith field in a class or record.
-   Causes a compilation error if `i` is not in 0..<numFields(t)
+   Causes a compilation error if `i` is not in 0..<getNumFields(t)
    or if the argument is not mutable.
 
    :arg x: a class or record
@@ -208,8 +204,8 @@ proc getImplementationField(const ref x:?t, param i:int) const ref {
    :returns: an rvalue referring to that field.
  */
 pragma "unsafe"
-inline
-proc getFieldRef(ref x:?t, param i:int) ref do
+@unstable(reason="'getFieldRef' is unstable")
+inline proc getFieldRef(ref x:?t, param i:int) ref do
   return __primitive("field by num", x, i+1);
 
 /* Get a mutable ref to a field in a class or record by name.
@@ -221,6 +217,7 @@ proc getFieldRef(ref x:?t, param i:int) ref do
    :returns: an rvalue referring to that field.
  */
 pragma "unsafe"
+@unstable(reason="'getFieldRef' is unstable")
 proc getFieldRef(ref x:?t, param s:string) ref {
   param i = __primitive("field name to num", t, s);
   if i == 0 then
@@ -256,6 +253,7 @@ proc hasField(type t, param name:string) param : bool do
    :arg idx: which field to query
    :returns: ``true`` if the field is instantiated
 */
+@unstable(reason="'isFieldBound' is unstable - consider using 'T.fieldName != ?' syntax instead")
 proc isFieldBound(type t, param idx: int) param : bool {
   return __primitive("is bound", checkQueryT(t),
                      getFieldName(checkQueryT(t), idx));
@@ -268,6 +266,7 @@ proc isFieldBound(type t, param idx: int) param : bool {
    :arg name: the name of a field
    :returns: ``true`` if the field is instantiated
 */
+@unstable(reason="'isFieldBound' is unstable - consider using 'T.fieldName != ?' syntax instead")
 proc isFieldBound(type t, param name : string) param : bool {
   return __primitive("is bound", checkQueryT(t), name);
 }
@@ -275,12 +274,14 @@ proc isFieldBound(type t, param name : string) param : bool {
 /* Returns ``true`` if a function named `fname` taking no arguments
    could be called in the current scope.
    */
+@unstable(reason="The 'canResolve...' family of procedures are unstable")
 proc canResolve(param fname : string) param : bool do
   return __primitive("call and fn resolves", fname);
 
 /* Returns ``true`` if a function named `fname` taking the arguments in
    `args` could be called in the current scope.
    */
+@unstable(reason="The 'canResolve...' family of procedures are unstable")
 proc canResolve(param fname : string, args ...) param : bool do
   return __primitive("call and fn resolves", fname, (...args));
 
@@ -289,24 +290,28 @@ proc canResolve(param fname : string, args ...) param : bool do
 /* Returns ``true`` if a method named `fname` taking no arguments
    could be called on `obj` in the current scope.
    */
+@unstable(reason="The 'canResolve...' family of procedures are unstable")
 proc canResolveMethod(obj, param fname : string) param : bool do
   return __primitive("method call and fn resolves", obj, fname);
 
 /* Returns ``true`` if a method named `fname` taking the arguments in
    `args` could be called on `obj` in the current scope.
    */
+@unstable(reason="The 'canResolve...' family of procedures are unstable")
 proc canResolveMethod(obj, param fname : string, args ...) param : bool do
   return __primitive("method call and fn resolves", obj, fname, (...args));
 
 /* Returns ``true`` if a type method named `fname` taking no
    arguments could be called on type `t` in the current scope.
    */
+@unstable(reason="The 'canResolve...' family of procedures are unstable")
 proc canResolveTypeMethod(type t, param fname : string) param : bool do
   return __primitive("method call and fn resolves", t, fname);
 
 /* Returns ``true`` if a type method named `fname` taking the
    arguments in `args` could be called on type `t` in the current scope.
    */
+@unstable(reason="The 'canResolve...' family of procedures are unstable")
 proc canResolveTypeMethod(type t, param fname : string, args ...) param : bool do
   return __primitive("method call and fn resolves", t, fname, (...args));
 

@@ -229,7 +229,7 @@ class Cyclic: BaseDist {
     const dummyLC = new unmanaged LocCyclic(rank, idxType, dummy=true);
     var locDistTemp: [targetLocDom] unmanaged LocCyclic(rank, idxType)
           = dummyLC;
-    coforall locid in targetLocDom do
+    coforall locid in targetLocDom with (ref locDistTemp) do
       on targetLocs(locid) do
        locDistTemp(locid) =
          new unmanaged LocCyclic(rank, idxType, locid, startIdxTemp, ranges);
@@ -365,7 +365,7 @@ override proc Cyclic.dsiNewRectangularDom(param rank: int, type idxType, param s
   const dummyLCD = new unmanaged LocCyclicDom(rank, idxType);
   var locDomsTemp: [this.targetLocDom] unmanaged LocCyclicDom(rank, idxType)
         = dummyLCD;
-  coforall localeIdx in this.targetLocDom do
+  coforall localeIdx in this.targetLocDom with (ref locDomsTemp) do
     on this.targetLocs(localeIdx) do
       locDomsTemp(localeIdx) = new unmanaged LocCyclicDom(rank, idxType,
                                               this.getChunk(whole, localeIdx));
@@ -492,7 +492,7 @@ class LocCyclic {
 }
 
 
-class CyclicDom : BaseRectangularDom {
+class CyclicDom : BaseRectangularDom(?) {
   const dist: unmanaged Cyclic(rank, idxType);
 
   var locDoms: [dist.targetLocDom] unmanaged LocCyclicDom(rank, idxType);
@@ -527,7 +527,7 @@ proc CyclicDom.dsiBuildArray(type eltType, param initElts:bool) {
   var myLocArrTemp: unmanaged LocCyclicArr(eltType, rank, idxType)?;
 
   // formerly in CyclicArr.setup()
-  coforall localeIdx in dom.dist.targetLocDom with (ref myLocArrTemp) {
+  coforall localeIdx in dom.dist.targetLocDom with (ref locArrTemp, ref myLocArrTemp) {
     on dom.dist.targetLocs(localeIdx) {
       const LCA = new unmanaged LocCyclicArr(eltType, rank, idxType,
                                              dom.locDoms(localeIdx),
@@ -735,7 +735,7 @@ class LocCyclicDom {
 proc LocCyclicDom.contains(i) do return myBlock.contains(i);
 
 
-class CyclicArr: BaseRectangularArr {
+class CyclicArr: BaseRectangularArr(?) {
   var doRADOpt: bool = defaultDoRADOpt;
   var dom: unmanaged CyclicDom(rank, idxType, stridable);
 
@@ -962,7 +962,7 @@ proc CyclicArr.dsiDynamicFastFollowCheck(lead: []) do
   return this.dsiDynamicFastFollowCheck(lead.domain);
 
 proc CyclicArr.dsiDynamicFastFollowCheck(lead: domain) {
-  return lead.dist.dsiEqualDMaps(this.dom.dist) && lead._value.whole == this.dom.whole;
+  return lead.distribution.dsiEqualDMaps(this.dom.dist) && lead._value.whole == this.dom.whole;
 }
 
 iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {

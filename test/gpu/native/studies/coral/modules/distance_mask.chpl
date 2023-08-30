@@ -1,8 +1,8 @@
 module distance_mask {
 
-proc create_distance_mask(radius : real, dx : real, nx : int) {
+proc create_distance_mask(radius : real, dx : real, nx : int(16)) {
 
-  const D : domain(2, int) = {-nx..nx, -nx..nx};
+  const D : domain(2, int(16)) = {-nx..nx, -nx..nx};
   var D_center : sparse subdomain(D);
   var D_left : sparse subdomain(D);
   var D_right : sparse subdomain(D);

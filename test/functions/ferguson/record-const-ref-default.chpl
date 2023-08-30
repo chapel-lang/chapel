@@ -23,7 +23,7 @@ proc run() {
   writeln(rr);
 
   if debug {
-    extern proc printf(fmt:c_string, ptr);
+    extern proc printf(fmt:c_ptrConst(c_char), ptr);
     printf("in check1, address of r is %p\n", ptr1);
     printf("address of rr.r is %p\n", ptr2);
   }

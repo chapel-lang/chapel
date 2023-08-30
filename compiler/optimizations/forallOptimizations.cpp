@@ -1729,7 +1729,7 @@ static CondStmt *createAggCond(CallExpr *noOptAssign, Symbol *aggregator, SymExp
 // remove it when we use it, but we can also leave some untouched. This
 // function removes that argument if the primitive still has 3 arguments
 void AggregationCandidateInfo::removeSideEffectsFromPrimitive() {
-  INT_ASSERT(this->candidate->isNamed("="));
+  INT_ASSERT(this->candidate->isNamedAstr(astrSassign));
 
   if (CallExpr *childCall = toCallExpr(this->candidate->get(1))) {
     if (childCall->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
@@ -1844,7 +1844,7 @@ static CallExpr *getAggGenCallForChild(Expr *child, bool srcAggregation) {
 // currently we want both sides to be calls, but we need to relax these to
 // accept symexprs to support foralls over arrays
 static bool assignmentSuitableForAggregation(CallExpr *call, ForallStmt *forall) {
-  INT_ASSERT(call->isNamed("="));
+  INT_ASSERT(call->isNamedAstr(astrSassign));
 
   if (CallExpr *leftCall = toCallExpr(call->get(1))) {
     if (CallExpr *rightCall = toCallExpr(call->get(2))) {
@@ -2101,7 +2101,7 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
                                                    ForallStmt *forall) {
   SET_LINENO(call);
 
-  INT_ASSERT(call->isNamed("="));
+  INT_ASSERT(call->isNamedAstr(astrSassign));
 
   if (!forall->optInfo.infoGathered) {
     gatherForallInfo(forall);
@@ -2369,7 +2369,7 @@ static void removeAggregationFromRecursiveForallHelp(BlockStmt *block) {
 
         CallExpr *assignCall = toCallExpr(condStmt->thenStmt->getFirstExpr()->parentExpr);
         INT_ASSERT(assignCall);
-        INT_ASSERT(assignCall->isNamed("="));
+        INT_ASSERT(assignCall->isNamedAstr(astrSassign));
 
         CallExpr *aggCall = toCallExpr(condStmt->elseStmt->getFirstExpr()->parentExpr);
         INT_ASSERT(aggCall);

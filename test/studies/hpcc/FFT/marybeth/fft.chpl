@@ -41,7 +41,7 @@ proc main() {
     fillRandom(z);
 
   // conjugate input, storing result to work array
-  Z = conjg(z);
+  Z = conj(z);
 
 
   // TIMED SECTION
@@ -56,7 +56,7 @@ proc main() {
 }
 
 
-proc computeTwiddles(W) {
+proc computeTwiddles(ref W) {
   const n = W.size;
   const delta = 2.0 * atan(1.0) / n;
 
@@ -103,7 +103,7 @@ proc bitReverse(val: ?valType, numBits = 64) {
 }
 
 
-proc dfft(A, W) {
+proc dfft(ref A, W) {
   
   var span = 1;
   var m, m2: int;
@@ -149,11 +149,11 @@ proc dfft(A, W) {
 }
 
 
-proc verifyResults(z, Z, execTime, Twiddles) {
+proc verifyResults(ref z, ref Z, execTime, Twiddles) {
   const N = Z.size;
 
   // BLC: This line wants /(complex,real) to be implemented directly:
-  Z = conjg(Z) / N;
+  Z = conj(Z) / N;
 
   Z = bitReverseShuffle(Z);
   dfft(Z, Twiddles);

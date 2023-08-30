@@ -10,9 +10,9 @@ class BoundedBuffer {
   param bufSize:int = 2;
   type eltType = int;
 
-  var buffer$: [0..#bufSize] sync eltType;
-  var producerPos$: sync int = 0;
-  var consumerPos$: sync int = 0;
+  var buffer: [0..#bufSize] sync eltType;
+  var producerPos: sync int = 0;
+  var consumerPos: sync int = 0;
 
   proc init() {}
 
@@ -21,9 +21,9 @@ class BoundedBuffer {
   // value has been consumed
   //
   proc add(i: eltType) {
-    var c = producerPos$.readFE();
-    producerPos$.writeEF((c + 1) % bufSize);
-    buffer$(c).writeEF(i);
+    var c = producerPos.readFE();
+    producerPos.writeEF((c + 1) % bufSize);
+    buffer(c).writeEF(i);
   }
 
   //
@@ -31,9 +31,9 @@ class BoundedBuffer {
   // value has been produced
   //
   proc remove(): eltType {
-    var c = consumerPos$.readFE();
-    consumerPos$.writeEF((c + 1) % bufSize);
-    return buffer$(c).readFE();
+    var c = consumerPos.readFE();
+    consumerPos.writeEF((c + 1) % bufSize);
+    return buffer(c).readFE();
   }
 
   //

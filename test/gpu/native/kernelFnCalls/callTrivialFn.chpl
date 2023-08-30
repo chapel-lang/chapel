@@ -1,4 +1,6 @@
 use GpuDiagnostics;
+
+
 config const n = 100;
 
 proc foo(a, b, i) {
@@ -14,4 +16,4 @@ on here.gpus[0] {
  }
   stopGpuDiagnostics();
 }
-writeln(getGpuDiagnostics());
+assertGpuDiags(kernel_launch=1);

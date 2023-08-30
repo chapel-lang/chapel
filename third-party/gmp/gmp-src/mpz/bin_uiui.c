@@ -2,7 +2,7 @@
 
 Contributed to the GNU project by Torbjorn Granlund and Marco Bodrato.
 
-Copyright 2010-2012, 2015-2018 Free Software Foundation, Inc.
+Copyright 2010-2012, 2015-2018, 2020 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -491,31 +491,31 @@ mpz_smallkdc_bin_uiui (mpz_ptr r, unsigned long int n, unsigned long int k)
       (PR) *= (P);						\
   } while (0)
 
-#define LOOP_ON_SIEVE_CONTINUE(prime,end,sieve)			\
+#define LOOP_ON_SIEVE_CONTINUE(prime,end)			\
     __max_i = (end);						\
 								\
     do {							\
       ++__i;							\
-      if (((sieve)[__index] & __mask) == 0)			\
+      if ((*__sieve & __mask) == 0)				\
 	{							\
 	  mp_limb_t prime;					\
 	  prime = id_to_n(__i)
 
 #define LOOP_ON_SIEVE_BEGIN(prime,start,end,off,sieve)		\
   do {								\
-    mp_limb_t __mask, __index, __max_i, __i;			\
+    mp_limb_t __mask, *__sieve, __max_i, __i;			\
 								\
     __i = (start)-(off);					\
-    __index = __i / GMP_LIMB_BITS;				\
+    __sieve = (sieve) + __i / GMP_LIMB_BITS;			\
     __mask = CNST_LIMB(1) << (__i % GMP_LIMB_BITS);		\
     __i += (off);						\
 								\
-    LOOP_ON_SIEVE_CONTINUE(prime,end,sieve)
+    LOOP_ON_SIEVE_CONTINUE(prime,end)
 
 #define LOOP_ON_SIEVE_STOP					\
 	}							\
       __mask = __mask << 1 | __mask >> (GMP_LIMB_BITS-1);	\
-      __index += __mask & 1;					\
+      __sieve += __mask & 1;					\
     }  while (__i <= __max_i)
 
 #define LOOP_ON_SIEVE_END					\
@@ -584,7 +584,7 @@ limb_apprsqrt (mp_limb_t x)
   ASSERT (x > 2);
   count_leading_zeros (s, x);
   s = (GMP_LIMB_BITS - s) >> 1;
-  return ((CNST_LIMB(1) << s) + (x >> s)) >> 1;
+  return ((CNST_LIMB(1) << (s - 1)) + (x >> 1 >> s));
 }
 
 static void
@@ -632,7 +632,7 @@ mpz_goetgheluck_bin_uiui (mpz_ptr r, unsigned long int n, unsigned long int k)
       ASSERT (max_prod <= GMP_NUMB_MAX / 2);
       max_prod <<= 1;
 
-      LOOP_ON_SIEVE_CONTINUE (prime, n_to_bit (n >> 1),sieve);
+      LOOP_ON_SIEVE_CONTINUE (prime, n_to_bit (n >> 1));
       SH_COUNT_A_PRIME (prime, n, k, prod, max_prod, factors, j);
       LOOP_ON_SIEVE_END;
 

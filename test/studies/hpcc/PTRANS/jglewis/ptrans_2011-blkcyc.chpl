@@ -163,7 +163,7 @@ module HPCC_PTRANS {
   //  =====================================================
 
   proc Chapel_PTRANS ( A : [?A_domain] real, 
-                       C : [?C_domain] real, 
+                       ref C : [?C_domain] real, 
                        beta : real ) : bool
     where ( A.rank == 2 ) && ( C.rank == 2 )
     {
@@ -204,7 +204,7 @@ module HPCC_PTRANS {
   //  =====================================================
 
   proc Chapel_blocked_PTRANS_v1 ( A : [?A_domain] real, 
-                                  C : [?C_domain] real, 
+                                  ref C : [?C_domain] real, 
                                   beta : real           ) : bool
     where ( A.rank == 2 ) && ( C.rank == 2 )
     {
@@ -253,7 +253,7 @@ module HPCC_PTRANS {
   //  =====================================================
 
   proc Chapel_blocked_PTRANS_v2 ( A : [?A_domain] real, 
-                                  C : [?C_domain] real, 
+                                  ref C : [?C_domain] real, 
                                   beta : real           ) : bool
     where ( A.rank == 2 ) && ( C.rank == 2 )
     {
@@ -274,7 +274,7 @@ module HPCC_PTRANS {
     // processor grid from A's distribution
     // --------------------------------------------
 
-    const C_locale_grid = C.domain.dist.targetLocales(); // block version
+    const C_locale_grid = C.domain.distribution.targetLocales(); // block version
     const C_grid_domain = C_locale_grid.domain,
           n_processors  = C_grid_domain.size;
 

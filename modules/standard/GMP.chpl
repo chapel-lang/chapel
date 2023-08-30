@@ -266,7 +266,7 @@ module GMP {
 
   extern proc mpz_set_d(ref rop: mpz_t, op: c_double);
 
-  extern proc mpz_set_str(ref rop: mpz_t, str: c_string, base: c_int);
+  extern proc mpz_set_str(ref rop: mpz_t, str: c_ptrConst(c_char), base: c_int);
 
   extern proc mpz_swap(ref rop1: mpz_t, ref rop2: mpz_t);
 
@@ -284,9 +284,8 @@ module GMP {
   extern proc mpz_init_set_d(ref rop: mpz_t, op: c_double);
 
   extern proc mpz_init_set_str(ref rop: mpz_t,
-                               str: c_string,
+                               str: c_ptrConst(c_char),
                                base: c_int) : c_int;
-
 
   //
   // 5.4 Conversion Functions
@@ -301,10 +300,9 @@ module GMP {
   extern proc mpz_get_d_2exp(ref exp: c_long,
                              const ref op: mpz_t) : c_double;
 
-  extern proc mpz_get_str(str: c_string,
+  extern proc mpz_get_str(str: c_ptrConst(c_char),
                           base: c_int,
-                          const ref op: mpz_t) : c_string;
-
+                          const ref op: mpz_t) : c_ptrConst(c_char);
 
   //
   // 5.5 Arithmetic Functions
@@ -877,7 +875,7 @@ module GMP {
                         const ref op: mpz_t);
 
   extern proc mpf_set_str(ref rop: mpz_t,
-                          str: c_string,
+                          str: c_ptrConst(c_char),
                           base: c_int);
 
   extern proc mpf_swap(ref rop1: mpf_t,
@@ -1120,16 +1118,15 @@ module GMP {
   //
   // printf/scanf
   //
-  extern proc gmp_printf(fmt: c_string, arg...);
+  extern proc gmp_printf(fmt: c_ptrConst(c_char), arg...);
 
-  extern proc gmp_fprintf(fp: c_FILE, fmt: c_string, arg...);
+  extern proc gmp_fprintf(fp: c_FILE, fmt: c_ptrConst(c_char), arg...);
 
   pragma "last resort"
   @deprecated(notes="the '_file' type is deprecated; use the variant of 'gmp_fprintf' that takes a 'c_FILE'")
-  extern proc gmp_fprintf(fp: _file, fmt: c_string, arg...);
+  extern proc gmp_fprintf(fp: _file, fmt: c_ptrConst(c_char), arg...);
 
-  extern proc gmp_asprintf(ref ret: c_string, fmt: c_string, arg...);
-
+  extern proc gmp_asprintf(ref ret: c_ptr(c_uchar), fmt: c_ptrConst(c_char), arg...);
 
   /* Get an MPZ value stored on another locale */
   pragma "chpldoc ignore chpl prefix"
@@ -1213,7 +1210,7 @@ module GMP {
 
   /* Get an mpz_t as a string */
   pragma "chpldoc ignore chpl prefix"
-  extern proc chpl_gmp_mpz_get_str(base: c_int, const ref x: mpz_t) : c_string;
+  extern proc chpl_gmp_mpz_get_str(base: c_int, const ref x: mpz_t) : c_ptrConst(c_char);
 
   class GMPRandom {
     var state: gmp_randstate_t;

@@ -13,10 +13,10 @@ proc createRandomArraySerial(minimum:int, maximum:int) {
 }
 
 proc createRandomArrayParallel(nTasks:int, minimum:int, maximum:int) {
-  var nPerTask = divceil(n, nTasks);
+  var nPerTask = divCeil(n, nTasks);
   var A:[0..#n] int;
   // Create #cores tasks
-  coforall taskNum in 0..#nTasks {
+  coforall taskNum in 0..#nTasks with (ref A) {
     var start = nPerTask * taskNum;
     var end = start + nPerTask - 1;
     if end >= n then

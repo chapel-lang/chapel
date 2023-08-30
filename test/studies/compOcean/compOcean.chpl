@@ -24,7 +24,7 @@ proc readData(param dims: int, dataname: string) {
 
   var name: c_string;
 
-  cdfError(nc_open((fullPath).c_str(), NC_NOWRITE, ncid));
+  cdfError(nc_open(fullPath.c_str(), NC_NOWRITE, ncid));
 
   cdfError(nc_inq_varid(ncid, dataname.c_str(), varid));
   cdfError(nc_inq_varndims(ncid, varid, ndims));
@@ -39,7 +39,7 @@ proc readData(param dims: int, dataname: string) {
   var dimranges: dims*range;
   for i in 0..#ndims {
     cdfError(nc_inq_dimlen_WAR(ncid, dimids[i], dimlens[i]));
-    dimranges(i+1) = 0..#dimlens[i];
+    dimranges(i) = 0..#dimlens[i];
   }
 
   var data: [(...dimranges)] real(32);

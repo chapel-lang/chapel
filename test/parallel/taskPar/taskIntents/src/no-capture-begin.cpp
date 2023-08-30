@@ -7,22 +7,22 @@
 #endif
 
 #include "var-decls.cpp"
-var s$: sync int;
+var s: sync int;
 
 begin with (
 #define lvar(name, type, init) ref name,
 #include "var-types.h"
 #undef lvar
-          ref s$)
+          ref s)
 {
   writeln("in begin");
 #include "var-writes.cpp"
 #include "var-assigns.cpp"
 //writeln("after assigns in begin");
 //#include "var-writes.cpp"
-  s$ = 1;
+  s = 1;
 }
 
-s$;
+s;
 writeln("after begin");
 #include "var-writes.cpp"

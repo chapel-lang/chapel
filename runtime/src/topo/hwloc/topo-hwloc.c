@@ -144,27 +144,16 @@ void chpl_topo_init(void) {
     return;
   }
 
-  // Check hwloc API version.
-  // Require at least hwloc version 1.11 (we need 1.11.5 to not crash
-  // in some NUMA configurations).
-  // Check both at build time and run time.
-#define REQUIRE_HWLOC_VERSION 0x00010b00
-
-#if HWLOC_API_VERSION < REQUIRE_HWLOC_VERSION
-#error hwloc version 1.11.5 or newer is required
-#endif
-
-  CHK_ERR(hwloc_get_api_version() >= REQUIRE_HWLOC_VERSION);
-
   //
   // Allocate and initialize topology object.
   //
   CHK_ERR_ERRNO(hwloc_topology_init(&topology) == 0);
 
-  // Make sure we get everything including I/O devices.
-  int flags = HWLOC_TOPOLOGY_FLAG_WHOLE_IO | HWLOC_TOPOLOGY_FLAG_IO_BRIDGES | HWLOC_TOPOLOGY_FLAG_IO_DEVICES;
+  int flags = HWLOC_TOPOLOGY_FLAG_INCLUDE_DISALLOWED;
   CHK_ERR_ERRNO(hwloc_topology_set_flags(topology, flags) == 0);
 
+  CHK_ERR_ERRNO(hwloc_topology_set_all_types_filter(topology,
+                                            HWLOC_TYPE_FILTER_KEEP_ALL) == 0);
   //
   // Perform the topology detection.
   //
@@ -275,7 +264,6 @@ static void cpuInfoInit(void) {
   //
   CHK_ERR_ERRNO((physAccSet = hwloc_bitmap_alloc()) != NULL);
   CHK_ERR_ERRNO((physReservedSet = hwloc_bitmap_alloc()) != NULL);
-  CHK_ERR_ERRNO((logAccSet = hwloc_bitmap_alloc()) != NULL);
 
   // accessible NUMA nodes
 
@@ -288,31 +276,14 @@ static void cpuInfoInit(void) {
 
   // accessible PUs
 
-  //
-  // We could seemingly use hwloc_topology_get_allowed_cpuset() to get
-  // the set of accessible PUs here.  But that seems not to reflect the
-  // schedaffinity settings, so use hwloc_get_proc_cpubind() instead.
-  //
-  if (topoSupport->cpubind->get_proc_cpubind) {
-    int rc = hwloc_get_proc_cpubind(topology, getpid(), logAccSet, 0);
-    CHK_ERR_ERRNO(rc == 0);
-  } else {
-    // assume all PUs are accessible
-    hwloc_bitmap_fill(logAccSet);
-  }
-  hwloc_bitmap_and(logAccSet, logAccSet,
-                   hwloc_topology_get_online_cpuset(topology));
+  logAccSet = hwloc_bitmap_dup(hwloc_topology_get_allowed_cpuset(topology));
   numCPUsLogAcc = hwloc_bitmap_weight(logAccSet);
   CHK_ERR(numCPUsLogAcc > 0);
   _DBG_P("numCPUsLogAcc = %d", numCPUsLogAcc);
 
-  //
-  // all PUs. The online set doesn't include PUs that cannot be
-  // used, e.g., if hyperthreading is turned off
-  //
-  hwloc_const_cpuset_t onlineSet = hwloc_topology_get_online_cpuset(
+  hwloc_const_cpuset_t completeSet = hwloc_topology_get_complete_cpuset(
                                                               topology);
-  numCPUsLogAll = hwloc_bitmap_weight(onlineSet);
+  numCPUsLogAll = hwloc_bitmap_weight(completeSet);
   CHK_ERR(numCPUsLogAll > 0);
   _DBG_P("numCPUsLogAll = %d", numCPUsLogAll);
 
@@ -348,7 +319,7 @@ static void cpuInfoInit(void) {
   // all cores
   //
   // Note: hwloc_get_nbobjs_inside_cpuset_by_type cannot be called on
-  // onlineSet because inaccessible PUs and their cores do not have
+  // completeSet because inaccessible PUs and their cores do not have
   // objects in the topology. pusPerCore might vary by core, but that is
   // checked above.
 
@@ -458,10 +429,6 @@ static void cpuInfoInit(void) {
     hwloc_bitmap_list_snprintf(buf, sizeof(buf), set);
     _DBG_P("complete cpuset: %s", buf);
 
-    set = hwloc_topology_get_online_cpuset(topology);
-    hwloc_bitmap_list_snprintf(buf, sizeof(buf), set);
-    _DBG_P("online cpuset: %s", buf);
-
     set = hwloc_topology_get_topology_cpuset(topology);
     hwloc_bitmap_list_snprintf(buf, sizeof(buf), set);
     _DBG_P("topology cpuset: %s", buf);
@@ -543,7 +510,7 @@ void chpl_topo_setThreadLocality(c_sublocid_t subloc) {
   CHK_ERR_ERRNO((cpuset = hwloc_bitmap_alloc()) != NULL);
 
   hwloc_cpuset_from_nodeset(topology, cpuset,
-                            getNumaObj(subloc)->allowed_nodeset);
+                            getNumaObj(subloc)->nodeset);
 
   // Only use accessible CPUs.
 
@@ -778,12 +745,12 @@ void chpl_topo_setMemLocalityByPages(unsigned char* p, size_t size,
       || !do_set_area_membind)
     return;
 
-  _DBG_P("hwloc_set_area_membind_nodeset(%p, %#zx, %d)", p, size,
-         (int) hwloc_bitmap_first(numaObj->allowed_nodeset));
+  _DBG_P("hwloc_set_area_membind(%p, %#zx, %d)", p, size,
+         (int) hwloc_bitmap_first(numaObj->nodeset));
 
   flags = HWLOC_MEMBIND_MIGRATE | HWLOC_MEMBIND_STRICT;
-  CHK_ERR_ERRNO(hwloc_set_area_membind_nodeset(topology, p, size,
-                                               numaObj->allowed_nodeset,
+  CHK_ERR_ERRNO(hwloc_set_area_membind(topology, p, size,
+                                               numaObj->nodeset,
                                                HWLOC_MEMBIND_BIND, flags)
                 == 0);
 }

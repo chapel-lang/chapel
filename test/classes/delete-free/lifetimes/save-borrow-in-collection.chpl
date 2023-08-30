@@ -37,7 +37,7 @@ proc error4(arg: borrowed MyClass) {
   globalB.b = arg;
 }
 
-proc BorrowedThing.error5(arg: borrowed MyClass) {
+proc ref BorrowedThing.error5(arg: borrowed MyClass) {
   this.b = arg;
 }
 

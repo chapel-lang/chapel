@@ -2,7 +2,7 @@ class ParentGenericClass {
   type t;
 }
 
-class ChildGenericClass : ParentGenericClass {
+class ChildGenericClass : ParentGenericClass(?) {
   var v: t;
 }
 

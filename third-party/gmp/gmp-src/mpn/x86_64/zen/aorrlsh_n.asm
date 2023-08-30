@@ -37,7 +37,9 @@ C AMD bd1		n/a
 C AMD bd2		n/a
 C AMD bd3		n/a
 C AMD bd4		 2.31
-C AMD zen		 1.69
+C AMD zn1		 1.69
+C AMD zn2		 1.55
+C AMD zn3		 1.36
 C AMD bt1		n/a
 C AMD bt2		n/a
 C Intel P4		n/a
@@ -53,7 +55,6 @@ C Intel SLM		n/a
 C VIA nano		n/a
 
 C TODO
-C  * The loop sustains 4 insns/cycle on zen.
 C  * Perhaps avoid using jrcxz by using dec n + jnz.
 
 define(`rp',	`%rdi')

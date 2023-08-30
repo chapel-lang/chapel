@@ -100,6 +100,7 @@ struct Visitor {
   bool isParentFalseBlock(int depth=0) const;
 
   bool isNamedThisAndNotReceiverOrFunction(const NamedDecl* node);
+  bool isSpecialMethodKeywordUsedIncorrectly(const NamedDecl *node);
   bool isNameReservedWord(const NamedDecl* node);
   inline bool shouldEmitUnstableWarning(const AstNode* node);
 
@@ -133,11 +134,14 @@ struct Visitor {
   void checkVisibilityClauseValid(const AstNode* parentNode,
                                   const VisibilityClause* clause);
   void checkAttributeNameRecognizedOrToolSpaced(const Attribute* node);
+  void checkAttributeAppliedToCorrectNode(const Attribute* attr);
   void checkAttributeUsedParens(const Attribute* node);
+  void checkAttributeUnstable(const Attribute* node);
   void checkUserModuleHasPragma(const AttributeGroup* node);
+  void checkParenfulDeprecation(const AttributeGroup* node);
   void checkExternBlockAtModuleScope(const ExternBlock* node);
   void checkLambdaDeprecated(const Function* node);
-
+  void checkCStringLiteral(const CStringLiteral* node);
   /*
   TODO
   void checkProcedureFormalsAgainstRetType(const Function* node);
@@ -158,6 +162,7 @@ struct Visitor {
 
   // Warnings.
   void warnUnstableUnions(const Union* node);
+  void warnUnstableForeachLoops(const Foreach* node);
   void warnUnstableSymbolNames(const NamedDecl* node);
 
   // Visitors.
@@ -169,7 +174,9 @@ struct Visitor {
   void visit(const BracketLoop* node);
   void visit(const Break* node);
   void visit(const Continue* node);
+  void visit(const CStringLiteral* node);
   void visit(const ExternBlock* node);
+  void visit(const Foreach* node);
   void visit(const FnCall* node);
   void visit(const Function* node);
   void visit(const FunctionSignature* node);
@@ -219,6 +226,19 @@ static ControlFlowModifier nodeAllowsReturn(const AstNode* node,
       // can't return a value from an iterator.
       return ControlFlowModifier::BLOCKS;
     }
+
+    // The 'init' method is handled separately by the initializerRules pass.
+    // If we handle it here it also erroneously picks up the use of 'return'
+    // in 'lifetime return' statements (which isn't a concern for deinit
+    // and postinit).
+    if(fn->name() == USTR("deinit") ||
+       fn->name() == USTR("postinit"))
+    {
+      if(ctrl->value() != nullptr) {
+        return ControlFlowModifier::BLOCKS;
+      }
+    }
+
     return ControlFlowModifier::ALLOWS;
   }
   if (node->isForall() || node->isForeach() || node->isCoforall() ||
@@ -1032,9 +1052,29 @@ bool Visitor::isNamedThisAndNotReceiverOrFunction(const NamedDecl* node) {
   return true;
 }
 
+bool Visitor::isSpecialMethodKeywordUsedIncorrectly(
+  const NamedDecl *node)
+{
+  if ((node->name() != USTR("init")) &&
+      (node->name() != USTR("deinit")) &&
+      (node->name() != USTR("postinit")))
+  {
+    return false;
+  }
+
+  // deinit can be a free function used to deinitialize the current
+  // module
+  if(node->name() == USTR("deinit")) {
+    return !node->isFunction();
+  }
+
+  return !(node->isFunction() && node->toFunction()->isMethod());
+}
+
 bool Visitor::isNameReservedWord(const NamedDecl* node) {
   auto name = node->name();
   if (isNamedThisAndNotReceiverOrFunction(node)) return true;
+  if (isSpecialMethodKeywordUsedIncorrectly(node)) return true;
   if (name == "none") return true;
   if (name == "false") return true;
   if (name == "true") return true;
@@ -1157,6 +1197,12 @@ void Visitor::warnUnstableUnions(const Union* node) {
              "in ways that will break their current uses.");
 }
 
+void Visitor::warnUnstableForeachLoops(const Foreach* node) {
+  if (!shouldEmitUnstableWarning(node)) return;
+  warn(node, "foreach loops are currently unstable and are expected to change "
+             "in ways that may break some of their current uses.");
+}
+
 void Visitor::warnUnstableSymbolNames(const NamedDecl* node) {
   if (!shouldEmitUnstableWarning(node)) return;
   if (!isUserCode()) return;
@@ -1231,6 +1277,16 @@ void Visitor::checkUserModuleHasPragma(const AttributeGroup* node) {
   }
 }
 
+void Visitor::checkParenfulDeprecation(const AttributeGroup* node) {
+  if (!node->isParenfulDeprecated()) return;
+  auto groupParent = parents_.back();
+  auto fn = groupParent->toFunction();
+
+  if (!fn || !fn->isParenless()) {
+    CHPL_REPORT(context_, InvalidParenfulDeprecation, node, groupParent);
+  }
+}
+
 void Visitor::checkAttributeUsedParens(const Attribute* node) {
   if (node->numActuals() > 0 && !node->usedParens()) {
      CHPL_REPORT(context_, ParenlessAttributeArgDeprecated, node);
@@ -1243,7 +1299,9 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
   if (node->name() == USTR("deprecated") ||
       node->name() == USTR("unstable") ||
       node->name() == USTR("stable") ||
-      node->name().startsWith(USTR("chpldoc."))) {
+      node->name() == USTR("assertOnGpu") ||
+      node->name().startsWith(USTR("chpldoc.")) ||
+      node->name().startsWith(USTR("llvm."))) {
       // TODO: should we match chpldoc.nodoc or anything toolspaced with chpldoc.?
       return;
   } else if (node->fullyQualifiedAttributeName().find('.') == std::string::npos) {
@@ -1268,13 +1326,37 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
   }
 }
 
+void Visitor::checkAttributeAppliedToCorrectNode(const Attribute* attr) {
+  CHPL_ASSERT(parents_.size() >= 2);
+  auto attributeGroup = parents_[parents_.size() - 1];
+  CHPL_ASSERT(attributeGroup->isAttributeGroup());
+  auto node = parents_[parents_.size() - 2];
+  if (attr->name() == USTR("assertOnGpu")) {
+    if (node->isForall() || node->isForeach()) return;
+
+    CHPL_REPORT(context_, InvalidGpuAssertion, node, attr);
+  }
+}
+
+void Visitor::checkAttributeUnstable(const Attribute* node) {
+  if (shouldEmitUnstableWarning(node)) {
+    if(node->name() == UniqueString::get(context_, "llvm.metadata") ||
+       node->name() == UniqueString::get(context_, "llvm.assertVectorized")) {
+      warn(node, "'%s' is an unstable attribute", node->name());
+    }
+  }
+}
+
 void Visitor::visit(const Attribute* node) {
+  checkAttributeAppliedToCorrectNode(node);
   checkAttributeNameRecognizedOrToolSpaced(node);
   checkAttributeUsedParens(node);
+  checkAttributeUnstable(node);
 }
 
 void Visitor::visit(const AttributeGroup* node) {
   checkUserModuleHasPragma(node);
+  checkParenfulDeprecation(node);
 }
 
 void Visitor::visit(const FnCall* node) {
@@ -1320,6 +1402,10 @@ void Visitor::visit(const FunctionSignature* node) {
 
 void Visitor::visit(const Union* node) {
   warnUnstableUnions(node);
+}
+
+void Visitor::visit(const Foreach* node) {
+  warnUnstableForeachLoops(node);
 }
 
 void Visitor::visit(const Use* node) {
@@ -1423,9 +1509,18 @@ void Visitor::checkExternBlockAtModuleScope(const ExternBlock* node) {
   }
 }
 
+void Visitor::checkCStringLiteral(const CStringLiteral* node) {
+   warn(node, "the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst(\"string\")' or 'string.c_str()' from the 'CTypes' module instead");
+}
+
 void Visitor::visit(const ExternBlock* node) {
   checkExternBlockAtModuleScope(node);
 }
+
+void Visitor::visit(const CStringLiteral* node) {
+  checkCStringLiteral(node);
+}
+
 
 } // end anonymous namespace
 

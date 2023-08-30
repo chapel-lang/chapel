@@ -1,3 +1,4 @@
+use CTypes;
 enum E { zero=-1, one=-2, two=-4, three=-8 };
 
 param cstr:c_string = "8";
@@ -6,11 +7,11 @@ param cstrc:c_string = cstr+"+"+cstri;
 param cstrE:c_string = "three";
 param cstrB:c_string = "true";
 
-var vcstr:c_string = cstr;
-var vcstri:c_string = cstri;
-var vcstrc:c_string = cstrc;
-var vcstrE:c_string = cstrE;
-var vcstrB:c_string = cstrB;
+var vcstr:c_ptrConst(c_char) = cstr;
+var vcstri:c_ptrConst(c_char) = cstri;
+var vcstrc:c_ptrConst(c_char) = cstrc;
+var vcstrE:c_ptrConst(c_char) = cstrE;
+var vcstrB:c_ptrConst(c_char) = cstrB;
 
 const str = cstr:string;
 const stri = cstri:string;

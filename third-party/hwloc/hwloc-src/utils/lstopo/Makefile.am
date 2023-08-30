@@ -1,6 +1,7 @@
-# Copyright © 2009-2018 Inria.  All rights reserved.
+# Copyright © 2009-2020 Inria.  All rights reserved.
 # Copyright © 2009-2012, 2014 Université Bordeaux
 # Copyright © 2009-2014 Cisco Systems, Inc.  All rights reserved.
+# Copyright © 2020 Hewlett Packard Enterprise.  All rights reserved.
 #
 # See COPYING in top-level directory.
 
@@ -11,23 +12,30 @@ AM_CFLAGS = $(HWLOC_CFLAGS)
 AM_CPPFLAGS = $(HWLOC_CPPFLAGS) -I$(top_srcdir)/utils/hwloc
 AM_LDFLAGS = $(HWLOC_LDFLAGS)
 
-LDADD = $(HWLOC_top_builddir)/src/libhwloc.la
+LDADD = $(HWLOC_top_builddir)/hwloc/libhwloc.la \
+	$(HWLOC_top_builddir)/utils/hwloc/libutils_common.la
 
 bin_PROGRAMS = \
         lstopo-no-graphics
 
 EXTRA_DIST = \
-        test-hwloc-ls.output
+        lstopo-android.c \
+        test-lstopo.output
 
 lstopo_no_graphics_SOURCES = \
         lstopo.h \
         lstopo.c \
-        lstopo-color.c \
         lstopo-draw.c \
+        lstopo-tikz.c \
         lstopo-fig.c \
+        lstopo-svg.c \
         lstopo-ascii.c \
         lstopo-text.c \
         lstopo-xml.c
+
+if !HWLOC_HAVE_WINDOWS
+lstopo_no_graphics_SOURCES += lstopo-shmem.c
+endif
 
 lstopo_no_graphics_CFLAGS = $(AM_CFLAGS)
 lstopo_no_graphics_LDADD = $(LDADD) -lm $(HWLOC_TERMCAP_LIBS)
@@ -59,10 +67,11 @@ man1_pages = lstopo-no-graphics.1
 EXTRA_DIST += $(man1_pages:.1=.1in)
 nodist_man_MANS = $(man1_pages)
 
-if !HWLOC_HAVE_MINGW32
 TESTS = \
-        test-hwloc-ls.sh
-endif !HWLOC_HAVE_MINGW32
+        test-lstopo.sh
+if HWLOC_HAVE_LINUX
+TESTS += test-lstopo-shmem.sh
+endif HWLOC_HAVE_LINUX
 
 if HWLOC_HAVE_CAIRO
 # only installed when lstopo is built with Cairo/X11 support

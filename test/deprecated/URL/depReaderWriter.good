@@ -1,0 +1,2 @@
+depReaderWriter.chpl:10: warning: openUrlReader with a style argument is deprecated
+depReaderWriter.chpl:11: warning: openUrlWriter with a style argument is deprecated

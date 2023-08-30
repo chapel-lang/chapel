@@ -1,5 +1,3 @@
-extern proc chpl_task_yield();
-
 /*  - The Chameneos game is as follows:
       A population of n chameneos gathers at a common meeting place, where
       m meetings will take place (n and m may be distinct).  At any time, only
@@ -132,7 +130,7 @@ class Chameneos {
           meetingsWithSelf += is_same;
         } else {
           while (meetingCompleted.read() == 0) {
-            chpl_task_yield();
+            currentTask.yieldExecution();
           }
           meetingCompleted.write(0);
           stateTemp = meetingPlace.state.read();

@@ -1,0 +1,4 @@
+parenless-tertiary-ambiguous.chpl:17: In function 'main':
+parenless-tertiary-ambiguous.chpl:19: error: ambiguous call 'R.field'
+parenless-tertiary-ambiguous.chpl:7: note: candidates are: R.field
+parenless-tertiary-ambiguous.chpl:12: note:                 R.field

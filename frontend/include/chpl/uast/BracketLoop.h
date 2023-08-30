@@ -48,7 +48,8 @@ class BracketLoop final : public IndexableLoop {
               int8_t withClauseChildNum,
               BlockStyle blockStyle,
               int loopBodyChildNum,
-              bool isExpressionLevel)
+              bool isExpressionLevel,
+              int attributeGroupChildNum)
     : IndexableLoop(asttags::BracketLoop, std::move(children),
                     indexChildNum,
                     iterandChildNum,
@@ -56,7 +57,7 @@ class BracketLoop final : public IndexableLoop {
                     blockStyle,
                     loopBodyChildNum,
                     isExpressionLevel,
-                    NO_CHILD /*attributeGroup*/) {
+                    attributeGroupChildNum) {
   }
 
   BracketLoop(Deserializer& des)
@@ -82,7 +83,8 @@ class BracketLoop final : public IndexableLoop {
                                   owned<WithClause> withClause,
                                   BlockStyle blockStyle,
                                   owned<Block> body,
-                                  bool isExpressionLevel);
+                                  bool isExpressionLevel,
+                                  owned<AttributeGroup> attributeGroup = nullptr);
 
   /**
    * Check if this bracket loop is actually an array type

@@ -18,7 +18,7 @@ class GenericParent {
   var y;
 }
 
-class GenericChild : GenericParent {
+class GenericChild : GenericParent(?) {
   var z:int;
 }
 

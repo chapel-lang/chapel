@@ -52,7 +52,7 @@ namespace {
     std::string reContent = "(?:(?:" + reCntType1 + ")|(?:" + reCntType2 + ")|(?:" + reCntType3 + ")|(?:" + reCntType4 +  + "))";
 
     // Various roles; put into a (?...) group so we don't "capture" it
-    std::string reRole = R"#((?:mod|proc|iter|data|const|var|param|type|class|record|attr|enum))#";
+    std::string reRole = R"#((?:mod|proc|iter|data|const|var|param|type|class|record|attr|enum|enumconstant))#";
 
     // Regexp to match :role:`content`; note \B is used on either end to indicate markup is separated by word boundaries
     std::string reSphinxMrkp = R"#(\B\:)#" + reRole + R"#(\:`)#" + reContent + R"#(`\B)#";

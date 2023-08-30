@@ -32,7 +32,7 @@ module DefaultSparse {
 
   config param defaultSparseSupportsAutoLocalAccess = true;
 
-  class DefaultSparseDom: BaseSparseDomImpl {
+  class DefaultSparseDom: BaseSparseDomImpl(?) {
     var dist: unmanaged DefaultDist;
     var _nnz = 0;
 
@@ -266,7 +266,7 @@ module DefaultSparse {
     }
 
     // this returns the position for the last sparse index added
-    override proc bulkAdd_help(inds: [?indsDom] index(rank, idxType),
+    override proc bulkAdd_help(ref inds: [?indsDom] index(rank, idxType),
         dataSorted=false, isUnique=false, addOn=nilLocale){
       import Sort;
 
@@ -413,7 +413,7 @@ module DefaultSparse {
   }
 
 
-  class DefaultSparseArr: BaseSparseArrImpl {
+  class DefaultSparseArr: BaseSparseArrImpl(?) {
 
     proc init(type eltType,
               param rank : int,

@@ -9,7 +9,7 @@ record Foo {
 
 var foo = new Foo();
 
-for param i in 0..<numFields(foo.type) {
+for param i in 0..<getNumFields(foo.type) {
     if isType(getField(foo,i)) {
         continue;
     }

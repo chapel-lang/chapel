@@ -36,14 +36,22 @@
 
 #define HASHSIZE 101
 
+// if we decide on a flag to enable printing out deprecated and/or unstable
+// configs, they should be wired into these
+static int showDeprecatedConfigsWithHelp = 0;
+static int showUnstableConfigsWithHelp = 0;
+
 typedef struct _configVarType { /* table entry */
   char* varName;
   const char* moduleName;
-  char* defaultValue;
+  char* defaultType;
   char* setValue;
   int isPrivate;
   int deprecated;
   const char* deprecationMsg;
+
+  int unstable;
+  const char* unstableMsg;
 
   struct _configVarType* nextInBucket;
   struct _configVarType* nextInstalled;
@@ -168,6 +176,38 @@ static unsigned hash(const char* varName) {
   return hashValue % HASHSIZE;
 }
 
+__attribute__ ((format (printf, 4, 5)))
+static int genDetailsHelp(int flag, int nItems, FILE* stream,
+                          const char* fmt, ...) {
+  if (!flag) return 0;  // nothing to generate
+
+  va_list args;
+  va_start(args, fmt);
+
+  if (nItems == 0)
+    fprintf(stream, " (");
+  else
+    fprintf(stream, ", ");
+
+  vfprintf(stream, fmt, args);
+
+  va_end(args);
+
+  return 1;
+}
+
+static void genDetails(configVarType* configVar, FILE* stream) {
+  int nItems = 0;
+  nItems += genDetailsHelp(configVar->isPrivate, nItems, stream, "private");
+  nItems += genDetailsHelp(configVar->setValue!=NULL, nItems, stream,
+                           "configured to %s", configVar->setValue);
+  nItems += genDetailsHelp(configVar->deprecated, nItems, stream, "deprecated");
+  nItems += genDetailsHelp(configVar->unstable, nItems, stream, "unstable");
+
+  if (nItems>0)  // we must have generated a "(" and some info, add ")"
+    fprintf(stream, ")");
+}
+
 
 void printConfigVarTable(void) {
   configVarType* configVar = NULL;
@@ -204,6 +244,9 @@ void printConfigVarTable(void) {
          configVar != NULL;
          configVar = configVar->nextInstalled) {
 
+      if ( (!configVar->deprecated || showDeprecatedConfigsWithHelp) &&
+           (!configVar->unstable || showUnstableConfigsWithHelp) ) {
+
         if (foundMultipleModules) {
           if (moduleName == NULL) {
             moduleName = configVar->moduleName;
@@ -216,22 +259,13 @@ void printConfigVarTable(void) {
           }
         }
         fprintf(stdout, "  %*s: ", longestName, configVar->varName);
-        fprintf(stdout, "%s", configVar->defaultValue);
-        if (configVar->setValue || configVar->isPrivate) {
-          fprintf(stdout, " (");
-          if (configVar->isPrivate) {
-            fprintf(stdout, "private");
-            if (configVar->setValue) {
-              fprintf(stdout, ", ");
-            }
-          }
-          if (configVar->setValue) {
-            fprintf(stdout, "configured to %s", configVar->setValue);
-          }
-          fprintf(stdout, ")");
-        }
+        fprintf(stdout, "%s", configVar->defaultType);
+
+        genDetails(configVar, stdout);
+
         fprintf(stdout, "\n");
       }
+    }
   }
 
 }
@@ -305,6 +339,12 @@ void initSetValue(const char* varName, const char* value,
       chpl_warning(configVar->deprecationMsg, lineno, filename);
     }
     #endif
+  } else if (warnUnstable && configVar->unstable) {
+    #ifndef LAUNCHER
+    if (chpl_nodeID == 0) {
+      chpl_warning(configVar->unstableMsg, lineno, filename);
+    }
+    #endif
   }
   if (strcmp(varName, "numLocales") == 0) {
     parseNumLocales(value, lineno, filename);
@@ -331,9 +371,10 @@ const char* lookupSetValue(const char* varName, const char* moduleName) {
 }
 
 
-void installConfigVar(const char* varName, const char* value,
+void installConfigVar(const char* varName, const char* type,
                       const char* moduleName, int isPrivate, int deprecated,
-                      const char* deprecationMsg) {
+                      const char* deprecationMsg, int unstable,
+                      const char* unstableMsg) {
   unsigned hashValue;
   configVarType* configVar = (configVarType*)
     chpl_mem_allocMany(1, sizeof(configVarType), CHPL_RT_MD_CF_TABLE_DATA, 0, 0);
@@ -350,11 +391,13 @@ void installConfigVar(const char* varName, const char* value,
   lastInTable = configVar;
   configVar->varName = chpl_glom_strings(1, varName);
   configVar->moduleName = chpl_glom_strings(1, moduleName);
-  configVar->defaultValue = chpl_glom_strings(1, value);
+  configVar->defaultType = chpl_glom_strings(1, type);
   configVar->setValue = NULL;
   configVar->isPrivate = isPrivate;
   configVar->deprecated = deprecated;
   configVar->deprecationMsg = deprecationMsg;
+  configVar->unstable = unstable;
+  configVar->unstableMsg = unstableMsg;
 }
 
 
@@ -427,7 +470,7 @@ int handlePossibleConfigVar(int* argc, char* argv[], int argnum,
     char* value = equalsSign + 1;
     if (equalsSign && *value) {
       initSetValue(varName, value, moduleName, lineno, filename);
-    } else if (!strcmp(configVar->defaultValue, "bool")) {
+    } else if (!strcmp(configVar->defaultType, "bool")) {
       initSetValue(varName, "true", moduleName, lineno, filename);
     } else {
       if (argnum + 1 >= *argc) {

@@ -1,6 +1,6 @@
 /* mpz_import -- set mpz from word data.
 
-Copyright 2002, 2012 Free Software Foundation, Inc.
+Copyright 2002, 2012, 2021, 2022 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -64,38 +64,26 @@ mpz_import (mpz_ptr z, size_t count, int order,
 
   /* Can't use these special cases with nails currently, since they don't
      mask out the nail bits in the input data.  */
-  if (nail == 0 && GMP_NAIL_BITS == 0)
+  if (nail == 0 && GMP_NAIL_BITS == 0
+      && size == sizeof (mp_limb_t)
+      && (((char *) data - (char *) NULL) % sizeof (mp_limb_t)) == 0 /* align */)
     {
-      unsigned  align = ((char *) data - (char *) NULL) % sizeof (mp_limb_t);
-
-      if (order == -1
-	  && size == sizeof (mp_limb_t)
-	  && endian == HOST_ENDIAN
-	  && align == 0)
+      if (order == -1)
 	{
-	  MPN_COPY (zp, (mp_srcptr) data, (mp_size_t) count);
-	  goto done;
+	  if (endian == HOST_ENDIAN)
+	    MPN_COPY (zp, (mp_srcptr) data, (mp_size_t) count);
+	  else /* if (endian == - HOST_ENDIAN) */
+	    MPN_BSWAP (zp, (mp_srcptr) data, (mp_size_t) count);
 	}
-
-      if (order == -1
-	  && size == sizeof (mp_limb_t)
-	  && endian == - HOST_ENDIAN
-	  && align == 0)
+      else /* if (order == 1) */
 	{
-	  MPN_BSWAP (zp, (mp_srcptr) data, (mp_size_t) count);
-	  goto done;
-	}
-
-      if (order == 1
-	  && size == sizeof (mp_limb_t)
-	  && endian == HOST_ENDIAN
-	  && align == 0)
-	{
-	  MPN_REVERSE (zp, (mp_srcptr) data, (mp_size_t) count);
-	  goto done;
+	  if (endian == HOST_ENDIAN)
+	    MPN_REVERSE (zp, (mp_srcptr) data, (mp_size_t) count);
+	  else /* if (endian == - HOST_ENDIAN) */
+	    MPN_BSWAP_REVERSE (zp, (mp_srcptr) data, (mp_size_t) count);
 	}
     }
-
+  else
   {
     mp_limb_t      limb, byte, wbitsmask;
     size_t         i, j, numb, wbytes;
@@ -172,7 +160,6 @@ mpz_import (mpz_ptr z, size_t count, int order,
 
   }
 
- done:
   zp = PTR(z);
   MPN_NORMALIZE (zp, zsize);
   SIZ(z) = zsize;

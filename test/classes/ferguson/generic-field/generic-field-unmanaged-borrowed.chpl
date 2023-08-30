@@ -27,7 +27,7 @@ proc test1a() {
   var ownX = new owned GenericClassUnmanaged(a);
   var x = ownX.borrow();
   var ownY = new owned GenericClassUnmanaged(b);
-  var y:borrowed GenericClassUnmanaged = ownY.borrow();
+  var y:borrowed GenericClassUnmanaged(?) = ownY.borrow();
   var ownZ = new owned GenericClassUnmanaged(c);
   var z:borrowed GenericClassUnmanaged(unmanaged ClassA) = ownZ.borrow();
 
@@ -48,7 +48,7 @@ proc test1b() {
   var c = new unmanaged ClassB(3);
   var x = new owned GenericClassUnmanaged(a);
   var myOwnedY = new owned GenericClassUnmanaged(b);
-  var y:borrowed GenericClassUnmanaged = myOwnedY;
+  var y:borrowed GenericClassUnmanaged(?) = myOwnedY;
   var myOwnedZ = new owned GenericClassUnmanaged(c);
   var z:borrowed GenericClassUnmanaged(unmanaged ClassB) = myOwnedZ;
 
@@ -73,7 +73,7 @@ proc test2a() {
   var c = ownC.borrow();
   var x = new unmanaged GenericClassBorrowed(a);
   var ownY = new owned GenericClassBorrowed(b);
-  var y:borrowed GenericClassBorrowed = ownY.borrow();
+  var y:borrowed GenericClassBorrowed(?) = ownY.borrow();
   var ownZ = new owned GenericClassBorrowed(c);
   var z:borrowed GenericClassBorrowed(borrowed ClassA) = ownZ.borrow();
 
@@ -97,7 +97,7 @@ proc test2b() {
   var ownX = new owned GenericClassBorrowed(a);
   var x = ownX.borrow();
   var myOwnedY = new owned GenericClassBorrowed(b);
-  var y:borrowed GenericClassBorrowed = myOwnedY;
+  var y:borrowed GenericClassBorrowed(?) = myOwnedY;
   var myOwnedZ = new owned GenericClassBorrowed(c);
   var z:borrowed GenericClassBorrowed(borrowed ClassB) = myOwnedZ;
 

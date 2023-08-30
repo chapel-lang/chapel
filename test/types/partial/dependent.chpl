@@ -12,7 +12,7 @@ class Parent {
   type T;
 }
 
-class Child : Parent {
+class Child : Parent(?) {
   param p : T;
 }
 

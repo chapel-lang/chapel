@@ -1,6 +1,6 @@
 /* mpz_inp_raw -- read an mpz_t in raw format.
 
-Copyright 2001, 2002, 2005, 2012, 2016 Free Software Foundation, Inc.
+Copyright 2001, 2002, 2005, 2012, 2016, 2021 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -75,7 +75,7 @@ mpz_inp_raw (mpz_ptr x, FILE *fp)
     fp = stdin;
 
   /* 4 bytes for size */
-  if (fread (csize_bytes, sizeof (csize_bytes), 1, fp) != 1)
+  if (UNLIKELY (fread (csize_bytes, sizeof (csize_bytes), 1, fp) != 1))
     return 0;
 
   size = (((size_t) csize_bytes[0] << 24) + ((size_t) csize_bytes[1] << 16) +
@@ -88,8 +88,11 @@ mpz_inp_raw (mpz_ptr x, FILE *fp)
 
   abs_csize = ABS (csize);
 
+  if (UNLIKELY (abs_csize > ~(mp_bitcnt_t) 0 / 8))
+    return 0; /* Bit size overflows */
+
   /* round up to a multiple of limbs */
-  abs_xsize = BITS_TO_LIMBS (abs_csize*8);
+  abs_xsize = BITS_TO_LIMBS ((mp_bitcnt_t) abs_csize * 8);
 
   if (abs_xsize != 0)
     {
@@ -99,7 +102,7 @@ mpz_inp_raw (mpz_ptr x, FILE *fp)
 	 non-nails case.  */
       xp[0] = 0;
       cp = (char *) (xp + abs_xsize) - abs_csize;
-      if (fread (cp, abs_csize, 1, fp) != 1)
+      if (UNLIKELY (fread (cp, abs_csize, 1, fp) != 1))
 	return 0;
 
       if (GMP_NAIL_BITS == 0)

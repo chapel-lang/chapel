@@ -4,7 +4,7 @@ module matrix_matrix_multiply_inner_product {
   // Symmetric Block Inner Product for a Single Block Column
   // =======================================================
 
-  proc block_1D_inner_product ( L : [] , A : [] )
+  proc block_1D_inner_product ( L : [] , ref A : [] )
 
     where ( A.domain.rank == 2 && L.domain.rank == 2) {
 
@@ -47,7 +47,7 @@ module matrix_matrix_multiply_inner_product {
   // Column for a 2D Block Distributed Matrix
   // ================================================
 
-  proc block_2D_inner_product ( L : [] , A : [] )
+  proc block_2D_inner_product ( L : [] , ref A : [] )
 
     where ( A.domain.rank == 2 && L.domain.rank == 2) {
 

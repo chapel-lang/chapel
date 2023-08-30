@@ -59,7 +59,7 @@ record padded {
 var A = Block.createArray(1..numTasks*2, padded(atomic int));
 var B = Block.createArray(1..numTasks*2, padded(int));
 for loc in Locales do on loc {
-  coforall tid in 1..numTasks*2 {
+  coforall tid in 1..numTasks*2 with (ref A, ref B) {
     A[tid].val.write(0);
     B[tid].val = 0;
   }
@@ -69,7 +69,7 @@ for loc in Locales do on loc {
 proc test(op: OP) {
   const iters = if op == OP.AM || op == OP.FASTAM then numIters/10 else numIters;
   startDiags();
-  coforall tid in 1..numTasks {
+  coforall tid in 1..numTasks with (ref A, ref B) {
     ref bLoc = B.localAccess[tid].val;
     ref bRem = B[tid+numTasks].val;
     ref aLoc = A.localAccess[tid].val;

@@ -110,16 +110,16 @@ casting 0..1 to stridable range of flavor:
   chocolate..vanilla: (chocolate, vanilla, 1, chocolate)
 
 casting 0..1 to range of size
-  caught Error: illegal argument 'bad cast from int '0' to enum 'size': '
+  caught Error: bad cast from int '0' to enum 'size'
 
 casting 0..1 to stridable range of size:
-  caught Error: illegal argument 'bad cast from int '0' to enum 'size': '
+  caught Error: bad cast from int '0' to enum 'size'
 
 casting 0..1 to range of polygon
-  caught Error: illegal argument 'bad cast from int '0' to enum 'polygon': '
+  caught Error: bad cast from int '0' to enum 'polygon'
 
 casting 0..1 to stridable range of polygon:
-  caught Error: illegal argument 'bad cast from int '0' to enum 'polygon': '
+  caught Error: bad cast from int '0' to enum 'polygon'
 
 casting 1..2 to range of flavor
   vanilla..strawberry: (vanilla, strawberry, 1, chocolate)
@@ -134,10 +134,10 @@ casting 1..2 to stridable range of size:
   small..medium: (small, medium, 1, small)
 
 casting 1..2 to range of polygon
-  caught Error: illegal argument 'bad cast from int '1' to enum 'polygon': '
+  caught Error: bad cast from int '1' to enum 'polygon'
 
 casting 1..2 to stridable range of polygon:
-  caught Error: illegal argument 'bad cast from int '1' to enum 'polygon': '
+  caught Error: bad cast from int '1' to enum 'polygon'
 
 casting 0..1 to range of flavor
   chocolate..vanilla: (chocolate, vanilla, 1, chocolate)
@@ -146,16 +146,16 @@ casting 0..1 to stridable range of flavor:
   chocolate..vanilla: (chocolate, vanilla, 1, chocolate)
 
 casting 0..1 to range of size
-  caught Error: illegal argument 'bad cast from int '0' to enum 'size': '
+  caught Error: bad cast from int '0' to enum 'size'
 
 casting 0..1 to stridable range of size:
-  caught Error: illegal argument 'bad cast from int '0' to enum 'size': '
+  caught Error: bad cast from int '0' to enum 'size'
 
 casting 0..1 to range of polygon
-  caught Error: illegal argument 'bad cast from int '0' to enum 'polygon': '
+  caught Error: bad cast from int '0' to enum 'polygon'
 
 casting 0..1 to stridable range of polygon:
-  caught Error: illegal argument 'bad cast from int '0' to enum 'polygon': '
+  caught Error: bad cast from int '0' to enum 'polygon'
 
 casting 1..2 to range of flavor
   vanilla..strawberry: (vanilla, strawberry, 1, chocolate)
@@ -170,10 +170,10 @@ casting 1..2 to stridable range of size:
   small..medium: (small, medium, 1, small)
 
 casting 1..2 to range of polygon
-  caught Error: illegal argument 'bad cast from int '1' to enum 'polygon': '
+  caught Error: bad cast from int '1' to enum 'polygon'
 
 casting 1..2 to stridable range of polygon:
-  caught Error: illegal argument 'bad cast from int '1' to enum 'polygon': '
+  caught Error: bad cast from int '1' to enum 'polygon'
 
 casting small..medium to range of bool
   true..true: (true, true, 1, false)

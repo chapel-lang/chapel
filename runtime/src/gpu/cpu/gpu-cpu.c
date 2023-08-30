@@ -39,8 +39,6 @@ void chpl_gpu_impl_init(int* num_devices) {
   *num_devices = 1;
 }
 
-void chpl_gpu_impl_support_module_finished_initializing(void) { }
-
 bool chpl_gpu_impl_is_device_ptr(const void* ptr) {
   return false;  // this OK? maybe we want assertions to go through?
 }
@@ -68,10 +66,6 @@ inline void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
                                              va_list args) {
 }
 
-void* chpl_gpu_impl_memmove(void* dst, const void* src, size_t n) {
-  return chpl_memmove(dst, src, n);
-}
-
 void* chpl_gpu_impl_memset(void* addr, const uint8_t val, size_t n) {
   return memset(addr, val, n);
 }
@@ -97,8 +91,7 @@ void chpl_gpu_impl_comm_wait(void *stream) {
   assert(stream==NULL);
 }
 
-void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
-                               int32_t lineno, int32_t filename) {
+void* chpl_gpu_impl_mem_array_alloc(size_t size) {
   // this function's upstream is blocked by GPU_RUNTIME_CPU check, This should
   // be unreachable
   chpl_internal_error("chpl_gpu_mem_array_alloc was called unexpectedly.");
@@ -132,6 +125,9 @@ bool chpl_gpu_impl_can_access_peer(int dev1, int dev2) {
 }
 
 void chpl_gpu_impl_set_peer_access(int dev1, int dev2, bool enable) {
+}
+
+void chpl_gpu_impl_use_device(c_sublocid_t dev_id) {
 }
 
 #endif // HAS_GPU_LOCALE

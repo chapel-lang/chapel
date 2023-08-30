@@ -40,7 +40,7 @@ extern type fwdStruct = forwardStruct;
 
 extern type my_int = c_int;
 
-extern type my_string = c_string;
+extern type my_string = c_ptr(c_char);
 
 // Typedef'd pointer to struct
 extern type recp;

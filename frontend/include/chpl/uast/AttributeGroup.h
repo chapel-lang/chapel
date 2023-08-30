@@ -42,27 +42,36 @@ class AttributeGroup final : public AstNode {
   std::set<PragmaTag> pragmas_;
   bool isDeprecated_;
   bool isUnstable_;
+  bool isParenfulDeprecated_;
   UniqueString deprecationMessage_;
   UniqueString unstableMessage_;
+  UniqueString parenfulDeprecationMessage_;
 
   // TODO: Do we want to preserve the location of string literals used in
   // pragmas and deprecation messages?
   AttributeGroup(std::set<PragmaTag> pragmas,
                  bool isDeprecated,
                  bool isUnstable,
+                 bool isParenfulDeprecated,
                  UniqueString deprecationMessage,
-                 UniqueString unstableMessage)
+                 UniqueString unstableMessage,
+                 UniqueString parenfulDeprecationMessage)
     : AstNode(asttags::AttributeGroup),
       pragmas_(std::move(pragmas)),
       isDeprecated_(isDeprecated),
       isUnstable_(isUnstable),
+      isParenfulDeprecated_(isParenfulDeprecated),
       deprecationMessage_(deprecationMessage),
-      unstableMessage_(unstableMessage) {
+      unstableMessage_(unstableMessage),
+      parenfulDeprecationMessage_(parenfulDeprecationMessage) {
     if (!deprecationMessage_.isEmpty()) {
       CHPL_ASSERT(isDeprecated_);
     }
     if (!unstableMessage_.isEmpty()) {
       CHPL_ASSERT(isUnstable_);
+    }
+    if (!parenfulDeprecationMessage_.isEmpty()) {
+      CHPL_ASSERT(isParenfulDeprecated_);
     }
 
     // This might already be a compile-time invariant? Not sure...
@@ -74,27 +83,36 @@ class AttributeGroup final : public AstNode {
       pragmas_ = des.read<std::set<PragmaTag>>();
       isDeprecated_ = des.read<bool>();
       isUnstable_ = des.read<bool>();
+      isParenfulDeprecated_ = des.read<bool>();
       deprecationMessage_ = des.read<UniqueString>();
       unstableMessage_ = des.read<UniqueString>();
+      parenfulDeprecationMessage_ = des.read<UniqueString>();
     }
 
   AttributeGroup(std::set<PragmaTag> pragmas,
                  bool isDeprecated,
                  bool isUnstable,
+                 bool isParenfulDeprecated,
                  UniqueString deprecationMessage,
                  UniqueString unstableMessage,
+                 UniqueString parenfulDeprecationMessage,
                  AstList attributes)
     : AstNode(asttags::AttributeGroup, std::move(attributes)),
       pragmas_(std::move(pragmas)),
       isDeprecated_(isDeprecated),
       isUnstable_(isUnstable),
+      isParenfulDeprecated_(isParenfulDeprecated),
       deprecationMessage_(deprecationMessage),
-      unstableMessage_(unstableMessage) {
+      unstableMessage_(unstableMessage),
+      parenfulDeprecationMessage_(parenfulDeprecationMessage) {
     if (!deprecationMessage_.isEmpty()) {
       CHPL_ASSERT(isDeprecated_);
     }
     if (!unstableMessage_.isEmpty()) {
       CHPL_ASSERT(isUnstable_);
+    }
+    if (!parenfulDeprecationMessage_.isEmpty()) {
+      CHPL_ASSERT(isParenfulDeprecated_);
     }
 
     // This might already be a compile-time invariant? Not sure...
@@ -106,13 +124,16 @@ class AttributeGroup final : public AstNode {
     return this->pragmas_ == rhs->pragmas_ &&
            this->isDeprecated_ == rhs->isDeprecated_ &&
            this->isUnstable_ == rhs->isUnstable_ &&
+           this->isParenfulDeprecated_ == rhs->isParenfulDeprecated_ &&
            this->deprecationMessage_ == rhs->deprecationMessage_ &&
-           this->unstableMessage_ == rhs->unstableMessage_;
+           this->unstableMessage_ == rhs->unstableMessage_ &&
+           this->parenfulDeprecationMessage_ == rhs->parenfulDeprecationMessage_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
     deprecationMessage_.mark(context);
     unstableMessage_.mark(context);
+    parenfulDeprecationMessage_.mark(context);
   }
 
   void dumpInner(const DumpSettings& s) const;
@@ -124,15 +145,19 @@ class AttributeGroup final : public AstNode {
                                      std::set<PragmaTag> pragmas,
                                      bool isDeprecated,
                                      bool isUnstable,
+                                     bool isParenfulDeprecated,
                                      UniqueString deprecationMessage,
-                                     UniqueString unstableMessage);
+                                     UniqueString unstableMessage,
+                                     UniqueString parenfulDeprecationMessage);
 
   static owned<AttributeGroup> build(Builder* builder, Location loc,
                                      std::set<PragmaTag> pragmas,
                                      bool isDeprecated,
                                      bool isUnstable,
+                                     bool isParenfulDeprecated,
                                      UniqueString deprecationMessage,
                                      UniqueString unstableMessage,
+                                     UniqueString parenfulDeprecationMessage,
                                      AstList attributes);
 
   /**
@@ -188,6 +213,14 @@ class AttributeGroup final : public AstNode {
   }
 
   /**
+    Returns true if the declaration associated with this attributeGroup
+    has a parenful form that's deprecated in favor of a parenless form.
+  */
+  bool isParenfulDeprecated() const {
+    return isParenfulDeprecated_;
+  }
+
+  /**
     Returns a deprecation message, or the empty string if it is not set.
   */
   UniqueString deprecationMessage() const {
@@ -201,14 +234,23 @@ class AttributeGroup final : public AstNode {
     return unstableMessage_;
   }
 
+  /**
+    Returns a deprecation message, or the empty string if it is not set.
+  */
+  UniqueString parenfulDeprecationMessage() const {
+    return parenfulDeprecationMessage_;
+  }
+
   void serialize(Serializer& ser) const override {
     AstNode::serialize(ser);
 
     ser.write(pragmas_);
     ser.write(isDeprecated_);
     ser.write(isUnstable_);
+    ser.write(isParenfulDeprecated_);
     ser.write(deprecationMessage_);
     ser.write(unstableMessage_);
+    ser.write(parenfulDeprecationMessage_);
   }
 
   DECLARE_STATIC_DESERIALIZE(AttributeGroup);

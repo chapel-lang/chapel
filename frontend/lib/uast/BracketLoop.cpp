@@ -31,7 +31,8 @@ owned<BracketLoop> BracketLoop::build(Builder* builder, Location loc,
                                       owned<WithClause> withClause,
                                       BlockStyle blockStyle,
                                       owned<Block> body,
-                                      bool isExpressionLevel) {
+                                      bool isExpressionLevel,
+                                      owned<AttributeGroup> attributeGroup) {
 
   CHPL_ASSERT(iterand.get() != nullptr);
   CHPL_ASSERT(body.get() != nullptr);
@@ -40,6 +41,12 @@ owned<BracketLoop> BracketLoop::build(Builder* builder, Location loc,
   int8_t indexChildNum = NO_CHILD;
   int8_t iterandChildNum = NO_CHILD;
   int8_t withClauseChildNum = NO_CHILD;
+  int attributeGroupChildNum = NO_CHILD;
+
+  if (attributeGroup.get() != nullptr) {
+    attributeGroupChildNum = lst.size();
+    lst.push_back(std::move(attributeGroup));
+  }
 
   if (index.get() != nullptr) {
     indexChildNum = lst.size();
@@ -64,7 +71,8 @@ owned<BracketLoop> BracketLoop::build(Builder* builder, Location loc,
                                      withClauseChildNum,
                                      blockStyle,
                                      loopBodyChildNum,
-                                     isExpressionLevel);
+                                     isExpressionLevel,
+                                     attributeGroupChildNum);
 
   builder->noteLocation(ret, loc);
   return toOwned(ret);

@@ -1,4 +1,4 @@
-class Derived : Base {
+class Derived : Base(?) {
   var y : int = x + 1;
 
   proc init(param _x) {

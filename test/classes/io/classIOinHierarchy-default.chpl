@@ -1,3 +1,4 @@
+use CTypes;
 class C {
   var x: int;
 }
@@ -27,12 +28,12 @@ var c7 = new C();
 var c8 = new D();
 var c9 = new E();
 
-writeln("c1 (static type: ", c1.type:string, ", dynamic type: ", __primitive("class name by id", __primitive("getcid", c1.borrow())):string, ") is: ", c1);
-writeln("c2 (static type: ", c2.type:string, ", dynamic type: ", __primitive("class name by id", __primitive("getcid", c2.borrow())):string, ") is: ", c2);
-writeln("c3 (static type: ", c3.type:string, ", dynamic type: ", __primitive("class name by id", __primitive("getcid", c3.borrow())):string, ") is: ", c3);
-writeln("c4 (static type: ", c4.type:string, ", dynamic type: ", __primitive("class name by id", __primitive("getcid", c4.borrow())):string, ") is: ", c4);
-writeln("c5 (static type: ", c5.type:string, ", dynamic type: ", __primitive("class name by id", __primitive("getcid", c5.borrow())):string, ") is: ", c5);
-writeln("c6 (static type: ", c6.type:string, ", dynamic type: ", __primitive("class name by id", __primitive("getcid", c6.borrow())):string, ") is: ", c6);
-writeln("c7 (static type: ", c7.type:string, ", dynamic type: ", __primitive("class name by id", __primitive("getcid", c7.borrow())):string, ") is: ", c7);
-writeln("c8 (static type: ", c8.type:string, ", dynamic type: ", __primitive("class name by id", __primitive("getcid", c8.borrow())):string, ") is: ", c8);
-writeln("c9 (static type: ", c9.type:string, ", dynamic type: ", __primitive("class name by id", __primitive("getcid", c9.borrow())):string, ") is: ", c9);
+writeln("c1 (static type: ", c1.type:string, ", dynamic type: ", string.createBorrowingBuffer(__primitive("class name by id", __primitive("getcid", c1.borrow())):c_ptrConst(c_char)), ") is: ", c1);
+writeln("c2 (static type: ", c2.type:string, ", dynamic type: ", string.createBorrowingBuffer(__primitive("class name by id", __primitive("getcid", c2.borrow())):c_ptrConst(c_char)), ") is: ", c2);
+writeln("c3 (static type: ", c3.type:string, ", dynamic type: ", string.createBorrowingBuffer(__primitive("class name by id", __primitive("getcid", c3.borrow())):c_ptrConst(c_char)), ") is: ", c3);
+writeln("c4 (static type: ", c4.type:string, ", dynamic type: ", string.createBorrowingBuffer(__primitive("class name by id", __primitive("getcid", c4.borrow())):c_ptrConst(c_char)), ") is: ", c4);
+writeln("c5 (static type: ", c5.type:string, ", dynamic type: ", string.createBorrowingBuffer(__primitive("class name by id", __primitive("getcid", c5.borrow())):c_ptrConst(c_char)), ") is: ", c5);
+writeln("c6 (static type: ", c6.type:string, ", dynamic type: ", string.createBorrowingBuffer(__primitive("class name by id", __primitive("getcid", c6.borrow())):c_ptrConst(c_char)), ") is: ", c6);
+writeln("c7 (static type: ", c7.type:string, ", dynamic type: ", string.createBorrowingBuffer(__primitive("class name by id", __primitive("getcid", c7.borrow())):c_ptrConst(c_char)), ") is: ", c7);
+writeln("c8 (static type: ", c8.type:string, ", dynamic type: ", string.createBorrowingBuffer(__primitive("class name by id", __primitive("getcid", c8.borrow())):c_ptrConst(c_char)), ") is: ", c8);
+writeln("c9 (static type: ", c9.type:string, ", dynamic type: ", string.createBorrowingBuffer(__primitive("class name by id", __primitive("getcid", c9.borrow())):c_ptrConst(c_char)), ") is: ", c9);

@@ -21,6 +21,6 @@ export proc printBlock(x: [D] int) {
   writeln(output);
 }
 
-export proc addEltBlock(x: [D] int, idx: int, val: int) {
+export proc addEltBlock(ref x: [D] int, idx: int, val: int) {
   x[idx] = val;
 }

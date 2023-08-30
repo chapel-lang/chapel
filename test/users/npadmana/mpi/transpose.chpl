@@ -30,7 +30,7 @@ proc main() {
 
   // Just for fun, write this out....
   if debug then for loc in Locales do on loc {
-    writef("Locale %i owns %t\n",here.id, Space.localSubdomain());
+    writef("Locale %i owns %?\n",here.id, Space.localSubdomain());
   }
 
   // Define arrays

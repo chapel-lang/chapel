@@ -169,7 +169,7 @@ class Chameneos {
       if spinCount then
         spinCount -= 1;
       else
-        chpl_task_yield();
+        currentTask.yieldExecution();
     }
     meetingCompleted.write(false);
   }

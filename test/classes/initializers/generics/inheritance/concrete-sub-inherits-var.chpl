@@ -10,7 +10,7 @@ class Parent {
   }
 }
 
-class Child : Parent {
+class Child : Parent(?) {
   var y: int;
 
   proc init(yVal: int, xVal: int) {

@@ -10,7 +10,7 @@ proc print(x) {
   writeln(x);
 
   writef("%s\n", x);
-  writef("%t\n", x);
+  writef("%?\n", x);
   if dontskip == 0 then
     trybad("%i", x);
   if dontskip == 1 then

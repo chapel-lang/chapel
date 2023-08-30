@@ -14,9 +14,9 @@ const Dom2: domain(2) dmapped Cyclic(startIdx=Space2.low)=Space2;
 const Space3 = {1..n,1..n,1..n};
 const Dom3: domain(3) dmapped Cyclic(startIdx=Space3.low)=Space3;
 
-var Dist2 = new dmap(new Block({1..n,1..n}));
+var Dist2 = new Block({1..n,1..n});
 var Dom2B: domain(2,int) dmapped Dist2 = {1..n,1..n};
-var Dist3 = new dmap(new Block({1..n,1..n,1..n}));
+var Dist3 = new Block({1..n,1..n,1..n});
 var Dom3B: domain(3,int) dmapped Dist3 = {1..n,1..n,1..n};
 
 

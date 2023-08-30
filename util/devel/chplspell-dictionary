@@ -5528,26 +5528,6 @@ cfun
 cfuns
 istms
 
-FILEID: 83e8f86a-f561-11eb-bb15-35b7469d4b43
-acceptconn
-addrlen
-addrstrlen
-getfd
-getfl
-getsockaddr
-hostlen
-inaddr
-loopback
-maxhost
-maxserv
-oobinline
-rcvtimeo
-reuseaddr
-secinfo
-setfd
-setfl
-sndtimeo
-
 FILEID: b6ed298e-f561-11eb-bb15-35b7469d4b43
 curnext
 getcid
@@ -9664,4 +9644,3 @@ zypper
 øbenhavns
 ławski
 śniak
-

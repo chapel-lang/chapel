@@ -43,7 +43,8 @@ see https://www.gnu.org/licenses/.  */
 #define MOD_1_2_TO_MOD_1_4_THRESHOLD        10
 #define PREINV_MOD_1_TO_MOD_1_THRESHOLD      5
 #define USE_PREINV_DIVREM_1                  1  /* native */
-#define DIV_QR_1N_PI1_METHOD                 1  /* 11.44% faster than 2 */
+/* From sky.gmplib.org, 2023-07-20 */
+#define DIV_QR_1N_PI1_METHOD                 3  /* 5.86% faster than 1 */
 #define DIV_QR_1_NORM_THRESHOLD             13
 #define DIV_QR_1_UNNORM_THRESHOLD        MP_SIZE_T_MAX  /* never */
 #define DIV_QR_2_PI2_THRESHOLD           MP_SIZE_T_MAX  /* never */

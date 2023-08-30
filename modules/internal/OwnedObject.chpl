@@ -291,6 +291,7 @@ module OwnedObject {
       }
     }
 
+    @deprecated("calling `.borrow()` on an `owned` type is deprecated - please use a cast to `borrowed` instead")
     proc type borrow() type {
       if _to_nilable(chpl_t) == chpl_t {
         return chpl_t;
@@ -401,6 +402,12 @@ module OwnedObject {
       if tmp == nil then
         this = nil;
     }
+  }
+
+  @chpldoc.nodoc
+  proc _owned.deserialize(reader, ref deserializer) throws {
+    var tmp = this.chpl_p! : borrowed class;
+    reader.read(tmp);
   }
 
   // cast to owned?, no class downcast

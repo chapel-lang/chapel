@@ -1,0 +1,7 @@
+--test=1   # castAwayStridableDomain.1.good
+--test=2   # castAwayStridableDomain.2.good
+--test=3   # castAwayStridableDomain.3.good
+--test=4   # castAwayStridableDomain.4.good
+--test=5   # castAwayStridableDomain.5.good
+--test=6   # castAwayStridableDomain.6.good
+           # castAwayStridableDomain.good

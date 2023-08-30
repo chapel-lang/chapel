@@ -1,0 +1,3 @@
+# Test/studies/amr ignores.
+/**/_output
+/**/*.tmp.save

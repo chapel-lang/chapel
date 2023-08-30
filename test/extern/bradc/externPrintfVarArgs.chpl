@@ -1,4 +1,5 @@
-extern proc printf(fmt: c_string, vals...?numvals): int;
+use CTypes;
+extern proc printf(fmt: c_ptrConst(c_char), vals...?numvals): int;
 
 var x = 12.34;
 

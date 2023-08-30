@@ -1763,58 +1763,12 @@ instantiated class type itself.
 
 .. _Getter_Methods:
 
-Variable Getter Methods
-~~~~~~~~~~~~~~~~~~~~~~~
+Field Getter Methods
+~~~~~~~~~~~~~~~~~~~~
 
-All field accesses are performed via getters. A getter is a method
-without parentheses with the same name as the field. It is defined in
-the field’s class and has a ``ref`` return intent
-(:ref:`Ref_Return_Intent`). If the program does not define it,
-the default getter, which simply returns the field, is provided.
-
-   *Example (getterSetter.chpl)*.
-
-   In the code 
-
-   .. code-block:: chapel
-
-      class C {
-        var setCount: int;
-        var x: int;
-        proc x ref {
-          setCount += 1;
-          return x;
-        }
-        proc x {
-          return x;
-        }
-
-      }
-
-   
-
-   .. BLOCK-test-chapelpost
-
-      var c = new C();
-      c.x = 1;
-      writeln(c.x);
-      c.x = 2;
-      writeln(c.x);
-      c.x = 3;
-      writeln(c.x);
-      writeln(c.setCount);
-
-
-   .. BLOCK-test-chapeloutput
-
-      1
-      2
-      3
-      3
-
-   an explicit variable getter method is defined for field ``x``. It
-   returns the field ``x`` and increments another field that records the
-   number of times x was assigned a value.
+The compiler implements field access as calls to a compiler-generated
+methods without parentheses that have the same name as the field. See
+also :ref:`Methods_without_Parentheses`.
 
 .. _Class_Method_Calls:
 

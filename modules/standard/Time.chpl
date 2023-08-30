@@ -142,7 +142,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     if CHPL_TARGET_PLATFORM == "darwin" then
       return c_ptr(c_char); // char *
     else
-      return c_string; // const char *
+      return c_ptrConst(c_char); // const char *
   }
 
   /* Get the `time` since Unix Epoch in seconds
@@ -485,7 +485,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* Return a formatted `string` matching the `format` argument and the date */
   @unstable("'date.strftime' is unstable")
   proc date.strftime(fmt: string) {
-    extern proc strftime(s: c_ptr(void), size: c_size_t, format: c_string, ref timeStruct: tm);
+    extern proc strftime(s: c_ptr(void), size: c_size_t, format: c_ptrConst(c_char), ref timeStruct: tm);
     const bufLen: c_size_t = 100;
     var buf: [1..bufLen] c_char;
     var timeStruct: tm;
@@ -506,7 +506,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
     var str: string;
     try! {
-      str = string.createCopyingBuffer(c_ptrTo(buf):c_string);
+      str = string.createCopyingBuffer(c_ptrTo(buf));
     }
     return str;
   }
@@ -526,7 +526,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   // Exists to support some common functionality for `dateTime.readThis`
   @chpldoc.nodoc
-  proc date._readCore(f) throws {
+  proc ref date._readCore(f) throws {
     const dash = "-";
 
     chpl_year = f.read(int);
@@ -537,10 +537,13 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* Reads this `date` from ISO 8601 format: YYYY-MM-DD */
-  proc date.readThis(f) throws {
-    const binary = f.binary(),
+  proc ref date.readThis(f) throws {
+    import JSON.JsonDeserializer;
+
+    const binary = f._binary(),
           arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
-          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+          isjson = (arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary) ||
+            isSubtype(f.deserializerType, JsonDeserializer);
 
     if isjson then
       f._readLiteral('"');
@@ -794,7 +797,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* Return a `string` matching the `format` argument for this `time` */
   @unstable("'time.strftime' is unstable")
   proc time.strftime(fmt: string) {
-    extern proc strftime(s: c_ptr(void), size: c_size_t, format: c_string, ref timeStruct: tm);
+    extern proc strftime(s: c_ptr(void), size: c_size_t, format: c_ptrConst(c_char), ref timeStruct: tm);
     const bufLen: c_size_t = 100;
     var buf: [1..bufLen] c_char;
     var timeStruct: tm;
@@ -822,7 +825,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
     var str: string;
     try! {
-      str = string.createCopyingBuffer(c_ptrTo(buf):c_string);
+      str = string.createCopyingBuffer(c_ptrTo(buf));
     }
 
     return str;
@@ -835,7 +838,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   // Exists to support some common functionality for `dateTime.readThis`
   @chpldoc.nodoc
-  proc time._readCore(f) throws {
+  proc ref time._readCore(f) throws {
     const colon = ":";
 
     chpl_hour = f.read(int);
@@ -848,10 +851,13 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* Reads this `time` from ISO format: hh:mm:ss.sss */
-  proc time.readThis(f) throws {
-    const binary = f.binary(),
+  proc ref time.readThis(f) throws {
+    import JSON.JsonDeserializer;
+
+    const binary = f._binary(),
           arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
-          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary  ||
+            isSubtype(f.deserializerType, JsonDeserializer);
 
     if isjson then
       f._readLiteral('"');
@@ -1401,7 +1407,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   */
   @unstable("'dateTime.strptime' is unstable")
   proc type dateTime.strptime(date_string: string, format: string) {
-    extern proc strptime(buf: c_string, format: c_string, ref ts: tm);
+    extern proc strptime(buf: c_ptrConst(c_char), format: c_ptrConst(c_char), ref ts: tm);
     var timeStruct: tm;
     strptime(date_string.c_str(), format.c_str(), timeStruct);
     return new dateTime(timeStruct.tm_year + 1900,
@@ -1415,7 +1421,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* Create a `string` from a `dateTime` matching the `format` string */
   @unstable("'dateTime.strftime' is unstable")
   proc dateTime.strftime(fmt: string) {
-    extern proc strftime(s: c_ptr(void), size: c_size_t, format: c_string, ref timeStruct: tm);
+    extern proc strftime(s: c_ptr(void), size: c_size_t, format: c_ptrConst(c_char), ref timeStruct: tm);
     const bufLen: c_size_t = 100;
     var buf: [1..bufLen] c_char;
     var timeStruct: tm;
@@ -1477,7 +1483,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
     var str: string;
     try! {
-      str = string.createCopyingBuffer(c_ptrTo(buf):c_string);
+      str = string.createCopyingBuffer(c_ptrTo(buf));
     }
 
     return str;
@@ -1497,10 +1503,13 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* Reads this `dateTime` from ISO format: YYYY-MM-DDThh:mm:ss.sss */
-  proc dateTime.readThis(f) throws {
-    const binary = f.binary(),
+  proc ref dateTime.readThis(f) throws {
+    import JSON.JsonDeserializer;
+
+    const binary = f._binary(),
           arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
-          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary ||
+            isSubtype(f.deserializerType, JsonDeserializer);
 
     if isjson then
       f._readLiteral('"');
@@ -2086,7 +2095,7 @@ record stopwatch {
      Clears the elapsed time. If the timer is running then it is restarted
      otherwise it remains in the stopped state.
   */
-  proc clear() : void {
+  proc ref clear() : void {
     accumulated = 0.0;
 
     if running {
@@ -2095,7 +2104,7 @@ record stopwatch {
   }
 
   /* Starts the timer. A warning is emitted if the timer is already running. */
-  proc start() : void {
+  proc ref start() : void {
     if !running {
       running = true;
       time    = chpl_now_timevalue();
@@ -2105,7 +2114,7 @@ record stopwatch {
   }
 
   /* Stops the timer. A warning is emitted if the timer is not running. */
-  proc stop() : void {
+  proc ref stop() : void {
     if running {
       var time2: _timevalue = chpl_now_timevalue();
 
@@ -2117,7 +2126,7 @@ record stopwatch {
   }
 
   /* Clear the elapsed time and ensure the stopwatch is stopped */
-  proc reset() {
+  proc ref reset() {
     if running {
       stop();
     }
@@ -2125,7 +2134,7 @@ record stopwatch {
   }
 
   /* Clear the elapsed time and ensure the stopwatch is running */
-  proc restart() {
+  proc ref restart() {
     clear();
     if !running {
       start();
@@ -2201,7 +2210,7 @@ record Timer {
   }
 
   /* Starts the timer. A warning is emitted if the timer is already running. */
-  proc start() : void {
+  proc ref start() : void {
     if !running {
       running = true;
       time    = chpl_now_timevalue();
@@ -2211,7 +2220,7 @@ record Timer {
   }
 
   /* Stops the timer. A warning is emitted if the timer is not running. */
-  proc stop() : void {
+  proc ref stop() : void {
     if running {
       var time2: _timevalue = chpl_now_timevalue();
 

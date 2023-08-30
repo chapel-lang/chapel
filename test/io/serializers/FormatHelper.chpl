@@ -2,7 +2,6 @@
 
 module FormatHelper {
   use JSON;
-  use BinaryIO;
   use IO;
   use ChplFormat;
 

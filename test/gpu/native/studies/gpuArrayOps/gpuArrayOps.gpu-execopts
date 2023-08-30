@@ -1,0 +1,2 @@
+--n=100_000_000 --verboseGpu=false --touchOnGpu=false --reportTime=true # gpuArrayOps-d2h-from-h
+--n=100_000_000 --verboseGpu=false --touchOnGpu=true  --reportTime=true # gpuArrayOps-d2h-from-d

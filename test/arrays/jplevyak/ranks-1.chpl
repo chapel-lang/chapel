@@ -1,4 +1,4 @@
-proc zero(A : [?D] real) {
+proc zero(ref A : [?D] real) {
   forall i in D {
     A(i) = 0;
   }

@@ -351,6 +351,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_IS_NILABLE_CLASS_TYPE:
     case PRIM_IS_NON_NILABLE_CLASS_TYPE:
     case PRIM_IS_RECORD_TYPE:
+    case PRIM_IS_FCF_TYPE:
     case PRIM_IS_UNION_TYPE:
     case PRIM_IS_EXTERN_UNION_TYPE:
     case PRIM_IS_ATOMIC_TYPE:
@@ -365,6 +366,8 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_IS_CONST_ASSIGNABLE:
     case PRIM_HAS_DEFAULT_VALUE:
     case PRIM_NEEDS_AUTO_DESTROY:
+      CHPL_ASSERT(false && "not implemented yet");
+      break;
 
     case PRIM_CALL_RESOLVES:
     case PRIM_CALL_AND_FN_RESOLVES:
@@ -381,6 +384,7 @@ CallResolutionResult resolvePrimCall(Context* context,
       break;
 
     case PRIM_RESOLVES:
+    case PRIM_IMPLEMENTS_INTERFACE:
       CHPL_ASSERT(false && "not implemented yet");
       break;
 

@@ -180,7 +180,7 @@ module SSCA2_kernels
   // ==================================================================
 
   proc approximate_betweenness_centrality ( G, starting_vertices,
-                                            Between_Cent : [] real,
+                                            ref Between_Cent : [] real,
                                             out Sum_Min_Dist : real )
 
     // -----------------------------------------------------------------------
@@ -273,7 +273,7 @@ module SSCA2_kernels
 
       if PRINT_TIMING_STATISTICS then sw.start ();
 
-      forall s in starting_vertices do on vertex_domain.dist.idxToLocale(s) {
+      forall s in starting_vertices do on vertex_domain.distribution.idxToLocale(s) {
 
         const shere = here.id;
 
@@ -284,7 +284,7 @@ module SSCA2_kernels
         const tpv = TPVM.getTPV(tid);
         ref BCaux = tpv.BCaux;
         pragma "dont disable remote value forwarding"
-        inline proc f1(BCaux, v) {
+        inline proc f1(ref BCaux, v) {
           BCaux[v].path_count$.write(0.0);
         }
         forall v in vertex_domain do {
@@ -319,17 +319,17 @@ module SSCA2_kernels
         //
         ref Active_Level = tpv.Active_Level;
         pragma "dont disable remote value forwarding"
-        inline proc f2(BCaux, s) {
+        inline proc f2(ref BCaux, s) {
           BCaux[s].path_count$.write(1.0);
         }
 
         var bar = new barrier(numLocales);
 
-        coforall loc in Locales with (ref remaining, ref bar) do on loc {
+        coforall loc in Locales with (ref remaining, ref bar, ref Between_Cent$) do on loc {
           const AL = Active_Level[here.id]!;
           AL.Members.clear();
           AL.next!.Members.clear();
-          if vertex_domain.dist.idxToLocale(s) == here {
+          if vertex_domain.distribution.idxToLocale(s) == here {
             // Establish the initial level sets for the breadth-first
             // traversal from s
             AL.Members.add(s);
@@ -355,7 +355,7 @@ module SSCA2_kernels
             // coforall loop.
             const current_distance_c = current_distance;
             pragma "dont disable remote value forwarding"
-            inline proc f3(BCaux, v, u, current_distance_c, Active_Level, ref dist_temp) {
+            inline proc f3(ref BCaux, v, u, current_distance_c, Active_Level, ref dist_temp) {
 
                   // --------------------------------------------
                   // add any unmarked neighbors to the next level
@@ -387,7 +387,7 @@ module SSCA2_kernels
             const AL = Active_Level[here.id]!;
 
             forall u in AL.Members do {
-              forall v in G.FilteredNeighbors(u) do on vertex_domain.dist.idxToLocale(v) {
+              forall v in G.FilteredNeighbors(u) do on vertex_domain.distribution.idxToLocale(v) {
                       var dist_temp: real;
                       f3(BCaux, v, u, current_distance_c, Active_Level, dist_temp);
                       if VALIDATE_BC && dist_temp != 0 then
@@ -442,7 +442,7 @@ module SSCA2_kernels
                         "  is ", graph_diameter );
 
           pragma "dont disable remote value forwarding"
-          inline proc f4(BCaux, Between_Cent$, u) {
+          inline proc f4(ref BCaux, ref Between_Cent$, u) {
             BCaux[u].depend = + reduce [v in BCaux[u].children_list.Row_Children[1..BCaux[u].children_list.child_count.read()]]
               ( BCaux[u].path_count$.read() /
                 BCaux[v].path_count$.read() )      *
@@ -456,7 +456,7 @@ module SSCA2_kernels
           for current_distance in 2 .. graph_diameter by -1 {
             curr_Level = curr_Level.previous!;
 
-            for u in curr_Level.Members do on vertex_domain.dist.idxToLocale(u) {
+            for u in curr_Level.Members do on vertex_domain.distribution.idxToLocale(u) {
                 f4(BCaux, Between_Cent$, u);
             }
 
@@ -499,7 +499,7 @@ module SSCA2_kernels
           const tpv = tpvElem!;
           var al = tpv.Active_Level;
           coforall loc in Locales do on loc {
-            var level: unmanaged Level_Set? = al[here.id];
+            var level: unmanaged Level_Set(?)? = al[here.id];
             var prev = level!.previous;
             while prev != nil {
               var p2 = prev!.previous;
@@ -561,7 +561,7 @@ module SSCA2_kernels
     }
 
     // This function should only be called using unique vertices
-    proc add_child ( new_child: vertex ) {
+    proc ref add_child ( new_child: vertex ) {
       var c = child_count.fetchAdd(1)+1;
       Row_Children[c] = new_child;
     }
@@ -615,7 +615,7 @@ module SSCA2_kernels
     proc gettid() {
       const tid = this.currTPV.fetchAdd(1)%numTPVs;
       on this.TPV[tid] do
-        while this.TPV[tid]!.used.testAndSet() do chpl_task_yield();
+        while this.TPV[tid]!.used.testAndSet() do currentTask.yieldExecution();
       return tid;
     }
     proc getTPV(tid) {

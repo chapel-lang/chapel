@@ -1,1 +1,2 @@
-[Design] What should be the result?
+arrArg-fromFunction.chpl:17: error: non-lvalue actual is passed to 'ref' formal 'X' of writeArrRef()
+arrArg-fromFunction.chpl:19: error: non-lvalue actual is passed to 'ref' formal 'X' of writeArrRef()

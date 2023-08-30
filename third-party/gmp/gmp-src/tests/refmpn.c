@@ -2004,10 +2004,10 @@ refmpn_gcd_11 (mp_limb_t x, mp_limb_t y)
 mp_double_limb_t
 refmpn_gcd_22 (mp_limb_t x1, mp_limb_t x0, mp_limb_t y1, mp_limb_t y0)
 {
-  mp_double_limb_t g;
-  mp_limb_t cy;
   ASSERT ((x0 & 1) != 0);
   ASSERT ((y0 & 1) != 0);
+  mp_double_limb_t g;
+  mp_limb_t cy;
 
   do
     {

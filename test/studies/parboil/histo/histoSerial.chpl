@@ -22,7 +22,7 @@ proc main(args: [] string) {
   totalTime.start();
   inputTime.start();
   var f = open(inputFilename, ioMode.r);
-  var r = f.reader(kind=ionative);
+  var r = f.reader(deserializer=new BinaryDeserializer());
 
   r.read(imgWidth);
   r.read(imgHeight);
@@ -163,7 +163,7 @@ proc createBMP(bitmap:[] RGB, height: uint(32), width: uint(32), filename: strin
   image.dibHeader.nimpcolors = 0;
 
   var f = open(filename, ioMode.cw);
-  var w = f.writer(kind=ionative);
+  var w = f.writer(serializer=new BinarySerializer());
 
   w.write(image.magic(0));
   w.write(image.magic(1));

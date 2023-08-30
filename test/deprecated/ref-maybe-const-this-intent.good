@@ -1,0 +1,2 @@
+ref-maybe-const-this-intent.chpl:4: warning: inferring a default intent to be 'ref' is deprecated - please use an explicit 'ref' this-intent for the method 'foo'
+(10, 12)

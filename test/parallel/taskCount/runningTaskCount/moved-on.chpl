@@ -18,7 +18,7 @@ proc main() {
       mytask();
 
       // wait for 2nd task to migrate (if it'll actually migrate)
-      if numLocales > 1 then while (here.runningTasks() != 2) { chpl_task_yield(); }
+      if numLocales > 1 then while (here.runningTasks() != 2) { currentTask.yieldExecution(); }
       writeln("\n", here.runningTasks());
       on Locales[1%numLocales] do setDoneSpinning();
       bar.barrier();

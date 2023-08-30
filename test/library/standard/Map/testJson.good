@@ -3,7 +3,10 @@ Writing map:
 {key2: val2, key1: val1}
 
 Wrote JSON: 
-{"key2": "val2", "key1": "val1"}
+{
+  "key2": "val2", 
+  "key1": "val1"
+}
 
 Read map(string,string,false): 
 {key2: val2, key1: val1}
@@ -14,7 +17,11 @@ Writing map:
 {red: (x = 5, y = 42.0), blue: (x = 9, y = 9.9), green: (x = 3, y = 3.3)}
 
 Wrote JSON: 
-{"red": {"x":5, "y":4.200000e+01}, "blue": {"x":9, "y":9.900000e+00}, "green": {"x":3, "y":3.300000e+00}}
+{
+  "red": {"x":5, "y":4.200000e+01}, 
+  "blue": {"x":9, "y":9.900000e+00}, 
+  "green": {"x":3, "y":3.300000e+00}
+}
 
 Read map(string,R,false): 
 {red: (x = 5, y = 42.0), blue: (x = 9, y = 9.9), green: (x = 3, y = 3.3)}
@@ -25,7 +32,10 @@ Writing map:
 {banana: (z = yellow, r = (x = 0, y = 0.68)), apple: (z = red, r = (x = 1, y = 0.31))}
 
 Wrote JSON: 
-{"banana": {"z":"yellow", "r":{"x":0, "y":6.800000e-01}}, "apple": {"z":"red", "r":{"x":1, "y":3.100000e-01}}}
+{
+  "banana": {"z":"yellow", "r":{"x":0, "y":6.800000e-01}}, 
+  "apple": {"z":"red", "r":{"x":1, "y":3.100000e-01}}
+}
 
 Read map(string,Z,false): 
 {banana: (z = yellow, r = (x = 0, y = 0.68)), apple: (z = red, r = (x = 1, y = 0.31))}
@@ -36,7 +46,16 @@ Writing map:
 {y: {S: 33, R: 99}, x: {A: 5, B: 42}}
 
 Wrote JSON: 
-{"y": {"S": 33, "R": 99}, "x": {"A": 5, "B": 42}}
+{
+  "y": {
+  "S": 33, 
+  "R": 99
+}, 
+  "x": {
+  "A": 5, 
+  "B": 42
+}
+}
 
 Read map(string,map(string,int(64),false),false): 
 {y: {S: 33, R: 99}, x: {A: 5, B: 42}}
@@ -47,7 +66,10 @@ Writing map:
 {y: [4, 5, 6], x: [1, 2, 3]}
 
 Wrote JSON: 
-{"y": [4, 5, 6], "x": [1, 2, 3]}
+{
+  "y": [4, 5, 6], 
+  "x": [1, 2, 3]
+}
 
 Read map(string,list(int(64),false),false): 
 {y: [4, 5, 6], x: [1, 2, 3]}

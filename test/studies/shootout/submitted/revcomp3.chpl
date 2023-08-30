@@ -52,7 +52,7 @@ proc main(args: [] string) {
 }
 
 
-proc revcomp(buf: [?inds]) {
+proc revcomp(ref buf: [?inds]) {
   param cols = 61;  // the number of characters per full row (including '\n')
   var lo = inds.low,
       hi = inds.high;

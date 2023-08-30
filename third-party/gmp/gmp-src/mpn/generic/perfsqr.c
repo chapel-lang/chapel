@@ -194,7 +194,7 @@ mpn_perfect_square_p (mp_srcptr up, mp_size_t usize)
 #if 0
   /* Check that we have even multiplicity of 2, and then check that the rest is
      a possible perfect square.  Leave disabled until we can determine this
-     really is an improvement.  It it is, it could completely replace the
+     really is an improvement.  If it is, it could completely replace the
      simple probe above, since this should throw out more non-squares, but at
      the expense of somewhat more cycles.  */
   {
@@ -207,8 +207,7 @@ mpn_perfect_square_p (mp_srcptr up, mp_size_t usize)
     if ((cnt & 1) != 0)
       return 0;			/* return of not even multiplicity of 2 */
     lo >>= cnt;			/* shift down to align lowest non-zero bit */
-    lo >>= 1;			/* shift away lowest non-zero bit */
-    if ((lo & 3) != 0)
+    if ((lo & 6) != 0)
       return 0;
   }
 #endif

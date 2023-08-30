@@ -53,6 +53,21 @@ useConfigSetting(Context* context, std::string name, ID id) {
   QUERY_STORE_INPUT_RESULT(nameToConfigSettingId, context, id, name);
 }
 
+// Generate compile-time warnings for deprecated/unstable config params set
+// in command line
+static void
+generateConfigWarning(std::string varName, std::string kind,
+                      UniqueString message) {
+  // TODO: Need proper message handling here
+  std::string msg = "'" + varName + "' was set via a compiler flag";
+  if (message.isEmpty()) {
+    std::cerr << "warning: " + varName + " is " + kind << std::endl;
+  } else {
+    std::cerr << "warning: " + message.str() << std::endl;
+  }
+  std::cerr << "note: " + msg << std::endl;
+}
+
 bool Builder::checkAllConfigVarsAssigned(Context* context) {
    // check that all config vars that were set from the command line were assigned
    bool anyBadConfigs = false;
@@ -450,25 +465,16 @@ Builder::lookupConfigSettingsForVar(Variable* var, pathVecT& pathVec,
   }
   // for config vars, check if they were set from the command line
   for (auto configPair: configs) {
-    if ((var->name().str() == configPair.first &&
-         var->visibility() != Decl::PRIVATE) ||
-        configPair.first == possibleModule + var->name().str()) {
+    std::string varName = var->name().str();
+    if ((varName == configPair.first && var->visibility() != Decl::PRIVATE) ||
+        configPair.first == possibleModule + varName) {
       // found a config that was set via cmd line
-      // handle deprecations
+      // handle deprecations/unstability
       if (auto attribs = var->attributeGroup()) {
-        if (attribs->isDeprecated()) {
-          // TODO: Need proper message handling here
-          std::string msg = "'" + var->name().str() +
-                            "' was set via a compiler flag";
-          if (attribs->deprecationMessage().isEmpty()) {
-            std::cerr << "warning: " + var->name().str() + " is deprecated"
-                      << std::endl;
-          } else {
-            std::cerr << "warning: " + attribs->deprecationMessage().str()
-                      << std::endl;
-          }
-          std::cerr << "note: " + msg << std::endl;
-        }
+        if (attribs->isDeprecated())
+          generateConfigWarning(varName, "deprecated", attribs->deprecationMessage());
+        if (attribs->isUnstable())
+          generateConfigWarning(varName, "unstable", attribs->unstableMessage());
       }
       if (!configMatched.first.empty() &&
           configMatched.first != configPair.first) {

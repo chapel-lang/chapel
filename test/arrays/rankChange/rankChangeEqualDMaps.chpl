@@ -1,7 +1,7 @@
 use BlockDist;
 
 proc test(a, b) {
-  writeln(a.domain.dist == b.domain.dist);
+  writeln(a.domain.distribution == b.domain.distribution);
 }
 
 var space = {0..9, 0..9};

@@ -4,7 +4,7 @@ config const tpl = 2;
 
 proc test1d() {
   const r = 3.0;
-  const Dist = new dmap(new Cyclic(startIdx=min(int(64)), dataParTasksPerLocale=tpl));
+  const Dist = new Cyclic(startIdx=min(int(64)), dataParTasksPerLocale=tpl);
 
   const Dom: domain(1, int(64)) dmapped Dist = {1..10:int(64)};
   var A, B: [Dom] real;
@@ -22,7 +22,7 @@ proc test1d() {
 }
 
 proc test2d() {
-  var Dist = new dmap(new Cyclic(startIdx=(min(int), min(int)), dataParTasksPerLocale=tpl));
+  var Dist = new Cyclic(startIdx=(min(int), min(int)), dataParTasksPerLocale=tpl);
   var Dom: domain(2, int) dmapped Dist = {1..5, 1..5};
   var A: [Dom] real;
 

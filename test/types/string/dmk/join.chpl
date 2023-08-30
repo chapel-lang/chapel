@@ -25,12 +25,14 @@ proc main() {
 
     var s1c = s1.c_str();
     var s2c = s2.c_str();  // edit: Oops, was s1.c_str();
-    if s1c != s2c {
+    const s1cs = string.createCopyingBuffer(s1c);
+    const s2cs = string.createCopyingBuffer(s2c);
+    if s1cs != s2cs {
       writeln("Mismatched!");
       writeln("  s1  = ", s1);
-      writeln("  s1c = ", string.createCopyingBuffer(s1c));
+      writeln("  s1c = ", s1cs);
       writeln("  s2  = ", s2);
-      writeln("  s2c = ", string.createCopyingBuffer(s2c));
+      writeln("  s2c = ", s2cs);
     }
   }
 }

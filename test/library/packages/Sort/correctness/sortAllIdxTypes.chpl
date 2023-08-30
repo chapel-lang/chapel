@@ -1,6 +1,6 @@
 use Sort, Sort.ShellSort;
 
-proc test(X) {
+proc test(ref X) {
   writeln("[", X.domain, " (", X.domain.idxType:string, ")] int");
   var Y = X;
   writeln("unsorted: ", X);

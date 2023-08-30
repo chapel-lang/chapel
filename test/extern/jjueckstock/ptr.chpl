@@ -28,7 +28,7 @@ module OuterModule {
     static inline int* get_int_ref(void) {
       return &foo;
     }
-    
+
     static inline void struct_ptr_test(struct st* s) {
       printf("struct s contains %s and %d\n", s->c, s->foo);
     }

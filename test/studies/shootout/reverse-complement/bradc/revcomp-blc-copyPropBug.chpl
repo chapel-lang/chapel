@@ -8,8 +8,8 @@
 
 proc main(args: [] string) {
   use IO;
-  const stdinBin = (new file(0)).reader(iokind.native, locking=false),
-        stdoutBin = (new file(1)).writer(iokind.native, locking=false);
+  const stdinBin = (new file(0)).reader(deserializer=new BinaryDeserializer(), locking=false),
+        stdoutBin = (new file(1)).writer(serializer=new BinarySerializer(), locking=false);
 
   // read in the data using an incrementally growing buffer
   var bufLen = 8 * 1024,
@@ -46,7 +46,7 @@ proc main(args: [] string) {
 }
 
 
-proc revcomp(buf, in lo, hi) {
+proc revcomp(ref buf, in lo, hi) {
   param eol = "\n".toByte(),  // end-of-line, as an integer
         cols = 61,            // # of characters per full row (including '\n')
         // A 'bytes' value that stores the complement of each base at its index

@@ -8,20 +8,20 @@ use BlockDist, PrivateDist;
 use Time;
 
 record taskPrivateData {
-  var tid$: sync chpl_taskID_t = chpl_nullTaskID;
+  var tid: sync chpl_taskID_t = chpl_nullTaskID;
   var x: int;
   var y: [0..#numLocales] real;
 
   proc init() {}
   proc init=(other: taskPrivateData) {
-    this.tid$ =other.tid$.readXX();
+    this.tid =other.tid.readXX();
     this.x = other.x;
     this.y = other.y;
   }
 
   // need our version of writeThis so we can print the sync field
   proc writeThis(f) throws {
-    f.write("(", tid$.readXX(), ": ", x, "  ", y, ")");
+    f.write("(", tid.readXX(), ": ", x, "  ", y, ")");
   }
 };
 
@@ -43,13 +43,13 @@ class localePrivateData {
     var mytid = chpl_task_getId();
     var slot = (mytid:uint % (numTasks:uint)):int;
     // Would be nice to have CAS
-    var tid: chpl_taskID_t = temps[slot].tid$.readFE(); // lock
+    var tid: chpl_taskID_t = temps[slot].tid.readFE(); // lock
     while ((tid != chpl_nullTaskID) && (tid != mytid)) {
-      temps[slot].tid$.writeEF(tid);                   // unlock
+      temps[slot].tid.writeEF(tid);                   // unlock
       slot = (slot+1)%numTasks;
-      tid = temps[slot].tid$.readFE();                 // lock
+      tid = temps[slot].tid.readFE();                 // lock
     }
-    temps[slot].tid$.writeEF(mytid);                   // unlock
+    temps[slot].tid.writeEF(mytid);                   // unlock
     return slot;
   }
 }

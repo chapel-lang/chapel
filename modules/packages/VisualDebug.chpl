@@ -31,6 +31,7 @@
 module VisualDebug
 {
 
+  private use CTypes;
   use String;
 
   /*
@@ -53,7 +54,7 @@ module VisualDebug
   // Data Generation for the Visual Debug tool  (offline)
   //
 
-  private extern proc chpl_vdebug_start (rootname: c_string, time:real);
+  private extern proc chpl_vdebug_start (rootname: c_ptrConst(c_char), time:real);
 
   private extern proc chpl_vdebug_stop ();
 
@@ -63,7 +64,7 @@ module VisualDebug
 
   private extern proc chpl_vdebug_mark ();
 
-  private extern proc chpl_vdebug_tagname (tagname: c_string, tagno: int);
+  private extern proc chpl_vdebug_tagname (tagname: c_ptrConst(c_char), tagno: int);
 
   private var tagno: atomic int;
 

@@ -138,7 +138,7 @@ module ArrayViewRankChange {
   // for rectangular domains (because they're the only ones with
   // rank>1), so this is a subclass of BaseRectangularDom.
   //
- class ArrayViewRankChangeDom: BaseRectangularDom {
+ class ArrayViewRankChangeDom: BaseRectangularDom(?) {
     // the lower-dimensional index set that we represent upwards
     var upDomInst: unmanaged DefaultRectangularDom(rank, idxType, strides)?;
     forwarding upDom except these, chpl__serialize, chpl__deserialize;
@@ -468,7 +468,7 @@ module ArrayViewRankChange {
   // interface.
   //
   pragma "aliasing array"
-  class ArrayViewRankChangeArr: AbsBaseArr {
+  class ArrayViewRankChangeArr: AbsBaseArr(?) {
     // the representation of the slicing domain.  For a rank change
     // like A[lo..hi, 3] this is the lower-dimensional domain {lo..hi}.
     // It is represented as an ArrayViewRankChangeDom.

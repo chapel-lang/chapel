@@ -1,3 +1,7 @@
+day18-bug.chpl:26: warning: please use '?' when declaring a variable with generic type
+day18-bug.chpl:26: note: for example with 'Node(?)'
+day18-bug.chpl:26: warning: please use '?' when declaring a variable with generic type
+day18-bug.chpl:26: note: for example with 'Node(?)'
 day18-bug.chpl:23: In function 'lineToTree':
 day18-bug.chpl:28: error: cannot default-initialize a variable with generic type
 day18-bug.chpl:28: note: '<temporary>' has generic type 'Node'

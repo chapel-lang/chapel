@@ -97,8 +97,8 @@ config const useOn = (CHPL_COMM != "ugni") && (CHPL_COMM != "none");
 // distribution that is computed by blocking the indices 0..N_U-1
 // across the locales.
 //
-const TableDist = new dmap(new Block(boundingBox={0..m-1})),
-      UpdateDist = new dmap(new Block(boundingBox={0..N_U-1}));
+const TableDist = new Block(boundingBox={0..m-1}),
+      UpdateDist = new Block(boundingBox={0..N_U-1});
 
 //
 // TableSpace describes the index set for the table.  It is a 1D
@@ -178,7 +178,7 @@ proc printConfiguration() {
 //
 // Verify that the computation is correct
 //
-proc verifyResults(T) {
+proc verifyResults(ref T) {
   if (!verify) then return true;
   //
   // We protect against errors in verification by using locks to
@@ -257,10 +257,10 @@ record vlock {
   proc init=(other: vlock) {
     this.l = other.l.read();
   }
-  proc lock() {
-    on this do while l.testAndSet() != false do chpl_task_yield();
+  proc ref lock() {
+    on this do while l.testAndSet() != false do currentTask.yieldExecution();
   }
-  proc unlock() {
+  proc ref unlock() {
     l.write(false);
   }
 }

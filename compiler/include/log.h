@@ -37,7 +37,6 @@ void logMakePassAvailable(const char* name, char shortname);
 // arg might be a pass name or a 1-character short name (e.g. 'R')
 void logSelectPass(const char* arg);
 
-
 void  setupLogfiles();
 void  teardownLogfiles();
 
@@ -46,7 +45,7 @@ void  logWriteLog(const char* passName, int passNum, char logTag);
 bool  deletedIdON();
 
 extern char  log_dir   [FILENAME_MAX + 1];
-extern char  log_module[FILENAME_MAX + 1];
+extern std::set<std::string> log_modules;
 
 extern bool  fLogDir; // was --log-dir passed?
 

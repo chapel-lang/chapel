@@ -503,7 +503,7 @@ proc Vector(Dom: domain(1), type eltType=real) {
 
 /* Return a vector (1D array) with domain and values of ``A`` */
 proc Vector(A: [?Dom] ?Atype, type eltType=Atype ) {
-  var V: [Dom] eltType = A: eltType;
+  var V: [Dom] eltType = if eltType == Atype then A else A: eltType;
   return V;
 }
 
@@ -577,7 +577,7 @@ proc Matrix(Dom: domain, type eltType=real) where Dom.rank == 2 {
 proc Matrix(A: [?Dom] ?Atype, type eltType=Atype)
   where isDenseMatrix(A)
 {
-  var M: [Dom] eltType = A: eltType;
+  var M: [Dom] eltType = if eltType == Atype then A else A: eltType;
   return M;
 }
 
@@ -961,10 +961,10 @@ proc isDistributed(a) param {
   else if a.domain.isSparse() {
     // TODO: is there a better way to check for distributed sparse domains?
     use BlockDist;
-    return isSubtype(a.domain.dist.type, Block);
+    return isSubtype(a.domain.distribution.type, Block);
   }
   else {
-    return !isSubtype(a.domain.dist.type, DefaultDist);
+    return !isSubtype(a.domain.distribution.type, DefaultDist);
   }
 }
 
@@ -985,15 +985,15 @@ proc inner(const ref A: [?Adom] ?eltType, const ref B: [?Bdom]) {
 
     var localResults: [Locales.domain] eltType = 0;
 
-    coforall l in Locales do on l {
+    coforall l in Locales with (ref localResults) do on l {
       const maxThreads = if dataParTasksPerLocale==0
                          then here.maxTaskPar else dataParTasksPerLocale;
       const localDomain = A.localSubdomain();
-      const iterPerThread = divceil(localDomain.size, maxThreads);
+      const iterPerThread = divCeil(localDomain.size, maxThreads);
       var localResult: eltType = 0;
       var threadResults: [0..#maxThreads] eltType = 0;
 
-      coforall tid in 0..#maxThreads {
+      coforall tid in 0..#maxThreads with (ref threadResults) {
         const startid = localDomain.lowBound + tid * iterPerThread;
         const temp_endid = startid + iterPerThread - 1;
         const endid = if localDomain.highBound < temp_endid
@@ -1098,8 +1098,8 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
 
 @chpldoc.nodoc
 /* Helper for Generic matrix-matrix multiplication */
-proc _matmatMultHelper(ref AMat: [?Adom] ?eltType,
-                       ref BMat : [?Bdom] eltType,
+proc _matmatMultHelper(AMat: [?Adom] ?eltType,
+                       BMat : [?Bdom] eltType,
                        ref CMat : [] eltType)
 {
   // TODO - Add logic to calculate blockSize
@@ -1496,7 +1496,7 @@ proc isHermitian(A: [?D]) where isDenseMatrix(A) {
 
   for (i, j) in D {
     if i > j {
-      if A[i, j] != conjg(A[j, i]) then return false;
+      if A[i, j] != conj(A[j, i]) then return false;
     }
   }
   return true;
@@ -1831,7 +1831,7 @@ proc solve_triu(const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
 
 /* Return the solution ``x`` to the linear system ``A * x = b``.
 */
-proc solve(A: [?Adom] ?eltType, b: [?bdom] eltType) {
+proc solve(A: [?Adom] ?eltType, ref b: [?bdom] eltType) {
   var (LU, ipiv) = lu(A);
   b = permute (ipiv, b, true);
   var z = solve_tril(LU, b);
@@ -2006,7 +2006,7 @@ proc cholesky(A: [] ?t, lower = true)
       compiler error if ``lapackImpl`` is ``off``.
 
 */
-proc eigvalsh(A: [] ?t, lower=true, param overwrite=false) throws where (A.domain.rank == 2) && (usingLAPACK) {
+proc eigvalsh(ref A: [] ?t, lower=true, param overwrite=false) throws where (A.domain.rank == 2) && (usingLAPACK) {
   if isDistributed(A) then
     compilerError("eigvalsh does not support distributed vectors/matrices");
   return eigh(A, lower=lower, overwrite=overwrite, eigvalsOnly=true);
@@ -2036,7 +2036,7 @@ proc eigvalsh(A: [] ?t, lower=true, param overwrite=false) throws where (A.domai
       compiler error if ``lapackImpl`` is ``off``.
 
 */
-proc eigh(A: [] ?t, lower=true, param eigvalsOnly=false, param overwrite=false) throws where (A.domain.rank == 2) && (usingLAPACK) {
+proc eigh(ref A: [] ?t, lower=true, param eigvalsOnly=false, param overwrite=false) throws where (A.domain.rank == 2) && (usingLAPACK) {
   if isDistributed(A) then
     compilerError("eigh does not support distributed vectors/matrices");
 
@@ -2607,7 +2607,7 @@ proc isLocalArr(A: [?D]) param : bool {
 @chpldoc.nodoc
 /* Returns ``true`` if the domain is dense N-dimensional non-distributed domain. */
 proc isLocalDom(D: domain) param : bool {
-  return D.dist.type == defaultDist.type;
+  return D.distribution.type == defaultDist.type;
 }
 
 // TODO: Add this to public interface eventually
@@ -2631,7 +2631,7 @@ proc type _array.rank param {
 @chpldoc.nodoc
 /* Returns ``true`` if the domain is ``DefaultSparse`` */
 private proc isDefaultSparseDom(D: domain) param {
-  return isSubtype(_to_borrowed(D.dist.type), DefaultDist) && D.isSparse();
+  return isSubtype(_to_borrowed(D.distribution.type), DefaultDist) && D.isSparse();
 }
 
 @chpldoc.nodoc
@@ -2805,7 +2805,7 @@ module Sparse {
     casted to ``eltType``
    */
   proc CSRMatrix(A: [?Dom] ?Atype, type eltType=Atype) where isCSArr(A) {
-    var M: [Dom] eltType = A: eltType;
+    var M: [Dom] eltType = if eltType == Atype then A else A: eltType;
     return M;
   }
 
@@ -3047,7 +3047,7 @@ module Sparse {
 
 
   /* Populate indPtr and total nnz (last element of indPtr) */
-  private proc pass1(ref A: [?ADom] ?eltType, ref B: [?BDom] eltType, ref indPtr) {
+  private proc pass1(A: [?ADom] ?eltType, B: [?BDom] eltType, ref indPtr) {
     // TODO: Parallelize - mask -> atomic ints,
     //                   - Write a scan to compute idxPtr in O(log(n))
 
@@ -3093,7 +3093,7 @@ module Sparse {
   }
 
   /* Populate indices and data */
-  private proc pass2(ref A: [?ADom] ?eltType, ref B: [?BDom] eltType, ref indPtr, ref ind, ref data) {
+  private proc pass2(A: [?ADom] ?eltType, B: [?BDom] eltType, ref indPtr, ref ind, ref data) {
     // TODO: Parallelize - next, sums -> task-private stacks
 
     /* Aliases for readability */
@@ -3454,7 +3454,7 @@ module Sparse {
       return false;
 
     for (i, j) in D {
-      if A[i, j] != conjg(A[j, i]) then return false;
+      if A[i, j] != conj(A[j, i]) then return false;
     }
     return true;
   }
@@ -3481,11 +3481,11 @@ module Sparse {
 
   @chpldoc.nodoc
   /* Returns ``true`` if the array is dmapped to ``CS`` layout. */
-  proc isCSArr(A: []) param { return isCSType(A.domain.dist.type); }
+  proc isCSArr(A: []) param { return isCSType(A.domain.distribution.type); }
 
   @chpldoc.nodoc
   /* Returns ``true`` if the domain is dmapped to ``CS`` layout. */
-  proc isCSDom(D: domain) param { return isCSType(D.dist.type); }
+  proc isCSDom(D: domain) param { return isCSType(D.distribution.type); }
 
 
 } // submodule LinearAlgebra.Sparse

@@ -6,7 +6,7 @@ proc print(x) {
   var s1 = "%s".format(x);
   writeln(s1);
 
-  var s2 = "%t".format(x);
+  var s2 = "%?".format(x);
   writeln(s2);
 }
 

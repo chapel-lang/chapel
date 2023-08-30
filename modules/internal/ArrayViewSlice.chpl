@@ -48,7 +48,7 @@ module ArrayViewSlice {
   // class implementations, it supports the standard dsi interface.
   //
   pragma "aliasing array"
-  class ArrayViewSliceArr: AbsBaseArr {
+  class ArrayViewSliceArr: AbsBaseArr(?) {
     // the representation of the slicing domain
     //
     // TODO: Can we privatize upon creation of the array-view slice and cache

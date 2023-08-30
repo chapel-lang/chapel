@@ -29,48 +29,48 @@ config param useDimIterRowDistributed = useDimIterDistributed;
 config param useDimIterColDistributed = useDimIterDistributed;
 
 class SyncLock {
-  var lock$ : sync bool;
+  var lockVar : sync bool;
 
   proc init(){
     this.complete();
-    this.lock$.writeEF(true);
+    this.lockVar.writeEF(true);
   }
 
   proc lock(){
-    lock$.readFE();
+    lockVar.readFE();
   }
 
   proc unlock(){
-    lock$.writeEF(true);
+    lockVar.writeEF(true);
   }
 
   proc forceUnlock(){
-    lock$.writeXF(true);
+    lockVar.writeXF(true);
   }
 
   proc isLocked() : bool {
-    return this.lock$.isFull;
+    return this.lockVar.isFull;
   }
 }
 
 class AtomicLock {
-  var lock$: atomic bool;
+  var lockVar: atomic bool;
 
   proc init(){
     this.complete();
-    lock$.clear();
+    lockVar.clear();
   }
 
   proc lock(){
-    while lock$.testAndSet() do chpl_task_yield();
+    while lockVar.testAndSet() do currentTask.yieldExecution();
   }
 
   proc unlock(){
-    lock$.clear();
+    lockVar.clear();
   }
 
   proc isLocked() : bool {
-    return this.lock$.read();
+    return this.lockVar.read();
   }
 }
 
@@ -202,7 +202,7 @@ class ParallelWorkQueue {
           yield work;
         }
       } else  {
-        chpl_task_yield();
+        currentTask.yieldExecution();
       }
 
       delete unlockedQueue;
@@ -296,7 +296,7 @@ class LocalDistributedWorkQueue {
 
     this.complete();
 
-    this.lock.lock$.write( that.lock.isLocked() );
+    this.lock.lockVar.write( that.lock.isLocked() );
     this.terminated.write(that.terminated.read());
   }
 
@@ -369,7 +369,7 @@ class LocalDistributedWorkQueue {
             yield work;
           }
         } else  {
-          chpl_task_yield();
+          currentTask.yieldExecution();
         }
 
         delete unlockedQueue;
@@ -1015,7 +1015,7 @@ where D.rank == 2
     }
 
     if count == 1 {
-      workQueue.add( row, D.dist.dsiIndexToLocale( (row,minCol) ) );
+      workQueue.add( row, D.distribution.dsiIndexToLocale( (row,minCol) ) );
     }
 
     rowCount[row].write( count );
@@ -1091,7 +1091,7 @@ where D.rank == 2
           // if previousRowCount = 2 (ie rowCount[row] == 1)
           if previousRowCount == 2 {
             if enableRuntimeDebugging && debugTopo then writeln( "Queueing ", row);
-            workQueue.add( row, D.dist.dsiIndexToLocale( (row,minCol) ) );
+            workQueue.add( row, D.distribution.dsiIndexToLocale( (row,minCol) ) );
           }
         }
       }

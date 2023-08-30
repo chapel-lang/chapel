@@ -34,9 +34,9 @@ writeln("Number of tasks     = ", tasks, " (per locale)");
 // object), set parSafe to false to avoid locking overhead.
 //
 var counts: [LocaleSpace] [1..tasks] int;
-coforall loc in Locales do on loc {
+coforall loc in Locales with (ref counts) do on loc {
   var myN = (loc.id+1)*n/numLocales - (loc.id)*n/numLocales;
-  coforall task in 1..tasks {
+  coforall task in 1..tasks with (ref counts) {
     var rs = new NPBRandomStream(real, seed + loc.id*tasks*2 + task*2, parSafe=false);
     var count = 0;
     for i in (task-1)*myN/tasks+1..task*myN/tasks do

@@ -1,5 +1,5 @@
 // Copy matrix B's transpose into matrix A
-proc transposeCopy(A: [] real, B: [] real) where A.rank == 2 && B.rank == 2 {
+proc transposeCopy(ref A: [] real, B: [] real) where A.rank == 2 && B.rank == 2 {
     forall (i, j) in A.domain do
         A[i, j] = B[j, i];
 }
@@ -16,7 +16,7 @@ operator *(V: [] real, M: [] real) where V.rank == 1 && M.rank == 2 {
     return R;
 }
 
-// Matrix-Vector multiplication 
+// Matrix-Vector multiplication
 operator *(M: [] real, V: [] real) where V.rank == 1 && M.rank == 2 {
     var R: [M.domain.dim(0)] real = 0.0;
 

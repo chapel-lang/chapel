@@ -1,1 +1,1 @@
--M modules
+-M modules --gpu-block-size=64

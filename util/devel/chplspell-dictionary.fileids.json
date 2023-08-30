@@ -1340,9 +1340,6 @@
   "796d72aa-3f88-11ec-81f0-3de99c714400": [
     "modules/standard/Subprocess.chpl"
   ],
-  "83e8f86a-f561-11eb-bb15-35b7469d4b43": [
-    "modules/standard/Sys.chpl"
-  ],
   "f5a43844-9c7b-11e8-b963-10ddb1d4c3d5": [
     "modules/standard/Time.chpl"
   ],

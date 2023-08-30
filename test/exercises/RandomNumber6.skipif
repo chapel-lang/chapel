@@ -1,0 +1,2 @@
+# The small stack size can be exceeded with baseline
+COMPOPTS <= --baseline

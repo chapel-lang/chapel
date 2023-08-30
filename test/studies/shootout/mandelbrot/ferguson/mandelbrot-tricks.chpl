@@ -19,7 +19,7 @@ type eltType = uint(bitsPerElt);  // element type used to store the image
 
 
 proc main() {
-  const xsize = divceilpos(n, bitsPerElt),  // the compacted x dimension
+  const xsize = divCeilPos(n, bitsPerElt),  // the compacted x dimension
         imgSpace = {0..#n, 0..#xsize};      // the compacted image size
 
   var image : [imgSpace] eltType,           // the compacted image
@@ -71,7 +71,7 @@ proc main() {
   }
 
   // Get a lock-free writer channel on 'stdout'
-  var w = (new file(1)).writer(iokind.native, locking=false);
+  var w = (new file(1)).writer(serializer=new BinarySerializer(), locking=false);
 
   // Write the file header and the image array.
   w.writef("P4\n");

@@ -12,7 +12,7 @@ record RECTYPE {
     initRT();
   }
 
-  proc initRT() {
+  proc ref initRT() {
     writeln("RECTYPE.initRT()");
     VARFIELD   *= 2;
     CONSTFIELD *= 3;

@@ -860,11 +860,11 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
       var ivLen = IV.getBuffSize();
       var keyLen = key.getBuffSize();
       if (ivLen != 8) {
-        throw new owned IllegalArgumentError("IV", "Blowfish cipher expects a size of 8 bytes.");
+        throw new owned IllegalArgumentError("illegal argument 'IV': Blowfish cipher expects a size of 8 bytes.");
       }
 
       if (keyLen < 10) {
-        throw new owned IllegalArgumentError("key", "Blowfish cipher expects a size greater than 10 bytes.");
+        throw new owned IllegalArgumentError("illegal argument 'key': Blowfish cipher expects a size greater than 10 bytes.");
       }
       var encryptedPlaintext = bfEncrypt(plaintext, key, IV, this.cipher);
       var encryptedPlaintextBuff = new owned CryptoBuffer(encryptedPlaintext);
@@ -938,7 +938,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     */
     proc getRandomBuffer(buffLen: int): owned CryptoBuffer throws {
       if (buffLen < 1) {
-        throw new owned IllegalArgumentError("buffLen", "Invalid random buffer length specified.");
+        throw new owned IllegalArgumentError("illegal argument 'buffLen': Invalid random buffer length specified.");
       }
       var randomizedBuff = try createRandomBuffer(buffLen);
       var randomizedCryptoBuff = new owned CryptoBuffer(randomizedBuff);
@@ -1101,7 +1101,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
       }
 
       if (!openErrCode) {
-        throw new owned IllegalArgumentError("key", "The RSAKey is an invalid match.");
+        throw new owned IllegalArgumentError("illegal argument 'key': The RSAKey is an invalid match.");
       }
 
       var plaintextLen = ciphertext.size;
@@ -1276,7 +1276,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     extern proc EVP_OpenFinal(ref ctx: EVP_CIPHER_CTX, outm: c_ptr(c_uchar), outl: c_ptr(c_int)): c_int;
 
     extern proc CHPL_OpenSSL_add_all_digests();
-    extern proc EVP_get_digestbyname(name: c_string): CONST_EVP_MD_PTR;
+    extern proc EVP_get_digestbyname(name: c_ptrConst(c_char)): CONST_EVP_MD_PTR;
 
     extern proc CHPL_EVP_MD_CTX_new(): CHPL_EVP_MD_CTX;
     extern proc CHPL_EVP_MD_CTX_free(ref c: CHPL_EVP_MD_CTX);
@@ -1289,7 +1289,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
     extern proc EVP_sha256(): CONST_EVP_MD_PTR;
 
-    extern proc PKCS5_PBKDF2_HMAC(pass: c_string,
+    extern proc PKCS5_PBKDF2_HMAC(pass: c_ptrConst(c_char),
                                   passlen: c_int,
                                   const salt: c_ptr(c_uchar),
                                   saltlen: c_int,

@@ -1,3 +1,4 @@
+use CTypes;
 var a = " 9i ";
 var a1 = a:imag;
 writeln(a1);
@@ -6,7 +7,7 @@ writeln(a2);
 var a3 = a:imag(64);
 writeln(a3);
 
-var x = " 9i ":c_string;
+var x = " 9i ":c_ptrConst(c_char);
 var x1 = x:imag;
 writeln(x1);
 var x2 = x:imag(32);

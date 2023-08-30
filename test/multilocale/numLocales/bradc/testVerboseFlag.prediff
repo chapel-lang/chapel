@@ -43,7 +43,7 @@ fi
 # aren't meaningful.
 case $target in
   cray-cs|cray-x*|hpe-cray-ex)
-     sed "s/\(executing on node 0 of 1 node(s): \).*/\1$uname/" \
+     sed "s/\(executing locale 0 of 1 on node \).*/\1'$uname'/" \
          < $2 > $2.tmp &&
      mv $2.tmp $2;;
 esac

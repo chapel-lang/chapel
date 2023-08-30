@@ -184,12 +184,12 @@ module ExternalArray {
   // can make the same function call and get the appropriate type depending on
   // the argument.  Unsupported array types are turned into opaque
   // representations
-  proc convertToExternalArray(arr: []): chpl_opaque_array
+  proc convertToExternalArray(ref arr: []): chpl_opaque_array
     where (getExternalArrayType(arr) == chpl_opaque_array) {
 
     var ret: chpl_opaque_array;
     ret._pid = arr._pid;
-    ret._instance = arr._value: c_ptr(void);
+    ret._instance = c_ptrToConst_helper(arr._value);
     ret._unowned = arr._unowned;
     if (!arr._unowned) {
       arr._unowned = true;
@@ -203,7 +203,7 @@ module ExternalArray {
   private proc isExternArrEltType(type t) param {
     if (isPrimitive(t)) {
       return true;
-    } else if (t == c_string) {
+    } else if (t == c_ptrConst(c_char)) {
       return true;
     } else if (__primitive("is extern type", t)) {
       return true;

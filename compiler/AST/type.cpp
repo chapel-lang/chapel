@@ -43,6 +43,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "vec.h"
+#include "wellknown.h"
 
 #include "global-ast-vecs.h"
 
@@ -276,6 +277,12 @@ const char* toString(Type* type, bool decorateAllClasses) {
       // de-sugar chpl__c_void_ptr, which is used internally and is a distinct
       // type from c_ptr(void)
       retval = "raw_c_void_ptr";
+    } else if (vt == dtCFnPtr) {
+      retval = "c_fn_ptr";
+    } else if (vt == dtStringC) {
+      // present dtStringC type as familiar 'c_string' instead of the internal
+      // name 'chpl_c_string' or cname, 'c_string_rehook'.
+      retval = "c_string";
     }
 
     if (retval == NULL)
@@ -1054,7 +1061,14 @@ void initPrimitiveTypes() {
   dtInt[INT_SIZE_64]                   = createPrimitiveType("int",      "int64_t");
   dtReal[FLOAT_SIZE_64]                = createPrimitiveType("real",     "_real64");
 
-  dtStringC                            = createPrimitiveType("c_string", "c_string" );
+  // The Chapel name is prefixed with 'chpl_' to make it internal, but the
+  // C type is 'c_string' which is defined in the runtime as an alias for
+  // 'const char*'. The user-facing alias is defined in 'ChapelBase' so that
+  // it can easily be deprecated.
+  // Note that we actually map to the type 'c_string_rehook' to avoid a
+  // collision with the type alias when '--no-munge-user-idents' is thrown.
+  // TODO: a better solution than renaming c_string to avoid the collision would be preferred
+  dtStringC                            = createPrimitiveType("chpl_c_string", "c_string_rehook");
   dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
 
   dtObject                             = new AggregateType(AGGREGATE_CLASS);
@@ -1172,7 +1186,10 @@ void initPrimitiveTypes() {
   dtCVoidPtr->symbol->addFlag(FLAG_NO_CODEGEN);
   dtCVoidPtr->defaultValue = gNil;
 
-  dtCFnPtr = createPrimitiveType("c_fn_ptr", "c_fn_ptr");
+  // Map to runtime type 'c_fn_ptr_rehook' to avoid collision with name of
+  // symbol in module ('c_fn_ptr'), when using '--no-munge-user-idents' is
+  // thrown.
+  dtCFnPtr = createPrimitiveType("chpl_c_fn_ptr", "c_fn_ptr_rehook");
   dtCFnPtr->symbol->addFlag(FLAG_NO_CODEGEN);
   dtCFnPtr->defaultValue = gNil;
 
@@ -1612,6 +1629,15 @@ bool isClassLikeOrPtr(Type* t) {
                             t == dtCFnPtr);
 }
 
+bool isCPtrConstChar(Type* t) {
+  if (t->symbol->hasFlag(FLAG_C_PTRCONST_CLASS)) {
+    if (auto dct = getDataClassType(t->symbol)) {
+      return dct->typeInfo() == dt_c_char;
+    }
+  }
+  return false;
+}
+
 bool isCVoidPtr(Type* t) {
   return (t->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
           getDataClassType(t->symbol)->typeInfo() == dtVoid) ||
@@ -1832,15 +1858,12 @@ static Type* finalArrayElementType(AggregateType* arrayType) {
   return eltType;
 }
 
-static bool isOrContains(Type *type, Flag flag, bool canBeTypeVar = false) {
+static bool isOrContains(Type *type, Flag flag, bool checkRefs = true) {
   if (type == nullptr) {
     return false;
+  } else if (!checkRefs && type->isRef()) {
+    return false;
   } else if (type->symbol->hasFlag(flag)) {
-    return true;
-  } else if (canBeTypeVar && !type->symbol->hasFlag(FLAG_TYPE_VARIABLE)) {
-    // in the base case, this function should not return true for something like
-    // type T = sync int;
-    // But when searching tuples and arrays, this is needed
     return true;
   } else {
     Type* vt = type->getValType();
@@ -1851,21 +1874,27 @@ static bool isOrContains(Type *type, Flag flag, bool canBeTypeVar = false) {
       // get backing array instance and recurse
       if (at->symbol->hasFlag(FLAG_ARRAY)) {
         Type* eltType = finalArrayElementType(at);
-        if (isOrContains(eltType, flag, true /*can be type var*/)) return true;
+        if (isOrContains(eltType, flag, checkRefs)) return true;
       } else if (at->symbol->hasFlag(FLAG_TUPLE)) {
         // if its a tuple, search the tuple type substitutions
         for (const auto& ns: at->substitutionsPostResolve) {
           Type* eltType = ns.value->type;
-          if (isOrContains(eltType, flag, true /*can be type var*/)) return true;
+          if (isOrContains(eltType, flag, checkRefs)) return true;
         }
       }
     }
   }
   return false;
 }
-bool isOrContainsSyncType(Type* t) { return isOrContains(t, FLAG_SYNC); }
-bool isOrContainsSingleType(Type* t) { return isOrContains(t, FLAG_SINGLE); }
-bool isOrContainsAtomicType(Type* t) { return isOrContains(t, FLAG_ATOMIC_TYPE); }
+bool isOrContainsSyncType(Type* t, bool checkRefs) {
+  return isOrContains(t, FLAG_SYNC, checkRefs);
+}
+bool isOrContainsSingleType(Type* t, bool checkRefs) {
+  return isOrContains(t, FLAG_SINGLE, checkRefs);
+}
+bool isOrContainsAtomicType(Type* t, bool checkRefs) {
+  return isOrContains(t, FLAG_ATOMIC_TYPE, checkRefs);
+}
 
 
 bool isRefIterType(Type* t) {

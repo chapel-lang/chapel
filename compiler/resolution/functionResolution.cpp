@@ -239,6 +239,9 @@ static bool useLegacyNilability(Symbol* at) {
   return false;
 }
 
+bool tryingToResolve() {
+  return inTryResolve > 0;
+}
 
 //
 // Invoke resolveFunction(fn) with 'call' on top of 'callStack'.
@@ -655,8 +658,14 @@ isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual,
         sym->isParameter())
       actualConst = true;
 
-    bool actualExprTmp = sym->hasFlag(FLAG_EXPR_TEMP) &&
-                         !sym->type->symbol->hasFlag(FLAG_ARRAY);
+    bool actualExprTmp = sym->hasFlag(FLAG_EXPR_TEMP);
+
+    // don't emit lvalue errors for array slices
+    // (we can think of these as a special kind of reference)
+    if (isAliasingArrayType(sym->type)) {
+      actualExprTmp = false;
+    }
+
     TypeSymbol* formalTS = NULL;
     bool formalCopyMutates = false;
     if (formal) {
@@ -694,18 +703,10 @@ isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual,
 
 
 // Is this a legal actual argument for a 'const ref' formal?
-// At present, params cannot be passed to 'const ref'.
+// At present, anything can be passed to 'const ref'
 static bool
 isLegalConstRefActualArg(ArgSymbol* formal, Expr* actual) {
-  bool retval = true;
-
-  if (SymExpr* se = toSymExpr(actual))
-    if (se->symbol()->isParameter()                   ==  true &&
-        isString(se->symbol())                        == false &&
-        isBytes(se->symbol())                         == false)
-      retval = false;
-
-  return retval;
+  return true;
 }
 
 /* If we have a generic parent, e.g.:
@@ -1041,8 +1042,10 @@ static bool canParamCoerce(Type*   actualType,
     }
   }
 
+  // need to allow converting param string->c_ptrConst(c_char)
   // param strings can coerce between string and c_string
-  if ((formalType == dtString || formalType == dtStringC) &&
+  if ((formalType == dtString || formalType == dtStringC ||
+       isCPtrConstChar(formalType))                      &&
       (actualType == dtString || actualType == dtStringC)) {
     if (actualSym && actualSym->isImmediate()) {
       *paramNarrows = true;
@@ -1534,6 +1537,14 @@ bool canCoerceAsSubtype(Type*     actualType,
   if (actualType == dtCVoidPtr && isCVoidPtr(formalType))
     return true;
 
+  // coerce c_ptrConst(c_char) to dtStringC
+  if (formalType == dtStringC && isCPtrConstChar(actualType))
+    return true;
+
+  // coerce dtStringC to c_ptrConst(c_char)
+  if (actualType == dtStringC && isCPtrConstChar(formalType))
+    return true;
+
   // coerce c_ptr(t) to c_ptr(void)
   if (actualType->symbol->hasFlag(FLAG_C_PTR_CLASS) && isCVoidPtr(formalType))
     return true;
@@ -1966,8 +1977,11 @@ computeVisibilityDistanceInternal(BlockStmt* block, FnSymbol* fn,
 // Returns a distance measure used to compare the visibility
 // of two functions.
 //
-// Returns -1 if the function is not found here
+// Returns -1 if the function is a method or if the function is not found
 static int computeVisibilityDistance(Expr* expr, FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_METHOD))
+    return -1;
+
   //
   // call helper function with visited set to avoid infinite recursion
   //
@@ -2492,7 +2506,7 @@ static Symbol* getBaseSymForConstCheck(CallExpr* call) {
 }
 
 
-// Report an error when storing a sync or single variable into a tuple.
+// Report an error when storing a sync variable into a tuple.
 // This is because currently we deallocate memory excessively in this case.
 void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn)
 {
@@ -2514,7 +2528,7 @@ void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn)
           name = aSE->symbol()->name;
 
       USR_FATAL_CONT(actual,
-                     "storing a sync or single variable %s in a tuple "
+                     "storing a sync variable %s in a tuple "
                      "is not currently implemented - "
                      "apply readFE() or readFF()",
                      name);
@@ -6327,8 +6341,36 @@ static void discardWorseWhereClauses(Vec<ResolutionCandidate*>&   candidates,
   }
 }
 
+// Returns 'true' if the candidates include both non-operator methods
+// and non-operator non-methods.
+static
+bool mixesNonOpMethodsAndFunctions(Vec<ResolutionCandidate*>&   candidates,
+                                   const DisambiguationContext& DC,
+                                   std::vector<bool>&           discarded) {
+
+  int nMethodsNotOperators = 0;
+  int nFunctionsNotOperators = 0;
+  for (int i = 0; i < candidates.n; i++) {
+    if (discarded[i]) {
+      continue;
+    }
+
+    ResolutionCandidate* candidate = candidates.v[i];
+    if (!candidate->fn->hasFlag(FLAG_OPERATOR)) {
+      if (candidate->fn->hasFlag(FLAG_METHOD)) {
+        nMethodsNotOperators++;
+      } else {
+        nFunctionsNotOperators++;
+      }
+    }
+  }
+
+  return nMethodsNotOperators > 0 && nFunctionsNotOperators > 0;
+}
+
 // Discard candidates with further visibility distance
 // than other candidates.
+// This check does not consider methods or operator methods.
 static void discardWorseVisibility(Vec<ResolutionCandidate*>&   candidates,
                                    const DisambiguationContext& DC,
                                    std::vector<bool>&           discarded) {
@@ -6341,14 +6383,17 @@ static void discardWorseVisibility(Vec<ResolutionCandidate*>&   candidates,
     }
 
     ResolutionCandidate* candidate = candidates.v[i];
+
     int distance = computeVisibilityDistance(DC.scope, candidate->fn);
     candidate->visibilityDistance = distance;
 
-    if (distance < minDistance) {
-      minDistance = distance;
-    }
-    if (distance > maxDistance) {
-      maxDistance = distance;
+    if (distance >= 0) {
+      if (distance < minDistance) {
+        minDistance = distance;
+      }
+      if (distance > maxDistance) {
+        maxDistance = distance;
+      }
     }
   }
 
@@ -6360,7 +6405,7 @@ static void discardWorseVisibility(Vec<ResolutionCandidate*>&   candidates,
 
       ResolutionCandidate* candidate = candidates.v[i];
       int distance = candidate->visibilityDistance;
-      if (distance > minDistance) {
+      if (distance > 0 && distance > minDistance) {
         EXPLAIN("X: Fn %d has further visibility distance\n", i);
         discarded[i] = true;
       }
@@ -6505,6 +6550,10 @@ static void disambiguateDiscarding(Vec<ResolutionCandidate*>&   candidates,
                                    const DisambiguationContext& DC,
                                    bool                         ignoreWhere,
                                    std::vector<bool>&           discarded) {
+
+  if (mixesNonOpMethodsAndFunctions(candidates, DC, discarded)) {
+    return;
+  }
 
   if (!DC.useOldVisibility && !DC.isMethodCall) {
     // If some candidates are less visible than other candidates,
@@ -7377,7 +7426,7 @@ static CallExpr* findOutIntentCallFromAssign(CallExpr* call,
                                              ArgSymbol** outFormal) {
   // Call is an assign from a temp
   // Find an out/inout argument call setting the temp
-  if (call->isNamed("=")) {
+  if (call->isNamedAstr(astrSassign)) {
     if (SymExpr* lhs = toSymExpr(call->get(1))) {
       if (SymExpr* rhs = toSymExpr(call->get(2))) {
         if (rhs->symbol()->hasFlag(FLAG_TEMP)) {
@@ -8227,6 +8276,8 @@ void resolveInitVar(CallExpr* call) {
     // If the target type is generic, compute the appropriate instantiation
     // type.
     if (genericTgt) {
+      checkSurprisingGenericDecls(dst, targetTypeExpr, nullptr);
+
       Type* inst = getInstantiationType(srcType, NULL, targetType, NULL, call,
                                         /* allowCoercion */ true,
                                         /* implicitBang */ false,
@@ -12905,6 +12956,7 @@ static void resolvePrimInit(CallExpr* call) {
 
   if (SymExpr* se = toSymExpr(typeExpr)) {
     if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+      checkSurprisingGenericDecls(val, typeExpr, nullptr);
       resolvePrimInit(call, val, resolveTypeAlias(se));
     } else {
       USR_FATAL(call, "invalid type specification");
@@ -13630,36 +13682,13 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
         }
       }
     } else if (isGenericField) {
-
-      bool hasCompilerGeneratedInitializer = root->wantsDefaultInitializer();
-
-      if (hasCompilerGeneratedInitializer && hasDefault == false) {
-        // Create a temporary to pass for typeless generic fields
-        // e.g. for
-        //   record R { var x; }
-        //   var myR: R(int);
-        // convert the  default initialization into
-        //   var default_field_tmp: int;
-        //   var myR = new R(x=default_field_tmp)
-        VarSymbol* temp = newTemp("default_field_temp", value->typeInfo());
-        CallExpr* tempCall = new CallExpr(PRIM_DEFAULT_INIT_VAR, temp, value);
-
-        call->insertBefore(new DefExpr(temp));
-        call->insertBefore(tempCall);
-        resolveExpr(tempCall->get(2));
-        resolveExpr(tempCall);
-        appendExpr = new SymExpr(temp);
-
-      } else {
-        USR_FATAL_CONT(call, "default initialization with type '%s' "
-                             "is not yet supported", toString(at));
-        USR_PRINT(field, "field '%s' is a generic value",
-                         field->name);
-        USR_PRINT(field, "consider separately declaring a type field for it "
-                         "or using a 'new' call");
-        USR_STOP();
-      }
-
+      USR_FATAL_CONT(call, "default initialization with type '%s' "
+                           "is not yet supported", toString(at));
+      USR_PRINT(field, "field '%s' is a generic value",
+                       field->name);
+      USR_PRINT(field, "consider separately declaring a type field for it "
+                       "or using a 'new' call");
+      USR_STOP();
     } else {
       INT_FATAL("Unhandled case for default-init");
     }
@@ -13776,44 +13805,176 @@ void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx) {
   }
 }
 
-void checkSurprisingGenericDecls(DefExpr* def, bool isField) {
-  if (def == nullptr) {
+static bool isBuiltinGenericType(Type* t) {
+  return isBuiltinGenericClassType(t) ||
+         t == dtAnyComplex || t == dtAnyImag || t == dtAnyReal ||
+         t == dtAnyBool || t == dtAnyEnumerated ||
+         t == dtNumeric || t == dtIntegral ||
+         t == dtIteratorRecord || t == dtIteratorClass ||
+         t == dtAnyPOD ||
+         t == dtOwned || t == dtShared ||
+         t == dtAnyRecord;
+}
+
+std::set<Symbol*> gAlreadyWarnedSurprisingGenericSyms;
+std::set<Symbol*> gAlreadyWarnedSurprisingGenericManagementSyms;
+
+void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
+                                 AggregateType* forFieldInHere) {
+  if (sym == nullptr || typeExpr == nullptr) {
     return;
   }
 
-  Symbol* sym = def->sym;
+  if (typeExpr) {
+    Type* declType = nullptr;
+    if (SymExpr* se = toSymExpr(typeExpr)) {
+      declType = resolveTypeAlias(se);
+    } else {
+      declType = typeExpr->typeInfo();
+    }
 
-  bool hasQuestionArg = false;
-  if (sym && def->exprType) {
-    if (CallExpr* call = toCallExpr(def->exprType)) {
-      for_actuals(actual, call) {
-        if (SymExpr* act = toSymExpr(actual)) {
-          if (act->symbol() == gUninstantiated) {
-            hasQuestionArg = true;
+    if (declType->symbol->hasFlag(FLAG_GENERIC) &&
+        !sym->hasFlag(FLAG_MARKED_GENERIC) &&
+        !sym->hasFlag(FLAG_TYPE_VARIABLE)) {
+
+      // is it a field? check to see if it's a temp within an initializer
+      // initializing field (in which case, we should think about
+      // this as a field).
+      bool isField = false;
+
+      if (forFieldInHere) {
+        AggregateType* ct = forFieldInHere->getRootInstantiation();
+        Symbol* field = ct->getField(sym->name);
+        isField = true;
+        sym = field;
+      } else if (sym->hasFlag(FLAG_TEMP)) {
+        for_SymbolSymExprs(se, sym) {
+          if (CallExpr* c = toCallExpr(se->parentExpr)) {
+            if ((c->isPrimitive(PRIM_SET_MEMBER) ||
+                 c->isPrimitive(PRIM_INIT_FIELD)) && se == c->get(3)) {
+              isField = true;
+
+              // replace 'sym' with the field for the error location
+              AggregateType* ct = toAggregateType(c->get(1)->getValType());
+              ct = ct->getRootInstantiation();
+              SymExpr* nameSe = toSymExpr(c->get(2));
+              VarSymbol* nameVar = toVarSymbol(nameSe->symbol());
+              const char* name = astr(nameVar->immediate->v_string.c_str());
+              Symbol* field = ct->getField(name);
+              sym = field;
+              break;
+            }
           }
         }
       }
-    }
-  }
 
-  if (def->exprType) {
-    Type* declType = def->exprType->typeInfo();
-    if (declType->symbol->hasFlag(FLAG_GENERIC) &&
-        !hasQuestionArg &&
-        !sym->hasFlag(FLAG_MARKED_GENERIC) &&
-        !sym->hasFlag(FLAG_TYPE_VARIABLE)) {
-      if (isField && isClassLikeOrManaged(declType)) {
+      if (isClassLikeOrManaged(declType)) {
         auto dec = classTypeDecorator(declType);
-        if (isDecoratorUnknownManagement(dec)) {
+        if (isField && isDecoratorUnknownManagement(dec)) {
+          auto pair = gAlreadyWarnedSurprisingGenericManagementSyms.insert(sym);
+          if (!pair.second) {
+            // don't warn twice for the same field
+            return;
+          }
+
           USR_WARN(sym, "field is declared with generic memory management");
           USR_PRINT("consider adding 'owned', 'shared', or 'borrowed'");
           USR_PRINT("if generic memory management is desired, "
                     "use a 'type' field to store the class type");
+          if (fWarnUnstable) {
+            USR_PRINT("this warning may be an error in the future");
+          }
         }
+
+        // consider the class type ignoring management for
+        // the rest of the checks.
+        declType = canonicalClassType(declType);
       }
-      if (declType->symbol->hasFlag(FLAG_DOMAIN)) {
-        USR_WARN(sym, "please use 'domain(?)' for the type of a generic %s "
-                      "storing any domain", isField?"field":"variable");
+
+
+      // supress the warning for builtin types like
+      // 'integral', 'record', 'borrowed'.
+      if (isBuiltinGenericType(declType)) {
+        return;
+      }
+
+      // suppress the warning for formal temps e.g.
+      // proc f(out arg: R) for a generic record R
+      if (sym->hasFlag(FLAG_FORMAL_TEMP))
+        return;
+
+
+      // supress the warning for fields within owned/shared
+      // themselves (better to see the warning at uses of owned/shared
+      // that create generic owned/shared).
+      if (TypeSymbol* ts = toTypeSymbol(sym->defPoint->parentSymbol))
+        if (ts->hasFlag(FLAG_MANAGED_POINTER))
+          return;
+
+      bool hasQuestionArg = sym->hasFlag(FLAG_MARKED_GENERIC);
+
+      // Inspect the AST to decide if there was a question mark arg
+      // (such as 'R(?)'). This is particularly important for variable
+      // declarations with the current AST.
+      while (hasQuestionArg == false) {
+        if (SymExpr* se = toSymExpr(typeExpr)) {
+          if (se->symbol()->hasFlag(FLAG_MARKED_GENERIC)) {
+            hasQuestionArg = true;
+            break;
+          }
+
+          if (SymExpr* singleDef = se->symbol()->getSingleDef()) {
+            // Figure out the RHS of the singleDef
+            if (CallExpr* call = toCallExpr(singleDef->parentExpr)) {
+              if (call->isPrimitive(PRIM_MOVE) && call->get(1) == singleDef) {
+                  typeExpr = call->get(2);
+                  continue;
+              }
+            }
+          }
+        } else if (CallExpr* call = toCallExpr(typeExpr)) {
+          for_actuals(actual, call) {
+            if (SymExpr* act = toSymExpr(actual)) {
+              if (act->symbol() == gUninstantiated) {
+                hasQuestionArg = true;
+                break;
+              }
+            }
+          }
+        }
+
+        break;
+      }
+
+      if (declType->symbol->hasFlag(FLAG_GENERIC) && !hasQuestionArg) {
+        auto pair = gAlreadyWarnedSurprisingGenericSyms.insert(sym);
+        if (!pair.second) {
+          // don't warn twice for the same variable/field
+          return;
+        }
+
+        if (declType->symbol->hasFlag(FLAG_DOMAIN)) {
+          USR_WARN(sym, "please use 'domain(?)' for the type of a generic %s "
+                        "storing any domain", isField?"field":"variable");
+        } else {
+          std::string s = toString(declType, false);
+          // figure out what to suggest
+          //  * if there is a (...args...), add a ? arg
+          //  * if there is no argument list, add (?)
+          if (!s.empty() && s.back() == ')') {
+            s.insert(s.size()-1, ",?");
+          } else {
+            s.append("(?)");
+          }
+
+          const char* fieldOrVar = isField?"field":"variable";
+          USR_WARN(sym, "please use '?' when declaring a %s with generic type",
+                   fieldOrVar);
+          USR_PRINT(sym, "for example with '%s'", s.c_str());
+        }
+        if (fWarnUnstable) {
+          USR_PRINT("this warning may be an error in the future");
+        }
       }
     }
   }

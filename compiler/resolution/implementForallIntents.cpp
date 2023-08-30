@@ -1083,6 +1083,7 @@ static ArgSymbol* createArgForFieldAccess(ArgSymbol* thisArg, FnSymbol* fn,
   IntentTag intent = isConst ? INTENT_CONST : INTENT_BLANK;
   ArgSymbol* fieldArg = new ArgSymbol(intent, astr(fieldSym->name, "_arg"),
                                       fieldSym->type);
+  fieldArg->addFlag(FLAG_FIELD_ACCESSOR);
   fn->insertFormalAtTail(fieldArg);
 
   // Pass an actual correspondingly.

@@ -17,6 +17,7 @@
 set(SRCS
     AggregateType.cpp
     alist.cpp
+    metadata.cpp
     AstCount.cpp
     AstDump.cpp
     AstDumpToHtml.cpp

@@ -56,7 +56,7 @@ record TargetLocaleComparator {
   param rank;
   type idxType;
   type sparseLayoutType;
-  var dist: unmanaged Block(rank, idxType, sparseLayoutType);
+  var dist: unmanaged BlockImpl(rank, idxType, sparseLayoutType);
   proc key(a: index(rank, idxType)) {
     if rank == 2 { // take special care for CSC/CSR
       if sparseLayoutType == unmanaged CS(compressRows=false) then
@@ -81,10 +81,10 @@ record TargetLocaleComparator {
 // locDoms:   a non-distributed array of local domain classes
 // whole:     a non-distributed domain that defines the domain's indices
 //
-class SparseBlockDom: BaseSparseDomImpl {
+class SparseBlockDom: BaseSparseDomImpl(?) {
   type sparseLayoutType;
   param strides = strideKind.one;  // TODO: remove default value eventually
-  const dist: unmanaged Block(rank, idxType, sparseLayoutType);
+  const dist: unmanaged BlockImpl(rank, idxType, sparseLayoutType);
   var whole: domain(rank=rank, idxType=idxType, strides=strides);
   var locDoms: [dist.targetLocDom] unmanaged LocSparseBlockDom(rank, idxType,
                                                  strides, sparseLayoutType)?;
@@ -155,7 +155,7 @@ class SparseBlockDom: BaseSparseDomImpl {
     return max reduce ([l in locDoms] l!.mySparseBlock.last);
   }
 
-  override proc bulkAdd_help(inds: [?indsDom] index(rank,idxType),
+  override proc bulkAdd_help(ref inds: [?indsDom] index(rank,idxType),
       dataSorted=false, isUnique=false, addOn=nilLocale) {
     use Sort;
     use Search;
@@ -387,7 +387,7 @@ class LocSparseBlockDom {
 // locArr: a non-distributed array of local array classes
 // myLocArr: optimized reference to here's local array class (or nil)
 //
-class SparseBlockArr: BaseSparseArr {
+class SparseBlockArr: BaseSparseArr(?) {
   param strides: strideKind;
   type sparseLayoutType = unmanaged DefaultDist;
 
@@ -601,6 +601,13 @@ class LocSparseBlockArr {
   override proc writeThis(f) throws {
     halt("LocSparseBlockArr.writeThis() is not implemented / should not be needed");
   }
+}
+
+proc SparseBlockDom.dsiGetDist() {
+  if _isPrivatized(dist) then
+    return new Block(dist.pid, dist, _unowned=true);
+  else
+    return new Block(nullPid, dist, _unowned=true);
 }
 
 /*

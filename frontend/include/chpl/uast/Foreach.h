@@ -50,7 +50,8 @@ class Foreach final : public IndexableLoop {
           int8_t iterandChildNum,
           int8_t withClauseChildNum,
           BlockStyle blockStyle,
-          int loopBodyChildNum)
+          int loopBodyChildNum,
+          int attributeGroupChildNum)
     : IndexableLoop(asttags::Foreach, std::move(children),
                     indexChildNum,
                     iterandChildNum,
@@ -58,7 +59,7 @@ class Foreach final : public IndexableLoop {
                     blockStyle,
                     loopBodyChildNum,
                     /*isExpressionLevel*/ false,
-                    /*attributeGroup*/ NO_CHILD) {
+                    attributeGroupChildNum) {
 
   }
 
@@ -84,7 +85,8 @@ class Foreach final : public IndexableLoop {
                               owned<AstNode> iterand,
                               owned<WithClause> withClause,
                               BlockStyle blockStyle,
-                              owned<Block> body);
+                              owned<Block> body,
+                              owned<AttributeGroup> attributeGroup = nullptr);
 
 
   void serialize(Serializer& ser) const override {

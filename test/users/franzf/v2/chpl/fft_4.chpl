@@ -39,7 +39,7 @@ proc init_fft4() {
 
 }
 
-proc fft4(Y: [] complex, X: [] complex) {
+proc fft4(ref Y: [] complex, X: [] complex) {
     var s2239, t3647, t3648, t3649:complex;
     t3647 = (X(0) + X(2));
     t3648 = (X(0) - X(2));

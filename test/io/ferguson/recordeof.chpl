@@ -16,7 +16,7 @@ config const debug = true;
 // Note that fileName not exist or have no contents
 var f = open(fileName, ioMode.cwr);
 
-proc MyRecord.readThis(r: fileReader) throws {
+proc ref MyRecord.readThis(r: fileReader) throws {
   i = r.read(int);
   r.readNewline();
 }
@@ -27,9 +27,7 @@ proc MyRecord.writeThis(w: fileWriter) throws {
 }
 
 {
-  // create a reader but specify that we'd like to use single-quoted strings.
-  // 0x27 is ascii for '
-  var reader = f.reader(style=new iostyleInternal(string_format=iostringformat.basic:uint(8), string_start = 0x27, string_end = 0x27));
+  var reader = f.reader();
 
   var rec:MyRecord;
   var i = 1;

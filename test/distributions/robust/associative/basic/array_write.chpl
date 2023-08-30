@@ -8,7 +8,7 @@ for i in D {
   DomIntType += myIdx;
   DomUintType += myIdx:uintType;
   DomRealType += myIdx:realType;
-  DomStringType += stringify(myIdx);
+  DomStringType += myIdx:string;
 }
 
 forall ai in DomIntType do

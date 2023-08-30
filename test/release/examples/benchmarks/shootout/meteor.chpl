@@ -121,7 +121,7 @@ proc calcPieces() {
    by not including the 180-degree-rotated pieces of ONE of the
    pieces.  Piece 3 was chosen because it gave the best time ;)
  */
-proc calcSixRotations(piece, indx, cell) {
+proc calcSixRotations(piece, indx, ref cell) {
   for rotation in 0..5 {
     if piece != 3 || rotation < 3 {
       calcCellIndices(cell, piece, indx);
@@ -140,7 +140,7 @@ proc calcSixRotations(piece, indx, cell) {
 /* Convenience function to quickly calculate all of the indices for a
    piece
  */
-proc calcCellIndices(cell, piece, indx) {
+proc calcCellIndices(ref cell, piece, indx) {
   cell[0] = indx;
   for i in 0..3 do
     cell[i+1] = shift(cell[i], pieceDef[piece][i]);
@@ -285,7 +285,7 @@ proc hasIsland(cell, piece) {
 /* Fill the entire board going cell by cell.  If any cells are "trapped"
    they will be left alone.
  */
-proc fillContiguousSpace(board, indx) {
+proc fillContiguousSpace(ref board, indx) {
   if board[indx] == 1 then
     return;
 
@@ -480,7 +480,7 @@ proc boardHasIslands(cell, board) {
     return badEvenTriple[currentTriple:int];
 }
 
-proc solveLinear(in depth, in cell, in board, in avail, solNums, solMasks) {
+proc solveLinear(in depth, in cell, in board, in avail, ref solNums, ref solMasks) {
   if solutionCount.read() >= n then
     return;
 

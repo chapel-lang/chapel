@@ -1,0 +1,4 @@
+c_str.chpl:4: warning: 'string.c_str()' is unstable and may change in a future release
+c_str.chpl:5: warning: 'bytes.c_str()' is unstable and may change in a future release
+my string
+my bytes

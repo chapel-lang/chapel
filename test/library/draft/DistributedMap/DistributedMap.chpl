@@ -129,7 +129,7 @@ class DistributedMapImpl {
   // assumes that everything is local
   proc applyAggregatedUpdates(buffer, updater) {
     if debugDistributedMap then
-      writef("applyAggregatedUpdates  %t  %t updates\n", here, buffer.size);
+      writef("applyAggregatedUpdates  %?  %? updates\n", here, buffer.size);
     coforall mapIdx in 0..#numLocalMaps {
       const numLocales = this.numLocales;
       localMaps[mapIdx].bulkUpdate(buffer, updater,
@@ -200,7 +200,7 @@ record distributedMapManager {
     this.key    = k;
   }
 
-  proc enterThis() ref {
+  proc ref enterContext() ref {
     // todo: optimize remote accesses here
     client = client.getPrivatizedThisOn(client.targetLocales[locIdx]);
     ref map = client.localMaps[mapIdx];
@@ -208,7 +208,7 @@ record distributedMapManager {
     return map.thisInternal(key);
   }
 
-  proc leaveThis(in err: owned Error?) throws {
+  proc exitContext(in err: owned Error?) throws {
     on client {
       client.localMaps[mapIdx]._leave();
     }
@@ -231,7 +231,7 @@ proc ref map.thisInternal(k: keyType) ref { //private
 
 // an addition to map's interface
 // primarily for use by an aggregator
-proc map.bulkUpdate(keysToUpdate, updater, filter) {
+proc ref map.bulkUpdate(keysToUpdate, updater, filter) {
   _enter(); defer _leave();
 
   for k in keysToUpdate {

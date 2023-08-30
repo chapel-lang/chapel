@@ -3,7 +3,7 @@ use RandomNumber8;
 var count: [1..3] int = 0;
 config const numberOfPoints = 10;
 
-coforall i in 1..3 {
+coforall i in 1..3 with (ref count) {
   var n = numberOfPoints/3 + if numberOfPoints%3 >= i then 1 else 0;
   for j in 1..n do
     if sqrt(RealRandomNumber(i)**2 + RealRandomNumber(i)**2) <= 1 then

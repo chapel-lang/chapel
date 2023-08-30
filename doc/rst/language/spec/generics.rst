@@ -1250,11 +1250,11 @@ Example: A Generic Stack
         type itemType;             // type of items
         var top: unmanaged MyNode(itemType)?; // top node on stack linked list
 
-        proc push(item: itemType) {
+        proc ref push(item: itemType) {
           top = new unmanaged MyNode(itemType, item, top);
         }
 
-        proc pop() {
+        proc ref pop() {
           if isEmpty then
             halt("attempt to pop an item off an empty stack");
           var oldTop = top;

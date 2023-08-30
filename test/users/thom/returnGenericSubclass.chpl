@@ -7,7 +7,7 @@ class C {
   var n;
 }
 
-class D: C {
+class D: C(?) {
   var m;
 }
 

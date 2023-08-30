@@ -61,8 +61,56 @@ module ChapelGpuSupport {
   }
 
   private proc isEnvSet(name: string): bool {
-    extern proc getenv(name : c_string) : c_string;
-    var env = bytes.createBorrowingBuffer(getenv(name.localize().c_str()));
+    private use CTypes;
+    extern proc getenv(name : c_ptrConst(c_char)) : c_ptrConst(c_char);
+    const env = bytes.createBorrowingBuffer(getenv(name.localize().c_str()));
     return !env.isEmpty();
+  }
+
+  use CTypes;
+  export proc chpl_gpu_comm_on_put(dst_subloc: int(32), addr: c_ptr(void),
+                                   src_node: int(32), src_subloc: int(32),
+                                   raddr: c_ptr(void), size: c_size_t) {
+    // this is a way to implement remote GET, where host initiates a GET to a
+    // data that's on a remote device. Because we can't register memory with the
+    // comm layer yet, we do an `on` to the remote's device sublocale and
+    // initiate a PUT from there.
+    extern const chpl_nodeID: int(32);
+    const dst_node = chpl_nodeID;
+
+    on __primitive("chpl_on_locale_num",
+                   chpl_buildLocaleID(src_node, src_subloc)) {
+
+      // communicate to the primitive using a reference rather than a ptr
+      // the primitive will copy data using these references
+      const ref addrRef = (addr:c_ptr(uint(8))).deref();
+      ref raddrRef = (raddr:c_ptr(uint(8))).deref();
+      __primitive("chpl_comm_put", raddrRef, dst_node,
+                  dst_subloc, addrRef, size);
+
+    }
+  }
+
+  export proc chpl_gpu_comm_on_get(src_subloc: int(32), addr: c_ptr(void),
+                                   dst_node: int(32), dst_subloc: int(32),
+                                   raddr: c_ptr(void), size: c_size_t) {
+    // this is a way to implement remote PUT, where host initiates a PUT to an
+    // address that's on a remote device. Because we can't register memory with
+    // the comm layer yet, we do an `on` to the remote's device sublocale and
+    // initiate a GET from there.
+    extern const chpl_nodeID: int(32);
+    const src_node = chpl_nodeID;
+
+    on __primitive("chpl_on_locale_num",
+                   chpl_buildLocaleID(dst_node, dst_subloc)) {
+
+      // communicate to the primitive using a reference rather than a ptr
+      // the primitive will copy data using these references
+      ref addrRef = (addr:c_ptr(uint(8))).deref();
+      const ref raddrRef = (raddr:c_ptr(uint(8))).deref();
+      __primitive("chpl_comm_get", raddrRef, src_node,
+                  src_subloc, addrRef, size);
+
+    }
   }
 }

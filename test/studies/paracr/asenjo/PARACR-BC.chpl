@@ -152,7 +152,7 @@ proc Check()
     }
 }
 
-proc ComputeStage(A,B,C,D,AA,BB,CC,DD,j,Dom, msg="")
+proc ComputeStage(ref A,ref B,ref C,ref D,AA,BB,CC,DD,j,Dom, msg="")
 {
   //  writeln("ComputeStage", msg, " j=", j);
   // if timer then t3=timeSinceEpoch().totalSeconds();

@@ -1,11 +1,11 @@
 use CyclicDist;
 
 class VDistArray {
-  const C: dmap(Cyclic(rank=1, idxType=int));
+  const C: Cyclic(rank=1, idxType=int);
   var D: domain(1) dmapped C;
   var data: [D] int;
   proc init(val0: int, min: int, max: int) {
-    this.C = new dmap(new Cyclic(min));
+    this.C = new Cyclic(min);
     this.D = {min..max};
   }
 }
