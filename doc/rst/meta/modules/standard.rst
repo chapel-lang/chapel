@@ -53,6 +53,7 @@ Files/IO
 
    FileSystem <standard/FileSystem>
    IO <standard/IO>
+   JSON <standard/JSON>
    Path <standard/Path>
 
 
