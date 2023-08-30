@@ -605,7 +605,7 @@ module Time {
   @chpldoc.nodoc
   proc date._chpldoc_workaround() { }
 
-  /* Writes this `date` in format equivalent to cast to string */
+  /* Writes this `date` formatted as ``YYYY-MM-DD`` */
   proc date.writeThis(f) throws {
     f.write(this:string);
   }
@@ -622,8 +622,7 @@ module Time {
     chpl_day = f.read(int);
   }
 
-  /* Reads this `date` from format corresponding to
-     :proc:`date.writeThis` */
+  /* Reads this `date` with the same format used by :proc:`date.writeThis` */
   proc ref date.readThis(f) throws {
     import JSON.JsonDeserializer;
 
@@ -926,7 +925,9 @@ module Time {
     return str;
   }
 
-  /* Writes this `time` in format equivalent to cast to string */
+  /* Writes this `time` formatted as  ``hh:mm:ss.ssssss``,
+     followed by ``±hh:mm`` if a timezone is specified
+   */
   proc time.writeThis(f) throws {
     f.write(this:string);
   }
@@ -945,8 +946,7 @@ module Time {
     chpl_microsecond = f.read(int);
   }
 
-  /* Reads this `time` from format corresponding to
-     :proc:`time.writeThis` */
+  /* Reads this `time` with the same format used by :proc:`time.writeThis` */
   proc ref time.readThis(f) throws {
     import JSON.JsonDeserializer;
 
@@ -1487,7 +1487,8 @@ module Time {
   }
 
   /* Get a `string` representation of this `dateTime` in ISO format
-     ``<date>T<time>``.
+     ``YYYY-MM-DDThh:mm:ss.ssssss``, followed by ``±hh:mm`` if a timezone is
+     specified
   */
   operator dateTime.:(x: dateTime, type t: string) {
     proc zeroPad(nDigits: int, i: int) {
@@ -1653,13 +1654,16 @@ module Time {
     return this.strftime("%a %b %e %T %Y");
   }
 
-  /* Writes this `dateTime` in format equivalent to cast to string */
+  /* Writes this `dateTime` formatted as ``YYYY-MM-DDThh:mm:ss.ssssss``,
+     followed by ``±hh:mm`` if a timezone is specified
+  */
   proc dateTime.writeThis(f) throws {
     f.write(this:string);
   }
 
-  /* Reads this `dateTime` from format corresponding to
-     :proc:`dateTime.writeThis` */
+  /* Reads this `dateTime` with the same format used by
+     :proc:`dateTime.writeThis`
+   */
   proc ref dateTime.readThis(f) throws {
     import JSON.JsonDeserializer;
 
