@@ -280,7 +280,7 @@ module OwnedObject {
     Return the object managed by this :type:`owned` without impacting its
     lifetime at all. It is an error to use the value returned by this function
     after the :type:`owned` goes out of scope or deletes the contained class
-    instance for another reason, such as with `=` or ``owned.adopt``. In some
+    instance for another reason, such as with `=` or :proc:`owned.adopt`. In some
     cases such errors are caught at compile-time.
   */
   pragma "nil from this"

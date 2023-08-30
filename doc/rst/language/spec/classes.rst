@@ -2141,7 +2141,7 @@ Coercions for `shared`
 ~~~~~~~~~~~~~~~~~~~~~~
 
 As with :type:`~OwnedObject.owned`, :type:`~SharedObject.shared` supports
-coercions to the class type as well as
+coercions to the class type, as well as
 coercions from a ``shared T`` to ``shared U`` where ``T`` is a
 subclass of ``U``.
 
