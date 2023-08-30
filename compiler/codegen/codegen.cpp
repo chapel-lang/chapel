@@ -2940,8 +2940,10 @@ void makeBinary(void) {
   if (no_codegen)
     return;
 
-  // makeBinary shouldn't trigger in a compilation-only invocation
-  INT_ASSERT(!fDoCompilation);
+  // makeBinary shouldn't run in a compilation-only invocation.
+  // (Unless we're doing GPU codegen, which currently happens in the
+  // compilation phase.)
+  INT_ASSERT(!fDoCompilation || gCodegenGPU);
 
   if(fLlvmCodegen) {
 #ifdef HAVE_LLVM
