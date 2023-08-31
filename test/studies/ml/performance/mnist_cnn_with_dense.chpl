@@ -18,7 +18,7 @@ config const numTestImages = 100;
 
 config const learnRate = 0.03; // 0.05;
 config const batchSize = 20;
-config const numEpochs = 1;
+config const numEpochs = 10;
 
 
 MNISTTester.train(

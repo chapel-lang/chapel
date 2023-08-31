@@ -82,6 +82,7 @@ module Tensor {
         return filled;
     }
 
+    // Does the same thing, but linear in the shape size instead. 
     proc indexInShape(shape: ?rank*int, in n: int): rank*int {
         var idxs: rank*int;
         const size = * reduce shape;
