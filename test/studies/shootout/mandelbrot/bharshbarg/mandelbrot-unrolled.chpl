@@ -17,7 +17,7 @@ proc main() {
     Crb[i] = i * invN - 1.5;
   }
 
-  forall y in dynamic(ydim, chunkSize) {
+  forall y in dynamic(ydim, chunkSize) with (ref pixels) {
     for x in xdim {
       var xm = x*8;
       var res : uint(8);
