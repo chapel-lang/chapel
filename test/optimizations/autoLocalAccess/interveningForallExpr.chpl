@@ -6,7 +6,7 @@ var cyclicDom = Cyclic.createDomain(1..10);
 
 var sums: [1..10] int;
 
-forall blockIdx in blockArr.domain with (ref sums) {
+forall blockIdx in blockArr.domain {
   var dummy = [cyclicIdx in cyclicDom] 2*blockArr[blockIdx];
   sums[blockIdx] = + reduce dummy;
 }

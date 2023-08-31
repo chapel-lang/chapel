@@ -16,6 +16,6 @@ var B = createArr({1..10}, int);
 
 var c = new C();
 
-forall i in c with (ref A) {
+forall i in c {
   A[i] = 2 * B[i];
 }

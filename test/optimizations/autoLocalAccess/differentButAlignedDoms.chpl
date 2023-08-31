@@ -6,7 +6,7 @@ var A: [D] int;
 {
   writeln("Iterand is a different symbol");
   const DInner = D.expand(-1);
-  forall i in DInner with (ref A) {
+  forall i in DInner {
     A[i] = i;
   }
 
@@ -16,7 +16,7 @@ var A: [D] int;
 
 {
   writeln("Iterand is a call");
-  forall i in D.expand(-1) with (ref A) {
+  forall i in D.expand(-1) {
     A[i] = i;
   }
 
@@ -29,18 +29,18 @@ var A: [D] int;
 
   coforall l in Locales with (ref A) do on l {
 
-    forall i in D.localSubdomain() with (ref A) {
+    forall i in D.localSubdomain() {
       A[i] = i;
     }
 
     const localD = D.localSubdomain();
 
-    forall i in localD with (ref A) {
+    forall i in localD {
       A[i] = i;
     }
 
     const innerLocalD = localD.expand(-1);
-    forall i in innerLocalD with (ref A) {
+    forall i in innerLocalD {
       A[i] += i;
     }
   }
@@ -52,13 +52,13 @@ var A: [D] int;
 {
   writeln("Count based domain slices");
 
-  forall i in D#D.size-1 with (ref A) {
+  forall i in D#D.size-1 {
     A[i] = i;
   }
 
   var DExceptLast = D#D.size-1;
 
-  forall i in DExceptLast with (ref A) {
+  forall i in DExceptLast {
     A[i] = i;
   }
 

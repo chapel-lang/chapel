@@ -11,7 +11,7 @@ proc foo() {
   C = 7;
 
   // this is the very basic case and optimzed completely
-  forall i in D with (ref A) {
+  forall i in D {
     A[i] = B[i] + C[i];
   }
   writeln(A);

@@ -11,7 +11,7 @@ use common;
   C = 7;
 
   // domain information is not directly available for B and C
-  forall i in D with (ref A) {
+  forall i in D {
     A[i] = B[i] + C[i];
   }
   writeln(A);
@@ -28,7 +28,7 @@ use common;
   C = 7;
 
   // domain information is not directly available for B and C
-  forall i in A.domain with (ref A) {
+  forall i in A.domain {
     A[i] = B[i] + C[i];
   }
   writeln(A);
@@ -45,7 +45,7 @@ use common;
   C = 7;
 
   // domain information is not directly available for B and C
-  forall i in B.domain with (ref A) {
+  forall i in B.domain {
     A[i] = B[i] + C[i];
   }
   writeln(A);
@@ -62,7 +62,7 @@ use common;
   C = 7;
 
   // domain information is not directly available for B and C
-  forall i in C.domain with (ref A) {
+  forall i in C.domain {
     A[i] = B[i] + C[i];
   }
   writeln(A);

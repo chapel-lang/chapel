@@ -13,7 +13,7 @@ class MyClass {
 proc foo(ref A: arr.type, B) {
   // A is a static candidate that should be statically confirmed,
   // B is a dynamic candidate that should be statically reverted
-  forall i in A.domain with (ref A) {
+  forall i in A.domain {
     A[i] = B[i];
   }
 }

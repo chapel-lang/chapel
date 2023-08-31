@@ -10,14 +10,14 @@ class C {
 
 {
   var A = createArr({1..10}, R);
-  forall i in A.domain with (ref A) {
+  forall i in A.domain {
     A[i] = new R[i];
   }
 }
 
 {
   var A = createArr({1..10}, unmanaged C?);
-  forall i in A.domain with (ref A) {
+  forall i in A.domain {
     A[i] = new unmanaged C[i];
   }
 
@@ -26,14 +26,14 @@ class C {
 
 {
   var A = createArr({1..10}, owned C?);
-  forall i in A.domain with (ref A) {
+  forall i in A.domain {
     A[i] = new owned C[i];
   }
 }
 
 {
   var A = createArr({1..10}, shared C?);
-  forall i in A.domain with (ref A) {
+  forall i in A.domain {
     A[i] = new shared C[i];
   }
 }
