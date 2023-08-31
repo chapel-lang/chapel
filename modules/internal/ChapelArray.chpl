@@ -3732,7 +3732,7 @@ module ChapelArray {
       }
     } else {
       if needsInitWorkaround(result.eltType) {
-        forall (ri, src) in zip(result.domain, ir) {
+        forall (ri, src) in zip(result.domain, ir) with (ref result) {
           ref r = result[ri];
           pragma "no auto destroy"
           var copy = src; // init copy, might be elided
