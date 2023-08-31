@@ -301,7 +301,7 @@ module ChplFormat {
       }
 
       @chpldoc.nodoc
-      proc readField(name: string, ref field) throws P{
+      proc readField(name: string, ref field) throws {
         reader.readLiteral(name);
         reader.readLiteral("=");
         reader.read(field);
@@ -379,7 +379,7 @@ module ChplFormat {
         if !_first then reader._readLiteral(", ");
         else _first = false;
 
-        reader.read(element);`
+        reader.read(element);
       }
 
       proc endList() throws {

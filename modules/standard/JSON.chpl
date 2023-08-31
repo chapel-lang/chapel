@@ -489,7 +489,7 @@ module JSON {
       }
 
       @chpldoc.nodoc
-      proc readField(string: name, ref field) throws {
+      proc readField(name: string, ref field) throws {
         if _fieldOffsets.contains(name) {
           // Use 'advance' instead of 'seek' to support reading in a marked
           // channel, which can happen during 'readf'.

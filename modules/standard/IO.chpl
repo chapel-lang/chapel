@@ -3153,7 +3153,7 @@ record DefaultDeserializer {
     }
 
     @chpldoc.nodoc
-    proc ref readKey(key) throws {
+    proc ref readKey(ref key) throws {
       if !_first then reader._readLiteral(", ");
       else _first = false;
 
@@ -3637,7 +3637,7 @@ record BinaryDeserializer {
     }
 
     proc readValue(ref value) throws {
-      reader.read(valType);
+      reader.read(value);
     }
 
     proc endMap() throws {
