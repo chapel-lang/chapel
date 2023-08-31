@@ -1,0 +1,9 @@
+network initialized.
+Epoch 1
+[1 of 10] (loss: 2.3028, accuracy: 14 / 100)[2 of 10] (loss: 2.30156, accuracy: 13 / 100)[3 of 10] (loss: 2.30026, accuracy: 26 / 100)[4 of 10] (loss: 2.30033, accuracy: 19 / 100)[5 of 10] (loss: 2.29836, accuracy: 24 / 100)[6 of 10] (loss: 2.29635, accuracy: 22 / 100)[7 of 10] (loss: 2.29786, accuracy: 15 / 100)[8 of 10] (loss: 2.29601, accuracy: 21 / 100)[9 of 10] (loss: 2.29836, accuracy: 14 / 100)[10 of 10] (loss: 2.29651, accuracy: 26 / 100)
+Evaluating...
+End of epoch 1 Loss 2.29408 Accuracy 24 / 100
+Epoch 2
+[1 of 10] (loss: 2.29318, accuracy: 31 / 100)[2 of 10] (loss: 2.29291, accuracy: 26 / 100)[3 of 10] (loss: 2.29382, accuracy: 20 / 100)[4 of 10] (loss: 2.29032, accuracy: 24 / 100)[5 of 10] (loss: 2.28729, accuracy: 34 / 100)[6 of 10] (loss: 2.28655, accuracy: 24 / 100)[7 of 10] (loss: 2.28779, accuracy: 21 / 100)[8 of 10] (loss: 2.28371, accuracy: 26 / 100)[9 of 10] (loss: 2.28671, accuracy: 20 / 100)[10 of 10] (loss: 2.28876, accuracy: 17 / 100)
+Evaluating...
+End of epoch 2 Loss 2.28548 Accuracy 24 / 100

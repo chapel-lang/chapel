@@ -1,0 +1,9 @@
+network initialized.
+Epoch 1
+[1 of 5] (loss: 2.30347, accuracy: 19 / 200)[2 of 5] (loss: 2.30292, accuracy: 25 / 200)[3 of 5] (loss: 2.30253, accuracy: 26 / 200)[4 of 5] (loss: 2.30357, accuracy: 18 / 200)[5 of 5] (loss: 2.30318, accuracy: 17 / 200)
+Evaluating...
+End of epoch 1 Loss 2.30266 Accuracy 14 / 100
+Epoch 2
+[1 of 5] (loss: 2.30316, accuracy: 19 / 200)[2 of 5] (loss: 2.30292, accuracy: 20 / 200)[3 of 5] (loss: 2.30225, accuracy: 29 / 200)[4 of 5] (loss: 2.30257, accuracy: 20 / 200)[5 of 5] (loss: 2.30214, accuracy: 20 / 200)
+Evaluating...
+End of epoch 2 Loss 2.30219 Accuracy 15 / 100

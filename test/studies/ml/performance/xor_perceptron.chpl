@@ -2,10 +2,13 @@ import Chai as chai;
 import Tensor as tn;
 use Tensor only Tensor;
 import Math;
+import Time;
+
+config param perfTest = false;
 
 tn.seedRandom(0);
 
-config const epochs = 30000;
+config const epochs = 5000;
 config const learnRate = 0.3;
 
 var net = new chai.Network(
@@ -79,6 +82,9 @@ net.forwardPropBatch(inputs);
 
 var batchSizes = [2,3];
 
+var t = new Time.stopwatch();
+t.start();
+
 for e in 1..epochs {
     tn.shuffle(batch);
     tn.shuffle(batchSizes);
@@ -87,3 +93,5 @@ for e in 1..epochs {
 }
 
 test(batch);
+
+if perfTest then writeln("time: ", t.elapsed());
