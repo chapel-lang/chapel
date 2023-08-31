@@ -266,7 +266,7 @@ module RunParallelRawLoops {
             const half = 0.5;
             ltimer.start();
             for 0..#num_samples {
-              forall ii in 0..#dom.n_real_zones with (ref dom) {
+              forall ii in 0..#dom.n_real_zones with (ref dom, ref div) {
                 const i  = dom.real_zones[ii];
 
                 const xi  = half * (x1[i]  + x2[i]  - x3[i]  - x4[i]);

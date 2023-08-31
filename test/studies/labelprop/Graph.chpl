@@ -246,7 +246,7 @@ module Graph {
         next$.write(G.initialFirstAvail, memoryOrder.relaxed);
       }
       // Pass 2: populate.
-      forall trip in triples {
+      forall trip in triples with (ref next$) {
         var u = trip.from;
         var v = trip.to;
         var w = trip.weight;

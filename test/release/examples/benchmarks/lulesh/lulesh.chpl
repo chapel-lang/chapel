@@ -834,7 +834,7 @@ proc CalcPressureForElems(ref p_new: [?D] real, ref bvc, ref pbvc,
   //
   // TODO: Uncomment local once sparse domain is distributed
   //
-  forall i in D /* with (ref bvc, ref pbvc) do local */ {
+  forall i in D with (ref bvc, ref pbvc) /*do local */ {
     const c1s = 2.0 / 3.0;
     bvc[i] = c1s * (compression[i] + 1.0);
     pbvc[i] = c1s;
@@ -1536,7 +1536,7 @@ proc EvalEOSForElems(vnewc) {
   //
   // TODO: Uncomment local once sparse domain is distributed
   //
-  forall i in Elems /* with (ref compHalfStep, ref compression) do local */ {
+  forall i in Elems with (ref compHalfStep, ref compression) /* do local */ {
     compression[i] = 1.0 / vnewc[i] - 1.0;
     const vchalf = vnewc[i] - delvc[i] * 0.5;
     compHalfStep[i] = 1.0 / vchalf - 1.0;
@@ -1643,7 +1643,7 @@ proc CalcEnergyForElems(ref p_new, ref e_new, ref q_new, ref bvc, ref pbvc,
   //
   // TODO: Uncomment local once sparse domain is distributed
   //
-  forall i in Elems /* with (ref q_new) do local */ {
+  forall i in Elems with (ref q_new) /*do local */ {
     if delvc[i] <= 0.0 {
       var ssc = (pbvc[i] * e_new[i] + vnewc[i]**2 * bvc[i] * p_new[i] ) / rho0;
       if ssc <= 0.0 then ssc = 0.333333e-36;

@@ -98,7 +98,7 @@ proc ComputeStage(ref A,ref B,ref C,ref D,AA,BB,CC,DD,j, msg="")
   //  writeln("ComputeStage", msg, " j=", j);
   // if timer then t3=timeSinceEpoch().totalSeconds();
   const TtS:int=1<<(j-1); //// TtS stand for "Two to the Stage (minus 1)" which is = 2**(j-1)
-  forall i in Dom with (ref A, ref B, ref C) do{
+  forall i in Dom with (ref A, ref B, ref C, ref D) do{
     //writeln("i ",i, " j ",j);
     const lo=i-TtS;
     const hi=i+TtS;
