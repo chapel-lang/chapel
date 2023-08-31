@@ -561,21 +561,6 @@ proc testDirectory(dir, ref result, show: bool) throws {
   }
 }
 
-private proc testNameFromProcedureString(line: string): string {
-  var split = line.strip().split("{ ... }");
-  var sig = split[0].strip();
-
-  if !sig.startsWith("proc") then return "";
-  assert(sig.size > 4);
-
-  // E.g., in 'proc foo(...)', get 'foo'.
-  var str1 = sig.split("proc");
-  var str2 = str1[1].split("(");
-  var ret = str2[0].strip();
-
-  return ret;
-}
-
 @chpldoc.nodoc
 /*Docs: Todo*/
 proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales,
@@ -636,8 +621,8 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
     }
     else if sep1Found then testExecMsg += line;
     else {
-      var testName = testNameFromProcedureString(line);
-      if !testName.isEmpty() {
+      if line.strip().endsWith("()") {
+        var testName = line.strip();
         if currentRunningTests.count(testName) == 0 {
           currentRunningTests.pushBack(testName);
           if testNames.count(testName) == 0 then
