@@ -1,6 +1,6 @@
 // Snippet taken from test/types/complex/diten/cplxMathFnTypes.chpl
 proc testTypes(x: complex(?w)) {
-  const res4 = cproj(z=x);
+  const res4 = cproj(x);
   assert(res4.type == complex(w));
 }
 
