@@ -488,6 +488,32 @@ module JSON {
         return ret;
       }
 
+      @chpldoc.nodoc
+      proc readField(string: name, ref field) throws {
+        if _fieldOffsets.contains(name) {
+          // Use 'advance' instead of 'seek' to support reading in a marked
+          // channel, which can happen during 'readf'.
+          //
+          // Use 'mark' to rewind the position since 'advance' doesn't support
+          // negative values. This means that 'readField' does not advance
+          // the channel's position until 'endClass' or 'endRecord' are called.
+          reader.mark();
+          const dist =  _fieldOffsets[name] - reader.offset();
+          reader.advance(dist);
+        } else if !name.isEmpty() {
+          throw new IllegalArgumentError("field '" + name + "' not found.");
+        }
+
+        reader.read(field);
+
+        // note: trailing commas not allowed in json
+        reader.matchLiteral(",");
+
+        // Rewind so that we can call 'advance' again
+        if !name.isEmpty() then
+          reader.revert();
+      }
+
       proc ref startClass(reader, name: string) {
         // TODO: 'ref' intent probably required by use of 'map' field...
         return new AggregateDeserializer(reader, _fieldOffsets, _lastPos, _parent=true);
@@ -539,6 +565,16 @@ module JSON {
         if !this.hasMore()
           then throw new BadFormatError();
           else return reader.read(eltType);
+      }
+
+      @chpldoc.nodoc
+      proc ref readElement(ref element) throws {
+        if !_first then reader._readLiteral(",");
+        else _first = false;
+
+        if !this.hasMore()
+          then throw new BadFormatError();
+          else reader.read(element);
       }
 
       @chpldoc.nodoc
@@ -610,6 +646,14 @@ module JSON {
       }
 
       @chpldoc.nodoc
+      proc ref readElement(ref element) throws {
+        if !_first then reader._readLiteral(", ");
+        else _first = false;
+
+        reader.read(element);
+      }
+
+      @chpldoc.nodoc
       proc ref endDim() throws {
         if _arrayDim < _arrayMax {
           reader.readNewline();
@@ -651,7 +695,7 @@ module JSON {
           return reader.read(string);
         } else {
           // Read in a JSON string, write it to a memory file, then read that
-          // file as a JSON entity for the 'readType'.
+          // file as a JSON entity for the 'keyType'.
           var f = openMemFile();
           var s = reader.read(string);
           {
@@ -662,9 +706,34 @@ module JSON {
       }
 
       @chpldoc.nodoc
+      proc ref readKey(ref key: ?t) throws {
+        if !_first then reader._readLiteral(",");
+        else _first = false;
+
+        if t == string || t == bytes {
+          reader.read(key);
+        } else {
+          // Read in a JSON string, write it to a memory file, then read that
+          // file as a JSON entity for the 'readType'.
+          var f = openMemFile();
+          var s = reader.read(string);
+          {
+            f.writer().withSerializer(DefaultSerializer).write(s);
+          }
+          return f.reader().withDeserializer(JsonDeserializer).read(key);
+        }
+      }
+
+      @chpldoc.nodoc
       proc readValue(type valType) : valType throws {
         reader._readLiteral(":");
         return reader.read(valType);
+      }
+
+      @chpldoc.nodoc
+      proc readValue(ref value) throws {
+        reader._readLiteral(":");
+        reader.read(value);
       }
 
       @chpldoc.nodoc
