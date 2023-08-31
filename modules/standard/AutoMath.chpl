@@ -65,7 +65,7 @@ Computations Involving Complex Numbers
 --------------------------------------
 :proc:`carg`
 :proc:`conj`
-:proc:`cproj`
+:proc:`riemProj`
 
 .. _automath-inf-nan:
 
@@ -967,25 +967,10 @@ module AutoMath {
     return conj(z);
   }
 
-  /* Returns the projection of `x` on a Riemann sphere. */
-  inline proc cproj(x: complex(?w)): complex(w) {
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc cprojf(x: complex(64)): complex(64);
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc cproj(x: complex(128)): complex(128);
-    if w == 64 then
-      return cprojf(x);
-    else
-      return cproj(x);
-  }
-
   /* Returns the projection of `z` on a Riemann sphere. */
-  pragma "last resort"
-  @deprecated("The argument name 'z' is deprecated for 'cproj', please use 'x' instead")
+  @deprecated("'cproj' has been deprecated, please use :proc:`riemProj` instead")
   inline proc cproj(z: complex(?w)): complex(w) {
-    return cproj(z);
+    return riemProj(z);
   }
 
   // When removing this deprecated function, be sure to remove chpl_cos and
@@ -2188,6 +2173,19 @@ module AutoMath {
     return nearbyintf(x);
   }
 
+  /* Returns the projection of `x` on a Riemann sphere. */
+  inline proc riemProj(x: complex(?w)): complex(w) {
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc cprojf(x: complex(64)): complex(64);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc cproj(x: complex(128)): complex(128);
+    if w == 64 then
+      return cprojf(x);
+    else
+      return cproj(x);
+  }
 
   // When removing this deprecated function, be sure to remove chpl_rint
   // and move its contents into Math.chpl to reduce the symbols living in this
