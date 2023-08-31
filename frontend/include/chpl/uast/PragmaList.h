@@ -258,9 +258,6 @@ PRAGMA(FOLLOWER_INDEX, npr,
 PRAGMA(FORALL_BREAK_LABEL, npr,
        "forall break label",
        "target of error handling in the forall")
-PRAGMA(FORALL_INTENT_REF_MAYBE_CONST, npr,
-       "forall intent ref maybe const",
-       "used to support deprecation of ref maybe const")
 PRAGMA(FORMAL_TEMP, npr,
        "formal temp",
        "a formal temp requiring write-back for an out or inout argument")
