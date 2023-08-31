@@ -24,13 +24,17 @@ need to ``use`` or ``import`` the ``CTypes`` module.
 Here are some cases where directly replacing ``c_string`` with
 ``c_ptrConst(c_char)`` may not work and what to do instead:
 
-=============================== =============================================
-if your code is...              update it to...
-=============================== =============================================
-casting to ``string``           use a ``string.create*ingBuffer()`` method
-casting to ``bytes``            use a ``bytes.create*ingBuffer()`` method
-using ``param c_string``        use ``param string``
-=============================== =============================================
+==================================  ============================================
+if your code is...                  update it to...
+==================================  ============================================
+casting ``c_string`` to ``string``  use a ``string.create*Buffer()`` method
+casting ``c_string`` to ``bytes``   use a ``bytes.create*Buffer()`` method
+casting ``c_string`` to other type  create a string and cast it to other type
+casting ``string`` to ``c_string``  replace cast with ``.c_str()``
+casting ``bytes`` to ``c_string``   replace cast with ``.c_str()``
+casting other type to ``c_string``  create a string and call ``.c_str()`` on it
+using ``param c_string``            use ``param string``
+==================================  ============================================
 
 Additionally, several ``c_string`` methods are deprecated without replacement:
 
@@ -41,8 +45,8 @@ Additionally, several ``c_string`` methods are deprecated without replacement:
 - ``.substring()``
 - ``.size`` *
 
-An equivalent procedure for ``.size`` is the unstable procedure ``strLen(x)``
-in ``CTypes``.
+An equivalent for ``.size`` is the unstable procedure ``strLen(x)`` in the
+``CTypes`` module.
 
 version 1.31, June 2023
 -----------------------
