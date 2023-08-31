@@ -23,7 +23,7 @@ operator *(M: [] real, V: [] real) where V.rank == 1 && M.rank == 2 {
     if V.domain.dim(0) != M.domain.dim(1) then
         halt("*: Vector and matrix dims must match");
 
-    [i in R.domain] R[i] = + reduce(M(i,..) * V);
+    [i in R.domain with (ref R)] R[i] = + reduce(M(i,..) * V);
 
     return R;
 }
