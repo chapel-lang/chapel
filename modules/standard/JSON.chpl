@@ -18,25 +18,37 @@
  */
 
 /*
- The Json module provides a JsonSerializer and JsonDeserializer that allow
- for reading and writing data in the JSON format.
+ The Json module provides a ``JsonSerializer`` and ``JsonDeserializer`` that
+ allow for reading and writing data in the JSON format.
  */
-@unstable("JSON module is considered unstable pending naming changes")
 module JSON {
   private use IO;
   private use CTypes;
   private use Map;
   private use List;
 
-  @chpldoc.nodoc
-  type _writeType = fileWriter(serializerType=JsonSerializer, ?);
-  @chpldoc.nodoc
-  type _readerType = fileReader(deserializerType=JsonDeserializer, ?);
+  /* Type Alias for an :record:`IO.fileWriter` that uses a :record:`JsonSerializer` */
+  type jsonWriter = fileWriter(serializerType=JsonSerializer, ?);
+  /* Type Alias for an :record:`IO.fileReader` that uses a :record:`JsonDeserializer` */
+  type jsonReader = fileReader(deserializerType=JsonDeserializer, ?);
 
+  /*
+    A JSON format serializer to be used by :record:`~IO.fileWriter`.
+
+    Implements the 'serializeValue' method which is called by a ``fileWriter``
+    to produce a serialized representation of a value in JSON format.
+
+    This serializer is designed to generate valid JSON; however, no
+    guarantees are made about the exact formatting w.r.t. whitespace,
+    newlines or indentation.
+
+    See the :record:`~IO.DefaultSerializer` for more information about
+    serializers in general.
+  */
   record JsonSerializer {
     // TODO: rewrite in terms of writef, or something
     @chpldoc.nodoc
-    proc _oldWrite(ch: _writeType, const val:?t) throws {
+    proc _oldWrite(ch: jsonWriter, const val:?t) throws {
       var _def = new DefaultSerializer();
       var dc = ch.withSerializer(_def);
       var st = dc._styleInternal();
@@ -50,7 +62,8 @@ module JSON {
       dc._writeOne(dc._kind, val, here);
     }
 
-    proc ref serializeValue(writer: _writeType, const val:?t) throws {
+    /* Serialize a value into a :record:`~IO.fileWriter` in JSON format */
+    proc ref serializeValue(writer: jsonWriter, const val:?t) throws {
       if t == string  || isEnumType(t) || t == bytes {
         // for quotes around things
         _oldWrite(writer, val);
@@ -100,13 +113,13 @@ module JSON {
     }
 
     @chpldoc.nodoc
-    proc startClass(writer: _writeType, name: string, size: int) throws {
+    proc startClass(writer: jsonWriter, name: string, size: int) throws {
       writer.writeLiteral("{");
       return new AggregateSerializer(writer, _ending="}");
     }
 
     @chpldoc.nodoc
-    proc startRecord(writer: _writeType, name: string, size: int) throws {
+    proc startRecord(writer: jsonWriter, name: string, size: int) throws {
       writer.writeLiteral("{");
       return new AggregateSerializer(writer, _ending="}");
     }
@@ -134,13 +147,13 @@ module JSON {
     }
 
     @chpldoc.nodoc
-    proc startTuple(writer: _writeType, size: int) throws {
+    proc startTuple(writer: jsonWriter, size: int) throws {
       writer.writeLiteral("[");
       return new ListSerializer(writer);
     }
 
     @chpldoc.nodoc
-    proc startList(writer: _writeType, size: int) throws {
+    proc startList(writer: jsonWriter, size: int) throws {
       writer.writeLiteral("[");
       return new ListSerializer(writer);
     }
@@ -247,7 +260,7 @@ module JSON {
     }
 
     @chpldoc.nodoc
-    proc startArray(writer: _writeType, size: int) throws {
+    proc startArray(writer: jsonWriter, size: int) throws {
       return new ArraySerializer(writer);
     }
 
@@ -303,7 +316,7 @@ module JSON {
     //   "day": "night"
     // }
     @chpldoc.nodoc
-    proc startMap(writer: _writeType, size: int) throws {
+    proc startMap(writer: jsonWriter, size: int) throws {
       writer._writeLiteral("{");
       return new MapSerializer(writer);
     }
@@ -314,7 +327,7 @@ module JSON {
   // Read the JSON object in ahead of time, and produce a map of field names
   // to file offsets that we can look at later in readField.
   // TODO: use a proper JSON library.
-  private proc outOfOrderHelper(reader: _readerType) throws {
+  private proc outOfOrderHelper(reader: jsonReader) throws {
     var m : map(string, int);
     reader.mark();
 
@@ -343,6 +356,21 @@ module JSON {
     return (m, lastPos);
   }
 
+  /*
+    A JSON format deserializer to be used by :record:`~IO.fileReader`.
+
+    Implements the ``deserializeType`` and ``deserializeValue`` methods which are
+    called by a ``fileReader`` to deserialize a serialized representation of
+    a type or value in JSON format.
+
+    This deserializer supports reading class and record fields out-of-order
+    by default. I.e., the fields of a JSON object do not need to match the
+    declaration order in a Chapel type definition to be deserialized into that
+    type.
+
+    See the :record:`~IO.DefaultDeserializer` for more information about
+    deserializers in general.
+*/
   record JsonDeserializer {
 
     // Keep track of information gained from reading ahead
@@ -356,7 +384,7 @@ module JSON {
 
     // TODO: rewrite in terms of writef, or something
     @chpldoc.nodoc
-    proc _oldRead(ch: _readerType, ref val:?t) throws {
+    proc _oldRead(ch: jsonReader, ref val:?t) throws {
       var _def = new DefaultDeserializer();
       var dc = ch.withDeserializer(_def);
       var st = dc._styleInternal();
@@ -371,7 +399,8 @@ module JSON {
       dc._readOne(dc._kind, val, here);
     }
 
-    proc ref deserializeType(reader:_readerType, type readType) : readType throws {
+    /* Deserialize a JSON formatted value of the given type from a :record:`~IO.fileReader` */
+    proc ref deserializeType(reader: jsonReader, type readType) : readType throws {
       if isNilableClassType(readType) && reader.matchLiteral("null") {
         return nil:readType;
       }
@@ -402,7 +431,8 @@ module JSON {
       }
     }
 
-    proc ref deserializeValue(reader: _readerType, ref val: ?readType) : void throws {
+    /* Deserialize a JSON formatted value from a :record:`~IO.fileReader` */
+    proc ref deserializeValue(reader: jsonReader, ref val: ?readType) : void throws {
       if canResolveMethod(val, "deserialize", reader, this) {
         val.deserialize(reader=reader, deserializer=this);
       } else {
@@ -417,7 +447,7 @@ module JSON {
       var _parent : bool = false;
 
       @chpldoc.nodoc
-      proc _readFieldName(reader: _readerType, key: string) throws {
+      proc _readFieldName(reader: jsonReader, key: string) throws {
         try {
           reader._readLiteral('"');
           reader._readLiteral(key);
@@ -479,7 +509,7 @@ module JSON {
     }
 
     @chpldoc.nodoc
-    proc startClass(reader: _readerType, name: string) throws {
+    proc startClass(reader: jsonReader, name: string) throws {
       //
       // TODO: Should we only compute the mapping if the fields are being
       // read out of order?
@@ -490,8 +520,7 @@ module JSON {
       return new AggregateDeserializer(reader, m, last);
     }
 
-    @chpldoc.nodoc
-    proc startRecord(reader: _readerType, name: string) throws {
+    proc startRecord(reader: jsonReader, name: string) throws {
       return startClass(reader, name);
     }
 
@@ -534,13 +563,11 @@ module JSON {
       }
     }
 
-    @chpldoc.nodoc
-    proc startTuple(reader: _readerType) throws {
+    proc startTuple(reader: jsonReader) throws {
       return startList(reader);
     }
 
-    @chpldoc.nodoc
-    proc startList(reader: _readerType) throws {
+    proc startList(reader: jsonReader) throws {
       reader._readLiteral("[");
       return new ListDeserializer(reader);
     }
@@ -607,7 +634,7 @@ module JSON {
     }
 
     @chpldoc.nodoc
-    proc startArray(reader: _readerType) throws {
+    proc startArray(reader: jsonReader) throws {
       return new ArrayDeserializer(reader);
     }
 
@@ -653,7 +680,7 @@ module JSON {
     }
 
     @chpldoc.nodoc
-    proc startMap(reader: _readerType) throws {
+    proc startMap(reader: jsonReader) throws {
       reader._readLiteral("{");
       return new MapDeserializer(reader);
     }
