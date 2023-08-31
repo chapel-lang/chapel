@@ -164,7 +164,7 @@ proc PrintV(X)
 
 proc SetExampleMatrix()
 {
-  forall (i) in Dom{
+  forall (i) in Dom with (ref A, ref B, ref C) {
     A(i)=1.0;
     B(i)=2.0;
     C(i)=1.0;

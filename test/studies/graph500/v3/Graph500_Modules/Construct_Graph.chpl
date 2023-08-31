@@ -28,7 +28,7 @@ proc constructGraph(Edges:[?ArrD] , G)
    }
 */
    // zippered version of the above
-   forall (vertex, histogram) in zip(G.Vertices, Histogram$) do
+   forall (vertex, histogram) in zip(G.Vertices, Histogram$) with (ref Histogram$) do
      vertex.nd = {1..histogram.read()};
 
 // Note that graph for Graph500 benchmark is undirected

@@ -221,12 +221,12 @@ module Graph {
                                   initialLastAvail=0);
       var next$: [vertices] atomic int;
 
-      forall x in next$ {
+      forall x in next$ with (ref next$) {
         next$.write(G.initialFirstAvail);
       }
 
       // Pass 1: count.
-      forall trip in triples {
+      forall trip in triples with (ref next$) {
         var u = trip.from;
         var v = trip.to;
         var w = trip.weight;
@@ -242,7 +242,7 @@ module Graph {
         G.Row[v].ndom = {min..max};
       }
       // reset all of the counters.
-      forall x in next$ {
+      forall x in next$ with (ref next$) {
         next$.write(G.initialFirstAvail, memoryOrder.relaxed);
       }
       // Pass 2: populate.

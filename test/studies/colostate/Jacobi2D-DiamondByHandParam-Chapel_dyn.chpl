@@ -190,7 +190,7 @@ proc main(){
   timer.start();
 
   //forall (x,y) in computationDomain do
-  forall (read, write, x ,y) in DiamondTileIterator(lowerBound, upperBound, T, tau){
+  forall (read, write, x ,y) in DiamondTileIterator(lowerBound, upperBound, T, tau) with (ref space) {
   //forall (x,y) in computationDomain {
       space[write, x, y] = (space[read, x, y-1] +
                             space[read, x-1, y] +

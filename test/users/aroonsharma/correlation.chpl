@@ -103,7 +103,7 @@ proc kernel_correlation(dist_square, dist_linear, m_dim: int, n_dim: int) {
     forall (i, j) in dist_square with (ref symmat) {
         if (i < j) {
             var tempArray: [1..m_dim] real;
-            forall(d1, d2, k) in zip(data[1..m_dim, i], data[1..m_dim, j], 1..) {
+            forall(d1, d2, k) in zip(data[1..m_dim, i], data[1..m_dim, j], 1..) with (ref tempArray) {
                 tempArray[k] = d1 * d2;
             }
             symmat[i,j] = + reduce(tempArray);
@@ -162,7 +162,7 @@ proc kernel_correlation(dist_square, dist_linear, m_dim: int, n_dim: int) {
       forall (i, j) in {1..m_dim, 1..n_dim} with (ref symmatTest) {
           if (i < j) {
               var tempArray: [1..m_dim] real;
-              forall(d1, d2, k) in zip(dataTest[1..m_dim, i], dataTest[1..m_dim, j], 1..) {
+              forall(d1, d2, k) in zip(dataTest[1..m_dim, i], dataTest[1..m_dim, j], 1..) with (ref tempArray) {
                   tempArray[k] = d1 * d2;
               }
               symmatTest[i,j] = + reduce(tempArray);

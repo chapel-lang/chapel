@@ -219,7 +219,7 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
 
       serial(SERIAL_GRAPH_GEN) {
         forall (v, rnd) in zip(vertex_domain,
-          NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos-1))
+          NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos-1)) with (ref permutationSync)
         {
           const u = floor (1 + rnd * N_VERTICES) : int;
           if u != v {

@@ -126,7 +126,7 @@ proc main(){
   timer.start();
 
   forall (read, write, x) in DiamondTileIterator( lowerBound, upperBound, T,
-                                                   tau ){
+                                                   tau ) with (ref space) {
     space[write, x] = (space[read, x-1] +
                        space[read, x] +
                        space[read, x+1]) / 3;

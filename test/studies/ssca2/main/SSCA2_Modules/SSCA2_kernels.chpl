@@ -132,9 +132,9 @@ module SSCA2_kernels
 
 	for path_length in 1 .. max_path_length do {
 
-	  forall v in Active_Level with(ref Next_Level) do {
+	  forall v in Active_Level with (ref Next_Level, ref min_distance) do {
 
-	    forall w in G.Neighbors (v) with(ref Next_Level) do {
+	    forall w in G.Neighbors (v) with (ref Next_Level, ref min_distance) do {
 
 
               if min_distance(w).compareAndSwap(-1, path_length) then {
@@ -273,7 +273,7 @@ module SSCA2_kernels
 
       if PRINT_TIMING_STATISTICS then sw.start ();
 
-      forall s in starting_vertices with (ref Locales) do on vertex_domain.distribution.idxToLocale(s) {
+      forall s in starting_vertices with (ref Locales, ref Between_Cent$) do on vertex_domain.distribution.idxToLocale(s) {
 
         const shere = here.id;
 

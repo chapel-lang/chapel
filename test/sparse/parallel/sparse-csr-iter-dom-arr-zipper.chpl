@@ -78,7 +78,7 @@ proc test(param dim:int, d: domain(dim)) {
   forall (i,a,j,b) in zip(sd,A,sd,B) with (ref D) { D(i) = a - C(i) + b; }
   hd("forall(dom,arr,dom,arr) { ix = ivar, ix, ivar }"); showD;
 
-  forall(x,i,y,j) in zip(X,sd,Y,sd) { Q(i) = Z(i) - x - y; }
+  forall(x,i,y,j) in zip(X,sd,Y,sd) with (ref Q) { Q(i) = Z(i) - x - y; }
   hd("forall(arr,dom,arr,dom) { ix = ix, ivar, ivar }"); showQ;
 
   A = B; hd("A=B"); showA;
