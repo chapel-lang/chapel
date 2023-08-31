@@ -1816,20 +1816,21 @@ module DefaultRectangular {
     }
 
     use Reflection;
-    var ptr = c_addrOf(arr.dsiAccess(dom.dsiFirst));
-
-    param canResolveBulkElements = Reflection.canResolveMethod(helper, "writeBulkElements", ptr, 0) ||
-                                   Reflection.canResolveMethod(helper, "readBulkElements", ptr, 0);
+    var dummy : c_ptr(arr.eltType);
+    param canResolveBulkElements = Reflection.canResolveMethod(helper, "writeBulkElements", dummy, 0) ||
+                                   Reflection.canResolveMethod(helper, "readBulkElements", dummy, 0);
     param useBulkElements = canResolveBulkElements &&
                             arr.isDefaultRectangular() &&
                             !chpl__isArrayView(arr) &&
                             _isSimpleIoType(arr.eltType);
 
-    if useBulkElements && arr.isDataContiguous(dom) {
+    const len = dom.dsiNumIndices:int;
+    if useBulkElements && arr.isDataContiguous(dom) && len > 0 {
+      var ptr = c_addrOf(arr.dsiAccess(dom.dsiFirst));
       if f._writing then
-        helper.writeBulkElements(ptr, dom.dsiNumIndices:int);
+        helper.writeBulkElements(ptr, len);
       else
-        helper.readBulkElements(ptr, dom.dsiNumIndices:int);
+        helper.readBulkElements(ptr, len);
     } else {
       // Otherwise, recursively read or write the array
       const zeroTup: rank*idxType;
