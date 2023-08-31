@@ -76,7 +76,7 @@ proc main(){
         // Do the calculation
         kernelLaunches+=1;
         kernelTimer.start();
-        forall i in 0..#elemsInBlock {
+        forall i in 0..#elemsInBlock with (ref C0) {
           C0[i] = A0[i] * alpha + B0[i];
         }
         kernelTimer.stop();
@@ -114,14 +114,14 @@ proc main(){
             if(currentStream){
               kernelTimer.start();
               // Launch on Stream 1
-              forall i in 0..#elemsInBlock {
+              forall i in 0..#elemsInBlock with (ref C1) {
                 C1[i] = A1[i] * alpha + B1[i];
               }
               kernelTimer.stop();
             } else {
               kernelTimer.start();
               // Launch on Stream 0
-              forall i in 0..#elemsInBlock {
+              forall i in 0..#elemsInBlock with (ref C0) {
                 C0[i] = A0[i] * alpha + B0[i];
               }
               kernelTimer.stop();
