@@ -157,7 +157,7 @@ proc main() {
   // The main loop that computes the image in parallel using a dynamic
   // load-balancing iterator.
   //
-  forall (y, x) in dynamic(pixels.domain) do
+  forall (y, x) in dynamic(pixels.domain) with (ref pixels) do
     pixels[y, x] = computePixel(y, x, scene, rands);
 
   //

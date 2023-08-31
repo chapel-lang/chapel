@@ -317,7 +317,7 @@ mini_sync();
 proc tls_hazard_atomic_conditional() {
   var taskCounter: atomic int;
   var iterationsForTask:[0..M] atomic int;
-  forall i in 1..N with (var id = taskCounter.fetchAdd(1, ref iterationsForTask) {
+  forall i in 1..N with (var id = taskCounter.fetchAdd(1), ref iterationsForTask) {
     if 0 <= id && id <= M {
       iterationsForTask[id].add(1);
       assert(iterationsForTask[id].read() == 1);
@@ -331,7 +331,7 @@ tls_hazard_atomic_conditional();
 proc tls_hazard_atomic() {
   var taskCounter: atomic int;
   var iterationsForTask:[0..M] atomic int;
-  forall i in 1..N with (var id = taskCounter.fetchAdd(1, ref iterationsForTask) {
+  forall i in 1..N with (var id = taskCounter.fetchAdd(1), ref iterationsForTask) {
     iterationsForTask[id].add(1);
     assert(iterationsForTask[id].read() == 1);
     // do something useful...
@@ -388,7 +388,7 @@ proc tls_hazard_buffer1() {
   var taskCounter: atomic int;
   var perTaskBuff: [0..M] buffer1;
 
-  forall i in 1..N with (var id=taskCounter.fetchAdd(1, ref perTaskBuff) {
+  forall i in 1..N with (var id=taskCounter.fetchAdd(1), ref perTaskBuff) {
     perTaskBuff[id].enqueue(i);
   }
 }
@@ -431,7 +431,7 @@ proc tls_hazard_buffer2() {
   var taskCounter: atomic int;
   var perTaskBuff: [0..M] buffer2;
 
-  forall i in 1..N with (var id=taskCounter.fetchAdd(1, ref perTaskBuff) {
+  forall i in 1..N with (var id=taskCounter.fetchAdd(1), ref perTaskBuff) {
     perTaskBuff[id].enqueue(i);
   }
 }
@@ -465,7 +465,7 @@ proc tls_signalling() {
       }
     }
 
-    forall i in 1..N with (var id=taskCounter.fetchAdd(1, ref perTaskBuff) {
+    forall i in 1..N with (var id=taskCounter.fetchAdd(1), ref perTaskBuff) {
       ref tls = perTaskBuff[id];
       if tls.deferredSignal then
         tls.signal.add(1);
@@ -497,7 +497,7 @@ proc tls_signalling2() {
       }
     }
 
-    forall i in 1..N with (var id=taskCounter.fetchAdd(1, ref perTaskBuff) {
+    forall i in 1..N with (var id=taskCounter.fetchAdd(1), ref perTaskBuff) {
       ref tls = perTaskBuff[id];
       if tls.deferredSignal {
         tls.signal.add(1);

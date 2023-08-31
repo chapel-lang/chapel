@@ -26,7 +26,7 @@ proc blockLU(A: [?D], blk, ref piv: [D.dim(0)]) where (D.rank == 2) {
   if (blk <= 0) || (blk > D.dim(0).size) then
     halt(blk," is an invalid block size passed to blockLU");
 
-  [i in D.dim(0 with (ref piv) with (ref piv))] piv(i) = i;    // initialize the pivot vector
+  [i in D.dim(0) with (ref piv)] piv(i) = i;    // initialize the pivot vector
 
   // Main loop of block LU uses an iterator to compute three sets of
   // index ranges -- those that are unfactored, divided into those

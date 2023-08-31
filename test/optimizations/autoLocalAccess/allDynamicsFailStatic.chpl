@@ -15,6 +15,6 @@ var B = Cyclic.createArray({1..10}, int);
 // One way to confirm that is that "Static check successful" message is shown
 // only once in the compiler logs
 forall i in D with (ref A) {
-  A[i] = 
+  A[i] =
     B[i];
 }

@@ -20,7 +20,7 @@ proc in_set8(ipart: int, rpart8: int):uint(8) {
   
   var c8: 8*complex;
 
-  for i in 0..#8 {
+  for i in 0..#8 with (ref c8) {
     var rpart = rpart8 + i;
     c8[i].re = (upper.re - lower.re) * rpart / size + lower.re;
     c8[i].im = c_im;
@@ -48,7 +48,7 @@ proc main() {
 
   //var values: [D] complex = for (re,im) in space do compute(get_point(i));
 
-  forall (im,re8) in D {
+  forall (im,re8) in D with (ref set) {
     set(im,re8) = in_set8(im, re8);
   }
 

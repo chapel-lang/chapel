@@ -54,7 +54,7 @@ proc main() {
     }
     when Mode.aggregated {
       use CopyAggregation;
-      forall i in D2 with (var agg = new SrcAggregator(int, ref tmp) do
+      forall i in D2 with (var agg = new SrcAggregator(int), ref tmp) do
         agg.copy(tmp[i], A[rindex[i]]);
     }
   }

@@ -18,7 +18,7 @@ proc main() {
       B: [D] real;
 
   // initialize south boundary to 1.0
-  [ij in D.exterior(south with (ref A))] A(ij) = 1.0;
+  [ij in D.exterior(south) with (ref A)] A(ij) = 1.0;
 
 
   var bigdiff: real;

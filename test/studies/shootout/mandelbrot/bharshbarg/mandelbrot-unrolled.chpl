@@ -12,7 +12,7 @@ proc main() {
   const xdim = 0..((n+7)/8)-1;
   var pixels : [ydim][xdim] uint(8);
 
-  forall i in ydim {
+  forall i in ydim with (ref Cib, ref Crb) {
     Cib[i] = i * invN - 1.0;
     Crb[i] = i * invN - 1.5;
   }
