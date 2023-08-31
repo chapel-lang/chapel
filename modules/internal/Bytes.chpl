@@ -585,8 +585,8 @@ module Bytes {
 
 
   /*
-    Gets a `c_ptrConst(c_char)` from a :type:`bytes`. The returned `c_ptrConst(c_char)`
-    shares the buffer with the :type:`bytes`.
+    Gets a `c_ptrConst(c_char)` from a :type:`bytes`. The returned
+    `c_ptrConst(c_char)` shares the buffer with the :type:`bytes`.
 
     .. warning::
 
@@ -604,12 +604,12 @@ module Bytes {
           printf("%s", myBytes.localize().c_str());
         }
 
-    :returns: A `c_ptrConst(c_char)` that points to the underlying buffer used by this
-        :type:`bytes`. The returned `c_ptrConst(c_char)` is only valid when used
-        on the same locale as the bytes.
+    :returns: A `c_ptrConst(c_char)` that points to the underlying buffer used
+              by this :type:`bytes`. The returned `c_ptrConst(c_char)` is only
+              valid when used on the same locale as the bytes.
    */
   pragma "last resort"
-  @deprecated("'bytes.c_str()' has moved to 'CTypes'. Please 'use CTypes' to access the replacement")
+  @deprecated("'bytes.c_str()' has moved to 'CTypes'. Please use :proc:`~CTypes.bytes.c_str()`")
   inline proc bytes.c_str(): c_ptrConst(c_char) {
     use CTypes only c_str;
     return this.c_str();

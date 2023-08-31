@@ -1512,12 +1512,12 @@ module CTypes {
   }
 
   /*
-    Get the number of bytes in a c_ptrConst(int(8)) or c_ptrConst(uint(8)), excluding the
-    terminating null.
+    Get the number of bytes in a c_ptrConst(int(8)) or c_ptrConst(uint(8)),
+    excluding the terminating NULL.
 
     :arg x: c_ptrConst(int(8)) or c_ptrConst(uint(8)) to get length of
 
-    :returns: the number of bytes in x, excluding the terminating null
+    :returns: the number of bytes in x, excluding the terminating NULL
    */
   @unstable("the strLen function is unstable and may change or go away in a future release")
   inline proc strLen(x:c_ptrConst(?t)): int {
@@ -1525,15 +1525,15 @@ module CTypes {
   }
 
   /*
-    Get a `c_ptrConst(c_char)` from a :type:`string`. The returned `c_ptrConst(c_char)`
-    shares the buffer with the :type:`string`.
+    Get a `c_ptrConst(c_char)` from a :type:`~String.string`. The returned
+    `c_ptrConst(c_char)` shares the buffer with the :type:`~String.string`.
 
     .. warning::
 
-        This can only be called safely on a :type:`string` whose home is
+        This can only be called safely on a :type:`~String.string` whose home is
         the current locale.  This property can be enforced by calling
-        :proc:`string.localize()` before :proc:`string.c_str()`. If the
-        string is remote, the program will halt.
+        :proc:`~String.string.localize()` before :proc:`~String.string.c_str()`.
+        If the string is remote, the program will halt.
 
     For example:
 
@@ -1544,10 +1544,16 @@ module CTypes {
         printf("%s", my_string.localize().c_str());
       }
 
+    .. warning::
+
+        Chapel strings are capable of containing NULL bytes, and any C routines
+        relying on NULL terminated buffers may incorrectly process the
+        mid-string NULL as the terminating NULL.
+
     :returns:
         A `c_ptrConst(c_char)` that points to the underlying buffer used by this
-        :type:`string`. The returned `c_ptrConst(c_char)` is only valid when used
-        on the same locale as the string.
+        :type:`~String.string`. The returned `c_ptrConst(c_char)` is only valid
+        when used on the same locale as the string.
    */
   @unstable("'string.c_str()' is unstable and may change in a future release")
   inline proc string.c_str() : c_ptrConst(c_char) {
@@ -1556,15 +1562,15 @@ module CTypes {
   }
 
  /*
-    Gets a `c_ptrConst(c_char)` from a :type:`bytes`. The returned `c_ptrConst(c_char)`
-    shares the buffer with the :type:`bytes`.
+    Gets a `c_ptrConst(c_char)` from a :type:`~Bytes.bytes`. The returned
+    `c_ptrConst(c_char)` shares the buffer with the :type:`~Bytes.bytes`.
 
     .. warning::
 
-      This can only be called safely on a :type:`bytes` whose home is
+      This can only be called safely on a :type:`~Bytes.bytes` whose home is
       the current locale.  This property can be enforced by calling
-      :proc:`bytes.localize()` before :proc:`~bytes.c_str()`. If the
-      bytes is remote, the program will halt.
+      :proc:`~Bytes.bytes.localize()` before :proc:`~Bytes.bytes.c_str()`.
+      If the bytes is remote, the program will halt.
 
     For example:
 
@@ -1575,9 +1581,15 @@ module CTypes {
           printf("%s", myBytes.localize().c_str());
         }
 
-    :returns: A `c_ptrConst(c_char)` that points to the underlying buffer used by this
-        :type:`bytes`. The returned `c_ptrConst(c_char)` is only valid when used
-        on the same locale as the bytes.
+    .. warning::
+
+        Chapel :type:`~Bytes.bytes` are capable of containing NULL bytes, and
+        any C routines relying on NULL terminated buffers may incorrectly
+        process the mid-buffer NULL as the terminating NULL.
+
+    :returns: A `c_ptrConst(c_char)` that points to the underlying buffer used
+              by this :type:`~Bytes.bytes`. The returned `c_ptrConst(c_char)`
+              is only valid when used on the same locale as the bytes.
    */
   @unstable("'bytes.c_str()' is unstable and may change in a future release")
   inline proc bytes.c_str(): c_ptrConst(c_char) {

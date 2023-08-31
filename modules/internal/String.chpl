@@ -1359,8 +1359,8 @@ module String {
   }
 
   /*
-    Get a `c_ptrConst(c_char)` from a :type:`string`. The returned `c_ptrConst(c_char)`
-    shares the buffer with the :type:`string`.
+    Get a `c_ptrConst(c_char)` from a :type:`string`. The returned
+    `c_ptrConst(c_char)` shares the buffer with the :type:`string`.
 
     .. warning::
 
@@ -1384,7 +1384,7 @@ module String {
         on the same locale as the string.
    */
   pragma "last resort"
-  @deprecated("'string.c_str()'' has moved to 'CTypes'. Please 'use CTypes' to access the replacement")
+  @deprecated("'string.c_str()'' has moved to 'CTypes'. Please use :proc:`~CTypes.string.c_str()`")
   inline proc string.c_str() : c_ptrConst(c_char) {
     use CTypes only c_str;
     return this.c_str();
