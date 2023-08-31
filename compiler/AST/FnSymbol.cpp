@@ -885,8 +885,13 @@ static void checkFormalType(const FnSymbol* enclosingFn, ArgSymbol* formal) {
         formal->defPoint->getModule()->modTag == MOD_USER) {
       if (formal->type->symbol->hasFlag(FLAG_ARRAY)) {
         // don't worry about it for array types for now
-      } else if (formal->type == dtAny) {
+        //      } else if (formal->type == dtAny) {
         // skip over 'dtAny' cases for now
+        // TODO: This is casting too wide a net, though...  See
+        // test/functions/intents/out/out-generic-type-set-assign.chpl
+        // for a case that it lets through but shouldn't
+      } else if (enclosingFn->hasFlag(FLAG_COMPILER_GENERATED)) {
+        // We shouldn't complain to the user about routines we generate
       } else {
         USR_WARN(formal, "need ? on generic formal type (A)");
       }
