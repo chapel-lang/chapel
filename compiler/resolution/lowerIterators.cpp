@@ -3073,20 +3073,23 @@ static
 void maybeIssueRefMaybeConstWarning(ForallStmt* fs, Symbol* sym, std::vector<CallExpr*> allCalls, std::vector<SymExpr*> allIterandSymExprs) {
   // need to do some heuristics to determine if arg gets modified
 
-  // check if sym used in iterand
-  bool symInIterand = std::find_if(allIterandSymExprs.begin(),
-                                   allIterandSymExprs.end(), [sym](auto se) {
-                                     return sym == se->symbol();
-                                   }) != allIterandSymExprs.end();
-  if (!symInIterand) {
-    for (auto ce: allCalls) {
-      // if a call sets the symbol, warn
-      if (callSetsSymbol(sym, ce)) {
-        USR_WARN(fs,
-                  "inferring a default intent to be 'ref' is deprecated - "
-                  "please add an explicit 'ref' forall intent for '%s'",
-                  sym->name);
-        break;
+  if (sym->hasFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST)) {
+
+    // check if sym used in iterand
+    bool symInIterand = std::find_if(allIterandSymExprs.begin(),
+                                    allIterandSymExprs.end(), [sym](auto se) {
+                                      return sym == se->symbol();
+                                    }) != allIterandSymExprs.end();
+    if (!symInIterand) {
+      for (auto ce: allCalls) {
+        // if a call sets the symbol, warn
+        if (callSetsSymbol(sym, ce)) {
+          USR_WARN(fs,
+                    "inferring a default intent to be 'ref' is deprecated - "
+                    "please add an explicit 'ref' forall intent for '%s'",
+                    sym->name);
+          break;
+        }
       }
     }
   }

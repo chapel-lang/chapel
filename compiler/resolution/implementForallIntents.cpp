@@ -743,6 +743,8 @@ static void resolveShadowVarTypeIntent(ForallStmt* fs,
 
       // mark all ref-maybe-const shadow variables
       if (argInt == INTENT_REF_MAYBE_CONST && intent == TFI_REF) {
+        if(sym->id == 2779988) gdbShouldBreakHere();
+        sym->addFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST);
         auto it = refMaybeConstForallPairs.find(fs);
         if (it == refMaybeConstForallPairs.end())
           it = refMaybeConstForallPairs.insert(it, {fs, {}});
@@ -754,10 +756,20 @@ static void resolveShadowVarTypeIntent(ForallStmt* fs,
 
     case TFI_IN:               // Nothing to do for now.
     case TFI_CONST_IN:
-    case TFI_REF:
     case TFI_CONST_REF:
     case TFI_REDUCE:
     case TFI_TASK_PRIVATE:      break;
+
+    case TFI_REF: {
+      sym->removeFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST);
+      if (ShadowVarSymbol* svar = toShadowVarSymbol(sym)) {
+        if(Symbol* outerSym = svar->outerVarSym()) {
+          outerSym->removeFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST);
+        }
+      }
+
+      break;
+    }
 
     case TFI_IN_PARENT:         // These have not been created yet.
     case TFI_REDUCE_OP:
