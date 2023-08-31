@@ -108,7 +108,7 @@ module SharedObject {
   // If we one day support :noindexentry:, that could be applied at the module
   //   level (instead of :noindex:)
   // And then we could do :mod:`shared <SharedObject>`
-  // For now, `fixInternalDocs.sh` will replace `record` with `type` here
+  // For now, `fixInternalDocs.sh` replaces `.. record:: shared` with `.. type:: shared`
   /*
     :type:`shared` manages the deletion of a class instance in a way
     that supports multiple owners of the class instance.
@@ -428,7 +428,7 @@ module SharedObject {
     instance once there are no longer any copies of this
     :type:`shared` that refer to it.
   */
-  proc _shared.deinit() {
+  proc ref _shared.deinit() {
     if isClass(chpl_p) { // otherwise, let error happen on init call
       doClear();
     }

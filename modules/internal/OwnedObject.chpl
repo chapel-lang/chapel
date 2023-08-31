@@ -28,7 +28,7 @@ module OwnedObject {
   // If we one day support :noindexentry:, that could be applied at the module
   //   level (instead of :noindex:)
   // And then we could do :mod:`owned <OwnedObject>`
-  // For now, `fixInternalDocs.sh` will replace `record` with `type` here
+  // For now, `fixInternalDocs.sh` replaces `.. record:: owned` with `.. type:: owned`
   /*
     :type:`owned` manages the deletion of a class instance assuming
     that this :type:`owned` is the only thing responsible for
