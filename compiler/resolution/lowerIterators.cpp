@@ -3026,6 +3026,8 @@ static void removeUncalledIterators()
   }
 }
 
+std::unordered_set<int> refMaybeConstAlreadyWarnedFs;
+std::unordered_set<int> refMaybeConstAlreadyWarnedSym;
 
 static
 bool exprContainsSymbol(Symbol* sym, Expr* expr) {
@@ -3074,6 +3076,10 @@ static
 void maybeIssueRefMaybeConstWarning(ForallStmt* fs, Symbol* sym, std::vector<CallExpr*> allCalls, std::vector<SymExpr*> allIterandSymExprs) {
   // need to do some heuristics to determine if arg gets modified
 
+  if(refMaybeConstAlreadyWarnedFs.count(fs->id) > 0 &&
+    refMaybeConstAlreadyWarnedSym.count(sym->id) > 0)
+    return;
+
   // if has marker
   if (sym->hasFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST)) {
     // and its not in the iterand
@@ -3081,10 +3087,16 @@ void maybeIssueRefMaybeConstWarning(ForallStmt* fs, Symbol* sym, std::vector<Cal
       for (auto ce: allCalls) {
         // if a call sets the symbol, warn
         if (callSetsSymbol(sym, ce)) {
+          // for some reason, this has to be inside the loop!?
+          if(refMaybeConstAlreadyWarnedFs.count(fs->id) > 0 &&
+             refMaybeConstAlreadyWarnedSym.count(sym->id) > 0)
+            return;
           USR_WARN(fs,
                     "inferring a default intent to be 'ref' is deprecated - "
                     "please add an explicit 'ref' forall intent for '%s'",
                     sym->name);
+          refMaybeConstAlreadyWarnedFs.insert(fs->id);
+          refMaybeConstAlreadyWarnedSym.insert(sym->id);
         }
       }
     }
@@ -3093,7 +3105,6 @@ void maybeIssueRefMaybeConstWarning(ForallStmt* fs, Symbol* sym, std::vector<Cal
 static void checkForallRefMaybeConst(ForallStmt* fs) {
 
   if(fs->hasRefMaybeConst()) {
-    gdbShouldBreakHere();
 
     // collect all SymExpr used in the iterand of the forall so we dont warn for them
     std::vector<SymExpr*> allIterandSymExprs;
