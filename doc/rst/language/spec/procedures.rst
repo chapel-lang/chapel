@@ -681,9 +681,10 @@ Default Intent for ’owned’ and ’shared’
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The default intent for :type:`~OwnedObject.owned` and
-:type:`~SharedObject.shared` arguments is ``const``. Arguments can use the
-``in`` or ``const in`` intents to transfer or share ownership if those arguments
-apply to :type:`~OwnedObject.owned` or :type:`~SharedObject.shared` types.
+:type:`~SharedObject.shared` arguments is ``const``. To transfer the ownership
+from an :type:`~OwnedObject.owned` actual argument or to share the ownership
+with a :type:`~SharedObject.shared` actual argument, the formal argument can use
+the ``in`` or ``const in`` intent.
 
    *Example (owned-any-intent.chpl)*.
 
@@ -708,10 +709,7 @@ apply to :type:`~OwnedObject.owned` or :type:`~SharedObject.shared` types.
 
 If the default intent or ``const`` intent is used for an
 :type:`~OwnedObject.owned` or :type:`~SharedObject.shared` argument, then the
-compiler is allowed to optimize the procedure assuming that the
-:type:`~OwnedObject.owned` or :type:`~SharedObject.shared` actual is not
-changing. For example, the compiler could insert a ``borrowed`` temporary and
-replace all uses of the formal with it.
+actual argument is assumed to remain unchanged during the call.
 
 .. _Variable_Length_Argument_Lists:
 
