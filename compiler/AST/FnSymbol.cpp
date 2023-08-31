@@ -892,6 +892,10 @@ static void checkFormalType(const FnSymbol* enclosingFn, ArgSymbol* formal) {
         // for a case that it lets through but shouldn't
       } else if (enclosingFn->hasFlag(FLAG_COMPILER_GENERATED)) {
         // We shouldn't complain to the user about routines we generate
+      } else if (formal->intent == INTENT_OUT) {
+        // Skip 'out' intents...  We complain if '?' is missing, but
+        // also when it's present.  Also, we convert them to 'dtAny'
+        // by this point, which is inherently generic.
       } else {
         USR_WARN(formal, "need ? on generic formal type");
       }

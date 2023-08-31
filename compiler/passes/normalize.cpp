@@ -3479,6 +3479,9 @@ static void hack_resolve_types(ArgSymbol* arg) {
             } else if (!isGenericClassIgnoringManagement(type->symbol)) {
               //              USR_WARN(arg->typeExpr, "skipping due to non-generic class w/ generic management");
               // skip over cases that are only generic due to no class mgmt
+            } else if (arg->intent == INTENT_OUT) {
+              // skip over 'out' intents; we complain about them if '(?)'
+              // is missing, and then again if it's there
             } else {
               USR_WARN(arg->typeExpr, "need '?' on generic formal type '%s'", type->symbol->name);
             }
