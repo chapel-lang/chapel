@@ -19,6 +19,7 @@
  */
 
 #include <cstring>
+#include <regex>
 
 #include "library.h"
 
@@ -313,6 +314,7 @@ static void printCMakeListsIncludes(fileinfo cmakelists, std::string name) {
 static void printCMakeListsLibraries(fileinfo cmakelists, std::string name) {
   std::string varValue = "";
   std::string libraries = getCompilelineOption("libraries");
+  libraries = std::regex_replace(libraries, std::regex("(-framework \\S*)(\\s)"), "\"$1\"$2");
   std::string libname = getLibname(name);
 
   std::string requires_ = getRequireLibraries();
