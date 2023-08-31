@@ -16,7 +16,7 @@ B = AS;
 stopTrial(B, "use slice via assignment (module-scope)");
 
 startTrial();
-forall i in Dom4D do
+forall i in Dom4D with (ref B) do
   B[i] = AS[i];
 stopTrial(B, "use slice via random access (module-scope)");
 
@@ -57,7 +57,7 @@ proc main() {
   stopTrial(B, "use slice via assignment (local-scope)");
 
   startTrial();
-  forall i in Dom4D do
+  forall i in Dom4D with (ref B) do
     B[i] = AS[i];
   stopTrial(B, "use slice via random access (local-scope)");
 

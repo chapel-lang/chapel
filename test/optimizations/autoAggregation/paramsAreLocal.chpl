@@ -10,7 +10,7 @@ var b: [dom] int;
 var c = Block.createArray(0..10, int);
 
 writeln("Loop 1 -- expecting destination aggregation");
-forall i in a.domain {
+forall i in a.domain with (ref a) {
   a[10-i] = dummy;
 }
 writeln("End Loop 1");
@@ -19,7 +19,7 @@ writeln(a);
 writeln();
 
 writeln("Loop 2 -- expecting no aggregation");
-forall i in a.domain {
+forall i in a.domain with (ref a) {
   a[i] = dummy;
 }
 writeln("End Loop 2");
@@ -40,7 +40,7 @@ writeln();
 
 // index is comming from an aligned follower
 writeln("Loop 4 -- expecting no aggregation");
-forall (elem,i) in zip(b, a.domain) {
+forall (elem,i) in zip(b, a.domain) with (ref a) {
   elem = 5;
   a[i] = dummy;
 }

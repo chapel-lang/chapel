@@ -26,7 +26,7 @@ P.write(0);
 A = 1..n;
 
 startCommDiagnostics();
-forall a in A do
+forall a in A with (ref P) do
   P(here.id).fetchAdd(a);
 stopCommDiagnostics();
 

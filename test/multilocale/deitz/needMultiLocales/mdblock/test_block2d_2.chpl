@@ -26,7 +26,7 @@ writeln();
 writeln("initialized array");
 writeln(A);
 
-forall i in Dom do {
+forall i in Dom with (ref A) do {
   A(i) = 0;
 }
 

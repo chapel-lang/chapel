@@ -85,7 +85,7 @@ proc main() {
   // contains its index.  "[i in TableSpace]" is shorthand for "forall
   // i in TableSpace"
   //
-  [i in TableSpace] T(i) = i;
+  [i in TableSpace with (ref T)] T(i) = i;
 
   const startTime = timeSinceEpoch().totalSeconds();              // capture the start time
 
@@ -99,7 +99,7 @@ proc main() {
   // index and as the update value.
   //
   startCommDiagnostics();
-  forall (_, r) in zip(Updates, RAStream()) do
+  forall (_, r) in zip(Updates, RAStream()) with (ref T) do
     on TableDist.idxToLocale(r & indexMask) do
       T(r & indexMask) ^= r;
   stopCommDiagnostics();
@@ -138,7 +138,7 @@ proc verifyResults() {
   //
   // Reverse the updates by recomputing them
   //
-  forall (_, r) in zip(Updates, RAStream()) do
+  forall (_, r) in zip(Updates, RAStream()) with (ref T) do
     on TableDist.idxToLocale(r & indexMask) do
       T(r & indexMask) ^= r;
 
