@@ -4,7 +4,7 @@ proc testTypes(x: complex(?w)) {
   const res1 = abs(x);
   assert(res1.type == real(w/2));
 
-  const res2 = carg(x);
+  const res2 = phase(x);
   assert(res2.type == real(w/2));
 
   const res3 = conj(x);
