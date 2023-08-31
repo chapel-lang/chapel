@@ -1,14 +1,21 @@
---- test0() ---
+Running test: proc test0() { ... }
 1 2 3 4
---- test1() ---
+
+Running test: proc test1() { ... }
 5 6 7 8
---- test2() ---
+
+Running test: proc test2() { ... }
 1 3 5 7
---- test3() ---
+
+Running test: proc test3() { ... }
 -36
---- test4() ---
+
+Running test: proc test4() { ... }
 -4
---- test5() ---
+
+Running test: proc test5() { ... }
 1 4 9 16 25 36 49 64
---- test6() ---
+
+Running test: proc test6() { ... }
 1 2 3 4
+
