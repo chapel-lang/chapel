@@ -390,6 +390,7 @@ module String {
 
     :returns: A new `string`
   */
+  @unstable("'createBorrowingBuffer' is unstable and may change in the future")
   inline proc type string.createBorrowingBuffer(x: string) : string {
     // we don't validate here because `x` must have been validated already
     var ret: string;
@@ -439,6 +440,7 @@ module String {
 
     :returns: A new `string`
   */
+  @unstable("'createBorrowingBuffer' is unstable and may change in the future")
   inline proc type string.createBorrowingBuffer(x: c_ptr(?t),
                                                 length=strLen(x)) : string throws {
     return string.createBorrowingBuffer(x:bufferType,
@@ -462,6 +464,7 @@ module String {
 
     :returns: A new `string`
   */
+  @unstable("'createBorrowingBuffer' is unstable and may change in the future")
   inline proc type string.createBorrowingBuffer(x: c_ptrConst(?t),
                                                 length=strLen(x)) : string throws {
     return string.createBorrowingBuffer(x:bufferType,
@@ -539,6 +542,7 @@ module String {
 
      :returns: A new `string`
   */
+  @unstable("'createBorrowingBuffer' is unstable and may change in the future")
   proc type string.createBorrowingBuffer(x: c_ptr(?t),
                                          length: int,
                                          size: int) : string throws {
