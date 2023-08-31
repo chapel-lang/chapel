@@ -207,7 +207,7 @@ module SSCA2_kernels
       type Sparse_Vertex_List = domain(index(vertex_domain));
 
       var atomic_Between_Cent : [vertex_domain] atomic real;
-      var Sum_Min_Dist : atomic real;
+      var atomic_Sum_Min_Dist : atomic real;
 
       //
       // Throughout kernel 4, we use distributed arrays that are
@@ -426,7 +426,7 @@ module SSCA2_kernels
 
           if VALIDATE_BC then
             if here.id==0 then
-              Sum_Min_Dist.add(Lcl_Sum_Min_Dist.read());
+              atomic_Sum_Min_Dist.add(Lcl_Sum_Min_Dist.read());
 
           // -------------------------------------------------------------
           // compute the dependencies recursively, traversing the vertices
@@ -490,7 +490,7 @@ module SSCA2_kernels
       }
 
       if VALIDATE_BC then
-        Sum_Min_Dist = Sum_Min_Dist.read();
+        Sum_Min_Dist = atomic_Sum_Min_Dist.read();
 
       Between_Cent = atomic_Between_Cent.read();
 
