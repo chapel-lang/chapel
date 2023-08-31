@@ -27,7 +27,7 @@ proc rightBlockLU(A: [?D], blk) where (D.rank == 2) {
     halt(blk," is an invalid block size passed to blockLU");
 
   var piv: [D.dim(0)] int;
-  [i in D.dim(0)] piv(i) = i;    // initialize the pivot vector
+  [i in D.dim(0 with (ref piv))] piv(i) = i;    // initialize the pivot vector
 
   // Main loop of block LU uses an iterator to compute four sets of
   // index ranges -- those that are unfactored, divided into those

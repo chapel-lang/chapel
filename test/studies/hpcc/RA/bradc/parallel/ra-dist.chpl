@@ -37,7 +37,7 @@ proc main() {
 
   const startTime = timeSinceEpoch().totalSeconds();
 
-  [i in TableSpace] T(i) = i;
+  [i in TableSpace with (ref T)] T(i) = i;
 
   forall (i,r) in zip(UpdateSpace, RAStream()) with (ref T) do
     T(r & indexMask) ^= r;

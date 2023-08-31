@@ -15,7 +15,7 @@ writeln(B);
 var C: [1..20] int;
 forall (el, id) in zip(cycle(1..5, 4), 1..20) with (ref C) do C[id]=el;
 writeln(C);
-[id in 1..20] C[id]=0;
+[id in 1..20 with (ref C)] C[id]=0;
 forall (el, id) in zip(cycle({1..5}, 4), 1..20) with (ref C) do C[id]=el;
 writeln(C);
 

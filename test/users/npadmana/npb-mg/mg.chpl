@@ -196,7 +196,7 @@ proc smooth(ref Z :[] real, const ref R : []real) {
 proc resid(ref R:[?Dom]real, V:[]real, Z:[]real) {
   // TODO : Why does this not optimize properly???
   // R = V;
-  [ijk in Dom] R.localAccess[ijk] = V.localAccess[ijk];
+  [ijk in Dom with (ref R)] R.localAccess[ijk] = V.localAccess[ijk];
   resid(R, Z);
 }
 
@@ -376,8 +376,8 @@ proc fillInit(ref U, ref V : [?Dom]) {
 
   V = 0.0;
   U = 0.0;
-  [ijk in negative] V[ijk-1] = -1.0;
-  [ijk in positive] V[ijk-1] = 1.0;
+  [ijk in negative with (ref V)] V[ijk-1] = -1.0;
+  [ijk in positive with (ref V)] V[ijk-1] = 1.0;
 }
 
 inline proc increment(src : [?Dom]real, ref dest : []real) {

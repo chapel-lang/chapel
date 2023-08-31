@@ -93,7 +93,7 @@ proc main() {
   // contains its index.  "[i in TableSpace]" is shorthand for "forall
   // i in TableSpace"
   //
-  [i in TableSpace] T(i).poke(i);
+  [i in TableSpace with (ref T)] T(i).poke(i);
 
   const startTime = timeSinceEpoch().totalSeconds();              // capture the start time
 

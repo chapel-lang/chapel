@@ -27,7 +27,7 @@ var ind, temp:int;
 var rtemp: real;
 
 initA(A,'Adata.dat');
-[i in A1D] piv(i) = i;
+[i in A1D with (ref piv)] piv(i) = i;
 
 writeln("Unfactored Matrix:");
 writeln(A);

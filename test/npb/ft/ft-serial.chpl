@@ -166,9 +166,9 @@ proc cfftz(dir, m, n, ny, ny1 : int, ref x, ref y) {
 proc cffts1(dir, n, X1, ref X2, ny, ny1, ref x, ref y) {
   for j in DXYZ.dim(1) {
     for kk in DXYZ.dim(2) by ny {
-      [(i1,_,i3) in {0..n-1,j..j,kk..kk+ny-1}] x(i1,i3-kk) = X1(i1,j,i3);
+      [(i1,_,i3) in {0..n-1,j..j,kk..kk+ny-1} with (ref x)] x(i1,i3-kk) = X1(i1,j,i3);
       cfftz(dir, popCount((n-1):uint), n, ny, ny1, x, y);
-      [(i1,_,i3) in {0..n-1,j..j,kk..kk+ny-1}] X2(i1,j,i3) = x(i1,i3-kk);
+      [(i1,_,i3) in {0..n-1,j..j,kk..kk+ny-1} with (ref X2)] X2(i1,j,i3) = x(i1,i3-kk);
     }
   }
 }
@@ -176,9 +176,9 @@ proc cffts1(dir, n, X1, ref X2, ny, ny1, ref x, ref y) {
 proc cffts2(dir, n, X1, ref X2, ny, ny1, ref x, ref y) {
   for i in DXYZ.dim(0) {
     for kk in DXYZ.dim(2) by ny {
-      [(_,i2,i3) in {i..i,0..n-1,kk..kk+ny-1}] x(i2,i3-kk) = X1(i,i2,i3);
+      [(_,i2,i3) in {i..i,0..n-1,kk..kk+ny-1} with (ref x)] x(i2,i3-kk) = X1(i,i2,i3);
       cfftz(dir, popCount((n-1):uint), n, ny, ny1, x, y);
-      [(_,i2,i3) in {i..i,0..n-1,kk..kk+ny-1}] X2(i,i2,i3) = x(i2,i3-kk);
+      [(_,i2,i3) in {i..i,0..n-1,kk..kk+ny-1} with (ref X2)] X2(i,i2,i3) = x(i2,i3-kk);
     }
   }
 }
@@ -186,9 +186,9 @@ proc cffts2(dir, n, X1, ref X2, ny, ny1, ref x, ref y) {
 proc cffts3(dir, n, X1, ref X2, ny, ny1, ref x, ref y) {
   for i in DXYZ.dim(0) {
     for jj in DXYZ.dim(1) by ny {
-      [(_,i2,i3) in {i..i,jj..jj+ny-1,0..n-1}] x(i3,i2-jj) = X1(i,i2,i3);
+      [(_,i2,i3) in {i..i,jj..jj+ny-1,0..n-1} with (ref x)] x(i3,i2-jj) = X1(i,i2,i3);
       cfftz(dir, popCount((n-1):uint), n, ny, ny1, x, y);
-      [(_,i2,i3) in {i..i,jj..jj+ny-1,0..n-1}] X2(i,i2,i3) = x(i3,i2-jj);
+      [(_,i2,i3) in {i..i,jj..jj+ny-1,0..n-1} with (ref X2)] X2(i,i2,i3) = x(i3,i2-jj);
     }
   }
 }

@@ -17,7 +17,7 @@ var inserted: [1..numAdds] bool;
 var D: domain(real, parSafe=parSafe);
 
 var removeOrder: [1..numAdds] int;
-[i in 1..numAdds] removeOrder[i] = i;
+[i in 1..numAdds with (ref removeOrder)] removeOrder[i] = i;
 // permute the order in which we remove elements
 for p in 1..numSwapPasses {
   for i in p..stride*numSwaps+p by stride {

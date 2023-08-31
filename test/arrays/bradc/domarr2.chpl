@@ -10,7 +10,7 @@ forall (i,j) in Mat with (ref A) do
 
 writeln("A is:\n", A);
 
-[(i,j) in Mat] A(i,j) = 1.0;
+[(i,j) in Mat with (ref A)] A(i,j) = 1.0;
 
 //Commented out as this for-expression syntax sugar is in
 //direct conflict with the array literal production. 

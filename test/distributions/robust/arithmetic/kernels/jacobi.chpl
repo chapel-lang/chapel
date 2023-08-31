@@ -20,7 +20,7 @@ proc main() {
                                         //   X stores approximate solution
                                         //   XNew stores the next solution
 
-  [ij in ProblemSpace.exterior(1,0)]    // Set south boundary values to 1.0
+  [ij in ProblemSpace.exterior(1,0 with (ref X))]    // Set south boundary values to 1.0
     X[ij] = 1.0;
 
   if (verbose) {

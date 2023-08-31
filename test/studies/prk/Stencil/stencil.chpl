@@ -142,7 +142,7 @@ proc main() {
   }
 
   /* Initialize Input matrix */
-  [(i, j) in Dom] input[i,j] = coefx*i+coefy*j;
+  [(i, j) in Dom with (ref input)] input[i,j] = coefx*i+coefy*j;
 
   /* Update ghost cells with initial values */
   if useStencilDist then input.updateFluff();

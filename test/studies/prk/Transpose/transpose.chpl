@@ -69,7 +69,7 @@ if (!correctness) {
 }
 
 // Fill original column matrix
-[(i, j) in Dom] A[i,j] = order*j + i;
+[(i, j) in Dom with (ref A)] A[i,j] = order*j + i;
 
 // Initialize B for clarity
 B = 0.0;
