@@ -3474,7 +3474,7 @@ static void hack_resolve_types(ArgSymbol* arg) {
             //            USR_WARN(arg->typeExpr, "really considering %s", type->symbol->name);
             if (type->symbol->hasFlag(FLAG_ARRAY)) {
               // don't worry about it for array types for now
-            } else if (type == dtIntegral || type == dtTuple || type == dtOwned || !strcmp(type->symbol->name, "_singlevar")) {
+            } else if (type == dtIntegral || type == dtTuple || type == dtOwned || type == dtShared || !strcmp(type->symbol->name, "_singlevar") || !strcmp(type->symbol->name, "_syncvar")) {
               // nor integral nor _tuple
             } else if (!isGenericClassIgnoringManagement(type->symbol)) {
               //              USR_WARN(arg->typeExpr, "skipping due to non-generic class w/ generic management");
