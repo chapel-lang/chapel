@@ -40,8 +40,7 @@ var tests = [
 
 proc main() {
   for test in tests {
-    writeln("Running test: ", test:string);
+    writeln("--- ", test:string, " ---");
     test();
-    writeln();
   }
 }
