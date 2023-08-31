@@ -46,7 +46,7 @@ proc reqFun(reqArg1: MyRec(?), reqArg2: MyRec(?)): void {
   writeln("    reqArg2 = ", reqArg2, " : ", reqArg2.type:string);
 }
 
-proc reqFun(reqArg1: MyRec(?), reqArg2: NotherRec): void {
+proc reqFun(reqArg1: MyRec(?), reqArg2: NotherRec(?)): void {
   writeln("  reqFun.MyRec.NotherRec");
   writeln("    reqArg1 = ", reqArg1, " : ", reqArg1.type:string);
   writeln("    reqArg2 = ", reqArg2, " : ", reqArg2.type:string);
