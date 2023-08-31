@@ -311,8 +311,6 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
           arg->addFlag(FLAG_COFORALL_INDEX_VAR);
       if (sym->hasFlag(FLAG_NO_RVF))
           arg->addFlag(FLAG_NO_RVF);
-      if(sym->hasFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST))
-          arg->addFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST);
       arg->addFlag(FLAG_OUTER_VARIABLE);
 
       fn->insertFormalAtTail(new DefExpr(arg));

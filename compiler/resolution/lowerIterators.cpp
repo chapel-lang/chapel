@@ -3026,9 +3026,6 @@ static void removeUncalledIterators()
   }
 }
 
-std::unordered_set<int> refMaybeConstAlreadyWarnedFs;
-std::unordered_set<int> refMaybeConstAlreadyWarnedSym;
-
 static
 bool exprContainsSymbol(Symbol* sym, Expr* expr) {
   std::vector<SymExpr*> symExprs;
@@ -3076,62 +3073,48 @@ static
 void maybeIssueRefMaybeConstWarning(ForallStmt* fs, Symbol* sym, std::vector<CallExpr*> allCalls, std::vector<SymExpr*> allIterandSymExprs) {
   // need to do some heuristics to determine if arg gets modified
 
-  if(refMaybeConstAlreadyWarnedFs.count(fs->id) > 0 &&
-    refMaybeConstAlreadyWarnedSym.count(sym->id) > 0)
-    return;
-
-  // if has marker
-  if (sym->hasFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST)) {
-    // and its not in the iterand
-    if (std::find_if(allIterandSymExprs.begin(), allIterandSymExprs.end(), [sym](auto se) { return sym == se->symbol(); }) == allIterandSymExprs.end()) {
-      for (auto ce: allCalls) {
-        // if a call sets the symbol, warn
-        if (callSetsSymbol(sym, ce)) {
-          // for some reason, this has to be inside the loop!?
-          if(refMaybeConstAlreadyWarnedFs.count(fs->id) > 0 &&
-             refMaybeConstAlreadyWarnedSym.count(sym->id) > 0)
-            return;
-          USR_WARN(fs,
-                    "inferring a default intent to be 'ref' is deprecated - "
-                    "please add an explicit 'ref' forall intent for '%s'",
-                    sym->name);
-          refMaybeConstAlreadyWarnedFs.insert(fs->id);
-          refMaybeConstAlreadyWarnedSym.insert(sym->id);
-        }
+  // check if sym used in iterand
+  bool symInIterand = std::find_if(allIterandSymExprs.begin(),
+                                   allIterandSymExprs.end(), [sym](auto se) {
+                                     return sym == se->symbol();
+                                   }) != allIterandSymExprs.end();
+  if (!symInIterand) {
+    for (auto ce: allCalls) {
+      // if a call sets the symbol, warn
+      if (callSetsSymbol(sym, ce)) {
+        USR_WARN(fs,
+                  "inferring a default intent to be 'ref' is deprecated - "
+                  "please add an explicit 'ref' forall intent for '%s'",
+                  sym->name);
+        break;
       }
     }
   }
 }
-static void checkForallRefMaybeConst(ForallStmt* fs) {
 
-  if(fs->hasRefMaybeConst()) {
 
-    // collect all SymExpr used in the iterand of the forall so we dont warn for them
-    std::vector<SymExpr*> allIterandSymExprs;
-    for_alist(expr, fs->iteratedExpressions()) {
-      collectSymExprs(expr, allIterandSymExprs);
-    }
-    if (CallExpr* zipCall = fs->zipCall()) {
-      collectSymExprs(zipCall, allIterandSymExprs);
-    }
+static void checkForallRefMaybeConst(ForallStmt* fs, std::set<Symbol*> syms) {
+  // collect all SymExpr used in the iterand of the forall so we dont warn for them
+  std::vector<SymExpr*> allIterandSymExprs;
+  for_alist(expr, fs->iteratedExpressions()) {
+    collectSymExprs(expr, allIterandSymExprs);
+  }
+  if (CallExpr* zipCall = fs->zipCall()) {
+    collectSymExprs(zipCall, allIterandSymExprs);
+  }
 
-    // should I be checking loopBodies?
+  // should I be checking loopBodies?
+  std::vector<CallExpr*> allCallsInForall;
+  collectCallExprs(fs->loopBody(), allCallsInForall);
 
-    std::vector<CallExpr*> allCallsInForall;
-    collectCallExprs(fs->loopBody(), allCallsInForall);
-
-    std::vector<SymExpr*> allSymExprsInForall;
-    collectSymExprs(fs->loopBody(), allSymExprsInForall);
-
-    for (auto se: allSymExprsInForall) {
-      maybeIssueRefMaybeConstWarning(fs, se->symbol(), allCallsInForall, allIterandSymExprs);
-    }
+  for (auto s: syms) {
+    maybeIssueRefMaybeConstWarning(fs, s, allCallsInForall, allIterandSymExprs);
   }
 }
 
 static void checkForallRefMaybeConst() {
-  for_alive_in_Vec(ForallStmt, fs, gForallStmts) {
-    checkForallRefMaybeConst(fs);
+  for (auto fsSyms: refMaybeConstForallPairs) {
+    checkForallRefMaybeConst(fsSyms.first, fsSyms.second);
   }
 }
 

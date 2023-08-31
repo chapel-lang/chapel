@@ -709,6 +709,8 @@ Potential culprits:
 - others?
 */
 
+std::map<ForallStmt*, std::set<Symbol*>> refMaybeConstForallPairs;
+
 //
 // * If 'intent' is abstract, convert it to a concrete intent.
 // *
@@ -741,8 +743,10 @@ static void resolveShadowVarTypeIntent(ForallStmt* fs,
 
       // mark all ref-maybe-const shadow variables
       if (argInt == INTENT_REF_MAYBE_CONST && intent == TFI_REF) {
-        sym->addFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST);
-        fs->setRefMaybeConst(true);
+        auto it = refMaybeConstForallPairs.find(fs);
+        if (it == refMaybeConstForallPairs.end())
+          it = refMaybeConstForallPairs.insert(it, {fs, {}});
+        it->second.insert(sym);
       }
 
       break;

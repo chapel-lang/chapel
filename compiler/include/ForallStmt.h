@@ -134,10 +134,6 @@ public:
   // indicates a forall expression (vs a forall statement)
   bool isForallExpr() const;
 
-  // supports deprecation
-  bool hasRefMaybeConst() const;
-  void setRefMaybeConst(bool v);
-
   ForallOptimizationInfo optInfo;
 
   void insertZipSym(Symbol *sym);
@@ -156,7 +152,6 @@ private:
   bool           fRequireSerialIterator;
   bool           fVectorizationHazard;
   bool           fIsForallExpr;
-  bool           fHasRefMaybeConst;
 
   // constructor
   ForallStmt(BlockStmt* body);
@@ -245,5 +240,8 @@ bool fsGotFollower(Expr* anchor, Symbol* followThis, Symbol* iterSym);
 void fsCheckNumIdxVarsVsIterables(ForallStmt* fs, int numIdx, int numIter);
 
 /// done ///
+
+// used to deprecate ref-maybe-const forall intents
+extern std::map<ForallStmt*, std::set<Symbol*>> refMaybeConstForallPairs;
 
 #endif

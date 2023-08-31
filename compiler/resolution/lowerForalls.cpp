@@ -362,8 +362,6 @@ public:
       node->setHasVectorizationHazard(true);
     }
 
-    node->setRefMaybeConst(forall->hasRefMaybeConst());
-
     expandForall(this, node);
     // expandForall() takes care of descending into 'node'
     return false;
