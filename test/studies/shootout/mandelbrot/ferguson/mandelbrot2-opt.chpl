@@ -20,7 +20,7 @@ proc in_set8(ipart: int, rpart8: int):uint(8) {
   
   var c8: 8*complex;
 
-  for i in 0..#8 with (ref c8) {
+  for i in 0..#8 {
     var rpart = rpart8 + i;
     c8[i].re = (upper.re - lower.re) * rpart / size + lower.re;
     c8[i].im = c_im;
