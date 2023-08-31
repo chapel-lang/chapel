@@ -7,7 +7,7 @@ proc otherOutFn(input, out output: R) {
   writeln("in otherOutFn, output has type ", output.type:string);
 }
 
-proc outFn(input, out output: R(?)) {
+proc outFn(input, out output: R) {
   otherOutFn(input, output); // establishes type of output!
   writeln("in outFn, output has type ", output.type:string);
 }

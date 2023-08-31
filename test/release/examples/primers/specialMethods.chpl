@@ -173,7 +173,6 @@ proc R.writeThis(ch: fileWriter(?)) throws {
 // channel. We'll read the ``vals`` tuple between asterisks like how it
 // was written above.
 proc ref R.readThis(ch: fileReader(?)) throws {
-proc R.readThis(ch: fileReader(?)) throws {
   ch.readLiteral("*");
   ch.read(vals);
   ch.readLiteral("*");

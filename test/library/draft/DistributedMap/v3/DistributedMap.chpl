@@ -102,11 +102,11 @@ module DistributedMap {
             return this.size == 0;
         }
 
-        proc extend(m: map) {
+        proc extend(m: map(?)) {
             compilerError("unimplemented");
         }
 
-        proc extend(other: distributedMap) {
+        proc extend(other: distributedMap(?)) {
             compilerError("unimplemented");
         }
 
