@@ -179,14 +179,30 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   if (verbosity < 2) {
     fprintf(expectFile, "log_user 0\n");
   }
+  /*
+   * The following is pretty convoluted because 'expect' is typically
+   * programmed to look for the prompt after a command is executed, except we
+   * don't know what the user's prompt is, and prompts can be pretty
+   * complicated because of control characters and such. Instead, we use two
+   * sentinels to signal that commands are complete. The first is the
+   * string "CHPL_EXPECT_SENTINEL_1" which is stored in the environment
+   * variable "CHPL_ENV_EXPECT_SENTINEL_1", and it's printed after qsub has
+   * started and changed directories. The sentinel is stored in an
+   * environment variable of a different name so the sentinel doesn't appear
+   * in any output that is echoed back to us by qsub. The second sentinel is
+   * the string "CHPL_EXPECT_SENTINEL_2" and it is different from the first
+   * because the application may print its environment, in which case the
+   * first sentinel would appear in the output and confuse the 'expect'
+   * logic.
+   */
   fprintf(expectFile, "set timeout -1\n");
-  fprintf(expectFile, "set prompt \"(%%|#|\\\\$|>)( |\\t)?$\"\n");
+  fprintf(expectFile, "set env(CHPL_ENV_EXPECT_SENTINEL_1) CHPL_EXPECT_SENTINEL_1\n");
   fprintf(expectFile, "spawn qsub -z ");
   fprintf(expectFile, "-V "); // pass through all environment variables
   fprintf(expectFile, "-I %s\n", pbsFilename);
-  fprintf(expectFile, "expect -re $prompt\n");
-  fprintf(expectFile, "send \"cd \\$PBS_O_WORKDIR\\n\"\n");
-  fprintf(expectFile, "expect -re $prompt\n");
+  fprintf(expectFile, "expect -re \"qsub:.*ready\"\n");
+  fprintf(expectFile, "send \"cd \\$PBS_O_WORKDIR; echo \\$CHPL_ENV_EXPECT_SENTINEL_1\\n\"\n");
+  fprintf(expectFile, "expect CHPL_EXPECT_SENTINEL_1\n");
   fprintf(expectFile, "send \"%s %s/%s/gasnetrun_ibv -c 0 -n %d -N %d -E %s",
           isatty(fileno(stdout)) ? "" : "stty -onlcr;",
           CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales, numLocales,
@@ -195,9 +211,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   for (i=1; i<argc; i++) {
     fprintf(expectFile, " '%s'", argv[i]);
   }
-  fprintf(expectFile, "\\n\"\n");
-  fprintf(expectFile, "expect \"\\n\"\n"); // suck up echo of sent command
-  fprintf(expectFile, "interact -o -re $prompt {return}\n");
+  fprintf(expectFile, "; echo 'CHPL_EXPECT_SENTINEL_2'\\n\"\n");
+  fprintf(expectFile, "expect CHPL_EXPECT_SENTINEL_2\n"); // suck up echo of sent command
+  fprintf(expectFile, "interact -o CHPL_EXPECT_SENTINEL_2 {return}\n");
   fprintf(expectFile, "send \"exit\\n\"\n");
   fclose(expectFile);
 
