@@ -154,11 +154,11 @@ def main(argv):
     del argv[1]
     localDir = sub_test.get_local_dir(sub_test.get_chpl_base(compiler))
     name = os.path.join(localDir, argv[0])
+    base = os.path.splitext(os.path.basename(argv[0]))[0]
 
     if skipReason is None:
 
         # Compile the Chapel library
-        base = os.path.splitext(os.path.basename(argv[0]))[0]
         cmd = compiler + " %s.chpl --library" % base
         if verbose:
             print("Compiling Chapel library")
@@ -194,7 +194,7 @@ def main(argv):
         else:
             print("[Success matching tests in %s]" % name)
     sub_test.cleanup(base, False)
-    shutil.rmtree("./lib")
+    shutil.rmtree("./lib", ignore_errors=True)
 
 if __name__ == '__main__':
     main(sys.argv)
