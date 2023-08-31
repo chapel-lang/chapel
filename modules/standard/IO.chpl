@@ -2475,7 +2475,7 @@ proc openMemFileHelper(style:iostyleInternal = defaultIOStyleInternal()):file th
   return ret;
 }
 
-config param useIOSerializers = false;
+config param useIOSerializers = true;
 
 private proc defaultSerializeType(param writing : bool) type {
   if !useIOSerializers then return nothing;
