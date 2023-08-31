@@ -12,13 +12,12 @@ record R {
 
   proc init(reader: fileReader, ref deserializer) {
     writeln("IN R.init");
-    ref des = deserializer;
-    des.startRecord(reader, "R", 1);
-    this.x = des.deserializeField(reader, "x", int);
-    des.endRecord(reader);
+    var des = deserializer.startRecord(reader, "R", 1);
+    this.x = des.readField("x", int);
+    des.endRecord();
   }
 
-  proc deserialize(reader: fileReader,
+  proc ref deserialize(reader: fileReader,
                    ref deserializer: reader.deserializerType) {
     writeln("IN R.deserialize");
     this.x = reader.read(int);

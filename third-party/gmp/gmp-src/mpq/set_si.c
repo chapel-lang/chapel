@@ -32,7 +32,7 @@ see https://www.gnu.org/licenses/.  */
 #include "gmp-impl.h"
 
 void
-mpq_set_si (mpq_t dest, signed long int num, unsigned long int den)
+mpq_set_si (mpq_ptr dest, signed long int num, unsigned long int den)
 {
   if (GMP_NUMB_BITS < BITS_PER_ULONG)
     {

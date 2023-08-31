@@ -30,7 +30,7 @@ inline proc eval_A(i,j : int) : real
  * smaller number of cores, but does not show an improvement on our largest
  * testing machine
  */
-proc eval_A_times_u(u : [] real, inRange : int, Au : [] real, outRange1, outRange2 : int)
+proc eval_A_times_u(u : [] real, inRange : int, ref Au : [] real, outRange1, outRange2 : int)
 {
   for i in outRange1..outRange2-1 {
     Au(i) = + reduce [j in 0..inRange-1 by 2] ((u(j) * eval_A(i,j)) + (u(j+1) * eval_A(i, j+1)));
@@ -40,7 +40,7 @@ proc eval_A_times_u(u : [] real, inRange : int, Au : [] real, outRange1, outRang
   }
 }
 
-proc eval_At_times_u(u : [] real, inRange : int, Au : [] real, outRange1, outRange2 : int)
+proc eval_At_times_u(u : [] real, inRange : int, ref Au : [] real, outRange1, outRange2 : int)
 {
   for i in outRange1..outRange2-1 {
     Au(i) = + reduce [j in 0..inRange-1 by 2] ((u(j) * eval_A(j,i)) + (u(j+1) * eval_A(j+1, i)));
@@ -50,7 +50,7 @@ proc eval_At_times_u(u : [] real, inRange : int, Au : [] real, outRange1, outRan
   }
 }
 
-proc eval_AtA_times_u(u, AtAu, v : [] real, inRange, range1, range2 : int)
+proc eval_AtA_times_u(u, ref AtAu, ref v : [] real, inRange, range1, range2 : int)
 {
            eval_A_times_u(u, inRange, v, range1, range2);
            b!.barrier();
@@ -66,7 +66,7 @@ proc main() {
   u = 1.0;
   b = new owned BarrierWF(numThreads);
 
-  coforall i in 0..#numThreads {
+  coforall i in 0..#numThreads with (ref tmp, ref u, ref v) {
     const r_begin = i * chunk;
     var r_end : int;
     if (i < (numThreads - 1)) then

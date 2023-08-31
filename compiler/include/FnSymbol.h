@@ -106,6 +106,11 @@ public:
   IntentTag                  thisTag;
   RetTag                     retTag;
 
+  // If the parenful version of this function is deprecated, the deprecation
+  // message.
+  std::string                parenfulDeprecationMsg;
+  const char*                getParenfulDeprecationMsg() const;
+
   // Support for iterator lowering.
   IteratorInfo*              iteratorInfo;
   // Pointers to other iterator variants - serial, standalone, etc.

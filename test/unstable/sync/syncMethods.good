@@ -1,0 +1,9 @@
+syncMethods.chpl:6: warning: 'writeFF' is unstable
+syncMethods.chpl:7: warning: 'readXX' is unstable
+syncMethods.chpl:9: warning: 'writeXF' is unstable
+syncMethods.chpl:12: warning: 'isFull' is unstable
+syncMethods.chpl:13: warning: 'reset' is unstable
+1
+2
+3
+false

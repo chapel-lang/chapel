@@ -3,7 +3,7 @@ use IO, LinkedLists, JSON;
 record MyRecord {
   var numbers:LinkedList(int); // could it be [1..0] int ?
 
-  proc deinit() {
+  proc ref deinit() {
     numbers.destroy();
   }
 }

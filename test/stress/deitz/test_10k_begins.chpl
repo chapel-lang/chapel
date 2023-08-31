@@ -6,7 +6,7 @@ var A: [1..n] int;
 
 sync {
   for i in 1..n {
-    begin {
+    begin with (ref A) {
       A(i) += 1;
     }
   }

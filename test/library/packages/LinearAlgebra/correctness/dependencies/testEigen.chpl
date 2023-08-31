@@ -82,7 +82,7 @@ var cplxA: [1..10, 1..10] complex = A;
   // Where k and u are corresponding eigenvalues and left eigenvectors
   // and ^H means conjugate transpose.
   for (k, i) in zip(eigenvalues, left.domain.dim(1)) {
-    var eigVec:[left.domain.dim(0)] complex = conjg(left[.., i]);
+    var eigVec:[left.domain.dim(0)] complex = conj(left[.., i]);
     var Av = dot(eigVec, cplxA);
     var ku = dot(k, eigVec);
 
@@ -121,7 +121,7 @@ var cplxA: [1..10, 1..10] complex = A;
 
   // u^H * A = k * u^H
   for (k, i) in zip(eigenvalues, left.domain.dim(1)) {
-    var eigVec:[left.domain.dim(0)] complex = conjg(left[.., i]);
+    var eigVec:[left.domain.dim(0)] complex = conj(left[.., i]);
     var Av = dot(eigVec, cplxA);
     var ku = dot(k, eigVec);
 
@@ -208,7 +208,7 @@ fillRandom(B);
   // Where k and u are corresponding eigenvalues and left eigenvectors
   // and ^H means conjugate transpose.
   for (k, i) in zip(eigenvalues, left.domain.dim(1)) {
-    var eigVec:[1..10] complex = conjg(left[.., i]);
+    var eigVec:[1..10] complex = conj(left[.., i]);
     var Bv = dot(eigVec, B);
     var ku = dot(k, eigVec);
 
@@ -247,7 +247,7 @@ fillRandom(B);
 
   // u^H * B = k * u^H
   for (k, i) in zip(eigenvalues, left.domain.dim(1)) {
-    var eigVec:[1..10] complex = conjg(left[.., i]);
+    var eigVec:[1..10] complex = conj(left[.., i]);
     var Bv = dot(eigVec, B);
     var ku = dot(k, eigVec);
 
@@ -365,7 +365,7 @@ proc testEigenvalHerm1(type t) {
                     [+0.49754108324625095552 + 0.10391036719974609152i,
                      +0.40096763363066469802 + 0.24510208283104556075i,
                      +0.72166850550863686527 + 0.0i], eltType=t);
-  var eig0h = conjg(eig0);
+  var eig0h = conj(eig0);
   
   testEighHelper(mat0, true0, eig0h);
 }

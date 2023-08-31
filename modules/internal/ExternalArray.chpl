@@ -184,7 +184,7 @@ module ExternalArray {
   // can make the same function call and get the appropriate type depending on
   // the argument.  Unsupported array types are turned into opaque
   // representations
-  proc convertToExternalArray(arr: []): chpl_opaque_array
+  proc convertToExternalArray(ref arr: []): chpl_opaque_array
     where (getExternalArrayType(arr) == chpl_opaque_array) {
 
     var ret: chpl_opaque_array;

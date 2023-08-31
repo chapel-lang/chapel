@@ -1,15 +1,10 @@
+use Collectives;
 config const n = 250;
-var count: sync int = n;
-var barrier: single bool;
+
+var bar = new barrier(n);
 
 proc work(i) {
-  var c: int = count.readFE()-1;
-  if c != 0 {
-    count.writeEF(c);
-    barrier.readFF();
-  } else {
-    barrier.writeEF(true);
-  }
+  bar.barrier();
   writeln(i);
 }
 

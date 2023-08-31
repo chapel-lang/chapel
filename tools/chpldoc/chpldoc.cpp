@@ -952,9 +952,15 @@ struct RstSignatureVisitor {
 
   bool enter(const Class* c) {
     os_ << c->name().c_str();
-    if (c->parentClass()) {
+    if (c->numInheritExprs() > 0) {
       os_ << " : ";
-      c->parentClass()->traverse(*this);
+      bool printComma = false;
+      for (auto inheritExpr : c->inheritExprs()) {
+        if (printComma) os_ << ", ";
+        printComma = true;
+
+        inheritExpr->traverse(*this);
+      }
     }
     return false;
   }
@@ -1198,6 +1204,17 @@ struct RstSignatureVisitor {
     // TODO: Shouldn't this be record, not Record?
     if (textOnly_) os_ << "Record: ";
     os_ << r->name().c_str();
+
+    if (r->numInterfaceExprs() > 0) {
+      os_ << " : ";
+      bool printComma = false;
+      for (auto interfaceExpr : r->interfaceExprs()) {
+        if (printComma) os_ << ", ";
+        printComma = true;
+
+        interfaceExpr->traverse(*this);
+      }
+    }
     return false;
   }
 
@@ -1225,6 +1242,10 @@ struct RstSignatureVisitor {
     node->stringify(os_, StringifyKind::CHPL_SYNTAX);
     return false;
   }
+
+  // TODO union inheritance: unions should have support for inheriting
+  // from interfaces, which means printing the interfaces for chpldoc
+  // signatures.
 
   bool enter(const Use* node) {
     node->stringify(os_, StringifyKind::CHPL_SYNTAX);

@@ -29,48 +29,48 @@ config param useDimIterRowDistributed = useDimIterDistributed;
 config param useDimIterColDistributed = useDimIterDistributed;
 
 class SyncLock {
-  var lock$ : sync bool;
+  var lockVar : sync bool;
 
   proc init(){
     this.complete();
-    this.lock$.writeEF(true);
+    this.lockVar.writeEF(true);
   }
 
   proc lock(){
-    lock$.readFE();
+    lockVar.readFE();
   }
 
   proc unlock(){
-    lock$.writeEF(true);
+    lockVar.writeEF(true);
   }
 
   proc forceUnlock(){
-    lock$.writeXF(true);
+    lockVar.writeXF(true);
   }
 
   proc isLocked() : bool {
-    return this.lock$.isFull;
+    return this.lockVar.isFull;
   }
 }
 
 class AtomicLock {
-  var lock$: atomic bool;
+  var lockVar: atomic bool;
 
   proc init(){
     this.complete();
-    lock$.clear();
+    lockVar.clear();
   }
 
   proc lock(){
-    while lock$.testAndSet() do currentTask.yieldExecution();
+    while lockVar.testAndSet() do currentTask.yieldExecution();
   }
 
   proc unlock(){
-    lock$.clear();
+    lockVar.clear();
   }
 
   proc isLocked() : bool {
-    return this.lock$.read();
+    return this.lockVar.read();
   }
 }
 
@@ -296,7 +296,7 @@ class LocalDistributedWorkQueue {
 
     this.complete();
 
-    this.lock.lock$.write( that.lock.isLocked() );
+    this.lock.lockVar.write( that.lock.isLocked() );
     this.terminated.write(that.terminated.read());
   }
 

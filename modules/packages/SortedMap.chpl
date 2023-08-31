@@ -184,7 +184,7 @@ module SortedMap {
         Clearing the contents of this sortedMap will invalidate all existing
         references to the elements contained in this sortedMap.
     */
-    proc clear() {
+    proc ref clear() {
       _enter(); defer _leave();
       _set.clear();
     }
@@ -234,7 +234,7 @@ module SortedMap {
 
       :arg other: The other sortedMap
     */
-    proc update(other: sortedMap(keyType, valType, ?p)) {
+    proc ref update(other: sortedMap(keyType, valType, ?p)) {
       _enter(); defer _leave();
 
       if !isCopyableType(keyType) || !isCopyableType(valType) then
@@ -302,7 +302,7 @@ module SortedMap {
 
     /* Get a borrowed reference to the element at position `k`.
      */
-    proc getBorrowed(k: keyType) where isClass(valType) {
+    proc ref getBorrowed(k: keyType) where isClass(valType) {
       _enter(); defer _leave();
 
       // This could halt
@@ -316,7 +316,7 @@ module SortedMap {
     /* Get a reference to the element at position `k`. This method is not
        available for non-nilable types.
      */
-    proc getReference(k: keyType) ref
+    proc ref getReference(k: keyType) ref
     where !isNonNilableClass(valType) {
       _enter(); defer _leave();
 
@@ -349,7 +349,7 @@ module SortedMap {
     /*
       Remove the element at position `k` from the sortedMap and return its value
     */
-    proc getAndRemove(k: keyType) {
+    proc ref getAndRemove(k: keyType) {
       _enter(); defer _leave();
 
       var result: _eltType;
@@ -447,7 +447,7 @@ module SortedMap {
                `false` otherwise.
      :rtype: bool
     */
-    proc add(in k: keyType, in v: valType): bool lifetime this < v {
+    proc ref add(in k: keyType, in v: valType): bool lifetime this < v {
       _enter(); defer _leave();
 
       if _set.contains((k, nil)) {
@@ -473,7 +473,7 @@ module SortedMap {
                `false` otherwise.
      :rtype: bool
     */
-    proc set(k: keyType, in v: valType): bool {
+    proc ref set(k: keyType, in v: valType): bool {
       _enter(); defer _leave();
 
       if _set.contains((k, nil)) == false {
@@ -490,7 +490,7 @@ module SortedMap {
        set it to `v`. If the sortedMap already contains a value at position
        `k`, update it to the value `v`.
      */
-    proc addOrReplace(in k: keyType, in v: valType) {
+    proc ref addOrReplace(in k: keyType, in v: valType) {
       _enter(); defer _leave();
       _set.remove((k, nil));
       _set.add((k, new shared _valueWrapper(v)?));
@@ -504,7 +504,7 @@ module SortedMap {
      :returns: `false` if `k` was not in the sortedMap.  `true` if it was and removed.
      :rtype: bool
     */
-    proc remove(k: keyType): bool {
+    proc ref remove(k: keyType): bool {
       _enter(); defer _leave();
       return _set.remove((k, nil));
     }

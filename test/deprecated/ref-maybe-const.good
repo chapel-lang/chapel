@@ -1,0 +1,6 @@
+ref-maybe-const.chpl:7: warning: inferring a default intent to be 'ref' is deprecated - please use an explicit 'ref' intent for the argument 'A'
+ref-maybe-const.chpl:12: warning: inferring a default intent to be 'ref' is deprecated - please use an explicit 'ref' intent for the argument 'args'
+A, 1 2 3 4 5 6 7 8 9 10
+B, 1 2 3 4 5 6 7 8 9 10
+A, 1 1 1 1 1 1 1 1 1 1
+A, 2 2 2 2 2 2 2 2 2 2

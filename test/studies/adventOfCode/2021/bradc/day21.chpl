@@ -7,7 +7,7 @@ record d100 {
   var val = 0;
   var numrolls = 0;
 
-  proc roll() {
+  proc ref roll() {
     var next = val;
     val += 1;
     val %= 100;

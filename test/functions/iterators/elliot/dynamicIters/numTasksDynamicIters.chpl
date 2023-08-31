@@ -2,7 +2,7 @@ use DynamicIters;
 
 config const numTasks = here.maxTaskPar;
 
-proc testIters(iterand, A) {
+proc testIters(iterand, ref A) {
   for    i in iterand                                                 do A[i] += 1;
   forall i in iterand                                                 do A[i] += 1;
   forall (i, j) in zip(iterand, iterand)                              do A[i] += 1;

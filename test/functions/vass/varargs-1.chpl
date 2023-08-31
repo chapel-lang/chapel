@@ -11,6 +11,7 @@ proc main {
   test_param_queried("arg1 ", "arg2 ");
   show(1000, A111, i222);
   test_default(A111, 71);
+  A111 = 105;
   test_const(A111, 72);
   test_in(A111, i222);
   test_const_in(A111, 73);
@@ -50,8 +51,6 @@ proc test_param_queried(param xxx...?nnn) {
 
 proc test_default(xxx...) {
   show(1001, xxx(0), xxx(1));
-  xxx(0) = 105;
-  show(1009, xxx(0), xxx(1));
 }
 
 proc test_const(const xxx...) {

@@ -120,7 +120,7 @@ iter IterateByBlocks(D:range,blksize) {
   }   
 }
   
-proc initA(A,filename:string){
+proc initA(ref A,filename:string){
 
   var Adat = open(filename, ioMode.r).reader();
 

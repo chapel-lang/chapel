@@ -347,16 +347,16 @@ module CTypes {
 
     /* Print the elements */
     proc writeThis(ch) throws {
-      ch.readWriteLiteral("[");
+      ch.writeLiteral("[");
       var first = true;
       for i in 0..#size {
 
         ch.write(this(i));
 
         if i != size-1 then
-          ch.readWriteLiteral(", ");
+          ch.writeLiteral(", ");
       }
-      ch.readWriteLiteral("]");
+      ch.writeLiteral("]");
     }
 
     proc const serialize(writer, ref serializer) throws {
@@ -798,7 +798,7 @@ module CTypes {
     :arg arr: the array for which a pointer should be returned
     :returns: a pointer to the array's elements
   */
-  inline proc c_ptrTo(arr: []): c_ptr(arr.eltType) {
+  inline proc c_ptrTo(ref arr: []): c_ptr(arr.eltType) {
     if (!arr.isRectangular() || !arr.domain.distribution._value.dsiIsLayout()) then
       compilerError("Only single-locale rectangular arrays support c_ptrTo() at present");
 
@@ -1126,7 +1126,7 @@ module CTypes {
     Note that the existence of this :type:`c_ptr` has no impact on the lifetime
     of the array. The returned pointer will be invalid if the array is freed.
   */
-  inline proc c_addrOf(arr: []) {
+  inline proc c_addrOf(ref arr: []) {
     if (!arr.isRectangular() || !arr.domain.distribution._value.dsiIsLayout()) then
       compilerError("Only single-locale rectangular arrays support c_addrOf() at present");
 
@@ -1143,7 +1143,7 @@ module CTypes {
    Like :proc:`c_addrOf` for arrays, but returns a :type:`c_ptrConst` which
    disallows direct modification of the pointee.
   */
-  inline proc c_addrOfConst(arr: []) {
+  inline proc c_addrOfConst(const arr: []) {
     if (!arr.isRectangular() || !arr.domain.distribution._value.dsiIsLayout()) then
       compilerError("Only single-locale rectangular arrays support c_addrOfConst() at present");
 

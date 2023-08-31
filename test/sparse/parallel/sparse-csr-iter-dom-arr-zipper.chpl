@@ -88,7 +88,7 @@ proc test(param dim:int, d: domain(dim)) {
   C = D; hd("C=D"); showC;
   B = C; hd("B=C"); showB;
   Z = Q; hd("Z=Q"); showZ;
-  Y = Z; hd("Y=Z"); showY;  
+  Y = Z; hd("Y=Z"); showY;
 }
 
 // helpers
@@ -108,10 +108,10 @@ proc populateDomain(param dim, ref sd) where dim > 1 {
   }
 }
 
-proc seed(A,f) {
+proc seed(ref A,f) {
   var cnt = f;
   // the following needs to be deterministic so the output is, too
-  for a in A { a = cnt; cnt += f; }    
+  for a in A { a = cnt; cnt += f; }
 }
 
 proc show(A, msg...) {

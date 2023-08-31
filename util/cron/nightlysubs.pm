@@ -26,27 +26,6 @@ sub mysystem {
         $somethingfailed = 1;
         if($status != -1) {$status = $status / 256; }
         print "Error $errorname: $status\n";
-
-        if ($mailmsg != 0) {
-            $mailsubject = "$subjectid $config_name Failure";
-            $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
-
-            if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
-                print "Trying to mail message... using $mailcommand\n";
-                open(MAIL, $mailcommand);
-                print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab, "");
-                print MAIL "ERROR $errorname: $status\n";
-                print MAIL "(workspace left at $tmpdir)\n";
-                print MAIL endMailHeader();
-                print MAIL endMailChplenv();
-                close(MAIL);
-                
-               
-            } else {
-                print "CHPL_TEST_NOMAIL: No $mailcommand\n";
-            }
-        }
-
         if ($fatal != 0) {
             exit 1;
         }
@@ -152,7 +131,6 @@ sub writeEmail {
     my $summary = $_[6];
     my $prevsummary = $_[7];
     my $sortedsummary = $_[8];
-    print 
     #Create a file "email.txt" in the chapel homedir. This file will be used by Jenkins to attach the test results in the email body
     my $filename = "$chplhomedir/email.txt";
     open(my $SF, '>', $filename) or die "Could not open file '$filename' $!";
@@ -193,7 +171,7 @@ sub writeEmail {
         print $SF "--- New Failing Future tests -----------------\n";
         print $SF `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;
         print $SF "\n";
-    print $SF      
+    print $SF;
     print $SF endMailChplenv();
     close($SF);
 }

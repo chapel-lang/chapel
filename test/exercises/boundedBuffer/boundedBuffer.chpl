@@ -60,7 +60,7 @@ proc main() {
       consCounts: [1..numConsumers] int;
 
   // spawn two tasks using a 'cobegin'
-  cobegin {
+  cobegin with (ref prodCounts, ref consCounts) {
     // Task 1: run a single producer and store the number of things
     // it produces in 'prodCounts[1]'.  When it's done, write a
     // sentinel value per consumer.
@@ -211,7 +211,7 @@ class BoundedBuffer {
   const capacity: int,                     // the capacity of the buffer
         sentinel: eltType = -1.0;          // the sentinel value
 
-  var buff$: [0..#capacity] sync eltType,  // the sync values, empty by default
+  var buff: [0..#capacity] sync eltType,  // the sync values, empty by default
       head = 0,                            // the head's cursor position
       tail = 0;                            // the tail's cursor position
 
@@ -225,13 +225,13 @@ class BoundedBuffer {
 
   //
   // Place an item at the head position of the buffer, assuming
-  // it's available (empty).  If not, the write to 'buff$[head]' will
+  // it's available (empty).  If not, the write to 'buff[head]' will
   // block until it is.  Then advance the 'head' position.
   //
   proc produce(item: eltType) {
     if noisy then sleep(rng.getNext() / prodNoiseScale);
 
-    buff$[advance(head)].writeEF(item);
+    buff[advance(head)].writeEF(item);
   }
 
   //
@@ -244,7 +244,7 @@ class BoundedBuffer {
 
   //
   // Consume() an item from the tail position of the buffer, assuming
-  // it's available (full).  If not, the read from 'buff$[tail]' will
+  // it's available (full).  If not, the read from 'buff[tail]' will
   // block until it is.  Then advance the 'tail' position.  Return a
   // tuple containing (1) the data value read and (2) 'true' if there
   // is more data to be read (the sentinel value has not been found),
@@ -253,7 +253,7 @@ class BoundedBuffer {
   proc consume(): (eltType, bool) {
     if noisy then sleep(rng.getNext() / consNoiseScale);
 
-    const val = buff$[advance(tail)].readFE();
+    const val = buff[advance(tail)].readFE();
     return (val, val != sentinel);
   }
 

@@ -3011,9 +3011,12 @@ void setupLLVMCodegenFilenames(void) {
         genIntermediateFilename("chpl__gpu_module-opt1.bc");
     filenames->opt2Filename =
         genIntermediateFilename("chpl__gpu_module-opt2.bc");
-    filenames->gpuObjectFilename = genIntermediateFilename("chpl__gpu.o");
     filenames->fatbinFilename = genIntermediateFilename("chpl__gpu.fatbin");
-    filenames->outFilename = genIntermediateFilename("chpl__gpu.out");
+
+    filenames->outFilenamePrefix = genIntermediateFilename("chpl__gpu");
+    filenames->gpuObjectFilenamePrefix = genIntermediateFilename("chpl__gpu");
+    // no suffix on these last two because we might generate multiple, with
+    // slightly different names.
 
     // This switch may seem unnecessary, but in the past we wanted to use a
     // different "type" of intermediate file for different GPUs and we may want

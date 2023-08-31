@@ -110,7 +110,11 @@ static void chpl_gpu_impl_set_globals(c_sublocid_t dev_id, hipModule_t module) {
   ROCM_CALL(err);
 
   assert(glob_size == sizeof(c_nodeid_t));
-  chpl_gpu_impl_copy_host_to_device((void*)ptr, &chpl_nodeID, glob_size);
+  // chpl_gpu_impl_copy_host_to_device performs a validation using
+  // hipPointerGetAttributes. However, apparently, that's not something you
+  // should call on pointers returned from hipModuleGetGlobal. Just perform
+  // the copy directly.
+  ROCM_CALL(hipMemcpyHtoD(ptr, (void*)&chpl_nodeID, glob_size));
 }
 
 

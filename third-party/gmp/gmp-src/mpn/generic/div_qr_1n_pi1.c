@@ -115,7 +115,7 @@ see https://www.gnu.org/licenses/.  */
 	     "nor	%0, %0, %0"					\
 	   : "=r" (m), "=r" (s1), "=&r" (s0)				\
 	   : "r"  (a1), "r" (b1), "%r" (a0), "rI" (b0)			\
-	   __CLOBBER_CC)
+	     __CLOBBER_CC)
 #endif
 
 #if defined (__s390x__) && W_TYPE_SIZE == 64
@@ -138,6 +138,15 @@ see https://www.gnu.org/licenses/.  */
 	     "movcs	%0, #-1"					\
 	   : "=r" (m), "=r" (sh), "=&r" (sl)				\
 	   : "r" (ah), "rI" (bh), "%r" (al), "rI" (bl) __CLOBBER_CC)
+#endif
+
+#if defined (__aarch64__) && W_TYPE_SIZE == 64
+#define add_mssaaaa(m, sh, sl, ah, al, bh, bl)				\
+  __asm__ (  "adds	%2, %x5, %6\n\t"				\
+	     "adcs	%1, %x3, %x4\n\t"				\
+	     "csinv	%0, xzr, xzr, cc\n\t"				\
+	   : "=r" (m), "=r" (sh), "=&r" (sl)				\
+	   : "rZ" (ah), "rZ" (bh), "%rZ" (al), "rI" (bl) __CLOBBER_CC)
 #endif
 #endif /* defined (__GNUC__) */
 
@@ -184,6 +193,23 @@ mpn_div_qr_1n_pi1 (mp_ptr qp, mp_srcptr up, mp_size_t n, mp_limb_t uh,
 
 #elif DIV_QR_1N_METHOD == 2
 
+/* The main idea of this algorithm is to write B^2 = d (B + dinv) +
+   B2, where 1 <= B2 < d. Similarly to mpn_mod_1_1p, each iteration
+   can then replace
+
+     u1 B^2 = u1 B2 (mod d)
+
+   which gives a very short critical path for computing the remainder
+   (with some tricks to handle the carry when the next two lower limbs
+   are added in). To also get the quotient, include the corresponding
+   multiple of d in the expression,
+
+     u1 B^2 = u1 B2 + (u1 dinv + u1 B) d
+
+   We get the quotient by accumulating the (u1 dinv + u1 B) terms. The
+   two multiplies, u1 * B2 and u1 * dinv, are independent, and can be
+   executed in parallel.
+ */
 mp_limb_t
 mpn_div_qr_1n_pi1 (mp_ptr qp, mp_srcptr up, mp_size_t n, mp_limb_t u1,
 		   mp_limb_t d, mp_limb_t dinv)
@@ -239,17 +265,17 @@ mpn_div_qr_1n_pi1 (mp_ptr qp, mp_srcptr up, mp_size_t n, mp_limb_t u1,
        *    +---+---+---+
       */
       umul_ppmm (p1, t, u1, dinv);
+      ADDC_LIMB (cy, u0, u0, u2 & B2);
+      u0 -= (-cy) & d;
       add_ssaaaa (q2, q1, -u2, u2 & dinv, CNST_LIMB(0), u1);
-      add_ssaaaa (q2, q1, q2, q1, CNST_LIMB(0), p1);
       add_ssaaaa (q2, q1, q2, q1, CNST_LIMB(0), q0);
       q0 = t;
 
-      umul_ppmm (p1, p0, u1, B2);
-      ADDC_LIMB (cy, u0, u0, u2 & B2);
-      u0 -= (-cy) & d;
+      /* Note that p1 + cy cannot overflow */
+      add_ssaaaa (q2, q1, q2, q1, CNST_LIMB(0), p1 + cy);
 
-      /* Final q update */
-      add_ssaaaa (q2, q1, q2, q1, CNST_LIMB(0), cy);
+      umul_ppmm (p1, p0, u1, B2);
+
       qp[j+1] = q1;
       MPN_INCR_U (qp+j+2, n-j-2, q2);
 
@@ -272,6 +298,208 @@ mpn_div_qr_1n_pi1 (mp_ptr qp, mp_srcptr up, mp_size_t n, mp_limb_t u1,
   return u0;
 }
 
+#elif DIV_QR_1N_METHOD == 3
+
+/* This variant handles carry from the u update earlier. This gives a
+   longer critical path, but reduces the work needed for the
+   quotients. */
+mp_limb_t
+mpn_div_qr_1n_pi1 (mp_ptr qp, mp_srcptr up, mp_size_t n, mp_limb_t u1,
+		   mp_limb_t d, mp_limb_t dinv)
+{
+  mp_limb_t B2;
+  mp_limb_t cy, u0;
+  mp_limb_t q0, q1;
+  mp_limb_t p0, p1;
+  mp_limb_t t;
+  mp_size_t j;
+
+  ASSERT (d & GMP_LIMB_HIGHBIT);
+  ASSERT (n > 0);
+  ASSERT (u1 < d);
+
+  if (n == 1)
+    {
+      udiv_qrnnd_preinv (qp[0], u1, u1, up[0], d, dinv);
+      return u1;
+    }
+
+  /* FIXME: Could be precomputed */
+  B2 = -d*dinv;
+
+  umul_ppmm (q1, q0, dinv, u1);
+  umul_ppmm (p1, p0, B2, u1);
+  q1 += u1;
+  ASSERT (q1 >= u1);
+  u0 = up[n-1];	/* Early read, to allow qp == up. */
+
+  add_mssaaaa (cy, u1, u0, u0, up[n-2], p1, p0);
+  u1 -= cy & d;
+  q1 -= cy;
+  qp[n-1] = q1;
+
+  /* FIXME: Keep q1 in a variable between iterations, to reduce number
+     of memory accesses. */
+  for (j = n-2; j-- > 0; )
+    {
+      mp_limb_t q2, cy;
+      mp_limb_t t1, t0;
+
+      /* Additions for the q update:
+       *	+-------+
+       *        |u1 * v |
+       *        +---+---+
+       *        | u1|
+       *        +---+
+       *        | 1 |  (conditional on {u1, u0} carry)
+       *        +---+
+       * +      | q0|
+       *   -+---+---+---+
+       *    | q2| q1| q0|
+       *    +---+---+---+
+       *
+       * Additions for the u update:
+       *        +-------+
+       *        |u1 * B2|
+       *        +---+---+
+       *      + |u0 |u-1|
+       *        +---+---+
+       *      - | d |     (conditional on carry)
+       *     ---+---+---+
+       *        |u1 | u0|
+       *        +---+---+
+       *
+      */
+      umul_ppmm (p1, p0, u1, B2);
+      ADDC_LIMB (q2, q1, u1, q0);
+      umul_ppmm (t1, t0, u1, dinv);
+      add_mssaaaa (cy, u1, u0, u0, up[j], p1, p0);
+      u1 -= cy & d;
+
+      /* t1 <= B-2, so cy can be added in without overflow. */
+      add_ssaaaa (q2, q1, q2, q1, CNST_LIMB(0), t1 - cy);
+      q0 = t0;
+
+      /* Final q update */
+      qp[j+1] = q1;
+      MPN_INCR_U (qp+j+2, n-j-2, q2);
+    }
+
+  q1 = (u1 >= d);
+  u1 -= (-q1) & d;
+
+  udiv_qrnnd_preinv (t, u0, u1, u0, d, dinv);
+  add_ssaaaa (q1, q0, q1, q0, CNST_LIMB(0), t);
+
+  MPN_INCR_U (qp+1, n-1, q1);
+
+  qp[0] = q0;
+  return u0;
+}
+
+#elif DIV_QR_1N_METHOD == 4
+
+mp_limb_t
+mpn_div_qr_1n_pi1 (mp_ptr qp, mp_srcptr up, mp_size_t n, mp_limb_t u1,
+		   mp_limb_t d, mp_limb_t dinv)
+{
+  mp_limb_t B2;
+  mp_limb_t u2, u0;
+  mp_limb_t q0, q1;
+  mp_limb_t p0, p1;
+  mp_limb_t B2d0, B2d1;
+  mp_limb_t t;
+  mp_size_t j;
+
+  ASSERT (d & GMP_LIMB_HIGHBIT);
+  ASSERT (n > 0);
+  ASSERT (u1 < d);
+
+  if (n == 1)
+    {
+      udiv_qrnnd_preinv (qp[0], u1, u1, up[0], d, dinv);
+      return u1;
+    }
+
+  /* FIXME: Could be precomputed */
+  B2 = -d*dinv;
+  /* B2 * (B-d) */
+  umul_ppmm (B2d1, B2d0, B2, -d);
+
+  umul_ppmm (q1, q0, dinv, u1);
+  umul_ppmm (p1, p0, B2, u1);
+  q1 += u1;
+  ASSERT (q1 >= u1);
+
+  add_mssaaaa (u2, u1, u0, up[n-1], up[n-2], p1, p0);
+
+  /* After read of up[n-1], to allow qp == up. */
+  qp[n-1] = q1 - u2;
+
+  /* FIXME: Keep q1 in a variable between iterations, to reduce number
+     of memory accesses. */
+  for (j = n-2; j-- > 0; )
+    {
+      mp_limb_t q2, cy;
+      mp_limb_t t1, t0;
+
+      /* Additions for the q update. *After* u1 -= u2 & d adjustment.
+       *	+-------+
+       *        |u1 * v |
+       *        +---+---+
+       *        | u1|
+       *        +---+
+       *        | 1 |  (conditional on {u1, u0} carry)
+       *        +---+
+       * +      | q0|
+       *   -+---+---+---+
+       *    | q2| q1| q0|
+       *    +---+---+---+
+       *
+       * Additions for the u update. *Before* u1 -= u2 & d adjstment.
+       *        +-------+
+       *        |u1 * B2|
+       *        +---+---+
+       *        |u0 |u-1|
+       *        +---+---+
+       + +      |B2(B-d)| (conditional on u2)
+       *   -+---+---+---+
+       *    |u2 |u1 | u0|
+       *    +---+---+---+
+       *
+      */
+       /* Multiply with unadjusted u1, to shorten critical path. */
+      umul_ppmm (p1, p0, u1, B2);
+      u1 -= (d & u2);
+      ADDC_LIMB (q2, q1, u1, q0);
+      umul_ppmm (t1, t0, u1, dinv);
+
+      add_mssaaaa (cy, u1, u0, u0, up[j], u2 & B2d1, u2 & B2d0);
+      add_mssaaaa (u2, u1, u0, u1, u0, p1, p0);
+      u2 += cy;
+      ASSERT(-u2 <= 1);
+
+      /* t1 <= B-2, so u2 can be added in without overflow. */
+      add_ssaaaa (q2, q1, q2, q1, CNST_LIMB(0), t1 - u2);
+      q0 = t0;
+
+      /* Final q update */
+      qp[j+1] = q1;
+      MPN_INCR_U (qp+j+2, n-j-2, q2);
+    }
+  u1 -= u2 & d;
+
+  q1 = (u1 >= d);
+  u1 -= (-q1) & d;
+
+  udiv_qrnnd_preinv (t, u0, u1, u0, d, dinv);
+  add_ssaaaa (q1, q0, q1, q0, CNST_LIMB(0), t);
+
+  MPN_INCR_U (qp+1, n-1, q1);
+
+  qp[0] = q0;
+  return u0;
+}
 #else
 #error Unknown DIV_QR_1N_METHOD
 #endif

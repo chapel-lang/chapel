@@ -3,7 +3,7 @@ use IO, IO.FormattedIO;
 record R {
   var x: int;
   proc writeThis(fw: fileWriter) throws do fw.write(x);
-  proc readThis(fr: fileReader) throws do this.x = fr.read(int);
+  proc ref readThis(fr: fileReader) throws do this.x = fr.read(int);
 }
 
 writeln("%t \t %t \t %t".format("a string", 1, new R(1)));

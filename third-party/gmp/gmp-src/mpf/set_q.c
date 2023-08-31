@@ -51,7 +51,7 @@ see https://www.gnu.org/licenses/.  */
    to save one limb in the division.  */
 
 void
-mpf_set_q (mpf_t r, mpq_srcptr q)
+mpf_set_q (mpf_ptr r, mpq_srcptr q)
 {
   mp_srcptr np, dp;
   mp_size_t prec, nsize, dsize, qsize, prospective_qsize, tsize, zeros;

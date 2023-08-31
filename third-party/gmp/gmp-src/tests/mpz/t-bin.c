@@ -1,6 +1,6 @@
 /* Exercise mpz_bin_ui and mpz_bin_uiui.
 
-Copyright 2000, 2001, 2010, 2012, 2018 Free Software Foundation, Inc.
+Copyright 2000, 2001, 2010, 2012, 2018, 2020 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library test suite.
 
@@ -184,13 +184,13 @@ randomwalk (int count)
 	{
 	  n++; k++;
 	  mpz_mul_ui (want, want, n);
-	  mpz_fdiv_q_ui (want, want, k);
+	  mpz_divexact_ui (want, want, k);
 	}
       for (i = r >> 3; i > 0; i--)
 	{
 	  n++;
 	  mpz_mul_ui (want, want, n);
-	  mpz_fdiv_q_ui (want, want, n - k);
+	  mpz_divexact_ui (want, want, n - k);
 	}
 
       mpz_set_ui (n_z, n);
@@ -213,14 +213,14 @@ randomwalk (int count)
 	  k++;
 	  mpz_add_ui (n_z, n_z, 1);
 	  mpz_mul (want, want, n_z);
-	  mpz_tdiv_q_ui (want, want, k);
+	  mpz_divexact_ui (want, want, k);
 	}
       for (i = r >> 3; i > 0; i--)
 	{
 	  mpz_add_ui (n_z, n_z, 1);
 	  mpz_mul (want, want, n_z);
 	  mpz_sub_ui (tmp, n_z, k);
-	  mpz_tdiv_q (want, want, tmp);
+	  mpz_divexact (want, want, tmp);
 	}
 
       try_mpz_bin_ui (want, n_z, k);
@@ -257,12 +257,12 @@ randomwalk_down (int count)
 	{
 	  mpz_mul_ui (want, want, n - k);
 	  ++k;
-	  mpz_tdiv_q_ui (want, want, k);
+	  mpz_divexact_ui (want, want, k);
 	}
       for (i = r >> 3; i > 0; i--)
 	{
 	  mpz_mul_ui (want, want, n - k);
-	  mpz_tdiv_q_ui (want, want, n);
+	  mpz_divexact_ui (want, want, n);
 	  --n;
 	}
 

@@ -53,7 +53,7 @@ proc luLikeMultiply(
     var colCopies : [solLocales] owned WrappedArray?;
 
     // initialize row and col copies
-    coforall (locRow, locCol) in solLocales do on myLocales[locRow,locCol] {
+    coforall (locRow, locCol) in solLocales with (ref colCopies, ref rowCopies) do on myLocales[locRow,locCol] {
         rowCopies[locRow, locCol] = new WrappedArray(
             (locRow-1)*blkSize+1, 1, blkSize, blkSize);
         colCopies[locRow, locCol] = new WrappedArray(
@@ -105,7 +105,7 @@ proc matrixMult_ijk(
     innerDim,
     const A : [outerDim, innerDim] int,
     const B : [innerDim, outerDim] int,
-    C : [outerDim, outerDim] int)
+    ref C : [outerDim, outerDim] int)
 {
     for i in outerDim {
         for j in outerDim {

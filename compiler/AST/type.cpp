@@ -277,6 +277,8 @@ const char* toString(Type* type, bool decorateAllClasses) {
       // de-sugar chpl__c_void_ptr, which is used internally and is a distinct
       // type from c_ptr(void)
       retval = "raw_c_void_ptr";
+    } else if (vt == dtCFnPtr) {
+      retval = "c_fn_ptr";
     } else if (vt == dtStringC) {
       // present dtStringC type as familiar 'c_string' instead of the internal
       // name 'chpl_c_string' or cname, 'c_string_rehook'.
@@ -1184,7 +1186,10 @@ void initPrimitiveTypes() {
   dtCVoidPtr->symbol->addFlag(FLAG_NO_CODEGEN);
   dtCVoidPtr->defaultValue = gNil;
 
-  dtCFnPtr = createPrimitiveType("c_fn_ptr", "c_fn_ptr");
+  // Map to runtime type 'c_fn_ptr_rehook' to avoid collision with name of
+  // symbol in module ('c_fn_ptr'), when using '--no-munge-user-idents' is
+  // thrown.
+  dtCFnPtr = createPrimitiveType("chpl_c_fn_ptr", "c_fn_ptr_rehook");
   dtCFnPtr->symbol->addFlag(FLAG_NO_CODEGEN);
   dtCFnPtr->defaultValue = gNil;
 

@@ -10,7 +10,7 @@ record foo {
   var first : unmanaged node(t)?;
   var last : unmanaged node(t)?;
 
-  proc append(e : t) {
+  proc ref append(e : t) {
    var anew : unmanaged node(t) = new unmanaged node(t);
     anew.element = e;
     if length > 0 {
@@ -24,7 +24,7 @@ record foo {
     return this;
   }
 
-  proc prepend(e : t) {
+  proc ref prepend(e : t) {
     var anew : unmanaged node(t) = new unmanaged node(t);
     anew.element = e;
     if length > 0 {

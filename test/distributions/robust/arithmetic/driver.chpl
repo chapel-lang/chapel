@@ -61,11 +61,11 @@ proc setupDistributions(param DT : DistType) {
   }
   if DT == DistType.replicated {
     return (
-            new dmap(new Replicated()),
-            new dmap(new Replicated()),
-            new dmap(new Replicated()),
-            new dmap(new Replicated()),
-            new dmap(new Replicated())
+            new Replicated(),
+            new Replicated(),
+            new Replicated(),
+            new Replicated(),
+            new Replicated()
            );
   }
   if DT == DistType.stencil {

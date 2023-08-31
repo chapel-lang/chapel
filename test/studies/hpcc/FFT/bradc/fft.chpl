@@ -67,7 +67,7 @@ proc main() {
 }
 
 
-proc computeTwiddles(W) {
+proc computeTwiddles(ref W) {
   const n = W.size;
   const delta = 2.0 * atan(1.0) / n;
 
@@ -83,7 +83,7 @@ proc computeTwiddles(W) {
 }
 
 
-proc bitReverseShuffle(W: [?WD]) {
+proc bitReverseShuffle(ref W: [?WD]) {
   const n = WD.size;
   const reverse = log2(n);
   var Perm: [WD] index(WD) = [i in WD] bitReverse(i, numBits = reverse);
@@ -102,7 +102,7 @@ proc bitReverse(val: ?valType, numBits = 64) {
 
 
 
-proc dfft(Z, W) {
+proc dfft(ref Z, W) {
   cft1st(Z, W);
 
   var span = radix;
@@ -133,7 +133,7 @@ proc dfft(Z, W) {
 }
 
 
-proc verifyResults(z, Z, execTime, Twiddles) {
+proc verifyResults(ref z, ref Z, execTime, Twiddles) {
   const N = Z.size;
 
   // BLC: This line wants /(complex,real) to be implemented directly:
@@ -159,7 +159,7 @@ proc verifyResults(z, Z, execTime, Twiddles) {
 }
 
 
-proc cft1st(A, W) {
+proc cft1st(ref A, W) {
   const n = A.domain.dim(0).size;
   var x0 = A(0) + A(1);
   var x1 = A(0) - A(1);

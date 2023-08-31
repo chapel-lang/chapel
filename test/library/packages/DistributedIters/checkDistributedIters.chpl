@@ -99,7 +99,7 @@ proc testIteratorSerial(c)
   checkCorrectness(array, c);
 }
 
-proc testIteratorZippered(array,
+proc testIteratorZippered(ref array,
                           target,
                           base,
                           workerLocales,

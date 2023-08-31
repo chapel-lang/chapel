@@ -1,55 +1,55 @@
-// ---- set up simulation parameters ------
-// declare configurable parameters with default values
-config const xLen = 2.0,    // length of the domain in x
-             yLen = 2.0,    // length of the domain in y
-             nx = 31,       // number of grid points in x
-             ny = 31,       // number of grid points in y
+/*
+  A 2D finite difference heat/diffusion equation solver
+
+  Computation is local (single compute node) and runs
+  the kernel in parallel using a `forall` loop
+
+  Values of the `config const` variables can be modified in
+  the command line (e.g., `./heat_2D --nt=100`)
+*/
+
+import Time.stopwatch;
+
+// create a stopwatch to time kernel execution
+var t = new stopwatch();
+config const writeTime = false;
+
+// declare configurable constants with default values
+config const nx = 256,      // number of grid points in x
+             ny = 256,      // number of grid points in y
              nt = 50,       // number of time steps
-             sigma = 0.25,  // CFL condition
-             nu = 0.05;     // viscosity
+             alpha = 0.25,  // diffusion constant
+             solutionStd = 0.221167; // known solution for the default parameters
 
-// declare non-configurable parameters
-const dx: real = xLen / (nx - 1),       // grid spacing in x
-      dy: real = yLen / (ny - 1),       // grid spacing in y
-      dt: real = sigma * dx * dy / nu;  // time step size
-
-// ---- set up the grid ------
 // define a 2D domain and subdomain to describe the grid and its interior
-const indices = {0..<nx, 0..<ny},
-      indicesInner = {1..<nx-1, 1..<ny-1};
+const indices = {0..nx+1, 0..ny+1},
+      indicesInner = {1..nx, 1..ny};
 
 // define a 2D array over the above domain
-var u: [indices] real;
+var u: [indices] real = 1.0;
 
 // set up initial conditions
-u = 1.0;
-u[
-  (0.5 / dx):int..<(1.0 / dx + 1):int,
-  (0.5 / dy):int..<(1.0 / dy + 1):int
-] = 2;
+u[nx/4..nx/2, ny/4..ny/2] = 2.0;
 
-// ---- run the finite difference computation ------
 // create a temporary copy of 'u' to store the previous time step
 var un = u;
 
 // iterate for 'nt' time steps
+t.start();
 for 1..nt {
-
-  // swap the arrays to prepare for the next time step
+  // swap arrays to prepare for next time step
   u <=> un;
 
-  // update the solution over the interior of the domain in parallel
-  forall (i, j) in indicesInner {
-    u[i, j] = un[i, j] +
-              nu * dt / dy**2 *
-                (un[i-1, j] - 2 * un[i, j] + un[i+1, j]) +
-              nu * dt / dx**2 *
-                (un[i, j-1] - 2 * un[i, j] + un[i, j+1]);
-  }
+  // compute the FD kernel in parallel
+  forall (i, j) in indicesInner do
+    u[i, j] = un[i, j] + alpha *
+      (un[i-1, j] + un[i, j-1] + un[i+1, j] + un[i, j+1] - 4 * un[i, j]);
 }
+t.stop();
 
-// ---- print final results ------
+// print final results
 const mean = (+ reduce u) / u.size,
       stdDev = sqrt((+ reduce (u - mean)**2) / u.size);
 
-writeln((0.102424 - stdDev) < 1e-6);
+writeln(abs(solutionStd - stdDev) < 1e-6);
+if writeTime then writeln("time: ", t.elapsed());

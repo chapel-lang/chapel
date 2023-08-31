@@ -8,18 +8,18 @@ proc writeit(ref x) {
   x = 1;
 }
 
-proc writeForAZip(A, B) {
+proc writeForAZip(ref A, B) {
   for (a,b) in zip(A, B) {
     a = b;
   }
 }
-proc writeForallAZip(A, B) {
+proc writeForallAZip(ref A, B) {
   forall (a,b) in zip(A, B) {
     a = b;
   }
 }
 
-proc writeCoforallAZip(A, B) {
+proc writeCoforallAZip(ref A, B) {
   coforall (a, b) in zip(A, B) {
     writeit(a);
   }

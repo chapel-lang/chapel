@@ -81,8 +81,8 @@ struct LLVMGenFilenames {
   std::string opt1Filename;
   std::string opt2Filename;
   std::string artifactFilename;
-  std::string gpuObjectFilename;
-  std::string outFilename;
+  std::string gpuObjectFilenamePrefix;
+  std::string outFilenamePrefix;
   std::string fatbinFilename;
 };
 

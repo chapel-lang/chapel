@@ -237,7 +237,10 @@ main (int argc, char **argv)
   check_kolmo2 ();
 
   /* Testcase to exercise the u0 == u1 case in mpn_gcdext_lehmer_n. */
-  mpz_set_ui (op2, GMP_NUMB_MAX); /* FIXME: Huge limb doesn't always fit */
+  /* mpz_set_ui (op2, GMP_NUMB_MAX); */ /* FIXME: Huge limb doesn't always fit */
+  mpz_set_ui (op2, 0);
+  mpz_setbit (op2, GMP_NUMB_BITS);
+  mpz_sub_ui (op2, op2, 1);
   mpz_mul_2exp (op1, op2, 100);
   mpz_add (op1, op1, op2);
   mpz_mul_ui (op2, op2, 2);

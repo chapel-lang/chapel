@@ -1,0 +1,2 @@
+tertiary-use-builtin-nontype.chpl:2: In module 'M2':
+tertiary-use-builtin-nontype.chpl:3: error: cannot use 'only' clause with symbol 'boundsChecking' as it is not defined in 'M1'

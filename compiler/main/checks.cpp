@@ -966,6 +966,15 @@ checkFormalActualTypesMatch()
           continue;
         }
 
+        if ((isCPtrConstChar(formal->getValType()) ||
+             isCPtrConstChar(actual->getValType())) &&
+            (formal->getValType()==dtStringC ||
+             actual->getValType()==dtStringC)) {
+            // we allow conversion between these types in function resolution
+            // TODO: remove this once we get rid of c_string remnants
+            continue;
+        }
+
         if (formal->getValType() != actual->getValType()) {
           INT_FATAL(call,
                     "actual formal type mismatch for %s: %s != %s",

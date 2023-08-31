@@ -64,13 +64,13 @@ record _batchedItemsPerLocale {  // private
   var buffer: [0..#maxBatchedItemsPerLocale] itemType;
 
   // returns true if the buffer ends full
-  proc add(in item: itemType): bool {
+  proc ref add(in item: itemType): bool {
     buffer[size] = item;
     size += 1;
     return size >= maxBatchedItemsPerLocale;
   }
 
-  proc clear() {
+  proc ref clear() {
     size = 0;
     // todo: how to clear up individual items?
     // they should be moved to the client data structure

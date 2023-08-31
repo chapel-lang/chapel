@@ -500,7 +500,7 @@ module RunParallelRawLoops {
 
             // initialize the array of atomics to match the 'h' array so
             // it can be updated in parallel
-            for (aH, init) in zip(atomicH, h) do aH.write(init);
+            for (aH, initial) in zip(atomicH, h) do aH.write(initial);
             proc overIndexMapper(i,j) {
               /* The reference version of this kernel is over-indexing a
                  logical Nx25 array using indices like (16,26).  With bounds

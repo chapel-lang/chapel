@@ -7,7 +7,7 @@ use FileSystem;
 config const host = "127.0.0.1";
 config const port = "8000";
 
-var server:subprocess(kind=iokind.dynamic, locking=true);
+var server:subprocess(locking=true);
 
 proc startServer() {
   // Run a curl command to check if the server is already up

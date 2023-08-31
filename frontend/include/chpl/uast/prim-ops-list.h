@@ -155,6 +155,7 @@ PRIMITIVE_G(GPU_ALLOC_SHARED, "gpu allocShared")
 PRIMITIVE_G(GPU_SYNC_THREADS, "gpu syncThreads")
 PRIMITIVE_R(GPU_SET_BLOCKSIZE, "gpu set blockSize")
 PRIMITIVE_G(ASSERT_ON_GPU, "chpl_assert_on_gpu")
+PRIMITIVE_R(GPU_ELIGIBLE, "gpu eligible")
 
 PRIMITIVE_G(GET_SERIAL, "task_get_serial")
 PRIMITIVE_G(SET_SERIAL, "task_set_serial")
@@ -340,6 +341,8 @@ PRIMITIVE_R(METHOD_CALL_RESOLVES, "method call resolves")
 PRIMITIVE_R(CALL_AND_FN_RESOLVES, "call and fn resolves")
 PRIMITIVE_R(METHOD_CALL_AND_FN_RESOLVES, "method call and fn resolves")
 PRIMITIVE_R(RESOLVES, "resolves")
+
+PRIMITIVE_R(IMPLEMENTS_INTERFACE, "implements interface")
 
 PRIMITIVE_G(START_RMEM_FENCE, "chpl_rmem_consist_acquire")
 PRIMITIVE_G(FINISH_RMEM_FENCE, "chpl_rmem_consist_release")

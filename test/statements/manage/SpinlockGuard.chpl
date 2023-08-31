@@ -15,12 +15,12 @@ record spinlock {
     this._resource = resource;
   }
 
-  proc ref enterThis() ref: T {
+  proc ref enterContext() ref: T {
     _lock.lock();
     return _resource;
   }
 
-  proc ref leaveThis(in err: owned Error?) {
+  proc ref exitContext(in err: owned Error?) {
     defer _lock.unlock();
     if err then try! { throw err; }
   }

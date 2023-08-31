@@ -1,7 +1,7 @@
 /*
 Computes heat equation until convergence
-Array is "manually" distributed on locales so each locale has a DR subblock 
-Halo communications are implemented a la MPI: 
+Array is "manually" distributed on locales so each locale has a DR subblock
+Halo communications are implemented a la MPI:
 explicit Data[localeA].DR[sliceHalo]=Data[localeB].DR[sliceSource]
 */
 
@@ -63,17 +63,17 @@ proc refcomp(oddphase: bool, out delta: elType) {
 }
 // oddphase: A vs. refdataA
 proc verify(oddphase: bool) {
-  var globdiff$: sync elType = min(elType);
+  var globdiff: sync elType = min(elType);
   forall ((gi,gj), dat) in zip(gridDom, Data) {
     const locdiff = max reduce [(i,j) in dat.domCompute]
       abs( (if oddphase then dat.A[i,j] else dat.B[i,j]) -
 	   (if oddphase then refdataA[work2ref(i,j,gi,gj)]
 	                else refdataB[work2ref(i,j,gi,gj)]) );
-    globdiff$.writeEF(max(globdiff$.readFE(), locdiff));
+    globdiff.writeEF(max(globdiff.readFE(), locdiff));
   } // forall
 
-  if globdiff$.readXX() > 0.000001 {
-    writeln("too much of a difference from reference: ", globdiff$.readXX());
+  if globdiff.readXX() > 0.000001 {
+    writeln("too much of a difference from reference: ", globdiff.readXX());
     errCount += 1;
   }
 }
@@ -139,7 +139,7 @@ proc fetch(oddphase: bool) {
 var i=0;
 proc progress() {
   i=i+1;
-  fetch(true);          showfetch(true); 
+  fetch(true);          showfetch(true);
   compute(true, delta); showme(true, delta, "After odd phase: "+i:string);
   refcomp(true, refdelta); showref(true);
   verify(true);

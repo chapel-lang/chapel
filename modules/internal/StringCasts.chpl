@@ -256,7 +256,7 @@ module StringCasts {
   // complex
   //
   operator :(x: chpl_anycomplex, type t:string) {
-    if isnan(x.re) || isnan(x.im) then
+    if isNan(x.re) || isNan(x.im) then
       return "nan";
     var re = (x.re):string;
     var im: string;

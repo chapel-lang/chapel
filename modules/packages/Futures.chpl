@@ -159,7 +159,7 @@ module Futures {
     }
 
     @chpldoc.nodoc
-    proc deinit() {
+    proc ref deinit() {
       release();
     }
 
@@ -236,7 +236,7 @@ module Futures {
     }
 
     @chpldoc.nodoc
-    proc acquire(newRef: unmanaged FutureClass?) {
+    proc ref acquire(newRef: unmanaged FutureClass?) {
       if isValid() then halt("acquire(newRef) called on valid future!");
       classRef = newRef;
       if classRef then classRef!.incRefCount();
@@ -249,7 +249,7 @@ module Futures {
     }
 
     @chpldoc.nodoc
-    proc release() {
+    proc ref release() {
       if classRef == nil then halt("release() called on nil future");
       var rc = classRef!.decRefCount();
       if rc == 1 {

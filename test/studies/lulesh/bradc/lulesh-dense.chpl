@@ -506,7 +506,7 @@ proc CalcElemVolume(x, y, z) {
   return volume / 12.0;
 }
 
-proc InitStressTermsForElems(p, q, sigxx, sigyy, sigzz: [?D] real) {
+proc InitStressTermsForElems(p, q, ref sigxx, ref sigyy, ref sigzz: [?D] real) {
   forall i in D {
     sigxx[i] = -p[i] - q[i];
     sigyy[i] = -p[i] - q[i];
@@ -781,7 +781,7 @@ proc CalcElemVelocityGradient(xvel, yvel, zvel, pfx,  pfy, pfz,
 }
 
 
-proc CalcPressureForElems(p_new: [?D] real, bvc, pbvc, 
+proc CalcPressureForElems(ref p_new: [?D] real, ref bvc, ref pbvc, 
                           e_old, compression, vnewc,
                           pmin: real, p_cut: real, eosvmax: real) {
 
@@ -959,7 +959,7 @@ proc CalcVolumeForceForElems() {
 }
 
 
-proc IntegrateStressForElems(sigxx, sigyy, sigzz, determ) {
+proc IntegrateStressForElems(sigxx, sigyy, sigzz, ref determ) {
   forall k in Elems {
     var b_x, b_y, b_z: 8*real;
     var x_local, y_local, z_local: 8*real;
@@ -999,7 +999,7 @@ proc IntegrateStressForElems(sigxx, sigyy, sigzz, determ) {
 
   var dvdx, dvdy, dvdz, x8n, y8n, z8n: [Elems] 8*real;
 
-proc CalcHourglassControlForElems(determ) {
+proc CalcHourglassControlForElems(ref determ) {
 
   forall eli in Elems {
     /* Collect domain nodes to elem nodes */
@@ -1181,7 +1181,7 @@ proc CalcLagrangeElements() {
 }
 
 
-proc CalcKinematicsForElems(dxx, dyy, dzz, const dt: real) {
+proc CalcKinematicsForElems(ref dxx, ref dyy, ref dzz, const dt: real) {
   // loop over all elements
   forall k in Elems {
     var b_x, b_y, b_z: 8*real,
@@ -1297,8 +1297,8 @@ proc UpdateVolumesForElems() {
 }
 
 
-proc CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta, 
-                                     delx_xi, delx_eta, delx_zeta) {
+proc CalcMonotonicQGradientsForElems(ref delv_xi, ref delv_eta, ref delv_zeta, 
+                                     ref delx_xi, ref delx_eta, ref delx_zeta) {
   forall eli in Elems {
     const ptiny = 1.0e-36;
     var xl, yl, zl: 8*real;
@@ -1559,7 +1559,7 @@ proc EvalEOSForElems(vnewc) {
 
   var pHalfStep: [MatElems] real;
 
-proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
+proc CalcEnergyForElems(ref p_new, ref e_new, ref q_new, ref bvc, ref pbvc,
                         p_old, e_old, q_old, compression, compHalfStep, 
                         vnewc, work, delvc, qq_old, ql_old) {
   // TODO: might need to move these consts into foralls or global

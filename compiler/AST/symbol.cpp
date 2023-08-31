@@ -472,20 +472,33 @@ void Symbol::maybeGenerateDeprecationWarning(Expr* context) {
   Symbol* contextParent = context->parentSymbol;
   bool parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
   bool compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
+  bool ignoreUsage = contextParent->hasFlag(FLAG_IGNORE_DEPRECATED_USE);
+
+  // Ignore initialization of deprecated fields in initializers.
+  if (FnSymbol* fn = toFnSymbol(contextParent)) {
+    bool isField = isTypeSymbol(this->defPoint->parentSymbol) ||
+                   this->hasFlag(FLAG_FIELD_ACCESSOR);
+    bool isInit = (fn->isInitializer() || fn->isCopyInit());
+    if (isField && isInit) {
+      return;
+    }
+  }
 
   // Traverse until we find a deprecated parent symbol, a compiler generated
   // parent symbol, or until we reach the highest outer scope
   while (contextParent != NULL && contextParent->defPoint != NULL &&
          contextParent->defPoint->parentSymbol != NULL &&
-         parentDeprecated != true && compilerGenerated != true) {
+         parentDeprecated != true && compilerGenerated != true &&
+         ignoreUsage != true) {
     contextParent = contextParent->defPoint->parentSymbol;
     parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
     compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
+    ignoreUsage = contextParent->hasFlag(FLAG_IGNORE_DEPRECATED_USE);
   }
 
   // Only generate the warning if the location with the reference is not
   // created by the compiler or also deprecated.
-  if (!compilerGenerated && !parentDeprecated) {
+  if (!compilerGenerated && !parentDeprecated && !ignoreUsage) {
     USR_WARN(context, "%s", getSanitizedMsg(getDeprecationMsg()));
   }
 }

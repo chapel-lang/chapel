@@ -63,7 +63,7 @@ module LocaleModelHelpSetup {
       this.maxTaskPar.write(other.maxTaskPar.read());
     }
 
-    proc accum(loc:locale) {
+    proc ref accum(loc:locale) {
       nPUsPhysAcc.add(loc.nPUsPhysAcc);
       nPUsPhysAll.add(loc.nPUsPhysAll);
       nPUsLogAcc.add(loc.nPUsLogAcc);

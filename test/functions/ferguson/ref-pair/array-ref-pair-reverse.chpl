@@ -12,13 +12,13 @@ proc global_getter(arg) ref {
   return global; // returns ref to global
 }
 
-proc global_getter(arg) const ref {
+proc global_getter(ref arg) const ref {
   writeln("GLOBAL CONST REF");
   setit(arg); // ref on arg
   return global; // returns const ref to global
 }
 
-proc arg_getter(arg) ref {
+proc arg_getter(ref arg) ref {
   writeln("ARG REF");
   return arg;
 }
@@ -28,7 +28,7 @@ proc arg_getter(arg) const ref {
   return arg;
 }
 
-proc setit(x) {
+proc setit(ref x) {
   x[1] = 1;
 }
 

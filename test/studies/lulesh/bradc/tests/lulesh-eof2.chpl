@@ -235,7 +235,8 @@ if debugIO {
 
 writeln("Doing EOF check");
 
-reader.assertEOF();
+var tmp: uint(8);
+if reader.read(tmp) then halt();
 
 writeln("Made it past EOF check");
 

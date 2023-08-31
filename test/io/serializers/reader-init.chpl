@@ -12,12 +12,10 @@ record R {
   }
 
   proc init(reader: fileReader, ref deserializer) {
-    const ref r = reader;
-    ref fmt = r.deserializer;
-    fmt.startRecord(r, "R");
-    this.x = fmt.deserializeField(r, "x", int);
-    this.y = fmt.deserializeField(r, "y", real);
-    fmt.endRecord(r);
+    var des = deserializer.startRecord(reader, "R");
+    this.x = des.readField("x", int);
+    this.y = des.readField("y", real);
+    des.endRecord();
   }
 
   proc equals(other: R) {
@@ -42,12 +40,10 @@ record G {
   proc init(type A, type B, reader: fileReader, ref deserializer) {
     this.A = A;
     this.B = B;
-    const ref r = reader;
-    ref fmt = r.deserializer;
-    fmt.startRecord(r, "G");
-    this.x = fmt.deserializeField(r, "x", A);
-    this.y = fmt.deserializeField(r, "y", B);
-    fmt.endRecord(r);
+    var des = deserializer.startRecord(reader, "G");
+    this.x = des.readField("x", A);
+    this.y = des.readField("y", B);
+    des.endRecord();
   }
 
   proc equals(other: G) {
@@ -63,17 +59,15 @@ class Parent {
     this.x = x;
   }
   proc init(reader: fileReader, ref deserializer) {
-    const ref r = reader;
-    ref fmt = r.deserializer;
-    fmt.startClass(r, "Parent");
-    this.x = fmt.deserializeField(r, "x", int);
-    fmt.endClass(r);
+    var des = deserializer.startClass(reader, "Parent");
+    this.x = des.readField("x", int);
+    des.endClass();
   }
 
   override proc serialize(writer: fileWriter, ref serializer) {
-    serializer.startClass(writer, "Parent", 1);
-    serializer.serializeField(writer, "x", x);
-    serializer.endClass(writer);
+    var ser = serializer.startClass(writer, "Parent", 1);
+    ser.writeField("x", x);
+    ser.endClass();
   }
 
   proc equals(other: borrowed Parent) {
@@ -89,19 +83,17 @@ class Child : Parent {
     this.y = y;
   }
   proc init(reader: fileReader, ref deserializer) {
-    const ref r = reader;
-    ref fmt = r.deserializer;
-    fmt.startClass(r, "Child");
-    super.init(r, deserializer);
-    this.y = fmt.deserializeField(r, "y", real);
-    fmt.endClass(r);
+    var des = deserializer.startClass(reader, "Child");
+    super.init(reader, des);
+    this.y = des.readField("y", real);
+    des.endClass();
   }
 
   override proc serialize(writer: fileWriter, ref serializer) {
-    serializer.startClass(writer, "Child", 1);
-    super.serialize(writer, serializer);
-    serializer.serializeField(writer, "y", y);
-    serializer.endClass(writer);
+    var ser = serializer.startClass(writer, "Child", 1);
+    super.serialize(writer, ser);
+    ser.writeField("y", y);
+    ser.endClass();
   }
 
   proc equals(other: borrowed Child) {

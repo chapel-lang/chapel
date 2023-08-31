@@ -14,7 +14,7 @@ use checkType;
   var c1 = ownC1.borrow();
   checkType(c1.x.type);
 
-  const blah2: c_ptrConst(c_char) = "blah".c_str();
+  const blah2: c_ptrConst(c_char) = "blah";
   var ownC2 = new owned C(blah2);
   var c2 = ownC2.borrow();
   checkType(c_ptrConst(c_char), c2.x.type);
@@ -52,7 +52,7 @@ use checkType;
   var r1 = new R(blah1);
   checkType(r1.x.type);
 
-  const blah2: c_ptrConst(c_char) = "blah".c_str();
+  const blah2: c_ptrConst(c_char) = "blah";
   var r2 = new R(blah2);
   checkType(c_ptrConst(c_char), r2.x.type);
 

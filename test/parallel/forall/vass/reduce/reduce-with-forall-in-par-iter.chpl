@@ -10,7 +10,7 @@ config const nn = 3;
 config const mm = 3;
 
 //
-// myiter() iterator ensures deterministic execution (using cnt$)
+// myiter() iterator ensures deterministic execution (using cnt)
 // while still creating bona fide parallel tasks
 //
 
@@ -19,15 +19,15 @@ iter myiter() {
 }
 
 iter myiter(param tag: iterKind) where tag == iterKind.standalone {
-  var cnt$: sync int = 1;
+  var cnt: sync int = 1;
   coforall ooo in 1..nn {
-    const current = cnt$.readFE();
+    const current = cnt.readFE();
     writef("myiter start %i\n", current);
     for jjj in 1..mm {
       yield current * 100 + jjj;
     }
     writef("myiter done  %i\n", current);
-    cnt$.writeEF(current + 1);
+    cnt.writeEF(current + 1);
   }
 }
 

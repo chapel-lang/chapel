@@ -12,6 +12,6 @@ proc main() {
 }
 
 
-proc foo(A: [?yD]) {
+proc foo(ref A: [?yD]) {
   A[n+1,-4] = 1.0;
 }

@@ -1,4 +1,0 @@
-new-dmap.chpl:3: warning: The use of 'dmap' is deprecated for this distribution; please replace 'new dmap(new <DistName>(<args>))' with 'new <DistName>(<args>)'
-new-dmap.chpl:10: warning: The use of 'dmap' is deprecated for this distribution; please replace 'new dmap(new <DistName>(<args>))' with 'new <DistName>(<args>)'
-0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
-0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0

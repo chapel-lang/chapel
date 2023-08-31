@@ -1,6 +1,5 @@
 castEnumRange4a.chpl:3: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
 castEnumRange4a.chpl:5: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
-castEnumRange4a.chpl:7: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
 42..56
 red..orange
 uncaught IllegalArgumentError: bad cast from int '0' to enum 'color'

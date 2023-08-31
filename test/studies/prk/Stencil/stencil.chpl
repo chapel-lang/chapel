@@ -92,7 +92,7 @@ proc main() {
 
   /* Flavors of parallelism, by distribution */
   const blockDist = new Block(localDom),
-      stencilDist = new dmap(new Stencil(innerLocalDom, fluff=(R,R))),
+      stencilDist = new Stencil(innerLocalDom, fluff=(R,R)),
            noDist = defaultDist;
 
   /* Set distribution based on configs */

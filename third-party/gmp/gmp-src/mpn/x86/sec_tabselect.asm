@@ -1,6 +1,6 @@
 dnl  x86 mpn_sec_tabselect.
 
-dnl  Copyright 2011 Free Software Foundation, Inc.
+dnl  Copyright 2011, 2021 Free Software Foundation, Inc.
 
 dnl  This file is part of the GNU MP Library.
 dnl
@@ -56,12 +56,11 @@ C mpn_sec_tabselect (mp_limb_t *rp, mp_limb_t *tp, mp_size_t n, mp_size_t nents,
 define(`rp',     `%edi')
 define(`tp',     `%esi')
 define(`n',      `%ebx')
-define(`nents',  `%ecx')
+define(`nents',  `32(%esp)')
 define(`which',  `36(%esp)')
 
 define(`i',      `%ebp')
-define(`maskp',  `20(%esp)')
-define(`maskn',  `32(%esp)')
+define(`mask',   `%ecx')
 
 ASM_START()
 	TEXT
@@ -74,36 +73,28 @@ PROLOGUE(mpn_sec_tabselect)
 	mov	20(%esp), rp
 	mov	24(%esp), tp
 	mov	28(%esp), n
-	mov	32(%esp), nents
 
 	lea	(rp,n,4), rp
 	lea	(tp,n,4), tp
-	sub	nents, which
 L(outer):
-	mov	which, %eax
-	add	nents, %eax
-	neg	%eax			C set CF iff 'which' != k
-	sbb	%eax, %eax
-	mov	%eax, maskn
-	not	%eax
-	mov	%eax, maskp
+	subl	$1, which
+	sbb	mask, mask
 
 	mov	n, i
 	neg	i
 
 	ALIGN(16)
 L(top):	mov	(tp,i,4), %eax
-	and	maskp, %eax
 	mov	(rp,i,4), %edx
-	and	maskn, %edx
-	or	%edx, %eax
+	xor	%edx, %eax
+	and	mask, %eax
+	xor	%edx, %eax
 	mov	%eax, (rp,i,4)
 	inc	i
 	js	L(top)
 
-L(end):	mov	n, %eax
-	lea	(tp,%eax,4), tp
-	dec	nents
+L(end):	lea	(tp,n,4), tp
+	decl	nents
 	jne	L(outer)
 
 L(outer_end):

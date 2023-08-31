@@ -7,7 +7,7 @@ config const test=1;
 config const testfile="test.bin";
 var f = open(testfile, ioMode.cwr);
 {
-  var w = f.writer(kind=ionative);
+  var w = f.writer(serializer=new BinarySerializer());
 
     // Write 011
     w.writeBits(0b011, 3);
@@ -15,7 +15,7 @@ var f = open(testfile, ioMode.cwr);
 }
 
 if test == 1 {
-    var w = f.writer(kind=ionative);
+    var w = f.writer(serializer=new BinarySerializer());
 
     // test writing negative # of bits
     // Write 011
@@ -26,7 +26,7 @@ if test == 1 {
 }
 
 if test == 2 {
-    var w = f.writer(kind=ionative);
+    var w = f.writer(serializer=new BinarySerializer());
 
     // test writing too many bits
     // Write 011
@@ -38,7 +38,7 @@ if test == 2 {
 
 
 if test == 3 {
-    var r = f.reader(kind=ionative);
+    var r = f.reader(deserializer=new BinaryDeserializer());
 
     // test reading negative # of bits
     var tmp:int;
@@ -49,7 +49,7 @@ if test == 3 {
 }
 
 if test == 4 {
-    var r = f.reader(kind=ionative);
+    var r = f.reader(deserializer=new BinaryDeserializer());
 
     // test reading too many bits
     var tmp:uint(8);

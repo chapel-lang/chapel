@@ -39,7 +39,7 @@ proc main(args:[] string)
     var mdArray:[0..19] uint(8);
     var data:string;
     var f = open(path, ioMode.r);
-    f.reader(kind=iokind.native).readAll(data);
+    f.reader(deserializer=new BinaryDeserializer()).readAll(data);
     SHA1(data.c_str():c_ptr(uint(8)), data.numBytes:uint, c_ptrTo(mdArray));
     var hash:Hash;
     for i in 0..19 do

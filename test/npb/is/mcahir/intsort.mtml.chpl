@@ -477,7 +477,7 @@ proc gen_keys () {
   // are the same no matter how many locales or ranks are used
   // -- come back later and see if this can be simplified w/ a local range
  
-  coforall loc in Locales do {
+  coforall loc in Locales with (ref key) do {
     on loc do {
       var tmpreals: [1..4] real;
       var seed: int(64) = 314159265;

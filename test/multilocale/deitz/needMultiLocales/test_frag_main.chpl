@@ -35,8 +35,8 @@ class node {
 
 class list {
   var head, tail: shared node?;
-  var lock$: sync bool;
-  var signal$: sync bool;
+  var lock: sync bool;
+  var signal: sync bool;
   proc init() {}
 }
 
@@ -51,25 +51,25 @@ proc chpl_send_int(data: int, loc) {
   var from = here.id;
   on Locales[loc] {
     var b = buffer[here.id][from]!;
-    b.lock$.writeEF(true);
+    b.lock.writeEF(true);
     b.tail = new shared node(data, b.tail);
     if b.head == nil then
       b.head = b.tail;
-    b.signal$.writeXF(true);
-    b.lock$.readFE();
+    b.signal.writeXF(true);
+    b.lock.readFE();
   }
 }
 
 proc chpl_recv_int(out data: int, loc) {
   var b = buffer[here.id][loc]!;
-  b.signal$.readFE();
-  b.lock$.writeEF(true);
+  b.signal.readFE();
+  b.lock.writeEF(true);
   data = b.head!.data;
   var next = b.head!.next;
   b.head = next;
   if b.head == nil then
     b.tail = nil;
   else
-    b.signal$.writeXF(true);
-  b.lock$.readFE();
+    b.signal.writeXF(true);
+  b.lock.readFE();
 }

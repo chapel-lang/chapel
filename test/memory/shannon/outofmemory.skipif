@@ -7,4 +7,5 @@ CHPL_HOST_PLATFORM <= cygwin
 COMPOPTS <= --baseline
 # Sanitizers do not work with ulimit -v
 CHPL_SANITIZE_EXE != none
-# Note, this test has a different error for GASNet fast + fifo
+# Call stack size is too small for larger arm page sizes
+CHPL_TARGET_ARCH == aarch64

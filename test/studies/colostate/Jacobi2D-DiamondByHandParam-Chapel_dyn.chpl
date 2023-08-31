@@ -216,7 +216,7 @@ proc main(){
 
 // return true if the current end state is the same as the
 // stencil applied to the original state, in serial iteration.
-proc verifyResult( space: [] Cell, computationalDomain: domain(2),
+proc verifyResult(ref space: [] Cell, computationalDomain: domain(2),
                    verbose: bool = true, T: int ): bool {
 
   var computationTimeRange = 1..T;

@@ -1,6 +1,7 @@
 
 use IO;
 use OS;
+use JSON;
 
 //
 // Test cases:
@@ -76,10 +77,7 @@ proc testJSON() {
     w.write(quote);
   }
 
-  var r = f.reader(locking=false);
-  var st = r._styleInternal();
-  st.string_format = iostringformatInternal.json:uint(8);
-  r._set_styleInternal(st);
+  var r = f.reader(locking=false, deserializer=new JsonDeserializer());
 
   try {
     var x = "[";

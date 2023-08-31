@@ -47,7 +47,7 @@ for row in 0..#size2 {
     bufIdx += 4;
   }
 }
-matrixDom.bulkAdd(indBuf, preserveInds=false);
+matrixDom.bulkAddNoPreserveInds(indBuf);
 
 //do a sanitiy check to make sure we have created correct numver of
 //indicese in the sparse domain

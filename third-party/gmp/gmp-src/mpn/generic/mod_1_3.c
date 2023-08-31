@@ -110,10 +110,9 @@ mpn_mod_1s_3p (mp_srcptr ap, mp_size_t n, mp_limb_t b, const mp_limb_t cps[6])
       add_ssaaaa (rh, rl, rh, rl, ph, pl);
       n -= 3;
       break;
-    case 2:	/* n mod 3 = 1 */
+    default:	/* n mod 3 = 1; (case 2)*/
       rh = 0;
-      rl = ap[n - 1];
-      n -= 1;
+      rl = ap[--n];
       break;
     case 1:	/* n mod 3 = 2 */
       rh = ap[n - 1];

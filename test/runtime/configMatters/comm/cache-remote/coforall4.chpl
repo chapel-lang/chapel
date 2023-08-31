@@ -13,7 +13,7 @@ proc doit(a:locale, b:locale, c:locale)
       for i in 1..10 {
         A[i] = 3*i;
       }
-      coforall i in 1..10 {
+      coforall i in 1..10 with (ref A) {
         on c {
           assert( A[i] == 3*i );
           A[i] = 2*i;

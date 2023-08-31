@@ -35,9 +35,11 @@ struct AttributeGroupParts {
   std::set<PragmaTag>* pragmas;
   bool isDeprecated;
   bool isUnstable;
+  bool isParenfulDeprecated;
   bool isStable;
   UniqueString deprecationMessage;
   UniqueString unstableMessage;
+  UniqueString parenfulDeprecationMessage;
 };
 
 struct ParserContext {
@@ -103,7 +105,7 @@ struct ParserContext {
     this->varDeclKind             = Variable::VAR;
     this->isBuildingFormal        = false;
     this->isVarDeclConfig         = false;
-    this->attributeGroupParts     = {nullptr, nullptr, false, false, false, UniqueString(), UniqueString() };
+    this->attributeGroupParts     = {nullptr, nullptr, false, false, false, false, UniqueString(), UniqueString(), UniqueString() };
     this->hasAttributeGroupParts  = false;
     this->numAttributesBuilt      = 0;
     YYLTYPE emptyLoc = {0};

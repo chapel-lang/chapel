@@ -5,7 +5,7 @@ module block_triangular_solve_variants {
   // Inner and Outer Product Cholesky codes
   // ============================================
 
-  proc transposed_block_triangular_solve ( L11 : [], L21 : [] ) {
+  proc transposed_block_triangular_solve ( L11 : [], ref L21 : [] ) {
     
     // ------------------------------------------------------
     // Solve the block equation
@@ -39,7 +39,7 @@ module block_triangular_solve_variants {
   // ===============================================
 
   proc transposed_2D_block_triangular_solve ( L11 : [],
-					     L21 : [] ) {
+					     ref L21 : [] ) {
     
     // ------------------------------------------------------
     // Solve the block equation
@@ -80,7 +80,7 @@ module block_triangular_solve_variants {
   // in Block Bordering Cholesky codes
   // ===================================
 
-  proc block_transposed_block_triangular_solve ( L : [], A : [] )
+  proc block_transposed_block_triangular_solve ( L : [], ref A : [] )
     where ( A.domain.rank == 2  && L.domain.rank == 2 ) {
 
     // -----------------------------------------------------------
@@ -127,7 +127,7 @@ module block_triangular_solve_variants {
   // in Block Bordering Cholesky codes
   // ======================================
 
-  proc block_2D_transposed_block_triangular_solve ( L : [], A : [] )
+  proc block_2D_transposed_block_triangular_solve ( L : [], ref A : [] )
     where ( A.domain.rank == 2  && L.domain.rank == 2 ) {
 
     // -----------------------------------------------------------

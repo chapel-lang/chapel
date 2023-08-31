@@ -30,15 +30,6 @@ proc callinout(inout x) {
 }
 
 
-proc callblank(x) {
-  writeln("in callblank, x is: ", x);
-  forall i in D {
-    x(i) += 1.0;
-  }
-  writeln("re-assigned to be: ", x);
-}
-
-
 proc main() {
 
   forall i in D {
@@ -54,9 +45,5 @@ proc main() {
   writeln();
 
   callinout(A);
-  writeln("back at callsite, A is: ", A);
-  writeln();
-
-  callblank(A);
   writeln("back at callsite, A is: ", A);
 }

@@ -709,7 +709,7 @@ record regex {
   }
 
   @chpldoc.nodoc
-  proc _deserialize(data) {
+  proc ref _deserialize(data) {
     const pattern = exprType.chpl__deserialize(data.pattern);
     qio_regex_create_compile(pattern.c_str(),
                              pattern.numBytes,
@@ -735,7 +735,8 @@ record regex {
   }
 
   @chpldoc.nodoc
-  proc _handle_captures(text: exprType, matches:c_array(qio_regex_string_piece_t, ?nmatches),
+  proc _handle_captures(text: exprType,
+                        ref matches:c_array(qio_regex_string_piece_t, ?nmatches),
                         ref captures) {
     assert(nmatches >= captures.size);
     for param i in 0..captures.size-1 {
@@ -1069,14 +1070,13 @@ record regex {
   }
 
   @chpldoc.nodoc
-  proc readThis(f) throws {
+  proc ref readThis(f) throws {
     var pattern:exprType;
     // Note -- this is wrong because we didn't quote
     // and there's no way to get the flags
-    var litOne = new ioLiteral("new regex(\"");
-    var litTwo = new ioLiteral("\")");
-
-    if (f.read(litOne, pattern, litTwo)) then
+    if f.matchLiteral("new regex(\"") &&
+       f.read(pattern) &&
+       f.matchLiteral("\")") then
       on this.home {
         var localPattern = pattern.localize();
         var opts: qio_regex_options_t;

@@ -42,7 +42,7 @@ record times {
 
 var gpuTimes: [here.gpus.domain] times;
 
-coforall (gpu, id) in zip(here.gpus, here.gpus.domain) do on gpu {
+coforall (gpu, id) in zip(here.gpus, here.gpus.domain) with (ref gpuTimes) do on gpu {
   const GpuSpace = {id*perGpuVecSize..#perGpuVecSize};
   var GpuA: [GpuSpace] elemType;
   var gpuTimer: stopwatch;

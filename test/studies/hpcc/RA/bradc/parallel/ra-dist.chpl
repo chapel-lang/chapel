@@ -57,7 +57,7 @@ proc printConfiguration() {
 }
 
 
-proc verifyResults(T: [?TDom], UpdateSpace) {
+proc verifyResults(ref T: [?TDom], UpdateSpace) {
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
   var lock: sync bool = true;

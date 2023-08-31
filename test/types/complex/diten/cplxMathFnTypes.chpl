@@ -10,7 +10,7 @@ proc testTypes(x: complex(?w)) {
   const res3 = conj(x);
   assert(res3.type == complex(w));
 
-  const res4 = cproj(x);
+  const res4 = riemProj(x);
   assert(res4.type == complex(w));
 
   const res5 = exp(x);

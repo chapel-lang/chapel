@@ -1,6 +1,6 @@
 /* mpz_addmul, mpz_submul -- add or subtract multiple.
 
-Copyright 2001, 2004, 2005, 2012 Free Software Foundation, Inc.
+Copyright 2001, 2004, 2005, 2012, 2022 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -52,7 +52,7 @@ mpz_aorsmul (mpz_ptr w, mpz_srcptr x, mpz_srcptr y, mp_size_t sub)
 {
   mp_size_t  xsize, ysize, tsize, wsize, wsize_signed;
   mp_ptr     wp, tp;
-  mp_limb_t  c, high;
+  mp_limb_t  c;
   TMP_DECL;
 
   /* w unaffected if x==0 or y==0 */
@@ -90,9 +90,16 @@ mpz_aorsmul (mpz_ptr w, mpz_srcptr x, mpz_srcptr y, mp_size_t sub)
 
   if (wsize_signed == 0)
     {
+      mp_limb_t  high;
       /* Nothing to add to, just set w=x*y.  No w==x or w==y overlap here,
 	 since we know x,y!=0 but w==0.  */
-      high = mpn_mul (wp, PTR(x),xsize, PTR(y),ysize);
+      if (x == y)
+	{
+	  mpn_sqr (wp, PTR(x),xsize);
+	  high = wp[tsize-1];
+	}
+      else
+	high = mpn_mul (wp, PTR(x),xsize, PTR(y),ysize);
       tsize -= (high == 0);
       SIZ(w) = (sub >= 0 ? tsize : -tsize);
       return;
@@ -101,8 +108,17 @@ mpz_aorsmul (mpz_ptr w, mpz_srcptr x, mpz_srcptr y, mp_size_t sub)
   TMP_MARK;
   tp = TMP_ALLOC_LIMBS (tsize);
 
-  high = mpn_mul (tp, PTR(x),xsize, PTR(y),ysize);
-  tsize -= (high == 0);
+  if (x == y)
+    {
+      mpn_sqr (tp, PTR(x),xsize);
+      tsize -= (tp[tsize-1] == 0);
+    }
+  else
+    {
+      mp_limb_t high;
+      high = mpn_mul (tp, PTR(x),xsize, PTR(y),ysize);
+      tsize -= (high == 0);
+    }
   ASSERT (tp[tsize-1] != 0);
   if (sub >= 0)
     {

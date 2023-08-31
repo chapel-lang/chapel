@@ -6,6 +6,7 @@ import chpl_locale_model
 import chpl_llvm
 import chpl_compiler
 import re
+import chpl_tasks
 from utils import error, warning, memoize, run_command, which, is_ver_in_range
 
 def _validate_cuda_version():
@@ -104,6 +105,11 @@ def get_arch():
     # Check if user is overriding the arch.
     arch = os.environ.get("CHPL_GPU_ARCH")
     if arch:
+        # arch might be specified in arch1,arch2 format, which is only supported
+        # on nvidia.
+        if len(arch.split(",")) > 1 and gpu_type != "nvidia":
+            error("Multi-target builds are only supported for the 'nvidia' GPU type.")
+
         return arch
 
     # Return vendor-specific default architecture
@@ -274,7 +280,7 @@ def _validate_rocm_version_impl():
     return True
 
 @memoize
-def validate(chplLocaleModel, chplComm):
+def validate(chplLocaleModel):
     if chplLocaleModel != "gpu":
         return True
 
@@ -285,6 +291,8 @@ def validate(chplLocaleModel, chplComm):
     gpu.validate_sdk_version()
 
     if get() == 'cpu':
+        if chpl_tasks.get() == 'fifo':
+            error("The 'fifo' tasking model is not supported with CPU-as-device mode")
         return True
 
     if chpl_compiler.get('target') != 'llvm':

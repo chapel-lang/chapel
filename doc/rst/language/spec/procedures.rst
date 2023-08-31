@@ -659,8 +659,7 @@ type:
     | unions                  | ``const ref``        | ``const ref``           |                                                      |
     +-------------------------+----------------------+-------------------------+------------------------------------------------------+
     | synchronization types   | ``const ref``        | ``ref``                 |                                                      |
-    | (``atomic``,            |                      |                         |                                                      |
-    | ``sync``, ``single``)   |                      |                         |                                                      |
+    | (``atomic``, ``sync``)  |                      |                         |                                                      |
     +-------------------------+----------------------+-------------------------+------------------------------------------------------+
 
 .. _Default_Intent_for_Arrays_and_Record_this:
@@ -681,14 +680,15 @@ overloads (see :ref:`Return_Intent_Overloads`).
 Default Intent for ’owned’ and ’shared’
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The default intent for ``owned`` and ``shared`` arguments is
-``const ref``. Arguments can use the ``in`` or ``const in`` intents to
-transfer or share ownership if those arguments apply to ``owned`` or
-``shared`` types.
+The default intent for :type:`~OwnedObject.owned` and
+:type:`~SharedObject.shared` arguments is ``const``. To transfer the ownership
+from an :type:`~OwnedObject.owned` actual argument or to share the ownership
+with a :type:`~SharedObject.shared` actual argument, the formal argument can use
+the ``in`` or ``const in`` intent.
 
    *Example (owned-any-intent.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -706,6 +706,10 @@ transfer or share ownership if those arguments apply to ``owned`` or
 
       owned SomeClass
       true
+
+If the default intent or ``const`` intent is used for an
+:type:`~OwnedObject.owned` or :type:`~SharedObject.shared` argument, then the
+actual argument is assumed to remain unchanged during the call.
 
 .. _Variable_Length_Argument_Lists:
 

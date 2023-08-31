@@ -950,8 +950,9 @@ static void checkRangeDeprecations(AggregateType* at, NamedExpr* ne,
   }
 }
 
-AggregateType* AggregateType::generateType(CallExpr* call, const char* callString) {
-
+AggregateType* AggregateType::generateType(CallExpr* call,
+                                           const char* callString,
+                                           bool allowAllNamedArgs) {
   checkNumArgsErrors(this, call, callString);
 
   if (call->numActuals() == 0 && mIsGenericWithDefaults == false) {
@@ -977,6 +978,19 @@ AggregateType* AggregateType::generateType(CallExpr* call, const char* callStrin
         USR_PRINT(call, "type specifier did not match: %s", typeSignature);
         USR_PRINT(call, "type '%s' does not contain a field named '%s'", symbol->name, ne->name);
         USR_STOP();
+      } else if (field->hasFlag(FLAG_DEPRECATED)) {
+        field->maybeGenerateDeprecationWarning(ne);
+      }
+      // don't allow type-constructor calls to use named-argument passing
+      // for a field that isn't 'type' or 'param'
+      if (!allowAllNamedArgs &&
+          !field->hasEitherFlag(FLAG_TYPE_VARIABLE, FLAG_PARAM)) {
+        USR_FATAL_CONT(call, "named arguments can only be used in "
+                             "type construction to set "
+                             "'type' or 'param' fields");
+        USR_PRINT(field, "field '%s' declared here is not 'type' or 'param'",
+                  field->name);
+        USR_STOP();
       }
       map.put(field, toSymExpr(ne->actual)->symbol());
     } else {
@@ -992,6 +1006,20 @@ AggregateType* AggregateType::generateType(CallExpr* call, const char* callStrin
   // place positional args in a map based on remaining unspecified fields
   for_vector(Symbol, field, genericFields) {
     if (substitutionForField(field, map) == NULL && notNamed.size() > 0) {
+      if (getModule()->modTag == MOD_STANDARD &&
+          field->hasFlag(FLAG_DEPRECATED) &&
+          strcmp(field->name, "kind") == 0) {
+        std::string typeName = notNamed.front()->type->symbol->name;
+        if (typeName != "iokind" && typeName != "_iokind") {
+          // If trying to pass a type other than iokind to 'kind' field,
+          // assume user is ignoring the deprecated field.
+          //
+          // TODO: How can we write this to apply more generally to any
+          // deprecated field?
+          continue;
+        }
+      }
+
       map.put(field, notNamed.front());
       notNamed.pop();
     }
@@ -1620,6 +1648,20 @@ static bool buildFieldNames(AggregateType* at, std::string& str, bool cname) {
       // A fully instantiated type
       bool isFirst = true;
       for_vector(Symbol, field, root->genericFields) {
+        Symbol* newField = at->getField(field->name);
+        const char* valStr = buildValueName(newField, cname);
+
+        bool isFileReaderWriter = root->getModule() == ioModule &&
+                                  (strcmp(root->symbol->name, "fileReader") == 0 ||
+                                   strcmp(root->symbol->name, "fileWriter") == 0);
+        bool isSubprocess = root->getModule()->modTag == MOD_STANDARD &&
+                            strcmp(root->getModule()->name, "Subprocess") == 0 &&
+                            strcmp(root->symbol->name, "subprocess") == 0;
+        if ((isFileReaderWriter || isSubprocess) &&
+            strcmp(field->name, "kind") == 0 &&
+            strcmp(valStr, "dynamic") == 0) {
+          continue;
+        }
 
         if (isFirst) {
           isFirst = false;
@@ -1632,8 +1674,7 @@ static bool buildFieldNames(AggregateType* at, std::string& str, bool cname) {
           str += "=";
         }
 
-        Symbol* newField = at->getField(field->name);
-        str += buildValueName(newField, cname);
+        str += valStr;
       }
     } else {
       // A partial instantiation
@@ -2396,10 +2437,11 @@ void AggregateType::buildDefaultInitializer() {
       std::set<const char*> names;
       SymbolMap fieldArgMap;
 
-      if (handleSuperFields(fn, names, fieldArgMap) == true) {
+      if (!badParentInit()) {
+        handleSuperFields(fn, names, fieldArgMap,
+                          /*fileReader=*/nullptr, /*desHelper=*/nullptr);
         // Parent fields before child fields
         fieldToArg(fn, names, fieldArgMap,
-                   /*fileReader=*/nullptr,
                    /*formatter=*/nullptr);
 
         // Replaces field references with argument references
@@ -2535,19 +2577,23 @@ void AggregateType::buildReaderInitializer() {
       // for compatibility with the new-expression-type-alias feature, in
       // which instantiated fields are passed to this initializer with
       // named-expressions.
-      if (handleSuperFields(fn, names, fieldArgMap, reader, deser) == true) {
-
+      if (!badParentInit()) {
         auto startKind = this->isClass() ? "startClass" : "startRecord";
         CallExpr* readStart = new CallExpr(startKind, gMethodToken, deser,
                                            reader, new CallExpr(PRIM_SIMPLE_TYPE_NAME, fn->_this));
-        fn->insertAtHead(readStart);
+        VarSymbol* desHelper = new VarSymbol("_chpl_des_helper");
+        DefExpr* helperDef = new DefExpr(desHelper, readStart);
+        fn->insertAtHead(helperDef);
+
+        handleSuperFields(fn, names, fieldArgMap, reader, desHelper);
+
+        fn->insertAtHead(helperDef->remove());
 
         // Parent fields before child fields
-        fieldToArg(fn, names, fieldArgMap, reader, deser);
+        fieldToArg(fn, names, fieldArgMap, desHelper);
 
         auto endKind = this->isClass() ? "endClass" : "endRecord";
-        CallExpr* readEnd = new CallExpr(endKind, gMethodToken, deser,
-                                         reader);
+        CallExpr* readEnd = new CallExpr(endKind, gMethodToken, desHelper);
         fn->insertAtTail(readEnd);
 
         // Replaces field references with argument references
@@ -2590,9 +2636,8 @@ void AggregateType::buildReaderInitializer() {
 void AggregateType::fieldToArg(FnSymbol*              fn,
                                std::set<const char*>& names,
                                SymbolMap&             fieldArgMap,
-                               ArgSymbol*             fileReader,
-                               ArgSymbol*             formatter) {
-  bool isReaderInit = (fileReader != nullptr);
+                               Symbol*                desHelper) {
+  bool isReaderInit = (desHelper != nullptr);
   int fieldNum = isClass() ? -1 : 0;
   for_fields(fieldDefExpr, this) {
     SET_LINENO(fieldDefExpr);
@@ -2714,7 +2759,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
                                         arg));
         } else {
           // isReaderInit == true, and we need to generate code to invoke
-          // the 'deserializeField' interface from the formatter.
+          // the 'readField' method from the deserializer.
           Expr* typeExpr = nullptr;
           if (defPoint->exprType != NULL) {
             typeExpr = defPoint->exprType->copy();
@@ -2723,8 +2768,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
           }
 
           if (typeExpr != nullptr) {
-            CallExpr* desField = new CallExpr("deserializeField", gMethodToken, formatter,
-                                               fileReader,
+            CallExpr* desField = new CallExpr("readField", gMethodToken, desHelper,
                                                new CallExpr(PRIM_FIELD_NUM_TO_NAME, fn->_this, new_IntSymbol(fieldNum)),
                                                typeExpr);
             fn->insertAtTail(new CallExpr("=",
@@ -2756,12 +2800,40 @@ void AggregateType::fieldToArgType(DefExpr* fieldDef, ArgSymbol* arg) {
   arg->typeExpr = exprType;
 }
 
-bool AggregateType::handleSuperFields(FnSymbol*                    fn,
+bool AggregateType::badParentInit() {
+  // Lydia NOTE 06/16/17: be sure to avoid applying this to tuples, too!
+  if (isClass()                    ==  true &&
+      symbol->hasFlag(FLAG_REF)    == false &&
+      dispatchParents.n            >      0 &&
+      symbol->hasFlag(FLAG_EXTERN) == false) {
+    if (AggregateType* parent = dispatchParents.v[0]) {
+
+      if (parent->hasUserDefinedInit == false && parent != dtObject) {
+        // We want to call the compiler-generated all-fields initializer
+
+        // First, ensure we have a default initializer for the parent
+        if (parent->builtDefaultInit == false && parent->wantsDefaultInitializer()) {
+          parent->buildDefaultInitializer();
+          parent->buildReaderInitializer();
+        }
+
+        return !parent->builtDefaultInit;
+
+
+      }
+    }
+  }
+
+  // Nothing to be done for records.
+
+  return false;
+}
+
+void AggregateType::handleSuperFields(FnSymbol*                    fn,
                                       const std::set<const char*>& names,
                                       SymbolMap& fieldArgMap,
-                                      ArgSymbol* fileReader,
-                                      ArgSymbol* deser) {
-  bool retval = true;
+                                      Symbol* fileReader,
+                                      Symbol* desHelper) {
 
   // Lydia NOTE 06/16/17: be sure to avoid applying this to tuples, too!
   if (isClass()                    ==  true &&
@@ -2780,12 +2852,6 @@ bool AggregateType::handleSuperFields(FnSymbol*                    fn,
       if (parent->hasUserDefinedInit == false && parent != dtObject) {
         // We want to call the compiler-generated all-fields initializer
 
-        // First, ensure we have a default initializer for the parent
-        if (parent->builtDefaultInit == false && parent->wantsDefaultInitializer()) {
-          parent->buildDefaultInitializer();
-          parent->buildReaderInitializer();
-        }
-
         // Otherwise, we are good to go!
         FnSymbol* defaultInit = NULL;
         forv_Vec(FnSymbol, method, parent->methods) {
@@ -2794,44 +2860,37 @@ bool AggregateType::handleSuperFields(FnSymbol*                    fn,
             break;
           }
         }
+        INT_ASSERT(defaultInit != nullptr);
 
-        if (defaultInit == NULL) {
-          retval = false;
-        } else {
-          // Add an argument per argument in the parent initializer
-          for_formals(formal, defaultInit) {
-            if (formal->type                   == dtMethodToken ||
-                formal->hasFlag(FLAG_ARG_THIS) == true) {
+        // Add an argument per argument in the parent initializer
+        for_formals(formal, defaultInit) {
+          if (formal->type                   == dtMethodToken ||
+              formal->hasFlag(FLAG_ARG_THIS) == true) {
+            continue;
+          }
 
-            // Skip arguments shadowed by this class' fields
-            } else if (names.find(formal->name) != names.end()) {
+          VarSymbol* field = toVarSymbol(parent->getField(formal->name));
 
-            } else {
-              DefExpr* superArg = formal->defPoint->copy();
+          // Skip arguments shadowed by this class' fields
+          if (names.find(formal->name) != names.end()) {
 
-              VarSymbol* field = toVarSymbol(parent->getField(superArg->sym->name));
+          } else if (desHelper == nullptr ||
+                     field->hasEitherFlag(FLAG_TYPE_VARIABLE, FLAG_PARAM)) {
+            DefExpr* superArg = formal->defPoint->copy();
 
-              if (fileReader != nullptr &&
-                  !field->hasFlag(FLAG_TYPE_VARIABLE) &&
-                  !field->hasFlag(FLAG_PARAM)) {
-                continue;
-              }
+            fieldArgMap.put(field, superArg->sym);
+            fieldArgMap.put(formal, superArg->sym);
 
-              fieldArgMap.put(field, superArg->sym);
-              fieldArgMap.put(formal, superArg->sym);
+            fn->insertFormalAtTail(superArg);
 
-              fn->insertFormalAtTail(superArg);
-
-              superCall->insertAtTail(superArg->sym);
-            }
+            superCall->insertAtTail(superArg->sym);
           }
         }
 
-        if (fileReader != nullptr) {
+        if (desHelper != nullptr) {
           superCall->insertAtTail(new NamedExpr("reader", new SymExpr(fileReader)));
-          superCall->insertAtTail(new NamedExpr("deserializer", new SymExpr(deser)));
+          superCall->insertAtTail(new NamedExpr("deserializer", new SymExpr(desHelper)));
         }
-
       }
 
       fn->body->insertAtHead(superCall);
@@ -2839,8 +2898,6 @@ bool AggregateType::handleSuperFields(FnSymbol*                    fn,
   }
 
   // Nothing to be done for records.
-
-  return retval;
 }
 
 void AggregateType::buildCopyInitializer() {
@@ -3045,11 +3102,48 @@ void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
 
   globalSeen.insert(this);
 
-  addRootType();
+  // Note: logic in the Dyno scope resolver will sometimes catch multiple inheritance,
+  // but not in every case. So for now, duplicate some checks here.
+  //
+  // TODO: what's a good way to centralize the multiple inheritance handling?
+  Expr* firstParent = nullptr;
 
   // Walk the base class list, and add parents into the class hierarchy.
   for_alist(expr, inherits) {
-    AggregateType* pt = discoverParentAndCheck(expr);
+    AggregateType* pt;
+    InterfaceSymbol* isym;
+    discoverParentAndCheck(expr, pt, isym);
+
+    // Handle class A : MyInterface and continue early.
+    if (isym) {
+      SET_LINENO(expr);
+
+      // For classes, we need to include management style in the implements
+      // statement so that it's picked up when necessary.
+      Symbol* implementFor = this->symbol;
+      if (this->isClass() && isClassLikeOrManaged(this)) {
+        Type* useType =
+          this->getDecoratedClass(ClassTypeDecorator::GENERIC_NONNIL);
+        implementFor = useType->symbol;
+      }
+
+      auto ifcActuals = new CallExpr(PRIM_ACTUALS_LIST, new SymExpr(implementFor));
+      auto istmt = ImplementsStmt::build(isym->name, ifcActuals, nullptr);
+      this->symbol->defPoint->insertAfter(istmt);
+
+      expr->remove();
+      continue;
+    }
+
+    if (this->isRecord()) {
+      USR_FATAL(expr, "inheritance is not currently supported for records");
+    }
+
+    if (firstParent) {
+      USR_FATAL(expr, "invalid use of multiple inheritance in class '%s'",
+                this->name());
+    }
+    firstParent = expr;
 
     localSeen.insert(this);
 
@@ -3106,11 +3200,19 @@ void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
     }
   }
 
+  if (!firstParent) {
+    addRootType();
+  }
+
   checkSameNameFields();
 }
 
-AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
+void AggregateType::discoverParentAndCheck(Expr* storesName,
+                                           AggregateType* &outParent,
+                                           InterfaceSymbol* &outIsym) {
   TypeSymbol*        ts  = NULL;
+  outIsym = nullptr;
+  outParent = nullptr;
 
   if (UnresolvedSymExpr* se = toUnresolvedSymExpr(storesName)) {
     Symbol* sym = lookup(se->unresolved, storesName);
@@ -3122,8 +3224,14 @@ AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
       sym = canonicalClassType(sym->type)->symbol;
     }
     ts = toTypeSymbol(sym);
+    outIsym = toInterfaceSymbol(sym);
   } else if (SymExpr* se = toSymExpr(storesName)) {
     ts = toTypeSymbol(se->symbol());
+    outIsym = toInterfaceSymbol(se->symbol());
+  }
+
+  if (outIsym != nullptr) {
+    return;
   }
 
   if (ts == NULL) {
@@ -3156,7 +3264,7 @@ AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
               pt->symbol->name);
   }
 
-  return pt;
+  outParent = pt;
 }
 
 void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {

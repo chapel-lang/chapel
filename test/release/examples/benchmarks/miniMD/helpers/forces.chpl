@@ -174,7 +174,7 @@ class ForceEAM : Force  {
   }
 
   // copied straight from c++, not entirely sure what it does
-  proc interp(n : int, delta : real, arr : [] real, spline : [] real) {
+  proc interp(n : int, delta : real, arr : [] real, ref spline : [] real) {
     for (f,m) in zip(arr[2..],1..) {
       spline[m*7 + 6] = f;
     }
@@ -206,7 +206,7 @@ class ForceEAM : Force  {
     }
   }
 
-  proc grab(rd,list : [] real) {
+  proc grab(rd,ref list : [] real) {
     for a in list[2..list.domain.high] {
       a = rd.read(real);
     }

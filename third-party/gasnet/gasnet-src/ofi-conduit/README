@@ -68,7 +68,7 @@ The ofi-conduit is currently known to lack support for the following providers
 as of libfabric v1.14.0. If these providers are important to you, please
 contact us at gasnet-staff@lbl.gov .
 
-  + "psm" provider for the (end-of-life) TrueScale products
+  + "psm" provider for the (end-of-life) True Scale products
   + "opx" provider, an alternative to "psm2" for the Omni-Path fabric
 
 The fi_info command installed with libfabric can be used to query the available
@@ -80,7 +80,7 @@ rather than ofi-conduit with the verbs OFI provider, as the former may provide
 better performance.
 
 Users with InfiniBand hardware with an InfiniPath HCA (PathScale or Qlogic) or
-TrueScale HCA (Intel) should use the GASNet mpi-conduit, rather than
+True Scale HCA (Intel) should use the GASNet mpi-conduit, rather than
 ofi-conduit with the verbs OFI provider, as the former may provide better
 performance.
 
@@ -179,7 +179,7 @@ The following configure options are also available:
       Default: 64
 
     * --with-ofi-max-medium=VALUE
-      This option specifes the default value of the environment variable
+      This option specifies the default value of the environment variable
       GASNET_OFI_MAX_MEDIUM, which in turn determines the value returned
       by gex_AM_LUB{Request,Reply}Medium().
       The value cannot be less than 512.
@@ -363,7 +363,7 @@ Recognized environment variables:
   increasing these may improve AM throughput or have no impact.  On some
   providers, reducing these may severely reduce AM throughput or even lead to
   crashes.  Defaults: 8 and 1M
-  See also: Bug 4179 and Bug 4461 under "Known problems"
+  See also: Bug 4461 and Bug 4517 under "Known problems"
 
 * GASNET_OFI_AM_INJECT_LIMIT - limit on size of fi_inject() payload.
   GASNet Active Messages of total size (at the ofi level) no larger than this
@@ -383,7 +383,7 @@ Recognized environment variables:
 * GASNET_OFI_RMA_INJECT_LIMIT - limit on size of RMA with FI_INJECT
   GASNet RMA put operations no larger than this size may be issued using the
   `FI_INJECT` flag to ensure the data is consumed synchronously.  This can
-  reduce the overal complexity of operations using `GEX_EVENT_NOW`, typically
+  reduce the overall complexity of operations using `GEX_EVENT_NOW`, typically
   at cost of an extra copy.  This setting does not affect local completion
   semantics at the GASNet API level.
   It too large a value is requested, it will be reduced to the maximum which
@@ -481,7 +481,8 @@ Recognized environment variables:
   provider-internal memory.  Unfortunately at the time of this writing the
   effect appears to be highly provider-specific, ranging from no apparent
   effect on some providers (sockets), to the intended scaling effect on others
-  (verbs), and even outright crashes on other providers (cxi).
+  (verbs), and even outright crashes on some versions of other providers (cxi).
+  See "Bug 4413" in the "Known problems" for more information.
 
 * FI_PSM2_LOCK_LEVEL - This variable only applies to the psm2 provider where
   it controls the internal locking state of the provider and can be set to the
@@ -549,10 +550,11 @@ Known problems:
     https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4267
 
 * Bug 4413
-  At least cxi provider is known to crash at initialization if the environment
-  variable "FI_UNIVERSE_SIZE" is set.  However, this is a supported variable in
-  some providers, and is even *recommended* for use with verbs;ofi_rxm in runs
-  with more than 256 processes.
+  At least cxi provider in libfabric 1.15.0.0 is known to crash at
+  initialization if the environment variable "FI_UNIVERSE_SIZE" is set, though
+  1.15.2.0 does not appear to have this problem.  In general, this is a
+  supported variable in multiple providers, and is even *recommended* for use
+  with verbs;ofi_rxm in runs with more than 256 processes.
   The most up-to-date information on this bug is maintained at:
     https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4413
 
@@ -564,8 +566,19 @@ Known problems:
     https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4503 (cxi)
 
 * Bug 4422
-  Multi-threaded applications run on a single core when using psm2 provider,
-  unless some action is taken to pin the application to subset of the cores.
+  By default, multi-threaded applications run on a single core when using psm2
+  provider (for Intel Omni-Path networks).  There are two known work-arounds
+  available:
+  + The undesired pinning to a single core will not take place if the process
+    is already pinned to a strict subset of the host's CPU cores.  In many
+    cases there are other motivations (such as NUMA affinity) for such pinning,
+    making this our preferred recommendation when practical.  However, the best
+    means to accomplish this may depend on the batch system.  An approach using
+    hwloc-bind (independent of batch system) is demonstrated in the bug report
+    (see link below).
+  + If pinning to a strict subset of the host's CPU cores is either undesirable
+    or impractical, one may instead set HFI_NO_CPUAFFINITY=1 in the environment
+    to disable the undesired single-core pinning behavior.
   The most up-to-date information on this bug is maintained at:
     https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4422
 
@@ -613,6 +626,27 @@ Known problems:
   libfabric version of 1.12 for this provider and this bug should not arise.
   The most up-to-date information on this bug is maintained at:
     https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4517
+
+* Bug 4554
+  On an HPE Cray EX system with Nvidia GPUs, Slingshot-11 network, and the 2.0.0
+  release of the Slingshot host software, it has been observed that tests using
+  `GEX_MK_CLASS_CUDA_UVA` would crash in RMA Put operations of 224 bytes or
+  less.  An example backtrace would include something like the following, where
+  the "cuda_gdrcopy_*" frames are the key ones:
+    [3] #7  <signal handler called>
+    [3] #8  cuda_gdrcopy_impl (handle=0, devptr=0x148e53200000, hostptr=0x17d27f0, len=4, dir=dir@entry=GDRCOPY_FROM_DEVICE) at src/hmem_cuda_gdrcopy.c:265
+    [3] #9  0x0000148e9e82e9c4 in cuda_gdrcopy_from_dev (handle=<optimized out>, hostptr=<optimized out>, devptr=<optimized out>, len=<optimized out>) at src/hmem_cuda_gdrcopy.c:291
+    [3] #10 0x0000148e9e82d5dd in cuda_copy_from_dev (device=<optimized out>, dst=<optimized out>, src=<optimized out>, size=<optimized out>) at src/hmem_cuda.c:176
+    [3] #11 0x0000148e9e82c1ed in ofi_copy_from_hmem (size=4, src=<optimized out>,
+  If one experiences crashes similar to the backtrace above with Nvida GPUs and
+  the Slingshot-11 network, check if the command `rpm -qa libfabric` reports a
+  version containing "SSHOT2.0.0".  If it does, then this bug is present and the
+  only known work-around for a user is to set `FI_HMEM_CUDA_USE_GDRCOPY=no` in
+  one's environment.
+  We also recommend asking your system administrator to upgrade to Slingshot
+  2.0.1 or newer.
+  The most up-to-date information on this bug is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4554
 
 * Bug 4565
   Use of explicit --with-ofi-provider=generic with the Cray Aries network (gni
@@ -669,7 +703,7 @@ Known problems:
   not compatible with ofi-conduit's needs.  As a result, initializing MPI
   prior to GASNet will yield less reliable Active Messages and possible hangs
   or crashes as a result.  Therefore, when an ofi-conduit application is
-  launched using `srun`, care is taken to avoid initializing MPI as the spawer.
+  launched using `srun`, care is taken to avoid initializing MPI as the spawner.
   To ensure those automatic measures are sufficient, we have the following
   recommendations for use of ofi-conduit on the HPE Cray EX platform:
     + Do not use MPI for job launch:

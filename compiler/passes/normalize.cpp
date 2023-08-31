@@ -69,6 +69,7 @@ static void        fixupArrayFormals(FnSymbol* fn);
 static bool        includesParameterizedPrimitive(FnSymbol* fn);
 static void        replaceFunctionWithInstantiationsOfPrimitive(FnSymbol* fn);
 static void        fixupQueryFormals(FnSymbol* fn);
+static void        fixupCastFormals(FnSymbol* fn);
 
 static void        updateInitMethod (FnSymbol* fn);
 
@@ -165,6 +166,8 @@ void normalize() {
         updateInitMethod(fn);
       }
     }
+
+    fixupCastFormals(fn);
   }
 
   normalizeBase(theProgram, true);
@@ -1893,11 +1896,18 @@ static void fixupExportedArrayReturns(FnSymbol* fn) {
     CallExpr* retCall = toCallExpr(fn->body->body.tail);
     INT_ASSERT(retCall && retCall->isPrimitive(PRIM_RETURN));
 
-    // This appears to be prior to any insertion of call temps, etc, so it seems
-    // okay for now to just insert the conversion call around the function call.
-    CallExpr* transformRet = new CallExpr("convertToExternalArray",
-                                          retCall->get(1)->remove());
-    retCall->insertAtTail(transformRet);
+    // if return value is a call expr, explicitly expand and suppress lvalue
+    // errors from `convertToExternalArray`
+    // otherwise, just use the value directly and let the normal call temp
+    // insertion take care of it
+    Expr* retVal = retCall->get(1);
+    if(CallExpr* callVal = toCallExpr(retVal)) {
+      Symbol* retSym = insertCallTempsWithStmt(callVal, retCall);
+      retSym->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
+      retVal = new SymExpr(retSym);
+    }
+    CallExpr* transformRet = new CallExpr("convertToExternalArray", retVal);
+    retCall->get(1)->replace(transformRet);
   }
 }
 
@@ -4177,6 +4187,9 @@ static void cloneParameterizedPrimitive(FnSymbol* fn,
 
 static void replaceUsesWithPrimTypeof(FnSymbol* fn, ArgSymbol* formal);
 
+static bool isBorrowedTypeActual(Expr* expr);
+static bool isCastToBorrowedInFormal(ArgSymbol* formal);
+
 static bool isQueryForGenericTypeSpecifier(ArgSymbol* formal);
 
 static void fixDecoratedTypePrimitives(FnSymbol* fn, ArgSymbol* formal);
@@ -4193,6 +4206,43 @@ static void addToWhereClause(FnSymbol*  fn,
                              ArgSymbol* formal,
                              Expr*      test);
 
+static void fixupCastFormals(FnSymbol* fn) {
+  for_formals(formal, fn) {
+    if (BlockStmt* typeExpr = formal->typeExpr) {
+      if(typeExpr->body.length == 1) {
+        if(CallExpr* typeCast = toCallExpr(typeExpr->body.tail)) {
+          if(typeCast->isCast() && isBorrowedTypeActual(typeCast->castTo())) {
+            VarSymbol* tmp = newTemp("call_type_tmp");
+            tmp->addFlag(FLAG_TYPE_VARIABLE);
+            tmp->addFlag(FLAG_MAYBE_TYPE);
+            tmp->addFlag(FLAG_EXPR_TEMP);
+
+            SymExpr* tmpSe = new SymExpr(tmp);
+            typeCast->replace(tmpSe);
+
+            auto mod = fn->getModule();
+            auto def = new DefExpr(tmp);
+            auto move = new CallExpr(PRIM_MOVE, tmp, typeCast);
+            mod->block->insertAtTail(def);
+
+            // insert the move just after we def the fromType
+            if(SymExpr* fromType = toSymExpr(typeCast->castFrom())) {
+              if(fromType->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+                fromType->symbol()->defPoint->insertAfter(move);
+              }
+              else {
+                USR_FATAL(formal, "Cannot perform a type cast on a non-type");
+              }
+            } else {
+              USR_FATAL(formal, "Complex expressions casted to `borrowed` in a formal type are not currently supported, consider using a helper function");
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 static void fixupQueryFormals(FnSymbol* fn) {
   if (fn->isConstrainedGeneric()) {
     introduceConstrainedTypes(fn);
@@ -4208,7 +4258,11 @@ static void fixupQueryFormals(FnSymbol* fn) {
 
         replaceUsesWithPrimTypeof(fn, formal);
 
-      } else if (isQueryForGenericTypeSpecifier(formal) == true) {
+      } else if (isCastToBorrowedInFormal(formal)) {
+        // avoids expandQueryForGenericTypeSpecifier messing up the cast to borrowed
+        // TODO: This will still break for something like `myOwnedType:unmanaged`
+      }
+      else if (isQueryForGenericTypeSpecifier(formal) == true) {
         if (formal->intent == INTENT_OUT)
           outFormalQueryError(formal);
 
@@ -4249,6 +4303,30 @@ static void replaceUsesWithPrimTypeof(FnSymbol* fn, ArgSymbol* formal) {
 
   formal->type = dtAny;
 }
+
+static bool isBorrowedTypeActual(Expr* expr) {
+  if (SymExpr* se = toSymExpr(expr)) {
+    if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
+      auto decoratorType = classTypeDecorator(canonicalDecoratedClassType(ts->type));
+      return isDecoratorBorrowed(decoratorType);
+    }
+  }
+
+  return false;
+}
+
+static bool isCastToBorrowedInFormal(ArgSymbol* formal) {
+  bool retval = false;
+
+  if(formal->typeExpr->body.length == 1) {
+    if (CallExpr* call = toCallExpr(formal->typeExpr->body.tail)) {
+      retval = call->isCast() && isBorrowedTypeActual(call->castTo());
+    }
+  }
+
+  return retval;
+}
+
 
 static bool isGenericActual(Expr* expr) {
   if (isDefExpr(expr))

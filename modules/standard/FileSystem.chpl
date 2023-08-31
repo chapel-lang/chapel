@@ -219,6 +219,12 @@ proc chmod(name: string, mode: int) throws {
    to the specified values.  If `uid` or `gid` are -1, the value in question
    will remain unchanged.
 
+   .. note::
+
+      Changing the owner typically requires root or elevated privileges.
+      Changing the group typically requires being the owner and a member of the
+      group, or having elevated privileges.
+
    :arg name: The name of the file to be changed.
    :type name: `string`
    :arg uid: The intended new owner(user) id, or -1 if it should remain the
@@ -404,14 +410,14 @@ private proc copyFileImpl(src: string, dest: string) throws {
     } catch { /* ignore errors */ }
   }
 
-  var srcChnl = try srcFile.reader(kind=ionative, locking=false);
+  var srcChnl = try srcFile.reader(locking=false);
   defer {
     try {
       srcChnl.close();
     } catch { /* ignore errors */ }
   }
 
-  var destChnl = try destFile.writer(kind=ionative, locking=false);
+  var destChnl = try destFile.writer(locking=false);
   defer {
     try {
       destChnl.close();
@@ -424,7 +430,7 @@ private proc copyFileImpl(src: string, dest: string) throws {
   // If increasing the read size, make sure there's a test in
   // test/library/standard/FileSystem that copies a file larger than one buffer.
   while (try srcChnl.readBytes(buf, maxSize=4096)) {
-    try destChnl.write(buf);
+    try destChnl.writeBytes(buf);
     // From mppf:
     // If you want it to be faster, we can make it only buffer once (sharing
     // the bytes read into memory between the two channels). To do that you'd

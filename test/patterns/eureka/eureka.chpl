@@ -34,7 +34,7 @@ var T: stopwatch;
 T.start();
 
 // Do a parallel search across the locales.
-coforall loc in Locales {
+coforall loc in Locales with (ref found) {
   on loc {
     // Split the on-locale work coarsely enough that every task/CPU has some.
     const rangeOnLoc = chunk(vals.domain.dim(0), numLocales, here.id);
@@ -44,7 +44,7 @@ coforall loc in Locales {
                           else dataParTasksPerLocale);
 
     // Do a parallel search across the CPUs on this locale.
-    coforall rangeOnCpu in chunks(rangeOnLoc, numChunks) {
+    coforall rangeOnCpu in chunks(rangeOnLoc, numChunks) with (ref found) {
       // Do a serial search over this task's (CPU's) portion of the array.
       for i in rangeOnCpu {
         // If we find the value, tell everyone and quit looking.

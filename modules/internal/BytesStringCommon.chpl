@@ -175,7 +175,17 @@ module BytesStringCommon {
             expectedSize += 2*nInvalidBytes;
             (newBuff, allocSize) = bufferEnsureSize(newBuff, allocSize,
                                                      expectedSize);
-            for i in 0..#nInvalidBytes {
+
+            // TODO: in --baseline, range for loops resolve range._getIterator,
+            // which in turn requires allocations, which leads to decodeByteBuffer...
+            // which would then needs to resolve _getIterator again for this loop
+            // down here. Write it as a primitive loop to avoid the recursive resolution.
+            // This is probably not the ideal solution.
+            var i: int;
+            while __primitive("C for loop",
+                              __primitive( "=", i, 0),
+                              __primitive("<", i, nInvalidBytes),
+                              __primitive("+=", i, 1)) {
               qio_encode_char_buf(newBuff+decodedIdx,
                                   0xdc00+(buff[thisIdx-nInvalidBytes+i]:int(32)));
               decodedIdx += 3;

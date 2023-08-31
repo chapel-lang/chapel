@@ -1,6 +1,9 @@
+use IO;
+use Types;
+
 config param testError = 0, testDisplayRepresentation = false;
 
-proc readArray(X) {
+proc readArray(ref X) {
   X["zero"]  = 0.0;
   X["pointone"]  = 0.1;
   X["half"]  = 0.5;
@@ -16,7 +19,18 @@ proc readArray(X) {
   X["ten"]   = 10.0;
 }
 
-proc testAssocArrayAPI(X: []) {
+proc testAssocArrayAPI(ref X: [], arrayOutput:fileWriter(?)=stdout) {
+  // only write arrays in CHPL format
+  proc writeln(const args ...?n) {
+    for param i in 0..<n {
+      if isArray(args(i)) then
+        try! arrayOutput.write(args(i));
+      else
+        try! stdout.write(args(i));
+    }
+    try! writeln();
+  }
+
   // print header
   writeln("----------------");
 

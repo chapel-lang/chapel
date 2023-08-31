@@ -95,16 +95,16 @@ Exponential Functions
 :proc:`exp`
 :proc:`exp2`
 :proc:`expm1`
-:proc:`ldexp`
+:proc:`ldExp`
 
 .. _math-rounding:
 
 Rounding
 --------
-:proc:`divceil`
-:proc:`divceilpos`
-:proc:`divfloor`
-:proc:`divfloorpos`
+:proc:`divCeil`
+:proc:`divCeilPos`
+:proc:`divFloor`
+:proc:`divFloorPos`
 :proc:`nearbyint`
 :proc:`rint`
 
@@ -112,8 +112,8 @@ Rounding
 
 Gamma Functions
 ---------------
-:proc:`lgamma`
-:proc:`tgamma`
+:proc:`gamma`
+:proc:`lnGamma`
 
 .. _math-error:
 
@@ -346,7 +346,7 @@ module Math {
     return chpl_atan2(y, x);
   }
 
-  /* Returns the arc tangent of the two arguments.
+  /* Returns the arc tangent of the ratio of the two arguments.
 
      This is equivalent to
      the arc tangent of `y` / `x` except that the signs of `y`
@@ -425,7 +425,7 @@ module Math {
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divceil(param x: integral, param y: integral) param do
+  proc divCeil(param x: integral, param y: integral) param do
     return chpl_divceil(x, y);
 
   /* Returns :proc:`~AutoMath.ceil`\(`x`/`y`),
@@ -434,15 +434,15 @@ module Math {
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divceil(x: integral, y: integral) do return chpl_divceil(x, y);
+  proc divCeil(x: integral, y: integral) do return chpl_divceil(x, y);
 
   /*
-    A variant of :proc:`divceil` that performs no runtime checks.
+    A variant of :proc:`divCeil` that performs no runtime checks.
     The user must ensure that both arguments are strictly positive
     (not 0) and are of a signed integer type (not `uint`).
   */
-  @unstable("divceilpos is unstable due to questions about its utility.  If you find this function valuable, please let us know!")
-  proc divceilpos(x: integral, y: integral) {
+  @unstable("divCeilPos is unstable due to questions about its utility.  If you find this function valuable, please let us know!")
+  proc divCeilPos(x: integral, y: integral) {
     return chpl_divceilpos(x, y);
   }
 
@@ -452,7 +452,7 @@ module Math {
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divfloor(param x: integral, param y: integral) param do return
+  proc divFloor(param x: integral, param y: integral) param do return
     chpl_divfloor(x, y);
 
   /* Returns :proc:`~AutoMath.floor`\(`x`/`y`),
@@ -461,36 +461,38 @@ module Math {
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divfloor(x: integral, y: integral) do return chpl_divfloor(x, y);
+  proc divFloor(x: integral, y: integral) do return chpl_divfloor(x, y);
 
   /*
-    A variant of :proc:`divfloor` that performs no runtime checks.
+    A variant of :proc:`divFloor` that performs no runtime checks.
     The user must ensure that both arguments are strictly positive
     (not 0) and are of a signed integer type (not `uint`).
   */
-  @unstable("divfloorpos is unstable due to questions about its utility.  If you find this function valuable, please let us know!")
-  proc divfloorpos(x: integral, y: integral) {
+  @unstable("divFloorPos is unstable due to questions about its utility.  If you find this function valuable, please let us know!")
+  proc divFloorPos(x: integral, y: integral) {
     return chpl_divfloorpos(x, y);
   }
 
-  /* Returns the error function of the argument `x`. */
+  /* Returns the error function of the argument `x`. This is equivalent to
+     ``2/sqrt(pi)`` * the integral of ``exp(-t**2)dt`` from 0 to `x`. */
   inline proc erf(x: real(64)): real(64) {
     return chpl_erf(x);
   }
 
-  /* Returns the error function of the argument `x`. */
+  /* Returns the error function of the argument `x`. This is equivalent to
+     ``2/sqrt(pi)`` * the integral of ``exp(-t**2)dt`` from 0 to `x`. */
   inline proc erf(x : real(32)): real(32) {
     return chpl_erf(x);
   }
 
-  /* Returns the complementary error function of the argument.
+  /* Returns the complementary error function of the argument `x`.
      This is equivalent to 1.0 - :proc:`erf`\(`x`).
   */
   inline proc erfc(x: real(64)): real(64) {
     return chpl_erfc(x);
   }
 
-  /* Returns the complementary error function of the argument.
+  /* Returns the complementary error function of the argument `x`.
      This is equivalent to 1.0 - :proc:`erf`\(`x`).
   */
   inline proc erfc(x : real(32)): real(32) {
@@ -504,19 +506,19 @@ module Math {
   }
 
   /* Returns the value of the Napierian `e` raised to the power of the
-     argument. */
+     argument `x`. */
   inline proc exp(x : real(32)): real(32) {
     return chpl_exp(x);
   }
 
   /* Returns the value of the Napierian `e` raised to the power of the
-     argument. */
+     argument `x`. */
   inline proc exp(x: complex(64)): complex(64) {
     return chpl_exp(x);
   }
 
   /* Returns the value of the Napierian `e` raised to the power of the
-     argument. */
+     argument `x`. */
   inline proc exp(x: complex(128)): complex(128) {
     return chpl_exp(x);
   }
@@ -543,29 +545,70 @@ module Math {
     return chpl_expm1(x);
   }
 
-  /* Multiply by an integer power of 2.
-     Returns x * 2**n.
-     */
+  /* Returns the gamma function of the argument `x`. */
+  inline proc gamma(x: real(64)): real(64) {
+    return chpl_tgamma(x);
+  }
+
+  /* Returns the gamma function of the argument `x`. */
+  inline proc gamma(x : real(32)): real(32) {
+    return chpl_tgamma(x);
+  }
+
+  /* Returns the value of the argument `x` multiplied by 2 raised to the
+     argument `exp` power, i.e., ``x * 2**exp``. */
+  inline proc ldExp(x:real(64), exp:int(32)):real(64) {
+    return chpl_ldexp(x, exp);
+  }
+
+  /* Returns the value of the argument `x` multiplied by 2 raised to the
+     argument `exp` power, i.e., ``x * 2**exp``. */
+  inline proc ldExp(x:real(32), exp:int(32)):real(32) {
+    return chpl_ldexp(x, exp);
+  }
+
+  /* Returns the value of the argument `x` multiplied by 2 raised to the
+     argument `n` power, i.e., ``x * 2**n``. */
+  @deprecated(notes="'ldexp' with an 'n' argument has been deprecated, please use :proc:`ldExp` with an 'exp' argument instead")
   inline proc ldexp(x:real(64), n:int(32)):real(64) {
-    return chpl_ldexp(x, n);
+    return ldExp(x, n);
   }
 
+  /* Returns the value of the argument `x` multiplied by 2 raised to the
+     argument `n` power, i.e., ``x * 2**n``. */
+  @deprecated(notes="'ldexp' with an 'n' argument has been deprecated, please use :proc:`ldExp` with an 'exp' argument instead")
   inline proc ldexp(x:real(32), n:int(32)):real(32) {
-    return chpl_ldexp(x, n);
+    return ldExp(x, n);
   }
 
   /* Returns the natural logarithm of the absolute value
      of the gamma function of the argument `x`.
   */
+  inline proc lnGamma(x: real(64)): real(64) {
+    return chpl_lgamma(x);
+  }
+
+  /* Returns the natural logarithm of the absolute value
+     of the gamma function of the argument `x`.
+  */
+  inline proc lnGamma(x : real(32)): real(32) {
+    return chpl_lgamma(x);
+  }
+
+  /* Returns the natural logarithm of the absolute value
+     of the gamma function of the argument `x`.
+  */
+  @deprecated(notes="'lgamma' has been deprecated in favor of :proc:`lnGamma`, please use that instead")
   inline proc lgamma(x: real(64)): real(64) {
-    return chpl_lgamma(x);
+    return lnGamma(x);
   }
 
   /* Returns the natural logarithm of the absolute value
      of the gamma function of the argument `x`.
   */
+  @deprecated(notes="'lgamma' has been deprecated in favor of :proc:`lnGamma`, please use that instead")
   inline proc lgamma(x : real(32)): real(32) {
-    return chpl_lgamma(x);
+    return lnGamma(x);
   }
 
   /* Returns the natural logarithm of the argument `x`.
@@ -985,16 +1028,18 @@ module Math {
   }
 
   /* Returns the gamma function of the argument `x`. */
+  @deprecated("'tgamma' has been deprecated in favor of :proc:`gamma`, please use that instead")
   inline proc tgamma(x: real(64)): real(64) {
     return chpl_tgamma(x);
   }
 
   /* Returns the gamma function of the argument `x`. */
+  @deprecated("'tgamma' has been deprecated in favor of :proc:`gamma`, please use that instead")
   inline proc tgamma(x : real(32)): real(32) {
     return chpl_tgamma(x);
   }
 
-  /* Returns the greatest common divisor of the integer argument `x` and
+  /* Returns the greatest common divisor of the integer arguments `x` and
      `y`. */
   proc gcd(in x: int,in y: int): int {
     return chpl_gcd(x, y);
@@ -1031,37 +1076,37 @@ module Math {
   }
 
   /* Returns the Bessel function of the second kind of order `0` of `x`, where
-     `x` must be greater than 0 */
+     `x` must be greater than 0. */
   inline proc y0(x: real(32)): real(32) {
     return chpl_y0(x);
   }
 
   /* Returns the Bessel function of the second kind of order `0` of `x`,
-     where `x` must be greater than 0 */
+     where `x` must be greater than 0. */
   inline proc y0(x: real(64)): real(64) {
     return chpl_y0(x);
   }
 
   /* Returns the Bessel function of the second kind of order `1` of `x`,
-     where `x` must be greater than 0 */
+     where `x` must be greater than 0. */
   inline proc y1(x: real(32)): real(32) {
     return chpl_y1(x);
   }
 
   /* Returns the Bessel function of the second kind of order `1` of `x`,
-     where `x` must be greater than 0 */
+     where `x` must be greater than 0. */
   inline proc y1(x: real(64)): real(64) {
     return chpl_y1(x);
   }
 
   /* Returns the Bessel function of the second kind of order `n` of `x`,
-     where `x` must be greater than 0 */
+     where `x` must be greater than 0. */
   inline proc yn(n: int, x: real(32)): real(32) {
     return chpl_yn(n, x);
   }
 
   /* Returns the Bessel function of the second kind of order `n` of `x`,
-     where `x` must be greater than 0 */
+     where `x` must be greater than 0. */
   inline proc yn(n: int, x: real(64)): real(64) {
     return chpl_yn(n, x);
   }

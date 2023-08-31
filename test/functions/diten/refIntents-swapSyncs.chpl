@@ -109,10 +109,10 @@ proc main {
     writeln((s1, s2));
   }
   { writeln("sync ints");
-    var s1$: sync int = 1;
-    var s2$: sync int = 2;
-    writeln((s1$.readFF(), s2$.readFF()));
-    swap(s1$, s2$);
-    writeln((s1$.readFF(), s2$.readFF()));
+    var s1: sync int = 1;
+    var s2: sync int = 2;
+    writeln((s1.readFF(), s2.readFF()));
+    swap(s1, s2);
+    writeln((s1.readFF(), s2.readFF()));
   }
 }

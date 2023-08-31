@@ -15,7 +15,7 @@ config type elt = int;
 // ARepl - the replicated array to be tested
 
 const repllocales = Locales;  // in case this changes
-var ReplBlockDist = new dmap(new Replicated());
+var ReplBlockDist = new Replicated();
 var DRepl: domain(2) dmapped ReplBlockDist = DsubLoc;
 var ARepl: [DRepl] elt;
 
@@ -27,12 +27,12 @@ proc show() {
     }
   }
 }
-    
+
 
 // set everything to predetermined values
 proc reset() {
   // explicitly go to each locale
-  coforall loc in repllocales do on loc do
+  coforall loc in repllocales with (ref ARepl) do on loc do
     // explicitly index into each element
     for ix in DsubLoc do ARepl[ix] = 100 + here.id;
 }

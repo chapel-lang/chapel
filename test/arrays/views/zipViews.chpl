@@ -1,7 +1,7 @@
 var A: [1..9, 1..9] real;
 var B: [1..9] real;
 
-proc assignViaZip(X, Y) {
+proc assignViaZip(ref X, Y) {
   forall (x,y) in zip(X,Y) do
     x = y;
 }

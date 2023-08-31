@@ -207,8 +207,10 @@ owned<AttributeGroup> ParserContext::buildAttributeGroup(YYLTYPE locationOfDecl)
                                 std::move(pragmaCopy),
                                 attributeGroupParts.isDeprecated,
                                 attributeGroupParts.isUnstable,
+                                attributeGroupParts.isParenfulDeprecated,
                                 attributeGroupParts.deprecationMessage,
                                 attributeGroupParts.unstableMessage,
+                                attributeGroupParts.parenfulDeprecationMessage,
                                 std::move(attrList));
   return node;
 }
@@ -291,24 +293,34 @@ void ParserContext::noteDeprecation(YYLTYPE loc, MaybeNamedActualList* actuals) 
   if (attributeGroupParts.isStable) {
     error(loc, "cannot apply both stable and deprecated attributes to the same symbol");
   }
-  attributeGroupParts.isDeprecated = true;
+
+  bool isParenfulDeprecation = false;
   AstNode* messageStr = nullptr;
   bool allActualsNamed = true;
+
   if (actuals != nullptr && actuals->size() > 0) {
     for (auto& actual : *actuals) {
       if (!(actual.name == UniqueString::get(context(), "since").podUniqueString() ||
             actual.name == UniqueString::get(context(), "notes").podUniqueString() ||
             actual.name == UniqueString::get(context(), "suggestion").podUniqueString()||
+            actual.name == UniqueString::get(context(), "parenful").podUniqueString() ||
             actual.name.isEmpty())) {
         error(loc, "unrecognized argument name '%s'. "
-                   "'@deprecated' attribute only accepts 'since', 'notes', and "
-                   "'suggestion' arguments",
+                   "'@deprecated' attribute only accepts 'since', 'notes', "
+                   "'parenful', and 'suggestion' arguments",
                    actual.name.c_str());
       }
       if (actual.name.isEmpty()) {
         allActualsNamed = false;
       }
-      if (!actual.expr->isStringLiteral()) {
+      if (actual.name == UniqueString::get(context(), "parenful").podUniqueString()) {
+        auto boolLit = actual.expr->toBoolLiteral();
+        if (!boolLit || !boolLit->value()) {
+          error(loc, "invalid value for deprecated attribute's 'parenful' "
+                     "parameter; only 'true' is supported.");
+        }
+        isParenfulDeprecation = true;
+      } else if (!actual.expr->isStringLiteral()) {
         error(loc, "deprecated attribute arguments must be string literals for now");
       }
       // TODO: Decide how this interaction should work, if we want to continue
@@ -325,10 +337,20 @@ void ParserContext::noteDeprecation(YYLTYPE loc, MaybeNamedActualList* actuals) 
   if (!allActualsNamed && actuals->size() > 1) {
     error(loc, "deprecated attribute only accepts one unnamed argument");
   }
+
+  UniqueString message;
   if (messageStr) {
     if (auto strLit = messageStr->toStringLiteral()) {
-      attributeGroupParts.deprecationMessage = strLit->value();
+      message = strLit->value();
     }
+  }
+
+  if (isParenfulDeprecation) {
+    attributeGroupParts.isParenfulDeprecated = true;
+    attributeGroupParts.parenfulDeprecationMessage = message;
+  } else {
+    attributeGroupParts.isDeprecated = true;
+    attributeGroupParts.deprecationMessage = message;
   }
 }
 
@@ -410,7 +432,7 @@ void ParserContext::resetAttributeGroupPartsState() {
   if (hasAttributeGroupParts) {
     auto& pragmas = attributeGroupParts.pragmas;
     if (pragmas) delete pragmas;
-    attributeGroupParts = {nullptr, nullptr, false, false, false, UniqueString(), UniqueString() };
+    attributeGroupParts = {nullptr, nullptr, false, false, false, false, UniqueString(), UniqueString(), UniqueString() };
     hasAttributeGroupParts = false;
   }
 
@@ -418,9 +440,11 @@ void ParserContext::resetAttributeGroupPartsState() {
   CHPL_ASSERT(attributeGroupParts.attributeList == nullptr);
   CHPL_ASSERT(!attributeGroupParts.isDeprecated);
   CHPL_ASSERT(!attributeGroupParts.isUnstable);
+  CHPL_ASSERT(!attributeGroupParts.isParenfulDeprecated);
   CHPL_ASSERT(!attributeGroupParts.isStable);
   CHPL_ASSERT(attributeGroupParts.deprecationMessage.isEmpty());
   CHPL_ASSERT(attributeGroupParts.unstableMessage.isEmpty());
+  CHPL_ASSERT(attributeGroupParts.parenfulDeprecationMessage.isEmpty());
   CHPL_ASSERT(!hasAttributeGroupParts);
 
   numAttributesBuilt = 0;
@@ -2509,44 +2533,26 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
 
   auto contentsList = consumeList(contents);
 
-  owned<AstNode> inheritExpr;
+  AstList inheritExprs;
   if (optInherit != nullptr) {
     if (optInherit->size() > 0) {
-      if (parts.tag == asttags::Record) {
-        CHPL_PARSER_REPORT(this, RecordInheritanceNotSupported, inheritLoc,
-                           parts.name.str());
-      } else if (parts.tag == asttags::Union) {
+      if (parts.tag == asttags::Union) {
+        // TODO union inheritance: unions should have support for inheriting
+        // from interfaces.
         error(inheritLoc, "unions cannot inherit.");
       } else {
-        if (optInherit->size() > 1)
-          error(inheritLoc, "only single inheritance is supported.");
-        AstNode* ast = (*optInherit)[0];
-        bool inheritOk = false;
-        if (ast->isIdentifier()) {
-          // inheriting from e.g. Parent is OK
-          inheritOk = true;
-        } else {
-          // inheriting from e.g. Parent(?) is OK
-          if (auto call = ast->toFnCall()) {
-            const AstNode* calledExpr = call->calledExpression();
-            if (calledExpr != nullptr && call->numActuals() == 1) {
-              if (const AstNode* actual = call->actual(0)) {
-                if (auto id = actual->toIdentifier()) {
-                  if (id->name() == USTR("?")) {
-                    inheritOk = true;
-                  }
-                }
-              }
-            }
-          }
-        }
+        for (size_t i = 0; i < optInherit->size(); i++) {
+          AstNode* ast = (*optInherit)[i];
+          bool inheritOk =
+            chpl::uast::AggregateDecl::isAcceptableInheritExpr(ast);
 
-        if (inheritOk) {
-          inheritExpr = toOwned(ast);
-          (*optInherit)[0] = nullptr;
-        } else {
-          syntax(inheritLoc,
-                 "invalid parent class; please specify a single class name");
+          if (inheritOk) {
+            inheritExprs.push_back(toOwned(ast));
+            (*optInherit)[i] = nullptr;
+          } else {
+            syntax(inheritLoc,
+                   "invalid parent class or interface; please specify a single class or interface name");
+          }
         }
       }
     }
@@ -2566,7 +2572,7 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
                         toOwned(parts.attributeGroup),
                         parts.visibility,
                         parts.name,
-                        std::move(inheritExpr),
+                        std::move(inheritExprs),
                         std::move(contentsList)).release();
   } else if (parts.tag == asttags::Record) {
     decl = Record::build(builder, convertLocation(location),
@@ -2575,6 +2581,7 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
                          parts.linkage,
                          toOwned(parts.linkageName),
                          parts.name,
+                         std::move(inheritExprs),
                          std::move(contentsList)).release();
   } else if (parts.tag == asttags::Union) {
 

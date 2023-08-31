@@ -71,20 +71,20 @@ if verb then
               "\nreplA\n", copyToDF(replA),
               "\nreplB\n", copyToDF(replB), "\n");
 
-var a$: sync int;
+var a: sync int;
 
 forall (row,col) in AbD by blkSize do {
   if row + blkSize - 1 <= n && col + blkSize - 1 <= n + 1 {
     const cur1 = (1..n)(row..#blkSize),
           cur2 = (1..n+1)(col..#blkSize);
-    a$.writeEF(1);
+    a.writeEF(1);
     if verb then writeln(cur1, ", ", cur2, "  on ", here.id);
     local {
       test(Ab.localSlice(cur1, cur2),
            replA.localSlice(cur1, 1..blkSize),
            replB.localSlice(1..blkSize, cur2));
     }
-    a$.readFE();
+    a.readFE();
   } else {
     if verb then writeln((row, col), "  on ", here.id, "  skipped");
   }
@@ -94,7 +94,7 @@ writeln();
 writeln(Ab);
 writeln("DONE");
 
-proc test(X, Y, Z) {
+proc test(ref X, Y, Z) {
   for (x, y, z) in zip(X, Y, Z) do x = y + z;
 }
 

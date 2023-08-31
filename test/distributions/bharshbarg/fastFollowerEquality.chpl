@@ -26,7 +26,7 @@ proc test(DA : domain, DB : domain) {
   test(A,B);
 }
 
-proc test(A : [?DA], B : [?DB]) {
+proc test(ref A : [?DA], B : [?DB]) {
   writeln("--- ", A.type:string, " vs. ", B.type:string, " ---");
   DA.distribution.displayRepresentation();
   writeln();
@@ -103,7 +103,19 @@ proc main() {
   test(make(cyclic,one),make(cyclic,one,startIdx=(2,)));
 
   // - different eltTypes
-  test(makeArray(make(block,one), real), makeArray(make(block,one), int));
-  test(makeArray(make(cyclic,one), real), makeArray(make(cyclic,one), int));
-  test(makeArray(make(stencil,one), real), makeArray(make(stencil,one), int));
+  {
+    var t1 = makeArray(make(block,one), real);
+    var t2 = makeArray(make(block,one), int);
+    test(t1, t2);
+  }
+  {
+    var t1 = makeArray(make(cyclic,one), real);
+    var t2 = makeArray(make(cyclic,one), int);
+    test(t1, t2);
+  }
+  {
+    var t1 = makeArray(make(stencil,one), real);
+    var t2 = makeArray(make(stencil,one), int);
+    test(t1, t2);
+  }
 }

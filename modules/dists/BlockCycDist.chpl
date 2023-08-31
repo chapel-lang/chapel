@@ -225,7 +225,7 @@ class BlockCyclic : BaseDist {
     const dummyLBC = new unmanaged LocBlockCyclic(rank, idxType, dummy=true);
     var locDistTemp: [targetLocDom] unmanaged LocBlockCyclic(rank, idxType) = dummyLBC;
 
-    coforall locid in targetLocDom do
+    coforall locid in targetLocDom with (ref locDistTemp) do
       on this.targetLocales(locid) do
         locDistTemp(locid) = new unmanaged LocBlockCyclic(rank, idxType, locid, this.lowIdx, this.blocksize, targetLocDom);
 
@@ -470,7 +470,7 @@ class LocBlockCyclic {
         const locid_i = if isTuple(locid) then locid(i) else locid;
         const lo = lowIdx(i) + (locid_i * blocksize(i));
         const str = blocksize(i) * targetLocDom.dim(i).size;
-        myStarts(i) = try! (lo.. by str) : myStarts(i).type;
+        myStarts(i) = (lo.. by str) : myStarts(i).type;
       }
     this.myStarts = myStarts;
   }
@@ -576,7 +576,7 @@ iter BlockCyclicDom.these(param tag: iterKind, followThis) where tag == iterKind
     const stride    = dim.stride;
     const low       = (stride * curFollow.lowBound): idxType;
     const high      = (stride * curFollow.highBound): idxType;
-    t(i) = try! ((low..high by stride) + dim.lowBound) : t(i).type;
+    t(i) = ((low..high by stride) + dim.lowBound) : t(i).type;
   }
 
   for i in {(...t)} {
@@ -596,7 +596,7 @@ proc BlockCyclicDom.dsiBuildArray(type eltType, param initElts:bool) {
   const creationLocale = here;
 
   // formerly BlockCyclicArr.setup()
-  coforall localeIdx in dom.dist.targetLocDom with (ref myLocArrTemp) {
+  coforall localeIdx in dom.dist.targetLocDom with (ref locArrTemp, ref myLocArrTemp) {
     on dom.dist.targetLocales(localeIdx) {
       const LBCA = new unmanaged LocBlockCyclicArr(eltType, rank,
                                                    idxType, strides,
@@ -1008,7 +1008,7 @@ iter BlockCyclicArr.these(param tag: iterKind, followThis) ref where tag == iter
     const stride    = dim.stride;
     const low       = curFollow.lowBound * stride;
     const high      = curFollow.highBound * stride;
-    myFollowThis(i) = try! ((low..high by stride) + dim.lowBound) : curFollow.type;
+    myFollowThis(i) = ((low..high by stride) + dim.lowBound) : curFollow.type;
   }
 
   const myFollowThisDom = {(...myFollowThis)};

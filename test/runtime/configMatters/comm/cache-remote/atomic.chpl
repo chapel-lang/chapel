@@ -13,7 +13,7 @@ var P: [PrivateSpace] atomic int;
 //var A: [D] int;
 
 //startCommDiagnostics();
-coforall loc in Locales do on loc {
+coforall loc in Locales with (ref P) do on loc {
   P(loc.id).write(100+loc.id);
 }
 //stopCommDiagnostics();

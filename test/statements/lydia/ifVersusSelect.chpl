@@ -57,7 +57,7 @@ if (verbose) {
 
 
 // Decides how to fill the array
-proc fillArr(arr) {
+proc fillArr(ref arr) {
   select fillBy {
     when filler.balanced {
       // Balanced

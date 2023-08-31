@@ -111,7 +111,7 @@ SUCCESS
 ===== writing: =====
 (x = 42, y = (1, 2, 3))
 --------------------
-new GenericRecord(int(64),3)(x = 42, y = (1, 2, 3))
+new GenericRecord(x = 42, y = (1, 2, 3))
 ====================
 --- read: ---
 (x = 42, y = (1, 2, 3))
@@ -123,7 +123,7 @@ SUCCESS
 ===== writing: =====
 {x = 5}
 --------------------
-new owned Parent(x = 5)
+new borrowed Parent(x = 5)
 ====================
 --- read: ---
 {x = 5}
@@ -135,7 +135,7 @@ SUCCESS
 ===== writing: =====
 {x = 5, y = 42.0}
 --------------------
-new owned SimpleChild(x = 5, y = 4.200000e+01)
+new borrowed SimpleChild(x = 5, y = 4.200000e+01)
 ====================
 --- read: ---
 {x = 5, y = 42.0}
@@ -147,7 +147,7 @@ SUCCESS
 ===== writing: =====
 {x = 1, y = 42.0, z = 5}
 --------------------
-new owned ChildChild(x = 1, y = 4.200000e+01, z = 5)
+new borrowed ChildChild(x = 1, y = 4.200000e+01, z = 5)
 ====================
 --- read: ---
 {x = 1, y = 42.0, z = 5}
@@ -159,7 +159,7 @@ SUCCESS
 ===== writing: =====
 {x = 5}
 --------------------
-new owned Parent?(x = 5)
+new borrowed Parent(x = 5)
 ====================
 --- read: ---
 {x = 5}
@@ -183,7 +183,7 @@ SUCCESS
 ===== writing: =====
 {x = 5}
 --------------------
-new shared Parent(x = 5)
+new borrowed Parent(x = 5)
 ====================
 --- read: ---
 {x = 5}
