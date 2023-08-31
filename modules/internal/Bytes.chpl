@@ -609,7 +609,7 @@ module Bytes {
               valid when used on the same locale as the bytes.
    */
   pragma "last resort"
-  @deprecated("'bytes.c_str()' has moved to 'CTypes'. Please use :proc:`~CTypes.bytes.c_str()`")
+  @deprecated("'bytes.c_str()' has moved to 'CTypes'. Please 'use CTypes' to access ':proc:`~CTypes.bytes.c_str`'")
   inline proc bytes.c_str(): c_ptrConst(c_char) {
     use CTypes only c_str;
     return this.c_str();

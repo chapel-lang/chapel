@@ -1384,7 +1384,7 @@ module String {
         on the same locale as the string.
    */
   pragma "last resort"
-  @deprecated("'string.c_str()'' has moved to 'CTypes'. Please use :proc:`~CTypes.string.c_str()`")
+  @deprecated("'string.c_str()' has moved to 'CTypes'. Please 'use CTypes' to access ':proc:`~CTypes.string.c_str`'")
   inline proc string.c_str() : c_ptrConst(c_char) {
     use CTypes only c_str;
     return this.c_str();
