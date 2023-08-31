@@ -30,20 +30,20 @@ module DataFrames {
     }
 
     @chpldoc.nodoc
-    proc uni(lhs: borrowed TypedSeries, rhs: borrowed TypedSeries, unifier:
-        borrowed SeriesUnifier): owned Series {
+    proc uni(lhs: borrowed TypedSeries(?), rhs: borrowed TypedSeries(?), unifier:
+        borrowed SeriesUnifier(?)): owned Series {
       halt("generic Index cannot be unioned");
       return new owned Series();
     }
 
     @chpldoc.nodoc
-    proc map(s: borrowed TypedSeries, mapper: borrowed SeriesMapper): owned Series {
+    proc map(s: borrowed TypedSeries(?), mapper: borrowed SeriesMapper(?)): owned Series {
       halt("generic Index cannot be mapped");
       return new owned Series();
     }
 
     @chpldoc.nodoc
-    proc filter(s: borrowed TypedSeries, filterSeries: borrowed TypedSeries): owned Series {
+    proc filter(s: borrowed TypedSeries(?), filterSeries: borrowed TypedSeries(?)): owned Series {
       halt("generic Index cannot be filtered");
       return new owned Series();
     }
@@ -231,7 +231,7 @@ module DataFrames {
     }
 
     override
-    proc writeThis(f, s: borrowed TypedSeries) throws {
+    proc writeThis(f, s: borrowed TypedSeries(?)) throws {
       var idxWidth = writeIdxWidth() + 4;
       for (idx, (v, d)) in zip(this, s!._these()) {
         // TODO: clean up to simple cast after bugfix
@@ -317,13 +317,13 @@ module DataFrames {
     }
 
     @chpldoc.nodoc
-    proc uni(lhs: borrowed TypedSeries, unifier: borrowed SeriesUnifier) {
+    proc uni(lhs: borrowed TypedSeries(?), unifier: borrowed SeriesUnifier(?)) {
       halt("generic Series cannot be unioned");
       return new owned Series();
     }
 
     @chpldoc.nodoc
-    proc map(mapper: borrowed SeriesMapper) {
+    proc map(mapper: borrowed SeriesMapper(?)) {
       halt("generic Series cannot be unioned");
       return new owned Series();
     }
@@ -614,7 +614,7 @@ module DataFrames {
     }
 
     override
-    proc map(mapper: borrowed SeriesMapper): owned Series {
+    proc map(mapper: borrowed SeriesMapper(?)): owned Series {
       if idx {
         // Workaround for lack of shared this-intent for Index.map
         var ret = idx!.map(this, mapper);

@@ -23,7 +23,7 @@ record GRec {
 
 proc getGeneric(dummyArg) type do  return GRec;
 
-proc test1(ref formal1: GRec) {
+proc test1(ref formal1: GRec(?)) {
   compilerWarning("formal1: ", formal1.type:string);
 }
 

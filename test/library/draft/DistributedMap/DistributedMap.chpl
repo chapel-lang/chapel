@@ -29,7 +29,7 @@ record distributedMap {
   inline proc _value do return chpl_getPrivatizedCopy(
                        unmanaged DistributedMapImpl(keyType, valType), pid);
 
-  proc init(impl: DistributedMapImpl) {
+  proc init(impl: DistributedMapImpl(?)) {
     this.keyType = impl.keyType;
     this.valType = impl.valType;
     this.pid     = impl.pid;
@@ -68,7 +68,7 @@ class DistributedMapImpl {
     this.pid = _newPrivatizedClass(this);
   }
   // create a privatized instance
-  proc init(original: DistributedMapImpl, targetLocales, numLocalMaps, pid) {
+  proc init(original: DistributedMapImpl(?), targetLocales, numLocalMaps, pid) {
     this.keyType = original.keyType;
     this.valType = original.valType;
     this.targetLocales = targetLocales;

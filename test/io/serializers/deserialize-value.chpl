@@ -10,14 +10,14 @@ record R {
     this.x = x;
   }
 
-  proc init(reader: fileReader, ref deserializer) {
+  proc init(reader: fileReader(?), ref deserializer) {
     writeln("IN R.init");
     var des = deserializer.startRecord(reader, "R", 1);
     this.x = des.readField("x", int);
     des.endRecord();
   }
 
-  proc ref deserialize(reader: fileReader,
+  proc ref deserialize(reader: fileReader(?),
                    ref deserializer: reader.deserializerType) {
     writeln("IN R.deserialize");
     this.x = reader.read(int);

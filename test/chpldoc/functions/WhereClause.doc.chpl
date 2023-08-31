@@ -39,8 +39,8 @@ module M {
         writeln("operator +");
     }
 
-    inline operator <<(x: ?t, y: _tuple(?)) where isHomogeneousTuple(y) &&
-                                                  isCoercible(t, (y(0).type)) {
+    inline operator <<(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
+                                               isCoercible(t, (y(0).type)) {
     }
 
     inline operator :(x: c_string, type t:c_ptrConst(?eltType))

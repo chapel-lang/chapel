@@ -893,7 +893,7 @@ static void checkFormalType(const FnSymbol* enclosingFn, ArgSymbol* formal) {
       } else if (enclosingFn->hasFlag(FLAG_COMPILER_GENERATED)) {
         // We shouldn't complain to the user about routines we generate
       } else {
-        USR_WARN(formal, "need ? on generic formal type (A)");
+        USR_WARN(formal, "need ? on generic formal type");
       }
     }
   }

@@ -25,7 +25,7 @@ record r3 {
 
 record r4 {}
 
-operator r1.==(lhs: r1, rhs: r1) {
+operator r1.==(lhs: r1(?), rhs: r1(?)) {
   return lhs.x == rhs.x;
 }
 
@@ -33,7 +33,7 @@ proc r1.hash() {
   return x.hash();
 }
 
-operator r2.==(lhs: r2, rhs: r2) {
+operator r2.==(lhs: r2(?), rhs: r2(?)) {
   return && reduce (lhs.a == rhs.a);
 }
 

@@ -9,7 +9,7 @@ class G {
   proc init(type t) { this.t = t; }
 }
 
-proc foo(type t : unmanaged G) {
+proc foo(type t : unmanaged G(?)) {
   writeln("G");
 }
 

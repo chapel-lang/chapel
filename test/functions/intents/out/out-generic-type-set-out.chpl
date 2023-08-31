@@ -2,12 +2,12 @@ record R {
   var x;
 }
 
-proc otherOutFn(input, out output: R) {
+proc otherOutFn(input, out output: R(?)) {
   output = new R(input); // establishes type of output!
   writeln("in otherOutFn, output has type ", output.type:string);
 }
 
-proc outFn(input, out output: R) {
+proc outFn(input, out output: R(?)) {
   otherOutFn(input, output); // establishes type of output!
   writeln("in outFn, output has type ", output.type:string);
 }

@@ -88,7 +88,7 @@ var B: [0..#3] MyRecord;
    - the compiler will generate readThis/writeThis for you if you don't
      provide one
  */
-proc ref MyRecord.readThis(fr: fileReader) throws {
+proc ref MyRecord.readThis(fr: fileReader(?)) throws {
   i = fr.read(int);
   fr.readLiteral("\t");
   r = fr.read(real);
@@ -97,7 +97,7 @@ proc ref MyRecord.readThis(fr: fileReader) throws {
   fr.readLiteral("\n");
 }
 
-proc MyRecord.writeThis(fw: fileWriter) throws {
+proc MyRecord.writeThis(fw: fileWriter(?)) throws {
   fw.write(i);
   fw.writeLiteral("\t");
   fw.write(r);
@@ -112,7 +112,7 @@ proc MyRecord.init(i: int = 0, r: real = 0.0, s: string = "") {
   this.s = s;
 }
 
-proc MyRecord.init(r: fileReader) throws {
+proc MyRecord.init(r: fileReader(?)) throws {
   this.init();
   readThis(r);
 }

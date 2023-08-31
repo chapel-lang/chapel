@@ -3,7 +3,7 @@ use IO;
 record MyRecord {
   var i: int;
   proc init(i: int = 0) { this.i = i; }
-  proc init(f: fileReader) throws {
+  proc init(f: fileReader(?)) throws {
     this.init();
     this.i = f.readln(int);
   }
@@ -16,12 +16,12 @@ config const debug = true;
 // Note that fileName not exist or have no contents
 var f = open(fileName, ioMode.cwr);
 
-proc ref MyRecord.readThis(r: fileReader) throws {
+proc ref MyRecord.readThis(r: fileReader(?)) throws {
   i = r.read(int);
   r.readNewline();
 }
 
-proc MyRecord.writeThis(w: fileWriter) throws {
+proc MyRecord.writeThis(w: fileWriter(?)) throws {
   w.write(i);
   w.writeNewline();
 }

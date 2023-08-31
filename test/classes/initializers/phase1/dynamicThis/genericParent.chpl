@@ -18,7 +18,7 @@ class Parent {
 proc foobar(p : borrowed Parent(int)) {
   writeln("foobar(Parent(int))");
 }
-proc foobar(p : borrowed Parent) {
+proc foobar(p : borrowed Parent(?)) {
   writeln("foobar(Parent(other))");
 }
 

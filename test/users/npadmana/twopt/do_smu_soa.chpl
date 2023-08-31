@@ -224,7 +224,7 @@ proc BuildTree(pp : Particle3D, lo : int, hi : int, id : int) : owned KDNode  {
   return me;
 }
 
-proc TreeAccumulate(hh : UniformBins, p1, p2 : Particle3D, node1, node2 :  KDNode) {
+proc TreeAccumulate(hh : UniformBins(?), p1, p2 : Particle3D, node1, node2 :  KDNode) {
   // Compute the distance between node1 and node2
   var rr = sqrt (+ reduce(node1.xcen - node2.xcen)**2);
   var rmin = rr - (node1.rcell+node2.rcell);
@@ -266,7 +266,7 @@ proc TreeAccumulate(hh : UniformBins, p1, p2 : Particle3D, node1, node2 :  KDNod
   
 
 // The basic pair counter
-proc smuAccumulate(hh : UniformBins, p1,p2 : Particle3D, d1,d2 : domain(1), scale : real) {
+proc smuAccumulate(hh : UniformBins(?), p1,p2 : Particle3D, d1,d2 : domain(1), scale : real) {
   for ii in d1 { // Loop over first set of particles
    
     var x1,y1,z1,w1,r2 : real;

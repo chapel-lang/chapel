@@ -10,7 +10,7 @@ writeln(DD);
 var dm = new dmap(new DefaultDist());
 testit(dm);
 
-proc testit(arg: _distribution) {
+proc testit(arg: _distribution(?)) {
   compilerError("done");
 }
 

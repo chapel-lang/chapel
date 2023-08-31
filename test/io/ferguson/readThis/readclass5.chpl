@@ -7,21 +7,21 @@ class mything {
     this.x = x;
     this.y = y;
   }
-  proc init(r: fileReader) {
+  proc init(r: fileReader(?)) {
     this.x = r.read(int);
     r.readLiteral(" ");
     this.y = r.read(int);
     r.readNewline();
   }
 
-  proc readThis(r: fileReader) throws {
+  proc readThis(r: fileReader(?)) throws {
     x = r.read(int);
     r.readLiteral(" ");
     y = r.read(int);
     r.readNewline();
   }
 
-  proc writeThis(w: fileWriter) throws {
+  proc writeThis(w: fileWriter(?)) throws {
     w.write(x);
     w.writeLiteral(" ");
     w.write(y);

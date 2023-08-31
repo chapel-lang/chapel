@@ -28,5 +28,5 @@ class Horse6 {
 (new unmanaged Horse6()).proc6(nil);
 
 class Monkey7 { type T7; }
-proc proc7(arg: Monkey7?) { writeln("in proc7"); }
+proc proc7(arg: Monkey7(?)?) { writeln("in proc7"); }
 proc7(nil: Monkey7(int)?);

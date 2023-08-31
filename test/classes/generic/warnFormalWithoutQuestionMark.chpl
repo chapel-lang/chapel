@@ -11,7 +11,7 @@ proc foo2(x: G(?)) {}
 
 proc bar(x: C) {}
 
-proc baz(x: shared G) {}         // should warn, but doesn't currently
+proc baz(xxxyz: shared G) {}         // should warn, but doesn't currently
 proc baz2(x: shared G(?)) {}
 proc baz(x: borrowed G) {}       // should warn
 proc baz2(x: borrowed G(?)) {}

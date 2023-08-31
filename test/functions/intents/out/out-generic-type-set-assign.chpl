@@ -2,7 +2,7 @@ record R {
   var x;
 }
 
-proc outFn(input, out output: R) {
+proc outFn(input, out output: R(?)) {
   output = new R(input); // establishes type of output!
   writeln("in outFn, output has type ", output.type:string);
 }

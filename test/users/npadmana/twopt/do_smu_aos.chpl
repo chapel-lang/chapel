@@ -83,7 +83,7 @@ proc readFile(fn : string, ref pp : []WeightedParticle3D)  {
   }
 }
 
-proc smuAccumulate(hh : UniformBins, p1, p2 : []WeightedParticle3D, d1,d2 : domain(1), scale : real) {
+proc smuAccumulate(hh : UniformBins(?), p1, p2 : []WeightedParticle3D, d1,d2 : domain(1), scale : real) {
   forall ii in d1 { // Loop over first set of particles
 
     var x1,y1,z1,w1,r2 : real;
@@ -201,7 +201,7 @@ proc BuildTree(ref pp : []WeightedParticle3D, ref scr : []WeightedParticle3D, id
   return me;
 }
 
-proc TreeAccumulate(hh : UniformBins, p1, p2 : []WeightedParticle3D, node1, node2 : KDNode) {
+proc TreeAccumulate(hh : UniformBins(?), p1, p2 : []WeightedParticle3D, node1, node2 : KDNode) {
   // Compute the distance between node1 and node2
   var rr = sqrt (+ reduce(node1.xcen - node2.xcen)**2);
   var rmin = rr - (node1.rcell+node2.rcell);

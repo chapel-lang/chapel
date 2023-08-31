@@ -28,7 +28,7 @@ class PlusReduceOp: ReduceScanOp {
   // with a lock on 'this'.
   // 'other' will not be accessed concurrently.
   /* combine the accumulations in 'this' and 'other' */
-  proc combine(other: borrowed PlusReduceOp)   { value = value + other.value; }
+  proc combine(other: borrowed PlusReduceOp(?))   { value = value + other.value; }
 
   /* Convert the accumulation into the value of the reduction
      that is reported to the user. This is trivial in our case. */
