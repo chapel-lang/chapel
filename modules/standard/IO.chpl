@@ -2732,6 +2732,10 @@ record DefaultSerializer {
     var _first : bool = true;
     const _ending : string;
 
+    // pointer to child's 'first' field so that we can communicate back if/when
+    // a field has already been written.
+    var _firstPtr : c_ptr(bool) = nil;
+
     proc ref writeField(name: string, const field: ?) throws {
       if !_first then writer._writeLiteral(", ");
       else _first = false;
@@ -2742,14 +2746,18 @@ record DefaultSerializer {
     }
 
     proc ref startClass(writer: fileWriter, name: string, size: int) throws {
-      _first = size == 0;
-      return new AggregateSerializer(writer, _parent=true);
+      // Note: 'size' of parent might be zero, but 'size' of grandparent might
+      // be non-zero.
+      return new AggregateSerializer(writer, _parent=true,
+                                     _firstPtr=c_addrOf(_first));
     }
 
     @chpldoc.nodoc
     proc endClass() throws {
       if !_parent then
         writer._writeLiteral(_ending);
+      else if _firstPtr != nil then
+        _firstPtr.deref() = _first;
     }
 
     @chpldoc.nodoc

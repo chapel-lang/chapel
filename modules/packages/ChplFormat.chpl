@@ -76,6 +76,7 @@ module ChplFormat {
       var writer;
       var _parent = false;
       var _first = true;
+      var _firstPtr : c_ptr(bool) = nil;
 
       @chpldoc.nodoc
       proc ref writeField(name: string, const field: ?T) throws {
@@ -89,14 +90,16 @@ module ChplFormat {
       }
 
       proc ref startClass(writer: _writeType, name: string, size: int) throws {
-        _first = size == 0;
-        return new AggregateSerializer(this.writer, _parent=true);
+        return new AggregateSerializer(this.writer, _parent=true,
+                                       _firstPtr=c_addrOf(_first));
       }
 
       @chpldoc.nodoc
       proc endClass() throws {
         if !_parent then
           writer.writeLiteral(")");
+        else if _firstPtr != nil then
+          _firstPtr.deref() = _first;
       }
 
       proc endRecord() throws {
