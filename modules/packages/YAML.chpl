@@ -629,9 +629,8 @@ module YAML {
         throw new BadFormatError("unexpected field name: " + foundName + " (expected: " + name + ")");
     }
 
-    const value = reader.deserializer.deserializeValue(reader, field);
-    if YamlVerbose then writeln("  got value: ", value);
-    return value;
+    reader.read(field);
+    if YamlVerbose then writeln("  got value: ", field);
   }
 
 

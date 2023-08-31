@@ -95,7 +95,7 @@ record myMap {
 
 proc test(x) {
   printDebugFmt(x);
-  var f = openMemFile();
+  var f = openTempFile();
   try {
     f.writer().withSerializer(FormatWriter).write(x);
   } catch e {
