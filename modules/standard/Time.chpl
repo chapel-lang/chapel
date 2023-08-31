@@ -23,11 +23,14 @@
 
 /* Support for routines related to measuring the passing of time.
 
-   This module provides support for querying wall time in the local
-   timezone and implements a record :record:`~stopwatch` that can measure
-   the execution time of sections of a program. The stopwatch has the
-   potential for microsecond resolution and is intended to be useful for
-   performance testing.
+   This module provides support for querying local wall time or UTC time,
+   and structures for manipulating dates and times. Note that timezone-naive
+   local and UTC time querying methods will produce different results if the
+   local time is not UTC, including potentially different calendar dates.
+
+   It also implements a record :record:`~stopwatch` that can measure the
+   execution time of sections of a program. The stopwatch has the potential for
+   microsecond resolution and is intended to be useful for performance testing.
  */
 
 module Time {
@@ -396,13 +399,24 @@ module Time {
     this.chpl_day = day;
   }
 
-  /* A `date` object representing the current day */
+  /* A `date` object representing the current day, using naive local time */
   proc type date.today() : date {
     const timeSinceEpoch = getTimeOfDay();
     const td = new timeDelta(seconds=timeSinceEpoch(0),
                              microseconds=timeSinceEpoch(1));
 
     return unixEpoch.getDate() + td;
+  }
+
+  /* A `date` object representing the current day, using naive UTC time */
+  proc type date.utcToday() : date {
+    var now = chpl_now_timevalue();
+
+    var seconds, minutes, hours, mday, month, year, wday, yday, isdst:int(32);
+
+    chpl_timevalue_parts(now, seconds, minutes, hours, mday, month, year, wday, yday, isdst);
+
+    return new date(year + 1900, month + 1, mday);
   }
 
   @deprecated(notes="'date.fromTimestamp' is deprecated, please use 'dateTime.createUtcFromTimestamp().getDate()' instead")
@@ -2182,22 +2196,17 @@ proc getCurrentTime(unit: TimeUnits = TimeUnits.seconds) : real(64) do
    The month is in the range 1 to 12.
    The day   is in the range 1 to 31
 */
-@deprecated(notes="'getCurrentDate' is deprecated; access the individual fields of 'date.today()' as needed instead")
+@deprecated(notes="'getCurrentDate' is deprecated; access the individual fields of 'date.utcToday()' as needed instead, or use 'date.today()' for local wall time")
 proc getCurrentDate() : (int, int, int) {
-  var now = chpl_now_timevalue();
-
-  var seconds, minutes, hours, mday, month, year, wday, yday, isdst:int(32);
-
-  chpl_timevalue_parts(now, seconds, minutes, hours, mday, month, year, wday, yday, isdst);
-
-  return (year + 1900, month + 1, mday);
+  var today = date.utcToday();
+  return (today.year, today.month, today.day);
 }
 
 /*
-   :returns: The current day of the week
+   :returns: The current day of the week, calculated from UTC time.
    :rtype:   :type:`day`
  */
-@deprecated("`getCurrentDayOfWeek` is deprecated; please use `date.today().weekday()` instead")
+@deprecated("`getCurrentDayOfWeek` is deprecated; please use `date.utcToday().weekday()` instead, or `date.today().weekday()` for local wall time")
 proc getCurrentDayOfWeek() : day {
   var now = chpl_now_timevalue();
 
