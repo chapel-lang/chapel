@@ -1532,7 +1532,7 @@ module CTypes {
 
         This can only be called safely on a :type:`~String.string` whose home is
         the current locale.  This property can be enforced by calling
-        :proc:`~String.string.localize()` before :proc:`~String.string.c_str()`.
+        :proc:`~String.string.localize()` before :proc:`string.c_str()`.
         If the string is remote, the program will halt.
 
     For example:
@@ -1569,7 +1569,7 @@ module CTypes {
 
       This can only be called safely on a :type:`~Bytes.bytes` whose home is
       the current locale.  This property can be enforced by calling
-      :proc:`~Bytes.bytes.localize()` before :proc:`~Bytes.bytes.c_str()`.
+      :proc:`~Bytes.bytes.localize()` before :proc:`bytes.c_str()`.
       If the bytes is remote, the program will halt.
 
     For example:
