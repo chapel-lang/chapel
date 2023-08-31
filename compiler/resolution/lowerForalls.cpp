@@ -889,53 +889,8 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* callToTFn, FnSymbol* taskF
   if (addErrorArgToCall)
     addDummyErrorArgumentToCall(callToTFn);
 
-  // collect all SymExpr used in the iterand of the forall so we dont warn for them
-  std::vector<SymExpr*> allIterandSymExprs;
-  for_alist(expr, EV->forall->iteratedExpressions()) {
-    collectSymExprs(expr, allIterandSymExprs);
-  }
-  if (CallExpr* zipCall = EV->forall->zipCall()) {
-    collectSymExprs(zipCall, allIterandSymExprs);
-  }
-
-  // we remove FLAG_FORALL_INTENT_REF_MAYBE_CONST in certain cases prior to
-  // flattening the task function. But it needs to be added back afterwards so
-  // other task functions using the same variables get marked correctly
-  std::vector<Symbol*> addFlagBackToMe;
-
-  std::vector<SymExpr*> allClonedTaskFnSymExpr;
-  collectSymExprs(cloneTaskFn, allClonedTaskFnSymExpr);
-  for (auto symExpr: allClonedTaskFnSymExpr) {
-    auto sym = symExpr->symbol();
-    if (sym->hasFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST) &&
-        !EV->forall->hasRefMaybeConst()) {
-      // if the symbol is marked, but the forall it came from is not, unmark the sym
-      sym->removeFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST);
-      addFlagBackToMe.push_back(sym);
-    }
-
-    if (sym->hasFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST)) {
-      // if symbol is used in the iterand, unmark it
-      const char* symName = sym->name;
-      auto it =
-          std::find_if(allIterandSymExprs.begin(), allIterandSymExprs.end(),
-                       [symName](auto iterSe) {
-                         return strcmp(iterSe->symbol()->name, symName) == 0;
-                       });
-      if (it != allIterandSymExprs.end()) {
-        sym->removeFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST);
-        addFlagBackToMe.push_back(sym);
-      }
-    }
-  }
-
-  // If we don't flatten it right away, we get non-global taskFns
-  // in expandTaskFn(). That may cause issues with scoping.
   flattenNestedFunction(cloneTaskFn);
 
-  for(auto sym: addFlagBackToMe) {
-    sym->addFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST);
-  }
 }
 
 /////////// expandForall ///////////
