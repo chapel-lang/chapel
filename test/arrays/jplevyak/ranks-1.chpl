@@ -1,5 +1,5 @@
 proc zero(ref A : [?D] real) {
-  forall i in D {
+  forall i in D with (ref A) {
     A(i) = 0;
   }
 }

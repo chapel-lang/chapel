@@ -82,7 +82,7 @@ for iteration in 0..iterations {
   if (iteration == 1) then timer.start();
 
   if (tiled) {
-    forall (i,j) in tiledDom {
+    forall (i,j) in tiledDom with (ref A, ref B) {
       for it in i .. # min(order - i, tileSize) {
         for jt in j .. # min(order - j, tileSize) {
           B[jt,it] += A[it,jt];
@@ -92,7 +92,7 @@ for iteration in 0..iterations {
     }
   }
   else {
-    forall (i,j) in Dom {
+    forall (i,j) in Dom with (ref A, ref B) {
       B[j,i] += A[i,j];
       A[i,j] += 1.0;
     }

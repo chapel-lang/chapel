@@ -53,7 +53,7 @@ proc main() {
 
   [i in TableSpace] T(i) = i;
 
-  forall (_,r) in zip(myFakeLeader, RAStream()) do
+  forall (_,r) in zip(myFakeLeader, RAStream()) with (ref T) do
     T(r & indexMask) ^= r;
 
   const execTime = timeSinceEpoch().totalSeconds() - startTime;
@@ -74,7 +74,7 @@ proc printConfiguration() {
 proc verifyResults(ref T: [?TDom], UpdateSpace) {
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
-  forall (_,r) in zip(myFakeLeader, RAStream()) do
+  forall (_,r) in zip(myFakeLeader, RAStream()) with (ref T) do
     T(r & indexMask) ^= r;
 
   if (printArrays) then writeln("After verification, T is: ", T, "\n");

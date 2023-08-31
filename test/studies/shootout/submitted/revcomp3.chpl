@@ -68,7 +68,7 @@ proc revcomp(ref buf: [?inds]) {
         shift = cols - off - 1;
 
   if off {
-    forall m in lo+off..<hi by cols {
+    forall m in lo+off..<hi by cols with (ref buf) {
       for i in m..#shift by -1 do
         buf[i+1] = buf[i];
       buf[m] = eol;
@@ -76,7 +76,7 @@ proc revcomp(ref buf: [?inds]) {
   }
 
   // walk from both ends of the sequence, complementing and swapping
-  forall (i,j) in zip(lo..#(len/2), ..<hi by -1) do
+  forall (i,j) in zip(lo..#(len/2), ..<hi by -1) with (ref buf) do
     (buf[i], buf[j]) = (table[buf[j]], table[buf[i]]);
 }
 

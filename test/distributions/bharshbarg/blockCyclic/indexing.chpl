@@ -12,7 +12,7 @@ proc test(Dom, bs) {
   const Space = Dom dmapped BlockCyclic(startIdx=start, blocksize=bs);
   var A : [Space] int;
 
-  forall i in Space do A[i] = here.id + 1;
+  forall i in Space with (ref A) do A[i] = here.id + 1;
 
   for a in A do assert(a >= 1);
 }

@@ -25,7 +25,7 @@ const float_n: real = 1.2;
 /* Initializes a matrix based on a distribution */
 proc initialize_matrix(distribution, m_dim: int) {
     var matrix: [distribution] real = 0.0;
-    forall (i,j) in distribution {
+    forall (i,j) in distribution with (ref matrix) {
         matrix[i,j] = ((i - 1) * (j - 1)):real / m_dim;
     }
     return matrix;
@@ -94,13 +94,13 @@ proc kernel_correlation(dist_square, dist_linear, m_dim: int, n_dim: int) {
     }
     
     /* Center and reduce the column vectors */
-    forall (i,j) in dist_square {
+    forall (i,j) in dist_square with (ref data) {
         data[i,j] -= mean[j];
         data[i,j] /= sqrt(float_n) * stddev[j];
     }
 
     /* Calculate the m * m correlation matrix. Computes only upper triangle */
-    forall (i, j) in dist_square {
+    forall (i, j) in dist_square with (ref symmat) {
         if (i < j) {
             var tempArray: [1..m_dim] real;
             forall(d1, d2, k) in zip(data[1..m_dim, i], data[1..m_dim, j], 1..) {
@@ -153,13 +153,13 @@ proc kernel_correlation(dist_square, dist_linear, m_dim: int, n_dim: int) {
       }
     
       /* Center and reduce the column vectors */
-      forall (i,j) in {1..m_dim, 1..n_dim} {
+      forall (i,j) in {1..m_dim, 1..n_dim} with (ref dataTest) {
           dataTest[i,j] -= meanTest[j];
           dataTest[i,j] /= sqrt(float_n) * stddevTest[j];
       }
 
       /* Calculate the m * m correlation matrix. Computes only upper triangle */
-      forall (i, j) in {1..m_dim, 1..n_dim} {
+      forall (i, j) in {1..m_dim, 1..n_dim} with (ref symmatTest) {
           if (i < j) {
               var tempArray: [1..m_dim] real;
               forall(d1, d2, k) in zip(dataTest[1..m_dim, i], dataTest[1..m_dim, j], 1..) {

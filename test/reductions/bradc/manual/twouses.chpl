@@ -17,7 +17,7 @@ var D: domain(1) = {1..n};
 var A: [D] int;
 var B: [D] real;
 
-forall i in D {
+forall i in D with (ref A, ref B) {
   A(i) = i;
   B(i) = i;
 }

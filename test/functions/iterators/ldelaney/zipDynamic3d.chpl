@@ -8,7 +8,7 @@ proc main(){
   var bigArr : [r1][r2][r3] int;
 
   //initialize bigArr
-  forall (x, y, z) in dom do
+  forall (x, y, z) in dom with (ref bigArr) do
     bigArr[x][y][z] = 0;
 
   //test that dynamic(domain, chunksize, numTasks, parDim) can lead

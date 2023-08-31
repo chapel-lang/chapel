@@ -41,7 +41,7 @@ proc kernel8(ref A) {
 proc kernel9(ref A) {
   // variables declared within a loop inhibit vectorization
   // if they require stack space - but loop still has parallel access data
-  forall i in 1..n {
+  forall i in 1..n with (ref A) {
     var x = i;
     x *= 2;
     A[i] = x;

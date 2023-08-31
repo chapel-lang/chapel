@@ -32,7 +32,7 @@ var Temp:[outerD] real;
 var moving: atomic int;
 do {
   moving.write(0);
-  forall (i,j) in D do {                       // calc new World
+  forall (i,j) in D with (ref World) do {                       // calc new World
     World(i,j) = (Temp(i-1,j) + Temp(i+1,j) + Temp(i,j-1) + Temp(i,j+1)) / 4.0;
     moving.add(abs( World(i,j) - Temp(i,j)) > THRESHOLD);
   }

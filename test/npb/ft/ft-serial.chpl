@@ -110,7 +110,7 @@ proc compute_initial_conditions(ref X1) {
 
 proc compute_index_map(ref Twiddle) {
   const ap = -4.0 * alpha * pi * pi;
-  forall (i,j,k) in DXYZ do
+  forall (i,j,k) in DXYZ with (ref Twiddle) do
     Twiddle(i,j,k) = exp(ap*(((i+nx/2) % nx - nx/2)**2 +
                              ((j+ny/2) % ny - ny/2)**2 +
                              ((k+nz/2) % nz - nz/2)**2));
@@ -158,7 +158,7 @@ proc cfftz(dir, m, n, ny, ny1 : int, ref x, ref y) {
     if l != m then
       fftz2(dir, l+1, m, n, ny, ny1, u, y, x);
     else
-      forall ij in {0..n-1, 0..ny-1} do
+      forall ij in {0..n-1, 0..ny-1} with (ref x) do
         x(ij) = y(ij);
   }
 }
@@ -208,7 +208,7 @@ proc fft(dir : int, ref X1, ref X2) {
 }
 
 proc evolve(ref X1, ref X2, Twiddle) {
-  forall ijk in DXYZ {
+  forall ijk in DXYZ with (ref X1, ref X2) {
     X1(ijk) *= (Twiddle(ijk) + 0i);
     X2(ijk) = X1(ijk);
   }

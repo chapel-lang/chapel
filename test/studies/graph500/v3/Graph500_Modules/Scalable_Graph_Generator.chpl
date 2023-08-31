@@ -249,7 +249,7 @@ module Scalable_Graph_Generator
    graph_gen_time.clear();
    graph_gen_time.start();
 
-   forall e in ArrD do {
+   forall e in ArrD with (ref Edges) do {
       Edges(e).start = permutation (Edges(e).start).readFF();
       Edges(e).end   = permutation (Edges(e).end  ).readFF();
    };
@@ -270,7 +270,7 @@ module Scalable_Graph_Generator
      Rand_Gen.fillRandom ( Unif_Random2 );
 
      serial (SHUFFLE_DETERMINISTICALLY) {
-     forall j in ArrD do
+     forall j in ArrD with (ref Edges) do
      {
 
 //     Choose two locations at random

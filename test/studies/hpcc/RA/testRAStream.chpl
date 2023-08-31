@@ -7,7 +7,7 @@ const ProbSpace = {0:randType..#numItems};
 var D = ProbSpace dmapped Block(ProbSpace);
 var A: [D] randType;
 
-forall (i, r) in zip(D, RAStream()) do
+forall (i, r) in zip(D, RAStream()) with (ref A) do
   A[i] = r;
 
 writeln("RAStream is: ");

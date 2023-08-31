@@ -114,7 +114,7 @@ proc main(){
   // initialize space with values
   var generator = new RandomStream( real, globalSeed, parSafe = false );
 
-  forall i in computationSpaceRange do{
+  forall i in computationSpaceRange with (ref space) do{
     space[0, i] = 0;
     space[1, i] = 0;
   }

@@ -17,7 +17,7 @@ printLocales(BA2);
 
 proc printLocales(D: domain) {
   var A: [D] int;
-  forall i in D do A[i] = here.id;
+  forall i in D with (ref A) do A[i] = here.id;
   writeln(A);
 }
 

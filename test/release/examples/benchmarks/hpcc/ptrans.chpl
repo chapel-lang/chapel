@@ -94,15 +94,15 @@ proc main() {
   const startTime = timeSinceEpoch().totalSeconds();
     
   if (beta == 1.0) then
-    forall (i,j) in TransposeDom do
+    forall (i,j) in TransposeDom with (ref C) do
       C[i,j] += A[j,i];
 
   else if (beta == 0.0) then
-    forall (i,j) in TransposeDom do
+    forall (i,j) in TransposeDom with (ref C) do
       C[i,j] = A[j,i];
 
   else
-    forall (i,j) in TransposeDom do
+    forall (i,j) in TransposeDom with (ref C) do
       C[i,j] = beta * C[i,j]  +  A[j,i];
 
   const execTime = timeSinceEpoch().totalSeconds() - startTime;
@@ -132,10 +132,10 @@ proc printConfiguration() {
 // to detect any addressing errors.
 //
 proc initArrays(ref A, ref C) {
-  forall (i,j) in A.domain do
+  forall (i,j) in A.domain with (ref A) do
     A[i,j] = erf(i:eltType) * cos(j:eltType);
 
-  forall (i,j) in C.domain do
+  forall (i,j) in C.domain with (ref C) do
     C[i,j] = sin(j:eltType) * cbrt(i:eltType);
 
   const norm_A = sqrt( + reduce A**2 ),

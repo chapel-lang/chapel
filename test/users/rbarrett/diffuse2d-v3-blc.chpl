@@ -277,7 +277,7 @@ proc ApplyStencil2d5ptA ( ProblemSpace2d, ref newGrid, oldGrid, iteration ) {
 
    // Apply 5-point difference stencil in 2d domain.
 
-   forall (i,j) in ProblemSpace2d do
+   forall (i,j) in ProblemSpace2d with (ref newGrid) do
 
       newGrid(i,j) = (                 oldGrid(i-1,j) +
                       oldGrid(i,j-1) + oldGrid(  i,j) + oldGrid(i,j+1) +
@@ -299,7 +299,7 @@ proc ApplyStencil2d5ptB ( ProblemSpace2d, ref newGrid, oldGrid, iteration ) {
 
    // Apply 5-point difference stencil in 2d domain.
 
-   forall ij in ProblemSpace2d do
+   forall ij in ProblemSpace2d with (ref newGrid) do
 
       newGrid(ij) = (                     oldGrid(ij+(-1,0)) +
                      oldGrid(ij+(0,-1)) + oldGrid(ij)        + oldGrid(ij+(0,1)) +
@@ -322,7 +322,7 @@ proc ApplyStencil2d5ptC ( ProblemSpace2d, ref newGrid, oldGrid, iteration ) {
 
    // Apply 5-point difference stencil in 2d domain.
 
-   forall ij in ProblemSpace2d do
+   forall ij in ProblemSpace2d with (ref newGrid) do
 
       newGrid(ij) = (                   oldGrid(ij+north) +
                      oldGrid(ij+west) + oldGrid(ij)       + oldGrid(ij+east)     +
@@ -345,7 +345,7 @@ proc ApplyStencil2d9pt ( ProblemSpace2d, ref newGrid, oldGrid, iteration ) {
 
    // Apply 9-point difference stencil in 2d domain.
 
-   forall ij in ProblemSpace2d do
+   forall ij in ProblemSpace2d with (ref newGrid) do
 
       newGrid(ij) = ( oldGrid(ij+northwest) + oldGrid(ij+north) + oldGrid(ij+northeast)     +
                       oldGrid(ij+west)      + oldGrid(ij)       + oldGrid(ij+east)          +

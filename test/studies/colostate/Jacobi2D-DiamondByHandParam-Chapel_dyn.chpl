@@ -176,7 +176,7 @@ proc main(){
   // initialize space with values
   var generator = new RandomStream( real, globalSeed, parSafe = false );
 
-  forall (x,y) in computationDomain do{
+  forall (x,y) in computationDomain with (ref space) do{
      space[0, x, y] = 0;
      space[1, x, y] = 0;
   }
@@ -223,7 +223,7 @@ proc verifyResult(ref space: [] Cell, computationalDomain: domain(2),
 
   var spaceEndState: [computationalDomain] Cell;
 
-  forall (x, y) in computationalDomain do
+  forall (x, y) in computationalDomain with (ref spaceEndState) do
      spaceEndState[ x, y ] = space[ T & 1, x, y ];
 
   var generator = new RandomStream( real, globalSeed, parSafe = false );

@@ -9,7 +9,7 @@ const Space = {1:myIntType..n,
                1:myIntType..n};
 
 proc dit(D, ref A, ref B, ref C) {
-  forall i in D {
+  forall i in D with (ref A, ref B, ref C) {
     var (i0,i1,i2,i3,i4,i5) = (i);
     A(i) = (i0+i1)/i2:real;
     B(i) = (i3+i4)/i5:real;

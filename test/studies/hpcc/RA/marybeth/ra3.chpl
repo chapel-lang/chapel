@@ -66,7 +66,7 @@ proc randomAccessUpdate() {
   [i in TableDomain] Table(i) = i;
   var lock: sync bool = true;
 
-  forall j in StreamDomain {
+  forall j in StreamDomain with (ref Table) {
     var ranvec: [LittleStepDomain] uint(64);
     [k in LittleStepDomain] ranvec(k) = randomStart(bigStep*j+(bigStep/littleStep)*k);
     for i in BigStepDomain by littleStep{

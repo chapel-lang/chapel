@@ -4,7 +4,7 @@ proc foo(Dom, ref Arr) {
   for i in Dom do
     Arr(i) = next();
 
-  forall i in Dom do
+  forall i in Dom with (ref Arr) do
     Arr(i) += 2;
 }
 

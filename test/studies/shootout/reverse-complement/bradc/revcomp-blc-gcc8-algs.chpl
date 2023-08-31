@@ -67,7 +67,7 @@ var stdinBin  = (new file(0)).reader(deserializer=new BinaryDeserializer(), lock
 proc main(args: [] string) {
   // set up the 'pairCmpl' map
   const chars = eol..<maxChars;
-  forall (i,j) in {chars, chars} do
+  forall (i,j) in {chars, chars} with (ref pairCmpl) do
     pairCmpl[join(i,j)] = join(cmpl(j), cmpl(i));
 
   // variables for reading into a dynamically growing buffer
@@ -94,7 +94,7 @@ proc main(args: [] string) {
       // shift the remaining characters down (only in parallel if no overlap)
       if shiftAlg == SerForall {
         serial (nextSeqStart < endOfRead) do
-          forall j in 0..<endOfRead do
+          forall j in 0..<endOfRead with (ref buff) do
             buff[j] = buff[j + nextSeqStart];
       } else if shiftAlg == Forall {
         // warning: not safe in general, but known to be for perf input

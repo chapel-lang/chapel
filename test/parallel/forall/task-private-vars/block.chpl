@@ -29,7 +29,7 @@ var MessageVisited: [MessageSpace] bool;
 
 // Ensure correct amount of TPVs on each locale.
 
-forall msg in MessageSpace with (const taskId = nextLocalTaskCounter(here.id)) {
+forall msg in MessageSpace with (const taskId = nextLocalTaskCounter(here.id, ref MessageVisited) {
   writef("t1  loc %i  task %i\n", here.id, taskId);
   MessageVisited[msg] ^= true;
 }

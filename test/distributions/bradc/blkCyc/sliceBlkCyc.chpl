@@ -10,7 +10,7 @@ var D: domain(1) dmapped MyBlkCyc = {1..n};
 var A: [D] XO;
 
 proc helper(rng) {
- forall i in D do
+ forall i in D with (ref A) do
    A(i) = XO.O;
  forall a in A[rng] do
    a = XO.X;

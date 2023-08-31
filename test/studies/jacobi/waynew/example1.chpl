@@ -26,7 +26,7 @@ var delta:[D] real;
 [e in eastOfD]  A(e) = 0.0;
 
 do {
-  forall (i,j) in D do
+  forall (i,j) in D with (ref newA) do
     newA(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
   [e in D] delta(e) = abs( newA(e) - A(e));
   maxdelta = max reduce delta;

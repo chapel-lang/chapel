@@ -373,7 +373,7 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
     if edgeChecks {
       // Check that 'permutation' was a permutation.
       var permuteCounts : [vertex_domain] atomic int;
-      forall p in permutation do
+      forall p in permutation with (ref permuteCounts) do
         permuteCounts[p].add(1);
       forall (pc, ix) in zip(permuteCounts, vertex_domain) do
         if !(pc.read() == 1) then halt(
@@ -426,7 +426,7 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
 
     var self_edges$: atomic int;
     serial(SERIAL_GRAPH_GEN) {
-      forall (e, w) in zip(Edges, Edge_Weight) do {
+      forall (e, w) in zip(Edges, Edge_Weight) with (ref firstAvailNeighbor) do {
         const u = e.start;
         const v = e.end;
 

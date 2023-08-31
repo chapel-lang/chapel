@@ -146,7 +146,7 @@ proc main() {
     if iteration >= 1 then subTimer.start();
 
     if debug then diagnostics('stencil');
-    forall (i,j) in innerDom with (const in weight) {
+    forall (i,j) in innerDom with (const in weight, ref output) {
       var tmpout: dtype = 0.0;
       if (!compact) {
         for param jj in -R..-1 do tmpout += weight[R][R+jj] * input.localAccess[i, j+jj];

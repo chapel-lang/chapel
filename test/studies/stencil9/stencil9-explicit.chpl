@@ -241,7 +241,7 @@ coforall (lr,lc) in LocaleGridDom with (ref LocalDomArrs) {
       //
       // TODO: wrap this in a local block.  Big perf boost expected
       //
-      forall (i,j) in MyLocDom do
+      forall (i,j) in MyLocDom with (ref B) do
         B[i,j] = 0.25   * A[i,j]
                + 0.125  * (A[i+1,j  ] + A[i-1,j  ] + A[i  ,j-1] + A[i  ,j+1])
                + 0.0625 * (A[i-1,j-1] + A[i-1,j+1] + A[i+1,j-1] + A[i+1,j+1]);

@@ -5,7 +5,7 @@ var D = Block.createDomain(1..10, 1..10);
 {
   // access index doesn't match cleanly
   var A: [D] int;
-  forall (i,j) in D {
+  forall (i,j) in D with (ref A) {
     A[i+0, j] = i;
   }
 }
@@ -41,7 +41,7 @@ var D = Block.createDomain(1..10, 1..10);
 {
   // the closest locality-determining to the call is not the forall in question
   var A: [D] 2*int;
-  forall i in D {
+  forall i in D with (ref A) {
     on Locales[0] {
       A[i] = i;
     }

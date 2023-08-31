@@ -5,7 +5,7 @@ var DSps: sparse subdomain(D) = [(i,j) in D] if (((i+j)%4) == 0) then (i,j);
 
 var ASps: [DSps] real;
 
-forall (i,j) in DSps do
+forall (i,j) in DSps with (ref ASps) do
   ASps(i,j) = i + j/10.0;
 
 writeln("ASps elements:");

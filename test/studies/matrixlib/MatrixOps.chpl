@@ -94,16 +94,16 @@ proc blockLU(A: [?D], blk, ref piv: [D.dim(0)]) where (D.rank == 2) {
       //   ..and subtract scaled kth row from remaining
       //   unfactored rows of A1
 
-      forall (i,j) in {UnfactoredInds(k+1..), CurrentBlockInds(k+1..)} do
+      forall (i,j) in {UnfactoredInds(k+1..), CurrentBlockInds(k+1..)} with (ref A1) do
         A1(i,j) -= A1(i,k) * A1(k,j);
     }
 
     // ... and now update A2.
     // First update A12.
 
-    forall j in TrailingBlockInds do
+    forall j in TrailingBlockInds with (ref A12) do
       for k in CurrentBlockInds do
-        forall i in CurrentBlockInds(k+1..) do
+        forall i in CurrentBlockInds(k+1..) with (ref A12) do
           A12(i,j) -= A1(i,k) * A12(k,j);
 
     // And then update A22 -= A21*A12.

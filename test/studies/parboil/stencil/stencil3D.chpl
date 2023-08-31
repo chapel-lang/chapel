@@ -94,7 +94,7 @@ proc stencil(c0: real(32), c1: real(32), A: [] real(32), ref ANext: [] real(32),
              nx: int, ny: int, nz: int) {
   // aak! the nz and nx indices are swapped here!
   // This is also walking the leftmost dimension fastest!
-  forall (i,j,k) in A.domain[1..nx-2, 1..ny-2, 1..nz-2] {
+  forall (i,j,k) in A.domain[1..nx-2, 1..ny-2, 1..nz-2] with (ref ANext) {
     ANext[k,j,i] = (A[k+1, j, i] + A[k-1, j, i] +
                     A[k, j+1, i] + A[k, j-1, i] +
                     A[k, j, i+1] + A[k, j, i-1])*c1 - A[k, j, i]*c0;
