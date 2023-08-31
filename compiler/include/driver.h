@@ -161,9 +161,9 @@ extern char fExplainInstantiation[256];
 extern bool fExplainVerbose;
 extern bool fParseOnly;
 // begin compiler driver control flags
-extern bool fDoMonolithic;
-extern bool fDoCompilation;
-extern bool fDoMakeBinary;
+extern bool fDriverDoMonolithic;
+extern bool fDriverDoCompilation;
+extern bool fDriverDoMakeBinary;
 // end compiler driver control flags
 extern bool fPrintAllCandidates;
 extern bool fPrintCallGraph;

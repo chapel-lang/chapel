@@ -198,7 +198,7 @@ void completePrintLlvmIrStage(llvmStageNum_t numStage) {
 // This is so that handlePrintAsm can access them later from makeBinary, when
 // we don't have a way to determine name->cname correspondence.
 static void savePrintIrCNamesIfNeeded() {
-  if (fDoCompilation) {
+  if (fDriverDoCompilation) {
     fileinfo* cnamesToPrintFile = openTmpFile(cnamesToPrintFilename, "w");
     for (const auto& cname : llvmPrintIrCNames) {
       fprintf(cnamesToPrintFile->fptr, "%s\n", cname);

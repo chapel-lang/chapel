@@ -2004,7 +2004,7 @@ static llvm::TargetOptions getTargetOptions(
 // deserialize the module from previously-outputted LLVM bitcode file
 static void loadModuleFromBitcode() {
   // should only be used for the backend to retrieve codegen results
-  INT_ASSERT(fDoMakeBinary);
+  INT_ASSERT(fDriverDoMakeBinary);
 
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
@@ -4750,7 +4750,7 @@ static void checkLoopsAssertVectorize() {
 #endif
 
 void makeBinaryLLVM(void) {
-  if (fDoMakeBinary) {
+  if (fDriverDoMakeBinary) {
     // generate necessary info for a backend-only invocation
     initializeGenInfo();
 
@@ -5230,7 +5230,7 @@ void llvmOptimizeAndCodegen(void) {
 }
 
 static void handlePrintAsm(std::string dotOFile) {
-  /* assert((fDoMakeBinary || fDoMonolithic) && */
+  /* assert((fDriverDoMakeBinary || fDriverDoMonolithic) && */
   /*        "handlePrintAsm should only be called during makebinary phase"); */
   if (llvmPrintIrStageNum == llvmStageNum::ASM ||
       llvmPrintIrStageNum == llvmStageNum::EVERY) {
@@ -5249,7 +5249,7 @@ static void handlePrintAsm(std::string dotOFile) {
     }
 
     // restore names to print from disk if we are in make binary-only invocation
-    if (fDoMakeBinary) restorePrintIrCNames();
+    if (fDriverDoMakeBinary) restorePrintIrCNames();
     std::vector<std::string> names = gatherPrintLlvmIrCNames();
     printf("%lu symbol names to disassemble\n", names.size());
     if (names.empty()) {

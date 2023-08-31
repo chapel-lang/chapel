@@ -107,7 +107,7 @@ static void appendLineToTmpFile(const char* str, const char* filename) {
 void addLibPath(const char* libString) {
   addPath(libString, &libDirs);
 
-  if (fDoCompilation) {
+  if (fDriverDoCompilation) {
     appendLineToTmpFile(libString, libDirsFilename);
   }
 }
@@ -116,7 +116,7 @@ void addLibFile(const char* libFile) {
   // use astr() to get a copy of the string that this vector can own
   libFiles.push_back(astr(libFile));
 
-  if (fDoCompilation) {
+  if (fDriverDoCompilation) {
     appendLineToTmpFile(libFile, libFilesFilename);
   }
 }
@@ -124,7 +124,7 @@ void addLibFile(const char* libFile) {
 void addIncInfo(const char* incDir) {
   addPath(incDir, &incDirs);
 
-  if (fDoCompilation) {
+  if (fDriverDoCompilation) {
     appendLineToTmpFile(incDir, incDirsFilename);
   }
 }
@@ -158,7 +158,7 @@ static void restoreLinesFromTmp(const char* tmpFileName,
 
 void restoreLibraryAndIncludeInfo() {
   INT_ASSERT(
-      fDoMakeBinary &&
+      fDriverDoMakeBinary &&
       "should only be restoring library and include info in makeBinary stage");
   assert(libDirs.empty() && libFiles.empty() && incDirs.empty() &&
          "tried to restore library and include info from disk, but it was "
@@ -170,7 +170,7 @@ void restoreLibraryAndIncludeInfo() {
 }
 
 void restoreAdditionalSourceFiles() {
-  INT_ASSERT(fDoMakeBinary &&
+  INT_ASSERT(fDriverDoMakeBinary &&
              "should only be restoring filenames in makeBinary stage");
   fileinfo* additionalFilenamesList =
       openTmpFile(additionalFilenamesListFilename, "r");
@@ -419,7 +419,7 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
   inputFilenames = (const char**)realloc(inputFilenames,
                                          (numInputFiles+1)*sizeof(char*));
   fileinfo* additionalFilenamesList = NULL;
-  if (fDoCompilation) {
+  if (fDriverDoCompilation) {
     additionalFilenamesList = openTmpFile(additionalFilenamesListFilename, "a");
   }
 

@@ -1195,7 +1195,7 @@ static void genConfigGlobalsAndAbout() {
   }
 
   // if we are running as compiler-driver, retrieve compile command saved to tmp
-  if (!fDoMonolithic) {
+  if (!fDriverDoMonolithic) {
     retrieveCompileCommand();
   }
 
@@ -2339,7 +2339,7 @@ static const char* getMainModuleFilename() {
 
   const char* filename;
   fileinfo* mainModTmpFile;
-  if (fDoMakeBinary) {
+  if (fDriverDoMakeBinary) {
     // we are in the backend, retrieve saved result from tmpdir
     mainModTmpFile = openTmpFile(mainModTmpFilename, "r");
     char nameReadIn[FILENAME_MAX];
@@ -2943,7 +2943,7 @@ void makeBinary(void) {
   // makeBinary shouldn't run in a compilation-only invocation.
   // (Unless we're doing GPU codegen, which currently happens in the
   // compilation phase.)
-  INT_ASSERT(!fDoCompilation || gCodegenGPU);
+  INT_ASSERT(!fDriverDoCompilation || gCodegenGPU);
 
   if(fLlvmCodegen) {
 #ifdef HAVE_LLVM

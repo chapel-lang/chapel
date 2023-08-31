@@ -143,9 +143,9 @@ static char driverTmpDir[FILENAME_MAX] = "";
 //
 static bool fRungdb = false;
 static bool fRunlldb = false;
-bool fDoMonolithic = false;
-bool fDoCompilation = false;
-bool fDoMakeBinary = false;
+bool fDriverDoMonolithic = true;
+bool fDriverDoCompilation = false;
+bool fDriverDoMakeBinary = false;
 bool driverDebugPhaseSpecified = false;
 bool fLibraryCompile = false;
 bool fLibraryFortran = false;
@@ -847,7 +847,7 @@ static void runAsCompilerDriver(int argc, char* argv[]) {
 
 // Run compilation step of compiler-driver
 static int runCompilation(int argc, char* argv[]) {
-  std::vector<std::string> additionalArgs = {"--do-compilation",
+  std::vector<std::string> additionalArgs = {"--driver-do-compilation",
                                              "--driver-tmp-dir", intDirName};
   return invokeChplWithArgs(argc, argv, additionalArgs,
                             "invoking compilation");
@@ -855,7 +855,7 @@ static int runCompilation(int argc, char* argv[]) {
 
 // Run make binary step of compiler-driver
 static int runMakeBinary(int argc, char* argv[]) {
-  std::vector<std::string> additionalArgs = {"--do-make-binary",
+  std::vector<std::string> additionalArgs = {"--driver-do-make-binary",
                                              "--driver-tmp-dir", intDirName};
   return invokeChplWithArgs(argc, argv, additionalArgs,
                             "invoking makeBinary");
@@ -1395,10 +1395,10 @@ static ArgumentDescription arg_desc[] = {
  {"explain-call-id", ' ', "<call-id>", "Explain resolution of call by ID", "I", &explainCallID, NULL, NULL},
  {"break-on-resolve-id", ' ', NULL, "Break when function call with AST id is resolved", "I", &breakOnResolveID, "CHPL_BREAK_ON_RESOLVE_ID", NULL},
  {"denormalize", ' ', NULL, "Enable [disable] denormalization", "N", &fDenormalize, "CHPL_DENORMALIZE", NULL},
- {"driver-tmp-dir", ' ', "<tmpDir>", "Set temp dir to be used by compiler driver", "P", &driverTmpDir, NULL, NULL},
- {"do-monolithic", ' ', NULL, "Run compiler as monolithic without driver", "F", &fDoMonolithic, NULL, NULL},
- {"do-compilation", ' ', NULL, "Run driver compilation step", "F", &fDoCompilation, NULL, setSubInvocation},
- {"do-make-binary", ' ', NULL, "Run driver make binary step", "F", &fDoMakeBinary, NULL, setSubInvocation},
+ {"driver-tmp-dir", ' ', "<tmpDir>", "Set temp dir to be used by compiler driver (internal use flag)", "P", &driverTmpDir, NULL, NULL},
+ {"compiler-driver", ' ', NULL, "Run chpl executable as a compiler driver", "f", &fDriverDoMonolithic, NULL, NULL},
+ {"driver-do-compilation", ' ', NULL, "Run driver compilation step (internal use flag)", "F", &fDriverDoCompilation, NULL, setSubInvocation},
+ {"driver-do-make-binary", ' ', NULL, "Run driver make binary step (internal use flag)", "F", &fDriverDoMakeBinary, NULL, setSubInvocation},
  {"driver-debug-phase", ' ', "<phase>", "Specify driver compilation phase to run when debugging: 1, 2, all", "S", NULL, NULL, setDriverDebugPhase},
  {"gdb", ' ', NULL, "Run compiler in gdb", "F", &fRungdb, NULL, NULL},
  {"lldb", ' ', NULL, "Run compiler in lldb", "F", &fRunlldb, NULL, NULL},
@@ -1887,8 +1887,9 @@ static void warnDeprecatedFlags() {
   }
 }
 
+// Check for inconsistencies in compiler-driver control flags
 static void checkCompilerDriverFlags() {
-  if (fDoMonolithic) {
+  if (fDriverDoMonolithic) {
     // Prevent running if we are in monolithic mode but appear to be in a
     // sub-invocation, to ensure we are safe from contradictory flags down the
     // line.
@@ -1898,12 +1899,12 @@ static void checkCompilerDriverFlags() {
           "flag was set");
     }
     if (driverTmpDir[0]) {
-      USR_WARN(
-          "Driver temp dir set for monolithic compilation will be ignored");
+      USR_FATAL("Can't set driver temp dir for monolithic compilation");
     }
   }
+
   if (driverDebugPhaseSpecified) {
-    if (fDoMonolithic) {
+    if (fDriverDoMonolithic) {
       USR_WARN(
           "Driver debug phase has no effect for monolithic compilation");
     }
@@ -1911,6 +1912,11 @@ static void checkCompilerDriverFlags() {
       USR_WARN(
           "Driver debug phase has no effect when not running with debugger");
     }
+  }
+
+  if (fDriverDoCompilation && fDriverDoMakeBinary) {
+      USR_FATAL(
+          "Multiple internal compiler-driver phase flags set simultaneously");
   }
 }
 
@@ -2118,8 +2124,6 @@ static void postprocess_args() {
 static void validateSettings() {
   warnDeprecatedFlags();
 
-  checkCompilerDriverFlags();
-
   checkNotLibraryAndMinimalModules();
 
   checkLLVMCodeGen();
@@ -2159,8 +2163,9 @@ static void bootstrapTmpDir() {
     // We are in a sub-invocation and can assume that a tmp dir has been
     // established for us by the driver already, and will be deleted for us
     // later if necessary.
-    assert(driverTmpDir[0] &&
-           "Driver sub-invocation was not supplied a tmp dir path");
+    if (!driverTmpDir[0]) {
+      USR_FATAL("Driver sub-invocation was not supplied a tmp dir path");
+    }
     intDirName = driverTmpDir;
     config.tmpDir = intDirName;
     config.keepTmpDir = true;
@@ -2335,18 +2340,22 @@ int main(int argc, char* argv[]) {
   // Printing and validation is skipped if we are in a sub-invocation to avoid
   // giving the user the same information on each invocation.
   //
+
+  // Check driver flags even in sub-invocation, in case user manually specified
+  // internal flags that put us in a phony sub-invocation.
+  checkCompilerDriverFlags();
   if (!driverInSubInvocation) {
     printStuff(argv[0]);
     validateSettings();
   }
 
-  if (!fDoMonolithic && !driverInSubInvocation)
+  if (!fDriverDoMonolithic && !driverInSubInvocation)
     runAsCompilerDriver(argc, argv);
 
   // In driver mode, debug only if we are in a driver phase that was requested
   // to be debugged.
-  if (!((fDoCompilation && !driverDebugCompilation) ||
-        (fDoMakeBinary && !driverDebugMakeBinary))) {
+  if (!((fDriverDoCompilation && !driverDebugCompilation) ||
+        (fDriverDoMakeBinary && !driverDebugMakeBinary))) {
     // re-run compiler in appropriate debugger if requested
     if (fRungdb) runCompilerInGDB(argc, argv);
     if (fRunlldb) runCompilerInLLDB(argc, argv);

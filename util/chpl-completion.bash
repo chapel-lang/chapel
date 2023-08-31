@@ -43,6 +43,7 @@ _chpl ()
 --comm \
 --comm-substrate \
 --compile-time-nil-checking \
+--compiler-driver \
 --copy-elision \
 --copy-propagation \
 --copyright \
@@ -56,10 +57,9 @@ _chpl ()
 --detailed-errors \
 --devel \
 --div-by-zero-checks \
---do-compilation \
---do-make-binary \
---do-monolithic \
 --driver-debug-phase \
+--driver-do-compilation \
+--driver-do-make-binary \
 --driver-tmp-dir \
 --dynamic \
 --dynamic-auto-local-access \
