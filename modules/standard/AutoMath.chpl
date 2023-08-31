@@ -2967,7 +2967,8 @@ module AutoMath {
   }
 
   /* Returns true if the sign of `x` is negative, else returns false. It detects
-     the sign bit of zeroes, infinities, and NANs */
+     the sign bit of zeroes, infinities, and nans */
+  @unstable("signbit is unstable and may change its name in the future")
   inline proc signbit(x : real(32)): bool {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -2976,7 +2977,8 @@ module AutoMath {
   }
 
   /* Returns true if the sign of `x` is negative, else returns false. It detects
-     the sign bit of zeroes, infinities, and NANs */
+     the sign bit of zeroes, infinities, and nans */
+  @unstable("signbit is unstable and may change its name in the future")
   inline proc signbit(x : real(64)): bool {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
