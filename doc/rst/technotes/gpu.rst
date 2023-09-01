@@ -246,8 +246,11 @@ tests where access to GPUs may be limited. In this mode:
     these warnings. Alternatively, you can pass ``--gpuNoCpuModeWarning`` to your
     application to the same effect.
 
-* Even though the GPU diagnostics are collected, the loop will be executed for
-  correctness testing and there will not be any kernel launch
+* Even though the kernel launches will be registered by GPU diagnostics, the
+  loop will be executed for correctness testing and there will not be any kernel
+  launch
+
+  * GPU diagnostics will not register data movement.
 
 * Advanced features like ``syncThreads`` and ``createSharedArray`` will compile
   and run, but in all likelihood code that uses those features will not
