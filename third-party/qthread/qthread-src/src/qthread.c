@@ -84,6 +84,7 @@
 #include "qt_subsystems.h"
 #include "qt_output_macros.h"
 #include "qt_int_log.h"
+#include "qt_hash.h"
 
 
 #if !(defined(HAVE_GCC_INLINE_ASSEMBLY) &&              \
@@ -130,6 +131,9 @@ int GUARD_PAGES = 1;
 #else
 #define GUARD_PAGES 0
 #endif
+
+extern int INTERNAL spinlocks_finalize();
+extern int INTERNAL spinlocks_initialize();
 
 /* Internal Prototypes */
 #ifdef QTHREAD_MAKECONTEXT_SPLIT
@@ -1006,9 +1010,13 @@ int API_FUNC qthread_initialize(void)
         qlib->shepherds[i].uniquelockaddrs = qt_hash_create(need_sync);
         qlib->shepherds[i].uniquefebaddrs  = qt_hash_create(need_sync);
 #endif
+        
 
         qthread_debug(SHEPHERD_DETAILS, "shepherd %i set up (%p)\n", i, &qlib->shepherds[i]);
     }
+
+    spinlocks_initialize();
+
     qthread_debug(SHEPHERD_DETAILS, "done setting up shepherds.\n");
 
 /* now, transform the current main context into a qthread,
@@ -1564,6 +1572,8 @@ void API_FUNC qthread_finalize(void)
     }
     qthread_debug(CORE_DETAILS, "freeing shep0's threadqueue\n");
     qt_threadqueue_free(shep0->ready);
+
+    spinlocks_finalize();
 
     qthread_debug(CORE_DETAILS, "calling cleanup functions\n");
     while (qt_cleanup_funcs != NULL) {
