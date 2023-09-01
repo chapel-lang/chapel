@@ -11268,17 +11268,17 @@ struct SpeciallyNamedMethodInfo {
   std::map<std::string, FnSymbol*> speciallyNamedMethods;
 };
 
-using SpeciallyNamedMethodKey = std::pair<AggregateType*, InterfaceSymbol*>;
+using SpeciallyNamedMethodKey = std::pair<InterfaceSymbol*, AggregateType*>;
 using SpecialMethodMap = std::map<SpeciallyNamedMethodKey, SpeciallyNamedMethodInfo>;
 
 static void checkSpeciallyNamedMethods() {
-  static const std::unordered_map<std::string, InterfaceSymbol*> reservedNames = {
-    { "hash", gHashable },
+  static const std::unordered_map<const char*, InterfaceSymbol*> reservedNames = {
+    { astr("hash"), gHashable },
   };
 
   SpecialMethodMap flagged;
 
-  // TODO: for now, this will simply not warn for classes, because all classe
+  // TODO: for now, this will simply not warn for classes, because all classes
   // implement hashable, and because overriding hash should be allowed. When
   // other special methods are converted, this logic will need to be updated
   // to handle them.
@@ -11295,7 +11295,7 @@ static void checkSpeciallyNamedMethods() {
     if (!at || !at->isRecord()) continue;
 
     while (at->instantiatedFrom) at = at->instantiatedFrom;
-    auto key = SpeciallyNamedMethodKey(at, reservedIter->second);
+    auto key = SpeciallyNamedMethodKey(reservedIter->second, at);
     flagged[key].speciallyNamedMethods[fn->name] = fn;
   }
 
@@ -11310,14 +11310,14 @@ static void checkSpeciallyNamedMethods() {
 
     // For this pair of aggregate type / interface, remove it from the
     // flagged set, because we found an instance.
-    flagged.erase(SpeciallyNamedMethodKey(at, isym));
+    flagged.erase(SpeciallyNamedMethodKey(isym, at));
   }
 
   // the things now left in flagged, we did not find any implements statements
   // for.
   for (auto& flaggedTypeIfc : flagged) {
-    auto at = flaggedTypeIfc.first.first;
-    auto ifc = flaggedTypeIfc.first.second;
+    auto ifc = flaggedTypeIfc.first.first;
+    auto at = flaggedTypeIfc.first.second;
 
     USR_WARN(at,
              "the type '%s' defines methods that previously had special meaning. "
