@@ -78,6 +78,31 @@ void chpl_gpu_init(void) {
   }
 }
 
+static chpl_gpu_taskPrvData_t* get_gpu_task_private_data(void) {
+  chpl_task_infoRuntime_t* infoRuntime = chpl_task_getInfoRuntime();
+  if (infoRuntime != NULL) return &infoRuntime->gpu_data;
+  return NULL;
+}
+
+void chpl_gpu_task_end(void) {
+  chpl_gpu_taskPrvData_t* prvData = get_gpu_task_private_data();
+  
+  if (prvData->stream == NULL) {
+    chpl_gpu_impl_destroy_stream(prvData->stream);
+  }
+
+}
+
+static void* get_stream(void) {
+  chpl_gpu_taskPrvData_t* prvData = get_gpu_task_private_data();
+
+  if (prvData->stream == NULL) {
+    prvData->stream = chpl_gpu_impl_create_stream();
+  }
+
+  return prvData->stream;
+}
+
 void chpl_gpu_support_module_finished_initializing(void) {
   // we can't use `CHPL_GPU_DEBUG` before the support module is finished
   // initializing. This call back is used to signal the runtime that that module
@@ -160,6 +185,7 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
   chpl_gpu_impl_launch_kernel_flat(ln, fn,
                                    name,
                                    num_threads, blk_dim,
+                                   get_stream(),
                                    nargs, args);
   va_end(args);
 
@@ -287,7 +313,7 @@ void* chpl_gpu_memset(void* addr, const uint8_t val, size_t n) {
   CHPL_GPU_DEBUG("Doing GPU memset of %zu bytes from %p. Val=%d\n\n", n, addr,
                  val);
 
-  void* ret = chpl_gpu_impl_memset(addr, val, n);
+  void* ret = chpl_gpu_impl_memset(addr, val, n, get_stream());
 
   CHPL_GPU_DEBUG("chpl_gpu_memset successful\n");
   return ret;
@@ -307,7 +333,7 @@ void chpl_gpu_copy_device_to_device(c_sublocid_t dst_dev, void* dst,
                                                commID);
   chpl_gpu_diags_incr(device_to_device);
 
-  chpl_gpu_impl_copy_device_to_device(dst, src, n);
+  chpl_gpu_impl_copy_device_to_device(dst, src, n, get_stream());
 
   CHPL_GPU_DEBUG("Copy successful\n");
 }
@@ -324,7 +350,7 @@ void chpl_gpu_copy_device_to_host(void* dst, c_sublocid_t src_dev,
   chpl_gpu_diags_verbose_device_to_host_copy(ln, fn, src_dev, n, commID);
   chpl_gpu_diags_incr(device_to_host);
 
-  chpl_gpu_impl_copy_device_to_host(dst, src, n);
+  chpl_gpu_impl_copy_device_to_host(dst, src, n, get_stream());
 
   CHPL_GPU_DEBUG("Copy successful\n");
 }
@@ -341,7 +367,7 @@ void chpl_gpu_copy_host_to_device(c_sublocid_t dst_dev, void* dst,
   chpl_gpu_diags_verbose_host_to_device_copy(ln, fn, dst_dev, n, commID);
   chpl_gpu_diags_incr(host_to_device);
 
-  chpl_gpu_impl_copy_host_to_device(dst, src, n);
+  chpl_gpu_impl_copy_host_to_device(dst, src, n, get_stream());
 
   CHPL_GPU_DEBUG("Copy successful\n");
 }
@@ -395,7 +421,7 @@ void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
   void* ptr = 0;
   if (size > 0) {
     chpl_memhook_malloc_pre(1, size, description, lineno, filename);
-    ptr = chpl_gpu_impl_mem_array_alloc(size);
+    ptr = chpl_gpu_impl_mem_array_alloc(size, get_stream());
     chpl_memhook_malloc_post((void*)ptr, 1, size, description, lineno, filename);
 
     CHPL_GPU_DEBUG("chpl_gpu_mem_array_alloc returning %p\n", (void*)ptr);
@@ -413,7 +439,7 @@ void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
   chpl_gpu_impl_use_device(chpl_task_getRequestedSubloc());
 
   chpl_memhook_free_pre(memAlloc, 0, lineno, filename);
-  chpl_gpu_impl_mem_free(memAlloc);
+  chpl_gpu_impl_mem_free(memAlloc, get_stream());
 
   CHPL_GPU_DEBUG("chpl_gpu_mem_free is returning\n");
 }
@@ -444,7 +470,7 @@ void* chpl_gpu_mem_calloc(size_t number, size_t size,
     ptr = chpl_gpu_impl_mem_alloc(total_size);
     chpl_memhook_malloc_post((void*)ptr, 1, total_size, description, lineno, filename);
 
-    chpl_gpu_impl_copy_host_to_device(ptr, host_mem, total_size);
+    chpl_gpu_impl_copy_host_to_device(ptr, host_mem, total_size, NULL);
 
     chpl_mem_free(host_mem, lineno, filename);
 
@@ -483,7 +509,9 @@ void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
   void* new_alloc = chpl_gpu_mem_alloc(size, description, lineno, filename);
 
   const size_t copy_size = size < cur_size ? size : cur_size;
-  chpl_gpu_impl_copy_device_to_device(new_alloc, memAlloc, copy_size);
+  chpl_gpu_impl_copy_device_to_device(new_alloc, memAlloc, copy_size,
+                                      /*stream=*/NULL); // for now, keep it on
+                                                        // the default stream
   chpl_gpu_mem_free(memAlloc, lineno, filename);
 
   return new_alloc;

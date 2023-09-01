@@ -1984,6 +1984,9 @@ module ChapelBase {
   pragma "task complete impl fn"
   extern proc chpl_comm_task_end(): void;
 
+  // TODO do we need the same pragma?
+  extern proc chpl_gpu_task_end(): void;
+
   pragma "compiler added remote fence"
   proc chpl_after_forall_fence() {
     chpl_comm_unordered_task_fence();
@@ -1997,6 +2000,7 @@ module ChapelBase {
   pragma "down end count fn"
   proc _downEndCount(e: _EndCount, err: unmanaged Error?) {
     chpl_save_task_error(e, err);
+    chpl_gpu_task_end();
     chpl_comm_task_end();
     // inform anybody waiting that we're done
     e.sub(1, memoryOrder.release);

@@ -76,11 +76,13 @@ static inline long double get_time() {
 #define CHPL_GPU_PRINT_TIMERS(...) do {} while(0);
 #endif
 
+extern c_sublocid_t chpl_task_getRequestedSubloc(void);
 static inline bool chpl_gpu_running_on_gpu_locale(void) {
   return chpl_task_getRequestedSubloc()>=0;
 }
 
 void chpl_gpu_init(void);
+void chpl_gpu_task_end(void);
 void chpl_gpu_support_module_finished_initializing(void);
 
 void chpl_gpu_launch_kernel(int ln, int32_t fn,

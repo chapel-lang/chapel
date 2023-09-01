@@ -33,6 +33,12 @@
 extern "C" {
 #endif
 
+#ifdef HAS_GPU_LOCALE
+typedef struct {
+  void* stream;
+} chpl_gpu_taskPrvData_t;
+#endif
+
 //
 // This holds per-runtime-task information the tasking layer maintains
 // on behalf of other runtime layers.  Its components are intended to
@@ -43,6 +49,9 @@ extern "C" {
 //
 typedef struct {
   chpl_comm_taskPrvData_t comm_data;
+#ifdef HAS_GPU_LOCALE
+  chpl_gpu_taskPrvData_t gpu_data;
+#endif
 } chpl_task_infoRuntime_t;
 
 //

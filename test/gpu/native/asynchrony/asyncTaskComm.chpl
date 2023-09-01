@@ -15,6 +15,8 @@ extern proc printf(s...);
 var HostIn: [0..#n] int = 2;
 var HostOut: [0..#n] int;
 
+var commTimer, kernelTimer: stopwatch;
+
 var t: stopwatch;
 on here.gpus[0] {
   t.start();
@@ -44,14 +46,27 @@ on here.gpus[0] {
   }
   else {
     var MyIn, MyOut: [0..#n] int;
-    /*var MyIn = HostIn;*/
+
+    commTimer.start();
+    MyIn = HostIn;
+    commTimer.stop();
+
+    kernelTimer.start();
     foreach (inData, outData) in zip(MyIn, MyOut) {
       for 0..#reps do outData += inData + 1;
     }
+    kernelTimer.stop();
+
+    commTimer.start();
     HostOut = MyOut;
+    commTimer.stop();
   }
   t.stop();
+
 }
 
 if printOutput then writeln(HostOut);
-writeln(t.elapsed());
+
+writeln("Comm: ", commTimer.elapsed());
+writeln("Kern: ", kernelTimer.elapsed());
+writeln("Total: ", t.elapsed());
