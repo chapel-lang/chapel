@@ -5,15 +5,20 @@ record A {
   var x: int;
   var b: B;
 
-  proc type deserializeFrom(reader: fileReader, ref deserializer) {
-    var a = new A();
-
+  proc ref deserialize(reader: fileReader, ref deserializer: reader.deserializerType) {
+    writeln("IN A.deserialize");
     var des = deserializer.startRecord(reader, "A");
-    des.readField("x", a.x);
-    des.readField("b", a.b);
+    des.readField("x", this.x);
+    des.readField("b", this.b);
     des.endRecord();
+  }
 
-    return a;
+  proc init(reader: fileReader, ref deserializer) {
+    writeln("IN A.init");
+    var des = deserializer.startRecord(reader, "A");
+    this.x = des.readField("x", int);
+    this.b = des.readField("b", B);
+    des.endRecord();
   }
 
   proc init() {
@@ -30,14 +35,18 @@ record A {
 record B {
   var t: (int, real);
 
-  proc type deserializeFrom(reader: fileReader, ref deserializer) {
-    var b = new B();
-
+  proc ref deserialize(reader: fileReader, ref deserializer: reader.deserializerType) {
+    writeln("IN B.deserialize");
     var des = deserializer.startRecord(reader, "B");
-    des.readField("t", b.t);
+    des.readField("t", this.t);
     des.endRecord();
+  }
 
-    return b;
+  proc init(reader: fileReader, ref deserializer) {
+    writeln("IN B.init");
+    var des = deserializer.startRecord(reader, "B");
+    this.t = des.readField("t", (int, real));
+    des.endRecord();
   }
 
   proc init() {
@@ -52,48 +61,70 @@ record B {
 record myList {
   var values: list(A);
 
-  proc type deserializeFrom(reader: fileReader, ref deserializer) {
-    var l = new list(A);
-
+  proc ref deserialize(reader: fileReader, ref deserializer: reader.deserializerType) {
+    writeln("IN myList.deserialize");
     var des = deserializer.startList(reader);
+
     while des.hasMore() {
-      l.pushBack(new A());
-      des.readElement(l.last);
+      this.values.pushBack(new A());
+      des.readElement(this.values.last);
     }
 
     des.endList();
-    return new myList(l);
   }
 
-  proc serialize(writer: fileWriter, ref serializer) {
-    writer.write(values);
+  proc init(reader: fileReader, ref deserializer) {
+    writeln("IN myList.init");
+    this.complete();
+    var des = deserializer.startList(reader);
+
+    while des.hasMore() do
+      this.values.pushBack(des.readElement(A));
+
+    des.endList();
   }
+
+  proc init(in values: list(A)) do this.values = values;
+
+  proc serialize(writer: fileWriter, ref serializer) do
+    writer.write(values);
 }
 
 record myMap {
   var values: map(int, A);
 
-  proc type deserializeFrom(reader: fileReader, ref deserializer) {
-    var m = new map(int, A);
-
+  proc ref deserialize(reader: fileReader, ref deserializer: reader.deserializerType) {
+    writeln("IN myMap.deserialize");
     var des = deserializer.startMap(reader);
+
     while des.hasMore() {
       var k: int, v: A;
       des.readKey(k);
       des.readValue(v);
-      m.add(k, v);
+      this.values.add(k, v);
     }
 
     des.endMap();
-    return new myMap(m);
   }
 
-  proc serialize(writer: fileWriter, ref serializer) {
-    writer.write(values);
+  proc init(reader: fileReader, ref deserializer) {
+    writeln("IN myMap.init");
+    this.complete();
+    var des = deserializer.startMap(reader);
+
+    while des.hasMore() do
+      this.values.add(des.readKey(int), des.readValue(A));
+
+    des.endMap();
   }
+
+  proc init(in values: map(int, A)) do this.values = values;
+
+  proc serialize(writer: fileWriter, ref serializer) do
+    writer.write(values);
 }
 
-proc test(x) {
+proc test(x, ref y) {
   printDebugFmt(x);
   var f = openTempFile();
   try {
@@ -102,7 +133,7 @@ proc test(x) {
     writeln("ERROR: ", e);
   }
   try {
-    var y = f.reader().withDeserializer(FormatReader).read(x.type);
+    f.reader().withDeserializer(FormatReader).read(y);
 
     if x != y {
       writeln("FAILURE: ", x.type:string);
@@ -124,6 +155,6 @@ proc main() {
   var m = new map(int, A);
   for (a, i) in zip(l, 1..) do m.add(i, a);
 
-  test(new myList(l));
-  test(new myMap(m));
+  test(new myList(l), new myList(new list(A)));
+  test(new myMap(m), new myMap(new map(int, A)));
 }

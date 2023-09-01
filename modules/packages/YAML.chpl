@@ -233,11 +233,11 @@ module YAML {
 
     /* called by a ``fileReader`` to parse into an existing Chapel value */
     proc ref deserializeValue(reader: yamlReader, ref val: ?t) throws {
-      if YamlVerbose then writeln("deserializing into: ", val);
-
-      // TODO: full implementation
-      var x = this.deserializeType(reader, t);
-      val = x;
+      if canResolveMethod(val, "deserialize", reader, this) {
+        val.deserialize(reader=reader, deserializer=this);
+      } else {
+        val = deserializeType(reader, t);
+      }
     }
 
     /* called by a ``fileReader`` to parse into a new Chapel value */
