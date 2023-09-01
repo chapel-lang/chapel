@@ -8,5 +8,9 @@ TMPFILE=$OUTFILE.prediff.tmp
 # TODO: once the optimization is fixed, this should be deleted
 sed "/warning: inferring a default intent to be 'ref' is deprecated - please add an explicit 'ref' forall intent for/d" < $OUTFILE > $TMPFILE
 cat $TMPFILE > $OUTFILE
+sed "/: In function /d" < $OUTFILE > $TMPFILE
+cat $TMPFILE > $OUTFILE
+sed "/: called as/d" < $OUTFILE > $TMPFILE
+cat $TMPFILE > $OUTFILE
 
 rm $TMPFILE
