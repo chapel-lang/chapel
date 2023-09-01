@@ -1434,6 +1434,16 @@ proc CyclicImpl.dsiTargetLocales() const ref {
   return targetLocs;
 }
 
+// create a domain over an existing Cyclic Distribution
+proc Cyclic.createDomain(dom: domain(?)) {
+  return dom dmapped this;
+}
+
+// create a domain over an existing Cyclic Distribution constructed from a series of ranges
+proc Cyclic.createDomain(rng: range(?)...) {
+  return this.createDomain({(...rng)});
+}
+
 // create a domain over a Cyclic Distribution
 proc type Cyclic.createDomain(dom: domain(?), targetLocales: [] locale = Locales)
 {

@@ -857,6 +857,16 @@ iter StencilImpl.activeTargetLocales(const space : domain = boundingBox) {
   }
 }
 
+// create a domain over an existing Stencil Distribution
+proc Stencil.createDomain(dom: domain(?)) {
+  return dom dmapped this;
+}
+
+// create a domain over an existing Stencil Distribution constructed from a series of ranges
+proc Stencil.createDomain(rng: range(?)...) {
+  return this.createDomain({(...rng)});
+}
+
 // create a domain over a Stencil Distribution
 proc type Stencil.createDomain(
   dom: domain(?),
