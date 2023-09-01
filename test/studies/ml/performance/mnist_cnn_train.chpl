@@ -34,7 +34,8 @@ MNISTTester.train(
     learnRate=0.03,
     batchSize=100,
     numEpochs=100,
-    savePath="../lib/models/mnist" + net1.signature() + ".model"
+    savePath="../lib/models/mnist" + net1.signature() + ".model",
+    watch=true
 );
 
 
@@ -58,7 +59,8 @@ MNISTTester.train(
     learnRate=0.03,
     batchSize=500,
     numEpochs=100,
-    savePath="../lib/models/mnist" + net2.signature() + ".model"
+    savePath="../lib/models/mnist" + net2.signature() + ".model",
+    watch=true
 );
 
 
@@ -82,7 +84,8 @@ MNISTTester.train(
     learnRate=0.05,
     batchSize=20,
     numEpochs=100,
-    savePath="../lib/models/mnist" + net3.signature() + ".model"
+    savePath="../lib/models/mnist" + net3.signature() + ".model",
+    watch=true
 );
 
 
@@ -107,7 +110,8 @@ MNISTTester.train(
     learnRate=0.03,
     batchSize=500,
     numEpochs=100,
-    savePath="../lib/models/mnist" + net4.signature() + ".model"
+    savePath="../lib/models/mnist" + net4.signature() + ".model",
+    watch=true
 );
 
 
@@ -131,6 +135,7 @@ MNISTTester.train(
     learnRate=0.03,
     batchSize=100,
     numEpochs=100,
-    savePath="../lib/models/mnist" + net5.signature() + ".model"
+    savePath="../lib/models/mnist" + net5.signature() + ".model",
+    watch=true
 );
 
