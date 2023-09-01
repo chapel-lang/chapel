@@ -2982,6 +2982,15 @@ record DefaultDeserializer {
       return ret;
     }
 
+    @chpldoc.nodoc
+    proc readField(name: string, ref field) throws {
+      reader.readLiteral(name);
+      reader.readLiteral("=");
+
+      reader.read(field);
+      reader.matchLiteral(",");
+    }
+
     proc startClass(reader: fileReader, name: string) throws {
       return new AggregateDeserializer(reader, _parent=true);
     }
@@ -3023,6 +3032,12 @@ record DefaultDeserializer {
     }
 
     @chpldoc.nodoc
+    proc readElement(ref element) throws {
+      reader.read(element);
+      reader.matchLiteral(",");
+    }
+
+    @chpldoc.nodoc
     proc endTuple() throws {
       reader.readLiteral(")");
     }
@@ -3045,6 +3060,13 @@ record DefaultDeserializer {
       else _first = false;
 
       return reader.read(eltType);
+    }
+    @chpldoc.nodoc
+    proc ref readElement(ref element) throws {
+      if !_first then reader._readLiteral(",");
+      else _first = false;
+
+      reader.read(element);
     }
     @chpldoc.nodoc
     proc endList() throws {
@@ -3100,6 +3122,14 @@ record DefaultDeserializer {
     }
 
     @chpldoc.nodoc
+    proc ref readElement(ref element) throws {
+      if !_first then reader._readLiteral(" ");
+      else _first = false;
+
+      reader.read(element);
+    }
+
+    @chpldoc.nodoc
     proc endArray() throws {
     }
   }
@@ -3123,10 +3153,25 @@ record DefaultDeserializer {
     }
 
     @chpldoc.nodoc
+    proc ref readKey(ref key) throws {
+      if !_first then reader._readLiteral(", ");
+      else _first = false;
+
+      reader.read(key);
+    }
+
+    @chpldoc.nodoc
     proc readValue(type valType) : valType throws {
       reader._readLiteral(": ");
 
       return reader.read(valType);
+    }
+
+    @chpldoc.nodoc
+    proc readValue(ref value) throws {
+      reader._readLiteral(": ");
+
+      reader.read(value);
     }
 
     @chpldoc.nodoc
@@ -3451,6 +3496,9 @@ record BinaryDeserializer {
     proc readField(name: string, type fieldType) : fieldType throws {
       return reader.read(fieldType);
     }
+    proc readField(name: string, ref field) throws {
+      reader.read(field);
+    }
     proc startClass(reader, name: string) throws {
       return this;
     }
@@ -3475,6 +3523,10 @@ record BinaryDeserializer {
       return reader.read(eltType);
     }
 
+    proc readElement(ref element) throws {
+      reader.read(element);
+    }
+
     proc endTuple() throws {
     }
   }
@@ -3495,6 +3547,16 @@ record BinaryDeserializer {
 
       return reader.read(eltType);
     }
+
+    proc ref readElement(ref element) throws {
+      if _numElements <= 0 then
+        throw new BadFormatError("no more list elements remain");
+
+      _numElements -= 1;
+
+      reader.read(element);
+    }
+
     proc endList() throws {
       if _numElements != 0 then
         throw new BadFormatError("read too few elements for list");
@@ -3521,6 +3583,10 @@ record BinaryDeserializer {
 
     proc readElement(type eltType) : eltType throws {
       return reader.read(eltType);
+    }
+
+    proc readElment(ref element) throws {
+      reader.read(element);
     }
 
     proc readBulkElements(data: c_ptr(?eltType), numElements: int) throws
@@ -3557,8 +3623,21 @@ record BinaryDeserializer {
       return reader.read(keyType);
     }
 
+    proc ref readKey(ref key) throws {
+      if _numElements <= 0 then
+        throw new BadFormatError("no more map elements remain!");
+
+      _numElements -= 1;
+
+      reader.read(key);
+    }
+
     proc readValue(type valType) : valType throws {
       return reader.read(valType);
+    }
+
+    proc readValue(ref value) throws {
+      reader.read(value);
     }
 
     proc endMap() throws {

@@ -300,6 +300,14 @@ module ChplFormat {
         return ret;
       }
 
+      @chpldoc.nodoc
+      proc readField(name: string, ref field) throws {
+        reader.readLiteral(name);
+        reader.readLiteral("=");
+        reader.read(field);
+        reader.matchLiteral(",");
+      }
+
       proc startClass(reader:_readerType, name: string) throws {
         return new AggregateDeserializer(reader, _parent=true);
       }
@@ -340,6 +348,11 @@ module ChplFormat {
         return ret;
       }
 
+      proc readElement(ref element) throws {
+        reader.read(element);
+        reader.matchLiteral(",");
+      }
+
       proc endTuple() throws {
         reader.readLiteral(")");
       }
@@ -360,6 +373,13 @@ module ChplFormat {
         else _first = false;
 
         return reader.read(eltType);
+      }
+
+      proc ref readElement(ref element) throws {
+        if !_first then reader._readLiteral(", ");
+        else _first = false;
+
+        reader.read(element);
       }
 
       proc endList() throws {
@@ -411,9 +431,23 @@ module ChplFormat {
       }
 
       @chpldoc.nodoc
+      proc ref readKey(ref key) throws {
+        if !_first then reader._readLiteral(",");
+        else _first = false;
+
+        reader.read(key);
+      }
+
+      @chpldoc.nodoc
       proc readValue(type valType) : valType throws {
         reader._readLiteral("=>");
         return reader.read(valType);
+      }
+
+      @chpldoc.nodoc
+      proc readValue(ref value) throws {
+        reader._readLiteral("=>");
+        reader.read(value);
       }
 
       @chpldoc.nodoc
