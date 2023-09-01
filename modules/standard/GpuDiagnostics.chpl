@@ -46,9 +46,9 @@ module GpuDiagnostics
   param gpuDiagsPrintUnstable = false;
 
   /*
-     Aggregated GPU operation counts. `host_to_device`, `device_to_host` and
-     `device_to_device` will be non-zero only when
-     `CHPL_GPU_MEM_STRATEGY==array_on_device` and `CHPL_GPU!=cpu`.
+     Aggregated GPU operation counts. ``host_to_device``, ``device_to_host`` and
+     ``device_to_device`` will be non-zero only when
+     ``CHPL_GPU_MEM_STRATEGY==array_on_device`` and ``CHPL_GPU!=cpu``.
    */
   pragma "chpldoc ignore chpl prefix"
   extern record chpl_gpuDiagnostics {

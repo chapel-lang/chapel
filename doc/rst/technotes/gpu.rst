@@ -238,19 +238,17 @@ tests where access to GPUs may be limited. In this mode:
   outlined under `Diagnostics and Utilities`_ will work as expected.
 
   * For example, :proc:`~GPU.assertOnGpu` will fail at compile time normally.
-    This can allow testing if a loop is GPU-eligible.
+    This can allow testing if a loop is GPU-eligible. It will generate a warning
+    per-iteration at execution time. The ``CHPL_GPU_NO_CPU_MODE_WARNING``
+    environment can be set to suppress these warnings. Alternatively, you can
+    pass ``--gpuNoCpuModeWarning`` to your application to the same effect.
 
-  * It will generate a warning per-iteration at execution time.
-
-  * The ``CHPL_GPU_NO_CPU_MODE_WARNING`` environment can be set to suppress
-    these warnings. Alternatively, you can pass ``--gpuNoCpuModeWarning`` to your
-    application to the same effect.
+  * Note that data movements between device and host will not be captured by the
+    :mod:`GpuDiagnostics` module in this mode.
 
 * Even though the kernel launches will be registered by GPU diagnostics, the
   loop will be executed for correctness testing and there will not be any kernel
   launch
-
-  * GPU diagnostics will not register data movement.
 
 * Advanced features like ``syncThreads`` and ``createSharedArray`` will compile
   and run, but in all likelihood code that uses those features will not
