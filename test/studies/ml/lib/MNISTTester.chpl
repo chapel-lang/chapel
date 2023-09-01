@@ -5,6 +5,7 @@ import Math;
 import MNIST;
 import IO;
 import Time;
+import AutoMath;
 
 config param perfTest = false;
 
@@ -63,7 +64,8 @@ proc train(ref network,
            learnRate: real,
            batchSize: int,
            numEpochs: int,
-           savePath: string) {
+           savePath: string,
+           watch: bool = false) {
     
     const numImages = numTrainImages + numTestImages;
 
@@ -98,7 +100,7 @@ proc train(ref network,
             const batch = trainingData[batchRange];
             const (loss,acc) = train(network,batch,learnRate);
             // writeln("[",i + 1," of ", trainingData.size / batchSize, "] Loss ", loss / batchSize," Accuracy ", acc ," / ", batchSize);
-            IO.stdout.write("\r","[",i + 1," of ",trainingData.size / batchSize,"] (loss: ", loss / batchSize, ", accuracy: ", acc, " / ", batchSize, ")");
+            if watch then IO.stdout.write("\r","[",i + 1," of ",trainingData.size / batchSize,"] (loss: ", loss / batchSize, ", accuracy: ", acc, " / ", batchSize, ")");
             IO.stdout.flush();
         }
         IO.stdout.write("\n");
@@ -115,7 +117,7 @@ proc train(ref network,
             numCorrect += a;
         }
 
-        writeln("End of epoch ", epoch + 1, " Loss ", loss / testingData.size, " Accuracy ", numCorrect, " / ", testingData.size);
+        writeln("End of epoch ", epoch + 1, " Loss ", AutoMath.floor(loss / testingData.size * 10000) / 10000, " Accuracy ", numCorrect, " / ", testingData.size);
 
         if !perfTest then network.save(savePath);
     }
@@ -150,7 +152,7 @@ proc classificationEval(ref network, numImages: int, modelPath: string) {
 
     loss /= numImages;
 
-    writeln("Loss: ",loss," Accuracy: ",acc ," / ", numImages, " ", (acc * 100):real / (numImages:real), " %");
+    writeln("Loss: ",AutoMath.floor(10000 * loss) / 10000," Accuracy: ",acc ," / ", numImages, " ", (acc * 100):real / (numImages:real), " %");
 
     t.stop();
 
