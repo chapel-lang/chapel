@@ -243,7 +243,7 @@ static void chpl_gpu_launch_kernel_help(int ln,
                            grd_dim_x, grd_dim_y, grd_dim_z,
                            blk_dim_x, blk_dim_y, blk_dim_z,
                            0,       // shared memory in bytes
-                           stream,  // stream ID
+                           (CUstream)stream,  // stream ID
                            (void**)kernel_params,
                            NULL));  // extra options
 
@@ -251,7 +251,9 @@ static void chpl_gpu_launch_kernel_help(int ln,
 
   chpl_task_yield();
 
-  CUDA_CALL(cuStreamSynchronize(stream)); // this should be removed
+  /*printf("kernel launched on stream %p\n", stream);*/
+  /*chpl_gpu_impl_stream_synchronize(stream);*/
+  /*CUDA_CALL(cuStreamSynchronize(stream)); // this should be removed*/
 
   CHPL_GPU_DEBUG("Synchronization complete %s\n", name);
   CHPL_GPU_STOP_TIMER(kernel_time);
@@ -324,6 +326,10 @@ void chpl_gpu_impl_copy_device_to_host(void* dst, const void* src, size_t n,
   assert(chpl_gpu_is_device_ptr(src));
 
   CUDA_CALL(cuMemcpyDtoHAsync(dst, (CUdeviceptr)src, n, (CUstream)stream));
+  
+  // this needs synchronization (data is on host now, out of cuda's
+  // control, so we must synchronize
+  chpl_gpu_impl_stream_synchronize(stream);
 }
 
 void chpl_gpu_impl_copy_host_to_device(void* dst, const void* src, size_t n,
@@ -446,6 +452,10 @@ void chpl_gpu_impl_destroy_stream(void* stream) {
   if (stream) {
     CUDA_CALL(cuStreamDestroy((CUstream)stream));
   }
+}
+
+void chpl_gpu_impl_stream_synchronize(void* stream) {
+  CUDA_CALL(cuStreamSynchronize(stream));
 }
 
 #endif // HAS_GPU_LOCALE

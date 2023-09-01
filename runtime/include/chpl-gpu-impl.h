@@ -66,6 +66,7 @@ void chpl_gpu_impl_use_device(c_sublocid_t dev_id);
 
 void* chpl_gpu_impl_create_stream(void);
 void chpl_gpu_impl_destroy_stream(void* stream);
+void chpl_gpu_impl_stream_synchronize(void* stream);
 
 #ifdef __cplusplus
 }

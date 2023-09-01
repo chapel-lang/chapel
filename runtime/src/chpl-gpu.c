@@ -333,7 +333,12 @@ void chpl_gpu_copy_device_to_device(c_sublocid_t dst_dev, void* dst,
                                                commID);
   chpl_gpu_diags_incr(device_to_device);
 
-  chpl_gpu_impl_copy_device_to_device(dst, src, n, get_stream());
+  void* stream = get_stream();
+  chpl_gpu_impl_copy_device_to_device(dst, src, n, stream);
+  if (dst_dev != src_dev) {
+    // going to a device that maybe used by a different task, synchornize
+    chpl_gpu_impl_stream_synchronize(stream);
+  }
 
   CHPL_GPU_DEBUG("Copy successful\n");
 }
@@ -350,7 +355,9 @@ void chpl_gpu_copy_device_to_host(void* dst, c_sublocid_t src_dev,
   chpl_gpu_diags_verbose_device_to_host_copy(ln, fn, src_dev, n, commID);
   chpl_gpu_diags_incr(device_to_host);
 
+  void* stream = get_stream();
   chpl_gpu_impl_copy_device_to_host(dst, src, n, get_stream());
+  chpl_gpu_impl_stream_synchronize(stream);
 
   CHPL_GPU_DEBUG("Copy successful\n");
 }

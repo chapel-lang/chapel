@@ -2,6 +2,8 @@ use Time;
 
 config const multitask = false;
 config const printOutput = false;
+config const validateOutput = false;
+config const printSumOnly = validateOutput;
 config const numTasks = 2;
 config const taskSize = 100;
 config const n = 1000;
@@ -12,18 +14,27 @@ var curChunk: atomic int;
 
 extern proc printf(s...);
 
-var HostIn: [0..#n] int = 2;
-var HostOut: [0..#n] int;
+var HostIn: [0..#n] real = 2;
+var HostOut: [0..#n] real;
 
-var commTimer, kernelTimer: stopwatch;
+var inCommTimer, outCommTimer, kernelTimer: stopwatch;
+
+inline proc kernel(ref MyIn, ref MyOut) {
+  @assertOnGpu
+  foreach (inData, outData) in zip(MyIn, MyOut) {
+    var result = 0.0;
+    for i in 0..#reps do result += inData + sqrt(i);
+    outData = result;
+  }
+}
 
 var t: stopwatch;
+t.start();
 on here.gpus[0] {
-  t.start();
 
   if multitask {
     coforall tid in 0..#numTasks {
-      var MyIn, MyOut: [0..#taskSize] int;
+      var MyIn, MyOut: [0..#taskSize] real;
 
       while true {
         const myChunkId = curChunk.fetchAdd(1);
@@ -31,42 +42,59 @@ on here.gpus[0] {
 
         const myChunk = myChunkId*taskSize..#taskSize;
 
-
+        writeln(myChunk);
+        printf("%d starting in copy %f\n", tid, t.elapsed());
         MyIn = HostIn[myChunk];
+        printf("%d finished in copy %f\n", tid, t.elapsed());
 
-        /*printf("task %d entering kernel %f\n", tid, t.elapsed());*/
-        foreach (inData, outData) in zip(MyIn, MyOut) {
-          for 0..#reps do outData += inData + 1;
-        }
-        /*printf("task %d exiting kernel %f\n", tid, t.elapsed());*/
+        printf("%d starting kernel %f\n", tid, t.elapsed());
+        kernel(MyIn, MyOut);
+        printf("%d finished kernel %f\n", tid, t.elapsed());
 
+        printf("%d starting out copy %f\n", tid, t.elapsed());
         HostOut[myChunk] = MyOut;
+        printf("%d finished out copy %f\n", tid, t.elapsed());
       }
     }
   }
   else {
-    var MyIn, MyOut: [0..#n] int;
+    var MyIn, MyOut: [0..#n] real;
 
-    commTimer.start();
+    inCommTimer.start();
     MyIn = HostIn;
-    commTimer.stop();
+    inCommTimer.stop();
 
     kernelTimer.start();
-    foreach (inData, outData) in zip(MyIn, MyOut) {
-      for 0..#reps do outData += inData + 1;
-    }
+    kernel(MyIn, MyOut);
     kernelTimer.stop();
 
-    commTimer.start();
+    outCommTimer.start();
     HostOut = MyOut;
-    commTimer.stop();
+    outCommTimer.stop();
   }
-  t.stop();
-
 }
+t.stop();
 
 if printOutput then writeln(HostOut);
+if validateOutput {
+  var sum = 0.0;
+  for o in HostOut do sum += o;
+  if printSumOnly {
+    writeln("Sum = ", sum);
+  }
+  else {
+    // only for simpler math
+    const expected = n*(2*reps + reps*(reps-1)/2);
+    if sum==expected {
+      writeln("validation successful");
+    }
+    else {
+      writeln("validation failed sum=", sum, " expected=", expected);
+    }
+  }
+}
 
-writeln("Comm: ", commTimer.elapsed());
+writeln("In Comm: ", inCommTimer.elapsed());
+writeln("Out Comm: ", outCommTimer.elapsed());
 writeln("Kern: ", kernelTimer.elapsed());
 writeln("Total: ", t.elapsed());
