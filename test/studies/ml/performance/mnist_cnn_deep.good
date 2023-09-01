@@ -1,5 +1,5 @@
 network initialized.
 Epoch 1
-[1 of 5] (loss: 2.30259, accuracy: 4 / 100)[2 of 5] (loss: 2.30259, accuracy: 18 / 100)[3 of 5] (loss: 2.30258, accuracy: 12 / 100)[4 of 5] (loss: 2.30256, accuracy: 13 / 100)[5 of 5] (loss: 2.30259, accuracy: 12 / 100)
+
 Evaluating...
-End of epoch 1 Loss 2.30255 Accuracy 2 / 10
+End of epoch 1 Loss 2.3025 Accuracy 2 / 10

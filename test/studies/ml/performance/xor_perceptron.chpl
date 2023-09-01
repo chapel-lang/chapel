@@ -89,8 +89,11 @@ for e in 1..epochs {
     tn.shuffle(batch);
     tn.shuffle(batchSizes);
     const loss = train(batch[0..#(batchSizes[0])],learnRate);
-    writeln("Epoch: ", e, " Loss: ", loss);
 }
+const loss = train(batch[0..#(batchSizes[0])],learnRate);
+
+writeln("Epoch: ", e, " Loss: ", AutoMath.floor(loss * 10000) / 10000);
+
 
 test(batch);
 
