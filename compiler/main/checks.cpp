@@ -180,6 +180,58 @@ void check_flattenFunctions()
   // Suggestion: Ensure no nested functions.
 }
 
+// copied and modified from `symExprIsUsedAsConstRef` in `cullOverReferences`
+static
+bool symbolIsUsedAsRef(Symbol* sym);
+static
+bool symExprIsUsedAsRef(SymExpr* use) {
+  if (CallExpr* call = toCallExpr(use->parentExpr)) {
+    if (FnSymbol* calledFn = call->resolvedFunction()) {
+      ArgSymbol* formal = actual_to_formal(use);
+      // generally, use const-ref-return if passing to const ref formal
+      if (formal->intent == INTENT_REF ||
+          formal->intent == INTENT_OUT ||
+          formal->intent == INTENT_INOUT) {
+        return true;
+      }
+    } else if (call->isPrimitive(PRIM_RETURN) ||
+               call->isPrimitive(PRIM_YIELD)) {
+      FnSymbol* inFn = toFnSymbol(call->parentSymbol);
+      if (inFn->retTag == RET_REF)
+        return true;
+    } else if (call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
+               call->isPrimitive(PRIM_WIDE_GET_NODE)) {
+      return true;
+    } else {
+      // Check for the case that sym is moved to a compiler-introduced
+      // variable, possibly with PRIM_MOVE tmp, PRIM_ADDR_OF sym
+      if (call->isPrimitive(PRIM_ADDR_OF) ||
+          call->isPrimitive(PRIM_SET_REFERENCE) ||
+          call->isPrimitive(PRIM_GET_MEMBER) ||
+          call->isPrimitive(PRIM_GET_SVEC_MEMBER))
+        call = toCallExpr(call->parentExpr);
+
+      if (call->isPrimitive(PRIM_MOVE)) {
+        SymExpr* lhs = toSymExpr(call->get(1));
+        Symbol* lhsSymbol = lhs->symbol();
+        if (lhs != use && symbolIsUsedAsRef(lhsSymbol))
+          return true;
+      }
+    }
+  }
+  return false;
+}
+
+static
+bool symbolIsUsedAsRef(Symbol* sym) {
+  for_SymbolSymExprs(se, sym) {
+    if (symExprIsUsedAsRef(se)) return true;
+  }
+  return false;
+}
+
+
+
 void check_cullOverReferences()
 {
   check_afterEveryPass();
@@ -190,6 +242,38 @@ void check_cullOverReferences()
   // No ContextCallExprs should remain in the tree.
   for_alive_in_Vec(ContextCallExpr, cc, gContextCallExprs) {
     INT_FATAL("ContextCallExpr should no longer be in AST");
+  }
+
+  // for all CallExprs, if we call a promotion wrapper that is disabled, warn
+  for_alive_in_Vec(CallExpr, ce, gCallExprs) {
+    if (FnSymbol* fn = ce->theFnSymbol()) {
+      if (fn->hasFlag(FLAG_PROMOTION_WRAPPER) &&
+          fn->hasFlag(FLAG_NO_PROMOTION_WHEN_BY_REF)) {
+
+        // We cannot rely on retTag to tell us if this promoted function returns
+        // a ref or not, we need to use the result of the call and see if it is
+        // used in any ref contexts.
+        // Assuming ce is used as a move/assign, get the lhs as a SymExpr. If its
+        // symbol is used as a ref (either a ref var or passed to a ref formal)
+        // then we should warn
+
+        if (CallExpr* parentCe = toCallExpr(ce->parentExpr)) {
+          if (isMoveOrAssign(parentCe)) {
+            if (SymExpr* lhs = toSymExpr(parentCe->get(1))) {
+              if(symbolIsUsedAsRef(lhs->symbol())) {
+                USR_WARN(ce,
+                         "modifying an array over an array of indices is a "
+                         "potential race condition and will be an error in a "
+                         "future release. If this is what you intended, please "
+                         "use an explicit loop");
+              }
+            }
+          }
+        }
+
+
+      }
+    }
   }
 }
 

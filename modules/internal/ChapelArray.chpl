@@ -1143,6 +1143,7 @@ module ChapelArray {
     // array element access
     // When 'this' is 'const', so is the returned l-value.
 
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "removable array access"
     pragma "alias scope from this"
@@ -1197,6 +1198,7 @@ module ChapelArray {
         return value.dsiAccess(i(0));
     }
 
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "removable array access"
     pragma "alias scope from this"
@@ -1216,6 +1218,7 @@ module ChapelArray {
       return this(i);
 
 
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "alias scope from this"
     @chpldoc.nodoc // ref version
@@ -1279,6 +1282,7 @@ module ChapelArray {
           return value.dsiLocalAccess(i(0));
     }
 
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "alias scope from this"
     @chpldoc.nodoc // ref version
@@ -1306,6 +1310,7 @@ module ChapelArray {
     // dense case because we can represent a domain by a tuple of
     // ranges, but in the sparse case, is there a general representation?
     //
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     @chpldoc.nodoc
@@ -1340,6 +1345,7 @@ module ChapelArray {
     }
 
     // array slicing by a tuple of ranges
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     @chpldoc.nodoc
@@ -1378,6 +1384,7 @@ module ChapelArray {
     }
 
     // array rank change
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     @chpldoc.nodoc
@@ -1442,6 +1449,7 @@ module ChapelArray {
 
     // Special cases of local slices for DefaultRectangularArrs because
     // we can't take an alias of the ddata class within that class
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     @chpldoc.nodoc
@@ -1453,6 +1461,7 @@ module ChapelArray {
       return chpl__localSliceDefaultArithArrHelp(dom);
     }
 
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     @chpldoc.nodoc
@@ -1470,6 +1479,7 @@ module ChapelArray {
              _value.locale.id, " from locale ", here.id);
       return this(d);
     }
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     @chpldoc.nodoc
@@ -1480,6 +1490,7 @@ module ChapelArray {
       return _value.dsiLocalSlice(r);
     }
 
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     @chpldoc.nodoc
@@ -1488,6 +1499,7 @@ module ChapelArray {
     }
 
     /* Yield the array elements */
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     iter these() ref {
       for i in _value.these() {
@@ -1495,6 +1507,7 @@ module ChapelArray {
       }
     }
 
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     @chpldoc.nodoc
     iter these(param tag: iterKind) ref
@@ -1509,6 +1522,7 @@ module ChapelArray {
       for followThis in _value.these(tag) do
         yield followThis;
     }
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     @chpldoc.nodoc
     iter these(param tag: iterKind, followThis, param fast: bool = false) ref
