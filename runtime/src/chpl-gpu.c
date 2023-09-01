@@ -86,21 +86,42 @@ static chpl_gpu_taskPrvData_t* get_gpu_task_private_data(void) {
 
 void chpl_gpu_task_end(void) {
   chpl_gpu_taskPrvData_t* prvData = get_gpu_task_private_data();
+  assert(prvData);
   
-  if (prvData->stream == NULL) {
-    chpl_gpu_impl_destroy_stream(prvData->stream);
+  if (prvData->streams != NULL) {
+	  int i;
+	  for (i=0 ; i<chpl_gpu_num_devices ; i++) {
+		  if (prvData->streams[i] != NULL) {
+			  chpl_gpu_impl_destroy_stream(prvData->streams[i]);
+		  }
+	  }
   }
 
 }
 
-static void* get_stream(void) {
+static void* get_stream(int dev) {
+	// assumes that device has been set correctly with
+	// chpl_gpu_impl_use_device
   chpl_gpu_taskPrvData_t* prvData = get_gpu_task_private_data();
 
-  if (prvData->stream == NULL) {
-    prvData->stream = chpl_gpu_impl_create_stream();
+  assert(prvData);
+  //printf("here %p\n", prvData);
+  
+  if (prvData->streams == NULL) {
+	  // TODO use chpl_mem_alloc
+	  prvData->streams = chpl_calloc(chpl_gpu_num_devices, sizeof(void*));
+//	  printf("allocated stream array\n");
+  }
+  void** stream = &(prvData->streams[dev]);
+  if (*stream == NULL) {
+	  *stream = chpl_gpu_impl_create_stream();
   }
 
-  return prvData->stream;
+  //printf("using stream %p\n", *stream);
+
+  return *stream;
+  
+  return NULL;
 }
 
 void chpl_gpu_support_module_finished_initializing(void) {
@@ -173,7 +194,8 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
                  nargs,
                  num_threads);
 
-  chpl_gpu_impl_use_device(chpl_task_getRequestedSubloc());
+  int dev = chpl_task_getRequestedSubloc();
+  chpl_gpu_impl_use_device(dev);
 
   va_list args;
   va_start(args, nargs);
@@ -185,7 +207,7 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
   chpl_gpu_impl_launch_kernel_flat(ln, fn,
                                    name,
                                    num_threads, blk_dim,
-                                   get_stream(),
+                                   get_stream(dev),
                                    nargs, args);
   va_end(args);
 
@@ -312,8 +334,10 @@ void chpl_gpu_memcpy(c_sublocid_t dst_subloc, void* dst,
 void* chpl_gpu_memset(void* addr, const uint8_t val, size_t n) {
   CHPL_GPU_DEBUG("Doing GPU memset of %zu bytes from %p. Val=%d\n\n", n, addr,
                  val);
+  int dev = chpl_task_getRequestedSubloc();
+  chpl_gpu_impl_use_device(dev);
 
-  void* ret = chpl_gpu_impl_memset(addr, val, n, get_stream());
+  void* ret = chpl_gpu_impl_memset(addr, val, n, get_stream(dev));
 
   CHPL_GPU_DEBUG("chpl_gpu_memset successful\n");
   return ret;
@@ -333,7 +357,7 @@ void chpl_gpu_copy_device_to_device(c_sublocid_t dst_dev, void* dst,
                                                commID);
   chpl_gpu_diags_incr(device_to_device);
 
-  void* stream = get_stream();
+  void* stream = get_stream(dst_dev);
   chpl_gpu_impl_copy_device_to_device(dst, src, n, stream);
   if (dst_dev != src_dev) {
     // going to a device that maybe used by a different task, synchornize
@@ -355,8 +379,8 @@ void chpl_gpu_copy_device_to_host(void* dst, c_sublocid_t src_dev,
   chpl_gpu_diags_verbose_device_to_host_copy(ln, fn, src_dev, n, commID);
   chpl_gpu_diags_incr(device_to_host);
 
-  void* stream = get_stream();
-  chpl_gpu_impl_copy_device_to_host(dst, src, n, get_stream());
+  void* stream = get_stream(src_dev);
+  chpl_gpu_impl_copy_device_to_host(dst, src, n, stream);
   chpl_gpu_impl_stream_synchronize(stream);
 
   CHPL_GPU_DEBUG("Copy successful\n");
@@ -372,9 +396,10 @@ void chpl_gpu_copy_host_to_device(c_sublocid_t dst_dev, void* dst,
   chpl_gpu_impl_use_device(dst_dev);
 
   chpl_gpu_diags_verbose_host_to_device_copy(ln, fn, dst_dev, n, commID);
+  //printf("host to device %s:%d\n", chpl_lookupFilename(fn), ln);
   chpl_gpu_diags_incr(host_to_device);
 
-  chpl_gpu_impl_copy_host_to_device(dst, src, n, get_stream());
+  chpl_gpu_impl_copy_host_to_device(dst, src, n, get_stream(dst_dev));
 
   CHPL_GPU_DEBUG("Copy successful\n");
 }
@@ -423,12 +448,13 @@ void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
   CHPL_GPU_DEBUG("chpl_gpu_mem_array_alloc called. Size:%zu file:%s line:%d\n",
                  size, chpl_lookupFilename(filename), lineno);
 
-  chpl_gpu_impl_use_device(chpl_task_getRequestedSubloc());
+  int dev = chpl_task_getRequestedSubloc();
+  chpl_gpu_impl_use_device(dev);
 
   void* ptr = 0;
   if (size > 0) {
     chpl_memhook_malloc_pre(1, size, description, lineno, filename);
-    ptr = chpl_gpu_impl_mem_array_alloc(size, get_stream());
+    ptr = chpl_gpu_impl_mem_array_alloc(size, get_stream(dev));
     chpl_memhook_malloc_post((void*)ptr, 1, size, description, lineno, filename);
 
     CHPL_GPU_DEBUG("chpl_gpu_mem_array_alloc returning %p\n", (void*)ptr);
@@ -443,10 +469,11 @@ void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
 void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
   CHPL_GPU_DEBUG("chpl_gpu_mem_free is called. Ptr %p\n", memAlloc);
 
-  chpl_gpu_impl_use_device(chpl_task_getRequestedSubloc());
+  int dev = chpl_task_getRequestedSubloc();
+  chpl_gpu_impl_use_device(dev);
 
   chpl_memhook_free_pre(memAlloc, 0, lineno, filename);
-  chpl_gpu_impl_mem_free(memAlloc, get_stream());
+  chpl_gpu_impl_mem_free(memAlloc, get_stream(dev));
 
   CHPL_GPU_DEBUG("chpl_gpu_mem_free is returning\n");
 }

@@ -35,7 +35,7 @@ extern "C" {
 
 #ifdef HAS_GPU_LOCALE
 typedef struct {
-  void* stream;
+  void** streams;
 } chpl_gpu_taskPrvData_t;
 #endif
 

@@ -220,7 +220,10 @@ static void chpl_gpu_launch_kernel_help(int ln,
       kernel_params[i] = chpl_malloc(1*sizeof(CUdeviceptr));
 
       // TODO this now doesn't use memory allocation hooks, but maybe that's OK?
-      *kernel_params[i] = chpl_gpu_impl_mem_array_alloc(cur_arg_size, stream);
+      // TODO this doesn't work on EX, why?
+      // *kernel_params[i] = chpl_gpu_impl_mem_array_alloc(cur_arg_size, stream);
+      *kernel_params[i] = chpl_gpu_mem_alloc(cur_arg_size, CHPL_RT_MD_GPU_KERNEL_ARG,
+		      			  ln, fn);
 
       chpl_gpu_impl_copy_host_to_device(*kernel_params[i], cur_arg,
                                         cur_arg_size, stream);
@@ -336,6 +339,8 @@ void chpl_gpu_impl_copy_host_to_device(void* dst, const void* src, size_t n,
                                        void* stream) {
   assert(chpl_gpu_is_device_ptr(dst));
 
+
+  //printf("%d -- host to device: %p %p %zu %p\n", chpl_task_getRequestedSubloc(), dst, src, n, stream);
   CUDA_CALL(cuMemcpyHtoDAsync((CUdeviceptr)dst, src, n, (CUstream)stream));
 }
 
@@ -367,10 +372,12 @@ void* chpl_gpu_impl_mem_array_alloc(size_t size, void* stream) {
 
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
     CUDA_CALL(cuMemAllocAsync(&ptr, size, (CUstream)stream));
+    //CUDA_CALL(cuMemAllocAsync(&ptr, size, NULL));
 #else
     CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));
 #endif
 
+    chpl_gpu_impl_stream_synchronize(stream);
   return (void*)ptr;
 }
 
