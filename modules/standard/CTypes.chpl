@@ -89,6 +89,7 @@ module CTypes {
     supported and behave similarly to those operations in C.
 
   */
+  pragma "last resort"
   @deprecated(notes="c_void_ptr is deprecated, use 'c_ptr(void)' instead.")
   type c_void_ptr = c_ptr(void);
 
