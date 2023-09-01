@@ -475,12 +475,14 @@ module Math {
 
   /* Returns the error function of the argument `x`. This is equivalent to
      ``2/sqrt(pi)`` * the integral of ``exp(-t**2)dt`` from 0 to `x`. */
+  @unstable("'erf' is unstable and may be renamed or moved to a different module in the future")
   inline proc erf(x: real(64)): real(64) {
     return chpl_erf(x);
   }
 
   /* Returns the error function of the argument `x`. This is equivalent to
      ``2/sqrt(pi)`` * the integral of ``exp(-t**2)dt`` from 0 to `x`. */
+  @unstable("'erf' is unstable and may be renamed or moved to a different module in the future")
   inline proc erf(x : real(32)): real(32) {
     return chpl_erf(x);
   }
@@ -488,6 +490,7 @@ module Math {
   /* Returns the complementary error function of the argument `x`.
      This is equivalent to 1.0 - :proc:`erf`\(`x`).
   */
+  @unstable("'erfc' is unstable and may be renamed or moved to a different module in the future")
   inline proc erfc(x: real(64)): real(64) {
     return chpl_erfc(x);
   }
@@ -495,6 +498,7 @@ module Math {
   /* Returns the complementary error function of the argument `x`.
      This is equivalent to 1.0 - :proc:`erf`\(`x`).
   */
+  @unstable("'erfc' is unstable and may be renamed or moved to a different module in the future")
   inline proc erfc(x : real(32)): real(32) {
     return chpl_erfc(x);
   }
