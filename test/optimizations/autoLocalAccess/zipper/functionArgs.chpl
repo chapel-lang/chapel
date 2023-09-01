@@ -15,7 +15,7 @@ proc localQueriedDomain(ref a: [?d] int, b: [d] int){
   writeln(a);
 
   forall (i, loopIdx) in zip(b.domain, 1..) {
-    a[i] += 
+    a[i] +=
       b[i] * loopIdx;
   }
   writeln(a);
