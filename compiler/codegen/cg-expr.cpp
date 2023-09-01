@@ -5051,7 +5051,9 @@ DEFINE_PRIM(GETCID) {
       INT_ASSERT(0);
     }
 
-    GenRet ref = codegenFieldCidPtr(call->get(1));
+    GenRet ptr = call->get(1);
+    ptr = maybeConvertToLocalPointer(call->get(1), ptr);
+    GenRet ref = codegenFieldCidPtr(ptr);
 
     ret = codegenValue(ref);
 }
