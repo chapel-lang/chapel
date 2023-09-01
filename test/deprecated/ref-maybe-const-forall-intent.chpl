@@ -71,10 +71,3 @@ forall i in 1..10 with (ref myArrayD) do myArrayD(i) = i;
     A[i] = i;
   }
 }
-
-
-{ // this should warn or error
-  var B = [1, 3, 4, 3];
-  var A: [1..5] int = 10;
-  A[B] += 3;
-}
