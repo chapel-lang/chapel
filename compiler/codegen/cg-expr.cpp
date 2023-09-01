@@ -1116,7 +1116,12 @@ GenRet doCodegenFieldPtr(
   // Reduce the Chapel reference or wide reference cases
   // to GEN_PTR or GEN_WIDE_PTR cases.
   if (baseType->symbol->hasEitherFlag(FLAG_REF,FLAG_WIDE_REF)) {
-    base = codegenDeref(base);
+    if (baseType->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+      base = codegenDeref(base);
+      base = codegenValue(base);
+    } else {
+      base = codegenDeref(base);
+    }
     return doCodegenFieldPtr(base, c_field_name, chpl_field_name, special);
   }
 
@@ -5051,9 +5056,7 @@ DEFINE_PRIM(GETCID) {
       INT_ASSERT(0);
     }
 
-    GenRet ptr = call->get(1);
-    ptr = maybeConvertToLocalPointer(call->get(1), ptr);
-    GenRet ref = codegenFieldCidPtr(ptr);
+    GenRet ref = codegenFieldCidPtr(call->get(1));
 
     ret = codegenValue(ref);
 }
