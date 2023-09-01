@@ -29,7 +29,7 @@ module ChapelBase {
   // 'c_string' (which could break a lot of programs). This is OK because
   // after the deprecation period we can just remove 'c_string' entirely.
   pragma "last resort"
-  @deprecated(notes="the type 'c_string' is deprecated; please use 'c_ptrConst(c_char)' with 'use CTypes' instead")
+  @deprecated(notes="the type 'c_string' is deprecated; please 'use CTypes' and replace 'c_string' with 'c_ptrConst(c_char)'")
   type c_string = chpl_c_string;
 
   // c_fn_ptr stuff
