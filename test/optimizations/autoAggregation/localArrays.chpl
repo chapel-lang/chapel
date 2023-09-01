@@ -47,7 +47,7 @@ proc test(dom:domain, name) {
   var sourceArr: [dom] int;
 
 
-  forall i in dom with (ref destArr) {
+  forall i in dom {
     destArr[i] = sourceArr[generateIdx(i)]; // RHS will be seen as non-local
   }
 

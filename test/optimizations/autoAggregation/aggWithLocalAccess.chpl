@@ -5,7 +5,7 @@ var localArr: [0..9] int;
 
 distArr = 3;
 
-forall i in localArr.domain with (ref localArr) {
+forall i in localArr.domain {
   localArr.localAccess[i] = distArr[i];
 }
 

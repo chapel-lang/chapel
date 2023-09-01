@@ -9,7 +9,7 @@ for i in b.domain {
   b[i] = i;
 }
 
-forall i in a.domain with (ref a) {
+forall i in a.domain {
   a[i] = b[10-i];
 }
 

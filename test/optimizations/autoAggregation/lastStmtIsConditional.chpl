@@ -14,7 +14,7 @@ for i in b.domain {
 }
 
 writeln("Loop 1 -- expecting source aggregation");
-forall i in a.domain with (ref a) {
+forall i in a.domain {
   if flag {
     a[i] = b[10-i];
   }
@@ -28,7 +28,7 @@ writeln(a);
 writeln();
 
 writeln("Loop 2 -- expecting source aggregation");
-forall i in a.domain with (ref a) {
+forall i in a.domain {
   if flag || alwaysTrue {
     a[i] = b[10-i];
   }
@@ -39,7 +39,7 @@ writeln(a);
 writeln();
 
 writeln("Loop 3 -- expecting destination aggregation");
-forall i in a.domain with (ref b) {
+forall i in a.domain {
   if flag {
     b[10-i] = a[i];
   }
@@ -53,7 +53,7 @@ writeln(a);
 writeln();
 
 writeln("Loop 4 -- expecting destination aggregation");
-forall i in a.domain with (ref b) {
+forall i in a.domain {
   if flag || alwaysTrue {
     b[10-i] = a[i];
   }
