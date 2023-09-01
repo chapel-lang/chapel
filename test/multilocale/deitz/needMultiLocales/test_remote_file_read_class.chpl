@@ -7,7 +7,7 @@ class C {
 
 var w = open("test_remote_file_read_class.txt", ioMode.cw).writer();
 
-var c = new unmanaged C(x=1,y=2.3);
+var c = new C(x=1,y=2.3);
 
 writeln(c);
 
@@ -16,7 +16,7 @@ w.close();
 
 var r = open("test_remote_file_read_class.txt", ioMode.r).reader();
 
-var d = new unmanaged C();
+var d = new C();
 
 on Locales(1) {
   r.read(d);
@@ -24,6 +24,3 @@ on Locales(1) {
 }
 
 writeln(d);
-
-delete d;
-delete c;
