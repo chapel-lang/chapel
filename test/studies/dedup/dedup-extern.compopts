@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+ccflags=$(pkg-config --cflags 'libcrypto >= 1.1')
+ldflags=$(pkg-config --libs 'libcrypto >= 1.1')
+
+echo "${ccflags:+--ccflags '$ccflags'} ${ldflags:+--ldflags '$ldflags'}"
