@@ -94,7 +94,9 @@ static void chpl_gpu_impl_set_globals(c_sublocid_t dev_id, CUmodule module) {
   size_t glob_size;
   CUDA_CALL(cuModuleGetGlobal(&ptr, &glob_size, module, "chpl_nodeID"));
   assert(glob_size == sizeof(c_nodeid_t));
+  //printf("setting global\n");
   chpl_gpu_impl_copy_host_to_device((void*)ptr, &chpl_nodeID, glob_size, NULL);
+  //printf("global set\n");
 }
 
 void chpl_gpu_impl_use_device(c_sublocid_t dev_id) {
@@ -332,7 +334,7 @@ void chpl_gpu_impl_copy_device_to_host(void* dst, const void* src, size_t n,
   
   // this needs synchronization (data is on host now, out of cuda's
   // control, so we must synchronize
-  chpl_gpu_impl_stream_synchronize(stream);
+  //chpl_gpu_impl_stream_synchronize(stream);
 }
 
 void chpl_gpu_impl_copy_host_to_device(void* dst, const void* src, size_t n,
@@ -372,12 +374,10 @@ void* chpl_gpu_impl_mem_array_alloc(size_t size, void* stream) {
 
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
     CUDA_CALL(cuMemAllocAsync(&ptr, size, (CUstream)stream));
-    //CUDA_CALL(cuMemAllocAsync(&ptr, size, NULL));
 #else
     CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));
 #endif
 
-    chpl_gpu_impl_stream_synchronize(stream);
   return (void*)ptr;
 }
 
@@ -462,7 +462,17 @@ void chpl_gpu_impl_destroy_stream(void* stream) {
 }
 
 void chpl_gpu_impl_stream_synchronize(void* stream) {
+ 	CUresult res = cuStreamQuery(stream);
+	int dev = chpl_task_getRequestedSubloc();
+	if (res == CUDA_ERROR_NOT_INITIALIZED) {
+		return;
+	}
+	else if (res == CUDA_SUCCESS) {
+		//printf("stream ready\n");
+	}
+	//printf("synchronizing %p (subloc %d)\n", stream, dev);
   CUDA_CALL(cuStreamSynchronize(stream));
+	//printf("synchronized %p (subloc %d)\n", stream, dev);
 }
 
 #endif // HAS_GPU_LOCALE

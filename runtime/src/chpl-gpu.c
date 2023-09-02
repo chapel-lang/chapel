@@ -76,6 +76,8 @@ void chpl_gpu_init(void) {
     }
 #endif
   }
+
+  printf("init complete\n");
 }
 
 static chpl_gpu_taskPrvData_t* get_gpu_task_private_data(void) {
@@ -92,10 +94,35 @@ void chpl_gpu_task_end(void) {
 	  int i;
 	  for (i=0 ; i<chpl_gpu_num_devices ; i++) {
 		  if (prvData->streams[i] != NULL) {
+			  CHPL_GPU_DEBUG("Destroying stream %p (subloc %d)\n", prvData->streams[i], i);
+			  chpl_gpu_impl_stream_synchronize(prvData->streams[i]);
 			  chpl_gpu_impl_destroy_stream(prvData->streams[i]);
+			  prvData->streams[i] = NULL;
 		  }
 	  }
   }
+
+}
+
+void chpl_gpu_task_fence(void) {
+  int dev = chpl_task_getRequestedSubloc();
+  if (dev<0) { 
+	  return; 
+  }
+
+  chpl_gpu_taskPrvData_t* prvData = get_gpu_task_private_data();
+  assert(prvData);
+  
+  if (prvData->streams != NULL) {
+	  int i;
+	  for (i=0 ; i<chpl_gpu_num_devices ; i++) {
+		  if (prvData->streams[i] != NULL) {
+			  CHPL_GPU_DEBUG("Synchronizing stream %p (subloc %d)\n", prvData->streams[i], i);
+			  chpl_gpu_impl_stream_synchronize(prvData->streams[i]);
+		  }
+	  }
+  }
+
 
 }
 
@@ -109,15 +136,17 @@ static void* get_stream(int dev) {
   
   if (prvData->streams == NULL) {
 	  // TODO use chpl_mem_alloc
+	  CHPL_GPU_DEBUG("allocating stream array (subloc %d)\n", dev);
 	  prvData->streams = chpl_calloc(chpl_gpu_num_devices, sizeof(void*));
 //	  printf("allocated stream array\n");
   }
   void** stream = &(prvData->streams[dev]);
   if (*stream == NULL) {
 	  *stream = chpl_gpu_impl_create_stream();
+	  CHPL_GPU_DEBUG("Stream created: %p (subloc %d)\n", *stream, dev);
   }
 
-  //printf("using stream %p\n", *stream);
+	  CHPL_GPU_DEBUG("Returning stream: %p (subloc %d)\n", *stream, dev);
 
   return *stream;
   
@@ -182,20 +211,23 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
                                         int64_t num_threads, int blk_dim, int nargs,
                                         ...) {
 
+  int dev = chpl_task_getRequestedSubloc();
+  chpl_gpu_impl_use_device(dev);
+  void* stream = get_stream(dev);
+
   CHPL_GPU_DEBUG("Kernel launcher called. (subloc %d)\n"
                  "\tLocation: %s:%d\n"
                  "\tKernel: %s\n"
+                 "\tStream: %p\n"
                  "\tNumArgs: %d\n"
                  "\tNumThreads: %lld\n",
                  chpl_task_getRequestedSubloc(),
                  chpl_lookupFilename(fn),
                  ln,
                  name,
+                 stream,
                  nargs,
                  num_threads);
-
-  int dev = chpl_task_getRequestedSubloc();
-  chpl_gpu_impl_use_device(dev);
 
   va_list args;
   va_start(args, nargs);
@@ -349,7 +381,7 @@ void chpl_gpu_copy_device_to_device(c_sublocid_t dst_dev, void* dst,
                                     int32_t fn) {
   assert(chpl_gpu_is_device_ptr(src));
 
-  CHPL_GPU_DEBUG("Copying %zu bytes from device to host\n", n);
+  CHPL_GPU_DEBUG("Copying %zu bytes from device to device\n", n);
 
   chpl_gpu_impl_use_device(dst_dev);
 
@@ -372,14 +404,15 @@ void chpl_gpu_copy_device_to_host(void* dst, c_sublocid_t src_dev,
                                   int ln, int32_t fn) {
   assert(chpl_gpu_is_device_ptr(src));
 
-  CHPL_GPU_DEBUG("Copying %zu bytes from device to host\n", n);
 
   chpl_gpu_impl_use_device(src_dev);
+  void* stream = get_stream(src_dev);
+
+  CHPL_GPU_DEBUG("Copying %zu bytes from device to host on stream %p\n", n, stream);
 
   chpl_gpu_diags_verbose_device_to_host_copy(ln, fn, src_dev, n, commID);
   chpl_gpu_diags_incr(device_to_host);
 
-  void* stream = get_stream(src_dev);
   chpl_gpu_impl_copy_device_to_host(dst, src, n, stream);
   chpl_gpu_impl_stream_synchronize(stream);
 

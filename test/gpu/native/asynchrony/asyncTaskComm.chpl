@@ -42,18 +42,18 @@ on here.gpus[0] {
 
         const myChunk = myChunkId*taskSize..#taskSize;
 
-        writeln(myChunk);
-        printf("%d starting in copy %f\n", tid, t.elapsed());
+        //writeln(myChunk);
+        //printf("%d starting in copy %f\n", tid, t.elapsed());
         MyIn = HostIn[myChunk];
-        printf("%d finished in copy %f\n", tid, t.elapsed());
+        //printf("%d finished in copy %f\n", tid, t.elapsed());
 
-        printf("%d starting kernel %f\n", tid, t.elapsed());
+        //printf("%d starting kernel %f\n", tid, t.elapsed());
         kernel(MyIn, MyOut);
-        printf("%d finished kernel %f\n", tid, t.elapsed());
+        //printf("%d finished kernel %f\n", tid, t.elapsed());
 
-        printf("%d starting out copy %f\n", tid, t.elapsed());
+        //printf("%d starting out copy %f\n", tid, t.elapsed());
         HostOut[myChunk] = MyOut;
-        printf("%d finished out copy %f\n", tid, t.elapsed());
+        //printf("%d finished out copy %f\n", tid, t.elapsed());
       }
     }
   }
@@ -97,4 +97,5 @@ if validateOutput {
 writeln("In Comm: ", inCommTimer.elapsed());
 writeln("Out Comm: ", outCommTimer.elapsed());
 writeln("Kern: ", kernelTimer.elapsed());
-writeln("Total: ", t.elapsed());
+writeln("Total (s): ", t.elapsed());
+writeln("Throughput (GB/s): ", (n*8)/t.elapsed()/1e9);

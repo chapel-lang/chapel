@@ -83,6 +83,7 @@ static inline bool chpl_gpu_running_on_gpu_locale(void) {
 
 void chpl_gpu_init(void);
 void chpl_gpu_task_end(void);
+void chpl_gpu_task_fence(void);
 void chpl_gpu_support_module_finished_initializing(void);
 
 void chpl_gpu_launch_kernel(int ln, int32_t fn,
