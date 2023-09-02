@@ -8,6 +8,10 @@ testBaseName = sys.argv[1]
 testOutput = sys.argv[2]
 goodFile = 'all.good'
 
+if testBaseName == 'dedup-debug-1' or testBaseName == 'dedup-debug-2':
+  print("not processing ", testBaseName)
+  sys.exit()
+
 def readgroups(filename):
 
   curgroup = [ ]
