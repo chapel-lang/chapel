@@ -1,0 +1,3 @@
+# The purpose of this test is to debug the valgrind failure.
+# Skip it for all other configurations.
+CHPL_TEST_VGRND_EXE != on

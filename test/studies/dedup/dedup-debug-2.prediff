@@ -1,0 +1,4 @@
+#!/bin/bash
+
+# Save away the executable
+cp -ipv dedup-debug-2 dedup-debug-2.gen/
