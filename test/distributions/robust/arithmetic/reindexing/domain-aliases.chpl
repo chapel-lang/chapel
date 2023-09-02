@@ -55,7 +55,7 @@ proc main() {
   r2d = (11..22, 33..44);
   r3d = (11..11, 22..22, 33..33);
   r4d = (1..2, 3..4, 5..6, 7..8);
-  rr32 = (0..0:int(32), min(int(32))..max(int(32)));
+  rr32 = (0:int(32)..0:int(32), min(int(32))..max(int(32)));
 
   writeln(v1d);
   writeln(v2d);

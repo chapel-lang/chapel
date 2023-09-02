@@ -55,7 +55,7 @@ param eol = '\n'.toByte(),  // end-of-line, as an integer
              //    ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑       ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑
              //    ABCDEFGHIJKLMNOPQRSTUVWXYZ      abcdefghijklmnopqrstuvwxyz
 
-      maxChars = cmpl.size; // upper bound on number of nucleotides used
+      maxChars = cmpl.size: uint(8); //upper bound on number of nucleotides used
 
 // map from pairs of nucleotide characters to their reversed complements
 var pairCmpl: [0..<join(maxChars, maxChars)] uint(16);
