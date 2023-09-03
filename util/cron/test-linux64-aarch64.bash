@@ -8,4 +8,4 @@ source $CWD/common-localnode-paratest.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-aarch64"
 
-$CWD/nightly -cron $(get_nightly_paratest_args)
+$CWD/nightly -cron $(get_nightly_paratest_args 3)
