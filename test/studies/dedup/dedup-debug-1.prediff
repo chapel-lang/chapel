@@ -1,4 +1,0 @@
-#!/bin/bash
-
-# Save away the executable
-cp -pv dedup-debug-1 dedup-debug-1.gen/
