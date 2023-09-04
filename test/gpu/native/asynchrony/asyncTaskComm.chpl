@@ -43,6 +43,8 @@ on here.gpus[0] {
         const myChunk = myChunkId*taskSize..#taskSize;
 
         //writeln(myChunk);
+        //printf("%d starting slice %f\n", tid, t.elapsed());
+        //ref inRef = HostIn[myChunk];
         //printf("%d starting in copy %f\n", tid, t.elapsed());
         MyIn = HostIn[myChunk];
         //printf("%d finished in copy %f\n", tid, t.elapsed());

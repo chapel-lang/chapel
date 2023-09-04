@@ -132,10 +132,10 @@ static void* get_stream(int dev) {
   chpl_gpu_taskPrvData_t* prvData = get_gpu_task_private_data();
 
   assert(prvData);
-  //printf("here %p\n", prvData);
   
   if (prvData->streams == NULL) {
 	  // TODO use chpl_mem_alloc
+	  CHPL_GPU_DEBUG("here %p\n", prvData);
 	  CHPL_GPU_DEBUG("allocating stream array (subloc %d)\n", dev);
 	  prvData->streams = chpl_calloc(chpl_gpu_num_devices, sizeof(void*));
 //	  printf("allocated stream array\n");
@@ -503,9 +503,9 @@ void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
   CHPL_GPU_DEBUG("chpl_gpu_mem_free is called. Ptr %p\n", memAlloc);
 
   int dev = chpl_task_getRequestedSubloc();
-  chpl_gpu_impl_use_device(dev);
+  //chpl_gpu_impl_use_device(dev);
 
-  chpl_memhook_free_pre(memAlloc, 0, lineno, filename);
+  //chpl_memhook_free_pre(memAlloc, 0, lineno, filename);
   chpl_gpu_impl_mem_free(memAlloc, get_stream(dev));
 
   CHPL_GPU_DEBUG("chpl_gpu_mem_free is returning\n");
