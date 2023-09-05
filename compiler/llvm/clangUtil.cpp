@@ -2010,7 +2010,10 @@ static void loadModuleFromBitcode() {
   INT_ASSERT(info);
   INT_ASSERT(!info->module);
 
-  std::string bitcodeFilename = info->llvmGenFilenames.preOptFilename;
+  // If doing LLVM wide opt, use opt2 which has dummy functions removed.
+  std::string bitcodeFilename =
+      (fLLVMWideOpt ? info->llvmGenFilenames.opt2Filename
+                    : info->llvmGenFilenames.opt1Filename);
   auto fileResult = MemoryBuffer::getFile(bitcodeFilename);
   INT_ASSERT(fileResult && "could not load bitcode file into memory");
   std::unique_ptr<llvm::MemoryBuffer> bitcodeFile = std::move(fileResult.get());
@@ -2191,6 +2194,9 @@ static void cleanupFunctionOptManagers() {
     info->LAM = nullptr;
   }
 }
+
+static void llvmOptimizeAndCodegen(void);
+static void llvmEmitObjectFile(void);
 
 void finishCodegenLLVM() {
   GenInfo* info = gGenInfo;
@@ -4667,9 +4673,9 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
   mysystem(bundlerCmd.c_str(), ".out file to fatbin file");
 }
 
-static void saveIrToBcFileIfNeeded(const std::string& filename) {
+static void saveIrToBcFileIfNeeded(const std::string& filename, bool forceSave = false) {
   GenInfo* info = gGenInfo;
-  if (saveCDir[0] != '\0') {
+  if (forceSave || saveCDir[0] != '\0') {
     std::error_code tmpErr;
     // Save the generated LLVM IR to the given file
 #if HAVE_LLVM_VER >= 120
@@ -4778,6 +4784,9 @@ void makeBinaryLLVM(void) {
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
   LLVMGenFilenames* filenames = &info->llvmGenFilenames;
+
+  // generate .o file
+  llvmEmitObjectFile();
 
   // finishClang is before the call to the debug finalize
   deleteClang(clangInfo);
@@ -4946,189 +4955,12 @@ void makeBinaryLLVM(void) {
   }
 }
 
-void llvmOptimizeAndCodegen(void) {
+static void llvmEmitObjectFile(void) {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
   LLVMGenFilenames* filenames = &info->llvmGenFilenames;
-
-  if (gCodegenGPU) {
-    linkGpuDeviceLibraries();
-  }
-
-  {
-    std::error_code tmpErr;
-    // Save the generated LLVM before optimization.
-#if HAVE_LLVM_VER >= 120
-    ToolOutputFile output (filenames->preOptFilename.c_str(), tmpErr, sys::fs::OF_None);
-#else
-    ToolOutputFile output (filenames->preOptFilename.c_str(), tmpErr, sys::fs::F_None);
-#endif
-    if (tmpErr)
-      USR_FATAL("Could not open output file %s", filenames->preOptFilename.c_str());
-#if HAVE_LLVM_VER < 70
-    WriteBitcodeToFile(info->module, output.os());
-#else
-    WriteBitcodeToFile(*info->module, output.os());
-#endif
-    output.keep();
-    output.os().flush();
-  }
-
-    // Handle --llvm-print-ir-stage=basic
-#ifdef HAVE_LLVM
-  if((llvmStageNum::BASIC == llvmPrintIrStageNum ||
-      llvmStageNum::EVERY == llvmPrintIrStageNum)) {
-
-    for (auto &F : info->module->functions()) {
-      std::string str = F.getName().str();
-      if (shouldLlvmPrintIrCName(str.c_str()))
-        printLlvmIr(str.c_str(), &F, llvmStageNum::BASIC);
-    }
-
-    completePrintLlvmIrStage(llvmStageNum::BASIC);
-  }
-#endif
-
-  // Run optimizations, either with the old pass manager or with
-  // the new one.
-
-#ifdef LLVM_USE_OLD_PASSES
-  static bool addedGlobalExts = false;
-  if( ! addedGlobalExts ) {
-    // Add IR dumping pass if necessary
-    // point is initialized to a dummy value; it is set
-    // in getIrDumpExtensionPoint.
-    PassManagerBuilder::ExtensionPointTy point =
-                  PassManagerBuilder::EP_EarlyAsPossible;
-
-    if (getIrDumpExtensionPoint(llvmPrintIrStageNum, point)) {
-      printf("Adding IR dump extension at %i\n", point);
-      PassManagerBuilder::addGlobalExtension(point, addDumpIrPass);
-    }
-
-    if (llvmPrintIrStageNum == llvmStageNum::EVERY) {
-      printf("; Adding IR dump extensions for all phases\n");
-      for (int i = 0; i < llvmStageNum::LAST; i++) {
-        llvmStageNum::llvmStageNum_t stage = (llvmStageNum::llvmStageNum_t) i;
-        if (getIrDumpExtensionPoint(stage, point))
-          PassManagerBuilder::addGlobalExtension(
-              point,
-              [stage] (const PassManagerBuilder &Builder,
-                       llvm::legacy::PassManagerBase &PM) -> void {
-                PM.add(createLegacyDumpIrPass(stage));
-              });
-      }
-
-      // Put the print-stage-num back
-      llvmPrintIrStageNum = llvmStageNum::EVERY;
-    }
-
-    addedGlobalExts = true;
-  }
-
-  // Create PassManager and run optimizations
-  PassManagerBuilder PMBuilder;
-
-  configurePMBuilder(PMBuilder, /* for function passes */ false);
-
-  // Note, these global extensions currently only apply
-  // to the module-level optimization (not the "basic" function
-  // optimization we do immediately after generating LLVM IR).
-
-  // Add the Global to Wide optimization if necessary.
-  if (fLLVMWideOpt) {
-    PMBuilder.addExtension(PassManagerBuilder::EP_OptimizerLast, addAggregateGlobalOps);
-    PMBuilder.addExtension(PassManagerBuilder::EP_OptimizerLast, addGlobalToWide);
-    PMBuilder.addExtension(PassManagerBuilder::EP_EnabledOnOptLevel0, addGlobalToWide);
-  }
-
-  // Setup for and run LLVM optimization passes
-  {
-    adjustLayoutForGlobalToWide();
-
-    llvm::legacy::PassManager mpm;
-    llvm::legacy::PassManager mpm2;
-
-    // Add the TransformInfo pass
-    mpm.add(createTargetTransformInfoWrapperPass(
-            info->targetMachine->getTargetIRAnalysis()));
-    mpm2.add(createTargetTransformInfoWrapperPass(
-             info->targetMachine->getTargetIRAnalysis()));
-
-    // Add the TargetLibraryInfo pass
-    Triple TargetTriple(info->module->getTargetTriple());
-    llvm::TargetLibraryInfoImpl TLII(TargetTriple);
-    mpm.add(new TargetLibraryInfoWrapperPass(TLII));
-    mpm2.add(new TargetLibraryInfoWrapperPass(TLII));
-
-    PMBuilder.populateModulePassManager(mpm);
-
-    // Run the optimizations now!
-    mpm.run(*info->module);
-
-    saveIrToBcFileIfNeeded(filenames->opt1Filename);
-
-    if (fLLVMWideOpt) {
-      // the GlobalToWide pass creates calls to inline functions, among
-      // other things, that will need to be optimized. So run an additional
-      // battery of optimizations now.
-
-      PassManagerBuilder PMBuilder2;
-
-      configurePMBuilder(PMBuilder2, false, /* opt level */ 1);
-      // Should we disable vectorization since we did that?
-      // Or run select few cleanup passes?
-      // Inlining is definitely important here..
-
-      PMBuilder2.populateModulePassManager(mpm2);
-
-      // Reset the data layout.
-      info->module->setDataLayout(clangInfo->asmTargetLayoutStr);
-
-      // Run the optimizations now!
-      mpm2.run(*info->module);
-
-      saveIrToBcFileIfNeeded(filenames->opt2Filename);
-    }
-  }
-
-#else
-
-  // Run optimizations with the new PassManager
-  runModuleOptPipeline(fLLVMWideOpt);
-  saveIrToBcFileIfNeeded(opt1Filename);
-
-  if (fLLVMWideOpt) {
-    // the GlobalToWide pass creates calls to inline functions, among
-    // other things, that will need to be optimized. So run an additional
-    // battery of optimizations now.
-    runModuleOptPipeline(/* don't add global to wide opts */ false);
-
-    saveIrToBcFileIfNeeded(opt2Filename);
-  }
-
-#endif
-
-  // Handle --llvm-print-ir-stage=full
-#ifdef HAVE_LLVM
-  if((llvmStageNum::FULL == llvmPrintIrStageNum ||
-      llvmStageNum::EVERY == llvmPrintIrStageNum)) {
-
-    for (auto &F : info->module->functions()) {
-      std::string str = F.getName().str();
-      if (shouldLlvmPrintIrCName(str.c_str()))
-        printLlvmIr(str.c_str(), &F, llvmStageNum::FULL);
-    }
-
-    completePrintLlvmIrStage(llvmStageNum::FULL);
-  }
-#endif
-
-#ifdef HAVE_LLVM
-  checkLoopsAssertVectorize();
-#endif
 
   // setup output file info
   std::error_code error;
@@ -5229,9 +5061,179 @@ void llvmOptimizeAndCodegen(void) {
   }
 }
 
+static void llvmOptimizeAndCodegen(void) {
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(info);
+  ClangInfo* clangInfo = info->clangInfo;
+  INT_ASSERT(clangInfo);
+  LLVMGenFilenames* filenames = &info->llvmGenFilenames;
+
+  if (gCodegenGPU) {
+    linkGpuDeviceLibraries();
+  }
+
+  // Save the generated LLVM before optimization
+  saveIrToBcFileIfNeeded(filenames->preOptFilename);
+
+    // Handle --llvm-print-ir-stage=basic
+#ifdef HAVE_LLVM
+  if((llvmStageNum::BASIC == llvmPrintIrStageNum ||
+      llvmStageNum::EVERY == llvmPrintIrStageNum)) {
+
+    for (auto &F : info->module->functions()) {
+      std::string str = F.getName().str();
+      if (shouldLlvmPrintIrCName(str.c_str()))
+        printLlvmIr(str.c_str(), &F, llvmStageNum::BASIC);
+    }
+
+    completePrintLlvmIrStage(llvmStageNum::BASIC);
+  }
+#endif
+
+  // Run optimizations, either with the old pass manager or with
+  // the new one.
+
+#ifdef LLVM_USE_OLD_PASSES
+  static bool addedGlobalExts = false;
+  if( ! addedGlobalExts ) {
+    // Add IR dumping pass if necessary
+    // point is initialized to a dummy value; it is set
+    // in getIrDumpExtensionPoint.
+    PassManagerBuilder::ExtensionPointTy point =
+                  PassManagerBuilder::EP_EarlyAsPossible;
+
+    if (getIrDumpExtensionPoint(llvmPrintIrStageNum, point)) {
+      printf("Adding IR dump extension at %i\n", point);
+      PassManagerBuilder::addGlobalExtension(point, addDumpIrPass);
+    }
+
+    if (llvmPrintIrStageNum == llvmStageNum::EVERY) {
+      printf("; Adding IR dump extensions for all phases\n");
+      for (int i = 0; i < llvmStageNum::LAST; i++) {
+        llvmStageNum::llvmStageNum_t stage = (llvmStageNum::llvmStageNum_t) i;
+        if (getIrDumpExtensionPoint(stage, point))
+          PassManagerBuilder::addGlobalExtension(
+              point,
+              [stage] (const PassManagerBuilder &Builder,
+                       llvm::legacy::PassManagerBase &PM) -> void {
+                PM.add(createLegacyDumpIrPass(stage));
+              });
+      }
+
+      // Put the print-stage-num back
+      llvmPrintIrStageNum = llvmStageNum::EVERY;
+    }
+
+    addedGlobalExts = true;
+  }
+
+  // Create PassManager and run optimizations
+  PassManagerBuilder PMBuilder;
+
+  configurePMBuilder(PMBuilder, /* for function passes */ false);
+
+  // Note, these global extensions currently only apply
+  // to the module-level optimization (not the "basic" function
+  // optimization we do immediately after generating LLVM IR).
+
+  // Add the Global to Wide optimization if necessary.
+  if (fLLVMWideOpt) {
+    PMBuilder.addExtension(PassManagerBuilder::EP_OptimizerLast, addAggregateGlobalOps);
+    PMBuilder.addExtension(PassManagerBuilder::EP_OptimizerLast, addGlobalToWide);
+    PMBuilder.addExtension(PassManagerBuilder::EP_EnabledOnOptLevel0, addGlobalToWide);
+  }
+
+  // Setup for and run LLVM optimization passes
+  {
+    adjustLayoutForGlobalToWide();
+
+    llvm::legacy::PassManager mpm;
+    llvm::legacy::PassManager mpm2;
+
+    // Add the TransformInfo pass
+    mpm.add(createTargetTransformInfoWrapperPass(
+            info->targetMachine->getTargetIRAnalysis()));
+    mpm2.add(createTargetTransformInfoWrapperPass(
+             info->targetMachine->getTargetIRAnalysis()));
+
+    // Add the TargetLibraryInfo pass
+    Triple TargetTriple(info->module->getTargetTriple());
+    llvm::TargetLibraryInfoImpl TLII(TargetTriple);
+    mpm.add(new TargetLibraryInfoWrapperPass(TLII));
+    mpm2.add(new TargetLibraryInfoWrapperPass(TLII));
+
+    PMBuilder.populateModulePassManager(mpm);
+
+    // Run the optimizations now!
+    mpm.run(*info->module);
+
+    saveIrToBcFileIfNeeded(
+        filenames->opt1Filename,
+        /* forceSave */ !fDriverDoMonolithic && !fLLVMWideOpt);
+
+    if (fLLVMWideOpt) {
+      // the GlobalToWide pass creates calls to inline functions, among
+      // other things, that will need to be optimized. So run an additional
+      // battery of optimizations now.
+
+      PassManagerBuilder PMBuilder2;
+
+      configurePMBuilder(PMBuilder2, false, /* opt level */ 1);
+      // Should we disable vectorization since we did that?
+      // Or run select few cleanup passes?
+      // Inlining is definitely important here..
+
+      PMBuilder2.populateModulePassManager(mpm2);
+
+      // Reset the data layout.
+      info->module->setDataLayout(clangInfo->asmTargetLayoutStr);
+
+      // Run the optimizations now!
+      mpm2.run(*info->module);
+
+      saveIrToBcFileIfNeeded(filenames->opt2Filename,
+                             /* forceSave */ !fDriverDoMonolithic);
+    }
+  }
+
+#else
+
+  // Run optimizations with the new PassManager
+  runModuleOptPipeline(fLLVMWideOpt);
+  saveIrToBcFileIfNeeded(opt1Filename);
+
+  if (fLLVMWideOpt) {
+    // the GlobalToWide pass creates calls to inline functions, among
+    // other things, that will need to be optimized. So run an additional
+    // battery of optimizations now.
+    runModuleOptPipeline(/* don't add global to wide opts */ false);
+
+    saveIrToBcFileIfNeeded(opt2Filename);
+  }
+
+#endif
+
+  // Handle --llvm-print-ir-stage=full
+#ifdef HAVE_LLVM
+  if((llvmStageNum::FULL == llvmPrintIrStageNum ||
+      llvmStageNum::EVERY == llvmPrintIrStageNum)) {
+
+    for (auto &F : info->module->functions()) {
+      std::string str = F.getName().str();
+      if (shouldLlvmPrintIrCName(str.c_str()))
+        printLlvmIr(str.c_str(), &F, llvmStageNum::FULL);
+    }
+
+    completePrintLlvmIrStage(llvmStageNum::FULL);
+  }
+#endif
+
+#ifdef HAVE_LLVM
+  checkLoopsAssertVectorize();
+#endif
+}
+
 static void handlePrintAsm(std::string dotOFile) {
-  /* assert((fDriverDoMakeBinary || fDriverDoMonolithic) && */
-  /*        "handlePrintAsm should only be called during makebinary phase"); */
   if (llvmPrintIrStageNum == llvmStageNum::ASM ||
       llvmPrintIrStageNum == llvmStageNum::EVERY) {
 

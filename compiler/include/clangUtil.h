@@ -106,7 +106,6 @@ bool useDarwinArmFix(Type* type);
 
 void makeBinaryLLVM();
 void prepareCodegenLLVM();
-void llvmOptimizeAndCodegen();
 void finishCodegenLLVM();
 void initializeGenInfo(void);
 // appends clang arguments to be used to the provided vector
