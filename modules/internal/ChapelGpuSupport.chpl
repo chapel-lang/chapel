@@ -30,6 +30,9 @@ module ChapelGpuSupport {
   @unstable("The variable 'gpuNoCpuModeWarning' is unstable and its interface is subject to change in the future")
   config const gpuNoCpuModeWarning = isEnvSet("CHPL_GPU_NO_CPU_MODE_WARNING");
 
+  extern var chpl_gpu_always_sync_kernels : bool;
+  config const gpuAlwaysSyncKernels = false;
+
   /* If true, upon startup, enables peer-to-peer access between all pairs of
      GPUs that are eligible for peer-to-peer access within each locale. */
   @chpldoc.nodoc
@@ -41,6 +44,7 @@ module ChapelGpuSupport {
   // by virtue of module initialization:
   chpl_gpu_debug = debugGpu;
   chpl_gpu_no_cpu_mode_warning = gpuNoCpuModeWarning;
+  chpl_gpu_always_sync_kernels = gpuAlwaysSyncKernels;
 
   if CHPL_LOCALE_MODEL == 'gpu' {
     if(enableGpuP2P) {

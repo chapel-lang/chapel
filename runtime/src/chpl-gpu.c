@@ -24,6 +24,7 @@
 bool chpl_gpu_debug = false;
 bool chpl_gpu_no_cpu_mode_warning = false;
 int chpl_gpu_num_devices = -1;
+bool chpl_gpu_always_sync_kernels = false;
 
 #ifdef HAS_GPU_LOCALE
 
@@ -38,6 +39,7 @@ int chpl_gpu_num_devices = -1;
 #include "chpl-env-gen.h"
 #include "chpl-env.h"
 #include "chpl-comm-compiler-macros.h"
+
 
 void chpl_gpu_init(void) {
   chpl_gpu_impl_init(&chpl_gpu_num_devices);
@@ -87,68 +89,64 @@ static chpl_gpu_taskPrvData_t* get_gpu_task_private_data(void) {
 void chpl_gpu_task_end(void) {
   chpl_gpu_taskPrvData_t* prvData = get_gpu_task_private_data();
   assert(prvData);
-  
+
   if (prvData->streams != NULL) {
-	  int i;
-	  for (i=0 ; i<chpl_gpu_num_devices ; i++) {
-		  if (prvData->streams[i] != NULL) {
-			  CHPL_GPU_DEBUG("Destroying stream %p (subloc %d)\n", prvData->streams[i], i);
-			  chpl_gpu_impl_stream_synchronize(prvData->streams[i]);
-			  chpl_gpu_impl_destroy_stream(prvData->streams[i]);
-			  prvData->streams[i] = NULL;
-		  }
-	  }
+    int i;
+    for (i=0 ; i<chpl_gpu_num_devices ; i++) {
+      if (prvData->streams[i] != NULL) {
+        CHPL_GPU_DEBUG("Destroying stream %p (subloc %d)\n", prvData->streams[i], i);
+        chpl_gpu_impl_stream_synchronize(prvData->streams[i]);
+        chpl_gpu_impl_destroy_stream(prvData->streams[i]);
+        prvData->streams[i] = NULL;
+      }
+    }
   }
 
 }
 
 void chpl_gpu_task_fence(void) {
   int dev = chpl_task_getRequestedSubloc();
-  if (dev<0) { 
-	  return; 
+  if (dev<0) {
+    return;
   }
 
   chpl_gpu_taskPrvData_t* prvData = get_gpu_task_private_data();
   assert(prvData);
-  
+
   if (prvData->streams != NULL) {
-	  int i;
-	  for (i=0 ; i<chpl_gpu_num_devices ; i++) {
-		  if (prvData->streams[i] != NULL) {
-			  CHPL_GPU_DEBUG("Synchronizing stream %p (subloc %d)\n", prvData->streams[i], i);
-			  chpl_gpu_impl_stream_synchronize(prvData->streams[i]);
-		  }
-	  }
+    int i;
+    for (i=0 ; i<chpl_gpu_num_devices ; i++) {
+      if (prvData->streams[i] != NULL) {
+        CHPL_GPU_DEBUG("Synchronizing stream %p (subloc %d)\n", prvData->streams[i], i);
+        chpl_gpu_impl_stream_synchronize(prvData->streams[i]);
+      }
+    }
   }
-
-
 }
 
 static void* get_stream(int dev) {
-	// assumes that device has been set correctly with
-	// chpl_gpu_impl_use_device
+  // assumes that device has been set correctly with
+  // chpl_gpu_impl_use_device
   chpl_gpu_taskPrvData_t* prvData = get_gpu_task_private_data();
 
   assert(prvData);
-  
+
   if (prvData->streams == NULL) {
-	  // TODO use chpl_mem_alloc
 	  CHPL_GPU_DEBUG("here %p\n", prvData);
 	  CHPL_GPU_DEBUG("allocating stream array (subloc %d)\n", dev);
+
+	  // TODO use chpl_mem_alloc
 	  prvData->streams = chpl_calloc(chpl_gpu_num_devices, sizeof(void*));
-//	  printf("allocated stream array\n");
   }
   void** stream = &(prvData->streams[dev]);
   if (*stream == NULL) {
-	  *stream = chpl_gpu_impl_create_stream();
-	  CHPL_GPU_DEBUG("Stream created: %p (subloc %d)\n", *stream, dev);
+    *stream = chpl_gpu_impl_create_stream();
+    CHPL_GPU_DEBUG("Stream created: %p (subloc %d)\n", *stream, dev);
   }
 
-	  CHPL_GPU_DEBUG("Returning stream: %p (subloc %d)\n", *stream, dev);
+  CHPL_GPU_DEBUG("Using stream: %p (subloc %d)\n", *stream, dev);
 
   return *stream;
-  
-  return NULL;
 }
 
 void chpl_gpu_support_module_finished_initializing(void) {
@@ -172,6 +170,11 @@ inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
                                    int grd_dim_x, int grd_dim_y, int grd_dim_z,
                                    int blk_dim_x, int blk_dim_y, int blk_dim_z,
                                    int nargs, ...) {
+
+  int dev = chpl_task_getRequestedSubloc();
+  chpl_gpu_impl_use_device(dev);
+  void* stream = get_stream(dev);
+
   CHPL_GPU_DEBUG("Kernel launcher called. (subloc %d)\n"
                  "\tLocation: %s:%d\n"
                  "\tKernel: %s\n"
@@ -195,7 +198,14 @@ inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
                               name,
                               grd_dim_x, grd_dim_y, grd_dim_z,
                               blk_dim_x, blk_dim_y, blk_dim_z,
+                              stream,
                               nargs, args);
+
+  if (chpl_gpu_always_sync_kernels) {
+    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
+    chpl_gpu_impl_stream_synchronize(stream);
+  }
+
   va_end(args);
 
   CHPL_GPU_DEBUG("Kernel launcher returning. (subloc %d)\n"
@@ -237,8 +247,14 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
   chpl_gpu_impl_launch_kernel_flat(ln, fn,
                                    name,
                                    num_threads, blk_dim,
-                                   get_stream(dev),
+                                   stream,
                                    nargs, args);
+
+  if (chpl_gpu_always_sync_kernels) {
+    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
+    chpl_gpu_impl_stream_synchronize(stream);
+  }
+
   va_end(args);
 
   CHPL_GPU_DEBUG("Kernel launcher returning. (subloc %d)\n"
@@ -412,6 +428,8 @@ void chpl_gpu_copy_device_to_host(void* dst, c_sublocid_t src_dev,
   chpl_gpu_diags_incr(device_to_host);
 
   chpl_gpu_impl_copy_device_to_host(dst, src, n, stream);
+
+  // data is going to host, synchronize
   chpl_gpu_impl_stream_synchronize(stream);
 
   CHPL_GPU_DEBUG("Copy successful\n");
@@ -427,7 +445,6 @@ void chpl_gpu_copy_host_to_device(c_sublocid_t dst_dev, void* dst,
   chpl_gpu_impl_use_device(dst_dev);
 
   chpl_gpu_diags_verbose_host_to_device_copy(ln, fn, dst_dev, n, commID);
-  //printf("host to device %s:%d\n", chpl_lookupFilename(fn), ln);
   chpl_gpu_diags_incr(host_to_device);
 
   chpl_gpu_impl_copy_host_to_device(dst, src, n, get_stream(dst_dev));
@@ -501,9 +518,9 @@ void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
   CHPL_GPU_DEBUG("chpl_gpu_mem_free is called. Ptr %p\n", memAlloc);
 
   int dev = chpl_task_getRequestedSubloc();
-  //chpl_gpu_impl_use_device(dev);
+  chpl_gpu_impl_use_device(dev);
 
-  //chpl_memhook_free_pre(memAlloc, 0, lineno, filename);
+  chpl_memhook_free_pre(memAlloc, 0, lineno, filename);
   chpl_gpu_impl_mem_free(memAlloc, get_stream(dev));
 
   CHPL_GPU_DEBUG("chpl_gpu_mem_free is returning\n");

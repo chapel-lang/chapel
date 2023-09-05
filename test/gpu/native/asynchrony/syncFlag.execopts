@@ -1,0 +1,2 @@
+--n=100_000_000 --expectInstantenousKernelReturn=true
+--n=100_000_000 --gpuAlwaysSyncKernels=true --expectInstantenousKernelReturn=false

@@ -50,8 +50,6 @@ static CUmodule *chpl_gpu_cuda_modules;
 
 static int *deviceClockRates;
 
-static bool chpl_gpu_always_sync_kernels = false;
-
 
 static bool chpl_gpu_has_context(void) {
   CUcontext cuda_context = NULL;
@@ -138,12 +136,12 @@ void chpl_gpu_impl_init(int* num_devices) {
     // between runtime layers?
     chpl_gpu_impl_set_globals(i, module);
 
-    int res;
+    /*int res;*/
 
-    CUDA_CALL(cuDeviceGetAttribute(&res, CU_DEVICE_ATTRIBUTE_MEMORY_POOLS_SUPPORTED,
-                                   device));
+    /*CUDA_CALL(cuDeviceGetAttribute(&res, CU_DEVICE_ATTRIBUTE_MEMORY_POOLS_SUPPORTED,*/
+                                   /*device));*/
 
-    printf("%d\n", res);
+    /*printf("%d\n", res);*/
   }
 }
 
@@ -256,11 +254,6 @@ static void chpl_gpu_launch_kernel_help(int ln,
 
   chpl_task_yield();
 
-  if (chpl_gpu_always_sync_kernels) {
-    chpl_gpu_impl_stream_synchronize(stream);
-  }
-
-  CHPL_GPU_DEBUG("Synchronization complete %s\n", name);
   CHPL_GPU_STOP_TIMER(kernel_time);
   CHPL_GPU_START_TIMER(teardown_time);
 
@@ -290,12 +283,13 @@ inline void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
                                         int blk_dim_x,
                                         int blk_dim_y,
                                         int blk_dim_z,
+                                        void* stream,
                                         int nargs, va_list args) {
   chpl_gpu_launch_kernel_help(ln, fn,
                               name,
                               grd_dim_x, grd_dim_y, grd_dim_z,
                               blk_dim_x, blk_dim_y, blk_dim_z,
-                              /*stream=*/NULL,
+                              stream,
                               nargs, args);
 }
 
@@ -456,15 +450,13 @@ void chpl_gpu_impl_destroy_stream(void* stream) {
 }
 
 void chpl_gpu_impl_stream_synchronize(void* stream) {
-  CUresult res = cuStreamQuery(stream);
-  // we call CUDA_CALL later on; we want to ignore the following cases:
-  if (res == CUDA_ERROR_NOT_INITIALIZED ||
-      res == CUDA_ERROR_NOT_READY) {
+  // TODO do we want to call cuStreamQuery and chpl_task_yield if the stream is
+  // not ready?
+  CUresult res = cuStreamSynchronize(stream);
+  if (res == CUDA_ERROR_NOT_INITIALIZED) {
     return;
   }
   CUDA_CALL(res);
-
-  CUDA_CALL(cuStreamSynchronize(stream));
 }
 
 #endif // HAS_GPU_LOCALE
