@@ -12,5 +12,5 @@ export CHPL_COMM=gasnet
 export CHPL_LAUNCHER_PARTITION=stormP100
 export CHPL_GPU_MEM_STRATEGY=unified_memory
 
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-cuda.gasnet"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-cuda.um.gasnet"
 $CWD/nightly -cron ${nightly_args}
