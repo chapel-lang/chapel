@@ -262,10 +262,9 @@ void check_cullOverReferences()
             if (SymExpr* lhs = toSymExpr(parentCe->get(1))) {
               if(symbolIsUsedAsRef(lhs->symbol())) {
                 USR_WARN(ce,
-                         "modifying an array over an array of indices is a "
-                         "potential race condition and will be an error in a "
-                         "future release. If this is what you intended, please "
-                         "use an explicit loop");
+                         "modifying an array over an array of indices is "
+                         "deprecated and will be an error in a future release "
+                         "- please use an explicit loop instead");
               }
             }
           }
