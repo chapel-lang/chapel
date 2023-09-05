@@ -1680,8 +1680,7 @@ struct RstResultBuilder {
     if (textOnly_) indentDepth_ --;
     showComment(m, textOnly_);
     showDeprecationMessage(m, false);
-    // TODO: Are we not printing these for modules?
-    // showUnstableWarning(m, false);
+    showUnstableWarning(m, false);
     if (textOnly_) indentDepth_ ++;
 
     visitChildren(m);
