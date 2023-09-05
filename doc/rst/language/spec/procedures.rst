@@ -251,7 +251,7 @@ be called without parentheses.
 
    *Example (function-no-parens.chpl)*.
 
-   Given the definitions 
+   Given the definitions
 
    .. code-block:: chapel
 
@@ -265,7 +265,7 @@ be called without parentheses.
       foo;
       bar();
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -297,7 +297,7 @@ actual argument to a formal argument.
 
    *Example (named-args.chpl)*.
 
-   Running the code 
+   Running the code
 
    .. code-block:: chapel
 
@@ -351,7 +351,7 @@ from the default value expression.
 
    *Example (default-values.chpl)*.
 
-   The code 
+   The code
 
    .. code-block:: chapel
 
@@ -361,7 +361,7 @@ from the default value expression.
       foo(7);
       foo(y=5);
 
-   writes out 
+   writes out
 
    .. code-block:: printoutput
 
@@ -586,9 +586,27 @@ modify the formal argument within its dynamic scope. Whether ``const``
 is interpreted as ``const in`` or ``const ref`` intent depends on the
 argument type.  Generally, small values, such as scalar types, will be
 passed by ``const in``; while larger values, such as domains and
-arrays, will be passed by ``const ref`` intent. The
-:ref:`Abstract_Intents_Table` below lists the meaning of the ``const``
-intent for each type.
+arrays, will be passed by ``const ref`` intent.
+
+For the following types, the ``const`` intent means ``const in``:
+
+  * scalar types (``bool``, ``int``, ``uint``, ``real``, ``imag``, ``complex``)
+  * ranges
+  * non-managed classes (``borrowed``, ``unmanaged``)
+
+For the following types, the ``const`` intent means ``const ref``:
+
+  * string-like types (``string``, ``bytes``)
+  * domains / domain maps
+  * arrays
+  * records
+  * auto-managed classes (``owned``, ``shared``) - see :ref:`Default_Intent_for_owned_and_shared`
+  * unions ``const ref``
+  * synchronization types (``atomic``, ``sync``)
+
+The ``const`` intent for tuples applies the ``const`` intent to each tuple
+component as if it was passed as a separate argument.
+See :ref:`Tuple_Argument_Intents`.
 
 .. _The_Default_Intent:
 
@@ -596,71 +614,22 @@ The Default Intent
 ^^^^^^^^^^^^^^^^^^
 
 When no intent is specified for a formal argument, the *default
-intent* is applied.  It is designed to take the most natural/least
-surprising action for the argument, based on its type.  In practice,
+intent* is applied. It is designed to take the most natural/least
+surprising action for the argument, based on its type. In practice,
 this is ``const`` for most types (as defined by
 :ref:`The_Const_Intent`) to avoid surprises for programmers coming
 from languages where everything is passed by ``in`` or ``ref`` intent
-by default.  Exceptions are made for types where modification is
-considered part of their nature, such as types used for synchronization
+by default. Exceptions are made for types where modification is considered part
+of their nature, such as types used for synchronization
 (like ``atomic`` or ``sync``).
+
+For the following types, the default intent is not ``const``:
+
+  * synchronization types (``atomic``, ``sync``) - the default intent is ``ref``
 
 Default argument passing for tuples applies the default
 argument passing strategy to each tuple component as if it
 was passed as a separate argument. See :ref:`Tuple_Argument_Intents`.
-
-The :ref:`Abstract_Intents_Table` that follows defines the default
-intent for each type.
-
-.. _Abstract_Intents_Table:
-
-Abstract Intents Table
-^^^^^^^^^^^^^^^^^^^^^^
-
-The following table summarizes what these abstract intents mean for each
-type:
-
-.. table::
-    :widths: 28 18 22 32
-
-    +-------------------------+------------------+----------------+------------------------------------------------+
-    |                         | ``const`` intent | Default intent |                                                |
-    | Type                    | meaning          | meaning        | Notes                                          |
-    +=========================+==================+================+================================================+
-    | scalar types            |  ``const in``    |                |                                                |
-    |                         |                  |                |                                                |
-    | (``bool``,              |                  |                |                                                |
-    | ``int``, ``uint``,      |                  |                |                                                |
-    | ``real``, ``imag``,     |                  |                |                                                |
-    | ``complex``)            |                  |                |                                                |
-    +-------------------------+------------------+----------------+------------------------------------------------+
-    | string-like types       | ``const ref``    |                |                                                |
-    |                         |                  |                |                                                |
-    | (``string``, ``bytes``) |                  |                |                                                |
-    +-------------------------+------------------+----------------+------------------------------------------------+
-    | ranges                  | ``const in``     |                |                                                |
-    +-------------------------+------------------+----------------+------------------------------------------------+
-    | domains / domain maps   | ``const ref``    |                |                                                |
-    +-------------------------+------------------+----------------+------------------------------------------------+
-    | arrays                  | ``const ref``    |                |                                                |
-    +-------------------------+------------------+----------------+------------------------------------------------+
-    | records                 | ``const ref``    |                |                                                |
-    +-------------------------+------------------+----------------+------------------------------------------------+
-    | auto-managed classes    | ``const ref``    |                | see :ref:`Default_Intent_for_owned_and_shared` |
-    | (``owned``, ``shared``) |                  |                |                                                |
-    +-------------------------+------------------+----------------+------------------------------------------------+
-    | non-managed classes     | ``const in``     |                |                                                |
-    |                         |                  |                |                                                |
-    | (``borrowed``,          |                  |                |                                                |
-    | ``unmanaged``)          |                  |                |                                                |
-    +-------------------------+------------------+----------------+------------------------------------------------+
-    | tuples                  | per-element      |                | see :ref:`Tuple_Argument_Intents`              |
-    +-------------------------+------------------+----------------+------------------------------------------------+
-    | unions                  | ``const ref``    |                |                                                |
-    +-------------------------+------------------+----------------+------------------------------------------------+
-    | synchronization types   | ``const ref``    | ``ref``        |                                                |
-    | (``atomic``, ``sync``)  |                  |                |                                                |
-    +-------------------------+------------------+----------------+------------------------------------------------+
 
 .. _Default_Intent_for_owned_and_shared:
 
@@ -724,7 +693,7 @@ homogeneous tuple, otherwise it will be a heterogeneous tuple.
 
    *Example (varargs.chpl)*.
 
-   The code 
+   The code
 
    .. code-block:: chapel
 
@@ -740,7 +709,7 @@ homogeneous tuple, otherwise it will be a heterogeneous tuple.
       mywriteln("hi", "there");
       mywriteln(1, 2.0, 3, 4.0);
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -764,13 +733,13 @@ homogeneous tuple, otherwise it will be a heterogeneous tuple.
 
    Either or both the number of variable arguments and their types can
    be specified. For example, a basic procedure to sum the values of
-   three integers can be written as 
+   three integers can be written as
 
    .. code-block:: chapel
 
       proc sum(x: int...3) do return x(0) + x(1) + x(2);
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -982,13 +951,13 @@ during compilation and substituted for the call expression.
 
       var x: sumOfSquares(2, 3)*int;
 
-   
+
 
    .. BLOCK-test-chapelpost
 
       writeln(x);
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -1044,7 +1013,7 @@ with a conditional expression that is not a parameter.
           bt: myType(b);
       writeln((numBits(at.type), numBits(bt.type)));
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -1106,7 +1075,7 @@ The syntax of the return statement is given by
    *Example (return.chpl)*.
 
    The following code defines a procedure that returns the sum of three
-   integers: 
+   integers:
 
    .. code-block:: chapel
 
@@ -1182,21 +1151,21 @@ resolution.
 
    *Example (whereClause.chpl)*.
 
-   Given two overloaded function definitions 
+   Given two overloaded function definitions
 
    .. code-block:: chapel
 
       proc foo(x) where x.type == int { writeln("int"); }
       proc foo(x) where x.type == real { writeln("real"); }
 
-   
+
 
    .. BLOCK-test-chapelpost
 
       foo(3);
       foo(3.14);
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
