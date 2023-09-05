@@ -186,7 +186,7 @@ bool symbolIsUsedAsRef(Symbol* sym);
 static
 bool symExprIsUsedAsRef(SymExpr* use) {
   if (CallExpr* call = toCallExpr(use->parentExpr)) {
-    if (FnSymbol* calledFn = call->resolvedFunction()) {
+    if (call->resolvedFunction() != nullptr) {
       ArgSymbol* formal = actual_to_formal(use);
       // generally, use const-ref-return if passing to const ref formal
       if (formal->intent == INTENT_REF ||
