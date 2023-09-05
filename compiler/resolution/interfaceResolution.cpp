@@ -844,7 +844,7 @@ static BlockStmt* createHolderBlock(FnSymbol* wrapFn, ImplementsStmt* istm) {
   return holder;
 }
 
-static bool foundTargetFunctionValid(FnSymbol* tg, bool generatedOnly) {
+static bool targetFunctionIsValid(FnSymbol* tg, bool generatedOnly) {
   // the argument is ignored for now, but in the future should be used
   // in the check below; silence "unused variable" warnings.
   (void) generatedOnly;
@@ -907,7 +907,7 @@ static Type* inferAssociatedType(InterfaceSymbol* isym,  ImplementsStmt*   istm,
   FnSymbol* target = tryResolveCall(enterContextCall);
   callStack.pop();
 
-  if (!foundTargetFunctionValid(target, false)) return nullptr;
+  if (!targetFunctionIsValid(target, false)) return nullptr;
 
   handleContextCallExpr(enterContextCall, RET_REF, target);
   resolveFunction(target); // aborts if there are errors
@@ -1548,7 +1548,7 @@ static bool resolveOneRequiredFn(InterfaceSymbol* isym,  ImplementsStmt*  istm,
   callStack.add(call);
   FnSymbol* target = tryResolveCall(call);
 
-  if (!foundTargetFunctionValid(target, generatedOnly) && addlSite != nullptr) {
+  if (!targetFunctionIsValid(target, generatedOnly) && addlSite != nullptr) {
     // the call did not resolve at this location
     cleanupHolder(holder);
     // try resolving it at 'addlSite'
@@ -1560,7 +1560,7 @@ static bool resolveOneRequiredFn(InterfaceSymbol* isym,  ImplementsStmt*  istm,
   }
 
   // do not allow representatives to help satisfy a constraint
-  if (foundTargetFunctionValid(target, generatedOnly)) {
+  if (targetFunctionIsValid(target, generatedOnly)) {
     INT_ASSERT(target->hasFlag(FLAG_PROMOTION_WRAPPER) ||
                ! target->isGeneric());
 
