@@ -40,7 +40,7 @@ module ChplFormat {
     // TODO: rewrite in terms of writef, or something
     @chpldoc.nodoc
     proc _oldWrite(ch: _writeType, const val:?t) throws {
-      var _def = new DefaultSerializer();
+      var _def = new defaultSerializer();
       var dc = ch.withSerializer(_def);
       var st = dc._styleInternal();
       var orig = st; defer { dc._set_styleInternal(orig); }
@@ -235,7 +235,7 @@ module ChplFormat {
     // TODO: rewrite in terms of writef, or something
     @chpldoc.nodoc
     proc _oldRead(ch: _readerType, ref val:?t) throws {
-      var _def = new DefaultDeserializer();
+      var _def = new defaultDeserializer();
       var dc = ch.withDeserializer(_def);
       var st = dc._styleInternal();
       var orig = st; defer { dc._set_styleInternal(orig); }
@@ -263,7 +263,7 @@ module ChplFormat {
         _oldRead(reader, tmp);
         return tmp;
       } else if isEnumType(readType) {
-        var ret = reader.withDeserializer(DefaultDeserializer).read(readType);
+        var ret = reader.withDeserializer(defaultDeserializer).read(readType);
         return ret;
       } else if canResolveTypeMethod(readType, "deserializeFrom", reader, this) ||
                 isArrayType(readType) {

@@ -3331,7 +3331,7 @@ record binarySerializer {
 /*
   An unstructured binary Deserializer to be used with ``fileReader``.
 */
-record BinaryDeserializer {
+record binaryDeserializer {
   /*
     'endian' represents the endianness that this Deserializer should use when
     deserializing input.
@@ -3446,7 +3446,7 @@ record BinaryDeserializer {
 
 
   record AggregateDeserializer {
-    var reader : fileReader(false, BinaryDeserializer);
+    var reader : fileReader(false, binaryDeserializer);
 
     proc readField(name: string, type fieldType) : fieldType throws {
       return reader.read(fieldType);
@@ -3469,7 +3469,7 @@ record BinaryDeserializer {
   }
 
   record TupleDeserializer {
-    var reader : fileReader(false, BinaryDeserializer);
+    var reader : fileReader(false, binaryDeserializer);
 
     proc readElement(type eltType) : eltType throws {
       return reader.read(eltType);
@@ -3484,7 +3484,7 @@ record BinaryDeserializer {
   }
 
   record ListDeserializer {
-    var reader : fileReader(false, BinaryDeserializer);
+    var reader : fileReader(false, binaryDeserializer);
     var _numElements : uint;
 
     proc ref readElement(type eltType) : eltType throws {
@@ -3511,7 +3511,7 @@ record BinaryDeserializer {
 
 
   record ArrayDeserializer {
-    var reader : fileReader(false, BinaryDeserializer);
+    var reader : fileReader(false, binaryDeserializer);
     const endian : ioendian;
 
     proc startDim() throws {
@@ -10031,10 +10031,10 @@ General Conversions
           r: R;
 
       // write an 'R' in JSON format
-      f.writer(serializer = new JsonSerializer()).writef("%?", new R(/* ... */));
+      f.writer(serializer = new jsonSerializer()).writef("%?", new R(/* ... */));
 
       // read into an 'R' from JSON format
-      f.reader(deserializer = new JsonDeserializer()).readf("%?", r);
+      f.reader(deserializer = new jsonDeserializer()).readf("%?", r);
 
 ``%ht``
  read or write an object in Chapel syntax using readThis/writeThis
@@ -10056,10 +10056,10 @@ General Conversions
           r: R;
 
       // write an 'R' in Chapel Syntax format
-      f.writer(serializer = new ChplSerializer()).writef("%?", new R(/* ... */))
+      f.writer(serializer = new chplSerializer()).writef("%?", new R(/* ... */))
 
       // read into an 'R' from Chapel Syntax format
-      f.reader(deserializer = new ChplDeserializer()).readf("%?", r);
+      f.reader(deserializer = new chplDeserializer()).readf("%?", r);
 
 ``%|t``
  read or write an object in binary native-endian with readThis/writeThis *(deprecated)*

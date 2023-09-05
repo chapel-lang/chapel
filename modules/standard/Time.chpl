@@ -624,12 +624,12 @@ module Time {
 
   /* Reads this `date` with the same format used by :proc:`date.writeThis` */
   proc ref date.readThis(f) throws {
-    import JSON.JsonDeserializer;
+    import JSON.jsonDeserializer;
 
     const binary = f._binary(),
           arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
           isjson = (arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary) ||
-            isSubtype(f.deserializerType, JsonDeserializer);
+            isSubtype(f.deserializerType, jsonDeserializer);
 
     if isjson then
       f._readLiteral('"');
@@ -950,12 +950,12 @@ module Time {
 
   /* Reads this `time` with the same format used by :proc:`time.writeThis` */
   proc ref time.readThis(f) throws {
-    import JSON.JsonDeserializer;
+    import JSON.jsonDeserializer;
 
     const binary = f._binary(),
           arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
           isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary  ||
-            isSubtype(f.deserializerType, JsonDeserializer);
+            isSubtype(f.deserializerType, jsonDeserializer);
 
     if isjson then
       f._readLiteral('"');
@@ -1669,12 +1669,12 @@ module Time {
      :proc:`dateTime.writeThis`
    */
   proc ref dateTime.readThis(f) throws {
-    import JSON.JsonDeserializer;
+    import JSON.jsonDeserializer;
 
     const binary = f._binary(),
           arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
           isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary ||
-            isSubtype(f.deserializerType, JsonDeserializer);
+            isSubtype(f.deserializerType, jsonDeserializer);
 
     if isjson then
       f._readLiteral('"');

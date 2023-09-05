@@ -42,14 +42,14 @@ module JSON {
     guarantees are made about the exact formatting w.r.t. whitespace,
     newlines or indentation.
 
-    See the :record:`~IO.DefaultSerializer` for more information about
+    See the :record:`~IO.defaultSerializer` for more information about
     serializers in general.
   */
   record jsonSerializer {
     // TODO: rewrite in terms of writef, or something
     @chpldoc.nodoc
     proc _oldWrite(ch: jsonWriter, const val:?t) throws {
-      var _def = new DefaultSerializer();
+      var _def = new defaultSerializer();
       var dc = ch.withSerializer(_def);
       var st = dc._styleInternal();
       var orig = st; defer { dc._set_styleInternal(orig); }
@@ -368,7 +368,7 @@ module JSON {
     declaration order in a Chapel type definition to be deserialized into that
     type.
 
-    See the :record:`~IO.DefaultDeserializer` for more information about
+    See the :record:`~IO.defaultDeserializer` for more information about
     deserializers in general.
 */
   record jsonDeserializer {
@@ -385,7 +385,7 @@ module JSON {
     // TODO: rewrite in terms of writef, or something
     @chpldoc.nodoc
     proc _oldRead(ch: jsonReader, ref val:?t) throws {
-      var _def = new DefaultDeserializer();
+      var _def = new defaultDeserializer();
       var dc = ch.withDeserializer(_def);
       var st = dc._styleInternal();
       var orig = st; defer { dc._set_styleInternal(orig); }
@@ -420,7 +420,7 @@ module JSON {
         return tmp;
       } else if isEnumType(readType) {
         reader.readLiteral('"');
-        var ret = reader.withDeserializer(DefaultDeserializer).read(readType);
+        var ret = reader.withDeserializer(defaultDeserializer).read(readType);
         reader.readLiteral('"');
         return ret;
       } else if canResolveTypeMethod(readType, "deserializeFrom", reader, this) ||
@@ -655,7 +655,7 @@ module JSON {
           var f = openMemFile();
           var s = reader.read(string);
           {
-            f.writer().withSerializer(DefaultSerializer).write(s);
+            f.writer().withSerializer(defaultSerializer).write(s);
           }
           return f.reader().withDeserializer(jsonDeserializer).read(keyType);
         }

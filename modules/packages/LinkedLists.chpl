@@ -324,7 +324,7 @@ record LinkedList {
   }
 
   proc serialize(writer, ref serializer) throws {
-    if writer.serializerType == IO.DefaultSerializer {
+    if writer.serializerType == IO.defaultSerializer {
       writeThis(writer);
     } else {
       var ser = serializer.startList(writer, size);
@@ -405,7 +405,7 @@ record LinkedList {
   }
 
   proc ref deserialize(reader: fileReader, ref deserializer) throws
-  where reader.deserializerType == IO.DefaultDeserializer {
+  where reader.deserializerType == IO.defaultDeserializer {
     destroy();
 
     // Default format works as a 1D array

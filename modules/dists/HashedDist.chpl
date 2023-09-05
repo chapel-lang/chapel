@@ -910,7 +910,7 @@ class UserMapAssocArr: AbsBaseArr(?) {
 
   proc dsiSerialWrite(f) throws where f.serializerType != nothing {
     use IO;
-    if f.serializerType == IO.DefaultSerializer {
+    if f.serializerType == IO.defaultSerializer {
       var ser = f.serializer.startArray(f, dom.dsiNumIndices:int);
       ser.startDim(dom.dsiNumIndices);
 
