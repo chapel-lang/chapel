@@ -219,11 +219,7 @@ module Graph {
                                   edgeWeightType = r.weight.type,
                                   vertices = vertices,
                                   initialLastAvail=0);
-      var next$: [vertices] atomic int;
-
-      forall x in next$ with (ref next$) {
-        next$.write(G.initialFirstAvail);
-      }
+      var next$: [vertices] atomic int = G.initialFirstAvail;
 
       // Pass 1: count.
       forall trip in triples with (ref next$) {

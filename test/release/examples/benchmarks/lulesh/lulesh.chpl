@@ -1643,7 +1643,7 @@ proc CalcEnergyForElems(ref p_new, ref e_new, ref q_new, ref bvc, ref pbvc,
   //
   // TODO: Uncomment local once sparse domain is distributed
   //
-  forall i in Elems with (ref q_new) /*do local */ {
+  forall i in Elems with (ref q_new) /* do local */ {
     if delvc[i] <= 0.0 {
       var ssc = (pbvc[i] * e_new[i] + vnewc[i]**2 * bvc[i] * p_new[i] ) / rho0;
       if ssc <= 0.0 then ssc = 0.333333e-36;

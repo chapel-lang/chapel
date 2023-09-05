@@ -27,7 +27,7 @@ proc main() {
 
   // precompute (x, y) values from the complex plane
   const inv = 2.0 / n;
-  forall i in 0..#n  with (ref xval, ref yval) {
+  forall i in 0..#n with (ref xval, ref yval) {
     xval[i] = inv*i - 1.5;
     yval[i] = inv*i - 1.0;
   }

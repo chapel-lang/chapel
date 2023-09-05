@@ -45,7 +45,7 @@ proc main() {
   t.start();
 
   select mode {
-    when Mode.ordered {
+  when Mode.ordered {
       forall r in rindex with (ref A) do
         A[r].add(1);
     }
