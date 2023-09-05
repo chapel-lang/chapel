@@ -50,6 +50,8 @@ static CUmodule *chpl_gpu_cuda_modules;
 
 static int *deviceClockRates;
 
+static bool chpl_gpu_always_sync_kernels = false;
+
 
 static bool chpl_gpu_has_context(void) {
   CUcontext cuda_context = NULL;
@@ -94,9 +96,7 @@ static void chpl_gpu_impl_set_globals(c_sublocid_t dev_id, CUmodule module) {
   size_t glob_size;
   CUDA_CALL(cuModuleGetGlobal(&ptr, &glob_size, module, "chpl_nodeID"));
   assert(glob_size == sizeof(c_nodeid_t));
-  //printf("setting global\n");
   chpl_gpu_impl_copy_host_to_device((void*)ptr, &chpl_nodeID, glob_size, NULL);
-  //printf("global set\n");
 }
 
 void chpl_gpu_impl_use_device(c_sublocid_t dev_id) {
@@ -256,9 +256,9 @@ static void chpl_gpu_launch_kernel_help(int ln,
 
   chpl_task_yield();
 
-  /*printf("kernel launched on stream %p\n", stream);*/
-  /*chpl_gpu_impl_stream_synchronize(stream);*/
-  /*CUDA_CALL(cuStreamSynchronize(stream)); // this should be removed*/
+  if (chpl_gpu_always_sync_kernels) {
+    chpl_gpu_impl_stream_synchronize(stream);
+  }
 
   CHPL_GPU_DEBUG("Synchronization complete %s\n", name);
   CHPL_GPU_STOP_TIMER(kernel_time);
@@ -331,18 +331,12 @@ void chpl_gpu_impl_copy_device_to_host(void* dst, const void* src, size_t n,
   assert(chpl_gpu_is_device_ptr(src));
 
   CUDA_CALL(cuMemcpyDtoHAsync(dst, (CUdeviceptr)src, n, (CUstream)stream));
-  
-  // this needs synchronization (data is on host now, out of cuda's
-  // control, so we must synchronize
-  //chpl_gpu_impl_stream_synchronize(stream);
 }
 
 void chpl_gpu_impl_copy_host_to_device(void* dst, const void* src, size_t n,
                                        void* stream) {
   assert(chpl_gpu_is_device_ptr(dst));
 
-
-  //printf("%d -- host to device: %p %p %zu %p\n", chpl_task_getRequestedSubloc(), dst, src, n, stream);
   CUDA_CALL(cuMemcpyHtoDAsync((CUdeviceptr)dst, src, n, (CUstream)stream));
 }
 
@@ -373,9 +367,9 @@ void* chpl_gpu_impl_mem_array_alloc(size_t size, void* stream) {
   CUdeviceptr ptr = 0;
 
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
-    CUDA_CALL(cuMemAllocAsync(&ptr, size, (CUstream)stream));
+  CUDA_CALL(cuMemAllocAsync(&ptr, size, (CUstream)stream));
 #else
-    CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));
+  CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));
 #endif
 
   return (void*)ptr;
@@ -405,7 +399,7 @@ void chpl_gpu_impl_mem_free(void* memAlloc, void* stream) {
     else {
       CUDA_CALL(cuMemFreeAsync((CUdeviceptr)memAlloc, NULL));
 #else
-      CUDA_CALL(cuMemFree((CUdeviceptr)memAlloc));
+    CUDA_CALL(cuMemFree((CUdeviceptr)memAlloc));
 #endif
 
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
@@ -462,9 +456,10 @@ void chpl_gpu_impl_destroy_stream(void* stream) {
 }
 
 void chpl_gpu_impl_stream_synchronize(void* stream) {
-  // we call CUDA_CALL later on; CUDA_ERROR_NOT_INITIALIZED should be allowed.
   CUresult res = cuStreamQuery(stream);
-  if (res == CUDA_ERROR_NOT_INITIALIZED) {
+  // we call CUDA_CALL later on; we want to ignore the following cases:
+  if (res == CUDA_ERROR_NOT_INITIALIZED ||
+      res == CUDA_ERROR_NOT_READY) {
     return;
   }
   CUDA_CALL(res);

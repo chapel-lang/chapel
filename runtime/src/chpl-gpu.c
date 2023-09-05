@@ -76,8 +76,6 @@ void chpl_gpu_init(void) {
     }
 #endif
   }
-
-  printf("init complete\n");
 }
 
 static chpl_gpu_taskPrvData_t* get_gpu_task_private_data(void) {
