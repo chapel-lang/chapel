@@ -70,9 +70,9 @@ DefExpr* InterfaceSymbol::buildDef(const char* name,
 {
   InterfaceSymbol* isym = new InterfaceSymbol(name, body);
 
-  if (gHashable == nullptr && name == astr("hashable")) {
+  if (gHashable == nullptr && strcmp("hashable", name) == 0) {
     gHashable = isym;
-  } else if (gContextManager == nullptr && name == astr("contextManager")) {
+  } else if (gContextManager == nullptr && strcmp("contextManager", name) == 0) {
     gContextManager = isym;
   }
 

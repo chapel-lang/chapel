@@ -1,5 +1,5 @@
 record R : contextManager {
-  proc enterContext() ref {
+  proc enterContext() {
     writeln("entering");
     return none;
   }

@@ -845,7 +845,10 @@ static BlockStmt* createHolderBlock(FnSymbol* wrapFn, ImplementsStmt* istm) {
 }
 
 static bool foundTargetFunctionValid(FnSymbol* tg, bool generatedOnly) {
+  // the argument is ignored for now, but in the future should be used
+  // in the check below; silence "unused variable" warnings.
   (void) generatedOnly;
+
   return tg != NULL &&
 
          // After we switch the "implicit implements" warning to an error,
