@@ -1978,8 +1978,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
     // Compiler generated versions of readThis/writeThis now throw.
     fn->throwsErrorInit();
 
-    CallExpr* initExpr = new CallExpr(".", fileArg, new_StringSymbol("deserializerType"));
-    ArgSymbol* deserializer = new ArgSymbol(INTENT_REF, "deserializer", dtUnknown, initExpr);
+    ArgSymbol* deserializer = new ArgSymbol(INTENT_REF, "deserializer", dtAny);
     fn->insertFormalAtTail(deserializer);
 
     if (!fNoIODeserializeReadThis && hasReadThis) {

@@ -2475,16 +2475,34 @@ proc openMemFileHelper(style:iostyleInternal = defaultIOStyleInternal()):file th
   return ret;
 }
 
-config param useIOSerializers = false;
+config param useIOSerializers = true;
 
-private proc defaultSerializeType(param writing : bool) type {
+private proc defaultSerializeType(param writing : bool,
+                                  param kind : _iokind = _iokind.dynamic) type {
   if !useIOSerializers then return nothing;
+
+  // Compatibility with 'iokind'
+  if kind != _iokind.dynamic {
+    if writing then return BinarySerializer;
+    else return BinaryDeserializer;
+  }
+
   if writing then return DefaultSerializer;
   else return DefaultDeserializer;
 }
 
-private proc defaultSerializeVal(param writing : bool) {
+private proc defaultSerializeVal(param writing : bool,
+                                 param kind : _iokind = _iokind.dynamic) {
   if !useIOSerializers then return none;
+
+  if kind != _iokind.dynamic {
+    var endian = if kind == _iokind.native then ioendian.native
+                 else if kind == _iokind.big then ioendian.big
+                 else ioendian.little;
+    if writing then return new BinarySerializer(endian, _structured=false);
+    else return new BinaryDeserializer(endian, _structured=false);
+  }
+
   if writing then return new DefaultSerializer();
   else return new DefaultDeserializer();
 }
@@ -2542,7 +2560,7 @@ record fileReader {
      deserializerType indicates the type of the deserializer that this
      fileReader will use to deserialize data.
    */
-  type deserializerType = defaultSerializeType(/* writing= */ false);
+  type deserializerType = defaultSerializeType(/* writing= */ false, kind);
 
   @chpldoc.nodoc
   var _home:locale = here;
@@ -2623,7 +2641,7 @@ record fileWriter {
      serializerType indicates the type of the serializer that this fileWriter
      will use to serialize data.
    */
-  type serializerType = defaultSerializeType(/* writing */ true);
+  type serializerType = defaultSerializeType(/* writing */ true, kind);
 
   @chpldoc.nodoc
   var _home:locale = here;
@@ -2699,7 +2717,7 @@ record DefaultSerializer {
       writer._writeOne(writer._kind, val, writer.getLocaleOfIoRequest());
     } else if t == _nilType {
       writer._writeLiteral("nil");
-    } else if isClassType(t) || chpl_isAnyCPtr(t) {
+    } else if isClassType(t) || chpl_isAnyCPtr(t) || chpl_isDdata(t) {
       _serializeClassOrPtr(writer, val);
     } else if isUnionType(t) {
       val.writeThis(writer);
@@ -2714,6 +2732,10 @@ record DefaultSerializer {
     var _first : bool = true;
     const _ending : string;
 
+    // pointer to child's 'first' field so that we can communicate back if/when
+    // a field has already been written.
+    var _firstPtr : c_ptr(bool) = nil;
+
     proc ref writeField(name: string, const field: ?) throws {
       if !_first then writer._writeLiteral(", ");
       else _first = false;
@@ -2724,14 +2746,18 @@ record DefaultSerializer {
     }
 
     proc ref startClass(writer: fileWriter, name: string, size: int) throws {
-      _first = size == 0;
-      return new AggregateSerializer(writer, _parent=true);
+      // Note: 'size' of parent might be zero, but 'size' of grandparent might
+      // be non-zero.
+      return new AggregateSerializer(writer, _parent=true,
+                                     _firstPtr=c_addrOf(_first));
     }
 
     @chpldoc.nodoc
     proc endClass() throws {
       if !_parent then
         writer._writeLiteral(_ending);
+      else if _firstPtr != nil then
+        _firstPtr.deref() = _first;
     }
 
     @chpldoc.nodoc
@@ -5079,7 +5105,7 @@ proc openReader(path:string,
                 start:int(64) = 0, end:int(64) = max(int(64)),
                 hints=ioHintSet.empty,
                 style:iostyle)
-    : fileReader(kind, locking, defaultSerializeType(false)) throws {
+    : fileReader(kind, locking, defaultSerializeType(false, kind)) throws {
   return openReaderHelper(path, kind, locking, start..end, hints,
                           style: iostyleInternal);
 }
@@ -5137,7 +5163,7 @@ This function is equivalent to calling :proc:`open` and then
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty)
-    : fileReader(kind, locking, defaultSerializeType(false)) throws where (!region.hasHighBound() ||
+    : fileReader(kind, locking, defaultSerializeType(false, kind)) throws where (!region.hasHighBound() ||
                                               useNewOpenReaderRegionBounds) {
   return openReader(path, kind, locking, region, hints);
 }
@@ -5189,7 +5215,7 @@ pragma "last resort"
 proc openReader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty,
-                in deserializer: ?dt = defaultSerializeVal(false))
+                in deserializer: ?dt = defaultSerializeVal(false,kind))
     : fileReader(kind, locking, dt) throws where (!region.hasHighBound() ||
                                               useNewOpenReaderRegionBounds) {
   return openReaderHelper(path, kind, locking, region, hints, deserializer=deserializer);
@@ -5199,7 +5225,7 @@ proc openReader(path:string,
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty)
-    : fileReader(kind, locking, defaultSerializeType(false)) throws where (region.hasHighBound() &&
+    : fileReader(kind, locking, defaultSerializeType(false,kind)) throws where (region.hasHighBound() &&
                                               !useNewOpenReaderRegionBounds) {
   return openReader(path, kind, locking, region, hints);
 }
@@ -5208,7 +5234,7 @@ proc openreader(path:string,
 proc openReader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty)
-    : fileReader(kind, locking, defaultSerializeType(false)) throws where (region.hasHighBound() &&
+    : fileReader(kind, locking, defaultSerializeType(false,kind)) throws where (region.hasHighBound() &&
                                               !useNewOpenReaderRegionBounds) {
   return openReaderHelper(path, kind, locking, region, hints);
 }
@@ -5218,7 +5244,7 @@ private proc openReaderHelper(path:string,
                               region: range(?) = 0..,
                               hints=ioHintSet.empty,
                               style:iostyleInternal = defaultIOStyleInternal(),
-                              in deserializer: ?dt = defaultSerializeVal(false))
+                              in deserializer: ?dt = defaultSerializeVal(false,kind))
   : fileReader(kind, locking, dt) throws {
 
   var fl:file = try open(path, ioMode.r);
@@ -5233,7 +5259,7 @@ proc openwriter(path:string,
                 start:int(64) = 0, end:int(64) = max(int(64)),
                 hints=ioHintSet.empty,
                 style:iostyle)
-    : fileWriter(kind, locking, defaultSerializeType(true)) throws {
+    : fileWriter(kind, locking, defaultSerializeType(true,kind)) throws {
   return openWriter(path, kind, locking, start, end, hints, style);
 }
 
@@ -5243,7 +5269,7 @@ proc openWriter(path:string,
                 start:int(64) = 0, end:int(64) = max(int(64)),
                 hints=ioHintSet.empty,
                 style:iostyle)
-    : fileWriter(kind, locking, defaultSerializeType(true)) throws {
+    : fileWriter(kind, locking, defaultSerializeType(true,kind)) throws {
   return openWriterHelper(path, kind, locking, start, end, hints,
                     style: iostyleInternal);
 }
@@ -5282,7 +5308,7 @@ This function is equivalent to calling :proc:`open` with ``ioMode.cwr`` and then
 proc openwriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 hints = ioHintSet.empty)
-    : fileWriter(kind, locking, defaultSerializeType(true)) throws {
+    : fileWriter(kind, locking, defaultSerializeType(true,kind)) throws {
   return openWriter(path, kind, locking, hints);
 }
 
@@ -5323,7 +5349,7 @@ pragma "last resort"
 proc openWriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 hints = ioHintSet.empty,
-                in serializer: ?st = defaultSerializeVal(true))
+                in serializer: ?st = defaultSerializeVal(true,kind))
     : fileWriter(kind, locking, st) throws {
   return openWriterHelper(path, kind, locking, hints=hints, serializer=serializer);
 }
@@ -5333,7 +5359,7 @@ private proc openWriterHelper(path:string,
                               start:int(64) = 0, end:int(64) = max(int(64)),
                               hints = ioHintSet.empty,
                               style:iostyleInternal = defaultIOStyleInternal(),
-                              in serializer: ?st = defaultSerializeVal(true))
+                              in serializer: ?st = defaultSerializeVal(true,kind))
   : fileWriter(kind, locking, st) throws {
 
   var fl:file = try open(path, ioMode.cw);
@@ -5406,7 +5432,7 @@ pragma "last resort"
 @deprecated("reader with a 'kind' argument is deprecated, please use Deserializers instead")
 proc file.reader(param kind=iokind.dynamic, param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty,
-                 in deserializer: ?dt = defaultSerializeVal(false))
+                 in deserializer: ?dt = defaultSerializeVal(false,kind))
   : fileReader(kind, locking, dt) throws where (!region.hasHighBound() ||
                                                 useNewFileReaderRegionBounds) {
   return this.readerHelper(kind, locking, region, hints,
@@ -5416,7 +5442,7 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
 @deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewFileReaderRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
 proc file.reader(param kind=iokind.dynamic, param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty,
-                 in deserializer: ?dt = defaultSerializeVal(false))
+                 in deserializer: ?dt = defaultSerializeVal(false,kind))
   : fileReader(kind, locking, dt) throws where (region.hasHighBound() &&
                                             !useNewFileReaderRegionBounds) {
   return this.readerHelper(kind, locking, region, hints, deserializer=deserializer);
@@ -5429,7 +5455,7 @@ proc file.readerHelper(param kind=_iokind.dynamic, param locking=true,
                        region: range(?) = 0.., hints = ioHintSet.empty,
                        style:iostyleInternal = this._style,
                        fromOpenReader=false, fromOpenUrlReader=false,
-                       in deserializer: ?dt = defaultSerializeVal(false))
+                       in deserializer: ?dt = defaultSerializeVal(false,kind))
   : fileReader(kind, locking, dt) throws {
   if (region.hasLowBound() && region.low < 0) {
     throw new IllegalArgumentError("illegal argument 'region': file region's lowest accepted bound is 0");
@@ -5657,7 +5683,7 @@ pragma "last resort"
 @deprecated("writer with a 'kind' argument is deprecated, please use Serializers instead")
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty,
-                 in serializer:?st = defaultSerializeVal(true)):
+                 in serializer:?st = defaultSerializeVal(true,kind)):
                  fileWriter(kind,locking,st) throws where (!region.hasHighBound() ||
                                                         useNewFileWriterRegionBounds) {
   return this.writerHelper(kind, locking, region, hints, serializer=serializer);
@@ -5666,7 +5692,7 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
 @deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewFileWriterRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty,
-                 in serializer:?st = defaultSerializeVal(true)):
+                 in serializer:?st = defaultSerializeVal(true,kind)):
                  fileWriter(kind,locking,st) throws where (region.hasHighBound() &&
                                                         !useNewFileWriterRegionBounds) {
   return this.writerHelper(kind, locking, region, hints, serializer=serializer);
@@ -5677,7 +5703,7 @@ proc file.writerHelper(param kind=_iokind.dynamic, param locking=true,
                        region: range(?) = 0.., hints = ioHintSet.empty,
                        style:iostyleInternal = this._style,
                        fromOpenUrlWriter = false,
-                       in serializer:?st = defaultSerializeVal(true)):
+                       in serializer:?st = defaultSerializeVal(true,kind)):
   fileWriter(kind,locking,st) throws {
 
   if (region.hasLowBound() && region.low < 0) {

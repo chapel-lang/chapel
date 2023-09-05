@@ -85,6 +85,7 @@ module JSON {
       var _parent : bool = false;
       var _first : bool = true;
       const _ending : string;
+      var _firstPtr : c_ptr(bool) = nil;
 
       proc ref writeField(name: string, const field: ?) throws {
         if !_first then writer._writeLiteral(", ");
@@ -96,14 +97,16 @@ module JSON {
       }
 
       proc ref startClass(writer, name: string, size: int) throws {
-        _first = size == 0;
-        return new AggregateSerializer(writer, _parent=true);
+        return new AggregateSerializer(writer, _parent=true,
+                                       _firstPtr=c_addrOf(_first));
       }
 
       @chpldoc.nodoc
       proc endClass() throws {
         if !_parent then
           writer._writeLiteral(_ending);
+        else if _firstPtr != nil then
+          _firstPtr.deref() = _first;
       }
 
       @chpldoc.nodoc

@@ -190,4 +190,16 @@ SUCCESS
 -------------
 SUCCESS
 =========================
+
+===== owned Child101 =====
+===== writing: =====
+{grandParentField = 0, field = (1, 0, 1)}
+--------------------
+{"grandParentField":0, "field":[1, 0, 1]}
+====================
+--- read: ---
+{grandParentField = 0, field = (1, 0, 1)}
+-------------
+SUCCESS
+==========================
 ALL SUCCESS
