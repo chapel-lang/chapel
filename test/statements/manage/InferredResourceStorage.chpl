@@ -12,7 +12,7 @@ record res {
 
 var globalRes = new res();
 
-record man1 {
+record man1 : contextManager {
   var x = new r();
   proc enterContext(): res {
     writeln('proc man1.enterContext(): res'); return new res();
@@ -22,7 +22,7 @@ record man1 {
   }
 }
 
-record man2 {
+record man2 : contextManager {
   var x = new r();
   proc enterContext() ref: res {
     writeln('proc man2.enterContext() ref: res'); return globalRes;
@@ -32,7 +32,7 @@ record man2 {
   }
 }
 
-record man3 {
+record man3 : contextManager {
   var x = new r();
   proc enterContext() const ref: res {
     writeln('proc man3.enterContext() const ref: res'); return globalRes;
