@@ -136,13 +136,19 @@ void chpl_gpu_impl_init(int* num_devices) {
     // between runtime layers?
     chpl_gpu_impl_set_globals(i, module);
 
-    /*int res;*/
-
-    /*CUDA_CALL(cuDeviceGetAttribute(&res, CU_DEVICE_ATTRIBUTE_MEMORY_POOLS_SUPPORTED,*/
-                                   /*device));*/
-
-    /*printf("%d\n", res);*/
   }
+}
+
+bool chpl_gpu_impl_supports_async_streams(int dev_id) {
+  int res = true;
+
+  CUdevice device;
+  CUDA_CALL(cuDeviceGet(&device, dev_id));
+  CUDA_CALL(cuDeviceGetAttribute(&res,
+                                 CU_DEVICE_ATTRIBUTE_MEMORY_POOLS_SUPPORTED,
+                                 device));
+
+  return res;
 }
 
 bool chpl_gpu_impl_is_device_ptr(const void* ptr) {

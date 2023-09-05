@@ -40,6 +40,17 @@ bool chpl_gpu_always_sync_kernels = false;
 #include "chpl-env.h"
 #include "chpl-comm-compiler-macros.h"
 
+static bool async_supported = false; // a safer default
+
+static bool get_async_supported(void) {
+  int i;
+  for (i=0; i<chpl_gpu_num_devices; i++) {
+    if (!chpl_gpu_impl_supports_async_streams(i)) {
+      return false;
+    }
+  }
+  return true;
+}
 
 void chpl_gpu_init(void) {
   chpl_gpu_impl_init(&chpl_gpu_num_devices);
@@ -78,15 +89,21 @@ void chpl_gpu_init(void) {
     }
 #endif
   }
+
+  async_supported = get_async_supported();
 }
 
 static chpl_gpu_taskPrvData_t* get_gpu_task_private_data(void) {
+  if (!async_supported) return NULL;
+
   chpl_task_infoRuntime_t* infoRuntime = chpl_task_getInfoRuntime();
   if (infoRuntime != NULL) return &infoRuntime->gpu_data;
   return NULL;
 }
 
 void chpl_gpu_task_end(void) {
+  if (!async_supported) return;
+
   chpl_gpu_taskPrvData_t* prvData = get_gpu_task_private_data();
   assert(prvData);
 
@@ -105,6 +122,8 @@ void chpl_gpu_task_end(void) {
 }
 
 void chpl_gpu_task_fence(void) {
+  if (!async_supported) return;
+
   int dev = chpl_task_getRequestedSubloc();
   if (dev<0) {
     return;
@@ -125,8 +144,9 @@ void chpl_gpu_task_fence(void) {
 }
 
 static void* get_stream(int dev) {
-  // assumes that device has been set correctly with
-  // chpl_gpu_impl_use_device
+  if (!async_supported) return NULL;
+
+  // assumes that device has been set correctly with chpl_gpu_impl_use_device
   chpl_gpu_taskPrvData_t* prvData = get_gpu_task_private_data();
 
   assert(prvData);
