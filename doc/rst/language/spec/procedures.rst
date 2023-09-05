@@ -251,7 +251,7 @@ be called without parentheses.
 
    *Example (function-no-parens.chpl)*.
 
-   Given the definitions
+   Given the definitions 
 
    .. code-block:: chapel
 
@@ -265,7 +265,7 @@ be called without parentheses.
       foo;
       bar();
 
-
+   
 
    .. BLOCK-test-chapeloutput
 
@@ -297,7 +297,7 @@ actual argument to a formal argument.
 
    *Example (named-args.chpl)*.
 
-   Running the code
+   Running the code 
 
    .. code-block:: chapel
 
@@ -351,7 +351,7 @@ from the default value expression.
 
    *Example (default-values.chpl)*.
 
-   The code
+   The code 
 
    .. code-block:: chapel
 
@@ -361,7 +361,7 @@ from the default value expression.
       foo(7);
       foo(y=5);
 
-   writes out
+   writes out 
 
    .. code-block:: printoutput
 
@@ -693,7 +693,7 @@ homogeneous tuple, otherwise it will be a heterogeneous tuple.
 
    *Example (varargs.chpl)*.
 
-   The code
+   The code 
 
    .. code-block:: chapel
 
@@ -709,7 +709,7 @@ homogeneous tuple, otherwise it will be a heterogeneous tuple.
       mywriteln("hi", "there");
       mywriteln(1, 2.0, 3, 4.0);
 
-
+   
 
    .. BLOCK-test-chapeloutput
 
@@ -733,13 +733,13 @@ homogeneous tuple, otherwise it will be a heterogeneous tuple.
 
    Either or both the number of variable arguments and their types can
    be specified. For example, a basic procedure to sum the values of
-   three integers can be written as
+   three integers can be written as 
 
    .. code-block:: chapel
 
       proc sum(x: int...3) do return x(0) + x(1) + x(2);
 
-
+   
 
    .. BLOCK-test-chapelpost
 
@@ -951,13 +951,13 @@ during compilation and substituted for the call expression.
 
       var x: sumOfSquares(2, 3)*int;
 
-
+   
 
    .. BLOCK-test-chapelpost
 
       writeln(x);
 
-
+   
 
    .. BLOCK-test-chapeloutput
 
@@ -1013,7 +1013,7 @@ with a conditional expression that is not a parameter.
           bt: myType(b);
       writeln((numBits(at.type), numBits(bt.type)));
 
-
+   
 
    .. BLOCK-test-chapeloutput
 
@@ -1075,7 +1075,7 @@ The syntax of the return statement is given by
    *Example (return.chpl)*.
 
    The following code defines a procedure that returns the sum of three
-   integers:
+   integers: 
 
    .. code-block:: chapel
 
@@ -1151,21 +1151,21 @@ resolution.
 
    *Example (whereClause.chpl)*.
 
-   Given two overloaded function definitions
+   Given two overloaded function definitions 
 
    .. code-block:: chapel
 
       proc foo(x) where x.type == int { writeln("int"); }
       proc foo(x) where x.type == real { writeln("real"); }
 
-
+   
 
    .. BLOCK-test-chapelpost
 
       foo(3);
       foo(3.14);
 
-
+   
 
    .. BLOCK-test-chapeloutput
 
