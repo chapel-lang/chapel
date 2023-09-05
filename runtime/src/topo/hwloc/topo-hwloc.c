@@ -133,23 +133,19 @@ static void chk_err_errno_fn(const char*, int, const char*);
 #define REPORT_ERR_ERRNO(expr) \
   chk_err_errno_fn(__FILE__, __LINE__, #expr)
 
-#ifdef NOTDEF
-void chpl_topo_init(char *accessiblePUsMask) {
+// Partially initialize the topology layer for use during comm initialization.
+// The remainder of the initialization is done in chpl_topo_post_comm_init
+// after the comm layer has been initialized and we know how many locales
+// are running on this node.
+//
+
+void chpl_topo_pre_comm_init(char *accessiblePUsMask) {
   //
   // accessibleMask is a string in hwloc "bitmap list" format that
   // specifies which processing units should be considered accessible
   // to this locale. It is intended for testing purposes only and
   // should be NULL in production code.
 
-
-#endif
-//
-// Partially initialize the topology layer for use during comm initialization.
-// The remainder of the initialization is done in chpl_topo_post_comm_init
-// after the comm layer has been initialized and we know how many locales
-// are running on this node.
-//
-void chpl_topo_pre_comm_init(void) {
   //
   // We only load hwloc topology information in configurations where
   // the locale model is other than "flat" or the tasking is based on
@@ -483,10 +479,6 @@ static void cpuInfoInit(void) {
     hwloc_bitmap_list_snprintf(buf, sizeof(buf), set);
     _DBG_P("complete cpuset: %s", buf);
 
-    set = hwloc_topology_get_online_cpuset(topology);
-    hwloc_bitmap_list_snprintf(buf, sizeof(buf), set);
-    _DBG_P("online cpuset: %s", buf);
-
     set = hwloc_topology_get_topology_cpuset(topology);
     hwloc_bitmap_list_snprintf(buf, sizeof(buf), set);
     _DBG_P("topology cpuset: %s", buf);
@@ -695,11 +687,9 @@ void chpl_topo_setThreadLocality(c_sublocid_t subloc) {
   flags = HWLOC_CPUBIND_THREAD | HWLOC_CPUBIND_STRICT;
   CHK_ERR_ERRNO(hwloc_set_cpubind(topology, cpuset, flags) == 0);
   if (debug) {
-    char cpubuf[1024];
-    char nodebuf[1024];
-    hwloc_bitmap_list_snprintf(cpubuf, sizeof(cpubuf), cpuset);
-    hwloc_bitmap_list_snprintf(nodebuf, sizeof(nodebuf), getNumaObj(subloc)->allowed_nodeset);
-    _DBG_P("chpl_topo_setThreadLocality(%d): cpuset %s nodeset %s", (int) subloc, cpubuf, nodebuf);
+    char buf[1024];
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), cpuset);
+    _DBG_P("chpl_topo_setThreadLocality(%d): %s", (int) subloc, buf);
   }
   hwloc_bitmap_free(cpuset);
 }
