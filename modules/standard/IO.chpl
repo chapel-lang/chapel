@@ -2480,13 +2480,13 @@ config param useIOSerializers = false;
 private proc defaultSerializeType(param writing : bool) type {
   if !useIOSerializers then return nothing;
   if writing then return defaultSerializer;
-  else return DefaultDeserializer;
+  else return defaultDeserializer;
 }
 
 private proc defaultSerializeVal(param writing : bool) {
   if !useIOSerializers then return none;
   if writing then return new defaultSerializer();
-  else return new DefaultDeserializer();
+  else return new defaultDeserializer();
 }
 
 @chpldoc.nodoc
@@ -2925,7 +2925,7 @@ record defaultSerializer {
   The compiler is expected to generate a default implementation of
   'deserialize' methods and deserializing initializers for records and classes.
 */
-record DefaultDeserializer {
+record defaultDeserializer {
 
   proc ref deserializeType(reader:fileReader, type readType) : readType throws {
     if isNilableClassType(readType) {
@@ -3351,7 +3351,7 @@ record binaryDeserializer {
   // TODO: rewrite in terms of writef, or something
   @chpldoc.nodoc
   proc _oldRead(ch: fileReader(?), ref val:?t) throws {
-    var _def = new DefaultDeserializer();
+    var _def = new defaultDeserializer();
     var dc = ch.withDeserializer(_def);
     var st = dc._styleInternal();
     var orig = st; defer { dc._set_styleInternal(orig); }
@@ -3761,7 +3761,7 @@ proc ref fileWriter.deinit() {
   }
 }
 
-// Convenience for forms like 'r.withDeserializer(DefaultDeserializer)`
+// Convenience for forms like 'r.withDeserializer(defaultDeserializer)`
 @chpldoc.nodoc
 proc fileReader.withDeserializer(type deserializerType) :
   fileReader(this._kind, this.locking, deserializerType) {
