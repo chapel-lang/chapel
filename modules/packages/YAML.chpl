@@ -40,7 +40,7 @@ IO module's serialization/deserialization API. For example:
   var myFile = open("r.yaml", iomode.cwr),
       r1 = new R(1, "hello");
 
-  myFile.writer().withSerializer(new YamlSerializer()).write(r1);
+  myFile.writer().withSerializer(new yamlSerializer()).write(r1);
 
   /* r.yaml:
     --- R!
@@ -49,7 +49,7 @@ IO module's serialization/deserialization API. For example:
     ...
   */
 
-  var r2 = myFile.reader().withDeserializer(new YamlDeserializer()).read(R);
+  var r2 = myFile.reader().withDeserializer(new yamlDeserializer()).read(R);
   assert(r1 == r2);
 
 Yaml files can also be written and parsed directly using the :type:`YamlValue`
@@ -82,16 +82,16 @@ module YAML {
   // Serializer/Deserializer Definitions
   // ----------------------------------------------------
 
-  /* Type Alias for a :record:`~IO.fileWriter` that uses a YamlSerializer */
-  type yamlWriter = fileWriter(serializerType=YamlSerializer, ?);
-  /* Type Alias for a :record:`~IO.fileReader` that uses a YamlDeserializer */
-  type yamlReader = fileReader(deserializerType=YamlDeserializer, ?);
+  /* Type Alias for a :record:`~IO.fileWriter` that uses a yamlSerializer */
+  type yamlWriter = fileWriter(serializerType=yamlSerializer, ?);
+  /* Type Alias for a :record:`~IO.fileReader` that uses a yamlDeserializer */
+  type yamlReader = fileReader(deserializerType=yamlDeserializer, ?);
 
   /*
   A YAML-format serializer for emitting chapel values in Yaml format
   via the IO module's :record:`~IO.fileWriter` interface
 */
-  record YamlSerializer {
+  record yamlSerializer {
     @chpldoc.nodoc
     var emitter: shared LibYamlEmitter;
 
@@ -99,7 +99,7 @@ module YAML {
     var context: shared ContextCounter;
 
     /*
-      Create a new ``YamlSerializer``
+      Create a new ``yamlSerializer``
 
       :arg seqStyle: The style to use for sequences. See :record:`YamlSequenceStyle`.
       :arg mapStyle: The style to use for mappings. See :record:`YamlMappingStyle`.
@@ -197,7 +197,7 @@ module YAML {
     A YAML-format deserializer for parsing Yaml files into Chapel values
     via the IO module's :record:`~IO.fileReader` interface
   */
-  record YamlDeserializer {
+  record yamlDeserializer {
     @chpldoc.nodoc
     var parser: shared LibYamlParser;
 
@@ -207,7 +207,7 @@ module YAML {
     @chpldoc.nodoc
     var strictTypeChecking: bool;
 
-    /* Create a new ``YamlDeserializer``
+    /* Create a new ``yamlDeserializer``
 
       With ``strictTypeChecking`` set to ``true``, the deserializer will
       throw an error if a Yaml value has a type annotation which does
@@ -451,7 +451,7 @@ module YAML {
   // ---- deserializer helpers -------
 
   @chpldoc.nodoc
-  proc YamlDeserializer.YamlParsePrimitive(rawValue: string, type t): t throws {
+  proc yamlDeserializer.YamlParsePrimitive(rawValue: string, type t): t throws {
     if YamlVerbose then writeln("parsing primitive: ", t:string, " from: ", rawValue);
 
     if rawValue.startsWith("!!") {
@@ -488,7 +488,7 @@ module YAML {
   }
 
   @chpldoc.nodoc
-  proc YamlDeserializer.speculativeParseNilableClass(reader: yamlReader, type t): t throws {
+  proc yamlDeserializer.speculativeParseNilableClass(reader: yamlReader, type t): t throws {
     if context.isBase {
       // parse nilable class without context
 
@@ -501,7 +501,7 @@ module YAML {
         return nil;
       } else {
         reader.revert();
-        var r = reader.withDeserializer(new YamlDeserializer(this.parser, this.context, this.strictTypeChecking));
+        var r = reader.withDeserializer(new yamlDeserializer(this.parser, this.context, this.strictTypeChecking));
         return new t(reader=r, deserializer=r.deserializer);
       }
     } else {
@@ -512,7 +512,7 @@ module YAML {
         then return nil;
         else throw new YamlParserError("expected Class or nil value, got scalar: " + maybeNil);
       } catch e: YamlUnexpectedEventError {
-        var r = reader.withDeserializer(new YamlDeserializer(this.parser, this.context, this.strictTypeChecking));
+        var r = reader.withDeserializer(new yamlDeserializer(this.parser, this.context, this.strictTypeChecking));
         return new t(reader=r, deserializer=r.deserializer);
       }
     }
@@ -702,7 +702,7 @@ module YAML {
   }
 
   @chpldoc.nodoc
-  proc YamlDeserializer._speculativeRead(reader: yamlReader, type t) throws {
+  proc yamlDeserializer._speculativeRead(reader: yamlReader, type t) throws {
     try {
       return reader.read(t);
     } catch e: YamlUnexpectedEventError {
@@ -711,7 +711,7 @@ module YAML {
   }
 
   @chpldoc.nodoc
-  proc  YamlDeserializer._getScalar(reader: yamlReader): string throws {
+  proc  yamlDeserializer._getScalar(reader: yamlReader): string throws {
     const (start, end) = this.parser.expectEvent(reader, EventType.Scalar);
     reader.seek((start:int)..);
     return reader.readString((end - start):int);

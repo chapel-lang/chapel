@@ -2479,13 +2479,13 @@ config param useIOSerializers = false;
 
 private proc defaultSerializeType(param writing : bool) type {
   if !useIOSerializers then return nothing;
-  if writing then return DefaultSerializer;
+  if writing then return defaultSerializer;
   else return DefaultDeserializer;
 }
 
 private proc defaultSerializeVal(param writing : bool) {
   if !useIOSerializers then return none;
-  if writing then return new DefaultSerializer();
+  if writing then return new defaultSerializer();
   else return new DefaultDeserializer();
 }
 
@@ -2680,7 +2680,7 @@ proc fileWriter.serializer ref : serializerType {
   The compiler is expected to generate a default implementation of 'serialize'
   methods for records and classes.
 */
-record DefaultSerializer {
+record defaultSerializer {
 
   @chpldoc.nodoc
   proc ref _serializeClassOrPtr(writer:fileWriter, x: ?t) : void throws {
@@ -3154,7 +3154,7 @@ record DefaultDeserializer {
 /*
   An unstructured binary Serializer to be used with ``fileWriter``.
 */
-record BinarySerializer {
+record binarySerializer {
   /*
     'endian' represents the endianness of the binary output produced by this
     Serializer.
@@ -3169,7 +3169,7 @@ record BinarySerializer {
   // types
   @chpldoc.nodoc
   proc _oldWrite(ch: fileWriter(?), const val:?t) throws {
-    var _def = new DefaultSerializer();
+    var _def = new defaultSerializer();
     var dc = ch.withSerializer(_def);
     var st = dc._styleInternal();
     var orig = st; defer { dc._set_styleInternal(orig); }
@@ -3191,7 +3191,7 @@ record BinarySerializer {
     :arg writer: the ``fileWriter`` to which the serialized output will be written.
     :arg val: the value to be serialized.
   */
-  proc ref serializeValue(writer: fileWriter(serializerType=BinarySerializer, locking=false, ?),
+  proc ref serializeValue(writer: fileWriter(serializerType=binarySerializer, locking=false, ?),
                       const val:?t) throws {
     if isNumericType(t) {
       select endian {
@@ -3222,7 +3222,7 @@ record BinarySerializer {
   }
 
   record AggregateSerializer {
-    var writer : fileWriter(false, BinarySerializer);
+    var writer : fileWriter(false, binarySerializer);
 
     proc writeField(name: string, const field: ?T) throws {
       writer.write(field);
@@ -3247,7 +3247,7 @@ record BinarySerializer {
   }
 
   record TupleSerializer {
-    var writer : fileWriter(false, BinarySerializer);
+    var writer : fileWriter(false, binarySerializer);
 
     proc writeElement(const element: ?T) throws {
       writer.write(element);
@@ -3261,7 +3261,7 @@ record BinarySerializer {
   }
 
   record ListSerializer {
-    var writer : fileWriter(false, BinarySerializer);
+    var writer : fileWriter(false, binarySerializer);
 
     proc writeElement(const element: ?) throws {
       writer.write(element);
@@ -3277,7 +3277,7 @@ record BinarySerializer {
 
 
   record ArraySerializer {
-    var writer : fileWriter(false, BinarySerializer);
+    var writer : fileWriter(false, binarySerializer);
     const endian : ioendian;
 
     proc startDim(size: int) throws {
@@ -3308,7 +3308,7 @@ record BinarySerializer {
   }
 
   record MapSerializer {
-    var writer : fileWriter(false, BinarySerializer);
+    var writer : fileWriter(false, binarySerializer);
 
     proc writeKey(const key: ?) throws {
       writer.write(key);
@@ -3782,7 +3782,7 @@ proc fileReader.withDeserializer(in deserializer: ?dt) : fileReader(this._kind, 
   return ret;
 }
 
-// Convenience for forms like 'w.withSerializer(DefaultSerializer)`
+// Convenience for forms like 'w.withSerializer(defaultSerializer)`
 @chpldoc.nodoc
 proc fileWriter.withSerializer(type serializerType) :
   fileWriter(this._kind, this.locking, serializerType) {

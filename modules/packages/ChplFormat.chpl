@@ -18,7 +18,7 @@
  */
 
 /*
- The ChplFormat module provides a ChplSerializer and ChplDeserializer that
+ The ChplFormat module provides a chplSerializer and chplDeserializer that
  aim to read and write data in a format similar to that of Chapel's syntax.
  */
 @unstable("ChplFormat module is considered unstable pending naming changes")
@@ -31,11 +31,11 @@ module ChplFormat {
   // TODO: out of order reading
 
   @chpldoc.nodoc
-  type _writeType = fileWriter(serializerType=ChplSerializer, ?);
+  type _writeType = fileWriter(serializerType=chplSerializer, ?);
   @chpldoc.nodoc
-  type _readerType = fileReader(deserializerType=ChplDeserializer, ?);
+  type _readerType = fileReader(deserializerType=chplDeserializer, ?);
 
-  record ChplSerializer {
+  record chplSerializer {
 
     // TODO: rewrite in terms of writef, or something
     @chpldoc.nodoc
@@ -67,7 +67,7 @@ module ChplFormat {
         }
       } else {
         if isArray(val) && val.rank > 1 then
-          throw new IllegalArgumentError("ChplSerializer does not support multidimensional arrays");
+          throw new IllegalArgumentError("chplSerializer does not support multidimensional arrays");
         val.serialize(writer=writer, serializer=this);
       }
     }
@@ -230,7 +230,7 @@ module ChplFormat {
     }
   }
 
-  record ChplDeserializer {
+  record chplDeserializer {
 
     // TODO: rewrite in terms of writef, or something
     @chpldoc.nodoc
@@ -268,7 +268,7 @@ module ChplFormat {
       } else if canResolveTypeMethod(readType, "deserializeFrom", reader, this) ||
                 isArrayType(readType) {
         if isArrayType(readType) && chpl__domainFromArrayRuntimeType(readType).rank > 1 then
-          throw new IllegalArgumentError("ChplSerializer does not support multidimensional arrays");
+          throw new IllegalArgumentError("chplSerializer does not support multidimensional arrays");
         return readType.deserializeFrom(reader=reader, deserializer=this);
       } else {
         return new readType(reader=reader, deserializer=this);
@@ -278,7 +278,7 @@ module ChplFormat {
     proc ref deserializeValue(reader: _readerType, ref val: ?readType) : void throws {
       if canResolveMethod(val, "deserialize", reader, this) {
         if isArrayType(readType) && val.rank > 1 then
-          throw new IllegalArgumentError("ChplSerializer does not support multidimensional arrays");
+          throw new IllegalArgumentError("chplSerializer does not support multidimensional arrays");
         val.deserialize(reader=reader, deserializer=this);
       } else {
         val = deserializeType(reader, readType);

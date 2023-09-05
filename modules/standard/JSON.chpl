@@ -18,7 +18,7 @@
  */
 
 /*
- The Json module provides a ``JsonSerializer`` and ``JsonDeserializer`` that
+ The Json module provides a ``jsonSerializer`` and ``jsonDeserializer`` that
  allow for reading and writing data in the JSON format.
  */
 module JSON {
@@ -27,10 +27,10 @@ module JSON {
   private use Map;
   private use List;
 
-  /* Type Alias for an :record:`IO.fileWriter` that uses a :record:`JsonSerializer` */
-  type jsonWriter = fileWriter(serializerType=JsonSerializer, ?);
-  /* Type Alias for an :record:`IO.fileReader` that uses a :record:`JsonDeserializer` */
-  type jsonReader = fileReader(deserializerType=JsonDeserializer, ?);
+  /* Type Alias for an :record:`IO.fileWriter` that uses a :record:`jsonSerializer` */
+  type jsonWriter = fileWriter(serializerType=jsonSerializer, ?);
+  /* Type Alias for an :record:`IO.fileReader` that uses a :record:`jsonDeserializer` */
+  type jsonReader = fileReader(deserializerType=jsonDeserializer, ?);
 
   /*
     A JSON format serializer to be used by :record:`~IO.fileWriter`.
@@ -45,7 +45,7 @@ module JSON {
     See the :record:`~IO.DefaultSerializer` for more information about
     serializers in general.
   */
-  record JsonSerializer {
+  record jsonSerializer {
     // TODO: rewrite in terms of writef, or something
     @chpldoc.nodoc
     proc _oldWrite(ch: jsonWriter, const val:?t) throws {
@@ -287,7 +287,7 @@ module JSON {
           // it as a proper key for the map.
           var f = openMemFile();
           {
-            f.writer().withSerializer(JsonSerializer).write(key);
+            f.writer().withSerializer(jsonSerializer).write(key);
           }
           var tmp : string;
           f.reader().readAll(tmp);
@@ -371,7 +371,7 @@ module JSON {
     See the :record:`~IO.DefaultDeserializer` for more information about
     deserializers in general.
 */
-  record JsonDeserializer {
+  record jsonDeserializer {
 
     // Keep track of information gained from reading ahead
 
@@ -657,7 +657,7 @@ module JSON {
           {
             f.writer().withSerializer(DefaultSerializer).write(s);
           }
-          return f.reader().withDeserializer(JsonDeserializer).read(keyType);
+          return f.reader().withDeserializer(jsonDeserializer).read(keyType);
         }
       }
 
