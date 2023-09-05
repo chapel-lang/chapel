@@ -2887,6 +2887,8 @@ record defaultSerializer {
   // that such types should just be printed inside a string for compatibility?
 }
 
+@deprecated(notes="'DefaultSerializer' is deprecated; please use 'defaultSerializer' instead")
+type DefaultSerializer = defaultSerializer;
 
 /*
   The default deserializer used by ``fileReader``.
@@ -3151,6 +3153,9 @@ record defaultDeserializer {
   }
 }
 
+@deprecated(notes="'DefaultDeserializer' is deprecated; please use 'defaultDeserializer' instead")
+type DefaultDeserializer = defaultDeserializer;
+
 /*
   An unstructured binary Serializer to be used with ``fileWriter``.
 */
@@ -3327,6 +3332,9 @@ record binarySerializer {
     return new MapSerializer(writer);
   }
 }
+
+@deprecated(notes="'BinarySerializer' is deprecated; please use 'binarySerializer' instead")
+type BinarySerializer = binarySerializer;
 
 /*
   An unstructured binary Deserializer to be used with ``fileReader``.
@@ -3575,6 +3583,9 @@ record binaryDeserializer {
     return new MapDeserializer(reader, reader.read(uint));
   }
 }
+
+@deprecated(notes="'BinaryDeserializer' is deprecated; please use 'binaryDeserializer' instead")
+type BinaryDeserializer = binaryDeserializer;
 
 @chpldoc.nodoc
 operator fileReader.=(ref lhs:fileReader, rhs:fileReader) {
