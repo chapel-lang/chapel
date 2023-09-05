@@ -145,12 +145,12 @@ proc rank(iteration: int) {
     }
     keyBuff1 = 0;
     // keyBuff1(keyBuff2) += 1;
-    forall k in keyBuff2 with (ref keyBuff1) do keyBuff1(k) += 1;
+    forall k in keyBuff2 with (+ reduce keyBuff1) do keyBuff1(k) += 1;
     keyBuff1 = + scan keyBuff1;
   } else {
     keyBuff1 = 0;
     // keyBuff1(keyArray) += 1;
-    forall k in keyArray with (ref keyBuff1) do keyBuff1(k) += 1;
+    forall k in keyArray with (+ reduce keyBuff1) do keyBuff1(k) += 1;
     keyBuff1 = + scan keyBuff1;
   }
   partialVerification(iteration);
