@@ -7,7 +7,7 @@ use List, IO, JSON;
   mylist.pushBack(2);
   mylist.pushBack(3);
 
-  stdout.withSerializer(JsonSerializer).writef("testing json write: %?\n", mylist);
+  stdout.withSerializer(jsonSerializer).writef("testing json write: %?\n", mylist);
 }
 
 var f = openTempFile();
@@ -20,7 +20,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer());
 
   var mylist:list(int);
 
@@ -41,7 +41,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer());
 
   var mylist:list(int);
 
@@ -63,7 +63,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer());
 
   var mylist:list(int);
 
@@ -84,7 +84,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer());
 
   var mylist:list(int);
 
@@ -105,7 +105,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer());
 
   var mylist:list(int);
 

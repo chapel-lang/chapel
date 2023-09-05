@@ -13,7 +13,7 @@ proc test(m: map) {
 
   // TODO: reading maps in default format is not supported, at least not
   // when the key or value type is a string.
-  if FormatReader.type == DefaultDeserializer &&
+  if FormatReader.type == defaultDeserializer &&
      (m.keyType == string || m.valType == string) then return;
 
   var f = openMemFile();

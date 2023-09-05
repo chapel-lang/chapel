@@ -49,10 +49,9 @@ proc main()
     }
 
   var f = new file(1);
-  var w = f.writer(serializer=new BinarySerializer(), locking=false);
+  var w = f.writer(serializer=new binarySerializer(), locking=false);
   w.writef("P4\n%i %i\n", size, size);
 
   
   w.write(byteArr);
 }
-

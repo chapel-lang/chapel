@@ -26,7 +26,7 @@ proc test(val, type T = val.type) {
     {
       var readVal = f.reader().withDeserializer(FormatReader).read(T);
       writeln("--- read: ---");
-      stdout.withSerializer(DefaultSerializer).writeln(readVal);
+      stdout.withSerializer(defaultSerializer).writeln(readVal);
       writeln("-------------");
 
       var compare = if isNilableClassType(val.type) then

@@ -16,7 +16,7 @@ writeln("Done writing");
 
 {
   // Read data (FILE MUST BE 8 MB)
-  var myfile = open(fname, ioMode.r).reader(deserializer=new BinaryDeserializer());
+  var myfile = open(fname, ioMode.r).reader(deserializer=new binaryDeserializer());
   var sum:uint = 0;
 
   for i in 0..#n
