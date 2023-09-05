@@ -251,7 +251,7 @@ module YAML {
           const value = reader.readTo(" ");
           return parseYamlBool(value);
         } else{
-          var default = reader.withDeserializer(new DefaultDeserializer());
+          var default = reader.withDeserializer(new defaultDeserializer());
           return default.read(t);
         }
       } else if _isIoPrimitiveType(t) {

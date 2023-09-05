@@ -634,7 +634,7 @@ module Map {
 
     @chpldoc.nodoc
     proc ref _readHelper(r: fileReader, ref deserializer) throws {
-      if deserializer.type == DefaultDeserializer &&
+      if deserializer.type == defaultDeserializer &&
          (keyType == string || valType == string ||
           keyType == bytes || valType == bytes) then
         compilerError("Default IO format for 'map' does not support reading when the key or value type is  'string' or 'bytes'.");
