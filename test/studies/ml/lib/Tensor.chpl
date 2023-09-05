@@ -447,6 +447,17 @@ module Tensor {
         return t;
     }
 
+    // Compute the outer product of two vectors. 
+    proc outer(a: Tensor(1), b: Tensor(1)): Tensor(2) {
+        const (m,) = a.shape;
+        const (n,) = b.shape;
+        var c = new Tensor({0..#m, 0..#n});
+        forall (i,j) in c.domain with (ref c) {
+            c[i,j] = a[i] * b[j];
+        }
+        return c;
+    }
+
     proc transposeMultiply(M: Tensor(2), v: Tensor(1)) {
         const (m,n) = M.shape;
         const (p,) = v.shape;

@@ -91,10 +91,9 @@ module Chai {
         }
 
         proc ref backward(delta: Tensor(1), input: Tensor(1)): Tensor(1) {
-            const newDelta = tn.transposeMultiply(weights,delta);// weights.transpose() * delta;
-            biasGrad    += newDelta;
-            weightsGrad += newDelta * input.transpose();
-            return newDelta;
+            weightsGrad += tn.outer(delta,input);
+            biasGrad += delta;
+            return tn.transposeMultiply(weights,delta);
         }
 
         proc ref backwardBatch(deltas: [] Tensor(1), inputs: [] Tensor(1)): [] Tensor(1) {
@@ -107,11 +106,9 @@ module Chai {
             const weightsT = weights.transpose();
 
             forall (delta,input,i) in zip(deltas,inputs,0..) with (ref this, + reduce biasGradient, + reduce weightsGradient) {
-                const newDelta = weightsT * delta;
+                weightsGradient += tn.outer(delta,input).data;
                 biasGradient += delta.data;
-                const wg = delta * input.transpose();
-                weightsGradient += wg.data;
-                newDeltas[i] = newDelta;
+                newDeltas[i] = tn.transposeMultiply(weights,delta);
             }
             this.biasGrad.data += biasGradient;
             this.weightsGrad.data += weightsGradient;
