@@ -1,0 +1,6 @@
+unstableErfc.chpl:6: warning: 'erfc' is unstable and may be renamed or moved to a different module in the future
+unstableErfc.chpl:8: warning: 'erfc' is unstable and may be renamed or moved to a different module in the future
+a = -100.0
+erfc(a) = 2.0
+b = -0.05
+erfc(b) = 1.05637
