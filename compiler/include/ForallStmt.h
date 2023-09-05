@@ -241,4 +241,7 @@ void fsCheckNumIdxVarsVsIterables(ForallStmt* fs, int numIdx, int numIter);
 
 /// done ///
 
+// used to deprecate ref-maybe-const forall intents
+extern std::map<ForallStmt*, std::set<Symbol*>> refMaybeConstForallPairs;
+
 #endif

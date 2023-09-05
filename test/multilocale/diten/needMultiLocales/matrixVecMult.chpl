@@ -19,7 +19,7 @@ proc initIt(X) { /* ... */ }
 initIt(matrix);
 initIt(vec);
 
-forall i in DistColumnDom {
+forall i in DistColumnDom with (ref resultVec) {
   var result = 0.0;
   var localVec = vec; // Copy the input vector to the current locale
   for j in RowDom {

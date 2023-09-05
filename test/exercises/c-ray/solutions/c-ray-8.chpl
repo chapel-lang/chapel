@@ -175,7 +175,7 @@ proc main() {
   // random numbers.  This avoids communication back to locale #0
   // (where they were allocated) to access them from other locales.
   //
-  forall (y, x) in pixelPlane with (in scene, in rands) {
+  forall (y, x) in pixelPlane with (in scene, in rands, ref pixels) {
     pixels[y, x] = computePixel(y, x, scene, rands);
   }
 

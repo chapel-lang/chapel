@@ -172,13 +172,13 @@ proc dfft(ref A: [?ADom], W, phase) {
     // problem size is a power of 4
     //
     if (str*radix == numElements) then
-      forall lo in 0..#str do
+      forall lo in 0..#str with (ref A) do
         butterfly(1.0, 1.0, 1.0, A, lo.. by str #radix);
     //
     // ...otherwise using a simple radix-2 butterfly scheme
     //
     else
-      forall lo in 0..#str {
+      forall lo in 0..#str with (ref A) {
         const a = A(lo),
               b = A(lo+str);
         A(lo)     = a + b;
@@ -279,7 +279,7 @@ proc computeTwiddles(ref Twiddles) {
   Twiddles(0) = 1.0;
   Twiddles(numTwdls/2) = let x = cos(delta * numTwdls/2)
                           in (x, x): elemType;
-  forall i in 1..numTwdls/2-1 {
+  forall i in 1..numTwdls/2-1 with (ref Twiddles) {
     const x = cos(delta*i),
           y = sin(delta*i);
     Twiddles(i)            = (x, y): elemType;

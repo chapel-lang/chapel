@@ -49,7 +49,7 @@ proc main(){
   // initialize space with values
   var generator = new RandomStream( real, globalSeed, parSafe = false );
 
-  forall (x,y) in computationDomain do{
+  forall (x,y) in computationDomain with (ref space) do{
      space[0, x, y] = 0;
      space[1, x, y] = 0;
   }
@@ -69,7 +69,7 @@ proc main(){
   for t in computationTimeRange {
       //forall (x,y) in dynamic(computationDomain,chunkSize=1) do
       //forall (x,y) in computationDomain do
-      forall x in dynamic(rows,1) {
+      forall x in dynamic(rows,1) with (ref space) {
         for y in cols do
           space[write, x, y] = (space[read, x, y-1] + space[read, x-1, y] +
                                 space[read, x, y+1] + space[read, x+1, y] +
@@ -101,7 +101,7 @@ proc verifyResult(ref space: [] Cell, computationalDomain: domain(2),
 
   var spaceEndState: [computationalDomain] Cell;
 
-  forall (x, y) in computationalDomain do
+  forall (x, y) in computationalDomain with (ref spaceEndState) do
      spaceEndState[ x, y ] = space[ T & 1, x, y ];
 
   var generator = new RandomStream( real, globalSeed, parSafe = false );

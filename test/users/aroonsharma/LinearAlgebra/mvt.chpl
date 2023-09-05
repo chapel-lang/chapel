@@ -23,7 +23,7 @@ config var Dim: int = 64;
 /* Initializes a matrix based on a distribution */
 proc initialize_matrix(distribution, dim: int) {
     var matrix: [distribution] real = 0.0;
-    forall (i,j) in distribution {
+    forall (i,j) in distribution with (ref matrix) {
         matrix[i,j] = ((i - 1.00) * (j - 1.00)) / dim;
     }
     return matrix;
@@ -103,7 +103,7 @@ proc kernel_mvt(dist, dim: int) {
     for i in 1..dim {
         var x1_temp: [dist(1, ..)] real = 0.0;
         var x2_temp: [dist(1, ..)] real = 0.0;
-        forall (a, b, c, d, e) in zip(A[i, 1..dim], A[1..dim, i], y1, y2, 1..dim) {
+        forall (a, b, c, d, e) in zip(A[i, 1..dim], A[1..dim, i], y1, y2, 1..dim) with (ref x1_temp, ref x2_temp) {
             x1_temp[e] = a * c;
             x2_temp[e] = b * d;
         }
@@ -141,7 +141,7 @@ proc kernel_mvt(dist, dim: int) {
       for i in 1..dim {
           var x1_tempTest: [{1..dim}] real = 0.0;
           var x2_tempTest: [{1..dim}] real = 0.0;
-          forall (a, b, c, d, e) in zip(ATest[i, 1..dim], ATest[1..dim, i], y1Test, y2Test, 1..dim) {
+          forall (a, b, c, d, e) in zip(ATest[i, 1..dim], ATest[1..dim, i], y1Test, y2Test, 1..dim) with (ref x1_tempTest, ref x2_tempTest) {
               x1_tempTest[e] = a * c;
               x2_tempTest[e] = b * d;
           }

@@ -15,7 +15,7 @@ B = 1;
 C = 2;
 
 forall i in returnDom() {
-  A[i] = 
+  A[i] =
     B[i] + 
     C[i];
 }

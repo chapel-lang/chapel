@@ -9,13 +9,13 @@ var B: [D] int;
 
 proc localQueriedDomain(ref a: [?d] int, b: [d] int){
   forall (i, loopIdx) in zip(a.domain, 1..) {
-    a[i] += 
+    a[i] +=
       b[i] * loopIdx;
   }
   writeln(a);
 
   forall (i, loopIdx) in zip(b.domain, 1..) {
-    a[i] += 
+    a[i] +=
       b[i] * loopIdx;
   }
   writeln(a);

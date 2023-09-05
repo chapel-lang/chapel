@@ -5,7 +5,7 @@ proc readArrayCheckpoint(filename: string, A:[] ?t, nTasks: int = dataParTasksPe
   var offsetDom = targetLocs.domain;
   var offsetArr: [offsetDom] int;
 
-  forall idx in targetLocs.domain {
+  forall idx in targetLocs.domain with (ref offsetArr) {
     offsetArr[idx] = + reduce A.localSubdomains(targetLocs(idx)).size;
   }
 
@@ -31,7 +31,7 @@ proc checkpointArray(filename: string, A:[] ?t, nTasks: int = dataParTasksPerLoc
   var offsetDom = targetLocs.domain;
   var offsetArr: [offsetDom] int;
 
-  forall idx in targetLocs.domain {
+  forall idx in targetLocs.domain with (ref offsetArr) {
     offsetArr[idx] = + reduce A.localSubdomains(targetLocs(idx)).size;
   }
 

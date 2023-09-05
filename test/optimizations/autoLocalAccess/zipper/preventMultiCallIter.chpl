@@ -33,8 +33,8 @@ B = 1;
 C = 2;
 
 forall (i, j) in zip(myIter(), 2..) {
-  A[i] = 
-    B[i] + 
+  A[i] =
+    B[i] +
     C[i] + j;
 }
 

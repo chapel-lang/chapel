@@ -24,7 +24,7 @@ proc callout(out x) {
 
 proc callinout(inout x) {
   writeln("in callinout, x is: ", x);
-  forall i in D {
+  forall i in D with (ref x) {
     x(i) += 1.0;
   }
   writeln("re-assigned to be: ", x);
@@ -33,7 +33,7 @@ proc callinout(inout x) {
 
 proc main() {
 
-  forall i in D {
+  forall i in D with (ref A) {
     A(i) = i;
   }
 

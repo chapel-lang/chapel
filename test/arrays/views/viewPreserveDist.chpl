@@ -14,7 +14,7 @@ foo(A1.reindex(0..15 by 2));
 
 proc foo(ref X: [?D] real) {
   writeln("D is: ", D);
-  forall i in D do
+  forall i in D with (ref X) do
     X[i] = here.id / 10.0;
   writeln("X is: ", X);
   var Y: [D] real;

@@ -15,7 +15,7 @@ proc truncate(x) {
 proc transpose(A: [] real) where A.rank == 2 {
     var B : [A.domain] real;
 
-    forall (i, j) in A.domain do
+    forall (i, j) in A.domain with (ref B) do
         B[i, j] = A[j, i];
 
     return B;
@@ -23,7 +23,7 @@ proc transpose(A: [] real) where A.rank == 2 {
 
 // Copy matrix B's transpose into matrix A
 proc transposeCopy(A: [] real, B: [] real) where A.rank == 2 && B.rank == 2 {
-    forall (i, j) in A.domain do
+    forall (i, j) in A.domain with (ref A) do
         A[i, j] = B[j, i];
 }
 

@@ -127,7 +127,7 @@ proc initGreekVars(ref lxim, ref lxip, ref letam, ref letap, ref lzetam, ref lze
     for (xm,xp,em,ep,zm,zp) in zip(lxim, lxip, letam, letap, lzetam, lzetap) do
       reader.read(xm,xp,em,ep,zm,zp);
   } else {
-    forall num in lxim.domain {
+    forall num in lxim.domain with (ref letam, ref letap, ref lxip, ref lzetam, ref lzetap, ref lxim) {
       const (i,j,k) = elemIdx1DTo3D(num);
       
       lxim[num] = if (k == 0) 

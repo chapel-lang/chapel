@@ -44,17 +44,17 @@ proc main() {
 
   select mode {
     when Mode.ordered {
-      forall i in D2 do
+      forall i in D2 with (ref tmp) do
         tmp[i] = A[rindex[i]];
     }
     when Mode.unordered {
       use UnorderedCopy;
-      forall i in D2 do
+      forall i in D2 with (ref tmp) do
         unorderedCopy(tmp[i], A[rindex[i]]);
     }
     when Mode.aggregated {
       use CopyAggregation;
-      forall i in D2 with (var agg = new SrcAggregator(int)) do
+      forall i in D2 with (var agg = new SrcAggregator(int), ref tmp) do
         agg.copy(tmp[i], A[rindex[i]]);
     }
   }

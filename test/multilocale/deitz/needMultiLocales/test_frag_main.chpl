@@ -43,8 +43,8 @@ class list {
 use PrivateDist;
 
 var buffer: [PrivateSpace] [0..numLocales-1] owned list?;
-forall p in PrivateSpace do
-  forall l in LocaleSpace do
+forall p in PrivateSpace with (ref buffer) do
+  forall l in LocaleSpace with (ref buffer) do
     buffer[p][l] = new list();
 
 proc chpl_send_int(data: int, loc) {

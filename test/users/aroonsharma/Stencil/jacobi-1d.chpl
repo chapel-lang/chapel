@@ -33,7 +33,7 @@ config var dist: string = "B";
 /* Initializes a 1D structure */
 proc initialize_1D(distribution, adder: int, divider: int) {
     var array: [distribution] real = 0.0;
-    forall i in distribution {
+    forall i in distribution with (ref array) {
         array[i] = (i - 1.0 + adder) / divider;
     }
     return array;

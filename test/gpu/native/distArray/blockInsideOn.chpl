@@ -10,7 +10,7 @@ on here.gpus[0] {
   var dom = space dmapped Block(space, targetLocales=[here,]);
   var arr: [dom] int;
 
-  forall i in dom do
+  forall i in dom with (ref arr) do
     arr[i] = 1;
 
   /* The following does not work yet:

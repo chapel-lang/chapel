@@ -31,7 +31,7 @@ proc main(){
   writeln();
   var iter_count = 0;
   do {
-    [ij in life_domain] {
+    [ij in life_domain with (ref tmp)] {
       var neighbors: int;
 
       neighbors = life(ij+north) + life(ij+east)  + 
@@ -50,7 +50,7 @@ proc main(){
         else
           tmp(ij) = 0; // cell is not born
     }
-    [ij in life_domain] life(ij) = tmp(ij);
+    [ij in life_domain with (ref life)] life(ij) = tmp(ij);
     writeln(life);
     writeln();
     iter_count += 1;

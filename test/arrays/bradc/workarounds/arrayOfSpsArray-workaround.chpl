@@ -44,9 +44,9 @@ var A: [BigDom] real,
     B: [ProbDom] real,
     W: [ProbDom] sps33;
 
-forall (i,j) in ProbDom {
+forall (i,j) in ProbDom with (ref A, ref W) {
   A(i,j) = (i-1)*n + j;
-  forall (x,y) in SpsStencDom() {
+  forall (x,y) in SpsStencDom() with (ref W) {
     W(i,j)(x,y) = 1.0;
   }
 }
@@ -55,7 +55,7 @@ forall (i,j) in ProbDom {
 writeln("A is:\n", A, "\n");
 
 
-forall ij in ProbDom do
+forall ij in ProbDom with (ref B) do
   B(ij) = (+ reduce [off in SpsStencDom()] W(ij)(off)*A(ij+off)) / 6;
 
 writeln("B is:\n", B, "\n");

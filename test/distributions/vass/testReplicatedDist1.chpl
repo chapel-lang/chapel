@@ -104,7 +104,7 @@ on teston {
   // in a forall
   start("forall ix in DsubLoc do ARepl[ix] = A[ix];");
   reset();
-  forall ix in DsubLoc do ARepl[ix] = A[ix];
+  forall ix in DsubLoc with (ref ARepl) do ARepl[ix] = A[ix];
   show();
 
   // --- iterate over Dsub => each locale's replicant is visited
@@ -112,7 +112,7 @@ on teston {
   // in a forall
   start("forall ix in Dsub do ARepl[ix] = A[ix];");
   reset();
-  forall ix in Dsub do ARepl[ix] = A[ix];
+  forall ix in Dsub with (ref ARepl) do ARepl[ix] = A[ix];
   show();
 
   // in a for
