@@ -462,17 +462,14 @@ void chpl_gpu_impl_destroy_stream(void* stream) {
 }
 
 void chpl_gpu_impl_stream_synchronize(void* stream) {
- 	CUresult res = cuStreamQuery(stream);
-	int dev = chpl_task_getRequestedSubloc();
-	if (res == CUDA_ERROR_NOT_INITIALIZED) {
-		return;
-	}
-	else if (res == CUDA_SUCCESS) {
-		//printf("stream ready\n");
-	}
-	//printf("synchronizing %p (subloc %d)\n", stream, dev);
+  // we call CUDA_CALL later on; CUDA_ERROR_NOT_INITIALIZED should be allowed.
+  CUresult res = cuStreamQuery(stream);
+  if (res == CUDA_ERROR_NOT_INITIALIZED) {
+    return;
+  }
+  CUDA_CALL(res);
+
   CUDA_CALL(cuStreamSynchronize(stream));
-	//printf("synchronized %p (subloc %d)\n", stream, dev);
 }
 
 #endif // HAS_GPU_LOCALE
