@@ -1,3 +1,4 @@
+warning in unstableSymbols.doc.chpl:2: an implicit module named 'unstableSymbols.doc' is being introduced to contain file-scope code
 .. default-domain:: chpl
 
 .. module:: unstableSymbols.doc
@@ -16,6 +17,14 @@ or
 .. code-block:: chapel
 
    import unstableSymbols.doc;
+
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   unstableSymbols.doc/*
 
 .. data:: var a: int
 
