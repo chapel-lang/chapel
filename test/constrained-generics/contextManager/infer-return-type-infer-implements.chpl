@@ -1,7 +1,6 @@
 record R {
-  proc enterContext() ref {
+  proc enterContext() {
     writeln("entering");
-    return none;
   }
 
   proc exitContext(in err: owned Error?) {

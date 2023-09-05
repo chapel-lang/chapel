@@ -1,7 +1,6 @@
 record R : contextManager {
   proc enterContext() {
     writeln("entering");
-    return none;
   }
 
   proc exitContext(in err: owned Error?) {

@@ -1852,7 +1852,6 @@ module ChapelBase {
         taskInfo = chpl_task_getInfoChapel();
         prevDiagsDisabledVal = chpl_task_data_setCommDiagsTemporarilyDisabled(taskInfo, true);
       }
-      return none;
     }
 
     inline proc exitContext(in unused: owned Error?) {
