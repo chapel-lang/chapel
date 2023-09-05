@@ -11294,11 +11294,6 @@ static void checkSpeciallyNamedMethods() {
 
   SpecialMethodMap flagged;
 
-  // TODO: for now, this will simply not warn for classes, because all classes
-  // implement hashable, and because overriding hash should be allowed. When
-  // other special methods are converted, this logic will need to be updated
-  // to handle them.
-
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
     if (!fn->isMethod()) continue;
     if (fn->isCompilerGenerated() || fn->hasFlag(FLAG_FIELD_ACCESSOR)) continue;
