@@ -526,6 +526,7 @@ static void partitionResources(void) {
         if (rank != -1) {
           // Use the socket whose logical index corresponds to our local rank.
           // See getSocketNumber below if you change this.
+          _DBG_P("confining ourself to socket %d", rank);
           socket = hwloc_get_obj_inside_cpuset_by_type(topology,
                                     root->cpuset, HWLOC_OBJ_PACKAGE, rank);
           CHK_ERR(socket != NULL);
