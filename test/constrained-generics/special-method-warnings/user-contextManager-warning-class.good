@@ -1,0 +1,4 @@
+user-contextManager-warning-class.chpl:1: warning: the type 'C' defines methods that previously had special meaning. These will soon require 'C' to implement the 'contextManager' interface to continue to be treated specially.
+user-contextManager-warning-class.chpl:4: note: formerly-special function 'enterContext' defined here
+user-contextManager-warning-class.chpl:7: note: formerly-special function 'exitContext' defined here
+{x = 0}
