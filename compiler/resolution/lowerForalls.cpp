@@ -887,8 +887,9 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* callToTFn, FnSymbol* taskF
   if (addErrorArgToCall)
     addDummyErrorArgumentToCall(callToTFn);
 
+  // If we don't flatten it right away, we get non-global taskFns
+  // in expandTaskFn(). That may cause issues with scoping.
   flattenNestedFunction(cloneTaskFn);
-
 }
 
 /////////// expandForall ///////////
