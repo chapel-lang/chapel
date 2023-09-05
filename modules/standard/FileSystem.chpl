@@ -1455,7 +1455,17 @@ proc locale.umask(mask: int): int where (CHPL_LOCALE_MODEL == "flat") {
 @chpldoc.nodoc
 @unstable("'umask' is unstable on locale models other than 'flat'")
 proc locale.umask(mask: int): int where (CHPL_LOCALE_MODEL != "flat") {
-  return this.umask(mask);
+  import OS.POSIX.mode_t;
+  extern proc chpl_fs_umask(mask: mode_t): mode_t;
+  extern proc chpl_int_to_mode(mode: c_int): mode_t;
+  extern proc chpl_mode_to_int(mode: mode_t): c_int;
+
+  var result: int;
+  on this {
+    var callRes = chpl_fs_umask(chpl_int_to_mode(mask.safeCast(c_int)));
+    result = chpl_mode_to_int(callRes);
+  }
+  return result.safeCast(int);
 }
 
 @deprecated(notes="walkdirs is deprecated; please use walkDirs instead")
