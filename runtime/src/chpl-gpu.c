@@ -42,6 +42,7 @@ bool chpl_gpu_always_sync_kernels = false;
 
 static bool async_supported = false; // a safer default
 
+// if any of the devices do not support async streams; bail
 static bool get_async_supported(void) {
   int i;
   for (i=0; i<chpl_gpu_num_devices; i++) {
