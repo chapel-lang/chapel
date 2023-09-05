@@ -69,3 +69,49 @@ or
 
       h is unstable, don't use it
 
+.. default-domain:: chpl
+
+.. module:: UnstableMod1
+
+UnstableMod1
+============
+**Usage**
+
+.. code-block:: chapel
+
+   use unstableSymbols.doc.UnstableMod1;
+
+
+or
+
+.. code-block:: chapel
+
+   import unstableSymbols.doc.UnstableMod1;
+
+.. warning::
+
+   UnstableMod1 is unstable
+
+.. default-domain:: chpl
+
+.. module:: UnstableMod2
+
+UnstableMod2
+============
+**Usage**
+
+.. code-block:: chapel
+
+   use unstableSymbols.doc.UnstableMod2;
+
+
+or
+
+.. code-block:: chapel
+
+   import unstableSymbols.doc.UnstableMod2;
+
+.. warning::
+
+   This module is unstable
+
