@@ -978,10 +978,11 @@ context managers. The syntax of the manage statement is given by
     expression
 
 Classes or records that wish to be used as context managers must implement
-the ``contextManager`` interface. This is done by definings two special methods,
-and by adjusting the declaration of the class or record to say that it implements
-``contextManager``. The code sample below declares a context manager record
-type named ``IntWrapper`` and then uses it in a manage statement.
+the ``contextManager`` interface. This is done by defining the methods
+``enterContext`` and ``exitContext``, and by adjusting the declaration of the
+class or record to say that it implements ``contextManager``. The code sample
+below declares a context manager record ``IntWrapper`` and then uses it in a
+manage statement.
 
    *Example (manage1.chpl)*.
 
