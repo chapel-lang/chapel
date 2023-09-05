@@ -499,25 +499,25 @@ module Math {
     return chpl_erfc(x);
   }
 
-  /* Returns the value of the Napierian `e` raised to the power of the
+  /* Returns the value of the Napierian :param:`e` raised to the power of the
      argument `x`. */
   inline proc exp(x: real(64)): real(64) {
     return chpl_exp(x);
   }
 
-  /* Returns the value of the Napierian `e` raised to the power of the
+  /* Returns the value of the Napierian :param:`e` raised to the power of the
      argument `x`. */
   inline proc exp(x : real(32)): real(32) {
     return chpl_exp(x);
   }
 
-  /* Returns the value of the Napierian `e` raised to the power of the
+  /* Returns the value of the Napierian :param:`e` raised to the power of the
      argument `x`. */
   inline proc exp(x: complex(64)): complex(64) {
     return chpl_exp(x);
   }
 
-  /* Returns the value of the Napierian `e` raised to the power of the
+  /* Returns the value of the Napierian :param:`e` raised to the power of the
      argument `x`. */
   inline proc exp(x: complex(128)): complex(128) {
     return chpl_exp(x);
@@ -533,14 +533,13 @@ module Math {
     return chpl_exp2(x);
   }
 
-  /* Returns one less than the value of the Napierian `e` raised to the power
-     of the argument `x`. */
+  /* Returns one less than the value of the Napierian :param:`e` raised to the
+     power of the argument `x`. */
   inline proc expm1(x: real(64)): real(64) {
-    return chpl_expm1(x);
-  }
+     return chpl_expm1(x); }
 
-  /* Returns one less than the value of the Napierian `e` raised to the power
-     of the argument `x`. */
+  /* Returns one less than the value of the Napierian :param:`e` raised to the
+     power of the argument `x`. */
   inline proc expm1(x : real(32)): real(32) {
     return chpl_expm1(x);
   }
