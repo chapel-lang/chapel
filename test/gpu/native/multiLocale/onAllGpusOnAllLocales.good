@@ -2,5 +2,5 @@ warning: The prototype GPU support implies --no-checks. This may impact debuggab
 here.gpus.size > 1:  true
 numLaunches.size == Locales.size: true
 numLaunches[0] == numLaunches[1] + 2:  true
-numLaunches[1] == here.gpus.size + 1:  true
+numLaunches[1] == here.gpus.size*2:  true
 numLaunches[i] == numLaunches[i+1] for all i > 0?:  true
