@@ -244,7 +244,7 @@ void check_cullOverReferences()
     INT_FATAL("ContextCallExpr should no longer be in AST");
   }
 
-  // for all CallExprs, if we call a promotion wrapper that is disabled, warn
+  // for all CallExprs, if we call a promotion wrapper that is marked no promotion, warn
   for_alive_in_Vec(CallExpr, ce, gCallExprs) {
     if (FnSymbol* fn = ce->theFnSymbol()) {
       if (fn->hasFlag(FLAG_PROMOTION_WRAPPER) &&
@@ -270,8 +270,6 @@ void check_cullOverReferences()
             }
           }
         }
-
-
       }
     }
   }
