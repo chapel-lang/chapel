@@ -85,9 +85,6 @@ module ChapelGpuSupport {
     extern const chpl_nodeID: int(32);
     const dst_node = chpl_nodeID;
 
-    extern proc printf(s...);
-    printf("DOING ON+PUT\n");
-
     on __primitive("chpl_on_locale_num",
                    chpl_buildLocaleID(src_node, src_subloc)) {
 
@@ -110,9 +107,6 @@ module ChapelGpuSupport {
     // initiate a GET from there.
     extern const chpl_nodeID: int(32);
     const src_node = chpl_nodeID;
-
-    extern proc printf(s...);
-    printf("DOING ON+GET\n");
 
     on __primitive("chpl_on_locale_num",
                    chpl_buildLocaleID(dst_node, dst_subloc)) {

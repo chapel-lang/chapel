@@ -1984,7 +1984,7 @@ module ChapelBase {
   pragma "task complete impl fn"
   extern proc chpl_comm_task_end(): void;
 
-  // TODO do we need the same pragma?
+  // TODO do we need "task complete impl fn" pragma?
   extern proc chpl_gpu_task_end(): void;
 
   pragma "compiler added remote fence"

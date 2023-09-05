@@ -117,7 +117,6 @@ void chpl_gpu_impl_init(int* num_devices) {
     CUdevice device;
     CUcontext context;
 
-
     CUDA_CALL(cuDeviceGet(&device, i));
     CUDA_CALL(cuDevicePrimaryCtxSetFlags(device, CU_CTX_SCHED_BLOCKING_SYNC));
     CUDA_CALL(cuDevicePrimaryCtxRetain(&context, device));
@@ -135,7 +134,6 @@ void chpl_gpu_impl_init(int* num_devices) {
     // TODO can we refactor some of this to chpl-gpu to avoid duplication
     // between runtime layers?
     chpl_gpu_impl_set_globals(i, module);
-
   }
 }
 
@@ -260,6 +258,7 @@ static void chpl_gpu_launch_kernel_help(int ln,
 
   chpl_task_yield();
 
+  // TODO: this is not a proper kernel_time now. What to do?
   CHPL_GPU_STOP_TIMER(kernel_time);
   CHPL_GPU_START_TIMER(teardown_time);
 
@@ -397,7 +396,7 @@ void chpl_gpu_impl_mem_free(void* memAlloc, void* stream) {
       CUDA_CALL(cuMemFreeHost(memAlloc));
     }
     else {
-      CUDA_CALL(cuMemFreeAsync((CUdeviceptr)memAlloc, NULL));
+      CUDA_CALL(cuMemFreeAsync((CUdeviceptr)memAlloc, stream));
 #else
     CUDA_CALL(cuMemFree((CUdeviceptr)memAlloc));
 #endif

@@ -40,6 +40,7 @@ bool chpl_gpu_always_sync_kernels = false;
 #include "chpl-env.h"
 #include "chpl-comm-compiler-macros.h"
 
+// TODO do we want a user flag to control this?
 static bool async_supported = false; // a safer default
 
 // if any of the devices do not support async streams; bail
