@@ -1,2 +1,4 @@
 # The small stack size can be exceeded with baseline
 COMPOPTS <= --baseline
+# Total memory can be exhausted from number of stacks
+CHPL_TARGET_PLATFORM == linux32
