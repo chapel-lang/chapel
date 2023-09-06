@@ -35,7 +35,7 @@ proc try1() {
 
   // "forall": parallel, distributed over D_distrib
   // compute all A[i] in parallel
-  forall i in D_distrib {
+  forall i in D_distrib with (ref A) {
 
     // "for": sequential, local; over a privitized copy of D_distrib
     // accumulate into A[i] sequentially
