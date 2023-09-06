@@ -3937,7 +3937,7 @@ module HDF5 {
       extern proc H5Pset_dxpl_mpio(xferPlist: C_HDF5.hid_t,
                                    flag: C_HDF5.H5FD_mpio_xfer_t): C_HDF5.herr_t;
 
-      proc isBlock(D: Block) param do return true;
+      proc isBlock(D: blockDist) param do return true;
       proc isBlock(D) param do return false;
 
       if !isBlock(A.dom.dist) {
@@ -4061,7 +4061,7 @@ module HDF5 {
       // A11, A12, B11, B12
       // A21, A22, B21, B22
       use BlockDist, CyclicDist, super.C_HDF5;
-      proc isBlock(D: Block) param do return true;
+      proc isBlock(D: blockDist) param do return true;
       proc isBlock(D) param do return false;
       proc isCyclic(D: Cyclic) param do return true;
       proc isCyclic(D) param do return false;
