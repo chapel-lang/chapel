@@ -133,6 +133,7 @@ static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
 static bool fBaseline = false;
 
+// Tmp dir path managed by compiler driver
 static char driverTmpDir[FILENAME_MAX] = "";
 
 // Flags that were in commonFlags.h/cpp for awhile
@@ -1877,6 +1878,7 @@ static void setGPUFlags() {
 
 }
 
+// Warn for use of deprecated flags
 static void warnDeprecatedFlags() {
   if (fYesLlvmCodegen) {
     USR_WARN("--llvm is deprecated -- please use --target-compiler=llvm");
@@ -2341,7 +2343,7 @@ int main(int argc, char* argv[]) {
   // giving the user the same information on each invocation.
   //
 
-  // Check driver flags even in sub-invocation, in case user manually specified
+  // Check driver flags even in sub-invocation, in case the user manually set
   // internal flags that put us in a phony sub-invocation.
   checkCompilerDriverFlags();
   if (!driverInSubInvocation) {

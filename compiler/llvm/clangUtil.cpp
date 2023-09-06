@@ -2195,8 +2195,49 @@ static void cleanupFunctionOptManagers() {
   }
 }
 
-static void llvmOptimizeAndCodegen(void);
+void setupLLVMCodegenFilenames(void) {
+#ifdef HAVE_LLVM
+  GenInfo* info = gGenInfo;
+  LLVMGenFilenames* filenames = &info->llvmGenFilenames;
+  if (gCodegenGPU == false) {
+    filenames->moduleFilename = genIntermediateFilename("chpl__module.o");
+    filenames->preOptFilename = genIntermediateFilename("chpl__module-nopt.bc");
+    filenames->opt1Filename = genIntermediateFilename("chpl__module-opt1.bc");
+    filenames->opt2Filename = genIntermediateFilename("chpl__module-opt2.bc");
+  } else {
+    filenames->moduleFilename = genIntermediateFilename("chpl__gpu_module.o");
+    filenames->preOptFilename =
+        genIntermediateFilename("chpl__gpu_module-nopt.bc");
+    filenames->opt1Filename =
+        genIntermediateFilename("chpl__gpu_module-opt1.bc");
+    filenames->opt2Filename =
+        genIntermediateFilename("chpl__gpu_module-opt2.bc");
+    filenames->fatbinFilename = genIntermediateFilename("chpl__gpu.fatbin");
+
+    filenames->outFilenamePrefix = genIntermediateFilename("chpl__gpu");
+    filenames->gpuObjectFilenamePrefix = genIntermediateFilename("chpl__gpu");
+    // no suffix on these last two because we might generate multiple, with
+    // slightly different names.
+
+    // This switch may seem unnecessary, but in the past we wanted to use a
+    // different "type" of intermediate file for different GPUs and we may want
+    // to do that again in the future. See the comment in getGpuCodegenType()
+    // for more details about this history.
+    switch (getGpuCodegenType()) {
+      case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
+      case GpuCodegenType::GPU_CG_AMD_HIP:
+        filenames->artifactFilename = genIntermediateFilename("chpl__gpu.s");
+        break;
+      case GpuCodegenType::GPU_CG_CPU:
+        break;
+    }
+  }
+#endif
+}
+
+static void llvmRunOptimizations(void);
 static void llvmEmitObjectFile(void);
+static void checkLoopsAssertVectorize(void);
 
 void finishCodegenLLVM() {
   GenInfo* info = gGenInfo;
@@ -2241,7 +2282,12 @@ void finishCodegenLLVM() {
     }
   }
 
-  llvmOptimizeAndCodegen();
+  // Run all LLVM optimizations.
+  llvmRunOptimizations();
+
+#ifdef HAVE_LLVM
+  checkLoopsAssertVectorize();
+#endif
 }
 
 #ifdef HAVE_LLVM_RV
@@ -2656,12 +2702,6 @@ static void addFilteredArgs(std::vector<std::string>& dst,
     for (size_t i = 0; i < src.size(); i++) {
       dst.push_back(src[i]);
     }
-  }
-}
-
-void initializeGenInfo(void) {
-  if (!gGenInfo) {
-    gGenInfo = new GenInfo();
   }
 }
 
@@ -4673,15 +4713,18 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
   mysystem(bundlerCmd.c_str(), ".out file to fatbin file");
 }
 
-static void saveIrToBcFileIfNeeded(const std::string& filename, bool forceSave = false) {
-  GenInfo* info = gGenInfo;
-  if (forceSave || saveCDir[0] != '\0') {
+// Save the current state of the LLVM IR to an LLVM bitcode file if needed
+static void saveIrToBcFileIfNeeded(const std::string& filename,
+                                   bool forceSave = false) {
+  bool shouldSave = forceSave || saveCDir[0];
+  if (shouldSave) {
+    GenInfo* info = gGenInfo;
     std::error_code tmpErr;
     // Save the generated LLVM IR to the given file
 #if HAVE_LLVM_VER >= 120
-    ToolOutputFile output (filename.c_str(), tmpErr, sys::fs::OF_None);
+    ToolOutputFile output(filename.c_str(), tmpErr, sys::fs::OF_None);
 #else
-    ToolOutputFile output (filename.c_str(), tmpErr, sys::fs::F_None);
+    ToolOutputFile output(filename.c_str(), tmpErr, sys::fs::F_None);
 #endif
     if (tmpErr) {
       USR_FATAL("Could not open output file %s", filename.c_str());
@@ -4712,7 +4755,7 @@ static unsigned getBinaryMetadataValue(llvm::MDNode* MD) {
   return 0;
 }
 
-static void checkLoopsAssertVectorize() {
+static void checkLoopsAssertVectorize(void) {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
 
@@ -4757,7 +4800,8 @@ static void checkLoopsAssertVectorize() {
 
 void makeBinaryLLVM(void) {
   if (fDriverDoMakeBinary) {
-    // generate necessary info for a backend-only invocation
+    // Set up necessary resources for a driver makeBinary phase invocation.
+
     initializeGenInfo();
 
     // setup filenames to be referenced
@@ -4779,6 +4823,7 @@ void makeBinaryLLVM(void) {
     setupModule();
   }
 
+  // setup info handles that are the same for driver and monolithic
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
@@ -4796,165 +4841,169 @@ void makeBinaryLLVM(void) {
     return;
   }
 
-  std::string options = "";
+  // Link and create final executable or library
+  {
+    std::string options = "";
 
-  std::string maino(CHPL_RUNTIME_LIB);
-  maino += "/";
-  maino += CHPL_RUNTIME_SUBDIR;
-  maino += "/main.o";
+    std::string maino(CHPL_RUNTIME_LIB);
+    maino += "/";
+    maino += CHPL_RUNTIME_SUBDIR;
+    maino += "/main.o";
 
-  std::string clangCC = clangInfo->clangCC;
-  std::string clangCXX = clangInfo->clangCXX;
-  std::string useLinkCXX = clangCXX;
+    std::string clangCC = clangInfo->clangCC;
+    std::string clangCXX = clangInfo->clangCXX;
+    std::string useLinkCXX = clangCXX;
 
-  if (CHPL_TARGET_LD != nullptr && CHPL_TARGET_LD[0] != '\0')
-    useLinkCXX = CHPL_TARGET_LD;
+    if (CHPL_TARGET_LD != nullptr && CHPL_TARGET_LD[0] != '\0')
+      useLinkCXX = CHPL_TARGET_LD;
 
-  // start with arguments from CHPL_LLVM_CLANG_C unless
-  // using a non-clang compiler to link
-  std::vector<std::string> clangLDArgs = clangInfo->clangLDArgs;
-  if (useLinkCXX != clangCXX)
-    clangLDArgs.clear();
+    // start with arguments from CHPL_LLVM_CLANG_C unless
+    // using a non-clang compiler to link
+    std::vector<std::string> clangLDArgs = clangInfo->clangLDArgs;
+    if (useLinkCXX != clangCXX)
+      clangLDArgs.clear();
 
-  // Add runtime libs arguments
-  //readArgsFromFile(runtime_libs, clangLDArgs);
+    // Add runtime libs arguments
+    //readArgsFromFile(runtime_libs, clangLDArgs);
 
-  // add the bundled link args from printchplenv
-  splitStringWhitespace(CHPL_TARGET_BUNDLED_LINK_ARGS, clangLDArgs);
+    // add the bundled link args from printchplenv
+    splitStringWhitespace(CHPL_TARGET_BUNDLED_LINK_ARGS, clangLDArgs);
 
-  // add the system link args from printchplenv
-  splitStringWhitespace(CHPL_TARGET_SYSTEM_LINK_ARGS, clangLDArgs);
+    // add the system link args from printchplenv
+    splitStringWhitespace(CHPL_TARGET_SYSTEM_LINK_ARGS, clangLDArgs);
 
-  // Grab extra dependencies for multilocale libraries if needed.
-  if (fMultiLocaleInterop) {
-    std::string cmd = std::string(CHPL_HOME);
-    cmd += "/util/config/compileline --multilocale-lib-deps";
-    std::string libs = runCommand(cmd);
-    // Erase trailing newline.
-    libs.erase(libs.size() - 1);
-    clangLDArgs.push_back(libs);
-  }
-
-  // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
-  expandInstallationPaths(clangLDArgs);
-
-
-  std::vector<std::string> dotOFiles;
-
-  // Gather C flags for compiling C files.
-  std::string cargs;
-  for( size_t i = 0; i < clangInfo->clangCCArgs.size(); ++i ) {
-    cargs += " ";
-    cargs += clangInfo->clangCCArgs[i];
-  }
-
-  std::string gpuArgs = "";
-  if (usingGpuLocaleModel()) {
-    gpuArgs = generateClangGpuLangArgs() + " -Wno-unknown-cuda-version";
-  }
-
-  int filenum = 0;
-  while (const char* inputFilename = nthFilename(filenum++)) {
-    if (isCSource(inputFilename)) {
-      const char* objFilename = objectFileForCFile(inputFilename);
-      std::string cmd = clangCC + " " + gpuArgs + " -c -o " + objFilename + " " +
-                        inputFilename + " " + cargs;
-
-      mysystem(cmd.c_str(), "Compile C File");
-      dotOFiles.push_back(objFilename);
-    } else if( isObjFile(inputFilename) ) {
-      dotOFiles.push_back(inputFilename);
+    // Grab extra dependencies for multilocale libraries if needed.
+    if (fMultiLocaleInterop) {
+      std::string cmd = std::string(CHPL_HOME);
+      cmd += "/util/config/compileline --multilocale-lib-deps";
+      std::string libs = runCommand(cmd);
+      // Erase trailing newline.
+      libs.erase(libs.size() - 1);
+      clangLDArgs.push_back(libs);
     }
-  }
 
-  // Note: we used to start 'options' with 'cargs' so that
-  // we'd communicate -O3 -march=native e.g. to the "linker".
-  // That was only important when we were emitting a .bc file
-  // and currently we emit a .o.
-  // If we decide to put it back, we might also need to
-  // pass -Qunused-arguments or -Wno-error=unused-command-line-argument
-  // to avoid unused argument errors for optimization flags.
+    // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
+    expandInstallationPaths(clangLDArgs);
 
-  if(debugCCode) {
-    options += " -g";
-  }
 
-  // We used to supply link args here *and* later on
-  // in the link line. I think the later position is sufficient.
+    std::vector<std::string> dotOFiles;
 
-  // note: currently ldflags are not stored into clangLDArgs.
-  // If they were, these lines would need to be removed.
-  options += " ";
-  options += ldflags;
-
-  // We may need to add the -pthread flag here for the link step
-  // if we start doing link-time optimization.  For now, leave it
-  // out because its unnecessary inclusion causes a warning message
-  // on Macs.
-
-  // Now, if we're doing a multilocale build, we have to make a launcher.
-  // For this reason, we create a makefile. codegen_makefile
-  // also gives us the name of the temporary place to save
-  // the generated program.
-  fileinfo mainfile;
-  mainfile.filename = "chpl__module.o";
-  mainfile.pathname = filenames->moduleFilename.c_str();
-  const char* tmpbinname = NULL;
-  const char* tmpservername = NULL;
-
-  if (fMultiLocaleInterop) {
-    codegen_makefile(&mainfile, &tmpbinname, &tmpservername, true);
-    INT_ASSERT(tmpservername);
-    INT_ASSERT(tmpbinname);
-  } else {
-    codegen_makefile(&mainfile, &tmpbinname, NULL, true);
-    INT_ASSERT(tmpbinname);
-  }
-
-  if (fLibraryCompile && !fMultiLocaleInterop) {
-    switch (fLinkStyle) {
-    // The default library link style for Chapel is _static_.
-    case LS_DEFAULT:
-    case LS_STATIC:
-      makeLLVMStaticLibrary(filenames->moduleFilename, tmpbinname, dotOFiles);
-      break;
-    case LS_DYNAMIC:
-      makeLLVMDynamicLibrary(useLinkCXX, options, filenames->moduleFilename, tmpbinname,
-                             dotOFiles, clangLDArgs);
-      break;
-    default:
-      INT_FATAL("Unsupported library link mode");
-      break;
+    // Gather C flags for compiling C files.
+    std::string cargs;
+    for( size_t i = 0; i < clangInfo->clangCCArgs.size(); ++i ) {
+      cargs += " ";
+      cargs += clangInfo->clangCCArgs[i];
     }
-  } else {
-    const char* outbin = fMultiLocaleInterop ? tmpservername : tmpbinname;
 
-    // Runs the LLVM link command for executables.
-    runLLVMLinking(useLinkCXX, options, filenames->moduleFilename, maino, outbin,
-                   dotOFiles, clangLDArgs);
-  }
+    std::string gpuArgs = "";
+    if (usingGpuLocaleModel()) {
+      gpuArgs = generateClangGpuLangArgs() + " -Wno-unknown-cuda-version";
+    }
 
-  // If we're not using a launcher, copy the program here
-  if (0 == strcmp(CHPL_LAUNCHER, "none")) {
+    int filenum = 0;
+    while (const char* inputFilename = nthFilename(filenum++)) {
+      if (isCSource(inputFilename)) {
+        const char* objFilename = objectFileForCFile(inputFilename);
+        std::string cmd = clangCC + " " + gpuArgs + " -c -o " + objFilename + " " +
+                          inputFilename + " " + cargs;
 
-    if (fLibraryCompile) {
-      moveGeneratedLibraryFile(tmpbinname);
+        mysystem(cmd.c_str(), "Compile C File");
+        dotOFiles.push_back(objFilename);
+      } else if( isObjFile(inputFilename) ) {
+        dotOFiles.push_back(inputFilename);
+      }
+    }
+
+    // Note: we used to start 'options' with 'cargs' so that
+    // we'd communicate -O3 -march=native e.g. to the "linker".
+    // That was only important when we were emitting a .bc file
+    // and currently we emit a .o.
+    // If we decide to put it back, we might also need to
+    // pass -Qunused-arguments or -Wno-error=unused-command-line-argument
+    // to avoid unused argument errors for optimization flags.
+
+    if(debugCCode) {
+      options += " -g";
+    }
+
+    // We used to supply link args here *and* later on
+    // in the link line. I think the later position is sufficient.
+
+    // note: currently ldflags are not stored into clangLDArgs.
+    // If they were, these lines would need to be removed.
+    options += " ";
+    options += ldflags;
+
+    // We may need to add the -pthread flag here for the link step
+    // if we start doing link-time optimization.  For now, leave it
+    // out because its unnecessary inclusion causes a warning message
+    // on Macs.
+
+    // Now, if we're doing a multilocale build, we have to make a launcher.
+    // For this reason, we create a makefile. codegen_makefile
+    // also gives us the name of the temporary place to save
+    // the generated program.
+    fileinfo mainfile;
+    mainfile.filename = "chpl__module.o";
+    mainfile.pathname = filenames->moduleFilename.c_str();
+    const char* tmpbinname = NULL;
+    const char* tmpservername = NULL;
+
+    if (fMultiLocaleInterop) {
+      codegen_makefile(&mainfile, &tmpbinname, &tmpservername, true);
+      INT_ASSERT(tmpservername);
+      INT_ASSERT(tmpbinname);
     } else {
-      moveResultFromTmp(executableFilename, tmpbinname);
+      codegen_makefile(&mainfile, &tmpbinname, NULL, true);
+      INT_ASSERT(tmpbinname);
     }
 
-  } else {
-    // Now run the makefile to move from tmpbinname to the proper program
-    // name and to build a launcher (if necessary).
-    const char* makeflags = printSystemCommands ? "-f " : "-s -f ";
-    const char* makecmd = astr(astr(CHPL_MAKE, " "),
-                               makeflags,
-                               getIntermediateDirName(), "/Makefile");
+    if (fLibraryCompile && !fMultiLocaleInterop) {
+      switch (fLinkStyle) {
+      // The default library link style for Chapel is _static_.
+      case LS_DEFAULT:
+      case LS_STATIC:
+        makeLLVMStaticLibrary(filenames->moduleFilename, tmpbinname, dotOFiles);
+        break;
+      case LS_DYNAMIC:
+        makeLLVMDynamicLibrary(useLinkCXX, options, filenames->moduleFilename, tmpbinname,
+                               dotOFiles, clangLDArgs);
+        break;
+      default:
+        INT_FATAL("Unsupported library link mode");
+        break;
+      }
+    } else {
+      const char* outbin = fMultiLocaleInterop ? tmpservername : tmpbinname;
 
-    mysystem(makecmd, "Make Binary - Building Launcher and Copying");
+      // Runs the LLVM link command for executables.
+      runLLVMLinking(useLinkCXX, options, filenames->moduleFilename, maino, outbin,
+                     dotOFiles, clangLDArgs);
+    }
+
+    // If we're not using a launcher, copy the program here
+    if (0 == strcmp(CHPL_LAUNCHER, "none")) {
+
+      if (fLibraryCompile) {
+        moveGeneratedLibraryFile(tmpbinname);
+      } else {
+        moveResultFromTmp(executableFilename, tmpbinname);
+      }
+
+    } else {
+      // Now run the makefile to move from tmpbinname to the proper program
+      // name and to build a launcher (if necessary).
+      const char* makeflags = printSystemCommands ? "-f " : "-s -f ";
+      const char* makecmd = astr(astr(CHPL_MAKE, " "),
+                                 makeflags,
+                                 getIntermediateDirName(), "/Makefile");
+
+      mysystem(makecmd, "Make Binary - Building Launcher and Copying");
+    }
   }
 }
 
+// Generate .o file from a completed LLVM Module
 static void llvmEmitObjectFile(void) {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
@@ -5061,7 +5110,9 @@ static void llvmEmitObjectFile(void) {
   }
 }
 
-static void llvmOptimizeAndCodegen(void) {
+// Perform all LLVM optimization passes.
+// This function encapsulates running with either the old or new pass manager.
+static void llvmRunOptimizations(void) {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
@@ -5227,12 +5278,9 @@ static void llvmOptimizeAndCodegen(void) {
     completePrintLlvmIrStage(llvmStageNum::FULL);
   }
 #endif
-
-#ifdef HAVE_LLVM
-  checkLoopsAssertVectorize();
-#endif
 }
 
+// Output assembly dump to file if it was requested.
 static void handlePrintAsm(std::string dotOFile) {
   if (llvmPrintIrStageNum == llvmStageNum::ASM ||
       llvmPrintIrStageNum == llvmStageNum::EVERY) {
@@ -5458,7 +5506,6 @@ static void runLLVMLinking(std::string useLinkCXX, std::string options,
                                              tmpbinname,
                                              dotOFiles,
                                              clangLDArgs);
-
 
   mysystem(command.c_str(), "Make Binary - Linking");
 }

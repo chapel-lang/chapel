@@ -181,11 +181,12 @@ extern bool     gCodegenGPU;
 // generated GET/PUT
 extern std::map<std::string, int> commIDMap;
 
+// Freshly initialize gGenInfo, expecting it does not already exist.
+void initializeGenInfo(void);
+
 #ifdef HAVE_LLVM
 void setupClang(GenInfo* info, std::string rtmain);
 #endif
-
-void setupLLVMCodegenFilenames(void);
 
 bool isBuiltinExternCFunction(const char* cname);
 

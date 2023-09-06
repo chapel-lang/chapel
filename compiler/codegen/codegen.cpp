@@ -2667,8 +2667,7 @@ static bool shouldShowLLVMRemarks() {
 
 // Do this for GPU and then do for CPU
 static void codegenPartTwo() {
-  // Initialize the global gGenInfo for C code generation.
-  gGenInfo = new GenInfo();
+  initializeGenInfo();
 
   if (fMultiLocaleInterop) {
     codegenMultiLocaleInteropWrappers();
@@ -2994,46 +2993,10 @@ GenInfo::GenInfo()
 #endif
 }
 
-void setupLLVMCodegenFilenames(void) {
-#ifdef HAVE_LLVM
-  GenInfo* info = gGenInfo;
-  LLVMGenFilenames* filenames = &info->llvmGenFilenames;
-  if (gCodegenGPU == false) {
-    filenames->moduleFilename = genIntermediateFilename("chpl__module.o");
-    filenames->preOptFilename = genIntermediateFilename("chpl__module-nopt.bc");
-    filenames->opt1Filename = genIntermediateFilename("chpl__module-opt1.bc");
-    filenames->opt2Filename = genIntermediateFilename("chpl__module-opt2.bc");
-  } else {
-    filenames->moduleFilename = genIntermediateFilename("chpl__gpu_module.o");
-    filenames->preOptFilename =
-        genIntermediateFilename("chpl__gpu_module-nopt.bc");
-    filenames->opt1Filename =
-        genIntermediateFilename("chpl__gpu_module-opt1.bc");
-    filenames->opt2Filename =
-        genIntermediateFilename("chpl__gpu_module-opt2.bc");
-    filenames->fatbinFilename = genIntermediateFilename("chpl__gpu.fatbin");
-
-    filenames->outFilenamePrefix = genIntermediateFilename("chpl__gpu");
-    filenames->gpuObjectFilenamePrefix = genIntermediateFilename("chpl__gpu");
-    // no suffix on these last two because we might generate multiple, with
-    // slightly different names.
-
-    // This switch may seem unnecessary, but in the past we wanted to use a
-    // different "type" of intermediate file for different GPUs and we may want
-    // to do that again in the future. See the comment in getGpuCodegenType()
-    // for more details about this history.
-    switch (getGpuCodegenType()) {
-      case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
-      case GpuCodegenType::GPU_CG_AMD_HIP:
-        filenames->artifactFilename = genIntermediateFilename("chpl__gpu.s");
-        break;
-      case GpuCodegenType::GPU_CG_CPU:
-        break;
-    }
-  }
-#endif
+void initializeGenInfo(void) {
+  assert(!gGenInfo && "tried to initialize GenInfo but it already exists");
+  gGenInfo = new GenInfo();
 }
-
 
 std::string numToString(int64_t num)
 {
