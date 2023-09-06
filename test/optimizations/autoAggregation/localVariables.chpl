@@ -9,7 +9,7 @@ forall i in a.domain with (ref a) {
 
 writeln(a);
 
-forall i in a.domain with (ref d) {
+forall i in a.domain {
   var d: 11*int;
   d[10-i] = a[i];
 }
@@ -18,7 +18,7 @@ writeln(a);
 
 // this doesn't make much sense but should compile
 // at least make sure we compile this
-forall i in a.domain with (ref d) {
+forall i in a.domain {
   var d: 11*int;
   var e: 11*int;
   d[10-i] = e[i];
