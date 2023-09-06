@@ -165,7 +165,7 @@ proc schurComplement(AD, BD, Rest) {
       replB = Ab[BD.dim(0), 1..n+1];
       }
 
-  forall (row,col) in Rest by (blkSize, blkSize) {
+  forall (row,col) in Rest by (blkSize, blkSize) with (ref Ab) {
 
     vwln("  dgemm(", (Rest.dim(0))(row..#blkSize), ",",
                      (Rest.dim(1))(col..#blkSize), ")  on ", here.id);
@@ -255,7 +255,7 @@ proc schurComplementRef(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domai
   //  writeln("Rest = ", Rest);
   //  writeln("Rest by blkSize = ", Rest by (blkSize, blkSize));
   // do local matrix-multiply on a block-by-block basis
-  forall (row,col) in Rest by (blkSize, blkSize) {
+  forall (row,col) in Rest by (blkSize, blkSize) with (ref Ab) {
     //
     // At this point, the dgemms should all be local once we have
     // replication correct, so we'll want to assert that fact

@@ -70,7 +70,7 @@ module cholesky_test_unsymmetric_ranges {
 
     A = 0.0;
 
-    forall (i,j) in mat_dom do
+    forall (i,j) in mat_dom with (ref A) do
       A (i,j) = + reduce (  [k in mat_dom.dim (0) ] 
     			    B (i, k) * B (j, k) );
 

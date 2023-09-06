@@ -157,7 +157,7 @@ def get_gpu_mem_strategy():
             error("CHPL_GPU_MEM_STRATEGY must be set to one of: %s" %
                  ", ".join(valid_options));
         return memtype
-    return "unified_memory"
+    return "array_on_device"
 
 
 def get_cuda_libdevice_path():

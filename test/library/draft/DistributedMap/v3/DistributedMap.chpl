@@ -355,7 +355,7 @@ module DistributedMap {
         }
     }
 
-    record staticRefsManager {
+    record staticRefsManager : contextManager {
         type dmType;
         var dm: dmType;
 

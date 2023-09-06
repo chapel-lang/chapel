@@ -61,7 +61,7 @@ proc panelSolve(
 
         // update all other values below the pivot
         if k+1 <= pnlRows.high && k+1 <= pnlCols.high {
-            forall (i,j) in panel[k+1.., k+1..] {
+            forall (i,j) in panel[k+1.., k+1..] with (ref A) {
                 A[i,j] -= A[i,k] * A[k,j];
             }
         }
@@ -82,7 +82,7 @@ proc updateBlockRow(ref A : [] ?t, tl : domain(2), tr : domain(2))
     assert(tlCols == trRows);
 
     for i in trRows {
-        forall j in trCols {
+        forall j in trCols with (ref A) {
             for k in tlRows.low..i-1 {
                 A[i, j] -= A[i, k] * A[k,j];
             }
@@ -184,7 +184,7 @@ proc selfMult(n : int, A : [?D] real, ref C : [D] real) {
     assert(D.dim(0) == D.dim(1));
     C = 0;
 
-    forall (i,j) in D {
+    forall (i,j) in D with (ref C) {
         if(i <= j) {
           for k in D.dim(0).low..i-1 {
                 C[i,j] += A[i,k] * A[k,j];
@@ -211,7 +211,7 @@ proc permuteMatrix(ref matrix : [?dmn], in vector) {
     //p.IRV = 0;
 
     // construct permutation matrix
-    forall i in vector {
+    forall i in vector with (ref p) {
         //pdmn.add((i, vector[i]));
         p[i, vector[i]] = 1;
     }
@@ -413,7 +413,7 @@ proc test_updateBlockRow(rprt = true) : bool {
     // the block row
     var recalc : [randomOffset..randomOffset+randomHeight-1,
                   randomOffset+randomHeight..(randomWidth-randomHeight)] real;
-    forall (i,j) in recalc.domain {
+    forall (i,j) in recalc.domain with (ref recalc) {
         for k in randomOffset..i-1 {
             recalc[i,j] += A[i,k] * A[k,j];
         }

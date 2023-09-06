@@ -709,13 +709,18 @@ Potential culprits:
 - others?
 */
 
+std::map<ForallStmt*, std::set<Symbol*>> refMaybeConstForallPairs;
+
 //
 // * If 'intent' is abstract, convert it to a concrete intent.
 // *
 // It is done on an already-existing, explicit shadow variable
 // or before an implicit shadow variable is to be created.
 //
-static void resolveShadowVarTypeIntent(Type*& type, ForallIntentTag& intent,
+static void resolveShadowVarTypeIntent(ForallStmt* fs,
+                                       Symbol* sym,
+                                       Type*& type,
+                                       ForallIntentTag& intent,
                                        bool& prune)
 {
   switch (intent) {
@@ -733,17 +738,41 @@ static void resolveShadowVarTypeIntent(Type*& type, ForallIntentTag& intent,
       }
 
       IntentTag argInt = (intent == TFI_DEFAULT) ? INTENT_BLANK : INTENT_CONST;
-      intent = forallIntentForArgIntent(concreteIntent(argInt, valType));
+      argInt = concreteIntent(argInt, valType);
+      intent = forallIntentForArgIntent(argInt);
+
+      // mark all ref-maybe-const shadow variables
+      if (argInt == INTENT_REF_MAYBE_CONST && intent == TFI_REF) {
+        auto it = refMaybeConstForallPairs.find(fs);
+        if (it == refMaybeConstForallPairs.end())
+          it = refMaybeConstForallPairs.insert(it, {fs, {}});
+        it->second.insert(sym);
+      }
 
       break;
     }
 
     case TFI_IN:               // Nothing to do for now.
     case TFI_CONST_IN:
-    case TFI_REF:
     case TFI_CONST_REF:
     case TFI_REDUCE:
     case TFI_TASK_PRIVATE:      break;
+
+    case TFI_REF: {
+      // if there is an explicit ref shadow variable
+      // we need to remove the symbol from the list
+      auto it = refMaybeConstForallPairs.find(fs);
+      if (it != refMaybeConstForallPairs.end()) {
+        auto& listOfSyms = it->second;
+        listOfSyms.erase(sym);
+        if (ShadowVarSymbol* svar = toShadowVarSymbol(sym)) {
+          if(Symbol* outerSym = svar->outerVarSym()) {
+            listOfSyms.erase(outerSym);
+          }
+        }
+      }
+      break;
+    }
 
     case TFI_IN_PARENT:         // These have not been created yet.
     case TFI_REDUCE_OP:
@@ -850,7 +879,7 @@ static void doImplicitShadowVars(ForallStmt* fs, BlockStmt* block,
     bool  prune = false;
     if (sym->type == dtUnknown)
       USR_FATAL(se, "'%s' appears to be used before it is defined", sym->name);
-    resolveShadowVarTypeIntent(type, intent, prune); // updates the args
+    resolveShadowVarTypeIntent(fs, sym, type, intent, prune); // updates the args
 
     if (prune) {                      // do not convert to shadow var
       assertNotRecordReceiver(sym, se);
@@ -919,7 +948,7 @@ static void resolveAndPruneExplicitShadowVars(ForallStmt* fs,
   {
     Type* type  = ovarOrSvarType(svar);
     bool  prune = false;
-    resolveShadowVarTypeIntent(type, svar->intent, prune); // updates the args
+    resolveShadowVarTypeIntent(fs, svar, type, svar->intent, prune); // updates the args
 
     // Ensure the svar is retained for a `this` with an explicit intent,
     // see convertFieldsOfRecordThis().
@@ -994,7 +1023,7 @@ static ShadowVarSymbol* createSVforFieldAccess(ForallStmt* fs, Symbol* ovar,
   Type*           svarType   = field->type;
   ForallIntentTag svarIntent = isConst ? TFI_CONST : TFI_DEFAULT;
   bool            pruneDummy = false;
-  resolveShadowVarTypeIntent(svarType, svarIntent, pruneDummy);
+  resolveShadowVarTypeIntent(fs, field, svarType, svarIntent, pruneDummy);
 
   ShadowVarSymbol* svar = new ShadowVarSymbol(svarIntent,
                                               astr(field->name, "_svar"),

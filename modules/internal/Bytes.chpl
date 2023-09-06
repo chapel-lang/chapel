@@ -60,6 +60,7 @@ module Bytes {
 
     :returns: A new :type:`bytes`
   */
+  @unstable("'createBorrowingBuffer' is unstable and may change in the future")
   inline proc type bytes.createBorrowingBuffer(x: bytes) : bytes {
     var ret: bytes;
     initWithBorrowedBuffer(ret, x);
@@ -107,6 +108,7 @@ module Bytes {
 
     :returns: A new :type:`bytes`
   */
+  @unstable("'createBorrowingBuffer' is unstable and may change in the future")
   inline proc type bytes.createBorrowingBuffer(x: c_ptr(?t),
                                                length=strLen(x)) : bytes {
     return bytes.createBorrowingBuffer(x:bufferType, length=length,
@@ -126,6 +128,7 @@ module Bytes {
 
     :returns: A new :type:`bytes`
   */
+  @unstable("'createBorrowingBuffer' is unstable and may change in the future")
   inline proc type bytes.createBorrowingBuffer(x: c_ptrConst(?t),
                                                length=strLen(x)) : bytes {
     return bytes.createBorrowingBuffer(x:bufferType, length=length,
@@ -184,6 +187,7 @@ module Bytes {
 
      :returns: A new :type:`bytes`
   */
+  @unstable("'createBorrowingBuffer' is unstable and may change in the future")
   inline proc type bytes.createBorrowingBuffer(x: c_ptr(?t), length: int,
                                                   size: int) : bytes {
     if t != uint(8) && t != int(8) {

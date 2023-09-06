@@ -63,7 +63,7 @@ proc computeTwiddles(ref W) {
   W(0) = 1.0;
   W(n/2) = let cosDeltaN = cos(delta * n/2)
             in (cosDeltaN, cosDeltaN):complex;
-  forall i in 1..n/2-1 {
+  forall i in 1..n/2-1 with (ref W) {
     const x = cos(delta*i);
     const y = sin(delta*i);
     W(i)     = (x, y):complex;
@@ -83,7 +83,7 @@ proc bitReverseShuffle(W: [?WD]) {
   bitReverse(P);
   V(P) = W;
   */
-  forall i in WD {  // BLC: could this be a uint domain?
+  forall i in WD with (ref V) {  // BLC: could this be a uint domain?
     // BLC: what does this bitReverse function do with high-order bits?
     // BLC: could this be rewritten as one line?
     var ndx = bitReverse(i:uint(64), numBits=reverse);

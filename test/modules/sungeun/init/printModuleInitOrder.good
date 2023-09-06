@@ -49,6 +49,7 @@ Initializing Modules:
     ChapelUtil
     ExportWrappers
     ChapelGpuSupport
+    ChapelContext
     AlignedTSupport
     CopyAggregation
      AggregationPrimitives

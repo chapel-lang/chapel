@@ -158,7 +158,7 @@ proc main() {
   //
   // The main loop that computes the image in parallel.
   //
-  forall (y, x) in pixelPlane {
+  forall (y, x) in pixelPlane with (ref pixels) {
     pixels[y, x] = computePixel(y, x, scene, rands);
   }
 

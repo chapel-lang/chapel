@@ -94,7 +94,7 @@ writeln("A(2..4) is: ", A(2..4), "\n");
 
 var B: [1..n, 1..n] real;
 
-forall (i,j) in {1..n, 1..n} do
+forall (i,j) in {1..n, 1..n} with (ref B) do
   B[i,j] = i + j/10.0;
 
 writeln("Initially, B is:\n", B, "\n");
@@ -134,7 +134,7 @@ writeln("After incrementing B's elements, B is:\n", B, "\n");
 // by querying its domain:
 //
 
-forall (i,j) in B.domain do
+forall (i,j) in B.domain with (ref B) do
   B[i,j] -= 1;
 
 writeln("After decrementing B's elements, B is:\n", B, "\n");
@@ -149,7 +149,7 @@ writeln("After decrementing B's elements, B is:\n", B, "\n");
 
 proc negateAndPrintArr(ref X: [?D] real) {
   writeln("within negateAndPrintArr, D is: ", D, "\n");
-  forall (i,j) in D do
+  forall (i,j) in D with (ref X) do
     X[i,j] = -X[i,j];
   writeln("after negating X within negateAndPrintArr, X is:\n", X, "\n");
 }
@@ -201,7 +201,7 @@ var C, D, E: [ProbSpace] bool;
 
 // ...and to iterate over their shared index set...
 
-forall (i,j) in ProbSpace do
+forall (i,j) in ProbSpace with (ref C) do
   C[i,j] = (i+j) % 3 == 0;
 
 writeln("After assigning C, its value is:\n", C, "\n");
@@ -460,7 +460,7 @@ writeln("New size of r: ", r.Arr.size);
 
 var Y: [ProbSpace] [1..3] real;
 
-forall (i,j) in ProbSpace do
+forall (i,j) in ProbSpace with (ref Y) do
   for k in 1..3 do
     Y[i,j][k] = i*10 + j + k/10.0;
 

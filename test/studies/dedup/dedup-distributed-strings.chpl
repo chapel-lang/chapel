@@ -48,7 +48,7 @@ proc main(args:[] string)
     startVdebug(vis);
 
   // Using the Spawn module, compute the SHA1 sums using an external program
-  forall (id,path) in zip(distributedPaths.domain, distributedPaths) {
+  forall (id,path) in zip(distributedPaths.domain, distributedPaths) with (ref hashAndFile) {
     if verbose then
       writeln("Running sha1sum ", path);
     // The spawn call creates a subprocess. By specifying

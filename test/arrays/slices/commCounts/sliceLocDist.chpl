@@ -63,7 +63,7 @@ proc testit(ref A: [?DA], DInner) {
   writeln("-------------------------");
 
   startTrial();
-  forall ij in B.domain do
+  forall ij in B.domain with (ref B) do
     B[ij] += 0.1;
   stopTrial();
 
@@ -106,7 +106,7 @@ proc testit(ref A: [?DA], DInner) {
     writeln("---------------------------------");
 
     startTrial();
-    forall ij in D do
+    forall ij in D with (ref X) do
       X[ij] += 0.1;
     stopTrial();
   }

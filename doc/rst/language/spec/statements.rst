@@ -977,10 +977,12 @@ context managers. The syntax of the manage statement is given by
     expression 'as' identifier
     expression
 
-Classes or records that wish to be used as context managers must
-define two special methods. The code sample below turns a record
-type named ``IntWrapper`` into a context manager and then uses it
-in a manage statement.
+Classes or records that wish to be used as context managers must implement
+the ``contextManager`` interface. This is done by defining the methods
+``enterContext`` and ``exitContext``, and by adjusting the declaration of the
+class or record to say that it implements ``contextManager``. The code sample
+below declares a context manager record ``IntWrapper`` and then uses it in a
+manage statement.
 
    *Example (manage1.chpl)*.
 
@@ -988,7 +990,7 @@ in a manage statement.
 
    .. code-block:: chapel
 
-      record IntWrapper {
+      record IntWrapper : contextManager {
         var x: int;
       }
 
@@ -1045,7 +1047,7 @@ Resource storage may also be specified explicitly.
 
    .. code-block:: chapel
 
-      record IntWrapper {
+      record IntWrapper : contextManager {
         var x: int;
       }
 
@@ -1112,7 +1114,7 @@ statement.
 
    .. code-block:: chapel
 
-      record IntWrapper {
+      record IntWrapper : contextManager {
         var x: int;
       }
 

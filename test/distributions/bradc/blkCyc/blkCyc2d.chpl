@@ -19,10 +19,10 @@ writeln("D2 is: ", D2);
 var A: [D] real;
 var A2: [D2] real;
 
-forall (i,j) in D do
+forall (i,j) in D with (ref A) do
   A(i,j) = i + j/100.0;
          
-forall (i,j) in D2 do
+forall (i,j) in D2 with (ref A2) do
   A2(i,j) = i + j/100.0;
 
 writeln("A is: ", A);

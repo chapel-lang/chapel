@@ -35,7 +35,7 @@ proc convolve_and_calculate(Image: [] int(8),
   var first_point = centerPoints.first[1];
   var last_point = centerPoints.last[1];
 
-  forall center in centerPoints[..,first_point] {
+  forall center in centerPoints[..,first_point] with (ref Output) {
 
       // Calculate masks and beta diversity for leftmost point in subdomain
       var B_left: [0..(d_size-1)] real(64) = 0;
@@ -157,7 +157,7 @@ proc main(args: [] string) {
   const offset = nx; // maybe needs to be +1 to account for truncation?
   const Inner = ImageSpace.expand(-offset);
   const myTargetLocales = reshape(Locales, {1..Locales.size, 1..1});
-  const D = Inner dmapped Block(Inner, targetLocales=myTargetLocales);
+  const D = Block.createDomain(Inner, targetLocales=myTargetLocales);
   var OutputArray : [D] real(64);
 
   // Create NetCDF
@@ -213,4 +213,3 @@ proc main(args: [] string) {
   if printReduce then
     writeln("Sum reduce of OutputArray: ", (+ reduce OutputArray));
 }
-

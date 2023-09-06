@@ -190,6 +190,79 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
   Iterating directly over a Stencil-distributed domain or array will only yield
   indices and elements within the ``boundingBox``.
 
+  **Convenience Initializer Functions**
+
+  It is common for a ``Stencil`` distribution to distribute its ``boundingBox``
+  across all locales. In this case, a convenience function can be used to
+  declare variables of stencil-distributed or array type. These functions take
+  a domain or a series of ranges as arguments and return a stencil-distributed
+  domain or array.
+
+  .. code-block:: chapel
+
+    use StencilDist;
+
+    var BlockDom1 = Stencil.createDomain({1..5, 1..5});
+    var BlockArr1 = Stencil.createArray({1..5, 1..5}, real);
+    var BlockDom2 = Stencil.createDomain(1..5, 1..5);
+    var BlockArr2 = Stencil.createArray(1..5, 1..5, real);
+
+  The helper methods on ``Stencil`` have the following signatures:
+
+  .. function:: proc type Stencil.createDomain(dom: domain, targetLocales = Locales, fluff, periodic = false)
+
+    Create a domain over a Stencil Distribution.
+
+  .. function:: proc type Stencil.createDomain(rng: range(?)..., targetLocales = Locales, fluff, periodic = false)
+
+    Create a domain over a Stencil Distribution constructed from a series of
+    ranges.
+
+  .. function:: proc type Stencil.createArray(dom: domain, type eltType, targetLocales = Locales, fluff, periodic = false)
+
+    Create a default initialized array over a Stencil Distribution using the
+    given domain.
+
+  .. function:: proc type Stencil.createArray(rng: range(?)..., type eltType, targetLocales = Locales, fluff, periodic = false)
+
+    Create a default initialized array over a Stencil Distribution using a
+    domain constructed from the series of ranges.
+
+  .. function:: proc type Stencil.createArray(dom: domain, type eltType, initExpr, targetLocales = Locales, fluff, periodic = false)
+
+    Create an array over a Stencil Distribution using the given domain.
+
+    The array's values are initialized using ``initExpr`` which can be any of
+    the following:
+
+    * a value coercible to ``eltType`` — all elements of the array will be
+      assigned with this value
+    * an iterator expression with compatible size and type — the array elements
+      will be initialized with the values yielded by the iterator
+    * an array of compatible size and type — the array will be assigned into
+      the distributed array
+
+  .. function:: proc type Stencil.createArray(rng: range(?)..., type eltType, initExpr, targetLocales = Locales, fluff, periodic = false)
+
+    Create an array over a Stencil Distribution using a domain constructed from
+    the series of ranges.
+
+    The array's values are initialized using ``initExpr`` which can be any of
+    the following:
+
+    * a value coercible to ``eltType`` — all elements of the array will be
+      assigned with this value
+    * an iterator expression with compatible size and type — the array elements
+      will be initialized with the values yielded by the iterator
+    * an array of compatible size and type — the array will be assigned into
+      the distributed array
+
+
+  Note that the ``fluff`` argument in the above methods has a default value
+  computed from the ``dom`` or ``rng`` argument. If a ``fluff`` argument is
+  not provided, it will be a tuple of *n* zeros, where *n* is the domain's rank
+  or the number of provided ranges.
+
   **Updating the Cached Elements**
 
   Once you have completed a series of writes to the array, you will need to
@@ -782,6 +855,143 @@ iter StencilImpl.activeTargetLocales(const space : domain = boundingBox) {
     if locSpace[(...chunk)].sizeAs(int) > 0 then
       yield i;
   }
+}
+
+// create a domain over an existing Stencil Distribution
+proc Stencil.createDomain(dom: domain(?)) {
+  return dom dmapped this;
+}
+
+// create a domain over an existing Stencil Distribution constructed from a series of ranges
+proc Stencil.createDomain(rng: range(?)...) {
+  return this.createDomain({(...rng)});
+}
+
+// create a domain over a Stencil Distribution
+proc type Stencil.createDomain(
+  dom: domain(?),
+  targetLocales: [] locale = Locales,
+  fluff = makeZero(dom.rank, dom.idxType),
+  periodic = false
+) {
+  return dom dmapped Stencil(dom, targetLocales, fluff=fluff, periodic=periodic);
+}
+
+// create a domain over a Stencil Distribution constructed from a series of ranges
+proc type Stencil.createDomain(
+  rng: range(?)...,
+  targetLocales: [] locale = Locales,
+  fluff: ?t = makeZero(rng.size, int),
+  periodic = false
+) where isHomogeneousTupleType(t)
+{
+  return createDomain({(...rng)}, targetLocales, fluff, periodic);
+}
+
+proc type Stencil.createDomain(rng: range(?)...) {
+  return createDomain({(...rng)}, fluff = makeZero(rng.size, rng[0].idxType));
+}
+
+// create an array over a Stencil Distribution, default initialized
+proc type Stencil.createArray(
+  dom: domain(?),
+  type eltType,
+  targetLocales: [] locale = Locales,
+  fluff = makeZero(dom.rank, dom.idxType),
+  periodic = false
+) {
+  var D = createDomain(dom, targetLocales, fluff, periodic);
+  var A: [D] eltType;
+  return A;
+}
+
+// create an array over a Stencil Distribution, initialized with the given value or iterator
+proc type Stencil.createArray(
+  dom: domain(?),
+  type eltType,
+  initExpr: ?t,
+  targetLocales: [] locale = Locales,
+  fluff = makeZero(dom.rank, dom.idxType),
+  periodic = false
+) where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
+{
+  var D = createDomain(dom, targetLocales, fluff, periodic);
+  var A: [D] eltType;
+  A = initExpr;
+  return A;
+}
+
+// create an array over a Stencil Distribution, initialized from the given array
+proc type Stencil.createArray(
+  dom: domain(?),
+  type eltType,
+  initExpr: [?arrayDom] ?arrayEltType,
+  targetLocales: [] locale = Locales,
+  fluff = makeZero(dom.rank, dom.idxType),
+  periodic = false
+) where dom.rank == arrayDom.rank && isCoercible(arrayEltType, eltType)
+{
+  for (d, ad, i) in zip(dom.dims(), arrayDom.dims(), 0..) do
+    if d.size != ad.size then halt("Domain size mismatch in 'Stencil.createArray' dimension " + i:string);
+  var D = createDomain(dom, targetLocales, fluff, periodic);
+  var A: [D] eltType;
+  A = initExpr;
+  return A;
+}
+
+// create an array over a Stencil Distribution constructed from a series of ranges, default initialized
+proc type Stencil.createArray(
+  rng: range(?)...,
+  type eltType,
+  targetLocales: [] locale = Locales,
+  fluff: ?f = makeZero(rng.size, int),
+  periodic = false
+) where isHomogeneousTupleType(f) {
+  return createArray({(...rng)}, eltType, targetLocales, fluff, periodic);
+}
+
+proc type Stencil.createArray(rng: range(?)..., type eltType) {
+  return createArray({(...rng)}, eltType, fluff = makeZero(rng.size, rng[0].idxType));
+}
+
+// create an array over a Stencil Distribution constructed from a series of ranges, initialized with the given value or iterator
+proc type Stencil.createArray(rng: range(?)..., type eltType, initExpr: ?t)
+  where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
+{
+  return createArray({(...rng)}, eltType, initExpr, fluff = makeZero(rng.size, rng[0].idxType));
+}
+
+proc type Stencil.createArray(
+  rng: range(?)...,
+  type eltType,
+  initExpr: ?t,
+  targetLocales: [] locale = Locales,
+  fluff: ?f = makeZero(rng.size, int),
+  periodic = false
+) where (isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)) && isHomogeneousTupleType(f)  {
+  return createArray({(...rng)}, eltType, initExpr, targetLocales, fluff, periodic);
+}
+
+// create an array over a Cyclic Distribution constructed from a series of ranges, initialized from the given array
+proc type Stencil.createArray(
+  rng: range(?)...,
+  type eltType,
+  initExpr: [?arrayDom] ?arrayEltType
+) where rng.size == arrayDom.rank && isCoercible(arrayEltType, eltType)
+{
+  return createArray({(...rng)}, eltType, initExpr);
+}
+
+proc type Stencil.createArray(
+  rng: range(?)...,
+  type eltType,
+  initExpr: [?arrayDom] ?arrayEltType,
+  targetLocales: [] locale = Locales,
+  fluff: ?f = makeZero(rng.size, int),
+  periodic = false
+) where rng.size == arrayDom.rank && isCoercible(arrayEltType, eltType) && isHomogeneousTupleType(f)
+{
+  return createArray({(...rng)}, eltType, initExpr, targetLocales, fluff, periodic);
 }
 
 proc chpl__computeBlock(locid, targetLocBox, boundingBox) {

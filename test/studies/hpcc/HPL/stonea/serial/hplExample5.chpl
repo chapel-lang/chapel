@@ -141,7 +141,7 @@ proc panelSolve(
 
         // update all other values below the pivot
         if k+1 <= pnlRows.high && k+1 <= pnlCols.high {
-            forall (i,j) in panel[k+1.., k+1..] {
+            forall (i,j) in panel[k+1.., k+1..] with (ref A) {
                 A[i,j] -= A[i,k] * A[k,j];
             }
         }
@@ -162,7 +162,7 @@ proc updateBlockRow(ref A : [] ?t, tl : domain(2), tr : domain(2))
     assert(tlCols == trRows);
 
     for i in trRows {
-        forall j in trCols {
+        forall j in trCols with (ref A) {
             for k in tlRows.low..i-1 {
                 A[i, j] -= A[i, k] * A[k,j];
             }

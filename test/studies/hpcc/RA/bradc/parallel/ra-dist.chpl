@@ -37,9 +37,9 @@ proc main() {
 
   const startTime = timeSinceEpoch().totalSeconds();
 
-  [i in TableSpace] T(i) = i;
+  [i in TableSpace with (ref T)] T(i) = i;
 
-  forall (i,r) in zip(UpdateSpace, RAStream()) do
+  forall (i,r) in zip(UpdateSpace, RAStream()) with (ref T) do
     T(r & indexMask) ^= r;
 
   const execTime = timeSinceEpoch().totalSeconds() - startTime;
@@ -61,7 +61,7 @@ proc verifyResults(ref T: [?TDom], UpdateSpace) {
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
   var lock: sync bool = true;
-  forall (i,r) in zip(UpdateSpace, RAStream()) {
+  forall (i,r) in zip(UpdateSpace, RAStream()) with (ref T) {
     lock.readFE();
     T(r & indexMask) ^= r;
     lock.writeEF(true);

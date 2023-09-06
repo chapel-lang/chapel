@@ -16,7 +16,7 @@ var Dom: domain(2, int(64)) dmapped Dist = {sizeRange, sizeRange};
 var Bitmap: [Dom] bool;
 
 
-forall(i,j) in Dom do {
+forall(i,j) in Dom with (ref Bitmap) do {
   Bitmap(i,j) = work(i,j);
  }
 

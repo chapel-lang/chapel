@@ -10,8 +10,6 @@ source $CWD/common.bash
 source $CWD/common-arkouda.bash
 export ARKOUDA_NUMLOCALES=16
 
-export CHPL_TEST_ARKOUDA_PERF=false
-
 module list
 
 # setup for XC perf (ugni, gnu, 28-core broadwell)

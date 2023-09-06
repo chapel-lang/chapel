@@ -98,6 +98,8 @@ static void qt_affinity_internal_hwloc_teardown(void)
     if (my_topology) {
         qthread_debug(AFFINITY_DETAILS, "destroy hwloc topology handle\n");
         hwloc_topology_destroy(topology);
+        topology = NULL;
+        my_topology = 0;
     }
     initialized = 0;
 } /*}}}*/

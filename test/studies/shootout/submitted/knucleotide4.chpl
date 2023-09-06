@@ -131,9 +131,9 @@ inline proc startsWithThree(data) {
 }
 
 
-record hashVal : hashable {
+record hashVal {
   var val: int;
   proc hash() {
-    return val : uint;
+    return val;
   }
 }

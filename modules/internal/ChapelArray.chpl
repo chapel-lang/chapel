@@ -2450,7 +2450,7 @@ module ChapelArray {
   pragma "ignore transfer errors"
   private proc initCopyAfterTransfer(ref a: []) {
     if needsInitWorkaround(a.eltType) {
-      forall ai in a.domain {
+      forall ai in a.domain with (ref a) {
         ref aa = a[ai];
         pragma "no auto destroy"
         var copy: a.eltType = aa; // run copy initializer
@@ -2522,7 +2522,7 @@ module ChapelArray {
 
   private proc fixEltRuntimeTypesAfterTransfer(ref a: []) {
     if needsInitWorkaround(a.eltType) {
-      forall ai in a.domain {
+      forall ai in a.domain with (ref a) {
         ref aa = a[ai];
         fixRuntimeType(a.eltType, aa);
       }
@@ -2720,7 +2720,7 @@ module ChapelArray {
     } else {
       if kind==_tElt.move {
         if needsInitWorkaround(a.eltType) {
-          [ (ai, bb) in zip(a.domain, b) ] {
+          [ (ai, bb) in zip(a.domain, b) with (ref a) ] {
             ref aa = a[ai];
             __primitive("=", aa, __primitive("steal", bb));
             fixRuntimeType(a.eltType, aa);
@@ -2734,7 +2734,7 @@ module ChapelArray {
         }
       } else if kind==_tElt.initCopy {
         if needsInitWorkaround(a.eltType) {
-          [ (ai, bb) in zip(a.domain, b) ] {
+          [ (ai, bb) in zip(a.domain, b) with (ref a) ] {
             ref aa = a[ai];
             pragma "no auto destroy"
             var copy: a.eltType = bb; // init copy
@@ -3732,7 +3732,7 @@ module ChapelArray {
       }
     } else {
       if needsInitWorkaround(result.eltType) {
-        forall (ri, src) in zip(result.domain, ir) {
+        forall (ri, src) in zip(result.domain, ir) with (ref result) {
           ref r = result[ri];
           pragma "no auto destroy"
           var copy = src; // init copy, might be elided

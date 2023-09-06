@@ -353,8 +353,8 @@ module meteor {
 
   /* Calculate every legal rotation for each piece at each board location. */
   proc calcPieces() {
-    for piece in 0..9:int(8) {
-      for indx in 0..49:int(8) {
+    for piece in 0:int(8)..9:int(8) {
+      for indx in 0:int(8)..49:int(8) {
         calcSixRotations(piece, indx);
         flipPiece(piece);
         calcSixRotations(piece, indx);
@@ -436,15 +436,15 @@ module meteor {
 
   proc calcRows() {
     var result1, result2: bool;
-    for row1 in 0:int(8)..31 {
-      for row2 in 0:int(8)..31 {
+    for row1 in 0:int(8)..31:int(8) {
+      for row2 in 0:int(8)..31:int(8) {
         badEvenRows[row1][row2] = rowsBad(row1, row2, true);
         badOddRows[row1][row2] = rowsBad(row1, row2, false);
       }
     }
-    for row1 in 0:int(8)..31 {
-      for row2 in 0:int(8)..31 {
-        for row3 in 0:int(8)..31 {
+    for row1 in 0:int(8)..31:int(8) {
+      for row2 in 0:int(8)..31:int(8) {
+        for row3 in 0:int(8)..31:int(8) {
           result1 = badEvenRows[row1][row2];
           result2 = badOddRows[row2][row3];
           if(result1 == false && result2 == true
@@ -519,7 +519,7 @@ module meteor {
     while (board & (1 << cell)) do
       cell += 1;
 
-    for piece in 0..9:uint(8) {
+    for piece in 0:uint(8)..9:uint(8) {
       pieceNoMask = 1:uint(16) << piece;
       if !((avail & pieceNoMask):bool) {
         continue;

@@ -14,10 +14,14 @@
 extern "C" {
 #endif
 
+#define PUT_COLLISION 0
+#define PUT_SUCCESS   1
+
 typedef const void *qt_key_t;
 typedef struct qt_hash_s *qt_hash;
 typedef void (*qt_hash_callback_fn)(const qt_key_t, void *, void *);
 typedef void (*qt_hash_deallocator_fn)(void *);
+
 
 void qt_hash_initialize_subsystem(void);
 

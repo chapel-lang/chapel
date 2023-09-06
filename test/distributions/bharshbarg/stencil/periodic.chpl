@@ -20,7 +20,7 @@ proc test(dom : domain, halo : dom.rank * int) {
 
   var A : [Space] int;
   const n = dom.dim(0).size;
-  forall idx in Space {
+  forall idx in Space with (ref A) {
     var val = 0;
     for i in 0..rank-1 do val += n*idx(i);
     A[idx] = val;

@@ -65,7 +65,7 @@ proc main {
 }
 
 proc reset(ref A: [] int) {
-  [i in A.domain] A(i) = i;
+  [i in A.domain with (ref A)] A(i) = i;
 }
 
 proc writeArr(A: [] int) {

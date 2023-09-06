@@ -12,12 +12,12 @@ proc main() {
   const xdim = 0..((n+7)/8)-1;
   var pixels : [ydim][xdim] uint(8);
 
-  forall i in ydim {
+  forall i in ydim with (ref Cib, ref Crb) {
     Cib[i] = i * invN - 1.0;
     Crb[i] = i * invN - 1.5;
   }
 
-  forall y in dynamic(ydim, chunkSize) {
+  forall y in dynamic(ydim, chunkSize) with (ref pixels) {
     for x in xdim {
       var xm = x*8;
       var res : uint(8);

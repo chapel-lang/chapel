@@ -198,7 +198,7 @@ proc schurComplement(ref Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: doma
             replB = replicateD1(Ab, BD);
 
   // do local matrix-multiply on a block-by-block basis
-  forall (row,col) in Rest by (blkSize, blkSize) {
+  forall (row,col) in Rest by (blkSize, blkSize) with (ref Ab) {
     //
     // At this point, the dgemms should all be local once we have
     // replication correct, so we'll want to assert that fact
@@ -282,7 +282,7 @@ proc panelSolve(ref Ab: [] elemType,
     Ab[k+1.., k..k] /= pivotVal;
 
     // update all other values below the pivot
-    forall (i,j) in panel[k+1.., k+1..] do
+    forall (i,j) in panel[k+1.., k+1..] with (ref Ab) do
       Ab[i,j] -= Ab[i,k] * Ab[k,j];
   }
 }
@@ -301,7 +301,7 @@ proc updateBlockRow(ref Ab: [] elemType,
     const activeRow = tr[row..row, ..],
           prevRows = tr.dim(0).low..row-1;
 
-    forall (i,j) in activeRow do
+    forall (i,j) in activeRow with (ref Ab) do
       for k in prevRows do
         Ab[i, j] -= Ab[i, k] * Ab[k,j];
   }
@@ -418,7 +418,7 @@ proc gaxpyMinus(A: [],
                 y: [?yD]) {
   var res: [1..n] elemType;
 
-  forall i in 1..n do
+  forall i in 1..n with (ref res) do
     res[i] = (+ reduce [j in xD] (A[i,j] * x[j])) - y[i,n+1];
 
   return res;

@@ -75,7 +75,7 @@ proc main() {
 
 
 proc computeNextApproximation(ProblemSpace, ref newGrid, oldGrid, iteration) {
-  forall (i,j) in ProblemSpace do
+  forall (i,j) in ProblemSpace with (ref newGrid) do
 
     newGrid(i,j) = (                 oldGrid(i-1,j) +
                     oldGrid(i,j-1) + oldGrid(  i,j) + oldGrid(i,j+1) +

@@ -13,7 +13,7 @@ var temp: real;
 var ind, itemp: int;
 
 initA(A);
-[i in Vec] piv(i) = i;
+[i in Vec with (ref piv)] piv(i) = i;
 
 writeln("Unfactored Matrix:");
 writeln(A);

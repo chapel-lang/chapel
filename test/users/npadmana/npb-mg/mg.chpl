@@ -142,7 +142,7 @@ proc restrict(ref coarse:[?coarseDom] real, fine : [?FineDom]real) {
   const w : coeff = (1.0/2.0, 1.0/4.0, 1.0/8.0, 1.0/16.0);
   fine.updateFluff();
 
-  forall (i,j,k) in coarseDom {
+  forall (i,j,k) in coarseDom with (ref coarse) {
     const i2 = 2*i,
           j2 = 2*j,
           k2 = 2*k;
@@ -196,7 +196,7 @@ proc smooth(ref Z :[] real, const ref R : []real) {
 proc resid(ref R:[?Dom]real, V:[]real, Z:[]real) {
   // TODO : Why does this not optimize properly???
   // R = V;
-  [ijk in Dom] R.localAccess[ijk] = V.localAccess[ijk];
+  [ijk in Dom with (ref R)] R.localAccess[ijk] = V.localAccess[ijk];
   resid(R, Z);
 }
 
@@ -216,7 +216,7 @@ proc resid(ref R:[?Dom]real, const ref Z:[]real) {
 proc prolong(ref fine:[?fineDom]real, coarse:[?coarseDom]real) {
   coarse.updateFluff();
   // TODO : This is a horrific piece of code.
-  forall (i,j,k) in coarseDom {
+  forall (i,j,k) in coarseDom with (ref fine) {
     const i2 = 2*i,
           j2 = 2*j,
           k2 = 2*k;
@@ -282,7 +282,7 @@ proc stencilConvolve(ref dest : [?Dom] real, const ref src : []real, const w : c
           return locSrc[i+1,j+1,k] + locSrc[i-1,j+1,k] +
                  locSrc[i+1,j-1,k] + locSrc[i-1,j-1,k];
         }
-        forall (i,j) in outer  {
+        forall (i,j) in outer  with (ref dest) {
           dest.localAccess[i,j,klo] += w2 * valA(i,j,klo-1) +
                                        w3 * valB(i,j,klo-1);
 
@@ -376,12 +376,12 @@ proc fillInit(ref U, ref V : [?Dom]) {
 
   V = 0.0;
   U = 0.0;
-  [ijk in negative] V[ijk-1] = -1.0;
-  [ijk in positive] V[ijk-1] = 1.0;
+  [ijk in negative with (ref V)] V[ijk-1] = -1.0;
+  [ijk in positive with (ref V)] V[ijk-1] = 1.0;
 }
 
 inline proc increment(src : [?Dom]real, ref dest : []real) {
-  forall ijk in Dom do dest.localAccess[ijk] += src.localAccess[ijk];
+  forall ijk in Dom with (ref dest) do dest.localAccess[ijk] += src.localAccess[ijk];
 }
 
 

@@ -1,1 +1,2 @@
 CHPL_LAUNCHER <= lsf-
+CHPL_LAUNCHER <= pbs-

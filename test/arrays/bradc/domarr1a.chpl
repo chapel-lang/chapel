@@ -5,7 +5,7 @@ var Mat : domain(2) = {1..m, 1..n};
 
 var A : [Mat] real;
 
-forall ij in Mat do
+forall ij in Mat with (ref A) do
   A(ij) = 0.0;
 
 writeln("A is:\n", A);

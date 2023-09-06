@@ -144,7 +144,7 @@ proc HPCC_Stream( params: HPCC_Params,  doIO: bool): bool {
 
 
   // Get initial value for system clock.
-  [j in Vector] {
+  [j in Vector with (ref a, ref b, ref c)] {
     a[j] = 1.0;
     b[j] = 2.0;
     c[j] = 0.0;

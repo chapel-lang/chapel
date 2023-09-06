@@ -169,7 +169,7 @@ ownedExample9EOB();
 class Wrapper { var x; }
 proc f() {
   var a: [1..100] int;
-  forall i in a.domain {
+  forall i in a.domain with (ref a) {
     a[i] = i;
   }
   return new Wrapper(a);

@@ -37,7 +37,7 @@ proc main(args:[] string)
     startVdebug(vis);
 
   // Compute the SHA1 sums using the external program
-  forall (id,path) in zip(distributedPaths.domain, distributedPaths) {
+  forall (id,path) in zip(distributedPaths.domain, distributedPaths) with (ref hashAndFileId) {
     if verbose then
       writeln("Running sha1sum ", path);
     var sub = spawn(["sha1sum", path], stdout=pipeStyle.pipe);

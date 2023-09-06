@@ -186,7 +186,7 @@ record _mapIdxTrivalFilter { //private
 }
 
 // produced by distributedMap.updateManager()
-record distributedMapManager {
+record distributedMapManager : contextManager {
   var   client;
   const locIdx;
   const mapIdx;

@@ -1,0 +1,8 @@
+createBorrowingBuffer.chpl:6: warning: 'createBorrowingBuffer' is unstable and may change in the future
+createBorrowingBuffer.chpl:11: warning: 'createBorrowingBuffer' is unstable and may change in the future
+createBorrowingBuffer.chpl:16: warning: 'createBorrowingBuffer' is unstable and may change in the future
+createBorrowingBuffer.chpl:21: warning: 'createBorrowingBuffer' is unstable and may change in the future
+hello
+hello
+hello
+hello

@@ -49,9 +49,9 @@ proc BFS ( root : vertex_id, ref ParentTree, G )
     var barrier: sync bool;
 
     coforall loc in Locales with (ref Active_Level, ref Active_Remaining, ref Next_Level) do on loc {
-      forall u in rcLocal(Active_Level)!.Members do {
+      forall u in rcLocal(Active_Level)!.Members with (ref Next_Level, ref ParentTree) do {
 
-        forall v in G.Neighbors (u) do on v {
+        forall v in G.Neighbors (u) with (ref Next_Level, ref ParentTree) do on v {
 
           if ( visited (v).readXX() < 0 )
           {

@@ -1,4 +1,4 @@
-record man {
+record man : contextManager {
   var x = 0;
   proc ref enterContext() ref: int { return x; }
   proc exitContext(in err: owned Error?) {
