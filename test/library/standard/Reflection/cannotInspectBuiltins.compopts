@@ -1,0 +1,70 @@
+-stestNum=1 -stestType=string
+-stestNum=2 -stestType=string
+-stestNum=3 -stestType=string
+-stestNum=4 -stestType=string
+-stestNum=5 -stestType=string
+-stestNum=6 -stestType=string
+-stestNum=7 -stestType=string
+-stestNum=8 -stestType=string
+-stestNum=9 -stestType=string
+-stestNum=10 -stestType=string
+-stestNum=1 -stestType=range
+-stestNum=2 -stestType=range
+-stestNum=3 -stestType=range
+-stestNum=4 -stestType=range
+-stestNum=5 -stestType=range
+-stestNum=6 -stestType=range
+-stestNum=7 -stestType=range
+-stestNum=8 -stestType=range
+-stestNum=9 -stestType=range
+-stestNum=10 -stestType=range
+-stestNum=1 -stestType=domain(1)
+-stestNum=2 -stestType=domain(1)
+-stestNum=3 -stestType=domain(1)
+-stestNum=4 -stestType=domain(1)
+-stestNum=5 -stestType=domain(1)
+-stestNum=6 -stestType=domain(1)
+-stestNum=7 -stestType=domain(1)
+-stestNum=8 -stestType=domain(1)
+-stestNum=9 -stestType=domain(1)
+-stestNum=10 -stestType=domain(1)
+-stestNum=1 -stestType='[1..10] int'
+-stestNum=2 -stestType='[1..10] int'
+-stestNum=3 -stestType='[1..10] int'
+-stestNum=4 -stestType='[1..10] int'
+-stestNum=5 -stestType='[1..10] int'
+-stestNum=6 -stestType='[1..10] int'
+-stestNum=7 -stestType='[1..10] int'
+-stestNum=8 -stestType='[1..10] int'
+-stestNum=9 -stestType='[1..10] int'
+-stestNum=10 -stestType='[1..10] int'
+-stestNum=1 -stestType='sync int'
+-stestNum=2 -stestType='sync int'
+-stestNum=3 -stestType='sync int'
+-stestNum=4 -stestType='sync int'
+-stestNum=5 -stestType='sync int'
+-stestNum=6 -stestType='sync int'
+-stestNum=7 -stestType='sync int'
+-stestNum=8 -stestType='sync int'
+-stestNum=9 -stestType='sync int'
+-stestNum=10 -stestType='sync int'
+-stestNum=1 -stestType='atomic int'
+-stestNum=2 -stestType='atomic int'
+-stestNum=3 -stestType='atomic int'
+-stestNum=4 -stestType='atomic int'
+-stestNum=5 -stestType='atomic int'
+-stestNum=6 -stestType='atomic int'
+-stestNum=7 -stestType='atomic int'
+-stestNum=8 -stestType='atomic int'
+-stestNum=9 -stestType='atomic int'
+-stestNum=10 -stestType='atomic int'
+-stestNum=1 -stestType='(int,int)'
+-stestNum=2 -stestType='(int,int)'
+-stestNum=3 -stestType='(int,int)'
+-stestNum=4 -stestType='(int,int)'
+-stestNum=5 -stestType='(int,int)'
+-stestNum=6 -stestType='(int,int)'
+-stestNum=7 -stestType='(int,int)'
+-stestNum=8 -stestType='(int,int)'
+-stestNum=9 -stestType='(int,int)'
+-stestNum=10 -stestType='(int,int)'
