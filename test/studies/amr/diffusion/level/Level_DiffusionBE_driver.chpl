@@ -9,6 +9,7 @@ use LevelSolution_DiffusionBE;
 use LevelBC_DiffusionBE;
 
 use IO;
+use Math;
 
 private proc main {
 

@@ -10,6 +10,7 @@ use LevelSolution_AdvectionCTU;
 use LevelBC_AdvectionCTU;
 
 use IO;
+use Math;
 
 private proc main {
 
