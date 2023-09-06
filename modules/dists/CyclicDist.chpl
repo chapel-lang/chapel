@@ -1311,8 +1311,8 @@ where canDoAnyToCyclic(this, destDom, Src, srcDom) {
 
   coforall i in Dest.dom.dist.targetLocDom {
     on Dest.dom.dist.targetLocs(i) {
-      const regionDest = Dest.dom.locDoms(i).myBlock[destDom];
-      const regionSrc = Src.dom.locDoms(i).myBlock[srcDom];
+      const regionDest = Dest.dom.locDoms(i).myBlock[(...destDom.dims())];
+      const regionSrc = Src.dom.locDoms(i).myBlock[(...srcDom.dims())];
       if regionDest.sizeAs(int) > 0 {
         const ini = bulkCommConvertCoordinate(regionDest.first, destDom, srcDom);
         const end = bulkCommConvertCoordinate(regionDest.last, destDom, srcDom);
@@ -1352,7 +1352,7 @@ where useBulkTransferDist {
 
   coforall j in Src.dom.dist.targetLocDom {
     on Src.dom.dist.targetLocs(j) {
-      const inters = Src.dom.locDoms(j).myBlock[srcDom];
+      const inters = Src.dom.locDoms(j).myBlock[(...srcDom.dims())];
       if inters.sizeAs(int) > 0 {
         const ini = bulkCommConvertCoordinate(inters.first, srcDom, destDom);
         const end = bulkCommConvertCoordinate(inters.last, srcDom, destDom);

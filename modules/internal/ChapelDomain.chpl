@@ -44,6 +44,10 @@ module ChapelDomain {
      to suppress the warning about arrays and slices with negative strides. */
   config param noNegativeStrideWarnings = false;
 
+  /* Compile with ``-snewDomainSlicingRule`` to switch to the new domain
+     slicing behavior and suppress the corresponding deprecation warning. */
+  config param newDomainSlicingRule = false;
+
   pragma "no copy return"
   pragma "return not owned"
   proc _getDomain(value) {
@@ -1301,22 +1305,38 @@ module ChapelDomain {
       }
     }
 
-
     // see comments for the same method in _array
     //
     // domain slicing by domain
     @chpldoc.nodoc
     proc this(d: domain) {
-      if d.rank == rank then
-        return this((...d.getIndices()));
-      else
+      if d.rank != rank then
         compilerError("slicing a domain with a domain of a different rank");
+
+      if newDomainSlicingRule {
+        const slicedRanges = chpl_sliceRanges(d.dims());
+        return new _domain(d.distribution,
+                           rank, _value.idxType, slicedRanges(0).strides,
+                           slicedRanges);
+      } else {
+        if ! this.isDefaultRectangular() || ! d.isDefaultRectangular() then
+          compilerWarning("when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'");
+
+        return this((...d.getIndices()));
+      }
     }
 
     // domain slicing by tuple of ranges
     @chpldoc.nodoc
     proc this(ranges...rank)
     where chpl__isTupleOfRanges(ranges) {
+      const slicedRanges = chpl_sliceRanges(ranges);
+      return new _domain(distribution,
+                         rank, _value.idxType, slicedRanges(0).strides,
+                         slicedRanges);
+    }
+
+    proc chpl_sliceRanges(ranges) {
       const myDims = dims();
 
       proc resultStrides(param dim = 0) param do return
@@ -1328,7 +1348,8 @@ module ChapelDomain {
       for param i in 0..rank-1 {
         r(i) = myDims(i)[ranges(i)];
       }
-      return new _domain(distribution, rank, _value.idxType, r(0).strides, r);
+
+      return r;
     }
 
     // domain rank change
@@ -1677,7 +1698,7 @@ module ChapelDomain {
       }
 
       @chpldoc.nodoc
-      proc _checkThatArrayShapeIsSupported(arr) param {
+      proc _checkThatArrayShapeIsSupported(arr) {
 
         // TODO: Test associative, ND rectangular with rank 2+.
         if !arr.isDefaultRectangular() {

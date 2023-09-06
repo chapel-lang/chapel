@@ -1,0 +1,576 @@
+../../domains/userAPI/domainAPItest.chpl:3: In function 'testDomainAPI2D':
+../../domains/userAPI/domainAPItest.chpl:51: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:61: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:61: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:63: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:63: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+  testUserAPI.chpl:24: called as testDomainAPI2D(lbl: string, D: DimensionalDom(2,int(64),one,unmanaged DimensionalDist2D([domain(2,int(64),one)] locale,BlockDim(int(64)),BlockDim(int(64)),int(64),2),Block1dom(int(64),one,BlockDim(int(64))),Block1dom(int(64),one,BlockDim(int(64)))), idx: 2*int(64), OOBidx1: 2*int(64), OOBidx2: 2*int(64), intDom: domain(2,int(64),one)) from function 'help'
+  testUserAPI.chpl:26: called as help(dd: DimensionalDist2D([domain(2,int(64),one)] locale,BlockDim(int(64)),BlockDim(int(64)),int(64),2)) from function 'testDomainAPI2D'
+  testUserAPI.chpl:35: called as testDomainAPI2D(param lbl = "2D domain", DR: domain(2,int(64),one), idx: 2*int(64), OOBidx1: 2*int(64), OOBidx2: 2*int(64), intDom: domain(2,int(64),one))
+../../domains/userAPI/domainAPItest.chpl:3: In function 'testDomainAPI2D':
+../../domains/userAPI/domainAPItest.chpl:51: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:61: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:61: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:63: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:63: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+  testUserAPI.chpl:24: called as testDomainAPI2D(lbl: string, D: DimensionalDom(2,int(64),one,unmanaged DimensionalDist2D([domain(2,int(64),one)] locale,BlockDim(int(64)),BlockCyclicDim,int(64),2),Block1dom(int(64),one,BlockDim(int(64))),BlockCyclic1dom(int(64),int(64),one)), idx: 2*int(64), OOBidx1: 2*int(64), OOBidx2: 2*int(64), intDom: domain(2,int(64),one)) from function 'help'
+  testUserAPI.chpl:27: called as help(dd: DimensionalDist2D([domain(2,int(64),one)] locale,BlockDim(int(64)),BlockCyclicDim,int(64),2)) from function 'testDomainAPI2D'
+  testUserAPI.chpl:35: called as testDomainAPI2D(param lbl = "2D domain", DR: domain(2,int(64),one), idx: 2*int(64), OOBidx1: 2*int(64), OOBidx2: 2*int(64), intDom: domain(2,int(64),one))
+../../domains/userAPI/domainAPItest.chpl:3: In function 'testDomainAPI2D':
+../../domains/userAPI/domainAPItest.chpl:51: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:61: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:61: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:63: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:63: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+  testUserAPI.chpl:24: called as testDomainAPI2D(lbl: string, D: DimensionalDom(2,int(64),one,unmanaged DimensionalDist2D([domain(2,int(64),one)] locale,BlockCyclicDim,BlockDim(int(64)),int(64),2),BlockCyclic1dom(int(64),int(64),one),Block1dom(int(64),one,BlockDim(int(64)))), idx: 2*int(64), OOBidx1: 2*int(64), OOBidx2: 2*int(64), intDom: domain(2,int(64),one)) from function 'help'
+  testUserAPI.chpl:28: called as help(dd: DimensionalDist2D([domain(2,int(64),one)] locale,BlockCyclicDim,BlockDim(int(64)),int(64),2)) from function 'testDomainAPI2D'
+  testUserAPI.chpl:35: called as testDomainAPI2D(param lbl = "2D domain", DR: domain(2,int(64),one), idx: 2*int(64), OOBidx1: 2*int(64), OOBidx2: 2*int(64), intDom: domain(2,int(64),one))
+../../domains/userAPI/domainAPItest.chpl:3: In function 'testDomainAPI2D':
+../../domains/userAPI/domainAPItest.chpl:51: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:61: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:61: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:63: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:63: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+  testUserAPI.chpl:24: called as testDomainAPI2D(lbl: string, D: DimensionalDom(2,int(64),one,unmanaged DimensionalDist2D([domain(2,int(64),one)] locale,BlockCyclicDim,BlockCyclicDim,int(64),2),BlockCyclic1dom(int(64),int(64),one),BlockCyclic1dom(int(64),int(64),one)), idx: 2*int(64), OOBidx1: 2*int(64), OOBidx2: 2*int(64), intDom: domain(2,int(64),one)) from function 'help'
+  testUserAPI.chpl:29: called as help(dd: DimensionalDist2D([domain(2,int(64),one)] locale,BlockCyclicDim,BlockCyclicDim,int(64),2)) from function 'testDomainAPI2D'
+  testUserAPI.chpl:35: called as testDomainAPI2D(param lbl = "2D domain", DR: domain(2,int(64),one), idx: 2*int(64), OOBidx1: 2*int(64), OOBidx2: 2*int(64), intDom: domain(2,int(64),one))
+../../domains/userAPI/domainAPItest.chpl:3: In function 'testDomainAPI2D':
+../../domains/userAPI/domainAPItest.chpl:51: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:61: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:61: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:63: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:63: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+  testUserAPI.chpl:24: called as testDomainAPI2D(lbl: string, D: DimensionalDom(2,int(64),positive,unmanaged DimensionalDist2D([domain(2,int(64),one)] locale,BlockDim(int(64)),BlockDim(int(64)),int(64),2),Block1dom(int(64),positive,BlockDim(int(64))),Block1dom(int(64),positive,BlockDim(int(64)))), idx: 2*int(64), OOBidx1: 2*int(64), OOBidx2: 2*int(64), intDom: domain(2,int(64),one)) from function 'help'
+  testUserAPI.chpl:26: called as help(dd: DimensionalDist2D([domain(2,int(64),one)] locale,BlockDim(int(64)),BlockDim(int(64)),int(64),2)) from function 'testDomainAPI2D'
+  testUserAPI.chpl:36: called as testDomainAPI2D(param lbl = "strided 2D domain", DR: domain(2,int(64),positive), idx: 2*int(64), OOBidx1: 2*int(64), OOBidx2: 2*int(64), intDom: domain(2,int(64),one))
+../../domains/userAPI/domainAPItest.chpl:3: In function 'testDomainAPI2D':
+../../domains/userAPI/domainAPItest.chpl:51: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:61: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:61: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:63: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:63: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+  testUserAPI.chpl:24: called as testDomainAPI2D(lbl: string, D: DimensionalDom(2,int(64),positive,unmanaged DimensionalDist2D([domain(2,int(64),one)] locale,BlockDim(int(64)),BlockCyclicDim,int(64),2),Block1dom(int(64),positive,BlockDim(int(64))),BlockCyclic1dom(int(64),int(64),positive)), idx: 2*int(64), OOBidx1: 2*int(64), OOBidx2: 2*int(64), intDom: domain(2,int(64),one)) from function 'help'
+  testUserAPI.chpl:27: called as help(dd: DimensionalDist2D([domain(2,int(64),one)] locale,BlockDim(int(64)),BlockCyclicDim,int(64),2)) from function 'testDomainAPI2D'
+  testUserAPI.chpl:36: called as testDomainAPI2D(param lbl = "strided 2D domain", DR: domain(2,int(64),positive), idx: 2*int(64), OOBidx1: 2*int(64), OOBidx2: 2*int(64), intDom: domain(2,int(64),one))
+../../domains/userAPI/domainAPItest.chpl:3: In function 'testDomainAPI2D':
+../../domains/userAPI/domainAPItest.chpl:51: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:61: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:61: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:63: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:63: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+  testUserAPI.chpl:24: called as testDomainAPI2D(lbl: string, D: DimensionalDom(2,int(64),positive,unmanaged DimensionalDist2D([domain(2,int(64),one)] locale,BlockCyclicDim,BlockDim(int(64)),int(64),2),BlockCyclic1dom(int(64),int(64),positive),Block1dom(int(64),positive,BlockDim(int(64)))), idx: 2*int(64), OOBidx1: 2*int(64), OOBidx2: 2*int(64), intDom: domain(2,int(64),one)) from function 'help'
+  testUserAPI.chpl:28: called as help(dd: DimensionalDist2D([domain(2,int(64),one)] locale,BlockCyclicDim,BlockDim(int(64)),int(64),2)) from function 'testDomainAPI2D'
+  testUserAPI.chpl:36: called as testDomainAPI2D(param lbl = "strided 2D domain", DR: domain(2,int(64),positive), idx: 2*int(64), OOBidx1: 2*int(64), OOBidx2: 2*int(64), intDom: domain(2,int(64),one))
+../../domains/userAPI/domainAPItest.chpl:3: In function 'testDomainAPI2D':
+../../domains/userAPI/domainAPItest.chpl:51: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:61: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:61: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:63: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+../../domains/userAPI/domainAPItest.chpl:63: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+  testUserAPI.chpl:24: called as testDomainAPI2D(lbl: string, D: DimensionalDom(2,int(64),positive,unmanaged DimensionalDist2D([domain(2,int(64),one)] locale,BlockCyclicDim,BlockCyclicDim,int(64),2),BlockCyclic1dom(int(64),int(64),positive),BlockCyclic1dom(int(64),int(64),positive)), idx: 2*int(64), OOBidx1: 2*int(64), OOBidx2: 2*int(64), intDom: domain(2,int(64),one)) from function 'help'
+  testUserAPI.chpl:29: called as help(dd: DimensionalDist2D([domain(2,int(64),one)] locale,BlockCyclicDim,BlockCyclicDim,int(64),2)) from function 'testDomainAPI2D'
+  testUserAPI.chpl:36: called as testDomainAPI2D(param lbl = "strided 2D domain", DR: domain(2,int(64),positive), idx: 2*int(64), OOBidx1: 2*int(64), OOBidx2: 2*int(64), intDom: domain(2,int(64),one))
+### bl1,bl2 2D domain
+------------
+{1..5, 0..4}
+rank             = 2
+idxType          = int(64)
+fullIdxType      = 2*int(64)
+strides          = one
+size             = 25
+isEmpty()        = false
+lowBound         = (1, 0)
+highBound        = (5, 4)
+stride           = (1, 1)
+alignment        = (0, 0)
+first            = (1, 0)
+last             = (5, 4)
+low              = (1, 0)
+high             = (5, 4)
+dims()           = (1..5, 0..4)
+dim(0)           = 1..5
+dim(1)           = 0..4
+contains((3, 3))   = true
+contains((0, 3))   = false
+contains((3, 5))   = false
+indexOrder((3, 3)) = 13
+shape            = (5, 5)
+position((3, 3)) = (2, 3)
+expand(1)        = {0..6, -1..5}
+expand(1,0)      = {0..6, 0..4}
+expand((0,2))    = {1..5, -2..6}
+exterior(1)      = {6..6, 5..5}
+exterior(1,0)    = {6..6, 0..4}
+exterior((0,2))  = {1..5, 5..6}
+interior(1)      = {5..5, 4..4}
+interior(1,0)    = {5..5, 0..4}
+interior((0,2)   = {1..5, 3..4}
+translate(1)     = {2..6, 1..5}
+translate(1,0)   = {2..6, 0..4}
+translate((0,2)) = {1..5, 2..6}
+serial iteration = 
+(1, 0) (1, 1) (1, 2) (1, 3) (1, 4) (2, 0) (2, 1) (2, 2) (2, 3) (2, 4) (3, 0) (3, 1) (3, 2) (3, 3) (3, 4) (4, 0) (4, 1) (4, 2) (4, 3) (4, 4) (5, 0) (5, 1) (5, 2) (5, 3) (5, 4) 
+D[{0..6, 3..5}] = {1..5, 3..4}
+D[{0..6, 3..5} (as ranges)] = {1..5, 3..4}
+D.localSlice({0..6, 3..5}) = {1..5, 3..4}
+D.targetLocales() = LOCALE0
+D.hasSingleLocalSubdomain() = true
+D.localSubdomain() = {1..5, 0..4}
+D#(2,2) = {1..2, 0..1}
+D == intDom = false
+D(intDom) == intDom(D) = true
+D != intDom = true
+D(intDom) != intDom(D) = false
+D:string = {1..5, 0..4}
+Copying...
+{1..5, 0..4}
+Clearing...
+{1..0, 1..0}
+size             = 0
+isEmpty()        = true
+lowBound         = (1, 1)
+highBound        = (0, 0)
+stride           = (1, 1)
+alignment        = (0, 0)
+
+### bl1,bc2 2D domain
+------------
+{1..5, 0..4}
+rank             = 2
+idxType          = int(64)
+fullIdxType      = 2*int(64)
+strides          = one
+size             = 25
+isEmpty()        = false
+lowBound         = (1, 0)
+highBound        = (5, 4)
+stride           = (1, 1)
+alignment        = (0, 0)
+first            = (1, 0)
+last             = (5, 4)
+low              = (1, 0)
+high             = (5, 4)
+dims()           = (1..5, 0..4)
+dim(0)           = 1..5
+dim(1)           = 0..4
+contains((3, 3))   = true
+contains((0, 3))   = false
+contains((3, 5))   = false
+indexOrder((3, 3)) = 13
+shape            = (5, 5)
+position((3, 3)) = (2, 3)
+expand(1)        = {0..6, -1..5}
+expand(1,0)      = {0..6, 0..4}
+expand((0,2))    = {1..5, -2..6}
+exterior(1)      = {6..6, 5..5}
+exterior(1,0)    = {6..6, 0..4}
+exterior((0,2))  = {1..5, 5..6}
+interior(1)      = {5..5, 4..4}
+interior(1,0)    = {5..5, 0..4}
+interior((0,2)   = {1..5, 3..4}
+translate(1)     = {2..6, 1..5}
+translate(1,0)   = {2..6, 0..4}
+translate((0,2)) = {1..5, 2..6}
+serial iteration = 
+(1, 0) (1, 1) (1, 2) (1, 3) (1, 4) (2, 0) (2, 1) (2, 2) (2, 3) (2, 4) (3, 0) (3, 1) (3, 2) (3, 3) (3, 4) (4, 0) (4, 1) (4, 2) (4, 3) (4, 4) (5, 0) (5, 1) (5, 2) (5, 3) (5, 4) 
+D[{0..6, 3..5}] = {1..5, 3..4}
+D[{0..6, 3..5} (as ranges)] = {1..5, 3..4}
+D.localSlice({0..6, 3..5}) = {1..5, 3..4}
+D.targetLocales() = LOCALE0
+D.hasSingleLocalSubdomain() = true
+D.localSubdomain() = {1..5, 0..4}
+D#(2,2) = {1..2, 0..1}
+D == intDom = false
+D(intDom) == intDom(D) = true
+D != intDom = true
+D(intDom) != intDom(D) = false
+D:string = {1..5, 0..4}
+Copying...
+{1..5, 0..4}
+Clearing...
+{1..0, 1..0}
+size             = 0
+isEmpty()        = true
+lowBound         = (1, 1)
+highBound        = (0, 0)
+stride           = (1, 1)
+alignment        = (0, 0)
+
+### bc1,bl2 2D domain
+------------
+{1..5, 0..4}
+rank             = 2
+idxType          = int(64)
+fullIdxType      = 2*int(64)
+strides          = one
+size             = 25
+isEmpty()        = false
+lowBound         = (1, 0)
+highBound        = (5, 4)
+stride           = (1, 1)
+alignment        = (0, 0)
+first            = (1, 0)
+last             = (5, 4)
+low              = (1, 0)
+high             = (5, 4)
+dims()           = (1..5, 0..4)
+dim(0)           = 1..5
+dim(1)           = 0..4
+contains((3, 3))   = true
+contains((0, 3))   = false
+contains((3, 5))   = false
+indexOrder((3, 3)) = 13
+shape            = (5, 5)
+position((3, 3)) = (2, 3)
+expand(1)        = {0..6, -1..5}
+expand(1,0)      = {0..6, 0..4}
+expand((0,2))    = {1..5, -2..6}
+exterior(1)      = {6..6, 5..5}
+exterior(1,0)    = {6..6, 0..4}
+exterior((0,2))  = {1..5, 5..6}
+interior(1)      = {5..5, 4..4}
+interior(1,0)    = {5..5, 0..4}
+interior((0,2)   = {1..5, 3..4}
+translate(1)     = {2..6, 1..5}
+translate(1,0)   = {2..6, 0..4}
+translate((0,2)) = {1..5, 2..6}
+serial iteration = 
+(1, 0) (1, 1) (1, 2) (1, 3) (1, 4) (2, 0) (2, 1) (2, 2) (2, 3) (2, 4) (3, 0) (3, 1) (3, 2) (3, 3) (3, 4) (4, 0) (4, 1) (4, 2) (4, 3) (4, 4) (5, 0) (5, 1) (5, 2) (5, 3) (5, 4) 
+D[{0..6, 3..5}] = {1..5, 3..4}
+D[{0..6, 3..5} (as ranges)] = {1..5, 3..4}
+D.localSlice({0..6, 3..5}) = {1..5, 3..4}
+D.targetLocales() = LOCALE0
+D.hasSingleLocalSubdomain() = true
+D.localSubdomain() = {1..5, 0..4}
+D#(2,2) = {1..2, 0..1}
+D == intDom = false
+D(intDom) == intDom(D) = true
+D != intDom = true
+D(intDom) != intDom(D) = false
+D:string = {1..5, 0..4}
+Copying...
+{1..5, 0..4}
+Clearing...
+{1..0, 1..0}
+size             = 0
+isEmpty()        = true
+lowBound         = (1, 1)
+highBound        = (0, 0)
+stride           = (1, 1)
+alignment        = (0, 0)
+
+### bc1,bc2 2D domain
+------------
+{1..5, 0..4}
+rank             = 2
+idxType          = int(64)
+fullIdxType      = 2*int(64)
+strides          = one
+size             = 25
+isEmpty()        = false
+lowBound         = (1, 0)
+highBound        = (5, 4)
+stride           = (1, 1)
+alignment        = (0, 0)
+first            = (1, 0)
+last             = (5, 4)
+low              = (1, 0)
+high             = (5, 4)
+dims()           = (1..5, 0..4)
+dim(0)           = 1..5
+dim(1)           = 0..4
+contains((3, 3))   = true
+contains((0, 3))   = false
+contains((3, 5))   = false
+indexOrder((3, 3)) = 13
+shape            = (5, 5)
+position((3, 3)) = (2, 3)
+expand(1)        = {0..6, -1..5}
+expand(1,0)      = {0..6, 0..4}
+expand((0,2))    = {1..5, -2..6}
+exterior(1)      = {6..6, 5..5}
+exterior(1,0)    = {6..6, 0..4}
+exterior((0,2))  = {1..5, 5..6}
+interior(1)      = {5..5, 4..4}
+interior(1,0)    = {5..5, 0..4}
+interior((0,2)   = {1..5, 3..4}
+translate(1)     = {2..6, 1..5}
+translate(1,0)   = {2..6, 0..4}
+translate((0,2)) = {1..5, 2..6}
+serial iteration = 
+(1, 0) (1, 1) (1, 2) (1, 3) (1, 4) (2, 0) (2, 1) (2, 2) (2, 3) (2, 4) (3, 0) (3, 1) (3, 2) (3, 3) (3, 4) (4, 0) (4, 1) (4, 2) (4, 3) (4, 4) (5, 0) (5, 1) (5, 2) (5, 3) (5, 4) 
+D[{0..6, 3..5}] = {1..5, 3..4}
+D[{0..6, 3..5} (as ranges)] = {1..5, 3..4}
+D.localSlice({0..6, 3..5}) = {1..5, 3..4}
+D.targetLocales() = LOCALE0
+D.hasSingleLocalSubdomain() = true
+D.localSubdomain() = {1..5, 0..4}
+D#(2,2) = {1..2, 0..1}
+D == intDom = false
+D(intDom) == intDom(D) = true
+D != intDom = true
+D(intDom) != intDom(D) = false
+D:string = {1..5, 0..4}
+Copying...
+{1..5, 0..4}
+Clearing...
+{1..0, 1..0}
+size             = 0
+isEmpty()        = true
+lowBound         = (1, 1)
+highBound        = (0, 0)
+stride           = (1, 1)
+alignment        = (0, 0)
+
+### bl1,bl2 strided 2D domain
+------------
+{1..5 by 2, 0..4 by 2 align 1}
+rank             = 2
+idxType          = int(64)
+fullIdxType      = 2*int(64)
+strides          = positive
+size             = 6
+isEmpty()        = false
+lowBound         = (1, 0)
+highBound        = (5, 4)
+stride           = (2, 2)
+alignment        = (1, 1)
+first            = (1, 1)
+last             = (5, 3)
+low              = (1, 1)
+high             = (5, 3)
+dims()           = (1..5 by 2, 0..4 by 2 align 1)
+dim(0)           = 1..5 by 2
+dim(1)           = 0..4 by 2 align 1
+contains((3, 3))   = true
+contains((0, 3))   = false
+contains((3, 5))   = false
+indexOrder((3, 3)) = 3
+shape            = (3, 2)
+position((3, 3)) = (1, 1)
+expand(1)        = {0..6 by 2 align 1, -1..5 by 2}
+expand(1,0)      = {0..6 by 2 align 1, 0..4 by 2 align 1}
+expand((0,2))    = {1..5 by 2, -2..6 by 2 align 1}
+exterior(1)      = {6..6 by 2 align 1, 5..5 by 2}
+exterior(1,0)    = {6..6 by 2 align 1, 0..4 by 2 align 1}
+exterior((0,2))  = {1..5 by 2, 5..6 by 2}
+interior(1)      = {5..5 by 2, 4..4 by 2 align 1}
+interior(1,0)    = {5..5 by 2, 0..4 by 2 align 1}
+interior((0,2)   = {1..5 by 2, 3..4 by 2}
+translate(1)     = {2..6 by 2, 1..5 by 2 align 0}
+translate(1,0)   = {2..6 by 2, 0..4 by 2 align 1}
+translate((0,2)) = {1..5 by 2, 2..6 by 2 align 1}
+serial iteration = 
+(1, 1) (1, 3) (3, 1) (3, 3) (5, 1) (5, 3) 
+D[{0..6, 3..5}] = {1..5 by 2, 3..4 by 2}
+D[{0..6, 3..5} (as ranges)] = {1..5 by 2, 3..4 by 2}
+D.localSlice({0..6, 3..5}) = {1..5 by 2, 3..4 by 2}
+D.targetLocales() = LOCALE0
+D.hasSingleLocalSubdomain() = true
+D.localSubdomain() = {1..5 by 2, 0..4 by 2 align 1}
+D#(2,2) = {1..4 by 2, 0..3 by 2 align 1}
+D == intDom = false
+D(intDom) == intDom(D) = true
+D != intDom = true
+D(intDom) != intDom(D) = false
+D:string = {1..5 by 2, 0..4 by 2 align 1}
+Copying...
+{1..5 by 2, 0..4 by 2 align 1}
+Clearing...
+{1..0, 1..0}
+size             = 0
+isEmpty()        = true
+lowBound         = (1, 1)
+highBound        = (0, 0)
+stride           = (1, 1)
+alignment        = (0, 0)
+
+### bl1,bc2 strided 2D domain
+------------
+{1..5 by 2, 0..4 by 2 align 1}
+rank             = 2
+idxType          = int(64)
+fullIdxType      = 2*int(64)
+strides          = positive
+size             = 6
+isEmpty()        = false
+lowBound         = (1, 0)
+highBound        = (5, 4)
+stride           = (2, 2)
+alignment        = (1, 1)
+first            = (1, 1)
+last             = (5, 3)
+low              = (1, 1)
+high             = (5, 3)
+dims()           = (1..5 by 2, 0..4 by 2 align 1)
+dim(0)           = 1..5 by 2
+dim(1)           = 0..4 by 2 align 1
+contains((3, 3))   = true
+contains((0, 3))   = false
+contains((3, 5))   = false
+indexOrder((3, 3)) = 3
+shape            = (3, 2)
+position((3, 3)) = (1, 1)
+expand(1)        = {0..6 by 2 align 1, -1..5 by 2}
+expand(1,0)      = {0..6 by 2 align 1, 0..4 by 2 align 1}
+expand((0,2))    = {1..5 by 2, -2..6 by 2 align 1}
+exterior(1)      = {6..6 by 2 align 1, 5..5 by 2}
+exterior(1,0)    = {6..6 by 2 align 1, 0..4 by 2 align 1}
+exterior((0,2))  = {1..5 by 2, 5..6 by 2}
+interior(1)      = {5..5 by 2, 4..4 by 2 align 1}
+interior(1,0)    = {5..5 by 2, 0..4 by 2 align 1}
+interior((0,2)   = {1..5 by 2, 3..4 by 2}
+translate(1)     = {2..6 by 2, 1..5 by 2 align 0}
+translate(1,0)   = {2..6 by 2, 0..4 by 2 align 1}
+translate((0,2)) = {1..5 by 2, 2..6 by 2 align 1}
+serial iteration = 
+(1, 1) (1, 3) (3, 1) (3, 3) (5, 1) (5, 3) 
+D[{0..6, 3..5}] = {1..5 by 2, 3..4 by 2}
+D[{0..6, 3..5} (as ranges)] = {1..5 by 2, 3..4 by 2}
+D.localSlice({0..6, 3..5}) = {1..5 by 2, 3..4 by 2}
+D.targetLocales() = LOCALE0
+D.hasSingleLocalSubdomain() = true
+D.localSubdomain() = {1..5 by 2, 0..4 by 2 align 1}
+D#(2,2) = {1..4 by 2, 0..3 by 2 align 1}
+D == intDom = false
+D(intDom) == intDom(D) = true
+D != intDom = true
+D(intDom) != intDom(D) = false
+D:string = {1..5 by 2, 0..4 by 2 align 1}
+Copying...
+{1..5 by 2, 0..4 by 2 align 1}
+Clearing...
+{1..0, 1..0}
+size             = 0
+isEmpty()        = true
+lowBound         = (1, 1)
+highBound        = (0, 0)
+stride           = (1, 1)
+alignment        = (0, 0)
+
+### bc1,bl2 strided 2D domain
+------------
+{1..5 by 2, 0..4 by 2 align 1}
+rank             = 2
+idxType          = int(64)
+fullIdxType      = 2*int(64)
+strides          = positive
+size             = 6
+isEmpty()        = false
+lowBound         = (1, 0)
+highBound        = (5, 4)
+stride           = (2, 2)
+alignment        = (1, 1)
+first            = (1, 1)
+last             = (5, 3)
+low              = (1, 1)
+high             = (5, 3)
+dims()           = (1..5 by 2, 0..4 by 2 align 1)
+dim(0)           = 1..5 by 2
+dim(1)           = 0..4 by 2 align 1
+contains((3, 3))   = true
+contains((0, 3))   = false
+contains((3, 5))   = false
+indexOrder((3, 3)) = 3
+shape            = (3, 2)
+position((3, 3)) = (1, 1)
+expand(1)        = {0..6 by 2 align 1, -1..5 by 2}
+expand(1,0)      = {0..6 by 2 align 1, 0..4 by 2 align 1}
+expand((0,2))    = {1..5 by 2, -2..6 by 2 align 1}
+exterior(1)      = {6..6 by 2 align 1, 5..5 by 2}
+exterior(1,0)    = {6..6 by 2 align 1, 0..4 by 2 align 1}
+exterior((0,2))  = {1..5 by 2, 5..6 by 2}
+interior(1)      = {5..5 by 2, 4..4 by 2 align 1}
+interior(1,0)    = {5..5 by 2, 0..4 by 2 align 1}
+interior((0,2)   = {1..5 by 2, 3..4 by 2}
+translate(1)     = {2..6 by 2, 1..5 by 2 align 0}
+translate(1,0)   = {2..6 by 2, 0..4 by 2 align 1}
+translate((0,2)) = {1..5 by 2, 2..6 by 2 align 1}
+serial iteration = 
+(1, 1) (1, 3) (3, 1) (3, 3) (5, 1) (5, 3) 
+D[{0..6, 3..5}] = {1..5 by 2, 3..4 by 2}
+D[{0..6, 3..5} (as ranges)] = {1..5 by 2, 3..4 by 2}
+D.localSlice({0..6, 3..5}) = {1..5 by 2, 3..4 by 2}
+D.targetLocales() = LOCALE0
+D.hasSingleLocalSubdomain() = true
+D.localSubdomain() = {1..5 by 2, 0..4 by 2 align 1}
+D#(2,2) = {1..4 by 2, 0..3 by 2 align 1}
+D == intDom = false
+D(intDom) == intDom(D) = true
+D != intDom = true
+D(intDom) != intDom(D) = false
+D:string = {1..5 by 2, 0..4 by 2 align 1}
+Copying...
+{1..5 by 2, 0..4 by 2 align 1}
+Clearing...
+{1..0, 1..0}
+size             = 0
+isEmpty()        = true
+lowBound         = (1, 1)
+highBound        = (0, 0)
+stride           = (1, 1)
+alignment        = (0, 0)
+
+### bc1,bc2 strided 2D domain
+------------
+{1..5 by 2, 0..4 by 2 align 1}
+rank             = 2
+idxType          = int(64)
+fullIdxType      = 2*int(64)
+strides          = positive
+size             = 6
+isEmpty()        = false
+lowBound         = (1, 0)
+highBound        = (5, 4)
+stride           = (2, 2)
+alignment        = (1, 1)
+first            = (1, 1)
+last             = (5, 3)
+low              = (1, 1)
+high             = (5, 3)
+dims()           = (1..5 by 2, 0..4 by 2 align 1)
+dim(0)           = 1..5 by 2
+dim(1)           = 0..4 by 2 align 1
+contains((3, 3))   = true
+contains((0, 3))   = false
+contains((3, 5))   = false
+indexOrder((3, 3)) = 3
+shape            = (3, 2)
+position((3, 3)) = (1, 1)
+expand(1)        = {0..6 by 2 align 1, -1..5 by 2}
+expand(1,0)      = {0..6 by 2 align 1, 0..4 by 2 align 1}
+expand((0,2))    = {1..5 by 2, -2..6 by 2 align 1}
+exterior(1)      = {6..6 by 2 align 1, 5..5 by 2}
+exterior(1,0)    = {6..6 by 2 align 1, 0..4 by 2 align 1}
+exterior((0,2))  = {1..5 by 2, 5..6 by 2}
+interior(1)      = {5..5 by 2, 4..4 by 2 align 1}
+interior(1,0)    = {5..5 by 2, 0..4 by 2 align 1}
+interior((0,2)   = {1..5 by 2, 3..4 by 2}
+translate(1)     = {2..6 by 2, 1..5 by 2 align 0}
+translate(1,0)   = {2..6 by 2, 0..4 by 2 align 1}
+translate((0,2)) = {1..5 by 2, 2..6 by 2 align 1}
+serial iteration = 
+(1, 1) (1, 3) (3, 1) (3, 3) (5, 1) (5, 3) 
+D[{0..6, 3..5}] = {1..5 by 2, 3..4 by 2}
+D[{0..6, 3..5} (as ranges)] = {1..5 by 2, 3..4 by 2}
+D.localSlice({0..6, 3..5}) = {1..5 by 2, 3..4 by 2}
+D.targetLocales() = LOCALE0
+D.hasSingleLocalSubdomain() = true
+D.localSubdomain() = {1..5 by 2, 0..4 by 2 align 1}
+D#(2,2) = {1..4 by 2, 0..3 by 2 align 1}
+D == intDom = false
+D(intDom) == intDom(D) = true
+D != intDom = true
+D(intDom) != intDom(D) = false
+D:string = {1..5 by 2, 0..4 by 2 align 1}
+Copying...
+{1..5 by 2, 0..4 by 2 align 1}
+Clearing...
+{1..0, 1..0}
+size             = 0
+isEmpty()        = true
+lowBound         = (1, 1)
+highBound        = (0, 0)
+stride           = (1, 1)
+alignment        = (0, 0)
+

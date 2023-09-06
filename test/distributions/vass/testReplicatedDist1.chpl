@@ -59,7 +59,7 @@ proc trydist(mydmap, teston: locale, dmname) {
 on teston {
 
   var D: domain(2) dmapped mydmap = Dbase;
-  const Dsub = D[DsubLoc];
+  const Dsub = D[(...DsubLoc.dims())];
   var A: [D] elt;
   proc resetA() { A = [(i,j) in D] i*10 + j; }
   proc showA() { write(/*"A=\n",*/ A, "\n"); }

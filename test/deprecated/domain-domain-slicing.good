@@ -1,0 +1,5 @@
+domain-domain-slicing.chpl:10: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+domain-domain-slicing.chpl:11: warning: when slicing a domain with another domain, the distribution of the original domain is currently preserved in the result; in a future release, the distribution of the slicing domain will be used in the result instead; to switch to this new behavior and turn off this warning, compile with -snewDomainSlicingRule; to retain the current behavior going forward and turn off this warning, replace 'd1[d2]' with 'd1[(...d2.dims())]'
+{1..5} : domain(1,int(64),one)
+{1..7} : domain(1,int(64),one)
+{1..5} : BlockDom(1,int(64),one,unmanaged DefaultDist)

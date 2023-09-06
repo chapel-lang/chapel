@@ -2329,7 +2329,7 @@ private proc _doSimpleStencilTransfer(Dest, destDom, Src, srcDom) {
       //
       // Compute the local portion of the destination domain, and find the
       // corresponding indices in the source's domain.
-      const localDestBlock = dst.dom.locDoms[i].myBlock[destDom];
+      const localDestBlock = dst.dom.locDoms[i].myBlock[(...destDom.dims())];
       assert(localDestBlock.sizeAs(int) > 0);
       const corSrcBlock    = bulkCommTranslateDomain(localDestBlock, destDom, srcDom);
       if debugStencilDistBulkTransfer then
@@ -2363,7 +2363,7 @@ where canDoAnyToStencil(this, destDom, Src, srcDom) {
     on dom.dist.targetLocales(j) {
       const Dest = if _privatization then chpl_getPrivatizedCopy(this.type, pid) else this;
 
-      const inters   = Dest.dom.locDoms(j).myBlock[destDom];
+      const inters   = Dest.dom.locDoms(j).myBlock[(...destDom.dims())];
       const srcChunk = bulkCommTranslateDomain(inters, destDom, srcDom);
 
       if debugStencilDistBulkTransfer then
@@ -2388,7 +2388,7 @@ where !disableStencilDistBulkTransfer {
   coforall j in dom.dist.activeTargetLocales(srcDom) {
     on dom.dist.targetLocales(j) {
       const Src = if _privatization then chpl_getPrivatizedCopy(this.type, pid) else this;
-      const inters = Src.dom.locDoms(j).myBlock[srcDom];
+      const inters = Src.dom.locDoms(j).myBlock[(...srcDom.dims())];
 
       const destChunk = bulkCommTranslateDomain(inters, srcDom, destDom);
 
@@ -2415,7 +2415,7 @@ where !disableStencilDistBulkTransfer {
     on dom.dist.targetLocales(j) {
       // Grab privatized copy of 'this' to avoid extra GETs
       const Dest = if _privatization then chpl_getPrivatizedCopy(this.type, pid) else this;
-      const inters = Dest.dom.locDoms(j).myBlock[destDom];
+      const inters = Dest.dom.locDoms(j).myBlock[(...destDom.dims())];
       assert(inters.sizeAs(int) > 0);
 
       const srcChunk = bulkCommTranslateDomain(inters, destDom, srcDom);

@@ -1,0 +1,12 @@
+#
+# The only place in the code that does non-trivial domain slicing is this:
+#   if (Dom[Panels[ij]].size > 0)
+#
+# Here Dom is distttributed and Panels[ij] is local (default rectangular).
+# Since all we need is the size of the slice, there is no need
+# for the overhead of creating a distributed domain for the slice.
+#
+# Therefore we opt into the new domain slicing semantics
+# so that the slice results in a local, not distributed, domain.
+#
+-snewDomainSlicingRule

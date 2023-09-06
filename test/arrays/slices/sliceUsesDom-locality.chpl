@@ -4,7 +4,7 @@ var D = {1..9, 1..9};
 var SubD = {4..6, 4..6};
 
 var DB = Block.createDomain(D);
-var SubDB = DB[SubD];
+var SubDB = Block.createDomain(SubD);
 
 testit(D, SubD);
 testit(D, SubDB);

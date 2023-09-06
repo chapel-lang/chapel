@@ -2010,7 +2010,7 @@ private proc _doSimpleBlockTransfer(Dest, destDom, Src, srcDom) {
 
       // Compute the local portion of the destination domain, and find the
       // corresponding indices in the source's domain.
-      const localDestBlock = dst.dom.locDoms[i].myBlock[destDom];
+      const localDestBlock = dst.dom.locDoms[i].myBlock[(...destDom.dims())];
       assert(localDestBlock.sizeAs(int) > 0);
       const corSrcBlock    = bulkCommTranslateDomain(localDestBlock, destDom, srcDom);
       if debugBlockDistBulkTransfer then
@@ -2045,7 +2045,7 @@ where canDoAnyToBlock(this, destDom, Src, srcDom) {
     on dom.dist.targetLocales(j) {
       const Dest = if _privatization then chpl_getPrivatizedCopy(this.type, pid) else this;
 
-      const inters   = Dest.dom.locDoms(j).myBlock[destDom];
+      const inters   = Dest.dom.locDoms(j).myBlock[(...destDom.dims())];
       const srcChunk = bulkCommTranslateDomain(inters, destDom, srcDom);
 
       if debugBlockDistBulkTransfer then
@@ -2069,7 +2069,7 @@ where !disableBlockDistBulkTransfer {
   coforall j in dom.dist.activeTargetLocales(srcDom) {
     on dom.dist.targetLocales(j) {
       const Src = if _privatization then chpl_getPrivatizedCopy(this.type, pid) else this;
-      const inters = Src.dom.locDoms(j).myBlock[srcDom];
+      const inters = Src.dom.locDoms(j).myBlock[(...srcDom.dims())];
 
       const destChunk = bulkCommTranslateDomain(inters, srcDom, destDom);
 
@@ -2096,7 +2096,7 @@ where !disableBlockDistBulkTransfer {
     on dom.dist.targetLocales(j) {
       // Grab privatized copy of 'this' to avoid extra GETs
       const Dest = if _privatization then chpl_getPrivatizedCopy(this.type, pid) else this;
-      const inters = Dest.dom.locDoms(j).myBlock[destDom];
+      const inters = Dest.dom.locDoms(j).myBlock[(...destDom.dims())];
       assert(inters.sizeAs(int) > 0);
 
       const srcChunk = bulkCommTranslateDomain(inters, destDom, srcDom);
@@ -2179,9 +2179,9 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
       // Compute the local pre-scan on our local array
       const (numTasks, rngs, state, tot) =
         if !allowDuplicateTargetLocales && sameStaticDist && sameDynamicDist then
-          myLocArr._value.chpl__preScan(myop, res._value.myLocArr!.myElems, myLocDom[dom])
+          myLocArr._value.chpl__preScan(myop, res._value.myLocArr!.myElems, myLocDom[(...dom.dims())])
         else
-          myLocArr._value.chpl__preScan(myop, res, myLocDom[dom]);
+          myLocArr._value.chpl__preScan(myop, res, myLocDom[(...dom.dims())]);
 
       if debugBlockScan then
         writeln(locid, ": ", (numTasks, rngs, state, tot));

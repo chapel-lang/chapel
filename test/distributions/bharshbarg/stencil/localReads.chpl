@@ -37,10 +37,10 @@ proc main() {
   // create one by slicing the Stencil domain with the restricted
   // index set.
 
-  const sub = Space[Space.localSubdomain()];
+  const sub = Space[(...Space.localSubdomain().dims())];
   test(A[sub]);
 
-  const mid = Space[{n/4..#n/2, n/4..#n/2}];
+  const mid = Space[n/4..#n/2, n/4..#n/2];
   test(A[mid]);
 
   writeln("Success");
