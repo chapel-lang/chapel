@@ -48,6 +48,9 @@ def skipif():
     if env.get('CHPL_COMM', 'none') != 'none':
         skipReason = "CHPL_COMM != none"
         return
+    if env.get('CHPL_HWLOC', 'none') == 'none':
+        skipReason = "CHPL_HWLOC == none"
+        return
 
 class SrunTests(unittest.TestCase):
     @classmethod
