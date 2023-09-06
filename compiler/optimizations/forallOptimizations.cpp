@@ -1029,6 +1029,13 @@ static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
       }
     }
 
+    // this call has another tighter-enclosing stmt that may change locality,
+    // don't optimize
+    if (forall != getLocalityDominator(call)) {
+      if (reason != NULL) *reason = CRR_TIGHTER_LOCALITY_DOMINATOR;
+      return NULL;
+    }
+
     // (i,j) in forall (i,j) in bla is a tuple that is index-by-index accessed
     // in loop body that throw off this analysis
     if (accBaseSym->hasFlag(FLAG_INDEX_OF_INTEREST)) { return NULL; }
@@ -1037,13 +1044,6 @@ static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
     // loop itself
     if (forall->loopBody()->contains(accBaseSym->defPoint)) {
       if (reason != NULL) *reason = CRR_ACCESS_BASE_IS_NOT_OUTER_VAR;
-      return NULL;
-    }
-
-    // this call has another tighter-enclosing stmt that may change locality,
-    // don't optimize
-    if (forall != getLocalityDominator(call)) {
-      if (reason != NULL) *reason = CRR_TIGHTER_LOCALITY_DOMINATOR;
       return NULL;
     }
 
