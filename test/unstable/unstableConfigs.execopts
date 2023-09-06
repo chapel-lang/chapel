@@ -1,0 +1,2 @@
+--help #unstableConfigs.help.good
+--myUnstableConfig=12 --myUserConfig=1 #unstableConfigs.good
