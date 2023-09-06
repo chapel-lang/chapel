@@ -11,7 +11,7 @@ proc foo(ref a) {
   for bb in b do bb = 1;
 
   writeln("Loop 1");
-  forall i in a.domain {
+  forall i in a.domain with (ref a) {
     a[i] = b[10-i];
   }
   writeln("End Loop 1");
