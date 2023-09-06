@@ -677,7 +677,7 @@ module ChapelArray {
   }
 
   proc chpl__buildDistType(type t: record) type {
-    compilerWarning("The use of 'dmap' is depreacted for this distribution; please replace 'dmap(<DistName>(<args>))' with '<DistName>(<args>)'");
+    compilerWarning("The use of 'dmap' is not supported for this distribution; please replace 'dmap(<DistName>(<args>))' with '<DistName>(<args>)'");
     return t;
   }
 
@@ -700,7 +700,7 @@ module ChapelArray {
   }
 
   proc chpl__buildDistDMapValue(const ref x: record) const ref {
-    compilerWarning("The use of 'dmap' is deprecated for this distribution; please replace 'new dmap(new <DistName>(<args>))' with 'new <DistName>(<args>)'");
+    compilerWarning("The use of 'dmap' is not supported for this distribution; please replace 'new dmap(new <DistName>(<args>))' with 'new <DistName>(<args>)'");
     return chpl__buildDistValue(x);
   }
 
