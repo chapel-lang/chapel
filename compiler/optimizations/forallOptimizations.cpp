@@ -63,7 +63,8 @@ enum CallRejectReason {
   CRR_NO_CLEAN_INDEX_MATCH,
   CRR_ACCESS_BASE_IS_LOOP_INDEX,
   CRR_ACCESS_BASE_IS_NOT_OUTER_VAR,
-  CRR_ACCESS_BASE_IS_SHADOW_VAR,  // remove?
+  CRR_ACCESS_BASE_IS_COMPLEX_SHADOW_VAR,
+  CRR_ACCESS_BASE_IS_REDUCE_SHADOW_VAR,
   CRR_TIGHTER_LOCALITY_DOMINATOR,
   CRR_UNKNOWN,
 };
@@ -966,8 +967,11 @@ static const char *getCallRejectReasonStr(CallRejectReason reason) {
     case CRR_ACCESS_BASE_IS_NOT_OUTER_VAR:
       return "call base is defined within the loop body";
       break;
-    case CRR_ACCESS_BASE_IS_SHADOW_VAR:
-      return "call base is a defined in a forall intent";
+    case CRR_ACCESS_BASE_IS_COMPLEX_SHADOW_VAR:
+      return "call base is a complex shadow variable";
+      break;
+    case CRR_ACCESS_BASE_IS_REDUCE_SHADOW_VAR:
+      return "call base has reduce intent";
       break;
     case CRR_TIGHTER_LOCALITY_DOMINATOR:
       return "call base is in a nested on and/or forall";
@@ -1048,7 +1052,19 @@ static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
     }
 
     if (ShadowVarSymbol *svar = toShadowVarSymbol(accBaseSym)) {
-      return svar->outerVarSym();
+      if (svar->isReduce()) {
+        if (reason != NULL) *reason = CRR_ACCESS_BASE_IS_REDUCE_SHADOW_VAR;
+        return NULL;
+      }
+
+      Symbol* outerVar = svar->outerVarSym();
+
+      if (outerVar == NULL) {
+        if (reason != NULL) *reason = CRR_ACCESS_BASE_IS_COMPLEX_SHADOW_VAR;
+        return NULL;
+      }
+
+      return outerVar;
     }
     else {
       return accBaseSym;
