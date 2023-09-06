@@ -1566,6 +1566,22 @@ module ChapelDomain {
       return _newArray(x);
     }
 
+    proc tryCreateArrayNoInit(type eltType) throws {
+      chpl_checkEltType(eltType);
+      chpl_checkNegativeStride();
+
+      var (x, callPostAlloc) = _value.doiTryCreateArrayNoInit(eltType);
+      pragma "dont disable remote value forwarding"
+      proc help() {
+        _value.add_arr(x);
+      }
+      help();
+
+      chpl_incRefCountsForDomainsInArrayEltTypes(x, x.eltType);
+
+      return (_newArray(x), callPostAlloc);
+    }
+
     // assumes that data is already initialized
     pragma "no copy return"
     @chpldoc.nodoc

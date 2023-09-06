@@ -1629,6 +1629,19 @@ module ChapelBase {
     return ret;
   }
 
+  inline proc _try_ddata_allocate_noinit(type eltType, size: integral,
+                                  subloc = c_sublocid_none) throws {
+    var callPostAlloc: bool;
+    var ret: _ddata(eltType);
+
+    ret = _ddata_allocate_noinit(eltType, size, callPostAlloc, subloc, false);
+
+    if ret == nil then
+      throw new ArrayOomError();
+
+    return (ret, callPostAlloc);
+  }
+
   inline proc _ddata_allocate_postalloc(data:_ddata, size: integral) {
     pragma "fn synchronization free"
     pragma "insert line file info"
