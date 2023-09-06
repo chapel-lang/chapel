@@ -154,7 +154,9 @@ def elapsed_sub_test_time():
         chpl_name = os.environ.get('CHPL_ONETEST')
         base_name = os.path.splitext(chpl_name)[0]
         test_name = os.path.join(test_name, base_name)
+    print_elapsed_sub_test_time(test_name, elapsed_sec)
 
+def print_elapsed_sub_test_time(test_name, elapsed_sec):
     print('[Finished subtest "{0}" - {1:.3f} seconds]\n'.format(test_name, elapsed_sec))
 
 def run_process(*args, **kwargs):
@@ -469,6 +471,14 @@ def printTestVariation(compoptsnum, compoptslist,
     sys.stdout.write(')')
     return
 
+def printStartOfTestMsg(startTime, preexecs=None, prediffs=None):
+    sys.stdout.write('[Starting subtest - %s]\n'%(time.strftime('%a %b %d %H:%M:%S %Z %Y', startTime)))
+    #sys.stdout.write('[compiler: \'%s\']\n'%(compiler))
+    if preexecs:
+        sys.stdout.write('[system-wide preexec(s): \'%s\']\n'%(', '.join(preexecs)))
+    if prediffs:
+        sys.stdout.write('[system-wide prediff(s): \'%s\']\n'%(', '.join(prediffs)))
+
 # print '[Elapsed time to compile and execute all versions of ...'
 #   in the format expected by convert_start_test_log_to_junit_xml.py.
 
@@ -477,6 +487,12 @@ def printEndOfTestMsg(test_name, elapsedTime):
     print('[Elapsed time to compile and execute all versions of "{0}" - '
         '{1:.3f} seconds]'.format(test_name, elapsedTime))
 
+
+def printTestName(name):
+    sys.stdout.write('[test: %s]\n' % name)
+
+def printSkipping(name, reason):
+    sys.stdout.write('Skipping test %s: %s\n' % (name, reason))
 
 # return true if string is an integer
 def IsInteger(str):
@@ -1208,12 +1224,7 @@ def main():
     #
     # Start running tests
     #
-    sys.stdout.write('[Starting subtest - %s]\n'%(time.strftime('%a %b %d %H:%M:%S %Z %Y', time.localtime())))
-    #sys.stdout.write('[compiler: \'%s\']\n'%(compiler))
-    if systemPreexecs:
-        sys.stdout.write('[system-wide preexec(s): \'%s\']\n'%(', '.join(systemPreexecs)))
-    if systemPrediffs:
-        sys.stdout.write('[system-wide prediff(s): \'%s\']\n'%(', '.join(systemPrediffs)))
+    printStartOfTestMsg(time.localtime(), systemPreexecs, systemPrediffs)
 
     # consistently look only at the files in the current directory
     dirlist=os.listdir(".")
@@ -1234,7 +1245,7 @@ def main():
         compiler = original_compiler
 
         # print testname
-        sys.stdout.write('[test: %s/%s]\n'%(localdir,testname))
+        printTestName(os.path.join(localdir, testname))
         test_filename = re.match(r'^(.*)\.(?:chpl|test\.c|test\.cpp|ml-test\.c|ml-test\.cpp)$', testname).group(1)
         execname = test_filename
         if uniquifyTests:
