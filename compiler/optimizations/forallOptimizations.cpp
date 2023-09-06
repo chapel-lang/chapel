@@ -63,7 +63,7 @@ enum CallRejectReason {
   CRR_NO_CLEAN_INDEX_MATCH,
   CRR_ACCESS_BASE_IS_LOOP_INDEX,
   CRR_ACCESS_BASE_IS_NOT_OUTER_VAR,
-  CRR_ACCESS_BASE_IS_SHADOW_VAR,
+  CRR_ACCESS_BASE_IS_SHADOW_VAR,  // remove?
   CRR_TIGHTER_LOCALITY_DOMINATOR,
   CRR_UNKNOWN,
 };
@@ -1040,12 +1040,6 @@ static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
       return NULL;
     }
 
-    // similarly, give up if the base symbol is a shadow variable
-    if (isShadowVarSymbol(accBaseSym)) {
-      if (reason != NULL) *reason = CRR_ACCESS_BASE_IS_SHADOW_VAR;
-      return NULL;
-    }
-
     // this call has another tighter-enclosing stmt that may change locality,
     // don't optimize
     if (forall != getLocalityDominator(call)) {
@@ -1053,7 +1047,12 @@ static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
       return NULL;
     }
 
-    return accBaseSym;
+    if (ShadowVarSymbol *svar = toShadowVarSymbol(accBaseSym)) {
+      return svar->outerVarSym();
+    }
+    else {
+      return accBaseSym;
+    }
   }
 
   if (reason != NULL) *reason = CRR_NOT_ARRAY_ACCESS_LIKE;
@@ -1063,7 +1062,12 @@ static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
 static Symbol *getCallBase(CallExpr *call) {
   SymExpr *baseSE = toSymExpr(call->baseExpr);
   if (baseSE != NULL) {
-    return baseSE->symbol();
+    if (ShadowVarSymbol *svar = toShadowVarSymbol(baseSE->symbol())) {
+      return svar->outerVarSym();
+    }
+    else {
+      return baseSE->symbol();
+    }
   }
   return NULL;
 }
