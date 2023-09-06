@@ -1,0 +1,7 @@
+#!/bin/bash
+
+mv $2  $1.orig.tmp
+pattern1="^warning: GPU support is under active development. As such, the interface is unstable and expected to change in the forthcoming releases."
+pattern2="^warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly"
+
+grep -vE "$pattern1|$pattern2" "$1.orig.tmp" > "$2"
