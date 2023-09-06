@@ -2544,8 +2544,27 @@ static void maybeEmitWarningsForId(Resolver* rv, QualifiedType qt,
   // TODO: We can skip all parenless functions using the below check, but
   // I'm not sure we can write something similar for functions, since it's
   // possible for function names to appear in other places besides calls.
-  if (qt.kind() != QualifiedType::PARENLESS_FUNCTION &&
-      !isCalledExpression(rv, astMention)) {
+
+  if (qt.kind() == QualifiedType::PARENLESS_FUNCTION) return;
+
+  bool shouldWarn = true;
+  if (isCalledExpression(rv, astMention)) {
+    // By default, do not warn, since call resolution will take care of that.
+    shouldWarn = false;
+    debuggerBreakHere();
+
+    // It looks like a called expression, but is actually a 'new', if it's
+    // in a `dmapped` call. Check the parent expression.
+    auto callExpr = parsing::parentAst(rv->context, astMention);
+    auto parentExpr = parsing::parentAst(rv->context, callExpr);
+    if (auto op = parentExpr->toOpCall()) {
+      if (op->op() == USTR("dmapped") && callExpr == op->actual(1)) {
+        shouldWarn = true;
+      }
+    }
+  }
+
+  if (shouldWarn) {
     ID idMention = astMention->id();
     Context* context = rv->context;
     parsing::reportDeprecationWarningForId(context, idMention, idTarget);
