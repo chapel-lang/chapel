@@ -113,7 +113,7 @@ proc writeCaptureFor(ref A) {
 }
 
 proc writeCaptureForall(ref A) {
-  forall i in 1..10 {
+  forall i in 1..10 with (ref A) {
     writeit(A);
   }
 }

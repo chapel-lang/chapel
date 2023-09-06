@@ -24,7 +24,7 @@ to an instance of that class or any of its derived classes.
 
 A class is generic if it has generic fields. A class can also be generic
 if it inherits from a generic class. Generic classes and fields are
-discussed in :ref:`Generic_Types`.
+discussed in :ref:`Generic_Types`.
 
 .. _Class_Declarations:
 
@@ -64,7 +64,7 @@ effect.
 If a class declaration contains a type alias or a parameter field, or it
 contains a variable or constant without a specified type and without an
 initialization expression, then it declares a generic class type.
-Generic classes are described in :ref:`Generic_Types`.
+Generic classes are described in :ref:`Generic_Types`.
 
    .. note::
       *Future:*.
@@ -110,7 +110,7 @@ Additionally, coercions are available that are equivalent to calling the
 
    *Example (borrowing.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -220,8 +220,7 @@ It is an error to apply more than one memory management strategy to a
 class type. However, in some cases, generic code needs to compute a
 variant of the class type using a different memory management strategy.
 Casts from the class type to a different memory management strategy are
-available for this purpose
-(see :ref:`Explicit_Class_Conversions`).
+available for this purpose (see :ref:`Explicit_Class_Conversions`).
 
    *Example (duplicate-management.chpl)*.
 
@@ -296,13 +295,13 @@ or ``shared``. If the value is in fact ``nil``, it halts.
 
 An alternative to ``!`` is to use a cast to a non-nilable type. Such a
 cast will throw ``NilClassError`` if the value was in fact ``nil``.
-See :ref:`Explicit_Class_Conversions`.
+See :ref:`Explicit_Class_Conversions`.
 
 Non-nilable class types are implicitly convertible to nilable class
-types. See :ref:`Implicit_Class_Conversions`.
+types. See :ref:`Implicit_Class_Conversions`.
 
 Class methods generally expect a receiver of type ``borrowed C``
-(see :ref:`Class_Methods`). Since such a class method call might
+(see :ref:`Class_Methods`). Since such a class method call might
 involve dynamic dispatch, it is a program error to call a class method
 on a class receiver storing ``nil``. The compiler will not
 resolve calls to class methods if the receiver has nilable type. If the
@@ -440,7 +439,7 @@ Class Methods
 ~~~~~~~~~~~~~
 
 Methods on classes are referred to as *class methods*. They can be
-instance methods or type methods.  See :ref:`Chapter-Methods` for more
+instance methods or type methods.  See :ref:`Chapter-Methods` for more
 information about methods.
 
 Within a class method, the type of ``this`` is generally the non-nilable
@@ -574,7 +573,7 @@ It is possible for a class to inherit from a generic class. Suppose for
 example that a class ``C`` inherits from class ``ParentC``. In this
 situation, ``C`` will have type constructor arguments based upon generic
 fields in the ``ParentC`` as described
-in :ref:`Type_Constructors`. Furthermore, a fully specified ``C``
+in :ref:`Type_Constructors`. Furthermore, a fully specified ``C``
 will be a subclass of a corresponding fully specified ``ParentC``.
 
 .. _The_Root_Class:
@@ -598,7 +597,7 @@ A derived class contains data associated with the fields in its base
 classes. The fields can be accessed in the same way that they are
 accessed in their base class unless a getter method is overridden in the
 derived class, as discussed
-in :ref:`Overriding_Base_Class_Methods`.
+in :ref:`Overriding_Base_Class_Methods`.
 
 .. _Shadowing_Base_Class_Fields:
 
@@ -748,7 +747,7 @@ are initialized must be initialized in declaration order.
 Initializers for generic classes (:ref:`Generic_Types`) handle
 generic fields without default values differently and may need to
 satisfy additional requirements. See
-Section :ref:`Generic_User_Initializers` for details.
+Section :ref:`Generic_User_Initializers` for details.
 
    *Example (simpleInitializers.chpl)*.
 
@@ -1280,7 +1279,7 @@ The order and names of arguments matches the order and names of field
 declarations within the class.
 
 Generic fields are discussed in
-Section :ref:`Generic_Compiler_Generated_Initializers`.
+Section :ref:`Generic_Compiler_Generated_Initializers`.
 
 The compiler-generated initializer will initialize each field to the
 value of the corresponding actual argument.
@@ -1959,17 +1958,17 @@ the memory.
 Owned Objects
 -------------
 
-Including ``owned`` (or :record:`~SharedObject.shared`) in a class type directs
-the compiler to manage the deallocation of a class instances of that type.
-:record:`~OwnedObject.owned` is meant to be used when only one reference to an
-object needs to manage that object's storage at a time.
+Including :type:`~OwnedObject.owned` (or :type:`~SharedObject.shared`) in a
+class type directs the compiler to manage the deallocation of a class instances
+of that type. :type:`~OwnedObject.owned` is meant to be used when only one
+reference to an object needs to manage that object's storage at a time.
 
 Also see the above section on :ref:`Class_Lifetime_and_Borrows`.
 
 Using `owned`
 ~~~~~~~~~~~~~
 
-The ``new`` keyword allocates :record:`~OwnedObject.owned` classes by default.
+The ``new`` keyword allocates :type:`~OwnedObject.owned` classes by default.
 Additionally, it is possible to explicitly request an ``owned`` class instance
 
 .. code-block:: chapel
@@ -1981,11 +1980,11 @@ Additionally, it is possible to explicitly request an ``owned`` class instance
  var myOwnedObject = new owned MyClass();
 
 When ``myOwnedObject`` goes out of scope, the class instance it refers to will
-be deleted. It is possible to transfer the ownership to another ``owned``
-variable before that happens.
+be deleted. It is possible to transfer the ownership to another
+:type:`~OwnedObject.owned` variable before that happens.
 
 Copy initializing from ``myOwnedObject`` or assigning it to another
-:record:`~OwnedObject.owned` will leave ``myOwnedObject`` storing a nil value
+:type:`~OwnedObject.owned` will leave ``myOwnedObject`` storing a nil value
 and transfer the owned class instance to the other value.
 
 .. code-block:: chapel
@@ -2002,7 +2001,7 @@ and transfer the owned class instance to the other value.
  // when myOwnedObject goes out of scope.
 
 
-``owned`` forms part of a type and can be used in type expressions:
+:type:`~OwnedObject.owned` forms part of a type and can be used in type expressions:
 
 .. code-block:: chapel
 
@@ -2015,8 +2014,8 @@ Borrowing from `owned`
 ~~~~~~~~~~~~~~~~~~~~~~
 
 The :proc:`~OwnedObject.owned.borrow` method returns the pointer managed by the
-:record:`~OwnedObject.owned`. This pointer is only valid as long as the
-:record:`~OwnedObject.owned` is storing that pointer.
+:type:`~OwnedObject.owned`. This pointer is only valid as long as the
+:type:`~OwnedObject.owned` is storing that pointer.
 
 The compiler includes a component called the lifetime checker that
 can, in many cases, check that a `borrow` does not refer to an object
@@ -2039,7 +2038,7 @@ Coercions for `owned`
 ~~~~~~~~~~~~~~~~~~~~~
 
 The compiler includes support for introducing automatic coercions
-from :record:`~OwnedObject.owned` to the borrow type. This is equivalent
+from :type:`~OwnedObject.owned` to the borrow type. This is equivalent
 to calling the :proc:`~OwnedObject.owned.borrow` method. For example:
 
 .. code-block:: chapel
@@ -2071,8 +2070,9 @@ For example:
 `owned` Default Intent
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-The default intent for :record:`~OwnedObject.owned` is ``const ref``.
-See more on argument intents in the :ref:`Procedures Primer <primers-procedures>`
+The default intent for :type:`~OwnedObject.owned` is ``const``. See more on
+argument intents in the :ref:`Procedures Primer <primers-procedures>` and see
+more on the default intent in the :ref:`Default_Intent_for_owned_and_shared`.
 
 .. _Owned_Methods:
 
@@ -2088,23 +2088,23 @@ Methods on `owned` Classes
 Shared Objects
 --------------
 
-Including ``shared`` (or :record:`~OwnedObject.owned`) in a class type directs
-the compiler to manage the deallocation of a class instances of that type.
-:record:`~OwnedObject.owned` is meant to be used when many different references
-will exist to the object at the same time and these references need to keep
-the object alive.
+Including :type:`~SharedObject.shared` (or :type:`~OwnedObject.owned`) in a
+class type directs the compiler to manage the deallocation of a class instances
+of that type. :type:`~SharedObject.shared` is meant to be used when many
+different references will exist to the object at the same time and these
+references need to keep the object alive.
 
 Also see the above section on :ref:`Class_Lifetime_and_Borrows`.
 
 Using `shared`
 ~~~~~~~~~~~~~~
 
-To use :record:`~SharedObject.shared`, allocate a class instance following this
+To use :type:`~SharedObject.shared`, allocate a class instance following this
 pattern:
 
 .. code-block:: chapel
 
- var mySharedObject = new shared MyClass(...));
+ var mySharedObject = new shared MyClass(...);
 
 When ``mySharedObject`` and any copies of it go out of scope, the class
 instance it refers to will be deleted.
@@ -2130,19 +2130,19 @@ Borrowing from `shared`
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 The :proc:`~SharedObject.shared.borrow` method returns the pointer managed by
-the :record:`~SharedObject.shared`. This pointer is only valid as long as the
-:record:`~SharedObject.shared` is storing that pointer. The compiler includes
+the :type:`~SharedObject.shared`. This pointer is only valid as long as the
+:type:`~SharedObject.shared` is storing that pointer. The compiler includes
 some checking for errors in this case. In these ways,
-:record:`~SharedObject.shared` is similar to :record:`~OwnedObject.owned`.
+:type:`~SharedObject.shared` is similar to :type:`~OwnedObject.owned`.
 
 See :ref:`about-owned-borrowing` for more details and examples.
 
 Coercions for `shared`
 ~~~~~~~~~~~~~~~~~~~~~~
 
-As with :record:`~OwnedObject.owned`, :record:`~SharedObject.shared` supports
-coercions to the class type as well as
-coercions from a ``shared(T)`` to ``shared(U)`` where ``T`` is a
+As with :type:`~OwnedObject.owned`, :type:`~SharedObject.shared` supports
+coercions to the class type, as well as
+coercions from a ``shared T`` to ``shared U`` where ``T`` is a
 subclass of ``U``.
 
 See :ref:`about-owned-coercions` for more details and examples.
@@ -2150,8 +2150,9 @@ See :ref:`about-owned-coercions` for more details and examples.
 `shared` Default Intent
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-The default intent for :record:`~SharedObject.shared` types is ``const ref``.
-See more on argument intents in the :ref:`Procedures Primer <primers-procedures>`
+The default intent for :type:`~SharedObject.shared` is ``const``. See more on
+argument intents in the :ref:`Procedures Primer <primers-procedures>` and see
+more on the default intent in the :ref:`Default_Intent_for_owned_and_shared`.
 
 .. _Shared_Methods:
 

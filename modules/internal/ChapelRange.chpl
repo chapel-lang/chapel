@@ -379,18 +379,8 @@ module ChapelRange {
 
   private
   proc computeParamRangeIndexType(param low, param high) type {
-    // if either type is int, and the int value fits in the other type,
-    // return the other type
-    if low.type == int &&
-       min(high.type) <= low && low <= max(high.type) {
-      return high.type;
-    } else if high.type == int &&
-              min(low.type) <= high && high <= max(low.type) {
-      return low.type;
-    } else {
-      // otherwise, use the type that '+' would produce.
+      // The idxType of 'low..high' is the type that '+' would produce.
       return (low+high).type;
-    }
   }
   private proc isValidRangeIdxType(type t) param {
     return isIntegralType(t) || isEnumType(t) || isBoolType(t);

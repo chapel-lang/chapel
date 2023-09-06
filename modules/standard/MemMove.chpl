@@ -430,7 +430,7 @@ module MemMove {
                          const ref src:[] eltType, const srcRegion) : void throws {
     _checkArgs(dst, dstRegion, src, srcRegion);
 
-    forall (di, si) in zip(dstRegion, srcRegion) {
+    forall (di, si) in zip(dstRegion, srcRegion) with (ref dst) {
       moveInitialize(dst[di], moveFrom(src[si]));
     }
   }
@@ -505,7 +505,7 @@ module MemMove {
     const dstLo = d.indexOrder(dstStartIndex);
     const srcLo = d.indexOrder(srcStartIndex);
 
-    forall i in 0..<numElements {
+    forall i in 0..<numElements with (ref a) {
       const dstIdx = d.orderToIndex(dstLo + i);
       const srcIdx = d.orderToIndex(srcLo + i);
       ref dst = a[dstIdx];
@@ -577,7 +577,7 @@ module MemMove {
     var srcLo = dstD.indexOrder(srcStartIndex);
 
     // TODO: Optimize communication for this loop?
-    forall i in 0..<numElements {
+    forall i in 0..<numElements with (ref dstA) {
       const dstIdx = dstD.orderToIndex(dstLo + i);
       const srcIdx = srcD.orderToIndex(srcLo + i);
       ref dst = dstA[dstIdx];

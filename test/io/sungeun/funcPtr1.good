@@ -1,1 +1,1 @@
-foo()
+proc foo(): int { ... }

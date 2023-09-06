@@ -6,7 +6,7 @@ proc main(){
 	var d1 = {r1, r2, r3};
 	var bigArr : [r1][r2][r3] int;
 
-	forall ((x, y, z), xyz) in zip(dynamic(d1, 2), d1) do {
+	forall ((x, y, z), xyz) in zip(dynamic(d1, 2), d1) with (ref bigArr) do {
 		var sum : int = x + y + z;
 		bigArr[x][y][z] = sum;
 	}

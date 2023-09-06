@@ -1,3 +1,6 @@
-ref-maybe-const-task-intent.chpl:2: warning: interpreting 'ref-maybe-const' as 'ref' in a forall is unstable
-ref-maybe-const-task-intent.chpl:16: warning: interpreting 'ref-maybe-const' as 'ref' in a forall is unstable
-ref-maybe-const-task-intent.chpl:35: warning: interpreting 'ref-maybe-const' as 'ref' in a forall is unstable
+ref-maybe-const-forall-intent.chpl:31: warning: inferring a default intent to be 'ref' is deprecated - please add an explicit 'ref' forall intent for 'B'
+ref-maybe-const-forall-intent.chpl:70: warning: inferring a default intent to be 'ref' is deprecated - please add an explicit 'ref' forall intent for 'A'
+ref-maybe-const-forall-intent.chpl:2: warning: inferring a default intent to be 'ref' is deprecated - please add an explicit 'ref' forall intent for 'myArray1'
+ref-maybe-const-forall-intent.chpl:31: warning: inferring a default intent to be 'ref' is deprecated - please add an explicit 'ref' forall intent for 'B'
+ref-maybe-const-forall-intent.chpl:50: warning: inferring a default intent to be 'ref' is deprecated - please add an explicit 'ref' forall intent for 'myArrayD'
+0,0,0,0,0,0,0,0,0,0,

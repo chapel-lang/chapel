@@ -11255,6 +11255,82 @@ static void checkNoVoidFields()
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*  Find specially named methods such as 'hash' that are placed on types that  *
+*  don't have the corresponding interface. This is executed here because      *
+*  resolution cleans up unused functions and interface statements, but we want*
+*  to warn even if a function isn't used.                                     *
+*                                                                             *
+************************************** | *************************************/
+
+struct SpeciallyNamedMethodInfo {
+  std::map<std::string, FnSymbol*> speciallyNamedMethods;
+};
+
+using SpeciallyNamedMethodKey = std::pair<InterfaceSymbol*, AggregateType*>;
+using SpecialMethodMap = std::map<SpeciallyNamedMethodKey, SpeciallyNamedMethodInfo>;
+
+static void checkSpeciallyNamedMethods() {
+  static const std::unordered_map<const char*, InterfaceSymbol*> reservedNames = {
+    { astr("hash"), gHashable },
+  };
+
+  SpecialMethodMap flagged;
+
+  // TODO: for now, this will simply not warn for classes, because all classes
+  // implement hashable, and because overriding hash should be allowed. When
+  // other special methods are converted, this logic will need to be updated
+  // to handle them.
+
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+    if (!fn->isMethod()) continue;
+    if (fn->isCompilerGenerated() || fn->hasFlag(FLAG_FIELD_ACCESSOR)) continue;
+
+    auto reservedIter = reservedNames.find(fn->name);
+    if (reservedIter == reservedNames.end()) continue;
+    auto receiverType = fn->getReceiverType();
+
+    auto at = toAggregateType(receiverType);
+    if (!at || !at->isRecord()) continue;
+
+    while (at->instantiatedFrom) at = at->instantiatedFrom;
+    auto key = SpeciallyNamedMethodKey(reservedIter->second, at);
+    flagged[key].speciallyNamedMethods[fn->name] = fn;
+  }
+
+  for_alive_in_Vec(ImplementsStmt, istm, gImplementsStmts) {
+    auto se = toSymExpr(istm->iConstraint->consActuals.get(1));
+    auto ts = toTypeSymbol(se->symbol());
+    auto at = toAggregateType(ts->type);
+    if (!at || !at->isRecord()) continue;
+
+    while (at->instantiatedFrom) at = at->instantiatedFrom;
+    auto isym = istm->iConstraint->ifcSymbol();
+
+    // For this pair of aggregate type / interface, remove it from the
+    // flagged set, because we found an instance.
+    flagged.erase(SpeciallyNamedMethodKey(isym, at));
+  }
+
+  // the things now left in flagged, we did not find any implements statements
+  // for.
+  for (auto& flaggedTypeIfc : flagged) {
+    auto ifc = flaggedTypeIfc.first.first;
+    auto at = flaggedTypeIfc.first.second;
+
+    USR_WARN(at,
+             "the type '%s' defines methods that previously had special meaning. "
+             "These will soon require '%s' to implement the '%s' interface to "
+             "continue to be treated specially.", at->name(), at->name(), ifc->name);
+    for (auto& flaggedNameFn : flaggedTypeIfc.second.speciallyNamedMethods) {
+      USR_PRINT(flaggedNameFn.second, "formerly-special function '%s' defined here",
+               flaggedNameFn.second->name);
+    }
+  }
+}
+
+
 
 void resolve() {
   parseExplainFlag(fExplainCall, &explainCallLine, &explainCallModule);
@@ -11328,6 +11404,8 @@ void resolve() {
 
   if (fPrintUnusedFns || fPrintUnusedInternalFns)
     printUnusedFunctions();
+
+  checkSpeciallyNamedMethods();
 
   saveGenericSubstitutions();
 

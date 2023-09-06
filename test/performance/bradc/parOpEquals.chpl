@@ -14,7 +14,7 @@ var A: [1..n] real;
 
 var B: [1..n] int;
 
-forall i in 1..n do
+forall i in 1..n with (ref B) do
   B[i] = i;
 
 

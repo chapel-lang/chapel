@@ -649,9 +649,10 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
   }
   exec.wait();//wait till the subprocess is complete
   exitCode = exec.exitCode;
-  if haltOccured then
+  if haltOccured {
     exitCode = runAndLog(executable, fileName, result, reqNumLocales, testsPassed,
               testNames, localesCountMap, failedTestNames, erroredTestNames, skippedTestNames, show);
+  }
   if testNames.size != 0 {
     var maxCount = -1;
     for key in localesCountMap.keys() {

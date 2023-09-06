@@ -89,6 +89,7 @@ module CTypes {
     supported and behave similarly to those operations in C.
 
   */
+  pragma "last resort"
   @deprecated(notes="c_void_ptr is deprecated, use 'c_ptr(void)' instead.")
   type c_void_ptr = c_ptr(void);
 
@@ -968,14 +969,14 @@ module CTypes {
     return __primitive("cast", c_ptr(void), c.borrow());
   }
   @chpldoc.nodoc
-  inline proc c_ptrToConst_helper(const c: class): c_ptr(void)
+  inline proc c_ptrToConst_helper(const c: class): c_ptrConst(void)
   {
-    return __primitive("cast", c_ptr(void), c.borrow());
+    return __primitive("cast", c_ptrConst(void), c.borrow());
   }
   @chpldoc.nodoc
-  inline proc c_ptrToConst_helper(const c: class?): c_ptr(void)
+  inline proc c_ptrToConst_helper(const c: class?): c_ptrConst(void)
   {
-    return __primitive("cast", c_ptr(void), c.borrow());
+    return __primitive("cast", c_ptrConst(void), c.borrow());
   }
   /****************************************************************************
     End of temporary helper functions while deprecating c_ptr(string) etc
@@ -1062,15 +1063,15 @@ module CTypes {
   /*
    Like :proc:`c_ptrTo` for class types, but also accepts ``const`` data.
    */
-  inline proc c_ptrToConst(const c: class): c_ptr(void)
+  inline proc c_ptrToConst(const c: class): c_ptrConst(void)
     where cPtrToLogicalValue == true
   {
-    return __primitive("cast", c_ptr(void), c.borrow());
+    return __primitive("cast", c_ptrConst(void), c.borrow());
   }
-  inline proc c_ptrToConst(const c: class?): c_ptr(void)
+  inline proc c_ptrToConst(const c: class?): c_ptrConst(void)
     where cPtrToLogicalValue == true
   {
-    return __primitive("cast", c_ptr(void), c.borrow());
+    return __primitive("cast", c_ptrConst(void), c.borrow());
   }
 
   @deprecated(notes="The c_ptrToConst(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")

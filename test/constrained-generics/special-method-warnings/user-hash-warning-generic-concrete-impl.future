@@ -1,0 +1,2 @@
+bug: secondary method receiver types are unknown and don't flag special method warning
+#23189

@@ -22,7 +22,7 @@ arr1 = 1;
 arr2 = 2;
 
 forall i in arr2.domain {
-  arr1[i] = 
+  arr1[i] =
     arr2[i];
 }
 

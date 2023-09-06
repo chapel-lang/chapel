@@ -57,7 +57,7 @@ proc stridedAssign(ref A : [], sa, B : [], sb, debug=debugDefault) {
 
     var failOut = false,
         failIn  = false;
-    forall i in A.domain with ( || reduce failOut, || reduce failIn) {
+    forall i in A.domain with ( || reduce failOut, || reduce failIn, ref A) {
       const isFortyTwo = A[i] == 42;
       const inSlice = isMember(i);
       failIn = failIn || (inSlice && !isFortyTwo);

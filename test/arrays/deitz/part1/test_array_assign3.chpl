@@ -5,8 +5,8 @@ var A : [D] int;
 var B : [D] int;
 var C : [D] int;
 
-[(i,j) in D] A(i,j) = (i - 1) * n + j;
-[(i,j) in D] B(i,j) = (i - 1) * n + j;
+[(i,j) in D with (ref A)] A(i,j) = (i - 1) * n + j;
+[(i,j) in D with (ref B)] B(i,j) = (i - 1) * n + j;
 
 writeln(A);
 writeln(B);

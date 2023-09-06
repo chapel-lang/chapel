@@ -1,0 +1,11 @@
+The following now creates an int(64) range, where a uint(16) range is desired:
+  const chars = eol..<maxChars;
+
+Currently getting:
+  revcomp8.chpl:37: error: unresolved call 'join(int(64), int(64))'
+  revcomp8.chpl:174: note: this candidate did not match: join(i: uint(16), j)
+  revcomp8.chpl:37: note: because actual argument #1 with type 'int(64)'
+  revcomp8.chpl:174: note: is passed to formal 'i: uint(16)'
+
+A solution is to change to:
+  const chars = eol..<maxChars:eol.type;

@@ -41,7 +41,7 @@ proc main(args:[] string)
   // a file id is just the index into the paths array.
   var hashAndFileId:[pathsArray.domain] (Hash, int);
 
-  forall (id,path) in zip(pathsArray.domain, pathsArray) {
+  forall (id,path) in zip(pathsArray.domain, pathsArray) with (ref hashAndFileId) {
     var mdArray:[0..19] uint(8);
     var data:string;
     var f = open(path, ioMode.r);

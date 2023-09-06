@@ -104,7 +104,7 @@ if perfTest then writeln("TIME   :",timer.elapsed());
 //writeln("LOCALES:",numLocales);
 proc computeForces()
 {
-    forall i in atomsDist
+    forall i in atomsDist with (ref forces)
     {
 	local
 	{
@@ -139,7 +139,7 @@ proc computeForce(dist2:real,d:3*real)
 
 proc updatePositions()
 { 
-    forall i in atomsDist
+    forall i in atomsDist with (ref velocities, ref positionsLoc)
     {
 	local
 	{
@@ -153,12 +153,12 @@ proc updatePositions()
 	}
     }
     
-    forall (loc,i) in copyDist
+    forall (loc,i) in copyDist with (ref needsUpdate)
     {
 	local do needsUpdate[loc,i]=true;
     }
 
-    forall i in atomsDist
+    forall i in atomsDist with (ref positions, ref needsUpdate)
     {
 	local 
 	{
@@ -167,7 +167,7 @@ proc updatePositions()
 	}
     }
 
-    forall i in atomsDist
+    forall i in atomsDist with (ref positionsLoc, ref needsUpdate)
     {
 	locks[here.id].writeEF(true);
 	for m in 0..membcounts[i]-1
@@ -185,17 +185,17 @@ proc updatePositions()
 
 proc updateNeighbors()
 {
-    forall ii in atomsDist
+    forall ii in atomsDist with (ref positions)
     {
 	local do positions[ii]=positionsLoc[here.id,ii];
     }
 
-    forall (loc,i) in copyDist
+    forall (loc,i) in copyDist with (ref positionsLoc)
     {
 	positionsLoc[loc,i]=positions[i];
     }
 
-    forall i in atomsDist
+    forall i in atomsDist with (ref neighbors, ref membcounts)
     {
 	local
 	{
@@ -213,7 +213,7 @@ proc updateNeighbors()
 			if(cnt<maxSize)
 			{
 			    neighbors[i,cnt]=j;
-			    cnt+=1;	
+			    cnt+=1;
 			}
 		    }
 		}
@@ -238,7 +238,7 @@ proc loadParticles(filename:string, p:[?D], v:[D])
 	positions[i]=(p0,p1,p2);
 	velocities[i]=(v0,v1,v2);
     }
-    forall i in atomsDist
+    forall i in atomsDist with (ref positionsLoc)
     {
 	positionsLoc[here.id,i]=positions[i];
     }

@@ -142,7 +142,7 @@ proc main() {
   }
 
   /* Initialize Input matrix */
-  [(i, j) in Dom] input[i,j] = coefx*i+coefy*j;
+  [(i, j) in Dom with (ref input)] input[i,j] = coefx*i+coefy*j;
 
   /* Update ghost cells with initial values */
   if useStencilDist then input.updateFluff();
@@ -184,7 +184,7 @@ proc main() {
 
     if debug then diagnostics('stencil');
     if (!tiling) {
-      forall (i,j) in innerDom with (const in weight) {
+      forall (i,j) in innerDom with (const in weight, ref output) {
         var tmpout: dtype = 0.0;
         if (!compact) {
           for param jj in -R..-1 do tmpout += weight[R][R+jj] * input[i, j+jj];
@@ -199,7 +199,7 @@ proc main() {
         output[i, j] += tmpout;
       }
     } else {
-      forall (it,jt) in tiledDom {
+      forall (it,jt) in tiledDom with (ref output) {
         for i in it .. # min(order - R - it, tileSize) {
           for j in jt .. # min(order - R - jt, tileSize) {
             var tmpout: dtype = 0.0;

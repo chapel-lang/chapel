@@ -52,7 +52,7 @@ for 1..nt {
   un.updateFluff();
 
   // compute the FD kernel in parallel
-  forall (i, j) in IndicesInner do
+  forall (i, j) in IndicesInner with (ref u) do
     u[i, j] = un[i, j] + alpha *
       (un[i-1, j] + un[i, j-1] + un[i+1, j] + un[i, j+1] - 4 * un[i, j]);
 }

@@ -388,6 +388,7 @@ class GpuizableLoop {
 public:
   GpuizableLoop(BlockStmt* blk);
   GpuizableLoop(GpuizableLoop&&) = default;
+  GpuizableLoop(const GpuizableLoop&) = default;
 
   static GpuizableLoop fromEligibleClone(BlockStmt* blk) {
     GpuizableLoop loop{blk};

@@ -23,7 +23,7 @@ module SSCA2_sync_array_initialization_bug
 
     writeln ( "min_distance arrays SHOULD be all -1's except for a solo 0");
 
-    forall s in G.vertices do {
+    forall s in G.vertices with (ref good_initialization) do {
 
       var min_distance : [G.vertices] sync int = -1;
 

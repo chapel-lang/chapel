@@ -468,7 +468,7 @@ proc create_and_analyze_graph(ref Pairs)
 
     // TODO:  -> forall, but handle races in vertex labels?
     // iterate over G.vertices in a random order
-    serial !parallel { forall vid in reorder {
+    serial !parallel { forall vid in reorder with (ref labels) {
     //for vid in G.vertices {
 
       if printall then

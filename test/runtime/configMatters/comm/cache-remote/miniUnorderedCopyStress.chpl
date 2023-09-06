@@ -34,20 +34,20 @@ proc stop(opType: string) {
 
 
 start();
-forall i in D {
+forall i in D with (ref reversedA) {
   reversedA[i] = A[size-i];
 }
 stop("GET   ");
 
 start();
-forall i in D {
+forall i in D with (ref reversedA) {
   reversedA[size-i] = A[i];
 }
 stop("PUT   ");
 
 start();
 const offset = 2 * (size/numLocales);
-forall i in D {
+forall i in D with (ref reversedA) {
   const offIdx = (i + offset) % (size+1);
   reversedA[offIdx] = A[size-offIdx];
 }

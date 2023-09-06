@@ -13,7 +13,7 @@ proc main()
   const limit : real = 4.0;
   const maxIter : int = 50;
 
-  forall y in sizeRange do
+  forall y in sizeRange with (ref byteArr) do
     {
       for bytex in byteRange {
         var byte_acc : uint(8) = 0;

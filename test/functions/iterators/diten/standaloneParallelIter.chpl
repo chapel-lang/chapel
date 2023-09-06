@@ -37,7 +37,7 @@ proc main {
   count.write(0);
 
   // standalone
-  forall i in myiter() {
+  forall i in myiter() with (ref A) {
     const curr = count.fetchAdd(1);
     A[i] = curr;
   }
@@ -46,7 +46,7 @@ proc main {
     writeln(i);
 
   // leader-follower zippered
-  forall (i,j) in zip(myiter(), myiter()) {
+  forall (i,j) in zip(myiter(), myiter()) with (ref A) {
     const curr = count.fetchAdd(1);
     A[i] = curr;
   }

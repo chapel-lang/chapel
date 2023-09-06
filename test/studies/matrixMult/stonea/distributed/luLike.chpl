@@ -86,8 +86,8 @@ proc luLikeMultiply(
         ref localB   = colCopies[locRow,locCol]!.data;
         ref localSol = A[locRow,locCol].data;
 
-        forall i in localSol.domain.dim(0) {
-            forall j in localSol.domain.dim(1) {
+        forall i in localSol.domain.dim(0) with (ref localSol) {
+            forall j in localSol.domain.dim(1) with (ref localSol) {
                 localSol[i,j] = 0;
                 for k in localA.domain.dim(1) {
                     localSol[i,j] += localA[i,k] * localB[k,j];
@@ -165,7 +165,7 @@ proc main() {
     var solRegion :domain(2) = {1+blkSize..n, 1+blkSize..n};
 
     var data : [1..n, 1..n] int;
-    forall (i,j) in data.domain do {
+    forall (i,j) in data.domain with (ref data) do {
         data[i,j] = i+j;
     }
 

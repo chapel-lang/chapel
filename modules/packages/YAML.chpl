@@ -233,11 +233,11 @@ module YAML {
 
     /* called by a ``fileReader`` to parse into an existing Chapel value */
     proc ref deserializeValue(reader: yamlReader, ref val: ?t) throws {
-      if YamlVerbose then writeln("deserializing into: ", val);
-
-      // TODO: full implementation
-      var x = this.deserializeType(reader, t);
-      val = x;
+      if canResolveMethod(val, "deserialize", reader, this) {
+        val.deserialize(reader=reader, deserializer=this);
+      } else {
+        val = deserializeType(reader, t);
+      }
     }
 
     /* called by a ``fileReader`` to parse into a new Chapel value */
@@ -573,8 +573,20 @@ module YAML {
         else return reader.read(keyType);
     }
     @chpldoc.nodoc
+    proc readKey(ref key) throws {
+      if this.parser.peekFor(reader, EventType.MappingEnd)
+        then throw new BadFormatError("mapping end event");
+        else reader.read(key);
+    }
+
+    @chpldoc.nodoc
     proc readValue(type valType): valType throws {
       return reader.read(valType);
+    }
+
+    @chpldoc.nodoc
+    proc readValue(ref value) throws {
+      reader.read(value);
     }
 
     proc hasMore() : bool throws {
@@ -600,6 +612,25 @@ module YAML {
     const value = reader.deserializer.deserializeType(reader, fieldType);
     if YamlVerbose then writeln("  got value: ", value);
     return value;
+  }
+
+  @chpldoc.nodoc
+  proc YamlMapDeserializer.readField(name: string, ref field) throws {
+    if YamlVerbose then writeln("deserializing field: ", name, " of type: ", field.type:string);
+
+    if name.size > 0 {
+      var foundName: string;
+      try {
+        foundName = reader.deserializer._getScalar(reader);
+      } catch e: YamlUnexpectedEventError {
+        throw new BadFormatError("unexpected event: " + e.message());
+      }
+      if foundName != name then
+        throw new BadFormatError("unexpected field name: " + foundName + " (expected: " + name + ")");
+    }
+
+    reader.read(field);
+    if YamlVerbose then writeln("  got value: ", field);
   }
 
 
@@ -645,6 +676,13 @@ module YAML {
       if this.parser.peekFor(reader, EventType.SequenceEnd)
         then throw new BadFormatError("sequence end event");
         else return reader.read(eltType);
+    }
+
+    @chpldoc.nodoc
+    proc readElement(ref element) throws {
+      if this.parser.peekFor(reader, EventType.SequenceEnd)
+        then throw new BadFormatError("sequence end event");
+        else return reader.read(element);
     }
 
     @chpldoc.nodoc

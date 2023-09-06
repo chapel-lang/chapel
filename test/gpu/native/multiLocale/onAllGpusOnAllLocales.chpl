@@ -34,13 +34,16 @@ writeln("here.gpus.size > 1:  ", here.gpus.size > 1);
 var numLaunches = getGpuDiagnostics().kernel_launch;
 writeln("numLaunches.size == Locales.size: ", numLaunches.size == Locales.size);
 
-// We expect the first locale to have 1 more launch than all subsequent locales
-writeln("numLaunches[0] == numLaunches[1] + 1:  ",
-  numLaunches[0] == numLaunches[1] + 1);
+// We expect the first locale to have 2 more launch than all subsequent locales
+// because of array initializations
+writeln("numLaunches[0] == numLaunches[1] + 2:  ",
+  numLaunches[0] == numLaunches[1] + 2);
 
 // We expect the second locale to have launches equal to the number of GPUs per
-// node (we're assuming all nodes have an equal number of GPUs)
-writeln("numLaunches[1] == here.gpus.size:  ", numLaunches[1] == here.gpus.size);
+// node*2 (we're assuming all nodes have an equal number of GPUs), where *2 is
+// for array initialization.
+writeln("numLaunches[1] == here.gpus.size*2:  ",
+        numLaunches[1] == here.gpus.size*2);
 
 // Ensure that for all but the first locale the number of kernel launches
 // on each locale matches

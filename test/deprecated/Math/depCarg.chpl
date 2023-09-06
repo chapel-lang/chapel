@@ -1,7 +1,7 @@
-// Snippet taken from test/types/complex/diten/cplxMathFnTypes.chpl
+// Note: snippet taken from test/types/complex/diten/cplxMathFnTypes.chpl
 proc testTypes(x: complex(?w)) {
-  const res4 = cproj(z=x);
-  assert(res4.type == complex(w));
+  const res2 = carg(x);
+  assert(res2.type == real(w/2));
 }
 
 var c64 = 1.0:real(32) + 2.0i:imag(32);

@@ -28,7 +28,8 @@ module ChapelBase {
   // ChapelBase so that you don't have to 'import CTypes' to see the type
   // 'c_string' (which could break a lot of programs). This is OK because
   // after the deprecation period we can just remove 'c_string' entirely.
-  @deprecated(notes="the type 'c_string' is deprecated; please 'import CTypes' and use 'c_ptrConst(c_char)' instead")
+  pragma "last resort"
+  @deprecated(notes="the type 'c_string' is deprecated; please 'use CTypes' and replace 'c_string' with 'c_ptrConst(c_char)'")
   type c_string = chpl_c_string;
 
   // c_fn_ptr stuff
@@ -1843,10 +1844,11 @@ module ChapelBase {
   config param commDiagsTrackEndCounts = false;
 
   pragma "no default functions"
-  record endCountDiagsManager {
+  record endCountDiagsManager : contextManager {
     var taskInfo: c_ptr(chpl_task_infoChapel_t);
     var prevDiagsDisabledVal: bool;
-    inline proc ref enterContext() : void {
+
+    inline proc ref enterContext() {
       if !commDiagsTrackEndCounts {
         taskInfo = chpl_task_getInfoChapel();
         prevDiagsDisabledVal = chpl_task_data_setCommDiagsTemporarilyDisabled(taskInfo, true);

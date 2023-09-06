@@ -1,4 +1,4 @@
-record man {
+record man : contextManager {
   proc enterContext(): int { return 0; }
   proc exitContext(in err: owned Error?) {
     if err then try! { throw err; }

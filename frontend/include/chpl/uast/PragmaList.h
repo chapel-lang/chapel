@@ -303,6 +303,7 @@ PRAGMA(INFER_CUSTOM_TYPE, ypr, "infer custom type", ncm)
 PRAGMA(MANAGER_HANDLE, npr, "manager handle", ncm)
 PRAGMA(MANAGER_RESOURCE_INFER_STORAGE, npr, "manager resource infer storage", ncm)
 
+PRAGMA(IFC_ANY_RETURN_INTENT, ypr, "ifc any return intent", "allow a function with any return intent to be a witness for this interface requirement")
 // This can also mark a temp that serves as an intermediate step of
 // destructuring a tuple-typed INDEX_OF_INTEREST variable
 // into loop index variables.

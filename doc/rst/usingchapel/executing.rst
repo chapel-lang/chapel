@@ -282,9 +282,14 @@ are as follows:
   ``CHPL_RT_NUM_THREADS_PER_LOCALE``
     number of threads used to execute tasks
 
-There is a bit more information on ``CHPL_RT_CALL_STACK_SIZE`` and
-``CHPL_RT_NUM_THREADS_PER_LOCALE`` below, and more detailed discussion
-of all of these in :ref:`readme-tasks` and :ref:`readme-cray`.
+  ``CHPL_RT_USE_PU_KIND``
+    which kind of processing units to use on CPUs with heterogeneous
+    processing units. Values are "performance", "efficiency", or "all".
+
+There is a bit more information on ``CHPL_RT_CALL_STACK_SIZE``,
+``CHPL_RT_NUM_THREADS_PER_LOCALE``, and ``CHPL_RT_USE_PU_KIND`` below,
+and more detailed discussions
+in :ref:`readme-tasks` and :ref:`readme-cray`.
 
 
 -------------------------------
@@ -338,6 +343,27 @@ See :ref:`readme-tasks` for more information on the role of
 this variable in creating threads and executing tasks for the various
 tasking layers.
 
+
+----------------------------------------
+Controlling the Kind of Processing Units
+----------------------------------------
+
+Some CPUs, such as Intel's "Alder Lake" family of processors, have
+heterogeneous processing units, some of which are "performance" and others
+of which are "efficiency". The following environment variable can be used
+to select the kind of processing units used by a program.
+
+  ``CHPL_RT_USE_PU_KIND``
+    Specifies which kind of processing units to use on CPUs with heterogeneous
+    processing units. Values are "performance", "efficiency", or "all".
+
+By default the Chapel runtime will only use "performance" processing units.
+Note that if set to "all" the runtime will run tasks on all available
+cores/processing units indiscriminately ; it will not take the difference in
+performance into account when assigning tasks to processing units.
+
+This environment variable has no effect if the processor has homogeneous
+processing units.
 
 -----------------------------------------
 Controlling the Amount of Non-User Output

@@ -7,7 +7,7 @@ var A : [D] real;
 var iD : index(D);
 var i2 : index(2);
 
-forall (i,j) in {1..n, 1..n} {
+forall (i,j) in {1..n, 1..n} with (ref A) {
   A(i,j) = 0;
 }
 

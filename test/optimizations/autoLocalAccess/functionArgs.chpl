@@ -9,7 +9,7 @@ var B: [D] int;
 
 proc localQueriedDomain(ref a: [?d] int, b: [d] int){
   forall i in a.domain {
-    a[i] += 
+    a[i] +=
       b[i];
   }
   writeln(a);

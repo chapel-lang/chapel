@@ -660,6 +660,26 @@ attachChildThis(const SharedFcfSuperInfo info, AggregateType* child,
   return ret;
 }
 
+static const char*
+generateWriteThisOutput(FnSymbol* fn) {
+  auto ft = toFunctionType(fn->type);
+  INT_ASSERT(ft && ft->kind() == FunctionType::PROC);
+  std::string str = ft->toString();
+
+  if (!fn->isAnonymous()) {
+    std::string key = FunctionType::kindToString(ft->kind());
+    auto idx = str.find(key);
+    INT_ASSERT(idx != std::string::npos);
+    auto pos = idx + key.length();
+    str.insert(pos, fn->name);
+    str.insert(pos, " ");
+  }
+
+  str += " { ... }";
+
+  return astr(str);
+}
+
 static FnSymbol*
 attachChildWriteMethod(const SharedFcfSuperInfo info,
                      AggregateType* child,
@@ -677,7 +697,7 @@ attachChildWriteMethod(const SharedFcfSuperInfo info,
 
   ret->body->useListAdd(new UseStmt(ioModule, "", false));
   ret->getModule()->moduleUseAdd(ioModule);
-  auto str = new_StringSymbol(astr(payload->name, "()"));
+  auto str = new_StringSymbol(generateWriteThisOutput(payload));
   auto writeCall = new CallExpr(".", fileArg, new_StringSymbol("write"),
                                 str);
   ret->insertAtTail(new CallExpr(writeCall));

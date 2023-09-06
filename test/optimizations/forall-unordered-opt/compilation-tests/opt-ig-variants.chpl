@@ -31,14 +31,14 @@ proc test1l() {
   var rindex: [0..#N] int;
   var tmp: [0..#N] int;
 
-  forall i in 0..#N {
+  forall i in 0..#N with (ref tmp) {
     tmp.localAccess[i] = A[rindex.localAccess[i]];
   }
 }
 test1l();
 
 proc test1() {
-  forall i in D2 do
+  forall i in D2 with (ref tmp) do
     tmp.localAccess[i] = A[rindex.localAccess[i]];
 }
 test1();
@@ -48,14 +48,14 @@ proc test2l() {
   var rindex: [0..#N] int;
   var tmp: [0..#N] int;
 
-  forall i in 0..#N {
+  forall i in 0..#N with (ref tmp) {
     tmp.localAccess[i] = A[rindex[i]];
   }
 }
 test2l();
 
 proc test2() {
-  forall i in D2 do
+  forall i in D2 with (ref tmp) do
     tmp.localAccess[i] = A[rindex[i]];
 }
 test2();

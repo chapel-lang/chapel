@@ -1,3 +1,6 @@
+c_ptr(void)
+c_ptrConst(void)
+
 true
 true
 true

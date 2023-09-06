@@ -1,6 +1,6 @@
 class parent {
   var p: int;
-  override proc writeThis(f) throws { halt("halt"); }
+  override proc serialize(writer, ref serializer) throws { halt("halt"); }
 }
 class child: parent { var c: int; }
 writeln(new child());
