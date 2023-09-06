@@ -296,6 +296,9 @@ The helper methods on ``Block`` have the following signatures:
     * an array of compatible size and type — the array will be assigned into
       the distributed array
 
+    .. Warning::
+      ``Block.createArray`` with an ``initExpr`` formal is unstable and may change in a future release
+
   .. function:: proc type Block.createArray(rng: range(?)..., type eltType, initExpr, targetLocales = Locales)
 
     Create an array over a Block Distribution using a domain constructed from
@@ -310,6 +313,9 @@ The helper methods on ``Block`` have the following signatures:
       will be initialized with the values yielded by the iterator
     * an array of compatible size and type — the array will be assigned into
       the distributed array
+
+    .. Warning::
+      ``Block.createArray`` with an ``initExpr`` formal is unstable and may change in a future release
 
 **Data-Parallel Iteration**
 
@@ -955,6 +961,7 @@ proc type Block.createArray(
 }
 
 // create an array over a Block Distribution, initialized with the given value or iterator
+@unstable("'Block.createArray' with an 'initExpr' formal is unstable and may change in a future release")
 proc type Block.createArray(
   dom: domain(?),
   type eltType,
@@ -969,6 +976,7 @@ proc type Block.createArray(
 }
 
 // create an array over a Block Distribution, initialized from the given array
+@unstable("'Block.createArray' with an 'initExpr' formal is unstable and may change in a future release")
 proc type Block.createArray(
   dom: domain(?),
   type eltType,
@@ -998,6 +1006,7 @@ proc type Block.createArray(rng: range(?)..., type eltType) {
 }
 
 // create an array over a Block Distribution constructed from a series of ranges, initialized with the given value or iterator
+@unstable("'Block.createArray' with an 'initExpr' formal is unstable and may change in a future release")
 proc type Block.createArray(
   rng: range(?)...,
   type eltType, initExpr: ?t,
@@ -1007,6 +1016,7 @@ proc type Block.createArray(
   return createArray({(...rng)}, eltType, initExpr, targetLocales);
 }
 
+@unstable("'Block.createArray' with an 'initExpr' formal is unstable and may change in a future release")
 proc type Block.createArray(rng: range(?)..., type eltType, initExpr: ?t)
   where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
 {
@@ -1015,6 +1025,7 @@ proc type Block.createArray(rng: range(?)..., type eltType, initExpr: ?t)
 
 
 // create an array over a Block Distribution constructed from a series of ranges, initialized from the given array
+@unstable("'Block.createArray' with an 'initExpr' formal is unstable and may change in a future release")
 proc type Block.createArray(
   rng: range(?)...,
   type eltType,
@@ -1025,6 +1036,7 @@ proc type Block.createArray(
   return createArray({(...rng)}, eltType, initExpr, targetLocales);
 }
 
+@unstable("'Block.createArray' with an 'initExpr' formal is unstable and may change in a future release")
 proc type Block.createArray(
   rng: range(?)...,
   type eltType,
