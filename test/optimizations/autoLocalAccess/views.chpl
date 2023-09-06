@@ -82,7 +82,7 @@ writeln("Starting");
 
   ref C = A[1..10, colIdx];
 
-  forall i in C.domain with (ref A) {
+  forall i in C.domain with (ref C) {
     C[i] =            // static: obvious
       B[i, colIdx];   // no optimization, index should be just `i`
   }
