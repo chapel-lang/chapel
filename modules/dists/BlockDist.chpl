@@ -418,6 +418,10 @@ operator =(ref a: blockDist(?), b: blockDist(?)) {
 }
 
 
+@deprecated("'Block' is deprecated, please use 'blockDist' instead")
+type Block = BlockImpl;
+
+
 @chpldoc.nodoc
 class BlockImpl : BaseDist {
   param rank: int;
