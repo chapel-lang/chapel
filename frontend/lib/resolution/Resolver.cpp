@@ -2547,24 +2547,17 @@ static void maybeEmitWarningsForId(Resolver* rv, QualifiedType qt,
 
   if (qt.kind() == QualifiedType::PARENLESS_FUNCTION) return;
 
-  bool shouldWarn = true;
+  bool emitUnstableAndDeprecationWarnings = true;
   if (isCalledExpression(rv, astMention)) {
-    // By default, do not warn, since call resolution will take care of that.
-    shouldWarn = false;
-    debuggerBreakHere();
-
-    // It looks like a called expression, but is actually a 'new', if it's
-    // in a `dmapped` call. Check the parent expression.
-    auto callExpr = parsing::parentAst(rv->context, astMention);
-    auto parentExpr = parsing::parentAst(rv->context, callExpr);
-    if (auto op = parentExpr->toOpCall()) {
-      if (op->op() == USTR("dmapped") && callExpr == op->actual(1)) {
-        shouldWarn = true;
-      }
-    }
+    // For functions, do not warn, since call resolution will take care of that.
+    // However, if we're referring to a class or record, we know right now that
+    // a deprecation warning should be emitted (and it won't be emitted during
+    // resolution, since the initializers themselves are probably not deprecated)
+    emitUnstableAndDeprecationWarnings =
+      !asttags::isFunction(parsing::idToTag(rv->context, idTarget));
   }
 
-  if (shouldWarn) {
+  if (emitUnstableAndDeprecationWarnings) {
     ID idMention = astMention->id();
     Context* context = rv->context;
     parsing::reportDeprecationWarningForId(context, idMention, idTarget);
