@@ -1566,6 +1566,59 @@ module ChapelDomain {
       return _newArray(x);
     }
 
+    pragma "no copy return"
+    @unstable("tryCreateArray() is subject to change in the future.")
+    proc tryCreateArray(type eltType, initExpr: ?t) throws
+      where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType) {
+      if !(__primitive("resolves", _value.doiTryCreateArray(eltType))) then
+        compilerError("cannot call 'tryCreateArray' on domains that do not" +
+                      " support a 'doiTryCreateArray' method.");
+
+      chpl_checkEltType(eltType);
+      chpl_checkNegativeStride();
+
+      var x = _value.doiTryCreateArray(eltType);
+      pragma "dont disable remote value forwarding"
+      proc help() {
+        _value.add_arr(x);
+      }
+      help();
+
+      chpl_incRefCountsForDomainsInArrayEltTypes(x, x.eltType);
+      var res = _newArray(x);
+      res = initExpr;
+
+      return res;
+    }
+
+    pragma "no copy return"
+    @unstable("tryCreateArray() is subject to change in the future.")
+    proc tryCreateArray(type eltType, initExpr: [?dom] ?arrayEltType) throws
+      where this.rank == dom.rank && isCoercible(arrayEltType, eltType) {
+      if !(__primitive("resolves", _value.doiTryCreateArray(eltType))) then
+        compilerError("cannot call 'tryCreateArray' on domains that do not" +
+                      " support a 'doiTryCreateArray' method.");
+      if boundsChecking then
+        for (d, ad, i) in zip(this.dims(), dom.dims(), 0..) do
+          if d.size != ad.size then halt("Domain size mismatch in 'Block.createArray' dimension " + i:string);
+
+      chpl_checkEltType(eltType);
+      chpl_checkNegativeStride();
+
+      var x = _value.doiTryCreateArray(eltType);
+      pragma "dont disable remote value forwarding"
+      proc help() {
+        _value.add_arr(x);
+      }
+      help();
+
+      chpl_incRefCountsForDomainsInArrayEltTypes(x, x.eltType);
+      var res = _newArray(x);
+      res = initExpr;
+
+      return res;
+    }
+
     // assumes that data is already initialized
     pragma "no copy return"
     @chpldoc.nodoc

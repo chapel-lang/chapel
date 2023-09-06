@@ -1472,7 +1472,7 @@ module ChapelArray {
       return chpl__localSliceDefaultArithArrHelp(d);
     }
 
-    @unstable("tryCreateArray() is subject to change in the future.")
+    @unstable("tryCopy() is subject to change in the future.")
     proc tryCopy() throws {
       use Reflection;
       if !(__primitive("resolves", this.domain.
