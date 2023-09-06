@@ -617,7 +617,7 @@ proc scanKernel(numBlocks : uint(32), ref g_odata: [] uint(32), ref g_idata: [] 
 
         // If possible, read from global mem in a uint4 chunk
         if(fullBlock || (i+3) < n) {
-            for j in 0..3:uint(32) {
+            for j in (0..3):range(uint(32)) {
                 tempData[j] = g_idata[i + j];
             }
             threadScanT[0] = tempData[0];
@@ -652,7 +652,7 @@ proc scanKernel(numBlocks : uint(32), ref g_odata: [] uint(32), ref g_idata: [] 
         tempData[3] = res + threadScanT[2];
 
         if fullBlock || (i + 3) < n {
-            for j in 0..3: uint(32) {
+            for j in (0..3):range(uint(32)) {
                 g_odata[gid * 4 + j] = tempData[j];
             }
         } else {
