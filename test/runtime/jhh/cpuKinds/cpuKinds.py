@@ -11,6 +11,7 @@ import subprocess
 import os
 import sys
 import shutil
+import time
 
 
 if not 'CHPL_HOME' in os.environ:
@@ -133,6 +134,8 @@ class SrunTests(unittest.TestCase):
 
 def main(argv):
     global verbose
+
+    startTime=time.time()
     failfast = False
     if "-f" in argv or "--force" in argv:
         failfast = True
@@ -156,6 +159,9 @@ def main(argv):
     name = os.path.join(localDir, argv[0])
     base = os.path.splitext(os.path.basename(argv[0]))[0]
 
+    sub_test.printStartOfTestMsg(time.localtime())
+    sub_test.printTestName(name)
+
     if skipReason is None:
 
         # Compile the Chapel library
@@ -173,7 +179,6 @@ def main(argv):
             print("Compiling test harness")
             print(cmd)
         runCmd(cmd)
-
     if verbose:
         print("Running tests")
         verbosity=2
@@ -186,15 +191,20 @@ def main(argv):
     # test. Report report success if all tests succeeded, an error if any
     # test failed, and nothing if all tests were skipped.
 
+    elapsedTime = time.time() - startTime
+
     if len(prog.result.skipped) > 0:
+        sub_test.printSkipping(name, skipReason)
         print("Skipped %d tests in %s" % (len(prog.result.skipped), name))
     if len(prog.result.skipped) != prog.result.testsRun:
         if len(prog.result.errors) > 0 or len(prog.result.failures) > 0:
             print("[Error running tests in %s]" % name)
         else:
             print("[Success matching tests in %s]" % name)
+    sub_test.printEndOfTestMsg(name, elapsedTime)
     sub_test.cleanup(base, False)
     shutil.rmtree("./lib", ignore_errors=True)
+    sub_test.print_elapsed_sub_test_time(name, elapsedTime)
 
 if __name__ == '__main__':
     main(sys.argv)
