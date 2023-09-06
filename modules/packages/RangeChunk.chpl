@@ -66,9 +66,7 @@ module RangeChunk {
     foreach (startOrder, endOrder) in chunksOrder(r, numChunks, remPol) {
       const start = r.orderToIndex(startOrder);
       const end = r.orderToIndex(endOrder);
-      var result: r.type;
-      result.chpl_setFields(start, end, r.stride); // start..end by r.stride
-      yield result;
+      yield ( start..end by r.stride ): r.type;
     }
   }
 
@@ -83,9 +81,7 @@ module RangeChunk {
     const (startOrder, endOrder) = chunkOrder(r, numChunks, idx, remPol);
     const start = r.orderToIndex(startOrder);
     const end = r.orderToIndex(endOrder);
-    var result: r.type;
-    result.chpl_setFields(start, end, r.stride); // start..end by r.stride
-    return result;
+    return ( start..end by r.stride ): r.type;
   }
 
   /*
@@ -156,7 +152,7 @@ module RangeChunk {
         chunkSize = nElems / nChunks;
         if chunkSize * nChunks != nElems {
           chunkSize += 1;
-          nChunks = divceil(nElems, chunkSize);
+          nChunks = divCeil(nElems, chunkSize);
         }
       }
       when Mod {
@@ -222,10 +218,10 @@ module RangeChunk {
     const m = nElems * i;
     const start = if i == 0
       then 0: I
-      else divceil(m, nChunks);
+      else divCeil(m, nChunks);
     const end = if i == nChunks - 1
       then nElems - 1
-      else divceil(m + nElems, nChunks) - 1;
+      else divCeil(m + nElems, nChunks) - 1;
     return (start, end);
   }
 

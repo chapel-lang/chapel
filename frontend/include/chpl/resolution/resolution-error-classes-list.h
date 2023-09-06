@@ -67,6 +67,7 @@ ERROR_CLASS(Redefinition, ID, UniqueString, std::vector<resolution::BorrowedIdsW
 ERROR_CLASS(ReductionInvalidName, const uast::AstNode*, UniqueString, types::QualifiedType)
 ERROR_CLASS(ReductionNotReduceScanOp, const uast::AstNode*, types::QualifiedType)
 ERROR_CLASS(SuperFromTopLevelModule, const uast::AstNode*, const uast::Module*, resolution::VisibilityStmtKind)
+WARNING_CLASS(TertiaryUseImportUnstable, UniqueString, const uast::AstNode*, const uast::VisibilityClause*, const resolution::Scope*, resolution::VisibilityStmtKind)
 ERROR_CLASS(TupleDeclMismatchedElems, const uast::TupleDecl*, const types::TupleType*)
 ERROR_CLASS(TupleDeclNotTuple, const uast::TupleDecl*, const types::Type*)
 ERROR_CLASS(TupleDeclUnknownType, const uast::TupleDecl*)

@@ -1,7 +1,7 @@
 record R {
   var x: int;
 
-  proc postinit() {
+  proc ref postinit() {
     writeln("R.postinit() x: ", x);
     x = x + 1;
   }

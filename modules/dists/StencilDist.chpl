@@ -1136,7 +1136,7 @@ iter StencilDom.these(param tag: iterKind, followThis) where tag == iterKind.fol
     var low  = wholeDim.orderToIndex(followDim.low);
     var high = wholeDim.orderToIndex(followDim.high);
     if wholeDim.hasNegativeStride() then low <=> high;
-    t(i) = try! (low..high by (wholeDim.stride*followDim.stride)) : t(i).type;
+    t(i) = (low..high by (wholeDim.stride*followDim.stride)) : t(i).type;
   }
   for i in {(...t)} {
     yield i;
@@ -1638,7 +1638,7 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
     writeln((if fast then "fast" else "regular") + " follower invoked for Stencil array");
 
   var myFollowThis: rank*range(idxType=idxType, strides=chpl_strideProduct(
-                                      strides, chpl_strideUnion(followThis)));
+                                     strides, chpl_strideUnion(followThis)));
   var lowIdx: rank*idxType;
 
   for param i in 0..rank-1 {
@@ -1646,7 +1646,8 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
     // NOTE: Not bothering to check to see if these can fit into idxType
     var low = followThis(i).lowBound * abs(stride):idxType;
     var high = followThis(i).highBound * abs(stride):idxType;
-    myFollowThis(i) = try! ((low..high by stride) + dom.whole.dim(i).low by followThis(i).stride) : myFollowThis(i).type;
+    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).low
+                       by followThis(i).stride) : myFollowThis(i).type;
     lowIdx(i) = myFollowThis(i).lowBound;
   }
 
@@ -1689,23 +1690,23 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
 //
 proc StencilArr.dsiSerialWrite(f) {
   type strType = chpl__signedType(idxType);
-  var binary = f.binary();
+  var binary = f._binary();
   if dom.dsiNumIndices == 0 then return;
   var i : rank*idxType;
   for dim in 0..rank-1 do
-    i(dim) = dom.dsiDim(dim).lowBound;
+    i(dim) = dom.dsiDim(dim).low;
   label next while true {
     f.write(do_dsiAccess(true, i));
-    if i(rank-1) <= (dom.dsiDim(rank-1).highBound - dom.dsiDim(rank-1).stride:strType) {
+    if i(rank-1) <= (dom.dsiDim(rank-1).high - dom.dsiDim(rank-1).stride:strType) {
       if ! binary then f.write(" ");
       i(rank-1) += dom.dsiDim(rank-1).stride:strType;
     } else {
       for dim in 0..rank-2 by -1 {
-        if i(dim) <= (dom.dsiDim(dim).highBound - dom.dsiDim(dim).stride:strType) {
+        if i(dim) <= (dom.dsiDim(dim).high - dom.dsiDim(dim).stride:strType) {
           i(dim) += dom.dsiDim(dim).stride:strType;
           for dim2 in dim+1..rank-1 {
             f.writeln();
-            i(dim2) = dom.dsiDim(dim2).lowBound;
+            i(dim2) = dom.dsiDim(dim2).low;
           }
           continue next;
         }
@@ -2431,3 +2432,66 @@ where !disableStencilDistBulkTransfer {
 }
 
 override proc StencilArr.doiCanBulkTransferRankChange() param do return true;
+
+
+proc StencilArr.canDoOptimizedSwap(other) {
+  var domsMatch = true;
+
+  if this.dom != other.dom { // no need to check if this is true
+    for param i in 0..this.dom.rank-1 {
+      if this.dom.whole.dim(i) != other.dom.whole.dim(i) {
+        domsMatch = false;
+      }
+    }
+  }
+
+  if domsMatch {
+    // distributions must be equal, too
+    return this.dom.dist.dsiEqualDMaps(other.dom.dist);
+  }
+  return false;
+}
+
+// A helper routine that will perform a pointer swap on an array
+// instead of doing a deep copy of that array. Returns true
+// if used the optimized swap, false otherwise
+//
+// TODO: stridability causes issues with RAD swap, and somehow isn't captured by
+// the formal type when we check whether this resolves.
+proc StencilArr.doiOptimizedSwap(other: this.type)
+  where this.strides == other.strides {
+
+  if(canDoOptimizedSwap(other)) {
+    if debugOptimizedSwap {
+      writeln("StencilArr doing optimized swap. Domains: ",
+              this.dom.whole, " ", other.dom.whole, " Bounding boxes: ",
+              this.dom.dist.boundingBox, " ", other.dom.dist.boundingBox);
+    }
+    coforall (locarr1, locarr2) in zip(this.locArr, other.locArr) {
+      on locarr1 {
+        locarr1.myElems <=> locarr2.myElems;
+        locarr1.locRAD <=> locarr2.locRAD;
+      }
+    }
+    return true;
+  } else {
+    if debugOptimizedSwap {
+      writeln("StencilArr doing unoptimized swap. Domains: ",
+              this.dom.whole, " ", other.dom.whole, " Bounding boxes: ",
+              this.dom.dist.boundingBox, " ", other.dom.dist.boundingBox);
+    }
+    return false;
+  }
+}
+
+
+// The purpose of this overload is to provide debugging output in the event that
+// debugOptimizedSwap is on and the main routine doesn't resolve (e.g., due to a
+// type, stridability, or rank mismatch in the other argument). When
+// debugOptimizedSwap is off, this overload will be ignored due to its where
+// clause.
+pragma "last resort"
+proc StencilArr.doiOptimizedSwap(other) where debugOptimizedSwap {
+  writeln("StencilArr doing unoptimized swap. Type mismatch");
+  return false;
+}

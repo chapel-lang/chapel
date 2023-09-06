@@ -75,7 +75,7 @@ writeln();
 //
 // In parallel, subtract one from each element of the array.
 //
-forall i in Dom do {
+forall i in Dom with (ref A) do {
   A(i) = A(i) - 1;
 }
 writeln("Subtracted 1 via parallel iteration over the domain");

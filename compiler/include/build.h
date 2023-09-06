@@ -159,12 +159,12 @@ std::set<Flag>* buildVarDeclFlags(Flag flag1 = FLAG_UNKNOWN,
 BlockStmt* buildVarDecls(BlockStmt* stmts,
                          std::set<Flag>* flags = NULL, Expr* cnameExpr = NULL);
 
-DefExpr*  buildClassDefExpr(const char*   name,
-                            const char*   cname,
-                            AggregateTag  tag,
-                            AList       inherits,
-                            BlockStmt*    decls,
-                            Flag          isExtern);
+DefExpr*  buildClassDefExpr(const char*               name,
+                            const char*               cname,
+                            AggregateTag              tag,
+                            const std::vector<Expr*>& inherits,
+                            BlockStmt*                decls,
+                            Flag                      isExtern);
 
 void setupTypeIntentArg(ArgSymbol* arg);
 

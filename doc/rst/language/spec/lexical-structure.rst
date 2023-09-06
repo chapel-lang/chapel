@@ -142,6 +142,7 @@ The following identifiers are reserved as keywords:
    const
    continue
    defer
+   deinit
    delete
    dmapped
    do
@@ -161,6 +162,7 @@ The following identifiers are reserved as keywords:
    implements
    in
    index
+   init
    inline
    inout
    int
@@ -184,9 +186,10 @@ The following identifiers are reserved as keywords:
    override
    owned
    param
+   postinit
    private
-   prototype
    proc
+   prototype
    public
    real
    record

@@ -24,7 +24,7 @@ config var N: int = 64;
    that Cholesky decomposition can take place */
 proc initialize_matrix(distribution, n_dim: int) {
     var matrix: [distribution] real = 0.0;
-    forall (i,j) in distribution {
+    forall (i,j) in distribution with (ref matrix) {
     if i == j {
       matrix[i,j] = n_dim;
     }

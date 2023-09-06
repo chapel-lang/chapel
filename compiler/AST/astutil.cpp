@@ -102,10 +102,10 @@ void collectForallStmts(BaseAST* ast, std::vector<ForallStmt*>& forallStmts) {
     forallStmts.push_back(forall);
 }
 
-void collectCForLoopStmts(BaseAST* ast, std::vector<CForLoop*>& cforloopStmts) {
-  AST_CHILDREN_CALL(ast, collectCForLoopStmts, cforloopStmts);
+void collectCForLoopStmtsPreorder(BaseAST* ast, std::vector<CForLoop*>& cforloopStmts) {
   if (CForLoop* cforloop = toCForLoop(ast))
     cforloopStmts.push_back(cforloop);
+  AST_CHILDREN_CALL(ast, collectCForLoopStmtsPreorder, cforloopStmts);
 }
 
 void collectCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs) {

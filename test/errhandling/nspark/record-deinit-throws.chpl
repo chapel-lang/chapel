@@ -9,11 +9,11 @@ record Wrapper {
     err = nil;
   }
 
-  proc deinit() throws {
+  proc ref deinit() throws {
     if err then throw err;
   }
 
-  proc oops() {
+  proc ref oops() {
     err = new owned StringError("called oops()");
   }
 }

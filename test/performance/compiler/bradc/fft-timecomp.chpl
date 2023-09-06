@@ -72,7 +72,7 @@ proc computeTwiddles(ref Twiddles) {
   Twiddles(0) = 1.0;
   Twiddles(numTwdls/2) = let x = cos(delta * numTwdls/2)
                           in (x, x):elemType;
-  forall i in 1..#numTwdls/2 {
+  forall i in 1..#numTwdls/2 with (ref Twiddles) {
     const x = cos(delta*i),
           y = sin(delta*i);
     Twiddles(i)            = (x, y):elemType;
@@ -124,7 +124,7 @@ proc dfft(ref A: [?ADom], W) {
     forall lo in 0..#str do
       butterfly(1.0, 1.0, 1.0, A[lo.. by str #radix]);
   else {
-    forall lo in 0..#str {
+    forall lo in 0..#str with (ref A) {
       const a = A(lo),
             b = A(lo+str);
       A(lo)     = a + b;

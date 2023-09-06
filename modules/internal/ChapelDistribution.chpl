@@ -640,11 +640,11 @@ module ChapelDistribution {
       bufDom = {0..#size};
     }
 
-    proc deinit() {
+    proc ref deinit() {
       commit();
     }
 
-    proc add(idx: idxType) {
+    proc ref add(idx: idxType) {
       buf[cur] = idx;
       cur += 1;
 
@@ -652,7 +652,7 @@ module ChapelDistribution {
         commit();
     }
 
-    proc commit() {
+    proc ref commit() {
       if cur >= 1 then
         obj.dsiBulkAdd(buf[..cur-1]);
       cur = 0;

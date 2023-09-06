@@ -45,17 +45,17 @@ proc main() {
   t.start();
 
   select mode {
-    when Mode.ordered {
-      forall r in rindex do
+  when Mode.ordered {
+      forall r in rindex with (ref A) do
         A[r].add(1);
     }
     when Mode.unordered {
-      forall r in rindex do
-	A[r].unorderedAdd(1);
+      forall r in rindex with (ref A) do
+	      A[r].unorderedAdd(1);
     }
     when Mode.aggregated {
-      forall r in rindex with (var agg = new AtomicIncAggregator(int)) do
-	agg.inc(AggA[r]);
+      forall r in rindex with (var agg = new AtomicIncAggregator(int), ref AggA) do
+	      agg.inc(AggA[r]);
     }
   }
 

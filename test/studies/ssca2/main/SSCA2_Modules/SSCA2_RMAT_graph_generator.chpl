@@ -52,7 +52,7 @@ record directed_vertex_pair {
 // Quadrant selection algorithm
 // ============================
 
-inline proc directed_vertex_pair.assign_quadrant
+inline proc ref directed_vertex_pair.assign_quadrant
   (u: real, a: real, b: real, c: real, d: real, bit: int)
   {
     // ---------------------------------------------------------------------
@@ -219,7 +219,7 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
 
       serial(SERIAL_GRAPH_GEN) {
         forall (v, rnd) in zip(vertex_domain,
-          NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos-1))
+          NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos-1)) with (ref permutationSync)
         {
           const u = floor (1 + rnd * N_VERTICES) : int;
           if u != v {
@@ -373,7 +373,7 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
     if edgeChecks {
       // Check that 'permutation' was a permutation.
       var permuteCounts : [vertex_domain] atomic int;
-      forall p in permutation do
+      forall p in permutation with (ref permuteCounts) do
         permuteCounts[p].add(1);
       forall (pc, ix) in zip(permuteCounts, vertex_domain) do
         if !(pc.read() == 1) then halt(
@@ -426,7 +426,7 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
 
     var self_edges$: atomic int;
     serial(SERIAL_GRAPH_GEN) {
-      forall (e, w) in zip(Edges, Edge_Weight) do {
+      forall (e, w) in zip(Edges, Edge_Weight) with (ref firstAvailNeighbor) do {
         const u = e.start;
         const v = e.end;
 

@@ -35,7 +35,7 @@ proc convolve_and_calculate(Image: [] int(8),
   var first_point = centerPoints.first[1];
   var last_point = centerPoints.last[1];
 
-  forall center in centerPoints[..,first_point] {
+  forall center in centerPoints[..,first_point] with (ref Output) {
 
       // Calculate masks and beta diversity for leftmost point in subdomain
       var B_left: [0..(d_size-1)] real(64) = 0;

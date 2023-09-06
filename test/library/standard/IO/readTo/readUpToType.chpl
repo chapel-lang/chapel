@@ -5,7 +5,7 @@ record xyType {
   var y: real;
 }
 
-proc xyType.readThis(fr) throws {
+proc ref xyType.readThis(fr) throws {
   fr.matchLiteral("|");
   this.x = fr.read(int);
   fr.matchLiteral(",");

@@ -135,6 +135,6 @@ record ForallExpr2 { proc init(){} }
 
 proc transpose(ref DestRow, SrcCol) {
   // a shared-memory version for now
-  forall i in 1..n do
+  forall i in 1..n with (ref DestRow) do
     DestRow(1,i) = SrcCol(i,1);
 }

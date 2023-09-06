@@ -13,7 +13,7 @@ var D = {1..n};
 
 var A: [D] complex;
 
-[i in D] {
+[i in D with (ref A)] {
   A[i].re = 2*i;
   A[i].im = 2*i + 1;
 }

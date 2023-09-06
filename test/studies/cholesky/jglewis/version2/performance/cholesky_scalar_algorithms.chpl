@@ -129,13 +129,13 @@ module cholesky_scalar_algorithms {
 	// compute the jth column of L
 
 	A (j, j)      = sqrt ( A (j, j) );
-	forall k in  A_rc_indices (j+1..) do
+	forall k in  A_rc_indices (j+1..) with (ref A) do
 	  A (j, k) /= A (j, j);
 
 	// make rank 1 (outerproduct) modification to the remaining rows
 	// and columns of  A, which become the Schur complement
 
-	forall k in A_rc_indices (j+1..) do
+	forall k in A_rc_indices (j+1..) with (ref A) do
 	  for q in A_rc_indices (k..) do
 	    A (k, q) -= A(j, q) * A (j, k);
       }

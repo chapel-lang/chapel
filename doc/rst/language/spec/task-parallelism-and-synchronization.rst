@@ -50,8 +50,8 @@ Tasks and Task Parallelism
 A Chapel *task* is a distinct context of execution that may be running
 concurrently with other tasks. Chapel provides a simple construct, the
 ``begin`` statement, to create tasks, introducing concurrency into a
-program in an unstructured way. In addition, Chapel introduces two type
-qualifiers, ``sync`` and ``single``, for synchronization between tasks.
+program in an unstructured way. In addition, Chapel introduces the type
+qualifier ``sync`` for synchronization between tasks.
 
 Chapel provides two constructs, the ``cobegin`` and ``coforall``
 statements, to introduce concurrency in a more structured way. These
@@ -147,42 +147,30 @@ reads of a synchronization variable cannot proceed until the variable’s
 state is full. Normal writes of a synchronization variable cannot
 proceed until the variable’s state is empty.
 
-Chapel supports two types of synchronization variables: ``sync`` and ``single``.
-Both types behave similarly, except that a ``single`` variable may only be
-written once. Consequently, when a ``sync`` variable is read, its state
-transitions to empty, whereas when a ``single`` variable is read, its state
-does not change. When either type of synchronization variable is
-written, its state transitions to full.
-
-``sync`` and ``single`` are type qualifiers and precede the type of the
-variable’s value in the declaration. ``sync`` and ``single`` are
-supported for the primitive types ``nothing``, ``bool``, ``int``,
-``uint``, ``real``, ``imag``, ``complex``, ``range``, ``bytes``, and
-``string`` ( :ref:`Primitive_Types`); for enumerated types
+The ``sync`` type qualifier precedes the type of the variable’s value in
+the declaration. ``sync`` is supported for the primitive types
+``nothing``, ``bool``, ``int``, ``uint``, ``real``, ``imag``,
+``complex``, ``range``, ``bytes``, and ``string``
+( :ref:`Primitive_Types`); for enumerated types
 ( :ref:`Enumerated_Types`); and for class types (:ref:`Class_Types`) and
-record types (:ref:`Record_Types`). For sync variables of class type, the
-full/empty state applies to the reference to the class object, not to its
-member fields.
+record types (:ref:`Record_Types`). For sync variables of class type,
+the full/empty state applies to the reference to the class object, not
+to its member fields.
 
 If a task attempts to read or write a synchronization variable that is
 not in the correct state, the task is suspended. When the variable
 transitions to the correct state, the task is resumed. If there are
-multiple tasks blocked waiting for the state transition:
+multiple tasks blocked waiting for the state transition one task is
+non-deterministically selected to proceed and the others continue to
+wait.
 
- * for a ``sync`` variable, one task is non-deterministically selected to
-   proceed and the others continue to wait
- * for a ``single`` variable, all tasks are selected to proceed.
-
-A synchronization variable is specified with a ``sync`` or ``single``
-type given by the following syntax:
+A synchronization variable is specified with a ``sync`` type given by
+the following syntax:
 
 .. code-block:: syntax
 
    sync-type:
      'sync' type-expression
-
-   single-type:
-     'single' type-expression
 
 A default-initialized synchronization variable will be empty. A
 synchronization variable initialized from another expression will be
@@ -239,10 +227,10 @@ full and store the value from that expression.
 
 ..
 
-   *Example (singleVar.chpl)*.
+   *Example (syncVar.chpl)*.
 
    The following code implements a simple split-phase barrier using a
-   single variable.
+   sync variable.
 
    .. BLOCK-test-chapelpre
 
@@ -256,7 +244,7 @@ full and store the value from that expression.
    .. code-block:: chapel
 
       var count: sync int = n;  // counter which also serves as a lock
-      var release: single bool; // barrier release
+      var release: sync bool; // barrier release
 
       forall t in 1..n do begin {
         work(t);
@@ -292,22 +280,16 @@ type or the formal is generic
 synchronization type, the actual must be an lvalue and is passed by
 reference. In these cases the formal itself is an lvalue, too. The
 actual argument is not read or written during argument passing; its
-state is not changed or waited on. The qualifier ``sync`` or ``single``
-without the value type can be used to specify a generic formal argument
-that requires a ``sync`` or ``single`` actual.
-
-When the actual argument is a ``sync`` or ``single`` and the
-corresponding formal has the actual’s base type or is implicitly
-converted from that type, a normal read of the actual is performed when
-the call is made, and the read value is passed to the formal.
+state is not changed or waited on. The qualifier ``sync`` without the
+value type can be used to specify a generic formal argument that
+requires a ``sync`` actual.
 
 .. _Functions_on_Synchronization_Variables:
 
-Predefined Single and Sync Methods
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Predefined Sync Methods
+~~~~~~~~~~~~~~~~~~~~~~~
 
-The following methods are defined for variables of ``sync`` and
-``single`` type:
+The following methods are defined for variables of ``sync`` type:
 
 .. include:: /builtins/ChapelSyncvar.rst
 
@@ -375,19 +357,19 @@ statements may not be used to exit a cobegin block.
       }
 
    is equivalent to the following code that uses only begin statements
-   and single variables to introduce concurrency and synchronize:
+   and sync variables to introduce concurrency and synchronize:
 
 
    .. code-block:: chapel
 
-      var s1, s2, s3: single bool;
+      var s1, s2, s3: sync bool;
       begin { stmt1(); s1.writeEF(true); }
       begin { stmt2(); s2.writeEF(true); }
       begin { stmt3(); s3.writeEF(true); }
       s1.readFF(); s2.readFF(); s3.readFF();
 
    Each begin statement is executed concurrently but control does not
-   continue past the final line above until each of the single variables
+   continue past the final line above until each of the sync variables
    is written, thereby ensuring that each of the functions has finished.
 
 .. _Coforall:
@@ -439,13 +421,12 @@ statements may not be used to exit a coforall block.
       }
 
    is equivalent to the following code that uses only begin statements
-   and sync and single variables to introduce concurrency and
-   synchronize:
+   and sync variables to introduce concurrency and synchronize:
 
    .. code-block:: chapel
 
       var runningCount: sync int = 1;
-      var finished: single bool;
+      var finished: sync bool;
       for i in iterator() {
         runningCount.writeEF(runningCount.readFE() + 1);
         begin {
@@ -464,7 +445,7 @@ statements may not be used to exit a coforall block.
    begin statement. The sync variable
    ``runningCount`` is used to keep track of the
    number of executing tasks plus one for the main task. When this
-   variable reaches zero, the single variable
+   variable reaches zero, the sync variable
    ``finished`` is used to signal that all of the
    tasks have completed. Thus control does not continue past the last
    line until all of the tasks have completed.

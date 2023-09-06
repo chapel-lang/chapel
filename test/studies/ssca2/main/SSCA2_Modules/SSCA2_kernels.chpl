@@ -132,9 +132,9 @@ module SSCA2_kernels
 
 	for path_length in 1 .. max_path_length do {
 
-	  forall v in Active_Level with(ref Next_Level) do {
+	  forall v in Active_Level with (ref Next_Level, ref min_distance) do {
 
-	    forall w in G.Neighbors (v) with(ref Next_Level) do {
+	    forall w in G.Neighbors (v) with (ref Next_Level, ref min_distance) do {
 
 
               if min_distance(w).compareAndSwap(-1, path_length) then {
@@ -273,7 +273,7 @@ module SSCA2_kernels
 
       if PRINT_TIMING_STATISTICS then sw.start ();
 
-      forall s in starting_vertices do on vertex_domain.distribution.idxToLocale(s) {
+      forall s in starting_vertices with (ref Locales, ref Between_Cent$) do on vertex_domain.distribution.idxToLocale(s) {
 
         const shere = here.id;
 
@@ -287,7 +287,7 @@ module SSCA2_kernels
         inline proc f1(ref BCaux, v) {
           BCaux[v].path_count$.write(0.0);
         }
-        forall v in vertex_domain do {
+        forall v in vertex_domain with (ref BCaux) do {
           BCaux[v].depend = 0.0;
           BCaux[v].min_distance.write(-1);
           f1(BCaux, v);
@@ -386,8 +386,8 @@ module SSCA2_kernels
 
             const AL = Active_Level[here.id]!;
 
-            forall u in AL.Members do {
-              forall v in G.FilteredNeighbors(u) do on vertex_domain.distribution.idxToLocale(v) {
+            forall u in AL.Members with (ref BCaux) do {
+              forall v in G.FilteredNeighbors(u) with (ref BCaux) do on vertex_domain.distribution.idxToLocale(v) {
                       var dist_temp: real;
                       f3(BCaux, v, u, current_distance_c, Active_Level, dist_temp);
                       if VALIDATE_BC && dist_temp != 0 then
@@ -561,7 +561,7 @@ module SSCA2_kernels
     }
 
     // This function should only be called using unique vertices
-    proc add_child ( new_child: vertex ) {
+    proc ref add_child ( new_child: vertex ) {
       var c = child_count.fetchAdd(1)+1;
       Row_Children[c] = new_child;
     }

@@ -7,7 +7,7 @@ record item {
 record itemset {
   var dataset: 3*item;
 
-  proc up() {
+  proc ref up() {
     dataset(0).data += 1;
   }
 }

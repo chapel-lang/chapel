@@ -221,7 +221,7 @@ proc rank_keys ( iteration ) {
   // count the number of occurrences of each key value (each pe can do their share independently)
 
   tloops(1).start();
-  forall (k,i) in zip(key, keyDom) do {
+  forall (k,i) in zip(key, keyDom) with (ref bucket_cnts) do {
     on k do {
       var ibucket: int = k >> (log2range-log2nbuckets);  // this is equivalent to (key(i)/range)*nbuckets
       var mype: int = i / nkeys_per_pe;
@@ -253,7 +253,7 @@ proc rank_keys ( iteration ) {
   var hi1 = if distType==ISDistType.block then 1..nbuckets-1
     else 1..npes-1;
   tloops(2).start();
-  forall b in hi0 do {
+  forall b in hi0 with (ref bucket_ptrs) do {
     for i in hi1 {
       bucket_ptrs[i, b] = bucket_ptrs[i-1, b] + bucket_cnts[i-1, b];
       if false then writeln("bucket_ptrs", (i,b), "=", bucket_ptrs[i, b]);
@@ -267,7 +267,7 @@ proc rank_keys ( iteration ) {
   // now send off the keys -- there are remote references here, but there are no race conditions,
   //                          that is, each pe can work independently
   tloops(3).start();
-  forall (k,i) in zip(key, keyDom) do {
+  forall (k,i) in zip(key, keyDom) with (ref bucket_ptrs, ref keybuff) do {
     on k do {
       var mype: int = i / nkeys_per_pe;   // change this to a shift?
       var ibucket: int;
@@ -288,7 +288,7 @@ proc rank_keys ( iteration ) {
   // now think of operating in an alternate domain
   // each pe does this bit
   tloops(4).start();
-  forall b in 0..nbuckets-1 do {
+  forall b in 0..nbuckets-1 with (ref keycount) do {
     on keybuff[b,0] do     {			// is this necessary?
       var mykeys: int = bucket_ptrs[npes-1, b]; 
       for i in 0..mykeys-1 {
@@ -443,7 +443,7 @@ proc fullVerify () {
   // store the ranks in the rank array -- think of being back on the orginal domain
   // first, adjust the bucketptr array
   
-  forall mype in 0..npes-1 do {
+  forall mype in 0..npes-1 with (ref bucket_ptrs, ref rank) do {
     var first: int = mype*nkeys_per_pe;
     var last:  int = first+nkeys_per_pe-1;
     var ibucket: int;

@@ -26,7 +26,6 @@ var tu2 = (1,2);         test("tuple-2", tu2);
 var tu3 = (1,2,3);       test("tuple-3", tu3);
 var atm: atomic int;     test("atomic", atm);
 var snc: sync int;       test("sync", snc);
-var sng: single int;     test("single", sng);
 var oc: owned C = new owned C();            test("owned class", oc);
 compilerError("done"); // no need for a C compile
 
@@ -41,7 +40,6 @@ proc test(param msg, v) {
   if isArrayType(v.type)  then compilerWarning(msg + " is an array");
   if isAtomicType(v.type) then compilerWarning(msg + " is an atomic");
   if isSyncType(v.type)   then compilerWarning(msg + " is a sync");
-  if isSingleType(v.type) then compilerWarning(msg + " is a single");
 // Todo: would be nice to add versions of the above tests on variables
 // instead of types, e.g. isTuple(v) in addition to isTupleType(v.type).
 }

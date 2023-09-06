@@ -43,14 +43,14 @@ module ChapelLocks {
       this.l.init_helper(other.l.read());
     }
 
-    inline proc lock() {
+    inline proc ref lock() {
       use ChapelBase.currentTask;
       on this do
         while l.read() || l.testAndSet(memoryOrder.acquire) do
           yieldExecution();
     }
 
-    inline proc unlock() {
+    inline proc ref unlock() {
       l.clear(memoryOrder.release);
     }
   }

@@ -49,7 +49,7 @@ module analyze_RMAT_graph_associative_array {
       proc numNeighbors() do  return ndom.size;
 
       // firstAvail must be passed by reference
-      proc addEdgeOnVertex(uArg, vArg, wArg, firstAvail: sync int) {
+      proc ref addEdgeOnVertex(uArg, vArg, wArg, firstAvail: sync int) {
         on this do {
           // todo: the compiler should make these values local automatically!
           const /*u = uArg,*/ v = vArg, w = wArg;
@@ -76,7 +76,7 @@ module analyze_RMAT_graph_associative_array {
       }
 
       // not parallel-safe
-      proc tidyNeighbors(firstAvail: sync int) {
+      proc ref tidyNeighbors(firstAvail: sync int) {
         local {
           // no synchronization here
           var edgeCount = firstAvail.readXX() - 1;
@@ -94,7 +94,7 @@ module analyze_RMAT_graph_associative_array {
       // Jargon: a "duplicate" is an edge v1->v2 for which
       // there is another edge v1->v2, possibly with a different weight.
       //
-      proc RemoveDuplicates(lo, inout hi) {
+      proc ref RemoveDuplicates(lo, inout hi) {
         use IO;
 
         param showArrays = false;  // beware of 'local' in the caller

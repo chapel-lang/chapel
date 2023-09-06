@@ -32,7 +32,7 @@ bar();
 record R {
   var A: [1..10] int;
 }
-proc R.foo() {
+proc ref R.foo() {
   begin {
     this.A[1] = 1;
   }

@@ -198,7 +198,7 @@ module ChapelIO {
     @chpldoc.nodoc
     proc writeThisFieldsDefaultImpl(writer, x:?t, inout first:bool) throws {
       param num_fields = __primitive("num fields", t);
-      var isBinary = writer.binary();
+      var isBinary = writer._binary();
 
       if (isClassType(t)) {
         if _to_borrowed(t) != borrowed RootClass {
@@ -261,7 +261,7 @@ module ChapelIO {
       const st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
       const isJson = st == QIO_AGGREGATE_FORMAT_JSON;
 
-      if !writer.binary() {
+      if !writer._binary() {
         const start = if isJson then "{"
                       else if st == QIO_AGGREGATE_FORMAT_CHPL
                       then "new " + t:string + "("
@@ -274,7 +274,7 @@ module ChapelIO {
 
       writeThisFieldsDefaultImpl(writer, x, first);
 
-      if !writer.binary() {
+      if !writer._binary() {
         const end = if isJson then "}"
                     else if st == QIO_AGGREGATE_FORMAT_CHPL then ")"
                     else if isClassType(t) then "}"
@@ -307,43 +307,44 @@ module ChapelIO {
                               const x:?t) throws {
       const name = __primitive("simple type name", x);
       const numIO = __numIOFields(t);
-      if isClassType(t) then
-        serializer.startClass(writer, name, numIO);
+      var ser = if isClassType(t) then
+        serializer.startClass(writer, name, numIO)
       else
         serializer.startRecord(writer, name, numIO);
 
       if isClassType(t) && _to_borrowed(t) != borrowed RootClass {
-        serializeDefaultImpl(writer, serializer, x.super);
+        if x.super.type != borrowed RootClass then
+          x.super.serialize(writer, ser);
       }
 
       param num_fields = __primitive("num fields", t);
       for param i in 1..num_fields {
         if isIoField(x, i) {
           param name : string = __primitive("field num to name", x, i);
-          serializer.serializeField(writer, name,
-                                    __primitive("field by num", x, i));
+          ser.writeField(name,
+                         __primitive("field by num", x, i));
         }
       }
 
       if isClassType(t) then
-        serializer.endClass(writer);
+        ser.endClass();
       else
-        serializer.endRecord(writer);
+        ser.endRecord();
     }
 
     @chpldoc.nodoc
     proc deserializeDefaultImpl(reader: fileReader, ref deserializer,
                                 ref x:?t) throws {
       const name = __primitive("simple type name", x):string;
-      if isClassType(t) then
-        deserializer.startClass(reader, name);
+      var des = if isClassType(t) then
+        deserializer.startClass(reader, name)
       else
         deserializer.startRecord(reader, name);
 
       if isClassType(t) && _to_borrowed(t) != borrowed RootClass {
         var castTmp : x.super.type = x;
         if x.super.type != borrowed RootClass then
-          castTmp.deserialize(reader, deserializer);
+          castTmp.deserialize(reader, des);
       }
 
       param num_fields = __primitive("num fields", t);
@@ -351,15 +352,15 @@ module ChapelIO {
         if isIoField(x, i) {
           param name : string = __primitive("field num to name", x, i);
           ref field = __primitive("field by num", x, i);
-          field = deserializer.deserializeField(reader, name,
-                                                __primitive("field by num", x, i).type);
+          field = des.readField(name,
+                                __primitive("field by num", x, i).type);
         }
       }
 
       if isClassType(t) then
-        deserializer.endClass(reader);
+        des.endClass();
       else
-        deserializer.endRecord(reader);
+        des.endRecord();
     }
 
     //
@@ -409,7 +410,7 @@ module ChapelIO {
         where !isUnionType(t) {
 
       param numFields = __primitive("num fields", t);
-      var isBinary = reader.binary();
+      var isBinary = reader._binary();
 
       if isClassType(t) && _to_borrowed(t) != borrowed RootClass {
 
@@ -541,7 +542,7 @@ module ChapelIO {
         where isUnionType(t) && !isExternUnionType(t) {
 
       param numFields = __primitive("num fields", t);
-      var isBinary = reader.binary();
+      var isBinary = reader._binary();
 
 
       if isBinary {
@@ -598,7 +599,7 @@ module ChapelIO {
     proc readThisDefaultImpl(reader, x:?t) throws where isClassType(t) {
       const st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
 
-      if !reader.binary() {
+      if !reader._binary() {
         const start = if st == QIO_AGGREGATE_FORMAT_CHPL
                       then "new " + t:string + "("
                       else "{";
@@ -614,7 +615,7 @@ module ChapelIO {
       try readThisFieldsDefaultImpl(reader, t, obj, needsComma);
       try skipFieldsAtEnd(reader, needsComma);
 
-      if !reader.binary() {
+      if !reader._binary() {
         const end = if st == QIO_AGGREGATE_FORMAT_CHPL then ")"
                     else "}";
 
@@ -627,7 +628,7 @@ module ChapelIO {
       const st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
       const isJson = st ==  QIO_AGGREGATE_FORMAT_JSON;
 
-      if !reader.binary() {
+      if !reader._binary() {
         const start = if st ==  QIO_AGGREGATE_FORMAT_CHPL
                       then "new " + t:string + "("
                       else if isJson then "{"
@@ -641,7 +642,7 @@ module ChapelIO {
       try readThisFieldsDefaultImpl(reader, t, x, needsComma);
       try skipFieldsAtEnd(reader, needsComma);
 
-      if !reader.binary() {
+      if !reader._binary() {
         const end = if isJson then "}"
                     else ")";
 
@@ -688,21 +689,21 @@ module ChapelIO {
   proc nothing.serialize(writer, ref serializer) {}
 
   @chpldoc.nodoc
-  proc _tuple.readThis(f) throws {
+  proc ref _tuple.readThis(f) throws {
     _readWriteHelper(f);
   }
 
   @chpldoc.nodoc
-  proc _tuple.writeThis(f) throws {
+  proc ref _tuple.writeThis(f) throws {
     _readWriteHelper(f);
   }
 
   // Moved here to avoid circular dependencies in ChapelTuple.
   @chpldoc.nodoc
-  proc _tuple._readWriteHelper(f) throws {
+  proc ref _tuple._readWriteHelper(f) throws {
     const st = f.styleElement(QIO_STYLE_ELEMENT_TUPLE);
     const isJson = st == QIO_TUPLE_FORMAT_JSON;
-    const binary = f.binary();
+    const binary = f._binary();
 
     // Returns a 4-tuple containing strings representing:
     // - start of a tuple
@@ -760,25 +761,24 @@ module ChapelIO {
   }
 
   @chpldoc.nodoc
-  proc _tuple.deserialize(reader, ref deserializer) throws {
-    ref des = deserializer;
-    des.startTuple(reader);
+  proc ref _tuple.deserialize(reader, ref deserializer) throws {
+    var des = deserializer.startTuple(reader);
     for param i in 0..<this.size {
       pragma "no auto destroy"
-      var elt = des.deserializeField(reader, "", this(i).type);
+      var elt = des.readElement(this(i).type);
       __primitive("=", this(i), elt);
     }
-    des.endTuple(reader);
+    des.endTuple();
   }
 
   @chpldoc.nodoc
   proc const _tuple.serialize(writer, ref serializer) throws {
-    serializer.startTuple(writer, this.size);
+    var ser = serializer.startTuple(writer, this.size);
     for param i in 0..<size {
       const ref elt = this(i);
-      serializer.serializeField(writer, "", elt);
+      ser.writeElement(elt);
     }
-    serializer.endTuple(writer);
+    ser.endTuple();
   }
 
   // Moved here to avoid circular dependencies in ChapelRange

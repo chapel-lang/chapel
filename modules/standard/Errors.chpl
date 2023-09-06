@@ -179,7 +179,7 @@ module Errors {
     var _head: unmanaged Error? = nil;
     var _errorsLock: chpl_LocalSpinlock;
 
-    proc append(err: unmanaged Error) {
+    proc ref append(err: unmanaged Error) {
       on this {
         _errorsLock.lock();
         var tmp = _head;

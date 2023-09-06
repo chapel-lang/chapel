@@ -1080,7 +1080,7 @@ proc main() {
 
 // Parallel Experiment:
   timer.start(); // start timer
-  forall (x,y) in myBigArray.domain { // Parallel iteration
+  forall (x,y) in myBigArray.domain with (ref myBigArray) { // Parallel iteration
     myBigArray[x,y] = (x:real) / (y:real);
   }
   timer.stop(); // Stop timer
@@ -1149,25 +1149,6 @@ proc main() {
       writeln("Writer: will write in...");
       countdown(3);
       someSyncVar.writeEF(123);
-    }
-  }
-
-// ``single`` vars can only be written once. A read on an unwritten ``single``
-// results in a wait, but when the variable has a value it can be read indefinitely.
-  var someSingleVar: single int;
-  sync {
-    begin { // Reader task
-      writeln("Reader: waiting to read.");
-      for i in 1..5 {
-        var read_single = someSingleVar.readFF();
-        writeln("Reader: iteration ", i,", and the value is ", read_single);
-      }
-    }
-
-    begin { // Writer task
-      writeln("Writer: will write in...");
-      countdown(3);
-      someSingleVar.writeEF(5); // first and only write ever.
     }
   }
 

@@ -1,7 +1,7 @@
-depDivFloorPos.chpl:1: warning: In an upcoming release 'divfloorpos' will no longer be included by default, please 'use' or 'import' the Math module to call it.  Additionally its argument names will also change with this move
-depDivFloorPos.chpl:2: warning: In an upcoming release 'divfloorpos' will no longer be included by default, please 'use' or 'import' the Math module to call it.  Additionally its argument names will also change with this move
-depDivFloorPos.chpl:3: warning: In an upcoming release 'divfloorpos' will no longer be included by default, please 'use' or 'import' the Math module to call it.  Additionally its argument names will also change with this move
-depDivFloorPos.chpl:4: warning: In an upcoming release 'divfloorpos' will no longer be included by default, please 'use' or 'import' the Math module to call it.  Additionally its argument names will also change with this move
+depDivFloorPos.chpl:1: warning: In an upcoming release 'divfloorpos' will no longer be included by default.  Please 'use' or 'import' the Math module to prepare for this move, noting that its name has changed to divFloorPos and its argument names have changed to 'x' and 'y'
+depDivFloorPos.chpl:2: warning: In an upcoming release 'divfloorpos' will no longer be included by default.  Please 'use' or 'import' the Math module to prepare for this move, noting that its name has changed to divFloorPos and its argument names have changed to 'x' and 'y'
+depDivFloorPos.chpl:3: warning: In an upcoming release 'divfloorpos' will no longer be included by default.  Please 'use' or 'import' the Math module to prepare for this move, noting that its name has changed to divFloorPos and its argument names have changed to 'x' and 'y'
+depDivFloorPos.chpl:4: warning: In an upcoming release 'divfloorpos' will no longer be included by default.  Please 'use' or 'import' the Math module to prepare for this move, noting that its name has changed to divFloorPos and its argument names have changed to 'x' and 'y'
 2
 4
 1

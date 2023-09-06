@@ -129,7 +129,7 @@ module CopyAggregation {
     type elemType;
     @chpldoc.nodoc
     var agg: if aggregate then SrcAggregatorImpl(elemType) else nothing;
-    inline proc copy(ref dst: elemType, const ref src: elemType) {
+    inline proc ref copy(ref dst: elemType, const ref src: elemType) {
       if aggregate then agg.copy(dst, src);
                    else dst = src;
     }
@@ -150,7 +150,7 @@ module CopyAggregation {
     var rBuffers: [myLocaleSpace] remoteBuffer(aggType);
     var bufferIdxs: c_ptr(int);
 
-    proc postinit() {
+    proc ref postinit() {
       lBuffers = allocate(c_ptr(aggType), numLocales);
       bufferIdxs = bufferIdxAlloc();
       for loc in myLocaleSpace {
@@ -160,7 +160,7 @@ module CopyAggregation {
       }
     }
 
-    proc deinit() {
+    proc ref deinit() {
       flush();
       for loc in myLocaleSpace {
         deallocate(lBuffers[loc]);
@@ -169,14 +169,14 @@ module CopyAggregation {
       deallocate(bufferIdxs);
     }
 
-    proc flush() {
+    proc ref flush() {
       for offsetLoc in myLocaleSpace + lastLocale {
         const loc = offsetLoc % numLocales;
         _flushBuffer(loc, bufferIdxs[loc], freeData=true);
       }
     }
 
-    inline proc copy(ref dst: elemType, const in srcVal: elemType) {
+    inline proc ref copy(ref dst: elemType, const in srcVal: elemType) {
       if verboseAggregation {
         writeln("DstAggregator.copy is called");
       }
@@ -206,7 +206,7 @@ module CopyAggregation {
       }
     }
 
-    proc _flushBuffer(loc: int, ref bufferIdx, freeData) {
+    proc ref _flushBuffer(loc: int, ref bufferIdx, freeData) {
       const myBufferIdx = bufferIdx;
       if myBufferIdx == 0 then return;
 
@@ -248,7 +248,7 @@ module CopyAggregation {
     var rSrcVals: [myLocaleSpace] remoteBuffer(elemType);
     var bufferIdxs: c_ptr(int);
 
-    proc postinit() {
+    proc ref postinit() {
       dstAddrs = allocate(c_ptr(aggType), numLocales);
       lSrcAddrs = allocate(c_ptr(aggType), numLocales);
       bufferIdxs = bufferIdxAlloc();
@@ -261,7 +261,7 @@ module CopyAggregation {
       }
     }
 
-    proc deinit() {
+    proc ref deinit() {
       flush();
       for loc in myLocaleSpace {
         deallocate(dstAddrs[loc]);
@@ -272,14 +272,14 @@ module CopyAggregation {
       deallocate(bufferIdxs);
     }
 
-    proc flush() {
+    proc ref flush() {
       for offsetLoc in myLocaleSpace + lastLocale {
         const loc = offsetLoc % numLocales;
         _flushBuffer(loc, bufferIdxs[loc], freeData=true);
       }
     }
 
-    inline proc copy(ref dst: elemType, const ref src: elemType) {
+    inline proc ref copy(ref dst: elemType, const ref src: elemType) {
       if verboseAggregation {
         writeln("SrcAggregator.copy is called");
       }
@@ -308,7 +308,7 @@ module CopyAggregation {
       }
     }
 
-    proc _flushBuffer(loc: int, ref bufferIdx, freeData) {
+    proc ref _flushBuffer(loc: int, ref bufferIdx, freeData) {
       const myBufferIdx = bufferIdx;
       if myBufferIdx == 0 then return;
 
@@ -389,7 +389,7 @@ module AggregationPrimitives {
 
     // Allocate a buffer on loc if we haven't already. Return a c_ptr to the
     // remote locales buffer
-    proc cachedAlloc(): c_ptr(elemType) {
+    proc ref cachedAlloc(): c_ptr(elemType) {
       if data == nil {
         const rvf_size = size.safeCast(c_size_t);
         on Locales[loc] do {
@@ -427,7 +427,7 @@ module AggregationPrimitives {
 
     // After free'ing the data, need to nil out the records copy of the pointer
     // so we don't double-free on deinit
-    inline proc markFreed() {
+    inline proc ref markFreed() {
       if boundsChecking {
         assert(this.locale.id == here.id);
       }
@@ -466,7 +466,7 @@ module AggregationPrimitives {
       AggregationPrimitives.GET(c_ptrTo(lArr[0]), data, loc, byte_size);
     }
 
-    proc deinit() {
+    proc ref deinit() {
       if data != nil {
         const rvf_data=data;
         on Locales[loc] {

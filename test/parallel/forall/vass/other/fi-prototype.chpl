@@ -145,7 +145,7 @@ proc nocapture() {
   writeln("A%start nocapture()");
   var i: int = 1;
   var s: sync bool;
-  var q: single bool;
+  var q: sync bool;
 
   cobegin with (ref i) {
     {
@@ -168,7 +168,7 @@ proc captureManually() {
   writeln("B%start captureManually()");
   var i: int = 1;
   var s: sync bool;
-  var q: single bool;
+  var q: sync bool;
 
   cobegin with (ref i) {
     {
@@ -192,7 +192,7 @@ proc noCaptureWithIntent() {
   writeln("C%start noCaptureWithIntent()");
   var i: int = 1;
   var s: sync bool;
-  var q: single bool;
+  var q: sync bool;
 
   cobegin with (ref i) {
     {
@@ -220,7 +220,7 @@ proc captureWithIntent() {
   writeln("D%start captureWithIntent()");
   var i: int = 1;
   var s: sync bool;
-  var q: single bool;
+  var q: sync bool;
 
   cobegin with (ref i) {
     {

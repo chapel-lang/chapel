@@ -65,8 +65,8 @@ printit("negnanzeros", negnanzeros, nosign=true);
 printit("naninf", naninf, nosign=true);
 printit("negnaninf", negnaninf, nosign=true);
 
-printit("NAN", NAN);
-printit("-NAN", -NAN);
-printit("INFINITY", INFINITY);
-printit("-INFINITY", -INFINITY);
+printit("nan", nan);
+printit("-nan", -nan);
+printit("inf", inf);
+printit("-inf", -inf);
 

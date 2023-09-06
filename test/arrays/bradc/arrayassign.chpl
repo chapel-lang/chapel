@@ -5,7 +5,7 @@ var D: domain(1) = {1..n};
 var A: [D] int;
 var B: [D] int;
 
-[i in D] A(i) = i;
+[i in D with (ref A)] A(i) = i;
 
 B = A;
 

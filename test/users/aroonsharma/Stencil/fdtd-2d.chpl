@@ -33,7 +33,7 @@ config var dist: string = "C";
 /* Initializes a 1D structure */
 proc initialize_1D(distribution) {
     var array: [distribution] real = 0.0;
-    forall i in distribution {
+    forall i in distribution with (ref array) {
         array[i] = (i - 1.0);
     }
     return array;
@@ -42,7 +42,7 @@ proc initialize_1D(distribution) {
 /* Initializes a 2D structure */
 proc initialize_2D(distribution, adder: int, divider: int) {
     var matrix: [distribution] real = 0.0;
-    forall (i,j) in distribution {
+    forall (i,j) in distribution with (ref matrix) {
         matrix[i,j] = ((i - 1.0) * (j + adder)) / divider;
     }
     return matrix;

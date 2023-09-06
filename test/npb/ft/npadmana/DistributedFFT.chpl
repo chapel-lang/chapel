@@ -127,11 +127,11 @@ prototype module DistributedFFT {
     }
 
     inline proc execute(ref arr1 : ?T, ref arr2 : T) where (T != c_ptr(?)) {
-      execute(c_ptrTo(arr1), c_ptrTo(arr2));
+      this.execute(c_ptrTo(arr1), c_ptrTo(arr2));
     }
 
     inline proc execute(ref arr1 : ?T) where (T != c_ptr(?)) {
-      execute(arr1, arr1);
+      this.execute(arr1, arr1);
     }
 
     proc isValid : bool {
@@ -286,7 +286,7 @@ prototype module DistributedFFT {
       var myplane : [{0..0, ySrc, zSrc}] T;
 
       if usePrimitiveComm {
-        forall iy in ySrc {
+        forall iy in ySrc with (ref myplane) {
           copy(myplane[0, iy, zSrc.first], Src[xSrc.first, iy, zSrc.first], myLineSize);
         }
       } else {
@@ -296,14 +296,14 @@ prototype module DistributedFFT {
       for ix in xSrc {
         // Y-transform
         timeTrack.start();
-        forall (plan, myzRange) in yPlan.batch() {
+        forall (plan, myzRange) in yPlan.batch() with (ref myplane) {
           plan.execute(myplane[0, ySrc.first, myzRange.first]);
         }
         timeTrack.stop(TimeStages.Y);
 
         // Z-transform, offset to reduce comm congestion/collision
         timeTrack.start();
-        forall iy in offset(ySrc) {
+        forall iy in offset(ySrc) with (ref Dst, ref myplane) {
           zPlan.execute(myplane[0, iy, zSrc.first]);
           // Transpose data into Dst, and copy the next Src slice into myplane
           if usePrimitiveComm {
@@ -327,7 +327,7 @@ prototype module DistributedFFT {
 
       // X-transform
       timeTrack.start();
-      forall (plan, myzRange) in xPlan.batch() {
+      forall (plan, myzRange) in xPlan.batch() with (ref Dst) {
         for iy in yDst {
           plan.execute(Dst[iy, xDst.first, myzRange.first]);
         }
@@ -397,7 +397,7 @@ prototype module DistributedFFT {
        we could implement FFTWplan.init=() to either duplicate or borrow
        the fftw_plan object that FFTWplan points at. */
     pragma "do not unref for yields"
-    iter batch(param tag : iterKind) where (tag==iterKind.standalone) {
+    iter ref batch(param tag : iterKind) where (tag==iterKind.standalone) {
       coforall chunk in chunks(parRange, numTasks) {
         if chunk.size == batchSizeSm then yield (planSm, chunk);
         if chunk.size == batchSizeLg then yield (planLg, chunk);
@@ -532,13 +532,13 @@ prototype module DistributedFFT {
         }
       }
 
-      proc start() {
+      proc ref start() {
         if timeTrackFFT {
           tt.clear(); tt.start();
         }
       }
 
-      proc stop(stage) {
+      proc ref stop(stage) {
         if timeTrackFFT {
           tt.stop();
           arr[stage] += tt.elapsed();

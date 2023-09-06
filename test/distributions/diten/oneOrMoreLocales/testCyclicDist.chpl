@@ -9,7 +9,7 @@ proc test1d() {
   const Dom: domain(1, int(64)) dmapped Dist = {1..10:int(64)};
   var A, B: [Dom] real;
 
-  forall i in Dom {
+  forall i in Dom with (ref B) {
     B(i) = i;
   }
 
@@ -30,7 +30,7 @@ proc test2d() {
     writeln(A(i,j).locale, ": A(", i, ",", j, ") = ", A(i,j));
   }
 
-  forall (i,j) in Dom { A(i,j) = i*100 + j; }
+  forall (i,j) in Dom with (ref A) { A(i,j) = i*100 + j; }
   forall a in A { a += 1; }
   writeln(A);
 }

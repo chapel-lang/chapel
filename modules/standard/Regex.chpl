@@ -709,7 +709,7 @@ record regex {
   }
 
   @chpldoc.nodoc
-  proc _deserialize(data) {
+  proc ref _deserialize(data) {
     const pattern = exprType.chpl__deserialize(data.pattern);
     qio_regex_create_compile(pattern.c_str(),
                              pattern.numBytes,
@@ -1070,7 +1070,7 @@ record regex {
   }
 
   @chpldoc.nodoc
-  proc readThis(f) throws {
+  proc ref readThis(f) throws {
     var pattern:exprType;
     // Note -- this is wrong because we didn't quote
     // and there's no way to get the flags

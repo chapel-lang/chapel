@@ -12,7 +12,7 @@ var arr: [dom] int;
 
 ref data = arr._value.myLocArr!.myElems;
 
-forall i in dom do
+forall i in dom with (ref data) do
   data[i] = 1;
 
 stopGpuDiagnostics();

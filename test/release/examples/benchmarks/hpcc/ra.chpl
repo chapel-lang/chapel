@@ -130,7 +130,7 @@ proc main() {
   // contains its index.  "[i in TableSpace]" is shorthand for "forall
   // i in TableSpace"
   //
-  [i in TableSpace] T[i] = i;
+  [i in TableSpace with (ref T)] T[i] = i;
 
   const startTime = timeSinceEpoch().totalSeconds();              // capture the start time
 
@@ -147,11 +147,11 @@ proc main() {
   // index and as the update value.
   //
   if (useOn) then
-    forall (_, r) in zip(Updates, RAStream()) do
+    forall (_, r) in zip(Updates, RAStream()) with (ref T) do
       on T[r & indexMask] do
         T.localAccess[r & indexMask] ^= r;
   else
-    forall (_, r) in zip(Updates, RAStream()) do
+    forall (_, r) in zip(Updates, RAStream()) with (ref T) do
       T[r & indexMask] ^= r;
 
   const execTime = timeSinceEpoch().totalSeconds() - startTime;   // capture the elapsed time
@@ -207,14 +207,14 @@ proc verifyResults(ref T) {
   // with that table element, but not always.
   //
   if (useOnVerify) then
-    forall (_, r) in zip(Updates, RAStream()) do
+    forall (_, r) in zip(Updates, RAStream()) with (ref T, ref locks) do
       on T[r & indexMask] {
         locks[r & lockIndexMask].lock();
         T[r & indexMask] ^= r;
         locks[r & lockIndexMask].unlock();
       }
   else
-    forall (_, r) in zip(Updates, RAStream()) do {
+    forall (_, r) in zip(Updates, RAStream()) with (ref T, ref locks) do {
       locks[r & lockIndexMask].lock();
       T[r & indexMask] ^= r;
       locks[r & lockIndexMask].unlock();
@@ -249,10 +249,10 @@ record vlock {
   proc init=(other: vlock) {
     this.l = other.l.read();
   }
-  proc lock() {
+  proc ref lock() {
     on this do while l.testAndSet() != false do currentTask.yieldExecution();
   }
-  proc unlock() {
+  proc ref unlock() {
     l.write(false);
   }
 }

@@ -1565,12 +1565,12 @@ AggregateType* installInternalType(AggregateType* ct, AggregateType* dt) {
   return dt;
 }
 
-DefExpr* buildClassDefExpr(const char*  name,
-                           const char*  cname,
-                           AggregateTag tag,
-                           AList        inherits,
-                           BlockStmt*   decls,
-                           Flag         externFlag) {
+DefExpr* buildClassDefExpr(const char*               name,
+                           const char*               cname,
+                           AggregateTag              tag,
+                           const std::vector<Expr*>& inherits,
+                           BlockStmt*                decls,
+                           Flag                      externFlag) {
   bool isExtern = externFlag == FLAG_EXTERN;
   AggregateType* ct = NULL;
   TypeSymbol* ts = NULL;
@@ -1619,7 +1619,7 @@ DefExpr* buildClassDefExpr(const char*  name,
     ct->defaultValue=NULL;
 
     if (!inherits.empty()) {
-      USR_FATAL_CONT(inherits.first(),
+      USR_FATAL_CONT(inherits.front(),
                      "External types do not currently support inheritance");
     }
   }
@@ -1632,8 +1632,8 @@ DefExpr* buildClassDefExpr(const char*  name,
 
   ct->addDeclarations(decls);
 
-  for_alist(inherit, inherits) {
-    ct->inherits.insertAtTail(inherit->remove());
+  for (auto inherit : inherits) {
+    ct->inherits.insertAtTail(inherit);
   }
   return def;
 }
@@ -1968,6 +1968,7 @@ static TryStmt* buildTryCatchForManagerBlock(VarSymbol* managerHandle,
 
   {
     TEMP ref manager = PRIM_ADDR_OF(myManager());
+    chpl__verifyTypeContext(manager);
     USER [var/ref/const] myResource = manager.enterContext();
     TEMP errorCaught = false;
 
@@ -1997,7 +1998,10 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
   auto moveIntoHandle = new CallExpr(PRIM_MOVE, managerHandle, addrOfExpr);
   ret->insertAtTail(moveIntoHandle);
 
-  // Build call to 'enterContext()', but don't insert into the tree yet.
+  auto verifyCall = new CallExpr("chpl__verifyTypeContext", new SymExpr(managerHandle));
+  ret->insertAtTail(verifyCall);
+
+  // Build call to 'enterContext', but don't insert into the tree yet.
   auto seManager = new SymExpr(managerHandle);
   auto enterContext = new CallExpr("enterContext", gMethodToken, seManager);
 

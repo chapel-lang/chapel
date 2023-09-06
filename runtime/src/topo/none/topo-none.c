@@ -31,7 +31,7 @@
 #include <stdint.h>
 
 
-void chpl_topo_init(void) { }
+void chpl_topo_init(char *accessbilePUsMask) { }
 
 void chpl_topo_post_args_init(void) { }
 

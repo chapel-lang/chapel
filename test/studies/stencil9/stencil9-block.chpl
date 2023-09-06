@@ -27,7 +27,7 @@ var numIters = 0;
 do {
   numIters += 1;
 
-  forall (i,j) in Dom do
+  forall (i,j) in Dom with (ref B) do
     B[i,j] = 0.25   * A[i,j]
            + 0.125  * (A[i+1,j  ] + A[i-1,j  ] + A[i  ,j-1] + A[i  ,j+1])
            + 0.0625 * (A[i-1,j-1] + A[i-1,j+1] + A[i+1,j-1] + A[i+1,j+1]);

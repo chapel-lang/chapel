@@ -11,7 +11,7 @@ const blockDom : domain(1, int(64)) dmapped blockDist = {sizeRange};
 var array : [blockDom] int(64) = [i in blockDom] i;
 var output : [blockDom] string;
 
-forall i in array.domain {
+forall i in array.domain with (ref output) {
   for j in 1..array(i) {
     output[i] += j:string + " ";
     if (j == 5) then {

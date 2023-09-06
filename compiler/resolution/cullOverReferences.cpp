@@ -475,15 +475,26 @@ static void maybeIssueRefMaybeConstWarning(ArgSymbol* arg) {
   // we have full control here, but this should be ok
   bool isOuter = arg->hasFlag(FLAG_OUTER_VARIABLE);
 
-  bool notImplementedYetOptOut = isArgThis;
-  bool shouldWarn = !notImplementedYetOptOut && !isOuter && !fromPragma && !isCompilerGenerated;
+  bool shouldWarn = !isOuter && !fromPragma && !isCompilerGenerated;
 
   // if its an outer variable but its used in a task intent, warn
   if (!shouldWarn && isOuter && isTaskIntent) {
     shouldWarn = true;
   }
 
-  if (shouldWarn) {
+  // should not warn if a method is marked pragma "reference to const when const this"
+  // this messes up a number of tests
+  if (shouldWarn && isArgThis) {
+    if (FnSymbol* fn = arg->getFunction()) {
+      if (fn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS)) {
+        shouldWarn = false;
+      }
+    }
+  }
+
+  // only warn if the default intent is not INTENT_REF_MAYBE_CONST
+  // this does to apply to `this-intent`'s, always warn for them
+  if (shouldWarn && !isArgThis) {
     IntentTag defaultIntent = blankIntentForType(arg->type);
     // if default intent is not ref-maybe-const, do nothing
     if(defaultIntent != INTENT_REF_MAYBE_CONST) shouldWarn = false;
@@ -500,6 +511,9 @@ static void maybeIssueRefMaybeConstWarning(ArgSymbol* arg) {
       int ret = sscanf(arg->name, "_e%d_%63s", &varArgNum, argBuffer);
       CHPL_ASSERT(ret == 2);
       argName = argBuffer;
+    } else if (isArgThis) {
+      FnSymbol* fn = arg->getFunction();
+      argName = fn ? fn->name : "<unknown-method>";
     } else {
       argName = arg->name;
     }
@@ -507,10 +521,10 @@ static void maybeIssueRefMaybeConstWarning(ArgSymbol* arg) {
     const char* intentName = isTaskIntent ?
       "add an explicit 'ref' task intent for" :
         (isArgThis ?
-          "use an explicit 'ref' this intent for the method" :
+          "use an explicit 'ref' this-intent for the method" :
           "use an explicit 'ref' intent for the argument");
 
-    bool useFunctionForWarning = isTaskIntent && arg->getFunction();
+    bool useFunctionForWarning = (isTaskIntent | isArgThis) && arg->getFunction();
     Symbol* warnSym =
       useFunctionForWarning ? (Symbol*)arg->getFunction() : (Symbol*)arg;
     USR_WARN(warnSym,

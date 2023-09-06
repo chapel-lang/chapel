@@ -224,16 +224,16 @@ casting triangle..pentagon to stridable range of uint(64):
   300..500: (300, 500, 1, 0)
 
 casting triangle..pentagon to range of int(8)
-  caught Error: bad cast from int(64) with a value greater than the maximum of int(8) to int(8)
+  44..-12: (44, -12, 1, 0)
 
 casting triangle..pentagon to stridable range of int(8):
-  caught Error: bad cast from int(64) with a value greater than the maximum of int(8) to int(8)
+  44..-12: (44, -12, 1, 0)
 
 casting triangle..pentagon to range of uint(8)
-  caught Error: bad cast from int(64) with a value greater than the maximum of uint(8) to uint(8)
+  44..244: (44, 244, 1, 0)
 
 casting triangle..pentagon to stridable range of uint(8):
-  caught Error: bad cast from int(64) with a value greater than the maximum of uint(8) to uint(8)
+  44..244: (44, 244, 1, 0)
 
 casting chocolate..strawberry to range of bool
   false..true: (false, true, 1, false)

@@ -52,7 +52,7 @@ proc testit(mode: Mode, param explicit, printStats) {
   var t: stopwatch; t.start();
   select mode {
     when Mode.directIndexLocal {
-      forall i in D2 {
+      forall i in D2 with (ref tmp) {
         if explicit then
           unorderedCopy(tmp[i], A[rindex[i]]);
         else
@@ -60,7 +60,7 @@ proc testit(mode: Mode, param explicit, printStats) {
       }
     }
     when Mode.directIndex {
-      forall i in D2 {
+      forall i in D2 with (ref tmp) {
         if explicit then
           unorderedCopy(tmp[i], A[rindex[i]]);
         else

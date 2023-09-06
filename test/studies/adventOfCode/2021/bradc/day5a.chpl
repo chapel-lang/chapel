@@ -22,7 +22,7 @@ param X = 0, Y = 1;
 
 var count: [0..xmax, 0..ymax] atomic int;
 
-forall ((x1,y1),(x2,y2)) in coords {
+forall ((x1,y1),(x2,y2)) in coords with (ref count) {
   const minx = min(x1, x2);
   const maxx = max(x1, x2);
   const miny = min(y1, y2);

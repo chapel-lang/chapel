@@ -27,7 +27,7 @@ proc kernel1for(ref A) {
 }
 
 proc kernel1forall(ref A) {
-  forall i in 1..n {
+  forall i in 1..n with (ref A) {
     A[i] = i;
   }
 }
@@ -39,7 +39,7 @@ proc kernel2for(ref A) {
 }
 
 proc kernel2forall(ref A) {
-  forall i in 1..n {
+  forall i in 1..n with (ref A) {
     A[i] = sqrt(i:real);
   }
 }
@@ -51,7 +51,7 @@ proc kernel4for(ref A, B, C) {
 }
 
 proc kernel4forall(ref A, B, C) {
-  forall i in 1..n {
+  forall i in 1..n with (ref A) {
     A[i] = B[i] + C[i];
   }
 }

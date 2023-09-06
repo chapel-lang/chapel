@@ -16,7 +16,7 @@ module dequeue {
     var id: int;
 
     // pushTop: add an item to the top of the DeQueue
-    proc pushTop(item: itemType) {
+    proc ref pushTop(item: itemType) {
       var newTop = new unmanaged MyNode(itemType, item, nil, top);
       if top == nil {
         bottom = newTop;
@@ -28,7 +28,7 @@ module dequeue {
     }
 
     // pushBottom: add an item to the bottom of the DeQueue
-    proc pushBottom(item: itemType) {
+    proc ref pushBottom(item: itemType) {
       var newBottom = new unmanaged MyNode(itemType, item, bottom, nil);
       if bottom == nil {
         top = newBottom;
@@ -41,7 +41,7 @@ module dequeue {
     
     // popTop: remove an item from the top of the DeQueue
     // note: it is a runtime error if the stack is empty
-    proc popTop() {
+    proc ref popTop() {
       if isEmpty() then
         halt("attempt to pop an item off an empty DeQueue");
       var oldTop = top;
@@ -54,7 +54,7 @@ module dequeue {
     }
 
     // popBottom: remove an item from the bottom of the DeQueue
-    proc popBottom() {
+    proc ref popBottom() {
       if isEmpty() then
         halt("attempt to pop an item off an empty DeQueue");
       var oldBottom = bottom;
@@ -68,7 +68,7 @@ module dequeue {
 
     // Split n elements off the bottom of the Dequeue and
     // return as a new stack.
-    proc split(n: int): DeQueue(itemType) {
+    proc ref split(n: int): DeQueue(itemType) {
       if (n > size) then
         halt("attempt to split more items than are in DeQueue");
 

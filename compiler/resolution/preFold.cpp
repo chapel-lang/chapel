@@ -426,6 +426,27 @@ static void setRecordDefaultValueFlags(AggregateType* at) {
             }
           }
         }
+
+        // default initialization is not currently allowed
+        // for records like 'record R { var x; }'
+        if (!at->symbol->hasFlag(FLAG_TUPLE)) {
+          AggregateType* root = at->getRootInstantiation();
+          for (auto elem: sortedSymbolMapElts(at->substitutions)) {
+            const char* keyName = elem.key->name;
+
+            Symbol* field = root->getField(keyName);
+            bool hasDefault = false;
+            bool isGenericField = root->fieldIsGeneric(field, hasDefault);
+
+            if (field->isParameter() || field->hasFlag(FLAG_TYPE_VARIABLE)) {
+              // OK, it's a param or type field
+            } else if (isGenericField) {
+              failsDefaultInit = true;
+              break;
+            }
+          }
+        }
+
         if (failsDefaultInit) {
           ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
           return;

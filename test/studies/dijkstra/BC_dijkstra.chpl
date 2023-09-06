@@ -12,7 +12,7 @@ module BC_dijkstra {
      for i in D1 do
       // onStack = next record on stack; -1 EOS; -2 not on stack
       // inHeap = location of this record in heap
-      new unmanaged Record(distance = INFINITY, onStack = -2, inHeap = -1,
+      new unmanaged Record(distance = inf, onStack = -2, inHeap = -1,
                       preEdge = new unmanaged PreEdge(edge = -1, next = nil));
 
     // Initialize heap
@@ -57,7 +57,7 @@ module BC_dijkstra {
         // First shortest path from S to neighbor is found
         //     set neighbor's distance and sigma and insert record in heap
         //     node is the pre node of neighbor
-        if (isinf(neighborDistance)) {
+        if (isInf(neighborDistance)) {
 
           Records[neighbor].distance = newDistance;
           Records[neighbor].sigma = sigma;

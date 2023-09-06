@@ -15,3 +15,7 @@ CHPL_COMM != none
 # ASAN will report a stack overflow, which is great but not what the .good file
 # expects
 CHPL_SANITIZE_EXE <= address
+
+# Call stack size is too small for larger arm page sizes
+CHPL_TARGET_ARCH == aarch64
+CHPL_TARGET_ARCH == arm64

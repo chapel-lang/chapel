@@ -9,7 +9,7 @@ record RR {
   var xx: int;
 }
 
-proc RR.asdf() {
+proc ref RR.asdf() {
   forall idx in DOM with (ref this) {
     this.aa[idx] = idx*10;
     if idx == DOM.high / 2 then

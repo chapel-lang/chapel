@@ -63,7 +63,7 @@ if verify then sort(Aref);
 {
   var timer: stopwatch;
   timer.start();
-  forall ai in AD {
+  forall ai in AD with (ref A) {
     A((ai+offset)/2) = ai;
   }
   timer.stop();

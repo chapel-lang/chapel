@@ -412,6 +412,30 @@ static ID parentFunctionId(Context* context, ID functionId) {
   return ID();
 }
 
+static void checkForParenlessMethodFieldRedefinition(Context* context,
+                                                     const Function* fn,
+                                                     Resolver& visitor) {
+
+  if (fn->isMethod() && fn->isParenless()) {
+    QualifiedType receiverType;
+    ID receiverId;
+    if (visitor.getMethodReceiver(&receiverType, &receiverId)) {
+      if (receiverType.type()) {
+        // use the type information, if it is present
+        if (auto ct = receiverType.type()->getCompositeType()) {
+          receiverId = ct->id();
+        }
+      }
+      if (!receiverId.isEmpty()) {
+        if (parsing::idContainsFieldWithName(context, receiverId, fn->name())) {
+          context->error(fn, "parenless proc redeclares the field '%s'",
+                         fn->name().c_str());
+        }
+      }
+    }
+  }
+}
+
 static const TypedFnSignature* const&
 typedSignatureInitialQuery(Context* context,
                            const UntypedFnSignature* untypedSig) {
@@ -459,6 +483,8 @@ typedSignatureInitialQuery(Context* context,
         whereResult = whereClauseResult(context, fn, r, needsInstantiation);
       }
     }
+
+    checkForParenlessMethodFieldRedefinition(context, fn, visitor);
 
     result = TypedFnSignature::get(context,
                                    untypedSig,
@@ -2080,6 +2106,8 @@ scopeResolveFunctionQuery(Context* context, ID id) {
         visitor.methodReceiverScopes(/*recompute=*/true);
       }
     }
+
+    checkForParenlessMethodFieldRedefinition(context, fn, visitor);
 
     sig = visitor.typedSignature;
   }

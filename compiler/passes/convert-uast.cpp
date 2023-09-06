@@ -710,6 +710,12 @@ struct Converter {
         return remap;
       }
     } else {
+      if (name == USTR("single")) {
+        if (currentModuleType == MOD_USER) {
+          USR_WARN(node->id(), "'single' variables are deprecated - please use 'sync' variables instead");
+        }
+      }
+
       if (auto remap = reservedWordRemapForIdent(name)) {
         return remap;
       }
@@ -2181,6 +2187,9 @@ struct Converter {
       if (name == USTR("atomic")) {
         ret = new UnresolvedSymExpr("chpl__atomicType");
       } else if (name == USTR("single")) {
+        if (currentModuleType == MOD_USER) {
+          USR_WARN(node->id(), "'single' variables are deprecated - please use 'sync' variables instead");
+        }
         ret = new UnresolvedSymExpr("_singlevar");
       } else if (name == USTR("subdomain")) {
         ret = new CallExpr("chpl__buildSubDomainType");
@@ -3920,18 +3929,18 @@ struct Converter {
   }
 
   template <typename Iterable>
-  AList convertInheritsExprs(const Iterable& iterable, bool& inheritMarkedGeneric) {
-    AList inherits;
+  void convertInheritsExprs(const Iterable& iterable,
+                            std::vector<Expr*>& inherits,
+                            bool& inheritMarkedGeneric) {
     for (auto inheritExpr : iterable) {
       bool thisInheritMarkedGeneric = false;
       const uast::Identifier* ident =
         uast::Class::getInheritExprIdent(inheritExpr, thisInheritMarkedGeneric);
       if (auto converted = convertExprOrNull(ident)) {
-        inherits.insertAtTail(converted);
+        inherits.push_back(converted);
       }
       inheritMarkedGeneric |= thisInheritMarkedGeneric;
     }
-    return inherits;
   }
 
   Expr* convertAggregateDecl(const uast::AggregateDecl* node) {
@@ -3946,11 +3955,11 @@ struct Converter {
     const char* cname = name;
     bool inheritMarkedGeneric = false;
 
-    AList inherits;
+    std::vector<Expr*> inherits;
     if (auto cls = node->toClass()) {
-      inherits = convertInheritsExprs(cls->inheritExprs(), inheritMarkedGeneric);
+      convertInheritsExprs(cls->inheritExprs(), inherits, inheritMarkedGeneric);
     } else if (auto rec = node->toRecord()) {
-      inherits = convertInheritsExprs(rec->interfaceExprs(), inheritMarkedGeneric);
+      convertInheritsExprs(rec->interfaceExprs(), inherits, inheritMarkedGeneric);
     }
 
     if (node->linkageName()) {

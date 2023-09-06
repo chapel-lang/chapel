@@ -25,7 +25,7 @@ intents.
 Any Chapel program with a data race is not a valid program, and an
 implementation cannot be relied upon to produce consistent behavior.
 Valid Chapel programs will use synchronization constructs such as
-*sync*, *single*, or *atomic* variables or higher-level constructs based
+*sync* or *atomic* variables or higher-level constructs based
 on these to enforce ordering for conflicting memory operations.
 
 The following design principles were used in developing Chapel’s memory
@@ -70,15 +70,14 @@ of two orders: *program order* and *memory order*. The *program order*
 :math:`<_p` is a partial order describing serial or fork-join
 parallelism dependencies between variable reads and writes. The *memory
 order* :math:`<_m` is a total order that describes the semantics of
-synchronizing memory operations (via ``atomic``, ``sync`` or ``single``
-variables) with sequential consistency. Non-SC atomic operations
-(described in :ref:`non_sc_atomics`) do not create this
-total order.
+synchronizing memory operations (via ``atomic`` or ``sync`` variables)
+with sequential consistency. Non-SC atomic operations (described
+in :ref:`non_sc_atomics`) do not create this total order.
 
-Note that ``sync/single`` variables have memory consistency behavior
-equivalent to a sequence of SC operations on ``atomic`` variables. Thus
-for the remainder of the chapter, we will primarily focus on operations
-on ``atomic`` variables.
+Note that ``sync`` variables have memory consistency behavior equivalent
+to a sequence of SC operations on ``atomic`` variables. Thus for the
+remainder of the chapter, we will primarily focus on operations on
+``atomic`` variables.
 
 We will use the following notation:
 

@@ -87,7 +87,7 @@ proc main() {
 			}
 		}
 		//add up neighbors' contributions
-		forall (a, liz) in zip(GridDist, lizDoms) {
+		forall (a, liz) in zip(GridDist, lizDoms) with (ref atoms) {
 			local {
 				var total: AtomMatrix;
 				for ac in liz {

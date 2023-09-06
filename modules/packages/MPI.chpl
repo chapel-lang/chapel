@@ -421,7 +421,7 @@ module MPI {
   }
 
   /* Get the count from a status object */
-  proc MPI_Status.getCount(tt : MPI_Datatype) {
+  proc ref MPI_Status.getCount(tt : MPI_Datatype) {
     var count : c_int;
     C_MPI.MPI_Get_count(this, tt, count);
     return count : int;

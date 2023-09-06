@@ -304,7 +304,7 @@ module Set {
     // Do things the slow/copy way if the element is serializable.
     // See issue: #17477
     @chpldoc.nodoc
-    proc _addElem(in elem: eltType): bool
+    proc ref _addElem(in elem: eltType): bool
     where _isSerializable(eltType) {
         var result = false;
 
@@ -323,7 +323,7 @@ module Set {
     // For types that aren't serializable, avoid an extra copy by moving
     // the value across locales.
     @chpldoc.nodoc
-    proc _addElem(pragma "no auto destroy" in elem: eltType): bool {
+    proc ref _addElem(pragma "no auto destroy" in elem: eltType): bool {
       use MemMove;
 
       var result = false;

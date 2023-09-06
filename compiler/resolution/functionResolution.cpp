@@ -703,18 +703,10 @@ isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual,
 
 
 // Is this a legal actual argument for a 'const ref' formal?
-// At present, params cannot be passed to 'const ref'.
+// At present, anything can be passed to 'const ref'
 static bool
 isLegalConstRefActualArg(ArgSymbol* formal, Expr* actual) {
-  bool retval = true;
-
-  if (SymExpr* se = toSymExpr(actual))
-    if (se->symbol()->isParameter()                   ==  true &&
-        isString(se->symbol())                        == false &&
-        isBytes(se->symbol())                         == false)
-      retval = false;
-
-  return retval;
+  return true;
 }
 
 /* If we have a generic parent, e.g.:
@@ -1985,8 +1977,11 @@ computeVisibilityDistanceInternal(BlockStmt* block, FnSymbol* fn,
 // Returns a distance measure used to compare the visibility
 // of two functions.
 //
-// Returns -1 if the function is not found here
+// Returns -1 if the function is a method or if the function is not found
 static int computeVisibilityDistance(Expr* expr, FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_METHOD))
+    return -1;
+
   //
   // call helper function with visited set to avoid infinite recursion
   //
@@ -2511,7 +2506,7 @@ static Symbol* getBaseSymForConstCheck(CallExpr* call) {
 }
 
 
-// Report an error when storing a sync or single variable into a tuple.
+// Report an error when storing a sync variable into a tuple.
 // This is because currently we deallocate memory excessively in this case.
 void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn)
 {
@@ -2533,7 +2528,7 @@ void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn)
           name = aSE->symbol()->name;
 
       USR_FATAL_CONT(actual,
-                     "storing a sync or single variable %s in a tuple "
+                     "storing a sync variable %s in a tuple "
                      "is not currently implemented - "
                      "apply readFE() or readFF()",
                      name);
@@ -6346,8 +6341,36 @@ static void discardWorseWhereClauses(Vec<ResolutionCandidate*>&   candidates,
   }
 }
 
+// Returns 'true' if the candidates include both non-operator methods
+// and non-operator non-methods.
+static
+bool mixesNonOpMethodsAndFunctions(Vec<ResolutionCandidate*>&   candidates,
+                                   const DisambiguationContext& DC,
+                                   std::vector<bool>&           discarded) {
+
+  int nMethodsNotOperators = 0;
+  int nFunctionsNotOperators = 0;
+  for (int i = 0; i < candidates.n; i++) {
+    if (discarded[i]) {
+      continue;
+    }
+
+    ResolutionCandidate* candidate = candidates.v[i];
+    if (!candidate->fn->hasFlag(FLAG_OPERATOR)) {
+      if (candidate->fn->hasFlag(FLAG_METHOD)) {
+        nMethodsNotOperators++;
+      } else {
+        nFunctionsNotOperators++;
+      }
+    }
+  }
+
+  return nMethodsNotOperators > 0 && nFunctionsNotOperators > 0;
+}
+
 // Discard candidates with further visibility distance
 // than other candidates.
+// This check does not consider methods or operator methods.
 static void discardWorseVisibility(Vec<ResolutionCandidate*>&   candidates,
                                    const DisambiguationContext& DC,
                                    std::vector<bool>&           discarded) {
@@ -6360,14 +6383,17 @@ static void discardWorseVisibility(Vec<ResolutionCandidate*>&   candidates,
     }
 
     ResolutionCandidate* candidate = candidates.v[i];
+
     int distance = computeVisibilityDistance(DC.scope, candidate->fn);
     candidate->visibilityDistance = distance;
 
-    if (distance < minDistance) {
-      minDistance = distance;
-    }
-    if (distance > maxDistance) {
-      maxDistance = distance;
+    if (distance >= 0) {
+      if (distance < minDistance) {
+        minDistance = distance;
+      }
+      if (distance > maxDistance) {
+        maxDistance = distance;
+      }
     }
   }
 
@@ -6379,7 +6405,7 @@ static void discardWorseVisibility(Vec<ResolutionCandidate*>&   candidates,
 
       ResolutionCandidate* candidate = candidates.v[i];
       int distance = candidate->visibilityDistance;
-      if (distance > minDistance) {
+      if (distance > 0 && distance > minDistance) {
         EXPLAIN("X: Fn %d has further visibility distance\n", i);
         discarded[i] = true;
       }
@@ -6524,6 +6550,10 @@ static void disambiguateDiscarding(Vec<ResolutionCandidate*>&   candidates,
                                    const DisambiguationContext& DC,
                                    bool                         ignoreWhere,
                                    std::vector<bool>&           discarded) {
+
+  if (mixesNonOpMethodsAndFunctions(candidates, DC, discarded)) {
+    return;
+  }
 
   if (!DC.useOldVisibility && !DC.isMethodCall) {
     // If some candidates are less visible than other candidates,
@@ -11225,6 +11255,82 @@ static void checkNoVoidFields()
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*  Find specially named methods such as 'hash' that are placed on types that  *
+*  don't have the corresponding interface. This is executed here because      *
+*  resolution cleans up unused functions and interface statements, but we want*
+*  to warn even if a function isn't used.                                     *
+*                                                                             *
+************************************** | *************************************/
+
+struct SpeciallyNamedMethodInfo {
+  std::map<std::string, FnSymbol*> speciallyNamedMethods;
+};
+
+using SpeciallyNamedMethodKey = std::pair<InterfaceSymbol*, AggregateType*>;
+using SpecialMethodMap = std::map<SpeciallyNamedMethodKey, SpeciallyNamedMethodInfo>;
+
+static void checkSpeciallyNamedMethods() {
+  static const std::unordered_map<const char*, InterfaceSymbol*> reservedNames = {
+    { astr("hash"), gHashable },
+  };
+
+  SpecialMethodMap flagged;
+
+  // TODO: for now, this will simply not warn for classes, because all classes
+  // implement hashable, and because overriding hash should be allowed. When
+  // other special methods are converted, this logic will need to be updated
+  // to handle them.
+
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+    if (!fn->isMethod()) continue;
+    if (fn->isCompilerGenerated() || fn->hasFlag(FLAG_FIELD_ACCESSOR)) continue;
+
+    auto reservedIter = reservedNames.find(fn->name);
+    if (reservedIter == reservedNames.end()) continue;
+    auto receiverType = fn->getReceiverType();
+
+    auto at = toAggregateType(receiverType);
+    if (!at || !at->isRecord()) continue;
+
+    while (at->instantiatedFrom) at = at->instantiatedFrom;
+    auto key = SpeciallyNamedMethodKey(reservedIter->second, at);
+    flagged[key].speciallyNamedMethods[fn->name] = fn;
+  }
+
+  for_alive_in_Vec(ImplementsStmt, istm, gImplementsStmts) {
+    auto se = toSymExpr(istm->iConstraint->consActuals.get(1));
+    auto ts = toTypeSymbol(se->symbol());
+    auto at = toAggregateType(ts->type);
+    if (!at || !at->isRecord()) continue;
+
+    while (at->instantiatedFrom) at = at->instantiatedFrom;
+    auto isym = istm->iConstraint->ifcSymbol();
+
+    // For this pair of aggregate type / interface, remove it from the
+    // flagged set, because we found an instance.
+    flagged.erase(SpeciallyNamedMethodKey(isym, at));
+  }
+
+  // the things now left in flagged, we did not find any implements statements
+  // for.
+  for (auto& flaggedTypeIfc : flagged) {
+    auto ifc = flaggedTypeIfc.first.first;
+    auto at = flaggedTypeIfc.first.second;
+
+    USR_WARN(at,
+             "the type '%s' defines methods that previously had special meaning. "
+             "These will soon require '%s' to implement the '%s' interface to "
+             "continue to be treated specially.", at->name(), at->name(), ifc->name);
+    for (auto& flaggedNameFn : flaggedTypeIfc.second.speciallyNamedMethods) {
+      USR_PRINT(flaggedNameFn.second, "formerly-special function '%s' defined here",
+               flaggedNameFn.second->name);
+    }
+  }
+}
+
+
 
 void resolve() {
   parseExplainFlag(fExplainCall, &explainCallLine, &explainCallModule);
@@ -11298,6 +11404,8 @@ void resolve() {
 
   if (fPrintUnusedFns || fPrintUnusedInternalFns)
     printUnusedFunctions();
+
+  checkSpeciallyNamedMethods();
 
   saveGenericSubstitutions();
 
@@ -13652,36 +13760,13 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
         }
       }
     } else if (isGenericField) {
-
-      bool hasCompilerGeneratedInitializer = root->wantsDefaultInitializer();
-
-      if (hasCompilerGeneratedInitializer && hasDefault == false) {
-        // Create a temporary to pass for typeless generic fields
-        // e.g. for
-        //   record R { var x; }
-        //   var myR: R(int);
-        // convert the  default initialization into
-        //   var default_field_tmp: int;
-        //   var myR = new R(x=default_field_tmp)
-        VarSymbol* temp = newTemp("default_field_temp", value->typeInfo());
-        CallExpr* tempCall = new CallExpr(PRIM_DEFAULT_INIT_VAR, temp, value);
-
-        call->insertBefore(new DefExpr(temp));
-        call->insertBefore(tempCall);
-        resolveExpr(tempCall->get(2));
-        resolveExpr(tempCall);
-        appendExpr = new SymExpr(temp);
-
-      } else {
-        USR_FATAL_CONT(call, "default initialization with type '%s' "
-                             "is not yet supported", toString(at));
-        USR_PRINT(field, "field '%s' is a generic value",
-                         field->name);
-        USR_PRINT(field, "consider separately declaring a type field for it "
-                         "or using a 'new' call");
-        USR_STOP();
-      }
-
+      USR_FATAL_CONT(call, "default initialization with type '%s' "
+                           "is not yet supported", toString(at));
+      USR_PRINT(field, "field '%s' is a generic value",
+                       field->name);
+      USR_PRINT(field, "consider separately declaring a type field for it "
+                       "or using a 'new' call");
+      USR_STOP();
     } else {
       INT_FATAL("Unhandled case for default-init");
     }

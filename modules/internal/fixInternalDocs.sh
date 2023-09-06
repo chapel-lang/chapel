@@ -156,7 +156,6 @@ removeUsage $file
 
 file="./ChapelSyncvar.rst"
 replace "_syncvar" "sync" $file
-replace "_singlevar" "single" $file
 removePrefixFunctions $file
 removeTitle $file
 removeUsage $file
@@ -234,6 +233,7 @@ file=OwnedObject.rst
 removeTitle $file
 replace "_owned" "owned" $file
 replace "chpl_t" "t" $file
+replace ".. record:: owned" ".. type:: owned" $file
 removeUsage $file
 ## End of OwnedObject ##
 
@@ -243,6 +243,7 @@ removeTitle $file
 replace "_owned" "owned" $file
 replace "_shared" "shared" $file
 replace "chpl_t" "t" $file
+replace ".. record:: shared" ".. type:: shared" $file
 removeUsage $file
 ## End of SharedObject ##
 

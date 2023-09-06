@@ -14,12 +14,12 @@ var resultVec: [ColumnDom] real;
 
 var matrix: [DistColumnDom] [RowDom] real;
 
-proc init(X) { /* ... */ }
+proc initIt(X) { /* ... */ }
 
-init(matrix);
-init(vec);
+initIt(matrix);
+initIt(vec);
 
-forall i in DistColumnDom {
+forall i in DistColumnDom with (ref resultVec) {
   var result = 0.0;
   var localVec = vec; // Copy the input vector to the current locale
   for j in RowDom {

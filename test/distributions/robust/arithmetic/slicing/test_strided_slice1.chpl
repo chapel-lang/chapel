@@ -6,7 +6,7 @@ var A: [D] int;
 
 ref AA = A(D by 2);
 
-forall i in D do A(i) = 1;
+forall i in D with (ref A) do A(i) = 1;
 
 forall e in AA do e = 0;
 

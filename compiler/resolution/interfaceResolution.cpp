@@ -353,6 +353,9 @@ static void resolveISymRequiredFun(InterfaceSymbol* isym, FnSymbol* fn) {
     USR_FATAL_CONT(fn->where, "the interface function %s%s", fn->name,
           " contains a where clause, which is currently not supported");
 
+  if (fn->hasFlag(FLAG_IFC_ANY_RETURN_INTENT))
+    isym->hasAnyIntentFn = true;
+
   if (fn->isConstrainedGeneric() && ! fn->hasFlag(FLAG_NO_FN_BODY)) {
     resolveConstrainedGenericFun(fn);
   } else {
@@ -582,7 +585,8 @@ static Type* instantiateOneAggregateType(SymbolMap &fml2act,
     genCall->insertAtTail(new NamedExpr(elem.key->name, new SymExpr(instSym)));
   }
 
-  AggregateType* instT = atgen->generateType(genCall, "<internal error>");
+  AggregateType* instT = atgen->generateType(genCall, "<internal error>",
+                                             /* allowAllNamedArgs */ true);
   genCall->remove();
   if (markRm) cgInstantiations.insert(instT);
   fml2act.put(at->symbol, instT->symbol);
@@ -740,6 +744,14 @@ void resolveConstrainedGenericFun(FnSymbol* fn) {
   InterfaceInfo* ifcInfo = fn->interfaceInfo;
   if (ifcInfo == NULL) return;  // not a CG
 
+  for_alist(iconExpr, ifcInfo->interfaceConstraints) {
+    auto icon = toIfcConstraint(iconExpr);
+    if (icon->ifcSymbol()->hasAnyIntentFn) {
+      USR_FATAL(fn, "the interface '%s' cannot be used in a constrained-generic "
+                    "function.", icon->ifcSymbol()->name);
+    }
+  }
+
   cgprint("resolving CG function early %s  %s {\n",
           symstring(fn), debugLoc(fn));
   if (fn->id == breakOnResolveID) gdbShouldBreakHere();
@@ -832,6 +844,80 @@ static BlockStmt* createHolderBlock(FnSymbol* wrapFn, ImplementsStmt* istm) {
   return holder;
 }
 
+static bool targetFunctionIsValid(FnSymbol* tg, bool generatedOnly) {
+  // the argument is ignored for now, but in the future should be used
+  // in the check below; silence "unused variable" warnings.
+  (void) generatedOnly;
+
+  return tg != NULL &&
+
+         // After we switch the "implicit implements" warning to an error,
+         // uncomment the following line:
+         //
+         // (!generatedOnly || target->hasFlag(FLAG_COMPILER_GENERATED)) &&
+
+         // do not allow representatives to help satisfy a constraint
+         !tg->hasFlag(FLAG_CG_REPRESENTATIVE);
+}
+
+static void handleContextCallExpr(CallExpr* call, RetTag retTag,
+                                  FnSymbol* &target) {
+  ContextCallExpr* cc = toContextCallExpr(call->parentExpr);
+  if (cc == nullptr) return; // nothing to do
+
+  CallExpr* preferred =
+    retTag == RET_REF ? cc->getRefCall() :
+    retTag == RET_VALUE ? cc->getValueCall() :
+    retTag == RET_CONST_REF ? cc->getConstRefCall() : nullptr;
+
+  if (preferred != nullptr)
+    target = preferred->resolvedFunction();
+
+  cc->insertBefore(call->remove());
+  cc->remove();
+}
+
+static bool shouldInferAssociatedType(InterfaceSymbol* isym,
+                                      ConstrainedType* ifcAT) {
+  if (isym == gContextManager) {
+    INT_ASSERT(ifcAT->name() == astr("contextReturnType"));
+    return true;
+  }
+
+  return false;
+}
+
+static Type* inferAssociatedType(InterfaceSymbol* isym,  ImplementsStmt*   istm,
+                                 SymbolMap&    fml2act,  BlockStmt*      holder,
+                                 const char*    indent,  ConstrainedType* ifcAT) {
+  if (isym != gContextManager) return nullptr;
+  INT_ASSERT(ifcAT->name() == astr("contextReturnType"));
+  INT_ASSERT(istm->iConstraint->numActuals() == 1);
+  INT_ASSERT(isym->ifcFormals.length == 1);
+
+  // By the time we're here, fml2act should have a mapping for the self type.
+  auto selfType = fml2act.get(toDefExpr(isym->ifcFormals.head)->sym);
+  INT_ASSERT(toTypeSymbol(selfType));
+  auto recv = newTemp("infer_ctxRet_tmp", toTypeSymbol(selfType)->type);
+  INT_ASSERT(selfType);
+
+  auto enterContextCall = new CallExpr("enterContext", gMethodToken, recv);
+  holder->insertAtTail(enterContextCall);
+  callStack.add(enterContextCall);
+  FnSymbol* target = tryResolveCall(enterContextCall);
+  callStack.pop();
+
+  if (!targetFunctionIsValid(target, false)) return nullptr;
+
+  handleContextCallExpr(enterContextCall, RET_REF, target);
+  resolveFunction(target); // aborts if there are errors
+
+  auto returnType = target->retType->getValType();
+  cleanupHolder(holder);
+
+  return returnType;
+}
+
 // resolveAssociatedTypes() and helpers
 
 // Computes and stores the associated type for this implementations
@@ -850,6 +936,12 @@ static bool resolveOneAssocType(InterfaceSymbol* isym,  ImplementsStmt*   istm,
   INT_ASSERT(holder->body.empty());
   INT_ASSERT(ifcAT->ctUse == CT_IFC_ASSOC_TYPE);
   cgprint("%s  assoc type  %s\n", indent, symstring(ifcAT->symbol));
+
+  // We will attempt to infer the associated type for certain standard interfaces
+  // to help users migrate from existing special-methods-based implementations.
+  bool shouldInfer = shouldInferAssociatedType(isym, ifcAT);
+  bool reportIfCannotInfer = reportErrors;
+  if (shouldInfer) reportErrors = false;
 
   // To find the corresponding associated type, create a call and resolve it.
   // It is a method call, the receiver's type is the first actual of istm.
@@ -890,6 +982,19 @@ static bool resolveOneAssocType(InterfaceSymbol* isym,  ImplementsStmt*   istm,
   }
 
   cleanupHolder(holder);
+
+  if (implAT == nullptr && shouldInfer) {
+    Type* inferredAT = inferAssociatedType(isym, istm, fml2act, holder, indent, ifcAT);
+    if (!inferredAT && reportIfCannotInfer) {
+      USR_FATAL_CONT(istm, "when checking this implements statement");
+      USR_PRINT(istm, "the associated type %s is not implemented",
+                ifcAT->symbol->name);
+      USR_PRINT(ifcAT->symbol, "the associated type %s in the interface %s"
+                " is declared here", ifcAT->symbol->name, isym->name);
+    }
+    implAT = inferredAT;
+  }
+
   if (implAT != nullptr) {
     fml2act.put(ifcAT->symbol, implAT->symbol);
     istm->witnesses.symWits.put(ifcAT->symbol, implAT->symbol);
@@ -1022,23 +1127,6 @@ static bool addReqFnConstraints(BlockStmt* holder, FnSymbol* reqFn,
   }
 
   return true;
-}
-
-static void handleContextCallExpr(CallExpr* call, FnSymbol* reqFn,
-                                  FnSymbol* &target) {
-  ContextCallExpr* cc = toContextCallExpr(call->parentExpr);
-  if (cc == nullptr) return; // nothing to do
-
-  CallExpr* preferred =
-    reqFn->retTag == RET_REF ? cc->getRefCall() :
-    reqFn->retTag == RET_VALUE ? cc->getValueCall() :
-    reqFn->retTag == RET_CONST_REF ? cc->getConstRefCall() : nullptr;
-
-  if (preferred != nullptr)
-    target = preferred->resolvedFunction();
-
-  cc->insertBefore(call->remove());
-  cc->remove();
 }
 
 static void copyOneIfcRep(InterfaceReps* tgtData, InterfaceReps* implData) {
@@ -1335,6 +1423,8 @@ static bool checkReturnType(InterfaceSymbol* isym,  ImplementsStmt* istm,
 static bool checkReturnIntent(InterfaceSymbol* isym,  ImplementsStmt* istm,
                               FnSymbol*      target,  FnSymbol*      reqFn,
                               bool   reportErrors) {
+  if (reqFn->hasFlag(FLAG_IFC_ANY_RETURN_INTENT)) return true;
+
   if (target->retTag == reqFn->retTag)
     return true;
 
@@ -1458,19 +1548,7 @@ static bool resolveOneRequiredFn(InterfaceSymbol* isym,  ImplementsStmt*  istm,
   callStack.add(call);
   FnSymbol* target = tryResolveCall(call);
 
-  auto targetValid = [&](FnSymbol* tg) {
-    return tg != NULL &&
-
-           // After we switch the "implicit implements" warning to an error,
-           // uncomment the following line:
-           //
-           // (!generatedOnly || target->hasFlag(FLAG_COMPILER_GENERATED)) &&
-
-           // do not allow representatives to help satisfy a constraint
-           !target->hasFlag(FLAG_CG_REPRESENTATIVE);
-  };
-
-  if (!targetValid(target) && addlSite != nullptr) {
+  if (!targetFunctionIsValid(target, generatedOnly) && addlSite != nullptr) {
     // the call did not resolve at this location
     cleanupHolder(holder);
     // try resolving it at 'addlSite'
@@ -1482,11 +1560,11 @@ static bool resolveOneRequiredFn(InterfaceSymbol* isym,  ImplementsStmt*  istm,
   }
 
   // do not allow representatives to help satisfy a constraint
-  if (targetValid(target)) {
+  if (targetFunctionIsValid(target, generatedOnly)) {
     INT_ASSERT(target->hasFlag(FLAG_PROMOTION_WRAPPER) ||
                ! target->isGeneric());
 
-    handleContextCallExpr(call, reqFn, target);
+    handleContextCallExpr(call, reqFn->retTag, target);
 
     resolveFunction(target); // aborts if there are errors
                              // 'call' needs to be inTree() in such case
@@ -2041,7 +2119,7 @@ static Expr* closestInterestingScopeAnchor(Expr*   callsite,
 }
 
 static bool isAutoImplementInternalInterface(InterfaceSymbol* isym) {
-  return isym == gHashable;
+  return isym == gHashable || isym == gContextManager;
 }
 
 static Expr* anchorPointForAutoImplementInterface(InterfaceSymbol* isym,

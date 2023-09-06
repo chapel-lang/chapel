@@ -20,8 +20,8 @@ if printTiming then
   writeln("init serial: ", dt);
 
 st = timeSinceEpoch().totalSeconds();
-forall i in 1..n do
-  forall j in 1..m do
+forall i in 1..n with (ref A) do
+  forall j in 1..m with (ref A) do
     A[i,j] = i+j;
 dt = timeSinceEpoch().totalSeconds()-st;
 if printOutput then
@@ -31,7 +31,7 @@ if printTiming then
 
 st = timeSinceEpoch().totalSeconds();
 for i in 1..n do
-  forall j in 1..m do
+  forall j in 1..m with (ref A) do
     A[i,j] = i+j;
 dt = timeSinceEpoch().totalSeconds()-st;
 if printOutput then
@@ -40,7 +40,7 @@ if printTiming then
   writeln("init for-forall: ", dt);
 
 st = timeSinceEpoch().totalSeconds();
-forall i in 1..n do
+forall i in 1..n with (ref A) do
   for j in 1..m do
     A[i,j] = i+j;
 dt = timeSinceEpoch().totalSeconds()-st;

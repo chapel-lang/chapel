@@ -860,7 +860,7 @@ module TimSort {
     const size = (hi - lo) / stride + 1;
     const chunks = (size + blockSize - 1) / blockSize;
 
-    forall i in 0..#chunks {
+    forall i in 0..#chunks with (ref Data) {
       InsertionSort.insertionSort(Data, comparator = comparator, lo + (i * blockSize) * stride, min(hi, lo + ((i + 1) * blockSize * stride) - stride));
     }
 
@@ -871,7 +871,7 @@ module TimSort {
 
     var numSize = blockSize;
     while(numSize < size) {
-      forall i in 0..<size by 2 * numSize {
+      forall i in 0..<size by 2 * numSize with (ref Data) {
 
         const l = lo + i * stride;
         const mid = lo + (i + numSize - 1) * stride;
@@ -1493,7 +1493,7 @@ module SampleSortHelp {
 
     // Build the tree from the sorted splitters
     // logBuckets does not account for equalBuckets.
-    proc build(logBuckets: int, equalBuckets: bool) {
+    proc ref build(logBuckets: int, equalBuckets: bool) {
       this.logBuckets = logBuckets;
       this.numBuckets = 1 << logBuckets;
       this.equalBuckets = equalBuckets;
@@ -1504,7 +1504,7 @@ module SampleSortHelp {
       build(0, numSplitters, 1);
     }
     // Recursively builds the tree
-    proc build(left: int, right: int, pos: int) {
+    proc ref build(left: int, right: int, pos: int) {
       var mid = left + (right - left) / 2;
       storage[pos] = sortedStorage[mid];
       if 2*pos < numBuckets {
@@ -2022,8 +2022,8 @@ module SequentialInPlacePartitioning {
     // Divide the input into nTasks chunks.
     const countsSize = nTasks * nBuckets;
     const n = end_n - start_n + 1;
-    const blockSize = divceil(n, nTasks);
-    const nBlocks = divceil(n, blockSize);
+    const blockSize = divCeil(n, nTasks);
+    const nBlocks = divCeil(n, blockSize);
 
     var counts: [0..#nBuckets] int;
 
@@ -2257,7 +2257,8 @@ module TwoArrayPartitioning {
                       else here.maxTaskPar;
     var countsSize:int = nTasks*maxBuckets;
 
-    var bucketizer; // contains e.g. sample
+    type bucketizerType;
+    var bucketizer: bucketizerType; // contains e.g. sample
 
     // globalCounts stores counts like this:
     //   count for bin 0, task 0
@@ -2286,6 +2287,21 @@ module TwoArrayPartitioning {
     var baseCaseSize:int = 16;
     var sequentialSizePerTask:int = 4096;
     var endbit:int = max(int);
+
+    proc init(type bucketizerType) {
+      this.bucketizerType = bucketizerType;
+    }
+
+    proc init(in bucketizer,
+              baseCaseSize: int = 16,
+              sequentialSizePerTask: int = 4096,
+              endbit: int = max(int)) {
+      this.bucketizerType = bucketizer.type;
+      this.bucketizer = bucketizer;
+      this.baseCaseSize = baseCaseSize;
+      this.sequentialSizePerTask = sequentialSizePerTask;
+      this.endbit = endbit;
+    }
   }
 
   record TwoArrayDistributedBucketizerStatePerLocale {
@@ -2328,7 +2344,7 @@ module TwoArrayPartitioning {
     var globalCounts:[0..#countsSize] int;
     var globalEnds:[0..#countsSize] int;
 
-    proc postinit() {
+    proc ref postinit() {
       // Copy some vars to the compat
       for p in perLocale {
         p.compat.baseCaseSize = baseCaseSize;
@@ -2362,8 +2378,8 @@ module TwoArrayPartitioning {
 
     // Divide the input into nTasks chunks.
     const countsSize = nTasks * nBuckets;
-    const blockSize = divceil(n, nTasks);
-    const nBlocks = divceil(n, blockSize);
+    const blockSize = divCeil(n, nTasks);
+    const nBlocks = divCeil(n, blockSize);
 
     // Count
     coforall tid in 0..#nTasks with (ref state) {
@@ -2441,7 +2457,7 @@ module TwoArrayPartitioning {
 
     // Compute the total counts
     ref counts = state.counts;
-    forall bin in 0..#nBuckets {
+    forall bin in 0..#nBuckets with (ref counts) {
       var total = 0;
       for tid in 0..#nTasks {
         total += state.globalCounts[bin*nTasks + tid];
@@ -2629,7 +2645,7 @@ module TwoArrayPartitioning {
 
     // TODO: sort small tasks by size
 
-    forall task in state.smallTasks {
+    forall task in state.smallTasks with (ref A) {
       const size = task.size;
       const taskEnd = task.start + size - 1;
       if size > 0 {
@@ -2907,7 +2923,7 @@ module TwoArrayPartitioning {
           // (i.e. the transpose of the order needed for scan)
           const toIdx = maxBuckets * tid;
           ref perLocale = state.perLocale;
-          forall dstTid in task.otherIds(tid) {
+          forall dstTid in task.otherIds(tid) with (ref perLocale) {
             // perLocale[dstTid].globalCounts[toIdx..#maxBuckets] = localCounts;
             ShallowCopy.shallowCopyPutGet(
                 perLocale[dstTid].globalCounts, toIdx,
@@ -2944,7 +2960,7 @@ module TwoArrayPartitioning {
             ref globalEnds = state.perLocale[tid].globalEnds;
 
             // Compute the transpose
-            forall (tid,bkt) in {0..#nLocalesTotal, 0..#maxBuckets} {
+            forall (tid,bkt) in {0..#nLocalesTotal, 0..#maxBuckets} with (ref globalEnds) {
               var count = 0;
               if bktFirstLocale <= tid && tid <= bktLastLocale then
                 count = globalCounts[tid*maxBuckets+bkt];
@@ -2991,7 +3007,7 @@ module TwoArrayPartitioning {
             }
           }
 
-          forall bin in 0..#nBuckets {
+          forall bin in 0..#nBuckets with (ref A) {
             var size = globalCounts[bin*nLocalesTotal + tid];
             if size > 0 {
               var localStart = localOffsets[bin];
@@ -3500,7 +3516,7 @@ module MSBRadixSort {
         }
       }
 
-      forall (bin,(bin_start,bin_end)) in zip(0..#nbigsubs,bigsubs) {
+      forall (bin,(bin_start,bin_end)) in zip(0..#nbigsubs,bigsubs) with (ref A) {
         msbRadixSort(A, bin_start, bin_end, criterion, subbits, endbit, settings);
       }
     } else {

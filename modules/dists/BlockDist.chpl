@@ -1199,7 +1199,7 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
     var low  = wholeDim.orderToIndex(followDim.low);
     var high = wholeDim.orderToIndex(followDim.high);
     if wholeDim.hasNegativeStride() then low <=> high;
-    t(i) = try! (low..high by (wholeDim.stride*followDim.stride)) : t(i).type;
+    t(i) = (low..high by (wholeDim.stride*followDim.stride)) : t(i).type;
   }
   for i in {(...t)} {
     yield i;
@@ -1560,7 +1560,8 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
     // NOTE: Not bothering to check to see if these can fit into idxType
     var low = followThis(i).lowBound * abs(stride):idxType;
     var high = followThis(i).highBound * abs(stride):idxType;
-    myFollowThis(i) = try! ((low..high by stride) + dom.whole.dim(i).low by followThis(i).stride) : myFollowThis(i).type;
+    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).low
+                       by followThis(i).stride) : myFollowThis(i).type;
     lowIdx(i) = myFollowThis(i).lowBound;
   }
 
@@ -1932,11 +1933,9 @@ proc BlockArr.canDoOptimizedSwap(other) {
   var domsMatch = true;
 
   if this.dom != other.dom { // no need to check if this is true
-    if domsMatch {
-      for param i in 0..this.dom.rank-1 {
-        if this.dom.whole.dim(i) != other.dom.whole.dim(i) {
-          domsMatch = false;
-        }
+    for param i in 0..this.dom.rank-1 {
+      if this.dom.whole.dim(i) != other.dom.whole.dim(i) {
+        domsMatch = false;
       }
     }
   }

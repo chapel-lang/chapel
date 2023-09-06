@@ -24,23 +24,23 @@ module AtomicAggregation {
     var rBuffers: [myLocaleSpace] remoteBuffer(aggType);
     var bufferIdxs: [myLocaleSpace] int;
 
-    proc postinit() {
+    proc ref postinit() {
       for loc in myLocaleSpace {
         rBuffers[loc] = new remoteBuffer(aggType, bufferSize, loc);
       }
     }
 
-    proc deinit() {
+    proc ref deinit() {
       flush();
     }
 
-    proc flush() {
+    proc ref flush() {
       for loc in myLocaleSpace {
         _flushBuffer(loc, bufferIdxs[loc], freeData=true);
       }
     }
 
-    inline proc inc(ref dst: AggregatedAtomic(elemType)) {
+    inline proc ref inc(ref dst: AggregatedAtomic(elemType)) {
       // Get the locale of dst and the local address on that locale
       const loc = dst.locale.id;
       const dstAddr = getAddr(dst);
@@ -66,7 +66,7 @@ module AtomicAggregation {
       }
     }
 
-    proc _flushBuffer(loc: int, ref bufferIdx, freeData) {
+    proc ref _flushBuffer(loc: int, ref bufferIdx, freeData) {
       const myBufferIdx = bufferIdx;
       if myBufferIdx == 0 then return;
 

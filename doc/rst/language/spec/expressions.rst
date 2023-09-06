@@ -406,7 +406,6 @@ Precedence and Associativity
 | | ``[ ]``          |                | | forall expression                  |
 | | ``for do``       |                | | for expression                     |
 | | ``sync``         |                | | sync type modifier                 |
-| | ``single``       |                | | single type modifier               |
 | | ``atomic``       |                | | atomic type modifier               |
 |                    |                |                                      |
 +--------------------+----------------+--------------------------------------+

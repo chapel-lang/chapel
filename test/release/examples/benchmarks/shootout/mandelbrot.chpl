@@ -18,11 +18,11 @@ type eltType = uint(bitsPerElt);   // element type used to store the image
 
 
 proc main() {
-  const xdim = 0..#divceilpos(n, bitsPerElt);  // the compacted x dimension
+  const xdim = 0..#divCeilPos(n, bitsPerElt);  // the compacted x dimension
 
   var image : [0..#n, xdim] eltType;           // the compacted bitmap image
 
-  forall (y, xelt) in dynamic(image.domain, chunkSize) { // for all elements
+  forall (y, xelt) in dynamic(image.domain, chunkSize) with (ref image) { // for all elements
 
     var buff: eltType;                         // a single-element pixel buffer
 

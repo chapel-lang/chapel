@@ -38,7 +38,7 @@ cobegin {
 
 config var depth: uint(64) = 1024;
 
-var sum1, sum2: single uint(64);
+var sum1, sum2: sync uint(64);
 
 proc recursive_sum(n: uint(64)): uint(64) {
   if n <= 1 then return n; else return n + recursive_sum(n - 1);

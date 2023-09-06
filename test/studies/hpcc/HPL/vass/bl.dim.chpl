@@ -44,8 +44,8 @@ config const n = 62,
 
 // The bounding box for the Block distributions.
 // We arbitrarily choose to round up, rather than down.
-const nbb1 = divceilpos(n, blkSize * tl1) * blkSize * tl1, //MBD //BD
-      nbb2 = divceilpos(n, blkSize * tl2) * blkSize * tl2; //MBD //BD
+const nbb1 = divCeilPos(n, blkSize * tl1) * blkSize * tl1, //MBD //BD
+      nbb2 = divCeilPos(n, blkSize * tl2) * blkSize * tl2; //MBD //BD
 
 // The starting indices for the Block-Cyclic distributions.
 //const st1=1, st2=1; //MBC //BC
@@ -165,7 +165,7 @@ proc schurComplement(AD, BD, Rest) {
       replB = Ab[BD.dim(0), 1..n+1];
       }
 
-  forall (row,col) in Rest by (blkSize, blkSize) {
+  forall (row,col) in Rest by (blkSize, blkSize) with (ref Ab) {
 
     vwln("  dgemm(", (Rest.dim(0))(row..#blkSize), ",",
                      (Rest.dim(1))(col..#blkSize), ")  on ", here.id);

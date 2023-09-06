@@ -62,7 +62,7 @@ record HPLparams {
   var L1, U: transtype;
   var memAlign: int;
 
-  proc postinit() {
+  proc ref postinit() {
      var infile = open(inFileName, ioMode.r).reader();
 
      infile.readln();
@@ -176,7 +176,7 @@ record HPLparams {
   }
 }
 
-proc init(A:[?D]) {
+proc initialize(A:[?D]) {
 //  Rather than initialize A = [Asquare | b] with one call to 
 //  fillRandom, Asquare is initialized first, followed by b.
 //  This is to match the previous version of benchmark where

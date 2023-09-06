@@ -16,7 +16,7 @@ proc main() {
 }
 
 proc kernel3forall(ref A) {
-  forall (i,j) in zip(1..n, 2..) {
+  forall (i,j) in zip(1..n, 2..) with (ref A) {
     A[i] = j:real;
   }
 }

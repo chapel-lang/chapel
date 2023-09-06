@@ -891,7 +891,7 @@ class UserMapAssocArr: AbsBaseArr(?) {
   proc dsiSerialWrite(f) {
     use IO;
 
-    var binary = f.binary();
+    var binary = f._binary();
     var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
     var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
     var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
@@ -910,28 +910,27 @@ class UserMapAssocArr: AbsBaseArr(?) {
 
   proc dsiSerialWrite(f) throws where f.serializerType != nothing {
     use IO;
-    ref fmt = f.serializer;
     if f.serializerType == IO.DefaultSerializer {
-      fmt.startArray(f, dom.dsiNumIndices:uint);
-      fmt.startArrayDim(f, dom.dsiNumIndices:uint);
+      var ser = f.serializer.startArray(f, dom.dsiNumIndices:int);
+      ser.startDim(dom.dsiNumIndices);
 
       for locArr in locArrs {
-        for val in locArr!.myElems do fmt.writeArrayElement(f, val);
+        for val in locArr!.myElems do ser.writeElement(val);
       }
 
-      fmt.endArrayDim(f);
-      fmt.endArray(f);
+      ser.endDim();
+      ser.endArray();
     } else {
-      fmt.startMap(f, dom.dsiNumIndices:uint);
+      var ser = f.serializer.startMap(f, dom.dsiNumIndices);
 
       for locArr in locArrs {
         for (key, val) in zip(locArr!.myElems.domain, locArr!.myElems) {
-          fmt.writeKey(f, key);
-          fmt.writeValue(f, val);
+          ser.writeKey(key);
+          ser.writeValue(val);
         }
       }
 
-      fmt.endMap(f);
+      ser.endMap();
     }
   }
 

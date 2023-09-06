@@ -312,7 +312,7 @@ module Vector {
     }
 
     @chpldoc.nodoc
-    proc _commonInitFromIterable(iterable) {
+    proc ref _commonInitFromIterable(iterable) {
       for x in iterable do {
         _append(x);
       }
@@ -943,7 +943,7 @@ module Vector {
     }
 
     @chpldoc.nodoc
-    proc _requestCapacity(newCap: int) {
+    proc ref _requestCapacity(newCap: int) {
       if (_capacity >= newCap) then return;
       if (_capacity == 0) {
         _capacity = _initialCapacity;
@@ -956,7 +956,7 @@ module Vector {
     }
 
     @chpldoc.nodoc
-    proc _maybeDecreaseCapacity() {
+    proc ref _maybeDecreaseCapacity() {
 
       const threshold = _capacity/2;
 
@@ -1067,14 +1067,14 @@ module Vector {
 
       :yields: A reference to one of the elements contained in this vector.
     */
-    iter these() ref {
+    iter ref these() ref {
       for i in 0..#_size {
         yield _data[i];
       }
     }
 
     @chpldoc.nodoc
-    iter these(param tag: iterKind) ref where tag == iterKind.standalone {
+    iter ref these(param tag: iterKind) ref where tag == iterKind.standalone {
       const osz = _size;
       const minChunkSize = 64;
       const hasOneChunk = osz <= minChunkSize;
@@ -1082,7 +1082,7 @@ module Vector {
       const chunkSize = floor(osz / numTasks):int;
       const trailing = osz - chunkSize * numTasks;
 
-      coforall tid in 0..#numTasks {
+      coforall tid in 0..#numTasks with (ref this) {
         var chunk = _computeChunk(tid, chunkSize, trailing);
         for i in chunk(0) do
           yield this[i];
@@ -1105,7 +1105,7 @@ module Vector {
     }
 
     @chpldoc.nodoc
-    iter these(param tag) ref where tag == iterKind.leader {
+    iter ref these(param tag) ref where tag == iterKind.leader {
       const osz = _size;
       const minChunkSize = 32;
       const hasOneChunk = osz <= minChunkSize;
@@ -1121,7 +1121,7 @@ module Vector {
     }
 
     @chpldoc.nodoc
-    iter these(param tag, followThis) ref where tag == iterKind.follower {
+    iter ref these(param tag, followThis) ref where tag == iterKind.follower {
       for i in followThis(0) do
         yield this[i];
     }

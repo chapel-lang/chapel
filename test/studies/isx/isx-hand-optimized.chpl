@@ -135,7 +135,7 @@ config const numBurnInRuns = 1,
 // Horrible hack to help https://github.com/chapel-lang/chapel/issues/9414
 record TimerArr {
   var A: [1..numTrials] real;
-  proc this(i) ref { return A[i]; }
+  proc ref this(i) ref { return A[i]; }
   iter these() { for a in A do yield a; }
 }
 

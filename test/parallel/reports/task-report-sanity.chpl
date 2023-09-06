@@ -1,15 +1,15 @@
 //
 // Start a couple of tasks, but don't let either one finish.
 //
-var t1_notify: single int;
-var t1_release: single int;
+var t1_notify: sync int;
+var t1_release: sync int;
 begin {
   t1_notify.writeEF(0);
   t1_release.readFF();
 }
 
-var t2_notify: single int;
-var t2_release: single int;
+var t2_notify: sync int;
+var t2_release: sync int;
 begin {
   t2_notify.writeEF(0);
   t2_release.readFF();

@@ -172,7 +172,7 @@ proc main() {
   //
   // The main loop that computes the image in parallel.
   //
-  forall (y, x) in pixelPlane {
+  forall (y, x) in pixelPlane with (ref pixels) {
     // If uncommented, the following line will print out where each
     // iteration is running to sanity check that the work is
     // distributed:

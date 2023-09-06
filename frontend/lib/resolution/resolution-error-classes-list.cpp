@@ -939,6 +939,22 @@ void ErrorSuperFromTopLevelModule::write(ErrorWriterBase& wr) const {
   wr.codeForLocation(mod);
 }
 
+void ErrorTertiaryUseImportUnstable::write(ErrorWriterBase& wr) const {
+  auto name = std::get<UniqueString>(info);
+  auto node = std::get<const uast::AstNode*>(info);
+  auto clause = std::get<const uast::VisibilityClause*>(info);
+  auto searchedScope = std::get<const resolution::Scope*>(info);
+  auto useOrImport = std::get<resolution::VisibilityStmtKind>(info);
+  auto useOrImportStr = (useOrImport == resolution::VIS_USE) ? "a 'use'"
+                                                             : "an 'import'";
+  wr.heading(kind_, type_, clause,
+             "using a type's name ('", name, "' in this case) in ", useOrImportStr,
+             " statement to access its tertiary methods is an unstable feature.");
+  wr.message("In the following clause:");
+  wr.code(clause, { node });
+  wr.message("The type '", name, "' is not defined in '", searchedScope->name(), "'.");
+}
+
 void ErrorTupleDeclMismatchedElems::write(ErrorWriterBase& wr) const {
   auto decl = std::get<const uast::TupleDecl*>(info);
   auto type = std::get<const types::TupleType*>(info);

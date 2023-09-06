@@ -329,7 +329,7 @@ class LocalDistributedWorkQueue {
   pragma "fn returns iterator"
   inline proc these(param tag) where (tag == iterKind.standalone) {
     var maxTasks : [0..#Locales.size] int;
-    forall onLocale in Locales {
+    forall onLocale in Locales with (ref maxTasks) {
       maxTasks[ onLocale.id ] = onLocale.maxTaskPar;
     }
     return this.these(tag=tag, maxTasks);
@@ -504,7 +504,7 @@ class PermutationMap {
 
   proc permuateIndexList( array : [?D] rank*idxType ) : [D] rank*idxType {
     var retArray : [array.domain] array.eltType;
-    forall i in retArray.domain {
+    forall i in retArray.domain with (ref retArray) {
       retArray[i] = this( array[i] );
     }
     return retArray;
@@ -584,7 +584,7 @@ proc createSparseUpperTriangluarIndexList(
       var sDRandom : [sDRandomDom] D.rank*D.idxType;
 
       // foreach row
-      forall row in low..high-1 {
+      forall row in low..high-1 with (ref sDRandom) {
         // Inital position in sDRandom is Sum(N-1) - Sum( (N-1) - (row-1) ) + 1
         var i = (-((N-row)*(N-row)) - N + row) / 2 + ((N-1)*(N-1) + N - 1)/2 + 1;
         for column in row+1..high {
@@ -637,7 +637,7 @@ proc createSparseUpperTriangluarIndexList(
       }
 
       // foreach row...
-      forall row in low..high-1 {
+      forall row in low..high-1 with (ref rowCount, ref sDRandom) {
         // create a new local random number generator
         // note: seed is still deterministic. Should get same behavior regardless
         // of tasking (including number of tasks and scheduling)
@@ -665,7 +665,7 @@ proc createSparseUpperTriangluarIndexList(
   }
 
   // Diagonal indices
-  forall i in D.dim(0) {
+  forall i in D.dim(0) with (ref sparseD) {
     sparseD[i] = (i,i);
   }
 
@@ -849,7 +849,7 @@ where D.rank == 2
 
   // initialize rowCount and rowSum and put work in queue
   result.timers["initialization"].start();
-  forall row in rows {
+  forall row in rows with (ref rowCount, ref rowSum) {
     // Accumulate task locally, then write at end.
     var count = 0;
     var sum = 0;
@@ -893,7 +893,7 @@ where D.rank == 2
   result.timers["toposort"].start();
 
   // For each queued row (and rows that will be queued)...
-  forall swapRow in workQueue {
+  forall swapRow in workQueue with (ref columnMap, ref rowCount, ref rowMap, ref rowSum) {
     // The body of this loop executes on the locale where swapRow is queued
 
     if enableRuntimeDebugging && debugTopo {
@@ -992,7 +992,7 @@ where D.rank == 2
 
   // initialize rowCount and rowSum and put work in queue
   result.timers["initialization"].start();
-  forall row in rows {
+  forall row in rows with (ref rowCount, ref rowSum) {
     // Accumulate task locally, then write at end.
     var count = 0;
     var sum = 0;
@@ -1037,7 +1037,7 @@ where D.rank == 2
 
   // For each queued row (and rows that will be queued)...
   // TODO make workQueue.these() accept maxTasksPerLocale
-  forall swapRow in workQueue {
+  forall swapRow in workQueue with (ref columnMap, ref rowCount, ref rowMap, ref rowSum) {
     // The body of this loop executes on the locale where swapRow is queued
 
     if enableRuntimeDebugging && debugTopo {

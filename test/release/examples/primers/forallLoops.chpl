@@ -39,7 +39,7 @@ in parallel:
 config const n = 5;
 var A: [1..n] real;
 
-forall i in 1..n {
+forall i in 1..n with (ref A) {
   A[i] = i;
 }
 
@@ -85,7 +85,7 @@ Here we illustrate zippering arrays and domains:
 */
 
 var C: [1..n] real;
-forall (a, b, i) in zip(A, B, C.domain) do
+forall (a, b, i) in zip(A, B, C.domain) with (ref C) do
   C[i] = a * 10 + b / 10 + i * 0.001;
 
 writeln("After a zippered loop, C is:");
@@ -186,8 +186,8 @@ of shadow variables, one per outer variable.
 The default argument intent (:ref:`The_Default_Intent`) is used by default.
 For numeric types, this implies capturing the value of the outer
 variable by the time the task starts executing. Arrays are passed by
-reference, as are sync, single, and atomic variables
-(:ref:`primers-syncsingle`, :ref:`primers-atomics`).
+reference, as are sync and atomic variables
+(:ref:`primers-syncs`, :ref:`primers-atomics`).
 */
 
 var outerIntVariable = 0;
@@ -196,7 +196,7 @@ proc updateOuterVariable() {
 }
 var outerAtomicVariable: atomic int;
 
-forall i in 1..n {
+forall i in 1..n with (ref D) {
 
   D[i] += 0.5; // if multiple iterations of the loop update the same
                // array element, it could lead to a data race
@@ -336,7 +336,7 @@ record MyRecord {
   var intField: int;
 }
 
-proc MyRecord.myMethod() {
+proc ref MyRecord.myMethod() {
   forall i in 1..n {
     arrField[i] = i * 2;  // beware of potential for data races
     // intField += 1;     // would cause "illegal assignment" error

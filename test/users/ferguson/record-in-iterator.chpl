@@ -6,7 +6,7 @@ iter myiter(N /* adding :int makes it work */) {
   /* Moving record myrecord outside of myiter makes it work */
   record myrecord {
     var x:int;
-    proc add(y: int) {
+    proc ref add(y: int) {
       x += y;
     }
   }

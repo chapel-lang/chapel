@@ -149,10 +149,10 @@ proc main() {
 
   // render a frame of xsz x ysz pixels into the provided framebuffer
   if loopStyle == 0 {
-    forall (y, x) in pixels.domain do
+    forall (y, x) in pixels.domain with (ref pixels) do
       pixels[y, x] = computePixel(y, x);
   } else if loopStyle == 1 {
-    forall (y, x) in pixdom do
+    forall (y, x) in pixdom with (ref pixels) do
       pixels[y, x] = computePixel(y, x);
   } else if loopStyle == 2 {
     pixels = computePixel(pixdom);

@@ -96,7 +96,7 @@ proc multiply(A, B) {
 proc denseMultiply(A: [?ADom] ?eltType, B: [?BDom] eltType) {
   const CDom = {ADom.dim(0), BDom.dim(1)};
   var C: [CDom] eltType;
-  forall (i, j) in CDom {
+  forall (i, j) in CDom with (ref C) {
     for k in BDom.dim(0) {
       C[i,j] += A[i, k] * B[k, j];
     }

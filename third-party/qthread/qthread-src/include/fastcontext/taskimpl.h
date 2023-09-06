@@ -36,6 +36,13 @@
 # define NEEDARMMAKECONTEXT
 # define NEEDSWAPCONTEXT
 # include "arm-ucontext.h"
+#elif (QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARMV8_A64)
+# ifdef HAVE_STDARG_H
+#  include <stdarg.h>
+# endif
+# define NEEDARMA64MAKECONTEXT
+# define NEEDSWAPCONTEXT
+# include "arm-ucontext.h"
 #else
 # error This platform has no fastcontext support
 #endif

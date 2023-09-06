@@ -274,8 +274,8 @@ class DimensionalDist2D : BaseDist {
 // helper for locDdescType: any of storage index ranges can be stridable
 private proc stoStridableDom(type stoIndexT, dom1, dom2) param {
   proc stoStridable1d(dom1d) param {
-    const dummy = dom1d.dsiNewLocalDom1d(stoIndexT, 0:locIdT)
-      .dsiSetLocalIndices1d(dom1d, 0:locIdT);
+    var dummy1 = dom1d.dsiNewLocalDom1d(stoIndexT, 0:locIdT);
+    const dummy = dummy1.dsiSetLocalIndices1d(dom1d, 0:locIdT);
     return dummy.strides;
   }
   return chpl_strideUnion(stoStridable1d(dom1), stoStridable1d(dom2));
@@ -286,7 +286,8 @@ private proc locDescTypeHelper(param rank : int, type idxType, dom1, dom2) type 
   type d2type = dom2.dsiNewLocalDom1d(idxType, 0).type;
 
   proc strideHelper(dom1d) param {
-    const dummy = dom1d.dsiNewLocalDom1d(idxType, 0).dsiSetLocalIndices1d(dom1d, 0);
+    var dummy1 = dom1d.dsiNewLocalDom1d(idxType, 0);
+    const dummy = dummy1.dsiSetLocalIndices1d(dom1d, 0);
     return dummy.strides;
   }
 

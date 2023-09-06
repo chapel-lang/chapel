@@ -38,7 +38,7 @@ record buf {
   }
 
   pragma "no copy return"
-  proc fill() {
+  proc ref fill() {
     if cur >= cap {
       if numLeft > 0 {
         cap = min(bufSize, numLeft);
@@ -56,7 +56,7 @@ record buf {
     return buf[low..max(0, cap-1)];
   }
 
-  proc consume(n : int) {
+  proc ref consume(n : int) {
     cur = min(cur + n, cap);
   }
 
@@ -71,7 +71,7 @@ record buf {
     return -1;
   }
 
-  proc readUntil(term : uint(8), ref data: list(uint(8))) : int {
+  proc ref readUntil(term : uint(8), ref data: list(uint(8))) : int {
     var read = 0;
     while true {
       var done = false, used = 0;

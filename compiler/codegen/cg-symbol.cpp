@@ -1026,7 +1026,11 @@ bool ArgSymbol::requiresCPtr(void) {
 static Type* getArgSymbolCodegenType(ArgSymbol* arg) {
   QualifiedType q = arg->qualType();
   Type* useType = q.type();
-
+  // TODO: this is a hack to make python module generation work by substituting
+  // `const char *` instead of `int8_t *` or `uint8_t *` in the exported header
+  if (isCPtrConstChar(useType)) {
+    return dtStringC;
+  }
   if (q.isRef() && !q.isRefType())
     useType = getOrMakeRefTypeDuringCodegen(useType);
 

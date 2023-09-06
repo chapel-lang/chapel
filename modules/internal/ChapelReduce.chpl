@@ -366,6 +366,6 @@ module ChapelReduce {
     proc clone() do return new unmanaged minloc(eltType=eltType);
   }
 
-  private inline proc gotNaN(value) where isReal(value) do return isnan(value);
+  private inline proc gotNaN(value) where isReal(value) do return isNan(value);
   private        proc gotNaN(value) param do return false;
 }

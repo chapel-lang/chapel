@@ -4,8 +4,8 @@ var y = 0.0;
 writeln(signbit(x:real(32)));
 writeln(signbit(y:real(32)));
 
-writeln(signbit(-NAN));
-writeln(signbit(NAN));
+writeln(signbit(-nan));
+writeln(signbit(nan));
 
 writeln(signbit(x:real(64)));
 writeln(signbit(y:real(64)));

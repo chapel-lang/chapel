@@ -1,6 +1,6 @@
 record R {
   var x, y, z: int;
-  iter iterator() {
+  iter ref iterator() {
     x = 1;
     yield x;
     y = 2;
