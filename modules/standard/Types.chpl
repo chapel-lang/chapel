@@ -883,6 +883,7 @@ These methods perform the minimum number of runtime checks.
 For example, when casting from ``uint(8)`` to ``uint(64)``,
 no checks at all will be done.
 */
+@unstable("integral.safeCast() is unstable and its behavior may change in the future")
 inline proc integral.safeCast(type T: integral) : T {
   if castChecking then
     if const error = this.chpl_checkValue(T) then
@@ -937,16 +938,19 @@ proc integral.chpl_checkValue(type T: integral): owned IllegalArgumentError? {
   return nil;
 }
 
+@unstable("integral.safeCast() is unstable and its behavior may change in the future")
 proc integral.safeCast(type T: bool) {
   if this != 0 && this != 1 then
     HaltWrappers.safeCastCheckHalt("casting "+this.type:string+" to 'bool' requires it to have a value of either 0 or 1, but the current value is " + this:string);
   return this: bool;
 }
 
+@unstable("bool.safeCast() is unstable and its behavior may change in the future")
 proc bool.safeCast(type T: integral) {
   return this: T;
 }
 
+@unstable("bool.safeCast() is unstable and its behavior may change in the future")
 proc bool.safeCast(type T: bool) {
   return this;
 }
