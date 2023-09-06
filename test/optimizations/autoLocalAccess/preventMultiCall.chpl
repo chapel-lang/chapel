@@ -14,7 +14,7 @@ var C = createArr({1..10}, int);
 B = 1;
 C = 2;
 
-forall i in returnDom() {
+forall i in returnDom() with (ref A) {
   A[i] =
     B[i] + 
     C[i];
