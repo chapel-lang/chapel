@@ -1865,7 +1865,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   if (rc != PMI_SUCCESS) {
     CHPL_INTERNAL_ERROR("PMI_Get_numpes_in_app_on_smp() failed");
   }
-  chpl_set_num_locales_on_node((int32_t) count)
+  chpl_set_num_locales_on_node((int32_t) count);
 
   {
     GNI_CHECK(GNI_GetDeviceType(&nic_type));
