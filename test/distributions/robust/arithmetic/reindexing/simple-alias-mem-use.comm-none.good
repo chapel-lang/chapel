@@ -1,3 +1,5 @@
+warning: The variable 'memTrack' is unstable and its interface is subject to change in the future
+note: 'memTrack' was set via a compiler flag
 simple-alias-mem-use.chpl:17: warning: Dist1D is a DefaultDist
 start
 testing on LOCALE0
