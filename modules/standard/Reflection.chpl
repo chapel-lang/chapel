@@ -45,7 +45,11 @@ private proc checkQueryT(type t) type {
     compilerError(t:string, " is not a class, record, or union type", 2);
 }
 private proc checkValidQueryT(type t) param {
-  if !isClassType(t) && !(isRecordType(t) || isUnionType(t)) then
+  if isClassType(t) then
+    {}
+  else if isRecordType(t) || isUnionType(t) then
+    {}
+  else
     compilerError(t:string, " is not a class, record, or union type", 2);
 }
 
