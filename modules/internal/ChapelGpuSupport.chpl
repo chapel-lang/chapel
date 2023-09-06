@@ -23,14 +23,17 @@ module ChapelGpuSupport {
   use ChplConfig;
 
   extern var chpl_gpu_debug : bool;
+  @unstable("The variable 'debugGpu' is unstable and its interface is subject to change in the future")
   config const debugGpu = false;
 
   extern var chpl_gpu_no_cpu_mode_warning: bool;
+  @unstable("The variable 'gpuNoCpuModeWarning' is unstable and its interface is subject to change in the future")
   config const gpuNoCpuModeWarning = isEnvSet("CHPL_GPU_NO_CPU_MODE_WARNING");
 
   /* If true, upon startup, enables peer-to-peer access between all pairs of
      GPUs that are eligible for peer-to-peer access within each locale. */
   @chpldoc.nodoc
+  @unstable("The variable 'enableGpuP2P' is unstable and its interface is subject to change in the future")
   config const enableGpuP2P = false;
 
   extern proc chpl_gpu_support_module_finished_initializing() : void;
