@@ -23,5 +23,5 @@
  */
 @deprecated("BinaryIO module is deprecated; please use the IO module instead")
 module BinaryIO {
-  public import IO.{BinarySerializer, BinaryDeserializer};
+  public import IO.{BinarySerializer, BinaryDeserializer, binarySerializer, binaryDeserializer};
 }

@@ -7,7 +7,7 @@ config const testSlice = false;
 proc main() {
 
   // Ask that arrays are output with [1,2] style
-  var output = stdout.withSerializer(new ChplSerializer());
+  var output = stdout.withSerializer(new chplSerializer());
 
   output.writeln([1,2,3]);
 

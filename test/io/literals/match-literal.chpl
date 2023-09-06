@@ -70,7 +70,7 @@ proc testJSON() {
     w.write(quote);
   }
 
-  var r = f.reader(locking=false, deserializer=new JsonDeserializer());
+  var r = f.reader(locking=false, deserializer=new jsonDeserializer());
 
   try {
     var x = "[";

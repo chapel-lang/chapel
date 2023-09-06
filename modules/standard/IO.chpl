@@ -2483,12 +2483,12 @@ private proc defaultSerializeType(param writing : bool,
 
   // Compatibility with 'iokind'
   if kind != _iokind.dynamic {
-    if writing then return BinarySerializer;
-    else return BinaryDeserializer;
+    if writing then return binarySerializer;
+    else return binaryDeserializer;
   }
 
-  if writing then return DefaultSerializer;
-  else return DefaultDeserializer;
+  if writing then return defaultSerializer;
+  else return defaultDeserializer;
 }
 
 private proc defaultSerializeVal(param writing : bool,
@@ -2499,12 +2499,12 @@ private proc defaultSerializeVal(param writing : bool,
     var endian = if kind == _iokind.native then ioendian.native
                  else if kind == _iokind.big then ioendian.big
                  else ioendian.little;
-    if writing then return new BinarySerializer(endian, _structured=false);
-    else return new BinaryDeserializer(endian, _structured=false);
+    if writing then return new binarySerializer(endian, _structured=false);
+    else return new binaryDeserializer(endian, _structured=false);
   }
 
-  if writing then return new DefaultSerializer();
-  else return new DefaultDeserializer();
+  if writing then return new defaultSerializer();
+  else return new defaultDeserializer();
 }
 
 @chpldoc.nodoc
@@ -2698,7 +2698,7 @@ proc fileWriter.serializer ref : serializerType {
   The compiler is expected to generate a default implementation of 'serialize'
   methods for records and classes.
 */
-record DefaultSerializer {
+record defaultSerializer {
 
   @chpldoc.nodoc
   proc ref _serializeClassOrPtr(writer:fileWriter, x: ?t) : void throws {
@@ -2913,6 +2913,8 @@ record DefaultSerializer {
   // that such types should just be printed inside a string for compatibility?
 }
 
+@deprecated(notes="'DefaultSerializer' is deprecated; please use 'defaultSerializer' instead")
+type DefaultSerializer = defaultSerializer;
 
 /*
   The default deserializer used by ``fileReader``.
@@ -2951,7 +2953,7 @@ record DefaultSerializer {
   The compiler is expected to generate a default implementation of
   'deserialize' methods and deserializing initializers for records and classes.
 */
-record DefaultDeserializer {
+record defaultDeserializer {
 
   proc ref deserializeType(reader:fileReader, type readType) : readType throws {
     if isNilableClassType(readType) {
@@ -3222,10 +3224,13 @@ record DefaultDeserializer {
   }
 }
 
+@deprecated(notes="'DefaultDeserializer' is deprecated; please use 'defaultDeserializer' instead")
+type DefaultDeserializer = defaultDeserializer;
+
 /*
   An unstructured binary Serializer to be used with ``fileWriter``.
 */
-record BinarySerializer {
+record binarySerializer {
   /*
     'endian' represents the endianness of the binary output produced by this
     Serializer.
@@ -3240,7 +3245,7 @@ record BinarySerializer {
   // types
   @chpldoc.nodoc
   proc _oldWrite(ch: fileWriter(?), const val:?t) throws {
-    var _def = new DefaultSerializer();
+    var _def = new defaultSerializer();
     var dc = ch.withSerializer(_def);
     var st = dc._styleInternal();
     var orig = st; defer { dc._set_styleInternal(orig); }
@@ -3262,7 +3267,7 @@ record BinarySerializer {
     :arg writer: the ``fileWriter`` to which the serialized output will be written.
     :arg val: the value to be serialized.
   */
-  proc ref serializeValue(writer: fileWriter(serializerType=BinarySerializer, locking=false, ?),
+  proc ref serializeValue(writer: fileWriter(serializerType=binarySerializer, locking=false, ?),
                       const val:?t) throws {
     if isNumericType(t) {
       select endian {
@@ -3293,7 +3298,7 @@ record BinarySerializer {
   }
 
   record AggregateSerializer {
-    var writer : fileWriter(false, BinarySerializer);
+    var writer : fileWriter(false, binarySerializer);
 
     proc writeField(name: string, const field: ?T) throws {
       writer.write(field);
@@ -3318,7 +3323,7 @@ record BinarySerializer {
   }
 
   record TupleSerializer {
-    var writer : fileWriter(false, BinarySerializer);
+    var writer : fileWriter(false, binarySerializer);
 
     proc writeElement(const element: ?T) throws {
       writer.write(element);
@@ -3332,7 +3337,7 @@ record BinarySerializer {
   }
 
   record ListSerializer {
-    var writer : fileWriter(false, BinarySerializer);
+    var writer : fileWriter(false, binarySerializer);
 
     proc writeElement(const element: ?) throws {
       writer.write(element);
@@ -3348,7 +3353,7 @@ record BinarySerializer {
 
 
   record ArraySerializer {
-    var writer : fileWriter(false, BinarySerializer);
+    var writer : fileWriter(false, binarySerializer);
     const endian : ioendian;
 
     proc startDim(size: int) throws {
@@ -3379,7 +3384,7 @@ record BinarySerializer {
   }
 
   record MapSerializer {
-    var writer : fileWriter(false, BinarySerializer);
+    var writer : fileWriter(false, binarySerializer);
 
     proc writeKey(const key: ?) throws {
       writer.write(key);
@@ -3399,10 +3404,13 @@ record BinarySerializer {
   }
 }
 
+@deprecated(notes="'BinarySerializer' is deprecated; please use 'binarySerializer' instead")
+type BinarySerializer = binarySerializer;
+
 /*
   An unstructured binary Deserializer to be used with ``fileReader``.
 */
-record BinaryDeserializer {
+record binaryDeserializer {
   /*
     'endian' represents the endianness that this Deserializer should use when
     deserializing input.
@@ -3422,7 +3430,7 @@ record BinaryDeserializer {
   // TODO: rewrite in terms of writef, or something
   @chpldoc.nodoc
   proc _oldRead(ch: fileReader(?), ref val:?t) throws {
-    var _def = new DefaultDeserializer();
+    var _def = new defaultDeserializer();
     var dc = ch.withDeserializer(_def);
     var st = dc._styleInternal();
     var orig = st; defer { dc._set_styleInternal(orig); }
@@ -3517,7 +3525,7 @@ record BinaryDeserializer {
 
 
   record AggregateDeserializer {
-    var reader : fileReader(false, BinaryDeserializer);
+    var reader : fileReader(false, binaryDeserializer);
 
     proc readField(name: string, type fieldType) : fieldType throws {
       return reader.read(fieldType);
@@ -3543,7 +3551,7 @@ record BinaryDeserializer {
   }
 
   record TupleDeserializer {
-    var reader : fileReader(false, BinaryDeserializer);
+    var reader : fileReader(false, binaryDeserializer);
 
     proc readElement(type eltType) : eltType throws {
       return reader.read(eltType);
@@ -3562,7 +3570,7 @@ record BinaryDeserializer {
   }
 
   record ListDeserializer {
-    var reader : fileReader(false, BinaryDeserializer);
+    var reader : fileReader(false, binaryDeserializer);
     var _numElements : uint;
 
     proc ref readElement(type eltType) : eltType throws {
@@ -3599,7 +3607,7 @@ record BinaryDeserializer {
 
 
   record ArrayDeserializer {
-    var reader : fileReader(false, BinaryDeserializer);
+    var reader : fileReader(false, binaryDeserializer);
     const endian : ioendian;
 
     proc startDim() throws {
@@ -3680,6 +3688,9 @@ record BinaryDeserializer {
     return new MapDeserializer(reader, reader.read(uint));
   }
 }
+
+@deprecated(notes="'BinaryDeserializer' is deprecated; please use 'binaryDeserializer' instead")
+type BinaryDeserializer = binaryDeserializer;
 
 @chpldoc.nodoc
 operator fileReader.=(ref lhs:fileReader, rhs:fileReader) {
@@ -3866,7 +3877,7 @@ proc ref fileWriter.deinit() {
   }
 }
 
-// Convenience for forms like 'r.withDeserializer(DefaultDeserializer)`
+// Convenience for forms like 'r.withDeserializer(defaultDeserializer)`
 @chpldoc.nodoc
 proc fileReader.withDeserializer(type deserializerType) :
   fileReader(this._kind, this.locking, deserializerType) {
@@ -3887,7 +3898,7 @@ proc fileReader.withDeserializer(in deserializer: ?dt) : fileReader(this._kind, 
   return ret;
 }
 
-// Convenience for forms like 'w.withSerializer(DefaultSerializer)`
+// Convenience for forms like 'w.withSerializer(defaultSerializer)`
 @chpldoc.nodoc
 proc fileWriter.withSerializer(type serializerType) :
   fileWriter(this._kind, this.locking, serializerType) {
@@ -10136,10 +10147,10 @@ General Conversions
           r: R;
 
       // write an 'R' in JSON format
-      f.writer(serializer = new JsonSerializer()).writef("%?", new R(/* ... */));
+      f.writer(serializer = new jsonSerializer()).writef("%?", new R(/* ... */));
 
       // read into an 'R' from JSON format
-      f.reader(deserializer = new JsonDeserializer()).readf("%?", r);
+      f.reader(deserializer = new jsonDeserializer()).readf("%?", r);
 
 ``%ht``
  read or write an object in Chapel syntax using readThis/writeThis
@@ -10161,10 +10172,10 @@ General Conversions
           r: R;
 
       // write an 'R' in Chapel Syntax format
-      f.writer(serializer = new ChplSerializer()).writef("%?", new R(/* ... */))
+      f.writer(serializer = new chplSerializer()).writef("%?", new R(/* ... */))
 
       // read into an 'R' from Chapel Syntax format
-      f.reader(deserializer = new ChplDeserializer()).readf("%?", r);
+      f.reader(deserializer = new chplDeserializer()).readf("%?", r);
 
 ``%|t``
  read or write an object in binary native-endian with readThis/writeThis *(deprecated)*
@@ -12104,7 +12115,7 @@ proc readf(fmt:string):bool throws {
    :throws UnexpectedEofError: Thrown if EOF encountered skipping field.
    :throws SystemError: Thrown if the field could not be skipped.
  */
-@deprecated("skipField is deprecated, please use JsonDeserializer instead.")
+@deprecated("skipField is deprecated, please use jsonDeserializer instead.")
 proc fileReader.skipField() throws {
   this._skipField();
 }

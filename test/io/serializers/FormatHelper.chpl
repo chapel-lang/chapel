@@ -18,24 +18,24 @@ module FormatHelper {
   proc getFormatVal(param writing : bool) {
     select format {
       when FormatKind.default {
-        if writing then return new IO.DefaultSerializer();
-        else return new IO.DefaultDeserializer();
+        if writing then return new IO.defaultSerializer();
+        else return new IO.defaultDeserializer();
       }
       when FormatKind.json {
-        if writing then return new JsonSerializer();
-        else return new JsonDeserializer();
+        if writing then return new jsonSerializer();
+        else return new jsonDeserializer();
       }
       when FormatKind.little {
-        if writing then return new BinarySerializer(endian=IO.ioendian.little);
-        else return new BinaryDeserializer(endian=IO.ioendian.little);
+        if writing then return new binarySerializer(endian=IO.ioendian.little);
+        else return new binaryDeserializer(endian=IO.ioendian.little);
       }
       when FormatKind.big {
-        if writing then return new BinarySerializer(endian=IO.ioendian.big);
-        else return new BinaryDeserializer(endian=IO.ioendian.big);
+        if writing then return new binarySerializer(endian=IO.ioendian.big);
+        else return new binaryDeserializer(endian=IO.ioendian.big);
       }
       when FormatKind.syntax {
-        if writing then return new ChplSerializer();
-        else return new ChplDeserializer();
+        if writing then return new chplSerializer();
+        else return new chplDeserializer();
       }
       otherwise return nothing;
     }

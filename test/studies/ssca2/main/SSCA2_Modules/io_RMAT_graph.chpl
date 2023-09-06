@@ -327,14 +327,14 @@ iter graphReaderReal(GRow, uxIDs, type VType, vCount, eCount, repfiles,
   //
   const sta_v1 = repfiles[repfileST2].reader(locking = false,
                                              region = staOffsetForVID(v1)..#staOffsetForVID(v1+1),
-                                             deserializer=new BinaryDeserializer(IOendianness));
+                                             deserializer=new binaryDeserializer(IOendianness));
   const sta1 = readNum(sta_v1) + 1;
   sta_v1.close();
 
   // We read edgeStart(v2) from its own channel.
   const sta_v2 = repfiles[repfileSTA].reader(false,
                             staOffsetForVID(v2+1)..#staOffsetForVID(v2+1+1),
-                            deserializer=new BinaryDeserializer(IOendianness));
+                            deserializer=new binaryDeserializer(IOendianness));
   const sta2 = readNum(sta_v2);
   sta_v2.close();
 
@@ -347,19 +347,19 @@ iter graphReaderReal(GRow, uxIDs, type VType, vCount, eCount, repfiles,
   // We access only our parts these files.
   const sv = repfiles[repfileSV].reader(false,
                         svOffsetForEID(sta1)..#svOffsetForEID(sta2+1),
-                        deserializer=new BinaryDeserializer(IOendianness));
+                        deserializer=new binaryDeserializer(IOendianness));
   const ev = repfiles[repfileEV].reader(false,
                         svOffsetForEID(sta1)..#svOffsetForEID(sta2+1),
-                        deserializer=new BinaryDeserializer(IOendianness));
+                        deserializer=new binaryDeserializer(IOendianness));
   const ww = repfiles[repfileWW].reader(false,
                         svOffsetForEID(sta1)..#svOffsetForEID(sta2+1),
-                        deserializer=new BinaryDeserializer(IOendianness));
+                        deserializer=new binaryDeserializer(IOendianness));
 
   // 'sta' covers edgeStart(v1+1..v2).
   // Do not include v1, as another process will be reading it from its 'STA'.
   const sta = repfiles[repfileSTA].reader(false,
                          staOffsetForVID(v1+1)..#staOffsetForVID(v2+1+1),
-                         deserializer=new BinaryDeserializer(IOendianness));
+                         deserializer=new binaryDeserializer(IOendianness));
 
   var startIxCnt = sta1 - 1;
 
@@ -497,8 +497,8 @@ proc graphNumVertices(G) do return G.vertices.size;
 proc createGraphChannel(prefix:string, suffix:string, param forWriting:bool) {
   const f = createGraphFile(prefix, suffix, forWriting);
   const chan = if forWriting
-    then f.writer(false, serializer=new BinarySerializer(IOendianness))
-    else f.reader(false, deserializer=new BinaryDeserializer(IOendianness));
+    then f.writer(false, serializer=new binarySerializer(IOendianness))
+    else f.reader(false, deserializer=new binaryDeserializer(IOendianness));
   return chan;
 }
 

@@ -9,7 +9,7 @@ use Types;
 //
 
 record Serializer {
-  var def : IO.BinarySerializer;
+  var def : IO.binarySerializer;
 
   proc ref serializeValue(writer, const val) {
     if isArrayType(val.type) {
@@ -38,7 +38,7 @@ record Serializer {
 }
 
 record Deserializer {
-  var def : IO.BinaryDeserializer;
+  var def : IO.binaryDeserializer;
 
   proc ref deserializeType(reader, type valType) {
     if isArrayType(valType) {

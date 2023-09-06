@@ -11,4 +11,13 @@ proc main() {
     var s = f.reader(deserializer=new BinaryDeserializer()).read(string);
     writeln(s);
   }
+
+  var f1 = openMemFile();
+  {
+    f1.writer(serializer=new binarySerializer()).write("hello, world");
+  }
+  {
+    var s = f1.reader(deserializer=new binaryDeserializer()).read(string);
+    writeln(s);
+  }
 }

@@ -40,8 +40,8 @@ module DefaultAssociative {
   }
 
   private proc _isDefaultDeser(f) param : bool {
-    if f._writing then return f.serializerType == IO.DefaultSerializer;
-    else return f.deserializerType == IO.DefaultDeserializer;
+    if f._writing then return f.serializerType == IO.defaultSerializer;
+    else return f.deserializerType == IO.defaultDeserializer;
   }
 
   // helps to move around array elements when rehashing the domain

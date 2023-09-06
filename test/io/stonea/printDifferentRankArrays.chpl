@@ -6,7 +6,7 @@ var B: [1..2, 1..2] string = "hi";
 writeln(A);
 writeln(B);
 
-var chplOut = stdout.withSerializer(ChplSerializer);
+var chplOut = stdout.withSerializer(chplSerializer);
 
 chplOut.writef("%?\n", A);
 chplOut.writef("%?\n", B);
