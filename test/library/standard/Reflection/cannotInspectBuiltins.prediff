@@ -5,10 +5,8 @@ TESTNAME=$1
 OUTFILE=$2
 TMPFILE=$OUTFILE.prediff.tmp
 
+# some errors come from cannotInspectBuiltins.chpl and some come from Reflection.chpl
 sed -E 's/^.+\.chpl:[0-9]*:/FILE.chpl:n:/' < $OUTFILE > $TMPFILE
-mv $TMPFILE $OUTFILE
-
-sed -E 's/error: .+ is not a class, record, or union type/error: testType is not a class, record, or union type/' < $OUTFILE > $TMPFILE
 mv $TMPFILE $OUTFILE
 
 grep -v ' In function ' < $OUTFILE > $TMPFILE
