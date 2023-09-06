@@ -1,1 +1,1 @@
-cannotInspectBuiltins.chpl:n: error: testType is not a class, record, or union type
+FILE.chpl:n: error: testType is not a class, record, or union type
