@@ -12,6 +12,7 @@ proc r.exitContext(in err: owned Error?) {
   writeln('leaving');
   if err then try! { throw err; }
 }
+r implements contextManager;
 
 record res {
   proc doSomething() {

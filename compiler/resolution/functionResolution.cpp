@@ -11271,30 +11271,42 @@ struct SpeciallyNamedMethodInfo {
 using SpeciallyNamedMethodKey = std::pair<InterfaceSymbol*, AggregateType*>;
 using SpecialMethodMap = std::map<SpeciallyNamedMethodKey, SpeciallyNamedMethodInfo>;
 
+static AggregateType* getBaseTypeForInterfaceWarnings(Type* ts) {
+  AggregateType* toReturn = toAggregateType(ts);
+
+  if (!toReturn) {
+    if (auto dct = toDecoratedClassType(ts)) {
+      toReturn = dct->getCanonicalClass();
+    }
+  }
+
+  if (toReturn) toReturn = toReturn->getRootInstantiation();
+
+  return toReturn;
+}
+
 static void checkSpeciallyNamedMethods() {
   static const std::unordered_map<const char*, InterfaceSymbol*> reservedNames = {
     { astr("hash"), gHashable },
+    { astr("enterContext"), gContextManager },
+    { astr("exitContext"), gContextManager },
   };
 
   SpecialMethodMap flagged;
 
-  // TODO: for now, this will simply not warn for classes, because all classes
-  // implement hashable, and because overriding hash should be allowed. When
-  // other special methods are converted, this logic will need to be updated
-  // to handle them.
-
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
     if (!fn->isMethod()) continue;
     if (fn->isCompilerGenerated() || fn->hasFlag(FLAG_FIELD_ACCESSOR)) continue;
-
+    // The parent class must have this function, and would've been flagged.
+    // the user will already get the warning.
+    if (fn->hasFlag(FLAG_OVERRIDE)) continue;
     auto reservedIter = reservedNames.find(fn->name);
     if (reservedIter == reservedNames.end()) continue;
+
     auto receiverType = fn->getReceiverType();
+    auto at = getBaseTypeForInterfaceWarnings(receiverType);
+    if (!at || (reservedIter->second == gHashable && at == dtObject)) continue;
 
-    auto at = toAggregateType(receiverType);
-    if (!at || !at->isRecord()) continue;
-
-    while (at->instantiatedFrom) at = at->instantiatedFrom;
     auto key = SpeciallyNamedMethodKey(reservedIter->second, at);
     flagged[key].speciallyNamedMethods[fn->name] = fn;
   }
@@ -11302,14 +11314,12 @@ static void checkSpeciallyNamedMethods() {
   for_alive_in_Vec(ImplementsStmt, istm, gImplementsStmts) {
     auto se = toSymExpr(istm->iConstraint->consActuals.get(1));
     auto ts = toTypeSymbol(se->symbol());
-    auto at = toAggregateType(ts->type);
-    if (!at || !at->isRecord()) continue;
-
-    while (at->instantiatedFrom) at = at->instantiatedFrom;
-    auto isym = istm->iConstraint->ifcSymbol();
+    auto at = getBaseTypeForInterfaceWarnings(ts->type);
+    if (!at) continue;
 
     // For this pair of aggregate type / interface, remove it from the
     // flagged set, because we found an instance.
+    auto isym = istm->iConstraint->ifcSymbol();
     flagged.erase(SpeciallyNamedMethodKey(isym, at));
   }
 
