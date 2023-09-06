@@ -1042,14 +1042,14 @@ inline proc _remoteAccessData.getDataIndex(
 
 inline proc CyclicArr.dsiLocalAccess(i: rank*idxType) ref {
   return if allowDuplicateTargetLocales then this.dsiAccess(i)
-                                        else _to_nonnil(myLocArr).this(i);
+                                        else _to_nonnil(myLocArr)(i);
 }
 
 proc CyclicArr.dsiAccess(i:rank*idxType) ref {
   local {
     if const myLocArrNN = myLocArr then
       if myLocArrNN.locDom.contains(i) then
-        return myLocArrNN.this(i);
+        return myLocArrNN(i);
   }
   if hasUnitStride() && doRADOpt {
     if const myLocArr = this.myLocArr {
@@ -1177,7 +1177,7 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
     proc accessHelper(i) ref {
       if const myLocArrNN = myLocArr then local {
         if myLocArrNN.locDom.contains(i) then
-          return myLocArrNN.this(i);
+          return myLocArrNN(i);
       }
       return dsiAccess(i);
     }

@@ -1500,7 +1500,7 @@ override proc StencilArr.dsiDestroyArr(deinitElts:bool) {
 
 inline proc StencilArr.dsiLocalAccess(i: rank*idxType) ref {
   return if allowDuplicateTargetLocales then this.dsiAccess(i)
-                                        else _to_nonnil(myLocArr).this(i);
+                                        else _to_nonnil(myLocArr)(i);
 }
 
 //
@@ -1515,11 +1515,11 @@ proc StencilArr.do_dsiAccess(param setter, const in idx: rank*idxType) ref {
       const myLocArr = _to_nonnil(this.myLocArr);
       if setter || this.ignoreFluff {
         // A write: return from actual data and not fluff
-        if myLocArr.locDom.contains(idx) then return myLocArr.this(idx);
+        if myLocArr.locDom.contains(idx) then return myLocArr(idx);
       } else {
         // A read: return from fluff if possible
         // If there is no fluff, then myFluff == myBlock
-        if myLocArr.locDom.myFluff.contains(idx) then return myLocArr.this(idx);
+        if myLocArr.locDom.myFluff.contains(idx) then return myLocArr(idx);
       }
     }
   }
