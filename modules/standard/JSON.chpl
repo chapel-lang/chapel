@@ -721,9 +721,9 @@ module JSON {
           var f = openMemFile();
           var s = reader.read(string);
           {
-            f.writer().withSerializer(DefaultSerializer).write(s);
+            f.writer().withSerializer(defaultSerializer).write(s);
           }
-          return f.reader().withDeserializer(JsonDeserializer).read(key);
+          return f.reader().withDeserializer(jsonDeserializer).read(key);
         }
       }
 
