@@ -91,17 +91,17 @@ proc main() {
   tiledLocalDom = {R.. # order-2*R by tileSize, R.. # order-2*R by tileSize};
 
   /* Flavors of parallelism, by distribution */
-  const blockDist = new blockDist(localDom),
+  const myBlockDist = new blockDist(localDom),
       stencilDist = new Stencil(innerLocalDom, fluff=(R,R)),
            noDist = defaultDist;
 
   /* Set distribution based on configs */
-  const Dist =  if useBlockDist then blockDist
+  const Dist =  if useBlockDist then myBlockDist
                 else if useStencilDist then stencilDist
                 else noDist;
 
-  const outputDist =  if useBlockDist then blockDist
-                      else if useStencilDist then blockDist
+  const outputDist =  if useBlockDist then myBlockDist
+                      else if useStencilDist then myBlockDist
                       else noDist;
 
   /* Map domains to selected distribution */

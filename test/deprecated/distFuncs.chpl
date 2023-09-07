@@ -15,10 +15,10 @@ var CD2 = newCyclicDom((...rng));
 var CA2 = newCyclicArr((...rng), int);
 
 // New way:
-var newBD1 = blockDist.createDomain(D);
-var newBA1 = blockDist.createArray(D, int);
-var newBD2 = blockDist.createDomain((...rng));
-var newBA2 = blockDist.createArray((...rng), int);
+var newBD1 = Block.createDomain(D);
+var newBA1 = Block.createArray(D, int);
+var newBD2 = Block.createDomain((...rng));
+var newBA2 = Block.createArray((...rng), int);
 var newCD1 = Cyclic.createDomain(D);
 var newCA1 = Cyclic.createArray(D, int);
 var newCD2 = Cyclic.createDomain((...rng));
