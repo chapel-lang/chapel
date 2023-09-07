@@ -176,7 +176,7 @@ module Tensor {
             return t;
         }
         
-        
+
         // Efficient assignment and casting for iteratable expressions. The `itr.type:string` is a type checking workaround. 
 
         operator =(ref lhs: Tensor(?rank,?eltType), itr) where itr.type:string == "promoted expression" || isSubtype(itr.type, _iteratorRecord) {
@@ -193,7 +193,6 @@ module Tensor {
             const t: Tensor(rank,eltType) = itr;
             return t;
         }
-
 
         // Transposes a vector to a row matrix
         proc transpose() where rank == 1 {
@@ -320,6 +319,7 @@ module Tensor {
         t.data = lhs.data + rhs.data;
         return t;
     }
+
     operator +=(ref lhs: Tensor(?d), const ref rhs: Tensor(d)) {
         if lhs.domain.size == rhs.domain.size {
             lhs.data += rhs.data;
@@ -332,42 +332,52 @@ module Tensor {
             err("Cannot add tensors of different sizes. += ", lhs.domain.size, " != ", rhs.domain.size,"  [",lhs.shape," += ",rhs.shape,"]");
         }
     }
+
     operator +=(ref lhs: Tensor(?rank,?eltType), rhs) where (isArray(rhs) && rhs.rank == rank) || rhs.type == eltType {
         lhs.data += rhs;
     }
+
     operator +=(ref lhs: Tensor(?rank,?eltType), rhs) where rhs.type:string == "promoted expression" || rhs.type:string == "iterator" {
         lhs.data += rhs;
     }
+
     operator -(lhs: Tensor(?rank,?eltType), rhs: Tensor(rank,eltType)) {
         var t = new Tensor(lhs._domain,eltType=eltType);
         t.data = lhs.data - rhs.data;
         return t;
     }
+
     operator -=(ref lhs: Tensor(?d), const ref rhs: Tensor(d)) {
         lhs.data -= rhs.data;
     }
+
     operator -=(ref lhs: Tensor(?rank,?eltType), rhs) where (isArray(rhs) && rhs.rank == rank) || rhs.type == eltType {
         lhs.data -= rhs;
     }
+
     operator *(c: ?eltType, rhs: Tensor(?rank,eltType)) {
         var t = new Tensor(rhs.domain,eltType=eltType);
         t.data = c * rhs.data;
         return t;
     }
+
     operator *(lhs: Tensor(?rank,?eltType), c: eltType) {
         var t = new Tensor(lhs.domain,eltType=eltType);
         t.data = lhs.data * c;
         return t;
     }
+
     operator *(lhs: Tensor(?rank,?eltType), rhs: Tensor(rank,eltType)) {
         // Hermitian product, not composition
         var t = new Tensor(lhs.domain,eltType=eltType);
         t.data = lhs.data * rhs.data;
         return t;
     }
+
     operator *=(ref lhs: Tensor(?d), const ref rhs: Tensor(d)) {
         lhs.data *= rhs.data;
     }
+
     operator *=(ref lhs: Tensor(?rank,?eltType), rhs) where (isArray(rhs) && rhs.rank == rank) || rhs.type == eltType {
         lhs.data *= rhs;
     }
@@ -427,6 +437,7 @@ module Tensor {
         t.data /= c;
         return t;
     }
+
     operator -(lhs: Tensor(?d,?eltType), c: eltType) {
         var t = lhs;
         t.data -= c;
@@ -590,7 +601,6 @@ module Tensor {
         const (nh,nw) = inputShape;
         if kh != kw then err("Correlation only works with square filters.", kh, " != ", kw);
         return (AutoMath.floor((nh - kh + 2* padding):real / stride:real):int + 1, AutoMath.floor((nw - kw + 2 * padding):real / stride:real):int + 1);
-        // return (AutoMath.floor(((nh - kh + padding + stride):real) / (stride:real)):int,AutoMath.floor(((nw - kw + padding + stride):real) / (stride:real)):int);
     }
 
     // Compute the resulting tensor shape of a cross correlation
@@ -735,34 +745,28 @@ module Tensor {
     // Softmax but returns the sum of the exponentials and the exponentials themselves
     proc softmaxParts(t: Tensor(?rank)) {
         const m = max reduce t.data;
-        var y = t;
-        y.data -= m;
-        foreach i in y.data.domain {
-            y.data[i] = Math.exp(y.data[i]);
+        var ys = new Tensor(t.domain);
+        forall (x,y) in zip(t.data,ys.data) {
+            y = Math.exp(x - m);
         }
-        const sum = + reduce y.data;
-        
-        return (y,sum,y / sum);
+        const sum = + reduce ys.data;
+        return (ys,sum,ys / sum);
     }
 
     // Softmax function
     proc softmax(t: Tensor(?rank)) {
         const m = max reduce t.data;
-        var y = t;
-        y.data -= m;
-        foreach i in y.data.domain {
-            y.data[i] = Math.exp(y.data[i]);
+        var ys = new Tensor(t.domain);
+        forall (x,y) in zip(t.data,ys.data) {
+            y = Math.exp(x - m);
         }
-        const sum = + reduce y.data;
-        y.data /= sum;
-        return y;
+        const sum = + reduce ys.data;
+        ys.data /= sum;
+        return ys;
     }
 
     proc crossEntropyLoss(p: Tensor(1),q: Tensor(1)) {
-        var sum = 0.0;
-        forall (a,b) in zip(p,q) with (+ reduce sum){
-            sum += a * Math.log(b);
-        }
+        const sum = + reduce [(a,b) in zip(p,q)] a * Math.log(b);
         return -sum;
     }
 
