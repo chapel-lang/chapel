@@ -359,10 +359,11 @@ prototype module DistributedFFT {
       Note that both ``dst`` and ``src`` cannot be remote.
   */
   proc copy(ref dst, const ref src, numBytes: int) {
+    use Communication;
     if dst.locale.id == here.id {
-      __primitive("chpl_comm_get", dst, src.locale.id, src, numBytes.safeCast(c_size_t));
+      get(c_ptrTo(dst), c_ptrToConst(src), src.locale.id, numBytes.safeCast(c_size_t));
     } else if src.locale.id == here.id {
-      __primitive("chpl_comm_put", src, dst.locale.id, dst, numBytes.safeCast(c_size_t));
+      put(c_ptrTo(dst), c_ptrToConst(src), dst.locale.id, numBytes.safeCast(c_size_t));
     } else {
       halt("Remote src and remote dst not yet supported");
     }
