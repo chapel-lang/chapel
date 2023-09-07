@@ -1850,7 +1850,7 @@ proc solve(A: [?Adom] ?eltType, ref b: [?bdom] eltType) {
 
     - ``s`` is the singular values of ``a``
 
-    :throws LinearAlgebraError: If ``A`` and ``b`` shapes do not match, are empty, or SVD failed to converge.
+   :throws LinearAlgebraError: If ``A`` and ``b`` shapes do not match, are empty, or SVD failed to converge.
 
    .. note::
 
@@ -2532,7 +2532,7 @@ proc sincos(A: []) throws {
 }
 
 /*
-This method returns the sine of the matrix ``A``.
+  This method returns the sine of the matrix ``A``.
 
   :arg A: Expects a square matrix.
   :type A: `A`
@@ -2554,7 +2554,7 @@ proc sinm(A: []) throws {
 }
 
 /*
-This method returns the cosine of the matrix ``A``.
+  This method returns the cosine of the matrix ``A``.
 
   :arg A: Expects a square matrix.
   :type A: `A`
