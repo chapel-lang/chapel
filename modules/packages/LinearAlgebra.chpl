@@ -482,26 +482,26 @@ class ExpmPadeHelper {
 // Matrix and Vector Initializers
 //
 
-/* Return a vector (1D array) over domain ``{0..<length}``*/
+/* Return a vector (1D array) over domain ``{0..<length}``. */
 proc Vector(length, type eltType=real) {
   if (length <= 0) then halt("Vector length must be > 0");
   return Vector(0..<length, eltType);
 }
 
 
-/* Return a vector (1D array) over domain ``{space}`` */
+/* Return a vector (1D array) over domain ``{space}``. */
 proc Vector(space: range, type eltType=real) {
   return Vector({space}, eltType);
 }
 
-/* Return a vector (1D array) over domain ``Dom`` */
+/* Return a vector (1D array) over domain ``Dom``. */
 proc Vector(Dom: domain(1), type eltType=real) {
   var V: [Dom] eltType;
   return V;
 }
 
 
-/* Return a vector (1D array) with domain and values of ``A`` */
+/* Return a vector (1D array) with domain and values of ``A``. */
 proc Vector(A: [?Dom] ?Atype, type eltType=Atype ) {
   var V: [Dom] eltType = if eltType == Atype then A else A: eltType;
   return V;
@@ -515,9 +515,9 @@ proc Vector(x: ?t, Scalars...?n)  where isNumericType(t) {
 }
 
 
-/* Return a vector (1D array), given 2 or more numeric values
+/* Return a vector (1D array), given 2 or more numeric values.
 
-   If `type` is omitted, it will be inferred from the first argument
+   If `type` is omitted, it will be inferred from the first argument.
 */
 proc Vector(x: ?t, Scalars...?n, type eltType) where isNumericType(t) {
 
@@ -537,33 +537,33 @@ proc Vector(x: ?t, Scalars...?n, type eltType) where isNumericType(t) {
 }
 
 
-/* Return a square matrix (2D array) over domain ``{0..<rows, 0..<rows}``*/
+/* Return a square matrix (2D array) over domain ``{0..<rows, 0..<rows}``. */
 proc Matrix(rows, type eltType=real) where isIntegral(rows) {
   if rows <= 0 then halt("Matrix dimensions must be > 0");
   return Matrix(0..<rows, 0..<rows, eltType);
 }
 
 
-/* Return a matrix (2D array) over domain ``{0..<rows, 0..<cols}``*/
+/* Return a matrix (2D array) over domain ``{0..<rows, 0..<cols}``. */
 proc Matrix(rows, cols, type eltType=real) where isIntegral(rows) && isIntegral(cols) {
   if rows <= 0 || cols <= 0 then halt("Matrix dimensions must be > 0");
   return Matrix(0..<rows, 0..<cols, eltType);
 }
 
 
-/* Return a square matrix (2D array) over domain ``{space, space}`` */
+/* Return a square matrix (2D array) over domain ``{space, space}``. */
 proc Matrix(space: range, type eltType=real) {
   return Matrix({space, space}, eltType);
 }
 
 
-/* Return a matrix (2D array) over domain ``{rowSpace, colSpace}`` */
+/* Return a matrix (2D array) over domain ``{rowSpace, colSpace}``. */
 proc Matrix(rowSpace: range, colSpace: range, type eltType=real) {
   return Matrix({rowSpace, colSpace}, eltType);
 }
 
 
-/* Return a matrix (2D array) over domain ``Dom`` */
+/* Return a matrix (2D array) over domain ``Dom``. */
 proc Matrix(Dom: domain, type eltType=real) where Dom.rank == 2 {
   var A: [Dom] eltType;
   return A;
@@ -633,7 +633,7 @@ proc Matrix(const Arrays ...?n) {
     Return a matrix (2D array), given 2 or more vectors, such that the vectors
     form the rows of the matrix. In other words, the vectors are
     concatenated such that the ``ith`` vector corresponds to the matrix slice:
-    ``A[i, ..]``
+    ``A[i, ..]``.
 
     If `type` is omitted, it will be inferred from the first array.
 
@@ -686,7 +686,7 @@ private proc _eyeDiagonal(ref A: [?Dom] ?eltType) {
   for i in Dom.dim(idx) do A[i, i] = 1: eltType;
 }
 
-/* Return a square identity matrix over domain ``{0..<m, 0..<m}`` */
+/* Return a square identity matrix over domain ``{0..<m, 0..<m}``. */
 proc eye(m: integral, type eltType=real) {
   var A: [{0..<m, 0..<m}] eltType;
   _eyeDiagonal(A);
@@ -694,7 +694,7 @@ proc eye(m: integral, type eltType=real) {
 }
 
 
-/* Return an identity matrix over domain ``{0..<m, 0..<n}`` */
+/* Return an identity matrix over domain ``{0..<m, 0..<n}``. */
 proc eye(m: integral, n: integral, type eltType=real) {
   var A: [{0..<m, 0..<n}] eltType;
   _eyeDiagonal(A);
@@ -702,7 +702,7 @@ proc eye(m: integral, n: integral, type eltType=real) {
 }
 
 
-/* Return an identity matrix over domain ``Dom`` */
+/* Return an identity matrix over domain ``Dom``. */
 proc eye(Dom: domain(2), type eltType=real) {
   var A: [Dom] eltType;
   _eyeDiagonal(A);
@@ -716,7 +716,7 @@ proc eye(Dom: domain(2), type eltType=real) {
 
 
 /* Sets the value of a diagonal in a matrix in-place. If the matrix is sparse,
-    indices on the diagonal will be added to its domain
+    indices on the diagonal will be added to its domain.
 
     ``k > 0``, represents an upper diagonal starting
     from the ``k``th column, ``k == 0`` represents the main
@@ -771,7 +771,7 @@ proc _array.T where this.domain.rank == 1 { return transpose(this); }
    .. note::
 
       Since row vectors and columns vectors are indistinguishable, passing
-      a vector to this function will return that vector unchanged
+      a vector to this function will return that vector unchanged.
 
 */
 proc transpose(A: [?Dom] ?eltType) where isDenseMatrix(A) {
@@ -787,7 +787,7 @@ proc transpose(A: [?Dom] ?eltType) where isDenseMatrix(A) {
   }
 }
 
-/* Transpose vector or matrix */
+/* Transpose vector or matrix. */
 proc _array.T where isDenseMatrix(this)
 {
   return transpose(this);
@@ -850,7 +850,7 @@ proc dot(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isDenseArr(A) && isDense
     return matMult(A, B);
 }
 
-/* Compute the dot-product
+/* Compute the dot-product.
 
   .. note::
 
@@ -1158,8 +1158,7 @@ private inline proc hasNonStridedIndices(Adom : domain(2)) {
 }
 
 /*
-  Returns the inverse of ``A`` square matrix A.
-
+  Returns the inverse of ``A``.
 
     .. note::
 
@@ -1194,7 +1193,7 @@ proc inv(ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
 }
 
 /*
-  Return the matrix ``A`` to the ``bth`` power, where ``b`` is a positive
+  Return the matrix ``A`` to the ``b``'th power, where ``b`` is a positive
   integral type.
 
   .. note::
@@ -1487,7 +1486,7 @@ proc isEye(A: [?D] ?eltType) where isDenseMatrix(A) {
   return _isEye(A);
 }
 
-/* Return `true` if matrix is Hermitian */
+/* Return `true` if matrix is Hermitian. */
 proc isHermitian(A: [?D]) where isDenseMatrix(A) {
   if D.rank != 2 then
     compilerError("Rank is not 2");
@@ -1503,7 +1502,7 @@ proc isHermitian(A: [?D]) where isDenseMatrix(A) {
 }
 
 
-/* Return `true` if matrix is symmetric */
+/* Return `true` if matrix is symmetric. */
 proc isSymmetric(A: [?D]) where isDenseMatrix(A) {
   if D.rank != 2 then
     compilerError("Rank is not 2");
@@ -1522,7 +1521,7 @@ proc isSymmetric(A: [?D]) where isDenseMatrix(A) {
 /*
    Return `true` if matrix is lower triangular below the diagonal + ``k``,
    where ``k = 0`` does *not* include the diagonal, and ``k = 1`` includes the
-   diagonal
+   diagonal.
  */
 proc isTril(A: [?D] ?eltType, k=0) : bool {
   if D.rank != 2 then
@@ -1536,7 +1535,7 @@ proc isTril(A: [?D] ?eltType, k=0) : bool {
 
 /* Return `true` if matrix is upper triangular above the diagonal + ``k``,
    where ``k = 0`` does *not* include the diagonal, and ``k = -1`` includes the
-   diagonal
+   diagonal.
  */
 proc isTriu(A: [?D] ?eltType, k=0) : bool {
   if D.rank != 2 then
@@ -1548,7 +1547,7 @@ proc isTriu(A: [?D] ?eltType, k=0) : bool {
 }
 
 
-/* Return `true` if matrix is square */
+/* Return `true` if matrix is square. */
 proc isSquare(A: [?D]) {
   if D.rank != 2 then
     compilerError("Rank is not 2");
@@ -1557,7 +1556,7 @@ proc isSquare(A: [?D]) {
 }
 
 
-/* Return the trace (sum of diagonal elements) of ``A`` */
+/* Return the trace (sum of diagonal elements) of ``A``. */
 proc trace(A: [?D] ?eltType) {
   if D.rank != 2 then compilerError("Ranks not 2");
 
@@ -1860,6 +1859,8 @@ proc solve(A: [?Adom] ?eltType, ref b: [?bdom] eltType) {
 
     - ``s`` is the singular values of ``a``
 
+    :throws LinearAlgebraError: If ``A`` and ``b`` shapes do not match, are empty, or SVD failed to converge.
+
    .. note::
 
      This procedure depends on the :mod:`LAPACK` module, and will generate a
@@ -1879,8 +1880,6 @@ proc leastSquares(A: [] ?t, b: [] t, cond = -1.0) throws
   //       update this error message and documentation
   if b.rank != 1 then
     compilerError('leastSquares requires b.rank == 1');
-
-
 
   if A.shape[0] != b.shape[0] {
     throw new LinearAlgebraError('leastSquares(): A.shape[0] != b.shape[0]: %i != %i'.format(A.shape[0], b.shape[0]));
@@ -1994,6 +1993,8 @@ proc cholesky(A: [] ?t, lower = true)
    true, on exiting, this part
    of the matrix, including the diagonal is overwritten.
 
+   :throws LinearAlgebraError: If the input matrix is not a square matrix, LAPACK does not support the given type, or the eigenvalue computation does not converge.
+
    .. note::
 
      This procedure currently just returns all eigenvalues.
@@ -2004,7 +2005,6 @@ proc cholesky(A: [] ?t, lower = true)
 
       This procedure depends on the :mod:`LAPACK` module, and will generate a
       compiler error if ``lapackImpl`` is ``off``.
-
 */
 proc eigvalsh(ref A: [] ?t, lower=true, param overwrite=false) throws where (A.domain.rank == 2) && (usingLAPACK) {
   if isDistributed(A) then
@@ -2023,6 +2023,8 @@ proc eigvalsh(ref A: [] ?t, lower=true, param overwrite=false) throws where (A.d
 
    The eigenvectors are stored in the columns of the returned matrix i.e. ``A[..,i]`` is the
    ``i``'th eigenvector.
+
+   :throws LinearAlgebraError: If the input matrix is not a square matrix, LAPACK does not support the given type, or the eigenvalue computation does not converge.
 
    .. note::
 
@@ -2253,9 +2255,7 @@ proc eig(A: [] ?t, param left = false, param right = false)
                    eltType=real);
     var (U, s, Vh) = svd(A);
 
-  ``LinearAlgebraError`` will be thrown if the SVD computation does not
-  converge or an illegal argument, such as a matrix containing a ``NAN`` value,
-  is given.
+  :throws LinearAlgebraError: If the SVD computation does not converge or an illegal argument, such as a matrix containing a ``NAN`` value, is given.
 
   .. note::
 
@@ -2373,7 +2373,7 @@ proc eig(A: [] ?t, param left = false, param right = false)
 
 /* Return the Kronecker Product of matrix ``A`` and matrix ``B``.
    If the size of A is ``x * y`` and of B is ``a * b`` then size of the resulting
-   matrix will be ``(x * a) * (y * b)`` */
+   matrix will be ``(x * a) * (y * b)``. */
 proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
   if ADom.rank != 2 || BDom.rank != 2 then compilerError("Ranks not 2");
 
@@ -2401,15 +2401,15 @@ proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
 
 /*
   Matrix exponential using Pade approximation. This method returns N*N matrix which
-  is Matrix exponential of `A`
+  is matrix exponential of ``A``.
 
   :arg A: Expects an N*N square matrix.
   :type A: `A`
 
-  :arg useExactOneNorm: boolean value specifying if the onenorm has to be exact. Defaults to true.
+  :arg useExactOneNorm: boolean value specifying if the onenorm has to be exact. Defaults to `true`.
   :type useExactOneNorm: bool
 
-  :throws LinearAlgebraError: If Input Matrix is not Square Matrix.
+  :throws LinearAlgebraError: If input matrix is not square matrix.
 
   :returns: Matrix exponential of the given matrix.
   :rtype: `A`
@@ -2514,10 +2514,12 @@ private proc solvePQ(U: [?D], V: [D]) where !usingLAPACK {
 }
 
 /*
-  This method returns both sine and cosine of the matrix A.
+  This method returns both sine and cosine of the matrix ``A``.
 
   :arg A: Expects an N*N square matrix.
   :type A: `A`
+
+  :throws LinearAlgebraError: If A is not square matrix.
 
   :returns: Matrix a tuple of sin and cosine of the given matrix.
   :rtype: (`A`, `A`)
@@ -2539,10 +2541,12 @@ proc sincos(A: []) throws {
 }
 
 /*
-This method returns the sine of the matrix A.
+This method returns the sine of the matrix ``A``.
 
   :arg A: Expects an N*N square matrix.
   :type A: `A`
+
+  :throws LinearAlgebraError: If input matrix is not square matrix.
 
   :returns: Matrix returns the sine of the given matrix.
   :rtype: `A`
@@ -2559,10 +2563,12 @@ proc sinm(A: []) throws {
 }
 
 /*
-This method returns the cosine of the matrix A.
+This method returns the cosine of the matrix ``A``.
 
   :arg A: Expects an N*N square matrix.
   :type A: `A`
+
+  :throws LinearAlgebraError: If input matrix is not square matrix.
 
   :returns: Matrix returns the cosine of the given matrix.
   :rtype: `A`
