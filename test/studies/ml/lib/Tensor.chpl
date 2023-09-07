@@ -108,7 +108,7 @@ module Tensor {
         forwarding data only this;
         forwarding data only these;
 
-        proc reshapeDomain(d: this._domain.type) {
+        proc ref reshapeDomain(d: this._domain.type) {
             this._domain = d;
         }
 

@@ -30,7 +30,7 @@ proc forward(batch: [] (Tensor(1),Tensor(1))) {
     var losses: [0..#batch.size] real;
     var lossesGrad: [0..#batch.size] Tensor(1);
 
-    forall ((input,expected),idx) in zip(batch,0..) with (ref net) {
+    forall ((input,expected),idx) in zip(batch,0..) with (ref net, ref outputs, ref losses, ref lossesGrad) {
         const output = net.forwardProp(input);
         outputs[idx] = output;
         losses[idx] = (+ reduce ((expected - output).data ** 2.0)) / output.domain.size;
@@ -85,15 +85,14 @@ var batchSizes = [2,3];
 var t = new Time.stopwatch();
 t.start();
 
-for e in 1..epochs {
+var loss = 0.0;
+for epoch in 1..epochs {
     tn.shuffle(batch);
     tn.shuffle(batchSizes);
-    const loss = train(batch[0..#(batchSizes[0])],learnRate);
+    loss = train(batch[0..#(batchSizes[0])],learnRate);
 }
-const loss = train(batch[0..#(batchSizes[0])],learnRate);
 
-writeln("Epoch: ", e, " Loss: ", AutoMath.floor(loss * 10000) / 10000);
-
+writeln("Epoch: ", epochs, " Loss: ", AutoMath.floor(loss * 10000) / 10000);
 
 test(batch);
 
