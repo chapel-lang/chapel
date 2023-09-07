@@ -52,6 +52,7 @@ static void checkReturnPaths(FnSymbol* fn);
 static void checkCalls();
 static void checkExternProcs();
 static void checkExportedProcs();
+static void checkTheseWithArguments();
 
 static void
 checkConstLoops() {
@@ -218,6 +219,8 @@ checkResolved() {
 
   checkSyncSingleAtomicDefaultInit();
   checkSyncSingleAtomicReturnByCopy();
+
+  checkTheseWithArguments();
 }
 
 
@@ -788,6 +791,71 @@ static void checkExportedProcs() {
 
     if (fn->retType->symbol->hasFlag(FLAG_C_ARRAY)) {
       USR_FATAL_CONT(fn, "exported procedures should not return c_array");
+    }
+  }
+}
+
+
+static bool shouldWarnUnstableForFunction(FnSymbol* fn) {
+  if (auto mod = fn->getModule()) {
+    if (mod->modTag == MOD_INTERNAL) return fWarnUnstableInternal;
+    else if (mod->modTag == MOD_STANDARD) return fWarnUnstableStandard;
+  }
+  return fWarnUnstable;
+}
+
+static bool isTheseIterator(FnSymbol* fn) {
+  return fn->isIterator() && fn->isMethod() && fn->name == astrThese;
+}
+static bool hasIterTag(FnSymbol* fn, Symbol* iterKind) {
+  if (Symbol* tag = fn->getSubstitutionWithName(astr("tag"))) {
+    return tag->type == iterKind->type && tag->name == iterKind->name;
+  }
+  return false;
+}
+static bool isParallelTheseIterator(FnSymbol* fn) {
+  return isTheseIterator(fn) &&
+          (hasIterTag(fn, gStandaloneTag) ||
+           hasIterTag(fn, gLeaderTag) ||
+           hasIterTag(fn, gFollowerTag));
+}
+static bool isStandaloneTheseIterator(FnSymbol* fn) {
+  return isTheseIterator(fn) && hasIterTag(fn, gStandaloneTag);
+}
+static bool isLeaderTheseIterator(FnSymbol* fn) {
+  return isTheseIterator(fn) && hasIterTag(fn, gLeaderTag);
+}
+static bool isFollowerTheseIterator(FnSymbol* fn) {
+  return isTheseIterator(fn) && hasIterTag(fn, gFollowerTag);
+}
+static bool isSerialTheseIterator(FnSymbol* fn) {
+  return isTheseIterator(fn) && !isParallelTheseIterator(fn);
+}
+
+
+static void checkTheseWithArguments() {
+  // only do these checks if `--warn-unstable`
+  if (!fWarnUnstable) return;
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (shouldWarnUnstableForFunction(fn)) {
+      if (isSerialTheseIterator(fn) && fn->numFormals() > 1) {
+        USR_WARN(fn,
+                 "defining a serial 'these' iterator that takes arguments "
+                 "is unstable and may change in the future");
+      } else if (isStandaloneTheseIterator(fn) && fn->numFormals() > 1) {
+        USR_WARN(fn,
+                 "defining a parallel 'these' standalone iterator that takes "
+                 "extra arguments is unstable and may change in the future");
+      } else if (isLeaderTheseIterator(fn) && fn->numFormals() > 1) {
+        USR_WARN(fn,
+                 "defining a parallel 'these' leader iterator that takes "
+                 "extra arguments is unstable and may change in the future");
+      } else if (isFollowerTheseIterator(fn) && fn->numFormals() > 2) {
+        USR_WARN(fn,
+                 "defining a parallel 'these' follower iterator that takes "
+                 "extra arguments is unstable and may change in the future");
+      }
     }
   }
 }
