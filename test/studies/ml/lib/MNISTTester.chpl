@@ -13,6 +13,7 @@ tn.seedRandom(0);
 
 config const dataPath = "./data";
 
+// Single input forward function
 proc forward(ref net,x: Tensor(?), lb: int) {
     const output = net.forwardProp(x);
     const loss = -Math.log(output[lb]);
@@ -23,23 +24,23 @@ proc forward(ref net,x: Tensor(?), lb: int) {
 proc train(ref net, data: [] (Tensor(3),int), lr: real = 0.005) {
     const size = data.domain.size;
 
+    net.resetGradients();
+
+    const inputs = [im in data] im[0];
+    const labels = [im in data] im[1];
+
+    // Compute the outputs of the network using batched method. 
+    const outputs = net.forwardPropBatch(inputs);
+
     var loss = 0.0;
     var acc = 0;
-
-    net.resetGradients();
     var gradients: [0..#size] Tensor(1);
-
-    // Convert this to use batched forward prop
-    forall ((im,lb),gradient) in zip(data,gradients) with (ref net, + reduce loss, + reduce acc) {
-        const (output,l,a) = forward(net,im,lb);
-
+    forall (output,lb,gradient) in zip(outputs,labels,gradients) with (+ reduce loss, + reduce acc) {
+        loss += -Math.log(output[lb]);
+        acc += if tn.argmax(output.data) == lb then 1 else 0;
         gradient = tn.zeros(10);
         gradient[lb] = -1.0 / output[lb];
-
-        loss += l;
-        acc += a;
     }
-    const inputs = [im in data] im[0];
 
     net.backwardPropBatch(inputs,gradients);
     net.optimize(lr / size);
