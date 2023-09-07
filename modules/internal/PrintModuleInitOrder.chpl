@@ -30,6 +30,7 @@ pragma "export init"
 module PrintModuleInitOrder {
   private use ChapelBase, CTypes;
 
+  @unstable("The variable 'printModuleInitOrder' is unstable and its interface is subject to change in the future")
   config const printModuleInitOrder = false;
   pragma "print module init indent level" var moduleInitLevel = 2:int(32);
 

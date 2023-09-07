@@ -44,6 +44,10 @@ private proc checkQueryT(type t) type {
   else
     compilerError(t:string, " is not a class, record, or union type", 2);
 }
+private proc checkValidQueryT(type t) param {
+  if !isClassType(t) && !isRecordType(t) && !isUnionType(t) then
+    compilerError(t:string, " is not a class, record, or union type", 2);
+}
 
 /* Return the number of fields in a class or record as a param.
    The count of fields includes types and param fields.
@@ -205,8 +209,10 @@ proc getImplementationField(const ref x:?t, param i:int) const ref {
  */
 pragma "unsafe"
 @unstable(reason="'getFieldRef' is unstable")
-inline proc getFieldRef(ref x:?t, param i:int) ref do
+inline proc getFieldRef(ref x:?t, param i:int) ref {
+  checkValidQueryT(t);
   return __primitive("field by num", x, i+1);
+}
 
 /* Get a mutable ref to a field in a class or record by name.
    Will generate a compilation error if a field with that name
@@ -219,6 +225,7 @@ inline proc getFieldRef(ref x:?t, param i:int) ref do
 pragma "unsafe"
 @unstable(reason="'getFieldRef' is unstable")
 proc getFieldRef(ref x:?t, param s:string) ref {
+  checkValidQueryT(t);
   param i = __primitive("field name to num", t, s);
   if i == 0 then
     compilerError("field ", s, " not found in ", t:string);

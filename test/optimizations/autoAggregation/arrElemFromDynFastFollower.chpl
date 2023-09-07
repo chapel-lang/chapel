@@ -13,7 +13,7 @@ forall (a,b) in zip(A,B) {
 writeln(B);
 
 // same idea, but for destination aggregation
-forall (a,b) in zip(A,B) {
+forall (a,b) in zip(A,B) with (ref someOther) {
   someOther[a] = b;
 }
 

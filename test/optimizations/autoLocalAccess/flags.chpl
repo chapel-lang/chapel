@@ -7,7 +7,7 @@ B = 3;
 
 // A should be optimized statically
 // B should be optimized dynamically
-forall i in A.domain {
+forall i in A.domain with (ref A) {
   A[i] +=
     B[i];
 }
@@ -18,7 +18,7 @@ var Dom = createDom({0..10});
 
 // A should be optimized dynamically
 // B should be optimized dynamically
-forall i in Dom {
+forall i in Dom with (ref A) {
   A[i] +=
     B[i];
 }

@@ -1,0 +1,5 @@
+unstableConfigs.chpl:XX: warning: Hey it's unstable!
+0
+0
+0
+<command-line arg>:1: warning: The variable 'printModuleInitOrder' is unstable and its interface is subject to change in the future

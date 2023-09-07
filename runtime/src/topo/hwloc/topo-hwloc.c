@@ -91,6 +91,7 @@ static hwloc_cpuset_t logAllSet = NULL;
 static hwloc_cpuset_t logAccMask = NULL;
 
 static void cpuInfoInit(void);
+static void partitionResources(void);
 
 // Accessible NUMA nodes
 
@@ -132,14 +133,18 @@ static void chk_err_errno_fn(const char*, int, const char*);
 #define REPORT_ERR_ERRNO(expr) \
   chk_err_errno_fn(__FILE__, __LINE__, #expr)
 
+// Partially initialize the topology layer for use during comm initialization.
+// The remainder of the initialization is done in chpl_topo_post_comm_init
+// after the comm layer has been initialized and we know how many locales
+// are running on this node.
+//
 
-void chpl_topo_init(char *accessiblePUsMask) {
+void chpl_topo_pre_comm_init(char *accessiblePUsMask) {
   //
   // accessibleMask is a string in hwloc "bitmap list" format that
   // specifies which processing units should be considered accessible
   // to this locale. It is intended for testing purposes only and
   // should be NULL in production code.
-
 
   //
   // We only load hwloc topology information in configurations where
@@ -213,6 +218,14 @@ void chpl_topo_init(char *accessiblePUsMask) {
     }
   }
   cpuInfoInit();
+}
+
+//
+// Finish initializing the topology layer after the comm layer has been
+// initialized.
+//
+void chpl_topo_post_comm_init(void) {
+  partitionResources();
 }
 
 
@@ -312,8 +325,9 @@ static void filterPUsByKind(int numKinds, chpl_bool *ignoreKinds,
 }
 
 //
-// Initializes information about CPUs (cores and PUs) and and NICs from the
-// topology.
+// Initializes information about all CPUs (cores and PUs) from
+// the topology. The accessible CPUs are initialized as a side-effect,
+// but they aren't partitioned until partitionResources is called.
 //
 
 static void cpuInfoInit(void) {
@@ -441,6 +455,44 @@ static void cpuInfoInit(void) {
   _DBG_P("numCPUsPhysAll = %d", numCPUsPhysAll);
   _DBG_P("numCPUsPhysAcc = %d", numCPUsPhysAcc);
 
+  if (debug) {
+    char buf[1024];
+    _DBG_P("numCPUsLogAll: %d", numCPUsLogAll);
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), logAccSet);
+    _DBG_P("numCPUsLogAcc: %d logAccSet: %s", numCPUsLogAcc,
+           buf);
+
+    _DBG_P("numCPUsPhysAll: %d", numCPUsPhysAll);
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), physAccSet);
+    _DBG_P("numCPUsPhysAcc: %d physAccSet: %s", numCPUsPhysAcc,
+           buf);
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), numaSet);
+    _DBG_P("numaSet: %s", buf);
+
+    hwloc_const_cpuset_t set;
+
+    set = hwloc_topology_get_allowed_cpuset(topology);
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), set);
+    _DBG_P("allowed cpuset: %s", buf);
+
+    set = hwloc_topology_get_complete_cpuset(topology);
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), set);
+    _DBG_P("complete cpuset: %s", buf);
+
+    set = hwloc_topology_get_topology_cpuset(topology);
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), set);
+    _DBG_P("topology cpuset: %s", buf);
+
+  }
+}
+
+//
+// Partitions resources when running with co-locales. Currently, only
+// partitioning based on sockets is supported.
+//
+
+static void partitionResources(void) {
+  _DBG_P("partitionResources");
   numSockets = hwloc_get_nbobjs_inside_cpuset_by_type(topology,
                       root->cpuset, HWLOC_OBJ_PACKAGE);
   _DBG_P("numSockets = %d", numSockets);
@@ -452,6 +504,8 @@ static void cpuInfoInit(void) {
   _DBG_P("numLocalesOnNode = %d", numLocalesOnNode);
   _DBG_P("expectedLocalesOnNode = %d", expectedLocalesOnNode);
   _DBG_P("rank = %d", rank);
+  _DBG_P("useSocket = %d", useSocket);
+  _DBG_P("cond = %d", (numLocalesOnNode > 1) || (expectedLocalesOnNode > 1) || useSocket);
   if ((numLocalesOnNode > 1) || (expectedLocalesOnNode > 1) || useSocket) {
     if (numLocalesOnNode > 1) {
       oversubscribed = true;
@@ -472,6 +526,7 @@ static void cpuInfoInit(void) {
         if (rank != -1) {
           // Use the socket whose logical index corresponds to our local rank.
           // See getSocketNumber below if you change this.
+          _DBG_P("confining ourself to socket %d", rank);
           socket = hwloc_get_obj_inside_cpuset_by_type(topology,
                                     root->cpuset, HWLOC_OBJ_PACKAGE, rank);
           CHK_ERR(socket != NULL);

@@ -53,7 +53,7 @@ proc test(dom:domain, name) {
 
   var arr: [dom] int;
 
-  forall i in dom {
+  forall i in dom with (ref arr) {
     arr[i] = idxToInt(i);
   }
 
