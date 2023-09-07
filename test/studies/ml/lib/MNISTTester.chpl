@@ -14,7 +14,7 @@ tn.seedRandom(0);
 config const dataPath = "./data";
 
 // Single input forward function
-proc forward(ref net,x: Tensor(?), lb: int) {
+proc forward(ref net, x: Tensor(?), lb: int) {
     const output = net.forwardProp(x);
     const loss = -Math.log(output[lb]);
     const acc = if tn.argmax(output.data) == lb then 1 else 0;

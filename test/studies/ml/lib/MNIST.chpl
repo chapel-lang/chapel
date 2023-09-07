@@ -71,14 +71,7 @@ proc loadLabels(num: int, fileName: string = "week2/emnist/data/train-labels-idx
 }
 
 proc printImage(image: [0..#28, 0..#28] real) {
-    for i in 0..<28 {
-        for j in 0..<28 {
-            if image[i,j] > 0.5 then {
-                write("#");
-            } else {
-                write(" ");
-            }
-        }
-        writeln();
-    }
+    for pixel in image do
+        write(if pixel>0.5 then "#" else " ");
+    writeln();
 }
