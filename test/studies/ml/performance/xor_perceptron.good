@@ -1,0 +1,6 @@
+xor_perceptron.chpl:95: warning: In an upcoming release 'e' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it
+Epoch: 2.71828 Loss: 0.0073
+1.0 1.0 -> 0.0802925 [0.0]
+0.0 1.0 -> 0.909546 [1.0]
+0.0 0.0 -> 0.0721928 [0.0]
+1.0 0.0 -> 0.940392 [1.0]
