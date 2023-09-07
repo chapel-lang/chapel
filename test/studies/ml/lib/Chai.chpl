@@ -318,12 +318,6 @@ module Chai {
     record MaxPool {
 
         proc const ref forwardPropBatch(batch: [] Tensor(3)): [] Tensor(3) {
-            // const batchSize = batch.size;
-            // var pools: [0..#batchSize] Tensor(3);
-            // forall (convs,pool) in zip(batch,pools) with (ref this,ref pools) {
-            //     pool = forwardProp(convs);
-            // }
-            // return pools;
             return [convs in batch] forwardProp(convs);
         }
 
