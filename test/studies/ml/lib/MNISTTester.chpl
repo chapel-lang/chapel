@@ -21,7 +21,6 @@ proc forward(ref net,x: Tensor(?), lb: int) {
 }
 
 proc train(ref net, data: [] (Tensor(3),int), lr: real = 0.005) {
-    // writeln("Training on ",data.domain.size," images");
     const size = data.domain.size;
 
     var loss = 0.0;
@@ -30,33 +29,24 @@ proc train(ref net, data: [] (Tensor(3),int), lr: real = 0.005) {
     net.resetGradients();
     var gradients: [0..#size] Tensor(1,real);
 
-    forall ((im,lb),i) in zip(data,0..) with (ref net,+ reduce loss, + reduce acc) {
+    // Convert this to use batched forward prop
+    forall ((im,lb),i) in zip(data,0..) with (ref net, + reduce loss, + reduce acc) {
         const (output,l,a) = forward(net,im,lb);
+
         var gradient = tn.zeros(10);
         gradient[lb] = -1.0 / output[lb];
-        
         gradients[i] = gradient;
-        // net.backwardProp(im,gradient);
 
         loss += l;
         acc += a;
     }
     const inputs = [im in data] im[0];
+    
     net.backwardPropBatch(inputs,gradients);
-
     net.optimize(lr / size);
 
     return (loss,acc);
 }
-
-
-
-// config const numTrainImages = 50000;
-// config const numTestImages = 1000;
-
-// config const learnRate = 0.03; // 0.05;
-// config const batchSize = 50;
-// config const numEpochs = 60;
 
 proc train(ref network, 
            numTrainImages: int,
@@ -99,8 +89,9 @@ proc train(ref network,
             const batchRange = (i * batchSize)..#batchSize;
             const batch = trainingData[batchRange];
             const (loss,acc) = train(network,batch,learnRate);
-            // writeln("[",i + 1," of ", trainingData.size / batchSize, "] Loss ", loss / batchSize," Accuracy ", acc ," / ", batchSize);
-            if watch then IO.stdout.write("\r","[",i + 1," of ",trainingData.size / batchSize,"] (loss: ", loss / batchSize, ", accuracy: ", acc, " / ", batchSize, ")");
+            if watch then IO.stdout.write("\r","[",i + 1," of ",trainingData.size / batchSize,
+                                          "] (loss: ", loss / batchSize, ", accuracy: ", 
+                                          acc, " / ", batchSize, ")");
             IO.stdout.flush();
         }
         IO.stdout.write("\n");
@@ -111,13 +102,16 @@ proc train(ref network,
         var loss = 0.0;
         var numCorrect = 0;
 
-        forall (im,lb) in testingData with (+ reduce loss, + reduce numCorrect,ref network) {
-            const (o,l,a) = forward(network,im,lb);
-            loss += l;
-            numCorrect += a;
+        forall (im,lb) in testingData with (+ reduce loss, + reduce numCorrect, ref network) {
+            const (output_,loss_,acc_) = forward(network,im,lb);
+            loss += loss_;
+            numCorrect += acc_;
         }
 
-        writeln("End of epoch ", epoch + 1, " Loss ", AutoMath.floor(loss / testingData.size * 10000) / 10000, " Accuracy ", numCorrect, " / ", testingData.size);
+        writeln("End of epoch ", epoch + 1,
+                " Loss ", AutoMath.floor(loss / testingData.size * 10000) / 10000,
+                " Accuracy ", numCorrect, 
+                " / ", testingData.size);
 
         if !perfTest then network.save(savePath);
     }
@@ -144,7 +138,7 @@ proc classificationEval(ref network, numImages: int, modelPath: string) {
     var loss = 0.0;
     var acc = 0;
 
-    forall (im,lb) in testingData with (+ reduce loss, + reduce acc,ref network) {
+    forall (im,lb) in testingData with (+ reduce loss, + reduce acc, ref network) {
         const (output,loss_,acc_) = forward(network,im,lb);
         loss += loss_;
         acc += acc_;
@@ -152,7 +146,10 @@ proc classificationEval(ref network, numImages: int, modelPath: string) {
 
     loss /= numImages;
 
-    writeln("Loss: ",AutoMath.floor(10000 * loss) / 10000," Accuracy: ",acc ," / ", numImages, " ", (acc * 100):real / (numImages:real), " %");
+    writeln("Loss: ", AutoMath.floor(10000 * loss) / 10000,
+            " Accuracy: ",acc ,
+            " / ", numImages, 
+            " ", (acc * 100):real / (numImages:real), " %");
 
     t.stop();
 
