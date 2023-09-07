@@ -112,18 +112,18 @@ module Chai {
             this.weightsGrad.data = 0;
         }
 
-        proc write(fw: IO.fileWriter) throws {
+        proc ref write(fw: IO.fileWriter) throws {
             bias.write(fw);
             weights.write(fw);
         }
 
-        proc read(fr: IO.fileReader) throws {
+        proc ref read(fr: IO.fileReader) throws {
             bias.read(fr);
             weights.read(fr);
             uninitialized = false;
         }
 
-        proc signature(): string {
+        proc ref signature(): string {
             return "Dense(" + outputSize:string + ")";
         }
     }
@@ -137,32 +137,32 @@ module Chai {
 
         proc init() { }
 
-        proc forwardProp(x: Tensor(?rank)): Tensor(rank) {
+        proc ref forwardProp(x: Tensor(?rank)): Tensor(rank) {
             return tn.sigmoid(x);
         }
 
-        proc forwardPropBatch(batch: [] ?tensorType) where isSubtype(tensorType, Tensor) {
-            return tn.sigmoid(batch);
+        proc ref forwardPropBatch(batch: [] ?tensorType) where isSubtype(tensorType, Tensor) {
+            return forwardProp(batch);
         }
 
-        proc backward(delta: Tensor(?rank),lastInput: Tensor(rank)): Tensor(rank) {
+        proc const ref backward(delta: Tensor(?rank),lastInput: Tensor(rank)): Tensor(rank) {
             return delta * tn.sigmoidPrime(lastInput); 
         }
 
-        proc backwardBatch(deltas: [] ?tensorType1, inputs: [] ?tensorType2) 
+        proc const ref backwardBatch(deltas: [] ?tensorType1, inputs: [] ?tensorType2) 
             where isSubtype(tensorType1, Tensor) && isSubtype(tensorType2, Tensor) {
-            return [(d,i) in zip(deltas,inputs)] backward(d,i);
+            return backward(deltas,inputs);
         }
 
-        proc optimize(mag: real) { }
+        proc ref optimize(mag: real) { }
 
-        proc resetGradients() { }
+        proc ref resetGradients() { }
 
-        proc write(fw: IO.fileWriter) throws { }
+        proc ref write(fw: IO.fileWriter) throws { }
 
-        proc read(fr: IO.fileReader) throws { }
+        proc ref read(fr: IO.fileReader) throws { }
 
-        proc signature(): string do
+        proc ref signature(): string do
             return "Sigmoid()";
     }
 
@@ -196,11 +196,11 @@ module Chai {
             this.padding = padding;
         }
 
-        proc forwardPropBatch(batch: [] Tensor(3)): [] Tensor(3) {
+        proc ref forwardPropBatch(batch: [] Tensor(3)): [] Tensor(3) {
             return forwardProp(batch);
         }
 
-        proc forwardProp(images: Tensor(3)): Tensor(3) {
+        proc ref forwardProp(images: Tensor(3)): Tensor(3) {
             const (h,w,channels) = images.shape;
             const (outChannels,kh,kw,inChannels) = filters.shape;
 
@@ -220,7 +220,7 @@ module Chai {
             return convs;
         }
 
-        proc backward(delta: Tensor(3), images: Tensor(3)): Tensor(3) {
+        proc ref backward(delta: Tensor(3), images: Tensor(3)): Tensor(3) {
             const (h,w,channels) = images.shape;
             const (outChannels,kh,kw,inChannels) = filters.shape;
             const (dh,dw,dc) = delta.shape;
@@ -248,7 +248,7 @@ module Chai {
             return dL_dX;
         }
 
-        proc backwardBatch(deltas: [] Tensor(3), inputs: [] Tensor(3)): [] Tensor(3) {
+        proc ref backwardBatch(deltas: [] Tensor(3), inputs: [] Tensor(3)): [] Tensor(3) {
             var newDeltas: [deltas.domain] Tensor(3);
             var filtersGradient = filtersGrad.data;
             forall (delta,images,newDelta) in zip(deltas,inputs,newDeltas) with (+ reduce filtersGradient) {
@@ -279,26 +279,26 @@ module Chai {
             return newDeltas;
         }
 
-        proc optimize(mag: real(64)) {
+        proc ref optimize(mag: real(64)) {
             filters -= mag * filtersGrad;
         }
 
-        proc resetGradients() {
+        proc ref resetGradients() {
             filtersGrad.data = 0.0;
         }
 
-        proc write(fw: IO.fileWriter) throws {
+        proc ref write(fw: IO.fileWriter) throws {
             fw.write(numFilters);
             filters.write(fw);
         }
 
-        proc read(fr: IO.fileReader) throws {
+        proc ref read(fr: IO.fileReader) throws {
             var nf = fr.read(int);
             if nf != numFilters then err("Conv read: numFilters mismatch");
             filters.read(fr);
         }
 
-        proc signature(): string {
+        proc ref signature(): string {
             const (outChannels,kh,kw,inChannels) = filters.shape;
             return "Conv(" + inChannels:string 
                     + "," + outChannels:string
@@ -317,16 +317,17 @@ module Chai {
 
     record MaxPool {
 
-        proc forwardPropBatch(batch: [] Tensor(3)): [] Tensor(3) {
-            const batchSize = batch.size;
-            var pools: [0..#batchSize] Tensor(3);
-            forall (convs,i) in zip(batch,0..) {
-                pools[i] = forwardProp(convs);
-            }
-            return pools;
+        proc const ref forwardPropBatch(batch: [] Tensor(3)): [] Tensor(3) {
+            // const batchSize = batch.size;
+            // var pools: [0..#batchSize] Tensor(3);
+            // forall (convs,pool) in zip(batch,pools) with (ref this,ref pools) {
+            //     pool = forwardProp(convs);
+            // }
+            // return pools;
+            return [convs in batch] forwardProp(convs);
         }
 
-        proc forwardProp(convs: Tensor(3)): Tensor(3) {
+        proc const ref forwardProp(convs: Tensor(3)): Tensor(3) {
             const (h,w,numFilters) = convs.shape;
             const newH: int = h / 2;
             const newW: int = w / 2;
@@ -350,7 +351,7 @@ module Chai {
             return maxIndex - d.first;
         }
 
-        proc backward(delta: Tensor(3), convs: Tensor(3)): Tensor(3) {
+        proc ref backward(delta: Tensor(3), convs: Tensor(3)): Tensor(3) {
             const (h,w,numFilters) = convs.shape;
 
             const newH: int = h / 2;
@@ -366,23 +367,23 @@ module Chai {
             return grad;
         }
 
-        proc backwardBatch(deltas: [] Tensor(3), inputs: [] Tensor(3)): [] Tensor(3) {
+        proc ref backwardBatch(deltas: [] Tensor(3), inputs: [] Tensor(3)): [] Tensor(3) {
             var newDeltas: [deltas.domain] Tensor(3);
-            forall (delta,inputs,newDelta) in zip(deltas,inputs,newDeltas) {
+            forall (delta,inputs,newDelta) in zip(deltas,inputs,newDeltas) with (ref this) {
                 newDelta = backward(delta,inputs);
             }
             return newDeltas;
         }
 
-        proc optimize(mag: real(64)) { }
+        proc ref optimize(mag: real(64)) { }
 
-        proc resetGradients() { }
+        proc ref resetGradients() { }
 
-        proc write(fw: IO.fileWriter) throws { }
+        proc ref write(fw: IO.fileWriter) throws { }
 
-        proc read(fr: IO.fileReader) throws { }
+        proc ref read(fr: IO.fileReader) throws { }
 
-        proc signature(): string do
+        proc ref signature(): string do
             return "MaxPool()";
     }
 
@@ -398,33 +399,33 @@ module Chai {
         proc init(a: real = 0.0) do
             this.a = a;
 
-        proc forwardProp(input: Tensor(?rank)) {
+        proc ref forwardProp(input: Tensor(?rank)) {
             return tn.relu(a,input);
         }
 
-        proc forwardPropBatch(batch: [] ?tensorType) where isSubtype(tensorType, Tensor) {
+        proc ref forwardPropBatch(batch: [] ?tensorType) where isSubtype(tensorType, Tensor) {
             return tn.relu(a,batch);
         }
 
-        proc backward(delta: Tensor(?rank),input: Tensor(rank)) {
+        proc ref backward(delta: Tensor(?rank),input: Tensor(rank)) {
             var output = new Tensor(input.domain);
             output.data = delta.data * tn.reluPrime(a,input.data);
             return output;
         }
 
-        proc backwardBatch(deltas: [] ?tensorType1, inputs: [] ?tensorType2) where isSubtype(tensorType1, Tensor) && isSubtype(tensorType2, Tensor) {
+        proc ref backwardBatch(deltas: [] ?tensorType1, inputs: [] ?tensorType2) where isSubtype(tensorType1, Tensor) && isSubtype(tensorType2, Tensor) {
             return [(delta,input) in zip(deltas,inputs)] backward(delta,input);
         }
 
-        proc optimize(mag: real(64)) { }
+        proc ref optimize(mag: real(64)) { }
 
-        proc resetGradients() { }
+        proc ref resetGradients() { }
 
-        proc write(fw: IO.fileWriter) throws { }
+        proc ref write(fw: IO.fileWriter) throws { }
 
-        proc read(fr: IO.fileReader) throws { }
+        proc ref read(fr: IO.fileReader) throws { }
 
-        proc signature(): string do
+        proc ref signature(): string do
             return "ReLU(" + a:string + ")";
     }
 
@@ -436,27 +437,27 @@ module Chai {
 
         proc init() { }
 
-        proc forwardProp(input: Tensor(?inRank)): Tensor(1) do
+        proc ref forwardProp(input: Tensor(?inRank)): Tensor(1) do
             return input.flatten();
 
-        proc forwardPropBatch(batch: [] ?tensorType): [] Tensor(1) where isSubtype(tensorType,Tensor) do
-            return [b in batch] forwardProp(b);
+        proc ref forwardPropBatch(batch: [] ?tensorType): [] Tensor(1) where isSubtype(tensorType,Tensor) do
+            return forwardProp(batch);
 
-        proc backward(delta: Tensor(1), input: Tensor(?inRank)): Tensor(inRank) do
+        proc ref backward(delta: Tensor(1), input: Tensor(?inRank)): Tensor(inRank) do
             return delta.reshape(input.domain);
 
-        proc backwardBatch(deltas: [] Tensor(1), inputs: [] ?tensorType): [] tensorType where isSubtype(tensorType,Tensor) do
-            return [(d,i) in zip(deltas,inputs)] backward(d,i);
+        proc ref backwardBatch(deltas: [] Tensor(1), inputs: [] ?tensorType): [] tensorType where isSubtype(tensorType,Tensor) do
+            return backward(deltas,inputs);
 
-        proc optimize(mag: real(64)) { }
+        proc ref optimize(mag: real(64)) { }
 
-        proc resetGradients() { }
+        proc ref resetGradients() { }
 
-        proc write(fw: IO.fileWriter) throws { }
+        proc ref write(fw: IO.fileWriter) throws { }
 
-        proc read(fr: IO.fileReader) throws { }
+        proc ref read(fr: IO.fileReader) throws { }
 
-        proc signature(): string do
+        proc ref signature(): string do
             return "Flatten()";
     }
 
@@ -479,7 +480,7 @@ module Chai {
         proc init(outputSize: int) do
             this.outputSize = outputSize;
 
-        proc initialize(input: Tensor(?)) {
+        proc ref initialize(input: Tensor(?)) {
             const inputSize = * reduce input.shape;
             if inputSize < 1 then err("Softmax input size must be > 0");
 
@@ -495,7 +496,7 @@ module Chai {
             uninitialized = false;
         }
         
-        proc forwardPropBatch(batch: [] ?tensorType): [] Tensor(1) where isSubtype(tensorType, Tensor) {
+        proc ref forwardPropBatch(batch: [] ?tensorType): [] Tensor(1) where isSubtype(tensorType, Tensor) {
             if uninitialized then initialize(batch[0]);
 
             var outputs: [batch.domain] Tensor(1);
@@ -504,7 +505,7 @@ module Chai {
             return outputs;
         }
 
-        proc forwardProp(input: Tensor(?)): Tensor(1) {
+        proc ref forwardProp(input: Tensor(?)): Tensor(1) {
             if uninitialized then initialize(input);
 
             const flattened = input.flatten();
@@ -512,7 +513,7 @@ module Chai {
             return tn.softmax(z);
         }
 
-        proc backward(delta: Tensor(1), input: Tensor(?outRank)): Tensor(outRank) {
+        proc ref backward(delta: Tensor(1), input: Tensor(?outRank)): Tensor(outRank) {
             const flattened = input.flatten();
             const Z = (weights * flattened) + biases;
             const (exp,expSum,softmax) = tn.softmaxParts(Z);
@@ -546,7 +547,7 @@ module Chai {
             return dL_dIn.reshape(input.domain);
         }
 
-        proc backwardBatch(deltas: [] Tensor(1), inputs: [] ?tensorType2) : [] tensorType2 where isSubtype(tensorType2, Tensor) {
+        proc ref backwardBatch(deltas: [] Tensor(1), inputs: [] ?tensorType2) : [] tensorType2 where isSubtype(tensorType2, Tensor) {
             const batchSize = deltas.size;
             var newDeltas: [0..#batchSize] tensorType2;
             newDeltas.reshapeDomain(inputs[0].domain);
@@ -582,28 +583,28 @@ module Chai {
             return newDeltas;
         }
 
-        proc optimize(mag: real(64)) {
+        proc ref optimize(mag: real(64)) {
             weights.data -= mag * weightsGrad.data;
             biases.data -= mag * biasesGrad.data;
         }
 
-        proc resetGradients() {
+        proc ref resetGradients() {
             weightsGrad.data = 0.0;
             biasesGrad.data = 0.0;
         }
 
-        proc write(fw: IO.fileWriter) throws {
+        proc ref write(fw: IO.fileWriter) throws {
             weights.write(fw);
             biases.write(fw);
         }
         
-        proc read(fr: IO.fileReader) throws {
+        proc ref read(fr: IO.fileReader) throws {
             weights.read(fr);
             biases.read(fr);
             uninitialized = false;
         }
 
-        proc signature(): string do
+        proc ref signature(): string do
             return "SoftMax(" + outputSize:string + ")";
     }
 
@@ -674,9 +675,9 @@ module Chai {
             }
         }
 
-        proc save(path: string) throws {
+        proc ref save(path: string) throws {
             var file = IO.open(path, IO.ioMode.cw);
-            var serializer = new IO.BinarySerializer(IO.ioendian.big);
+            var serializer = new IO.binarySerializer(IO.ioendian.big);
             var fw = file.writer(serializer=serializer);
             // fw.write("[network]");
             fw.write(layers.size);
@@ -686,9 +687,9 @@ module Chai {
             fw.close();
         }
 
-        proc load(path: string) throws {
+        proc ref load(path: string) throws {
             var file = IO.open(path, IO.ioMode.rw);
-            var deserializer = new IO.BinaryDeserializer(IO.ioendian.big);
+            var deserializer = new IO.binaryDeserializer(IO.ioendian.big);
             var fr = file.reader(deserializer=deserializer);
             var size = fr.read(int);
             if size != layers.size then err("Network load: size mismatch");
@@ -698,7 +699,7 @@ module Chai {
             return this;
         }
 
-        proc signature(): string {
+        proc ref signature(): string {
             var sig = "[";
             for param i in 0..#(layers.size) {
                 sig += layers[i].signature();
