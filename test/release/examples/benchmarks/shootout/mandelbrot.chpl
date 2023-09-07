@@ -56,7 +56,7 @@ proc main() {
   // and the image array.
   //
   var w = (new file(1)).writer(locking=false,
-                               serializer=new BinarySerializer());
+                               serializer=new binarySerializer());
 
   w.writef("P4\n");
   w.writef("%i %i\n", n, n);

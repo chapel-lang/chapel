@@ -10,8 +10,6 @@ import unittest
 import subprocess
 import os
 import sys
-from pprint import pprint
-from packaging import version
 
 if not 'CHPL_HOME' in os.environ:
     print('CHPL_HOME is not set')
@@ -35,22 +33,27 @@ def runCmd(cmd, env=None):
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     return proc.stdout
 
-def skipif():
+def setup():
     global skipReason
+    global launcher, comm
 
     # Get the Chapel configuration
     printchplenv.compute_all_values()
     # strip the padding printchplenv puts on some of the keys
     env = {k.strip():v for k,v in printchplenv.ENV_VALS.items()}
 
+    launcher = env.get('CHPL_LAUNCHER')
+    comm = env.get('CHPL_COMM')
+
     # Verify Chapel configuration
     # These tests only run on comm=ofi and slurm-srun
-    if env.get('CHPL_LAUNCHER', None) != 'slurm-srun':
-        skipReason = "CHPL_LAUNCHER != slurm-srun"
-        print(skipReason)
+    launchers = ['slurm-srun', 'slurm-gasnetrun_ibv']
+    if launcher not in launchers:
+        skipReason = "CHPL_LAUNCHER not one of " + str(launchers)
         return
-    if env.get('CHPL_COMM', None) != 'ofi':
-        skipReason = "CHPL_COMM != ofi"
+    comms = ['ofi', 'gasnet']
+    if comm not in comms:
+        skipReason = "CHPL_COMM not one of " + str(comms)
         return
 
 class LocalePerSocket(unittest.TestCase):
@@ -60,7 +63,9 @@ class LocalePerSocket(unittest.TestCase):
         if skipReason is not None:
             return
         v = runCmd("sinfo --version").split()[1]
-        if version.parse(v) < version.parse("23.02.0"):
+        fields = v.split('.')
+        major = int(fields[0])
+        if major < 23:
             # older versions of sinfo do not support %i
             fmt = "%X %Y %Z"
         else:
@@ -118,13 +123,15 @@ class LocalePerSocket(unittest.TestCase):
     # Check standard srun arguments
     def checkArgs(self, nodes, tasks, tasksPerNode, cpusPerTask,
                   cpuBind, output):
-        self.assertIn('--nodes=%d' % nodes, output)
+        self.assertTrue('--nodes=%d' % nodes in output or '-N %d' % nodes in output)
         self.assertIn('--ntasks=%d' % tasks, output)
-        self.assertIn('--cpus-per-task=%d' % cpusPerTask, output)
-        if (cpuBind != None):
-            self.assertIn('--cpu-bind=%s' % cpuBind, output)
-        else:
-            self.assertNotIn('--cpu-bind', output)
+        if launcher != 'slurm-gasnetrun_ibv':
+            self.assertIn('--cpus-per-task=%d' % cpusPerTask, output)
+            if (cpuBind != None):
+                self.assertIn('--cpu-bind=%s' % cpuBind, output)
+            else:
+                self.assertNotIn('--cpu-bind', output)
+        self.assertNotIn('--ntasks-per-node', output)
 
     def mrAllocatedRequired(self):
         output = runCmd("fi_info -v")
@@ -260,7 +267,9 @@ class LocalePerSocket(unittest.TestCase):
         # When SLURM_HINT=nomultithread and
         # CHPL_RT_NUM_THREADS_PER_LOCALE indicates to use
         # hyperthreading, the number of threads/shepherds should be
-        # recuded to the number of cores.
+        # reduced to the number of cores.
+        if launcher == 'slurm-gasnetrun_ibv':
+            self.skipTest('slurm-gasnetrun_ibv does not implement SLURM_HINT=nomultithread')
         env = os.environ.copy()
         env['CHPL_RT_LOCALES_PER_NODE'] = '2'
         env['CHPL_RT_NUM_THREADS_PER_LOCALE'] = str(self.sockets * self.cores)
@@ -275,6 +284,8 @@ class LocalePerSocket(unittest.TestCase):
 
     def test_10_reserved(self):
         # One core is reserved for the AM handler thread
+        if comm == 'gasnet':
+            self.skipTest("CHPL_COMM=gasnet does not support dedicated progress thread")
         env = os.environ.copy()
         env['CHPL_RT_LOCALES_PER_NODE'] = '2'
         env['CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES'] = 'true'
@@ -289,6 +300,8 @@ class LocalePerSocket(unittest.TestCase):
     def test_11_ht_reserved(self):
         # One core is reserved for the AM handler thread when using
         # hyperthreading.
+        if comm == 'gasnet':
+            self.skipTest("CHPL_COMM=gasnet does not support dedicated progress thread")
         env = os.environ.copy()
         env['CHPL_RT_LOCALES_PER_NODE'] = '2'
         env['CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES'] = 'true'
@@ -392,7 +405,7 @@ def main(argv):
     if "-v" in argv or "--verbose" in argv:
         verbose = True
 
-    skipif()
+    setup()
 
     if len(argv) < 2:
         print('usage: sub_test COMPILER [options]')

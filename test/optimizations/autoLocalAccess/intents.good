@@ -1,0 +1,13 @@
+
+Start analyzing forall (intents.chpl:7)
+| Found loop domain (intents.chpl:3)
+| Will attempt static and dynamic optimizations (intents.chpl:7)
+|
+|  Start analyzing call (intents.chpl:8)
+|   Found the domain of the access base (intents.chpl:3)
+|   Can optimize: Access base's domain is the iterator (intents.chpl:8)
+|  This call is a static optimization candidate (intents.chpl:8)
+|
+End analyzing forall (intents.chpl:7)
+
+Static check successful. Using localAccess [static only ALA clone]  (intents.chpl:8)

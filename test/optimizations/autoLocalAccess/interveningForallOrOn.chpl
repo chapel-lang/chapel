@@ -8,8 +8,8 @@ use common;
   var B: [D] real;
   var C: [D] real;
 
-  forall i in D {
-    forall j in 1..10 { // this'll make C[j] a candidate that's not optimized
+  forall i in D with (ref A) {
+    forall j in 1..10 with (ref A) { // this'll make C[j] a candidate that's not optimized
       A[i] = B[i] + C[j];
     }
   }
@@ -22,7 +22,7 @@ use common;
   var B: [D] real;
   var C: [D] real;
 
-  forall i in D {
+  forall i in D with (ref A) {
     on Locales[0] {
       A[i] = B[i] + C[i];
     }

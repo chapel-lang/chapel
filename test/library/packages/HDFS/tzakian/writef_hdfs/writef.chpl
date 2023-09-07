@@ -41,7 +41,7 @@ ch.writeln("Part 4");
 ch.writef("%?\n", (1,17));
 ch.writef("%xt\n", (1,17));
 ch.writef("%@xt\n", (1,17));
-ch.withSerializer(JsonSerializer).writef("%?\n", (1,17));
+ch.withSerializer(jsonSerializer).writef("%?\n", (1,17));
 
 ch.writeln("Part 5");
 ch.writef("%*i\n", 17, 1);

@@ -559,5 +559,3 @@ chpl_bool chpl_config_has_value(c_string v, c_string m) {
 c_string chpl_config_get_value(c_string v, c_string m) {
   return lookupSetValue(v, m);
 }
-
-

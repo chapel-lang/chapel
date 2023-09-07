@@ -12,7 +12,7 @@ config const LOOKUP_SIZE = 4*1024;
 config const LOOKUP_SCALE : real = LOOKUP_SIZE - 1;
 config const n = 1000;
 
-const stdout = (new file(1)).writer(serializer=new BinarySerializer(), locking=false);
+const stdout = (new file(1)).writer(serializer=new binarySerializer(), locking=false);
 param newLine = "\n".toByte();
 
 enum Ntide {

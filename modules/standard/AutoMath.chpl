@@ -104,6 +104,7 @@ Constant and Function Definitions
 
 */
 pragma "module included by default"
+@unstable("The module name 'AutoMath' is unstable.  If you want to use qualified naming on the symbols within it, please 'use' or 'import' the :mod:`Math` module")
 module AutoMath {
   import HaltWrappers;
   private use CTypes;

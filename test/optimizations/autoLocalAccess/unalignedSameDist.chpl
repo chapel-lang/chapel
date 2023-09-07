@@ -21,7 +21,7 @@ var arr2 = createAnnoyingArray();
 arr1 = 1;
 arr2 = 2;
 
-forall i in arr2.domain {
+forall i in arr2.domain with (ref arr1) {
   arr1[i] =
     arr2[i];
 }

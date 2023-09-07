@@ -10,7 +10,7 @@ for i in b.domain {
 }
 
 writeln("Loop 1");
-forall i in a.domain {
+forall i in a.domain with (ref a) {
   a[i] = b[10-i];
 }
 writeln("End Loop 1");
@@ -21,7 +21,7 @@ writeln();
 b = 0;
 
 writeln("Loop 2");
-forall i in a.domain {
+forall i in a.domain with (ref a, ref b) {
   a[i] = b[10-i];
   b[10-i] += 5; // should thwart the optimization
 }

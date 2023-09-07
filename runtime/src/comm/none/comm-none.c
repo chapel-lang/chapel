@@ -107,11 +107,8 @@ int32_t chpl_comm_getMaxThreads(void) {
   return 0;
 }
 
-void chpl_comm_pre_topo_init(void) {
-  chpl_set_num_locales_on_node(1);
-}
-
 void chpl_comm_init(int *argc_p, char ***argv_p) {
+  chpl_set_num_locales_on_node(1);
   chpl_numNodes = 1;
   chpl_nodeID = 0;
 }

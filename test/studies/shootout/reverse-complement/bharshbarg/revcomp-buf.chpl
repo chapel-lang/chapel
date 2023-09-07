@@ -26,14 +26,14 @@ record buf {
   const bufSize : int;
   var buf : [0..#bufSize] uint(8);
   var cur, cap, numLeft : int;
-  var chan : fileReader(locking=false, BinaryDeserializer);
+  var chan : fileReader(locking=false, binaryDeserializer);
 
   proc init(fi:file, bs:int) {
     this.bufSize = bs;
 
     this.complete();
 
-    chan = fi.reader(locking=false, deserializer=new BinaryDeserializer());
+    chan = fi.reader(locking=false, deserializer=new binaryDeserializer());
     numLeft = fi.size;
   }
 
@@ -136,7 +136,7 @@ proc main(args: [] string) {
     }
   }
 
-  const stdoutBin = (new file(1)).writer(serializer=new BinarySerializer(), locking=false);
+  const stdoutBin = (new file(1)).writer(serializer=new binarySerializer(), locking=false);
 
   // This conversion wastes memory, but correct output requires array stdout
   // specifically at the moment.

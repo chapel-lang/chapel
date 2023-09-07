@@ -1,6 +1,6 @@
 use IO;
 
-const stdout = (new file(1)).writer(serializer=new BinarySerializer(), locking=false);
+const stdout = (new file(1)).writer(serializer=new binarySerializer(), locking=false);
 
 // Historically this test existed to ensure that writing in native binary mode
 // was not different betwen 'write' and 'writef'. In particular, this test

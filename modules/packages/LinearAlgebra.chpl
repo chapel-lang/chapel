@@ -1937,7 +1937,7 @@ proc vander(x: [?d], in N=0) where d.rank == 1 {
   var resultDom = {d.dim(0), 0..<N};
   var result: [resultDom] x.eltType;
 
-  forall (i,j) in resultDom {
+  forall (i,j) in resultDom with (ref result) {
     result[i, j] = x[i]**(N-1-j);
   }
 
@@ -2347,7 +2347,7 @@ proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType,
 
   while (itern < maxiter) {
     itern = itern + 1;
-    forall i in Adom.dim(0) {
+    forall i in Adom.dim(0) with (ref t) {
       var sigma = 0.0;
       for j in Adom.dim(1) {
         if i!=j then sigma += A(i,j) * X(j);
@@ -2506,7 +2506,7 @@ private proc solvePQ(U: [?D], V: [D]) where !usingLAPACK {
   // Matrix Q (which is redundant in this case
   // since we could get away with a single LU calls
   // for all the N iterations).
-  forall j in D.dim(1) {
+  forall j in D.dim(1) with (ref P) {
       P[.., j] = solve(Q, P[.., j]);
     }
 
@@ -2928,13 +2928,13 @@ module Sparse {
     var C: [resDom] A.eltType;
 
     if isCSArr(A) && !isCSArr(B) {
-      forall i in 0..<B.domain.shape(1) {
+      forall i in 0..<B.domain.shape(1) with (ref C) {
         C[.., i] = dot(A, B[.., i]);
       }
       return C;
     }
     else {
-      forall i in 0..<A.domain.shape(0) {
+      forall i in 0..<A.domain.shape(0) with (ref C) {
         C[i, ..] = dot(A[i, ..], B);
       }
       return C;
@@ -3386,7 +3386,7 @@ module Sparse {
 
     while (itern < maxiter) {
       itern = itern + 1;
-      forall i in Adom.dim(0) {
+      forall i in Adom.dim(0) with (ref t) {
         var sigma = 0.0;
         for j in Adom.dimIter(1,i) {
           if i!=j then sigma += A(i,j) * X(j);
@@ -3421,11 +3421,11 @@ module Sparse {
         end = D.shape(0);
       }
       var indices : [start..end] (D.idxType, D.idxType);
-      forall ind in {start..end} {
+      forall ind in {start..end} with (ref indices) {
         indices[ind] = (ind, ind+k);
       }
       D.bulkAdd(indices, dataSorted=true, isUnique=true, preserveInds=false);
-      forall ind in indices {
+      forall ind in indices with (ref X) {
         X(ind) = val;
       }
   }

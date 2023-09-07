@@ -8,7 +8,7 @@ record Rec {
 var r = new Rec(10, "some bytes":bytes);
 
 writef("testing default stdout: %?\n", r);
-stdout.withSerializer(JsonSerializer).writef("testing json stdout: %?\n", r);
+stdout.withSerializer(jsonSerializer).writef("testing json stdout: %?\n", r);
 
 var f = openTempFile();
 {
@@ -20,7 +20,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer());
 
   var r: Rec;
 

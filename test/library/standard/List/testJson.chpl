@@ -19,16 +19,16 @@ proc testList(orig: list(?)) {
   writeln(header);
   var f = openMemFile();
   {
-    f.writer(serializer = new JsonSerializer()).writef("%?", orig);
+    f.writer(serializer = new jsonSerializer()).writef("%?", orig);
     writeln("Writing list: ");
     writeln(orig);
     writeln();
     writeln("Wrote JSON: ");
-    stdout.withSerializer(JsonSerializer).writef("%?\n", orig);
+    stdout.withSerializer(jsonSerializer).writef("%?\n", orig);
     writeln();
   }
   {
-    var r = f.reader(deserializer = new JsonDeserializer());
+    var r = f.reader(deserializer = new jsonDeserializer());
     var li : orig.type;
     r.readf("%?", li);
     writeln("Read ", li.type:string, ": ");

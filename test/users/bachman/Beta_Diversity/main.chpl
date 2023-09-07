@@ -141,7 +141,7 @@ proc main(args: [] string) {
   // Read in array
   //var f = open(in_array, ioMode.r);
   var f = open(in_name + "_" + map_type + ".bin", ioMode.r);
-  var r = f.reader(deserializer=new BinaryDeserializer());
+  var r = f.reader(deserializer=new binaryDeserializer());
 
   // Read in dissimilarity coefficients
   var dissimilarity_file = map_type + ".txt";
@@ -157,7 +157,7 @@ proc main(args: [] string) {
   const offset = nx; // maybe needs to be +1 to account for truncation?
   const Inner = ImageSpace.expand(-offset);
   const myTargetLocales = reshape(Locales, {1..Locales.size, 1..1});
-  const D = Inner dmapped blockDist(Inner, targetLocales=myTargetLocales);
+  const D = blockDist.createDomain(Inner, targetLocales=myTargetLocales);
   var OutputArray : [D] real(64);
 
   // Create NetCDF
@@ -186,7 +186,7 @@ proc main(args: [] string) {
     // Read in array
     var f = open(in_name + "_" + map_type + ".bin", ioMode.r);
     var first_point = locD_plus.first[0]*locD_plus.shape[1] + locD_plus.first[1];
-    var r = f.reader(deserializer=new BinaryDeserializer(), region=first_point..);
+    var r = f.reader(deserializer=new binaryDeserializer(), region=first_point..);
 
     for i in locD_plus.first[0]..locD_plus.last[0] {
       for j in locD_plus.first[1]..locD_plus.last[1] {
@@ -213,4 +213,3 @@ proc main(args: [] string) {
   if printReduce then
     writeln("Sum reduce of OutputArray: ", (+ reduce OutputArray));
 }
-

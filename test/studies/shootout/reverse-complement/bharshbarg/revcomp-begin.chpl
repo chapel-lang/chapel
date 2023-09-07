@@ -53,7 +53,7 @@ proc main(args: [] string) {
   }
 
   // Open a binary writer to stdout
-  var binout = (new file(1)).writer(serializer=new BinarySerializer(), locking=false);
+  var binout = (new file(1)).writer(serializer=new binarySerializer(), locking=false);
   binout.writeBinary(data);
 }
 

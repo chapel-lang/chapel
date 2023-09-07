@@ -249,7 +249,7 @@ currently coordinate, but :class:`LayoutCS.CS` is an interesting alternative.
 It is common for a ``blockDist`` distribution to distribute its ``boundingBox``
 across all locales. In this case, a convenience function can be used to
 declare variables of block-distributed domain or array type.  These functions
-take a domain or list of ranges as arguments and return a block-distributed
+take a domain or series of ranges as arguments and return a block-distributed
 domain or array.
 
   .. code-block:: chapel
@@ -260,6 +260,62 @@ domain or array.
     var BlockArr1 = blockDist.createArray({1..5, 1..5}, real);
     var BlockDom2 = blockDist.createDomain(1..5, 1..5);
     var BlockArr2 = blockDist.createArray(1..5, 1..5, real);
+
+The helper methods on ``Block`` have the following signatures:
+
+  .. function:: proc type Block.createDomain(dom: domain, targetLocales = Locales)
+
+    Create a domain over a Block Distribution.
+
+  .. function:: proc type Block.createDomain(rng: range(?)..., targetLocales = Locales)
+
+    Create a domain over a Block Distribution constructed from a series of
+    ranges.
+
+  .. function:: proc type Block.createArray(dom: domain, type eltType, targetLocales = Locales)
+
+    Create a default initialized array over a Block Distribution using the
+    given domain.
+
+  .. function:: proc type Block.createArray(rng: range(?)..., type eltType, targetLocales = Locales)
+
+    Create a default initialized array over a Block Distribution using a
+    domain constructed from the series of ranges.
+
+  .. function:: proc type Block.createArray(dom: domain, type eltType, initExpr, targetLocales = Locales)
+
+    Create an array over a Block Distribution using the given domain.
+
+    The array's values are initialized using ``initExpr`` which can be any of
+    the following:
+
+    * a value coercible to ``eltType`` — all elements of the array will be
+      assigned with this value
+    * an iterator expression with compatible size and type — the array elements
+      will be initialized with the values yielded by the iterator
+    * an array of compatible size and type — the array will be assigned into
+      the distributed array
+
+    .. Warning::
+      ``Block.createArray`` with an ``initExpr`` formal is unstable and may change in a future release
+
+  .. function:: proc type Block.createArray(rng: range(?)..., type eltType, initExpr, targetLocales = Locales)
+
+    Create an array over a Block Distribution using a domain constructed from
+    the series of ranges.
+
+    The array's values are initialized using ``initExpr`` which can be any of
+    the following:
+
+    * a value coercible to ``eltType`` — all elements of the array will be
+      assigned with this value
+    * an iterator expression with compatible size and type — the array elements
+      will be initialized with the values yielded by the iterator
+    * an array of compatible size and type — the array will be assigned into
+      the distributed array
+
+    .. Warning::
+      ``Block.createArray`` with an ``initExpr`` formal is unstable and may change in a future release
 
 **Data-Parallel Iteration**
 
@@ -873,23 +929,127 @@ iter BlockImpl.activeTargetLocales(const space : domain = boundingBox) {
   }
 }
 
-proc type blockDist.createDomain(dom: domain) {
-  return dom dmapped blockDist(dom);
+// create a domain over an existing Block Distribution
+proc blockDist.createDomain(dom: domain(?)) {
+  return dom dmapped this;
 }
 
-proc type blockDist.createDomain(rng: range...) {
+// create a domain over an existing Block Distribution constructed from a series of ranges
+proc blockDist.createDomain(rng: range(?)...) {
+  return this.createDomain({(...rng)});
+}
+
+// create a domain over a Block Distribution
+proc type blockDist.createDomain(dom: domain(?), targetLocales: [] locale = Locales) {
+  return dom dmapped Block(dom, targetLocales);
+}
+
+// create a domain over a Block Distribution constructed from a series of ranges
+proc type blockDist.createDomain(rng: range(?)..., targetLocales: [] locale = Locales) {
+  return createDomain({(...rng)}, targetLocales);
+}
+
+proc type blockDist.createDomain(rng: range(?)...) {
   return createDomain({(...rng)});
 }
 
-proc type blockDist.createArray(dom: domain, type eltType) {
-  var D = createDomain(dom);
+// create an array over a Block Distribution, default initialized
+proc type blockDist.createArray(
+  dom: domain(?),
+  type eltType,
+  targetLocales: [] locale = Locales
+) {
+  var D = createDomain(dom, targetLocales);
   var A: [D] eltType;
   return A;
 }
 
-proc type blockDist.createArray(rng: range..., type eltType) {
+// create an array over a blockDist Distribution, initialized with the given value or iterator
+@unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
+proc type blockDist.createArray(
+  dom: domain(?),
+  type eltType,
+  initExpr: ?t,
+  targetLocales: [] locale = Locales
+) where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
+{
+  var D = createDomain(dom, targetLocales);
+  var A: [D] eltType;
+  A = initExpr;
+  return A;
+}
+
+// create an array over a blockDist Distribution, initialized from the given array
+@unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
+proc type blockDist.createArray(
+  dom: domain(?),
+  type eltType,
+  initExpr: [?arrayDom] ?arrayEltType,
+  targetLocales: [] locale = Locales
+) where dom.rank == arrayDom.rank && isCoercible(arrayEltType, eltType)
+{
+  for (d, ad, i) in zip(dom.dims(), arrayDom.dims(), 0..) do
+    if d.size != ad.size then halt("Domain size mismatch in 'blockDist.createArray' dimension " + i:string);
+  var D = createDomain(dom, targetLocales);
+  var A: [D] eltType;
+  A = initExpr;
+  return A;
+}
+
+// create an array over a blockDist Distribution constructed from a series of ranges, default initialized
+proc type blockDist.createArray(
+  rng: range(?)...,
+  type eltType,
+  targetLocales: [] locale = Locales
+) {
+  return createArray({(...rng)}, eltType, targetLocales);
+}
+
+proc type blockDist.createArray(rng: range(?)..., type eltType) {
   return createArray({(...rng)}, eltType);
 }
+
+// create an array over a blockDist Distribution constructed from a series of ranges, initialized with the given value or iterator
+@unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
+proc type blockDist.createArray(
+  rng: range(?)...,
+  type eltType, initExpr: ?t,
+  targetLocales: [] locale = Locales
+) where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
+{
+  return createArray({(...rng)}, eltType, initExpr, targetLocales);
+}
+
+@unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
+proc type blockDist.createArray(rng: range(?)..., type eltType, initExpr: ?t)
+  where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
+{
+  return createArray({(...rng)}, eltType, initExpr);
+}
+
+
+// create an array over a blockDist Distribution constructed from a series of ranges, initialized from the given array
+@unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
+proc type blockDist.createArray(
+  rng: range(?)...,
+  type eltType,
+  initExpr: [?arrayDom] ?arrayEltType,
+  targetLocales: [] locale = Locales
+) where rng.size == arrayDom.rank && isCoercible(arrayEltType, eltType)
+{
+  return createArray({(...rng)}, eltType, initExpr, targetLocales);
+}
+
+@unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
+proc type blockDist.createArray(
+  rng: range(?)...,
+  type eltType,
+  initExpr: [?arrayDom] ?arrayEltType
+) where rng.size == arrayDom.rank && isCoercible(arrayEltType, eltType)
+{
+  return createArray({(...rng)}, eltType, initExpr);
+}
+
 
 proc chpl__computeBlock(locid, targetLocBox:domain, boundingBox:domain,
                         boundingBoxDims /* boundingBox.dims() */) {
@@ -1284,7 +1444,7 @@ override proc BlockArr.dsiDestroyArr(deinitElts:bool) {
 
 inline proc BlockArr.dsiLocalAccess(i: rank*idxType) ref {
   return if allowDuplicateTargetLocales then this.dsiAccess(i)
-                                        else _to_nonnil(myLocArr).this(i);
+                                        else _to_nonnil(myLocArr)(i);
 }
 
 //
@@ -1299,7 +1459,7 @@ inline proc BlockArr.dsiAccess(const in idx: rank*idxType) ref {
   local {
     if const myLocArrNN = myLocArr then
       if myLocArrNN.locDom.contains(idx) then
-        return myLocArrNN.this(idx);
+        return myLocArrNN(idx);
   }
   return nonLocalAccess(idx);
 }

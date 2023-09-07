@@ -37,7 +37,7 @@ proc main() {
   for trial in 1..numTrials {                        // loop over the trials
     const startTime = timeSinceEpoch().totalSeconds();              // capture the start time
 
-    forall i in ProblemSpace do
+    forall i in ProblemSpace with (ref A) do
       A[i] = B[i+0];
 
     execTime(trial) = timeSinceEpoch().totalSeconds() - startTime;  // store the elapsed time
