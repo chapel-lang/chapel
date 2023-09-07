@@ -1275,7 +1275,7 @@ BlockStmt* getInstantiationPoint(Expr* expr) {
   Expr* cur = expr;
   while (cur != NULL) {
     if (BlockStmt* block = toBlockStmt(cur->parentExpr)) {
-      if (block->blockTag == BLOCK_SCOPELESS) {
+      if (block->blockTag == BLOCK_SCOPELESS || block->blockTag == BLOCK_TYPE) {
         // continue
       } else {
         return block;
