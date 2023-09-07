@@ -501,17 +501,10 @@ module Chai {
         proc forwardPropBatch(batch: [] ?tensorType): [] Tensor(1) where isSubtype(tensorType, Tensor) {
             if uninitialized then initialize(batch[0]);
 
-            const batchSize = batch.size;
-            var outputs: [0..#batchSize] Tensor(1);
-            forall (input,i) in zip(batch,0..) with (ref this) {
-                outputs[i] = forwardProp(input);
-            }
-            return outputs;
+            return [input in batch] forwardProp(input);
         }
 
         proc forwardProp(input: Tensor(?)): Tensor(1) {
-            tn.debugWrite("[enter softmax forward]");
-
             if uninitialized then initialize(input);
 
             const flattened = input.flatten();
