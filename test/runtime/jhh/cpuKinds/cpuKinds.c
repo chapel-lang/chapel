@@ -42,7 +42,8 @@ int main(int argc, char* argv[]) {
 
   chpl__init_cpuKinds(0, 0); // unsure why this is needed
   chpl_set_num_locales_on_node(1);
-  chpl_topo_init(mask);
+  chpl_topo_pre_comm_init(mask);
+  chpl_topo_post_comm_init();
 
   bool physical = false;
   do {
