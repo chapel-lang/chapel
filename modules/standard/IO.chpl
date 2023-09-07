@@ -538,6 +538,7 @@ import OS.{errorCode};
 use CTypes;
 public use OS;
 private use Reflection;
+public use ChapelIO;
 
 /*
 
