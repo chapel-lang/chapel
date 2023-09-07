@@ -16,7 +16,7 @@ config const dataPath = "./data";
 proc forward(ref net,x: Tensor(?), lb: int) {
     const output = net.forwardProp(x);
     const loss = -Math.log(output[lb]);
-    const acc = tn.argmax(output.data) == lb;
+    const acc = if tn.argmax(output.data) == lb then 1 else 0;
     return (output,loss,acc);
 }
 
@@ -39,7 +39,7 @@ proc train(ref net, data: [] (Tensor(3),int), lr: real = 0.005) {
         // net.backwardProp(im,gradient);
 
         loss += l;
-        acc += if a then 1 else 0;
+        acc += a;
     }
     const inputs = [im in data] im[0];
     net.backwardPropBatch(inputs,gradients);
@@ -147,7 +147,7 @@ proc classificationEval(ref network, numImages: int, modelPath: string) {
     forall (im,lb) in testingData with (+ reduce loss, + reduce acc,ref network) {
         const (output,loss_,acc_) = forward(network,im,lb);
         loss += loss_;
-        acc += if acc_ then 1 else 0;
+        acc += acc_;
     }
 
     loss /= numImages;
