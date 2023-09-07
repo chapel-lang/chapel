@@ -202,7 +202,7 @@ private param usingLAPACK = LAPACK.header != '';
 
 /* Base ``Error`` type for ``LinearAlgebra`` errors. */
 class LinearAlgebraError : Error {
-    /* Stores message to be emitted upon uncaught throw */
+    /* Stores message to be emitted upon uncaught throw. */
     var info: string;
 
     @chpldoc.nodoc
@@ -256,7 +256,7 @@ class ExpmPadeHelper {
   var isApproxdComputed : [{"A4", "A6", "A8", "A10"}] bool;
 
   /*
-    :arg A: Expects an N*N square matrix.
+    :arg A: Expects a square matrix.
     :type A: `A`
 
     :arg useExactOneNorm: boolean value specifying if the onenorm has to be exact.
@@ -719,9 +719,9 @@ proc eye(Dom: domain(2), type eltType=real) {
     indices on the diagonal will be added to its domain.
 
     ``k > 0``, represents an upper diagonal starting
-    from the ``k``th column, ``k == 0`` represents the main
+    from the ``k``'th column, ``k == 0`` represents the main
     diagonal, ``k < 0`` represents a lower diagonal starting
-    from the ``-k``th row. ``k`` is 0-indexed.
+    from the ``-k``'th row. ``k`` is 0-indexed.
 */
 proc setDiag (ref X: [?D] ?eltType, in k: int = 0, val: eltType = 0)
               where isDenseMatrix(X)
@@ -1170,8 +1170,6 @@ proc inv(ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
     compilerError("inv does not support distributed vectors/matrices");
 
   use CTypes;
-  if Adom.rank != 2 then
-    halt("Wrong rank for matrix inverse");
 
   if !isSquare(A) then
     halt("Matrix inverse only supports square matrices");
@@ -1465,9 +1463,6 @@ private proc _isZero(A: [?D] ?eltType) {
 }
 
 private proc _isEye(A: [?D] ?eltType) {
-  if D.rank != 2 then
-    compilerError("Rank is not 2");
-
   if !isSquare(A) then return false;
 
   for (i, j) in D {
@@ -1488,8 +1483,6 @@ proc isEye(A: [?D] ?eltType) where isDenseMatrix(A) {
 
 /* Return `true` if matrix is Hermitian. */
 proc isHermitian(A: [?D]) where isDenseMatrix(A) {
-  if D.rank != 2 then
-    compilerError("Rank is not 2");
   if !isSquare(A) then
     return false;
 
@@ -1504,8 +1497,6 @@ proc isHermitian(A: [?D]) where isDenseMatrix(A) {
 
 /* Return `true` if matrix is symmetric. */
 proc isSymmetric(A: [?D]) where isDenseMatrix(A) {
-  if D.rank != 2 then
-    compilerError("Rank is not 2");
   if !isSquare(A) then
     return false;
 
@@ -1782,7 +1773,7 @@ proc _norm(x: [?D], param p: normType) where x.rank == 2 {
   }
 }
 
-/* Return the solution ``x`` to the linear system `` L * x = b ``
+/* Return the solution ``x`` to the linear system ``L * x = b``
     where ``L`` is a lower triangular matrix. Setting `unit_diag` to true
     will assume the diagonal elements as `1` and will not be referenced
     within this procedure.
@@ -1807,7 +1798,7 @@ proc solve_tril(const ref L: [?Ldom] ?eltType, const ref b: [?bdom] eltType,
   return y;
 }
 
-/* Return the solution ``x`` to the linear system `` U * x = b ``
+/* Return the solution ``x`` to the linear system ``U * x = b``
     where ``U`` is an upper triangular matrix.
 */
 proc solve_triu(const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
@@ -2400,10 +2391,10 @@ proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
 }
 
 /*
-  Matrix exponential using Pade approximation. This method returns N*N matrix which
+  Matrix exponential using Pade approximation. This method returns square matrix which
   is matrix exponential of ``A``.
 
-  :arg A: Expects an N*N square matrix.
+  :arg A: Expects a square matrix.
   :type A: `A`
 
   :arg useExactOneNorm: boolean value specifying if the onenorm has to be exact. Defaults to `true`.
@@ -2516,7 +2507,7 @@ private proc solvePQ(U: [?D], V: [D]) where !usingLAPACK {
 /*
   This method returns both sine and cosine of the matrix ``A``.
 
-  :arg A: Expects an N*N square matrix.
+  :arg A: Expects a square matrix.
   :type A: `A`
 
   :throws LinearAlgebraError: If A is not square matrix.
@@ -2543,7 +2534,7 @@ proc sincos(A: []) throws {
 /*
 This method returns the sine of the matrix ``A``.
 
-  :arg A: Expects an N*N square matrix.
+  :arg A: Expects a square matrix.
   :type A: `A`
 
   :throws LinearAlgebraError: If input matrix is not square matrix.
@@ -2565,7 +2556,7 @@ proc sinm(A: []) throws {
 /*
 This method returns the cosine of the matrix ``A``.
 
-  :arg A: Expects an N*N square matrix.
+  :arg A: Expects a square matrix.
   :type A: `A`
 
   :throws LinearAlgebraError: If input matrix is not square matrix.
@@ -3454,8 +3445,6 @@ module Sparse {
 
   /* Return ``true`` if matrix is Hermitian. Supports CSR and COO arrays. */
   proc isHermitian(A: [?D]) where A.isSparse() {
-    if D.rank != 2 then
-      compilerError("Rank is not 2");
     if !isSquare(A) then
       return false;
 
@@ -3468,8 +3457,6 @@ module Sparse {
 
   /* Return ``true`` if sparse matrix is symmetric. Supports CSR and COO arrays. */
   proc isSymmetric(A: [?D]) where A.isSparse(): bool {
-    if D.rank != 2 then
-      compilerError("Rank is not 2");
     if !isSquare(A) then
       return false;
 
