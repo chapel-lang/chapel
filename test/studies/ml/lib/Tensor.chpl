@@ -499,6 +499,22 @@ module Tensor {
         return + reduce AA;
     }
 
+    inline proc relu(a: real, x: real) do
+        return max(x,a * x);
+
+    inline proc relu(a: real, in t: Tensor(?d)) {
+        t.data = max(t.data,a * t.data);
+        return t;
+    }
+
+    inline proc reluPrime(a: real, x: real) do
+        return if x > 0.0 then 1.0 else a;
+    
+    inline proc reluPrime(a: real, in t: Tensor(?d)) {
+        t.data = reluPrime(a,t.data);
+        return t;
+    }
+
     // Apply exponential function to each element of tensor
     proc exp(t: Tensor(?d)): Tensor(d) {
         var y = new Tensor(t.domain);

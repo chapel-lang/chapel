@@ -402,40 +402,21 @@ module Chai {
             this.a = a;
 
         proc forwardProp(input: Tensor(?rank)) {
-            var output = new Tensor(rank,real);
-            output.reshapeDomain(input.domain);
-            foreach i in output.domain {
-                const y = input.data[i];
-                output.data[i] = max(y,a * y);
-            }
-            return output;
+            return tn.relu(a,input);
         }
 
         proc forwardPropBatch(batch: [] ?tensorType) where isSubtype(tensorType, Tensor) {
-            var outputs: [batch.domain] batch.eltType;
-            for i in outputs.domain {
-                outputs[i] = this.forwardProp(batch[i]);
-            }
-            return outputs;
+            return tn.relu(a,batch);
         }
 
         proc backward(delta: Tensor(?rank),input: Tensor(rank)) {
-            var output = new Tensor(rank,real);
-            output.reshapeDomain(input.domain);
-            foreach i in output.domain {
-                const y = input.data[i];
-                const dy = delta.data[i];
-                output.data[i] = if y > 0.0 then dy else a * dy;
-            }
+            var output = new Tensor(input.domain);
+            output.data = delta.data * tn.reluPrime(a,input.data);
             return output;
         }
 
         proc backwardBatch(deltas: [] ?tensorType1, inputs: [] ?tensorType2) where isSubtype(tensorType1, Tensor) && isSubtype(tensorType2, Tensor) {
-            var newDeltas: [inputs.domain] inputs.eltType;
-            for i in newDeltas.domain {
-                newDeltas[i] = this.backward(deltas[i],inputs[i]);
-            }
-            return newDeltas;
+            return [(delta,input) in zip(deltas,inputs)] backward(delta,input);
         }
 
         proc optimize(mag: real(64)) { }
