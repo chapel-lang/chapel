@@ -207,6 +207,7 @@ The following identifiers are reserved as keywords:
    subdomain
    sync
    then
+   these
    this
    throw
    throws
