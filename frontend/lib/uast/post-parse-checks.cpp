@@ -100,6 +100,7 @@ struct Visitor {
   bool isParentFalseBlock(int depth=0) const;
 
   bool isNamedThisAndNotReceiverOrFunction(const NamedDecl* node);
+  bool isNamedTheseAndNotIterMethod(const NamedDecl* node);
   bool isSpecialMethodKeywordUsedIncorrectly(const NamedDecl *node);
   bool isNameReservedWord(const NamedDecl* node);
   inline bool shouldEmitUnstableWarning(const AstNode* node);
@@ -1052,6 +1053,15 @@ bool Visitor::isNamedThisAndNotReceiverOrFunction(const NamedDecl* node) {
   return true;
 }
 
+bool Visitor::isNamedTheseAndNotIterMethod(const NamedDecl* node) {
+  if (node->name() != USTR("these")) return false;
+  if (auto asFn = node->toFunction())
+    if (asFn->isMethod() && asFn->kind() == Function::Kind::ITER)
+      return false;
+
+  return true;
+}
+
 bool Visitor::isSpecialMethodKeywordUsedIncorrectly(
   const NamedDecl *node)
 {
@@ -1074,6 +1084,7 @@ bool Visitor::isSpecialMethodKeywordUsedIncorrectly(
 bool Visitor::isNameReservedWord(const NamedDecl* node) {
   auto name = node->name();
   if (isNamedThisAndNotReceiverOrFunction(node)) return true;
+  if (isNamedTheseAndNotIterMethod(node)) return true;
   if (isSpecialMethodKeywordUsedIncorrectly(node)) return true;
   if (name == "none") return true;
   if (name == "false") return true;
