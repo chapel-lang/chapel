@@ -1546,9 +1546,9 @@ module CTypes {
 
     .. warning::
 
-        Chapel strings are capable of containing NULL bytes, and any C routines
-        relying on NULL terminated buffers may incorrectly process the
-        mid-string NULL as the terminating NULL.
+        A Chapel :type:`~String.string` is capable of containing NULL characters
+        and any C routines relying on NULL terminated buffers may incorrectly
+        process the mid-string NULL as the terminating NULL.
 
     :returns:
         A `c_ptrConst(c_char)` that points to the underlying buffer used by this
@@ -1583,7 +1583,7 @@ module CTypes {
 
     .. warning::
 
-        Chapel :type:`~Bytes.bytes` are capable of containing NULL bytes, and
+        Chapel :type:`~Bytes.bytes` are capable of containing NULL bytes and
         any C routines relying on NULL terminated buffers may incorrectly
         process the mid-buffer NULL as the terminating NULL.
 
