@@ -52,6 +52,18 @@ module Mod9 {
     yield 4;
   }
 }
+module Mod10 {
+  class Foo {
+    // also allow iterator-forwarding proc method
+    pragma "fn returns iterator"
+    proc these() {
+      return this.these();
+    }
+    iter these() {
+      yield 4;
+    }
+  }
+}
 
 // Using illegally-named symbols should not trigger warnings
 module Main {

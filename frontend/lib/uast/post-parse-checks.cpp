@@ -1055,9 +1055,20 @@ bool Visitor::isNamedThisAndNotReceiverOrFunction(const NamedDecl* node) {
 
 bool Visitor::isNamedTheseAndNotIterMethod(const NamedDecl* node) {
   if (node->name() != USTR("these")) return false;
-  if (auto asFn = node->toFunction())
-    if (asFn->isMethod() && asFn->kind() == Function::Kind::ITER)
-      return false;
+  if (auto asFn = node->toFunction()) {
+    if (asFn->isMethod()) {
+      if (asFn->kind() == Function::Kind::ITER) {
+        return false;
+      } else if (asFn->kind() == Function::Kind::PROC &&
+                 node->attributeGroup() &&
+                 node->attributeGroup()->hasPragma(
+                     pragmatags::PRAGMA_FN_RETURNS_ITERATOR)) {
+        // also allow proc methods that forward an iterator,
+        // via: pragma "fn returns iterator"
+        return false;
+      }
+    }
+  }
 
   return true;
 }
