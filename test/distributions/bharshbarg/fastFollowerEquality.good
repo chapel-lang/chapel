@@ -1,5 +1,3 @@
-warning: The variable 'dataParTasksPerLocale' is unstable and its interface is subject to change in the future
-note: 'dataParTasksPerLocale' was set via a compiler flag
 --- [BlockDom(1,int(64),one,unmanaged DefaultDist)] int(64) vs. [BlockDom(1,int(64),one,unmanaged DefaultDist)] int(64) ---
 boundingBox = {1..10}
 targetLocDom = {0..3}
