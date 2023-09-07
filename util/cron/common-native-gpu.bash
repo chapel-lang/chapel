@@ -1,5 +1,4 @@
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-source $CWD/common-slurm-gasnet-cray-cs.bash
 
 # Use latest system LLVM, to use an earlier version uncomment and pass version
 # number as a parameter to the script.
