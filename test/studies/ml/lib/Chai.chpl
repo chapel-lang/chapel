@@ -501,7 +501,10 @@ module Chai {
         proc forwardPropBatch(batch: [] ?tensorType): [] Tensor(1) where isSubtype(tensorType, Tensor) {
             if uninitialized then initialize(batch[0]);
 
-            return [input in batch] forwardProp(input);
+            var outputs: [batch.domain] Tensor(1);
+            forall (input,output) in zip(batch,outputs) with (ref this) do
+                output = forwardProp(input);
+            return outputs;
         }
 
         proc forwardProp(input: Tensor(?)): Tensor(1) {

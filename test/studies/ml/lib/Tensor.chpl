@@ -193,17 +193,17 @@ module Tensor {
             return t;
         }*/
 
-        operator =(ref lhs: Tensor(?rank,?eltType), itr) where itr.type:string == "promoted expression" || itr.type:string == "iterator" {
+        operator =(ref lhs: Tensor(?rank,?eltType), itr) where itr.type:string == "promoted expression" || isSubtype(itr.type, _iteratorRecord) {
             lhs.reshapeDomain(itr.domain);
             lhs.data = itr;
         }
 
-        proc init=(itr) where itr.type:string == "promoted expression" || itr.type:string == "iterator" {
+        proc init=(itr) where itr.type:string == "promoted expression" || isSubtype(itr.type, _iteratorRecord) {
             const A = itr;
             this.init(A);
         }
 
-        operator :(itr, type toType: Tensor(?rank,?eltType)) where itr.type:string == "promoted expression" || itr.type:string == "iterator" {
+        operator :(itr, type toType: Tensor(?rank,?eltType)) where itr.type:string == "promoted expression" || isSubtype(itr.type, _iteratorRecord) {
             var t: Tensor(rank,eltType) = itr;
             return t;
         }
