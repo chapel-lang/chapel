@@ -27,21 +27,20 @@ proc train(ref net, data: [] (Tensor(3),int), lr: real = 0.005) {
     var acc = 0;
 
     net.resetGradients();
-    var gradients: [0..#size] Tensor(1,real);
+    var gradients: [0..#size] Tensor(1);
 
     // Convert this to use batched forward prop
-    forall ((im,lb),i) in zip(data,0..) with (ref net, + reduce loss, + reduce acc) {
+    forall ((im,lb),gradient) in zip(data,gradients) with (ref net, + reduce loss, + reduce acc) {
         const (output,l,a) = forward(net,im,lb);
 
-        var gradient = tn.zeros(10);
+        gradient = tn.zeros(10);
         gradient[lb] = -1.0 / output[lb];
-        gradients[i] = gradient;
 
         loss += l;
         acc += a;
     }
     const inputs = [im in data] im[0];
-    
+
     net.backwardPropBatch(inputs,gradients);
     net.optimize(lr / size);
 
