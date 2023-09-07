@@ -4,7 +4,7 @@
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common-native-gpu.bash
-source $CWD/common-cray-ex.bash
+source $CWD/common-hpe-cray-ex.bash
 
 module load cudatoolkit/23.3_11.8 # avoid 12.0
 
