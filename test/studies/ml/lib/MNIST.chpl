@@ -30,8 +30,8 @@ proc loadImages(num: int, fileName: string = "week2/emnist/data/train-images-idx
         var image: [imageDomain] real = raw / 255.0;
         return image;
     }
-
-    var images: [0..#num] [imageDomain] real(64);
+    const imageBatchDomain = {0..#num};
+    var images: [imageBatchDomain] [imageDomain] real(64);
     for i in images.domain {
         images[i] = readImage();
     }
@@ -55,12 +55,14 @@ proc loadLabels(num: int, fileName: string = "week2/emnist/data/train-labels-idx
 
     var labelCount = fr.read(int(32));
 
-    var labels: [0..#num] int;
+    const imageBatchDomain = {0..#num};
+
+    var labels: [imageBatchDomain] int;
     for i in labels.domain {
         labels[i] = fr.read(int(8));
     }
 
-    var formattedLabels: [0..#num] [0..#10] real(64);
+    var formattedLabels: [imageBatchDomain] [0..#10] real(64);
     for i in labels.domain {
         for j in 0..<10 {
             formattedLabels[i][j] = if labels[i] == j then 1.0 else 0.0;
