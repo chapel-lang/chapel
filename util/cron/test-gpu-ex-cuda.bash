@@ -14,7 +14,7 @@ export CHPL_LAUNCHER_PARTITION=allgriz
 
 export CHPL_GPU=nvidia  # amd is also detected automatically
 
-export CHPL_NIGHTLY_TEST_DIRS="gpu/native/studies" # for testing purposes only
+export CHPL_NIGHTLY_TEST_DIRS="gpu/native/studies/coral" # for testing purposes only
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-ex-cuda"
 $CWD/nightly -cron ${nightly_args} 
