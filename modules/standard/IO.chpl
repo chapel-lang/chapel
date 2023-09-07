@@ -456,6 +456,164 @@ recovered from separately from a ``SystemError``. See the following example:
     writeln("something else went wrong...");
   }
 
+
+.. _io-transactions:
+
+I/O Transactions
+----------------
+
+An *I/O transaction* is a common pattern afforded by the IO interface that
+provides the ability to temporarily hold a particular region of a file in a
+:record:`fileReader` or :record:`fileWriter`'s buffer. This allows I/O
+operations within that region of the file to easily be undone in the event
+of some unexpected data or other errors.
+
+To support *I/O transactions*, each ``fileReader`` and ``fileWriter`` is fitted
+with a *mark stack* which contains a series of file offsets. The region of the
+file between the minimum and maximum offset on the *mark stack* will always be
+retained in the buffer.
+
+The steps of a typical *I/O transaction* are as follows:
+
+* ``mark`` the current file offset with :proc:`fileReader.mark` or
+  :proc:`fileWriter.mark`. This pushes the current offset onto the *mark stack*
+* do a speculative I/O operation:
+    * reading example: read 200 bytes followed by a `b`.
+    * writing example: write 200 bytes without exceeding the ``fileWriter``'s region.
+* if the operation fails, ``revert`` the operation by calling :proc:`fileReader.revert`
+  or :proc:`fileWriter.revert`. Subsequent operations will continue from the
+  originally marked offset as if nothing happened.
+* if the operation is successful, call :proc:`fileReader.commit` or
+  :proc:`fileWriter.commit` to pop the value from the *mark stack* and continue
+  performing I/O operations from the current offset.
+
+Note that when the mark stack is emptied, a ``fileWriter`` is allowed to flush
+any portion of its buffer to its file and a ``fileReader`` is allowed to discard
+any portion of its buffer.
+
+See the following example of a simple I/O transaction:
+
+.. code-block:: chapel
+
+  use IO;
+
+  var fr = openReader("file.txt");
+
+  // mark the current channel position
+  fr.mark();
+
+  // read an array of bytes
+  var a: [0..<200] uint(8);
+  fr.read(a);
+
+  // try to match a pattern
+  if fr.matchLiteral("b") {
+    fr.commit(); // "b" was found, continue reading from the current offset
+  } else {
+    fr.revert(); // "b" was't found, revert back to the marked position
+
+    // try to read something else from the file, throw an error, etc.
+  }
+
+.. _filereader-filewriter-regions:
+
+The ``fileReader`` and ``fileWriter`` region
+--------------------------------------------
+
+The :record:`fileReader` and :record:`fileWriter` can be configured to map to
+a specific region of their associated file.
+
+When a ``fileReader`` or ``fileWriter`` is initialized using one of the
+following routines, the optional ``region`` argument can be set to designate
+some region of the file (zero-based in bytes) that can be read from or written
+to:
+
+* :proc:`file.reader`
+* :proc:`file.writer`
+* :proc:`openReader`
+* :proc:`openWriter`
+
+Read or Write operations outside of the ``region`` will result in an error.
+The ``region`` argument defaults to ``0..``, meaning that the owned region
+starts at the 0th byte, and extends indefinitely. The first read or write to a
+``fileReader`` or ``fileWriter`` whose region starts at ``0`` will occur at the
+beginning of the file. Otherwise, it will start at the provided region's low
+bound.
+
+Note that :proc:`fileReader.seek` and :proc:`fileWriter.seek` can be used to
+adjust a ``fileReader`` or ``fileWriter``'s region after initialization.
+
+Creating a ``fileReader`` or ``fileWriter`` that points to a sub-region of
+a file can be useful for concurrently reading from or writting to multiple
+sections of one file. See the following example, which uses ``nWorkers`` to
+concurrently read bytes from a file into an array ``a``:
+
+.. code-block:: chapel
+
+  use IO;
+
+  config const nWorkers = 8;
+
+  // open a (large) binary file
+  var f = open("file.dat", ioMode.r);
+
+  // compute how many bytes each worker will read
+  const nBytes = f.size,
+        nPerLoc = nBytes/ nWorkers;
+
+  // create an array to hold the file contents
+  var a: [0..<nBytes] uint(8);
+
+  // concurrently read each workers region into 'a'
+  coforall w in 0..<nWorkers {
+    const myRegion = (w*nPerLoc)..<((w+1) * nPerLoc),
+          fr = f.reader(region=myRegion, locking=false);
+
+    fr.readBinary(a[myRegion]);
+  }
+
+
+.. _locking-filereaders-and-filewriters:
+
+Locking Behavior of ``fileReaders`` and ``fileWriters``
+-------------------------------------------------------
+
+The :record:`fileReader` and :record:`fileWriter` types can be configured to
+lock internally around I/O operations to avoid race conditions with other
+``fileReader`` or ``fileWriter`` instances created from the same file.
+
+The ``locking`` field is a ``param`` and is thus part of the
+``fileReader`` and ``fileWriter``'s type. As such, it is possible to constrain
+a formal in a procedure, for example, to only accept a locking reader/writer or
+visa versa.
+
+.. code-block:: chapel
+
+  use IO;
+
+  proc readSomething(reader: fileReader(locking=true, ?)) {
+    // use 'reader' concurrently with another fileReader/fileWriter   ...
+  }
+
+By default, a ``fileReader`` or ``fileWriter`` will lock. A non-locking reader
+or writer can be created by setting ``locking=false`` in one of the following
+routines:
+
+* :proc:`file.reader`
+* :proc:`file.writer`
+* :proc:`openReader`
+* :proc:`openWriter`
+
+With a non-locking `fileReader`` or ``fileWriter``, one can lock manually by
+calling :proc:`fileReader.lock` or :proc:`fileWriter.lock`, and then release a
+lock by calling :proc:`fileReader.unlock` or :proc:`fileWriter.unlock`.
+
+Note: whether or not a reader/writer is locking, one must manually wrap ``lock``
+and ``unlock`` calls around :ref:`io-transactions` to make them concurrently safe
+(``mark``, ``commit``, and ``revert`` do not lock automatically even for
+``locking=true``).
+
+
 .. _about-io-ensuring-successful-io:
 
 Ensuring Successful I/O
@@ -472,6 +630,7 @@ When a file (or fileWriter) is closed, data written to that file will be written
 to disk eventually by the operating system. If an application needs to be sure
 that the data is immediately written to persistent storage, it should use
 :proc:`file.fsync` prior to closing the file.
+
 
 Correspondence with C I/O
 -------------------------
@@ -4551,6 +4710,8 @@ private inline proc markHelper(fileRW) throws {
    after the mark has been committed with :proc:`~fileReader.commit` or reverted
    with :proc:`~fileReader.revert`.
 
+   See :ref:`io-transactions` for more.
+
   .. note::
 
     Note that it is possible to request an entire file be buffered in memory
@@ -4592,6 +4753,8 @@ proc fileReader.mark() throws do return markHelper(this);
    after the mark has been committed with :proc:`~fileWriter.commit` or reverted
    with :proc:`~fileWriter.revert`.
 
+   See :ref:`io-transactions` for more.
+
   .. note::
 
     Note that it is possible to request an entire file be buffered in memory
@@ -4611,8 +4774,8 @@ proc fileWriter.mark() throws do return markHelper(this);
 
 /*
    Abort an *I/O transaction* by popping from the ``fileReader``'s *mark stack*
-   and adjusting its position to that offset. See :proc:`fileReader.mark` for a
-   full description of an *I/O transaction*.
+   and adjusting its position to that offset. See :ref:`io-transactions` for
+   more.
 
    This routine should only be called on a fileReader that has already
    been marked. If called on a fileReader with ``locking=true``, the fileReader
@@ -4625,13 +4788,15 @@ inline proc fileReader.revert() {
 
 /*
    Abort an *I/O transaction* by popping from the ``fileWriter``'s *mark stack*
-   and adjusting its position to that offset. See :proc:`fileWriter.mark` for a
-   full description of an *I/O transaction*.
+   and adjusting its position to that offset. See :ref:`io-transactions` for
+   more.
 
    This routine should only be called on a fileWriter that has already
    been marked. If called on a fileWriter with ``locking=true``, the fileWriter
    should have already been locked manually with :proc:`~fileWriter.lock` before
    :proc:`~fileWriter.mark` was called.
+
+   See :ref:`io-transactions` for more.
 */
 inline proc fileWriter.revert() {
   qio_channel_revert_unlocked(_channel_internal);
@@ -4639,8 +4804,8 @@ inline proc fileWriter.revert() {
 
 /*
    Commit an *I/O transaction* by popping from the ``fileReader``'s *mark stack*
-   and leaving its position in the file unchanged. See :proc:`fileReader.mark` for
-   a full description of an *I/O transaction*.
+   and leaving its position in the file unchanged. See :ref:`io-transactions` for
+   more.
 
    This routine should only be called on a fileReader that has already
    been marked. If called on a fileReader with ``locking=true``, the fileReader
@@ -4653,8 +4818,8 @@ inline proc fileReader.commit() {
 
 /*
    Commit an *I/O transaction* by popping from the ``fileWriter``'s *mark stack*
-   and leaving its position in the file unchanged. See :proc:`fileWriter.mark` for
-   a full description of an *I/O transaction*.
+   and leaving its position in the file unchanged. See :ref:`io-transactions` for
+   more.
 
    This routine should only be called on a fileWriter that has already
    been marked. If called on a fileWriter with ``locking=true``, the fileWriter
@@ -4678,10 +4843,10 @@ config param useNewSeekRegionBounds = false;
    file without creating a new fileReader. It can only be called
    on a fileReader with ``locking==false``.
 
-   The region specified must have a lower bound, but does not need to have
-   a high bound for correctness.  Specifying the high bound might be
-   an important performance optimization since the fileReader will not
-   try to read data outside of the region.
+   The :ref:`region <filereader-filewriter-regions>` specified must have a
+   lower bound, but does not need to have a high bound for correctness.
+   Specifying the high bound might be an important performance optimization
+   since the fileReader will not try to read data outside of the region.
 
    This function will, in most cases, discard the fileReader's buffer.
 
@@ -4728,10 +4893,10 @@ proc fileReader.seek(region: range(?)) throws where (!region.hasHighBound() ||
    file without creating a new fileWriter. It can only be called
    on a fileWriter with ``locking==false``.
 
-   The region specified must have a lower bound, but does not need to have
-   a high bound for correctness.  Specifying the high bound might be
-   an important performance optimization since the fileWriter will not
-   try to read data outside of the region.
+   he :ref:`region <filereader-filewriter-regions>` specified must have a
+   lower bound, but does not need to have a high bound for correctness.
+   Specifying the high bound might be an important performance optimization
+   since the fileReader will not try to read data outside of the region.
 
    This function will, in most cases, discard the fileWriter's buffer.
    The data will be saved to the file before discarding.
