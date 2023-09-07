@@ -1539,9 +1539,9 @@ module CTypes {
 
     .. code-block:: chapel
 
-      var my_string = "Hello!";
-      on different_locale {
-        printf("%s", my_string.localize().c_str());
+      var myString = "Hello!";
+      on differentLocale {
+        writef("%s", myString.localize().c_str());
       }
 
     .. warning::
@@ -1577,8 +1577,8 @@ module CTypes {
     .. code-block:: chapel
 
         var myBytes = b"Hello!";
-        on different_locale {
-          printf("%s", myBytes.localize().c_str());
+        on differentLocale {
+          writef("%s", myBytes.localize().c_str());
         }
 
     .. warning::

@@ -19,7 +19,8 @@ version 1.32, September 2023
 
 Version 1.32 deprecates the ``c_string`` type in user interfaces. Please
 replace occurrences of ``c_string`` with ``c_ptrConst(c_char)``. Note that you
-need to ``use`` or ``import`` the ``CTypes`` module.
+need to ``use`` or ``import`` the ``CTypes`` module to have access to
+``c_ptrConst`` and ``c_char`` types.
 
 Here are some cases where directly replacing ``c_string`` with
 ``c_ptrConst(c_char)`` may not work and what to do instead:

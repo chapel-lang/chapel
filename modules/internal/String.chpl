@@ -1360,7 +1360,7 @@ module String {
 
   /*
     Get a `c_ptrConst(c_char)` from a :type:`string`. The returned
-    `c_ptrConst(c_char)` shares the buffer with the :type:`string`.
+    :class:`~CTypes.c_ptrConst` shares the buffer with the :type:`string`.
 
     .. warning::
 

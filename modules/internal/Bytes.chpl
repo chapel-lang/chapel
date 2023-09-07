@@ -586,7 +586,7 @@ module Bytes {
 
   /*
     Gets a `c_ptrConst(c_char)` from a :type:`bytes`. The returned
-    `c_ptrConst(c_char)` shares the buffer with the :type:`bytes`.
+    :class:`~CTypes.c_ptrConst` shares the buffer with the :type:`bytes`.
 
     .. warning::
 
@@ -600,7 +600,7 @@ module Bytes {
     .. code-block:: chapel
 
         var myBytes = b"Hello!";
-        on different_locale {
+        on differentLocale {
           printf("%s", myBytes.localize().c_str());
         }
 
