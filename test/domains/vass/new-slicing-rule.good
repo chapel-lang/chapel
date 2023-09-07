@@ -1,0 +1,17 @@
+A = 0 1 2 3
+A:     0 LOCALE0 here: LOCALE0
+A:     1 LOCALE1 here: LOCALE1
+A:     2 LOCALE2 here: LOCALE2
+A:     3 LOCALE3 here: LOCALE3
+A[DB]: 0 LOCALE0 here: LOCALE2
+A[DB]: 1 LOCALE1 here: LOCALE3
+A[DB]: 2 LOCALE2 here: LOCALE0
+A[DB]: 3 LOCALE3 here: LOCALE1
+DA[DB]: 0 here: LOCALE2
+DA[DB]: 1 here: LOCALE3
+DA[DB]: 2 here: LOCALE0
+DA[DB]: 3 here: LOCALE1
+DB[DA]: 0 here: LOCALE0
+DB[DA]: 1 here: LOCALE1
+DB[DA]: 2 here: LOCALE2
+DB[DA]: 3 here: LOCALE3

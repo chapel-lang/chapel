@@ -1,0 +1,2 @@
+# This test requires (at least) 4 locales.
+CHPL_COMM == none
