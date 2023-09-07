@@ -11,7 +11,7 @@ foreach i in 1..10 {
 { // just to be sure
   use BlockDist;
 
-  var D = Block.createDomain(1..10);
+  var D = blockDist.createDomain(1..10);
   forall i in D {
     writeln(i);
   }

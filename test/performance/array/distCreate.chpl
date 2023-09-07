@@ -117,7 +117,7 @@ const localDom = {1..nElems};
 inline proc getDom(param dType: distType) {
   select dType {
     when distType.block do
-      return localDom dmapped Block(boundingBox=localDom);
+      return localDom dmapped blockDist(boundingBox=localDom);
     when distType.cyclic do
       return localDom dmapped Cyclic(startIdx=localDom.first);
     when distType.blockCyc do

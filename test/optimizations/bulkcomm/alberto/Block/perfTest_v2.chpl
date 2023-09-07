@@ -4,9 +4,9 @@ config const printOutput=false;
 
 config  const n: int=100;
 assert(n > 0); // relied upon in the cast 'n:uint'
-var Dist1 = new Block({1..n});
-var Dist2 = new Block({1..n,1..n});
-var Dist3 = new Block({1..n,1..n,1..n});
+var Dist1 = new blockDist({1..n});
+var Dist2 = new blockDist({1..n,1..n});
+var Dist3 = new blockDist({1..n,1..n,1..n});
 var Dom1: domain(1,int) dmapped Dist1 = {1..n};
 var Dom2: domain(2,int) dmapped Dist2 = {1..n,1..n};
 var Dom3: domain(3,int) dmapped Dist3 = {1..n,1..n,1..n};
@@ -217,7 +217,7 @@ if printOutput then writeln("Block Dist. Example 14: A",D3, " Locales:",numLocal
 A3[D3]=B3[D3];
 for (a,b) in zip(A3[D3],B3[D3]) do if (a!=b) then writeln("ERROR!!!!");
 
-var Dist4 = new Block({1..6,1..6,1..6});
+var Dist4 = new blockDist({1..6,1..6,1..6});
 var Dom4: domain(3,int) dmapped Dist4 ={1..6,1..6,1..6};
 var D4 ={1..5 by 2,1..3,1..6};
 var A4:[Dom4] int(64)=[(i,j,k) in Dom4] (i-1)*6*6 + (j-1)*6 + k;

@@ -5,9 +5,9 @@ const Space = {1..8, 1..8};
 
 const OneLocOnly: [0..0, 0..0] locale = Locales[0];
 
-const B1 = Space dmapped Block(boundingBox=Space);
-const B2 = Space dmapped Block(boundingBox={1..4, 1..4});
-const B3 = Space dmapped Block(boundingBox=Space, targetLocales=OneLocOnly);
+const B1 = Space dmapped blockDist(boundingBox=Space);
+const B2 = Space dmapped blockDist(boundingBox={1..4, 1..4});
+const B3 = Space dmapped blockDist(boundingBox=Space, targetLocales=OneLocOnly);
 
 writeln("Block comparisons:");
 
@@ -20,7 +20,7 @@ writeln(B2.distribution == B3.distribution);
 
 writeln(B3.distribution == B3.distribution);
 
-writeln(B1.distribution == (Space dmapped Block(boundingBox=Space)).distribution);
+writeln(B1.distribution == (Space dmapped blockDist(boundingBox=Space)).distribution);
 
 writeln();
 

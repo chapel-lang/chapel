@@ -153,7 +153,7 @@ proc main() {
         var dist_2D = dom_2D dmapped Cyclic(startIdx=dom_2D.low);
         kernel_syrk(dist_2D, M, N); 
     } else if dist == "B" {
-        var dist_2D = dom_2D dmapped Block(boundingBox=dom_2D);
+        var dist_2D = dom_2D dmapped blockDist(boundingBox=dom_2D);
         kernel_syrk(dist_2D, M, N);  
     } 
 }

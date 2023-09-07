@@ -1,7 +1,7 @@
 use BlockDist, CyclicDist, ReplicatedDist;
 
 const D = {1..10};
-const BD = Block.createDomain({1..11});
+const BD = blockDist.createDomain({1..11});
 const CD = Cyclic.createDomain({1..12});
 const RD = {1..13} dmapped Replicated();
 var SD: sparse subdomain(D);

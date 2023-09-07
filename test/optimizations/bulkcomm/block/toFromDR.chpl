@@ -47,7 +47,7 @@ proc makeFluff(param rank : int, val : int) {
 proc selectDomain(param useDist : bool, Dom : domain) {
   if useDist {
     if distType == DistType.block then
-      return Dom dmapped Block(Dom);
+      return Dom dmapped blockDist(Dom);
     else if distType == DistType.stencil then
       return Dom dmapped Stencil(Dom, fluff=makeFluff(Dom.rank, 1));
   } else {

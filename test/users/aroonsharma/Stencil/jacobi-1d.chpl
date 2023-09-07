@@ -131,7 +131,7 @@ proc main() {
         var dist_1D = dom_1D dmapped Cyclic(startIdx=dom_1D.low);
         kernel_jacobi1d(dist_1D, M); 
     } else if dist == "B" {
-        var dist_1D = dom_1D dmapped Block(boundingBox=dom_1D);
+        var dist_1D = dom_1D dmapped blockDist(boundingBox=dom_1D);
         kernel_jacobi1d(dist_1D, M);
     } else if dist == "BC" {
         var dist_1D = dom_1D dmapped BlockCyclic(startIdx = dom_1D.low, blocksize=bsize);

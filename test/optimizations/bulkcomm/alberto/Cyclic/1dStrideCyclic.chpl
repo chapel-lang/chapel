@@ -4,10 +4,10 @@ config const n=10;
 assert(n > 0); // relied upon in the cast 'n:uint'
 const S = {1..n};
 const BDom: domain(1) dmapped Cyclic(startIdx=S.low)=S;
-//const BDist = new Block(boundingBox=S);
+//const BDist = new blockDist(boundingBox=S);
 //const BDom : domain(1) dmapped BDist=S;
 
-//var A : [[1..n] dmapped Block(rank=1,boundingBox=[1..n])] int;
+//var A : [[1..n] dmapped blockDist(rank=1,boundingBox=[1..n])] int;
 var A : [BDom] int;
 var B : [BDom] int;
 writeln("A and B defined on ",S);

@@ -2706,6 +2706,7 @@ function_body_stmt:
   block_stmt_body   { $$ = $1; }
 | TDO toplevel_stmt { $$ = context->buildSingleStmtRoutineBody($2); }
 | return_stmt       { $$ = context->buildSingleStmtRoutineBody($1, &(@1)); }
+| TINIT TTHIS TSEMI { $$ = ...; }
 ;
 
 query_expr:

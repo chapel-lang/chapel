@@ -140,8 +140,8 @@ proc main() {
         const dist_big = BigDom dmapped Cyclic(startIdx=BigDom.low);
         kernel_stencil9(dist_little, dist_big, Dom, BigDom); 
     } else if dist == "B" {
-        const dist_little = Dom dmapped Block(boundingBox=Dom);
-        const dist_big = BigDom dmapped Block(boundingBox=BigDom);
+        const dist_little = Dom dmapped blockDist(boundingBox=Dom);
+        const dist_big = BigDom dmapped blockDist(boundingBox=BigDom);
         kernel_stencil9(dist_little, dist_big, Dom, BigDom); 
     }      
 }

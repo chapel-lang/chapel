@@ -2,7 +2,7 @@ writeln();
 
 use BlockDist;
 
-var dom = Block.createDomain(0..10);
+var dom = blockDist.createDomain(0..10);
 
 var a: [dom] int, b: [dom] int;
 

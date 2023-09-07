@@ -3,7 +3,7 @@ use BlockDist;
 config const m = 10;
 
 const Dom = {1..m};
-const ProblemSpace = Dom dmapped Block(Dom);
+const ProblemSpace = Dom dmapped blockDist(Dom);
 
 var A: [ProblemSpace] real;
 

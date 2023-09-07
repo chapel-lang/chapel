@@ -15,7 +15,7 @@
 // (`CyclicDist`) to access a `domain map` that supports the
 // round-robin distribution of indices to locales.
 //
-use CyclicDist;
+use BlockDist;
 
 //
 // Declare the number of messages to print:
@@ -30,7 +30,7 @@ config const numMessages = 100;
 // This causes its indices to be distributed across the locales in a
 // round-robin fashion where `startIdx` is mapped to locale #0.
 //
-const MessageSpace = {1..numMessages} dmapped Cyclic(startIdx=1);
+const MessageSpace = {1..numMessages} dmapped blockDist({1..numMessages});
 
 //
 // By using the distributed domain `MessageSpace` to drive the

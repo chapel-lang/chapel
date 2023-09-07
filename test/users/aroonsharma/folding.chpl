@@ -27,7 +27,7 @@ if dist=='NONE' {
   var mydist = mydom dmapped Cyclic(startIdx=mydom.low);
   dobench(mydist, mydom);  
 } else if dist=='B' {
-  var mydist = mydom dmapped Block(boundingBox=mydom);
+  var mydist = mydom dmapped blockDist(boundingBox=mydom);
   dobench(mydist, mydom);
 } /*else if dist == 'BC' {
   //won't work for this benchmark because of strided access patterns

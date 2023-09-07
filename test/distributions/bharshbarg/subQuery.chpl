@@ -8,7 +8,7 @@ config const n = 10;
 
 const Space = {1..n, 1..n};
 
-const B = Space dmapped Block(Space);
+const B = Space dmapped blockDist(Space);
 test(B);
 
 const C = Space dmapped Cyclic(startIdx = Space.low);

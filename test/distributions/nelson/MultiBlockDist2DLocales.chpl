@@ -6,7 +6,7 @@ const sizeRange = 0..#(size : int(64));
 
 
 proc printBlockLocaleAssignments(locs) {
-  const blockDist = new Block(rank=2, idxType=int(64),
+  const blockDist = new blockDist(rank=2, idxType=int(64),
                                                 targetLocales=locs,
                                                 boundingBox={sizeRange,sizeRange});
   const blockDom : domain(2, int(64)) dmapped blockDist = {sizeRange, sizeRange};

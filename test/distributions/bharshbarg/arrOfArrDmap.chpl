@@ -14,7 +14,7 @@ proc test(Space) {
 
 const Dom = {1..10};
 
-var BlockSpace = Dom dmapped Block(boundingBox=Dom);
+var BlockSpace = Dom dmapped blockDist(boundingBox=Dom);
 test(BlockSpace);
 writeln("Success: Block");
 

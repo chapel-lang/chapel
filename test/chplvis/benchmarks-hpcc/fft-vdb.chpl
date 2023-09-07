@@ -74,7 +74,7 @@ proc main() {
   // to m/4-1 stored using a block distribution.
   // Twiddles is the vector of twiddle values.
   //
-  const TwiddleDom: domain(1) dmapped Block(boundingBox={0..m/4-1}) 
+  const TwiddleDom: domain(1) dmapped blockDist(boundingBox={0..m/4-1}) 
                   = {0..m/4-1};
   var Twiddles: [TwiddleDom] elemType;
 
@@ -89,7 +89,7 @@ proc main() {
   // define the vectors z (used to store the input vector) and ZBlk
   // (used for the first half of the FFT phases).
   //
-  const BlkDom: domain(1) dmapped Block(boundingBox=ProblemSpace)
+  const BlkDom: domain(1) dmapped blockDist(boundingBox=ProblemSpace)
               = ProblemSpace;
   var Zblk, z: [BlkDom] elemType;
 

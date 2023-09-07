@@ -14,7 +14,7 @@ var rs = new owned NPBRandomStream(real, seed, parSafe=false);
 // Distribute the domain representing the random points in a 
 // Blocked manner over the target locale set.
 //
-var D = {1..n} dmapped Block({1..n});
+var D = {1..n} dmapped blockDist({1..n});
 
 //
 // The computation is identical to the non-distributed case.

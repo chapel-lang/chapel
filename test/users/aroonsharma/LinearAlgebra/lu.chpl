@@ -146,7 +146,7 @@ proc main() {
         var user_dist_square = dom_square dmapped Cyclic(startIdx=dom_square.low);
         kernel_lu(user_dist_square, N); 
     } else if dist == "B" {
-        var user_dist_square = dom_square dmapped Block(boundingBox=dom_square);
+        var user_dist_square = dom_square dmapped blockDist(boundingBox=dom_square);
         kernel_lu(user_dist_square, N);  
     } 
 }

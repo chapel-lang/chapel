@@ -121,7 +121,7 @@ type coeff = [0..3] real;
 const Levels: domain(1) = {1..numLevels};
 const Base: domain(3) = {1..nx, 1..ny, 1..nz};
 //BLC: distributed doesn't work yet
-//const Base: domain(3) dmapped(Block(3)) = {1..nx, 1..ny, 1..nz};
+//const Base: domain(3) dmapped(blockDist(3)) = {1..nx, 1..ny, 1..nz};
 //BLC: iterators in array decls don't work yet
 //const Hier: [lvl in Levels] subdomain(Base) = Base by -2**(lvl-1);
 //BLC: subdomains don't work:

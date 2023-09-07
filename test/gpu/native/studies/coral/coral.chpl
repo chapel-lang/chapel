@@ -162,7 +162,7 @@ proc main(args: [] string) {
     now.
      
     const myTargetLocales = reshape(Locales, {1..Locales.size, 1..1});
-    const D = Inner dmapped Block(Inner, targetLocales=myTargetLocales);
+    const D = Inner dmapped blockDist(Inner, targetLocales=myTargetLocales);
 
     */
     const Inner = ImageSpace.expand(-offset);

@@ -36,14 +36,14 @@ config const n = 8;
 //
 const Space = {1..n, 1..n};
 
-// Block (and distribution basics)
+// blockDist (and distribution basics)
 // -------------------------------
 //
-// The ``Block`` distribution distributes a bounding box from
+// The ``blockDist`` distribution distributes a bounding box from
 // n-dimensional space across the target locale array viewed as an
 // n-dimensional virtual locale grid.  The bounding box is blocked
 // into roughly equal portions across the locales.  Note that domains
-// declared over a Block distribution can also store indices outside
+// declared over a blockDist distribution can also store indices outside
 // of the bounding box; the bounding box is merely used to compute
 // the blocking of space.
 //
@@ -51,7 +51,7 @@ const Space = {1..n, 1..n};
 // domain ``BlockSpace`` and a Block-distributed array ``BA`` declared over
 // the domain.
 //
-const BlockSpace = Space dmapped Block(boundingBox=Space);
+const BlockSpace = Space dmapped blockDist(boundingBox=Space);
 var BA: [BlockSpace] int;
 
 //
@@ -120,7 +120,7 @@ var MyLocales: [MyLocaleView] locale = reshape(Locales, MyLocaleView);
 // this view of the locales:
 //
 
-const BlockSpace2 = Space dmapped Block(boundingBox=Space,
+const BlockSpace2 = Space dmapped blockDist(boundingBox=Space,
                                         targetLocales=MyLocales);
 var BA2: [BlockSpace2] int;
 

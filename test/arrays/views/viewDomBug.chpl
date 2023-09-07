@@ -1,6 +1,6 @@
 use BlockDist;
 
-var blockDom = Block.createDomain(3..8);
+var blockDom = blockDist.createDomain(3..8);
 var localArr: [1..10] int;
 
 ref slice = localArr[blockDom];
@@ -12,7 +12,7 @@ forall i in slice.domain with (ref slice) {        // I expect this to be a dist
 writeln(localArr);
 
 
-var blockDom2 = {3..8 by 2} dmapped Block({3..8});
+var blockDom2 = {3..8 by 2} dmapped blockDist({3..8});
 ref slice2 = localArr[blockDom2];
 
 forall i in slice2.domain with (ref slice2) {
