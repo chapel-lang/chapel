@@ -1,4 +1,4 @@
---networkNum=1 # mnist_classification.1.good
---networkNum=2 # mnist_classification.2.good
---networkNum=3 # mnist_classification.3.good
---networkNum=4 # mnist_classification.4.good
+-snetworkNum=1 # mnist_classification.1.good
+-snetworkNum=2 # mnist_classification.2.good
+-snetworkNum=3 # mnist_classification.3.good
+-snetworkNum=4 # mnist_classification.4.good
