@@ -176,22 +176,8 @@ module Tensor {
             return t;
         }
         
-        // ------------ Wasnt sure what to do with these   ----------------
-
-        /*operator =(ref lhs: Tensor(?rank,?eltType), in rhs: ?it) where (isRefIterType(it) || (isArray(rhs) && rhs.eltType == eltType)) && rhs.rank == rank {
-            lhs.reshapeDomain(rhs.domain);
-            lhs.data = rhs;
-        }
-        proc init=(in rhs: ?it) where isRefIterType(it) || isArray(rhs) {
-            this.init(rank,eltType);
-            this.reshapeDomain(rhs.domain);
-            this.data = rhs;
-        }
-        operator :(in from: ?it, type toType: Tensor(?rank,?eltType)) where (isRefIterType(it) || (isArray(from) && from.eltType == eltType)) && from.rank == rank {
-            // compilerError("Cannot convert from ",from.type:string," to ",toType:string);
-            var t: Tensor(rank,eltType) = from;
-            return t;
-        }*/
+        
+        // Efficient assignment and casting for iteratable expressions. The `itr.type:string` is a type checking workaround. 
 
         operator =(ref lhs: Tensor(?rank,?eltType), itr) where itr.type:string == "promoted expression" || isSubtype(itr.type, _iteratorRecord) {
             lhs.reshapeDomain(itr.domain);
@@ -199,12 +185,12 @@ module Tensor {
         }
 
         proc init=(itr) where itr.type:string == "promoted expression" || isSubtype(itr.type, _iteratorRecord) {
-            const A = itr;
-            this.init(A);
+            this.init(itr.domain);
+            this.data = itr;
         }
 
         operator :(itr, type toType: Tensor(?rank,?eltType)) where itr.type:string == "promoted expression" || isSubtype(itr.type, _iteratorRecord) {
-            var t: Tensor(rank,eltType) = itr;
+            const t: Tensor(rank,eltType) = itr;
             return t;
         }
 
