@@ -2045,6 +2045,10 @@ module AutoMath {
 
      The result is always >= 0 if `y` > 0.
      It is an error if `y` == 0.
+
+     .. note::
+        This does not have the same behavior as the :ref:`Modulus_Operators` (%)
+        when `y` is negative.
   */
   proc mod(param x: integral, param y: integral) param {
     param temp = x % y;
@@ -2068,6 +2072,10 @@ module AutoMath {
 
      The result is always >= 0 if `y` > 0.
      It is an error if `y` == 0.
+
+     .. note::
+        This does not have the same behavior as the :ref:`Modulus_Operators` (%)
+        when `y` is negative.
   */
   proc mod(x: integral, y: integral) {
     const temp = x % y;
@@ -2091,6 +2099,7 @@ module AutoMath {
     // Is there a more efficient implementation for reals?
     return x - y*floor(x/y);
   }
+
   /* Computes the mod operator on the two numbers, defined as
      ``mod(x,y) = x - y * floor(x / y)``.
   */
