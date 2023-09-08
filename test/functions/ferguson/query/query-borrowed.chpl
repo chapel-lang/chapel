@@ -23,7 +23,7 @@ proc i(arg:borrowed) {
 proc j(arg:borrowed MyClass(?)) {
   writeln("j ", arg.type:string);
 }
-proc k(arg:borrowed MyClass(borrowed OtherClass)) {
+proc k(arg:borrowed MyClass(borrowed OtherClass(?))) {
   writeln("k ", arg.type:string);
 }
 

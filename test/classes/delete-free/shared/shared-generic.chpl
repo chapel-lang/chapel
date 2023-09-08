@@ -3,7 +3,7 @@ class GenericClass {
   var v: int;
 }
 
-proc f(x: shared GenericClass) {
+proc f(x: shared GenericClass(?)) {
   writeln(x);
 }
 

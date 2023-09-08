@@ -23,7 +23,7 @@ proc i(arg:unmanaged) {
 proc j(arg:unmanaged MyClass(?)) {
   writeln("j ", arg.type:string);
 }
-proc k(arg:unmanaged MyClass(unmanaged OtherClass)) {
+proc k(arg:unmanaged MyClass(unmanaged OtherClass(?))) {
   writeln("k ", arg.type:string);
 }
 
