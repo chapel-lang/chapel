@@ -132,58 +132,59 @@ config param disableBlockLazyRAD = defaultDisableLazyRADOpt;
 //   disableBlockLazyRAD
 //
 /*
-This blockDist distribution partitions indices into blocks
-according to a ``boundingBox`` domain
-and maps each entire block onto a locale from a ``targetLocales`` array.
 
-The indices inside the bounding box are partitioned "evenly" across
-the target locales. An index outside the bounding box is mapped to the
-same locale as the nearest index inside the bounding box.
+The ``blockDist`` distribution partitions the indices specified by a
+``boundingBox`` domain into contiguous blocks, mapping each block to a
+distinct locale in a ``targetLocales`` array.  The indices within the
+bounding box are partitioned as evenly as possible across the target
+locales.  An index outside the bounding box is mapped to the same
+locale as the nearest index within the bounding box.
 
-Formally, an index ``idx`` is mapped to ``targetLocales[locIdx]``,
-where ``locIdx`` is computed as follows.
+More precisely, an index ``idx`` is mapped to
+``targetLocales[locIdx]``, where ``locIdx`` is computed as follows.
 
-In the 1-dimensional case, for a blockDist distribution with:
+In the 1-dimensional case, for a ``blockDist`` distribution with:
 
 
   =================   ====================
   ``boundingBox``     ``{low..high}``
-  ``targetLocales``   ``[0..N-1] locale``
+  ``targetLocales``   ``[0..n-1] locale``
   =================   ====================
 
-we have:
+``locIdx`` is computed from ``idx`` as follows:
 
-  ===================    ==========================================
-  if ``idx`` is ...      ``locIdx`` is ...
-  ===================    ==========================================
-  ``low<=idx<=high``     ``floor(  (idx-low)*N / (high-low+1)  )``
-  ``idx < low``          ``0``
-  ``idx > high``         ``N-1``
-  ===================    ==========================================
+  =======================    =====================================
+  if ``idx`` is ...          ``locIdx`` is ...
+  =======================    =====================================
+  ``low <= idx <= high``     ``floor((idx-low)*N / (high-low+1))``
+  ``idx < low``              ``0``
+  ``idx > high``             ``n-1``
+  =======================    =====================================
 
 In the multidimensional case, ``idx`` and ``locIdx`` are tuples
 of indices; ``boundingBox`` and ``targetLocales`` are multi-dimensional;
-the above computation is applied in each dimension.
+and the above computation is applied in each dimension.
 
 
 **Example**
 
-The following code declares a domain ``D`` distributed over
-a blockDist distribution with a bounding box equal to the domain ``Space``,
-and declares an array ``A`` over that domain.
-The `forall` loop sets each array element
-to the ID of the locale to which it is mapped.
+The following code declares a domain ``D`` distributed over a
+``blockDist`` distribution with a bounding box and index set equal to
+the non-distributed domain ``Space``.  It then declares an array ``A``
+over that domain.  The `forall` loop sets each array element to the ID
+of the locale to which it is mapped.
 
   .. code-block:: chapel
 
     use BlockDist;
 
     const Space = {1..8, 1..8};
-    const D: domain(2) dmapped blockDist(boundingBox=Space) = Space;
+    const Dist = new blockDist(boundingBox=Space);
+    const D = blockDist.createDomain(Space);
     var A: [D] int;
 
     forall a in A do
-      a = a.locale.id;
+      a = here.id;
 
     writeln(A);
 
@@ -201,6 +202,21 @@ When run on 6 locales, the output is:
     4 4 4 4 5 5 5 5
 
 
+**Data-Parallel Iteration**
+
+As demonstrated by the above example, a `forall` loop over a
+``blockDist``-distributed domain or array executes each iteration on
+the locale owning the index in question.
+
+By default, parallelism within each locale is applied to that locale's
+block of indices by creating a task for each available processor core
+(or the number of local indices if it is less than the number of
+cores). The domain's indices are then statically divided as evenly as
+possible between those tasks.  This default can be modified by
+changing the values of ``dataParTasksPerLocale``,
+``dataParIgnoreRunningTasks``, and ``dataParMinGranularity`` in the
+``blockDist``'s initializer:
+
 **Initializer Arguments**
 
 The ``blockDist`` class initializer is defined as follows:
@@ -210,12 +226,12 @@ The ``blockDist`` class initializer is defined as follows:
     proc blockDist.init(
       boundingBox: domain,
       targetLocales: [] locale  = Locales,
-      dataParTasksPerLocale     = // value of  dataParTasksPerLocale      config const,
-      dataParIgnoreRunningTasks = // value of  dataParIgnoreRunningTasks  config const,
-      dataParMinGranularity     = // value of  dataParMinGranularity      config const,
+      dataParTasksPerLocale     = // value of dataParTasksPerLocale config const,
+      dataParIgnoreRunningTasks = // value of dataParIgnoreRunningTasks config const,
+      dataParMinGranularity     = // value of dataParMinGranularity config const,
       param rank                = boundingBox.rank,
       type  idxType             = boundingBox.idxType,
-      type  sparseLayoutType    = DefaultDist)
+      type  sparseLayoutType    = unmanaged DefaultDist)
 
 The arguments ``boundingBox`` (a domain) and ``targetLocales`` (an array)
 define the mapping of any index of ``idxType`` type to a locale
@@ -227,64 +243,73 @@ heuristic is used to reshape the array of target locales so that it
 matches the rank of the distribution and each dimension contains an
 approximately equal number of indices.
 
-The arguments ``dataParTasksPerLocale``, ``dataParIgnoreRunningTasks``,
-and ``dataParMinGranularity`` set the knobs that are used to
-control intra-locale data parallelism for blockDist-distributed domains
-and arrays in the same way that the like-named config constants
-control data parallelism for ranges and default-distributed domains
-and arrays.
+The arguments ``dataParTasksPerLocale``,
+``dataParIgnoreRunningTasks``, and ``dataParMinGranularity`` set the
+knobs that are used to control intra-locale data parallelism for
+block-distributed domains and arrays in the same way that the
+like-named config constants control data parallelism for ranges and
+default-distributed domains and arrays.
 
-The ``rank`` and ``idxType`` arguments are inferred from the ``boundingBox``
-argument unless explicitly set.  They must match the rank and index type of the
-domains "dmapped" using that blockDist instance. If the ``boundingBox`` argument is
-a stridable domain, the stride information will be ignored and the
-``boundingBox`` will only use the lo..hi bounds.
+The ``rank`` and ``idxType`` arguments are inferred from the
+``boundingBox`` argument unless explicitly set.  They must match the
+rank and index type of the domains distributed using the ``blockDist``
+instance. If the ``boundingBox`` argument is a stridable domain, the
+stride information will be ignored and the ``boundingBox`` will only
+use the low and high bounds.
 
-When a ``sparse subdomain`` is created for a ``blockDist`` distributed domain, the
-``sparseLayoutType`` will be the layout of these sparse domains. The default is
-currently coordinate, but :class:`LayoutCS.CS` is an interesting alternative.
+When a ``sparse subdomain`` is created for a ``blockDist`` distributed
+domain, the ``sparseLayoutType`` will be the layout of these sparse
+domains. The default currently uses coordinate storage, but
+:class:`LayoutCS.CS` is an interesting alternative.
 
-**Convenience Initializer Functions**
+**Convenience Factory Procedures**
 
-It is common for a ``blockDist`` distribution to distribute its ``boundingBox``
-across all locales. In this case, a convenience function can be used to
-declare variables of block-distributed domain or array type.  These functions
-take a domain or series of ranges as arguments and return a block-distributed
-domain or array.
+It is common for a ``blockDist``-distributed domain or array to be
+declared using the same indices for both its ``boundingBox`` and its
+index set (as in the example using ``Space`` above).  It is also
+common to not override any of the other defaulted initializer
+arguments.  In such cases, factory procedures can be used for
+convenience and to avoid repetition.
+
+These procedures take a domain or series of ranges as arguments and
+return a new block-distributed domain or array.  For example, the
+following declarations create new ``5 x 5`` block-distributed domains
+and arrays using ``{1..5, 1..5}`` as both the bounding box and index
+set:
 
   .. code-block:: chapel
 
     use BlockDist;
 
     var BlockDom1 = blockDist.createDomain({1..5, 1..5});
-    var BlockArr1 = blockDist.createArray({1..5, 1..5}, real);
     var BlockDom2 = blockDist.createDomain(1..5, 1..5);
+    var BlockArr1 = blockDist.createArray({1..5, 1..5}, real);
     var BlockArr2 = blockDist.createArray(1..5, 1..5, real);
 
-The helper methods on ``Block`` have the following signatures:
+The helper methods on ``blockDist`` have the following signatures:
 
-  .. function:: proc type Block.createDomain(dom: domain, targetLocales = Locales)
+  .. function:: proc type blockDist.createDomain(dom: domain, targetLocales = Locales)
 
-    Create a domain over a Block Distribution.
+    Create a block-distributed domain.
 
-  .. function:: proc type Block.createDomain(rng: range(?)..., targetLocales = Locales)
+  .. function:: proc type blockDist.createDomain(rng: range(?)..., targetLocales = Locales)
 
-    Create a domain over a Block Distribution constructed from a series of
-    ranges.
+    Create a block-distributed domain from a series of ranges.
 
-  .. function:: proc type Block.createArray(dom: domain, type eltType, targetLocales = Locales)
+  .. function:: proc type blockDist.createArray(dom: domain, type eltType, targetLocales = Locales)
 
-    Create a default initialized array over a Block Distribution using the
-    given domain.
+    Create a default-initialized block-distributed array whose indices
+    match those of the given domain.
 
-  .. function:: proc type Block.createArray(rng: range(?)..., type eltType, targetLocales = Locales)
+  .. function:: proc type blockDist.createArray(rng: range(?)..., type eltType, targetLocales = Locales)
 
-    Create a default initialized array over a Block Distribution using a
+    Create a default-initialized block-distributed array using a
     domain constructed from the series of ranges.
 
-  .. function:: proc type Block.createArray(dom: domain, type eltType, initExpr, targetLocales = Locales)
+  .. function:: proc type blockDist.createArray(dom: domain, type eltType, initExpr, targetLocales = Locales)
 
-    Create an array over a Block Distribution using the given domain.
+    Create a block-distributed array whose indices match those of the
+    given domain.
 
     The array's values are initialized using ``initExpr`` which can be any of
     the following:
@@ -297,11 +322,11 @@ The helper methods on ``Block`` have the following signatures:
       the distributed array
 
     .. Warning::
-      ``Block.createArray`` with an ``initExpr`` formal is unstable and may change in a future release
+      ``blockDist.createArray`` with an ``initExpr`` formal is unstable and may change in a future release
 
-  .. function:: proc type Block.createArray(rng: range(?)..., type eltType, initExpr, targetLocales = Locales)
+  .. function:: proc type blockDist.createArray(rng: range(?)..., type eltType, initExpr, targetLocales = Locales)
 
-    Create an array over a Block Distribution using a domain constructed from
+    Create a block-distributed array using a domain constructed from
     the series of ranges.
 
     The array's values are initialized using ``initExpr`` which can be any of
@@ -315,28 +340,18 @@ The helper methods on ``Block`` have the following signatures:
       the distributed array
 
     .. Warning::
-      ``Block.createArray`` with an ``initExpr`` formal is unstable and may change in a future release
-
-**Data-Parallel Iteration**
-
-A `forall` loop over a Block-distributed domain or array
-executes each iteration on the locale where that iteration's index
-is mapped to.
-
-Parallelism within each locale is guided by the values of
-``dataParTasksPerLocale``, ``dataParIgnoreRunningTasks``, and
-``dataParMinGranularity`` of the respective Block instance.
-Updates to these values, if any, take effect only on the locale
-where the updates are made.
+      ``blockDist.createArray`` with an ``initExpr`` formal is unstable and may change in a future release
 
 **Sparse Subdomains**
 
-When a ``sparse subdomain`` is declared as a subdomain to a Block-distributed
-domain, the resulting sparse domain will also be Block-distributed. The
-sparse layout used in this sparse subdomain can be controlled with the
-``sparseLayoutType`` initializer argument to Block.
+When a ``sparse subdomain`` is created from a block-distributed
+domain, the resulting sparse domain will share the same block
+distribution across locales.  The sparse layout used in this sparse
+subdomain can be controlled with the ``sparseLayoutType`` initializer
+argument to ``blockDist``.
 
-This example demonstrates a Block-distributed sparse domain and array:
+The following example demonstrates a block-distributed sparse domain
+and array:
 
   .. code-block:: chapel
 
@@ -344,11 +359,11 @@ This example demonstrates a Block-distributed sparse domain and array:
 
     const Space = {1..8, 1..8};
 
-    // Declare a dense, Block-distributed domain.
-    const DenseDom: domain(2) dmapped blockDist(boundingBox=Space) = Space;
+    // Declare a dense, blockDist-distributed domain.
+    const DenseDom = blockDist.createDomain(Space);
 
     // Declare a sparse subdomain.
-    // Since DenseDom is Block-distributed, SparseDom will be as well.
+    // Since DenseDom is blockDist-distributed, SparseDom will be as well.
     var SparseDom: sparse subdomain(DenseDom);
 
     // Add some elements to the sparse subdomain.
@@ -356,7 +371,7 @@ This example demonstrates a Block-distributed sparse domain and array:
     SparseDom += [ (1,2), (3,6), (5,4), (7,8) ];
 
     // Declare a sparse array.
-    // This array is also Block-distributed.
+    // This array is also blockDist-distributed.
     var A: [SparseDom] int;
 
     A = 1;
