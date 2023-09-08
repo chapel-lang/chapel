@@ -14,7 +14,7 @@ config param printOriginal = false;
 config param printPerf = true;
 config param printCorrect = false;
 
-// if the user wants multilocale, use the Block distribution
+// if the user wants multilocale, use the blockDist distribution
 config param useStencilDist = false;
 config param useBlockDist = (CHPL_COMM != "none" && !useStencilDist);
 

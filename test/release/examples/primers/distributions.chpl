@@ -69,7 +69,7 @@ forall ba in BA do
 // index set for a locale can be represented by a single domain.
 //
 if !BA.hasSingleLocalSubdomain() then
-  halt("For a Block distribution, the index set per locale should be \
+  halt("For a blockDist distribution, the index set per locale should be \
       represented by a single domain");
 
 //

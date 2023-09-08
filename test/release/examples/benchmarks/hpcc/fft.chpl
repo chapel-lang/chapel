@@ -1,15 +1,15 @@
 /* This implementation of the FFT benchmark uses radix-4 butterflies
-   and is divided into two main phases: one which uses a Block
+   and is divided into two main phases: one which uses a blockDist
    distribution and the second which uses a Cyclic distribution.  When
    run on 4**k locales, this guarantees that each butterfly will only
    access local data.  In an optimized implementation, this should
    cause most of the communication to occur when copying the vector
-   between Block and Cyclic storage formats.
+   between blockDist and Cyclic storage formats.
 */
 
 //
 // Use standard modules for less common Math functions, Bit operations, Random
-// numbers, Timing, and Block and Cyclic distributions
+// numbers, Timing, and blockDist and Cyclic distributions
 //
 use Math, BitOps, Random, Time, BlockDist, CyclicDist;
 
@@ -83,7 +83,7 @@ proc main() {
   const ProblemSpace = {0..m-1};
 
   //
-  // BlkDom defines a Block-distributed problem space and is used to
+  // BlkDom defines a block-distributed problem space and is used to
   // define the vectors z (used to store the input vector) and ZBlk
   // (used for the first half of the FFT phases).
   //
