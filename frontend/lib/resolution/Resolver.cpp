@@ -2549,10 +2549,10 @@ static void maybeEmitWarningsForId(Resolver* rv, QualifiedType qt,
 
   bool emitUnstableAndDeprecationWarnings = true;
   if (isCalledExpression(rv, astMention)) {
-    // For functions, do not warn, since call resolution will take care of that.
-    // However, if we're referring to a class or record, we know right now that
-    // a deprecation warning should be emitted (and it won't be emitted during
-    // resolution, since the initializers themselves are probably not deprecated)
+    // For functions, do not warn, since call resolution will take
+    // care of that.  However, if we're referring to other symbol
+    // kinds, we know right now that a deprecation warning should be
+    // emitted.
     emitUnstableAndDeprecationWarnings =
       !asttags::isFunction(parsing::idToTag(rv->context, idTarget));
   }
