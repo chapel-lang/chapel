@@ -343,9 +343,8 @@ module ChapelIO {
         deserializer.startRecord(reader, name);
 
       if isClassType(t) && _to_borrowed(t) != borrowed RootClass {
-        var castTmp : x.super.type = x;
         if x.super.type != borrowed RootClass then
-          castTmp.deserialize(reader, des);
+          x.super.deserialize(reader, des);
       }
 
       param num_fields = __primitive("num fields", t);

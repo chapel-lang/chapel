@@ -1829,7 +1829,8 @@ static FnSymbol* buildReadThisFnSymbol(AggregateType* ct, ArgSymbol** filearg, c
 
   fn->cname = astr("_auto_", ct->symbol->name, "_", name);
 
-  auto thisIntent = isDeserialize ? INTENT_REF : INTENT_BLANK;
+  auto desIntent = ct->isClass() ? INTENT_BLANK : INTENT_REF;
+  auto thisIntent = isDeserialize ? desIntent : INTENT_BLANK;
   fn->_this = new ArgSymbol(thisIntent, "this", ct);
   fn->_this->addFlag(FLAG_ARG_THIS);
 
@@ -1987,10 +1988,13 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
                                     fn->_this,
                                     fileArg));
     } else {
+      VarSymbol* temp = newTemp("_deser_temp");
+      fn->insertAtTail(new DefExpr(temp));
+      fn->insertAtTail(new CallExpr(PRIM_MOVE, temp, fn->_this));
       fn->insertAtTail(new CallExpr("deserializeDefaultImpl",
                                     fileArg,
                                     deserializer,
-                                    fn->_this));
+                                    temp));
     }
 
     normalize(fn);
