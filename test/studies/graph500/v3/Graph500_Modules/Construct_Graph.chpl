@@ -14,7 +14,7 @@ proc constructGraph(Edges:[?ArrD] , G)
    // Generate a histogram from the Edges to guide the distribution
    // of the graph
 
-   forall e in Edges with (ref Histogram$) do {
+   forall e in Edges with (ref Histogram) do {
       var u = e.start;
       var v = e.end;
       Histogram[u].add(1);

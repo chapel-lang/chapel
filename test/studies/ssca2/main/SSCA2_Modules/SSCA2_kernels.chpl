@@ -273,7 +273,7 @@ module SSCA2_kernels
 
       if PRINT_TIMING_STATISTICS then sw.start ();
 
-      forall s in starting_vertices with (ref Locales, ref Between_Cent$) do on vertex_domain.distribution.idxToLocale(s) {
+      forall s in starting_vertices with (ref Locales, ref atomic_Between_Cent) do on vertex_domain.distribution.idxToLocale(s) {
 
         const shere = here.id;
 
