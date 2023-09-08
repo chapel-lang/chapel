@@ -26,6 +26,11 @@ def extractLineNumbers(file_name, warning_message, output_file_name):
       # excluding the filename at the end of the path
       # Ex: [test: attributes/badAttribute.chpl] -> path = attributes/
       current_sub_test_path = line.split(TEST_LINE_CLOSING)[0].split(TEST_LINE_PREFIX)[1].rsplit('/', 1)[0] + '/'
+      continue
+
+    if line.startswith("< "):
+      # Ignore matches in .good files
+      continue
 
     if warning_message in line:
       warning_line = resolveToAbsPath(current_sub_test_path, line)
@@ -33,14 +38,19 @@ def extractLineNumbers(file_name, warning_message, output_file_name):
         warning_lines.append(warning_line)
 
   # Remove duplicates efficiently
-  warning_lines = list(dict.fromkeys(warning_lines))
+  warning_set = set(warning_lines)
 
   # Write them to a file
   with open(output_file_name, 'w') as f:
-    for line in warning_lines:
+    for line in sorted(warning_set, key=lineKey):
       f.write(line)
-  print("Total Unique Matches Found: " + str(len(warning_lines)))
+  print("Total Unique Matches Found:", len(warning_set))
   return
+
+def lineKey(line):
+  split = line.split(":", 2)
+  try: return split[0], int(split[1])
+  except ValueError: return split[0], 0
 
 def resolveToAbsPath(current_sub_test_path, line):
 
@@ -67,13 +77,21 @@ def resolveToAbsPath(current_sub_test_path, line):
     test_name = line.split(':')[0]
     if not test_name.endswith(CHPL_EXT):
       return None
-    return DIR_ABS_PREFIX + current_sub_test_path + line.split(DIFF_INDICATOR, 1)[-1]
+
+    result = DIR_ABS_PREFIX + current_sub_test_path + line.split(DIFF_INDICATOR, 1)[-1]
+
+    # replace "XX/somedir/../YY" with "XX/YY"
+    subs = 1
+    while subs > 0: result, subs = re.subn(r'/[^/]+/\.\./', '/', result)
+
+    return result
 
 
 def main():
   # Print usage if the user does not provide the correct number of arguments
   if len(sys.argv) < 3:
     print("Usage: python3 extractLineNumbers.py <log_file> <search_string> [output_file_name]")
+    print('output_file_name is "warning_lines" by default')
     exit(1)
   file_name = sys.argv[1]
   warning_message = sys.argv[2]
