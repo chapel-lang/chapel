@@ -230,21 +230,10 @@ bool symbolIsUsedAsRef(Symbol* sym) {
   return false;
 }
 
-
-
-void check_cullOverReferences()
-{
-  check_afterEveryPass();
-  check_afterNormalization();
-  check_afterResolution();
-  check_afterResolveIntents();
-
-  // No ContextCallExprs should remain in the tree.
-  for_alive_in_Vec(ContextCallExpr, cc, gContextCallExprs) {
-    INT_FATAL("ContextCallExpr should no longer be in AST");
-  }
-
+static
+bool checkForInvalidPromotions() {
   // for all CallExprs, if we call a promotion wrapper that is marked no promotion, warn
+  // checking here after all ContextCallExpr's have been resolved to plain CallExpr's
   for_alive_in_Vec(CallExpr, ce, gCallExprs) {
     if (FnSymbol* fn = ce->theFnSymbol()) {
       if (fn->hasFlag(FLAG_PROMOTION_WRAPPER) &&
@@ -272,6 +261,22 @@ void check_cullOverReferences()
       }
     }
   }
+}
+
+
+void check_cullOverReferences()
+{
+  check_afterEveryPass();
+  check_afterNormalization();
+  check_afterResolution();
+  check_afterResolveIntents();
+
+  // No ContextCallExprs should remain in the tree.
+  for_alive_in_Vec(ContextCallExpr, cc, gContextCallExprs) {
+    INT_FATAL("ContextCallExpr should no longer be in AST");
+  }
+
+  checkForInvalidPromotions();
 }
 
 void check_lowerErrorHandling()
