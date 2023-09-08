@@ -3,6 +3,9 @@
 This is a simple 2 part script that can be used to quickly replace deprecated
 functions across multiple files in the chapel repository.
 
+
+## extractLineNumbers.py
+
 The first part of the script is called `extractLineNumbers.py`. It uses the
 log from a `paratest`/`start_test` run (`log_file`) and scans it for a user specified
 string (`search_string`), typically a deprecation warning.
@@ -18,6 +21,12 @@ to have absolute paths for each file). It extracts these lines into a separate
 file whose name can be customized using the optional `output_file_name` argument.
 By default the output file is called `warning_lines`.
 
+The script drops the matches in those lines that start with `<`.
+Such lines typically come from `.good` files and so are irrelevant to the task.
+
+
+## replaceDeprecatedLines.py
+
 The second script then takes two strings and this file as input as follows:
 
 ```sh
@@ -30,12 +39,15 @@ it replaces all instances of `from_string` with `to_string`.
 The `files_to_update` is an optional argument that runs the replacement only on the
 specified files. Otherwise the script operates on all files in the `lines_file` file.
 
-The recommended way is to use the python scripts one by one manually,
+
+### deprecateFunctions.bash
+
+The recommended way is to use the above two python scripts one by one manually,
 but you can also use the `deprecateFunctions.bash` script to run them together or
 to get an idea of how an example run would look like.
 
-## Limitations
 
+## Limitations
 
 It is important to note the limitations of these two scripts combined.
 
