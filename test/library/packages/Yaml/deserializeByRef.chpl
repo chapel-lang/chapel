@@ -5,7 +5,7 @@ record A {
   var x: int;
   var b: B;
 
-  proc ref deserialize(reader: fileReader, ref deserializer: reader.deserializerType) {
+  proc ref deserialize(reader: fileReader(?), ref deserializer: reader.deserializerType) {
     writeln("IN A.deserialize");
     var des = deserializer.startRecord(reader, "A");
     des.readField("x", this.x);
@@ -13,7 +13,7 @@ record A {
     des.endRecord();
   }
 
-  proc init(reader: fileReader, ref deserializer) {
+  proc init(reader: fileReader(?), ref deserializer) {
     writeln("IN A.init");
     var des = deserializer.startRecord(reader, "A");
     this.x = des.readField("x", int);
@@ -35,14 +35,14 @@ record A {
 record B {
   var t: (int, real);
 
-  proc ref deserialize(reader: fileReader, ref deserializer: reader.deserializerType) {
+  proc ref deserialize(reader: fileReader(?), ref deserializer: reader.deserializerType) {
     writeln("IN B.deserialize");
     var des = deserializer.startRecord(reader, "B");
     des.readField("t", this.t);
     des.endRecord();
   }
 
-  proc init(reader: fileReader, ref deserializer) {
+  proc init(reader: fileReader(?), ref deserializer) {
     writeln("IN B.init");
     var des = deserializer.startRecord(reader, "B");
     this.t = des.readField("t", (int, real));
@@ -61,7 +61,7 @@ record B {
 record myList {
   var values: list(A);
 
-  proc ref deserialize(reader: fileReader, ref deserializer: reader.deserializerType) {
+  proc ref deserialize(reader: fileReader(?), ref deserializer: reader.deserializerType) {
     writeln("IN myList.deserialize");
     var des = deserializer.startList(reader);
 
@@ -73,7 +73,7 @@ record myList {
     des.endList();
   }
 
-  proc init(reader: fileReader, ref deserializer) {
+  proc init(reader: fileReader(?), ref deserializer) {
     writeln("IN myList.init");
     this.complete();
     var des = deserializer.startList(reader);
@@ -86,14 +86,14 @@ record myList {
 
   proc init(in values: list(A)) do this.values = values;
 
-  proc serialize(writer: fileWriter, ref serializer) do
+  proc serialize(writer: fileWriter(?), ref serializer) do
     writer.write(values);
 }
 
 record myMap {
   var values: map(int, A);
 
-  proc ref deserialize(reader: fileReader, ref deserializer: reader.deserializerType) {
+  proc ref deserialize(reader: fileReader(?), ref deserializer: reader.deserializerType) {
     writeln("IN myMap.deserialize");
     var des = deserializer.startMap(reader);
 
@@ -107,7 +107,7 @@ record myMap {
     des.endMap();
   }
 
-  proc init(reader: fileReader, ref deserializer) {
+  proc init(reader: fileReader(?), ref deserializer) {
     writeln("IN myMap.init");
     this.complete();
     var des = deserializer.startMap(reader);
@@ -120,7 +120,7 @@ record myMap {
 
   proc init(in values: map(int, A)) do this.values = values;
 
-  proc serialize(writer: fileWriter, ref serializer) do
+  proc serialize(writer: fileWriter(?), ref serializer) do
     writer.write(values);
 }
 
