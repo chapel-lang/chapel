@@ -312,7 +312,7 @@ class ForceEAM : Force  {
 // Lennard-Jones potential
 class ForceLJ : Force {
   proc init(cf : real) {
-    this.complete();
+    init this;
     cutforcesq = cf * cf;
   }
 
