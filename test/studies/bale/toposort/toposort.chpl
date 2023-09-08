@@ -32,7 +32,7 @@ class SyncLock {
   var lockVar : sync bool;
 
   proc init(){
-    this.complete();
+    init this;
     this.lockVar.writeEF(true);
   }
 
@@ -57,7 +57,7 @@ class AtomicLock {
   var lockVar: atomic bool;
 
   proc init(){
-    this.complete();
+    init this;
     lockVar.clear();
   }
 
@@ -145,7 +145,7 @@ class ParallelWorkQueue {
     this.lockType = lockType;
     this.lock = new lockType();
     this.queue = new unmanaged Vector( eltType );
-    this.complete();
+    init this;
 
     terminated.write(false);
   }
@@ -244,7 +244,7 @@ class DistributedWorkQueue {
 
     this.localInstance = new unmanaged LocalDistributedWorkQueue(eltType, lockType, targetLocales);
     this.pid = this.localInstance.pid;
-    this.complete();
+    init this;
   }
 
   proc deinit(){
@@ -278,7 +278,7 @@ class LocalDistributedWorkQueue {
     this.queue = new unmanaged Vector(eltType);
     this.terminatedRetries = retries;
 
-    this.complete();
+    init this;
 
     terminated.write(false);
     this.pid = _newPrivatizedClass(this);
@@ -294,7 +294,7 @@ class LocalDistributedWorkQueue {
     this.terminatedRetries = that.terminatedRetries;
     this.pid = pid;
 
-    this.complete();
+    init this;
 
     this.lock.lockVar.write( that.lock.isLocked() );
     this.terminated.write(that.terminated.read());

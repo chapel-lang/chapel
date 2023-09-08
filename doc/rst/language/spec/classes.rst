@@ -1056,7 +1056,7 @@ initializer.
           this.y = y;
           // compiler inserts initialization for 'max' and 'msg'
 
-          this.complete(); // 'this' is now considered to be fully initialized
+          init this; // 'this' is now considered to be fully initialized
 
           this.verify();
           writeln(this);
@@ -1067,7 +1067,7 @@ initializer.
           this.msg = msg;
 
           // Illegal: this.verify();
-          // Implicit 'this.complete();'
+          // Implicit 'init this;'
         }
 
         proc verify() {
@@ -1129,7 +1129,7 @@ after such a call to ``init``.
           this.x = x;
           this.y = y;
           this.z = z;
-          // implicit 'this.complete();'
+          // implicit 'init this;'
         }
 
         proc init(u: real) {
@@ -1230,7 +1230,7 @@ at the end of the conditional statement.
           if cond {
             super.init(val, val);
             this.z = val;
-            this.complete();
+            init this;
           } else {
             this.init(val, val, val);
           }
@@ -1560,7 +1560,7 @@ functions as though it were of the parent type.
           super.init(x, y); // parent's compiler-generated initializer
           foo(); // Parent.foo()
           this.z = z;
-          this.complete();
+          init this;
           foo(); // Child.foo()
         }
 
