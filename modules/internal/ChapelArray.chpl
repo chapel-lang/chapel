@@ -1499,7 +1499,6 @@ module ChapelArray {
     }
 
     /* Yield the array elements */
-    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     iter these() ref {
       for i in _value.these() {
@@ -1507,7 +1506,6 @@ module ChapelArray {
       }
     }
 
-    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     @chpldoc.nodoc
     iter these(param tag: iterKind) ref
@@ -1522,7 +1520,6 @@ module ChapelArray {
       for followThis in _value.these(tag) do
         yield followThis;
     }
-    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     @chpldoc.nodoc
     iter these(param tag: iterKind, followThis, param fast: bool = false) ref
