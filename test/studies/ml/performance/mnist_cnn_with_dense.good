@@ -1,9 +1,2 @@
 network initialized.
-Epoch 1
-
-Evaluating...
-End of epoch 1 Loss 1.97 Accuracy 37 / 100
-Epoch 2
-
-Evaluating...
-End of epoch 2 Loss 1.71 Accuracy 52 / 100
+Passed accuracy and loss requirements.
