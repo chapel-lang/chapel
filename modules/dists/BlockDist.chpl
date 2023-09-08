@@ -19,7 +19,7 @@
  */
 
 //
-// The Block distribution is defined with six classes:
+// The blockDist distribution is defined with six classes:
 //
 //   BlockImpl   : distribution class
 //   BlockDom    : domain class
@@ -219,7 +219,7 @@ changing the values of ``dataParTasksPerLocale``,
 
 **Initializer Arguments**
 
-The ``blockDist`` class initializer is defined as follows:
+The ``blockDist`` initializer is defined as follows:
 
   .. code-block:: chapel
 
@@ -657,9 +657,9 @@ proc BlockImpl.init(boundingBox: domain,
   this.rank = rank;
   this.idxType = idxType;
   if rank != boundingBox.rank then
-    compilerError("specified Block rank != rank of specified bounding box");
+    compilerError("specified rank != rank of specified bounding box");
   if idxType != boundingBox.idxType then
-    compilerError("specified Block index type != index type of specified bounding box");
+    compilerError("specified index type != index type of specified bounding box");
   if rank != 2 && isCSType(sparseLayoutType) then
     compilerError("CS layout is only supported for 2 dimensional domains");
 
@@ -715,7 +715,7 @@ proc BlockImpl.init(boundingBox: domain,
   this.complete();
 
   if debugBlockDist {
-    writeln("Creating new Block distribution:");
+    writeln("Creating new blockDist distribution:");
     dsiDisplayRepresentation();
   }
 }
@@ -750,7 +750,7 @@ proc BlockImpl.redistribute(const in newBbox) {
 proc BlockImpl.dsiAssign(other: this.type) {
   if (this.targetLocDom != other.targetLocDom ||
       || reduce (this.targetLocales != other.targetLocales)) {
-    halt("Block distribution assignments currently require the target locale arrays to match");
+    halt("'blockDist' assignments currently require the target locale arrays to match");
   }
 
   this.redistribute(other.boundingBox);
@@ -803,9 +803,9 @@ override proc BlockImpl.dsiDisplayRepresentation() {
 override proc BlockImpl.dsiNewRectangularDom(param rank: int, type idxType,
                                          param strides: strideKind, inds) {
   if idxType != this.idxType then
-    compilerError("Block domain index type does not match distribution's");
+    compilerError("domain index type does not match distribution's");
   if rank != this.rank then
-    compilerError("Block domain rank does not match distribution's");
+    compilerError("domain rank does not match distribution's");
 
   const whole = createWholeDomainForInds(rank, idxType, strides, inds);
 
@@ -847,8 +847,8 @@ override proc BlockImpl.dsiNewSparseDom(param rank: int, type idxType,
 // output distribution
 //
 proc BlockImpl.writeThis(x) throws {
-  x.writeln("Block");
-  x.writeln("-------");
+  x.writeln("blockDist");
+  x.writeln("---------");
   x.writeln("distributes: ", boundingBox);
   x.writeln("across locales: ", targetLocales);
   x.writeln("indexed via: ", targetLocDom);
@@ -944,22 +944,22 @@ iter BlockImpl.activeTargetLocales(const space : domain = boundingBox) {
   }
 }
 
-// create a domain over an existing Block Distribution
+// create a domain over an existing blockDist Distribution
 proc blockDist.createDomain(dom: domain(?)) {
   return dom dmapped this;
 }
 
-// create a domain over an existing Block Distribution constructed from a series of ranges
+// create a domain over an existing blockDist Distribution constructed from a series of ranges
 proc blockDist.createDomain(rng: range(?)...) {
   return this.createDomain({(...rng)});
 }
 
-// create a domain over a Block Distribution
+// create a domain over a blockDist Distribution
 proc type blockDist.createDomain(dom: domain(?), targetLocales: [] locale = Locales) {
   return dom dmapped blockDist(dom, targetLocales);
 }
 
-// create a domain over a Block Distribution constructed from a series of ranges
+// create a domain over a blockDist Distribution constructed from a series of ranges
 proc type blockDist.createDomain(rng: range(?)..., targetLocales: [] locale = Locales) {
   return createDomain({(...rng)}, targetLocales);
 }
@@ -968,7 +968,7 @@ proc type blockDist.createDomain(rng: range(?)...) {
   return createDomain({(...rng)});
 }
 
-// create an array over a Block Distribution, default initialized
+// create an array over a blockDist Distribution, default initialized
 proc type blockDist.createArray(
   dom: domain(?),
   type eltType,
