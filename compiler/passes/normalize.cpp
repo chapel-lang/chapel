@@ -3414,7 +3414,26 @@ static void updateVariableAutoDestroy(DefExpr* defExpr) {
 
 std::set<Symbol*> gAlreadyWarnedGenericFormalSyms;
 
-void warnIfGenericFormalMissingQ(ArgSymbol* arg, Type* type) {
+static bool isDotTypeExpr(Expr* typeExpr) {
+  bool dotType = false;
+
+  Expr* only = typeExpr;
+  if (BlockStmt* block = toBlockStmt(typeExpr)) {
+    if (block->body.length == 1) {
+      only = block->body.only();
+    }
+  }
+
+  if (CallExpr* onlyCall = toCallExpr(only)) {
+    if (onlyCall->isPrimitive(PRIM_TYPEOF)) {
+      dotType = true;
+    }
+  }
+
+  return dotType;
+}
+
+void warnIfGenericFormalMissingQ(ArgSymbol* arg, Type* type, Expr* typeExpr) {
   bool genericWithDefaults = false;
   if (AggregateType* at = toAggregateType(type))
     genericWithDefaults = at->isGenericWithDefaults();
@@ -3434,8 +3453,10 @@ void warnIfGenericFormalMissingQ(ArgSymbol* arg, Type* type) {
       // skip over 'out' intents; we complain about them if '(?)'
       // is missing, and then again if it's there
       // TODO: fix
+    } else if (isDotTypeExpr(typeExpr)) {
+      // ignore e.g. proc R.init=(other: this.type)
+      // this.type isn't generic anymore by the time the compiler calls the copy
     } else {
-
       auto pair = gAlreadyWarnedGenericFormalSyms.insert(arg);
       if (!pair.second) {
         // don't warn twice for the same variable/field
@@ -3496,7 +3517,7 @@ static void hack_resolve_types(ArgSymbol* arg) {
         if (type != dtUnknown && type != dtAny) {
           // This test ensures that we are making progress.
 
-          warnIfGenericFormalMissingQ(arg, type);
+          warnIfGenericFormalMissingQ(arg, type, arg->typeExpr);
 
           arg->type = type;
           arg->typeExpr->remove();
@@ -4576,7 +4597,7 @@ static void expandQueryForActual(FnSymbol*  fn,
                          new CallExpr(PRIM_IS_INSTANTIATION_ALLOW_VALUES,
                                       subtype, query->copy()));
 
-        warnIfGenericFormalMissingQ(formal, ts->type);
+        warnIfGenericFormalMissingQ(formal, ts->type, actual);
       }
     } else {
       INT_FATAL("case not handled");
@@ -4660,7 +4681,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
                 CallExpr* c = new CallExpr(PRIM_IS_INSTANTIATION_ALLOW_VALUES,
                                            genericMgmt->symbol, queried);
                 addToWhereClause(fn, formal, c);
-                warnIfGenericFormalMissingQ(formal, genericMgmt);
+                warnIfGenericFormalMissingQ(formal, genericMgmt, call);
                 // Nothing else to do here since there is no nested call.
                 return;
               }
