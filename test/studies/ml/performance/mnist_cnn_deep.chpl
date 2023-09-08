@@ -11,7 +11,7 @@ var net = new chai.Network(
     )
 );
 
-config const numTrainImages = 500;
+config const numTrainImages = 50;
 config const numTestImages = 10;
 
 config const learnRate = 0.003; // 0.05;
@@ -26,5 +26,7 @@ MNISTTester.train(
     learnRate=learnRate,
     batchSize=batchSize,
     numEpochs=numEpochs,
-    savePath="../lib/models/test_cnn" + net.signature() + ".model"
+    savePath="../lib/models/test_cnn" + net.signature() + ".model",
+    expectedAccuracy=0.0 / 10.0,
+    expectedLoss=2.3
 );

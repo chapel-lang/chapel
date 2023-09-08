@@ -102,11 +102,11 @@ int chpl_comm_ofi_abort_on_error;
 //
 
 //
-// This is used to check that the libfabric version the runtime is
-// linked with in a user program is the same one it was compiled
-// against.
+// This is used as the API version to request in fi_getinfo(). We don't support
+// versions older than this and requesting an older version allows using
+// different versions at build and user compile time.
 //
-#define COMM_OFI_FI_VERSION FI_VERSION(FI_MAJOR_VERSION, FI_MINOR_VERSION)
+#define COMM_OFI_FI_VERSION FI_VERSION(1, 9)
 
 
 ////////////////////////////////////////

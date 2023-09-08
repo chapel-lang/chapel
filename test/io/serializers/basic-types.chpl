@@ -170,6 +170,8 @@ proc main() {
 
   test(new owned Child101());
 
+  test(new unmanaged SimpleChild(5, 42.0));
+
   if failures.size > 0 {
     writeln("FAILURES:");
     for f in failures do

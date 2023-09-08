@@ -1,5 +1,5 @@
 
-use IO, List, Map, FormatHelper;
+use IO, List, Map, FormatHelper, Types;
 
 record A {
   var x: int;
@@ -124,6 +124,14 @@ record myMap {
     writer.write(values);
 }
 
+record DefaultRecord {
+  var b : B;
+}
+
+class DefaultClass {
+  var b : B;
+}
+
 proc test(x, ref y) {
   printDebugFmt(x);
   var f = openMemFile();
@@ -135,7 +143,8 @@ proc test(x, ref y) {
   try {
     f.reader().withDeserializer(FormatReader).read(y);
 
-    if x != y {
+    var mismatch = if isClassType(x.type) then x.b != y.b else x != y;
+    if mismatch {
       writeln("FAILURE: ", x.type:string);
       writeln("GOT: ", y);
     } else
@@ -157,4 +166,13 @@ proc main() {
 
   test(new myList(l), new myList(new list(A)));
   test(new myMap(m), new myMap(new map(int, A)));
+
+  var dr : DefaultRecord;
+  test(new DefaultRecord(new B((11, 1.1))), dr);
+
+  var dco = new owned DefaultClass();
+  test(new owned DefaultClass(new B((22, 2.2))), dco);
+
+  var dcu = new unmanaged DefaultClass();
+  test(new unmanaged DefaultClass(new B((33, 3.3))), dcu);
 }
