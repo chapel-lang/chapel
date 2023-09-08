@@ -240,6 +240,7 @@ zip              return processToken(yyscanner, TZIP);
 "reduce="        return processToken(yyscanner, TASSIGNREDUCE);
 
 "init="          return processToken(yyscanner, TINITEQUALS);
+"init"           return processToken(yyscanner, TINIT);
 
 "=>"             return processToken(yyscanner, TALIAS);
 

@@ -387,7 +387,7 @@
 %token <uniqueStr> TELSE TENUM TEXCEPT TEXPORT TEXTERN
 %token <uniqueStr> TFALSE TFOR TFORALL TFOREACH TFORWARDING
 %token <uniqueStr> TIF TIMAG TIMPORT TIN TINCLUDE
-%token <uniqueStr> TINDEX TINLINE TINOUT TINT TITER TINITEQUALS
+%token <uniqueStr> TINDEX TINLINE TINOUT TINT TITER TINIT TINITEQUALS
 %token <uniqueStr> TIMPLEMENTS TINTERFACE
 %token <uniqueStr> TLABEL TLAMBDA TLET TLIFETIME TLOCAL TLOCALE
 %token <uniqueStr> TMANAGE TMINUSMINUS TMODULE
@@ -450,7 +450,7 @@
 // Add the 'internal_type_type_def' types here to resolve s/r for
 // function types/exprs, as well as TIDENT.
 %nonassoc TBOOL TINT TUINT TREAL TIMAG TCOMPLEX TBYTES TSTRING
-          TDOMAIN TINDEX TLOCALE TNOTHING TVOID TIDENT
+          TDOMAIN TINDEX TLOCALE TNOTHING TVOID TIDENT TINIT
 %nonassoc TFALSE TNONE TTHIS TTRUE
 
 %left TFOR TFORALL TFOREACH TIF TATOMIC TSYNC TSINGLE
@@ -1347,6 +1347,7 @@ assignment_stmt:
 opt_label_ident:
          { $$ = STR(""); }
 | TIDENT { $$ = $1; }
+| TINIT  { $$ = $1; } /* remove after init is no longer a valid identifier. */
 ;
 
 reserved_word_ident:
@@ -1359,6 +1360,7 @@ reserved_word_ident:
 
 ident_def:
   TIDENT
+| TINIT /* remove after init is no longer a valid identifier. */
 | reserved_word_ident
 ;
 
@@ -1372,6 +1374,7 @@ ident_def:
  */
 ident_use:
   TIDENT                   { $$ = $1; }
+| TINIT                    { $$ = $1; } /* remove after init is no longer a valid identifier. */
 | TTHIS                    { $$ = $1; }
 ;
 
@@ -2751,6 +2754,7 @@ lifetime_expr:
 
 lifetime_ident:
   TIDENT { $$ = context->buildIdent(@1, $1); }
+| TINIT  { $$ = context->buildIdent(@1, $1); } /* remove after init is no longer a valid identifier. */
 | TTHIS  { $$ = context->buildIdent(@1, $1); }
 ;
 
