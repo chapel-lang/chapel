@@ -1150,7 +1150,7 @@ void Visitor::checkReservedSymbolName(const NamedDecl* node) {
   }
 
   if(strchr(name.c_str(), '$') != nullptr) {
-    warn(node, "Using $ in identifiers is deprecated; rename this to not use a $.");
+    warn(node, "Using '$' in identifiers is deprecated; rename this to not use a '$'.");
   }
 }
 
