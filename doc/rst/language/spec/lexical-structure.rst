@@ -205,6 +205,7 @@ The following identifiers are reserved as keywords:
    sparse
    string
    subdomain
+   super
    sync
    then
    these
