@@ -50,7 +50,7 @@ module DistributedMap {
     proc init(type keyType, type valType,
               reader: fileReader(?), ref deserializer) throws {
       this.init(keyType, valType);
-      readThis(reader);
+      deserialize(reader, deserializer);
     }
 
     proc clear() {
@@ -58,12 +58,12 @@ module DistributedMap {
       m!.mapClear();
     }
 
-    proc readThis(ch: fileReader(?)) throws {
-      m!.readThis(ch);
+    proc ref deserialize(reader, ref deserializer) throws {
+      m!.deserialize(reader, deserializer);
     }
 
-    proc writeThis(ch: fileWriter(?)) throws {
-      m!.writeThis(ch);
+    proc serialize(writer, ref serializer) throws {
+      m!.serialize(writer, serializer);
     }
   }
 
@@ -399,12 +399,13 @@ module DistributedMap {
       }
     }
 
-    proc init(type keyType, type valType, r: fileReader(?)) {
+    proc init(type keyType, type valType,
+              reader: fileReader(?), ref deserializer) {
       this.init(keyType, valType);
-      readThis(r);
+      deserialize(reader, deserializer);
     }
 
-    // TODO: if writeThis encodes the locale hash, this should react to it
+    // TODO: if serialize encodes the locale hash, this should react to it
     // Right now, it's not easy to call read with a distributedMap as a type
     // argument because of how we store the hasher object.
     /*
@@ -416,7 +417,8 @@ module DistributedMap {
 
       :arg ch: A fileReader to read from.
     */
-    proc readThis(ch: fileReader(?)) throws {
+    override proc deserialize(reader, ref deserializer) throws {
+      var ch = reader;
       for i in locDom {
         locks[i].lock();
       }
@@ -463,7 +465,8 @@ module DistributedMap {
 
       :arg ch: A fileWriter to write to.
     */
-    proc writeThis(ch: fileWriter(?)) throws {
+    override proc serialize(writer, ref serializer) throws {
+      var ch = writer;
       for i in locDom {
         locks[i].lock();
       }

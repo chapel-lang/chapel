@@ -3,8 +3,8 @@ class myclass {
   var y: real;
 }
 
-override proc myclass.writeThis(f) throws {
-  f.write(x, " ", y);
+override proc myclass.serialize(writer, ref serializer) throws {
+  writer.write(x, " ", y);
 }
 
 var ownA = new owned myclass();

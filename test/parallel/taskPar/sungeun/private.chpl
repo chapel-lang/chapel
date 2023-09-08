@@ -20,8 +20,8 @@ record taskPrivateData {
   }
 
   // need our version of writeThis so we can print the sync field
-  proc writeThis(f) throws {
-    f.write("(", tid.readXX(), ": ", x, "  ", y, ")");
+  proc serialize(writer, ref serializer) throws {
+    writer.write("(", tid.readXX(), ": ", x, "  ", y, ")");
   }
 };
 

@@ -36,17 +36,17 @@ record foo {
   }
 }
 
-proc foo.writeThis(fp) throws {
-  fp.write("(/");
+proc foo.serialize(writer, ref serializer) throws {
+  writer.write("(/");
   var tmp = first;
   while tmp != nil {
-    fp.write(tmp!.element);
+    writer.write(tmp!.element);
     tmp = tmp!.next;
     if (tmp != nil) {
-      fp.write(", ");
+      writer.write(", ");
     }
   }
-  fp.write("/)");
+  writer.write("/)");
 }
 
 var f : foo(int);

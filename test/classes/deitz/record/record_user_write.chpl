@@ -4,8 +4,8 @@ record foo {
   var z : int = 3;
 }
 
-proc foo.writeThis(fp) throws {
-  fp.write("(---", x, " ", y, " ", z, "---)");
+proc foo.serialize(writer, ref serializer) throws {
+  writer.write("(---", x, " ", y, " ", z, "---)");
 }
 
 var f : foo;

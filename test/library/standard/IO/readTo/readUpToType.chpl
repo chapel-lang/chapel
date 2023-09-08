@@ -5,12 +5,12 @@ record xyType {
   var y: real;
 }
 
-proc ref xyType.readThis(fr) throws {
-  fr.matchLiteral("|");
-  this.x = fr.read(int);
-  fr.matchLiteral(",");
-  this.y = fr.read(real);
-  fr.matchLiteral("|");
+proc ref xyType.deserialize(reader, ref deserializer) throws {
+  reader.matchLiteral("|");
+  this.x = reader.read(int);
+  reader.matchLiteral(",");
+  this.y = reader.read(real);
+  reader.matchLiteral("|");
 }
 
 proc xyType.init(x = 0, y = 0.0) {
@@ -20,15 +20,11 @@ proc xyType.init(x = 0, y = 0.0) {
 
 proc xyType.init(reader, ref deserializer) {
   this.init();
-  readThis(reader);
+  deserialize(reader, deserializer);
 }
 
-proc xyType.deserialize(reader, ref deserializer) throws {
-  readThis(reader);
-}
-
-proc xyType.writeThis(fw) throws {
-  fw.write("(", this.x, ", ", this.y, ")");
+proc xyType.serialize(writer, ref serializer) throws {
+  writer.write("(", this.x, ", ", this.y, ")");
 }
 
 var r = openReader("xy.txt");

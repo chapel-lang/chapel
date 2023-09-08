@@ -39,12 +39,12 @@ record distributedMap {
     this.init(impl);
   }
 
-  proc readThis(ch) throws {
+  proc ref deserialize(reader, ref deserializer) throws {
     compilerError("Reading a distributedMap is not supported");
   }
 
-  proc writeThis(ch) throws {
-    _value.write(ch);
+  proc serialize(writer, ref serializer) throws {
+    _value.write(writer);
   }
 } // record distributedMap
 

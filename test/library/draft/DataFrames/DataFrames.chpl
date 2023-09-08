@@ -60,8 +60,8 @@ module DataFrames {
     }
 
     @chpldoc.nodoc
-    override proc writeThis(f) throws {
-      halt("cannot writeThis on generic Index");
+    override proc serialize(writer, ref serializer) throws {
+      halt("cannot serialize on generic Index");
     }
 
     iter these(type idxType) {
@@ -270,18 +270,18 @@ module DataFrames {
     }
 
     override
-    proc writeThis(f) throws {
+    proc serialize(writer, ref serializer) throws {
       var idxWidth = writeIdxWidth() + 1;
       for space in 1..idxWidth do
-        f.write(" ");
+        writer.write(" ");
 
       for idx in this {
-        f.write("\n");
+        writer.write("\n");
         // TODO: clean up to simple cast after bugfix
         var idxStr = idx: string;
-        f.write(idxStr);
+        writer.write(idxStr);
         for space in 1..idxWidth-idxStr.size do
-          f.write(" ");
+          writer.write(" ");
       }
     }
 
@@ -703,20 +703,20 @@ module DataFrames {
     }
 
     override
-    proc writeThis(f) throws {
+    proc serialize(writer, ref serializer) throws {
       if idx {
-        idx!.writeThis(f, _to_unmanaged(this));
+        idx!.writeThis(writer, _to_unmanaged(this));
       } else {
         for (v, (i, d)) in this._items() {
-          f.write(i:string + "    ");
+          writer.write(i:string + "    ");
           if v then
-            f.write(d);
+            writer.write(d);
           else
-            f.write("None");
-          f.write("\n");
+            writer.write("None");
+          writer.write("\n");
         }
       }
-      f.write("dtype: " + eltType:string);
+      writer.write("dtype: " + eltType:string);
     }
 
     @chpldoc.nodoc
@@ -825,9 +825,9 @@ module DataFrames {
     }
 
     override
-    proc writeThis(f) throws {
+    proc serialize(writer, ref serializer) throws {
       if idx {
-        idx!.writeThis(f, _to_unmanaged(this));
+        idx!.writeThis(writer, _to_unmanaged(this));
       } else {
         var n = nrows();
         var nStr = n: string;
@@ -835,22 +835,22 @@ module DataFrames {
         const labelsSorted = labels.sorted();
 
         for space in 1..idxWidth do
-          f.write(" ");
+          writer.write(" ");
         for lab in labelsSorted {
-          f.write(lab + "   ");
+          writer.write(lab + "   ");
         }
 
         for i in 0..#n {
-          f.write("\n");
+          writer.write("\n");
           var iStr = i: string;
-          f.write(iStr);
+          writer.write(iStr);
           for space in 1..idxWidth-iStr.size do
-            f.write(" ");
+            writer.write(" ");
 
           for lab in labelsSorted {
             const ser = columns[lab];
-            ser!.writeElemNoIndex(f, i, lab.size);
-            f.write("   ");
+            ser!.writeElemNoIndex(writer, i, lab.size);
+            writer.write("   ");
           }
         }
       }

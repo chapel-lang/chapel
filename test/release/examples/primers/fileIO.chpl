@@ -310,11 +310,11 @@ if example == 0 || example == 6 {
   }
 
   record MyThing {
-    proc writeThis(w) throws {
-      w.writeln("This should be a chunk: {");
-      w.writeln(" a");
-      w.writeln(" b");
-      w.writeln("}");
+    proc serialize(writer, ref serializer) throws {
+      writer.writeln("This should be a chunk: {");
+      writer.writeln(" a");
+      writer.writeln(" b");
+      writer.writeln("}");
     }
   }
 

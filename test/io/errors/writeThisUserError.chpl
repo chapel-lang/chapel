@@ -8,10 +8,10 @@ use IO;
 record foo {
   var x: int = 0;
 
-  proc writeThis(ch: fileWriter(?)) throws {
+  proc serialize(writer:fileWriter(?), ref serializer) throws {
     throw new
       IllegalArgumentError('User error thrown from writeThis!');
-    ch.write(x);
+    writer.write(x);
   }
 }
 

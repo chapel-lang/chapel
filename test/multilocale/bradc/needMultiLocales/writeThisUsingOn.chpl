@@ -3,9 +3,9 @@ use Time;
 class LocC {
   var id: int;
   
-  proc writeThis(x) throws {
+  override proc serialize(writer, ref serializer) throws {
     on this {
-      x.write(id);
+      writer.write(id);
     }
   }
 }
@@ -21,12 +21,12 @@ class C {
     }
   }
 
-  proc writeThis(x) throws {
+  override proc serialize(writer, ref serializer) throws {
     for loc in LocaleSpace {
       on Locales(loc) {
         if loc != 0 then
-          write(" ");
-        write(locCs(loc));
+          writer.write(" ");
+        writer.write(locCs(loc));
       }
     }
   }

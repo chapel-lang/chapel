@@ -1,2 +1,3 @@
+with-readThis.chpl:7: warning: 'readThis' is deprecated. Please use 'deserialize' methods instead.
 Error: bad format: missing expected literal (while reading string literal "(" with path "unknown" offset 0)
 (x = 0)

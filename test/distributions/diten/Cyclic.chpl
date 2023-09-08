@@ -116,14 +116,14 @@ class Cyclic1DDist {
   //
 
 
-  proc writeThis(x) throws {
-    x.writeln("Cyclic1DPar");
-    x.writeln("---------------");
-    x.writeln("across locales: ", targetLocs);
-    x.writeln("indexed via: ", targetLocDom);
-    x.writeln("resulting in: ");
+  proc serialize(writer, ref serializer) throws {
+    writer.writeln("Cyclic1DPar");
+    writer.writeln("---------------");
+    writer.writeln("across locales: ", targetLocs);
+    writer.writeln("indexed via: ", targetLocDom);
+    writer.writeln("resulting in: ");
     for locid in targetLocDom do
-      x.writeln("  [", locid, "] ", locDist(locid));
+      writer.writeln("  [", locid, "] ", locDist(locid));
   }
 
 
@@ -205,8 +205,8 @@ class LocCyclic1DDist {
       writeln("locale ", locid, " owns ", myChunk);
   }
 
-  proc writeThis(x) throws {
-    x.write("locale ", loc.id, " owns chunk: ", myChunk);
+  proc serialize(writer, ref serializer) throws {
+    writer.write("locale ", loc.id, " owns chunk: ", myChunk);
   }
 }
 
@@ -352,8 +352,8 @@ class Cyclic1DDom {
   //
   // the print method for the domain
   //
-  proc writeThis(x) throws {
-    x.write(whole);
+  proc serialize(writer, ref serializer) throws {
+    writer.write(whole);
   }
 
   //
@@ -430,8 +430,8 @@ class LocCyclic1DDom {
   //
   // how to write out this locale's indices
   //
-  proc writeThis(x) throws {
-    x.write(myBlock);
+  proc serialize(writer, ref serializer) throws {
+    writer.write(myBlock);
   }
 
   //
@@ -542,7 +542,7 @@ class Cyclic1DArr {
   //
   // how to print out the whole array, sequentially
   //
-  proc writeThis(x) throws {
+  override proc serialize(writer, ref serializer) throws {
     var first = true;
     for loc in dom.dist.targetLocDom {
       // May want to do something like the following:
@@ -552,11 +552,11 @@ class Cyclic1DArr {
           if (first) {
             first = false;
           } else {
-            x.write(" ");
+            writer.write(" ");
           }
 	  if debugCyclic1D then
             writeln("Writing elements on locale: ", loc);
-          x.write(locArr(loc));
+          writer.write(locArr(loc));
         }
         //    }
       stdout.flush();
@@ -628,11 +628,11 @@ class LocCyclic1DArr {
   //
   // prints out this locale's piece of the array
   //
-  proc writeThis(x) throws {
+  override proc serialize(writer, ref serializer) throws {
     // May want to do something like the following:
     //      on loc {
     // but it causes deadlock -- see writeThisUsingOn.chpl
-    x.write(myElems);
+    writer.write(myElems);
   }
 
   //

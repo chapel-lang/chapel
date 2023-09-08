@@ -3,8 +3,8 @@ use IO;
 class mything {
   var x:int;
   var y:int;
-  proc writeThis(w: fileWriter) throws {
-    w.writeln(x, " ", y);
+  override proc serialize(writer, ref serializer) throws {
+    writer.writeln(x, " ", y);
   }
   // no readThis. Expect a compile-time error
 }

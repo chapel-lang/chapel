@@ -248,7 +248,8 @@ module Tensor {
         }
         
         // Prints the tensor (only really works for rank 1 and 2)
-        proc writeThis(fw: IO.fileWriter(?)) throws {
+        proc serializer(writer: IO.fileWriter(?), ref serializer) throws {
+            const ref fw = writer;
             fw.write("tensor(");
             const shape = this.shape;
             var first: bool = true;

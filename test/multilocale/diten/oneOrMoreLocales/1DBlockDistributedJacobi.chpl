@@ -73,10 +73,10 @@ class DistribArray {
     }
   }
 
-  proc writeThis(w) throws {
+  override proc serialize(writer, ref serializer) throws {
     on Locales(0) {
       for i in 0..arrSize-1 {
-        w.writeln(element(i));
+        writer.writeln(element(i));
       }
     }
   }

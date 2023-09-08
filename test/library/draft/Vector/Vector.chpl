@@ -1158,16 +1158,13 @@ module Vector {
     }
 
     @chpldoc.nodoc
-    proc readThis(ch: fileReader(?)) throws {
+    proc deserialize(reader, ref deserializer) throws {
       compilerError("Reading a Vector is not supported");
     }
 
-    /*
-      Write the contents of this vector to a fileWriter.
-
-      :arg ch: A fileWriter to write to.
-    */
-    proc writeThis(ch: fileWriter(?)) throws {
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      var ch = writer;
       _enter();
 
       ch.write("[");
