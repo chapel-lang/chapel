@@ -16,5 +16,5 @@ export CHPL_GPU=nvidia  # amd is also detected automatically
 
 export CHPL_NIGHTLY_TEST_DIRS="gpu/native"
 
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-ex-cuda"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-ex-cuda-11"
 $CWD/nightly -cron ${nightly_args}
