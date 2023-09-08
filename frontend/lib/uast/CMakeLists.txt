@@ -70,6 +70,7 @@ target_sources(ChplFrontend-obj
                Import.cpp
                Include.cpp
                IndexableLoop.cpp
+               Init.cpp
                IntLiteral.cpp
                Interface.cpp
                Label.cpp

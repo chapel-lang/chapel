@@ -66,6 +66,7 @@
   AST_NODE(Implements)                 // old AST: ImplementsStmt
   AST_NODE(Import)                     // old AST: ImportStmt
   AST_NODE(Include)                    //
+  AST_NODE(Init)                       //
   AST_NODE(Label)                      //
   AST_NODE(Let)                        //
   AST_NODE(New)                        //

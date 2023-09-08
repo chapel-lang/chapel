@@ -1171,6 +1171,12 @@ struct Converter {
     return ret;
   }
 
+  Expr* visit(const uast::Init* node) {
+    // Init should always be "this", aka the method receiver.
+    auto toInit = convertAST(node->target());
+    return new CallExpr("complete", gMethodToken, toInit);
+  }
+
   CallExpr* visit(const uast::New* node) {
     INT_FATAL("Should not be called directly!");
     return nullptr;
