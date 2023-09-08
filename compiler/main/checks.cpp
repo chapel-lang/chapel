@@ -180,52 +180,17 @@ void check_flattenFunctions()
   // Suggestion: Ensure no nested functions.
 }
 
-// copied and modified from `symExprIsUsedAsConstRef` in `cullOverReferences`
-static
-bool symbolIsUsedAsRef(Symbol* sym);
-static
-bool symExprIsUsedAsRef(SymExpr* use) {
-  if (CallExpr* call = toCallExpr(use->parentExpr)) {
-    if (call->resolvedFunction() != nullptr) {
-      ArgSymbol* formal = actual_to_formal(use);
-      // generally, use const-ref-return if passing to const ref formal
-      if (formal->intent == INTENT_REF ||
-          formal->intent == INTENT_OUT ||
-          formal->intent == INTENT_INOUT) {
-        return true;
-      }
-    } else if (call->isPrimitive(PRIM_RETURN) ||
-               call->isPrimitive(PRIM_YIELD)) {
-      FnSymbol* inFn = toFnSymbol(call->parentSymbol);
-      if (inFn->retTag == RET_REF)
-        return true;
-    } else if (call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
-               call->isPrimitive(PRIM_WIDE_GET_NODE)) {
-      return true;
-    } else {
-      // Check for the case that sym is moved to a compiler-introduced
-      // variable, possibly with PRIM_MOVE tmp, PRIM_ADDR_OF sym
-      if (call->isPrimitive(PRIM_ADDR_OF) ||
-          call->isPrimitive(PRIM_SET_REFERENCE) ||
-          call->isPrimitive(PRIM_GET_MEMBER) ||
-          call->isPrimitive(PRIM_GET_SVEC_MEMBER))
-        call = toCallExpr(call->parentExpr);
-
-      if (call->isPrimitive(PRIM_MOVE)) {
-        SymExpr* lhs = toSymExpr(call->get(1));
-        Symbol* lhsSymbol = lhs->symbol();
-        if (lhs != use && symbolIsUsedAsRef(lhsSymbol))
-          return true;
-      }
-    }
-  }
-  return false;
-}
-
 static
 bool symbolIsUsedAsRef(Symbol* sym) {
+
+  auto checkForMove = [](SymExpr* use, CallExpr* call) {
+    SymExpr* lhs = toSymExpr(call->get(1));
+    Symbol* lhsSymbol = lhs->symbol();
+    return lhs != use && symbolIsUsedAsRef(lhsSymbol);
+  };
+
   for_SymbolSymExprs(se, sym) {
-    if (symExprIsUsedAsRef(se)) return true;
+    if (symExprIsUsedAsRef(se, false, checkForMove)) return true;
   }
   return false;
 }
