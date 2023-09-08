@@ -3412,6 +3412,34 @@ static void updateVariableAutoDestroy(DefExpr* defExpr) {
 *                                                                             *
 ************************************** | *************************************/
 
+void warnIfGenericFormalMissingQ(ArgSymbol* arg, Type* type) {
+  bool genericWithDefaults = false;
+  if (AggregateType* at = toAggregateType(type))
+    genericWithDefaults = at->isGenericWithDefaults();
+
+  if (type->symbol->hasFlag(FLAG_GENERIC) &&
+      !genericWithDefaults &&
+      !arg->hasFlag(FLAG_MARKED_GENERIC) &&
+      arg->defPoint->getModule()->modTag == MOD_USER) {
+    if (type->symbol->hasFlag(FLAG_ARRAY)) {
+      // don't worry about it for array types for now
+    } else if (isBuiltinGenericType(type)) {
+      // nor integral nor _tuple
+    } else if (isClassLikeOrManaged(type) &&
+               !isGenericClassIgnoringManagement(type->symbol)) {
+      // skip over cases that are only generic due to no class mgmt
+    } else if (arg->intent == INTENT_OUT) {
+      // skip over 'out' intents; we complain about them if '(?)'
+      // is missing, and then again if it's there
+      // TODO: fix
+    } else {
+      USR_WARN(arg->typeExpr,
+               "need '?' on generic formal type '%s'",
+               toString(type));
+    }
+  }
+}
+
 static void hack_resolve_types(ArgSymbol* arg) {
   // Look only at unknown or arbitrary types.
   if (arg->type == dtUnknown || arg->type == dtAny) {
@@ -3460,32 +3488,7 @@ static void hack_resolve_types(ArgSymbol* arg) {
         if (type != dtUnknown && type != dtAny) {
           // This test ensures that we are making progress.
 
-          bool genericWithDefaults = false;
-          if (AggregateType* at = toAggregateType(type))
-            genericWithDefaults = at->isGenericWithDefaults();
-
-          //          if (arg->defPoint->getModule()->modTag == MOD_USER) {
-            //            USR_WARN(arg->typeExpr, "considering %s: (%d, %d, %d)", type->symbol->name, type->symbol->hasFlag(FLAG_GENERIC), !genericWithDefaults, !arg->hasFlag(FLAG_MARKED_GENERIC));
-          //          }
-          if (type->symbol->hasFlag(FLAG_GENERIC) &&
-              !genericWithDefaults &&
-              !arg->hasFlag(FLAG_MARKED_GENERIC) &&
-              arg->defPoint->getModule()->modTag == MOD_USER) {
-            //            USR_WARN(arg->typeExpr, "really considering %s", type->symbol->name);
-            if (type->symbol->hasFlag(FLAG_ARRAY)) {
-              // don't worry about it for array types for now
-            } else if (type == dtIntegral || type == dtTuple || type == dtOwned || type == dtShared || !strcmp(type->symbol->name, "_singlevar") || !strcmp(type->symbol->name, "_syncvar")) {
-              // nor integral nor _tuple
-            } else if (!isGenericClassIgnoringManagement(type->symbol)) {
-              //              USR_WARN(arg->typeExpr, "skipping due to non-generic class w/ generic management");
-              // skip over cases that are only generic due to no class mgmt
-            } else if (arg->intent == INTENT_OUT) {
-              // skip over 'out' intents; we complain about them if '(?)'
-              // is missing, and then again if it's there
-            } else {
-              USR_WARN(arg->typeExpr, "need '?' on generic formal type '%s'", type->symbol->name);
-            }
-          }
+          warnIfGenericFormalMissingQ(arg, type);
 
           arg->type = type;
           arg->typeExpr->remove();
@@ -4564,6 +4567,8 @@ static void expandQueryForActual(FnSymbol*  fn,
         addToWhereClause(fn, formal,
                          new CallExpr(PRIM_IS_INSTANTIATION_ALLOW_VALUES,
                                       subtype, query->copy()));
+
+        warnIfGenericFormalMissingQ(formal, ts->type);
       }
     } else {
       INT_FATAL("case not handled");
@@ -4647,6 +4652,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
                 CallExpr* c = new CallExpr(PRIM_IS_INSTANTIATION_ALLOW_VALUES,
                                            genericMgmt->symbol, queried);
                 addToWhereClause(fn, formal, c);
+                warnIfGenericFormalMissingQ(formal, genericMgmt);
                 // Nothing else to do here since there is no nested call.
                 return;
               }

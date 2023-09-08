@@ -157,6 +157,7 @@ Expr* partOfNonNormalizableExpr(Expr* expr);
 // support for deprecation by Vass in 1.31 to implement #17131
 bool tryReplaceStridable(CallExpr* parentCall, const char* name,
                          UnresolvedSymExpr* use);
+void warnIfGenericFormalMissingQ(ArgSymbol* arg, Type* type);
 
 // parallel.cpp
 Type* getOrMakeRefTypeDuringCodegen(Type* type);
