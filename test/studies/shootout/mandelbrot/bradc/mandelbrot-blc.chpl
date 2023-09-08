@@ -26,13 +26,13 @@ proc main() {
 
   // precompute (x, y) values from the complex plane
   const inv = 2.0 / n;
-  forall i in 0..#n {
+  forall i in 0..#n with (ref xval, ref yval) {
     xval[i] = inv*i - 1.5;
     yval[i] = inv*i - 1.0;
   }
 
   // compute the image
-  forall (y, xelt) in dynamic(imgSpace, chunkSize) {
+  forall (y, xelt) in dynamic(imgSpace, chunkSize) with (ref image) {
     const xbase = xelt*bitsPerElt,
           cr = (xval[xbase+0], xval[xbase+1], xval[xbase+2], xval[xbase+3],
                 xval[xbase+4], xval[xbase+5], xval[xbase+6], xval[xbase+7]),
@@ -60,7 +60,7 @@ proc main() {
   }
 
   // Get a lock-free writer channel on 'stdout'
-  var w = (new file(1)).writer(serializer=new BinarySerializer(), locking=false);
+  var w = (new file(1)).writer(serializer=new binarySerializer(), locking=false);
 
   // Write the file header and the image array.
   w.writef("P4\n");

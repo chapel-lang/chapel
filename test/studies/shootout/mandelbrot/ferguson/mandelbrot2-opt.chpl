@@ -48,7 +48,7 @@ proc main() {
 
   //var values: [D] complex = for (re,im) in space do compute(get_point(i));
 
-  forall (im,re8) in D {
+  forall (im,re8) in D with (ref set) {
     set(im,re8) = in_set8(im, re8);
   }
 
@@ -60,7 +60,7 @@ proc main() {
   datastart = hwriter.offset();
   hwriter.close();
 
-  var writer = f.writer(serializer=new BinarySerializer(), locking=false, region=datastart..);
+  var writer = f.writer(serializer=new binarySerializer(), locking=false, region=datastart..);
   for (im,re8) in D {
     writer.write(set(im,re8));
   }

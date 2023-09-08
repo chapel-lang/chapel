@@ -128,7 +128,7 @@ the current iteration of the forall loop.
 
    .. code-block:: chapel
 
-      forall i in 1..N do
+      forall i in 1..N with (ref a) do
         a(i) = b(i);
 
    the user has stated that the element-wise assignments can execute
@@ -139,7 +139,7 @@ the current iteration of the forall loop.
 
    .. code-block:: chapel
 
-      [i in 1..N] a(i) = b(i);
+      [i in 1..N with (ref a)] a(i) = b(i);
 
    
 

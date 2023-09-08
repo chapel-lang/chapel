@@ -8,6 +8,6 @@ proc main () {
   const vertex_domain = {1..#numVertices} dmapped Block ({1..#numVertices});
 
   forall s in vertex_domain {
-    var min_distance$: [vertex_domain] int = -1;
+    var min_distance: [vertex_domain] int = -1;
   }
 }

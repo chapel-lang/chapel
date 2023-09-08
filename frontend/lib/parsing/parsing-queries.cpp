@@ -1476,30 +1476,69 @@ createDefaultUnstableMessage(Context* context, const NamedDecl* target) {
   return ret;
 }
 
+// Hack for deprecating symbols that can't be deprecated in module code for
+// whatever reason.
+static std::string hardcodedDeprecationForId(Context* context, ID idMention,
+    ID idTarget) {
+  std::string deprecationMsg;
+
+  // Time.dayOfWeek behavior change
+  {
+    if (idIsInStandardModule(context, idTarget) &&
+        idTarget.parentSymbolId(context).symbolName(context) == "Time" &&
+        idTarget.symbolName(context) == "dayOfWeek") {
+      // skip warning if -scIsoDayOfWeek=true
+      bool newBehaviorOptIn = false;
+      const ConfigSettingsList& configs = parsing::configSettings(context);
+      for (const auto& config : configs) {
+        if (config.first == "cIsoDayOfWeek" && config.second == "true") {
+          newBehaviorOptIn = true;
+          break;
+        }
+      }
+      if (!newBehaviorOptIn) {
+        deprecationMsg =
+            "in an upcoming release 'dayOfWeek' will represent "
+            "Monday as 1 instead of 0. Recompile with '-scIsoDayOfWeek=true' "
+            "to opt-in to the new behavior";
+      }
+    }
+  }
+
+  return deprecationMsg;
+}
+
 static bool
 deprecationWarningForIdImpl(Context* context, ID idMention, ID idTarget) {
+  std::string msg;
+
   if (idMention.isEmpty() || idTarget.isEmpty()) return false;
-
-  auto attributes = parsing::idToAttributeGroup(context, idTarget);
-  if (!attributes) return false;
-
-  bool isDeprecated = attributes->hasPragma(PRAGMA_DEPRECATED) ||
-                      attributes->isDeprecated();
-  if (!isDeprecated) return false;
 
   auto mention = parsing::idToAst(context, idMention);
   auto target = parsing::idToAst(context, idTarget);
   CHPL_ASSERT(mention && target);
-
   auto targetNamedDecl = target->toNamedDecl();
   if (!targetNamedDecl) return false;
 
-  auto storedMsg = attributes->deprecationMessage();
-  std::string msg = storedMsg.isEmpty()
-      ? createDefaultDeprecationMessage(context, targetNamedDecl)
-      : storedMsg.c_str();
+  std::string hardcodedMsg = hardcodedDeprecationForId(context, idMention,
+      idTarget);
+  if (!hardcodedMsg.empty()) {
+    msg = hardcodedMsg;
+  } else {
+    auto attributes = parsing::idToAttributeGroup(context, idTarget);
+    if (!attributes) return false;
 
-  msg = removeSphinxMarkup(msg);
+    bool isDeprecated = attributes->hasPragma(PRAGMA_DEPRECATED) ||
+                        attributes->isDeprecated();
+    if (!isDeprecated) return false;
+
+    auto storedMsg = attributes->deprecationMessage();
+    msg = storedMsg.isEmpty()
+        ? createDefaultDeprecationMessage(context, targetNamedDecl)
+        : storedMsg.c_str();
+
+    msg = removeSphinxMarkup(msg);
+  }
 
   CHPL_ASSERT(msg.size() > 0);
   CHPL_REPORT(context, Deprecation, msg, mention, targetNamedDecl);
@@ -1566,17 +1605,20 @@ isMentionOfWarnedTypeInReceiver(Context* context, ID idMention,
 
 void
 reportDeprecationWarningForId(Context* context, ID idMention, ID idTarget) {
-  auto attr = parsing::idToAttributeGroup(context, idTarget);
+  // skip checks if we have a harcoded deprecation for this symbol
+  if (hardcodedDeprecationForId(context, idMention, idTarget).empty()) {
+    auto attr = parsing::idToAttributeGroup(context, idTarget);
 
-  // Nothing to do, symbol is not deprecated.
-  if (!attr || !attr->isDeprecated()) return;
+    // Nothing to do, symbol is not deprecated.
+    if (!attr || !attr->isDeprecated()) return;
 
-  // Don't warn for 'this' formals with deprecated types.
-  if (isMentionOfWarnedTypeInReceiver(context, idMention, idTarget)) return;
+    // Don't warn for 'this' formals with deprecated types.
+    if (isMentionOfWarnedTypeInReceiver(context, idMention, idTarget)) return;
 
-  // See filter function for skip policy.
-  if (anyParentMatches(context, idMention, shouldSkipDeprecationWarning)) {
-    return;
+    // See filter function for skip policy.
+    if (anyParentMatches(context, idMention, shouldSkipDeprecationWarning)) {
+      return;
+    }
   }
 
   deprecationWarningForIdQuery(context, idMention, idTarget);

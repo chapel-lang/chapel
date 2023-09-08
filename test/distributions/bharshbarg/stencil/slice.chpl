@@ -36,7 +36,7 @@ proc test(dom : domain(?)) {
     assert(Data._value.dom.fluff == Half._value.dom.fluff);
 
     // Fill our array with dummy values
-    forall idx in Space {
+    forall idx in Space with (ref Data) {
       var temp = if isTuple(idx) then idx else (idx,);
       var m = 1;
       for i in temp do m *= i;
@@ -75,7 +75,7 @@ proc test(dom : domain(?)) {
     // Ensure that we didn't somehow create a new array with noFluffView
     assert(Actual[Space.low] == Data[Space.low]);
 
-    forall idx in Space {
+    forall idx in Space with (ref Data) {
       var temp = if isTuple(idx) then idx else (idx,);
       var m = 1;
       for i in temp do m *= i;

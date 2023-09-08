@@ -708,16 +708,20 @@ const char* FunctionType::intentToString(IntentTag intent) {
   return nullptr;
 }
 
-const char* FunctionType::typeToString(Type* t) {
-  auto vt = t->getValType();
+static const char* builtinTypeName(Type* vt) {
   if (vt == dtInt[INT_SIZE_DEFAULT]) return "int";
   if (vt == dtUInt[INT_SIZE_DEFAULT]) return "uint";
   if (vt == dtReal[COMPLEX_SIZE_DEFAULT]) return "real";
   if (vt == dtBools[BOOL_SIZE_DEFAULT]) return "bool";
   if (vt == dtComplex[COMPLEX_SIZE_DEFAULT]) return "complex";
   if (vt == dtImag[FLOAT_SIZE_DEFAULT]) return "imag";
-  auto ret = vt->symbol->cname;
-  return ret;
+  return nullptr;
+}
+
+const char* FunctionType::typeToString(Type* t) {
+  auto vt = t->getValType();
+  if (auto builtinName = builtinTypeName(vt)) return builtinName;
+  return vt->symbol->name;
 }
 
 const char* FunctionType::returnIntentToString(RetTag intent) {
@@ -888,6 +892,12 @@ const char* FunctionType::intentTagMnemonicMangled(IntentTag tag) {
   return nullptr;
 }
 
+const char* FunctionType::typeToStringMangled(Type* t) {
+  auto vt = t->getValType();
+  if (auto builtinName = builtinTypeName(vt)) return builtinName;
+  return vt->symbol->cname;
+}
+
 const char* FunctionType::retTagMnemonicMangled(RetTag tag) {
   switch (tag) {
     case RET_VALUE: return "";
@@ -908,7 +918,7 @@ const char* FunctionType::toStringMangledForCodegen() const {
     auto f = this->formal(i);
     bool skip = isIntentSameAsDefault(f->intent, f->type);
     if (!skip) oss << intentTagMnemonicMangled(f->intent);
-    oss << typeToString(f->type) << "_";
+    oss << typeToStringMangled(f->type) << "_";
     if (f->name) oss << f->name;
     oss << "_";
   }
@@ -918,7 +928,7 @@ const char* FunctionType::toStringMangledForCodegen() const {
     oss << retTagMnemonicMangled(returnIntent_) << "_";
   }
 
-  oss << typeToString(returnType_);
+  oss << typeToStringMangled(returnType_);
   if (throws_) oss << "_throws";
 
   auto ret = astr(oss.str());

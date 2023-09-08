@@ -10,7 +10,7 @@ proc mini_ig() {
   var rindex: [0..#N] int;
   var tmp: [0..#N] int;
 
-  forall i in 0..#N {
+  forall i in 0..#N with (ref tmp) {
     tmp.localAccess[i] = A[rindex.localAccess[i]];
   }
 }
@@ -20,7 +20,7 @@ proc mini_histo() {
   var A: [0..#M] atomic int;
   var rindex: [0..#N] int;
 
-  forall r in rindex {
+  forall r in rindex with (ref A) {
     A[r].add(1);
   }
 }
@@ -30,7 +30,7 @@ proc mini_histo_block() {
   var A: [0..#M] atomic int;
   var rindex: [0..#N] int;
 
-  forall r in rindex {
+  forall r in rindex with (ref A) {
     {
       A[r].add(1);
     }
@@ -42,7 +42,7 @@ proc mini_histo_cond() {
   var A: [0..#M] atomic int;
   var rindex: [0..#N] int;
 
-  forall r in rindex {
+  forall r in rindex with (ref A) {
     if choice then
       A[r].add(1);
   }
@@ -53,7 +53,7 @@ proc mini_histo_cond2() {
   var A: [0..#M] atomic int;
   var rindex: [0..#N] int;
 
-  forall r in rindex {
+  forall r in rindex with (ref A) {
     if choice then
       A[r].add(1);
     else
@@ -66,7 +66,7 @@ proc mini_histo_cond3() {
   var A: [0..#M] atomic int;
   var rindex: [0..#N] int;
 
-  forall r in rindex {
+  forall r in rindex with (ref A) {
     if choice {
     } else {
       A[r].add(1);
@@ -80,7 +80,7 @@ proc read_then_histo() {
   var B: [0..#M] atomic int;
   var rindex: [0..#N] int;
 
-  forall r in rindex {
+  forall r in rindex with (ref B) {
     var x = A[r].read();
     B[r].add(1);
   }
@@ -92,7 +92,7 @@ proc double_histo() {
   var B: [0..#M] atomic int;
   var rindex: [0..#N] int;
 
-  forall r in rindex {
+  forall r in rindex with (ref A, ref B) {
     A[r].add(1); // don't optimize this one
     B[r].add(1); // this one can be optimized
   }
@@ -104,8 +104,8 @@ proc nested_foralls_ok() {
   var B: [0..#M] atomic int;
   var rindex: [0..#N] int;
 
-  forall r in rindex {
-    forall r in rindex {
+  forall r in rindex with (ref A, ref B) {
+    forall r in rindex with (ref B) {
       B[r].add(1);
     }
     A[r].add(1);
@@ -119,7 +119,7 @@ proc mini_ra() {
   var Updates: [0..#M] int;
   var RAStream: [0..#M] int;
 
-  forall (_, r) in zip(Updates, RAStream) do
+  forall (_, r) in zip(Updates, RAStream) with (ref T) do
     T(r & indexMask).xor(r);
 }
 mini_ra();
@@ -136,7 +136,7 @@ proc mini_ra_recursive() {
   var Updates: [0..#M] int;
   var RAStream: [0..#M] int;
 
-  forall (_, r) in zip(Updates, RAStream) {
+  forall (_, r) in zip(Updates, RAStream) with (ref T) {
     recursive(indexMask);
     T(r & indexMask).xor(r);
   }
@@ -170,7 +170,7 @@ proc mini_ra_lf() {
   var indexMask = 1023;
   var Updates: [0..#M] int;
 
-  forall (_, r) in zip(Updates, rng_iter()) do
+  forall (_, r) in zip(Updates, rng_iter()) with (ref T) do
     T(r & indexMask).xor(r);
 }
 mini_ra_lf();

@@ -127,7 +127,7 @@ var l: list(string);
 for f in listDir(dirname1) {
   l.pushBack(f);
 }
-var chplout = stdout.withSerializer(ChplSerializer);
+var chplout = stdout.withSerializer(chplSerializer);
 for f in sorted(l.toArray()) {
   chplout.writeln(f.encode(policy=encodePolicy.unescape));
 }

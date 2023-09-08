@@ -26,7 +26,7 @@ proc test(val, type T = val.type) {
     {
       var readVal = f.reader().withDeserializer(FormatReader).read(T);
       writeln("--- read: ---");
-      stdout.withSerializer(DefaultSerializer).writeln(readVal);
+      stdout.withSerializer(defaultSerializer).writeln(readVal);
       writeln("-------------");
 
       var compare = if isNilableClassType(val.type) then
@@ -128,6 +128,20 @@ class ChildChild : SimpleChild {
   }
 }
 
+// Test printing class hierarchy with a parent in the middle that has no
+// fields.
+class GrandParentOne {
+  var grandParentField : int;
+}
+class ParentZeroOne : GrandParentOne {}
+class Child101 : ParentZeroOne  {
+  var field = (1,0,1);
+  proc equals(other: borrowed Child101?) {
+    return this.grandParentField == other!.grandParentField &&
+           this.field == other!.field;
+  }
+}
+
 // TODO: Add ranges back in once they can be printed across different
 // formats correctly
 proc main() {
@@ -153,6 +167,8 @@ proc main() {
   var nilTemp : owned Parent?;
   test(nilTemp);
   test(new shared Parent(5));
+
+  test(new owned Child101());
 
   if failures.size > 0 {
     writeln("FAILURES:");

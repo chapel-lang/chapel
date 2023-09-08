@@ -40,7 +40,7 @@ module transposed_gen_block_triangular_solve {
     // block and not parallel within each row, due to the triangular solve.
     // (each row is the result of a triangular solve.)
 
-    forall i in offdiag_block_rows do
+    forall i in offdiag_block_rows with (ref L_offdiag) do
       for (j_row, j_col) in zip(diag_block_rows, diag_block_cols) do {
 	L_offdiag (i,j_col) -=
 	  +reduce [k in diag_block_cols (.. j_col-1)]

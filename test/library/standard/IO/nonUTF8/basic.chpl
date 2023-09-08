@@ -1,4 +1,4 @@
-use IO, FileSystem;
+use IO, FileSystem, Path;
 use ChplConfig;
 
 config param useNonUTF8 = true;
@@ -15,6 +15,6 @@ const filename1 = s("junkfile1");
 
 var f = open(filename1, ioMode.cw);
 var p = f.path;
-writeln("file.path works: ", p == CHPL_HOME + "/test/library/standard/IO/nonUTF8/" + filename1);
+writeln("file.path works: ", p == realPath(CHPL_HOME) + "/test/library/standard/IO/nonUTF8/" + filename1);
 f.close();
 FileSystem.remove(filename1);

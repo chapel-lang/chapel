@@ -46,7 +46,9 @@ module GpuDiagnostics
   param gpuDiagsPrintUnstable = false;
 
   /*
-     Aggregated GPU operation counts.
+     Aggregated GPU operation counts. ``host_to_device``, ``device_to_host`` and
+     ``device_to_device`` will be non-zero only when
+     ``CHPL_GPU_MEM_STRATEGY==array_on_device`` and ``CHPL_GPU!=cpu``.
    */
   pragma "chpldoc ignore chpl prefix"
   extern record chpl_gpuDiagnostics {
@@ -92,6 +94,7 @@ module GpuDiagnostics
     use ChplConfig;
 
     param isUm = CHPL_GPU_MEM_STRATEGY == "unified_memory";
+    param isCpu = CHPL_GPU == "cpu";
 
     const expectedLaunch;
     if kernel_launch >= 0 {
@@ -107,7 +110,7 @@ module GpuDiagnostics
     const diags = getGpuDiagnostics()[0];
     var success = compare(expectedLaunch, diags.kernel_launch, "launches");
 
-    if !isUm {
+    if !isUm && !isCpu {
       success &= compare(host_to_device, diags.host_to_device,
                          "host to device communication calls");
       success &= compare(device_to_host, diags.device_to_host,

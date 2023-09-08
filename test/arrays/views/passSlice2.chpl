@@ -1,7 +1,7 @@
 const D = {1..9, 1..9};
 var A: [D] real;
 
-forall (i,j) in D do
+forall (i,j) in D with (ref A) do
   A[i,j] = i + j/10.0;
 
 printArray(A[5..6, 7..8]);
@@ -21,7 +21,7 @@ proc printArray(ref X) {
 }
 
 proc printArray2(ref X: []) {
-  forall i in X.domain do
+  forall i in X.domain with (ref X) do
     X[i] = 1.0;
 }
 

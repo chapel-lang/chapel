@@ -30,6 +30,7 @@ module ChapelReduce {
     return (resType == stateType);
   }
 
+  @unstable("scans are unstable due to questions about exclusive scans and the default behavior.  See issue #20204")
   proc chpl__scanIteratorZip(op, data) {
     compilerWarning("scan has been serialized (see issue #12482)");
     var arr = for d in zip((...data)) do chpl__accumgen(op, d);
@@ -38,6 +39,7 @@ module ChapelReduce {
     return arr;
   }
 
+  @unstable("scans are unstable due to questions about exclusive scans and the default behavior.  See issue #20204")
   proc chpl__scanIterator(op, data) {
     use Reflection;
     param supportsPar = isArray(data) && canResolveMethod(data, "_scan", op);

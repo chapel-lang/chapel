@@ -3,7 +3,7 @@ const D = {1..5};
 var x, y: [D] real;
 var alpha = 2.0;
 
-[i in D] y(i) = 3.0*i;
+[i in D with (ref y)] y(i) = 3.0*i;
 scale(x, y, alpha);
 writeln(x);
 

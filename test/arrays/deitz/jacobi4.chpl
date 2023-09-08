@@ -9,10 +9,10 @@ var South = R.exterior(1, 0);
 var A : [BigR] real;
 var Temp : [R] real;
 
-forall ij in BigR do
+forall ij in BigR with (ref A) do
   A(ij) = 0.0;
 
-forall ij in South do
+forall ij in South with (ref A) do
   A(ij) = 1.0;
 
 if (verbose) {
@@ -24,10 +24,10 @@ var iteration : int = 0;
 var delta : sync real = 1.0;
 
 while (delta.readFE() > epsilon) {
-  forall (i,j) in R do
+  forall (i,j) in R with (ref Temp) do
     Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
   delta.writeEF(0.0);
-  forall (i,j) in R {
+  forall (i,j) in R with (ref A) {
     delta.writeEF(max(delta.readFE(), Temp(i,j)-A(i,j)));
     A(i,j) = Temp(i,j);
   }

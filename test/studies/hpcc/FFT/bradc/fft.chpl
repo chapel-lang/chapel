@@ -74,7 +74,7 @@ proc computeTwiddles(ref W) {
   W(0) = 1.0;
   W(n/2) = let x = cos(delta * n/2)
             in (x, x):complex;
-  forall i in 1..#n/2 {
+  forall i in 1..#n/2 with (ref W) {
     const x = cos(delta*i);
     const y = sin(delta*i);
     W(i)     = (x, y):complex;
@@ -123,7 +123,7 @@ proc dfft(ref Z, W) {
       butterfly(1.0, 1.0, 1.0, Z[j..j+3*span by span]);
     }
   } else {
-    forall j in 0..#span {
+    forall j in 0..#span with (ref Z) {
       var a = Z(j);
       var b = Z(j+span);
       Z(j) = a + b;

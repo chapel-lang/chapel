@@ -11,10 +11,10 @@ SUCCESS: [domain(1,int(64),one)] int(64)
 3 4 5
 6 7 8
 --------------------
-ERROR: IllegalArgumentError: ChplSerializer does not support multidimensional arrays
+ERROR: IllegalArgumentError: chplSerializer does not support multidimensional arrays
 ====================
-ERROR: IllegalArgumentError: ChplSerializer does not support multidimensional arrays
-ERROR: IllegalArgumentError: ChplSerializer does not support multidimensional arrays
+ERROR: IllegalArgumentError: chplSerializer does not support multidimensional arrays
+ERROR: IllegalArgumentError: chplSerializer does not support multidimensional arrays
 ----- 3D -----
 ===== writing: =====
 0 1 2
@@ -29,10 +29,10 @@ ERROR: IllegalArgumentError: ChplSerializer does not support multidimensional ar
 21 22 23
 24 25 26
 --------------------
-ERROR: IllegalArgumentError: ChplSerializer does not support multidimensional arrays
+ERROR: IllegalArgumentError: chplSerializer does not support multidimensional arrays
 ====================
-ERROR: IllegalArgumentError: ChplSerializer does not support multidimensional arrays
-ERROR: IllegalArgumentError: ChplSerializer does not support multidimensional arrays
+ERROR: IllegalArgumentError: chplSerializer does not support multidimensional arrays
+ERROR: IllegalArgumentError: chplSerializer does not support multidimensional arrays
 ----- 4D -----
 ===== writing: =====
 0 1 2
@@ -73,10 +73,10 @@ ERROR: IllegalArgumentError: ChplSerializer does not support multidimensional ar
 75 76 77
 78 79 80
 --------------------
-ERROR: IllegalArgumentError: ChplSerializer does not support multidimensional arrays
+ERROR: IllegalArgumentError: chplSerializer does not support multidimensional arrays
 ====================
-ERROR: IllegalArgumentError: ChplSerializer does not support multidimensional arrays
-ERROR: IllegalArgumentError: ChplSerializer does not support multidimensional arrays
+ERROR: IllegalArgumentError: chplSerializer does not support multidimensional arrays
+ERROR: IllegalArgumentError: chplSerializer does not support multidimensional arrays
 ----- 5D -----
 ===== writing: =====
 0 1 2
@@ -197,10 +197,10 @@ ERROR: IllegalArgumentError: ChplSerializer does not support multidimensional ar
 237 238 239
 240 241 242
 --------------------
-ERROR: IllegalArgumentError: ChplSerializer does not support multidimensional arrays
+ERROR: IllegalArgumentError: chplSerializer does not support multidimensional arrays
 ====================
-ERROR: IllegalArgumentError: ChplSerializer does not support multidimensional arrays
-ERROR: IllegalArgumentError: ChplSerializer does not support multidimensional arrays
+ERROR: IllegalArgumentError: chplSerializer does not support multidimensional arrays
+ERROR: IllegalArgumentError: chplSerializer does not support multidimensional arrays
 --- array of arrays ---
 ===== writing: =====
 1 2 3 2 4 6 3 6 9

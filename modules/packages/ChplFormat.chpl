@@ -18,7 +18,7 @@
  */
 
 /*
- The ChplFormat module provides a ChplSerializer and ChplDeserializer that
+ The ChplFormat module provides a chplSerializer and chplDeserializer that
  aim to read and write data in a format similar to that of Chapel's syntax.
  */
 @unstable("ChplFormat module is considered unstable pending naming changes")
@@ -31,16 +31,16 @@ module ChplFormat {
   // TODO: out of order reading
 
   @chpldoc.nodoc
-  type _writeType = fileWriter(serializerType=ChplSerializer, ?);
+  type _writeType = fileWriter(serializerType=chplSerializer, ?);
   @chpldoc.nodoc
-  type _readerType = fileReader(deserializerType=ChplDeserializer, ?);
+  type _readerType = fileReader(deserializerType=chplDeserializer, ?);
 
-  record ChplSerializer {
+  record chplSerializer {
 
     // TODO: rewrite in terms of writef, or something
     @chpldoc.nodoc
     proc _oldWrite(ch: _writeType, const val:?t) throws {
-      var _def = new DefaultSerializer();
+      var _def = new defaultSerializer();
       var dc = ch.withSerializer(_def);
       var st = dc._styleInternal();
       var orig = st; defer { dc._set_styleInternal(orig); }
@@ -67,7 +67,7 @@ module ChplFormat {
         }
       } else {
         if isArray(val) && val.rank > 1 then
-          throw new IllegalArgumentError("ChplSerializer does not support multidimensional arrays");
+          throw new IllegalArgumentError("chplSerializer does not support multidimensional arrays");
         val.serialize(writer=writer, serializer=this);
       }
     }
@@ -76,6 +76,7 @@ module ChplFormat {
       var writer;
       var _parent = false;
       var _first = true;
+      var _firstPtr : c_ptr(bool) = nil;
 
       @chpldoc.nodoc
       proc ref writeField(name: string, const field: ?T) throws {
@@ -89,14 +90,16 @@ module ChplFormat {
       }
 
       proc ref startClass(writer: _writeType, name: string, size: int) throws {
-        _first = size == 0;
-        return new AggregateSerializer(this.writer, _parent=true);
+        return new AggregateSerializer(this.writer, _parent=true,
+                                       _firstPtr=c_addrOf(_first));
       }
 
       @chpldoc.nodoc
       proc endClass() throws {
         if !_parent then
           writer.writeLiteral(")");
+        else if _firstPtr != nil then
+          _firstPtr.deref() = _first;
       }
 
       proc endRecord() throws {
@@ -230,12 +233,12 @@ module ChplFormat {
     }
   }
 
-  record ChplDeserializer {
+  record chplDeserializer {
 
     // TODO: rewrite in terms of writef, or something
     @chpldoc.nodoc
     proc _oldRead(ch: _readerType, ref val:?t) throws {
-      var _def = new DefaultDeserializer();
+      var _def = new defaultDeserializer();
       var dc = ch.withDeserializer(_def);
       var st = dc._styleInternal();
       var orig = st; defer { dc._set_styleInternal(orig); }
@@ -263,12 +266,12 @@ module ChplFormat {
         _oldRead(reader, tmp);
         return tmp;
       } else if isEnumType(readType) {
-        var ret = reader.withDeserializer(DefaultDeserializer).read(readType);
+        var ret = reader.withDeserializer(defaultDeserializer).read(readType);
         return ret;
       } else if canResolveTypeMethod(readType, "deserializeFrom", reader, this) ||
                 isArrayType(readType) {
         if isArrayType(readType) && chpl__domainFromArrayRuntimeType(readType).rank > 1 then
-          throw new IllegalArgumentError("ChplSerializer does not support multidimensional arrays");
+          throw new IllegalArgumentError("chplSerializer does not support multidimensional arrays");
         return readType.deserializeFrom(reader=reader, deserializer=this);
       } else {
         return new readType(reader=reader, deserializer=this);
@@ -278,7 +281,7 @@ module ChplFormat {
     proc ref deserializeValue(reader: _readerType, ref val: ?readType) : void throws {
       if canResolveMethod(val, "deserialize", reader, this) {
         if isArrayType(readType) && val.rank > 1 then
-          throw new IllegalArgumentError("ChplSerializer does not support multidimensional arrays");
+          throw new IllegalArgumentError("chplSerializer does not support multidimensional arrays");
         val.deserialize(reader=reader, deserializer=this);
       } else {
         val = deserializeType(reader, readType);
@@ -298,6 +301,14 @@ module ChplFormat {
         reader.matchLiteral(",");
 
         return ret;
+      }
+
+      @chpldoc.nodoc
+      proc readField(name: string, ref field) throws {
+        reader.readLiteral(name);
+        reader.readLiteral("=");
+        reader.read(field);
+        reader.matchLiteral(",");
       }
 
       proc startClass(reader:_readerType, name: string) throws {
@@ -340,6 +351,11 @@ module ChplFormat {
         return ret;
       }
 
+      proc readElement(ref element) throws {
+        reader.read(element);
+        reader.matchLiteral(",");
+      }
+
       proc endTuple() throws {
         reader.readLiteral(")");
       }
@@ -360,6 +376,13 @@ module ChplFormat {
         else _first = false;
 
         return reader.read(eltType);
+      }
+
+      proc ref readElement(ref element) throws {
+        if !_first then reader._readLiteral(", ");
+        else _first = false;
+
+        reader.read(element);
       }
 
       proc endList() throws {
@@ -411,9 +434,23 @@ module ChplFormat {
       }
 
       @chpldoc.nodoc
+      proc ref readKey(ref key) throws {
+        if !_first then reader._readLiteral(",");
+        else _first = false;
+
+        reader.read(key);
+      }
+
+      @chpldoc.nodoc
       proc readValue(type valType) : valType throws {
         reader._readLiteral("=>");
         return reader.read(valType);
+      }
+
+      @chpldoc.nodoc
+      proc readValue(ref value) throws {
+        reader._readLiteral("=>");
+        reader.read(value);
       }
 
       @chpldoc.nodoc

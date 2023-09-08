@@ -67,7 +67,7 @@ proc main() {
 
   // solve, spawning one task for each locale
   t.start();
-  forall (tidX, tidY) in OnePerLocale {
+  forall (tidX, tidY) in OnePerLocale with (ref HaloArrays) {
     const localDom = u.localSubdomain(here);
 
     // allocate halo arrays
@@ -125,7 +125,7 @@ proc work(tidX: int, tidY: int) {
     b.barrier();
 
     // compute inner portion of FD kernel in parallel
-    forall (i, j) in localIndicesInner do
+    forall (i, j) in localIndicesInner with (ref u) do
       u.localAccess[i, j] = un.localAccess[i, j] + alpha * (
         un.localAccess[i-1, j] + un.localAccess[i, j-1] +
         un.localAccess[i+1, j] + un.localAccess[i, j+1] -
@@ -134,7 +134,7 @@ proc work(tidX: int, tidY: int) {
 
     // North edge
     if tidX > 0 {
-      forall j in localIndicesInner.dim(1) do
+      forall j in localIndicesInner.dim(1) with (ref u) do
         u.localAccess[nEdge, j] = un.localAccess[nEdge, j] + alpha * (
           HaloArrays[tidX, tidY][N].v[j] + un.localAccess[nEdge, j-1] +
           un.localAccess[nEdge+1, j]     + un.localAccess[nEdge, j+1] -
@@ -144,7 +144,7 @@ proc work(tidX: int, tidY: int) {
 
     // South edge
     if tidX < tidXMax {
-      forall j in localIndicesInner.dim(1) do
+      forall j in localIndicesInner.dim(1) with (ref u) do
         u.localAccess[sEdge, j] = un.localAccess[sEdge, j] + alpha * (
           un.localAccess[sEdge-1, j]     + un.localAccess[sEdge, j-1] +
           HaloArrays[tidX, tidY][S].v[j] + un.localAccess[sEdge, j+1] -
@@ -154,7 +154,7 @@ proc work(tidX: int, tidY: int) {
 
     // East edge
     if tidY < tidYMax {
-      forall i in localIndicesInner.dim(0) do
+      forall i in localIndicesInner.dim(0) with (ref u) do
         u.localAccess[i, eEdge] = un.localAccess[i, eEdge] + alpha * (
           un.localAccess[i-1, eEdge] + un.localAccess[i, eEdge-1] +
           un.localAccess[i+1, eEdge] + HaloArrays[tidX, tidY][E].v[i] -
@@ -164,7 +164,7 @@ proc work(tidX: int, tidY: int) {
 
     // West edge
     if tidY > 0 {
-      forall i in localIndicesInner.dim(0) do
+      forall i in localIndicesInner.dim(0) with (ref u) do
         u.localAccess[i, wEdge] = un.localAccess[i, wEdge] + alpha * (
           un.localAccess[i-1, wEdge] + HaloArrays[tidX, tidY][W].v[i] +
           un.localAccess[i+1, wEdge] + un.localAccess[i, wEdge+1] -

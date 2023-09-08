@@ -499,7 +499,7 @@ extern record sys_sockaddr_t {
   :type port: `c_uint`
   */
   @chpldoc.nodoc
-  proc set(host: sys_in6_addr_t, port: c_uint) {
+  proc ref set(host: sys_in6_addr_t, port: c_uint) {
     sys_set_sys_sockaddr_in6_t(this, host, port);
   }
 

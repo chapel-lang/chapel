@@ -14,7 +14,7 @@ var B = Cyclic.createArray({1..10}, int);
 
 // One way to confirm that is that "Static check successful" message is shown
 // only once in the compiler logs
-forall (i, loopIdx) in zip(D, 1..) {
+forall (i, loopIdx) in zip(D, 1..) with (ref A) {
   A[i] = 
     B[i]*loopIdx;
 }

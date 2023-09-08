@@ -16,7 +16,7 @@ writeln("Starting");
   B = 3;
 
  
-  forall (i,idx) in zip(innerD, 1..) {
+  forall (i,idx) in zip(innerD, 1..) with (ref A) {
     A[i] =     // dynamic: no connection btw A.domain and innerD
       C[i] * idx;    // dynamic: we don't recognize arrayview creation, yet
   }
@@ -37,7 +37,7 @@ writeln("Starting");
   B = 3;
 
 
-  forall (i,idx) in zip(A.domain, 1..) {
+  forall (i,idx) in zip(A.domain, 1..) with (ref A) {
     if innerD.contains(i) {
       A[i] =    // static: obvious
         C[i] * idx;   // dynamic: no recognizable connection btw C.domain and A.domain
@@ -60,7 +60,7 @@ writeln("Starting");
 
   B = 3;
 
-  forall (i,idx) in zip(C.domain, 1..) {
+  forall (i,idx) in zip(C.domain, 1..) with (ref A) {
     A[i-offset] =   // no optimization, index should be just `i`
       C[i] * idx;         // static opt: obvious
   }
@@ -82,7 +82,7 @@ writeln("Starting");
 
   ref C = A[1..10, colIdx];
 
-  forall (i,idx) in zip(C.domain, 1..) {
+  forall (i,idx) in zip(C.domain, 1..) with (ref C) {
     C[i] =            // static: obvious
       B[i, colIdx];   // no optimization, index should be just `i`
   }

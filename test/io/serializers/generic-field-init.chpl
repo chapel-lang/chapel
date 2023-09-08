@@ -19,7 +19,7 @@ proc main() {
     f.writer().write(new T(5));
   }
   {
-    var reader = f.reader().withDeserializer(DefaultDeserializer);
+    var reader = f.reader().withDeserializer(defaultDeserializer);
     var val = new T(int, reader);
     writeln(val);
   }

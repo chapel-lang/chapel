@@ -7,7 +7,7 @@ writeln("a3 = \n",a3,"\n");
 var a4 : [1..3] int;
 
 //error: halt reached - zippered iterations have non-equal lengths
-[i in 1..3] a4(i) = + reduce (a1*a3(.., i));
+[i in 1..3 with (ref a4)] a4(i) = + reduce (a1*a3(.., i));
 //[i in 1..3] a4(i) = + reduce (a1*a3(1..6,i));
 
 writeln("a4 = \n",a4,"\n");

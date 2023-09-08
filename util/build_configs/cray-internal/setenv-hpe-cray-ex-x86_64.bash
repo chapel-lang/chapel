@@ -132,7 +132,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
         launchers=none,pals,slurm-srun
         substrates=none
         locale_models=flat
-        auxfs=none,lustre
+        auxfs=none
         libpics=none,pic
 
         log_info "Start build_configs $dry_run $verbose # no make target"

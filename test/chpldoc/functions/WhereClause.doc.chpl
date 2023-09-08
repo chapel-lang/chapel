@@ -49,7 +49,8 @@ module M {
     }
 
     // From CMO_array.chpl
-    iter these(param tag, followThis) ref where tag == iterKind.follower {
+    iter these_example(param tag, followThis) ref
+      where tag == iterKind.follower {
         yield followThis;
     }
 

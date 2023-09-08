@@ -277,7 +277,7 @@ proc panelSolve(ref Ab: [] ?t,
     
     // update all other values below the pivot
     if k+1 <= pnlRows.high && k+1 <= pnlCols.high then
-      forall (i,j) in panel[k+1.., k+1..] do
+      forall (i,j) in panel[k+1.., k+1..] with (ref Ab) do
         Ab[i,j] -= Ab[i,k] * Ab[k,j];
   }
 }
@@ -302,7 +302,7 @@ proc updateBlockRow(ref Ab: [] ?t, tl: domain(2) dmapped Dist2D, tr: domain(2) d
   // in the dgemm.  We have not yet undertaken that optimization.
   //
   for i in trRows do
-    forall j in trCols do
+    forall j in trCols with (ref Ab) do
       for k in tlRows.low..i-1 do
         Ab[i, j] -= Ab[i, k] * Ab[k,j];
 }

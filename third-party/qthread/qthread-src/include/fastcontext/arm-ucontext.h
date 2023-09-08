@@ -2,6 +2,10 @@
 # include <config.h>
 #endif
 
+#if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARMV8_A64)
+  #define NEEDARMA64CONTEXT
+#endif
+
 #include <stddef.h> /* for size_t, per C89 */
 #include "qthread/qthread-int.h" /* for uint32_t */
 
@@ -14,7 +18,12 @@ typedef struct uctxt uctxt_t;
 
 struct mctxt {
     /* Saved main processor registers. */
+#ifdef NEEDARMA64CONTEXT
+	uint64_t regs[32]; /* callee saves x0-x30, SP */
+	uint64_t fpu_regs[64]; /* 32 128bit FPU/SIMD Neon Registers */
+#else
     uint32_t regs[16]; /* callee saves r0-r15 */
+#endif
     char first;
 };
 

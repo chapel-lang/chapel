@@ -43,14 +43,14 @@ module Map {
 
   @chpldoc.nodoc
   class _LockWrapper {
-    var lock$ = new _lockType();
+    var lockVar = new _lockType();
 
     inline proc lock() {
-      lock$.lock();
+      lockVar.lock();
     }
 
     inline proc unlock() {
-      lock$.unlock();
+      lockVar.unlock();
     }
   }
 
@@ -102,18 +102,18 @@ module Map {
     var table: chpl__hashtable(keyType, valType);
 
     @chpldoc.nodoc
-    var _lock$ = if parSafe then new _LockWrapper() else none;
+    var _lock = if parSafe then new _LockWrapper() else none;
 
     @chpldoc.nodoc
     inline proc _enter() {
       if parSafe then
-        _lock$.lock();
+        _lock.lock();
     }
 
     @chpldoc.nodoc
     inline proc _leave() {
       if parSafe then
-        _lock$.unlock();
+        _lock.unlock();
     }
 
 
@@ -634,6 +634,11 @@ module Map {
 
     @chpldoc.nodoc
     proc ref _readHelper(r: fileReader, ref deserializer) throws {
+      if deserializer.type == defaultDeserializer &&
+         (keyType == string || valType == string ||
+          keyType == bytes || valType == bytes) then
+        compilerError("Default IO format for 'map' does not support reading when the key or value type is  'string' or 'bytes'.");
+
       _enter(); defer _leave();
 
       var des = deserializer.startMap(r);

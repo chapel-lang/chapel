@@ -1,7 +1,7 @@
 const D = {1..5};
 var A: [D] real;
 
-[i in D] A(i) = i;
+[i in D with (ref A)] A(i) = i;
 
 writeln(getvalue("first",A));
 writeln(getvalue("last",A));

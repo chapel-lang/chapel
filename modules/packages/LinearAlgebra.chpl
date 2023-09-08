@@ -529,7 +529,7 @@ proc Vector(x: ?t, Scalars...?n, type eltType) where isNumericType(t) {
 
   V[0] = x: eltType;
 
-  forall i in 1..n {
+  forall i in 1..n with (ref V) {
     V[i] = Scalars[i-1]: eltType;
   }
 
@@ -588,7 +588,7 @@ proc Matrix(A: [?Dom] ?Atype, type eltType=Atype)
 {
   var M: [Dom.parentDom] eltType;
 
-  forall (i,j) in Dom {
+  forall (i,j) in Dom with (ref M) {
     M[i, j] = A[i, j]: eltType;
   }
 
@@ -601,7 +601,7 @@ proc Matrix(A: [?Dom] ?Atype, type eltType=Atype)
   where Dom.rank == 2 && isDefaultSparseArr(A)
 {
   var M: [Dom.parentDom] eltType;
-  forall (i,j) in Dom {
+  forall (i,j) in Dom with (ref M) {
     M[i,j] = A[i,j]: eltType;
   }
   return M;
@@ -664,7 +664,7 @@ proc Matrix(const Arrays ...?n, type eltType) {
   var M: [{dim1, dim2}] eltType;
 
   if (isHomogeneousTuple(Arrays)) {
-    forall i in dim1 do {
+    forall i in dim1 with (ref Arrays) do {
       if Arrays(i).size != Arrays(0).size then halt("Matrix() expected arrays of equal length");
       M[i, ..] = Arrays(i): eltType;
     }
@@ -738,7 +738,7 @@ proc setDiag (ref X: [?D] ?eltType, in k: int = 0, val: eltType = 0)
     start = -k;
     end = D.shape(0);
   }
-  forall row in start..<end {
+  forall row in start..<end with (ref Xref) {
     Xref[row, row+k] = val;
   }
 }
@@ -781,7 +781,7 @@ proc transpose(A: [?Dom] ?eltType) where isDenseMatrix(A) {
     const rDom = {Dom.dim(1), Dom.dim(0)};
     var C: [rDom] eltType;
 
-    [(i, j) in Dom] C[j, i] = A[i, j];
+    [(i, j) in Dom with (ref C)] C[j, i] = A[i, j];
 
     return C;
   }
@@ -1026,7 +1026,7 @@ proc outer(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
     compilerError("Ranks are not 1");
 
   var C: [{Adom.dim(0), Bdom.dim(0)}] eltType;
-  forall (i,j) in C.domain do
+  forall (i,j) in C.domain with (ref C) do
     C[i, j] = A[i]*B[j];
   return C;
 }
@@ -1049,12 +1049,12 @@ proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
   if !trans {
     if Adom.shape(1) != Xdom.shape(0) then
       halt("Mismatched shape in matrix-vector multiplication");
-    forall i in Ydom do
+    forall i in Ydom with (ref Y) do
       Y[i] = + reduce (A[i,..]*X[..]);
   } else {
     if Adom.shape(0) != Xdom.shape(0) then
       halt("Mismatched shape in matrix-vector multiplication");
-    forall i in Ydom do
+    forall i in Ydom with (ref Y) do
       Y[i] = + reduce (A[.., i]*X[..]);
   }
 
@@ -1287,7 +1287,7 @@ private proc _diag_vec(A:[?Adom] ?eltType) {
   var diagonal : [0..#diagSize] eltType;
   forall (i, j, diagInd) in zip (Adom.dim(0)#diagSize,
                                  Adom.dim(1)#diagSize,
-                                 0..) do
+                                 0..) with (ref diagonal) do
     diagonal[diagInd] = A[i,j];
 
   return diagonal;
@@ -1306,7 +1306,7 @@ private proc _diag_vec(A:[?Adom] ?eltType, k) {
 
     forall (i, j, diagInd) in zip(Adom.dim(0)#length,
                                   Adom.dim(1)#length,
-                                  0..) do
+                                  0..) with (ref diagonal) do
       diagonal[diagInd] = A[i, j+offset];
 
     return diagonal;
@@ -1322,7 +1322,7 @@ private proc _diag_vec(A:[?Adom] ?eltType, k) {
 
     forall (i, j, diagInd) in zip(Adom.dim(0)#length,
                                   Adom.dim(1)#length,
-                                  0..) do
+                                  0..) with (ref diagonal) do
       diagonal[diagInd] = A[i+offset, j];
 
     return diagonal;
@@ -1332,7 +1332,7 @@ private proc _diag_vec(A:[?Adom] ?eltType, k) {
 private proc _diag_mat(A:[?Adom] ?eltType){
   var diagonal = Matrix(Adom.dim(0), eltType);
 
-  forall i in Adom.dim(0) do
+  forall i in Adom.dim(0) with (ref diagonal) do
     diagonal[i, i] = A[i];
 
   return diagonal;
@@ -1380,7 +1380,7 @@ proc tril(A: [?D] ?eltType, k=0) {
   if D.rank != 2 then
     compilerError("Rank is not 2");
   var L = Matrix(A);
-  forall (i, j) in D do
+  forall (i, j) in D with (ref L) do
     if (i < j-k) then L[i, j] = 0: eltType;
   return L;
 }
@@ -1427,7 +1427,7 @@ proc triu(A: [?D] ?eltType, k=0) {
   if D.rank != 2 then
     compilerError("Rank is not 2");
   var U = Matrix(A);
-  forall (i, j) in D do
+  forall (i, j) in D with (ref U) do
     if (i > j-k) then U[i, j] = 0;
   return U;
 }
@@ -1599,21 +1599,21 @@ private proc _lu(in A: [?Adom] ?eltType) {
       numSwap += 1;
     }
 
-    forall k in i..<n {
+    forall k in i..<n with (ref U) {
       const sum = + reduce (L[i,..] * U[..,k]);
       U[i,k] = A[i,k] - sum;
     }
 
     L[i,i] = 1;
 
-    forall k in (i+1)..<n {
+    forall k in (i+1)..<n with (ref L) {
       const sum = + reduce (L[k,..] * U[..,i]);
       L[k,i] = (A[k,i] - sum) / U[i,i];
     }
   }
 
   LU = L + U;
-  forall i in dim {
+  forall i in dim with (ref LU) {
     LU(i,i) = U(i,i);
   }
 
@@ -1651,12 +1651,12 @@ private proc permute(ipiv: [] int, A: [?Adom] ?eltType, transpose=false) {
 
   if Adom.rank == 1 {
     if transpose {
-      forall (i,pi) in zip(dim, ipiv) {
+      forall (i,pi) in zip(dim, ipiv) with (ref B) {
         B[i] = A[pi];
       }
     }
     else {
-      forall (i,pi) in zip(dim, ipiv) {
+      forall (i,pi) in zip(dim, ipiv) with (ref B) {
         B[pi] = A[i];
       }
     }
@@ -1799,7 +1799,7 @@ proc solve_tril(const ref L: [?Ldom] ?eltType, const ref b: [?bdom] eltType,
     y(i) = sol;
 
     if (i < n - 1) {
-      forall j in (i+1)..<n {
+      forall j in (i+1)..<n with (ref y) {
         y(j) -= L(j,i) * sol;
       }
     }
@@ -1820,7 +1820,7 @@ proc solve_triu(const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
     y(i) = sol;
 
     if (i > 0) {
-      forall j in 0..<i by -1 {
+      forall j in 0..<i by -1 with (ref y) {
         y(j) -= U(j,i) * sol;
       }
     }
@@ -1937,7 +1937,7 @@ proc vander(x: [?d], in N=0) where d.rank == 1 {
   var resultDom = {d.dim(0), 0..<N};
   var result: [resultDom] x.eltType;
 
-  forall (i,j) in resultDom {
+  forall (i,j) in resultDom with (ref result) {
     result[i, j] = x[i]**(N-1-j);
   }
 
@@ -2347,7 +2347,7 @@ proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType,
 
   while (itern < maxiter) {
     itern = itern + 1;
-    forall i in Adom.dim(0) {
+    forall i in Adom.dim(0) with (ref t) {
       var sigma = 0.0;
       for j in Adom.dim(1) {
         if i!=j then sigma += A(i,j) * X(j);
@@ -2389,7 +2389,7 @@ proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
 
   var C = Matrix(rowA*rowB, colA*colB, eltType=eltType);
 
-  forall (i, j) in A1Dom {
+  forall (i, j) in A1Dom with (ref C) {
     const stR = i*rowB,
           stC = j*colB;
     for (k, l) in B1Dom {
@@ -2506,7 +2506,7 @@ private proc solvePQ(U: [?D], V: [D]) where !usingLAPACK {
   // Matrix Q (which is redundant in this case
   // since we could get away with a single LU calls
   // for all the N iterations).
-  forall j in D.dim(1) {
+  forall j in D.dim(1) with (ref P) {
       P[.., j] = solve(Q, P[.., j]);
     }
 
@@ -2928,13 +2928,13 @@ module Sparse {
     var C: [resDom] A.eltType;
 
     if isCSArr(A) && !isCSArr(B) {
-      forall i in 0..<B.domain.shape(1) {
+      forall i in 0..<B.domain.shape(1) with (ref C) {
         C[.., i] = dot(A, B[.., i]);
       }
       return C;
     }
     else {
-      forall i in 0..<A.domain.shape(0) {
+      forall i in 0..<A.domain.shape(0) with (ref C) {
         C[i, ..] = dot(A[i, ..], B);
       }
       return C;
@@ -2970,7 +2970,7 @@ module Sparse {
       if Adom.shape(1) != Xdom.shape(0) then
         halt("Mismatched shape in matrix-vector multiplication");
         // TODO: Loop over non-zero rows only
-        forall i in Adom.dim(0) {
+        forall i in Adom.dim(0) with (ref Y) {
           for j in Adom.dimIter(1, i) {
             Y[i] += A[i, j] * X[j];
           }
@@ -3204,7 +3204,7 @@ module Sparse {
     var Dom = transpose(Adom);
     var B: [Dom] eltType;
 
-    forall i in Adom.dim(0) {
+    forall i in Adom.dim(0) with (ref B) {
       for j in Adom.dimIter(1, i) {
         B[j, i] = A[i, j];
       }
@@ -3223,7 +3223,7 @@ module Sparse {
     sps += this.domain;
     sps += Adom;
     var S: [sps] eltType;
-    forall (i,j) in sps {
+    forall (i,j) in sps with (ref S) {
       S[i,j] = this[i,j] + A[i,j];
     }
     return S;
@@ -3238,7 +3238,7 @@ module Sparse {
     sps += this.domain;
     sps += Adom;
     var S: [sps] eltType;
-    forall (i,j) in sps {
+    forall (i,j) in sps with (ref S) {
       S[i,j] = this[i,j] + A[i,j];
     }
     return S;
@@ -3252,7 +3252,7 @@ module Sparse {
     sps += this.domain;
     sps += Adom;
     var S: [sps] eltType;
-    forall (i,j) in sps {
+    forall (i,j) in sps with (ref S) {
       S[i,j] = this[i,j] - A[i,j];
     }
     return S;
@@ -3267,7 +3267,7 @@ module Sparse {
     sps += this.domain;
     sps += Adom;
     var S: [sps] eltType;
-    forall (i,j) in sps {
+    forall (i,j) in sps with (ref S) {
       S[i,j] = this[i,j] - A[i,j];
     }
     return S;
@@ -3281,7 +3281,7 @@ module Sparse {
     // Create copy of 'this'
     var BDom = this.domain;
     var B: [BDom] this.eltType;
-    forall (i,j) in B.domain do B[i,j] = this[i,j];
+    forall (i,j) in B.domain with (ref B) do B[i,j] = this[i,j];
 
     // If domain indices do not match, bulk add A's indices to B
     if this.domain != A.domain {
@@ -3289,7 +3289,7 @@ module Sparse {
     }
 
     // Do in-place addition of A into B
-    forall (i,j) in A.domain do B[i,j] *= A[i,j];
+    forall (i,j) in A.domain with (ref B) do B[i,j] *= A[i,j];
 
     return B;
   }
@@ -3305,7 +3305,7 @@ module Sparse {
     sps += this.domain;
     sps += Adom;
     var S: [sps] eltType;
-    forall (i,j) in sps {
+    forall (i,j) in sps with (ref S) {
       S[i,j] = this[i,j] * A[i,j];
     }
     return S;
@@ -3319,7 +3319,7 @@ module Sparse {
     // Create copy of 'this'
     var BDom = this.domain;
     var B: [BDom] this.eltType;
-    forall (i,j) in B.domain do B[i,j] = this[i,j];
+    forall (i,j) in B.domain with (ref B) do B[i,j] = this[i,j];
 
     // If domain indices do not match, bulk add A's indices to B
     if this.domain != A.domain {
@@ -3327,7 +3327,7 @@ module Sparse {
     }
 
     // Do in-place addition of A into B
-    forall (i,j) in A.domain do B[i,j] /= A[i,j];
+    forall (i,j) in A.domain with (ref B) do B[i,j] /= A[i,j];
 
     return B;
   }
@@ -3343,7 +3343,7 @@ module Sparse {
     sps += this.domain;
     sps += Adom;
     var S: [sps] eltType;
-    forall (i,j) in Adom {
+    forall (i,j) in Adom with (ref S) {
       S[i,j] = this[i,j] / A[i,j];
     }
     return S;
@@ -3386,7 +3386,7 @@ module Sparse {
 
     while (itern < maxiter) {
       itern = itern + 1;
-      forall i in Adom.dim(0) {
+      forall i in Adom.dim(0) with (ref t) {
         var sigma = 0.0;
         for j in Adom.dimIter(1,i) {
           if i!=j then sigma += A(i,j) * X(j);
@@ -3421,11 +3421,11 @@ module Sparse {
         end = D.shape(0);
       }
       var indices : [start..end] (D.idxType, D.idxType);
-      forall ind in {start..end} {
+      forall ind in {start..end} with (ref indices) {
         indices[ind] = (ind, ind+k);
       }
       D.bulkAdd(indices, dataSorted=true, isUnique=true, preserveInds=false);
-      forall ind in indices {
+      forall ind in indices with (ref X) {
         X(ind) = val;
       }
   }

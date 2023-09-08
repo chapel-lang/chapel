@@ -6,6 +6,7 @@
 #include <limits.h>                    /* for UINT_MAX (C89) */
 #include "qthread-int.h"               /* for uint32_t and uint64_t */
 #include "common.h"                    /* important configuration options */
+#include <stdbool.h> 
 
 #include <string.h>                    /* for memcpy() */
 
@@ -51,7 +52,39 @@
 #define NO_SHEPHERD    ((qthread_shepherd_id_t)-1)
 #define NO_WORKER      ((qthread_worker_id_t)-1)
 
-#define QTHREAD_VERSION 1010001
+#define QTHREAD_RELEASE_TYPE_ALPHA  0
+#define QTHREAD_RELEASE_TYPE_BETA   1
+#define QTHREAD_RELEASE_TYPE_RC     2
+#define QTHREAD_RELEASE_TYPE_PATCH  3
+
+/* QTHREAD_VERSION = [MAJ].[MIN].[REV][EXT][EXT_NUMBER]
+ * Example: QTHREAD_VERSION = 1.17.1rc1 represents
+ *          MAJ = 1
+ *          MIN = 17
+ *          REV = 1
+ *          EXT = rc
+ *          EXT_NUMBER = 1
+ */
+#define QTHREAD_VERSION "1.19"
+
+/* * QTHREAD_NUMVERSION = [MAJ] * 10000000 + [MIN] * 100000 + [REV] * 1000
+ *                      + [EXT] * 100 + [EXT_NUMBER]
+ * where [EXT] is converted to the following format number:
+ *    ALPHA (a) = 0 (ABT_RELEASE_TYPE_ALPHA)
+ *    BETA (b)  = 1 (ABT_RELEASE_TYPE_BETA)
+ *    RC (rc)   = 2 (ABT_RELEASE_TYPE_RC)
+ *    PATCH (p) = 3 (ABT_RELEASE_TYPE_PATCH)
+ 
+ *
+ * QTHREAD_NUMVERSION has 2 digit for MAJ, 2 digits for MIN, 2 digits for REV, 1
+ * digit for EXT, and 2 digits for EXT_NUMBER.  For example, 1.17.1rc1 is
+ * converted to the numeric version 011701201.
+ */
+#define QTHREAD_NUMVERSION 011900000
+
+#define QTHREADS_GET_VERSION(MAJOR, MINOR, REVISION, TYPE, PATCH) \
+    (((MAJOR) * 10000000) + ((MINOR) * 100000) + ((REVISION) * 1000) + ((TYPE) * 100) + (PATCH))
+
 
 #include "macros.h"
 
@@ -322,7 +355,6 @@ qthread_worker_id_t   qthread_worker_local(qthread_shepherd_id_t *s);
 void *   qthread_get_tasklocal(unsigned int);
 unsigned qthread_size_tasklocal(void);
 
-
 void* qthread_tos(void);
 void* qthread_bos(void);
 
@@ -426,6 +458,28 @@ int       qthread_queue_destroy(qthread_queue_t q);
  * number of addresses in the system, relatively few will be in a non-default
  * (full, no waiters) state at any one time.
  */
+
+#define QTHREAD_SPINLOCK_IS_RECURSIVE (-1)
+#define QTHREAD_SPINLOCK_IS_NOT_RECURSIVE (-2)
+
+typedef union qt_spin_trylock_s {
+    aligned_t u;
+    struct {
+        haligned_t ticket;
+        haligned_t users;
+    } s;
+} Q_ALIGNED(QTHREAD_ALIGNMENT_ALIGNED_T) qt_spin_trylock_t;
+
+typedef struct {
+    int64_t s;
+    int64_t count;
+} qthread_spinlock_state_t;
+
+typedef struct {
+    qt_spin_trylock_t lock;
+    qthread_spinlock_state_t state;
+} qthread_spinlock_t;
+
 
 /* This function is just to assist with debugging; it returns 1 if the address
  * is full, and 0 if the address is empty */
@@ -556,6 +610,29 @@ int qthread_readXX(aligned_t       *dest,
  */
 int qthread_lock(const aligned_t *a);
 int qthread_unlock(const aligned_t *a);
+int qthread_trylock(const aligned_t *a);
+
+int qthread_spinlock_init(qthread_spinlock_t *a, const bool is_recursive);
+int qthread_spinlock_destroy(qthread_spinlock_t *a);
+int qthread_spinlock_lock(qthread_spinlock_t *a);
+int qthread_spinlock_unlock(qthread_spinlock_t *a);
+int qthread_spinlock_trylock(qthread_spinlock_t *a);
+
+int qthread_spinlocks_init(qthread_spinlock_t *a, const bool is_recursive); 
+int qthread_spinlocks_destroy(qthread_spinlock_t *a);
+
+#define QTHREAD_SPINLOCK_IS_RECURSIVE (-1)
+#define QTHREAD_SPINLOCK_IS_NOT_RECURSIVE (-2)
+
+#define QTHREAD_MUTEX_INITIALIZER  {{.s={0,0}},{QTHREAD_SPINLOCK_IS_NOT_RECURSIVE,0}}
+#define QTHREAD_RECURSIVE_MUTEX_INITIALIZER {{.s={0,0}},{QTHREAD_SPINLOCK_IS_RECURSIVE,0}}
+
+/* functions to implement spinlock-based locking/unlocking 
+ * if qthread_lock_init(adr) is called, subsequent locking over adr 
+ * uses spin locking instead of FEBs. Support recursive locking.
+ */
+int qthread_lock_init(const aligned_t *a, const bool is_recursive); 
+int qthread_lock_destroy(aligned_t *a);
 
 #if defined(QTHREAD_MUTEX_INCREMENT) ||             \
     (QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC32) || \

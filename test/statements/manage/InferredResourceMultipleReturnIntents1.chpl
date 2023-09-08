@@ -17,7 +17,7 @@ record res {
 
 var globalRes = new res();
 
-record man {
+record man : contextManager {
   var x = new r();
 
   proc enterContext() ref {

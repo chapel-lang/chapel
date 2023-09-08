@@ -187,7 +187,7 @@ proc process_json(logfile:fileReader(?), fname:string, ref Pairs) {
   var nlines = 0;
   var max_id = 0;
 
-  var jsonReader = logfile.withDeserializer(JsonDeserializer);
+  var jsonReader = logfile.withDeserializer(jsonDeserializer);
 
   if progress then
     writeln(fname, " : processing");
@@ -220,7 +220,7 @@ proc process_json(logfile:fileReader(?), fname:string, ref Pairs) {
     } // halt on truly unknown error
 
     if got {
-      if verbose then stdout.withSerializer(JsonSerializer).write(tweet);
+      if verbose then stdout.withSerializer(jsonSerializer).write(tweet);
       var id = tweet.user.id;
       if max_id < id then max_id = id;
       for mentions in tweet.entities.user_mentions {
@@ -468,7 +468,7 @@ proc create_and_analyze_graph(ref Pairs)
 
     // TODO:  -> forall, but handle races in vertex labels?
     // iterate over G.vertices in a random order
-    serial !parallel { forall vid in reorder {
+    serial !parallel { forall vid in reorder with (ref labels) {
     //for vid in G.vertices {
 
       if printall then

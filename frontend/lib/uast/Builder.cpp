@@ -19,6 +19,7 @@
 
 #include "chpl/uast/Builder.h"
 
+#include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/Context.h"
 #include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/ErrorBase.h"
@@ -473,7 +474,8 @@ Builder::lookupConfigSettingsForVar(Variable* var, pathVecT& pathVec,
       if (auto attribs = var->attributeGroup()) {
         if (attribs->isDeprecated())
           generateConfigWarning(varName, "deprecated", attribs->deprecationMessage());
-        if (attribs->isUnstable())
+        if (attribs->isUnstable() &&
+            isCompilerFlagSet(this->context(), CompilerFlags::WARN_UNSTABLE))
           generateConfigWarning(varName, "unstable", attribs->unstableMessage());
       }
       if (!configMatched.first.empty() &&

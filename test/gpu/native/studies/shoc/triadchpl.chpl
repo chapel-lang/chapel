@@ -31,7 +31,7 @@ proc main(){
   // with random values, in our implementation we fill with
   // known sample values so we can later verify the result.
   // This difference in values shouldn't impact performance.
-  forall i in 0..#halfNumFloats {
+  forall i in 0..#halfNumFloats with (ref A, ref B) {
     A[i] = i:int(32)%16:int(32) + 0.12:real(32);
     A[halfNumFloats+i] = A[i] ;
     B[i] = A[i];

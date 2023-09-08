@@ -3106,8 +3106,12 @@ static void adjustClassCastCall(CallExpr* call)
     // (Note, this assumes that managedType.borrow() does not throw/halt
     //  for nilable managed types storing nil. If that changed, we'd
     //  need another method to call here to get the possibly nil ptr).
+    // This code is important to allow proper borrowing, but without
+    //  `!isDecoratorUnmanaged(d)` it is too eager and is applied where it
+    //  should not be
     if (isDecoratorManaged(valueD) &&
         !isDecoratorManaged(d) &&
+        !isDecoratorUnmanaged(d) &&
         !valueIsType) {
       if (isDecoratorUnknownManagement(d))
         INT_FATAL(call, "actual value has unknown type");
@@ -11255,6 +11259,92 @@ static void checkNoVoidFields()
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*  Find specially named methods such as 'hash' that are placed on types that  *
+*  don't have the corresponding interface. This is executed here because      *
+*  resolution cleans up unused functions and interface statements, but we want*
+*  to warn even if a function isn't used.                                     *
+*                                                                             *
+************************************** | *************************************/
+
+struct SpeciallyNamedMethodInfo {
+  std::map<std::string, FnSymbol*> speciallyNamedMethods;
+};
+
+using SpeciallyNamedMethodKey = std::pair<InterfaceSymbol*, AggregateType*>;
+using SpecialMethodMap = std::map<SpeciallyNamedMethodKey, SpeciallyNamedMethodInfo>;
+
+static AggregateType* getBaseTypeForInterfaceWarnings(Type* ts) {
+  AggregateType* toReturn = toAggregateType(ts);
+
+  if (!toReturn) {
+    if (auto dct = toDecoratedClassType(ts)) {
+      toReturn = dct->getCanonicalClass();
+    }
+  }
+
+  if (toReturn) toReturn = toReturn->getRootInstantiation();
+
+  return toReturn;
+}
+
+static void checkSpeciallyNamedMethods() {
+  static const std::unordered_map<const char*, InterfaceSymbol*> reservedNames = {
+    { astr("hash"), gHashable },
+    { astr("enterContext"), gContextManager },
+    { astr("exitContext"), gContextManager },
+  };
+
+  SpecialMethodMap flagged;
+
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+    if (!fn->isMethod()) continue;
+    if (fn->isCompilerGenerated() || fn->hasFlag(FLAG_FIELD_ACCESSOR)) continue;
+    // The parent class must have this function, and would've been flagged.
+    // the user will already get the warning.
+    if (fn->hasFlag(FLAG_OVERRIDE)) continue;
+    auto reservedIter = reservedNames.find(fn->name);
+    if (reservedIter == reservedNames.end()) continue;
+
+    auto receiverType = fn->getReceiverType();
+    auto at = getBaseTypeForInterfaceWarnings(receiverType);
+    if (!at || (reservedIter->second == gHashable && at == dtObject)) continue;
+
+    auto key = SpeciallyNamedMethodKey(reservedIter->second, at);
+    flagged[key].speciallyNamedMethods[fn->name] = fn;
+  }
+
+  for_alive_in_Vec(ImplementsStmt, istm, gImplementsStmts) {
+    auto se = toSymExpr(istm->iConstraint->consActuals.get(1));
+    auto ts = toTypeSymbol(se->symbol());
+    auto at = getBaseTypeForInterfaceWarnings(ts->type);
+    if (!at) continue;
+
+    // For this pair of aggregate type / interface, remove it from the
+    // flagged set, because we found an instance.
+    auto isym = istm->iConstraint->ifcSymbol();
+    flagged.erase(SpeciallyNamedMethodKey(isym, at));
+  }
+
+  // the things now left in flagged, we did not find any implements statements
+  // for.
+  for (auto& flaggedTypeIfc : flagged) {
+    auto ifc = flaggedTypeIfc.first.first;
+    auto at = flaggedTypeIfc.first.second;
+
+    USR_WARN(at,
+             "the type '%s' defines methods that previously had special meaning. "
+             "These will soon require '%s' to implement the '%s' interface to "
+             "continue to be treated specially.", at->name(), at->name(), ifc->name);
+    for (auto& flaggedNameFn : flaggedTypeIfc.second.speciallyNamedMethods) {
+      USR_PRINT(flaggedNameFn.second, "formerly-special function '%s' defined here",
+               flaggedNameFn.second->name);
+    }
+  }
+}
+
+
 
 void resolve() {
   parseExplainFlag(fExplainCall, &explainCallLine, &explainCallModule);
@@ -11328,6 +11418,8 @@ void resolve() {
 
   if (fPrintUnusedFns || fPrintUnusedInternalFns)
     printUnusedFunctions();
+
+  checkSpeciallyNamedMethods();
 
   saveGenericSubstitutions();
 

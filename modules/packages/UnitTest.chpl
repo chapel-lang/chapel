@@ -1136,6 +1136,17 @@ module UnitTest {
     }
   }
 
+  private proc testNameFromProcedure(f): string {
+    var line = f: string;
+    assert(line.startsWith("proc"));
+    var parenIndex = line.find("(");
+    assert(parenIndex > -1);
+    var name = try! line[(5 : byteIndex)..<parenIndex];
+
+    // Adding parentheses to the end makes it easier to detect in stdout.
+    return name + "()";
+  }
+
   /*Runs the tests
 
     Call this as
@@ -1168,7 +1179,7 @@ module UnitTest {
     }
 
     for test in testSuite {
-      const testName = test: string;
+      const testName = testNameFromProcedure(test);
       testStatus.addOrReplace(testName, false);
       testsFailed.addOrReplace(testName, false);
       testsErrored.addOrReplace(testName, false);
@@ -1207,7 +1218,8 @@ module UnitTest {
     }
 
     for test in testSuite {
-      if !testStatus["%?".format(test)] {
+      const testName = testNameFromProcedure(test);
+      if !testStatus[testName] {
         // Create a test object per test
         var checkCircle: list(string);
         var circleFound = false;
@@ -1223,7 +1235,7 @@ module UnitTest {
                       ref testsSkipped, ref testsLocalFails, test, ref checkCircle,
                       ref circleFound) throws {
     var testResult = new TextTestResult();
-    var testName = test: string; //test is a FCF:
+    var testName = testNameFromProcedure(test); //test is a FCF:
     checkCircle.pushBack(testName);
     try {
       testResult.startTest(testName);
@@ -1240,7 +1252,8 @@ module UnitTest {
     catch e: DependencyFound {
       var allTestsRan = true;
       for superTest in testObject.testDependsOn {
-        var checkCircleCount = checkCircle.count(superTest: string);
+        var superTestName = testNameFromProcedure(superTest);
+        var checkCircleCount = checkCircle.count(superTestName);
         // cycle is checked
         if checkCircleCount > 0 {
           testsSkipped.replace(testName, true);
@@ -1251,37 +1264,37 @@ module UnitTest {
           return;
         }
         // if super test didn't Error or Failed or skipped
-        if !testsErrored[superTest: string] &&
-           !testsFailed[superTest: string] &&
-           !testsSkipped[superTest: string] {
+        if !testsErrored[superTestName] &&
+           !testsFailed[superTestName] &&
+           !testsSkipped[superTestName] {
           // checking if super test ran or not.
-          if !testStatus[superTest: string] {
+          if !testStatus[superTestName] {
             // Create a test object per test
             var superTestObject = new Test();
             // running the super test
             runTestMethod(testStatus, superTestObject, testsFailed, testsErrored,
                           testsSkipped, testsLocalFails, superTest, checkCircle,
                           circleFound);
-            var removeSuperTestCount = checkCircle.count(superTest: string);
+            var removeSuperTestCount = checkCircle.count(superTestName);
             if removeSuperTestCount > 0 {
-              checkCircle.remove(superTest: string);
+              checkCircle.remove(superTestName);
             }
             // if super test failed
-            if testsFailed[superTest: string] {
+            if testsFailed[superTestName] {
               testsSkipped.replace(testName, true);
-              var skipReason = testName + " skipped because " + superTest: string +" failed";
+              var skipReason = testName + " skipped because " + superTestName +" failed";
               testResult.addSkip(testName, skipReason);
               break;
             }
             // if super test failed
-            if testsSkipped[superTest: string] {
+            if testsSkipped[superTestName] {
               testsSkipped.replace(testName, true);
-              var skipReason = testName + " skipped because " + superTest: string +" skipped";
+              var skipReason = testName + " skipped because " + superTestName +" skipped";
               testResult.addSkip(testName, skipReason);
               break;
             }
             // this superTest has not yet finished.
-            if testsLocalFails[superTest: string] {
+            if testsLocalFails[superTestName] {
               allTestsRan = false;
             }
 
@@ -1289,32 +1302,32 @@ module UnitTest {
             if circleFound then break;
 
             // if superTest error then
-            if testsErrored[superTest: string] {
+            if testsErrored[superTestName] {
               testsSkipped.replace(testName, true);
-              var skipReason = testName + " skipped because " + superTest: string +" gave an Error";
+              var skipReason = testName + " skipped because " + superTestName +" gave an Error";
               testResult.addSkip(testName, skipReason);
               break;
             }
           }
         }
         // super test Errored
-        else if testsErrored[superTest: string] {
+        else if testsErrored[superTestName] {
           testsSkipped.replace(testName, true);
-          var skipReason = testName + " skipped because " + superTest: string +" gave an Error";
+          var skipReason = testName + " skipped because " + superTestName +" gave an Error";
           testResult.addSkip(testName, skipReason);
           break;
         }
         // super test Skipped
-        else if testsSkipped[superTest: string] {
+        else if testsSkipped[superTestName] {
           testsSkipped.replace(testName, true);
-          var skipReason = testName + " skipped because " + superTest: string +" Skipped";
+          var skipReason = testName + " skipped because " + superTestName +" Skipped";
           testResult.addSkip(testName, skipReason);
           break;
         }
         //super test failed
         else {
           testsSkipped.replace(testName, true);
-          var skipReason = testName + " skipped because " + superTest: string +" failed";
+          var skipReason = testName + " skipped because " + superTestName +" failed";
           testResult.addSkip(testName, skipReason);
         }
       }

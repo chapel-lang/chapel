@@ -288,6 +288,9 @@ io/corrado/qio_buf_optimization_perf/large_binary_io.graph
 studies/colostate/Jacobi1D.graph
 studies/colostate/Jacobi2D.graph
 studies/colostate/cfd-mini.graph
+# suite: ML
+studies/ml/performance/mnist_cnn.graph
+studies/ml/performance/xor_mlp.graph
 # suite: Nikhil Padmanabhan
 users/npadmana/twopt/twopt-buildtrees.graph
 users/npadmana/twopt/twopt-paircount.graph

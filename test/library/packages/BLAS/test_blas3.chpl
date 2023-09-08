@@ -99,7 +99,7 @@ proc test_gemm_helper(type t) {
           beta = rng.getNext();
 
     gemm(A,B,C,alpha,beta);
-    forall (i,j) in D.domain do D[i,j] = beta*D[i,j]+alpha*(+ reduce (A[i,..]*B[..,j]));
+    forall (i,j) in D.domain with (ref D) do D[i,j] = beta*D[i,j]+alpha*(+ reduce (A[i,..]*B[..,j]));
     var err = max reduce abs(C-D);
     trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
@@ -124,7 +124,7 @@ proc test_gemm_helper(type t) {
           beta = rng.getNext();
 
     gemm(A,B,C,alpha,beta, opA=Op.T);
-    forall (i,j) in D.domain do D[i,j] = beta*D[i,j]+alpha*(+ reduce (A[..,i]*B[..,j]));
+    forall (i,j) in D.domain with (ref D) do D[i,j] = beta*D[i,j]+alpha*(+ reduce (A[..,i]*B[..,j]));
     var err = max reduce abs(C-D);
     trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
@@ -149,7 +149,7 @@ proc test_gemm_helper(type t) {
           beta = rng.getNext();
 
     gemm(A,B,C,alpha,beta, opB=Op.H);
-    forall (i,j) in D.domain do D[i,j] = beta*D[i,j]+alpha*(+ reduce (A[i,..]*conj(B[j,..])));
+    forall (i,j) in D.domain with (ref D) do D[i,j] = beta*D[i,j]+alpha*(+ reduce (A[i,..]*conj(B[j,..])));
     var err = max reduce abs(C-D);
     trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
@@ -175,7 +175,7 @@ proc test_gemm_helper(type t) {
           beta = rng.getNext();
 
     gemm(A[..,0.. #k], B[..,0.. #n], C[..,0.. #n], alpha,beta);
-    forall (i,j) in {0.. #m, 0.. #n} do
+    forall (i,j) in {0.. #m, 0.. #n} with (ref D) do
       D[i,j] = beta*D[i,j]+alpha*(+ reduce (A[i,0.. #k]*B[..,j]));
     var err = max reduce abs(C-D);
     trackErrors(name, err, errorThreshold, passed, failed, tests);

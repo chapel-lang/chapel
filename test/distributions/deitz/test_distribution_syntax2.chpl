@@ -7,7 +7,7 @@ config const n: int = 4;
   var Dom: domain(2) dmapped Dist = {1..n,1..n} dmapped Dist;
   var Arr: [Dom] 2*int;
 
-  forall (i,j) in Dom {
+  forall (i,j) in Dom with (ref Arr) {
     Arr(i,j) = (here.id,(i-1)*n + j);
   }
   writeln("Block-Distributed Array");
@@ -22,7 +22,7 @@ config const n: int = 4;
   var Dom: domain(2) dmapped Dist = {1..n,1..n} dmapped Dist;
   var Arr: [Dom] 2*int;
 
-  forall (i,j) in Dom {
+  forall (i,j) in Dom with (ref Arr) {
     Arr(i,j) = (here.id,(i-1)*n + j);
   }
   writeln("Cyclic-Distributed Array");

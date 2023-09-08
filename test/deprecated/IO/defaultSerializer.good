@@ -1,0 +1,3 @@
+defaultSerializer.chpl:5: warning: 'DefaultSerializer' is deprecated; please use 'defaultSerializer' instead
+defaultSerializer.chpl:8: warning: 'DefaultDeserializer' is deprecated; please use 'defaultDeserializer' instead
+hello!

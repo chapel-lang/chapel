@@ -538,6 +538,7 @@ import OS.{errorCode};
 use CTypes;
 public use OS;
 private use Reflection;
+public use ChapelIO only write, writeln, writef;
 
 /*
 
@@ -2475,18 +2476,36 @@ proc openMemFileHelper(style:iostyleInternal = defaultIOStyleInternal()):file th
   return ret;
 }
 
-config param useIOSerializers = false;
+config param useIOSerializers = true;
 
-private proc defaultSerializeType(param writing : bool) type {
+private proc defaultSerializeType(param writing : bool,
+                                  param kind : _iokind = _iokind.dynamic) type {
   if !useIOSerializers then return nothing;
-  if writing then return DefaultSerializer;
-  else return DefaultDeserializer;
+
+  // Compatibility with 'iokind'
+  if kind != _iokind.dynamic {
+    if writing then return binarySerializer;
+    else return binaryDeserializer;
+  }
+
+  if writing then return defaultSerializer;
+  else return defaultDeserializer;
 }
 
-private proc defaultSerializeVal(param writing : bool) {
+private proc defaultSerializeVal(param writing : bool,
+                                 param kind : _iokind = _iokind.dynamic) {
   if !useIOSerializers then return none;
-  if writing then return new DefaultSerializer();
-  else return new DefaultDeserializer();
+
+  if kind != _iokind.dynamic {
+    var endian = if kind == _iokind.native then ioendian.native
+                 else if kind == _iokind.big then ioendian.big
+                 else ioendian.little;
+    if writing then return new binarySerializer(endian, _structured=false);
+    else return new binaryDeserializer(endian, _structured=false);
+  }
+
+  if writing then return new defaultSerializer();
+  else return new defaultDeserializer();
 }
 
 @chpldoc.nodoc
@@ -2542,7 +2561,7 @@ record fileReader {
      deserializerType indicates the type of the deserializer that this
      fileReader will use to deserialize data.
    */
-  type deserializerType = defaultSerializeType(/* writing= */ false);
+  type deserializerType = defaultSerializeType(/* writing= */ false, kind);
 
   @chpldoc.nodoc
   var _home:locale = here;
@@ -2623,7 +2642,7 @@ record fileWriter {
      serializerType indicates the type of the serializer that this fileWriter
      will use to serialize data.
    */
-  type serializerType = defaultSerializeType(/* writing */ true);
+  type serializerType = defaultSerializeType(/* writing */ true, kind);
 
   @chpldoc.nodoc
   var _home:locale = here;
@@ -2680,7 +2699,7 @@ proc fileWriter.serializer ref : serializerType {
   The compiler is expected to generate a default implementation of 'serialize'
   methods for records and classes.
 */
-record DefaultSerializer {
+record defaultSerializer {
 
   @chpldoc.nodoc
   proc ref _serializeClassOrPtr(writer:fileWriter, x: ?t) : void throws {
@@ -2699,7 +2718,7 @@ record DefaultSerializer {
       writer._writeOne(writer._kind, val, writer.getLocaleOfIoRequest());
     } else if t == _nilType {
       writer._writeLiteral("nil");
-    } else if isClassType(t) || chpl_isAnyCPtr(t) {
+    } else if isClassType(t) || chpl_isAnyCPtr(t) || chpl_isDdata(t) {
       _serializeClassOrPtr(writer, val);
     } else if isUnionType(t) {
       val.writeThis(writer);
@@ -2714,6 +2733,10 @@ record DefaultSerializer {
     var _first : bool = true;
     const _ending : string;
 
+    // pointer to child's 'first' field so that we can communicate back if/when
+    // a field has already been written.
+    var _firstPtr : c_ptr(bool) = nil;
+
     proc ref writeField(name: string, const field: ?) throws {
       if !_first then writer._writeLiteral(", ");
       else _first = false;
@@ -2724,14 +2747,18 @@ record DefaultSerializer {
     }
 
     proc ref startClass(writer: fileWriter, name: string, size: int) throws {
-      _first = size == 0;
-      return new AggregateSerializer(writer, _parent=true);
+      // Note: 'size' of parent might be zero, but 'size' of grandparent might
+      // be non-zero.
+      return new AggregateSerializer(writer, _parent=true,
+                                     _firstPtr=c_addrOf(_first));
     }
 
     @chpldoc.nodoc
     proc endClass() throws {
       if !_parent then
         writer._writeLiteral(_ending);
+      else if _firstPtr != nil then
+        _firstPtr.deref() = _first;
     }
 
     @chpldoc.nodoc
@@ -2887,6 +2914,8 @@ record DefaultSerializer {
   // that such types should just be printed inside a string for compatibility?
 }
 
+@deprecated(notes="'DefaultSerializer' is deprecated; please use 'defaultSerializer' instead")
+type DefaultSerializer = defaultSerializer;
 
 /*
   The default deserializer used by ``fileReader``.
@@ -2925,7 +2954,7 @@ record DefaultSerializer {
   The compiler is expected to generate a default implementation of
   'deserialize' methods and deserializing initializers for records and classes.
 */
-record DefaultDeserializer {
+record defaultDeserializer {
 
   proc ref deserializeType(reader:fileReader, type readType) : readType throws {
     if isNilableClassType(readType) {
@@ -2982,6 +3011,15 @@ record DefaultDeserializer {
       return ret;
     }
 
+    @chpldoc.nodoc
+    proc readField(name: string, ref field) throws {
+      reader.readLiteral(name);
+      reader.readLiteral("=");
+
+      reader.read(field);
+      reader.matchLiteral(",");
+    }
+
     proc startClass(reader: fileReader, name: string) throws {
       return new AggregateDeserializer(reader, _parent=true);
     }
@@ -3023,6 +3061,12 @@ record DefaultDeserializer {
     }
 
     @chpldoc.nodoc
+    proc readElement(ref element) throws {
+      reader.read(element);
+      reader.matchLiteral(",");
+    }
+
+    @chpldoc.nodoc
     proc endTuple() throws {
       reader.readLiteral(")");
     }
@@ -3045,6 +3089,13 @@ record DefaultDeserializer {
       else _first = false;
 
       return reader.read(eltType);
+    }
+    @chpldoc.nodoc
+    proc ref readElement(ref element) throws {
+      if !_first then reader._readLiteral(",");
+      else _first = false;
+
+      reader.read(element);
     }
     @chpldoc.nodoc
     proc endList() throws {
@@ -3100,6 +3151,14 @@ record DefaultDeserializer {
     }
 
     @chpldoc.nodoc
+    proc ref readElement(ref element) throws {
+      if !_first then reader._readLiteral(" ");
+      else _first = false;
+
+      reader.read(element);
+    }
+
+    @chpldoc.nodoc
     proc endArray() throws {
     }
   }
@@ -3123,10 +3182,25 @@ record DefaultDeserializer {
     }
 
     @chpldoc.nodoc
+    proc ref readKey(ref key) throws {
+      if !_first then reader._readLiteral(", ");
+      else _first = false;
+
+      reader.read(key);
+    }
+
+    @chpldoc.nodoc
     proc readValue(type valType) : valType throws {
       reader._readLiteral(": ");
 
       return reader.read(valType);
+    }
+
+    @chpldoc.nodoc
+    proc readValue(ref value) throws {
+      reader._readLiteral(": ");
+
+      reader.read(value);
     }
 
     @chpldoc.nodoc
@@ -3151,10 +3225,13 @@ record DefaultDeserializer {
   }
 }
 
+@deprecated(notes="'DefaultDeserializer' is deprecated; please use 'defaultDeserializer' instead")
+type DefaultDeserializer = defaultDeserializer;
+
 /*
   An unstructured binary Serializer to be used with ``fileWriter``.
 */
-record BinarySerializer {
+record binarySerializer {
   /*
     'endian' represents the endianness of the binary output produced by this
     Serializer.
@@ -3169,7 +3246,7 @@ record BinarySerializer {
   // types
   @chpldoc.nodoc
   proc _oldWrite(ch: fileWriter(?), const val:?t) throws {
-    var _def = new DefaultSerializer();
+    var _def = new defaultSerializer();
     var dc = ch.withSerializer(_def);
     var st = dc._styleInternal();
     var orig = st; defer { dc._set_styleInternal(orig); }
@@ -3191,7 +3268,7 @@ record BinarySerializer {
     :arg writer: the ``fileWriter`` to which the serialized output will be written.
     :arg val: the value to be serialized.
   */
-  proc ref serializeValue(writer: fileWriter(serializerType=BinarySerializer, locking=false, ?),
+  proc ref serializeValue(writer: fileWriter(serializerType=binarySerializer, locking=false, ?),
                       const val:?t) throws {
     if isNumericType(t) {
       select endian {
@@ -3222,7 +3299,7 @@ record BinarySerializer {
   }
 
   record AggregateSerializer {
-    var writer : fileWriter(false, BinarySerializer);
+    var writer : fileWriter(false, binarySerializer);
 
     proc writeField(name: string, const field: ?T) throws {
       writer.write(field);
@@ -3247,7 +3324,7 @@ record BinarySerializer {
   }
 
   record TupleSerializer {
-    var writer : fileWriter(false, BinarySerializer);
+    var writer : fileWriter(false, binarySerializer);
 
     proc writeElement(const element: ?T) throws {
       writer.write(element);
@@ -3261,7 +3338,7 @@ record BinarySerializer {
   }
 
   record ListSerializer {
-    var writer : fileWriter(false, BinarySerializer);
+    var writer : fileWriter(false, binarySerializer);
 
     proc writeElement(const element: ?) throws {
       writer.write(element);
@@ -3277,7 +3354,7 @@ record BinarySerializer {
 
 
   record ArraySerializer {
-    var writer : fileWriter(false, BinarySerializer);
+    var writer : fileWriter(false, binarySerializer);
     const endian : ioendian;
 
     proc startDim(size: int) throws {
@@ -3308,7 +3385,7 @@ record BinarySerializer {
   }
 
   record MapSerializer {
-    var writer : fileWriter(false, BinarySerializer);
+    var writer : fileWriter(false, binarySerializer);
 
     proc writeKey(const key: ?) throws {
       writer.write(key);
@@ -3328,10 +3405,13 @@ record BinarySerializer {
   }
 }
 
+@deprecated(notes="'BinarySerializer' is deprecated; please use 'binarySerializer' instead")
+type BinarySerializer = binarySerializer;
+
 /*
   An unstructured binary Deserializer to be used with ``fileReader``.
 */
-record BinaryDeserializer {
+record binaryDeserializer {
   /*
     'endian' represents the endianness that this Deserializer should use when
     deserializing input.
@@ -3351,7 +3431,7 @@ record BinaryDeserializer {
   // TODO: rewrite in terms of writef, or something
   @chpldoc.nodoc
   proc _oldRead(ch: fileReader(?), ref val:?t) throws {
-    var _def = new DefaultDeserializer();
+    var _def = new defaultDeserializer();
     var dc = ch.withDeserializer(_def);
     var st = dc._styleInternal();
     var orig = st; defer { dc._set_styleInternal(orig); }
@@ -3446,10 +3526,13 @@ record BinaryDeserializer {
 
 
   record AggregateDeserializer {
-    var reader : fileReader(false, BinaryDeserializer);
+    var reader : fileReader(false, binaryDeserializer);
 
     proc readField(name: string, type fieldType) : fieldType throws {
       return reader.read(fieldType);
+    }
+    proc readField(name: string, ref field) throws {
+      reader.read(field);
     }
     proc startClass(reader, name: string) throws {
       return this;
@@ -3469,10 +3552,14 @@ record BinaryDeserializer {
   }
 
   record TupleDeserializer {
-    var reader : fileReader(false, BinaryDeserializer);
+    var reader : fileReader(false, binaryDeserializer);
 
     proc readElement(type eltType) : eltType throws {
       return reader.read(eltType);
+    }
+
+    proc readElement(ref element) throws {
+      reader.read(element);
     }
 
     proc endTuple() throws {
@@ -3484,7 +3571,7 @@ record BinaryDeserializer {
   }
 
   record ListDeserializer {
-    var reader : fileReader(false, BinaryDeserializer);
+    var reader : fileReader(false, binaryDeserializer);
     var _numElements : uint;
 
     proc ref readElement(type eltType) : eltType throws {
@@ -3495,6 +3582,16 @@ record BinaryDeserializer {
 
       return reader.read(eltType);
     }
+
+    proc ref readElement(ref element) throws {
+      if _numElements <= 0 then
+        throw new BadFormatError("no more list elements remain");
+
+      _numElements -= 1;
+
+      reader.read(element);
+    }
+
     proc endList() throws {
       if _numElements != 0 then
         throw new BadFormatError("read too few elements for list");
@@ -3511,7 +3608,7 @@ record BinaryDeserializer {
 
 
   record ArrayDeserializer {
-    var reader : fileReader(false, BinaryDeserializer);
+    var reader : fileReader(false, binaryDeserializer);
     const endian : ioendian;
 
     proc startDim() throws {
@@ -3521,6 +3618,10 @@ record BinaryDeserializer {
 
     proc readElement(type eltType) : eltType throws {
       return reader.read(eltType);
+    }
+
+    proc readElment(ref element) throws {
+      reader.read(element);
     }
 
     proc readBulkElements(data: c_ptr(?eltType), numElements: int) throws
@@ -3557,8 +3658,21 @@ record BinaryDeserializer {
       return reader.read(keyType);
     }
 
+    proc ref readKey(ref key) throws {
+      if _numElements <= 0 then
+        throw new BadFormatError("no more map elements remain!");
+
+      _numElements -= 1;
+
+      reader.read(key);
+    }
+
     proc readValue(type valType) : valType throws {
       return reader.read(valType);
+    }
+
+    proc readValue(ref value) throws {
+      reader.read(value);
     }
 
     proc endMap() throws {
@@ -3575,6 +3689,9 @@ record BinaryDeserializer {
     return new MapDeserializer(reader, reader.read(uint));
   }
 }
+
+@deprecated(notes="'BinaryDeserializer' is deprecated; please use 'binaryDeserializer' instead")
+type BinaryDeserializer = binaryDeserializer;
 
 @chpldoc.nodoc
 operator fileReader.=(ref lhs:fileReader, rhs:fileReader) {
@@ -3761,7 +3878,7 @@ proc ref fileWriter.deinit() {
   }
 }
 
-// Convenience for forms like 'r.withDeserializer(DefaultDeserializer)`
+// Convenience for forms like 'r.withDeserializer(defaultDeserializer)`
 @chpldoc.nodoc
 proc fileReader.withDeserializer(type deserializerType) :
   fileReader(this._kind, this.locking, deserializerType) {
@@ -3782,7 +3899,7 @@ proc fileReader.withDeserializer(in deserializer: ?dt) : fileReader(this._kind, 
   return ret;
 }
 
-// Convenience for forms like 'w.withSerializer(DefaultSerializer)`
+// Convenience for forms like 'w.withSerializer(defaultSerializer)`
 @chpldoc.nodoc
 proc fileWriter.withSerializer(type serializerType) :
   fileWriter(this._kind, this.locking, serializerType) {
@@ -4220,13 +4337,22 @@ proc fileWriter.offset():int(64)
 proc fileWriter.chpl_offset():int(64) do return offsetHelper(this, false);
 
 /*
-   Move a fileReader offset forward.
+   Move a :record:`fileReader` offset forward.
 
-   This function will consume the next ``amount`` bytes. If EOF is reached, the
-   fileReader offset may be left at the EOF.
+   This routine will consume the next ``amount`` bytes from the file, storing
+   them in the ``fileReader``'s buffer. This can be useful for advancing to some
+   known offset in the file before reading.
+
+   Note that calling :proc:`fileReader.mark` before advancing will cause at
+   least ``amount`` bytes to be retained in memory until
+   :proc:`~fileReader.commit` or :proc:`~fileReader.revert` are called. As such,
+   it is typical to advance by a small number of bytes during an I/O transaction.
+
+   To make large adjustments to the offset, consider creating a new
+   ``fileReader`` or using :proc:`~fileReader.seek` instead.
 
    :throws EofError: If EOF is reached before the requested number of bytes can
-                     be consumed.
+                     be consumed. The offset will be left at EOF.
    :throws SystemError: For other failures, for which fileReader offset is not
                         moved.
  */
@@ -4240,14 +4366,30 @@ proc fileReader.advance(amount:int(64)) throws {
 }
 
 /*
-   Move a fileWriter offset forward.
+   Move a :record:`fileWriter` offset forward.
 
-   This function will write ``amount`` zeros - or some other data if it is
-   stored in the fileWriter's buffer, for example with :proc:`fileWriter.mark`
-   and :proc:`fileWriter.revert`.
+   This routine will populate the ``fileWriter``'s buffer as the offset is moved
+   forward by ``amount`` bytes. The buffer can be populated with any of the
+   following data depending on the ``fileWriter``'s configuration and whether
+   it was marked before advancing:
+
+   * zeros
+   * bytes directly from the file
+   * bytes from a previously buffered portion of the file
+
+   The contents of the buffer will subsequently be written to the file by the
+   buffering mechanism.
+
+   Note that calling :proc:`fileWriter.mark` before advancing will cause at
+   least ``amount`` bytes to be retained in memory until
+   :proc:`~fileWriter.commit` or :proc:`~fileWriter.revert` are called. As such,
+   it is typical to advance by a small number of bytes during an I/O transaction.
+
+   To make large adjustments to the offset, consider creating a new
+   ``fileWriter`` or using :proc:`~fileWriter.seek` instead.
 
    :throws EofError: If EOF is reached before the offset can be advanced by the
-                      requested number of bytes.
+                     requested number of bytes. The offset will be left at EOF.
    :throws SystemError: For other failures, for which fileWriter offset is not
                         moved.
  */
@@ -4557,19 +4699,22 @@ inline proc fileWriter.commit() {
 config param useNewSeekRegionBounds = false;
 
 /*
-   Reset a fileReader to point to a new part of a file.
-   This function allows one to jump to a different part of a
-   file without creating a new fileReader. It can only be called
-   on a fileReader with ``locking==false``.
+   Adjust a :record:`fileReader`'s region. The ``fileReader``'s buffer will be
+   discarded.
 
-   The region specified must have a lower bound, but does not need to have
-   a high bound for correctness.  Specifying the high bound might be
-   an important performance optimization since the fileReader will not
-   try to read data outside of the region.
+   This routine has the following constraints:
 
-   This function will, in most cases, discard the fileReader's buffer.
+    * the underlying file must be seekable (sockets and pipes are not seekable)
+    * the ``fileReader`` must be non-locking (to avoid race conditions if two
+      tasks seek and read simultaneously)
+    * the ``fileReader`` must not be marked (see: :proc:`fileReader.mark`)
 
-   :arg region: the new region, measured in bytes and counting from 0
+   If the ``fileReader`` offset needs to be updated during an I/O transaction
+   or if discarding the buffer will incur a performance penalty, consider using
+   :proc:`fileReader.advance` instead.
+
+   :arg region: the new region, measured in bytes and counting from 0. An upper
+                bound can be omitted (e.g., ``r.seek(range=42..)``).
 
    .. warning::
 
@@ -4607,20 +4752,22 @@ proc fileReader.seek(region: range(?)) throws where (!region.hasHighBound() ||
 }
 
 /*
-   Reset a fileWriter to point to a new part of a file.
-   This function allows one to jump to a different part of a
-   file without creating a new fileWriter. It can only be called
-   on a fileWriter with ``locking==false``.
+   Adjust a :record:`fileWriter`'s region. The ``fileWriter``'s buffer will be
+   discarded.
 
-   The region specified must have a lower bound, but does not need to have
-   a high bound for correctness.  Specifying the high bound might be
-   an important performance optimization since the fileWriter will not
-   try to read data outside of the region.
+   This routine has the following constraints:
 
-   This function will, in most cases, discard the fileWriter's buffer.
-   The data will be saved to the file before discarding.
+    * the underlying file must be seekable (sockets and pipes are not seekable)
+    * the ``fileWriter`` must be non-locking (to avoid race conditions if two
+      tasks seek and read simultaneously)
+    * the ``fileWriter`` must not be marked (see: :proc:`fileWriter.mark`)
 
-   :arg region: the new region, measured in bytes and counting from 0
+   If the ``fileWriter`` offset needs to be updated during an I/O transaction
+   or if discarding the buffer will incur a performance penalty, consider using
+   :proc:`fileWriter.advance` instead.
+
+   :arg region: the new region, measured in bytes and counting from 0. An upper
+                bound can be omitted (e.g., ``w.seek(range=42..)``).
 
    .. warning::
 
@@ -4628,7 +4775,7 @@ proc fileReader.seek(region: range(?)) throws where (!region.hasHighBound() ||
 
    :throws SystemError: if seeking failed. Possible reasons include
                          that the file is not seekable, or that the
-                         fileWriter is marked.
+                         fileReader is marked.
    :throws IllegalArgumentError: if region argument did not have a lower bound
  */
 proc fileWriter.seek(region: range(?)) throws where (!region.hasHighBound() ||
@@ -5000,7 +5147,7 @@ proc openReader(path:string,
                 start:int(64) = 0, end:int(64) = max(int(64)),
                 hints=ioHintSet.empty,
                 style:iostyle)
-    : fileReader(kind, locking, defaultSerializeType(false)) throws {
+    : fileReader(kind, locking, defaultSerializeType(false, kind)) throws {
   return openReaderHelper(path, kind, locking, start..end, hints,
                           style: iostyleInternal);
 }
@@ -5058,7 +5205,7 @@ This function is equivalent to calling :proc:`open` and then
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty)
-    : fileReader(kind, locking, defaultSerializeType(false)) throws where (!region.hasHighBound() ||
+    : fileReader(kind, locking, defaultSerializeType(false, kind)) throws where (!region.hasHighBound() ||
                                               useNewOpenReaderRegionBounds) {
   return openReader(path, kind, locking, region, hints);
 }
@@ -5110,7 +5257,7 @@ pragma "last resort"
 proc openReader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty,
-                in deserializer: ?dt = defaultSerializeVal(false))
+                in deserializer: ?dt = defaultSerializeVal(false,kind))
     : fileReader(kind, locking, dt) throws where (!region.hasHighBound() ||
                                               useNewOpenReaderRegionBounds) {
   return openReaderHelper(path, kind, locking, region, hints, deserializer=deserializer);
@@ -5120,7 +5267,7 @@ proc openReader(path:string,
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty)
-    : fileReader(kind, locking, defaultSerializeType(false)) throws where (region.hasHighBound() &&
+    : fileReader(kind, locking, defaultSerializeType(false,kind)) throws where (region.hasHighBound() &&
                                               !useNewOpenReaderRegionBounds) {
   return openReader(path, kind, locking, region, hints);
 }
@@ -5129,7 +5276,7 @@ proc openreader(path:string,
 proc openReader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty)
-    : fileReader(kind, locking, defaultSerializeType(false)) throws where (region.hasHighBound() &&
+    : fileReader(kind, locking, defaultSerializeType(false,kind)) throws where (region.hasHighBound() &&
                                               !useNewOpenReaderRegionBounds) {
   return openReaderHelper(path, kind, locking, region, hints);
 }
@@ -5139,7 +5286,7 @@ private proc openReaderHelper(path:string,
                               region: range(?) = 0..,
                               hints=ioHintSet.empty,
                               style:iostyleInternal = defaultIOStyleInternal(),
-                              in deserializer: ?dt = defaultSerializeVal(false))
+                              in deserializer: ?dt = defaultSerializeVal(false,kind))
   : fileReader(kind, locking, dt) throws {
 
   var fl:file = try open(path, ioMode.r);
@@ -5154,7 +5301,7 @@ proc openwriter(path:string,
                 start:int(64) = 0, end:int(64) = max(int(64)),
                 hints=ioHintSet.empty,
                 style:iostyle)
-    : fileWriter(kind, locking, defaultSerializeType(true)) throws {
+    : fileWriter(kind, locking, defaultSerializeType(true,kind)) throws {
   return openWriter(path, kind, locking, start, end, hints, style);
 }
 
@@ -5164,7 +5311,7 @@ proc openWriter(path:string,
                 start:int(64) = 0, end:int(64) = max(int(64)),
                 hints=ioHintSet.empty,
                 style:iostyle)
-    : fileWriter(kind, locking, defaultSerializeType(true)) throws {
+    : fileWriter(kind, locking, defaultSerializeType(true,kind)) throws {
   return openWriterHelper(path, kind, locking, start, end, hints,
                     style: iostyleInternal);
 }
@@ -5203,7 +5350,7 @@ This function is equivalent to calling :proc:`open` with ``ioMode.cwr`` and then
 proc openwriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 hints = ioHintSet.empty)
-    : fileWriter(kind, locking, defaultSerializeType(true)) throws {
+    : fileWriter(kind, locking, defaultSerializeType(true,kind)) throws {
   return openWriter(path, kind, locking, hints);
 }
 
@@ -5244,7 +5391,7 @@ pragma "last resort"
 proc openWriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 hints = ioHintSet.empty,
-                in serializer: ?st = defaultSerializeVal(true))
+                in serializer: ?st = defaultSerializeVal(true,kind))
     : fileWriter(kind, locking, st) throws {
   return openWriterHelper(path, kind, locking, hints=hints, serializer=serializer);
 }
@@ -5254,7 +5401,7 @@ private proc openWriterHelper(path:string,
                               start:int(64) = 0, end:int(64) = max(int(64)),
                               hints = ioHintSet.empty,
                               style:iostyleInternal = defaultIOStyleInternal(),
-                              in serializer: ?st = defaultSerializeVal(true))
+                              in serializer: ?st = defaultSerializeVal(true,kind))
   : fileWriter(kind, locking, st) throws {
 
   var fl:file = try open(path, ioMode.cw);
@@ -5327,7 +5474,7 @@ pragma "last resort"
 @deprecated("reader with a 'kind' argument is deprecated, please use Deserializers instead")
 proc file.reader(param kind=iokind.dynamic, param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty,
-                 in deserializer: ?dt = defaultSerializeVal(false))
+                 in deserializer: ?dt = defaultSerializeVal(false,kind))
   : fileReader(kind, locking, dt) throws where (!region.hasHighBound() ||
                                                 useNewFileReaderRegionBounds) {
   return this.readerHelper(kind, locking, region, hints,
@@ -5337,7 +5484,7 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
 @deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewFileReaderRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
 proc file.reader(param kind=iokind.dynamic, param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty,
-                 in deserializer: ?dt = defaultSerializeVal(false))
+                 in deserializer: ?dt = defaultSerializeVal(false,kind))
   : fileReader(kind, locking, dt) throws where (region.hasHighBound() &&
                                             !useNewFileReaderRegionBounds) {
   return this.readerHelper(kind, locking, region, hints, deserializer=deserializer);
@@ -5350,7 +5497,7 @@ proc file.readerHelper(param kind=_iokind.dynamic, param locking=true,
                        region: range(?) = 0.., hints = ioHintSet.empty,
                        style:iostyleInternal = this._style,
                        fromOpenReader=false, fromOpenUrlReader=false,
-                       in deserializer: ?dt = defaultSerializeVal(false))
+                       in deserializer: ?dt = defaultSerializeVal(false,kind))
   : fileReader(kind, locking, dt) throws {
   if (region.hasLowBound() && region.low < 0) {
     throw new IllegalArgumentError("illegal argument 'region': file region's lowest accepted bound is 0");
@@ -5578,7 +5725,7 @@ pragma "last resort"
 @deprecated("writer with a 'kind' argument is deprecated, please use Serializers instead")
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty,
-                 in serializer:?st = defaultSerializeVal(true)):
+                 in serializer:?st = defaultSerializeVal(true,kind)):
                  fileWriter(kind,locking,st) throws where (!region.hasHighBound() ||
                                                         useNewFileWriterRegionBounds) {
   return this.writerHelper(kind, locking, region, hints, serializer=serializer);
@@ -5587,7 +5734,7 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
 @deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewFileWriterRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty,
-                 in serializer:?st = defaultSerializeVal(true)):
+                 in serializer:?st = defaultSerializeVal(true,kind)):
                  fileWriter(kind,locking,st) throws where (region.hasHighBound() &&
                                                         !useNewFileWriterRegionBounds) {
   return this.writerHelper(kind, locking, region, hints, serializer=serializer);
@@ -5598,7 +5745,7 @@ proc file.writerHelper(param kind=_iokind.dynamic, param locking=true,
                        region: range(?) = 0.., hints = ioHintSet.empty,
                        style:iostyleInternal = this._style,
                        fromOpenUrlWriter = false,
-                       in serializer:?st = defaultSerializeVal(true)):
+                       in serializer:?st = defaultSerializeVal(true,kind)):
   fileWriter(kind,locking,st) throws {
 
   if (region.hasLowBound() && region.low < 0) {
@@ -8557,7 +8704,10 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
     try this.lock(); defer { this.unlock(); }
     const tSize = c_sizeof(t) : c_ssize_t;
 
-    if endian == ioendian.native && data.locale == this._home && data.isDefaultRectangular() {
+    // Allow either DefaultRectangular arrays or dense slices of DR arrays
+    const denseDR = chpl__isDROrDRView(data) &&
+                    data._value.isDataContiguous(d._value);
+    if endian == ioendian.native && data.locale == this._home && denseDR {
       e = try qio_channel_write_amt(false, this._channel_internal, data[d.low], data.size:c_ssize_t * tSize);
 
       if e != 0 then
@@ -8878,7 +9028,10 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
   on this._home {
     try this.lock(); defer { this.unlock(); }
 
-    if data.locale == this._home && data.isDefaultRectangular() && endian == ioendian.native {
+    // Allow either DefaultRectangular arrays or dense slices of DR arrays
+    const denseDR = chpl__isDROrDRView(data) &&
+                    data._value.isDataContiguous(d._value);
+    if data.locale == this._home && denseDR && endian == ioendian.native {
       e = qio_channel_read(false, this._channel_internal, data[d.low], (data.size * c_sizeof(data.eltType)) : c_ssize_t, numRead);
 
       if e != 0 && e != EEOF then throw createSystemOrChplError(e);
@@ -10025,10 +10178,10 @@ General Conversions
           r: R;
 
       // write an 'R' in JSON format
-      f.writer(serializer = new JsonSerializer()).writef("%?", new R(/* ... */));
+      f.writer(serializer = new jsonSerializer()).writef("%?", new R(/* ... */));
 
       // read into an 'R' from JSON format
-      f.reader(deserializer = new JsonDeserializer()).readf("%?", r);
+      f.reader(deserializer = new jsonDeserializer()).readf("%?", r);
 
 ``%ht``
  read or write an object in Chapel syntax using readThis/writeThis
@@ -10050,10 +10203,10 @@ General Conversions
           r: R;
 
       // write an 'R' in Chapel Syntax format
-      f.writer(serializer = new ChplSerializer()).writef("%?", new R(/* ... */))
+      f.writer(serializer = new chplSerializer()).writef("%?", new R(/* ... */))
 
       // read into an 'R' from Chapel Syntax format
-      f.reader(deserializer = new ChplDeserializer()).readf("%?", r);
+      f.reader(deserializer = new chplDeserializer()).readf("%?", r);
 
 ``%|t``
  read or write an object in binary native-endian with readThis/writeThis *(deprecated)*
@@ -11993,7 +12146,7 @@ proc readf(fmt:string):bool throws {
    :throws UnexpectedEofError: Thrown if EOF encountered skipping field.
    :throws SystemError: Thrown if the field could not be skipped.
  */
-@deprecated("skipField is deprecated, please use JsonDeserializer instead.")
+@deprecated("skipField is deprecated, please use jsonDeserializer instead.")
 proc fileReader.skipField() throws {
   this._skipField();
 }

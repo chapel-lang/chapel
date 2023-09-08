@@ -20,7 +20,7 @@ proc main(args: [] string) {
   // Open stdin and a binary reader channel
   const consoleIn = new file(0),
         fileLen = consoleIn.size,
-        stdinNoLock = consoleIn.reader(deserializer=new BinaryDeserializer(), locking=false);
+        stdinNoLock = consoleIn.reader(deserializer=new binaryDeserializer(), locking=false);
 
   // Read line-by-line until we see a line beginning with '>TH'
   var buff: [1..columns] uint(8),
@@ -110,7 +110,7 @@ proc calculate(data, param nclSize) {
 const toChar: [0..3] string = ["A", "C", "T", "G"];
 var toNum: [0..127] int;
 
-forall i in toChar.domain do
+forall i in toChar.domain with (ref toNum) do
   toNum[toChar[i].toByte()] = i;
 
 

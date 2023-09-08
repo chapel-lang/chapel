@@ -49,7 +49,7 @@ var Dns: [Elems] int;
 // For all indices in the sparse domain, set the dense value as a
 // function of the owning locale's ID.
 //
-forall ij in MatElems do
+forall ij in MatElems with (ref Dns) do
   Dns[ij] = here.id + 1;
 
 //
@@ -65,7 +65,7 @@ var Sps: [MatElems] int;
 //
 // Fill it similarly to the dense above.
 //
-forall ij in MatElems do
+forall ij in MatElems with (ref Sps) do
   Sps[ij] = here.id + 1;
 
 //

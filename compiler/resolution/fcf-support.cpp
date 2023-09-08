@@ -98,6 +98,8 @@ static const char* intentToString(IntentTag tag);
 
 static const char* typeToStringSpecializing(Type* t);
 
+static const char* typeToStringMangledSpecializing(Type* t);
+
 static const char*
 buildUserFacingTypeString(const std::vector<FcfFormalInfo>& formals,
                           RetTag retTag,
@@ -225,6 +227,10 @@ static const char* intentToString(IntentTag tag) {
 
 static const char* typeToStringSpecializing(Type* t) {
   return FunctionType::typeToString(t);
+}
+
+static const char* typeToStringMangledSpecializing(Type* t) {
+  return FunctionType::typeToStringMangled(t);
 }
 
 // TODO: Original intent or concrete intent?
@@ -363,14 +369,14 @@ buildSuperName(const std::vector<FcfFormalInfo>& formals,
   for (auto& info : formals) {
     bool skip = isIntentSameAsDefault(info.intent, info.type);
     if (!skip) oss << intentTagMnemonicMangled(info.intent);
-    oss << typeToStringSpecializing(info.type) << "_";
+    oss << typeToStringMangledSpecializing(info.type) << "_";
     if (info.name) oss << info.name;
     oss << "_";
   }
 
   oss << "_";
   if (retTag != RET_VALUE) oss << retTagMnemonicMangled(retTag) << "_";
-  oss << typeToStringSpecializing(retType);
+  oss << typeToStringMangledSpecializing(retType);
   if (throws) oss << "_throws";
 
   auto ret = astr(oss.str());
@@ -660,6 +666,26 @@ attachChildThis(const SharedFcfSuperInfo info, AggregateType* child,
   return ret;
 }
 
+static const char*
+generateWriteThisOutput(FnSymbol* fn) {
+  auto ft = toFunctionType(fn->type);
+  INT_ASSERT(ft && ft->kind() == FunctionType::PROC);
+  std::string str = ft->toString();
+
+  if (!fn->isAnonymous()) {
+    std::string key = FunctionType::kindToString(ft->kind());
+    auto idx = str.find(key);
+    INT_ASSERT(idx != std::string::npos);
+    auto pos = idx + key.length();
+    str.insert(pos, fn->name);
+    str.insert(pos, " ");
+  }
+
+  str += " { ... }";
+
+  return astr(str);
+}
+
 static FnSymbol*
 attachChildWriteMethod(const SharedFcfSuperInfo info,
                      AggregateType* child,
@@ -677,7 +703,7 @@ attachChildWriteMethod(const SharedFcfSuperInfo info,
 
   ret->body->useListAdd(new UseStmt(ioModule, "", false));
   ret->getModule()->moduleUseAdd(ioModule);
-  auto str = new_StringSymbol(astr(payload->name, "()"));
+  auto str = new_StringSymbol(generateWriteThisOutput(payload));
   auto writeCall = new CallExpr(".", fileArg, new_StringSymbol("write"),
                                 str);
   ret->insertAtTail(new CallExpr(writeCall));

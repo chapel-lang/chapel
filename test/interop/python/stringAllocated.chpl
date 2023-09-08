@@ -9,7 +9,11 @@ export proc g(size: int, ptr: c_ptr(uint(8))): int {
     return s.numBytes;
   }
 }
-
-export proc writeStr(in x: chpl_c_string) {
+// TODO: Remove once c_string fully deprecated
+export proc writeCstr(in x: chpl_c_string) {
   writeln(string.createCopyingBuffer(x:c_ptrConst(c_char)));
+}
+
+export proc writeStr(in x: c_ptrConst(c_char)) {
+  writeln(string.createCopyingBuffer(x));
 }

@@ -76,14 +76,14 @@ module HPCC_PTRANS {
    // detect any addressing errors.
    // -------------------------------------------------------------------------
 
-    forall (i,j) in matrix_domain do {
+    forall (i,j) in matrix_domain with (ref A, ref C) do {
       A [i,j] = erf (i) * cos (j);
       C [j,i] = sin (i) * cbrt (j);
     }
 
     C_save = C;
 
-    forall (i,j) in transpose_domain do
+    forall (i,j) in transpose_domain with (ref C_plus_A_transpose) do
       C_plus_A_transpose [i,j] = beta * sin (j) * cbrt (i) + erf(j) * cos (i);
 
     // norm_A = norm (A);
@@ -182,17 +182,17 @@ module HPCC_PTRANS {
 
         if ( beta == 1.0 ) then
 
-          forall (i,j) in C_domain do
+          forall (i,j) in C_domain with (ref C) do
             C [i,j] += A [j,i];
     
         else if ( beta == 0.0 ) then
       
-          forall (i,j) in C_domain do
+          forall (i,j) in C_domain with (ref C) do
             C [i,j] = A [j,i];
     
         else
       
-          forall (i,j) in C_domain do
+          forall (i,j) in C_domain with (ref C) do
             C [i,j] = beta * C [i,j]  +  A [j,i];
         return true;
       }
@@ -224,7 +224,7 @@ module HPCC_PTRANS {
 
           for c_rows in block_partitioning (C_domain, 0) do
             for c_cols in block_partitioning (C_domain, 1) do
-              forall i in c_rows do
+              forall i in c_rows with (ref C) do
                 for j in c_cols do
                   C [i,j] += A [j,i];
     
@@ -232,7 +232,7 @@ module HPCC_PTRANS {
       
           for c_rows in block_partitioning (C_domain, 0) do
             for c_cols in block_partitioning (C_domain, 1) do 
-              forall i in c_rows do
+              forall i in c_rows with (ref C) do
                 for j in c_cols do
                   C [i,j] = A [j,i];
     
@@ -240,7 +240,7 @@ module HPCC_PTRANS {
       
           for c_rows in block_partitioning (C_domain, 0) do
             for c_cols in block_partitioning (C_domain, 1) do 
-              forall i in c_rows do
+              forall i in c_rows with (ref C) do
                 for j in c_cols do
                   C [i,j] = beta * C [i,j]  +  A [j,i];
         return true;
@@ -296,7 +296,7 @@ module HPCC_PTRANS {
                                                  C_grid_domain,0) do
             for c_cols in SPMD_block_partitioning (C_domain, processor,
                                                    C_grid_domain,1) do 
-              forall i in c_rows do
+              forall i in c_rows with (ref C) do
                 for j in c_cols do
                   C [i,j] += A [j,i];
     
@@ -306,7 +306,7 @@ module HPCC_PTRANS {
                                                  C_grid_domain,0) do
             for c_cols in SPMD_block_partitioning (C_domain, processor, 
                                                    C_grid_domain,1) do 
-              forall i in c_rows do
+              forall i in c_rows with (ref C) do
                 for j in c_cols do
                   C [i,j] = A [j,i];
     
@@ -316,7 +316,7 @@ module HPCC_PTRANS {
                                                  C_grid_domain,0) do
             for c_cols in SPMD_block_partitioning (C_domain, processor,
                                                    C_grid_domain,1) do 
-              forall i in c_cols do
+              forall i in c_cols with (ref C) do
                 for j in c_cols do
                   C [i,j] = beta * C [i,j]  +  A [j,i];
       }

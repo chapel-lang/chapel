@@ -22,7 +22,7 @@ config param eurekaInterval = 2**17;
 // This is the array of values to search in.
 const valsD: domain(1) dmapped Block(boundingBox={0..#n}) = {0..#n};
 var vals: [valsD] int;
-[i in valsD] { vals[i] = i; }
+[i in valsD with (ref vals)] { vals[i] = i; }
 
 // If we do find findVal, this is where we'll record its index.
 const foundD: domain(1) dmapped Block(boundingBox={0..#numLocales})

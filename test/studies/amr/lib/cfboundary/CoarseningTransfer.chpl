@@ -263,7 +263,7 @@ proc GridVariable.coarsenValues (
   //---- Compute coarse averages ----
   var coarse_values: [coarse_cells] real;
 
-  forall coarse_cell in coarse_cells {
+  forall coarse_cell in coarse_cells with (+ reduce coarse_values) {
     var fine_cells = refine(coarse_cell, ref_ratio);
     for fine_cell in fine_cells do
       coarse_values(coarse_cell) += value(fine_cell);

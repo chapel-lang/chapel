@@ -146,7 +146,7 @@ Constant and Function Definitions
 */
 module Math {
   private use CTypes;
-  private use AutoMath;
+  public use AutoMath;
 
   //////////////////////////////////////////////////////////////////////////
   // Constants (included in chpldocs)
@@ -475,12 +475,14 @@ module Math {
 
   /* Returns the error function of the argument `x`. This is equivalent to
      ``2/sqrt(pi)`` * the integral of ``exp(-t**2)dt`` from 0 to `x`. */
+  @unstable("'erf' is unstable and may be renamed or moved to a different module in the future")
   inline proc erf(x: real(64)): real(64) {
     return chpl_erf(x);
   }
 
   /* Returns the error function of the argument `x`. This is equivalent to
      ``2/sqrt(pi)`` * the integral of ``exp(-t**2)dt`` from 0 to `x`. */
+  @unstable("'erf' is unstable and may be renamed or moved to a different module in the future")
   inline proc erf(x : real(32)): real(32) {
     return chpl_erf(x);
   }
@@ -488,6 +490,7 @@ module Math {
   /* Returns the complementary error function of the argument `x`.
      This is equivalent to 1.0 - :proc:`erf`\(`x`).
   */
+  @unstable("'erfc' is unstable and may be renamed or moved to a different module in the future")
   inline proc erfc(x: real(64)): real(64) {
     return chpl_erfc(x);
   }
@@ -495,29 +498,30 @@ module Math {
   /* Returns the complementary error function of the argument `x`.
      This is equivalent to 1.0 - :proc:`erf`\(`x`).
   */
+  @unstable("'erfc' is unstable and may be renamed or moved to a different module in the future")
   inline proc erfc(x : real(32)): real(32) {
     return chpl_erfc(x);
   }
 
-  /* Returns the value of the Napierian `e` raised to the power of the
+  /* Returns the value of the Napierian :param:`e` raised to the power of the
      argument `x`. */
   inline proc exp(x: real(64)): real(64) {
     return chpl_exp(x);
   }
 
-  /* Returns the value of the Napierian `e` raised to the power of the
+  /* Returns the value of the Napierian :param:`e` raised to the power of the
      argument `x`. */
   inline proc exp(x : real(32)): real(32) {
     return chpl_exp(x);
   }
 
-  /* Returns the value of the Napierian `e` raised to the power of the
+  /* Returns the value of the Napierian :param:`e` raised to the power of the
      argument `x`. */
   inline proc exp(x: complex(64)): complex(64) {
     return chpl_exp(x);
   }
 
-  /* Returns the value of the Napierian `e` raised to the power of the
+  /* Returns the value of the Napierian :param:`e` raised to the power of the
      argument `x`. */
   inline proc exp(x: complex(128)): complex(128) {
     return chpl_exp(x);
@@ -533,14 +537,13 @@ module Math {
     return chpl_exp2(x);
   }
 
-  /* Returns one less than the value of the Napierian `e` raised to the power
-     of the argument `x`. */
+  /* Returns one less than the value of the Napierian :param:`e` raised to the
+     power of the argument `x`. */
   inline proc expm1(x: real(64)): real(64) {
-    return chpl_expm1(x);
-  }
+     return chpl_expm1(x); }
 
-  /* Returns one less than the value of the Napierian `e` raised to the power
-     of the argument `x`. */
+  /* Returns one less than the value of the Napierian :param:`e` raised to the
+     power of the argument `x`. */
   inline proc expm1(x : real(32)): real(32) {
     return chpl_expm1(x);
   }
@@ -1046,67 +1049,79 @@ module Math {
   }
 
   /* Returns the Bessel function of the first kind of order `0` of `x`. */
+  @unstable("'j0' is unstable and may be renamed or moved to a different module in the future")
   inline proc j0(x: real(32)): real(32) {
     return chpl_j0(x);
   }
 
   /* Returns the Bessel function of the first kind of order `0` of `x`. */
+  @unstable("'j0' is unstable and may be renamed or moved to a different module in the future")
   inline proc j0(x: real(64)): real(64) {
     return chpl_j0(x);
   }
 
   /* Returns the Bessel function of the first kind of order `1` of `x`. */
+  @unstable("'j1' is unstable and may be renamed or moved to a different module in the future")
   inline proc j1(x: real(32)): real(32) {
     return chpl_j1(x);
   }
 
   /* Returns the Bessel function of the first kind of order `1` of `x`. */
+  @unstable("'j1' is unstable and may be renamed or moved to a different module in the future")
   inline proc j1(x: real(64)): real(64) {
     return chpl_j1(x);
   }
 
   /* Returns the Bessel function of the first kind of order `n` of `x`. */
+  @unstable("'jn' is unstable and may be renamed or moved to a different module in the future")
   inline proc jn(n: int, x: real(32)): real(32) {
     return chpl_jn(n, x);
   }
 
   /* Returns the Bessel function of the first kind of order `n` of `x`. */
+  @unstable("'jn' is unstable and may be renamed or moved to a different module in the future")
   inline proc jn(n: int, x: real(64)): real(64) {
     return chpl_jn(n, x);
   }
 
   /* Returns the Bessel function of the second kind of order `0` of `x`, where
      `x` must be greater than 0. */
+  @unstable("'y0' is unstable and may be renamed or moved to a different module in the future")
   inline proc y0(x: real(32)): real(32) {
     return chpl_y0(x);
   }
 
   /* Returns the Bessel function of the second kind of order `0` of `x`,
      where `x` must be greater than 0. */
+  @unstable("'y0' is unstable and may be renamed or moved to a different module in the future")
   inline proc y0(x: real(64)): real(64) {
     return chpl_y0(x);
   }
 
   /* Returns the Bessel function of the second kind of order `1` of `x`,
      where `x` must be greater than 0. */
+  @unstable("'y1' is unstable and may be renamed or moved to a different module in the future")
   inline proc y1(x: real(32)): real(32) {
     return chpl_y1(x);
   }
 
   /* Returns the Bessel function of the second kind of order `1` of `x`,
      where `x` must be greater than 0. */
+  @unstable("'y1' is unstable and may be renamed or moved to a different module in the future")
   inline proc y1(x: real(64)): real(64) {
     return chpl_y1(x);
   }
 
   /* Returns the Bessel function of the second kind of order `n` of `x`,
      where `x` must be greater than 0. */
+  @unstable("'yn' is unstable and may be renamed or moved to a different module in the future")
   inline proc yn(n: int, x: real(32)): real(32) {
     return chpl_yn(n, x);
   }
 
   /* Returns the Bessel function of the second kind of order `n` of `x`,
      where `x` must be greater than 0. */
+  @unstable("'yn' is unstable and may be renamed or moved to a different module in the future")
   inline proc yn(n: int, x: real(64)): real(64) {
     return chpl_yn(n, x);
   }

@@ -504,9 +504,8 @@ class FunctionType final : public Type {
 
   // Intended for codegen.
   static const char* intentTagMnemonicMangled(IntentTag tag);
+  static const char* typeToStringMangled(Type* t);
   static const char* retTagMnemonicMangled(RetTag tag);
-
-
 };
 
 /************************************* | **************************************

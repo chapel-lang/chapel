@@ -286,7 +286,7 @@ prototype module DistributedFFT {
       var myplane : [{0..0, ySrc, zSrc}] T;
 
       if usePrimitiveComm {
-        forall iy in ySrc {
+        forall iy in ySrc with (ref myplane) {
           copy(myplane[0, iy, zSrc.first], Src[xSrc.first, iy, zSrc.first], myLineSize);
         }
       } else {
@@ -296,14 +296,14 @@ prototype module DistributedFFT {
       for ix in xSrc {
         // Y-transform
         timeTrack.start();
-        forall (plan, myzRange) in yPlan.batch() {
+        forall (plan, myzRange) in yPlan.batch() with (ref myplane) {
           plan.execute(myplane[0, ySrc.first, myzRange.first]);
         }
         timeTrack.stop(TimeStages.Y);
 
         // Z-transform, offset to reduce comm congestion/collision
         timeTrack.start();
-        forall iy in offset(ySrc) {
+        forall iy in offset(ySrc) with (ref Dst, ref myplane) {
           zPlan.execute(myplane[0, iy, zSrc.first]);
           // Transpose data into Dst, and copy the next Src slice into myplane
           if usePrimitiveComm {
@@ -327,7 +327,7 @@ prototype module DistributedFFT {
 
       // X-transform
       timeTrack.start();
-      forall (plan, myzRange) in xPlan.batch() {
+      forall (plan, myzRange) in xPlan.batch() with (ref Dst) {
         for iy in yDst {
           plan.execute(Dst[iy, xDst.first, myzRange.first]);
         }

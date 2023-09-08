@@ -165,7 +165,7 @@ proc schurComplement(AD, BD, Rest) {
       replB = Ab[BD.dim(0), 1..n+1];
       }
 
-  forall (row,col) in Rest by (blkSize, blkSize) {
+  forall (row,col) in Rest by (blkSize, blkSize) with (ref Ab) {
 
     vwln("  dgemm(", (Rest.dim(0))(row..#blkSize), ",",
                      (Rest.dim(1))(col..#blkSize), ")  on ", here.id);

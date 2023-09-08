@@ -659,7 +659,7 @@ module ProtobufProtocolSupport {
       var typeUrl: string;
       var value: bytes;
 
-      proc pack(messageObj) throws {
+      proc ref pack(messageObj) throws {
         var s: bytes;
         var tmpMem = openMemFile();
         var memWriter = tmpMem.writer(locking=false);
@@ -703,7 +703,7 @@ module ProtobufProtocolSupport {
         binCh.writeBytes(this.value);
       }
 
-      proc _deserialize(binCh) throws {
+      proc ref _deserialize(binCh) throws {
         while true {
           var (fieldNumber, wireType) = tagConsume(binCh);
           select fieldNumber {

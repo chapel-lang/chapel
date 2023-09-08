@@ -26,7 +26,7 @@ proc blockLU(A: [?D], blk, ref piv: [D.dim(0)]) where (D.rank == 2) {
   if (blk <= 0) || (blk > D.dim(0).size) then
     halt(blk," is an invalid block size passed to blockLU");
 
-  [i in D.dim(0)] piv(i) = i;    // initialize the pivot vector
+  [i in D.dim(0) with (ref piv)] piv(i) = i;    // initialize the pivot vector
 
   // Main loop of block LU uses an iterator to compute three sets of
   // index ranges -- those that are unfactored, divided into those
@@ -94,16 +94,16 @@ proc blockLU(A: [?D], blk, ref piv: [D.dim(0)]) where (D.rank == 2) {
       //   ..and subtract scaled kth row from remaining
       //   unfactored rows of A1
 
-      forall (i,j) in {UnfactoredInds(k+1..), CurrentBlockInds(k+1..)} do
+      forall (i,j) in {UnfactoredInds(k+1..), CurrentBlockInds(k+1..)} with (ref A1) do
         A1(i,j) -= A1(i,k) * A1(k,j);
     }
 
     // ... and now update A2.
     // First update A12.
 
-    forall j in TrailingBlockInds do
+    forall j in TrailingBlockInds with (ref A12) do
       for k in CurrentBlockInds do
-        forall i in CurrentBlockInds(k+1..) do
+        forall i in CurrentBlockInds(k+1..) with (ref A12) do
           A12(i,j) -= A1(i,k) * A12(k,j);
 
     // And then update A22 -= A21*A12.
