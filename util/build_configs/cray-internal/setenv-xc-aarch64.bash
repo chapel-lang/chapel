@@ -131,7 +131,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
         launchers=aprun,none,slurm-srun
         substrates=aries,mpi,none
         locale_models=flat
-        auxfs=none,lustre
+        auxfs=none
 
         log_info "Start build_configs $dry_run $verbose # no make target"
 
