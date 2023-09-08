@@ -3412,6 +3412,8 @@ static void updateVariableAutoDestroy(DefExpr* defExpr) {
 *                                                                             *
 ************************************** | *************************************/
 
+std::set<Symbol*> gAlreadyWarnedGenericFormalSyms;
+
 void warnIfGenericFormalMissingQ(ArgSymbol* arg, Type* type) {
   bool genericWithDefaults = false;
   if (AggregateType* at = toAggregateType(type))
@@ -3433,9 +3435,15 @@ void warnIfGenericFormalMissingQ(ArgSymbol* arg, Type* type) {
       // is missing, and then again if it's there
       // TODO: fix
     } else {
-      USR_WARN(arg->typeExpr,
-               "need '?' on generic formal type '%s'",
-               toString(type));
+
+      auto pair = gAlreadyWarnedGenericFormalSyms.insert(arg);
+      if (!pair.second) {
+        // don't warn twice for the same variable/field
+      } else {
+        USR_WARN(arg->typeExpr,
+                 "need '?' on generic formal type '%s'",
+                 toString(type));
+      }
     }
   }
 }
