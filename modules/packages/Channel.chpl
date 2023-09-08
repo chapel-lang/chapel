@@ -51,14 +51,14 @@ module Channel {
 
   @chpldoc.nodoc
   class _LockWrapper {
-    var lock$ = new _lockType();
+    var lockVar = new _lockType();
 
     inline proc lock() {
-      lock$.lock();
+      lockVar.lock();
     }
 
     inline proc unlock() {
-      lock$.unlock();
+      lockVar.unlock();
     }
   }
 
@@ -278,7 +278,7 @@ module Channel {
     var closed = false;
     var sendWaiters : owned WaiterQueue(eltType);
     var recvWaiters : owned WaiterQueue(eltType);
-    var lock$ = new _LockWrapper();
+    var lockVar = new _LockWrapper();
 
     proc init(type elt, size = 0) {
       eltType = elt;
@@ -288,11 +288,11 @@ module Channel {
     }
 
     proc lock() {
-      lock$.lock();
+      lockVar.lock();
     }
 
     proc unlock() {
-      lock$.unlock();
+      lockVar.unlock();
     }
 
     proc recv(out val : eltType, blocking : bool) : bool {
