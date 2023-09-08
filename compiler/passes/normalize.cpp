@@ -3508,6 +3508,16 @@ static void hack_resolve_types(ArgSymbol* arg) {
             }
           }
         }
+        // similarly work around an issue with e.g.
+        //   proc Use_Foo(type inType : foo(?), in data : inType)
+        // the type of 'data' should not be resolved at this point
+        if (SymExpr* se = toSymExpr(only)) {
+          if (ArgSymbol* sym = toArgSymbol(se->symbol())) {
+            if (sym->hasFlag(FLAG_TYPE_VARIABLE)) {
+              type = dtUnknown;
+            }
+          }
+        }
 
         if (type == NULL)
           if (SymExpr* se = toSymExpr(only))
