@@ -1161,7 +1161,8 @@ module CTypes {
     Returns a :type:`c_ptr` to the address of any chapel object.
 
     Note that the behavior of this procedure is identical to :func:`c_ptrTo`
-    for scalar types. It only differs for arrays, strings, and bytes.
+    for scalar types. It only differs for arrays, strings, bytes, and class
+    variables.
   */
   inline proc c_addrOf(ref x: ?t): c_ptr(t) {
     if isDomainType(t) then
