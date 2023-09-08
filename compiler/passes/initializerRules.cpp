@@ -440,26 +440,26 @@ static void checkInvalidInit(InitNormalize& state, CallExpr* callExpr) {
   }
 
   if (state.isPhase2() == true) {
-    USR_FATAL(callExpr, "use of %s call in phase 2", initName);
+    USR_FATAL(callExpr, "use of '%s' call in phase 2", initName);
 
   } else if (state.inLoopBody() == true) {
-    USR_FATAL(callExpr, "use of %s call in loop body", initName);
+    USR_FATAL(callExpr, "use of '%s' call in loop body", initName);
 
   } else if (state.inParallelStmt() == true) {
     USR_FATAL(callExpr,
-              "use of %s call in a parallel statement", initName);
+              "use of '%s' call in a parallel statement", initName);
 
   } else if (state.inCoforall() == true) {
     USR_FATAL(callExpr,
-              "use of %s call in a coforall loop body", initName);
+              "use of '%s' call in a coforall loop body", initName);
 
   } else if (state.inForall() == true) {
     USR_FATAL(callExpr,
-              "use of %s call in a forall loop body", initName);
+              "use of '%s' call in a forall loop body", initName);
 
   } else if (state.inOn() == true) {
     USR_FATAL(callExpr,
-              "use of %s call in an on block", initName);
+              "use of '%s' call in an on block", initName);
   }
 }
 
