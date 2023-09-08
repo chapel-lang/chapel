@@ -90,6 +90,9 @@ module String {
     proc writeThis(f) throws {
       f.write(_bindex);
     }
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
 
     operator :(val: byteIndex, type t:string) {
       return val._bindex: string;
@@ -112,6 +115,10 @@ module String {
 
     proc writeThis(f) throws {
       f.write(_cpindex);
+    }
+
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
 
     operator :(val: codepointIndex, type t:string) {

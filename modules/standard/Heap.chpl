@@ -384,6 +384,10 @@ module Heap {
       ch.write(this._data);
       _leave();
     }
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
   }
 
   /*

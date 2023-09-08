@@ -142,6 +142,11 @@ module SortedSet {
       instance.writeThis(ch);
     }
 
+    @chpldoc.nodoc
+    inline proc const serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
+
     /*
       The current number of elements contained in this sortedSet.
     */

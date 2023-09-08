@@ -478,6 +478,10 @@ record blockDist {
   proc writeThis(x) {
     chpl_distHelp.writeThis(x);
   }
+
+  proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
+  }
 }
 
 
@@ -640,6 +644,10 @@ class LocBlockArr {
   // type's compilerError()
   override proc writeThis(f) throws {
     halt("LocBlockArr.writeThis() is not implemented / should not be needed");
+  }
+
+  override proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
   }
 
   proc deinit() {
@@ -866,6 +874,10 @@ proc BlockImpl.writeThis(x) throws {
   for locid in targetLocDom do
     x.writeln("  [", locid, "] locale ", locDist(locid).locale.id,
       " owns chunk: ", locDist(locid).myChunk);
+}
+
+override proc BlockImpl.serialize(writer, ref serializer) throws {
+  writeThis(writer);
 }
 
 proc BlockImpl.dsiIndexToLocale(ind: idxType) where rank == 1 {
@@ -2172,6 +2184,7 @@ class BoxedSync {
 
   // guard against dynamic dispatch trying to resolve write()ing the sync
   override proc writeThis(f) throws { }
+  override proc serialize(writer, ref serializer) throws { }
 }
 
 proc BlockArr.doiScan(op, dom) where (rank == 1) &&

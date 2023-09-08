@@ -332,6 +332,9 @@ record cyclicDist {
   proc writeThis(x) {
     chpl_distHelp.writeThis(x);
   }
+  proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
+  }
 }
 
 
@@ -580,6 +583,9 @@ proc CyclicImpl.writeThis(x) throws {
   for locid in targetLocDom do
     x.writeln(" [", locid, "=", targetLocs(locid), "] owns chunk: ",
       locDist(locid).myChunk);
+}
+override proc CyclicImpl.serialize(writer, ref serializer) throws {
+  writeThis(writer);
 }
 
 proc CyclicImpl.targetLocsIdx(i: idxType) {
@@ -1272,6 +1278,9 @@ class LocCyclicArr {
   // type's compilerError()
   override proc writeThis(f) throws {
     halt("LocCyclicArr.writeThis() is not implemented / should not be needed");
+  }
+  override proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
   }
 }
 

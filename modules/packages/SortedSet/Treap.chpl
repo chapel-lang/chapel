@@ -823,6 +823,11 @@ module Treap {
       _leave();
     }
 
+    @chpldoc.nodoc
+    proc const serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
+
     /*
       Returns `true` if this sortedSet is empty (size == 0).
 

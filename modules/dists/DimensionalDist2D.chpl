@@ -397,6 +397,9 @@ class LocDimensionalArr {
   override proc writeThis(f) throws {
     halt("LocDimensionalArr.writeThis() is not implemented / should not be needed");
   }
+  override proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
+  }
 }
 
 

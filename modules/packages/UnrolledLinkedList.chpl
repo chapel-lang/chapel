@@ -1190,6 +1190,11 @@ module UnrolledLinkedList {
       _leave();
     }
 
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
+
     /*
       Returns `true` if this unrolledLinkedList contains zero elements.
 

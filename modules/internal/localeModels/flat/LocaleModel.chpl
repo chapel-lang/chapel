@@ -175,6 +175,10 @@ module LocaleModel {
       f.write(name);
     }
 
+    override proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
+
     override proc _getChildCount() do return this.myLocaleSpace.size;
 
     proc getChildSpace() do return this.myLocaleSpace;

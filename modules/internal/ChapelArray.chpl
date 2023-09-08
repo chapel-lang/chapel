@@ -856,6 +856,11 @@ module ChapelArray {
       f.read(_value);
     }
 
+    @chpldoc.nodoc
+    proc ref deserialize(reader, ref deserializer) throws {
+      readThis(reader);
+    }
+
     // TODO: Can't this be an initializer?
     @chpldoc.nodoc
     proc type deserializeFrom(reader, ref deserializer) throws {

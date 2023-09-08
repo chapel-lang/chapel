@@ -332,6 +332,10 @@ module CommDiagnostics
       if first then c.write("<no communication>");
       c.write(")");
     }
+
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
   };
 
   /*

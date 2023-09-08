@@ -389,6 +389,11 @@ module OwnedObject {
     _readWriteHelper(f);
   }
 
+  @chpldoc.nodoc
+  proc _owned.serialize(writer, ref serializer) throws {
+    _readWriteHelper(writer);
+  }
+
   // Don't print out 'chpl_p' when printing an _owned, just print class pointer
   @chpldoc.nodoc
   proc _owned._readWriteHelper(f) throws {

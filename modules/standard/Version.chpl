@@ -203,6 +203,10 @@ module Version {
     proc writeThis(s) throws {
       s.write(this:string);
     }
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
 
     @chpldoc.nodoc
     proc init(param major: int,
@@ -366,6 +370,10 @@ module Version {
     @chpldoc.nodoc
     proc writeThis(s) throws {
       s.write(this:string);
+    }
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
 
     @chpldoc.nodoc

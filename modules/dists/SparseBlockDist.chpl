@@ -601,6 +601,10 @@ class LocSparseBlockArr {
   override proc writeThis(f) throws {
     halt("LocSparseBlockArr.writeThis() is not implemented / should not be needed");
   }
+
+  override proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
+  }
 }
 
 proc SparseBlockDom.dsiGetDist() {
