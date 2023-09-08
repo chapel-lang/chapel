@@ -186,6 +186,13 @@ for i in "${!experiment_name[@]}"; do
   echo "prebuildCmd=$prebuildCmd"
   echo "cmd=$cmd"
 
+  if [[ "$nameOpt" = "skip" ]]; then
+    echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
+    echo "* * * * * * * * * SKIPPING EXPERIMENT DUE TO __skip__ PREFIX  * * * * * * * * *"
+    echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
+    continue
+  fi
+
   # If experiment name has __reuse__ prefix copy previous results (.dat) file
   # if it exists (otherwise we'll continue on and repeat the experiment).
   if [[ "$nameOpt" = "reuse" ]]; then
@@ -194,6 +201,9 @@ for i in "${!experiment_name[@]}"; do
       echo "experiment we will copy its previous results into the log directrory."
       echo ">cp \"$backupLogDir/$name.dat\" \"$logDir\""
       cp "$backupLogDir/$name.dat" "$logDir"
+      echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
+      echo "* * * * * * * * * SKIPPING EXPERIMENT DUE TO __reuse__ PREFIX * * * * * * * * *"
+      echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
       continue
     fi
   fi
