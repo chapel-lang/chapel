@@ -59,7 +59,11 @@ proc train(ref network,
            batchSize: int,
            numEpochs: int,
            savePath: string,
-           watch: bool = false) {
+           watch: bool = false,
+           expectedAccuracy = -1.0,
+           expectedLoss = -1.0) {
+
+    const justValidate = expectedAccuracy >= 0.0 && expectedLoss >= 0.0;
     
     const numImages = numTrainImages + numTestImages;
 
@@ -84,7 +88,7 @@ proc train(ref network,
 
     for epoch in 0..#numEpochs {
         
-        writeln("Epoch ",epoch + 1);
+        if !justValidate then writeln("Epoch ",epoch + 1);
         network.forwardProp(trainingData[0][0]);
 
         tn.shuffle(trainingData);
@@ -98,10 +102,12 @@ proc train(ref network,
                                           acc, " / ", batchSize, ")");
             IO.stdout.flush();
         }
-        IO.stdout.write("\n");
-        IO.stdout.flush();
 
-        writeln("Evaluating...");
+        if !justValidate {        
+            IO.stdout.write("\n");
+            IO.stdout.flush();
+            writeln("Evaluating...");
+        }
 
         var loss = 0.0;
         var numCorrect = 0;
@@ -112,10 +118,27 @@ proc train(ref network,
             numCorrect += acc_;
         }
 
-        writeln("End of epoch ", epoch + 1,
-                " Loss ", decFormat(loss / testingData.size,2),
-                " Accuracy ", numCorrect, 
-                " / ", testingData.size);
+        if !justValidate then writeln("End of epoch ", epoch + 1,
+                                        " Loss ", decFormat(loss / testingData.size,2),
+                                        " Accuracy ", numCorrect, 
+                                        " / ", testingData.size);
+
+        if justValidate && epoch == numEpochs - 1 {
+            const accuracy = numCorrect:real / (testingData.size:real);
+            const epochLoss = loss / (testingData.size:real);
+            const accWindow = (10.0 / testingData.size:real);
+            const lossWindow = 0.5;
+            if abs(accuracy - expectedAccuracy) > accWindow || abs(epochLoss - expectedLoss) > lossWindow {
+                writeln("Failed to meet accuracy and loss requirements.");
+                writeln("Expected accuracy: ", expectedAccuracy, " +/- ", accWindow);
+                writeln("Expected loss: ", expectedLoss, " +/- ", lossWindow);
+                writeln("Actual accuracy: ", accuracy);
+                writeln("Actual loss: ", epochLoss);
+                halt(1);
+            } else {
+                writeln("Passed accuracy and loss requirements.");
+            }
+        }
 
         if !perfTest then network.save(savePath);
     }
@@ -124,7 +147,11 @@ proc train(ref network,
 
 }
 
-proc classificationEval(ref network, numImages: int, modelPath: string) {
+proc classificationEval(ref network, 
+                        numImages: int, 
+                        modelPath: string, 
+                        expectedAccuracy = -1.0,
+                        expectedLoss = -1.0) {
 
     network.load(modelPath);
 
@@ -149,11 +176,28 @@ proc classificationEval(ref network, numImages: int, modelPath: string) {
     }
 
     loss /= numImages;
+    
+    const justValidate = expectedAccuracy >= 0.0 && expectedLoss >= 0.0;
 
-    writeln("Loss: ", decFormat(loss,2),
-            " Accuracy: ",acc ,
-            " / ", numImages, 
-            " ", decFormat((acc * 100):real / (numImages:real),2), " %");
+    if !justValidate then writeln("Loss: ", decFormat(loss,2),
+                                    " Accuracy: ",acc ,
+                                    " / ", numImages, 
+                                    " ", decFormat((acc * 100):real / (numImages:real),2), " %");
+
+    if justValidate {
+        const accuracy = acc:real / (numImages:real);
+        const accWindow = (10.0 / numImages:real);
+        const lossWindow = 0.5;
+        if abs(accuracy - expectedAccuracy) > accWindow || abs(loss - expectedLoss) > lossWindow {
+            writeln("Failed to meet accuracy and loss requirements.");
+            writeln("Expected accuracy: ", expectedAccuracy, " +/- ", accWindow);
+            writeln("Expected loss: ", expectedLoss, " +/- ", lossWindow);
+            writeln("Actual accuracy: ", accuracy);
+            writeln("Actual loss: ", loss);
+        } else {
+            writeln("Passed accuracy and loss requirements.");
+        }
+    }
 
     t.stop();
 
