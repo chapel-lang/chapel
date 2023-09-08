@@ -1,3 +1,7 @@
+generic-formal-qs.chpl:19: In function 'e':
+generic-formal-qs.chpl:19: warning: need '?' on generic formal type 'C'
+generic-formal-qs.chpl:22: In function 'f':
+generic-formal-qs.chpl:22: warning: need '?' on generic formal type 'R'
 generic-formal-qs.chpl:2: In function 'a':
 generic-formal-qs.chpl:2: warning: need '?' on generic formal type 'R'
 generic-formal-qs.chpl:10: warning: need ? on generic formal type

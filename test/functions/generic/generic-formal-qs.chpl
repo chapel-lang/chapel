@@ -11,3 +11,13 @@ proc c(arg: getGenericType()) { }
 proc d(arg: getGenericType()(?)) { }
 c(new R(int));
 d(new R(int));
+
+
+class C { type t; }
+record WR { type t; }
+
+proc e(arg: owned C) { }
+e(new C(int));
+
+proc f(arg: WR(R)) { }
+f(new WR(R(int)));
