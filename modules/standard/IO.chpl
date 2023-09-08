@@ -9591,18 +9591,18 @@ record itemReaderInternal {
 
 // And now, the toplevel items.
 
-/* A :record:`fileReader` instance that reads from standard input. */
+/* A locking :record:`fileReader` instance that reads from standard input. */
 const stdin:fileReader(true);
 stdin = try! (new file(0)).reader();
 
 extern proc chpl_cstdout():chpl_cFilePtr;
-/* A :record:`fileWriter` instance that writes to standard output. */
+/* A locking :record:`fileWriter` instance that writes to standard output. */
 const stdout:fileWriter(true);
 stdout = try! (new file(chpl_cstdout())).writer();
 
 
 extern proc chpl_cstderr():chpl_cFilePtr;
-/* A :record:`fileWriter` instance that writes to standard error. */
+/* A locking :record:`fileWriter` instance that writes to standard error. */
 const stderr:fileWriter(true);
 stderr = try! (new file(chpl_cstderr())).writer();
 
