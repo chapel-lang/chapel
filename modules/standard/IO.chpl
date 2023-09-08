@@ -517,41 +517,40 @@ See the following example of a simple I/O transaction:
 
 .. _filereader-filewriter-regions:
 
-The ``fileReader`` and ``fileWriter`` region
---------------------------------------------
+Specifying the region of a FileReader or FileWriter
+---------------------------------------------------
 
-The :record:`fileReader` and :record:`fileWriter` can be configured to map to
-a specific region of their associated file.
+The :record:`fileReader` and :record:`fileWriter` types can be configured to
+own a specific *region* of their associated file.
 
 When a ``fileReader`` or ``fileWriter`` is initialized using one of the
 following routines, the optional ``region`` argument can be set to designate
-some region of the file (zero-based in bytes) that can be read from or written
-to:
+some region of the file (a zero-based :ref:`range<Chapter-Ranges>` of integers
+in bytes) that can be read from or written to:
 
 * :proc:`file.reader`
 * :proc:`file.writer`
 * :proc:`openReader`
 * :proc:`openWriter`
 
-Read or Write operations outside of the ``region`` will result in an error.
-The ``region`` argument defaults to ``0..``, meaning that the owned region
-starts at the 0th byte, and extends indefinitely. The first read or write to a
-``fileReader`` or ``fileWriter`` whose region starts at ``0`` will occur at the
-beginning of the file. Otherwise, it will start at the provided region's low
-bound.
+I/O operations that fall outside of the *region* are illegal. The ``region``
+argument defaults to ``0..``, meaning that the owned region starts at the 0th
+byte, and extends indefinitely.
 
 Note that :proc:`fileReader.seek` and :proc:`fileWriter.seek` can be used to
 adjust a ``fileReader`` or ``fileWriter``'s region after initialization.
 
 Creating a ``fileReader`` or ``fileWriter`` that points to a sub-region of
-a file can be useful for concurrently reading from or writting to multiple
-sections of one file. See the following example, which uses ``nWorkers`` to
-concurrently read bytes from a file into an array ``a``:
+a file can be useful for concurrently reading from or writing to multiple
+portions of a file from separate tasks. See the following example, which
+uses multiple tasks to concurrently read bytes from a binary file into an
+array of bytes:
 
 .. code-block:: chapel
 
   use IO;
 
+  // the number of tasks to use
   config const nWorkers = 8;
 
   // open a (large) binary file
@@ -564,7 +563,7 @@ concurrently read bytes from a file into an array ``a``:
   // create an array to hold the file contents
   var a: [0..<nBytes] uint(8);
 
-  // concurrently read each workers region into 'a'
+  // concurrently read each worker's region into 'a'
   coforall w in 0..<nWorkers {
     const myRegion = (w*nPerLoc)..<((w+1) * nPerLoc),
           fr = f.reader(region=myRegion, locking=false);
@@ -575,17 +574,18 @@ concurrently read bytes from a file into an array ``a``:
 
 .. _locking-filereaders-and-filewriters:
 
-Locking Behavior of ``fileReaders`` and ``fileWriters``
--------------------------------------------------------
+Locking Behavior of FileReaders and FileWriters
+-----------------------------------------------
 
 The :record:`fileReader` and :record:`fileWriter` types can be configured to
-lock internally around I/O operations to avoid race conditions with other
-``fileReader`` or ``fileWriter`` instances created from the same file.
+lock access to their file when executing I/O operations to avoid race conditions
+with other ``fileReader`` or ``fileWriter`` instances that may be accessing the
+same file.
 
-The ``locking`` field is a ``param`` and is thus part of the
-``fileReader`` and ``fileWriter``'s type. As such, it is possible to constrain
-a formal in a procedure, for example, to only accept a locking reader/writer or
-visa versa.
+The ``locking`` field is a ``param`` and is thus part of the ``fileReader``
+and ``fileWriter`` type. As such, it is possible to use type constraints to
+designate whether a reader or writer is locking. For example this could be
+useful in a procedure that relies on a ``reader`` argument being locking:
 
 .. code-block:: chapel
 
@@ -604,8 +604,8 @@ routines:
 * :proc:`openReader`
 * :proc:`openWriter`
 
-With a non-locking `fileReader`` or ``fileWriter``, one can lock manually by
-calling :proc:`fileReader.lock` or :proc:`fileWriter.lock`, and then release a
+With a non-locking `fileReader`` or ``fileWriter``, one can obtain a lock manually
+by calling :proc:`fileReader.lock` or :proc:`fileWriter.lock`, and then release a
 lock by calling :proc:`fileReader.unlock` or :proc:`fileWriter.unlock`.
 
 Note: whether or not a reader/writer is locking, one must manually wrap ``lock``
@@ -4868,7 +4868,7 @@ config param useNewSeekRegionBounds = false;
    discarded.
 
    This routine has the following constraints:
-   
+
     * the underlying file must be seekable (sockets and pipes are not seekable)
     * the ``fileReader`` must be non-locking (to avoid race conditions if two
       tasks seek and read simultaneously)
