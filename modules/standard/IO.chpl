@@ -604,14 +604,21 @@ routines:
 * :proc:`openReader`
 * :proc:`openWriter`
 
-With a non-locking `fileReader`` or ``fileWriter``, one can obtain a lock manually
+With a non-locking ``fileReader`` or ``fileWriter``, one can obtain a lock manually
 by calling :proc:`fileReader.lock` or :proc:`fileWriter.lock`, and then release a
 lock by calling :proc:`fileReader.unlock` or :proc:`fileWriter.unlock`.
 
-Note: whether or not a reader/writer is locking, one must manually wrap ``lock``
-and ``unlock`` calls around :ref:`io-transactions` to make them concurrently safe
-(``mark``, ``commit``, and ``revert`` do not lock automatically even for
-``locking=true``).
+Note: The following methods will not automatically acquire/release a lock for
+``locking=true``:
+
+* :proc:`fileReader.mark`
+* :proc:`fileWriter.mark`
+* :proc:`fileReader.commit`
+* :proc:`fileWriter.commit`
+* :proc:`fileReader.revert`
+* :proc:`fileWriter.revert`
+* :proc:`fileReader.offset`
+* :proc:`fileWriter.offset`
 
 
 .. _about-io-ensuring-successful-io:
@@ -4346,7 +4353,8 @@ proc fileWriter._ch_ioerror(errstr:string, msg:string) throws {
 }
 
 /*
-   Acquire a fileReader's lock.
+   Acquire a fileReader's lock. See :ref:<locking-filereaders-and-filewriters>
+   for more details.
 
    :throws SystemError: Thrown if the lock could not be acquired.
  */
@@ -4366,7 +4374,8 @@ inline proc fileReader.lock() throws {
 }
 
 /*
-   Acquire a fileWriter's lock.
+   Acquire a fileWriter's lock. See :ref:<locking-filereaders-and-filewriters>
+   for more details.
 
    :throws SystemError: Thrown if the lock could not be acquired.
  */
@@ -4386,7 +4395,8 @@ inline proc fileWriter.lock() throws {
 }
 
 /*
-   Release a fileReader's lock.
+   Release a fileReader's lock. See :ref:<locking-filereaders-and-filewriters>
+   for more details.
  */
 inline proc fileReader.unlock() {
   if locking {
@@ -4397,7 +4407,8 @@ inline proc fileReader.unlock() {
 }
 
 /*
-   Release a fileWriter's lock.
+   Release a fileWriter's lock. See :ref:<locking-filereaders-and-filewriters>
+   for more details.
  */
 inline proc fileWriter.unlock() {
   if locking {
