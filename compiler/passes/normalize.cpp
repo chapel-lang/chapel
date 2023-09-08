@@ -3434,15 +3434,15 @@ static bool isDotTypeExpr(Expr* typeExpr) {
 }
 
 void warnIfGenericFormalMissingQ(ArgSymbol* arg, Type* type, Expr* typeExpr) {
-  bool genericWithDefaults = false;
-  if (AggregateType* at = toAggregateType(type))
-    genericWithDefaults = at->isGenericWithDefaults();
-
   // ignore any decorator; generic-management is ignored here
   // and so the decorator is irrelevant
   if (DecoratedClassType* dct = toDecoratedClassType(type))
     if (AggregateType* at = dct->getCanonicalClass())
       type = at;
+
+  bool genericWithDefaults = false;
+  if (AggregateType* at = toAggregateType(type))
+    genericWithDefaults = at->isGenericWithDefaults();
 
   if (type->symbol->hasFlag(FLAG_GENERIC) &&
       !genericWithDefaults &&
@@ -3466,7 +3466,6 @@ void warnIfGenericFormalMissingQ(ArgSymbol* arg, Type* type, Expr* typeExpr) {
       } else {
         Expr* where = arg->defPoint;
         if (arg->typeExpr) where = arg->typeExpr;
-        gdbShouldBreakHere();
         USR_WARN(where,
                  "need '(?)' on generic formal type '%s'",
                  toString(type, /*decorators*/false));
