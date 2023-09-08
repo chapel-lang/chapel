@@ -231,7 +231,7 @@ bool symbolIsUsedAsRef(Symbol* sym) {
 }
 
 static
-bool checkForInvalidPromotions() {
+void checkForInvalidPromotions() {
   // for all CallExprs, if we call a promotion wrapper that is marked no promotion, warn
   // checking here after all ContextCallExpr's have been resolved to plain CallExpr's
   for_alive_in_Vec(CallExpr, ce, gCallExprs) {
