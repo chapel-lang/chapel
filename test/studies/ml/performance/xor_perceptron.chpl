@@ -57,7 +57,7 @@ proc train(batch: [] (Tensor(1),Tensor(1)), lr:real) {
 proc test(batch: [] (Tensor(1),Tensor(1))) {
     const (losses,lossesGrad, outputs) = forward( batch);
     for ((input,expected),output) in zip(batch,outputs) {
-        writeln(input.data, " -> ", output.data, " [", expected.data ,"]");
+        writeln(input.data, " -> ", decFormat(output.data,2), " [", expected.data ,"]");
     }
 }
 
@@ -92,8 +92,12 @@ for epoch in 1..epochs {
     loss = train(batch[0..#(batchSizes[0])],learnRate);
 }
 
-writeln("Epoch: ", epochs, " Loss: ", AutoMath.floor(loss * 10000) / 10000);
+writeln("Epoch: ", epochs, " Loss: ", decFormat(loss,2));
 
 test(batch);
 
 if perfTest then writeln("time: ", t.elapsed());
+
+proc decFormat(x: real, n: int) {
+    return AutoMath.floor(x * (10.0**(n:real))) / (10.0**(n:real));
+}
