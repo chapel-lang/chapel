@@ -1174,7 +1174,7 @@ struct Converter {
   Expr* visit(const uast::Init* node) {
     // target should always be "this", aka the method receiver.
     auto toInit = convertAST(node->target());
-    return new CallExpr(new CallExpr(".", toInit, new_CStringSymbol("complete")));
+    return new CallExpr(new CallExpr(".", toInit, new_CStringSymbol("chpl__initThisType")));
   }
 
   CallExpr* visit(const uast::New* node) {

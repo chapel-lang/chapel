@@ -417,14 +417,22 @@ static void checkLocalPhaseOneErrors(const InitNormalize& state,
   }
 }
 
+static const char* getInitDoneStyle(CallExpr* callExpr);
+
 static void checkInvalidInit(InitNormalize& state, CallExpr* callExpr) {
   const char* initName = NULL;
+  const char* initStyle = NULL;
+
   if (isSuperInit(callExpr) == true) {
     initName = "super.init()";
   } else if (isThisInit(callExpr) == true) {
     initName = "this.init()";
-  } else if (isInitDone(callExpr) == true) {
-    initName = "this.complete()";
+  } else if ((initStyle = getInitDoneStyle(callExpr))) {
+    initName = "init this";
+  }
+
+  if (initStyle && strcmp(initStyle, "complete") == 0) {
+    USR_WARN(callExpr, "'this.complete()' is deprecated; please use 'init this' instead");
   }
 
   if (initName == NULL) {
@@ -670,8 +678,8 @@ static InitNormalize preNormalize(AggregateType* at,
           // Only one branch contained an init
           if (stateThen.isPhase2() != stateElse.isPhase2()) {
             USR_FATAL(cond,
-                      "Both arms of a conditional must use this.init() "
-                      "or this.complete() in phase 1");
+                      "Both arms of a conditional must use 'this.init()' "
+                      "or 'init this' in phase 1");
 
           } else if (stateThen.currField() != stateElse.currField()) {
             unifyConditionalBranchLastField(at, cond, &stateThen, &stateElse);
@@ -839,28 +847,45 @@ static bool isUnresolvedSymbol(Expr* expr, const char* name) {
   return retval;
 }
 
-bool isInitDone(CallExpr* callExpr) {
-  bool retval = false;
+static const char* getInitDoneStyleLiteral(Expr* expr) {
+  if (isStringLiteral(expr, "chpl__initThisType")) {
+    return "chpl__initThisType";
+  } else if (isStringLiteral(expr, "complete")) {
+    return "complete";
+  }
+
+  return nullptr;
+}
+
+// If the call is 'this.complete()' or 'init this', return the string that
+// represents the call. Otherwise, returns nullptr.
+static const char* getInitDoneStyle(CallExpr* callExpr) {
+  const char* retval = nullptr;
 
   if (callExpr->numActuals() == 0) {
     if (UnresolvedSymExpr* usym = toUnresolvedSymExpr(callExpr->baseExpr)) {
-      if (strcmp(usym->unresolved, "complete") == 0) {
-        retval = true;
+      if (strcmp(usym->unresolved, "chpl__initThisType") == 0 ||
+          strcmp(usym->unresolved, "complete") == 0) {
+        retval = usym->unresolved;
       }
 
     } else if (CallExpr* subCall = toCallExpr(callExpr->baseExpr)) {
       if (subCall->numActuals()                        ==    2 &&
-          subCall->isNamedAstr(astrSdot)               == true &&
-          isStringLiteral(subCall->get(2), "complete") == true) {
-
-        if (isSymbolThis(subCall->get(1)) == true) {
-          retval = true;
+          subCall->isNamedAstr(astrSdot)               == true) {
+        if (auto litValue = getInitDoneStyleLiteral(subCall->get(2))) {
+          if (isSymbolThis(subCall->get(1)) == true) {
+            retval = litValue;
+          }
         }
       }
     }
   }
 
   return retval;
+}
+
+bool isInitDone(CallExpr* callExpr) {
+  return getInitDoneStyle(callExpr) != nullptr;
 }
 
 /************************************* | **************************************
