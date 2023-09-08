@@ -6,7 +6,7 @@ CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common-native-gpu.bash
 source $CWD/common-hpe-cray-ex.bash
 
-module load cudatoolkit/23.3_11.8 # avoid 12.0
+module load cudatoolkit/23.3_11.8 # pin to CUDA 11
 
 export CHPL_COMM=none
 export CHPL_LOCALE_MODEL=gpu
