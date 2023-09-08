@@ -931,8 +931,9 @@ proc type Stencil.createArray(
   periodic = false
 ) where dom.rank == arrayDom.rank && isCoercible(arrayEltType, eltType)
 {
-  for (d, ad, i) in zip(dom.dims(), arrayDom.dims(), 0..) do
-    if d.size != ad.size then halt("Domain size mismatch in 'Stencil.createArray' dimension " + i:string);
+  if boundsChecking then
+    for (d, ad, i) in zip(dom.dims(), arrayDom.dims(), 0..) do
+      if d.size != ad.size then halt("Domain size mismatch in 'Stencil.createArray' dimension " + i:string);
   var D = createDomain(dom, targetLocales, fluff, periodic);
   var A: [D] eltType;
   A = initExpr;
