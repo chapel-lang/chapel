@@ -372,7 +372,7 @@ concrete* for the purpose of function resolution.
 
    .. code-block:: chapel
 
-      proc g(c: C(?t,?u,Container)) {
+      proc g(c: C(?t,?u,Container(?))) {
         // ...
       }
 
@@ -411,7 +411,7 @@ Homogeneous tuple arguments of generic type are also supported:
       record Number {
         var n;
       }
-      proc f(tuple: 2*Number) {
+      proc f(tuple: 2*Number(?)) {
       }
 
 
