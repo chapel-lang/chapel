@@ -467,6 +467,17 @@ bool InitResolver::isFieldInitialized(ID fieldId) {
   return ret;
 }
 
+void InitResolver::handleInitMarker(const uast::AstNode* node) {
+  // TODO: Better/more appropriate user facing error message for this?
+  if (thisCompleteIds_.size() > 0) {
+    CHPL_ASSERT(phase_ == PHASE_COMPLETE);
+    CHPL_REPORT(ctx_, PhaseTwoInitMarker, node, thisCompleteIds_);
+  } else {
+    thisCompleteIds_.push_back(node->id());
+    phase_ = PHASE_COMPLETE;
+  }
+}
+
 bool InitResolver::handleCallToThisComplete(const FnCall* node) {
   if (!node->calledExpression()) return false;
   bool isCompleteCall = false;
@@ -480,14 +491,7 @@ bool InitResolver::handleCallToThisComplete(const FnCall* node) {
 
   if (!isCompleteCall) return false;
 
-  // TODO: Better/more appropriate user facing error message for this?
-  if (thisCompleteIds_.size() > 0) {
-    CHPL_ASSERT(phase_ == PHASE_COMPLETE);
-    ctx_->error(node, "use of 'init this' call in phase 2");
-  } else {
-    thisCompleteIds_.push_back(node->id());
-    phase_ = PHASE_COMPLETE;
-  }
+  handleInitMarker(node);
 
   return true;
 }
@@ -589,6 +593,16 @@ bool InitResolver::handleResolvingCall(const Call* node) {
   }
 
   return ret;
+}
+
+bool InitResolver::handleInitStatement(const uast::Init* node) {
+  // current parser rules require this to always be this, but maybe someday
+  // they won't.
+  if (node->target()->name() != "this") return false;
+
+  handleInitMarker(node);
+
+  return true;
 }
 
 bool InitResolver::handleUseOfField(const AstNode* node) {

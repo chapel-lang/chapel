@@ -746,6 +746,20 @@ void ErrorNotInModule::write(ErrorWriterBase& wr) const {
   return;
 }
 
+void ErrorPhaseTwoInitMarker::write(ErrorWriterBase& wr) const {
+  auto node = std::get<const uast::AstNode*>(info);
+  auto& others = std::get<std::vector<ID>>(info);
+
+  const char* markerType = node->isInit() ? "init this" : "this.complete()";
+  wr.heading(kind_, type_, node,
+             "use of '", markerType, "' after type has been initialized.");
+  wr.code(node, { node });
+
+  auto previousMarker = others.at(0);
+  wr.note(previousMarker, "the type was previously marked as initialized here:");
+  wr.code<ID>(previousMarker, { previousMarker });
+}
+
 void ErrorPrivateToPublicInclude::write(ErrorWriterBase& wr) const {
   auto moduleInclude = std::get<const uast::Include*>(info);
   auto moduleDef = std::get<const uast::Module*>(info);
