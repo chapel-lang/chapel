@@ -276,17 +276,20 @@ Type methods can also be iterators.
       7
       11
 
-When ``this-intent`` is ``ref``, the receiver argument will be passed by
-reference, allowing modifications to ``this``. If ``this-intent`` is
-``const ref``, the receiver argument is passed by reference but it
-cannot be modified inside the method. The ``this-intent`` can also
-describe an abstract intent as follows. If it is ``const``, the receiver
-argument will be passed with ``const`` intent. If it is left out
-entirely, the receiver will be passed with a default intent. For
-records, that default intent is ``ref`` if ``this`` is modified within
-the function and ``const ref`` otherwise. For other types, the default
-``this`` intent matches the default argument intent described in
-:ref:`The_Default_Intent`.
+When ``this-intent`` is ``ref``, the receiver argument will be passed
+by reference, allowing modifications to ``this``.  The ``ref``
+``this-intent`` is illegal for class methods, since this would permit
+such methods to modify which object the class variable refers to.
+
+If ``this-intent`` is ``const ref``, the receiver argument is passed
+by reference but it cannot be modified inside the method. The
+``this-intent`` can also describe an abstract intent as follows. If it
+is ``const``, the receiver argument will be passed with ``const``
+intent. If it is left out entirely, the receiver will be passed with a
+default intent. For records, that default intent is ``ref`` if
+``this`` is modified within the function and ``const ref``
+otherwise. For other types, the default ``this`` intent matches the
+default argument intent described in :ref:`The_Default_Intent`.
 
    *Example (refThisIntent.chpl)*.
 
