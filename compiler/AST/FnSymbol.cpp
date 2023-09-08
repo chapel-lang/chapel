@@ -875,29 +875,11 @@ static void checkFormalType(const FnSymbol* enclosingFn, ArgSymbol* formal) {
           "%s is given by non-type function '%s'", formal->name, target->name);
     }
 
-    bool genericWithDefaults = false;
-    if (AggregateType* at = toAggregateType(formal->type))
-      genericWithDefaults = at->isGenericWithDefaults();
-
-    if (formal->type->symbol->hasFlag(FLAG_GENERIC) &&
-        !genericWithDefaults &&
-        !formal->hasFlag(FLAG_MARKED_GENERIC) &&
-        formal->defPoint->getModule()->modTag == MOD_USER) {
-      if (formal->type->symbol->hasFlag(FLAG_ARRAY)) {
-        // don't worry about it for array types for now
-        //      } else if (formal->type == dtAny) {
-        // skip over 'dtAny' cases for now
-        // TODO: This is casting too wide a net, though...  See
-        // test/functions/intents/out/out-generic-type-set-assign.chpl
-        // for a case that it lets through but shouldn't
-      } else if (enclosingFn->hasFlag(FLAG_COMPILER_GENERATED)) {
+    if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
+      if (enclosingFn->hasFlag(FLAG_COMPILER_GENERATED)) {
         // We shouldn't complain to the user about routines we generate
-      } else if (formal->intent == INTENT_OUT) {
-        // Skip 'out' intents...  We complain if '?' is missing, but
-        // also when it's present.  Also, we convert them to 'dtAny'
-        // by this point, which is inherently generic.
       } else {
-        USR_WARN(formal, "need ? on generic formal type");
+        warnIfGenericFormalMissingQ(formal, formal->type, nullptr);
       }
     }
   }
