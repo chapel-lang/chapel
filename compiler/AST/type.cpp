@@ -1610,6 +1610,11 @@ bool isBuiltinGenericClassType(Type* t) {
 }
 
 bool isBuiltinGenericType(Type* t) {
+  // ignore any decorator; irrelevant for knowing if it's builtin+generic
+  if (DecoratedClassType* dct = toDecoratedClassType(t))
+    if (AggregateType* at = dct->getCanonicalClass())
+      t = at;
+
   return isBuiltinGenericClassType(t) ||
          t == dtAnyComplex || t == dtAnyImag || t == dtAnyReal ||
          t == dtAnyBool || t == dtAnyEnumerated ||
