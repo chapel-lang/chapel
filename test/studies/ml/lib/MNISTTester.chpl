@@ -48,6 +48,10 @@ proc train(ref net, data: [] (Tensor(3),int), lr: real = 0.005) {
     return (loss,acc);
 }
 
+proc decFormat(x: real, n: int) {
+    return AutoMath.floor(x * (10.0**(n:real))) / (10.0**(n:real));
+}
+
 proc train(ref network, 
            numTrainImages: int,
            numTestImages: int,
@@ -109,7 +113,7 @@ proc train(ref network,
         }
 
         writeln("End of epoch ", epoch + 1,
-                " Loss ", AutoMath.floor(loss / testingData.size * 10000) / 10000,
+                " Loss ", decFormat(loss / testingData.size,2),
                 " Accuracy ", numCorrect, 
                 " / ", testingData.size);
 
@@ -146,10 +150,10 @@ proc classificationEval(ref network, numImages: int, modelPath: string) {
 
     loss /= numImages;
 
-    writeln("Loss: ", AutoMath.floor(10000 * loss) / 10000,
+    writeln("Loss: ", decFormat(loss,2),
             " Accuracy: ",acc ,
             " / ", numImages, 
-            " ", (acc * 100):real / (numImages:real), " %");
+            " ", decFormat((acc * 100):real / (numImages:real),2), " %");
 
     t.stop();
 
