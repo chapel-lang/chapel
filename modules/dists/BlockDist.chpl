@@ -180,7 +180,7 @@ of the locale to which it is mapped.
 
     const Space = {1..8, 1..8};
     const Dist = new blockDist(boundingBox=Space);
-    const D = blockDist.createDomain(Space);
+    const D = Space dmapped Dist;
     var A: [D] int;
 
     forall a in A do
