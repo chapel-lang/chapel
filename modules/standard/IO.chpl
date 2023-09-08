@@ -1695,7 +1695,7 @@ record file {
 proc file.init(x: file) {
   this._home = x._home;
   this._file_internal = x._file_internal;
-  this.complete();
+  init this;
   on this._home {
     qio_file_retain(_file_internal);
   }
@@ -3425,7 +3425,7 @@ record binaryDeserializer {
   proc init(endian: IO.ioendian = IO.ioendian.native, _structured : bool = true) {
     this.endian = endian;
     this._structured = _structured;
-    this.complete();
+    init this;
   }
 
   // TODO: rewrite in terms of writef, or something
@@ -3754,7 +3754,7 @@ proc fileReader.init=(x: fileReader) {
   this._channel_internal = x._channel_internal;
   this._deserializer = new shared _serializeWrapper(deserializerType, x._deserializer!.member);
   this._readWriteThisFromLocale = x._readWriteThisFromLocale;
-  this.complete();
+  init this;
   on x._home {
     qio_channel_retain(x._channel_internal);
   }
@@ -3773,7 +3773,7 @@ proc fileWriter.init=(x: fileWriter) {
   this._channel_internal = x._channel_internal;
   this._serializer = new shared _serializeWrapper(serializerType, x._serializer!.member);
   this._readWriteThisFromLocale = x._readWriteThisFromLocale;
-  this.complete();
+  init this;
   on x._home {
     qio_channel_retain(x._channel_internal);
   }

@@ -31,7 +31,7 @@ module AtomicsCommon {
 
     proc init() {}
     proc init=(other: atomic_refcnt) {
-      this.complete();
+      init this;
       this._cnt.init_helper(other._cnt.read());
     }
 

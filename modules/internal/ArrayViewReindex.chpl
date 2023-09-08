@@ -404,7 +404,7 @@ module ArrayViewReindex {
       this._ArrInstance    = _ArrInstance;
       this.indexCache      = buildIndexCacheHelper(_ArrInstance, dom);
       this.ownsArrInstance = ownsArrInstance;
-      this.complete();
+      init this;
       __primitive("set aliasing array on type", this.type, !ownsArrInstance);
     }
 

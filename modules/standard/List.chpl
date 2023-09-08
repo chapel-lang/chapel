@@ -184,7 +184,7 @@ module List {
       _checkType(eltType);
       this.eltType = eltType;
       this.parSafe = false;
-      this.complete();
+      init this;
       this._firstTimeInitializeArrays();
     }
 
@@ -202,7 +202,7 @@ module List {
       _checkType(eltType);
       this.eltType = eltType;
       this.parSafe = parSafe;
-      this.complete();
+      init this;
       this._firstTimeInitializeArrays();
     }
 
@@ -220,7 +220,7 @@ module List {
                       "cannot be copied");
       this.eltType = t;
       this.parSafe = other.parSafe;
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -243,7 +243,7 @@ module List {
                       "cannot be copied");
       this.eltType = t;
       this.parSafe = parSafe;
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -263,7 +263,7 @@ module List {
 
       this.eltType = t;
       this.parSafe = false;
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -288,7 +288,7 @@ module List {
 
       this.eltType = t;
       this.parSafe = parSafe;
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -317,7 +317,7 @@ module List {
         compilerError(msg);
       }
 
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -351,7 +351,7 @@ module List {
         compilerError(msg);
       }
 
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -371,7 +371,7 @@ module List {
       this.eltType = t;
       this.parSafe = false;
 
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -396,7 +396,7 @@ module List {
       this.eltType = t;
       this.parSafe = parSafe;
 
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -423,7 +423,7 @@ module List {
                      then this.type.parSafe
                      else false;
 
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -449,7 +449,7 @@ module List {
                      then this.type.parSafe
                      else false;
 
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -483,7 +483,7 @@ module List {
                      then this.type.parSafe
                      else false;
 
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -508,7 +508,7 @@ module List {
                      then this.type.parSafe
                      else false;
 
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 

@@ -511,7 +511,7 @@ module ArrayViewRankChange {
       this.idx             = idx;
       this.indexCache      = buildIndexCacheHelper(_ArrInstance, dom, collapsedDim, idx);
       this.ownsArrInstance = ownsArrInstance;
-      this.complete();
+      init this;
       __primitive("set aliasing array on type", this.type, !ownsArrInstance);
     }
 

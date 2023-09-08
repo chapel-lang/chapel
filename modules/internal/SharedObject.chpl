@@ -41,7 +41,7 @@ module SharedObject {
     // a 'ReferenceCount' should only ever be initialized during 'shared' initialization
     // 'weak' references should only get a non-nil 'ReferenceCount' by copying from a 'shared'
     proc init() {
-      this.complete();
+      init this;
       strongCount.write(1);
       totalCount.write(1);
     }
@@ -207,7 +207,7 @@ module SharedObject {
     this.chpl_p = p;
     this.chpl_pn = rc;
 
-    this.complete();
+    init this;
   }
 
   /*
@@ -273,7 +273,7 @@ module SharedObject {
     this.chpl_p = p;
     this.chpl_pn = rc;
 
-    this.complete();
+    init this;
 
     if isNonNilableClass(this.type) && isNilableClass(take) then
       compilerError("cannot initialize '", this.type:string, "' from a '", take.type:string, "'");
@@ -295,7 +295,7 @@ module SharedObject {
     this.chpl_p = src.chpl_p;
     this.chpl_pn = src.chpl_pn;
 
-    this.complete();
+    init this;
 
     if this.chpl_pn != nil then
       this.chpl_pn!.retain();

@@ -281,7 +281,7 @@ module CTypes {
     proc init(type eltType, param size) {
       this.eltType = eltType;
       this.size = size;
-      this.complete();
+      init this;
       var i = 0;
       while i < size {
         // create a default value we'll transfer into the element
@@ -367,7 +367,7 @@ module CTypes {
     proc init=(other: c_array) {
       this.eltType = other.eltType;
       this.size = other.size;
-      this.complete();
+      init this;
       for i in 0..#size {
         pragma "no auto destroy"
         var value: eltType = other[i];

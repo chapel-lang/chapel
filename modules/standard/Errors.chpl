@@ -225,7 +225,7 @@ module Errors {
     proc init(ref group:chpl_TaskErrors) {
       var head: unmanaged Error? = group._head;
       group._head = nil;
-      this.complete();
+      init this;
 
       var cur: unmanaged Error?;
 
@@ -280,7 +280,7 @@ module Errors {
     proc init(err: unmanaged Error) {
       nErrors = 1;
       errorsArray = allocate(owned Error?, 1, clear=true);
-      this.complete();
+      init this;
       err._next = nil;
       errorsArray[0] = owned.adopt(err);
     }
