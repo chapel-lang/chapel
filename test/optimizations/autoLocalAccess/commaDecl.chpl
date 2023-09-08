@@ -6,7 +6,7 @@ var A, B: [D] int;
 
 B = 10;
 
-forall i in D {
+forall i in D with (ref A) {
   A[i] = B[i];
 }
 

@@ -1440,7 +1440,7 @@ override proc BlockArr.dsiDestroyArr(deinitElts:bool) {
 
 inline proc BlockArr.dsiLocalAccess(i: rank*idxType) ref {
   return if allowDuplicateTargetLocales then this.dsiAccess(i)
-                                        else _to_nonnil(myLocArr).this(i);
+                                        else _to_nonnil(myLocArr)(i);
 }
 
 //
@@ -1455,7 +1455,7 @@ inline proc BlockArr.dsiAccess(const in idx: rank*idxType) ref {
   local {
     if const myLocArrNN = myLocArr then
       if myLocArrNN.locDom.contains(idx) then
-        return myLocArrNN.this(idx);
+        return myLocArrNN(idx);
   }
   return nonLocalAccess(idx);
 }

@@ -131,6 +131,7 @@ appropriately before the elements can be read.
 
  */
 pragma "module included by default"
+@unstable("The module name 'ChapelIO' is unstable.  If you want to use qualified naming on the symbols within it, please 'use' or 'import' the :mod:`IO` module")
 module ChapelIO {
   use ChapelBase; // for uint().
   use ChapelLocale;

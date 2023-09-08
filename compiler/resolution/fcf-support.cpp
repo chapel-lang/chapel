@@ -98,6 +98,8 @@ static const char* intentToString(IntentTag tag);
 
 static const char* typeToStringSpecializing(Type* t);
 
+static const char* typeToStringMangledSpecializing(Type* t);
+
 static const char*
 buildUserFacingTypeString(const std::vector<FcfFormalInfo>& formals,
                           RetTag retTag,
@@ -225,6 +227,10 @@ static const char* intentToString(IntentTag tag) {
 
 static const char* typeToStringSpecializing(Type* t) {
   return FunctionType::typeToString(t);
+}
+
+static const char* typeToStringMangledSpecializing(Type* t) {
+  return FunctionType::typeToStringMangled(t);
 }
 
 // TODO: Original intent or concrete intent?
@@ -363,14 +369,14 @@ buildSuperName(const std::vector<FcfFormalInfo>& formals,
   for (auto& info : formals) {
     bool skip = isIntentSameAsDefault(info.intent, info.type);
     if (!skip) oss << intentTagMnemonicMangled(info.intent);
-    oss << typeToStringSpecializing(info.type) << "_";
+    oss << typeToStringMangledSpecializing(info.type) << "_";
     if (info.name) oss << info.name;
     oss << "_";
   }
 
   oss << "_";
   if (retTag != RET_VALUE) oss << retTagMnemonicMangled(retTag) << "_";
-  oss << typeToStringSpecializing(retType);
+  oss << typeToStringMangledSpecializing(retType);
   if (throws) oss << "_throws";
 
   auto ret = astr(oss.str());

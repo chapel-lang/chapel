@@ -3106,8 +3106,12 @@ static void adjustClassCastCall(CallExpr* call)
     // (Note, this assumes that managedType.borrow() does not throw/halt
     //  for nilable managed types storing nil. If that changed, we'd
     //  need another method to call here to get the possibly nil ptr).
+    // This code is important to allow proper borrowing, but without
+    //  `!isDecoratorUnmanaged(d)` it is too eager and is applied where it
+    //  should not be
     if (isDecoratorManaged(valueD) &&
         !isDecoratorManaged(d) &&
+        !isDecoratorUnmanaged(d) &&
         !valueIsType) {
       if (isDecoratorUnknownManagement(d))
         INT_FATAL(call, "actual value has unknown type");

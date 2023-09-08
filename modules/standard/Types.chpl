@@ -883,6 +883,7 @@ These methods perform the minimum number of runtime checks.
 For example, when casting from ``uint(8)`` to ``uint(64)``,
 no checks at all will be done.
 */
+@unstable("integral.safeCast() is unstable and its behavior may change in the future")
 inline proc integral.safeCast(type T: integral) : T {
   if castChecking then
     if const error = this.chpl_checkValue(T) then
@@ -937,16 +938,19 @@ proc integral.chpl_checkValue(type T: integral): owned IllegalArgumentError? {
   return nil;
 }
 
+@unstable("integral.safeCast() is unstable and its behavior may change in the future")
 proc integral.safeCast(type T: bool) {
   if this != 0 && this != 1 then
     HaltWrappers.safeCastCheckHalt("casting "+this.type:string+" to 'bool' requires it to have a value of either 0 or 1, but the current value is " + this:string);
   return this: bool;
 }
 
+@unstable("bool.safeCast() is unstable and its behavior may change in the future")
 proc bool.safeCast(type T: integral) {
   return this: T;
 }
 
+@unstable("bool.safeCast() is unstable and its behavior may change in the future")
 proc bool.safeCast(type T: bool) {
   return this;
 }
@@ -1012,28 +1016,28 @@ proc isCoercible(type from, type to) param {
   return __primitive("is_coercible", from, to);
 }
 
-/* Returns ``true`` if the type ``sub`` is a subtype of the type ``super``.
+/* Returns ``true`` if the type ``sub`` is a subtype of the type ``sup``.
    See also :ref:`Subtype`.
 
    In particular, returns ``true`` in any of these cases:
 
-     * ``sub`` is the same type as ``super``
-     * ``sub`` is an instantiation of a generic type ``super``
-     * ``sub`` is a class type inheriting from ``super``
-     * ``sub`` is non-nilable class type and ``super`` is the nilable version of the
+     * ``sub`` is the same type as ``sup``
+     * ``sub`` is an instantiation of a generic type ``sup``
+     * ``sub`` is a class type inheriting from ``sup``
+     * ``sub`` is non-nilable class type and ``sup`` is the nilable version of the
        same class type
    */
 pragma "docs only"
-proc isSubtype(type sub, type super) param {
-  return __primitive("is_subtype", super, sub);
+proc isSubtype(type sub, type sup) param {
+  return __primitive("is_subtype", sup, sub);
 }
 
 /* Similar to :proc:`isSubtype` but returns ``false`` if
-   ``sub`` and ``super`` refer to the same type.
+   ``sub`` and ``sup`` refer to the same type.
    */
 pragma "docs only"
-proc isProperSubtype(type sub, type super) param {
-  return __primitive("is_proper_subtype", super, sub);
+proc isProperSubtype(type sub, type sup) param {
+  return __primitive("is_proper_subtype", sup, sub);
 }
 
 /* :returns: isProperSubtype(a,b) */

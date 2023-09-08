@@ -25,6 +25,7 @@
 #include "chpl/parsing/parser-error.h"
 #include "chpl/uast/all-uast.h"
 #include <vector>
+#include <string.h>
 
 namespace {
 
@@ -100,6 +101,7 @@ struct Visitor {
   bool isParentFalseBlock(int depth=0) const;
 
   bool isNamedThisAndNotReceiverOrFunction(const NamedDecl* node);
+  bool isNamedTheseAndNotIterMethod(const NamedDecl* node);
   bool isSpecialMethodKeywordUsedIncorrectly(const NamedDecl *node);
   bool isNameReservedWord(const NamedDecl* node);
   inline bool shouldEmitUnstableWarning(const AstNode* node);
@@ -1052,6 +1054,26 @@ bool Visitor::isNamedThisAndNotReceiverOrFunction(const NamedDecl* node) {
   return true;
 }
 
+bool Visitor::isNamedTheseAndNotIterMethod(const NamedDecl* node) {
+  if (node->name() != USTR("these")) return false;
+  if (auto asFn = node->toFunction()) {
+    if (asFn->isMethod()) {
+      if (asFn->kind() == Function::Kind::ITER) {
+        return false;
+      } else if (asFn->kind() == Function::Kind::PROC &&
+                 node->attributeGroup() &&
+                 node->attributeGroup()->hasPragma(
+                     pragmatags::PRAGMA_FN_RETURNS_ITERATOR)) {
+        // also allow proc methods that forward an iterator,
+        // via: pragma "fn returns iterator"
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
 bool Visitor::isSpecialMethodKeywordUsedIncorrectly(
   const NamedDecl *node)
 {
@@ -1074,10 +1096,12 @@ bool Visitor::isSpecialMethodKeywordUsedIncorrectly(
 bool Visitor::isNameReservedWord(const NamedDecl* node) {
   auto name = node->name();
   if (isNamedThisAndNotReceiverOrFunction(node)) return true;
+  if (isNamedTheseAndNotIterMethod(node)) return true;
   if (isSpecialMethodKeywordUsedIncorrectly(node)) return true;
   if (name == "none") return true;
   if (name == "false") return true;
   if (name == "true") return true;
+  if (name == "super") return true;
   return false;
 }
 
@@ -1123,6 +1147,10 @@ void Visitor::checkReservedSymbolName(const NamedDecl* node) {
     error(node, "attempt to redefine reserved word '%s'.", name.c_str());
   } else if (isNameReservedType(name)) {
     error(node, "attempt to redefine reserved type '%s'.", name.c_str());
+  }
+
+  if(strchr(name.c_str(), '$') != nullptr) {
+    warn(node, "Using '$' in identifiers is deprecated; rename this to not use a '$'.");
   }
 }
 

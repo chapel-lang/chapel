@@ -1,0 +1,1 @@
+FILE.chpl:n: error: domain(1,int(64),one) is not a class, record, or union type

@@ -243,7 +243,7 @@ proc makeRandomInvertible (ref A: [?Adom] ?t) {
   makeUnit(I);
 
   var A2: [Adom] t;
-  forall (i,j) in A.domain do A2[i,j] = + reduce (A[i,..]*conj(A[..,j]));
+  forall (i,j) in A.domain with (ref A2) do A2[i,j] = + reduce (A[i,..]*conj(A[..,j]));
 
   const n = Adom.shape(1);
   const scale = (1/n**2) : t;

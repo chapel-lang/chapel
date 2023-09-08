@@ -146,7 +146,7 @@ Constant and Function Definitions
 */
 module Math {
   private use CTypes;
-  private use AutoMath;
+  public use AutoMath;
 
   //////////////////////////////////////////////////////////////////////////
   // Constants (included in chpldocs)

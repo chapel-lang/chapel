@@ -1,0 +1,13 @@
+theseKeyword.chpl:2: In module 'Mod1':
+theseKeyword.chpl:3: error: attempt to redefine reserved word 'these'
+theseKeyword.chpl:5: In module 'Mod2':
+theseKeyword.chpl:6: error: attempt to redefine reserved word 'these'
+theseKeyword.chpl:10: In module 'Mod3':
+theseKeyword.chpl:12: error: attempt to redefine reserved word 'these'
+theseKeyword.chpl:16: In module 'Mod4':
+theseKeyword.chpl:17: error: attempt to redefine reserved word 'these'
+theseKeyword.chpl:19: In module 'Mod5':
+theseKeyword.chpl:20: error: attempt to redefine reserved word 'these'
+theseKeyword.chpl:22: error: attempt to redefine reserved word 'these'
+theseKeyword.chpl:27: In module 'Mod6':
+theseKeyword.chpl:28: error: attempt to redefine reserved word 'these'
