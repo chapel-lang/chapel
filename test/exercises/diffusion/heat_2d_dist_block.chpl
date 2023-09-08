@@ -2,7 +2,7 @@
   A distributed 2D finite-difference heat/diffusion equation solver
 
   Computation is executed over a 2D distributed array.
-  The array distribution is managed by the `Block` distribution.
+  The array distribution is managed by the `blockDist` distribution.
   The `forall` loop manages task creation and synchronization
   across and within locales.
 */
