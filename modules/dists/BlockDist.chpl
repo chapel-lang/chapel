@@ -345,7 +345,7 @@ This example demonstrates a Block-distributed sparse domain and array:
     const Space = {1..8, 1..8};
 
     // Declare a dense, Block-distributed domain.
-    const DenseDom: domain(2) dmapped Block(boundingBox=Space) = Space;
+    const DenseDom: domain(2) dmapped blockDist(boundingBox=Space) = Space;
 
     // Declare a sparse subdomain.
     // Since DenseDom is Block-distributed, SparseDom will be as well.
@@ -941,7 +941,7 @@ proc blockDist.createDomain(rng: range(?)...) {
 
 // create a domain over a Block Distribution
 proc type blockDist.createDomain(dom: domain(?), targetLocales: [] locale = Locales) {
-  return dom dmapped Block(dom, targetLocales);
+  return dom dmapped blockDist(dom, targetLocales);
 }
 
 // create a domain over a Block Distribution constructed from a series of ranges
