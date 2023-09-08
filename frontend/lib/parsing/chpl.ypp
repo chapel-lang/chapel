@@ -702,6 +702,14 @@ stmt_base:
   }
 | try_stmt                  { $$ = context->finishStmt(@$, $1); }
 | return_stmt               { $$ = context->finishStmt($1); }
+| TINIT TTHIS TSEMI
+  {
+    auto comments = context->gatherComments(@1);
+    auto ident = Identifier::build(BUILDER, LOC(@2), $2);
+    auto node = Init::build(BUILDER, LOC(@$), std::move(ident));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
+  }
 | TBREAK opt_label_ident TSEMI
   {
     auto comments = context->gatherComments(@1);

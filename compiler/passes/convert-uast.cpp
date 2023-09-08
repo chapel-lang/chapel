@@ -1172,9 +1172,9 @@ struct Converter {
   }
 
   Expr* visit(const uast::Init* node) {
-    // Init should always be "this", aka the method receiver.
+    // target should always be "this", aka the method receiver.
     auto toInit = convertAST(node->target());
-    return new CallExpr("complete", gMethodToken, toInit);
+    return new CallExpr(new CallExpr(".", toInit, new_CStringSymbol("complete")));
   }
 
   CallExpr* visit(const uast::New* node) {
