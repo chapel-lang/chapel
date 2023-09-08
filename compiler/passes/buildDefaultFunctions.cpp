@@ -1867,6 +1867,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   bool makeReadThisAndWriteThis = true;
 
   bool hasSerialize             = false;
+  bool hasDeserialize           = false;
 
   // Always build for 'object' to satisfy 'override' keyword in some cases.
   bool makeSerialize            = ct == dtObject || !fNoIOGenSerialization;
@@ -1889,16 +1890,27 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   if (isArrayImplType(ct))
     return;
 
-  if (functionExists("writeThis", dtMethodToken, ct, dtAny)) {
-    hasWriteThis = true;
-  }
-
-  if (functionExists("readThis", dtMethodToken, ct, dtAny)) {
-    hasReadThis = true;
+  if (functionExists("deserialize", dtMethodToken, ct, dtAny, dtAny)) {
+    hasDeserialize = true;
   }
 
   if (functionExists("serialize", dtMethodToken, ct, dtAny, dtAny)) {
     hasSerialize = true;
+  }
+
+  // TODO: should these say something about the type declared on?
+  if (FnSymbol* fn = functionExists("writeThis", dtMethodToken, ct, dtAny)) {
+    if (hasSerialize == false) {
+      USR_WARN(fn, "'writeThis' is deprecated. Please use 'serialize' methods instead.");
+    }
+    hasWriteThis = true;
+  }
+
+  if (FnSymbol* fn = functionExists("readThis", dtMethodToken, ct, dtAny)) {
+    if (hasDeserialize == false) {
+      USR_WARN(fn, "'readThis' is deprecated. Please use 'deserialize' methods instead.");
+    }
+    hasReadThis = true;
   }
 
   // We'll make a writeThis and a readThis if neither exist.
@@ -1971,8 +1983,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   }
 
   bool makeDeserialize = ct == dtObject || !fNoIOGenSerialization;
-  if (makeDeserialize &&
-      !functionExists("deserialize", dtMethodToken, ct, dtAny, dtAny)) {
+  if (makeDeserialize && !hasDeserialize) {
     ArgSymbol* fileArg = NULL;
     FnSymbol* fn = buildReadThisFnSymbol(ct, &fileArg, "deserialize");
 
