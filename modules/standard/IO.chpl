@@ -4357,11 +4357,16 @@ proc fileReader.advance(amount:int(64)) throws {
    Move a :record:`fileWriter` offset forward.
 
    This routine will populate the ``fileWriter``'s buffer as the offset is moved
-   forward by ``amount`` bytes. If the file contains data after its current
-   offset, those data will be read into the buffer. Otherwise, the buffer will
-   be populated with zeros (or a combination of those if ``amount`` is larger
-   than the number of bytes remaining in the file). The contents of the buffer
-   will subsequently be written to the file by the buffering mechanism.
+   forward by ``amount`` bytes. The buffer can be populated with any of the
+   following data depending on the ``fileWriter``'s configuration and whether
+   it was marked before advancing:
+
+   * zeros
+   * bytes directly from the file
+   * bytes from a previously buffered portion of the file
+
+   The contents of the buffer will subsequently be written to the file by the
+   buffering mechanism.
 
    Note that calling :proc:`fileWriter.mark` before advancing will cause at
    least ``amount`` bytes to be retained in memory until
@@ -4688,7 +4693,8 @@ config param useNewSeekRegionBounds = false;
    This routine has the following constraints:
 
     * the underlying file must be seekable (sockets and pipes are not seekable)
-    * the ``fileReader`` must be non-locking
+    * the ``fileReader`` must be non-locking (to avoid race conditions if two
+      tasks seek and read simultaneously)
     * the ``fileReader`` must not be marked (see: :proc:`fileReader.mark`)
 
    If the ``fileReader`` offset needs to be updated during an I/O transaction
@@ -4740,7 +4746,8 @@ proc fileReader.seek(region: range(?)) throws where (!region.hasHighBound() ||
    This routine has the following constraints:
 
     * the underlying file must be seekable (sockets and pipes are not seekable)
-    * the ``fileWriter`` must be non-locking
+    * the ``fileWriter`` must be non-locking (to avoid race conditions if two
+      tasks seek and read simultaneously)
     * the ``fileWriter`` must not be marked (see: :proc:`fileWriter.mark`)
 
    If the ``fileWriter`` offset needs to be updated during an I/O transaction
