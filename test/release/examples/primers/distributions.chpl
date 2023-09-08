@@ -37,7 +37,7 @@ config const n = 8;
 const Space = {1..n, 1..n};
 
 // blockDist (and distribution basics)
-// -------------------------------
+// -----------------------------------
 //
 // The ``blockDist`` distribution distributes a bounding box from
 // n-dimensional space across the target locale array viewed as an
