@@ -1,2 +1,6 @@
 arg-type-type-method.chpl:12: In function 'test2':
+arg-type-type-method.chpl:12: warning: need '(?)' on generic formal type 'RRgen'
+arg-type-type-method.chpl:26: In function 'test2':
+arg-type-type-method.chpl:26: warning: need '(?)' on generic formal type 'CCgen'
+arg-type-type-method.chpl:12: In function 'test2':
 arg-type-type-method.chpl:12: error: '.' undeclared (first use this function)
