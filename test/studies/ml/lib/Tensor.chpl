@@ -285,7 +285,7 @@ module Tensor {
         }
 
         // Deserializer for tensor: rank,...shape,...data
-        proc read(fr: IO.fileReader) throws {
+        proc ref read(fr: IO.fileReader) throws {
             var r = fr.read(int);
             if r != rank then
                 err("Error reading tensor: rank mismatch.", r , " != this." , rank);
