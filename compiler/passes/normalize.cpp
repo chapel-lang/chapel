@@ -4504,6 +4504,16 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
   Expr*                 tail      = typeExpr->body.tail;
   CallExpr*             call      = toCallExpr(tail);
 
+  // workaround: don't add a where clause just for varargs with type R(?)
+  if (formal->variableExpr && call->numActuals() == 1) {
+    if (SymExpr* se = toSymExpr(call->get(1))) {
+      if (se->symbol() == gUninstantiated) {
+        formal->addFlag(FLAG_MARKED_GENERIC);
+        return; // don't do anything with this one
+      }
+    }
+  }
+
   std::vector<SymExpr*> symExprs;
 
   collectSymExprs(fn, symExprs);
