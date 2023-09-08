@@ -801,7 +801,7 @@ module WeakPointer {
         if ptr != nil then count!.incrementWeak(); else count = nil;
 
         this.classType = shared c.chpl_t;
-        // this.complete();
+        // init this;
 
         this.chpl_p = ptr;
         this.chpl_pn = count;

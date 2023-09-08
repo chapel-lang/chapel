@@ -35,11 +35,11 @@
 //       "value provided"
 // - [ ] "can't initialize %s field '%s' with 'new' expression"
 //       (for types and params)
-// - [ ] "cannot take a reference to 'this' before this.complete()"
-// - [ ] "cannot initialize a variable from 'this' before this.complete()"
+// - [ ] "cannot take a reference to 'this' before 'init this'"
+// - [ ] "cannot initialize a variable from 'this' before 'init this'"
 // - [ ] "cannot pass 'this' to a function before calling super.init() "
 //       "or this.init()"
-// - [ ] "cannot pass a record to a function before this.complete()"
+// - [ ] "cannot pass a record to a function before 'init this'"
 //
 namespace chpl {
 namespace resolution {
@@ -483,7 +483,7 @@ bool InitResolver::handleCallToThisComplete(const FnCall* node) {
   // TODO: Better/more appropriate user facing error message for this?
   if (thisCompleteIds_.size() > 0) {
     CHPL_ASSERT(phase_ == PHASE_COMPLETE);
-    ctx_->error(node, "use of this.complete() call in phase 2");
+    ctx_->error(node, "use of 'init this' call in phase 2");
   } else {
     thisCompleteIds_.push_back(node->id());
     phase_ = PHASE_COMPLETE;

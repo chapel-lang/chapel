@@ -1,6 +1,6 @@
 // Confirm that the compiler accepts simple conditional with init in
 // both branches, and allows field initialization before the
-// this.complete() in phase1.
+// 'init this' in phase1.
 
 record MyRec {
   var x : int = 10;

@@ -17,14 +17,14 @@ record R {
   var home : locale;
 
   proc init() {
-    this.complete();
+    init this;
     this.x = alloc();
     home = here;
     set(42);
   }
 
   proc init=(other: R) {
-    this.complete();
+    init this;
     this.x = alloc();
     home = here;
     set(other.get());
