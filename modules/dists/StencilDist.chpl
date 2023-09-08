@@ -662,7 +662,7 @@ proc StencilImpl.init(boundingBox: domain,
   this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
   this.dataParMinGranularity = dataParMinGranularity;
 
-  this.complete();
+  init this;
 
   if debugStencilDist {
     writeln("Creating new Stencil distribution:");

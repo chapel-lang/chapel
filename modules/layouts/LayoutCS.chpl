@@ -147,7 +147,7 @@ class CSDom: BaseSparseDomImpl(?) {
                   then {rowRange.lowBound..rowRange.highBound+1}
                   else {colRange.lowBound..colRange.highBound+1};
 
-    this.complete();
+    init this;
 
     nnzDom = {0..#_nnz};
     dsiClear();

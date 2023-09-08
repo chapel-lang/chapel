@@ -170,7 +170,7 @@ module UnrolledLinkedList {
       this.eltType = eltType;
       this.parSafe = parSafe;
       this.nodeCapacity = nodeCapacity;
-      this.complete();
+      init this;
     }
 
     /*
@@ -193,7 +193,7 @@ module UnrolledLinkedList {
       this.eltType = t;
       this.parSafe = parSafe;
       this.nodeCapacity = nodeCapacity;
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -218,7 +218,7 @@ module UnrolledLinkedList {
       this.eltType = t;
       this.parSafe = parSafe;
       this.nodeCapacity = nodeCapacity;
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -238,7 +238,7 @@ module UnrolledLinkedList {
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
       this.nodeCapacity = other.nodeCapacity;
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 

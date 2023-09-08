@@ -440,7 +440,7 @@ extern record sys_sockaddr_t {
   var len:socklen_t;
 
   proc init() {
-    this.complete();
+    init this;
     sys_init_sys_sockaddr_t(this);
   }
 

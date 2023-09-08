@@ -262,7 +262,7 @@ module Collectives {
      */
     proc init(n: int, param reusable: bool) {
       this.reusable = reusable;
-      this.complete();
+      init this;
       reset(n);
     }
 
@@ -272,7 +272,7 @@ module Collectives {
       this.reusable = reusable;
       this.procAtomics = procAtomics;
       this.hackIntoCommBarrier = hackIntoCommBarrier;
-      this.complete();
+      init this;
       reset(n);
     }
 
@@ -379,7 +379,7 @@ module Collectives {
      */
     proc init(n: int, param reusable: bool) {
       this.reusable = reusable;
-      this.complete();
+      init this;
       reset(n);
     }
 

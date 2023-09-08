@@ -241,7 +241,7 @@ module Set {
       }
       this._htb = new chpl__hashtable(eltType, nothing, this.resizeThreshold,
                                       initialCapacity);
-      this.complete();
+      init this;
 
       for elem in iterable do _addElem(elem);
     }
@@ -264,7 +264,7 @@ module Set {
       }
       this._htb = new chpl__hashtable(eltType, nothing, this.resizeThreshold,
                                       initialCapacity);
-      this.complete();
+      init this;
 
       for elem in iterable do _addElem(elem);
     }
@@ -284,7 +284,7 @@ module Set {
       this.resizeThreshold = other.resizeThreshold;
       this._htb = new chpl__hashtable(eltType, nothing,
                                       resizeThreshold);
-      this.complete();
+      init this;
 
       // TODO: Relax this to allow if 'isCoercible(t, this.eltType)'?
       if eltType != t {

@@ -122,7 +122,7 @@ module SortedSet {
       this.instance = new treap(this.eltType, this.parSafe,
                                             other.instance.comparator);
 
-      this.complete();
+      init this;
 
 
       if !isCopyableType(eltType) then

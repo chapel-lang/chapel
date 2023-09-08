@@ -385,7 +385,7 @@ module JSON {
 
     @chpldoc.nodoc
     proc init() {
-      this.complete();
+      init this;
     }
 
     // TODO: rewrite in terms of writef, or something

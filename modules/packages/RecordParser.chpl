@@ -130,7 +130,7 @@ class RecordReader {
     this.t = t;
     this.myReader = myReader;
     // TODO: remove the following once we can throw from init() calls
-    this.complete();
+    init this;
     try! {
       this.matchRegex = new regex(createRegex());
     }
@@ -148,7 +148,7 @@ class RecordReader {
     this.t = t;
     this.myReader = myReader;
     // TODO: remove the following once we can throw from init() calls
-    this.complete();
+    init this;
     try! {
         this.matchRegex = new regex(mRegex);
     }

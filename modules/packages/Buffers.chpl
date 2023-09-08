@@ -141,14 +141,14 @@ module Buffers {
    */
   proc byteBuffer.init(len:int(64), out error:errorCode) {
     this.home = here;
-    this.complete();
+    init this;
     error = qbytes_create_calloc(this._bytes_internal, len);
     // The buffer is "retained" internally on creation, but only on success.
   }
   @chpldoc.nodoc
   proc byteBuffer.init(len:int(64)) {
     this.home = here;
-    this.complete();
+    init this;
     var error:errorCode = qbytes_create_calloc(this._bytes_internal, len);
     if error then try! ioerror(error, "in bytes initializer");
     // The buffer is retained internally on initialization, but only on success.
@@ -296,14 +296,14 @@ module Buffers {
    */
   proc buffer.init(out error:errorCode) {
     this.home = here;
-    this.complete();
+    init this;
     error = qbuffer_create(this._buf_internal);
   }
   @chpldoc.nodoc
   proc buffer.init() /*throws*/ {
     var error:errorCode = 0;
     this.home = here;
-    this.complete();
+    init this;
     error = qbuffer_create(this._buf_internal);
     // TODO: really want the following to be `try` once we can throw from
     // initializers
@@ -315,7 +315,7 @@ module Buffers {
       qbuffer_retain(x._buf_internal);
       this.home = here;
       this._buf_internal = x._buf_internal;
-      this.complete();
+      init this;
     } else {
       var error: errorCode = 0;
       this.init(error);
