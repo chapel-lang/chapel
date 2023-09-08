@@ -3438,6 +3438,12 @@ void warnIfGenericFormalMissingQ(ArgSymbol* arg, Type* type, Expr* typeExpr) {
   if (AggregateType* at = toAggregateType(type))
     genericWithDefaults = at->isGenericWithDefaults();
 
+  // ignore any decorator; generic-management is ignored here
+  // and so the decorator is irrelevant
+  if (DecoratedClassType* dct = toDecoratedClassType(type))
+    if (AggregateType* at = dct->getCanonicalClass())
+      type = at;
+
   if (type->symbol->hasFlag(FLAG_GENERIC) &&
       !genericWithDefaults &&
       !arg->hasFlag(FLAG_MARKED_GENERIC) &&
@@ -3446,9 +3452,6 @@ void warnIfGenericFormalMissingQ(ArgSymbol* arg, Type* type, Expr* typeExpr) {
       // don't worry about it for array types for now
     } else if (isBuiltinGenericType(type)) {
       // nor integral nor _tuple
-    } else if (isClassLikeOrManaged(type) &&
-               !isGenericClassIgnoringManagement(type->symbol)) {
-      // skip over cases that are only generic due to no class mgmt
     } else if (arg->intent == INTENT_OUT) {
       // skip over 'out' intents; we complain about them if '(?)'
       // is missing, and then again if it's there
@@ -3461,9 +3464,11 @@ void warnIfGenericFormalMissingQ(ArgSymbol* arg, Type* type, Expr* typeExpr) {
       if (!pair.second) {
         // don't warn twice for the same variable/field
       } else {
-        USR_WARN(arg->typeExpr,
+        Expr* where = arg->defPoint;
+        if (arg->typeExpr) where = arg->typeExpr;
+        USR_WARN(where,
                  "need '?' on generic formal type '%s'",
-                 toString(type));
+                 toString(type, /*decorators*/false));
       }
     }
   }
