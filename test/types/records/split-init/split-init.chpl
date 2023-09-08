@@ -767,7 +767,7 @@ class TestClass18 {
     field1 = makeR(1);
     writeln("init field2");
     field2 = makeR(2);
-    this.complete();
+    init this;
     writeln("init field3 after this.complete()");
     field3 = makeR(3);
   }

@@ -271,7 +271,7 @@ module MyHashtable {
       this.tableSize = chpl__primes(tableSizeNum);
       this.rehashHelpers = rehashHelpers;
       this.postponeResize = false;
-      this.complete();
+      init this;
 
       // allocates a _ddata(chpl_TableEntry(keyType,valType)) storing the table
       // All elements are memset to 0 (no initializer is run for the idxType)

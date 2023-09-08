@@ -10,7 +10,7 @@ record r {
   var ptr = new shared C(1);
 
   proc init() {
-    this.complete();
+    init this;
     writeln('default init ', this);
   }
 

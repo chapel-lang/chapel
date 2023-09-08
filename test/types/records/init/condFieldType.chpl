@@ -4,7 +4,7 @@ record R {
 
   proc init(param stridable) {
     this.stridable = stridable;
-    this.complete();
+    init this;
     if stridable then
       str = 1;
   }

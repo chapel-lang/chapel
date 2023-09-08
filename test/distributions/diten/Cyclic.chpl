@@ -83,7 +83,7 @@ class Cyclic1DDist {
     targetLocDom = targetLocalesDomain;
     targetLocs = targetLocales;
 
-    this.complete();
+    init this;
 
     //
     // WANT TO DO:
@@ -200,7 +200,7 @@ class LocCyclic1DDist {
     myChunk = {lo..hi by numlocs};
     locid = _locid;
     loc = dist.targetLocs(locid);
-    this.complete();
+    init this;
     if debugCyclic1D then
       writeln("locale ", locid, " owns ", myChunk);
   }
@@ -250,7 +250,7 @@ class Cyclic1DDom {
     dist = myDist;
     whole = myDom;
 
-    this.complete();
+    init this;
     for locid in dist.targetLocDom do
       on dist.targetLocs(locid) do {
         locDoms(locid) = new unmanaged LocCyclic1DDom(glbIdxType, _to_unmanaged(this), 
@@ -486,7 +486,7 @@ class Cyclic1DArr {
     glbIdxType = idxType;
     elemType = eltType;
     dom = myDom;
-    this.complete();
+    init this;
     for locid in dom.dist.targetLocDom do
       on dom.dist.targetLocs(locid) do
         locArr(locid) = new unmanaged LocCyclic1DArr(glbIdxType, elemType, dom.locDoms(locid)!);

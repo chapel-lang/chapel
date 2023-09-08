@@ -6,7 +6,7 @@ record MyRec {
   var Ai: [D] int;
   proc init(n: int, low: int) {
     D = {1..n};
-    this.complete();
+    init this;
     for i in 1..n {
       Ar[i] = low + i/10.0;
       Ai[i] = low + i/2;

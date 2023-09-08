@@ -48,7 +48,7 @@ record path {
   }
 
   proc init(xs:int...) {
-    this.complete();
+    init this;
     for x in xs do
       steps.pushBack(x);
   }
@@ -145,7 +145,7 @@ record state {
   var cost: int;
 
   proc init() {
-    this.complete();
+    init this;
     for r in Rooms do
       for s in Spaces do
         monsterloc[room[r][s]] = r*slotsPerRoom + s + 1;

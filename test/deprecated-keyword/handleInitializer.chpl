@@ -8,7 +8,7 @@ record Foo {
 
   proc init(x: int) {
     v1 = x;
-    this.complete();
+    init this;
   }
 }
 

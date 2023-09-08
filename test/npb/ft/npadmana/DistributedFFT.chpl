@@ -95,7 +95,7 @@ prototype module DistributedFFT {
     // Mimic the advanced interface
     proc init(param ftType : FFTtype, args ...?k) {
       this.ftType = ftType;
-      this.complete();
+      init this;
       plannerLock.lock();
       select ftType {
         when FFTtype.DFT do plan = fftw_plan_many_dft((...args));

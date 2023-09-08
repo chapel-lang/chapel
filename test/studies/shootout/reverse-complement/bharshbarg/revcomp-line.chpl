@@ -31,7 +31,7 @@ record buf {
   proc init(fi:file, bs:int) {
     this.bufSize = bs;
 
-    this.complete();
+    init this;
 
     chan = fi.reader(locking=false, deserializer=new binaryDeserializer());
     numLeft = fi.size;

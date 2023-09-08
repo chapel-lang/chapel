@@ -114,7 +114,7 @@ module DataFrames {
       ords = D;
       ordToLabel = rev_idx;
 
-      this.complete();
+      init this;
       for (ord, lab) in zip(ords, ordToLabel) {
         labels.add(lab);
         labelToOrd[lab] = ord;
@@ -777,13 +777,13 @@ module DataFrames {
     // TODO: init with labels arg
 
     proc init() {
-      this.complete();
+      init this;
     }
 
     proc init(columns: [?D] ?E) where isSubtype(E, Series) {
       this.labels = D;
       this.idx = nil;
-      this.complete();
+      init this;
 
       for lab in labels do
         this.columns[lab] = owned.release(columns[lab].copy());
@@ -793,7 +793,7 @@ module DataFrames {
     proc init(columns: [?D] ?E) where isSubtype(E, Series?) {
       this.labels = D;
       this.idx = nil;
-      this.complete();
+      init this;
 
       for lab in labels do
         this.columns[lab] = owned.release(columns[lab]!.copy());
@@ -802,7 +802,7 @@ module DataFrames {
     proc init(columns: [?D], in idx: shared Index) {
       this.labels = D;
       this.idx = idx;
-      this.complete();
+      init this;
 
       for lab in labels do
         this.insert(lab, columns[lab]!);
