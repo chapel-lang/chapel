@@ -2339,7 +2339,7 @@ static const char* getMainModuleFilename() {
 
   const char* filename;
   fileinfo* mainModTmpFile;
-  if (fDriverDoMakeBinary) {
+  if (fDriverPhaseTwo) {
     // we are in the backend, retrieve saved result from tmpdir
     mainModTmpFile = openTmpFile(mainModTmpFilename, "r");
     char nameReadIn[FILENAME_MAX];
