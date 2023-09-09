@@ -2330,14 +2330,44 @@ static const char* getClangBuiltinWrappedName(const char* name)
 }
 #endif
 
+// Gets the name of the main module as an astr.
+// If we are not in a backend-only run, the result will be stored in the tmpdir.
+// If we are in a backend-only run, we cannot calculate the main module and will
+// expect a file in the tmpdir to have that information available to retrieve.
+static const char* getMainModuleFilename() {
+  static const char* mainModTmpFilename = "mainmodpath.tmp";
+
+  const char* filename;
+  fileinfo* mainModTmpFile;
+  if (fDriverDoMakeBinary) {
+    // we are in the backend, retrieve saved result from tmpdir
+    mainModTmpFile = openTmpFile(mainModTmpFilename, "r");
+    char nameReadIn[FILENAME_MAX];
+    INT_ASSERT(fgets(nameReadIn, sizeof(nameReadIn), mainModTmpFile->fptr));
+    filename = astr(nameReadIn);
+  } else {
+    ModuleSymbol* mainMod = ModuleSymbol::mainModule();
+    const char* mainModFilename = mainMod->astloc.filename();
+    const char* strippedFilename = stripdirectories(mainModFilename);
+    // stripdirectories returns an astr, so pointer is fine
+    filename = strippedFilename;
+
+    // save result in tmp file for future usage
+    mainModTmpFile = openTmpFile(mainModTmpFilename, "w");
+    fprintf(mainModTmpFile->fptr, "%s", filename);
+  }
+
+  closefile(mainModTmpFile);
+  return filename;
+}
+
+
 // Set the executable name to the name of the file containing the
 // main module (minus its path and extension) if it isn't set
 // already. If in library mode, set the name of the header file as well.
 void setupDefaultFilenames() {
   if (executableFilename[0] == '\0') {
-    ModuleSymbol* mainMod = ModuleSymbol::mainModule();
-    const char* mainModFilename = mainMod->astloc.filename();
-    const char* filename = stripdirectories(mainModFilename);
+    const char* filename = getMainModuleFilename();
 
     // "Executable" name should be given a "lib" prefix in library compilation,
     // and just the main module name in normal compilation.
@@ -2354,8 +2384,7 @@ void setupDefaultFilenames() {
         // remove the filename extension from the library header name.
         char* lastDot = strrchr(libmodeHeadername, '.');
         if (lastDot == NULL) {
-          INT_FATAL(mainMod,
-                    "main module filename is missing its extension: %s\n",
+          INT_FATAL("main module filename is missing its extension: %s\n",
                     libmodeHeadername);
         }
         *lastDot = '\0';
@@ -2371,8 +2400,7 @@ void setupDefaultFilenames() {
         pythonModulename[sizeof(pythonModulename)-1] = '\0';
         char* lastDot = strrchr(pythonModulename, '.');
         if (lastDot == NULL) {
-          INT_FATAL(mainMod,
-                    "main module filename is missing its extension: %s\n",
+          INT_FATAL("main module filename is missing its extension: %s\n",
                     pythonModulename);
         }
         *lastDot = '\0';
@@ -2391,8 +2419,7 @@ void setupDefaultFilenames() {
     // remove the filename extension from the executable filename
     char* lastDot = strrchr(executableFilename, '.');
     if (lastDot == NULL) {
-      INT_FATAL(mainMod,
-                "main module filename is missing its extension: %s\n",
+      INT_FATAL("main module filename is missing its extension: %s\n",
                 executableFilename);
     }
     *lastDot = '\0';
