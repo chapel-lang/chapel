@@ -1100,8 +1100,8 @@ module CTypes {
     :arg x: the by-reference argument to get a pointer to. Domains are not
             supported, and will cause a compiler error. Records, class
             instances, integral, real, imag, and complex types are supported.
-            For arrays, strings, bytes, or class variables, separate overloads
-            should be used.
+            See overloads taking arrays, strings, bytes, or class variables
+            which provide special behavior for those types.
     :returns: a pointer to the argument passed by reference
 
   */
