@@ -1265,30 +1265,38 @@ static void getVisibleFunctionsImpl(const char*       name,
    for expr (to be used when instantiating a type or a function).
  */
 BlockStmt* getInstantiationPoint(Expr* expr) {
-  // FnSymbols that correspond to FCFs are removed from the tree soon after
-  // they're resolved, which means they aren't suitable instantiation points.
-  // If we're inside a first-class function, skip its type block as an
-  // instantiation scope.
-  //
-  // See resolveFunctionTypeConstructor for where functions are removed.
-  bool skipTypeBlock = false;
-
   if (TypeSymbol* ts = toTypeSymbol(expr->parentSymbol)) {
     if (BlockStmt* block = ts->instantiationPoint) {
       return block;
     }
-  } else if (FnSymbol* fs = toFnSymbol(expr->parentSymbol)) {
-    if (fs->hasFlag(FLAG_ANONYMOUS_FN)) {
-      skipTypeBlock = true;
+  }
+
+  // FnSymbols that correspond to FCFs are removed from the tree soon after
+  // they're resolved, which means they aren't suitable instantiation points.
+  // If we're inside a first-class function, skip to its def point and keep
+  // looking from there.
+  //
+  // See resolveFunctionTypeConstructor for where functions are removed.
+  Expr* cur = expr;
+  while (cur != NULL) {
+    FnSymbol* inFn = NULL;
+    if (FnSymbol* fn = toFnSymbol(cur->parentSymbol)) {
+      inFn = fn;
+    } else if (ArgSymbol* as = toArgSymbol(cur->parentSymbol)) {
+      inFn = as->getFunction();
+    }
+
+    if (inFn && inFn->hasFlag(FLAG_ANONYMOUS_FN)) {
+      cur = inFn->defPoint;
+    } else {
+      // parent symbol is something else, no need to skip.
+      break;
     }
   }
 
-  Expr* cur = expr;
   while (cur != NULL) {
     if (BlockStmt* block = toBlockStmt(cur->parentExpr)) {
       if (block->blockTag == BLOCK_SCOPELESS) {
-        // continue
-      } else if (block->blockTag == BLOCK_TYPE && skipTypeBlock) {
         // continue
       } else {
         return block;
