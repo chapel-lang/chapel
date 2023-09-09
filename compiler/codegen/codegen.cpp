@@ -2367,6 +2367,11 @@ static const char* getMainModuleFilename() {
 // already. If in library mode, set the name of the header file as well.
 void setupDefaultFilenames() {
   if (executableFilename[0] == '\0') {
+    // Retrieve module for use in errors in phase one. It can't be retrieved in
+    // phase two, but that's not a problem because the errors would have already
+    // been hit (and are fatal) in phase one.
+    ModuleSymbol* mainMod =
+        (fDriverPhaseTwo ? nullptr : ModuleSymbol::mainModule());
     const char* filename = getMainModuleFilename();
 
     // "Executable" name should be given a "lib" prefix in library compilation,
@@ -2384,7 +2389,11 @@ void setupDefaultFilenames() {
         // remove the filename extension from the library header name.
         char* lastDot = strrchr(libmodeHeadername, '.');
         if (lastDot == NULL) {
-          INT_FATAL("main module filename is missing its extension: %s\n",
+          INT_ASSERT(!fDriverPhaseTwo &&
+                     "encountered error in phase two that should only be "
+                     "reachable in phase one");
+          INT_FATAL(mainMod,
+                    "main module filename is missing its extension: %s\n",
                     libmodeHeadername);
         }
         *lastDot = '\0';
@@ -2400,7 +2409,11 @@ void setupDefaultFilenames() {
         pythonModulename[sizeof(pythonModulename)-1] = '\0';
         char* lastDot = strrchr(pythonModulename, '.');
         if (lastDot == NULL) {
-          INT_FATAL("main module filename is missing its extension: %s\n",
+          INT_ASSERT(!fDriverPhaseTwo &&
+                     "encountered error in phase two that should only be "
+                     "reachable in phase one");
+          INT_FATAL(mainMod,
+                    "main module filename is missing its extension: %s\n",
                     pythonModulename);
         }
         *lastDot = '\0';
@@ -2419,7 +2432,10 @@ void setupDefaultFilenames() {
     // remove the filename extension from the executable filename
     char* lastDot = strrchr(executableFilename, '.');
     if (lastDot == NULL) {
-      INT_FATAL("main module filename is missing its extension: %s\n",
+      INT_ASSERT(!fDriverPhaseTwo &&
+                 "encountered error in phase two that should only be "
+                 "reachable in phase one");
+      INT_FATAL(mainMod, "main module filename is missing its extension: %s\n",
                 executableFilename);
     }
     *lastDot = '\0';
