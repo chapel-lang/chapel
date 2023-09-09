@@ -1,2 +1,2 @@
---driver-do-compilation
---driver-do-make-binary
+--driver-phase-one
+--driver-phase-two

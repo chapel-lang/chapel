@@ -1,1 +1,1 @@
---compiler-driver --driver-tmp-dir=./tmp --driver-do-compilation --driver-do-make-binary
+--compiler-driver --driver-tmp-dir=./tmp --driver-phase-one --driver-phase-two

@@ -192,8 +192,8 @@ void runPasses(PhaseTracker& tracker) {
   setupStopAfterPass();
 
   for (size_t i = 0; i < passListSize; i++) {
-    // skip until makeBinary if in backend invocation
-    if (fDriverDoMakeBinary && strcmp(sPassList[i].name, "makeBinary") != 0) {
+    // skip until makeBinary if in phase-two invocation
+    if (fDriverPhaseTwo && strcmp(sPassList[i].name, "makeBinary") != 0) {
       continue;
     }
 
@@ -203,8 +203,8 @@ void runPasses(PhaseTracker& tracker) {
 
     currentPassNo++;
 
-    // quit before backend in compilation-only invocation
-    if (fDriverDoCompilation && strcmp(sPassList[i].name, "codegen") == 0) {
+    // quit before makeBinary in phase-one invocation
+    if (fDriverPhaseOne && strcmp(sPassList[i].name, "codegen") == 0) {
       break;
     }
 
@@ -259,7 +259,7 @@ static void runPass(PhaseTracker& tracker, size_t passIndex) {
   // Skip if we're on the backend invocation of the compiler, in which case
   // there is no AST.
   //
-  if (!fDriverDoMakeBinary) {
+  if (!fDriverPhaseTwo) {
     tracker.StartPhase(info->name, PhaseTracker::kCleanAst);
     cleanAst();
   }

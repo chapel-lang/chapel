@@ -107,7 +107,7 @@ static void appendLineToTmpFile(const char* str, const char* filename) {
 void addLibPath(const char* libString) {
   addPath(libString, &libDirs);
 
-  if (fDriverDoCompilation) {
+  if (fDriverPhaseOne) {
     appendLineToTmpFile(libString, libDirsFilename);
   }
 }
@@ -116,7 +116,7 @@ void addLibFile(const char* libFile) {
   // use astr() to get a copy of the string that this vector can own
   libFiles.push_back(astr(libFile));
 
-  if (fDriverDoCompilation) {
+  if (fDriverPhaseOne) {
     appendLineToTmpFile(libFile, libFilesFilename);
   }
 }
@@ -124,7 +124,7 @@ void addLibFile(const char* libFile) {
 void addIncInfo(const char* incDir) {
   addPath(incDir, &incDirs);
 
-  if (fDriverDoCompilation) {
+  if (fDriverPhaseOne) {
     appendLineToTmpFile(incDir, incDirsFilename);
   }
 }
@@ -158,8 +158,8 @@ static void restoreLinesFromTmp(const char* tmpFileName,
 
 void restoreLibraryAndIncludeInfo() {
   INT_ASSERT(
-      fDriverDoMakeBinary &&
-      "should only be restoring library and include info in makeBinary stage");
+      fDriverPhaseTwo &&
+      "should only be restoring library and include info in driver phase two");
   assert(libDirs.empty() && libFiles.empty() && incDirs.empty() &&
          "tried to restore library and include info from disk, but it was "
          "already present in memory");
@@ -170,8 +170,8 @@ void restoreLibraryAndIncludeInfo() {
 }
 
 void restoreAdditionalSourceFiles() {
-  INT_ASSERT(fDriverDoMakeBinary &&
-             "should only be restoring filenames in makeBinary stage");
+  INT_ASSERT(fDriverPhaseTwo &&
+             "should only be restoring filenames in driver phase two");
   fileinfo* additionalFilenamesList =
       openTmpFile(additionalFilenamesListFilename, "r");
   char filename[FILENAME_MAX + 1];
@@ -419,7 +419,7 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
   inputFilenames = (const char**)realloc(inputFilenames,
                                          (numInputFiles+1)*sizeof(char*));
   fileinfo* additionalFilenamesList = NULL;
-  if (fDriverDoCompilation) {
+  if (fDriverPhaseOne) {
     additionalFilenamesList = openTmpFile(additionalFilenamesListFilename, "a");
   }
 
@@ -456,7 +456,7 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
       // add file
       inputFilenames[cursor++] = newFilename;
       if (additionalFilenamesList) {
-        // also save to file for use in makeBinary later
+        // also save to file for use in driver phase two later
         fprintf(additionalFilenamesList->fptr, "%s\n", newFilename);
       }
     }

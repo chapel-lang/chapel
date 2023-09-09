@@ -2912,10 +2912,9 @@ void makeBinary(void) {
   if (no_codegen)
     return;
 
-  // makeBinary shouldn't run in a compilation-only invocation.
-  // (Unless we're doing GPU codegen, which currently happens in the
-  // compilation phase.)
-  INT_ASSERT(!fDriverDoCompilation || gCodegenGPU);
+  // makeBinary shouldn't run in a phase-one invocation.
+  // (Unless we're doing GPU codegen, which currently happens in phase one.)
+  INT_ASSERT(!fDriverPhaseOne || gCodegenGPU);
 
   if(fLlvmCodegen) {
 #ifdef HAVE_LLVM

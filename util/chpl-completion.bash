@@ -58,8 +58,8 @@ _chpl ()
 --devel \
 --div-by-zero-checks \
 --driver-debug-phase \
---driver-do-compilation \
---driver-do-make-binary \
+--driver-phase-one \
+--driver-phase-two \
 --driver-tmp-dir \
 --dynamic \
 --dynamic-auto-local-access \

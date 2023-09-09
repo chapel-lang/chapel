@@ -195,10 +195,10 @@ void completePrintLlvmIrStage(llvmStageNum_t numStage) {
 
 
 // If running in compiler-driver mode, save cnames to print IR for to disk.
-// This is so that handlePrintAsm can access them later from makeBinary, when
+// This is so that handlePrintAsm can access them later from phase two, when
 // we don't have a way to determine name->cname correspondence.
 static void savePrintIrCNamesIfNeeded() {
-  if (fDriverDoCompilation) {
+  if (fDriverPhaseOne) {
     fileinfo* cnamesToPrintFile = openTmpFile(cnamesToPrintFilename, "w");
     for (const auto& cname : llvmPrintIrCNames) {
       fprintf(cnamesToPrintFile->fptr, "%s\n", cname);

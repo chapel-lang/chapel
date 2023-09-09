@@ -2004,7 +2004,7 @@ static llvm::TargetOptions getTargetOptions(
 // deserialize the module from previously-outputted LLVM bitcode file
 static void loadModuleFromBitcode() {
   // should only be used for the backend to retrieve codegen results
-  INT_ASSERT(fDriverDoMakeBinary);
+  INT_ASSERT(fDriverPhaseTwo);
 
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
@@ -4799,7 +4799,7 @@ static void checkLoopsAssertVectorize(void) {
 #endif
 
 void makeBinaryLLVM(void) {
-  if (fDriverDoMakeBinary) {
+  if (fDriverPhaseTwo) {
     // Set up necessary resources for a driver makeBinary phase invocation.
 
     initializeGenInfo();
@@ -5298,8 +5298,7 @@ static void handlePrintAsm(std::string dotOFile) {
       disSymArg += "_";
     }
 
-    // restore names to print from disk if we are in make binary-only invocation
-    if (fDriverDoMakeBinary) restorePrintIrCNames();
+    if (fDriverPhaseTwo) restorePrintIrCNames();
     std::vector<std::string> names = gatherPrintLlvmIrCNames();
     printf("%lu symbol names to disassemble\n", names.size());
     if (names.empty()) {
