@@ -12,7 +12,7 @@ enum DistType {
 
 proc main() {
   var D = {1..10, 1..10};
-  var S = if distType == DistType.block then D dmapped Block(D)
+  var S = if distType == DistType.block then D dmapped blockDist(D)
           else D dmapped Stencil(D, fluff=(1,1));
   var A, B : [S] int;
 

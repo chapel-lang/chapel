@@ -2544,8 +2544,20 @@ static void maybeEmitWarningsForId(Resolver* rv, QualifiedType qt,
   // TODO: We can skip all parenless functions using the below check, but
   // I'm not sure we can write something similar for functions, since it's
   // possible for function names to appear in other places besides calls.
-  if (qt.kind() != QualifiedType::PARENLESS_FUNCTION &&
-      !isCalledExpression(rv, astMention)) {
+
+  if (qt.kind() == QualifiedType::PARENLESS_FUNCTION) return;
+
+  bool emitUnstableAndDeprecationWarnings = true;
+  if (isCalledExpression(rv, astMention)) {
+    // For functions, do not warn, since call resolution will take
+    // care of that.  However, if we're referring to other symbol
+    // kinds, we know right now that a deprecation warning should be
+    // emitted.
+    emitUnstableAndDeprecationWarnings =
+      !asttags::isFunction(parsing::idToTag(rv->context, idTarget));
+  }
+
+  if (emitUnstableAndDeprecationWarnings) {
     ID idMention = astMention->id();
     Context* context = rv->context;
     parsing::reportDeprecationWarningForId(context, idMention, idTarget);

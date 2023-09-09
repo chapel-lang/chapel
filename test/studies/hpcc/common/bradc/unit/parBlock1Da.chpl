@@ -1,6 +1,6 @@
 use BlockDist;
 
-var Dist = new Block(boundingBox={1..9});
+var Dist = new blockDist(boundingBox={1..9});
 
 var D1: domain(1) dmapped (Dist) = {1..9};
 var D2: domain(1) dmapped (Dist) = {2..10};

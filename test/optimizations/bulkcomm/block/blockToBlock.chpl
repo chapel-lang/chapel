@@ -46,9 +46,9 @@ proc makeFluff(param rank : int, val : int) {
 
 proc testCore(DestDom : domain, DestLocales : [],
               SrcDom  : domain, SrcLocales  : []) {
-  const AD = if distType == DistType.block then DestDom dmapped Block(DestDom, DestLocales)
+  const AD = if distType == DistType.block then DestDom dmapped blockDist(DestDom, DestLocales)
              else DestDom dmapped Stencil(DestDom, DestLocales, fluff=makeFluff(DestDom.rank, 1));
-  const BD = if distType == DistType.block then SrcDom dmapped Block(SrcDom, SrcLocales)
+  const BD = if distType == DistType.block then SrcDom dmapped blockDist(SrcDom, SrcLocales)
              else SrcDom dmapped Stencil(SrcDom, SrcLocales, fluff=makeFluff(SrcDom.rank, 1));
 
   var A : [AD] int;

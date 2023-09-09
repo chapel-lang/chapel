@@ -32,7 +32,7 @@ proc main() {
   var AggA: [D] AggregatedAtomic(int);
 
   const Nspace = {0..numUpdates-1};
-  const D2 = Nspace dmapped Block(Nspace);
+  const D2 = Nspace dmapped blockDist(Nspace);
   var rindex: [D2] int;
 
   /* set up loop */

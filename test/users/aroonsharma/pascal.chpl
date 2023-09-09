@@ -35,7 +35,7 @@ if dist=='NONE' {
   var mydist = mydom dmapped BlockCyclic(startIdx=mydom.low, blocksize=blocksize);
   dobench(mydist, mydom);
 } else if dist=='B' {
-  var mydist = mydom dmapped Block(boundingBox=mydom);
+  var mydist = mydom dmapped blockDist(boundingBox=mydom);
   dobench(mydist, mydom);
 }
 

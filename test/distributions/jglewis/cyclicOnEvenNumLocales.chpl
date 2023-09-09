@@ -21,7 +21,7 @@ module cholesky_test {
     const mat_dom : domain (2) dmapped Cyclic ( startIdx = MatIdx.low )
       = MatIdx;
 
-    //  const mat_dom : domain (2) dmapped Block ( boundingBox = MatIdx )
+    //  const mat_dom : domain (2) dmapped blockDist ( boundingBox = MatIdx )
     //    = MatIdx;
 
     var A : [mat_dom] real,

@@ -4,7 +4,7 @@ use BlockDist;
 
 proc main() {
   var D = {1..4, 1..4, 1..4};
-  var Space = D dmapped Block(D);
+  var Space = D dmapped blockDist(D);
   var B : [Space] int;
 
   var cur = 0;

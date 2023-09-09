@@ -1,7 +1,7 @@
 use BlockDist;
 use CyclicDist;
 
-var blockArr = Block.createArray(1..10, int);
+var blockArr = blockDist.createArray(1..10, int);
 var cyclicDom = Cyclic.createDomain(1..10);
 
 var sums: [1..10] int;

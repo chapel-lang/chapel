@@ -99,18 +99,18 @@ const buffSpace:   domain(2)= {0..#nbuckets,0..#keybuffsz};
 // ... block a 2D space into horizontal slabs
 const MyLocaleView = {0..#numLocales, 1..1};
 const MyLocales: [MyLocaleView] locale = reshape(Locales, MyLocaleView);
-const bucketDom = bucketSpace dmapped Block(boundingBox=bucketSpace, targetLocales=MyLocales, dataParTasksPerLocale=tasksPerLocale);
+const bucketDom = bucketSpace dmapped blockDist(boundingBox=bucketSpace, targetLocales=MyLocales, dataParTasksPerLocale=tasksPerLocale);
 const buffDom = if distType==ISDistType.block
-  then buffSpace dmapped Block(boundingBox=buffSpace, targetLocales=MyLocales, dataParTasksPerLocale=tasksPerLocale)
+  then buffSpace dmapped blockDist(boundingBox=buffSpace, targetLocales=MyLocales, dataParTasksPerLocale=tasksPerLocale)
   else buffSpace dmapped BlockCyclic (startIdx=buffSpace.low,
                                       blocksize=(tasksPerLocale,
                                                  keybuffsz),
                                       targetLocales=MyLocales);
 
 // Map domains to locales
-const keyDom   = keySpace dmapped Block(boundingBox=keySpace, dataParTasksPerLocale=tasksPerLocale);
+const keyDom   = keySpace dmapped blockDist(boundingBox=keySpace, dataParTasksPerLocale=tasksPerLocale);
 const countDom = if distType==ISDistType.block
-  then countSpace dmapped Block(boundingBox=countSpace, dataParTasksPerLocale=tasksPerLocale)
+  then countSpace dmapped blockDist(boundingBox=countSpace, dataParTasksPerLocale=tasksPerLocale)
   else countSpace dmapped BlockCyclic(startIdx=countSpace.low,
                                       blocksize=(tasksPerLocale,1),
                                       targetLocales=MyLocales);

@@ -4,15 +4,15 @@ public use BlockCycDist;
 public use HashedDist;
 public use StencilDist;
 
-config type distType = Block;
+config type distType = blockDist;
 
 proc createDom(space) {
   if space.rank > 2 {
     compilerError("Only 1 and 2 dimensional domains");
   }
 
-  if distType == Block {
-    return Block.createDomain(space);
+  if distType == blockDist {
+    return blockDist.createDomain(space);
   }
   else if distType == Cyclic {
     return Cyclic.createDomain(space);
