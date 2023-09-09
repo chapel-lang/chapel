@@ -24,34 +24,29 @@ module DataFrames {
 
   class Index {
     @chpldoc.nodoc
-    proc contains(lab) {
+    proc contains(lab): bool {
       halt("generic Index contains no elements");
-      return false;
     }
 
     @chpldoc.nodoc
     proc uni(lhs: borrowed TypedSeries, rhs: borrowed TypedSeries, unifier:
         borrowed SeriesUnifier): owned Series {
       halt("generic Index cannot be unioned");
-      return new owned Series();
     }
 
     @chpldoc.nodoc
     proc map(s: borrowed TypedSeries, mapper: borrowed SeriesMapper): owned Series {
       halt("generic Index cannot be mapped");
-      return new owned Series();
     }
 
     @chpldoc.nodoc
     proc filter(s: borrowed TypedSeries, filterSeries: borrowed TypedSeries): owned Series {
       halt("generic Index cannot be filtered");
-      return new owned Series();
     }
 
     @chpldoc.nodoc
     proc nrows(): int {
       halt("generic Index cannot be countd");
-      return 0;
     }
 
     @chpldoc.nodoc
@@ -317,87 +312,73 @@ module DataFrames {
     }
 
     @chpldoc.nodoc
-    proc uni(lhs: borrowed TypedSeries, unifier: borrowed SeriesUnifier) {
+    proc uni(lhs: borrowed TypedSeries, unifier: borrowed SeriesUnifier): owned Series {
       halt("generic Series cannot be unioned");
-      return new owned Series();
     }
 
     @chpldoc.nodoc
-    proc map(mapper: borrowed SeriesMapper) {
+    proc map(mapper: borrowed SeriesMapper): owned Series {
       halt("generic Series cannot be unioned");
-      return new owned Series();
     }
 
     @chpldoc.nodoc
-    proc add(rhs) {
+    proc add(rhs): owned Series {
       halt("generic Series cannot be added");
-      return new owned Series();
     }
 
     @chpldoc.nodoc
-    proc add_scalar(n) {
+    proc add_scalar(n): owned Series {
       halt("generic Series cannot be added");
-      return new owned Series();
     }
 
     @chpldoc.nodoc
-    proc subtr(rhs) {
+    proc subtr(rhs): owned Series {
       halt("generic Series cannot be subtracted");
-      return new owned Series();
     }
 
     @chpldoc.nodoc
-    proc subtr_scalar(n) {
+    proc subtr_scalar(n): owned Series {
       halt("generic Series cannot be subtracted");
-      return new owned Series();
     }
 
     @chpldoc.nodoc
-    proc mult(rhs) {
+    proc mult(rhs): owned Series {
       halt("generic Series cannot be multiplied");
-      return new owned Series();
     }
 
     @chpldoc.nodoc
-    proc mult_scalar(n) {
+    proc mult_scalar(n): owned Series {
       halt("generic Series cannot be multiplied");
-      return new owned Series();
     }
 
     @chpldoc.nodoc
-    proc lt_scalar(n) {
+    proc lt_scalar(n): owned Series {
       halt("generic Series cannot be compared");
-      return new owned Series();
     }
 
     @chpldoc.nodoc
-    proc gt_scalar(n) {
+    proc gt_scalar(n): owned Series {
       halt("generic Series cannot be compared");
-      return new owned Series();
     }
 
     @chpldoc.nodoc
-    proc eq_scalar(n) {
+    proc eq_scalar(n): owned Series {
       halt("generic Series cannot be compared");
-      return new owned Series();
     }
 
     @chpldoc.nodoc
-    proc lteq_scalar(n) {
+    proc lteq_scalar(n): owned Series {
       halt("generic Series cannot be compared");
-      return new owned Series();
     }
 
     @chpldoc.nodoc
-    proc gteq_scalar(n) {
+    proc gteq_scalar(n): owned Series {
       halt("generic Series cannot be compared");
-      return new owned Series();
     }
 
     @chpldoc.nodoc
     proc nrows(): int {
       halt("generic Series cannot be counted");
-      return 0;
     }
 
     @chpldoc.nodoc

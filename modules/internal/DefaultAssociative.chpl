@@ -583,7 +583,6 @@ module DefaultAssociative {
         return data(slotNum);
       } else {
         halt("array index out of bounds: ", idx);
-        return data(0);
       }
     }
 
@@ -600,7 +599,6 @@ module DefaultAssociative {
         return data(slotNum);
       } else {
         halt("array index out of bounds: ", idx);
-        return data(0);
       }
     }
 
