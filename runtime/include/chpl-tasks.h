@@ -34,6 +34,9 @@ extern "C" {
 #endif
 
 #ifdef HAS_GPU_LOCALE
+// Engin: normally, I wanted to stick this into chpl-gpu.h. However, circular
+// dependency between headers was a bit difficult to break. chpl-gpu.h needs
+// chpl_task_getRequestedSubloc from here (well, actually chpl-tasks-impl-fns)
 typedef struct {
   void** streams;
 } chpl_gpu_taskPrvData_t;
