@@ -25,6 +25,7 @@ bool chpl_gpu_debug = false;
 bool chpl_gpu_no_cpu_mode_warning = false;
 int chpl_gpu_num_devices = -1;
 bool chpl_gpu_always_sync_kernels = false;
+bool chpl_gpu_use_default_stream = false;
 
 #ifdef HAS_GPU_LOCALE
 
@@ -40,11 +41,14 @@ bool chpl_gpu_always_sync_kernels = false;
 #include "chpl-env.h"
 #include "chpl-comm-compiler-macros.h"
 
-// TODO do we want a user flag to control this?
-static bool async_supported = false; // a safer default
+static bool hw_supports_async = false;
+
+static inline bool async_ok(void) {
+  return !chpl_gpu_use_default_stream && hw_supports_async;
+}
 
 // if any of the devices do not support async streams; bail
-static bool get_async_supported(void) {
+static bool is_async_supported(void) {
   int i;
   for (i=0; i<chpl_gpu_num_devices; i++) {
     if (!chpl_gpu_impl_supports_async_streams(i)) {
@@ -92,11 +96,11 @@ void chpl_gpu_init(void) {
 #endif
   }
 
-  async_supported = get_async_supported();
+  hw_supports_async = is_async_supported();
 }
 
 static chpl_gpu_taskPrvData_t* get_gpu_task_private_data(void) {
-  if (!async_supported) return NULL;
+  if (!async_ok()) return NULL;
 
   chpl_task_infoRuntime_t* infoRuntime = chpl_task_getInfoRuntime();
   if (infoRuntime != NULL) return &infoRuntime->gpu_data;
@@ -104,7 +108,7 @@ static chpl_gpu_taskPrvData_t* get_gpu_task_private_data(void) {
 }
 
 void chpl_gpu_task_end(void) {
-  if (!async_supported) return;
+  if (!async_ok()) return;
 
   chpl_gpu_taskPrvData_t* prvData = get_gpu_task_private_data();
   assert(prvData);
@@ -124,7 +128,7 @@ void chpl_gpu_task_end(void) {
 }
 
 void chpl_gpu_task_fence(void) {
-  if (!async_supported) return;
+  if (!async_ok()) return;
 
   int dev = chpl_task_getRequestedSubloc();
   if (dev<0) {
@@ -146,7 +150,7 @@ void chpl_gpu_task_fence(void) {
 }
 
 static void* get_stream(int dev) {
-  if (!async_supported) return NULL;
+  if (!async_ok()) return NULL;
 
   // assumes that device has been set correctly with chpl_gpu_impl_use_device
   chpl_gpu_taskPrvData_t* prvData = get_gpu_task_private_data();
@@ -185,6 +189,10 @@ void chpl_gpu_support_module_finished_initializing(void) {
     CHPL_GPU_DEBUG("    array data: unified memory\n");
     CHPL_GPU_DEBUG("         other: unified memory\n");
   #endif
+
+  CHPL_GPU_DEBUG("  Asynchrony: %s\n", async_ok() ? "enabled" : "disabled");
+  CHPL_GPU_DEBUG("  Force kernel synch: %s\n",
+                 chpl_gpu_always_sync_kernels ? "enabled" : "disabled");
 }
 
 inline void chpl_gpu_launch_kernel(int ln, int32_t fn,

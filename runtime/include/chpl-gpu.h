@@ -36,6 +36,7 @@ extern bool chpl_gpu_debug;
 extern int chpl_gpu_num_devices;
 extern bool chpl_gpu_no_cpu_mode_warning;
 extern bool chpl_gpu_always_sync_kernels;
+extern bool chpl_gpu_use_default_stream;
 
 
 #ifdef HAS_GPU_LOCALE
