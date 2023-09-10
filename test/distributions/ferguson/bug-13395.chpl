@@ -8,5 +8,5 @@ class C {
 	}
 }
 
-var c = new C(new Cyclic(startIdx=1));
+var c = new C(new cyclicDist(startIdx=1));
 writeln("Hello World");

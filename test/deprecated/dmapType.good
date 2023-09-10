@@ -1,3 +1,9 @@
+dmapType.chpl:4: warning: 'Block' is deprecated, please use 'blockDist' instead
+dmapType.chpl:8: warning: 'Block' is deprecated, please use 'blockDist' instead
+dmapType.chpl:8: warning: 'Block' is deprecated, please use 'blockDist' instead
+dmapType.chpl:14: warning: 'Cyclic' is deprecated, please use 'cyclicDist' instead
+dmapType.chpl:18: warning: 'Cyclic' is deprecated, please use 'cyclicDist' instead
+dmapType.chpl:18: warning: 'Cyclic' is deprecated, please use 'cyclicDist' instead
 dmapType.chpl:4: warning: The use of 'dmap' is deprecated for this distribution; please replace 'new dmap(new <DistName>(<args>))' with 'new <DistName>(<args>)'
 dmapType.chpl:8: warning: The use of 'dmap' is deprecated for this distribution; please replace 'dmap(<DistName>(<args>))' with '<DistName>(<args>)'
 dmapType.chpl:14: warning: The use of 'dmap' is deprecated for this distribution; please replace 'new dmap(new <DistName>(<args>))' with 'new <DistName>(<args>)'
@@ -9,7 +15,7 @@ dmapType.chpl:38: warning: The use of 'dmap' is deprecated for this distribution
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 blockDist(1,int(64),unmanaged DefaultDist)
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
-Cyclic(1,int(64))
+cyclicDist(1,int(64))
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 Replicated
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0

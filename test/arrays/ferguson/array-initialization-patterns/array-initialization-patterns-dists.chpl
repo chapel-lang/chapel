@@ -63,7 +63,7 @@ proc makeInitialArray() {
   } else if distType == DistType.block {
     return blockDist.createArray(1..1, int);
   } else if distType == DistType.cyclic {
-    return Cyclic.createArray(1..1, int);
+    return cyclicDist.createArray(1..1, int);
   } else if distType == DistType.blockcyclic {
     var D = {1..1} dmapped BlockCyclic(startIdx=(1,), (3,));
     var ret: [D] int;

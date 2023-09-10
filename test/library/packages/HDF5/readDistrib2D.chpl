@@ -30,7 +30,7 @@ proc main {
   if testCyclic {
     use CyclicDist;
     writeln("CyclicDist:");
-    var CyclicSpace = Space dmapped Cyclic(startIdx=Space.low);
+    var CyclicSpace = Space dmapped cyclicDist(startIdx=Space.low);
     var A: [CyclicSpace] int;
     hdf5ReadDistributedArray(A, pathPrefix+fileName, dsetName);
     writeln(A);

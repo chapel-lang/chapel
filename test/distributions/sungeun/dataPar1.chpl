@@ -65,7 +65,7 @@ var BA, BB, BC: [BDom] real;
 dit(BDom, BA, BB, BC);
 checkdit("Block", BA, BB, BC);
 
-const CDom = Space dmapped new Cyclic(startIdx=(1:myIntType,
+const CDom = Space dmapped new cyclicDist(startIdx=(1:myIntType,
                                                          1:myIntType,
                                                          1:myIntType,
                                                          1:myIntType,

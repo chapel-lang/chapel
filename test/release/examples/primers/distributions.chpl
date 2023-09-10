@@ -160,7 +160,7 @@ for (L, ML) in zip(BA2.targetLocales(), MyLocales) do
 // The starting index should just be considered a parameterization of
 // how the distribution is defined.
 //
-const CyclicSpace = Space dmapped Cyclic(startIdx=Space.low);
+const CyclicSpace = Space dmapped cyclicDist(startIdx=Space.low);
 var CA: [CyclicSpace] int;
 
 forall ca in CA do

@@ -35,7 +35,7 @@ proc map_distribution(size:int): domain(2) {
     /*} else if dist == "CM" {
       user_dist = dom dmapped CyclicZipOpt(startIdx=dom.low);*/
     } else if dist == "C" {
-      user_dist = dom dmapped Cyclic(startIdx=dom.low);
+      user_dist = dom dmapped cyclicDist(startIdx=dom.low);
     } else if dist == "B" {
       user_dist = dom dmapped blockDist(boundingBox=dom);
     } 
@@ -216,7 +216,7 @@ proc main() {
       var user_dist = dom dmapped CyclicZipOpt(startIdx=dom.low);
       kernel_2mm(alpha, beta, user_dist, size);   */
     } else if dist == "C" {
-        var user_dist = dom dmapped Cyclic(startIdx=dom.low);
+        var user_dist = dom dmapped cyclicDist(startIdx=dom.low);
         kernel_2mm(alpha, beta, user_dist, size);   
     } else if dist == "B" {
         var user_dist = dom dmapped blockDist(boundingBox=dom);

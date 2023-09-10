@@ -29,7 +29,7 @@ if dist=='NONE' {
   //totalcomm2=volume;
   dobench(mydist, mydom);  
 } */else if dist=='C' {
-  var mydist = mydom dmapped Cyclic(startIdx=mydom.low);
+  var mydist = mydom dmapped cyclicDist(startIdx=mydom.low);
   dobench(mydist, mydom);  
 } else if dist=='BC' {
   var mydist = mydom dmapped BlockCyclic(startIdx=mydom.low, blocksize=blocksize);
