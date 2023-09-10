@@ -235,7 +235,7 @@ This distribution has not been tuned for performance.
 */
 
 pragma "ignore noinit"
-record Cyclic {
+record cyclicDist {
   param rank: int;
   type idxType = int;
 
@@ -290,23 +290,23 @@ record Cyclic {
     // Note: This does not handle the case where the desired type of 'this'
     // does not match the type of 'other'. That case is handled by the compiler
     // via coercions.
-    proc init=(const ref other : Cyclic(?)) {
+    proc init=(const ref other : cyclicDist(?)) {
       this.init(other._value.dsiClone());
     }
 
     proc clone() {
-      return new Cyclic(this._value.dsiClone());
+      return new cyclicDist(this._value.dsiClone());
     }
 
   @chpldoc.nodoc
-  inline operator ==(d1: Cyclic(?), d2: Cyclic(?)) {
+  inline operator ==(d1: cyclicDist(?), d2: cyclicDist(?)) {
     if (d1._value == d2._value) then
       return true;
     return d1._value.dsiEqualDMaps(d2._value);
   }
 
   @chpldoc.nodoc
-  inline operator !=(d1: Cyclic(?), d2: Cyclic(?)) {
+  inline operator !=(d1: cyclicDist(?), d2: cyclicDist(?)) {
     return !(d1 == d2);
   }
 
@@ -318,7 +318,7 @@ record Cyclic {
 
 @chpldoc.nodoc
 @unstable(category="experimental", reason="assignment between distributions is currently unstable due to lack of testing")
-operator =(ref a: Cyclic(?), b: Cyclic(?)) {
+operator =(ref a: cyclicDist(?), b: cyclicDist(?)) {
   if a._value == nil {
     __primitive("move", a, chpl__autoCopy(b.clone(), definedConst=false));
   } else {
@@ -333,6 +333,8 @@ operator =(ref a: Cyclic(?), b: Cyclic(?)) {
   }
 }
 
+@deprecated("'Cyclic' is deprecated, please use 'cyclicDist' instead")
+type Cyclic = cyclicDist;
 
 @chpldoc.nodoc
 class CyclicImpl: BaseDist {
@@ -554,8 +556,8 @@ proc _cyclic_matchArgsShape(type rangeType, type scalarType, args) type {
 }
 
 proc CyclicImpl.writeThis(x) throws {
-  x.writeln("Cyclic");
-  x.writeln("------");
+  x.writeln("cyclicDist");
+  x.writeln("----------");
   for locid in targetLocDom do
     x.writeln(" [", locid, "=", targetLocs(locid), "] owns chunk: ",
       locDist(locid).myChunk);
@@ -664,9 +666,9 @@ proc CyclicDom.setup() {
 
 proc CyclicDom.dsiGetDist() {
   if _isPrivatized(dist) then
-    return new Cyclic(dist.pid, dist, _unowned=true);
+    return new cyclicDist(dist.pid, dist, _unowned=true);
   else
-    return new Cyclic(nullPid, dist, _unowned=true);
+    return new cyclicDist(nullPid, dist, _unowned=true);
 }
 
 override proc CyclicDom.dsiDestroyDom() {
@@ -1436,33 +1438,33 @@ proc CyclicImpl.dsiTargetLocales() const ref {
 }
 
 // create a domain over an existing Cyclic Distribution
-proc Cyclic.createDomain(dom: domain(?)) {
+proc cyclicDist.createDomain(dom: domain(?)) {
   return dom dmapped this;
 }
 
 // create a domain over an existing Cyclic Distribution constructed from a series of ranges
-proc Cyclic.createDomain(rng: range(?)...) {
+proc cyclicDist.createDomain(rng: range(?)...) {
   return this.createDomain({(...rng)});
 }
 
 // create a domain over a Cyclic Distribution
-proc type Cyclic.createDomain(dom: domain(?), targetLocales: [] locale = Locales)
+proc type cyclicDist.createDomain(dom: domain(?), targetLocales: [] locale = Locales)
 {
   return dom dmapped CyclicImpl(startIdx=dom.lowBound, targetLocales);
 }
 
 // create a domain over a Cyclic Distribution constructed from a series of ranges
-proc type Cyclic.createDomain(rng: range(?)..., targetLocales: [] locale = Locales) {
+proc type cyclicDist.createDomain(rng: range(?)..., targetLocales: [] locale = Locales) {
   return createDomain({(...rng)}, targetLocales);
 }
 
-proc type Cyclic.createDomain(rng: range(?)...) {
+proc type cyclicDist.createDomain(rng: range(?)...) {
   return createDomain({(...rng)});
 }
 
 
 // create an array over a Cyclic Distribution, default initialized
-proc type Cyclic.createArray(
+proc type cyclicDist.createArray(
   dom: domain(?),
   type eltType,
   targetLocales: [] locale = Locales
@@ -1473,7 +1475,7 @@ proc type Cyclic.createArray(
 }
 
 // create an array over a Cyclic Distribution, initialized with the given value or iterator
-proc type Cyclic.createArray(
+proc type cyclicDist.createArray(
   dom: domain(?),
   type eltType,
   initExpr: ?t,
@@ -1487,7 +1489,7 @@ proc type Cyclic.createArray(
 }
 
 // create an array over a Cyclic Distribution, initialized from the given array
-proc type Cyclic.createArray(
+proc type cyclicDist.createArray(
   dom: domain(?),
   type eltType,
   initExpr: [?arrayDom] ?arrayEltType,
@@ -1495,7 +1497,7 @@ proc type Cyclic.createArray(
 ) where dom.rank == arrayDom.rank && isCoercible(arrayEltType, eltType)
 {
   for (d, ad, i) in zip(dom.dims(), arrayDom.dims(), 0..) do
-    if d.size != ad.size then halt("Domain size mismatch in 'Cyclic.createArray' dimension " + i:string);
+    if d.size != ad.size then halt("Domain size mismatch in 'cyclicDist.createArray' dimension " + i:string);
   var D = createDomain(dom, targetLocales);
   var A: [D] eltType;
   A = initExpr;
@@ -1503,7 +1505,7 @@ proc type Cyclic.createArray(
 }
 
 // create an array over a Cyclic Distribution constructed from a series of ranges, default initialized
-proc type Cyclic.createArray(
+proc type cyclicDist.createArray(
   rng: range(?)...,
   type eltType,
   targetLocales: [] locale = Locales
@@ -1511,12 +1513,12 @@ proc type Cyclic.createArray(
   return createArray({(...rng)}, eltType, targetLocales);
 }
 
-proc type Cyclic.createArray(rng: range(?)..., type eltType) {
+proc type cyclicDist.createArray(rng: range(?)..., type eltType) {
   return createArray({(...rng)}, eltType);
 }
 
 // create an array over a Cyclic Distribution constructed from a series of ranges, initialized with the given value or iterator
-proc type Cyclic.createArray(
+proc type cyclicDist.createArray(
   rng: range(?)...,
   type eltType,
   initExpr: ?t,
@@ -1526,14 +1528,14 @@ proc type Cyclic.createArray(
   return createArray({(...rng)}, eltType, initExpr, targetLocales);
 }
 
-proc type Cyclic.createArray(rng: range(?)..., type eltType, initExpr: ?t)
+proc type cyclicDist.createArray(rng: range(?)..., type eltType, initExpr: ?t)
   where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
 {
   return createArray({(...rng)}, eltType, initExpr);
 }
 
 // create an array over a Cyclic Distribution constructed from a series of ranges, initialized from the given array
-proc type Cyclic.createArray(
+proc type cyclicDist.createArray(
   rng: range(?)...,
   type eltType,
   initExpr: [?arrayDom] ?arrayEltType,
@@ -1543,7 +1545,7 @@ proc type Cyclic.createArray(
   return createArray({(...rng)}, eltType, initExpr, targetLocales);
 }
 
-proc type Cyclic.createArray(
+proc type cyclicDist.createArray(
   rng: range(?)...,
   type eltType,
   initExpr: [?arrayDom] ?arrayEltType
@@ -1579,24 +1581,24 @@ proc CyclicDom.dsiLocalSubdomain(loc: locale) {
   }
 }
 
-@deprecated(notes="'newCyclicDom' is deprecated - please use 'Cyclic.createDomain' instead")
+@deprecated(notes="'newCyclicDom' is deprecated - please use 'cyclicDist.createDomain' instead")
 proc newCyclicDom(dom: domain) {
   return dom dmapped Cyclic(startIdx=dom.lowBound);
 }
 
-@deprecated(notes="'newCyclicArr' is deprecated - please use 'Cyclic.createArray' instead")
+@deprecated(notes="'newCyclicArr' is deprecated - please use 'cyclicDist.createArray' instead")
 proc newCyclicArr(dom: domain, type eltType) {
   var D = newCyclicDom(dom);
   var A: [D] eltType;
   return A;
 }
 
-@deprecated(notes="'newCyclicDom' is deprecated - please use 'Cyclic.createDomain' instead")
+@deprecated(notes="'newCyclicDom' is deprecated - please use 'cyclicDist.createDomain' instead")
 proc newCyclicDom(rng: range...) {
   return newCyclicDom({(...rng)});
 }
 
-@deprecated(notes="'newCyclicArr' is deprecated - please use 'Cyclic.createArray' instead")
+@deprecated(notes="'newCyclicArr' is deprecated - please use 'cyclicDist.createArray' instead")
 proc newCyclicArr(rng: range..., type eltType) {
   return newCyclicArr({(...rng)}, eltType);
 }
