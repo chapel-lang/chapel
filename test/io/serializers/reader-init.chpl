@@ -22,6 +22,10 @@ record R {
     return this.x == other.x &&
            this.y == other.y;
   }
+
+  proc serialize(writer, ref serializer) throws {
+    ChapelIO.serializeDefaultImpl(writer, serializer, this);
+  }
 }
 
 record G {
@@ -49,6 +53,10 @@ record G {
   proc equals(other: G(?)) {
     return this.x == other.x &&
            this.y == other.y;
+  }
+
+  proc serialize(writer, ref serializer) throws {
+    ChapelIO.serializeDefaultImpl(writer, serializer, this);
   }
 }
 
