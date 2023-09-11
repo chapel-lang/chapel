@@ -4,7 +4,7 @@ class EitherOr {
 
   proc init(param useField: bool) {
     if (useField) {
-      this.complete();
+      init this;
     } else {
       this.init(false, 17);
     }

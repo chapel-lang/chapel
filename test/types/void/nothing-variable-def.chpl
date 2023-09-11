@@ -15,7 +15,7 @@ proc vartype() type {
 
 class c {
   var v: vartype();
-  proc init() { this.complete(); if enabled then v = 5; }
+  proc init() { init this; if enabled then v = 5; }
 }
 
 var foo = new unmanaged c();

@@ -71,7 +71,7 @@ class GlobalInfo {
 proc GlobalInfo.init() {
   const dummyLI = new unmanaged LocalInfo();
   infos = dummyLI;
-  this.complete();
+  init this;
   coforall ((ix,iy), inf, loc) in zip(gridDist, infos, gridLocales) do on loc {
     inf = new unmanaged LocalInfo(mygx=ix, mygy=iy);
   }

@@ -188,7 +188,7 @@ module BigInteger {
       Initializes a :record:`bigint` to an initial value of ``0``.
     */
     proc init() {
-      this.complete();
+      init this;
       mpz_init(this.mpz);
 
       this.localeId = chpl_nodeID;
@@ -201,7 +201,7 @@ module BigInteger {
       :type x: :record:`bigint`, ``int``, ``uint``
     */
     proc init(const ref x: bigint) {
-      this.complete();
+      init this;
       if compiledForSingleLocale() || x.localeId == chpl_nodeID {
         mpz_init_set(this.mpz, x.mpz);
       } else {
@@ -217,7 +217,7 @@ module BigInteger {
 
     /* See :proc:`init` */
     proc init(x: int) {
-      this.complete();
+      init this;
       mpz_init_set_si(this.mpz, x.safeCast(c_long));
 
       this.localeId = chpl_nodeID;
@@ -225,7 +225,7 @@ module BigInteger {
 
     /* See :proc:`init` */
     proc init(x: uint) {
-      this.complete();
+      init this;
       mpz_init_set_ui(this.mpz, x.safeCast(c_ulong));
 
       this.localeId = chpl_nodeID;
@@ -250,7 +250,7 @@ module BigInteger {
 
      */
     proc init(x: string, base: int = 0) throws where bigintInitThrows == true {
-      this.complete();
+      init this;
       const ref x_ = x.localize().c_str();
       const base_ = base.safeCast(c_int);
 
@@ -312,7 +312,7 @@ module BigInteger {
 
     @deprecated(notes="bigint initializers that halt are deprecated, please set the config param :param:`bigintInitThrows` to 'true' to opt in to using the new initializer that throws")
     proc init(str: string, base: int = 0) where bigintInitThrows == false {
-      this.complete();
+      init this;
       const ref str_ = str.localize().c_str();
       const base_ = base.safeCast(c_int);
 
@@ -328,7 +328,7 @@ module BigInteger {
     @deprecated(notes="bigint initializers that return the errorCode type via an 'out' argument are deprecated, please remove the argument and ensure the config param :param:`bigintInitThrows` is set to 'true' to opt in to using the new initializer that throws")
     proc init(str: string, base: int = 0, out error: errorCode) {
 
-      this.complete();
+      init this;
       const ref str_ = str.localize().c_str();
       const base_ = base.safeCast(c_int);
 
@@ -5169,7 +5169,7 @@ module BigInteger {
     }
 
     proc init(x: bigint) {
-      this.complete();
+      init this;
       var mpz_struct = x.getImpl();
       mpz_init(this.mpz);
       chpl_gmp_get_mpz(this.mpz, x.localeId, mpz_struct);

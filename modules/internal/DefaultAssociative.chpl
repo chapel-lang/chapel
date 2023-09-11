@@ -94,7 +94,7 @@ module DefaultAssociative {
       this.parSafe = parSafe;
       this.dist = dist;
       this.table = new chpl__hashtable(idxType, nothing);
-      this.complete();
+      init this;
 
       // set the rehash helpers
       this.table.rehashHelpers =
@@ -490,7 +490,7 @@ module DefaultAssociative {
       this.data = dom.table.allocateData(tableSize, eltType);
       this.tmpData = nil;
       this.eltsNeedDeinit = initElts;
-      this.complete();
+      init this;
 
       if initElts {
         if isNonNilableClass(this.eltType) {

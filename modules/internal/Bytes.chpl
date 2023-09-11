@@ -475,18 +475,18 @@ module Bytes {
     }
 
     proc init=(b: bytes) {
-      this.complete();
+      init this;
       initWithNewBuffer(this, b);
     }
 
     proc init=(b: string) {
-      this.complete();
+      init this;
       initWithNewBuffer(this, b.buff, length=b.numBytes, size=b.numBytes+1);
     }
 
     @deprecated("the type 'c_string' is deprecated; please use one of the 'bytes.create*ingBuffer' methods that takes a 'c_ptrConst(c_char)' instead")
     proc init=(b: c_string) {
-      this.complete();
+      init this;
       var length = b.size;
       initWithNewBuffer(this, b: bufferType, length=length, size=length+1);
     }

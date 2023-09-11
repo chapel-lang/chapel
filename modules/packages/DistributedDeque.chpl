@@ -305,7 +305,7 @@ module DistributedDeque {
       const dummyLD = new unmanaged LocalDeque(eltType);
       this.slots = dummyLD;
 
-      complete();
+      init this;
 
       // Initialize each slot. We use a round-robin algorithm.
       var idx : atomic int;
@@ -349,7 +349,7 @@ module DistributedDeque {
       this.slotSpace = {0..#this.nSlots};
       slots = other.slots;
 
-      complete();
+      init this;
     }
 
     @chpldoc.nodoc

@@ -141,7 +141,7 @@ module LocaleModel {
         halt("Cannot create additional LocaleModel instances");
       }
 
-      this.complete();
+      init this;
 
       setup();
     }
@@ -164,7 +164,7 @@ module LocaleModel {
       numSublocales = chpl_topo_getNumNumaDomains();
       childSpace = {0..#numSublocales};
 
-      this.complete();
+      init this;
 
       setup();
     }

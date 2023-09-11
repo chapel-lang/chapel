@@ -6,7 +6,7 @@ record myNode {
 
     proc init(w: uint(8)) {
         this.D = {0..w:int};
-        this.complete();
+        init this;
         this.myArray[w][1] = 1;
     }
 }

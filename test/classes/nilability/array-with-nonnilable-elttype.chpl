@@ -19,7 +19,7 @@ class C2 {
   var A2: [1..3] borrowed RootClass;
   proc init() {
     // A2 is default-initialized here
-    this.complete();
+    init this;
   }
 }
 
@@ -45,7 +45,7 @@ class D2 {
   var B2: [1..3] [1..2] borrowed RootClass;
   proc init() {
     // B2 is default-initialized here
-    this.complete();
+    init this;
   }
 }
 

@@ -473,7 +473,7 @@ module ChapelSyncvar {
     proc init(type valType) {
       this.valType = valType;
       this.value = _retEmptyVal(valType);
-      this.complete();
+      init this;
       chpl_sync_initAux(syncAux);
     }
 
@@ -481,7 +481,7 @@ module ChapelSyncvar {
     proc init(type valType, in value: valType) {
       this.valType = valType;
       this.value = value;
-      this.complete();
+      init this;
       chpl_sync_initAux(syncAux);
       chpl_sync_lock(syncAux);
       chpl_sync_markAndSignalFull(syncAux);
@@ -680,7 +680,7 @@ module ChapelSyncvar {
     pragma "dont disable remote value forwarding"
     proc init(type valType) {
       this.valType = valType;
-      this.complete();
+      init this;
       // MPF: I think we can just call qthread_purge here
       // because all of the types supported here have a default of 0
       qthread_purge_to(alignedValue, defaultOfAlignedT(valType));
@@ -1008,14 +1008,14 @@ module ChapelSyncvar {
     proc init(type valType) {
       this.valType = valType;
       this.value = _retEmptyVal(valType);
-      this.complete();
+      init this;
       chpl_single_initAux(singleAux);
     }
 
     proc init(type valType, in value: valType) {
       this.valType = valType;
       this.value = value;
-      this.complete();
+      init this;
       chpl_single_initAux(singleAux);
       chpl_single_lock(singleAux);
       chpl_single_markAndSignalFull(singleAux);

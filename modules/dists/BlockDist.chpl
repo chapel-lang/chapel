@@ -721,7 +721,7 @@ proc BlockImpl.init(boundingBox: domain,
 
   this.sparseLayoutType = _to_unmanaged(sparseLayoutType);
 
-  this.complete();
+  init this;
 
   if debugBlockDist {
     writeln("Creating new blockDist distribution:");

@@ -96,7 +96,7 @@ record LinkedList {
   @chpldoc.nodoc
   proc init=(l : this.type) {
     this.eltType = l.eltType;
-    this.complete();
+    init this;
     for i in l do
       this.append(i);
   }

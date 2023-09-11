@@ -217,7 +217,7 @@ module Treap {
       this.eltType = eltType;
       this.parSafe = parSafe;
       this.comparator = comparator;
-      this.complete();
+      init this;
 
       for elem in iterable do _add(elem);
     }

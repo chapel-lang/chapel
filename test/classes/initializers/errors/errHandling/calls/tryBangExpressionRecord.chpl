@@ -10,7 +10,7 @@ module tryBangExpression {
 
     proc init(xVal: int) throws {
       x = xVal;
-      this.complete();
+      init this;
       validate(xVal);
     }
   }

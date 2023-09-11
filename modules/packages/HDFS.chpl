@@ -249,7 +249,7 @@ module HDFS {
       this.nameNode = nameNode;
       this.port = port;
       this.hfs = hdfsConnect(this.nameNode.c_str(), this.port.safeCast(uint(16)));
-      this.complete();
+      init this;
       refCount.write(1);
     }
     @chpldoc.nodoc

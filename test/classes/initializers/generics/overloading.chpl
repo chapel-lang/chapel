@@ -11,7 +11,7 @@ class D : C {
   proc init(param rankVal: int) {
     rank = rankVal;
 
-    this.complete();
+    init this;
 
     for i in 0..<rank do
       ranges(i) = 1..i+1;

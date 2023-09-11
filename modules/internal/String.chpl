@@ -932,7 +932,7 @@ module String {
     }
 
     proc init=(s: string) {
-      this.complete();
+      init this;
       initWithNewBuffer(this, s);
     }
 

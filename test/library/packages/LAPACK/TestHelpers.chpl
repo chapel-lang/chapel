@@ -42,7 +42,7 @@ module TestHelpers {
       this.matrix_domain = {1..#rows,1..#columns};
       this.epsilon = error;
       
-      this.complete();
+      init this;
       this.populateFromArray( input_array, input_array_order );
       
     }

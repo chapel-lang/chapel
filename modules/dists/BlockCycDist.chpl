@@ -237,7 +237,7 @@ class BlockCyclic : BaseDist {
     else
       this.dataParTasksPerLocale = dataParTasksPerLocale;
 
-    this.complete();
+    init this;
 
     if debugBlockCyclicDist then
       for loc in locDist do writeln(loc);
@@ -1148,7 +1148,7 @@ class LocBlockCyclicArr {
     this.indexDom = indexDom;
     this.myElems = this.allocDom.myFlatInds.buildArray(eltType, initElts=initElts);
     this.localeIndex = localeIndex;
-    this.complete();
+    init this;
 
     // BlockCyclic arrays are currently represented in a way that
     // stores additional padding elements.

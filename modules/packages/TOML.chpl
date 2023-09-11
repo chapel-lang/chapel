@@ -607,14 +607,14 @@ used to recursively hold tables and respective values
 
     // Toml
     proc init(A: [?D] shared Toml) where D.isAssociative() {
-      this.complete();
+      init this;
       for i in D do this.A[i] = A[i];
       this.tag = fieldToml;
     }
 
     @chpldoc.nodoc
     proc init(A: [?D] shared Toml?) where D.isAssociative() {
-      this.complete();
+      init this;
       for i in D do this.A[i] = A[i];
       this.tag = fieldToml;
     }
@@ -685,7 +685,7 @@ used to recursively hold tables and respective values
     // Clone
     proc init(root: Toml) {
       // INIT TODO: Can this be written in phase one?
-      this.complete();
+      init this;
       this.boo = root.boo;
       this.i = root.i;
       this.re = root.re;
@@ -1187,7 +1187,7 @@ module TomlReader {
 
     proc init(tomlStr: string) {
      this.tomlStr = tomlStr;
-     this.complete();
+     init this;
      genTokenlist(tomlStr);
     }
 
@@ -1359,7 +1359,7 @@ module TomlReader {
 
     @chpldoc.nodoc
     proc init(reader: fileReader, ref deserializer) {
-      this.complete();
+      init this;
       compilerError("Reading a Tokens type is not supported");
     }
 

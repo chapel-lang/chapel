@@ -227,7 +227,7 @@ module ChapelRange {
     this.idxType = t;
     this.bounds = boundKind.low;
     this._low = chpl__idxToInt(low);
-    this.complete();
+    init this;
     if isFiniteIdxType(idxType) {
       this._high = finiteIdxTypeHigh(idxType);
     }
@@ -240,7 +240,7 @@ module ChapelRange {
     this.idxType = t;
     this.bounds = boundKind.high;
     this._high = chpl__idxToInt(high);
-    this.complete();
+    init this;
     if isFiniteIdxType(idxType) {
       this._low = finiteIdxTypeLow(idxType);
     }
@@ -252,7 +252,7 @@ module ChapelRange {
   proc range.init() {
     this.idxType = int;
     this.bounds = boundKind.neither;
-    this.complete();
+    init this;
     if isFiniteIdxType(idxType) {
       this._low = finiteIdxTypeLow(idxType);
       this._high = finiteIdxTypeHigh(idxType);

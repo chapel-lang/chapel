@@ -98,7 +98,7 @@ module OwnedObject {
       compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
 
     this.chpl_p = owned.release(src);
-    this.complete();
+    init this;
 
     if isNonNilableClass(this.type) && isNilableClass(src) then
       compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");

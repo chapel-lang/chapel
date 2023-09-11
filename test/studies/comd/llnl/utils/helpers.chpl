@@ -19,7 +19,7 @@ class Ticker {
   var times : int;
 
   proc init(const in tName : string) {
-    this.complete();
+    init this;
     name = tName;
     tick = new stopwatch();
     tick.clear();

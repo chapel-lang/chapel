@@ -296,7 +296,7 @@ module LocaleModel {
       numSublocales = chpl_gpu_num_devices;
       childSpace = {0..#numSublocales};
 
-      this.complete();
+      init this;
 
       setup();
     }
@@ -314,7 +314,7 @@ module LocaleModel {
       numSublocales = chpl_gpu_num_devices;
       childSpace = {0..#numSublocales};
 
-      this.complete();
+      int this;
 
       setup();
     }

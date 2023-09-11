@@ -3,7 +3,7 @@ class Foo {
 
   proc init(xVal) {
     x = xVal;
-    this.complete();
+    init this;
     select xVal.type {
       when int(16) do
         writeln("It was small");

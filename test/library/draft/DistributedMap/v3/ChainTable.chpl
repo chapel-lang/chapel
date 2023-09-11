@@ -28,7 +28,7 @@ module ChainTable {
       this.keyType = keyType;
       this.valType = valType;
       this.numBuckets = initialCapacity;
-      this.complete();
+      init this;
       this.numEntries.write(0);
     }
 
