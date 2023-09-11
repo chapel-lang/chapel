@@ -92,12 +92,12 @@ proc main() {
 
   /* Flavors of parallelism, by distribution */
   const myBlockDist = new blockDist(localDom),
-      stencilDist = new Stencil(innerLocalDom, fluff=(R,R)),
+      myStencilDist = new stencilDist(innerLocalDom, fluff=(R,R)),
            noDist = defaultDist;
 
   /* Set distribution based on configs */
   const Dist =  if useBlockDist then myBlockDist
-                else if useStencilDist then stencilDist
+                else if useStencilDist then myStencilDist
                 else noDist;
 
   const outputDist =  if useBlockDist then myBlockDist

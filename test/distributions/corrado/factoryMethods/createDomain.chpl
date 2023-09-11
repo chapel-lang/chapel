@@ -5,7 +5,7 @@ const dom = {1..6, 1..6},
 
 const b = new blockDist(dom),
       c = new Cyclic(dom.lowBound),
-      s = new Stencil(dom, fluff=(1,1));
+      s = new stencilDist(dom, fluff=(1,1));
 
 testCreateDomainDom("Block:", b);
 testCreateDomainDom("Cyclic:", c);

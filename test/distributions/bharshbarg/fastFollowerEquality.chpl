@@ -69,7 +69,7 @@ proc make(param dist : Dist, dom : domain, box = dom, targetLocales = Locales, s
   else if dist == block then
     return dom dmapped blockDist(box, targetLocales=targetLocales);
   else if dist == stencil then
-    return dom dmapped Stencil(box, targetLocales=targetLocales);
+    return dom dmapped stencilDist(box, targetLocales=targetLocales);
 }
 
 proc main() {

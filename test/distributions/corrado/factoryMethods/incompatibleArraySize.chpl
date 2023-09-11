@@ -10,5 +10,5 @@ const dom1 = {1..6, 1..6},
 select dist {
   when Dists.B do blockDist.createArray(dom2, int, a);
   when Dists.C do Cyclic.createArray(dom2, int, a);
-  when Dists.S do Stencil.createArray(dom2, int, a);
+  when Dists.S do stencilDist.createArray(dom2, int, a);
 }
