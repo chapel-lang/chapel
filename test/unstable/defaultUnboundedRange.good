@@ -1,0 +1,4 @@
+1..
+..0
+defaultUnboundedRange.chpl:3: warning: Default initialization of a range with 'boundKind.low' or 'boundKind.high' is unstable
+defaultUnboundedRange.chpl:4: warning: Default initialization of a range with 'boundKind.low' or 'boundKind.high' is unstable
