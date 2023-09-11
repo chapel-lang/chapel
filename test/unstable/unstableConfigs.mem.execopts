@@ -1,0 +1,1 @@
+--memTrack=true --memStats=true --memLeaksByType=true --memLeaks=true --memMax=0 --memThreshold=0 --memLog="log" --memLeaksLog="leaklog" --memLeaksByDesc=" "
