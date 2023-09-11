@@ -55,6 +55,7 @@ inline void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
                                         int blk_dim_x,
                                         int blk_dim_y,
                                         int blk_dim_z,
+                                        void* stream,
                                         int nargs, va_list args) {
 }
 
@@ -62,23 +63,28 @@ inline void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
                                              const char* name,
                                              int64_t num_threads,
                                              int blk_dim,
+                                             void* stream,
                                              int nargs,
                                              va_list args) {
 }
 
-void* chpl_gpu_impl_memset(void* addr, const uint8_t val, size_t n) {
+void* chpl_gpu_impl_memset(void* addr, const uint8_t val, size_t n,
+                           void* stream) {
   return memset(addr, val, n);
 }
 
-void chpl_gpu_impl_copy_device_to_host(void* dst, const void* src, size_t n) {
+void chpl_gpu_impl_copy_device_to_host(void* dst, const void* src, size_t n,
+                                       void* stream) {
   chpl_memcpy(dst, src, n);
 }
 
-void chpl_gpu_impl_copy_host_to_device(void* dst, const void* src, size_t n) {
+void chpl_gpu_impl_copy_host_to_device(void* dst, const void* src, size_t n,
+                                       void* stream) {
   chpl_memcpy(dst, src, n);
 }
 
-void chpl_gpu_impl_copy_device_to_device(void* dst, const void* src, size_t n) {
+void chpl_gpu_impl_copy_device_to_device(void* dst, const void* src, size_t n,
+                                         void* stream) {
   chpl_memcpy(dst, src, n);
 }
 
@@ -91,7 +97,7 @@ void chpl_gpu_impl_comm_wait(void *stream) {
   assert(stream==NULL);
 }
 
-void* chpl_gpu_impl_mem_array_alloc(size_t size) {
+void* chpl_gpu_impl_mem_array_alloc(size_t size, void* stream) {
   // this function's upstream is blocked by GPU_RUNTIME_CPU check, This should
   // be unreachable
   chpl_internal_error("chpl_gpu_mem_array_alloc was called unexpectedly.");
@@ -103,7 +109,7 @@ void* chpl_gpu_impl_mem_alloc(size_t size) {
   return chpl_malloc(size);
 }
 
-void chpl_gpu_impl_mem_free(void* memAlloc) {
+void chpl_gpu_impl_mem_free(void* memAlloc, void* stream) {
   chpl_free(memAlloc);
 }
 
@@ -128,6 +134,20 @@ void chpl_gpu_impl_set_peer_access(int dev1, int dev2, bool enable) {
 }
 
 void chpl_gpu_impl_use_device(c_sublocid_t dev_id) {
+}
+
+bool chpl_gpu_impl_supports_async_streams(int dev_id) {
+  return false;
+}
+
+void* chpl_gpu_impl_stream_create(void) {
+  return NULL;
+}
+
+void chpl_gpu_impl_stream_destroy(void* stream) {
+}
+
+void chpl_gpu_impl_stream_synchronize(void* stream) {
 }
 
 #endif // HAS_GPU_LOCALE
