@@ -27,10 +27,10 @@ except FileNotFoundError:
 
 # If the .good file we checked already has this message, don't remove it
 if not foundInGood:
-   with open(outfile, 'r') as outR:
+   with open(outfile, 'r', newline='') as outR:
       myLines = outR.readlines()
 
-   with open(outfile, 'w') as overwrite:
+   with open(outfile, 'w', newline='') as overwrite:
         for line in myLines:
             if line.find(memleaksWarn) == -1:
                overwrite.write(line)
