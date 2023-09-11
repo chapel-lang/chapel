@@ -143,7 +143,7 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
 
     .. code-block:: chapel
 
-      proc Stencil.init(
+      proc stencilDist.init(
         boundingBox: domain,
         targetLocales: [] locale  = Locales,
         dataParTasksPerLocale     = // value of  dataParTasksPerLocale      config const,
@@ -202,33 +202,33 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
 
     use StencilDist;
 
-    var BlockDom1 = Stencil.createDomain({1..5, 1..5});
-    var BlockArr1 = Stencil.createArray({1..5, 1..5}, real);
-    var BlockDom2 = Stencil.createDomain(1..5, 1..5);
-    var BlockArr2 = Stencil.createArray(1..5, 1..5, real);
+    var BlockDom1 = stencilDist.createDomain({1..5, 1..5});
+    var BlockArr1 = stencilDist.createArray({1..5, 1..5}, real);
+    var BlockDom2 = stencilDist.createDomain(1..5, 1..5);
+    var BlockArr2 = stencilDist.createArray(1..5, 1..5, real);
 
   The helper methods on ``Stencil`` have the following signatures:
 
-  .. function:: proc type Stencil.createDomain(dom: domain, targetLocales = Locales, fluff, periodic = false)
+  .. function:: proc type stencilDist.createDomain(dom: domain, targetLocales = Locales, fluff, periodic = false)
 
     Create a domain over a Stencil Distribution.
 
-  .. function:: proc type Stencil.createDomain(rng: range(?)..., targetLocales = Locales, fluff, periodic = false)
+  .. function:: proc type stencilDist.createDomain(rng: range(?)..., targetLocales = Locales, fluff, periodic = false)
 
     Create a domain over a Stencil Distribution constructed from a series of
     ranges.
 
-  .. function:: proc type Stencil.createArray(dom: domain, type eltType, targetLocales = Locales, fluff, periodic = false)
+  .. function:: proc type stencilDist.createArray(dom: domain, type eltType, targetLocales = Locales, fluff, periodic = false)
 
     Create a default initialized array over a Stencil Distribution using the
     given domain.
 
-  .. function:: proc type Stencil.createArray(rng: range(?)..., type eltType, targetLocales = Locales, fluff, periodic = false)
+  .. function:: proc type stencilDist.createArray(rng: range(?)..., type eltType, targetLocales = Locales, fluff, periodic = false)
 
     Create a default initialized array over a Stencil Distribution using a
     domain constructed from the series of ranges.
 
-  .. function:: proc type Stencil.createArray(dom: domain, type eltType, initExpr, targetLocales = Locales, fluff, periodic = false)
+  .. function:: proc type stencilDist.createArray(dom: domain, type eltType, initExpr, targetLocales = Locales, fluff, periodic = false)
 
     Create an array over a Stencil Distribution using the given domain.
 
@@ -242,7 +242,7 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
     * an array of compatible size and type — the array will be assigned into
       the distributed array
 
-  .. function:: proc type Stencil.createArray(rng: range(?)..., type eltType, initExpr, targetLocales = Locales, fluff, periodic = false)
+  .. function:: proc type stencilDist.createArray(rng: range(?)..., type eltType, initExpr, targetLocales = Locales, fluff, periodic = false)
 
     Create an array over a Stencil Distribution using a domain constructed from
     the series of ranges.
@@ -321,7 +321,7 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
 
 */
 pragma "ignore noinit"
-record Stencil {
+record stencilDist {
   param rank: int;
   type idxType = int;
   param ignoreFluff = false;
@@ -377,23 +377,23 @@ record Stencil {
     // Note: This does not handle the case where the desired type of 'this'
     // does not match the type of 'other'. That case is handled by the compiler
     // via coercions.
-    proc init=(const ref other : Stencil(?)) {
+    proc init=(const ref other : stencilDist(?)) {
       this.init(other._value.dsiClone());
     }
 
     proc clone() {
-      return new Stencil(this._value.dsiClone());
+      return new stencilDist(this._value.dsiClone());
     }
 
   @chpldoc.nodoc
-  inline operator ==(d1: Stencil(?), d2: Stencil(?)) {
+  inline operator ==(d1: stencilDist(?), d2: stencilDist(?)) {
     if (d1._value == d2._value) then
       return true;
     return d1._value.dsiEqualDMaps(d2._value);
   }
 
   @chpldoc.nodoc
-  inline operator !=(d1: Stencil(?), d2: Stencil(?)) {
+  inline operator !=(d1: stencilDist(?), d2: stencilDist(?)) {
     return !(d1 == d2);
   }
 
@@ -405,7 +405,7 @@ record Stencil {
 
 @chpldoc.nodoc
 @unstable(category="experimental", reason="assignment between distributions is currently unstable due to lack of testing")
-operator =(ref a: Stencil(?), b: Stencil(?)) {
+operator =(ref a: stencilDist(?), b: stencilDist(?)) {
   if a._value == nil {
     __primitive("move", a, chpl__autoCopy(b.clone(), definedConst=false));
   } else {
@@ -419,6 +419,10 @@ operator =(ref a: Stencil(?), b: Stencil(?)) {
       _reprivatize(a._value);
   }
 }
+
+
+@deprecated("'Stencil' is deprecated, please use 'stencilDist' instead")
+type Stencil = stencilDist;
 
 
 class StencilImpl : BaseDist {
@@ -858,27 +862,27 @@ iter StencilImpl.activeTargetLocales(const space : domain = boundingBox) {
 }
 
 // create a domain over an existing Stencil Distribution
-proc Stencil.createDomain(dom: domain(?)) {
+proc stencilDist.createDomain(dom: domain(?)) {
   return dom dmapped this;
 }
 
 // create a domain over an existing Stencil Distribution constructed from a series of ranges
-proc Stencil.createDomain(rng: range(?)...) {
+proc stencilDist.createDomain(rng: range(?)...) {
   return this.createDomain({(...rng)});
 }
 
 // create a domain over a Stencil Distribution
-proc type Stencil.createDomain(
+proc type stencilDist.createDomain(
   dom: domain(?),
   targetLocales: [] locale = Locales,
   fluff = makeZero(dom.rank, dom.idxType),
   periodic = false
 ) {
-  return dom dmapped Stencil(dom, targetLocales, fluff=fluff, periodic=periodic);
+  return dom dmapped stencilDist(dom, targetLocales, fluff=fluff, periodic=periodic);
 }
 
 // create a domain over a Stencil Distribution constructed from a series of ranges
-proc type Stencil.createDomain(
+proc type stencilDist.createDomain(
   rng: range(?)...,
   targetLocales: [] locale = Locales,
   fluff: ?t = makeZero(rng.size, int),
@@ -888,12 +892,12 @@ proc type Stencil.createDomain(
   return createDomain({(...rng)}, targetLocales, fluff, periodic);
 }
 
-proc type Stencil.createDomain(rng: range(?)...) {
+proc type stencilDist.createDomain(rng: range(?)...) {
   return createDomain({(...rng)}, fluff = makeZero(rng.size, rng[0].idxType));
 }
 
 // create an array over a Stencil Distribution, default initialized
-proc type Stencil.createArray(
+proc type stencilDist.createArray(
   dom: domain(?),
   type eltType,
   targetLocales: [] locale = Locales,
@@ -906,7 +910,7 @@ proc type Stencil.createArray(
 }
 
 // create an array over a Stencil Distribution, initialized with the given value or iterator
-proc type Stencil.createArray(
+proc type stencilDist.createArray(
   dom: domain(?),
   type eltType,
   initExpr: ?t,
@@ -922,7 +926,7 @@ proc type Stencil.createArray(
 }
 
 // create an array over a Stencil Distribution, initialized from the given array
-proc type Stencil.createArray(
+proc type stencilDist.createArray(
   dom: domain(?),
   type eltType,
   initExpr: [?arrayDom] ?arrayEltType,
@@ -933,7 +937,7 @@ proc type Stencil.createArray(
 {
   if boundsChecking then
     for (d, ad, i) in zip(dom.dims(), arrayDom.dims(), 0..) do
-      if d.size != ad.size then halt("Domain size mismatch in 'Stencil.createArray' dimension " + i:string);
+      if d.size != ad.size then halt("Domain size mismatch in 'stencilDist.createArray' dimension " + i:string);
   var D = createDomain(dom, targetLocales, fluff, periodic);
   var A: [D] eltType;
   A = initExpr;
@@ -941,7 +945,7 @@ proc type Stencil.createArray(
 }
 
 // create an array over a Stencil Distribution constructed from a series of ranges, default initialized
-proc type Stencil.createArray(
+proc type stencilDist.createArray(
   rng: range(?)...,
   type eltType,
   targetLocales: [] locale = Locales,
@@ -951,18 +955,18 @@ proc type Stencil.createArray(
   return createArray({(...rng)}, eltType, targetLocales, fluff, periodic);
 }
 
-proc type Stencil.createArray(rng: range(?)..., type eltType) {
+proc type stencilDist.createArray(rng: range(?)..., type eltType) {
   return createArray({(...rng)}, eltType, fluff = makeZero(rng.size, rng[0].idxType));
 }
 
 // create an array over a Stencil Distribution constructed from a series of ranges, initialized with the given value or iterator
-proc type Stencil.createArray(rng: range(?)..., type eltType, initExpr: ?t)
+proc type stencilDist.createArray(rng: range(?)..., type eltType, initExpr: ?t)
   where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
 {
   return createArray({(...rng)}, eltType, initExpr, fluff = makeZero(rng.size, rng[0].idxType));
 }
 
-proc type Stencil.createArray(
+proc type stencilDist.createArray(
   rng: range(?)...,
   type eltType,
   initExpr: ?t,
@@ -974,7 +978,7 @@ proc type Stencil.createArray(
 }
 
 // create an array over a Cyclic Distribution constructed from a series of ranges, initialized from the given array
-proc type Stencil.createArray(
+proc type stencilDist.createArray(
   rng: range(?)...,
   type eltType,
   initExpr: [?arrayDom] ?arrayEltType
@@ -983,7 +987,7 @@ proc type Stencil.createArray(
   return createArray({(...rng)}, eltType, initExpr);
 }
 
-proc type Stencil.createArray(
+proc type stencilDist.createArray(
   rng: range(?)...,
   type eltType,
   initExpr: [?arrayDom] ?arrayEltType,
@@ -1030,9 +1034,9 @@ proc LocStencil.init(param rank, type idxType, param dummy: bool) where dummy {
 
 proc StencilDom.dsiGetDist() {
   if _isPrivatized(dist) then
-    return new Stencil(dist.pid, dist, _unowned=true);
+    return new stencilDist(dist.pid, dist, _unowned=true);
   else
-    return new Stencil(nullPid, dist, _unowned=true);
+    return new stencilDist(nullPid, dist, _unowned=true);
 }
 
 override proc StencilDom.dsiDisplayRepresentation() {
