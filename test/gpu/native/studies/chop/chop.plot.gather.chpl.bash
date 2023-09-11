@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # sets 'datFile', 'logDir', 'experimentName', and 'runLog'
-source $CHPL_HOME/util/test/chplExperimentGatherUtils/boilerplate.bash $@
+source $CHPL_HOME/util/test/chplExperimentGatherUtils/prelude.bash $@
 
 sizes=( 15 16 17)
 
