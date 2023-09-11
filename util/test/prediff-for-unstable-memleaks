@@ -17,10 +17,13 @@ memleaksWarn = "warning: The variable 'memLeaks' is unstable and its interface i
 
 foundInGood = False
 
-with open(goodfile, 'r') as gf:
+try:
+  with open(goodfile, 'r') as gf:
      for line in gf.readlines():
          if line.find(memleaksWarn) != -1:
             foundInGood = True
+except FileNotFoundError:
+  print("Oops, " + goodfile + " did not exist.  Won't adjust for expected warnings")
 
 # If the .good file we checked already has this message, don't remove it
 if not foundInGood:
