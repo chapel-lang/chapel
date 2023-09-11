@@ -459,7 +459,7 @@ bool chpl_gpu_impl_stream_supported(void) {
 
 void* chpl_gpu_impl_stream_create(void) {
   hipStream_t stream;
-  ROCM_CALL(hipStreamCreate(&stream, hipStreamDefault));
+  ROCM_CALL(hipStreamCreateWithFlags(&stream, hipStreamDefault));
   return (void*) stream;
 }
 
