@@ -100,9 +100,9 @@ const ElemSpace = {0..#numElems},
 
 /* Declare the (potentially distributed) problem domains */
 
-const Elems = if useBlockDist then ElemSpace dmapped Block(ElemSpace)
+const Elems = if useBlockDist then ElemSpace dmapped blockDist(ElemSpace)
                               else ElemSpace,
-      Nodes = if useBlockDist then NodeSpace dmapped Block(NodeSpace)
+      Nodes = if useBlockDist then NodeSpace dmapped blockDist(NodeSpace)
                               else NodeSpace;
 
                               

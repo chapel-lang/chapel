@@ -29,7 +29,7 @@ proc main() {
   var A: [D] int = 0..tableSize-1;
 
   const Nspace = {0..numUpdates-1};
-  const D2 = Nspace dmapped Block(Nspace);
+  const D2 = Nspace dmapped blockDist(Nspace);
   var rindex: [D2] int;
 
   fillRandom(rindex, seed);

@@ -62,7 +62,7 @@ const epsilon = 1.0e-8,
       seed = 271828183:int(64);
 	 
 const WorkSpace = {0:int(64)..#nn},
-      WorkDist  = WorkSpace dmapped Block(WorkSpace);
+      WorkDist  = WorkSpace dmapped blockDist(WorkSpace);
 
 var totalTime: stopwatch;
 

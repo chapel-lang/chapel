@@ -13,8 +13,8 @@
 {1..10}
 {1..10}
 {1..10}
-Block
--------
+blockDist
+---------
 distributes: {1..10}
 across locales: LOCALE0
 indexed via: {0..0}

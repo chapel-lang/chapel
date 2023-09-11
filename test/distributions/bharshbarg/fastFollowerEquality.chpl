@@ -67,7 +67,7 @@ proc make(param dist : Dist, dom : domain(?), box = dom, targetLocales = Locales
   if dist == cyclic then
     return dom dmapped Cyclic(startIdx,targetLocales=targetLocales);
   else if dist == block then
-    return dom dmapped Block(box, targetLocales=targetLocales);
+    return dom dmapped blockDist(box, targetLocales=targetLocales);
   else if dist == stencil then
     return dom dmapped Stencil(box, targetLocales=targetLocales);
 }

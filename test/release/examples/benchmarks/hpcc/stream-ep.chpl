@@ -13,7 +13,7 @@
 
 //
 // *** Since this benchmark is written on a per-locale basis, there is no
-// *** need to use the Block distribution.  The following use omits
+// *** need to use the blockDist distribution.  The following use omits
 // *** BlockDist, included in stream.chpl.
 //
 // Use standard modules for Timing routines, Type utility functions,

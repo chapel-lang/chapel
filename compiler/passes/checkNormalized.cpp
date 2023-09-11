@@ -102,24 +102,33 @@ static void checkExplicitThis() {
   // only do these checks if `--warn-unstable`
   if (!fWarnUnstable) return;
 
-  forv_Vec(CallExpr, ce, gCallExprs) {
-    // if there is an explicit method call to `this`, warn unstable
-    bool isNamedThis = false;
-    bool isMethod = false;
+  // keep track of if we have run these checks,
+  // because checkNormalized is called multiple times with `--verify`
+  // and these should only run once
+  static bool hasPerformedChecks = false;
+  if (hasPerformedChecks) return;
 
-    if (UnresolvedSymExpr* methodName = toUnresolvedSymExpr(ce->baseExpr)) {
-      isNamedThis = methodName->unresolved == astrThis;
-    }
-    // cannot use methodTag since we are preResolution
-    if (ce->numActuals() >= 1) {
-      if (SymExpr* firstArg = toSymExpr(ce->get(1))) {
-        isMethod = firstArg->symbol()->type == dtMethodToken;
+  for_alive_in_Vec(CallExpr, ce, gCallExprs) {
+    if (shouldWarnUnstableFor(ce)) {
+      // if there is an explicit method call to `this`, warn unstable
+      bool isNamedThis = false;
+      bool isMethod = false;
+
+      if (UnresolvedSymExpr* methodName = toUnresolvedSymExpr(ce->baseExpr)) {
+        isNamedThis = methodName->unresolved == astrThis;
       }
-    }
+      // cannot use methodTag since we are preResolution
+      if (ce->numActuals() >= 1) {
+        if (SymExpr* firstArg = toSymExpr(ce->get(1))) {
+          isMethod = firstArg->symbol()->type == dtMethodToken;
+        }
+      }
 
-    if (isNamedThis && isMethod)
-      USR_WARN(ce,
-               "calling the 'this' method explicitly is unstable "
-               "and may change in the future");
+      if (isNamedThis && isMethod)
+        USR_WARN(ce,
+                "calling the 'this' method explicitly is unstable "
+                "and may change in the future");
+    }
   }
+  hasPerformedChecks = true;
 }

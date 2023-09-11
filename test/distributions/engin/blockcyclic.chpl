@@ -5,7 +5,7 @@ config const N = 4;
 
 const space = {0..#N, 0..#N, 0..#N};
 const ParentDom = space dmapped BlockCyclic(space.low, blocksize=(1,2,3));
-// const ParentDom = space dmapped Block(space);
+// const ParentDom = space dmapped blockDist(space);
 var arr: [ParentDom] int;
 
 for (i,j,k) in ParentDom {

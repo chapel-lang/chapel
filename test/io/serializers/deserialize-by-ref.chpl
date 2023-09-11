@@ -174,5 +174,7 @@ proc main() {
   test(new owned DefaultClass(new B((22, 2.2))), dco);
 
   var dcu = new unmanaged DefaultClass();
-  test(new unmanaged DefaultClass(new B((33, 3.3))), dcu);
+  var x = new unmanaged DefaultClass(new B((33, 3.3)));
+  test(x, dcu);
+  delete x, dcu;
 }

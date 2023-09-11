@@ -185,7 +185,7 @@ proc main() {
         var user_dist = dom dmapped Cyclic(startIdx=dom.low);
         kernel_mvt(user_dist, Dim); 
     } else if dist == "B" {
-        var user_dist = dom dmapped Block(boundingBox=dom);
+        var user_dist = dom dmapped blockDist(boundingBox=dom);
         kernel_mvt(user_dist, Dim);  
     } 
 }

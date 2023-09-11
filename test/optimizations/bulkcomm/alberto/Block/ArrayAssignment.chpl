@@ -3,8 +3,8 @@ use Time;
 config const printOutput=false;
 
 config  const n: int=20;
-var Dist1 = new Block({1..n,1..n,1..n});
-var Dist2 = new Block({1..2*n,1..2*n,1..2*n});
+var Dist1 = new blockDist({1..n,1..n,1..n});
+var Dist2 = new blockDist({1..2*n,1..2*n,1..2*n});
 var Dom1: domain(3,int) dmapped Dist1 = {1..n,1..n,1..n};
 var Dom2: domain(3,int) dmapped Dist2 = {1..2*n,1..2*n,1..2*n};
 
@@ -366,8 +366,8 @@ if elem==1
   for (a,b) in zip(A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
 }
 
-var Dist3 = new Block({1..n,1..n,1..n,1..n});
-var Dist4 = new Block({1..2*n,1..2*n,1..2*n,1..2*n});
+var Dist3 = new blockDist({1..n,1..n,1..n,1..n});
+var Dist4 = new blockDist({1..2*n,1..2*n,1..2*n,1..2*n});
 var Dom3: domain(4,int) dmapped Dist3 = {1..n,1..n,1..n,1..n};
 var Dom4: domain(4,int) dmapped Dist4 = {1..2*n,1..2*n,1..2*n,1..2*n};
 

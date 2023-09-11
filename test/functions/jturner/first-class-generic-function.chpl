@@ -336,7 +336,7 @@ module cholesky_scalar_algorithms {
       = MatIdx; // CYCLIC VERSION
     const distribution_type = "cyclic";
 
-    // block_only const mat_dom : domain (2) dmapped Block ( boundingBox = MatIdx )
+    // block_only const mat_dom : domain (2) dmapped blockDist ( boundingBox = MatIdx )
     // block_only   = MatIdx;   // BLOCK Version
     // block_only const distribution_type = "block";
 

@@ -27,7 +27,7 @@ if dist=='NONE' {
   const mydist = mydom dmapped Cyclic(startIdx=mydom.low);
   dobench(mydist, mydom);  
 } else if dist=='B' {
-  const mydist = mydom dmapped Block(boundingBox=mydom);
+  const mydist = mydom dmapped blockDist(boundingBox=mydom);
   dobench(mydist, mydom);
 } 
 

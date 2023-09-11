@@ -1,6 +1,7 @@
 
 use IO;
 use List;
+use Types;
 
 use JSON;
 use FormatHelper;
@@ -38,6 +39,10 @@ proc test(val, type T = val.type) {
         writeln("FAILURE");
         failures.pushBack(T:string);
       } else writeln("SUCCESS");
+
+      if isUnmanagedClassType(val.type) {
+        delete readVal;
+      }
     }
   } catch e : Error {
     writeln("FAILURE: ", e.message());
@@ -170,7 +175,9 @@ proc main() {
 
   test(new owned Child101());
 
-  test(new unmanaged SimpleChild(5, 42.0));
+  var x = new unmanaged SimpleChild(5, 42.0);
+  test(x);
+  delete x;
 
   if failures.size > 0 {
     writeln("FAILURES:");

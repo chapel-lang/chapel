@@ -1,7 +1,7 @@
 use BlockDist;
 
 proc main() {
-  var myDomYo = {1..10} dmapped Block(boundingBox={1..10});
+  var myDomYo = {1..10} dmapped blockDist(boundingBox={1..10});
   var myArrayYo: [myDomYo] real;
   var myBogusSyncYo: [myDomYo] sync bool;
 

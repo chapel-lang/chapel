@@ -10,10 +10,10 @@ const a: [dom] int = 5,
 
 writeln("Distributions:");
 
-testDom("Block", Block.createDomain(dom));
-testDom("Block", Block.createDomain((...rng)));
-testDom("Block opts", Block.createDomain(dom, targetLocales=tls));
-testDom("Block opts:", Block.createDomain((...rng), targetLocales=tls));
+testDom("Block", blockDist.createDomain(dom));
+testDom("Block", blockDist.createDomain((...rng)));
+testDom("Block opts", blockDist.createDomain(dom, targetLocales=tls));
+testDom("Block opts:", blockDist.createDomain((...rng), targetLocales=tls));
 
 testDom("Stencil:", Stencil.createDomain(dom));
 testDom("Stencil:", Stencil.createDomain((...rng)));
@@ -36,18 +36,18 @@ proc testDom(test: string, D: domain(?)) {
 
 writeln("\nArrays:");
 
-testArray("Block:", Block.createArray(dom, int));
-testArray("Block:", Block.createArray((...rng), int));
-testArray("Block opts:", Block.createArray(dom, int, targetLocales=tls));
-testArray("Block opts:", Block.createArray((...rng), int, targetLocales=tls));
-testArray("Block value:", Block.createArray(dom, int, -1));
-testArray("Block value:", Block.createArray((...rng), int, -1));
-testArray("Block iter:", Block.createArray(dom, int, [(i, j) in dom] i + j));
-testArray("Block iter:", Block.createArray((...rng), int, [(i, j) in dom] i + j));
-testArray("Block array:", Block.createArray(dom, int, a));
-testArray("Block array:", Block.createArray(dom, int, b));
-testArray("Block array:", Block.createArray((...rng), int, a));
-testArray("Block array:", Block.createArray((...rng), int, b));
+testArray("Block:", blockDist.createArray(dom, int));
+testArray("Block:", blockDist.createArray((...rng), int));
+testArray("Block opts:", blockDist.createArray(dom, int, targetLocales=tls));
+testArray("Block opts:", blockDist.createArray((...rng), int, targetLocales=tls));
+testArray("Block value:", blockDist.createArray(dom, int, -1));
+testArray("Block value:", blockDist.createArray((...rng), int, -1));
+testArray("Block iter:", blockDist.createArray(dom, int, [(i, j) in dom] i + j));
+testArray("Block iter:", blockDist.createArray((...rng), int, [(i, j) in dom] i + j));
+testArray("Block array:", blockDist.createArray(dom, int, a));
+testArray("Block array:", blockDist.createArray(dom, int, b));
+testArray("Block array:", blockDist.createArray((...rng), int, a));
+testArray("Block array:", blockDist.createArray((...rng), int, b));
 
 testArray("Stencil:", Stencil.createArray(dom, int));
 testArray("Stencil:", Stencil.createArray((...rng), int));

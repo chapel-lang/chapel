@@ -1,12 +1,12 @@
 use BlockDist, CyclicDist;
 
-var DBlk: domain(1) dmapped Block(boundingBox={1..10}) = {1..10};
+var DBlk: domain(1) dmapped blockDist(boundingBox={1..10}) = {1..10};
 var DCyc: domain(1) dmapped Cyclic(startIdx=1) = {1..10};
 
 var ABlk: [DBlk] real;
 var ACyc: [DCyc] real;
 
-proc domproc(D: domain(?)) where isSubtype(D.distribution.type, Block) {
+proc domproc(D: domain(?)) where isSubtype(D.distribution.type, blockDist) {
   writeln("In the domproc() for Block");
 }
 
@@ -23,7 +23,7 @@ proc arrproc(A: []) where isSubtype(A.domain.distribution.type, Cyclic) {
 }
 
 proc isBlockArr(A) param {
-  return isSubtype(A.domain.distribution.type, Block);
+  return isSubtype(A.domain.distribution.type, blockDist);
 }
 
 domproc(DBlk);

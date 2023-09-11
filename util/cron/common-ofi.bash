@@ -2,12 +2,18 @@
 #
 # Configure environment for CHPL_COMM=ofi testing.
 
-if [[ $($CHPL_HOME/util/chplenv/chpl_platform.py --target) != cray-* ]] ; then
+if [[ $($CHPL_HOME/util/chplenv/chpl_platform.py --target) != *cray-* ]] ; then
   source $CWD/common-oversubscribed.bash
 fi
 
 export CHPL_COMM=ofi
-export CHPL_LIBFABRIC=bundled
+
+if [[ $($CHPL_HOME/util/chplenv/chpl_platform.py --target) == hpe-cray-ex ]] ; then
+  # make sure to let chplenv scripts decide based on what pkg-config says
+  unset CHPL_LIBFABRIC
+else
+  export CHPL_LIBFABRIC=bundled
+fi
 
 # Select a launcher and out-of-band support.  If we're on a Cray XC
 # system this will just fall out automatically.  On a slurm-based system
@@ -19,6 +25,8 @@ export CHPL_LIBFABRIC=bundled
 # also need MPI and the MPI-based out-of-band support.
 lchOK=
 if [[ $($CHPL_HOME/util/chplenv/chpl_platform.py --target) == cray-x* ]] ; then
+  lchOK=y
+elif [[ $($CHPL_HOME/util/chplenv/chpl_platform.py --target) == hpe-cray-ex ]] ; then
   lchOK=y
 elif [[ "$($CHPL_HOME/util/chplenv/chpl_launcher.py)" == slurm-srun ]] ; then
   pmiTypes=$(srun --mpi=list 2>&1)
@@ -68,7 +76,7 @@ if [ -z "$lchOK" ] ; then
   export MPI_DIR=$(which mpicc | sed 's,/bin/mpicc$,,')
 fi
 
-if [[ $($CHPL_HOME/util/chplenv/chpl_platform.py --target) != cray-* ]] ; then
+if [[ $($CHPL_HOME/util/chplenv/chpl_platform.py --target) != *cray-* ]] ; then
   # Bump the timeout slightly if we might be oversubscribed.
   export CHPL_TEST_TIMEOUT=500
 fi

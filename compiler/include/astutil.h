@@ -230,4 +230,6 @@ void cleanupAfterTypeRemoval();
 
 void convertToQualifiedRefs();
 
+bool shouldWarnUnstableFor(BaseAST* ast);
+
 #endif
