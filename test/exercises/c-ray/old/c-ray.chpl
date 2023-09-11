@@ -137,7 +137,7 @@ proc main() {
   const pixinds = {0..#yres, 0..#xres},
         pixdom = if !multilocale then pixinds
               else (if blockdist then pixinds dmapped blockDist(pixinds)
-                                 else pixinds dmapped Cyclic((0,0)));
+                                 else pixinds dmapped cyclicDist((0,0)));
   var pixels: [pixdom] pixelType;
 
   loadScene();

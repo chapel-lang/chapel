@@ -12,7 +12,7 @@ proc warning1() {
 
 proc warning2() {
 
-  var myDomain: domain(2) = {1..n, 1..n} dmapped Cyclic(startIdx=(1,1));
+  var myDomain: domain(2) = {1..n, 1..n} dmapped cyclicDist(startIdx=(1,1));
   writeln(myDomain);
 
 }

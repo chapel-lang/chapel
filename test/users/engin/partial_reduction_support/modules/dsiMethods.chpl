@@ -542,7 +542,7 @@ proc CyclicDom.dsiPartialDomain(param exceptDim) {
   var ranges = whole._value.ranges.withoutIdx(exceptDim);
   var space = {(...ranges)};
   var ret = space dmapped
-    Cyclic(startIdx=this.dist.startIdx.withoutIdx(exceptDim),
+    cyclicDist(startIdx=this.dist.startIdx.withoutIdx(exceptDim),
         targetLocales=dist.targetLocs[(...faceSliceMask(this,
             exceptDim))]);
 

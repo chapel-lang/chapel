@@ -220,11 +220,12 @@ the locale owning the index in question.
 By default, parallelism within each locale is applied to that locale's
 block of indices by creating a task for each available processor core
 (or the number of local indices if it is less than the number of
-cores). The domain's indices are then statically divided as evenly as
-possible between those tasks.  This default can be modified by
+cores). The local domain indices are then statically divided as evenly
+as possible between those tasks.  This default can be modified by
 changing the values of ``dataParTasksPerLocale``,
 ``dataParIgnoreRunningTasks``, and ``dataParMinGranularity`` in the
 ``blockDist``'s initializer:
+
 
 **Initializer Arguments**
 
@@ -233,7 +234,7 @@ The ``blockDist`` initializer is defined as follows:
   .. code-block:: chapel
 
     proc blockDist.init(
-      boundingBox: domain,
+      boundingBox: domain(?),
       targetLocales: [] locale  = Locales,
       dataParTasksPerLocale     = // value of dataParTasksPerLocale config const,
       dataParIgnoreRunningTasks = // value of dataParIgnoreRunningTasks config const,
@@ -271,16 +272,16 @@ domain, the ``sparseLayoutType`` will be the layout of these sparse
 domains. The default currently uses coordinate storage, but
 :class:`LayoutCS.CS` is an interesting alternative.
 
-**Convenience Factory Procedures**
+**Convenience Factory Methods**
 
 It is common for a ``blockDist``-distributed domain or array to be
 declared using the same indices for both its ``boundingBox`` and its
 index set (as in the example using ``Space`` above).  It is also
 common to not override any of the other defaulted initializer
-arguments.  In such cases, factory procedures can be used for
+arguments.  In such cases, factory methods can be used for
 convenience and to avoid repetition.
 
-These procedures take a domain or series of ranges as arguments and
+These methods take a domain or series of ranges as arguments and
 return a new block-distributed domain or array.  For example, the
 following declarations create new ``5 x 5`` block-distributed domains
 and arrays using ``{1..5, 1..5}`` as both the bounding box and index

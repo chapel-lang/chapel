@@ -11,7 +11,7 @@ const Space = {1..n, 1..n};
 const B = Space dmapped blockDist(Space);
 test(B);
 
-const C = Space dmapped Cyclic(startIdx = Space.low);
+const C = Space dmapped cyclicDist(startIdx = Space.low);
 test(C);
 
 const BC = Space dmapped BlockCyclic(startIdx = Space.low, blocksize = (2,2));

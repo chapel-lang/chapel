@@ -148,19 +148,20 @@ for (L, ML) in zip(BA2.targetLocales(), MyLocales) do
 
 
 
-// Cyclic
-// ------
+// cyclicDist
+// ----------
 //
-// Next, we'll perform a similar computation for the ``Cyclic`` distribution.
-// Cyclic distributions start at a designated n-dimensional index and
-// distribute the n-dimensional space across an n-dimensional array
-// of locales in a round-robin fashion (in each dimension).  As with
-// the ``blockDist`` distribution, domains declared using the Cyclic distribution
-// may have lower indices than the distribution's starting index.
-// The starting index should just be considered a parameterization of
-// how the distribution is defined.
+// Next, we'll perform a similar computation for the ``cyclicDist``
+// distribution.  This distribution deals indices of n-dimensional
+// space out to a set of target locales arranged in a conceptual
+// n-dimensional grid.  A designated ``startIdx`` is given to the
+// initial locale, and others are dealt out in a round-robin fashion
+// in each dimension from there.  Similar to the ``blockDist``
+// distribution, domains declared using the ``cyclicDist`` may have
+// indices that precede the distribution's starting index.
 //
-const CyclicSpace = Space dmapped Cyclic(startIdx=Space.low);
+const CycDist = new cyclicDist(startIdx=Space.low);
+const CyclicSpace = Space dmapped CycDist;
 var CA: [CyclicSpace] int;
 
 forall ca in CA do
@@ -171,8 +172,9 @@ writeln(CA);
 writeln();
 
 //
-// The domain returned by ``localSubdomain`` need not be a dense block, as is
-// the case for the ``Cyclic`` distribution.
+// When using the ``localSubdomain`` query with ``cyclicDist``, the
+// result will be a strided set of indices for any dimension that has
+// more than one target locale.
 //
 on Locales[0] {
   const indices = CA.localSubdomain();

@@ -32,7 +32,7 @@ proc stopTimer(name) {
 
 proc main() {
   const D = if useBlockArr then blockDist.createDomain(0..#tableSize)
-                           else Cyclic.createDomain(0..#tableSize);
+                           else cyclicDist.createDomain(0..#tableSize);
   var A: [D] int = D;
 
   const UpdatesDom = blockDist.createDomain(0..#numUpdates);

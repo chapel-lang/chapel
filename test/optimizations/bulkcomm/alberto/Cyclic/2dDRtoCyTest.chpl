@@ -5,7 +5,7 @@ const mygridlocs: [mygriddom] locale = Locales(0);
 use CyclicDist;
 config const n=100;
 var DA = {1..n,1..n};
-const Dom1: domain(2) dmapped Cyclic(startIdx=DA.low)=DA;
+const Dom1: domain(2) dmapped cyclicDist(startIdx=DA.low)=DA;
 //var Dom1 = DA dmapped blockDist(DA);
 var C:[Dom1] real(64);
 //var H:[Dom1] real(64);

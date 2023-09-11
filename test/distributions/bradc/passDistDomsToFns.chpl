@@ -10,7 +10,7 @@ proc fooB(X:[BlockSpace] int) {
 }
 
 
-const CyclicSpace = Space dmapped Cyclic(startIdx=Space.low);
+const CyclicSpace = Space dmapped cyclicDist(startIdx=Space.low);
 var CA: [CyclicSpace] int;
 fooC(CA);
 proc fooC(X:[CyclicSpace] int) {
