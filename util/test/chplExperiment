@@ -134,6 +134,30 @@ while (( "$#" > 0 )); do
 done
 
 # -----------------------------------------------------------------------------
+# Run some checks looking for problems before we start experimentin'
+# -----------------------------------------------------------------------------
+
+for i in "${!experiment_name[@]}"; do
+  nameOpt=""
+  name="${experiment_name[i]}"
+  feats="${experiment_feats[i]}"
+  skipIfErrsCmd="${experiment_skipIfErrsCmd[i]}"
+  shouldBuildChpl="${experiment_shouldBuildChpl[i]}"
+  prebuildCmd="${experiment_prebuildCmd[i]}"
+  cmd="${experiment_cmd[i]}"
+
+  if [[ ! -x "$cmd" ]]; then
+    >&2 echo "-- [ERROR] --"
+    >&2 echo "$cmd (used by $name experiment) is not an executable file"
+    exit 1
+  fi
+
+  if ! "$CHPL_HOME/util/test/chplExperimentGatherUtils/checks/checkScriptHasPrelude.py" "$cmd"; then
+    exit 1
+  fi
+done
+
+# -----------------------------------------------------------------------------
 # Start logging
 # -----------------------------------------------------------------------------
 

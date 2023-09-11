@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # sets 'datFile', 'logDir', 'experimentName', and 'runLog'
-source $CHPL_HOME/util/test/chplExperimentGatherUtils/boilerplate.bash $@
+source $CHPL_HOME/util/test/chplExperimentGatherUtils/prelude.bash $@
 
 sizes=( 15 16 17)
 
@@ -9,7 +9,7 @@ sizes=( 15 16 17)
 # Build and run tests
 # -----------------------------------------------------------------------------
 cd ChOp/other_codes/cudaOnly
-nvcc -O3 singleGPUQueens.cu -o cudaOnly
+nvcc -allow-unsupported-compiler -O3 singleGPUQueens.cu -o cudaOnly
 
 for x in "${sizes[@]}"; do
   ./cudaOnly $x 5 128 | tee -a "$runLog"
