@@ -2,8 +2,8 @@ use Time;
 
 config const multitask = false;
 config const printOutput = false;
-config const validateOutput = false;
-config const printSumOnly = validateOutput;
+config const printSum = false;
+config const printTimes = false;
 config const numTasks = 2;
 config const taskSize = 100;
 config const n = 1000;
@@ -16,8 +16,6 @@ extern proc printf(s...);
 
 var HostIn: [0..#n] real = 2;
 var HostOut: [0..#n] real;
-
-var inCommTimer, outCommTimer, kernelTimer: stopwatch;
 
 inline proc kernel(ref MyIn, ref MyOut) {
   @assertOnGpu
@@ -42,62 +40,30 @@ on here.gpus[0] {
 
         const myChunk = myChunkId*taskSize..#taskSize;
 
-        //writeln(myChunk);
-        //printf("%d starting slice %f\n", tid, t.elapsed());
-        //ref inRef = HostIn[myChunk];
-        //printf("%d starting in copy %f\n", tid, t.elapsed());
         MyIn = HostIn[myChunk];
-        //printf("%d finished in copy %f\n", tid, t.elapsed());
-
-        //printf("%d starting kernel %f\n", tid, t.elapsed());
         kernel(MyIn, MyOut);
-        //printf("%d finished kernel %f\n", tid, t.elapsed());
-
-        //printf("%d starting out copy %f\n", tid, t.elapsed());
         HostOut[myChunk] = MyOut;
-        //printf("%d finished out copy %f\n", tid, t.elapsed());
       }
     }
   }
   else {
     var MyIn, MyOut: [0..#n] real;
 
-    inCommTimer.start();
     MyIn = HostIn;
-    inCommTimer.stop();
-
-    kernelTimer.start();
     kernel(MyIn, MyOut);
-    kernelTimer.stop();
-
-    outCommTimer.start();
     HostOut = MyOut;
-    outCommTimer.stop();
   }
 }
 t.stop();
 
 if printOutput then writeln(HostOut);
-if validateOutput {
+if printSum {
   var sum = 0.0;
   for o in HostOut do sum += o;
-  if printSumOnly {
-    writeln("Sum = ", sum);
-  }
-  else {
-    // only for simpler math
-    const expected = n*(2*reps + reps*(reps-1)/2);
-    if sum==expected {
-      writeln("validation successful");
-    }
-    else {
-      writeln("validation failed sum=", sum, " expected=", expected);
-    }
-  }
+  writeln("Sum = ", sum);
 }
 
-writeln("In Comm: ", inCommTimer.elapsed());
-writeln("Out Comm: ", outCommTimer.elapsed());
-writeln("Kern: ", kernelTimer.elapsed());
-writeln("Total (s): ", t.elapsed());
-writeln("Throughput (GB/s): ", (n*8)/t.elapsed()/1e9);
+if printTimes {
+  writeln("Total (s): ", t.elapsed());
+  writeln("Throughput (GB/s): ", (n*8)/t.elapsed()/1e9);
+}
