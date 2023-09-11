@@ -795,15 +795,6 @@ static void checkExportedProcs() {
   }
 }
 
-
-static bool shouldWarnUnstableForFunction(FnSymbol* fn) {
-  if (auto mod = fn->getModule()) {
-    if (mod->modTag == MOD_INTERNAL) return fWarnUnstableInternal;
-    else if (mod->modTag == MOD_STANDARD) return fWarnUnstableStandard;
-  }
-  return fWarnUnstable;
-}
-
 static bool isTheseIterator(FnSymbol* fn) {
   return fn->isIterator() && fn->isMethod() && fn->name == astrThese;
 }
@@ -832,13 +823,18 @@ static bool isSerialTheseIterator(FnSymbol* fn) {
   return isTheseIterator(fn) && !isParallelTheseIterator(fn);
 }
 
-
 static void checkTheseWithArguments() {
   // only do these checks if `--warn-unstable`
   if (!fWarnUnstable) return;
 
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (shouldWarnUnstableForFunction(fn)) {
+  // keep track of if we have run these checks,
+  // because checkResolved is called multiple times with `--verify`
+  // and these should only run once
+  static bool hasPerformedChecks = false;
+  if (hasPerformedChecks) return;
+
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+    if (shouldWarnUnstableFor(fn)) {
       if (isSerialTheseIterator(fn) && fn->numFormals() > 1) {
         USR_WARN(fn,
                  "defining a serial 'these' iterator that takes arguments "
@@ -858,4 +854,5 @@ static void checkTheseWithArguments() {
       }
     }
   }
+  hasPerformedChecks = true;
 }
