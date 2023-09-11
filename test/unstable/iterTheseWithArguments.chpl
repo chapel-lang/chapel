@@ -8,7 +8,7 @@ proc myLog(args...?k) do if verbose then writeln((...args));
 // Records
 //
 record RecordTheseWithNoArg {
-  const D: range = 0..10;
+  const D = 0..10;
   const elms: [D] int = D*2;
   iter these() {
     myLog("serial");
@@ -36,7 +36,7 @@ record RecordTheseWithNoArg {
   }
 }
 record RecordTheseWithArg {
-  const D: range = 0..10;
+  const D = 0..10;
   const elms: [D] int = D*2;
   iter these(n=1) {
     myLog("serial");
@@ -64,7 +64,7 @@ record RecordTheseWithArg {
   }
 }
 record RecordTheseWithDefaultArg {
-  const D: range = 0..10;
+  const D = 0..10;
   const elms: [D] int = D*2;
   iter these(n=1) {
     myLog("serial");
@@ -96,7 +96,7 @@ record RecordTheseWithDefaultArg {
 // Classes
 //
 class ClassTheseWithNoArg {
-  const D: range = 0..10;
+  const D = 0..10;
   const elms: [D] int = D*2;
   iter these() {
     myLog("serial");
@@ -124,7 +124,7 @@ class ClassTheseWithNoArg {
   }
 }
 class ClassTheseWithArg {
-  const D: range = 0..10;
+  const D = 0..10;
   const elms: [D] int = D*2;
   iter these(n=1) {
     myLog("serial");
@@ -152,7 +152,7 @@ class ClassTheseWithArg {
   }
 }
 class ClassTheseWithDefaultArg {
-  const D: range = 0..10;
+  const D = 0..10;
   const elms: [D] int = D*2;
   iter these(n=1) {
     myLog("serial");
