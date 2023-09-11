@@ -8,17 +8,17 @@ sizes=( 15 16 17 18)
 # -----------------------------------------------------------------------------
 # Build and run tests
 # -----------------------------------------------------------------------------
-cd ChOp/other_codes/chplGPU
-chpl -M modules --fast chplGPU.chpl -o chplGPU
+cd ChOp/other_codes/cudaOnly
+nvcc -allow-unsupported-compiler -O3 singleGPUQueens.cu -o cudaOnly
 
 for x in "${sizes[@]}"; do
-  ./chplGPU --size=$x --initial_depth=5 | tee -a "$runLog"
+  ./cudaOnly $x 5 128 | tee -a "$runLog"
 done
 
 # -----------------------------------------------------------------------------
 # Gather compile and execution data, store in results.dat
 # -----------------------------------------------------------------------------
-data=$(cat $runLog | sed -r -n 's/Elapsed time: //p' | tr -s ' ' | cut -d ' ' -f 2)
+data=$(cat $runLog | sed -r -n 's/Elapsed total: //p' | tr -s ' ' | cut -d ' ' -f 2)
 
 set +x
 echo -e "\t$experimentName" > $datFile
