@@ -102,6 +102,12 @@ static void checkExplicitThis() {
   // only do these checks if `--warn-unstable`
   if (!fWarnUnstable) return;
 
+  // keep track of if we have run these checks,
+  // because checkNormalized is called multiple times with `--verify`
+  // and these should only run once
+  static bool hasPerformedChecks = false;
+  if (hasPerformedChecks) return;
+
   for_alive_in_Vec(CallExpr, ce, gCallExprs) {
     if (shouldWarnUnstableFor(ce)) {
       // if there is an explicit method call to `this`, warn unstable
@@ -124,4 +130,5 @@ static void checkExplicitThis() {
                 "and may change in the future");
     }
   }
+  hasPerformedChecks = true;
 }
