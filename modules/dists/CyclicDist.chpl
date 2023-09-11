@@ -55,8 +55,8 @@ config param disableCyclicLazyRAD = defaultDisableLazyRADOpt;
 //
 /*
 
-The ``cyclicDist`` distribution distributes d-dimensional indices to
-an d-dimensional array of locales in a round-robin manner starting
+The ``cyclicDist`` distribution uses a round-robin partitioning to map
+d-dimensional indices to a d-dimensional array of locales, starting
 from a given index.
 
 .. Warning::
