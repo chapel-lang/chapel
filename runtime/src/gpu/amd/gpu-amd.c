@@ -194,6 +194,7 @@ static void chpl_gpu_launch_kernel_help(int ln,
                                         int blk_dim_x,
                                         int blk_dim_y,
                                         int blk_dim_z,
+                                        void* stream,
                                         int nargs,
                                         va_list args) {
   CHPL_GPU_START_TIMER(load_time);
@@ -256,7 +257,7 @@ static void chpl_gpu_launch_kernel_help(int ln,
                            grd_dim_x, grd_dim_y, grd_dim_z,
                            blk_dim_x, blk_dim_y, blk_dim_z,
                            0,  // shared memory in bytes
-                           0,  // stream ID
+                           stream,  // stream ID
                            (void**)kernel_params,
                            NULL));  // extra options
 
@@ -325,8 +326,8 @@ void* chpl_gpu_impl_memset(void* addr, const uint8_t val, size_t n,
                            void* stream) {
   assert(chpl_gpu_is_device_ptr(addr));
 
-  ROCM_CALL(hipMemsetD8((hipDeviceptr_t)addr, (unsigned int)val, n,
-                        (hipStream_t)stream));
+  ROCM_CALL(hipMemsetD8Async((hipDeviceptr_t)addr, (unsigned int)val, n,
+                              (hipStream_t)stream));
 
   return addr;
 }
@@ -336,23 +337,24 @@ void chpl_gpu_impl_copy_device_to_host(void* dst, const void* src, size_t n,
                                        void* stream) {
   assert(chpl_gpu_is_device_ptr(src));
 
-  ROCM_CALL(hipMemcpyDtoH(dst, (hipDeviceptr_t)src, n, (hipStream_t)stream));
+  ROCM_CALL(hipMemcpyDtoHAsync(dst, (hipDeviceptr_t)src, n,
+                               (hipStream_t)stream));
 }
 
 void chpl_gpu_impl_copy_host_to_device(void* dst, const void* src, size_t n,
                                        void* stream) {
   assert(chpl_gpu_is_device_ptr(dst));
 
-  ROCM_CALL(hipMemcpyHtoD((hipDeviceptr_t)dst, (void *)src, n,
-                          (hipStream_t)stream));
+  ROCM_CALL(hipMemcpyHtoDAsync((hipDeviceptr_t)dst, (void *)src, n,
+                               (hipStream_t)stream));
 }
 
 void chpl_gpu_impl_copy_device_to_device(void* dst, const void* src, size_t n,
                                          void* stream) {
   assert(chpl_gpu_is_device_ptr(dst) && chpl_gpu_is_device_ptr(src));
 
-  ROCM_CALL(hipMemcpyDtoD((hipDeviceptr_t)dst, (hipDeviceptr_t)src, n,
-                          (hipStream_t)stream));
+  ROCM_CALL(hipMemcpyDtoDAsync((hipDeviceptr_t)dst, (hipDeviceptr_t)src, n,
+                               (hipStream_t)stream));
 }
 
 
@@ -470,7 +472,7 @@ void chpl_gpu_impl_stream_destroy(void* stream) {
 void chpl_gpu_impl_stream_synchronize(void* stream) {
   // TODO do we want to call hipStreamQuery and chpl_task_yield if the stream is
   // not ready?
-  hipResult_t res = hipStreamSynchronize(stream);
+  hipError_t res = hipStreamSynchronize(stream);
   if (res == hipErrorNotInitialized) {
     return;
   }
