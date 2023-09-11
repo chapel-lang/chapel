@@ -276,6 +276,20 @@ module ChapelRange {
               alignmentValue = 0:chpl__rangeStrideType(idxType));
   }
 
+  // this overload can be removed when the unstable warning in the above overload is removed
+  @chpldoc.nodoc
+  proc range.init(type idxType,
+                  param bounds: boundKind,
+                  param strides: strideKind,
+                  param internal: bool) {
+
+    this.init(idxType, bounds, strides,
+              _low = chpl__defaultLowBound(idxType, bounds),
+              _high = chpl__defaultHighBound(idxType, bounds),
+              _stride = strides.defaultStride():chpl__rangeStrideType(idxType),
+              alignmentValue = 0:chpl__rangeStrideType(idxType));
+  }
+
   // This is an initializer for defining a range value in terms of its
   // internal field values
   //
@@ -1764,7 +1778,7 @@ operator :(r: range(?), type t: range(?)) where chpl_castIsSafe(r, t) {
   checkBounds(t, r);
   checkEnumIdx(t, r);
 
-  var tmp: t;
+  var tmp = new range(t.idxType, t.bounds, t.strides, true);
   type srcType = r.idxType,
        dstType = t.idxType,
     dstIntType = tmp.chpl_integralIdxType;
@@ -1796,7 +1810,7 @@ operator :(r: range(?), type t: range(?)) throws where !chpl_castIsSafe(r, t) {
   checkBounds(t, r);
   checkEnumIdx(t, r);
 
-  var tmp: t;
+  var tmp = new range(t.idxType, t.bounds, t.strides, true);
   type srcType = r.idxType,
        dstType = t.idxType,
     dstIntType = tmp.chpl_integralIdxType;
