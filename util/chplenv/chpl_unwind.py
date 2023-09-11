@@ -23,8 +23,8 @@ def get():
                   "\nUse CHPL_UNWIND=system instead.", ValueError)
         elif val == 'system':
             return 'system'
-    elif val != None:
-        return val;
+    if val:
+        return val
     else:
         return 'none'
 

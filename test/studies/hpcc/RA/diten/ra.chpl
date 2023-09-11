@@ -63,10 +63,10 @@ config const printParams = true,
 // across the locales.
 //
 const
-  TableDist = new Block(boundingBox={0..m-1},
+  TableDist = new blockDist(boundingBox={0..m-1},
                                  dataParTasksPerLocale=tasksPerLocale,
                                  dataParIgnoreRunningTasks=true),
-  UpdateDist = new Block(boundingBox={0..N_U-1},
+  UpdateDist = new blockDist(boundingBox={0..N_U-1},
                                   dataParTasksPerLocale=tasksPerLocale,
                                   dataParIgnoreRunningTasks=true);
 

@@ -26,7 +26,7 @@ proc buildSpace(Dom) {
     // Use a boundingBox smaller than the resize amount to expose the potential
     // bug.
     var bb = {1..3};
-    return Dom dmapped Block(boundingBox=bb);
+    return Dom dmapped blockDist(boundingBox=bb);
   }
   else if distType == DistType.cyclic {
     return Dom dmapped Cyclic(startIdx=1);

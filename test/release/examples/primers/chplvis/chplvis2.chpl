@@ -13,7 +13,7 @@ proc main() {
 
    // Create a couple of domains and a block mapped data array.
    const Domain = { 1 .. ncells };
-   const mapDomain = Domain dmapped Block(Domain);
+   const mapDomain = Domain dmapped blockDist(Domain);
 
    var  data : [mapDomain] int = 1;
 

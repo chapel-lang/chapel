@@ -73,8 +73,8 @@ config const tasksPerCore = 1,
 // distribution that is computed by blocking the indices 0..N_U-1
 // across the locales.
 //
-const TableDist = new Block(boundingBox={0..m-1}),
-      UpdateDist = new Block(boundingBox={0..N_U-1},
+const TableDist = new blockDist(boundingBox={0..m-1}),
+      UpdateDist = new blockDist(boundingBox={0..N_U-1},
                             dataParTasksPerLocale=tasksPerLocale);
 
 //

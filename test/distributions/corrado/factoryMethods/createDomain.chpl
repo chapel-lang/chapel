@@ -3,7 +3,7 @@ use BlockDist, CyclicDist, StencilDist;
 const dom = {1..6, 1..6},
       rng = (1..6, 1..6);
 
-const b = new Block(dom),
+const b = new blockDist(dom),
       c = new Cyclic(dom.lowBound),
       s = new Stencil(dom, fluff=(1,1));
 

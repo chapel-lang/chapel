@@ -32,7 +32,7 @@ var expectfile = openMemFile();
 
 {
   writeln("Testing block array");
-  var A = Block.createArray({1..5}, int);
+  var A = blockDist.createArray({1..5}, int);
   A = 1..5;
 
   jsonOut.writef("%?\n", A);

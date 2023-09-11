@@ -33,7 +33,7 @@ config const printWarmupTiming = false;
 config const printTimings = false;
 config const printCommDiags = false;
 
-const remoteVarSpace = LocaleSpace dmapped Block(LocaleSpace);
+const remoteVarSpace = LocaleSpace dmapped blockDist(LocaleSpace);
 var remoteVar: [remoteVarSpace] int;
 var remoteVarAtomic: [remoteVarSpace] atomic int;
 

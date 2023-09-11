@@ -2,7 +2,7 @@ use BlockDist, CyclicDist, BlockCycDist, ReplicatedDist;
 use DimensionalDist2D, ReplicatedDim, BlockCycDim;
 
 const Space = {1..8, 1..8};
-const BlockSpace = Space dmapped Block(boundingBox=Space);
+const BlockSpace = Space dmapped blockDist(boundingBox=Space);
 var BA: [BlockSpace] int;
 fooB(BA);
 proc fooB(X:[BlockSpace] int) {

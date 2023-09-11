@@ -2325,7 +2325,7 @@ module TwoArrayPartitioning {
     type bucketizerType;
 
     var numLocales:int;
-    var perLocale = Block.createArray(0..#numLocales,
+    var perLocale = blockDist.createArray(0..#numLocales,
         TwoArrayDistributedBucketizerStatePerLocale(bucketizerType));
 
     const baseCaseSize:int;
@@ -2823,7 +2823,7 @@ module TwoArrayPartitioning {
                                startbit,
                                0, state1.numLocales-1);
     var nextDistTaskElts: list(TwoArrayDistSortPerBucketTask, parSafe=true);
-    var smallTasksPerLocale = Block.createArray(0..#numLocales,
+    var smallTasksPerLocale = blockDist.createArray(0..#numLocales,
                                           list(TwoArraySortTask, parSafe=true));
 
     assert(!distTask.isEmpty());

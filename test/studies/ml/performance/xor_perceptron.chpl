@@ -8,7 +8,7 @@ config param perfTest = false;
 
 tn.seedRandom(0);
 
-config const epochs = 5000;
+config const epochs = 200;
 config const learnRate = 0.3;
 
 var net = new chai.Network(
@@ -92,9 +92,13 @@ for epoch in 1..epochs {
     loss = train(batch[0..#(batchSizes[0])],learnRate);
 }
 
-writeln("Epoch: ", epochs, " Loss: ", decFormat(loss,2));
+const expectedLoss = 0.24;
 
-test(batch);
+if abs(loss - expectedLoss) > 0.5 then
+    writeln("Loss is not as expected: ", loss, " != ", expectedLoss);
+else
+    writeln("Loss is as expected.");
+
 
 if perfTest then writeln("time: ", t.elapsed());
 

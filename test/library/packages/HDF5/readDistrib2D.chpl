@@ -20,7 +20,7 @@ proc main {
     use BlockDist;
     writeln("BlockDist:");
 
-    var BlockSpace = Space dmapped Block(boundingBox=Space);
+    var BlockSpace = Space dmapped blockDist(boundingBox=Space);
     var A: [BlockSpace] int;
 
     hdf5ReadDistributedArray(A, pathPrefix+fileName, dsetName);

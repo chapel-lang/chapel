@@ -199,8 +199,8 @@ proc main() {
         var user_dist_linear = dom_linear dmapped Cyclic(startIdx=dom_linear.low);
         kernel_covariance(user_dist_square, user_dist_linear, M, N); 
     } else if dist == "B" {
-        var user_dist_square = dom_square dmapped Block(boundingBox=dom_square);
-        var user_dist_linear = dom_linear dmapped Block(boundingBox=dom_linear);
+        var user_dist_square = dom_square dmapped blockDist(boundingBox=dom_square);
+        var user_dist_linear = dom_linear dmapped blockDist(boundingBox=dom_linear);
         kernel_covariance(user_dist_square, user_dist_linear, M, N);  
     } 
 }

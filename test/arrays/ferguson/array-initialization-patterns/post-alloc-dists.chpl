@@ -18,7 +18,7 @@ proc makeA() {
     var ret: [1..1] int;
     return ret;
   } else if distType == DistType.block {
-    return Block.createArray(1..1, int);
+    return blockDist.createArray(1..1, int);
   } else if distType == DistType.cyclic {
     return Cyclic.createArray(1..1, int);
   } else if distType == DistType.blockcyclic {

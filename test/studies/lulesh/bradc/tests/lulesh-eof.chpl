@@ -136,9 +136,9 @@ config param useBlockDist = false;
 
 // STYLE: I don't really like these names (ElemDist, NodeDist)
 
-const ElemDist = if useBlockDist then ElemSpace dmapped Block(ElemSpace)
+const ElemDist = if useBlockDist then ElemSpace dmapped blockDist(ElemSpace)
                                  else ElemSpace;
-const NodeDist = if useBlockDist then NodeSpace dmapped Block(NodeSpace)
+const NodeDist = if useBlockDist then NodeSpace dmapped blockDist(NodeSpace)
                                  else NodeSpace;
 
 

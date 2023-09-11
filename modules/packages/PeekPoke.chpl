@@ -34,7 +34,7 @@
      use BlockDist, PeekPoke;
 
      const space = {1..1000};
-     const D = space dmapped Block(space);
+     const D = space dmapped blockDist(space);
      var A: [D] atomic int;
 
      forall i in D do
