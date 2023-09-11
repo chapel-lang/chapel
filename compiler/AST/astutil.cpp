@@ -1329,3 +1329,11 @@ void convertToQualifiedRefs() {
   }
 #undef fixRefSymbols
 }
+
+bool shouldWarnUnstableFor(BaseAST* ast) {
+  if (auto mod = ast->getModule()) {
+    if (mod->modTag == MOD_INTERNAL) return fWarnUnstableInternal;
+    else if (mod->modTag == MOD_STANDARD) return fWarnUnstableStandard;
+  }
+  return fWarnUnstable;
+}
