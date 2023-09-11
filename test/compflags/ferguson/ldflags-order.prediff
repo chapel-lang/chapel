@@ -9,7 +9,7 @@ MYLOG=""
 LAST=""
 FOUND_MARKER=0
 
-while read line || [[ -n $line ]];
+while IFS= read -ra line;
 do
   # skip until we find "compiling generated source" line
   if [[ $line == *"compiling generated source"* ]]; then
@@ -17,7 +17,8 @@ do
   fi
   if [ $FOUND_MARKER -ne 1 ]; then continue; fi
 
-  for word in $line
+  read -ra linearr <<< "$line"
+  for word in "${linearr[@]}";
     do
       if [[ $word == "-Ltest-"* ]]
         then
@@ -28,6 +29,6 @@ do
             fi
         fi
   done
-done <<< "$(cat $LOG)"
+done < $LOG
 
 echo $MYLOG > $LOG
