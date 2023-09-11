@@ -2152,26 +2152,22 @@ module Time {
     /* The offset from UTC this class represents */
     proc utcOffset(dt: dateTime): timeDelta {
       HaltWrappers.pureVirtualMethodHalt();
-      return new timeDelta();
     }
 
     /* The `timeDelta` for daylight saving time */
     proc dst(dt: dateTime): timeDelta {
       HaltWrappers.pureVirtualMethodHalt();
-      return new timeDelta();
     }
 
     /* The name of this time zone */
     @unstable("'tzname' is unstable")
     proc tzname(dt: dateTime): string {
       HaltWrappers.pureVirtualMethodHalt();
-      return "";
     }
 
     /* Convert a `time` in UTC to this time zone */
     proc fromUtc(dt: dateTime): dateTime {
       HaltWrappers.pureVirtualMethodHalt();
-      return new dateTime(0,0,0);
     }
 
   }
@@ -2467,7 +2463,6 @@ private proc _convert_to_seconds(unit: TimeUnits, us: real) {
   }
 
   HaltWrappers.exhaustiveSelectHalt("unknown timeunits type");
-  return -1.0;
 }
 
 // converts microseconds to another unit
@@ -2482,7 +2477,6 @@ private proc _convert_microseconds(unit: TimeUnits, us: real) {
   }
 
   HaltWrappers.exhaustiveSelectHalt("unknown timeunits type");
-  return -1.0;
 }
 
 }

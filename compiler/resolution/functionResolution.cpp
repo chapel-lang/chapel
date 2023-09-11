@@ -10160,27 +10160,10 @@ static bool terminatesControlFlow(Expr* expr) {
   return false;
 }
 
-// If 'expr' terminates CF, make an exception if 'expr' halts or throws.
-// Reason: existing code uses unreachable code to infer the return type, ex.
-//   proc bulkAdd_help(...) { halt(...); return -1; } --> returns int
-// Ex. test/sparse/CS/multiplication/correctness.chpl
-static bool needLaterReturn(Expr* expr) {
-  return isCallExpr(expr);
-}
-
 // If 'expr' aborts control flow, ex. goto (incl. return), throw, or call
 // to a "terminate program" function, remove subsequent unreachable stmts.
 static void handleEarlyFinish(Expr* expr) {
   if (! terminatesControlFlow(expr)) return; // nothing to do
-
-  if (needLaterReturn(expr))
-    if (isFnSymbol(expr->parentSymbol)) // returns are only in functions
-      for (Expr* cur = expr->next; cur; cur = cur->next)
-        if (CallExpr* call = toCallExpr(cur))
-          if (call->isPrimitive(PRIM_MOVE))
-            if (SymExpr* destSE = toSymExpr(call->get(1)))
-              if (destSE->symbol()->hasFlag(FLAG_RVV))
-                return; // keep the unreachable code
 
   if (CallExpr* nextCall = toCallExpr(expr->next))
     if (nextCall->isPrimitive(PRIM_END_OF_STATEMENT))

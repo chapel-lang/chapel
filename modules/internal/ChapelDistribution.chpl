@@ -199,8 +199,6 @@ module ChapelDistribution {
 
     proc dsiMyDist(): unmanaged BaseDist {
       halt("internal error: dsiMyDist is not implemented");
-      pragma "unsafe" var ret: unmanaged BaseDist; // nil
-      return ret;
     }
 
     // default overloads to provide clear compile-time error messages
@@ -451,12 +449,10 @@ module ChapelDistribution {
 
     proc dsiAdd(in x) {
       compilerError("Cannot add indices to a rectangular domain");
-      return 0;
     }
 
     proc dsiRemove(x) {
       compilerError("Cannot remove indices from a rectangular domain");
-      return 0;
     }
   }
 
@@ -482,10 +478,8 @@ module ChapelDistribution {
     }
 
     proc bulkAdd_help(ref inds: [?indsDom] index(rank, idxType),
-        dataSorted=false, isUnique=false, addOn=nilLocale){
+        dataSorted=false, isUnique=false, addOn=nilLocale): int {
       halt("Helper function called on the BaseSparseDomImpl");
-
-      return -1;
     }
 
     // TODO: Would ChapelArray.resizeAllocRange() be too expensive?
@@ -690,7 +684,6 @@ module ChapelDistribution {
         addOn=nilLocale): int {
 
       halt("Bulk addition is not supported by this sparse domain");
-      return 0;
     }
 
     proc dsiBulkAddNoPreserveInds(ref inds: [] index(rank, idxType),
@@ -698,7 +691,6 @@ module ChapelDistribution {
         addOn=nilLocale): int {
 
       halt("Bulk addition is not supported by this sparse domain");
-      return 0;
     }
 
     proc boundsCheck(ind: index(rank, idxType)):void {
@@ -729,15 +721,11 @@ module ChapelDistribution {
     override proc dsiHigh { return parentDom.highBound; }
     override proc dsiStride { return parentDom.stride; }
     override proc dsiAlignment { return parentDom.alignment; }
-    override proc dsiFirst {
+    override proc dsiFirst: rank*idxType {
       halt("dsiFirst is not implemented");
-      const _tmp: rank*idxType;
-      return _tmp;
     }
-    override proc dsiLast {
+    override proc dsiLast: rank*idxType {
       halt("dsiLast not implemented");
-      const _tmp: rank*idxType;
-      return _tmp;
     }
     override proc dsiAlignedLow { return parentDom.low; }
     override proc dsiAlignedHigh { return parentDom.high; }
@@ -762,7 +750,6 @@ module ChapelDistribution {
 
     proc dsiAdd(in idx) {
       compilerError("Index addition is not supported by this domain");
-      return 0;
     }
 
     proc rank param {
@@ -805,8 +792,6 @@ module ChapelDistribution {
 
     proc dsiGetBaseDom(): unmanaged BaseDom {
       halt("internal error: dsiGetBaseDom is not implemented");
-      pragma "unsafe" var ret: unmanaged BaseDom; // nil
-      return ret;
     }
 
     // takes 'rmFromList' which indicates whether the array should
@@ -839,17 +824,14 @@ module ChapelDistribution {
 
     proc chpl_isElementTypeDefaultInitializable(): bool {
       halt("chpl_isElementTypeDefaultInitializable must be defined");
-      return false;
     }
 
     proc chpl_isElementTypeNonNilableClass(): bool {
       halt("chpl_isElementTypeNonNilableClass must be defined");
-      return false;
     }
 
-    proc chpl_unsafeAssignIsClassElementNil(manager, idx) {
+    proc chpl_unsafeAssignIsClassElementNil(manager, idx): bool {
       halt("chpl_unsafeAssignIsClassElementNil must be defined");
-      return false;
     }
 
     proc chpl_unsafeAssignHaltUninitializedElement(idx) {

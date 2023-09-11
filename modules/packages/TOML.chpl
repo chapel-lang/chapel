@@ -422,7 +422,6 @@ module TomlParser {
         // Error
         else {
           throw new owned TomlError("Line "+ debugCounter:string +": Unexpected Token -> " + getToken(source));
-          return new shared Toml(val);
         }
       }
       catch e: IllegalArgumentError {
@@ -1071,7 +1070,6 @@ used to recursively hold tables and respective values
         when fieldDateTime do return val.dt:string;
         otherwise {
           throw new owned TomlError("Error in printing " + val.s);
-          return val.s;
         }
       }
     }
@@ -1112,7 +1110,6 @@ used to recursively hold tables and respective values
         when fieldToml do return 'toml';
         otherwise {
           throw new owned TomlError("Unknown type");
-          return "nil";
         }
       }
     }

@@ -571,10 +571,9 @@ module Errors {
 
   pragma "insert line file info"
   pragma "always propagate line file info"
-  proc chpl_enum_cast_error_no_int(enumName: string, constName: string) throws {
+  proc chpl_enum_cast_error_no_int(enumName: string, constName: string): int throws {
     throw new owned IllegalArgumentError("bad cast: enum '" + enumName + "." +
                                           constName + "' has no integer value");
-    return 0;
   }
 
 
