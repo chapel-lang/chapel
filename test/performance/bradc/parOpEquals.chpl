@@ -26,7 +26,8 @@ use Time;
 const startTime = timeSinceEpoch().totalSeconds();
 
 for i in 1..numIters do
-  A[B] += 1;
+  // A[B] += 1;
+  forall b in B with (ref A) do A[b] += 1;
 
 const stopTime = timeSinceEpoch().totalSeconds();
 if printTiming then
