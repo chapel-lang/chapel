@@ -237,7 +237,7 @@ static void chpl_gpu_launch_kernel_help(int ln,
                                              ln, fn);
 
       chpl_gpu_impl_copy_host_to_device(*kernel_params[i], cur_arg,
-                                        cur_arg_size);
+                                        cur_arg_size, stream);
 
       CHPL_GPU_DEBUG("\tKernel parameter %d: %p (device ptr)\n",
                    i, *kernel_params[i]);
@@ -309,8 +309,8 @@ inline void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
                                              const char* name,
                                              int64_t num_threads,
                                              int blk_dim,
-                                             int nargs,
                                              void* stream,
+                                             int nargs,
                                              va_list args) {
   int grd_dim = (num_threads+blk_dim-1)/blk_dim;
 
