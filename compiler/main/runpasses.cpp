@@ -214,7 +214,8 @@ void runPasses(PhaseTracker& tracker) {
     }
 
     // Breaks early if the user specified to stop after this pass
-    if (stopAfterPass[0] && strcmp(sPassList[i].name, stopAfterPass) == 0) {
+    if (stopAfterPass[0] != '\0' &&
+        strcmp(sPassList[i].name, stopAfterPass) == 0) {
       break;
     }
   }

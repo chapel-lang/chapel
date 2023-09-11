@@ -786,6 +786,9 @@ static int invokeChplWithArgs(int argc, char* argv[],
   for (int i = 0; i < argc; i++) {
     commandVec.emplace_back(argv[i]);
     if (i == 0) {
+      // argv[0] is the chapel binary (usually 'chpl'), and we want to insert
+      // our additional arguments immediately after that to put them before
+      // other user-specified args
       commandVec.insert(commandVec.end(), additionalArgs.begin(),
                         additionalArgs.end());
     }
@@ -914,9 +917,8 @@ static void setDriverDebugPhase(const ArgumentDescription* desc,
     driverDebugPhaseTwo = true;
   } else {
     USR_FATAL(
-        "--driver-debug-phase requires a valid phase number or 'all', "
-        "but got: %s\n",
-        arg);
+        "--driver-debug-phase requires either '1', '2', or 'all' as input, "
+        "but got: %s\n", arg);
   }
 }
 
@@ -2178,7 +2180,10 @@ static void bootstrapTmpDir() {
   auto oldContext = gContext;
   gContext = new chpl::Context(*oldContext, std::move(config));
   delete oldContext;
-  gContext->tmpDir();
+
+  // Besides accessing, this creates the dir if it does not exist already.
+  // Ensure it exists by the end of this function for simplicity.
+  std::ignore = gContext->tmpDir();
 }
 
 static void dynoConfigureContext(std::string chpl_module_path) {
@@ -2191,7 +2196,8 @@ static void dynoConfigureContext(std::string chpl_module_path) {
     config.chplEnvOverrides.insert(pair);
   }
   config.toolName = "chpl";
-  // keep tmp dir if previous config did
+  // Keep tmp dir if previous config did; this is needed as the tmp dir has
+  // already been created by the tmp dir bootstrap function.
   config.keepTmpDir = gContext->shouldSaveTmpDirFiles();
 
   // Replace the current gContext with one using the new configuration.

@@ -5126,7 +5126,7 @@ static void llvmRunOptimizations(void) {
   // Save the generated LLVM before optimization
   saveIrToBcFileIfNeeded(filenames->preOptFilename);
 
-    // Handle --llvm-print-ir-stage=basic
+  // Handle --llvm-print-ir-stage=basic
 #ifdef HAVE_LLVM
   if((llvmStageNum::BASIC == llvmPrintIrStageNum ||
       llvmStageNum::EVERY == llvmPrintIrStageNum)) {
@@ -5299,12 +5299,14 @@ static void handlePrintAsm(std::string dotOFile) {
     }
 
     if (fDriverPhaseTwo) restorePrintIrCNames();
+    // TODO: skip calling this (and remove the function) as the set should
+    // already have deterministic ordering and be fine to iterate through
     std::vector<std::string> names = gatherPrintLlvmIrCNames();
     printf("%lu symbol names to disassemble\n", names.size());
     if (names.empty()) {
       USR_WARN(
-          "requested assembly dump, but no symbols to be disassembled were "
-          "specified");
+          "requested assembly dump, but none of the symbols requested to be "
+          "disassembled could be found in the object file");
     } else {
       for (const auto& name : names) {
         printf("\n\n# Disassembling symbol %s\n\n", name.c_str());

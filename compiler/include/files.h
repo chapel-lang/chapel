@@ -40,6 +40,7 @@ extern std::vector<const char*> libDirs;
 extern std::vector<const char*> libFiles;
 
 // directory for intermediates; tmpdir or saveCDir
+// TODO: remove this as redundant with the Dyno Context's tmpdir
 extern const char* intDirName;
 
 struct fileinfo {
