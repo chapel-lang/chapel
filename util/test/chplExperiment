@@ -289,7 +289,7 @@ for i in "${!experiment_name[@]}"; do
   if [[ ! "$?" -eq "0" ]]; then
     if [[ "$CHPL_EXP_SKIP_IF_CONFIG_ERROR"=="y" ]]; then
       echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
-      echo "* * * * * SKIPPING EXPERIMENT DUE TO PRINTCHPLENV FAILURE D ERRORING  * * * * *"
+      echo "* * * * * * * * * * SKIPPING EXPERIMENT DUE TO PRINTCHPLENV * * * * * * * * * *"
       echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
       echo "> popd"; popd
       continue
@@ -355,13 +355,9 @@ for i in "${!experiment_name[@]}"; do
   cat "$datFile"
 done
 
+# Run paint script if one was specified
 if [[ ! -z "$CHPL_EXP_PAINT_WITH" ]]; then
-  source $CHPL_HOME/util/test/chplSetupEnv.bash --no-base-cfg "paintExperiment"
-  if [[ ! -z "$ALTERNATE_PYTHON" ]]; then
-    eval "$ALTERNATE_PYTHON" "$CHPL_EXP_PAINT_WITH"
-  else
-    eval "$CHPL_EXP_PAINT_WITH"
-  fi
+  eval "$CHPL_EXP_PAINT_WITH"
 fi
 
 echo -e "\n================================================================================\n================================================================================"

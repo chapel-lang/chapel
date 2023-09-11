@@ -9,12 +9,19 @@ if ! git clone ${CHOP_URL} --branch=${CHOP_BRANCH} --depth=1 2>gitClone.out; the
   exit
 fi
 
-
 "$CHPL_HOME/util/test/chplExperiment" \
-   --paint-with ./chop.plot.paint.py  \
+   --skip-if-config-error --paint-with ./chop.plot.paint.py  \
    \
   `#name           features  options          command`                         \
   `#-------------------------------------------------------------------------` \
-   cuda_only       nvidia   --no-build-chpl  ./chop.plot.gather.baseline.bash  \
+   nvidia_baseline nvidia   --no-build-chpl                                    \
+                            --skip-if-errs "nvcc --version"                    \
+                                             ./chop.plot.gather.nvidia.bash    \
                                                                                \
-   chpl            nvidia                    ./chop.plot.gather.chpl.bash
+   amd_baseline    amd      --no-build-chpl                                    \
+                            --skip-if-errs "hipcc --version"                   \
+                                             ./chop.plot.gather.amd.bash       \
+                                                                               \
+   nvidia          nvidia                    ./chop.plot.gather.chpl.bash      \
+                                                                               \
+   amd             amd                       ./chop.plot.gather.chpl.bash
