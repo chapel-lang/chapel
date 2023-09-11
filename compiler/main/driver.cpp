@@ -328,6 +328,7 @@ bool preserveInlinedLineNumbers = false;
 
 char stopAfterPass[128] = "";
 
+const char* compileCommandFilename = "compileCommand.tmp";
 const char* compileCommand = NULL;
 char compileVersion[64];
 
@@ -609,6 +610,13 @@ static void setupChplLLVM(void) {
 #endif
 }
 
+static void saveCompileCommand() {
+  // save compile command to file for later use in codegen
+  fileinfo* file = openTmpFile(compileCommandFilename, "w");
+  fprintf(file->fptr, "%s", compileCommand);
+  closefile(file);
+}
+
 static void recordCodeGenStrings(int argc, char* argv[]) {
   compileCommand = astr("chpl ");
   // WARNING: This does not handle arbitrary sequences of escaped characters
@@ -807,8 +815,9 @@ static int runDriverPhaseTwo(int argc, char* argv[]);
 static void runAsCompilerDriver(int argc, char* argv[]) {
   int status = 0;
 
-  // initialize tmp dir to be carried over between invocations
+  // initialize resources that need to be carried over between invocations
   ensureTmpDirExists();
+  saveCompileCommand();
 
   // invoke phase one
   if ((status = runDriverPhaseOne(argc, argv)) != 0) {
@@ -835,7 +844,7 @@ static void runAsCompilerDriver(int argc, char* argv[]) {
   }
 
   // Tmp dir will be deleted if necessary when the compiler-driver's Context is
-  // deleted, so no need to delete here.
+  // deleted.
 
   clean_exit(status);
 }
