@@ -265,6 +265,10 @@ module ChapelRange {
   proc range.init(type idxType,
                   param bounds: boundKind,
                   param strides: strideKind) {
+
+    if chpl_warnUnstable && (bounds == boundKind.low || bounds == boundKind.high)
+      then warning("Default initialization of a range with 'boundKind.low' or 'boundKind.high' is unstable");
+
     this.init(idxType, bounds, strides,
               _low = chpl__defaultLowBound(idxType, bounds),
               _high = chpl__defaultHighBound(idxType, bounds),
