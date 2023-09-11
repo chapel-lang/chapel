@@ -532,7 +532,7 @@ void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
   void* ptr = 0;
   if (size > 0) {
     chpl_memhook_malloc_pre(1, size, description, lineno, filename);
-    ptr = chpl_gpu_impl_mem_array_alloc(size, get_stream(dev));
+    ptr = chpl_gpu_impl_mem_array_alloc(size);
     chpl_memhook_malloc_post((void*)ptr, 1, size, description, lineno, filename);
 
     CHPL_GPU_DEBUG("chpl_gpu_mem_array_alloc returning %p\n", (void*)ptr);
@@ -551,7 +551,7 @@ void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
   chpl_gpu_impl_use_device(dev);
 
   chpl_memhook_free_pre(memAlloc, 0, lineno, filename);
-  chpl_gpu_impl_mem_free(memAlloc, get_stream(dev));
+  chpl_gpu_impl_mem_free(memAlloc);
 
   CHPL_GPU_DEBUG("chpl_gpu_mem_free is returning\n");
 }

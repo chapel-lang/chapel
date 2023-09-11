@@ -368,7 +368,7 @@ void chpl_gpu_impl_comm_wait(void *stream) {
   hipStreamDestroy((hipStream_t)stream);
 }
 
-void* chpl_gpu_impl_mem_array_alloc(size_t size, void* stream) {
+void* chpl_gpu_impl_mem_array_alloc(size_t size) {
   assert(size>0);
 
   hipDeviceptr_t ptr = 0;
@@ -396,7 +396,7 @@ void* chpl_gpu_impl_mem_alloc(size_t size) {
   return (void*)ptr;
 }
 
-void chpl_gpu_impl_mem_free(void* memAlloc, void* stream) {
+void chpl_gpu_impl_mem_free(void* memAlloc) {
   if (memAlloc != NULL) {
     assert(chpl_gpu_is_device_ptr(memAlloc));
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE

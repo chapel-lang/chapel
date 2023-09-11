@@ -360,13 +360,13 @@ void chpl_gpu_impl_comm_wait(void *stream) {
   cuStreamDestroy((CUstream)stream);
 }
 
-void* chpl_gpu_impl_mem_array_alloc(size_t size, void* stream) {
+void* chpl_gpu_impl_mem_array_alloc(size_t size) {
   assert(size>0);
 
   CUdeviceptr ptr = 0;
 
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
-  CUDA_CALL(cuMemAllocAsync(&ptr, size, (CUstream)stream));
+  CUDA_CALL(cuMemAlloc(&ptr, size));
 #else
   CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));
 #endif
@@ -388,7 +388,7 @@ void* chpl_gpu_impl_mem_alloc(size_t size) {
   return (void*)ptr;
 }
 
-void chpl_gpu_impl_mem_free(void* memAlloc, void* stream) {
+void chpl_gpu_impl_mem_free(void* memAlloc) {
   if (memAlloc != NULL) {
     assert(chpl_gpu_is_device_ptr(memAlloc));
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
@@ -396,7 +396,7 @@ void chpl_gpu_impl_mem_free(void* memAlloc, void* stream) {
       CUDA_CALL(cuMemFreeHost(memAlloc));
     }
     else {
-      CUDA_CALL(cuMemFreeAsync((CUdeviceptr)memAlloc, stream));
+      CUDA_CALL(cuMemFree((CUdeviceptr)memAlloc));
 #else
     CUDA_CALL(cuMemFree((CUdeviceptr)memAlloc));
 #endif
