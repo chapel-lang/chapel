@@ -358,18 +358,18 @@ module Buffers {
      the buffer into it. This function should work even if buffer is
      remote.
 
-     :arg range: the region of the buffer to copy, for example buffer.all()
+     :arg bufRange: the region of the buffer to copy, for example buffer.all()
      :returns: a newly initialized bytes object on the current locale
    */
-  proc buffer.flatten(range:buffer_range) throws {
+  proc buffer.flatten(bufRange:buffer_range) throws {
     var ret: byteBuffer  = new byteBuffer();
     var err: errorCode = 0;
 
     if this.home == here {
-      err = qbuffer_flatten(this._buf_internal, range.start._bufit_internal, range.end._bufit_internal, ret._bytes_internal);
+      err = qbuffer_flatten(this._buf_internal, bufRange.start._bufit_internal, bufRange.end._bufit_internal, ret._bytes_internal);
     } else {
       var dst_locale = here;
-      var dst_len:int(64) = range.len;
+      var dst_len:int(64) = bufRange.len;
       ret = new byteBuffer(dst_len, error=err);
       if err then try ioerror(err, "in buffer.flatten");
 
@@ -378,8 +378,8 @@ module Buffers {
         // Copy the buffer to the bytes...
         err = bulk_put_buffer(dst_locale.id, dst_addr, dst_len,
                                 this._buf_internal,
-                                range.start._bufit_internal,
-                                range.end._bufit_internal);
+                                bufRange.start._bufit_internal,
+                                bufRange.end._bufit_internal);
       }
     }
     if err then try ioerror(err, "in buffer.flatten");

@@ -102,7 +102,7 @@ module ChapelRange {
   pragma "plain old data"
   pragma "range"
   @chpldoc.nodoc
-  record range
+  record _range
   {
     type idxType = int;                            // element type
     param bounds: boundKind = boundKind.both;      // lower/upper bounds

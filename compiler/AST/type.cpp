@@ -1093,6 +1093,9 @@ void initPrimitiveTypes() {
   dtLocale                             = new AggregateType(AGGREGATE_RECORD);
   dtLocale->symbol                     = new TypeSymbol("locale", dtLocale);
 
+  dtRange                              = new AggregateType(AGGREGATE_RECORD);
+  dtRange->symbol                      = new TypeSymbol("range", dtRange);
+
   dtOwned                              = new AggregateType(AGGREGATE_RECORD);
   dtOwned->symbol                      = new TypeSymbol("_owned", dtOwned);
 
