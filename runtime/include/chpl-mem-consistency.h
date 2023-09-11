@@ -81,6 +81,9 @@ void chpl_rmem_consist_acquire(int ln, int32_t fn)
 #ifdef HAS_CHPL_CACHE_FNS
   chpl_cache_acquire(ln, fn);
 #endif
+#ifdef HAS_GPU_LOCALE
+  chpl_gpu_task_fence();
+#endif
 }
 
 
