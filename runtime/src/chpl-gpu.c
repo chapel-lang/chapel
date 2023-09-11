@@ -119,7 +119,7 @@ void chpl_gpu_task_end(void) {
       if (prvData->streams[i] != NULL) {
         CHPL_GPU_DEBUG("Destroying stream %p (subloc %d)\n", prvData->streams[i], i);
         chpl_gpu_impl_stream_synchronize(prvData->streams[i]);
-        chpl_gpu_impl_destroy_stream(prvData->streams[i]);
+        chpl_gpu_impl_stream_destroy(prvData->streams[i]);
         prvData->streams[i] = NULL;
       }
     }
@@ -166,7 +166,7 @@ static void* get_stream(int dev) {
   }
   void** stream = &(prvData->streams[dev]);
   if (*stream == NULL) {
-    *stream = chpl_gpu_impl_create_stream();
+    *stream = chpl_gpu_impl_stream_create();
     CHPL_GPU_DEBUG("Stream created: %p (subloc %d)\n", *stream, dev);
   }
 

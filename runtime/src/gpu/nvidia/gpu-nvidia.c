@@ -442,13 +442,13 @@ void chpl_gpu_impl_set_peer_access(int dev1, int dev2, bool enable) {
   }
 }
 
-void* chpl_gpu_impl_create_stream(void) {
+void* chpl_gpu_impl_stream_create(void) {
   CUstream stream;
   CUDA_CALL(cuStreamCreate(&stream, CU_STREAM_DEFAULT));
   return (void*) stream;
 }
 
-void chpl_gpu_impl_destroy_stream(void* stream) {
+void chpl_gpu_impl_stream_destroy(void* stream) {
   if (stream) {
     CUDA_CALL(cuStreamDestroy((CUstream)stream));
   }

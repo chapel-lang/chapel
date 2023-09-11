@@ -294,11 +294,13 @@ inline void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
                                         int blk_dim_x,
                                         int blk_dim_y,
                                         int blk_dim_z,
+                                        void* stream,
                                         int nargs, va_list args) {
   chpl_gpu_launch_kernel_help(ln, fn,
                               name,
                               grd_dim_x, grd_dim_y, grd_dim_z,
                               blk_dim_x, blk_dim_y, blk_dim_z,
+                              stream,
                               nargs, args);
 }
 
@@ -307,6 +309,7 @@ inline void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
                                              int64_t num_threads,
                                              int blk_dim,
                                              int nargs,
+                                             void* stream,
                                              va_list args) {
   int grd_dim = (num_threads+blk_dim-1)/blk_dim;
 
@@ -314,34 +317,42 @@ inline void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
                               name,
                               grd_dim, 1, 1,
                               blk_dim, 1, 1,
+                              stream,
                               nargs, args);
 }
 
-void* chpl_gpu_impl_memset(void* addr, const uint8_t val, size_t n) {
+void* chpl_gpu_impl_memset(void* addr, const uint8_t val, size_t n,
+                           void* stream) {
   assert(chpl_gpu_is_device_ptr(addr));
 
-  ROCM_CALL(hipMemsetD8((hipDeviceptr_t)addr, (unsigned int)val, n));
+  ROCM_CALL(hipMemsetD8((hipDeviceptr_t)addr, (unsigned int)val, n,
+                        (hipStream_t)stream));
 
   return addr;
 }
 
 
-void chpl_gpu_impl_copy_device_to_host(void* dst, const void* src, size_t n) {
+void chpl_gpu_impl_copy_device_to_host(void* dst, const void* src, size_t n,
+                                       void* stream) {
   assert(chpl_gpu_is_device_ptr(src));
 
-  ROCM_CALL(hipMemcpyDtoH(dst, (hipDeviceptr_t)src, n));
+  ROCM_CALL(hipMemcpyDtoH(dst, (hipDeviceptr_t)src, n, (hipStream_t)stream));
 }
 
-void chpl_gpu_impl_copy_host_to_device(void* dst, const void* src, size_t n) {
+void chpl_gpu_impl_copy_host_to_device(void* dst, const void* src, size_t n,
+                                       void* stream) {
   assert(chpl_gpu_is_device_ptr(dst));
 
-  ROCM_CALL(hipMemcpyHtoD((hipDeviceptr_t)dst, (void *)src, n));
+  ROCM_CALL(hipMemcpyHtoD((hipDeviceptr_t)dst, (void *)src, n,
+                          (hipStream_t)stream));
 }
 
-void chpl_gpu_impl_copy_device_to_device(void* dst, const void* src, size_t n) {
+void chpl_gpu_impl_copy_device_to_device(void* dst, const void* src, size_t n,
+                                         void* stream) {
   assert(chpl_gpu_is_device_ptr(dst) && chpl_gpu_is_device_ptr(src));
 
-  ROCM_CALL(hipMemcpyDtoD((hipDeviceptr_t)dst, (hipDeviceptr_t)src, n));
+  ROCM_CALL(hipMemcpyDtoD((hipDeviceptr_t)dst, (hipDeviceptr_t)src, n,
+                          (hipStream_t)stream));
 }
 
 
@@ -357,12 +368,13 @@ void chpl_gpu_impl_comm_wait(void *stream) {
   hipStreamDestroy((hipStream_t)stream);
 }
 
-void* chpl_gpu_impl_mem_array_alloc(size_t size) {
+void* chpl_gpu_impl_mem_array_alloc(size_t size, void* stream) {
   assert(size>0);
 
   hipDeviceptr_t ptr = 0;
 
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
+    // hip doesn't have stream-ordered memory allocator (no hipMallocAsync)
     ROCM_CALL(hipMalloc(&ptr, size));
 #else
     ROCM_CALL(hipMallocManaged(&ptr, size, hipMemAttachGlobal));
@@ -384,7 +396,7 @@ void* chpl_gpu_impl_mem_alloc(size_t size) {
   return (void*)ptr;
 }
 
-void chpl_gpu_impl_mem_free(void* memAlloc) {
+void chpl_gpu_impl_mem_free(void* memAlloc, void* stream) {
   if (memAlloc != NULL) {
     assert(chpl_gpu_is_device_ptr(memAlloc));
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
@@ -393,6 +405,7 @@ void chpl_gpu_impl_mem_free(void* memAlloc) {
     }
     else {
 #endif
+    // hip doesn't have stream-ordered memory allocator (no hipFreeAsync)
     ROCM_CALL(hipFree((hipDeviceptr_t)memAlloc));
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
     }
@@ -438,4 +451,29 @@ void chpl_gpu_impl_set_peer_access(int dev1, int dev2, bool enable) {
   }
 }
 
+bool chpl_gpu_impl_supports_async_streams(int dev_id) {
+  return true;
+}
+
+void* chpl_gpu_impl_stream_create(void) {
+  hipStream_t stream;
+  ROCM_CALL(hipStreamCreate(&stream, hipStreamDefault));
+  return (void*) stream;
+}
+
+void chpl_gpu_impl_stream_destroy(void* stream) {
+  if (stream) {
+    ROCM_CALL(hipStreamDestroy((hipStream_t)stream));
+  }
+}
+
+void chpl_gpu_impl_stream_synchronize(void* stream) {
+  // TODO do we want to call hipStreamQuery and chpl_task_yield if the stream is
+  // not ready?
+  hipResult_t res = hipStreamSynchronize(stream);
+  if (res == hipErrorNotInitialized) {
+    return;
+  }
+  ROCM_CALL(res);
+}
 #endif // HAS_GPU_LOCALE
