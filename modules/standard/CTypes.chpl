@@ -1029,6 +1029,12 @@ module CTypes {
     return c_addrOfConst(b);
   }
 
+  @chpldoc.nodoc
+  inline proc c_ptrTo(c: class): c_ptr(void)
+    where cPtrToLogicalValue == true
+  {
+    return __primitive("cast", c_ptr(void), c.borrow());
+  }
   /*
     Returns a ``c_ptr(void)`` to the heap instance of a class type.
 
@@ -1036,11 +1042,6 @@ module CTypes {
     lifetime of the instance.  The returned pointer will be invalid if the
     instance is freed or even reallocated.
   */
-  inline proc c_ptrTo(c: class): c_ptr(void)
-    where cPtrToLogicalValue == true
-  {
-    return __primitive("cast", c_ptr(void), c.borrow());
-  }
   inline proc c_ptrTo(c: class?): c_ptr(void)
     where cPtrToLogicalValue == true
   {
@@ -1048,6 +1049,7 @@ module CTypes {
   }
 
   @deprecated(notes="The c_ptrTo(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOf' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
+  @chpldoc.nodoc
   inline proc c_ptrTo(ref c: class): c_ptr(c.type)
     where cPtrToLogicalValue == false
   {
@@ -1060,14 +1062,15 @@ module CTypes {
     return c_addrOf(c);
   }
 
-  /*
-   Like :proc:`c_ptrTo` for class types, but also accepts ``const`` data.
-   */
+  @chpldoc.nodoc
   inline proc c_ptrToConst(const c: class): c_ptrConst(void)
     where cPtrToLogicalValue == true
   {
     return __primitive("cast", c_ptrConst(void), c.borrow());
   }
+  /*
+   Like :proc:`c_ptrTo` for class types, but also accepts ``const`` data.
+   */
   inline proc c_ptrToConst(const c: class?): c_ptrConst(void)
     where cPtrToLogicalValue == true
   {
@@ -1075,6 +1078,7 @@ module CTypes {
   }
 
   @deprecated(notes="The c_ptrToConst(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
+  @chpldoc.nodoc
   inline proc c_ptrToConst(const ref c: class): c_ptrConst(c.type)
     where cPtrToLogicalValue == false
   {
@@ -1096,7 +1100,8 @@ module CTypes {
     :arg x: the by-reference argument to get a pointer to. Domains are not
             supported, and will cause a compiler error. Records, class
             instances, integral, real, imag, and complex types are supported.
-            For arrays, strings, or bytes, separate overloads should be used.
+            See overloads taking arrays, strings, bytes, or class variables
+            which provide special behavior for those types.
     :returns: a pointer to the argument passed by reference
 
   */
@@ -1161,7 +1166,8 @@ module CTypes {
     Returns a :type:`c_ptr` to the address of any chapel object.
 
     Note that the behavior of this procedure is identical to :func:`c_ptrTo`
-    for scalar types. It only differs for arrays, strings, and bytes.
+    for scalar types and records. It only differs for arrays, strings, bytes,
+    and class variables.
   */
   inline proc c_addrOf(ref x: ?t): c_ptr(t) {
     if isDomainType(t) then

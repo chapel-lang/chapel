@@ -1,0 +1,1 @@
+incompatibleArraySize.chpl:11: error: halt reached - Domain size mismatch in 'blockDist.createArray' dimension 0
