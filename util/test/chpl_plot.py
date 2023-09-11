@@ -769,7 +769,7 @@ def plot(tables, save=True, filename=None, **plotArgs):
     for name in tables.tables:
       res.append(plot(tables.tables[name], save, **plotArgs))
   else:
-    res = _plotImpl(tables, save, filename=None, **plotArgs)
+    res = _plotImpl(tables, save, filename=filename, **plotArgs)
   return res
 
 
