@@ -120,7 +120,7 @@ proc GlobalData.init(nameArg: string) {
     datElm = dat;
   }
   this.datas = datasTemp!;
-  this.complete();
+  init this;
 
   /// get and store pointers to neighbor data slices ///
   forall ((ix,iy), dat, inf) in zip(gridDist, datas, WI.infos) {
