@@ -9,28 +9,12 @@ import sys
 testname = sys.argv[1]
 outfile = sys.argv[2]
 
-# note: assumes that no `--warn-unstable` test that intentionally throws
-# `--memLeaks` has an unusually-named `.good` file
-goodfile = testname+'.good'
-
 memleaksWarn = "warning: The variable 'memLeaks' is unstable and its interface is subject to change in the future"
 
-foundInGood = False
+with open(outfile, 'r', newline='') as outR:
+     myLines = outR.readlines()
 
-try:
-  with open(goodfile, 'r') as gf:
-     for line in gf.readlines():
-         if line.find(memleaksWarn) != -1:
-            foundInGood = True
-except FileNotFoundError:
-  print("Oops, " + goodfile + " did not exist.  Won't adjust for expected warnings")
-
-# If the .good file we checked already has this message, don't remove it
-if not foundInGood:
-   with open(outfile, 'r', newline='') as outR:
-      myLines = outR.readlines()
-
-   with open(outfile, 'w', newline='') as overwrite:
-        for line in myLines:
-            if line.find(memleaksWarn) == -1:
-               overwrite.write(line)
+with open(outfile, 'w', newline='') as overwrite:
+     for line in myLines:
+         if line.find(memleaksWarn) == -1:
+            overwrite.write(line)
