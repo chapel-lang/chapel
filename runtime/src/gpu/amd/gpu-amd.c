@@ -263,9 +263,8 @@ static void chpl_gpu_launch_kernel_help(int ln,
 
   CHPL_GPU_DEBUG("cuLaunchKernel returned %s\n", name);
 
-  ROCM_CALL(hipDeviceSynchronize());
+  chpl_task_yield();
 
-  CHPL_GPU_DEBUG("Synchronization complete %s\n", name);
   CHPL_GPU_STOP_TIMER(kernel_time);
   CHPL_GPU_START_TIMER(teardown_time);
 

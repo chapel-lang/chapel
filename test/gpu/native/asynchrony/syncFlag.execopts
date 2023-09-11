@@ -1,2 +1,2 @@
---n=100_000_000 --expectInstantenousKernelReturn=true
---n=100_000_000 --gpuAlwaysSyncKernels=true --expectInstantenousKernelReturn=false
+--n=100_000_000 --debugGpu                             # syncFlag-noForcedSync
+--n=100_000_000 --debugGpu --gpuAlwaysSyncKernels=true # syncFlag-forcedSync

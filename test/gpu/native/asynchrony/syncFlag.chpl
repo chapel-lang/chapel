@@ -24,7 +24,3 @@ on here.gpus[0] {
 }
 
 writeln(Arr[3]);
-
-if expectInstantenousKernelReturn then assert(t.elapsed() < timeThreshold);
-                                  else assert(t.elapsed() > timeThreshold);
-

@@ -176,7 +176,7 @@ void chpl_gpu_support_module_finished_initializing(void) {
   #endif
 
   CHPL_GPU_DEBUG("  Asynchrony: %s\n", async_ok() ? "enabled" : "disabled");
-  CHPL_GPU_DEBUG("  Force kernel synch: %s\n",
+  CHPL_GPU_DEBUG("  Force kernel sync: %s\n",
                  chpl_gpu_always_sync_kernels ? "enabled" : "disabled");
 }
 
