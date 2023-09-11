@@ -238,6 +238,11 @@ static Expr* postFoldNormal(CallExpr* call) {
     retval = new SymExpr(new_StringSymbol(call->fname()));
     call->replace(retval);
   } else if (fn->hasFlag(FLAG_GET_FUNCTION_NAME)) {
+    if (fWarnUnstable && call->getFunction()->hasFlag(FLAG_ANONYMOUS_FN)) {
+      USR_WARN(call, "using 'getRoutineName' inside first-class procedures is "
+                     "currently unstable");
+    }
+
     retval = new SymExpr(new_StringSymbol(call->getFunction()->name));
     call->replace(retval);
   } else if (fn->hasFlag(FLAG_GET_MODULE_NAME)) {
