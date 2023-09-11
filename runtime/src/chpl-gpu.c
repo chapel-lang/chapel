@@ -41,23 +41,6 @@ bool chpl_gpu_use_default_stream = false;
 #include "chpl-env.h"
 #include "chpl-comm-compiler-macros.h"
 
-static bool hw_supports_async = false;
-
-static inline bool async_ok(void) {
-  return !chpl_gpu_use_default_stream && hw_supports_async;
-}
-
-// if any of the devices do not support async streams; bail
-static bool is_async_supported(void) {
-  int i;
-  for (i=0; i<chpl_gpu_num_devices; i++) {
-    if (!chpl_gpu_impl_supports_async_streams(i)) {
-      return false;
-    }
-  }
-  return true;
-}
-
 void chpl_gpu_init(void) {
   chpl_gpu_impl_init(&chpl_gpu_num_devices);
 
@@ -95,8 +78,10 @@ void chpl_gpu_init(void) {
     }
 #endif
   }
+}
 
-  hw_supports_async = is_async_supported();
+static inline bool async_ok(void) {
+  return !chpl_gpu_use_default_stream && chpl_gpu_impl_stream_supported();
 }
 
 static chpl_gpu_taskPrvData_t* get_gpu_task_private_data(void) {

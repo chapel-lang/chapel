@@ -136,7 +136,7 @@ void chpl_gpu_impl_set_peer_access(int dev1, int dev2, bool enable) {
 void chpl_gpu_impl_use_device(c_sublocid_t dev_id) {
 }
 
-bool chpl_gpu_impl_supports_async_streams(int dev_id) {
+bool chpl_gpu_impl_stream_supported(void) {
   return false;
 }
 

@@ -137,7 +137,7 @@ void chpl_gpu_impl_init(int* num_devices) {
   }
 }
 
-bool chpl_gpu_impl_supports_async_streams(int dev_id) {
+bool chpl_gpu_impl_stream_supported(void) {
   return true;
 }
 

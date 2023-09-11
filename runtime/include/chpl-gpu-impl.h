@@ -71,7 +71,7 @@ void chpl_gpu_impl_use_device(c_sublocid_t dev_id);
 
 // TODO this should return true for NVIDIA, too. The current NVIDIA
 // implementation is returning true/false only for allocators
-bool chpl_gpu_impl_supports_async_streams(int dev_id);
+bool chpl_gpu_impl_stream_supported(void);
 void* chpl_gpu_impl_stream_create(void);
 void chpl_gpu_impl_stream_destroy(void* stream);
 void chpl_gpu_impl_stream_synchronize(void* stream);
