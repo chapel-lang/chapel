@@ -314,7 +314,7 @@ module LocaleModel {
       numSublocales = chpl_gpu_num_devices;
       childSpace = {0..#numSublocales};
 
-      int this;
+      init this;
 
       setup();
     }
