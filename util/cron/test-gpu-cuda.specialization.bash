@@ -14,5 +14,5 @@ export CHPL_LAUNCHER_PARTITION=stormP100
 
 export CHPL_GPU_SPECIALIZATION=y
 
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-cuda"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-cuda.specialization"
 $CWD/nightly -cron ${nightly_args}

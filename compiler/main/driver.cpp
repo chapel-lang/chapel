@@ -364,7 +364,7 @@ std::vector<std::string> gDynoPrependStandardModulePaths;
 int fGPUBlockSize = 0;
 char fGpuArch[gpuArchNameLen+1] = "";
 bool fGpuPtxasEnforceOpt;
-bool fGpuSpecialization = true;
+bool fGpuSpecialization = false;
 const char* gGpuSdkPath = NULL;
 std::set<std::string> gpuArches;
 
