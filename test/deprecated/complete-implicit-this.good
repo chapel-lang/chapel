@@ -1,0 +1,2 @@
+complete-implicit-this.chpl:8: In initializer:
+complete-implicit-this.chpl:9: warning: 'this.complete()' is deprecated; please use 'init this' instead
