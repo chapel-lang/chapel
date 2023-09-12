@@ -82,18 +82,38 @@ writeln("bigint.mod() cases");
 
 var bigModRes: bigint;
 mod(bigModRes, a3, b1: bigint); // 5 mod -2
-writeln(bigModRes); // ?
+writeln(bigModRes); // -1
 mod(bigModRes, a3, b2: bigint); // 5 mod -3
-writeln(bigModRes); // ?
+writeln(bigModRes); // -1
 mod(bigModRes, a3, b3: bigint); // 5 mod -4
-writeln(bigModRes); // ?
+writeln(bigModRes); // -3
 mod(bigModRes, a3, b4: bigint); // 5 mod -5
 writeln(bigModRes); // 0
 mod(bigModRes, a3, b5: bigint); // 5 mod -6
-writeln(bigModRes); // ?
+writeln(bigModRes); // -1
 mod(bigModRes, a4, b2: bigint); // 7 mod -3
-writeln(bigModRes); // ?
+writeln(bigModRes); // -2
 mod(bigModRes, a4, b3: bigint); // 7 mod -4
-writeln(bigModRes); // ?
+writeln(bigModRes); // -1
 mod(bigModRes, a4, b4: bigint); // 7 mod -5
-writeln(bigModRes); // ?
+writeln(bigModRes); // -3
+
+// Check bigint.rem
+writeln("bigint.rem() cases");
+var bigRemRes: bigint;
+rem(bigRemRes, a3, b1: bigint); // 5 rem -2
+writeln(bigRemRes); // 1
+rem(bigRemRes, a3, b2: bigint); // 5 rem -3
+writeln(bigRemRes); // 2
+rem(bigRemRes, a3, b3: bigint); // 5 rem -4
+writeln(bigRemRes); // 1
+rem(bigRemRes, a3, b4: bigint); // 5 rem -5
+writeln(bigRemRes); // 0
+rem(bigRemRes, a3, b5: bigint); // 5 rem -6
+writeln(bigRemRes); // 5
+rem(bigRemRes, a4, b2: bigint); // 7 rem -3
+writeln(bigRemRes); // 1
+rem(bigRemRes, a4, b3: bigint); // 7 rem -4
+writeln(bigRemRes); // 3
+rem(bigRemRes, a4, b4: bigint); // 7 rem -5
+writeln(bigRemRes); // 2

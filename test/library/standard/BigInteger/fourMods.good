@@ -34,3 +34,12 @@ bigint.mod() cases
 -2
 -1
 -3
+bigint.rem() cases
+1
+2
+1
+0
+5
+1
+3
+2
