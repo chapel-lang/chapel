@@ -1,6 +1,6 @@
 day18-bug2.chpl:11: In initializer:
-day18-bug2.chpl:11: warning: need '(?)' on generic formal type 'Node'
-day18-bug2.chpl:11: warning: need '(?)' on generic formal type 'Node'
+day18-bug2.chpl:11: warning: need '(?)' on the type 'Node' of the formal 'l' because this type is generic
+day18-bug2.chpl:11: warning: need '(?)' on the type 'Node' of the formal 'r' because this type is generic
 day18-bug2.chpl:26: warning: please use '?' when declaring a variable with generic type
 day18-bug2.chpl:26: note: for example with 'Node(?)'
 $CHPL_HOME/modules/internal/OwnedObject.chpl:57: In initializer:
