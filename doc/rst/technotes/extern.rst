@@ -251,6 +251,11 @@ Any calls that foo() makes through its function pointer argument will
 call back to Chapel's bar() routine.  Note that any Chapel functions
 passed as c_fn_ptr arguments cannot be overloaded nor generic.
 
+.. warning::
+
+  ``c_fn_ptr`` is unstable and expected to be replaced with more feature-rich
+  functionality in the future.
+
 .. _readme-extern-extern-declarations:
 
 Support for Extern Declarations
