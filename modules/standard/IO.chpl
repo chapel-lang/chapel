@@ -541,58 +541,45 @@ private use Reflection;
 public use ChapelIO only write, writeln, writef;
 
 /*
-
 The :type:`ioMode` type is an enum. When used as arguments when opening files, its
-constants have the same meaning as the following strings passed to ``fopen()`` in C:
-
-.. list-table::
-   :widths: 8 8 64
-   :header-rows: 1
-
-   * - :type:`ioMode`
-     - ``fopen()`` argument
-     - Description
-   * - ``ioMode.r``
-     - ``"r"``
-     - open an existing file for reading.
-   * - ``ioMode.rw``
-     - ``"r+"``
-     - open an existing file for reading and writing.
-   * - ``ioMode.cw``
-     - ``"w"``
-     - create a new file for writing. If the file already exists, its contents are truncated.
-   * - ``ioMode.cwr``
-     - ``"w+"``
-     - same as ``ioMode.cw``, but reading from the file is also allowed.
-   * - ``ioMode.a``
-     - ``"a"``
-     - open a file for appending, creating it if it does not exist.
-
-.. TODO: Support append / create-exclusive modes:
-   * - ``ioMode.ar``
-     - ``"a+"``
-     - same as ``ioMode.a``, but reading from the file is also allowed.
-   * - ``ioMode.cwx``
-     - ``"wx"``
-     - open a file for writing, throwing an error if it already exists. (The test for file's existence and the file's creation are atomic on POSIX.)
-   * - ``ioMode.cwrx``
-     - ``"w+x"``
-     - same as ``ioMode.cwx``, but reading from the file is also allowed.
-
+constants have the same meaning as the listed strings passed to ``fopen()`` in C.
 However, :proc:`open()` in Chapel does not necessarily invoke ``fopen()`` in C.
-
-.. warning::
-
-   ``ioMode.a`` is unstable and subject to change. It currently only supports
-   one :record:`fileWriter` at a time.
 */
 enum ioMode {
+  /*
+    Open an existing file for reading.
+    (``fopen()`` string is "r")
+  */
   r = 1,
+  /*
+    Create a new file for writing.
+    If the file already exists, its contents are truncated.
+    (``fopen()`` string is "w")
+  */
   cw = 2,
+  /*
+    Open an existing file for reading and writing.
+    (``fopen()`` string is "r+")
+  */
   rw = 3,
+  /*
+    Same as :enumconstant:`ioMode.cw`, but reading from the file is also allowed.
+    (``fopen()`` string is "w+")
+  */
   cwr = 4,
-  @unstable("append mode is unstable")
+  /*
+    Open a file for appending, creating it if it does not exist.
+    (``fopen()`` string is "a")
+  */
+  @unstable(":enumconstant:`ioMode.a` is unstable and subject to change. It currently only supports one :record:`fileWriter` at a time.")
   a = 5,
+  // same as ``ioMode.a``, but reading from the file is also allowed.
+  // ar, "a+"
+  // open a file for writing, throwing an error if it already exists. (The test for file's existence and the file's creation are atomic on POSIX.)
+  // cwx, "wx"
+  // same as ``ioMode.cwx``, but reading from the file is also allowed.
+  // cwrx, w+x
+
 }
 
 @deprecated(notes="enum iomode is deprecated - please use :enum:`ioMode` instead")
