@@ -533,12 +533,12 @@ class LocBlock1DDom {
   // this is the parallel iterator for the local domain, see global
   // domain parallel iterators for general notes on the approach
   //
-  iter these(param tag: iterKind) where tag == iterKind.leader {
+  iter these(param tag: iterKind): domain(1) where tag == iterKind.leader {
     halt("This is bogus");
     yield {1..100};
   }
 
-  iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
+  iter these(param tag: iterKind, followThis): int where tag == iterKind.follower {
     halt("This is bogus");
     yield 2;
   }

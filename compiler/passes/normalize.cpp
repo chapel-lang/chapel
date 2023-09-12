@@ -3467,8 +3467,12 @@ void warnIfGenericFormalMissingQ(ArgSymbol* arg, Type* type, Expr* typeExpr) {
         Expr* where = arg->defPoint;
         if (arg->typeExpr) where = arg->typeExpr;
         USR_WARN(where,
-                 "need '(?)' on generic formal type '%s'",
-                 toString(type, /*decorators*/false));
+                 "need '(?)' on the type '%s' of the formal '%s' "
+                 "because this type is generic",
+                 toString(type, /*decorators*/false), arg->name);
+        if (fWarnUnstable) {
+          USR_PRINT("this warning may be an error in the future");
+        }
       }
     }
   }
@@ -4412,7 +4416,6 @@ static bool isCastToBorrowedInFormal(ArgSymbol* formal) {
 }
 
 
-
 static bool isGenericActual(Expr* expr) {
   if (isDefExpr(expr))
     return true;
@@ -4551,7 +4554,6 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
 
   formal->typeExpr->replace(new BlockStmt(usetype));
 
-  //  printf("(B) Adding FLAG_MARKED_GENERIC to %s\n", formal->name);
   formal->addFlag(FLAG_MARKED_GENERIC);
 }
 
