@@ -10,7 +10,7 @@ platform = { 'nvidia': 'cuda',
 tbls = load_tables()
 for arch in ['nvidia', 'amd']:
   if not arch in tbls:
-     continue
+    continue
 
   experiment = arch
   experimentBase = arch + "_baseline"
