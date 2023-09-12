@@ -564,11 +564,12 @@ module Set {
     }
 
     /*
-      Write the contents of this set to a channel.
+      Write the contents of this set to a fileWriter.
 
-      :arg ch: A channel to write to.
+      :arg writer: A fileWriter to write to.
+      :arg serializer: The serializer to use when writing.
     */
-    proc const serialize(writer, ref serializer) throws {
+    proc const serialize(writer:fileWriter(?), ref serializer) throws {
       if serializer.type == IO.defaultSerializer {
         writeThis(writer);
       } else {
