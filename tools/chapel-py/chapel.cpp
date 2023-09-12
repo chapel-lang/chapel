@@ -471,7 +471,6 @@ PLAIN_GETTER(VisibilityClause, symbol, "O", return wrapAstNode(contextObject, no
 PLAIN_GETTER(Identifier, name, "s", return node->name());
 PLAIN_GETTER(SimpleBlockLike, block_style, "s", return blockStyleToString(node->blockStyle()));
 PLAIN_GETTER(Loop, block_style, "s", return blockStyleToString(node->blockStyle()));
-PLAIN_GETTER(Class, parent_class, "O", return wrapAstNode(contextObject, node->parentClass()));
 PLAIN_GETTER(EnumElement, init_expression, "O", return wrapAstNode(contextObject, node->initExpression()));
 
 
@@ -584,9 +583,6 @@ METHOD_TABLE(START_Loop,
   {"block_style", LoopObject_block_style, METH_NOARGS, "Get the style of this loop AST node"},
 );
 
-METHOD_TABLE(Class,
-  {"parent_class", ClassObject_parent_class, METH_NOARGS, "Get the parent class of this class AST node"},
-);
 METHOD_TABLE(EnumElement,
   {"init_expression", EnumElementObject_init_expression, METH_NOARGS, "Get the initExpression of this enum element AST node"},
 );
