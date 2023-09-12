@@ -7,8 +7,9 @@ set tmpfile = $outfile.raw.tmp
 #
 # some gdbs print out extra stuff.  This filters it out
 #
-# the sed command is due to the (gdb) prompt sometimes being followed by a
-# newline, sometimes not, before further program output
+# There is sometimes a newline between the (gdb) prompt and further program
+# output, sometimes not. The sed substitution adding a newline and the final
+# grep for non-empty lines ensures there is always exactly one.
 mv $outfile $tmpfile
-cat $tmpfile | grep -vE "Using host libthread_db library|Breakpoint 1 at|no debugging symbols found|Reading symbols|'tmpdirname' has unknown type" | sed 's/(gdb) quit/(gdb) /;s/(gdb) /(gdb) \n/;/^$/d' > $outfile
+cat $tmpfile | grep -vE "Using host libthread_db library|Breakpoint 1 at|no debugging symbols found|Reading symbols|'tmpdirname' has unknown type" | sed 's/(gdb) quit/(gdb) /;s/(gdb) /(gdb) \n/' | grep . > $outfile
 rm $tmpfile
