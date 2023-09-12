@@ -7,6 +7,8 @@ set tmpfile = $outfile.raw.tmp
 #
 # some gdbs print out extra stuff.  This filters it out
 #
+# the sed command is due to the (gdb) prompt sometimes being followed by a
+# newline, sometimes not, before further program output
 mv $outfile $tmpfile
-cat $tmpfile | grep -vE "Using host libthread_db library|Breakpoint 1 at|no debugging symbols found|Reading symbols|'tmpdirname' has unknown type" | sed 's/(gdb) quit/(gdb) /;s/(gdb) /(gdb) \n/' > $outfile
+cat $tmpfile | grep -vE "Using host libthread_db library|Breakpoint 1 at|no debugging symbols found|Reading symbols|'tmpdirname' has unknown type" | sed 's/(gdb) quit/(gdb) /;s/(gdb) /(gdb) \n/;/^$/d' > $outfile
 rm $tmpfile
