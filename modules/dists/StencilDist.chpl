@@ -121,8 +121,8 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
 //
 
 /*
-  The ``stencilDist`` distribution is a variant of the :mod:`BlockDist
-  <blockDist>` distribution that attempts to improve performance for
+  The ``stencilDist`` distribution is a variant of the :mod:`blockDist
+  <BlockDist>` distribution that attempts to improve performance for
   stencil computations by reducing the amount of communication
   necessary during array accesses. From the user's perspective, it
   behaves very similarly to ``blockDist`` in terms of reads, writes,
