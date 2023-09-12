@@ -97,7 +97,7 @@ The ``Replicated`` class initializer is defined as follows:
 
   .. code-block:: chapel
 
-    proc Replicated.init(
+    proc replicatedDist.init(
       targetLocales: [] locale = Locales,
       purposeMessage: string = "used to create a Replicated")
 
@@ -113,7 +113,7 @@ when the initializer encounters an error.
 
 
 pragma "ignore noinit"
-record Replicated {
+record replicatedDist {
   forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(unmanaged ReplicatedImpl);
 
   proc init(targetLocales: [] locale = Locales,
@@ -144,23 +144,23 @@ record Replicated {
   // Note: This does not handle the case where the desired type of 'this'
   // does not match the type of 'other'. That case is handled by the compiler
   // via coercions.
-  proc init=(const ref other : Replicated) {
+  proc init=(const ref other : replicatedDist) {
     this.init(other._value.dsiClone());
   }
 
   proc clone() {
-    return new Replicated(this._value.dsiClone());
+    return new replicatedDist(this._value.dsiClone());
   }
 
   @chpldoc.nodoc
-  inline operator ==(d1: Replicated(?), d2: Replicated(?)) {
+  inline operator ==(d1: replicatedDist(?), d2: replicatedDist(?)) {
     if (d1._value == d2._value) then
       return true;
     return d1._value.dsiEqualDMaps(d2._value);
   }
 
   @chpldoc.nodoc
-  inline operator !=(d1: Replicated(?), d2: Replicated(?)) {
+  inline operator !=(d1: replicatedDist(?), d2: replicatedDist(?)) {
     return !(d1 == d2);
   }
 
@@ -168,6 +168,11 @@ record Replicated {
     chpl_distHelp.writeThis(x);
   }
 }
+
+
+@deprecated("'Replicated' is deprecated, please use 'replicatedDist' instead")
+type Replicated = replicatedDist;
+
 
 
 @chpldoc.nodoc
@@ -433,9 +438,9 @@ iter ReplicatedDom.these(param tag: iterKind, followThis) where tag == iterKind.
 
 proc ReplicatedDom.dsiGetDist() {
   if _isPrivatized(dist) then
-    return new Replicated(dist.pid, dist, _unowned=true);
+    return new replicatedDist(dist.pid, dist, _unowned=true);
   else
-    return new Replicated(nullPid, dist, _unowned=true);
+    return new replicatedDist(nullPid, dist, _unowned=true);
 }
 
 override proc ReplicatedDom.dsiDestroyDom() {
