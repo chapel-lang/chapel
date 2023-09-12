@@ -5,6 +5,11 @@ source $CHPL_HOME/util/test/chplExperimentGatherUtils/prelude.bash $@
 
 sizes=( 15 16 17 18)
 
+EXEC_CMD=""
+if [[ -n "$CHPL_LAUNCHER_PARTITION" ]]; then
+  EXEC_CMD="srun --partition=$CHPL_LAUNCHER_PARTITION"
+fi
+
 # -----------------------------------------------------------------------------
 # Build and run tests
 # -----------------------------------------------------------------------------
@@ -13,7 +18,7 @@ make clean
 make
 
 for x in "${sizes[@]}"; do
-  ./main $x 5 128 | tee -a "$runLog"
+  $EXEC_CMD ./main $x 5 128 | tee -a "$runLog"
 done
 
 # -----------------------------------------------------------------------------
