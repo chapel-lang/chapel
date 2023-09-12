@@ -24,7 +24,7 @@
 bool chpl_gpu_debug = false;
 bool chpl_gpu_no_cpu_mode_warning = false;
 int chpl_gpu_num_devices = -1;
-bool chpl_gpu_always_sync_kernels = false;
+bool chpl_gpu_use_async_streams = false;
 bool chpl_gpu_use_default_stream = false;
 
 #ifdef HAS_GPU_LOCALE
@@ -177,7 +177,7 @@ void chpl_gpu_support_module_finished_initializing(void) {
 
   CHPL_GPU_DEBUG("  Asynchrony: %s\n", async_ok() ? "enabled" : "disabled");
   CHPL_GPU_DEBUG("  Force kernel sync: %s\n",
-                 chpl_gpu_always_sync_kernels ? "enabled" : "disabled");
+                 !chpl_gpu_use_async_streams ? "enabled" : "disabled");
 }
 
 inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
@@ -216,7 +216,7 @@ inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
                               stream,
                               nargs, args);
 
-  if (chpl_gpu_always_sync_kernels) {
+  if (!chpl_gpu_use_async_streams) {
     CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
     chpl_gpu_impl_stream_synchronize(stream);
   }
@@ -265,7 +265,7 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
                                    stream,
                                    nargs, args);
 
-  if (chpl_gpu_always_sync_kernels) {
+  if (!chpl_gpu_use_async_streams) {
     CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
     chpl_gpu_impl_stream_synchronize(stream);
   }
@@ -397,8 +397,13 @@ void* chpl_gpu_memset(void* addr, const uint8_t val, size_t n) {
                  val);
   int dev = chpl_task_getRequestedSubloc();
   chpl_gpu_impl_use_device(dev);
+  void* stream = get_stream(dev);
 
-  void* ret = chpl_gpu_impl_memset(addr, val, n, get_stream(dev));
+  void* ret = chpl_gpu_impl_memset(addr, val, n, stream);
+  if (!chpl_gpu_use_async_streams) {
+    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
+    chpl_gpu_impl_stream_synchronize(stream);
+  }
 
   CHPL_GPU_DEBUG("chpl_gpu_memset successful\n");
   return ret;
@@ -422,6 +427,10 @@ void chpl_gpu_copy_device_to_device(c_sublocid_t dst_dev, void* dst,
   chpl_gpu_impl_copy_device_to_device(dst, src, n, stream);
   if (dst_dev != src_dev) {
     // going to a device that maybe used by a different task, synchornize
+    chpl_gpu_impl_stream_synchronize(stream);
+  }
+  else if (!chpl_gpu_use_async_streams) {
+    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
     chpl_gpu_impl_stream_synchronize(stream);
   }
 
@@ -458,11 +467,16 @@ void chpl_gpu_copy_host_to_device(c_sublocid_t dst_dev, void* dst,
   CHPL_GPU_DEBUG("Copying %zu bytes from host to device\n", n);
 
   chpl_gpu_impl_use_device(dst_dev);
+  void* stream = get_stream(dst_dev);
 
   chpl_gpu_diags_verbose_host_to_device_copy(ln, fn, dst_dev, n, commID);
   chpl_gpu_diags_incr(host_to_device);
 
-  chpl_gpu_impl_copy_host_to_device(dst, src, n, get_stream(dst_dev));
+  chpl_gpu_impl_copy_host_to_device(dst, src, n, stream);
+  if (!chpl_gpu_use_async_streams) {
+    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
+    chpl_gpu_impl_stream_synchronize(stream);
+  }
 
   CHPL_GPU_DEBUG("Copy successful\n");
 }

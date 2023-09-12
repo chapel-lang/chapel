@@ -30,9 +30,9 @@ module ChapelGpuSupport {
   @unstable("The variable 'gpuNoCpuModeWarning' is unstable and its interface is subject to change in the future")
   config const gpuNoCpuModeWarning = isEnvSet("CHPL_GPU_NO_CPU_MODE_WARNING");
 
-  extern var chpl_gpu_always_sync_kernels : bool;
-  @unstable("The variable 'gpuAlwaysSyncKernels' is unstable and its interface is subject to change in the future")
-  config const gpuAlwaysSyncKernels = false;
+  extern var chpl_gpu_use_async_streams : bool;
+  @unstable("The variable 'gpuUseAsynchronousStreams' is unstable and its interface is subject to change in the future")
+  config const gpuUseAsyncStreams = false;
 
   extern var chpl_gpu_use_default_stream : bool;
   @unstable("The variable 'gpuUseDefaultStream' is unstable and its interface is subject to change in the future")
@@ -49,7 +49,7 @@ module ChapelGpuSupport {
   // by virtue of module initialization:
   chpl_gpu_debug = debugGpu;
   chpl_gpu_no_cpu_mode_warning = gpuNoCpuModeWarning;
-  chpl_gpu_always_sync_kernels = gpuAlwaysSyncKernels;
+  chpl_gpu_use_async_streams = gpuUseAsyncStreams;
   chpl_gpu_use_default_stream = gpuUseDefaultStream;
 
   if CHPL_LOCALE_MODEL == 'gpu' {
