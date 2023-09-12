@@ -36,7 +36,7 @@ module ChapelGpuSupport {
 
   extern var chpl_gpu_use_default_stream : bool;
   @unstable("The variable 'gpuUseDefaultStream' is unstable and its interface is subject to change in the future")
-  config const gpuUseDefaultStream = false;
+  config var gpuUseDefaultStream = CHPL_GPU_MEM_STRATEGY=="unified_memory";
 
   /* If true, upon startup, enables peer-to-peer access between all pairs of
      GPUs that are eligible for peer-to-peer access within each locale. */
@@ -50,6 +50,17 @@ module ChapelGpuSupport {
   chpl_gpu_debug = debugGpu;
   chpl_gpu_no_cpu_mode_warning = gpuNoCpuModeWarning;
   chpl_gpu_use_async_streams = gpuUseAsyncStreams;
+
+  if (CHPL_GPU_MEM_STRATEGY=="unified_memory") {
+    if (!gpuUseDefaultStream) {
+      // the user must have set this
+      warning("gpuUseDefaultStream can't be set to false with ",
+              "CHPL_GPU_MEM_STRATEGY=unified_memory. Assuming ",
+              "gpuUseDefaultStream=true.");
+
+      gpuUseDefaultStream = true;
+    }
+  }
   chpl_gpu_use_default_stream = gpuUseDefaultStream;
 
   if CHPL_LOCALE_MODEL == 'gpu' {
