@@ -121,11 +121,12 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
 //
 
 /*
-  The Stencil distribution is a variant of the :mod:`Block <BlockDist>`
-  distribution that attempts to improve performance for stencil computations by
-  reducing the amount of communication necessary during array accesses. From
-  the user's perspective, it behaves very similarly to the Block distribution
-  where reads, writes, and iteration are concerned.
+  The ``stencilDist`` distribution is a variant of the :mod:`BlockDist
+  <blockDist>` distribution that attempts to improve performance for
+  stencil computations by reducing the amount of communication
+  necessary during array accesses. From the user's perspective, it
+  behaves very similarly to ``blockDist`` in terms of reads, writes,
+  and iteration.
 
   This distribution reduces communication by creating read-only caches for
   elements adjacent to the block of elements owned by each locale. This
@@ -134,17 +135,17 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
   stencil computation near the boundary of the current locale's chunk of array
   elements. The user must manually refresh these caches after writes by calling
   the ``updateFluff`` method. Otherwise, reading and writing array elements
-  behaves the same as a Block-distributed array.
+  behaves the same as a block-distributed array.
 
-  The indices are partitioned in the same way as the :mod:`Block <BlockDist>`
-  distribution.
+  The indices are partitioned in the same way as the :mod:`blockDist
+  <BlockDist>` distribution.
 
-  The ``Stencil`` class initializer is defined as follows:
+  The ``stencilDist`` initializer is defined as follows:
 
     .. code-block:: chapel
 
       proc stencilDist.init(
-        boundingBox: domain,
+        boundingBox: domain(?),
         targetLocales: [] locale  = Locales,
         dataParTasksPerLocale     = // value of  dataParTasksPerLocale      config const,
         dataParIgnoreRunningTasks = // value of  dataParIgnoreRunningTasks  config const,
@@ -187,16 +188,17 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
      the expanded bounding box, so a user must manually wrap periodic indices
      themselves.
 
-  Iterating directly over a Stencil-distributed domain or array will only yield
+  Iterating directly over a stencil-distributed domain or array will only yield
   indices and elements within the ``boundingBox``.
 
-  **Convenience Initializer Functions**
+  **Convenience Factory Methods**
 
-  It is common for a ``Stencil`` distribution to distribute its ``boundingBox``
-  across all locales. In this case, a convenience function can be used to
-  declare variables of stencil-distributed or array type. These functions take
-  a domain or a series of ranges as arguments and return a stencil-distributed
-  domain or array.
+  It is common for a ``stencilDist``-distributed domain or array to be
+  declared using the same indices for both its ``boundingBox`` and its
+  index set (as in the example using ``Space`` above).  It is also
+  common to not override any of the other defaulted initializer
+  arguments.  In such cases, factory procedures can be used for
+  convenience and to avoid repetition.
 
   .. code-block:: chapel
 
@@ -207,30 +209,30 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
     var BlockDom2 = stencilDist.createDomain(1..5, 1..5);
     var BlockArr2 = stencilDist.createArray(1..5, 1..5, real);
 
-  The helper methods on ``Stencil`` have the following signatures:
+  The helper methods on ``stencilDist`` have the following signatures:
 
   .. function:: proc type stencilDist.createDomain(dom: domain, targetLocales = Locales, fluff, periodic = false)
 
-    Create a domain over a Stencil Distribution.
+    Create a stencil-distributed domain.
 
   .. function:: proc type stencilDist.createDomain(rng: range(?)..., targetLocales = Locales, fluff, periodic = false)
 
-    Create a domain over a Stencil Distribution constructed from a series of
-    ranges.
+    Create a stencil-distributed domain from a series of ranges.
 
   .. function:: proc type stencilDist.createArray(dom: domain, type eltType, targetLocales = Locales, fluff, periodic = false)
 
-    Create a default initialized array over a Stencil Distribution using the
-    given domain.
+    Create a default-initialized, stencil-distributed array whose
+    indices match those of the given domain.
 
   .. function:: proc type stencilDist.createArray(rng: range(?)..., type eltType, targetLocales = Locales, fluff, periodic = false)
 
-    Create a default initialized array over a Stencil Distribution using a
+    Create a default-initialized, stencil-distributed array using a
     domain constructed from the series of ranges.
 
   .. function:: proc type stencilDist.createArray(dom: domain, type eltType, initExpr, targetLocales = Locales, fluff, periodic = false)
 
-    Create an array over a Stencil Distribution using the given domain.
+    Create a stencil-distributed whose indices match those of the
+    given domain.
 
     The array's values are initialized using ``initExpr`` which can be any of
     the following:
@@ -244,7 +246,7 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
 
   .. function:: proc type stencilDist.createArray(rng: range(?)..., type eltType, initExpr, targetLocales = Locales, fluff, periodic = false)
 
-    Create an array over a Stencil Distribution using a domain constructed from
+    Create a stencil-distributed array using a domain constructed from
     the series of ranges.
 
     The array's values are initialized using ``initExpr`` which can be any of
@@ -258,26 +260,27 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
       the distributed array
 
 
-  Note that the ``fluff`` argument in the above methods has a default value
-  computed from the ``dom`` or ``rng`` argument. If a ``fluff`` argument is
-  not provided, it will be a tuple of *n* zeros, where *n* is the domain's rank
-  or the number of provided ranges.
+  Note that the ``fluff`` argument in the above methods defaults to a
+  tuple of *n* zeros, where *n* is the domain's rank or the number of
+  provided ranges.
 
   **Updating the Cached Elements**
 
   Once you have completed a series of writes to the array, you will need to
-  call the ``updateFluff`` function to update the cached elements for each
+  call the ``updateFluff`` method to update the cached elements for each
   locale. Here is a simple example:
 
   .. code-block:: chapel
 
     use StencilDist;
 
-    const Dom = {1..10, 1..10};
-    const Space = Dom dmapped Stencil(Dom, fluff=(1,1));
-    var A : [Space] int;
+    const Space = {1..10, 1..10};
+    const Dist = new stencilDist(boundingBox=Space, fluff=(1,1));
+    const D = Space dmapped Dist;
+    var A : [D] int;
 
-    [(i,j) in Space] A[i,j] = i*10 + j;
+    forall (i,j) in D with (ref A) do
+      A[i,j] = i*10 + j;
 
     // At this point, the ghost cell caches are out of date
 
@@ -286,15 +289,16 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
     // ghost caches are now up-to-date
 
   After updating, any read from the array should be up-to-date. The
-  ``updateFluff`` function does not currently accept any arguments.
+  ``updateFluff`` method does not currently accept any arguments.
 
   **Reading and Writing to Array Elements**
 
-  The Stencil distribution uses ghost cells as cached read-only values from
-  other locales. When reading from a Stencil-distributed array, the
-  distribution will attempt to read from the local ghost cache first. If the
-  index is not within the cached index set of the current locale, then we
-  default to a remote read from the locale on which the element is located.
+  The ``stencilDist`` distribution uses ghost cells as cached
+  read-only values from other locales. When reading from a
+  stencil-distributed array, the distribution will attempt to read
+  from the local ghost cache first. If the index is not within the
+  cached index set of the current locale, then we default to a remote
+  read from the locale on which the element is located.
 
   Any write to array data will be applied to the actual element, the same as if
   you were using a Block-distributed array.
