@@ -60,7 +60,9 @@ if [[ ! "$_chplSetupEnv_dryRun" == "y" ]]; then
   OLD_CHPL_HOME="$CHPL_HOME"
 fi
 
+_chplSetupEnv_foundFeature=""
 for _chplSetupEnv_feature in $(echo $_chplSetupEnv_featureSet | sed "s/:/ /g"); do
+  _chplSetupEnv_foundFeature=""
   for _chplSetupEnv_p in ${_chplSetupEnv_pathsToRun[@]}; do
     if [ ! -d "$_chplSetupEnv_p" ]; then
       continue
@@ -68,6 +70,7 @@ for _chplSetupEnv_feature in $(echo $_chplSetupEnv_featureSet | sed "s/:/ /g"); 
 
     # Run <feature>.bash
     if [ -f "$_chplSetupEnv_p/$_chplSetupEnv_feature.$_chplSetupEnv_suffix" ]; then
+      _chplSetupEnv_foundFeature="y"
       if [[ "$_chplSetupEnv_dryRun" == "y" ]]; then
         echo -e "\n# --- RUN $_chplSetupEnv_p/$_chplSetupEnv_feature.$_chplSetupEnv_suffix ---"
         cat  "$_chplSetupEnv_p/$_chplSetupEnv_feature.$_chplSetupEnv_suffix"
@@ -78,6 +81,7 @@ for _chplSetupEnv_feature in $(echo $_chplSetupEnv_featureSet | sed "s/:/ /g"); 
 
     # Run <feature>.<hostname>.bash
     if [ -f "$_chplSetupEnv_p/$_chplSetupEnv_feature.$_chplSetupEnv_shortHost.$_chplSetupEnv_suffix" ]; then
+      _chplSetupEnv_foundFeature="y"
       if [[ "$_chplSetupEnv_dryRun" == "y" ]]; then
         echo -e "\n# --- RUN $_chplSetupEnv_p/$_chplSetupEnv_feature.$_chplSetupEnv_shortHost.$_chplSetupEnv_suffix ---"
         cat  "$_chplSetupEnv_p/$_chplSetupEnv_feature.$_chplSetupEnv_shortHost.$_chplSetupEnv_suffix"
@@ -86,6 +90,11 @@ for _chplSetupEnv_feature in $(echo $_chplSetupEnv_featureSet | sed "s/:/ /g"); 
       fi
     fi
   done
+
+  if [[ -z "$_chplSetupEnv_foundFeature" ]]; then
+    >&2 echo "chplSetup was unable to find any files for feature: $_chplSetupEnv_feature"
+    exit 1
+  fi
 done
 
 if [[ ! "$_chplSetupEnv_dryRun" == "y" ]]; then
