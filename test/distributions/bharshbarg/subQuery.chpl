@@ -17,7 +17,7 @@ test(C);
 const BC = Space dmapped BlockCyclic(startIdx = Space.low, blocksize = (2,2));
 test(BC);
 
-const SC = Space dmapped Stencil(Space, fluff=(1,1));
+const SC = Space dmapped stencilDist(Space, fluff=(1,1));
 test(SC);
 
 proc test(Dist) {

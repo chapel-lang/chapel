@@ -25,12 +25,12 @@ proc createDom(space) {
       return space dmapped BlockCyclic(startIdx=space.low, blocksize=(2,2));
     }
   }
-  else if distType == Stencil {
+  else if distType == stencilDist {
     if space.rank == 1 {
-      return space dmapped Stencil(space, fluff=(1,));
+      return space dmapped stencilDist(space, fluff=(1,));
     }
     else {
-      return space dmapped Stencil(space, fluff=(1,1));
+      return space dmapped stencilDist(space, fluff=(1,1));
     }
   }
   else if distType == Hashed {

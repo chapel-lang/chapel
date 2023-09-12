@@ -15,10 +15,10 @@ testDom("Block", blockDist.createDomain((...rng)));
 testDom("Block opts", blockDist.createDomain(dom, targetLocales=tls));
 testDom("Block opts:", blockDist.createDomain((...rng), targetLocales=tls));
 
-testDom("Stencil:", Stencil.createDomain(dom));
-testDom("Stencil:", Stencil.createDomain((...rng)));
-testDom("Stencil opts:", Stencil.createDomain(dom, targetLocales=tls, fluff=(2, 2), periodic=true));
-testDom("Stencil opts:", Stencil.createDomain((...rng), targetLocales=tls, fluff=(2, 2), periodic=true));
+testDom("Stencil:", stencilDist.createDomain(dom));
+testDom("Stencil:", stencilDist.createDomain((...rng)));
+testDom("Stencil opts:", stencilDist.createDomain(dom, targetLocales=tls, fluff=(2, 2), periodic=true));
+testDom("Stencil opts:", stencilDist.createDomain((...rng), targetLocales=tls, fluff=(2, 2), periodic=true));
 
 testDom("Cyclic:", cyclicDist.createDomain(dom));
 testDom("Cyclic:", cyclicDist.createDomain((...rng)));
@@ -49,18 +49,18 @@ testArray("Block array:", blockDist.createArray(dom, int, b));
 testArray("Block array:", blockDist.createArray((...rng), int, a));
 testArray("Block array:", blockDist.createArray((...rng), int, b));
 
-testArray("Stencil:", Stencil.createArray(dom, int));
-testArray("Stencil:", Stencil.createArray((...rng), int));
-testArray("Stencil opts:", Stencil.createArray(dom, int, targetLocales=tls, fluff=(2, 2), periodic=true));
-testArray("Stencil opts:", Stencil.createArray((...rng), int, targetLocales=tls, fluff=(2, 2), periodic=true));
-testArray("Stencil value:", Stencil.createArray(dom, int, -1));
-testArray("Stencil value:", Stencil.createArray((...rng), int, -1));
-testArray("Stencil iter:", Stencil.createArray(dom, int, [(i, j) in dom] i + j));
-testArray("Stencil iter:", Stencil.createArray((...rng), int, [(i, j) in dom] i + j));
-testArray("Stencil array:", Stencil.createArray(dom, int, a));
-testArray("Stencil array:", Stencil.createArray(dom, int, b));
-testArray("Stencil array:", Stencil.createArray((...rng), int, a));
-testArray("Stencil array:", Stencil.createArray((...rng), int, b));
+testArray("Stencil:", stencilDist.createArray(dom, int));
+testArray("Stencil:", stencilDist.createArray((...rng), int));
+testArray("Stencil opts:", stencilDist.createArray(dom, int, targetLocales=tls, fluff=(2, 2), periodic=true));
+testArray("Stencil opts:", stencilDist.createArray((...rng), int, targetLocales=tls, fluff=(2, 2), periodic=true));
+testArray("Stencil value:", stencilDist.createArray(dom, int, -1));
+testArray("Stencil value:", stencilDist.createArray((...rng), int, -1));
+testArray("Stencil iter:", stencilDist.createArray(dom, int, [(i, j) in dom] i + j));
+testArray("Stencil iter:", stencilDist.createArray((...rng), int, [(i, j) in dom] i + j));
+testArray("Stencil array:", stencilDist.createArray(dom, int, a));
+testArray("Stencil array:", stencilDist.createArray(dom, int, b));
+testArray("Stencil array:", stencilDist.createArray((...rng), int, a));
+testArray("Stencil array:", stencilDist.createArray((...rng), int, b));
 
 testArray("Cyclic:", cyclicDist.createArray(dom, int));
 testArray("Cyclic:", cyclicDist.createArray((...rng), int));

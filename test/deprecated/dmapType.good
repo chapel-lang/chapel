@@ -4,6 +4,9 @@ dmapType.chpl:8: warning: 'Block' is deprecated, please use 'blockDist' instead
 dmapType.chpl:14: warning: 'Cyclic' is deprecated, please use 'cyclicDist' instead
 dmapType.chpl:18: warning: 'Cyclic' is deprecated, please use 'cyclicDist' instead
 dmapType.chpl:18: warning: 'Cyclic' is deprecated, please use 'cyclicDist' instead
+dmapType.chpl:34: warning: 'Stencil' is deprecated, please use 'stencilDist' instead
+dmapType.chpl:38: warning: 'Stencil' is deprecated, please use 'stencilDist' instead
+dmapType.chpl:38: warning: 'Stencil' is deprecated, please use 'stencilDist' instead
 dmapType.chpl:4: warning: The use of 'dmap' is deprecated for this distribution; please replace 'new dmap(new <DistName>(<args>))' with 'new <DistName>(<args>)'
 dmapType.chpl:8: warning: The use of 'dmap' is deprecated for this distribution; please replace 'dmap(<DistName>(<args>))' with '<DistName>(<args>)'
 dmapType.chpl:14: warning: The use of 'dmap' is deprecated for this distribution; please replace 'new dmap(new <DistName>(<args>))' with 'new <DistName>(<args>)'
@@ -19,4 +22,4 @@ cyclicDist(1,int(64))
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 Replicated
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
-Stencil(1,int(64),false)
+stencilDist(1,int(64),false)

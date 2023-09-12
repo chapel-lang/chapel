@@ -123,7 +123,7 @@ inline proc getDom(param dType: distType) {
     when distType.blockCyc do
       return localDom dmapped BlockCyclic(startIdx=localDom.first, blocksize=5);
     when distType.stencil do
-      return localDom dmapped Stencil(boundingBox=localDom, fluff=(1,));
+      return localDom dmapped stencilDist(boundingBox=localDom, fluff=(1,));
   }
 }
 

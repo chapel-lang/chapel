@@ -30,7 +30,7 @@ proc makeA() {
     var ret: [D] int;
     return ret;
   } else if distType == DistType.stencil {
-    var D = {1..1} dmapped Stencil(rank=1, boundingBox={1..1});
+    var D = {1..1} dmapped stencilDist(rank=1, boundingBox={1..1});
     var ret: [D] int;
     return ret;
   } else {
