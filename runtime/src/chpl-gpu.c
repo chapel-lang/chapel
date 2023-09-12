@@ -29,6 +29,8 @@ bool chpl_gpu_use_default_stream = false;
 
 #ifdef HAS_GPU_LOCALE
 
+// #define CHPL_GPU_ENABLE_PROFILE
+
 #include "chplrt.h"
 #include "chpl-gpu.h"
 #include "chpl-gpu-impl.h"
@@ -154,6 +156,8 @@ void chpl_gpu_task_fence(void) {
 static void* get_stream(int dev) {
   if (!async_ok()) return NULL;
 
+  CHPL_GPU_START_TIMER(stream_time);
+
   // assumes that device has been set correctly with chpl_gpu_impl_use_device
   chpl_gpu_taskPrvData_t* prvData = get_gpu_task_private_data();
 
@@ -171,6 +175,9 @@ static void* get_stream(int dev) {
     *stream = chpl_gpu_impl_stream_create();
     CHPL_GPU_DEBUG("Stream created: %p (subloc %d)\n", *stream, dev);
   }
+
+  CHPL_GPU_STOP_TIMER(stream_time);
+  CHPL_GPU_PRINT_TIMERS("Stream obtained in %.1Lf us\n", stream_time*1000);
 
   CHPL_GPU_DEBUG("Using stream: %p (subloc %d)\n", *stream, dev);
 
