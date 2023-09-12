@@ -856,10 +856,6 @@ The modulus operators are predefined as follows:
 For each of these definitions that return a value, the result is the
 remainder when the first operand is divided by the second operand.
 
-.. note::
-   This does not have the same behavior as :proc:`~AutoMath.mod` when `b` is
-   negative.
-
 The sign of the result is the same as the sign of the dividend ``a``,
 and the magnitude of the result is always smaller than that of the
 divisor ``b``. For integer operands, the ``%`` and ``/`` operators are
@@ -870,6 +866,10 @@ related by the following identity:
    var q = a / b;
    var r = a % b;
    writeln(q * b + r == a);    // true
+
+.. note::
+   This does not have the same behavior as :proc:`~AutoMath.mod` when `b` is
+   negative.
 
 There is an expectation that the predefined modulus operators will be
 extended to handle real, imaginary, and complex types in the future.
