@@ -1,0 +1,2 @@
+modify-with-op.chpl:3: warning: modifying an array over an array of indices is deprecated and will be an error in a future release - please use an explicit loop instead
+modify-with-op.chpl:4: warning: modifying an array over an array of indices is deprecated and will be an error in a future release - please use an explicit loop instead

@@ -174,72 +174,21 @@ symExprIsSetByUse(SymExpr* use) {
 }
 
 static
-bool symExprIsUsedAsConstRef(SymExpr* use) {
-  if (CallExpr* call = toCallExpr(use->parentExpr)) {
-    if (FnSymbol* calledFn = call->resolvedFunction()) {
-      ArgSymbol* formal = actual_to_formal(use);
-
-      // generally, use const-ref-return if passing to const ref formal
-      if (formal->intent == INTENT_CONST_REF) {
-        // but make an exception for initCopy calls
-        if (calledFn->hasFlag(FLAG_INIT_COPY_FN))
-          return false;
-
-        // TODO: tuples of types with blank intent
-        // being 'in' should perhaps use the value version.
-        return true;
-      }
-
-    } else if (call->isPrimitive(PRIM_RETURN) ||
-               call->isPrimitive(PRIM_YIELD)) {
-      FnSymbol* inFn = toFnSymbol(call->parentSymbol);
-
-      // use const-ref-return if returning by const ref intent
-      if (inFn->retTag == RET_CONST_REF)
-        return true;
-
-    } else if (call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
-               call->isPrimitive(PRIM_WIDE_GET_NODE)) {
-      // If we are extracting a field from the wide pointer,
-      // we need to keep it as a pointer.
-
-      // use const-ref-return if querying locale
-      return true;
-
-    } else {
-      // Check for the case that sym is moved to a compiler-introduced
-      // variable, possibly with PRIM_MOVE tmp, PRIM_ADDR_OF sym
-      if (call->isPrimitive(PRIM_ADDR_OF) ||
-          call->isPrimitive(PRIM_SET_REFERENCE) ||
-          call->isPrimitive(PRIM_GET_MEMBER) ||
-          call->isPrimitive(PRIM_GET_SVEC_MEMBER))
-        call = toCallExpr(call->parentExpr);
-
-      if (call->isPrimitive(PRIM_MOVE)) {
-        SymExpr* lhs = toSymExpr(call->get(1));
-        Symbol* lhsSymbol = lhs->symbol();
-
-        if (lhsSymbol->hasFlag(FLAG_REF_VAR)) {
-          // intended to handle 'const ref'
-          // it would be an error to reach this point if it is not const
-          INT_ASSERT(lhsSymbol->hasFlag(FLAG_CONST));
-          return true;
-        }
-
-        if (lhs != use &&
-            lhsSymbol->isRef() &&
-            symbolIsUsedAsConstRef(lhsSymbol))
-          return true;
-      }
-    }
-  }
-  return false;
-}
-
-static
 bool symbolIsUsedAsConstRef(Symbol* sym) {
+  auto checkForMove = [](SymExpr* use, CallExpr* call) {
+    SymExpr* lhs = toSymExpr(call->get(1));
+    Symbol* lhsSymbol = lhs->symbol();
+
+    if (lhsSymbol->hasFlag(FLAG_REF_VAR)) {
+      // intended to handle 'const ref'
+      // it would be an error to reach this point if it is not const
+      INT_ASSERT(lhsSymbol->hasFlag(FLAG_CONST));
+      return true;
+    }
+    return lhs != use && lhsSymbol->isRef() && symbolIsUsedAsConstRef(lhsSymbol);
+  };
   for_SymbolSymExprs(se, sym) {
-    if (symExprIsUsedAsConstRef(se)) {
+    if (symExprIsUsedAsRef(se, true, checkForMove)) {
       return true;
     }
   }

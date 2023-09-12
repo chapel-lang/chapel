@@ -29,7 +29,7 @@ proc buildSpace(Dom) {
     return Dom dmapped blockDist(boundingBox=bb);
   }
   else if distType == DistType.cyclic {
-    return Dom dmapped Cyclic(startIdx=1);
+    return Dom dmapped cyclicDist(startIdx=1);
   }
   else if distType == DistType.replicated {
     return Dom dmapped Replicated();

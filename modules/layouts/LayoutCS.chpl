@@ -341,7 +341,6 @@ class CSDom: BaseSparseDomImpl(?) {
       }
     }
     halt("Something went wrong in dsiFirst");
-    return (0, 0);
   }
 
   override proc dsiLast {

@@ -65,7 +65,7 @@ use Dist;
 
 proc make(param dist : Dist, dom : domain, box = dom, targetLocales = Locales, startIdx = (dom.first,)) {
   if dist == cyclic then
-    return dom dmapped Cyclic(startIdx,targetLocales=targetLocales);
+    return dom dmapped cyclicDist(startIdx,targetLocales=targetLocales);
   else if dist == block then
     return dom dmapped blockDist(box, targetLocales=targetLocales);
   else if dist == stencil then

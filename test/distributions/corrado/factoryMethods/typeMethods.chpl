@@ -20,10 +20,10 @@ testDom("Stencil:", stencilDist.createDomain((...rng)));
 testDom("Stencil opts:", stencilDist.createDomain(dom, targetLocales=tls, fluff=(2, 2), periodic=true));
 testDom("Stencil opts:", stencilDist.createDomain((...rng), targetLocales=tls, fluff=(2, 2), periodic=true));
 
-testDom("Cyclic:", Cyclic.createDomain(dom));
-testDom("Cyclic:", Cyclic.createDomain((...rng)));
-testDom("Cyclic opts:", Cyclic.createDomain(dom, targetLocales=tls));
-testDom("Cyclic opts:", Cyclic.createDomain((...rng), targetLocales=tls));
+testDom("Cyclic:", cyclicDist.createDomain(dom));
+testDom("Cyclic:", cyclicDist.createDomain((...rng)));
+testDom("Cyclic opts:", cyclicDist.createDomain(dom, targetLocales=tls));
+testDom("Cyclic opts:", cyclicDist.createDomain((...rng), targetLocales=tls));
 
 proc testDom(test: string, D: domain) {
   writeln("\n", test);
@@ -62,18 +62,18 @@ testArray("Stencil array:", stencilDist.createArray(dom, int, b));
 testArray("Stencil array:", stencilDist.createArray((...rng), int, a));
 testArray("Stencil array:", stencilDist.createArray((...rng), int, b));
 
-testArray("Cyclic:", Cyclic.createArray(dom, int));
-testArray("Cyclic:", Cyclic.createArray((...rng), int));
-testArray("Cyclic opts:", Cyclic.createArray(dom, int, targetLocales=tls));
-testArray("Cyclic opts:", Cyclic.createArray((...rng), int, targetLocales=tls));
-testArray("Cyclic value:", Cyclic.createArray(dom, int, -1));
-testArray("Cyclic value:", Cyclic.createArray((...rng), int, -1));
-testArray("Cyclic iter:", Cyclic.createArray(dom, int, [(i, j) in dom] i + j));
-testArray("Cyclic iter:", Cyclic.createArray((...rng), int, [(i, j) in dom] i + j));
-testArray("Cyclic array:", Cyclic.createArray(dom, int, a));
-testArray("Cyclic array:", Cyclic.createArray(dom, int, b));
-testArray("Cyclic array:", Cyclic.createArray((...rng), int, a));
-testArray("Cyclic array:", Cyclic.createArray((...rng), int, b));
+testArray("Cyclic:", cyclicDist.createArray(dom, int));
+testArray("Cyclic:", cyclicDist.createArray((...rng), int));
+testArray("Cyclic opts:", cyclicDist.createArray(dom, int, targetLocales=tls));
+testArray("Cyclic opts:", cyclicDist.createArray((...rng), int, targetLocales=tls));
+testArray("Cyclic value:", cyclicDist.createArray(dom, int, -1));
+testArray("Cyclic value:", cyclicDist.createArray((...rng), int, -1));
+testArray("Cyclic iter:", cyclicDist.createArray(dom, int, [(i, j) in dom] i + j));
+testArray("Cyclic iter:", cyclicDist.createArray((...rng), int, [(i, j) in dom] i + j));
+testArray("Cyclic array:", cyclicDist.createArray(dom, int, a));
+testArray("Cyclic array:", cyclicDist.createArray(dom, int, b));
+testArray("Cyclic array:", cyclicDist.createArray((...rng), int, a));
+testArray("Cyclic array:", cyclicDist.createArray((...rng), int, b));
 
 
 proc testArray(test: string, in A: [] int) {

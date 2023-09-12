@@ -11,9 +11,8 @@ module Timer {
     proc stop() {
       halt("Called Abstract Base stop method");
     }
-    proc elapsed() {
+    proc elapsed(): real {
       halt("Called Abstract Base elapsed method");
-      return 0.0;
     }
   }
 

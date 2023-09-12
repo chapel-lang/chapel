@@ -58,7 +58,7 @@ module DistributedList {
 
         @chpldoc.nodoc
         const locDom = {0..<targetLocales.size}
-            dmapped Cyclic(startIdx=0, targetLocales=targetLocales);
+            dmapped cyclicDist(startIdx=0, targetLocales=targetLocales);
 
         @chpldoc.nodoc
         var locks: [locDom] ChapelLocks.chpl_LocalSpinlock =

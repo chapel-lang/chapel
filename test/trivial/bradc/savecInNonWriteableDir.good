@@ -1,1 +1,1 @@
-error: opening nonWriteableDir/chpl__header.h: Permission denied
+error: write permission denied for directory nonWriteableDir

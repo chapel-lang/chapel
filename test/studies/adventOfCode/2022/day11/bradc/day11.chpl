@@ -96,9 +96,8 @@ proc Monkey.processItems(canFinishTurn) {
 
 // This is effectively an abstract base class
 class MathOp {
-  proc apply(item) {
+  proc apply(item): item.type {
     halt("We should never end up calling '.apply' on the base class");
-    return item;
   }
 }
 

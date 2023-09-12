@@ -27,7 +27,7 @@ const tableSize = M * numTasks;
 // The intuitive implementation of histogram that uses global atomics
 proc main() {
   const Mspace = {0..tableSize-1};
-  const D = Mspace dmapped Cyclic(startIdx=Mspace.low);
+  const D = Mspace dmapped cyclicDist(startIdx=Mspace.low);
   var A: [D] atomic int;
   var AggA: [D] AggregatedAtomic(int);
 

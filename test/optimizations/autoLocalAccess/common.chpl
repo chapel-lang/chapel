@@ -14,8 +14,8 @@ proc createDom(space) {
   if distType == blockDist {
     return blockDist.createDomain(space);
   }
-  else if distType == Cyclic {
-    return Cyclic.createDomain(space);
+  else if distType == cyclicDist {
+    return cyclicDist.createDomain(space);
   }
   else if distType == BlockCyclic {
     if space.rank == 1 {

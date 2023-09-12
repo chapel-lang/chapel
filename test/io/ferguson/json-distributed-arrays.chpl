@@ -48,7 +48,7 @@ var expectfile = openMemFile();
 
 {
   writeln("Testing cyclic array");
-  var A = Cyclic.createArray({1..5}, int);
+  var A = cyclicDist.createArray({1..5}, int);
   A = 1..5;
 
   jsonOut.writef("%?\n", A);

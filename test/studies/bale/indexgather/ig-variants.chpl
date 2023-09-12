@@ -21,7 +21,7 @@ const numUpdates = N * numTasks;
 const tableSize = M * numTasks;
 
 const Mspace = {0..tableSize-1};
-const D = Mspace dmapped Cyclic(startIdx=Mspace.low);
+const D = Mspace dmapped cyclicDist(startIdx=Mspace.low);
 var A: [D] int = 0..tableSize-1;
 
 const Nspace = {0..numUpdates-1};

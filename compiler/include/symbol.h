@@ -821,6 +821,7 @@ extern const char* astrPostinit;
 extern const char* astrBuildTuple;
 extern const char* astrTag;
 extern const char* astrThis;
+extern const char* astrThese;
 extern const char* astrSuper;
 extern const char* astr_chpl_cname;
 extern const char* astr_chpl_forward_tgt;
@@ -946,6 +947,8 @@ std::vector<std::string> gatherPrintLlvmIrCNames();
 void printLlvmIr(const char* name, llvm::Function *func, llvmStageNum_t numStage);
 #endif
 
+// Restore list of cnames to print, from tmp file on disk into memory.
+void restorePrintIrCNames();
 void preparePrintLlvmIrForCodegen();
 void completePrintLlvmIrStage(llvmStageNum_t numStage);
 

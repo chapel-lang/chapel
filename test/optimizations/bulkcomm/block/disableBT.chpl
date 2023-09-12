@@ -25,7 +25,7 @@ proc main() {
   }
 
   {
-    var CD = S dmapped Cyclic(S.low);
+    var CD = S dmapped cyclicDist(S.low);
     var C : [CD] int;
     writeln("Dist=Cyclic: ", chpl__bulkTransferArray(A, C));
   }

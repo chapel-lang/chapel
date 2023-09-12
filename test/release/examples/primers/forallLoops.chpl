@@ -154,7 +154,7 @@ Domains declared without a ``dmapped`` clause, including
 default rectangular and default associative domains, as well as
 arrays over such domains, provide both serial and parallel
 iterators. So do domains distributed over standard distributions,
-such as blockDist and Cyclic (:ref:`primers-distributions`), and
+such as blockDist and cyclicDist (:ref:`primers-distributions`), and
 arrays over such domains. The parallel iterators provided
 by standard distributions place each loop iteration on the
 locale where the corresponding index or array element is placed.

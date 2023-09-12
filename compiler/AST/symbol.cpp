@@ -2108,6 +2108,7 @@ const char* astrPostinit = NULL;
 const char* astrBuildTuple = NULL;
 const char* astrTag = NULL;
 const char* astrThis = NULL;
+const char* astrThese = NULL;
 const char* astrSuper = NULL;
 const char* astr_chpl_cname = NULL;
 const char* astr_chpl_forward_tgt = NULL;
@@ -2149,6 +2150,7 @@ void initAstrConsts() {
   astrBuildTuple = astr("_build_tuple");
   astrTag     = astr("tag");
   astrThis    = astr("this");
+  astrThese   = astr("these");
   astrSuper   = astr("super");
   astr_chpl_cname = astr("_chpl_cname");
   astr_chpl_forward_tgt = astr("_chpl_forward_tgt");

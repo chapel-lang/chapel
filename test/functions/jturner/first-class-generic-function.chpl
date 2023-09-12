@@ -332,7 +332,7 @@ module cholesky_scalar_algorithms {
 
     const MatIdx = { index_base .. #n, index_base .. #n };
 
-    const mat_dom : domain (2) dmapped Cyclic ( startIdx = MatIdx.low )
+    const mat_dom : domain (2) dmapped cyclicDist ( startIdx = MatIdx.low )
       = MatIdx; // CYCLIC VERSION
     const distribution_type = "cyclic";
 
