@@ -574,6 +574,7 @@ module Bytes {
      :returns: A shallow copy if the :type:`bytes` is already on the
                current locale, otherwise a deep copy is performed.
   */
+  @unstable("bytes.localize() is unstable and may change in a future release")
   inline proc bytes.localize() : bytes {
     if compiledForSingleLocale() || this.locale_id == chpl_nodeID {
       return bytes.createBorrowingBuffer(this);

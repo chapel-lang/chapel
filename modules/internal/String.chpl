@@ -1349,6 +1349,7 @@ module String {
      :returns: A shallow copy if the :type:`string` is already on the
                current locale, otherwise a deep copy is performed.
   */
+  @unstable("string.localize() is unstable and may change in a future release")
   inline proc string.localize() : string {
     if compiledForSingleLocale() || this.locale_id == chpl_nodeID {
       return string.createBorrowingBuffer(this);
