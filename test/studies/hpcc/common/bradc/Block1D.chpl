@@ -838,7 +838,7 @@ class LocBlock1DArr {
   // this is the parallel iterator for the local array, see global
   // domain parallel iterators for general notes on the approach
   //
-  iter these(param tag: iterKind) where tag == iterKind.leader {
+  iter these(param tag: iterKind) : domain(1) where tag == iterKind.leader {
     halt("This is bogus");
     yield {1..100};
   }
