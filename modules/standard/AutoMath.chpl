@@ -2695,14 +2695,10 @@ module AutoMath {
   }
 
   proc chpl_gcd(in a: int,in b: int): int {
-     a = abs(a);
-     b = abs(b);
-     var r: int;
-     while(b != 0) {
-       r = a % b;
-       a = b;
-       b = r;
-     }
+    (a, b) = (abs(a), abs(b));
+    while(b != 0) {
+      (a, b) = (b, a % b);
+    }
     return a;
   }
 

@@ -1048,6 +1048,72 @@ module Math {
     return chpl_gcd(x, y);
   }
 
+  /* Returns the greatest common divisor of the integer arguments `x` and
+     `y`. */
+  proc gcd(in x: int(32),in y: int(32)): int(32) {
+    (x, y) = (abs(x), abs(y));
+    while(y != 0) {
+      (x, y) = (y, x % y);
+    }
+    return x;
+  }
+
+  /* Returns the greatest common divisor of the integer arguments `x` and
+     `y`. */
+  proc gcd(in x: int(16),in y: int(16)): int(16) {
+    (x, y) = (abs(x), abs(y));
+    while(y != 0) {
+      (x, y) = (y, x % y);
+    }
+    return x;
+  }
+
+  /* Returns the greatest common divisor of the integer arguments `x` and
+     `y`. */
+  proc gcd(in x: int(8),in y: int(8)): int(8) {
+    (x, y) = (abs(x), abs(y));
+    while(y != 0) {
+      (x, y) = (y, x % y);
+    }
+    return x;
+  }
+
+  /* Returns the greatest common divisor of the unsigned integer arguments `x`
+     and `y`. */
+  proc gcd(in x: uint(64),in y: uint(64)): uint(64) {
+    while(y != 0) {
+      (x, y) = (y, x % y);
+    }
+    return x;
+  }
+
+  /* Returns the greatest common divisor of the unsigned integer arguments `x`
+     and `y`. */
+  proc gcd(in x: uint(32),in y: uint(32)): uint(32) {
+    while(y != 0) {
+      (x, y) = (y, x % y);
+    }
+    return x;
+  }
+
+  /* Returns the greatest common divisor of the unsigned integer arguments `x`
+     and `y`. */
+  proc gcd(in x: uint(16),in y: uint(16)): uint(16) {
+    while(y != 0) {
+      (x, y) = (y, x % y);
+    }
+    return x;
+  }
+
+  /* Returns the greatest common divisor of the unsigned integer arguments `x`
+     and `y`. */
+  proc gcd(in x: uint(8),in y: uint(8)): uint(8) {
+    while(y != 0) {
+      (x, y) = (y, x % y);
+    }
+    return x;
+  }
+
   /* Returns the Bessel function of the first kind of order `0` of `x`. */
   @unstable("'j0' is unstable and may be renamed or moved to a different module in the future")
   inline proc j0(x: real(32)): real(32) {
