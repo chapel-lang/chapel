@@ -40,7 +40,7 @@ PARSER_ERROR_CLASS(BisonUnknownError, std::string, std::string)
 // other parser errors
 PARSER_SYNTAX_CLASS(CannotAttachPragmas, const uast::AstNode*)
 PARSER_SYNTAX_CLASS(CommentEOF, Location, Location)
-PARSER_SYNTAX_CLASS(ExceptOnlyInvalidExpr, uast::VisibilityClause::LimitationKind)
+PARSER_SYNTAX_CLASS(ExceptOnlyInvalidExpr, Location, uast::VisibilityClause::LimitationKind)
 PARSER_SYNTAX_CLASS(ExternUnclosedPair, std::string)
 PARSER_SYNTAX_CLASS(InvalidIndexExpr)
 PARSER_SYNTAX_CLASS(InvalidNewForm, const uast::AstNode*)

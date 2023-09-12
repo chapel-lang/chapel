@@ -101,12 +101,13 @@ void ErrorCommentEOF::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorExceptOnlyInvalidExpr::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
+  auto loc = std::get<0>(info);
+  auto limitLoc = std::get<1>(info);
   auto limitationKind = std::get<uast::VisibilityClause::LimitationKind>(info);
   wr.heading(kind_, type_, loc, "incorrect expression in '", limitationKind,
              "' list, identifier expected.");
   wr.message("In the '", limitationKind, "' list here:");
-  wr.code(loc);
+  wr.code<Location>(loc, { limitLoc });
 }
 
 void ErrorExternUnclosedPair::write(ErrorWriterBase& wr) const {
