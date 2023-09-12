@@ -1600,7 +1600,7 @@ module ChapelDomain {
                       " support a 'doiTryCreateArray' method.");
       if boundsChecking then
         for (d, ad, i) in zip(this.dims(), dom.dims(), 0..) do
-          if d.size != ad.size then halt("Domain size mismatch in 'Block.createArray' dimension " + i:string);
+          if d.size != ad.size then halt("Domain size mismatch in 'tryCreateArray' dimension " + i:string);
 
       chpl_checkEltType(eltType);
       chpl_checkNegativeStride();

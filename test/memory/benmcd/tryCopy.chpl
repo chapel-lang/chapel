@@ -1,7 +1,7 @@
 use BlockDist;
 
 var a: [1..10] int = 10;
-var c = Block.createArray(0..10, int);
+var c = blockDist.createArray(0..10, int);
 c = 199;
 
 var b = a.tryCopy();
