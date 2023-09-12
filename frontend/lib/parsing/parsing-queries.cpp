@@ -1407,12 +1407,13 @@ static bool isAstDeprecated(Context* context, const AstNode* ast) {
 
 static bool isUnstablePackageModule(Context* context, const ID& id) {
   auto node = parsing::idToAst(context, id);
+  if (!node) return false;
 
   // If the node is deprecated, no unstable warning is needed
-  if(isAstDeprecated(context, node)) return false;
+  if (isAstDeprecated(context, node)) return false;
 
   bool isPackageModule = false;
-  if (auto mod = node->toModule()) {
+  if (node->isModule()) {
     UniqueString path;
     if (context->filePathForId(id, path)) {
       path = context->adjustPathForErrorMsg(path);
