@@ -29,7 +29,7 @@ SUCCESS: myMap
 --------------------
 0b000000000000009a9999999999f13f
 ====================
-IN B.init
+IN B.deserialize
 SUCCESS: DefaultRecord
 ===== writing: =====
 {b = (t = (22, 2.2))}
@@ -42,5 +42,5 @@ ERROR: BadFormatError: bad format (invalid binary format found for class nilabil
 --------------------
 0121000000000000006666666666660a40
 ====================
-IN B.init
+IN B.deserialize
 SUCCESS: unmanaged DefaultClass

@@ -33,19 +33,19 @@ SUCCESS: myMap
 --------------------
 {"b":{"t":[11, 1.100000e+00]}}
 ====================
-IN B.init
+IN B.deserialize
 SUCCESS: DefaultRecord
 ===== writing: =====
 {b = (t = (22, 2.2))}
 --------------------
 {"b":{"t":[22, 2.200000e+00]}}
 ====================
-IN B.init
+IN B.deserialize
 SUCCESS: owned DefaultClass
 ===== writing: =====
 {b = (t = (33, 3.3))}
 --------------------
 {"b":{"t":[33, 3.300000e+00]}}
 ====================
-IN B.init
+IN B.deserialize
 SUCCESS: unmanaged DefaultClass
