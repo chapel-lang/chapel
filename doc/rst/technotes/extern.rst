@@ -222,8 +222,8 @@ called on Chapel strings that are stored on the same locale; calling
 
 .. note::
 
-  ``c_string`` is expected to be deprecated in a future release in favor
-  of instead using ``c_ptr`` types such as ``c_ptrConst(c_char)``.
+  ``c_string`` is deprecated in favor of ``c_ptrConst(c_char)``, which can be
+  used with corresponding functions such as ``c_ptrToConst``.
 
 c_fn_ptr
 ~~~~~~~~
