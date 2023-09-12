@@ -183,6 +183,7 @@
   often necessary to run a small test program twice, once with that
   module present and once without it.
  */
+@unstable("The CommDiagnostics module is unstable and may change in the future")
 module CommDiagnostics
 {
   /*

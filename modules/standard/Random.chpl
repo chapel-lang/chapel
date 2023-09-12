@@ -59,6 +59,7 @@
        change.
 
 */
+@unstable("The Random module is unstable and may change in the future")
 module Random {
 
   public use RandomSupport;
