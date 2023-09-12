@@ -4,7 +4,7 @@ config var printInitDeinit = true;
 config const debug = false;
 
 
-proc printTable(h: chpl__hashtable) {
+proc printTable(h: chpl__hashtable(?)) {
   writeln("printing table tableSize=", h.tableSize,
           " tableNumFullSlots=", h.tableNumFullSlots);
   for slot in h.allSlots() {

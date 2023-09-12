@@ -122,7 +122,7 @@ module DistributedList {
 
             this.numEntries.write(d.size);
         }
-        proc init=(other: distributedList) {
+        proc init=(other: distributedList(?)) {
           this.eltType = other.eltType;
           this.blockSize = other.blockSize;
           this.targetLocales = other.targetLocales;

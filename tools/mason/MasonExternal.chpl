@@ -412,7 +412,7 @@ private proc editCompilers() {
 
 /* Given a toml of external dependencies returns
    the dependencies in a toml in lock file format */
-proc getExternalPackages(exDeps: Toml) /* [domain(string)] shared Toml? */ {
+proc getExternalPackages(exDeps: Toml(?)) /* [domain(string)] shared Toml? */ {
 
   var exDom: domain(string);
   var exDepTree: [exDom] shared Toml?;

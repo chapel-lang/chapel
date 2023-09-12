@@ -17,7 +17,7 @@ proc printDebug(msg: string...) {
   if debug then writeln((...msg));
 }
 
-proc buildDenseStride(MakeDense : domain, MakeStride : domain, stride : int) {
+proc buildDenseStride(MakeDense : domain(?), MakeStride : domain(?), stride : int) {
   const retStride = MakeStride by stride;
   var rngs = MakeDense.dims();
   for i in 0..#MakeDense.rank {
@@ -27,7 +27,7 @@ proc buildDenseStride(MakeDense : domain, MakeStride : domain, stride : int) {
   return (retDense, retStride);
 }
 
-proc buildRankChange(Dom : domain, param first : bool) {
+proc buildRankChange(Dom : domain(?), param first : bool) {
   var r : (Dom.rank-1) * Dom.dim(0).type;
   if first {
     for param i in 1..Dom.rank-1 do r(i-1) = Dom.dim(i);
@@ -44,8 +44,8 @@ proc makeFluff(param rank : int, val : int) {
   return ret;
 }
 
-proc testCore(DestDom : domain, DestLocales : [],
-              SrcDom  : domain, SrcLocales  : []) {
+proc testCore(DestDom : domain(?), DestLocales : [],
+              SrcDom  : domain(?), SrcLocales  : []) {
   const AD = if distType == DistType.block then DestDom dmapped blockDist(DestDom, DestLocales)
              else DestDom dmapped stencilDist(DestDom, DestLocales, fluff=makeFluff(DestDom.rank, 1));
   const BD = if distType == DistType.block then SrcDom dmapped blockDist(SrcDom, SrcLocales)

@@ -25,7 +25,7 @@ testDom("Cyclic:", cyclicDist.createDomain((...rng)));
 testDom("Cyclic opts:", cyclicDist.createDomain(dom, targetLocales=tls));
 testDom("Cyclic opts:", cyclicDist.createDomain((...rng), targetLocales=tls));
 
-proc testDom(test: string, D: domain) {
+proc testDom(test: string, D: domain(?)) {
   writeln("\n", test);
   var A: [D] int;
   forall a in A do a = here.id;

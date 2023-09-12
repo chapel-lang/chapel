@@ -178,7 +178,7 @@ record Empty {
 }
 
 
-proc process_json(logfile:fileReader, fname:string, ref Pairs) {
+proc process_json(logfile:fileReader(?), fname:string, ref Pairs) {
   var tweet:Tweet;
   var empty:Empty;
   var got:bool;

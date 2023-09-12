@@ -25,7 +25,7 @@ or
 
 .. function:: proc processArr(arr: []) where arr.elemType == int
 
-.. function:: proc processDom(dom: domain) where dom.rank == 2
+.. function:: proc processDom(dom: domain(?)) where dom.rank == 2
 
 .. function:: proc processRec(r: MyRecord) where r.x > 0
 

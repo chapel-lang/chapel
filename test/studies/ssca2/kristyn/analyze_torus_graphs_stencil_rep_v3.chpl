@@ -24,7 +24,7 @@ module analyze_torus_graphs {
   // between a one-tuple and a simple scalar.
   // ========================================
 
-  proc tuple_index (D: domain) type
+  proc tuple_index (D: domain(?)) type
     return if D.rank == 1 then 1*index(D) else index(D);
 
 
@@ -87,8 +87,8 @@ module analyze_torus_graphs {
   // document and execute kernels 2, 3 and 4 of SSCA2
   // ========================================================
   
-  proc generate_and_analyze_nD_torus ( const vertex_domain : domain, 
-                                      const dense_stencil : domain ) {
+  proc generate_and_analyze_nD_torus ( const vertex_domain : domain(?), 
+                                      const dense_stencil : domain(?) ) {
 
     // -----------------
     // instantiate graph

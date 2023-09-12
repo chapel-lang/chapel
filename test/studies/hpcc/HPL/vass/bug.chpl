@@ -236,7 +236,7 @@ proc schurComplementRefWrapper(blk:int):void {
     // throw it off: Abref[Abref.domain.low] = 0;
 }
 
-proc schurComplementRef(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) {
+proc schurComplementRef(Ab: [?AbD] elemType, AD: domain(?), BD: domain(?), Rest: domain(?)) {
   const replAD: domain(2, indexType) = AD,
         replBD: domain(2, indexType) = BD;
     

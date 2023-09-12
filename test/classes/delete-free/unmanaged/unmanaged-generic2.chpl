@@ -3,7 +3,7 @@ class Foo {
   var v: int;
 }
 
-proc takesUnmanagedFoo(x: unmanaged Foo) {
+proc takesUnmanagedFoo(x: unmanaged Foo(?)) {
   writeln(x);
 }
 

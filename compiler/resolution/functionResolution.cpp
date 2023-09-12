@@ -13880,17 +13880,6 @@ void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx) {
   }
 }
 
-static bool isBuiltinGenericType(Type* t) {
-  return isBuiltinGenericClassType(t) ||
-         t == dtAnyComplex || t == dtAnyImag || t == dtAnyReal ||
-         t == dtAnyBool || t == dtAnyEnumerated ||
-         t == dtNumeric || t == dtIntegral ||
-         t == dtIteratorRecord || t == dtIteratorClass ||
-         t == dtAnyPOD ||
-         t == dtOwned || t == dtShared ||
-         t == dtAnyRecord;
-}
-
 std::set<Symbol*> gAlreadyWarnedSurprisingGenericSyms;
 std::set<Symbol*> gAlreadyWarnedSurprisingGenericManagementSyms;
 

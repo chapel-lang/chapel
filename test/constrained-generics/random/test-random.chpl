@@ -159,7 +159,7 @@ module RandomInterface {
   implements PCGRandomStreamImpl(borrowed PCGRandomStream(?));
   // how about other management strategies?
 
-  proc PCGRandomStream.startCursor(D: domain) {
+  proc PCGRandomStream.startCursor(D: domain(?)) {
     import MyRandom.PCGRandom.randlc_skipto;
     type resultType = eltType;
     _lock();

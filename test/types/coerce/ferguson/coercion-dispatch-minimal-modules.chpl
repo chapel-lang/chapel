@@ -12,8 +12,8 @@ inline operator :(x: uint(?w), type t) do
 
 proc chpl__autoCopy(x:uint(?w)) do return x;
 proc chpl__initCopy(x:uint(?w)) do return x;
-proc chpl__initCopy(x:R) { return x; }
-proc chpl__autoDestroy(r:R) { }
+proc chpl__initCopy(x:R(?)) { return x; }
+proc chpl__autoDestroy(r:R(?)) { }
 
 
 // support methods that work with or without --minimal-modules
@@ -154,15 +154,15 @@ record R {
   var x;
 }
 
-proc boz(r:R, count:asSigned(r.x.type)) {
+proc boz(r:R(?), count:asSigned(r.x.type)) {
   return 1:r.x.type;
 }
 
-proc boz(r:R, count:asUnsigned(r.x.type)) {
+proc boz(r:R(?), count:asUnsigned(r.x.type)) {
   return 2:r.x.type;
 }
 
-proc boz(r:R, count) {
+proc boz(r:R(?), count) {
   return 0:uint(8);
 }
 

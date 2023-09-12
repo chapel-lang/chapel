@@ -3,7 +3,7 @@ use util;
 
 config const debug = false;
 
-proc test(dom : domain) {
+proc test(dom : domain(?)) {
 
   if debug then writeln("Testing domain ", dom);
 

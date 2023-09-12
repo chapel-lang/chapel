@@ -38,7 +38,7 @@ var baseDom2D = {1..10, 1..10};
   test(assocDom, "associative domain with string keys");
 }
 
-proc test(dom:domain, name) {
+proc test(dom:domain(?), name) {
   use CyclicDist;
 
   writeln("Testing ", name);

@@ -42,7 +42,7 @@ record padded {
   proc init(type T) {
     this.T = T;
   }
-  proc init=(other: padded) {
+  proc init=(other: padded(?)) {
     this.T = other.T;
     // I think `pad` does not need to be copied here
     // it is an optimization to make the struct consume a whole cache line

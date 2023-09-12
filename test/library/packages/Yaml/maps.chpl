@@ -8,7 +8,7 @@ record R {
   var y : real;
 }
 
-proc test(m: map) {
+proc test(m: map(?)) {
   printDebugFmt(m);
 
   var f = openTempFile();

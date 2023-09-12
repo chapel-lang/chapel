@@ -42,7 +42,7 @@ proc Vector.init=(data : [] this.type.T) {
   this.A = data;
 }
 
-operator :(data: [], type t: Vector) {
+operator :(data: [], type t: Vector(?)) {
   var tmp: t = data;
   return tmp;
 }
