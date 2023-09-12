@@ -26,7 +26,7 @@ if [[ "$_chplSetupEnv_sourced" == "0" ]]; then
 fi
 
 _chplSetupEnv_suffix="bash"
-_chplSetupEnv_pathsToRun=("/data/cf/chapel/chplSetup/" "/chapel/data/chaptools/chplSetup" "/cray/css/users/chapelu/chplSetup" "$HOME/.chplSetup" "$(pwd)/chplSetup")
+_chplSetupEnv_pathsToRun=("$CHPL_HOME/util/test/chplSetup" "/data/cf/chapel/chplSetup/" "/chapel/data/chaptools/chplSetup" "/cray/css/users/chapelu/chplSetup" "$HOME/.chplSetup" "$(pwd)/chplSetup")
 _chplSetupEnv_shortHost=$(hostname -s)
 _chplSetupEnv_featureSet=""
 _chplSetupEnv_dryRun=""
