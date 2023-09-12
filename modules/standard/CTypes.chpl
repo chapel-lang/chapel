@@ -1200,12 +1200,6 @@ module CTypes {
     return CHPL_RT_MD_ARRAY_ELEMENTS - chpl_memhook_md_num();
   }
 
-  pragma "last resort"
-  @deprecated(notes="c_sizeof with argument name 'x' is deprecated; please use c_sizeof(type t) instead")
-  inline proc c_sizeof(type x): c_size_t {
-    return c_sizeof(x);
-  }
-
   /*
     Return the size in bytes of a type, as with the C ``sizeof`` built-in.
 
