@@ -9,10 +9,10 @@ tbls = load_tables()
 tbl_amd = None
 tbl_nvidia = None
 if 'amd' in tbls:
-  tbl_amd = join(tbls['hip_baseline'], tbls['amd'], tbls['amd_aod']).with_title(
+  tbl_amd = join(tbls['hip_baseline'], tbls['amd']).with_title(
     'Stream on %s AMD GPU' % os.getenv('CHPL_GPU_ARCH'))
 if 'nvidia' in tbls:
-  tbl_nvidia = join(tbls['cuda_baseline'], tbls['nvidia'], tbls['nvidia_aod']).with_title(
+  tbl_nvidia = join(tbls['cuda_baseline'], tbls['nvidia']).with_title(
     'Stream on NVIDIA GPU')
 
 def report(tbl, filename):
