@@ -102,7 +102,7 @@ module ChapelRange {
   pragma "plain old data"
   pragma "range"
   @chpldoc.nodoc
-  record range
+  record _range
   {
     type idxType = int;                            // element type
     param bounds: boundKind = boundKind.both;      // lower/upper bounds
@@ -227,7 +227,7 @@ module ChapelRange {
     this.idxType = t;
     this.bounds = boundKind.low;
     this._low = chpl__idxToInt(low);
-    this.complete();
+    init this;
     if isFiniteIdxType(idxType) {
       this._high = finiteIdxTypeHigh(idxType);
     }
@@ -240,7 +240,7 @@ module ChapelRange {
     this.idxType = t;
     this.bounds = boundKind.high;
     this._high = chpl__idxToInt(high);
-    this.complete();
+    init this;
     if isFiniteIdxType(idxType) {
       this._low = finiteIdxTypeLow(idxType);
     }
@@ -252,7 +252,7 @@ module ChapelRange {
   proc range.init() {
     this.idxType = int;
     this.bounds = boundKind.neither;
-    this.complete();
+    init this;
     if isFiniteIdxType(idxType) {
       this._low = finiteIdxTypeLow(idxType);
       this._high = finiteIdxTypeHigh(idxType);
@@ -265,6 +265,24 @@ module ChapelRange {
   proc range.init(type idxType,
                   param bounds: boundKind,
                   param strides: strideKind) {
+
+    if chpl_warnUnstable && (bounds == boundKind.low || bounds == boundKind.high)
+      then warning("Default initialization of a range with 'boundKind.low' or 'boundKind.high' is unstable");
+
+    this.init(idxType, bounds, strides,
+              _low = chpl__defaultLowBound(idxType, bounds),
+              _high = chpl__defaultHighBound(idxType, bounds),
+              _stride = strides.defaultStride():chpl__rangeStrideType(idxType),
+              alignmentValue = 0:chpl__rangeStrideType(idxType));
+  }
+
+  // this overload can be removed when the unstable warning in the above overload is removed
+  @chpldoc.nodoc
+  proc range.init(type idxType,
+                  param bounds: boundKind,
+                  param strides: strideKind,
+                  param internal: bool) {
+
     this.init(idxType, bounds, strides,
               _low = chpl__defaultLowBound(idxType, bounds),
               _high = chpl__defaultHighBound(idxType, bounds),
@@ -1760,7 +1778,7 @@ operator :(r: range(?), type t: range(?)) where chpl_castIsSafe(r, t) {
   checkBounds(t, r);
   checkEnumIdx(t, r);
 
-  var tmp: t;
+  var tmp = new range(t.idxType, t.bounds, t.strides, true);
   type srcType = r.idxType,
        dstType = t.idxType,
     dstIntType = tmp.chpl_integralIdxType;
@@ -1792,7 +1810,7 @@ operator :(r: range(?), type t: range(?)) throws where !chpl_castIsSafe(r, t) {
   checkBounds(t, r);
   checkEnumIdx(t, r);
 
-  var tmp: t;
+  var tmp = new range(t.idxType, t.bounds, t.strides, true);
   type srcType = r.idxType,
        dstType = t.idxType,
     dstIntType = tmp.chpl_integralIdxType;

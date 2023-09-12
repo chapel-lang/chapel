@@ -184,7 +184,7 @@ class ReplicatedImpl : BaseDist {
 proc ReplicatedImpl.init(targetLocales: [] locale = Locales,
                          purposeMessage: string = "used to create a Replicated")
 {
-  this.complete();
+  init this;
 
   for loc in targetLocales {
     this.targetLocDom.add(loc.id);

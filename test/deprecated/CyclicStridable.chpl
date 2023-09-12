@@ -246,7 +246,7 @@ class Cyclic: BaseDist {
     this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
     this.dataParMinGranularity = dataParMinGranularity;
 
-    this.complete();
+    init this;
 
     if debugCyclicDist then
       for loc in locDist do writeln(loc);
@@ -1106,7 +1106,7 @@ class LocCyclicRADCache /* : LocRADCache */ {
     this.rank = rank;
     this.idxType = idxType;
 
-    this.complete();
+    init this;
 
     for param i in 0..rank-1 do
       // NOTE: Not bothering to check to see if length can fit into idxType

@@ -5,7 +5,6 @@ record sps33 {
   proc ref this(i, j) ref {
     if (i == j) {
       halt("Assigning an IRV value");
-      return irv;
     } else if (i==-1) {
       return data(i, j==1);
     } else {

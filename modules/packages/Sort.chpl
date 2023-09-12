@@ -2222,7 +2222,7 @@ module TwoArrayPartitioning {
                                                 firstLocaleId, lastLocaleId,
                                                 false);
       assert(!t.isEmpty());
-      this.complete();
+      init this;
       tasks.pushBack(t);
     }
     proc writeThis(f) throws {

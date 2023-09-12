@@ -7,7 +7,7 @@ class PotentialLJ : BasePotential {
   var epsilon : real;
 
   proc init() {
-    this.complete();
+    init this;
     sigma   = 2.315;
     epsilon = 0.167;
     mass    = 63.55 * amuToInternalMass;

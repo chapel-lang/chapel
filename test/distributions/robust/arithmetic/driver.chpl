@@ -43,11 +43,11 @@ proc setupDistributions(param DT : DistType) {
   }
   if DT == DistType.cyclic {
     return (
-            new Cyclic(startIdx=0),
-            new Cyclic(startIdx=(0,0)),
-            new Cyclic(startIdx=(0,0,0)),
-            new Cyclic(startIdx=(0,0,0,0)),
-            new Cyclic(startIdx=(0:int(32), 0:int(32)))
+            new cyclicDist(startIdx=0),
+            new cyclicDist(startIdx=(0,0)),
+            new cyclicDist(startIdx=(0,0,0)),
+            new cyclicDist(startIdx=(0,0,0,0)),
+            new cyclicDist(startIdx=(0:int(32), 0:int(32)))
            );
   }
   if DT == DistType.blockcyclic {
@@ -70,11 +70,11 @@ proc setupDistributions(param DT : DistType) {
   }
   if DT == DistType.stencil {
     return (
-            new dmap(new Stencil(rank=1, boundingBox=Space1)),
-            new dmap(new Stencil(rank=2, boundingBox=Space2)),
-            new dmap(new Stencil(rank=3, boundingBox=Space3)),
-            new dmap(new Stencil(rank=4, boundingBox=Space4)),
-            new dmap(new Stencil(rank=2, idxType=int(32), boundingBox=Space2D32))
+            new dmap(new stencilDist(rank=1, boundingBox=Space1)),
+            new dmap(new stencilDist(rank=2, boundingBox=Space2)),
+            new dmap(new stencilDist(rank=3, boundingBox=Space3)),
+            new dmap(new stencilDist(rank=4, boundingBox=Space4)),
+            new dmap(new stencilDist(rank=2, idxType=int(32), boundingBox=Space2D32))
            );
   }
   halt("unexpected 'distType': ", DT);

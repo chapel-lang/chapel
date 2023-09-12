@@ -73,7 +73,7 @@ module LocaleModel {
       }
       _node_id = chpl_nodeID: int;
 
-      this.complete();
+      init this;
 
       setup();
     }
@@ -87,7 +87,7 @@ module LocaleModel {
 
       _node_id = chpl_nodeID: int;
 
-      this.complete();
+      init this;
 
       setup();
     }
@@ -109,11 +109,8 @@ module LocaleModel {
         yield idx;
     }
 
-    pragma "unsafe"
     override proc _getChild(idx: int) : locale {
       halt("requesting a child from a flat LocaleModel locale");
-      var tmp:locale; // nil
-      return tmp;
     }
 
     iter getChildren() : locale  {

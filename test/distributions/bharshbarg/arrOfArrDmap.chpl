@@ -18,7 +18,7 @@ var BlockSpace = Dom dmapped blockDist(boundingBox=Dom);
 test(BlockSpace);
 writeln("Success: Block");
 
-var CyclicSpace = Dom dmapped Cyclic(startIdx=Dom.low);
+var CyclicSpace = Dom dmapped cyclicDist(startIdx=Dom.low);
 test(CyclicSpace);
 writeln("Success: Cyclic");
 

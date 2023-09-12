@@ -13,7 +13,7 @@ proc test(dom : domain(?)) {
 
   const max = dom.expand(fluff*dom.stride);
 
-  var Space = dom dmapped Stencil(dom, fluff=fluff, periodic=true);
+  var Space = dom dmapped stencilDist(dom, fluff=fluff, periodic=true);
   var abstr : rank*int;
   for i in 0..#rank do abstr(i) = abs(dom.dim(i).stride);
 
@@ -65,8 +65,8 @@ proc test(dom : domain(?)) {
   }
 
   {
-    // Test the 'noFluffView' feature of StencilDist, which gives us an
-    // array that behaves like a BlockDist
+    // Test the 'noFluffView' feature of stencilDist, which gives us an
+    // array that behaves like a blockDist
     var Data : [Space] int;
     ref Actual = Data.noFluffView();
     assert(Actual._value.dom.whole == Actual._value.dom.wholeFluff);

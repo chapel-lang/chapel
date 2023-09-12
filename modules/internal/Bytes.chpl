@@ -117,7 +117,7 @@ module Bytes {
 
   /*
     Creates a new :type:`bytes` which borrows the memory allocated for a
-    `c_ptrConst`. If the buffer is freed before the :type:`bytes` returned
+    :class:`~CTypes.c_ptrConst`. If the buffer is freed before the :type:`bytes` returned
     from this function, accessing it is undefined behavior.
 
     :arg x: `c_ptrConst` to borrow as a buffer
@@ -251,7 +251,7 @@ module Bytes {
 
     /*
     Creates a new :type:`bytes` which takes ownership of the memory
-    allocated for a `c_ptrConst`. The buffer will be freed when the
+    allocated for a :class:`~CTypes.c_ptrConst`. The buffer will be freed when the
     :type:`bytes` is deinitialized.
 
     :arg x: The `c_ptrConst` to take ownership of
@@ -347,7 +347,7 @@ module Bytes {
   /*
     Creates a new :type:`bytes` by creating a copy of a buffer
 
-    :arg x: The `c_ptrConst` to copy
+    :arg x: The :class:`~CTypes.c_ptrConst` to copy
     :type x: `c_ptrConst(uint(8))` or `c_ptrConst(int(8))`
 
     :arg length: Length of buffer `x`, excluding the terminating null byte. Defaults to the number of bytes in x before the terminating null byte.
@@ -475,18 +475,18 @@ module Bytes {
     }
 
     proc init=(b: bytes) {
-      this.complete();
+      init this;
       initWithNewBuffer(this, b);
     }
 
     proc init=(b: string) {
-      this.complete();
+      init this;
       initWithNewBuffer(this, b.buff, length=b.numBytes, size=b.numBytes+1);
     }
 
     @deprecated("the type 'c_string' is deprecated; please use one of the 'bytes.create*ingBuffer' methods that takes a 'c_ptrConst(c_char)' instead")
     proc init=(b: c_string) {
-      this.complete();
+      init this;
       var length = b.size;
       initWithNewBuffer(this, b: bufferType, length=length, size=length+1);
     }
@@ -585,8 +585,8 @@ module Bytes {
 
 
   /*
-    Gets a `c_ptrConst(c_char)` from a :type:`bytes`. The returned `c_ptrConst(c_char)`
-    shares the buffer with the :type:`bytes`.
+    Gets a `c_ptrConst(c_char)` from a :type:`bytes`. The returned
+    :class:`~CTypes.c_ptrConst` shares the buffer with the :type:`bytes`.
 
     .. warning::
 
@@ -600,17 +600,19 @@ module Bytes {
     .. code-block:: chapel
 
         var myBytes = b"Hello!";
-        on different_locale {
+        on differentLocale {
           printf("%s", myBytes.localize().c_str());
         }
 
-    :returns: A `c_ptrConst(c_char)` that points to the underlying buffer used by this
-        :type:`bytes`. The returned `c_ptrConst(c_char)` is only valid when used
-        on the same locale as the bytes.
+    :returns: A `c_ptrConst(c_char)` that points to the underlying buffer used
+              by this :type:`bytes`. The returned `c_ptrConst(c_char)` is only
+              valid when used on the same locale as the bytes.
    */
-  @unstable("'bytes.c_str()' is unstable and may change in a future release")
+  pragma "last resort"
+  @deprecated("'bytes.c_str()' has moved to 'CTypes'. Please 'use CTypes' to access ':proc:`~CTypes.bytes.c_str`'")
   inline proc bytes.c_str(): c_ptrConst(c_char) {
-    return getCStr(this);
+    use CTypes only c_str;
+    return this.c_str();
   }
 
   /*

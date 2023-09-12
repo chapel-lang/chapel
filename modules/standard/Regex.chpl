@@ -626,7 +626,7 @@ record regex {
     use ChplConfig;
 
     this.exprType = t;
-    this.complete();
+    init this;
 
     if CHPL_RE2 == "none" {
       compilerError("Cannot use Regex with CHPL_RE2=none");
@@ -673,11 +673,11 @@ record regex {
     /* if it's local, retain and avoid the recompile (thread safe) */
     if (x.home == here) {
       this._regex = x._regex;
-      this.complete();
+      init this;
       qio_regex_retain(x._regex);
     } else {
       /* otherwise recompile locally */
-      this.complete();
+      init this;
       var serialized = x._serialize();
       this._deserialize(serialized);
     }

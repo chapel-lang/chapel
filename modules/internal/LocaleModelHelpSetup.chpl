@@ -55,7 +55,7 @@ module LocaleModelHelpSetup {
     proc init() {
     }
     proc init=(other: chpl_root_locale_accum) {
-      this.complete();
+      init this;
       this.nPUsPhysAcc.write(other.nPUsPhysAcc.read());
       this.nPUsPhysAll.write(other.nPUsPhysAll.read());
       this.nPUsLogAcc.write(other.nPUsLogAcc.read());

@@ -232,4 +232,9 @@ void convertToQualifiedRefs();
 
 bool shouldWarnUnstableFor(BaseAST* ast);
 
+bool symExprIsUsedAsRef(
+  SymExpr* use,
+  bool constRef,
+  std::function<bool(SymExpr*, CallExpr*)> checkForMove);
+
 #endif

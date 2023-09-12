@@ -136,7 +136,7 @@ module LockFreeQueue {
 
     proc init(type objType) {
       this.objType = objType;
-      this.complete();
+      init this;
       var _node = new unmanaged Node(objType);
       _head.write(_node);
       _tail.write(_node);

@@ -71,7 +71,7 @@ class GlobalInfo {
 proc GlobalInfo.init() {
   const dummyLI = new unmanaged LocalInfo();
   infos = dummyLI;
-  this.complete();
+  init this;
   coforall ((ix,iy), inf, loc) in zip(gridDist, infos, gridLocales) do on loc {
     inf = new unmanaged LocalInfo(mygx=ix, mygy=iy);
   }
@@ -120,7 +120,7 @@ proc GlobalData.init(nameArg: string) {
     datElm = dat;
   }
   this.datas = datasTemp!;
-  this.complete();
+  init this;
 
   /// get and store pointers to neighbor data slices ///
   forall ((ix,iy), dat, inf) in zip(gridDist, datas, WI.infos) {

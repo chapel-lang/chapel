@@ -97,6 +97,7 @@ bool AstNode::mayContainStatements(AstTag tag) {
     case asttags::Identifier:
     case asttags::Import:
     case asttags::Include:
+    case asttags::Init:
     case asttags::Let:
     case asttags::New:
     case asttags::Range:
@@ -222,6 +223,7 @@ bool AstNode::isInherentlyStatement() const {
     case asttags::Identifier:
     case asttags::Import:
     case asttags::Include:
+    case asttags::Init:
     case asttags::Let:
     case asttags::New:
     case asttags::Range:

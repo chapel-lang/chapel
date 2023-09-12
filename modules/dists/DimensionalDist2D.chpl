@@ -428,7 +428,7 @@ proc DimensionalDist2D.init(
   this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
   this.dataParMinGranularity = dataParMinGranularity;
 
-  this.complete();
+  init this;
 
   checkInvariants();
 
@@ -579,7 +579,7 @@ proc DimensionalDist2D.init(param dummy: int,
   this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
   this.dataParMinGranularity     = dataParMinGranularity;
 
-  this.complete();
+  init this;
 
   // should not need it, but run it for now just in case
   checkInvariants();

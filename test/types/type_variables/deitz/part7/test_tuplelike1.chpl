@@ -21,7 +21,7 @@ operator =(ref a:TupleType(?), b:AnonTuple(?)) {
 proc TupleType.init=(from: AnonTuple(?)) {
   this.t = from.f.type;
   this.f = from.f;
-  this.complete();
+  init this;
 }
 operator :(from: AnonTuple(?), type t: TupleType(?)) {
   var tmp: t = from;

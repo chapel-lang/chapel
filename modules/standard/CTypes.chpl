@@ -281,7 +281,7 @@ module CTypes {
     proc init(type eltType, param size) {
       this.eltType = eltType;
       this.size = size;
-      this.complete();
+      init this;
       var i = 0;
       while i < size {
         // create a default value we'll transfer into the element
@@ -367,7 +367,7 @@ module CTypes {
     proc init=(other: c_array) {
       this.eltType = other.eltType;
       this.size = other.size;
-      this.complete();
+      init this;
       for i in 0..#size {
         pragma "no auto destroy"
         var value: eltType = other[i];
@@ -1518,15 +1518,89 @@ module CTypes {
   }
 
   /*
-    Get the number of bytes in a c_ptrConst(int(8)) or c_ptrConst(uint(8)), excluding the
-    terminating null.
+    Get the number of bytes in a c_ptrConst(int(8)) or c_ptrConst(uint(8)),
+    excluding the terminating NULL.
 
     :arg x: c_ptrConst(int(8)) or c_ptrConst(uint(8)) to get length of
 
-    :returns: the number of bytes in x, excluding the terminating null
+    :returns: the number of bytes in x, excluding the terminating NULL
    */
   @unstable("the strLen function is unstable and may change or go away in a future release")
   inline proc strLen(x:c_ptrConst(?t)): int {
      return __primitive("string_length_bytes", x).safeCast(int);
   }
+
+  /*
+    Get a `c_ptrConst(c_char)` from a :type:`~String.string`. The returned
+    `c_ptrConst(c_char)` shares the buffer with the :type:`~String.string`.
+
+    .. warning::
+
+        This can only be called safely on a :type:`~String.string` whose home is
+        the current locale.  This property can be enforced by calling
+        :proc:`~String.string.localize()` before :proc:`string.c_str()`.
+        If the string is remote, the program will halt.
+
+    For example:
+
+    .. code-block:: chapel
+
+      var myString = "Hello!";
+      on differentLocale {
+        writef("%s", myString.localize().c_str());
+      }
+
+    .. warning::
+
+        A Chapel :type:`~String.string` is capable of containing NULL characters
+        and any C routines relying on NULL terminated buffers may incorrectly
+        process the mid-string NULL as the terminating NULL.
+
+    :returns:
+        A `c_ptrConst(c_char)` that points to the underlying buffer used by this
+        :type:`~String.string`. The returned `c_ptrConst(c_char)` is only valid
+        when used on the same locale as the string.
+   */
+  @unstable("'string.c_str()' is unstable and may change in a future release")
+  inline proc string.c_str() : c_ptrConst(c_char) {
+    use BytesStringCommon only getCStr;
+    return getCStr(this);
+  }
+
+ /*
+    Gets a `c_ptrConst(c_char)` from a :type:`~Bytes.bytes`. The returned
+    `c_ptrConst(c_char)` shares the buffer with the :type:`~Bytes.bytes`.
+
+    .. warning::
+
+      This can only be called safely on a :type:`~Bytes.bytes` whose home is
+      the current locale.  This property can be enforced by calling
+      :proc:`~Bytes.bytes.localize()` before :proc:`bytes.c_str()`.
+      If the bytes is remote, the program will halt.
+
+    For example:
+
+    .. code-block:: chapel
+
+        var myBytes = b"Hello!";
+        on differentLocale {
+          writef("%s", myBytes.localize().c_str());
+        }
+
+    .. warning::
+
+        Chapel :type:`~Bytes.bytes` are capable of containing NULL bytes and
+        any C routines relying on NULL terminated buffers may incorrectly
+        process the mid-buffer NULL as the terminating NULL.
+
+    :returns: A `c_ptrConst(c_char)` that points to the underlying buffer used
+              by this :type:`~Bytes.bytes`. The returned `c_ptrConst(c_char)`
+              is only valid when used on the same locale as the bytes.
+   */
+  @unstable("'bytes.c_str()' is unstable and may change in a future release")
+  inline proc bytes.c_str(): c_ptrConst(c_char) {
+    use BytesStringCommon only getCStr;
+    return getCStr(this);
+  }
+
 }

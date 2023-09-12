@@ -2417,6 +2417,11 @@ static FnSymbol* buildPromotionWrapper(PromotionInfo& promotion,
   fn->maybeGenerateDeprecationWarning(info.call);
   fn->maybeGenerateUnstableWarning(info.call);
 
+  // if the fn is marked with NO_PROMOTION_WHEN_BY_REF, mark the wrapper
+  if (fn->hasFlag(FLAG_NO_PROMOTION_WHEN_BY_REF)) {
+    retval->addFlag(FLAG_NO_PROMOTION_WHEN_BY_REF);
+  }
+
   BlockStmt* loop = buildPromotionLoop(promotion, instantiationPt, info,
                                        fastFollowerChecks);
   retval->insertAtTail(loop);

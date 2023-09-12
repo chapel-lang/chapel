@@ -75,7 +75,7 @@ record myList {
 
   proc init(reader: fileReader(?), ref deserializer) {
     writeln("IN myList.init");
-    this.complete();
+    init this;
     var des = deserializer.startList(reader);
 
     while des.hasMore() do
@@ -109,7 +109,7 @@ record myMap {
 
   proc init(reader: fileReader(?), ref deserializer) {
     writeln("IN myMap.init");
-    this.complete();
+    init this;
     var des = deserializer.startMap(reader);
 
     while des.hasMore() do

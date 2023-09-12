@@ -202,7 +202,7 @@ module HTable {
       this.R = R;
       nFields = numFields(R);
       Rsize = c_sizeof(R);
-      this.complete();
+      init this;
 
       var r : R;
       for param ii in 0..<nFields {

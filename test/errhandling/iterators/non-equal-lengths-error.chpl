@@ -1,6 +1,6 @@
-proc willthrow() throws {
+proc willthrow(): string throws {
   throw new owned Error();
-  return 777;
+  return 777; // note that this line is ignored
 }
 
 var RRR = 0..3;

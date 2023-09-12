@@ -4063,7 +4063,7 @@ module HDF5 {
       use BlockDist, CyclicDist, super.C_HDF5;
       proc isBlock(D: blockDist) param do return true;
       proc isBlock(D) param do return false;
-      proc isCyclic(D: Cyclic) param do return true;
+      proc isCyclic(D: cyclicDist) param do return true;
       proc isCyclic(D) param do return false;
       if !(isBlock(A.dom.dist) || isCyclic(A.dom.dist)) then
         compilerError("hdf5ReadDistributedArray currently only supports block or cyclic distributed arrays");

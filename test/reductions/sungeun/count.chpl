@@ -5,7 +5,7 @@ class countVal: ReduceScanOp {
 
   proc init(type eltType, val) {
     this.eltType = eltType;
-    this.complete();
+    init this;
     count.write(0);
   }
 

@@ -8,7 +8,7 @@
   across and within locales.
 */
 
-import StencilDist.Stencil,
+import StencilDist.stencilDist,
        Time.stopwatch;
 
 // create a stopwatch to time kernel execution
@@ -27,7 +27,7 @@ config const nx = 256,      // number of grid points in x
              solutionStd = 0.221167; // known solution for the default parameters
 
 // define a distributed 2D domain and subdomain to describe the grid and its interior
-const Indices = Stencil.createDomain({0..nx+1, 0..ny+1}, fluff=(1,1)),
+const Indices = stencilDist.createDomain({0..nx+1, 0..ny+1}, fluff=(1,1)),
       IndicesInner = Indices[1..nx, 1..ny];
 
 // define a distributed 2D array over the above domain

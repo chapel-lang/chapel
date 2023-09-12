@@ -133,7 +133,7 @@ module Graph500_defs
       proc init (my_vertices, Histogram){
         this.my_vertices = my_vertices;
         this.Histogram = Histogram;
-        this.complete();
+        init this;
          forall i in my_vertices {
             Vertices[i].nd = {1..Histogram[i]};
          }

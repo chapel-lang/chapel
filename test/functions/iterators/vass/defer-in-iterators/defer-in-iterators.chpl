@@ -12,7 +12,7 @@ config const doReturn = false;
 
 record RRR {
   const jj:int;
-  proc init(arg:int) { jj=arg; complete(); writeln("RRR.init { ", jj); }
+  proc init(arg:int) { jj=arg; init this; writeln("RRR.init { ", jj); }
   proc deinit() { writeln("RRR.fini } ", jj); }
 }
 

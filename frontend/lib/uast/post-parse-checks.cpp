@@ -116,6 +116,7 @@ struct Visitor {
   void checkExplicitDeinitCalls(const FnCall* node);
   void checkBorrowFromNew(const FnCall* node);
   void checkSparseKeyword(const FnCall* node);
+  void checkPrimCallInUserCode(const PrimCall* node);
   void checkDmappedKeyword(const OpCall* node);
   void checkConstVarNoInit(const Variable* node);
   void checkConfigVar(const Variable* node);
@@ -184,6 +185,7 @@ struct Visitor {
   void visit(const FunctionSignature* node);
   void visit(const Import* node);
   void visit(const OpCall* node);
+  void visit(const PrimCall* node);
   void visit(const Return* node);
   void visit(const TypeQuery* node);
   void visit(const Union* node);
@@ -668,6 +670,17 @@ void Visitor::checkSparseKeyword(const FnCall* node) {
                " their behavior is likely to change in the future.");
 }
 
+// TODO: remove this check and warning after 1.34?
+void Visitor::checkPrimCallInUserCode(const PrimCall* node) {
+  if (isUserCode())
+    if (node->prim() == PrimitiveTag::PRIM_CHPL_COMM_GET ||
+        node->prim() == PrimitiveTag::PRIM_CHPL_COMM_PUT)
+          warn(node, "the primitives 'chpl_comm_get' and 'chpl_comm_put',"
+               " have changed behavior in Chapel 1.32. Please use"
+               " the 'Communication' module's 'get' and 'put' procedures"
+               " as replacements for calling the primitives directly");
+}
+
 void Visitor::checkDmappedKeyword(const OpCall* node) {
   if (node->op() == USTR("dmapped"))
     if (shouldEmitUnstableWarning(node))
@@ -1124,6 +1137,7 @@ static bool isNameReservedType(UniqueString name) {
       name == USTR("domain")    ||
       name == USTR("index")     ||
       name == USTR("locale")    ||
+      name == USTR("range")     ||
       name == USTR("nothing")   ||
       name == USTR("void"))
     return true;
@@ -1393,6 +1407,11 @@ void Visitor::visit(const FnCall* node) {
   checkExplicitDeinitCalls(node);
   checkBorrowFromNew(node);
   checkSparseKeyword(node);
+
+}
+
+void Visitor::visit(const PrimCall* node) {
+  checkPrimCallInUserCode(node);
 }
 
 void Visitor::visit(const OpCall* node) {

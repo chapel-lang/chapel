@@ -211,7 +211,7 @@ class PrivateArr: BaseRectangularArr(?) {
     // this.data not initialized
     this.isPrivatizedCopy = true;
     this.defaultInitDataOnPrivatize = toPrivatize.defaultInitDataOnPrivatize;
-    this.complete();
+    init this;
 
     if defaultInitDataOnPrivatize {
       pragma "no auto destroy" pragma "unsafe"

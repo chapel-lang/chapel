@@ -64,7 +64,7 @@ class DistributedMapImpl {
   proc init(type keyType, type valType) {
     this.keyType = keyType;
     this.valType = valType;
-    complete();
+    init this;
     this.pid = _newPrivatizedClass(this);
   }
   // create a privatized instance

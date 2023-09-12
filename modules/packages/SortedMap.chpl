@@ -173,7 +173,7 @@ module SortedMap {
 
       this._set = other._set;
 
-      this.complete();
+      init this;
     }
 
     /*

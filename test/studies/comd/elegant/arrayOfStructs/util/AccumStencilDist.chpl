@@ -281,7 +281,7 @@ proc AccumStencil.init(boundingBox: domain(?),
   this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
   this.dataParMinGranularity = dataParMinGranularity;
 
-  this.complete();
+  init this;
 
   if debugAccumStencilDist {
     writeln("Creating new AccumStencil distribution:");

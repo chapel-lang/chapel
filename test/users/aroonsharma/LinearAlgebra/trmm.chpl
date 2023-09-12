@@ -129,7 +129,7 @@ proc main() {
         var user_dist = dom dmapped CyclicZipOpt(startIdx=dom.low);
         kernel_trmm(user_dist, Dim);   */
     } else if dist == "C" {
-        var user_dist = dom dmapped Cyclic(startIdx=dom.low);
+        var user_dist = dom dmapped cyclicDist(startIdx=dom.low);
         kernel_trmm(user_dist, Dim); 
     } else if dist == "B" {
         var user_dist = dom dmapped blockDist(boundingBox=dom);

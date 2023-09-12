@@ -1,0 +1,1 @@
+modify-with-method.chpl:3: warning: modifying an array over an array of indices is deprecated and will be an error in a future release - please use an explicit loop instead

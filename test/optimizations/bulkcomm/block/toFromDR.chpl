@@ -49,7 +49,7 @@ proc selectDomain(param useDist : bool, Dom : domain(?)) {
     if distType == DistType.block then
       return Dom dmapped blockDist(Dom);
     else if distType == DistType.stencil then
-      return Dom dmapped Stencil(Dom, fluff=makeFluff(Dom.rank, 1));
+      return Dom dmapped stencilDist(Dom, fluff=makeFluff(Dom.rank, 1));
   } else {
     return Dom;
   }

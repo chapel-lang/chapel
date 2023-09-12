@@ -159,7 +159,7 @@ module Heap {
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
       this.comparator = other.comparator;
-      this.complete();
+      init this;
       _commonInitFromIterable(other._data);
     }
 

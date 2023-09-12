@@ -422,7 +422,6 @@ module TomlParser {
         // Error
         else {
           throw new owned TomlError("Line "+ debugCounter:string +": Unexpected Token -> " + getToken(source));
-          return new shared Toml(val);
         }
       }
       catch e: IllegalArgumentError {
@@ -607,14 +606,14 @@ used to recursively hold tables and respective values
 
     // Toml
     proc init(A: [?D] shared Toml) where D.isAssociative() {
-      this.complete();
+      init this;
       for i in D do this.A[i] = A[i];
       this.tag = fieldToml;
     }
 
     @chpldoc.nodoc
     proc init(A: [?D] shared Toml?) where D.isAssociative() {
-      this.complete();
+      init this;
       for i in D do this.A[i] = A[i];
       this.tag = fieldToml;
     }
@@ -685,7 +684,7 @@ used to recursively hold tables and respective values
     // Clone
     proc init(root: Toml) {
       // INIT TODO: Can this be written in phase one?
-      this.complete();
+      init this;
       this.boo = root.boo;
       this.i = root.i;
       this.re = root.re;
@@ -1071,7 +1070,6 @@ used to recursively hold tables and respective values
         when fieldDateTime do return val.dt:string;
         otherwise {
           throw new owned TomlError("Error in printing " + val.s);
-          return val.s;
         }
       }
     }
@@ -1112,7 +1110,6 @@ used to recursively hold tables and respective values
         when fieldToml do return 'toml';
         otherwise {
           throw new owned TomlError("Unknown type");
-          return "nil";
         }
       }
     }
@@ -1187,7 +1184,7 @@ module TomlReader {
 
     proc init(tomlStr: string) {
      this.tomlStr = tomlStr;
-     this.complete();
+     init this;
      genTokenlist(tomlStr);
     }
 
@@ -1359,7 +1356,7 @@ module TomlReader {
 
     @chpldoc.nodoc
     proc init(reader: fileReader, ref deserializer) {
-      this.complete();
+      init this;
       compilerError("Reading a Tokens type is not supported");
     }
 

@@ -240,7 +240,7 @@ proc main() {
   // phases.
   //
   const CycDom:
-    domain(1, idxType) dmapped Cyclic(startIdx=0:idxType) = ProblemSpace;
+    domain(1, idxType) dmapped cyclicDist(startIdx=0:idxType) = ProblemSpace;
 
   var Zcyc: [CycDom] elemType;
 

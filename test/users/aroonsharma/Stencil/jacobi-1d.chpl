@@ -128,7 +128,7 @@ proc main() {
         var dist_1D = dom_1D dmapped CyclicZipOpt(startIdx=dom_1D.low);
         kernel_jacobi1d(dist_1D, M);
     } */else if dist == "C" {
-        var dist_1D = dom_1D dmapped Cyclic(startIdx=dom_1D.low);
+        var dist_1D = dom_1D dmapped cyclicDist(startIdx=dom_1D.low);
         kernel_jacobi1d(dist_1D, M); 
     } else if dist == "B" {
         var dist_1D = dom_1D dmapped blockDist(boundingBox=dom_1D);

@@ -226,7 +226,7 @@ init 1
 init field2
 init 2
 init
-init field3 after this.complete()
+init field3 after 'init this'
 init 3
 = 0 3
 test19

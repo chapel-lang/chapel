@@ -147,7 +147,7 @@ class CSDom: BaseSparseDomImpl(?) {
                   then {rowRange.lowBound..rowRange.highBound+1}
                   else {colRange.lowBound..colRange.highBound+1};
 
-    this.complete();
+    init this;
 
     nnzDom = {0..#_nnz};
     dsiClear();
@@ -341,7 +341,6 @@ class CSDom: BaseSparseDomImpl(?) {
       }
     }
     halt("Something went wrong in dsiFirst");
-    return (0, 0);
   }
 
   override proc dsiLast {

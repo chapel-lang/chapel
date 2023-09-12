@@ -219,6 +219,10 @@ std::error_code ensureDirExists(const llvm::Twine& dirname) {
   return llvm::sys::fs::create_directories(dirname);
 }
 
+bool isPathWriteable(const llvm::Twine& path) {
+  return llvm::sys::fs::can_write(path);
+}
+
 // Functionality also exists in runtime/src/qio/sys.c
 // returns empty std::error_code on success.
 std::error_code currentWorkingDir(std::string& path_out) {

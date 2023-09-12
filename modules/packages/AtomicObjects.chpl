@@ -423,14 +423,14 @@ prototype module AtomicObjects {
 
     proc init(type objType, ptr : uint(64), cnt : uint(64)) {
       this.objType = objType;
-      this.complete();
+      init this;
       this._ABA_ptr.write(ptr);
       this._ABA_cnt.write(cnt);
     }
 
     proc init(type objType, ptr : uint(64)) {
       this.objType = objType;
-      this.complete();
+      init this;
       this._ABA_ptr.write(ptr);
     }
 
@@ -471,7 +471,7 @@ prototype module AtomicObjects {
       this.objType = objType;
       this.hasABASupport = hasABASupport;
       this.hasGlobalSupport = hasGlobalSupport;
-      this.complete();
+      init this;
       if hasABASupport {
         var ptr : c_ptr(void);
         var retval = posix_memalign(c_addrOf(ptr), 16, c_sizeof(ABA(objType?)));

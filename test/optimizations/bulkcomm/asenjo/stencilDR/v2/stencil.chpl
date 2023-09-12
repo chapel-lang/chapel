@@ -114,7 +114,7 @@ proc GlobalData.init(nameArg: string) {
     return dat;
   }
 
-  this.complete();
+  init this;
 
   /// get and store pointers to neighbor data slices ///
 

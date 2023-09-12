@@ -2733,6 +2733,16 @@ bool Resolver::enter(const Identifier* ident) {
 void Resolver::exit(const Identifier* ident) {
 }
 
+bool Resolver::enter(const uast::Init* init) {
+  return true;
+}
+
+void Resolver::exit(const uast::Init* init) {
+  if (initResolver) {
+    std::ignore = initResolver->handleInitStatement(init);
+  }
+}
+
 bool Resolver::enter(const TypeQuery* tq) {
   if (skipTypeQueries) {
     return false;

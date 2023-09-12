@@ -254,20 +254,20 @@ module Atomics {
 
     @chpldoc.nodoc
     proc init() {
-      this.complete();
+      init this;
       const default: bool;
       init_helper(default);
     }
 
     @chpldoc.nodoc
     proc init=(other:AtomicBool) {
-      this.complete();
+      init this;
       init_helper(other.read());
     }
 
     @chpldoc.nodoc
     proc init=(other:bool) {
-      this.complete();
+      init this;
       init_helper(other);
     }
 
@@ -448,7 +448,7 @@ module Atomics {
     @chpldoc.nodoc
     proc init(type valType) {
       this.valType = valType;
-      this.complete();
+      init this;
       const default: valType;
       init_helper(default);
     }
@@ -456,14 +456,14 @@ module Atomics {
     @chpldoc.nodoc
     proc init=(const ref other:this.type) {
       this.valType = other.valType;
-      this.complete();
+      init this;
       init_helper(other.read());
     }
 
     @chpldoc.nodoc
     proc init=(other:this.type.valType) {
       this.valType = other.type;
-      this.complete();
+      init this;
       init_helper(other);
     }
 

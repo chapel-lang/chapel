@@ -1177,6 +1177,14 @@ static void codegen_aggregate_def(AggregateType* ct) {
   ct->symbol->codegenDef();
 }
 
+static void retrieveCompileCommand() {
+  fileinfo* file = openTmpFile(compileCommandFilename, "r");
+  char buf[4096];
+  INT_ASSERT(fgets(buf, sizeof(buf), file->fptr));
+  compileCommand = astr(buf);
+  closefile(file);
+}
+
 static void genConfigGlobalsAndAbout() {
   GenInfo* info = gGenInfo;
 
@@ -1184,6 +1192,11 @@ static void genConfigGlobalsAndAbout() {
     genComment("Compilation Info");
     fprintf(info->cfile, "\n#include <stdio.h>");
     fprintf(info->cfile, "\n#include \"chpltypes.h\"\n\n");
+  }
+
+  // if we are running as compiler-driver, retrieve compile command saved to tmp
+  if (!fDriverDoMonolithic) {
+    retrieveCompileCommand();
   }
 
   genGlobalString("chpl_compileCommand", compileCommand);
@@ -2317,14 +2330,49 @@ static const char* getClangBuiltinWrappedName(const char* name)
 }
 #endif
 
-// Set the executable name to the name of the file containing the
-// main module (minus its path and extension) if it isn't set
-// already.  If in library mode, set the name of the header file as well.
-static void setupDefaultFilenames() {
-  if (executableFilename[0] == '\0') {
+// Gets the name of the main module as an astr.
+// If we are not in a backend-only run, the result will be stored in the tmpdir.
+// If we are in a backend-only run, we cannot calculate the main module and will
+// expect a file in the tmpdir to have that information available to retrieve.
+static const char* getMainModuleFilename() {
+  static const char* mainModTmpFilename = "mainmodpath.tmp";
+
+  const char* filename;
+  fileinfo* mainModTmpFile;
+  if (fDriverPhaseTwo) {
+    // we are in the backend, retrieve saved result from tmpdir
+    mainModTmpFile = openTmpFile(mainModTmpFilename, "r");
+    char nameReadIn[FILENAME_MAX];
+    INT_ASSERT(fgets(nameReadIn, sizeof(nameReadIn), mainModTmpFile->fptr));
+    filename = astr(nameReadIn);
+  } else {
     ModuleSymbol* mainMod = ModuleSymbol::mainModule();
     const char* mainModFilename = mainMod->astloc.filename();
-    const char* filename = stripdirectories(mainModFilename);
+    const char* strippedFilename = stripdirectories(mainModFilename);
+    // stripdirectories returns an astr, so pointer is fine
+    filename = strippedFilename;
+
+    // save result in tmp file for future usage
+    mainModTmpFile = openTmpFile(mainModTmpFilename, "w");
+    fprintf(mainModTmpFile->fptr, "%s", filename);
+  }
+
+  closefile(mainModTmpFile);
+  return filename;
+}
+
+
+// Set the executable name to the name of the file containing the
+// main module (minus its path and extension) if it isn't set
+// already. If in library mode, set the name of the header file as well.
+void setupDefaultFilenames() {
+  if (executableFilename[0] == '\0') {
+    // Retrieve module for use in errors in phase one. It can't be retrieved in
+    // phase two, but that's not a problem because the errors would have already
+    // been hit (and are fatal) in phase one.
+    ModuleSymbol* mainMod =
+        (fDriverPhaseTwo ? nullptr : ModuleSymbol::mainModule());
+    const char* filename = getMainModuleFilename();
 
     // "Executable" name should be given a "lib" prefix in library compilation,
     // and just the main module name in normal compilation.
@@ -2341,6 +2389,9 @@ static void setupDefaultFilenames() {
         // remove the filename extension from the library header name.
         char* lastDot = strrchr(libmodeHeadername, '.');
         if (lastDot == NULL) {
+          INT_ASSERT(!fDriverPhaseTwo &&
+                     "encountered error in phase two that should only be "
+                     "reachable in phase one");
           INT_FATAL(mainMod,
                     "main module filename is missing its extension: %s\n",
                     libmodeHeadername);
@@ -2358,6 +2409,9 @@ static void setupDefaultFilenames() {
         pythonModulename[sizeof(pythonModulename)-1] = '\0';
         char* lastDot = strrchr(pythonModulename, '.');
         if (lastDot == NULL) {
+          INT_ASSERT(!fDriverPhaseTwo &&
+                     "encountered error in phase two that should only be "
+                     "reachable in phase one");
           INT_FATAL(mainMod,
                     "main module filename is missing its extension: %s\n",
                     pythonModulename);
@@ -2378,6 +2432,9 @@ static void setupDefaultFilenames() {
     // remove the filename extension from the executable filename
     char* lastDot = strrchr(executableFilename, '.');
     if (lastDot == NULL) {
+      INT_ASSERT(!fDriverPhaseTwo &&
+                 "encountered error in phase two that should only be "
+                 "reachable in phase one");
       INT_FATAL(mainMod, "main module filename is missing its extension: %s\n",
                 executableFilename);
     }
@@ -2626,8 +2683,7 @@ static bool shouldShowLLVMRemarks() {
 
 // Do this for GPU and then do for CPU
 static void codegenPartTwo() {
-  // Initialize the global gGenInfo for C code generation.
-  gGenInfo = new GenInfo();
+  initializeGenInfo();
 
   if (fMultiLocaleInterop) {
     codegenMultiLocaleInteropWrappers();
@@ -2899,6 +2955,10 @@ void makeBinary(void) {
   if (no_codegen)
     return;
 
+  // makeBinary shouldn't run in a phase-one invocation.
+  // (Unless we're doing GPU codegen, which currently happens in phase one.)
+  INT_ASSERT(!fDriverPhaseOne || gCodegenGPU);
+
   if(fLlvmCodegen) {
 #ifdef HAVE_LLVM
    makeBinaryLLVM();
@@ -2946,6 +3006,11 @@ GenInfo::GenInfo()
   llvmContext.setOpaquePointers(false);
 #endif
 #endif
+}
+
+void initializeGenInfo(void) {
+  assert(!gGenInfo && "tried to initialize GenInfo but it already exists");
+  gGenInfo = new GenInfo();
 }
 
 std::string numToString(int64_t num)

@@ -58,7 +58,7 @@ module DistributedList {
 
         @chpldoc.nodoc
         const locDom = {0..<targetLocales.size}
-            dmapped Cyclic(startIdx=0, targetLocales=targetLocales);
+            dmapped cyclicDist(startIdx=0, targetLocales=targetLocales);
 
         @chpldoc.nodoc
         var locks: [locDom] ChapelLocks.chpl_LocalSpinlock =
@@ -74,7 +74,7 @@ module DistributedList {
         proc init(type eltType, param blockSize=DefaultBlockSize) {
             this.eltType = eltType;
             this.blockSize = blockSize;
-            this.complete();
+            init this;
             this.numEntries.write(0);
         }
 
@@ -83,7 +83,7 @@ module DistributedList {
         {
             this.eltType = t;
             this.blockSize = blockSize;
-            this.complete();
+            init this;
 
             const numBlocks = d.size / blockSize,
                   remainder = d.size % blockSize,
@@ -644,7 +644,7 @@ module DistributedList {
             this.numBlocks = DefaultNumBufferedBlocksPerLocale;
             this.numFilled = 0;
 
-            this.complete();
+            init this;
             on this {
                 this.blocks = this._makeBlockArray(this.numBlocks);
                 for i in 0..<this.numBlocks do this.blocks[i] = this._makeBlock();

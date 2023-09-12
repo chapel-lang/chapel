@@ -936,7 +936,7 @@ module Random {
         this.eltType = eltType;
         this.seed = seed;
         this.parSafe = parSafe;
-        this.complete();
+        init this;
         for param i in 0..numGenerators(eltType)-1 {
           param inc = pcg_getvalid_inc(i+1);
           PCGRandomStreamPrivate_rngs[i].srandom(seed:uint(64), inc);
@@ -2681,7 +2681,7 @@ module Random {
         mod = useed & two_46_mask;
         this.seed = mod:int(64);
         this.parSafe = parSafe;
-        this.complete();
+        init this;
 
         if this.seed % 2 == 0 || this.seed < 1 || this.seed > two_46:int(64) then
           HaltWrappers.initHalt("NPBRandomStream seed must be an odd integer between 0 and 2**46");

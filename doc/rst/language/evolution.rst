@@ -14,6 +14,41 @@ The purpose of this flag is to identify portions of a program that use a
 language or library feature has recently changed meaning or which is
 expected to change meaning in the future.
 
+version 1.32, September 2023
+----------------------------
+
+Version 1.32 deprecates the ``c_string`` type in user interfaces. Please
+replace occurrences of ``c_string`` with ``c_ptrConst(c_char)``. Note that you
+need to ``use`` or ``import`` the ``CTypes`` module to have access to
+``c_ptrConst`` and ``c_char`` types.
+
+Here are some cases where directly replacing ``c_string`` with
+``c_ptrConst(c_char)`` may not work and what to do instead:
+
+==================================  ============================================
+if your code is...                  update it to...
+==================================  ============================================
+casting ``c_string`` to ``string``  use a ``string.create*Buffer()`` method
+casting ``c_string`` to ``bytes``   use a ``bytes.create*Buffer()`` method
+casting ``c_string`` to other type  create a string and cast it to other type
+casting ``string`` to ``c_string``  replace cast with ``.c_str()``
+casting ``bytes`` to ``c_string``   replace cast with ``.c_str()``
+casting other type to ``c_string``  create a string and call ``.c_str()`` on it
+using ``param c_string``            use ``param string``
+==================================  ============================================
+
+Additionally, several ``c_string`` methods are deprecated without replacement:
+
+- ``.writeThis()``
+- ``.serialize()``
+- ``.readThis()``
+- ``.indexOf()``
+- ``.substring()``
+- ``.size`` *
+
+An equivalent for ``.size`` is the unstable procedure ``strLen(x)`` in the
+``CTypes`` module.
+
 version 1.31, June 2023
 -----------------------
 
@@ -418,7 +453,7 @@ experiences:
   If you have a pattern that you're trying to write in an
   index-neutral style, but can't, don't hesitate to `ask for tips
   <https://chapel-lang.org/community.html>`_.
-        
+
 
 * Some common pitfalls to check for in your code include:
 

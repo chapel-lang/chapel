@@ -147,8 +147,8 @@ static PassInfo sPassList[] = {
   // AST to C or LLVM
   RUN(insertLineNumbers),       // insert line numbers for error messages
   RUN(denormalize),             // denormalize -- remove local temps
-  RUN(codegen),                 // generate C code
-  RUN(makeBinary)               // invoke underlying C compiler
+  RUN(codegen),                 // generate C or LLVM code
+  RUN(makeBinary)               // invoke underlying C or LLVM compiler
 };
 
 static const size_t passListSize = sizeof(sPassList) / sizeof(sPassList[0]);
@@ -192,19 +192,30 @@ void runPasses(PhaseTracker& tracker) {
   setupStopAfterPass();
 
   for (size_t i = 0; i < passListSize; i++) {
+    // skip until makeBinary if in phase-two invocation
+    if (fDriverPhaseTwo && strcmp(sPassList[i].name, "makeBinary") != 0) {
+      continue;
+    }
+
     runPass(tracker, i);
 
     USR_STOP(); // quit if fatal errors were encountered in pass
 
     currentPassNo++;
 
+    // quit before makeBinary in phase-one invocation
+    if (fDriverPhaseOne && strcmp(sPassList[i].name, "codegen") == 0) {
+      break;
+    }
+
     // Break early if this is a parse-only run
-    if (fParseOnly ==  true && strcmp(sPassList[i].name, "checkParsed") == 0) {
+    if (fParseOnly && strcmp(sPassList[i].name, "checkParsed") == 0) {
       break;
     }
 
     // Breaks early if the user specified to stop after this pass
-    if (stopAfterPass[0] != '\0' && strcmp(sPassList[i].name, stopAfterPass) == 0) {
+    if (stopAfterPass[0] != '\0' &&
+        strcmp(sPassList[i].name, stopAfterPass) == 0) {
       break;
     }
   }
@@ -246,9 +257,13 @@ static void runPass(PhaseTracker& tracker, size_t passIndex) {
 
   //
   // Clean up the global pointers to AST.
+  // Skip if we're on the backend invocation of the compiler, in which case
+  // there is no AST.
   //
-  tracker.StartPhase(info->name, PhaseTracker::kCleanAst);
-  cleanAst();
+  if (!fDriverPhaseTwo) {
+    tracker.StartPhase(info->name, PhaseTracker::kCleanAst);
+    cleanAst();
+  }
 
   if (printPasses == true || printPassesFile != 0) {
     tracker.ReportPass();

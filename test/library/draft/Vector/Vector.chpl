@@ -105,7 +105,7 @@ module Vector {
       _checkType(eltType);
       this.eltType = eltType;
       this.parSafe = parSafe;
-      this.complete();
+      init this;
     }
 
     /*
@@ -126,7 +126,7 @@ module Vector {
                       "cannot be copied");
       this.eltType = t;
       this.parSafe = parSafe;
-      this.complete();
+      init this;
       _requestCapacity(other.size);
       _commonInitFromIterable(other);
     }
@@ -149,7 +149,7 @@ module Vector {
                       "cannot be copied");
       this.eltType = t;
       this.parSafe = parSafe;
-      this.complete();
+      init this;
       _requestCapacity(other.size);
       _commonInitFromIterable(other);
     }
@@ -167,7 +167,7 @@ module Vector {
                       "cannot be copied");
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
-      this.complete();
+      init this;
 
       _requestCapacity(other.size);
       _commonInitFromIterable(other);
@@ -192,7 +192,7 @@ module Vector {
 
       this.eltType = t;
       this.parSafe = parSafe;
-      this.complete();
+      init this;
       _requestCapacity(other.size);
       _commonInitFromIterable(other);
     }
@@ -225,7 +225,7 @@ module Vector {
         compilerError(msg);
       }
 
-      this.complete();
+      init this;
       _requestCapacity(other.size);
       _commonInitFromIterable(other);
     }
@@ -244,7 +244,7 @@ module Vector {
 
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
-      this.complete();
+      init this;
 
       _requestCapacity(other.size);
       _commonInitFromIterable(other);
@@ -263,7 +263,7 @@ module Vector {
                       "cannot be copied");
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
-      this.complete();
+      init this;
 
       _requestCapacity(d.size);
       _commonInitFromIterable(other);
@@ -293,7 +293,7 @@ module Vector {
         compilerError(msg);
       }
 
-      this.complete();
+      init this;
 
       _requestCapacity(other.size);
       _commonInitFromIterable(other);

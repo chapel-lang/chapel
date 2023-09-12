@@ -255,7 +255,6 @@ module LocaleModel {
     }
     override proc _getChild(idx:int) : locale {
       halt("requesting a child from a GPULocale locale");
-      return new locale(this);
     }
 
     override proc isGpu() : bool { return true; }
@@ -296,7 +295,7 @@ module LocaleModel {
       numSublocales = chpl_gpu_num_devices;
       childSpace = {0..#numSublocales};
 
-      this.complete();
+      init this;
 
       setup();
     }
@@ -314,7 +313,7 @@ module LocaleModel {
       numSublocales = chpl_gpu_num_devices;
       childSpace = {0..#numSublocales};
 
-      this.complete();
+      init this;
 
       setup();
     }

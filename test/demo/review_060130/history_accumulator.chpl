@@ -12,7 +12,7 @@ record history_real {
 
   proc init=(r : real) {
     this.size = this.type.size;
-    this.complete();
+    init this;
     add(r);
   }
 
