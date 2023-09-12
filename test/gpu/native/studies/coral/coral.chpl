@@ -24,6 +24,8 @@ config const report_times = true;
 config const report_checksum = false;
 config const write_data = false;
 config const verbose_gpu = false;
+config const numWorkers = 1;
+config const numChunksPerWorker = 1;
 
 //var bs = 1;
 //var be = 5;
@@ -171,57 +173,74 @@ proc main(args: [] string) {
     var OutputHost : [Inner] real(64); // D
 
     coforall (gpuId, gpu) in zip(here.gpus.domain, here.gpus) do on gpu {
-      /*writeln(gpuId, " started ", Inner.dim(0).size, " ", loc.gpus.size);*/
-      var (outRowStart, outRowEnd) = _computeChunkStartEnd(Inner.dim(0).size,
-                                                           loc.gpus.size,
-                                                           gpuId+1);
-      // offset for 1-based support function and start offset
-      outRowStart += Inner.dim(0).low-1;
-      outRowEnd += Inner.dim(0).low-1;
-      /*writeln(gpuId, " chunk computed", outRowStart, " ", outRowEnd);*/
-      const MyInner = {outRowStart..outRowEnd, Inner.dim(1)};
 
-      /*writeln(gpuId, " MyInner ", MyInner);*/
+      coforall taskId in 0..#numWorkers {
+        const workerId = gpuId*numWorkers + taskId;
 
-      var OutputGpu: [MyInner] real(64); // D
+        for chunkId in 0..#numChunksPerWorker {
+          const globalChunkId = workerId*numChunksPerWorker + chunkId;
+
+          /*writeln(gpuId, " started ", Inner.dim(0).size, " ", loc.gpus.size);*/
+          var (outRowStart, outRowEnd) =
+             _computeChunkStartEnd(Inner.dim(0).size,
+                                   loc.gpus.size*numWorkers*numChunksPerWorker,
+                                   globalChunkId);
+          // offset for 1-based support function and start offset
+          outRowStart += Inner.dim(0).low-1;
+          outRowEnd += Inner.dim(0).low-1;
+
+          var (inRowStart, inRowEnd) =
+              _computeChunkStartEnd(Array.domain.dim(1).size,
+                                    loc.gpus.size*numWorkers*numChunksPerWorker,
+                                    globalChunkId);
+
+          // offset for halo
+          inRowStart = max(Array.domain.dim(1).low, inRowStart-radius);
+          inRowEnd = min(Array.domain.dim(1).high, inRowEnd+radius);
 
 
-      var (inRowStart, inRowEnd) = _computeChunkStartEnd(Array.domain.dim(1).size,
-                                                         loc.gpus.size,
-                                                         gpuId+1);
 
-      // offset for halo
-      inRowStart = max(Array.domain.dim(1).low, inRowStart-radius);
-      inRowEnd = min(Array.domain.dim(1).high, inRowEnd+radius);
+          writeln(globalChunkId, " chunk computed", outRowStart, " ", outRowEnd);
+          const MyInner = {outRowStart..outRowEnd, Inner.dim(1)};
 
-      const MyArrayDom = {1..5, inRowStart..inRowEnd, Array.domain.dim(1)};
-      /*writeln(gpuId, " MyArrayDom ", MyArrayDom);*/
+          /*writeln(gpuId, " MyInner ", MyInner);*/
 
-      var locArray : [MyArrayDom] Array.eltType;
+          var OutputGpu: [MyInner] real(64); // D
 
-      /*writeln(gpuId, " MyArrayDom ", MyArrayDom);*/
 
-      locArray = Array[MyArrayDom];
 
-      // Create distance mask
-      const locLeftMaskDomain = LeftMask.domain;
-      const locCenterMaskDomain = CenterMask.domain;
-      const locRightMaskDomain = RightMask.domain;
+          const MyArrayDom = {1..5, inRowStart..inRowEnd, Array.domain.dim(1)};
+          writeln(globalChunkId, " MyArrayDom ", MyArrayDom);
 
-      if report_times then
-        writeln("Starting convolution at ", t.elapsed(), ".");
+          var locArray : [MyArrayDom] Array.eltType;
 
-      var t2 : stopwatch;
-      t2.start();
-      convolve_and_calculate(locArray, MyInner, locLeftMaskDomain,
-                             locCenterMaskDomain, locRightMaskDomain,
-                             OutputGpu, t);
-      t2.stop();
+          /*writeln(gpuId, " MyArrayDom ", MyArrayDom);*/
 
-      if report_times then writeln("Convolve time: ", t2.elapsed());
-      on loc {
-        OutputHost[MyInner] = OutputGpu;
+          locArray = Array[MyArrayDom];
+
+          // Create distance mask
+          const locLeftMaskDomain = LeftMask.domain;
+          const locCenterMaskDomain = CenterMask.domain;
+          const locRightMaskDomain = RightMask.domain;
+
+          if report_times then
+            writeln("Starting convolution at ", t.elapsed(), ".");
+
+          var t2 : stopwatch;
+          t2.start();
+          convolve_and_calculate(locArray, MyInner, locLeftMaskDomain,
+              locCenterMaskDomain, locRightMaskDomain,
+              OutputGpu, t);
+          t2.stop();
+
+          if report_times then writeln("Convolve time: ", t2.elapsed());
+          on loc {
+            OutputHost[MyInner] = OutputGpu;
+          }
+        }
+
       }
+
 
     }
     if report_checksum {
