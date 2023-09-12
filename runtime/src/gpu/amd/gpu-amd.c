@@ -468,6 +468,21 @@ void chpl_gpu_impl_stream_destroy(void* stream) {
   }
 }
 
+bool chpl_gpu_impl_stream_ready(void* stream) {
+  hipError_t res = hipStreamQuery(stream);
+  if (res == hipErrorNotInitialized) {
+    // this happens only during application intiialization, and doesn't really
+    // matter
+    return true;
+  }
+  else if (res == hipErrorNotReady) {
+    return false;
+  }
+  ROCM_CALL(res);
+
+  return true;
+}
+
 void chpl_gpu_impl_stream_synchronize(void* stream) {
   // TODO do we want to call hipStreamQuery and chpl_task_yield if the stream is
   // not ready?

@@ -80,6 +80,23 @@ void chpl_gpu_init(void) {
   }
 }
 
+// With very limited and artificial benchmarking, we observed that yielding
+// while waiting for a stream to finish actually hurts performance. So,
+// currently, this is hard-wired for `false`. As we explore overlap patterns
+// more, we might want to change it. I expect a begin-based parallelism where
+// multiple tasks are likely to be bunched up in a core, we might prefer this
+// yield.
+static bool yield_in_stream_sync = false;
+
+static inline void wait_stream(void* stream) {
+  if (yield_in_stream_sync) {
+    while (!chpl_gpu_impl_stream_ready(stream)) {
+      chpl_task_yield();
+    }
+  }
+  chpl_gpu_impl_stream_synchronize(stream);
+}
+
 static inline bool async_ok(void) {
   return !chpl_gpu_use_default_stream && chpl_gpu_impl_stream_supported();
 }
@@ -103,7 +120,7 @@ void chpl_gpu_task_end(void) {
     for (i=0 ; i<chpl_gpu_num_devices ; i++) {
       if (prvData->streams[i] != NULL) {
         CHPL_GPU_DEBUG("Destroying stream %p (subloc %d)\n", prvData->streams[i], i);
-        chpl_gpu_impl_stream_synchronize(prvData->streams[i]);
+        wait_stream(prvData->streams[i]);
         chpl_gpu_impl_stream_destroy(prvData->streams[i]);
         prvData->streams[i] = NULL;
       }
@@ -128,7 +145,7 @@ void chpl_gpu_task_fence(void) {
     for (i=0 ; i<chpl_gpu_num_devices ; i++) {
       if (prvData->streams[i] != NULL) {
         CHPL_GPU_DEBUG("Synchronizing stream %p (subloc %d)\n", prvData->streams[i], i);
-        chpl_gpu_impl_stream_synchronize(prvData->streams[i]);
+        wait_stream(prvData->streams[i]);
       }
     }
   }
@@ -218,7 +235,7 @@ inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
 
   if (!chpl_gpu_use_async_streams) {
     CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
-    chpl_gpu_impl_stream_synchronize(stream);
+    wait_stream(stream);
   }
 
   va_end(args);
@@ -267,7 +284,7 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
 
   if (!chpl_gpu_use_async_streams) {
     CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
-    chpl_gpu_impl_stream_synchronize(stream);
+    wait_stream(stream);
   }
 
   va_end(args);
@@ -402,7 +419,7 @@ void* chpl_gpu_memset(void* addr, const uint8_t val, size_t n) {
   void* ret = chpl_gpu_impl_memset(addr, val, n, stream);
   if (!chpl_gpu_use_async_streams) {
     CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
-    chpl_gpu_impl_stream_synchronize(stream);
+    wait_stream(stream);
   }
 
   CHPL_GPU_DEBUG("chpl_gpu_memset successful\n");
@@ -427,11 +444,11 @@ void chpl_gpu_copy_device_to_device(c_sublocid_t dst_dev, void* dst,
   chpl_gpu_impl_copy_device_to_device(dst, src, n, stream);
   if (dst_dev != src_dev) {
     // going to a device that maybe used by a different task, synchornize
-    chpl_gpu_impl_stream_synchronize(stream);
+    wait_stream(stream);
   }
   else if (!chpl_gpu_use_async_streams) {
     CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
-    chpl_gpu_impl_stream_synchronize(stream);
+    wait_stream(stream);
   }
 
   CHPL_GPU_DEBUG("Copy successful\n");
@@ -454,7 +471,7 @@ void chpl_gpu_copy_device_to_host(void* dst, c_sublocid_t src_dev,
   chpl_gpu_impl_copy_device_to_host(dst, src, n, stream);
 
   // data is going to host, synchronize
-  chpl_gpu_impl_stream_synchronize(stream);
+  wait_stream(stream);
 
   CHPL_GPU_DEBUG("Copy successful\n");
 }
@@ -475,7 +492,7 @@ void chpl_gpu_copy_host_to_device(c_sublocid_t dst_dev, void* dst,
   chpl_gpu_impl_copy_host_to_device(dst, src, n, stream);
   if (!chpl_gpu_use_async_streams) {
     CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
-    chpl_gpu_impl_stream_synchronize(stream);
+    wait_stream(stream);
   }
 
   CHPL_GPU_DEBUG("Copy successful\n");

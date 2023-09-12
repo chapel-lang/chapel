@@ -446,9 +446,22 @@ void chpl_gpu_impl_stream_destroy(void* stream) {
   }
 }
 
+bool chpl_gpu_impl_stream_ready(void* stream) {
+  CUresult res = cuStreamQuery(stream);
+  if (res == CUDA_ERROR_NOT_INITIALIZED) {
+    // this happens only during application intiialization, and doesn't really
+    // matter
+    return true;
+  }
+  else if (res == CUDA_ERROR_NOT_READY) {
+    return false;
+  }
+  CUDA_CALL(res);
+
+  return true;
+}
+
 void chpl_gpu_impl_stream_synchronize(void* stream) {
-  // TODO do we want to call cuStreamQuery and chpl_task_yield if the stream is
-  // not ready?
   CUresult res = cuStreamSynchronize(stream);
   if (res == CUDA_ERROR_NOT_INITIALIZED) {
     return;
