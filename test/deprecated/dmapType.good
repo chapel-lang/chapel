@@ -4,6 +4,9 @@ dmapType.chpl:8: warning: 'Block' is deprecated, please use 'blockDist' instead
 dmapType.chpl:14: warning: 'Cyclic' is deprecated, please use 'cyclicDist' instead
 dmapType.chpl:18: warning: 'Cyclic' is deprecated, please use 'cyclicDist' instead
 dmapType.chpl:18: warning: 'Cyclic' is deprecated, please use 'cyclicDist' instead
+dmapType.chpl:24: warning: 'Replicated' is deprecated, please use 'replicatedDist' instead
+dmapType.chpl:28: warning: 'Replicated' is deprecated, please use 'replicatedDist' instead
+dmapType.chpl:28: warning: 'Replicated' is deprecated, please use 'replicatedDist' instead
 dmapType.chpl:34: warning: 'Stencil' is deprecated, please use 'stencilDist' instead
 dmapType.chpl:38: warning: 'Stencil' is deprecated, please use 'stencilDist' instead
 dmapType.chpl:38: warning: 'Stencil' is deprecated, please use 'stencilDist' instead
@@ -20,6 +23,6 @@ blockDist(1,int(64),unmanaged DefaultDist)
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 cyclicDist(1,int(64))
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
-Replicated
+replicatedDist
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 stencilDist(1,int(64),false)
