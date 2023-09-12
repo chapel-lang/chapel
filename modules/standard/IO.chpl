@@ -2254,64 +2254,6 @@ proc openplugin(pluginFile: QioPluginFile, mode:ioMode,
   return ret;
 }
 
-@deprecated(notes="openfd is deprecated, please use the file initializer with a 'c_int' argument instead")
-proc openfd(fd: c_int, hints=ioHintSet.empty, style:iostyle):file throws {
-  return openfdHelper(fd, hints, style: iostyleInternal);
-}
-
-/*
-
-Create a Chapel file that works with a system file descriptor.  Note that once
-the file is open, you will need to use a :proc:`file.reader` to create a
-fileReader or :proc:`file.writer` to create a fileWriter to actually perform I/O
-operations
-
-The system file descriptor will be closed when the Chapel file is closed.
-
-.. note::
-
-  This function can be used to create Chapel files that refer to system file
-  descriptors that do not support the ``seek`` functionality. For example, file
-  descriptors that represent pipes or open socket connections have this
-  property. In that case, the resulting file value should only be used with one
-  :record:`fileReader` or :record:`fileWriter` at a time.  The I/O system will
-  ignore the fileReader or fileWriter offsets when reading or writing to files
-  backed by non-seekable file descriptors.
-
-
-:arg fd: a system file descriptor.
-:arg hints: optional argument to specify any hints to the I/O system about
-            this file. See :record:`ioHintSet`.
-:returns: an open :record:`file` using the specified file descriptor.
-
-:throws SystemError: Thrown if the file descriptor could not be retrieved.
-*/
-@deprecated(notes="openfd is deprecated, please use the file initializer with a 'c_int' argument instead")
-proc openfd(fd: c_int, hints = ioHintSet.empty):file throws {
-  return openfdHelper(fd, hints);
-}
-
-private proc openfdHelper(fd: c_int, hints = ioHintSet.empty,
-                          style:iostyleInternal = defaultIOStyleInternal()):file throws {
-  var local_style = style;
-  var ret:file;
-  ret._home = here;
-  extern proc chpl_cnullfile():c_ptr(chpl_cFile);
-  var err = qio_file_init(ret._file_internal, chpl_cnullfile(), fd, hints._internal, local_style, 0);
-
-  // On return, either ret._file_internal.ref_cnt == 1, or ret._file_internal is NULL.
-  // err should be nonzero in the latter case.
-  if err {
-    var path_cs:c_ptrConst(c_char);
-    var path_err = qio_file_path_for_fd(fd, path_cs);
-    var path = if path_err then "unknown"
-                           else string.createCopyingBuffer(path_cs,
-                                                          policy=decodePolicy.replace);
-    try ioerror(err, "in openfd", path);
-  }
-  return ret;
-}
-
 @deprecated("openTempFile with a 'style' argument is deprecated")
 proc openTempFile(hints=ioHintSet.empty, style:iostyle):file throws {
   return opentmpHelper(hints, style: iostyleInternal);
