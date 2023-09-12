@@ -10,6 +10,7 @@ use Time;
 use IO;
 use AutoMath;
 use LinearAlgebra;
+import DSIUtil._computeChunkStartEnd;
 
 /* Command line arguments. */
 config const in_array : string;               /* name of array to read in */
@@ -129,6 +130,7 @@ proc main(args: [] string) {
     const ImageSpace = {0..#y, 0..#x};
 
 
+    // TODO make this 0-based, too
     var Array : [1..5,1..y,1..x] real(32);
 
     // Read in array
@@ -168,11 +170,38 @@ proc main(args: [] string) {
     const Inner = ImageSpace.expand(-offset);
     var OutputHost : [Inner] real(64); // D
 
-    on here.gpus[0] {
+    coforall (gpuId, gpu) in zip(here.gpus.domain, here.gpus) do on gpu {
+      /*writeln(gpuId, " started ", Inner.dim(0).size, " ", loc.gpus.size);*/
+      var (outRowStart, outRowEnd) = _computeChunkStartEnd(Inner.dim(0).size,
+                                                           loc.gpus.size,
+                                                           gpuId+1);
+      // offset for 1-based support function and start offset
+      outRowStart += Inner.dim(0).low-1;
+      outRowEnd += Inner.dim(0).low-1;
+      /*writeln(gpuId, " chunk computed", outRowStart, " ", outRowEnd);*/
+      const MyInner = {outRowStart..outRowEnd, Inner.dim(1)};
 
-      var Output: [Inner] real(64); // D
-      const locArrayDomain = Array.domain;
-      const locArray : [locArrayDomain] Array.eltType = Array;
+      /*writeln(gpuId, " MyInner ", MyInner);*/
+
+      var OutputGpu: [MyInner] real(64); // D
+
+
+      var (inRowStart, inRowEnd) = _computeChunkStartEnd(Array.domain.dim(1).size,
+                                                         loc.gpus.size,
+                                                         gpuId+1);
+
+      // offset for halo
+      inRowStart = max(Array.domain.dim(1).low, inRowStart-radius);
+      inRowEnd = min(Array.domain.dim(1).high, inRowEnd+radius);
+
+      const MyArrayDom = {1..5, inRowStart..inRowEnd, Array.domain.dim(1)};
+      /*writeln(gpuId, " MyArrayDom ", MyArrayDom);*/
+
+      var locArray : [MyArrayDom] Array.eltType;
+
+      /*writeln(gpuId, " MyArrayDom ", MyArrayDom);*/
+
+      locArray = Array[MyArrayDom];
 
       // Create distance mask
       const locLeftMaskDomain = LeftMask.domain;
@@ -184,20 +213,23 @@ proc main(args: [] string) {
 
       var t2 : stopwatch;
       t2.start();
-      convolve_and_calculate(locArray, Inner, locLeftMaskDomain, locCenterMaskDomain, locRightMaskDomain, Output, t);
+      convolve_and_calculate(locArray, MyInner, locLeftMaskDomain,
+                             locCenterMaskDomain, locRightMaskDomain,
+                             OutputGpu, t);
       t2.stop();
 
       if report_times then writeln("Convolve time: ", t2.elapsed());
-
-      if report_checksum {
-        on loc {
-          OutputHost = Output;
-          writeln("Checksum: ", + reduce OutputHost);
-          if write_data then writeln(OutputHost);
-        }
+      on loc {
+        OutputHost[MyInner] = OutputGpu;
       }
+
+    }
+    if report_checksum {
+        writeln("Checksum: ", + reduce OutputHost);
+        if write_data then writeln(OutputHost);
     }
   }
+
 
   if report_times then
     writeln("Elapsed time to finish coforall loop: ", t.elapsed(), " seconds.");
