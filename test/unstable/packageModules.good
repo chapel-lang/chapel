@@ -1,0 +1,55 @@
+packageModules.chpl:1: warning: AllLocalesBarriers is unstable
+packageModules.chpl:2: warning: ArgumentParser is unstable.
+packageModules.chpl:3: warning: AtomicObjects is unstable
+packageModules.chpl:4: warning: BLAS is unstable
+packageModules.chpl:5: warning: BinaryIO module is deprecated; please use the IO module instead
+packageModules.chpl:6: warning: Buffers is unstable
+packageModules.chpl:7: warning: Channel is unstable
+packageModules.chpl:8: warning: ChplFormat module is considered unstable pending naming changes
+packageModules.chpl:9: warning: Collection is unstable
+packageModules.chpl:10: warning: ConcurrentMap is unstable
+packageModules.chpl:11: warning: CopyAggregation is unstable
+packageModules.chpl:12: warning: Crypto is unstable
+packageModules.chpl:13: warning: Curl is unstable
+packageModules.chpl:14: warning: DistributedBag is unstable
+packageModules.chpl:15: warning: DistributedDeque is unstable
+packageModules.chpl:16: warning: DistributedIters is unstable
+packageModules.chpl:17: warning: EpochManager is unstable
+packageModules.chpl:18: warning: ExplicitRefCount is unstable
+packageModules.chpl:19: warning: FFTW is unstable
+packageModules.chpl:20: warning: FunctionalOperations is unstable
+packageModules.chpl:21: warning: Futures is unstable
+packageModules.chpl:22: warning: HDF5 is unstable
+packageModules.chpl:23: warning: HDFS is unstable
+packageModules.chpl:24: warning: LAPACK is unstable
+packageModules.chpl:25: warning: LinearAlgebra is unstable
+packageModules.chpl:26: warning: LinearAlgebraJama is unstable
+packageModules.chpl:27: warning: LinkedLists is unstable
+packageModules.chpl:28: warning: LockFreeQueue is unstable
+packageModules.chpl:29: warning: LockFreeStack is unstable
+packageModules.chpl:30: warning: MPI is unstable
+packageModules.chpl:31: warning: MatrixMarket is unstable
+packageModules.chpl:32: warning: NetCDF is unstable
+packageModules.chpl:33: warning: The OrderedMap module and the orderedMap type are deprecated in favor of SortedMap and sortedMap
+packageModules.chpl:34: warning: The OrderedSet module and the orderedSet type are deprecated in favor of SortedSet and sortedMap
+packageModules.chpl:35: warning: PeekPoke is unstable
+packageModules.chpl:36: warning: Prefetch is unstable
+packageModules.chpl:37: warning: ProtobufProtocolSupport is unstable
+packageModules.chpl:38: warning: RangeChunk is unstable
+packageModules.chpl:39: warning: RecordParser is unstable
+packageModules.chpl:40: warning: ReplicatedVar is unstable
+packageModules.chpl:41: warning: Search is unstable
+packageModules.chpl:42: warning: Socket is unstable
+packageModules.chpl:43: warning: Sort is unstable
+packageModules.chpl:44: warning: SortedMap is unstable
+packageModules.chpl:45: warning: SortedSet is unstable
+packageModules.chpl:46: warning: TOML is unstable
+packageModules.chpl:47: warning: URL is unstable
+packageModules.chpl:48: warning: UgniPerfStats is unstable
+packageModules.chpl:49: warning: UnitTest is unstable
+packageModules.chpl:50: warning: UnorderedAtomics is unstable
+packageModules.chpl:51: warning: UnorderedCopy is unstable
+packageModules.chpl:52: warning: UnrolledLinkedList is unstable
+packageModules.chpl:53: warning: VisualDebug is unstable
+packageModules.chpl:54: warning: The YAML module is considered unstable pending various name and design changes.
+packageModules.chpl:55: warning: ZMQ is unstable
