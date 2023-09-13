@@ -363,8 +363,8 @@ proc radixSortBlocks(radixGlobalWorkSize, const nbits : uint(32), const startbit
         // Load keys and vals from Global memory
         var key, value : 4*uint(32);
         const base = 4*i;
-        for param j in 0..3:uint(32) do key[j] = keysIn[base + j];
-        for param j in 0..3:uint(32) do value[j] = valuesIn[base + j];
+        for param j in 0..3 do key[j] = keysIn[base + j];
+        for param j in 0..3 do value[j] = valuesIn[base + j];
 
         // For each of the 4 bits
         for shift in startbit:uint(32)..#nbits:uint(32) {
@@ -436,8 +436,8 @@ proc radixSortBlocks(radixGlobalWorkSize, const nbits : uint(32), const startbit
             syncThreads();
 
         }
-        for param j in 0..3:uint(32) do keysOut[base + j] = key[j];
-        for param j in 0..3:uint(32) do valuesOut[base + j] = value[j];
+        for param j in 0..3 do keysOut[base + j] = key[j];
+        for param j in 0..3 do valuesOut[base + j] = value[j];
     }
 }
 
@@ -687,7 +687,7 @@ proc vectorAddUniform4(ref d_vector: [] uint(32), const ref d_uniforms : [] uint
         syncThreads();
 
         // 4 elems per thread
-        for idx in 0..3:uint(32) {
+        for idx in 0..3 {
             if( address >= n) then break;
             d_vector[address] += uni[0];
             address += SCAN_BLOCK_SIZE : uint(32);

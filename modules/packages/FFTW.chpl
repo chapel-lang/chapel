@@ -253,9 +253,9 @@ module FFTW {
 
     var dims: c_array(c_int,rank);
     for param i in 0..<rank do
-      dims(i) = input.domain.dim(i).size.safeCast(c_int);
+      dims(i) = input.domain.dim(i).size: c_int;
 
-    return C_FFTW.fftw_plan_dft(rank.safeCast(c_int), dims, c_ptrToConst(input),
+    return C_FFTW.fftw_plan_dft(rank, dims, c_ptrToConst(input),
                                      c_ptrTo(output), sign, flags);
   }
 
