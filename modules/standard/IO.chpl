@@ -4548,7 +4548,8 @@ inline proc fileWriter.commit() {
    the region argument will fully specify the bounds of the seek.  When set to
    ``false``, the region argument will exclude the high bound.  Defaults to
    ``false``, the original behavior.  */
-config param useNewSeekRegionBounds = false;
+@deprecated("'useNewSeekRegionBounds' has been deprecated - the region adjustment it was controlling is now always 'true', this config no longer impacts code and will be removed in a future release")
+config param useNewSeekRegionBounds = true;
 
 /*
    Adjust a :record:`fileReader`'s region. The ``fileReader``'s buffer will be
@@ -4577,8 +4578,7 @@ config param useNewSeekRegionBounds = false;
                          fileReader is marked.
    :throws IllegalArgumentError: if region argument did not have a lower bound
  */
-proc fileReader.seek(region: range(?)) throws where (!region.hasHighBound() ||
-                                                     useNewSeekRegionBounds) {
+proc fileReader.seek(region: range(?)) throws where (!region.hasHighBound()) {
 
   if this.locking then
     compilerError("Cannot seek on a locking fileReader");
@@ -4630,8 +4630,7 @@ proc fileReader.seek(region: range(?)) throws where (!region.hasHighBound() ||
                          fileReader is marked.
    :throws IllegalArgumentError: if region argument did not have a lower bound
  */
-proc fileWriter.seek(region: range(?)) throws where (!region.hasHighBound() ||
-                                                     useNewSeekRegionBounds) {
+proc fileWriter.seek(region: range(?)) throws where (!region.hasHighBound()) {
 
   if this.locking then
     compilerError("Cannot seek on a locking fileWriter");
@@ -4653,34 +4652,6 @@ proc fileWriter.seek(region: range(?)) throws where (!region.hasHighBound() ||
       if err then
         throw createSystemError(err);
     }
-  }
-}
-
-@deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewSeekRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
-proc fileReader.seek(region: range(?)) throws where (region.hasHighBound() &&
-                                                     !useNewSeekRegionBounds) {
-  if (!region.hasLowBound()) {
-    throw new IllegalArgumentError("illegal argument 'region': must have a lower bound");
-
-  } else {
-    const err = qio_channel_seek(_channel_internal, region.low, region.high);
-
-    if err then
-      throw createSystemError(err);
-  }
-}
-
-@deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewSeekRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
-proc fileWriter.seek(region: range(?)) throws where (region.hasHighBound() &&
-                                                     !useNewSeekRegionBounds) {
-  if (!region.hasLowBound()) {
-    throw new IllegalArgumentError("illegal argument 'region': must have a lower bound");
-
-  } else {
-    const err = qio_channel_seek(_channel_internal, region.low, region.high);
-
-    if err then
-      throw createSystemError(err);
   }
 }
 
