@@ -1,0 +1,1 @@
+readWriteMultidimArray.chpl:13: error: writeBinary() does not currently support this type of array
