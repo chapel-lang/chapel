@@ -61,7 +61,7 @@ def rename_named_actuals(rc, call, renames):
             # yield (actual, actual_text.replace(name, renames[name]))
             yield from []
 
-def do_replace(finder, ctx, filename):
+def do_replace(finder, ctx, filename, suffix, inplace):
     asts = ctx.parse(filename)
     rc = ReplacementContext(filename)
     new_content = rc.content
@@ -129,12 +129,18 @@ def do_replace(finder, ctx, filename):
         for (replace_from, replace_to, replace_with) in recurse(ast):
             new_content = new_content[:replace_from] + replace_with + new_content[replace_to:]
 
-    with open(filename, "w") as newfile:
+    if inplace:
+        store_into = filename
+    else:
+        store_into = filename + suffix
+    with open(store_into, "w") as newfile:
         newfile.write(new_content)
 
 def run(finder, name='replace', description='A tool to search-and-replace Chapel expressions with others'):
     parser = argparse.ArgumentParser(prog=name, description=description)
     parser.add_argument('filenames', nargs='*')
+    parser.add_argument('--suffix', dest='suffix', action='store', default='.new')
+    parser.add_argument('--in-place', dest='inplace', action='store_true', default=False)
     args = parser.parse_args()
 
     # Some files might have the same name, which Dyno really doesn't like.
@@ -157,7 +163,7 @@ def run(finder, name='replace', description='A tool to search-and-replace Chapel
         to_replace = buckets[bucket]
 
         for filename in to_replace:
-            do_replace(finder, ctx, filename)
+            do_replace(finder, ctx, filename, args.suffix, args.inplace)
 
 def fuse(*args):
     def fused(rc, root):
