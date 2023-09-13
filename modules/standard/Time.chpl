@@ -763,7 +763,7 @@ module Time {
 
     proc timezone: shared Timezone
       where DateTimeStaticTZAwareness == true && this.tzAware == true
-        do return chpl_tz!;
+        do return try!(chpl_tz: shared Timezone);
 
     @chpldoc.nodoc
     proc timezone: shared Timezone
@@ -774,7 +774,7 @@ module Time {
     @chpldoc.nodoc
     proc _timezone: shared Timezone? where DateTimeStaticTZAwareness == false do return chpl_tz;
     @chpldoc.nodoc
-    proc _timezone: shared Timezone where DateTimeStaticTZAwareness == true do return chpl_tz!;
+    proc _timezone: shared Timezone where DateTimeStaticTZAwareness == true do return try!(chpl_tz: shared Timezone);
 
     @chpldoc.nodoc
     @deprecated(notes="'tzinfo' is deprecated, please use 'timezone' instead")
@@ -802,7 +802,7 @@ module Time {
 
   @chpldoc.nodoc
   @unstable("initializing a 'time' without arguments is unstable; it may become illegal or be replaced with a specific uninitialized 'time' sentinel value in the future")
-  proc time.init(param tzAware: bool = false) {
+  proc time.init(param tzAware: bool) {
     this.tzAware = tzAware;
   }
 
@@ -1313,7 +1313,7 @@ module Time {
 
     proc timezone: shared Timezone
       where DateTimeStaticTZAwareness == true && tzAware == true
-        do return chpl_time._timezone;
+        do return try!(chpl_time.chpl_tz: shared Timezone);
 
     @chpldoc.nodoc
     proc timezone: shared Timezone
@@ -1324,7 +1324,7 @@ module Time {
     @chpldoc.nodoc
     proc _timezone: shared Timezone? where DateTimeStaticTZAwareness == false do return chpl_time._timezone;
     @chpldoc.nodoc
-    proc _timezone: shared Timezone where DateTimeStaticTZAwareness == true do return chpl_time._timezone!;
+    proc _timezone: shared Timezone where DateTimeStaticTZAwareness == true do return try!(chpl_time.chpl_tz: shared Timezone);
 
     @chpldoc.nodoc
     @deprecated(notes="'tzinfo' is deprecated, please use 'timezone' instead")
@@ -1405,7 +1405,7 @@ module Time {
   }
 
   /* Initialize a new `dateTime` value from the given `date` and `time` */
-  proc dateTime.init(d: date, t: time(?) = new time()) {
+  proc dateTime.init(d: date, t: time(?) = new time(false)) {
     tzAware = t.tzAware;
     chpl_date = d;
     chpl_time = t;
@@ -1425,7 +1425,7 @@ module Time {
 
   /* Return a `dateTime` value representing the current time and date */
   @unstable("tz is unstable; its type may change in the future")
-  proc type dateTime.now(in tz: shared Timezone) : dateTime(true) {
+  proc type dateTime.now(in tz: shared Timezone) : dateTime(?) {
     // if tz.borrow() == nil {
     //   const timeSinceEpoch = getTimeOfDay();
     //   const lt = getLocalTime(timeSinceEpoch);
@@ -1549,19 +1549,26 @@ module Time {
      `tz` field
    */
   @unstable("tz is unstable; its type may change in the future")
-  proc dateTime.timetz() : time(true) {
-    return chpl_time;
-  }
+  proc dateTime.timetz() : time(true)
+    where DateTimeStaticTZAwareness == true
+      do return chpl_time;
+
+  /* Get the `time` portion of the `dateTime` value including the
+     `tz` field
+   */
+  @unstable("tz is unstable; its type may change in the future")
+  proc dateTime.timetz() : time
+    where DateTimeStaticTZAwareness == false
+      do return chpl_time;
 
   /* Get a new `time` based on this one, optionally with the `year`, `month`,
      `day`, `hour` `minute`, `second`, and/or `microsecond` replaced.
   */
   proc dateTime.replace(year=-1, month=-1, day=-1,
-                        hour=-1, minute=-1, second=-1, microsecond=-1)
-                        : dateTime(false) {
+                        hour=-1, minute=-1, second=-1, microsecond=-1): dateTime(false) {
     return new dateTime(
-        chpl_date.replace(year, month, day),
-        chpl_time.replace(hour, minute, second, microsecond)
+      chpl_date.replace(year, month, day),
+      chpl_time.replace(hour, minute, second, microsecond)
     );
   }
   /* Get a new `time` based on this one, optionally with the `year`, `month`,
@@ -1570,7 +1577,7 @@ module Time {
   @unstable("tz is unstable; its type may change in the future")
   proc dateTime.replace(year=-1, month=-1, day=-1,
                         hour=-1, minute=-1, second=-1, microsecond=-1,
-                        in tz=this._timezone) : dateTime(true)
+                        in tz: shared Timezone = this._timezone) : dateTime(true)
     where DateTimeStaticTZAwareness == true
   {
     return new dateTime(
@@ -1593,7 +1600,7 @@ module Time {
 
   /* Return the date and time converted into the timezone in the argument */
   @unstable("tz is unstable; its type may change in the future")
-  proc dateTime.astimezone(in tz: shared Timezone) : dateTime(true) {
+  proc dateTime.astimezone(in tz: shared Timezone): dateTime(this.tzAware) {
     if this._timezone == tz {
       return this;
     }
@@ -1659,12 +1666,22 @@ module Time {
     timeStruct.tm_yday = (getDate().toOrdinal() -
         (new date(year, 1, 1)).toOrdinal() + 1): int(32);
 
-    if timezone.borrow() == nil {
-      timeStruct.tm_isdst = -1;
-    } else if dst() == new timeDelta(0) {
-      timeStruct.tm_isdst = 0;
+    if DateTimeStaticTZAwareness {
+      if tzAware {
+        timeStruct.tm_isdst = -1;
+      } else if dst() == new timeDelta(0) {
+        timeStruct.tm_isdst = 0;
+      } else {
+        timeStruct.tm_isdst = 1;
+      }
     } else {
-      timeStruct.tm_isdst = 1;
+      if this._timezone.borrow() == nil {
+        timeStruct.tm_isdst = -1;
+      } else if dst() == new timeDelta(0) {
+        timeStruct.tm_isdst = 0;
+      } else {
+        timeStruct.tm_isdst = 1;
+      }
     }
 
     return timeStruct;
@@ -1675,15 +1692,28 @@ module Time {
    */
   @unstable("'dateTime.utctimetuple' is unstable")
   proc dateTime.utctimetuple() : tm {
-    if timezone.borrow() == nil {
-      var ret = timetuple();
-      ret.tm_isdst = 0;
-      return ret;
+    if DateTimeStaticTZAwareness {
+      if tzAware {
+        var ret = timetuple();
+        ret.tm_isdst = 0;
+        return ret;
+      } else {
+        const utc = this.replace() - utcOffset();
+        var ret = utc.timetuple();
+        ret.tm_isdst = 0;
+        return ret;
+      }
     } else {
-      const utc = this.replace(tz=nil) - utcOffset();
-      var ret = utc.timetuple();
-      ret.tm_isdst = 0;
-      return ret;
+      if this._timezone.borrow() == nil {
+        var ret = timetuple();
+        ret.tm_isdst = 0;
+        return ret;
+      } else {
+        const utc = this.replace(tz=nil) - utcOffset();
+        var ret = utc.timetuple();
+        ret.tm_isdst = 0;
+        return ret;
+      }
     }
   }
 
@@ -1809,7 +1839,7 @@ module Time {
      the format strings of C's strptime().
   */
   @unstable("'dateTime.strptime' is unstable")
-  proc type dateTime.strptime(date_string: string, format: string) :dateTime {
+  proc type dateTime.strptime(date_string: string, format: string): dateTime(false) {
     extern proc strptime(buf: c_ptrConst(c_char), format: c_ptrConst(c_char), ref ts: tm);
     var timeStruct: tm;
     strptime(date_string.c_str(), format.c_str(), timeStruct);
@@ -2418,9 +2448,15 @@ module Time {
     }
 
     /* Convert a `time` in UTC to this time zone */
-    proc fromUtc(dt: dateTime): dateTime {
+    proc fromUtc(dt: dateTime(?a)): dateTime(a) {
       HaltWrappers.pureVirtualMethodHalt();
     }
+
+    // proc fromUtc(dt: dateTime): dateTime(false)
+    //   where DateTimeStaticTZAwareness == false
+    // {
+    //   HaltWrappers.pureVirtualMethodHalt();
+    // }
 
   }
 
