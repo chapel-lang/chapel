@@ -60,10 +60,10 @@ module RadixSort {
     // This is the same as the count array, but each element is the sum of all previous elements
     // Uses a naive algorithm that does O(nlogn) work
     // Hillis and Steele (1986)
-    // if hostArr.size==0 then return;
+    if hostArr.size==0 then return;
 
     on here.gpus[useGpuId]{
-      // The algorithm only workd for arrays that are size of a power of two.
+      // The algorithm only works for arrays that are size of a power of two.
       // In case it's not a power of two we pad it out with 0s
       const size = makePowerOf2(hostArr.size);
       var arr : [0..<size] uint;
@@ -73,7 +73,7 @@ module RadixSort {
       while offset < arr.size {
           var arrBuffer = arr;
           @assertOnGpu
-          foreach i in offset..<arr.size with (ref arr){
+          foreach i in offset..<arr.size {
             arr[i] = arrBuffer[i] + arrBuffer[i-offset];
           }
           offset = offset << 1;
@@ -109,7 +109,7 @@ module RadixSort {
     // Blelloch (1990)
     // Up-sweep
     on here.gpus[useGpuId]{
-      // The algorithm only workd for arrays that are size of a power of two.
+      // The algorithm only works for arrays that are size of a power of two.
       // In case it's not a power of two we pad it out with 0s
       const size = makePowerOf2(hostArr.size);
       var arr : [0..<size] uint;
@@ -188,11 +188,8 @@ module RadixSort {
         // 2 out of 3 scan algorithms also work on GPU
         // So it's fine for those
         // But the serialScan is on the CPU
-        // It will crash and burn if we run that one
-        // Currently the execopts we use don't do that
-        // So tests will be fine.
-        // But if something burns in the future,
-        // You know this might be the culprit
+        // therefor we make sure we don't use serialScan here
+        assert(scanType!="serialScan");
         arrScan(gpuScanArr); // funky words
       }
 
