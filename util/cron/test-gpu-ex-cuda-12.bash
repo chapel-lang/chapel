@@ -8,6 +8,7 @@ source $CWD/common-hpe-cray-ex.bash
 
 module load cudatoolkit/23.3_12.0  # this is the default on this system
 
+export CHPL_LLVM=bundled  # CUDA 12 is only supported with bundled LLVM
 export CHPL_COMM=none
 export CHPL_LOCALE_MODEL=gpu
 export CHPL_LAUNCHER_PARTITION=allgriz
