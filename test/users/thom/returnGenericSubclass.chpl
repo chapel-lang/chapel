@@ -13,7 +13,7 @@ class D: C(?) {
 
 config const flag = false;
 
-proc baz(): unmanaged C {
+proc baz(): unmanaged C(?) {
  if flag then
   return new unmanaged C(3);
  else
