@@ -221,10 +221,7 @@ By default, parallelism within each locale is applied to that locale's
 block of indices by creating a task for each available processor core
 (or the number of local indices if it is less than the number of
 cores). The local domain indices are then statically divided as evenly
-as possible between those tasks.  This default can be modified by
-changing the values of ``dataParTasksPerLocale``,
-``dataParIgnoreRunningTasks``, and ``dataParMinGranularity`` in the
-``blockDist``'s initializer:
+as possible between those tasks.
 
 
 **Initializer Arguments**

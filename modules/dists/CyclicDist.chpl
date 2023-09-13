@@ -125,7 +125,7 @@ As demonstrated by the above example, a `forall` loop over a
 ``cyclicDist``-distributed domain or array executes each iteration on
 the locale owning the index in question.
 
-Parallelism within each locale is applied to that locale's
+By default, parallelism within each locale is applied to that locale's
 local, strided block of indices by creating a task for each available
 processor core (or the number of local indices if it is less than the
 number of cores). The local domain indices are then statically divided
