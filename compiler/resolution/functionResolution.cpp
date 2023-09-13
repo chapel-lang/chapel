@@ -13883,6 +13883,42 @@ void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx) {
 std::set<Symbol*> gAlreadyWarnedSurprisingGenericSyms;
 std::set<Symbol*> gAlreadyWarnedSurprisingGenericManagementSyms;
 
+static bool computeIsField(Symbol*& sym, AggregateType* forFieldInHere) {
+  // is it a field? check to see if it's a temp within an initializer
+  // initializing field (in which case, we should think about
+  // this as a field). If it's a field, replaces 'sym' with the
+  // field to use for error reporting.
+  bool isField = false;
+
+  if (forFieldInHere) {
+    AggregateType* ct = forFieldInHere->getRootInstantiation();
+    Symbol* field = ct->getField(sym->name);
+    isField = true;
+    sym = field;
+  } else if (sym->hasFlag(FLAG_TEMP)) {
+    for_SymbolSymExprs(se, sym) {
+      if (CallExpr* c = toCallExpr(se->parentExpr)) {
+        if ((c->isPrimitive(PRIM_SET_MEMBER) ||
+             c->isPrimitive(PRIM_INIT_FIELD)) && se == c->get(3)) {
+          isField = true;
+
+          // replace 'sym' with the field for the error location
+          AggregateType* ct = toAggregateType(c->get(1)->getValType());
+          ct = ct->getRootInstantiation();
+          SymExpr* nameSe = toSymExpr(c->get(2));
+          VarSymbol* nameVar = toVarSymbol(nameSe->symbol());
+          const char* name = astr(nameVar->immediate->v_string.c_str());
+          Symbol* field = ct->getField(name);
+          sym = field;
+          break;
+        }
+      }
+    }
+  }
+
+  return isField;
+}
+
 void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
                                  AggregateType* forFieldInHere) {
   if (sym == nullptr || typeExpr == nullptr) {
@@ -13897,40 +13933,22 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
       declType = typeExpr->typeInfo();
     }
 
+    bool genericWithDefaults = false;
+    if (AggregateType* at = toAggregateType(declType))
+      genericWithDefaults = at->isGenericWithDefaults();
+
     if (declType->symbol->hasFlag(FLAG_GENERIC) &&
+        declType != dtAny && // workaround for interfaces
+        !genericWithDefaults &&
         !sym->hasFlag(FLAG_MARKED_GENERIC) &&
+        !sym->hasFlag(FLAG_RET_TYPE_MARKED_GENERIC) &&
         !sym->hasFlag(FLAG_TYPE_VARIABLE)) {
 
       // is it a field? check to see if it's a temp within an initializer
       // initializing field (in which case, we should think about
       // this as a field).
-      bool isField = false;
-
-      if (forFieldInHere) {
-        AggregateType* ct = forFieldInHere->getRootInstantiation();
-        Symbol* field = ct->getField(sym->name);
-        isField = true;
-        sym = field;
-      } else if (sym->hasFlag(FLAG_TEMP)) {
-        for_SymbolSymExprs(se, sym) {
-          if (CallExpr* c = toCallExpr(se->parentExpr)) {
-            if ((c->isPrimitive(PRIM_SET_MEMBER) ||
-                 c->isPrimitive(PRIM_INIT_FIELD)) && se == c->get(3)) {
-              isField = true;
-
-              // replace 'sym' with the field for the error location
-              AggregateType* ct = toAggregateType(c->get(1)->getValType());
-              ct = ct->getRootInstantiation();
-              SymExpr* nameSe = toSymExpr(c->get(2));
-              VarSymbol* nameVar = toVarSymbol(nameSe->symbol());
-              const char* name = astr(nameVar->immediate->v_string.c_str());
-              Symbol* field = ct->getField(name);
-              sym = field;
-              break;
-            }
-          }
-        }
-      }
+      // Note: this can change 'sym' to a field rather than a tmp.
+      bool isField = computeIsField(sym, forFieldInHere);
 
       if (isClassLikeOrManaged(declType)) {
         auto dec = classTypeDecorator(declType);
@@ -14031,14 +14049,45 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
             s.append("(?)");
           }
 
-          const char* fieldOrVar = isField?"field":"variable";
-          USR_WARN(sym, "please use '?' when declaring a %s with generic type",
-                   fieldOrVar);
+          if (isFnSymbol(sym)) {
+            USR_WARN(sym, "please use '?' when declaring a routine "
+                          "with a generic return type");
+
+          } else {
+            const char* fieldOrVar = isField?"field":"variable";
+            USR_WARN(sym,
+                     "please use '?' when declaring a %s with generic type",
+                     fieldOrVar);
+          }
           USR_PRINT(sym, "for example with '%s'", s.c_str());
         }
         if (fWarnUnstable) {
           USR_PRINT("this warning may be an error in the future");
         }
+      }
+    }
+
+    // if it was marked generic, but it's not generic (or an instantiation)
+    // then have a fatal error
+    if (sym->hasFlag(FLAG_MARKED_GENERIC) ||
+        sym->hasFlag(FLAG_RET_TYPE_MARKED_GENERIC)) {
+      if (!declType->symbol->hasFlag(FLAG_GENERIC) &&
+          !genericWithDefaults) {
+        bool isField = computeIsField(sym, forFieldInHere);
+
+        const char* thing = "";
+        if (isFnSymbol(sym)) {
+          thing = astr("return type of the routine ", sym->name);
+        } else if (isField) {
+          thing = astr("field ", sym->name);
+        } else {
+          thing = astr("variable ", sym->name);
+        }
+
+        USR_FATAL(sym,
+                  "the %s is marked generic with (?) "
+                  "but the type '%s' is not generic",
+                  thing, toString(declType, /*decorators*/ false));
       }
     }
   }

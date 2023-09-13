@@ -103,6 +103,7 @@ static void        normalizeCallToTypeConstructor(CallExpr* call);
 static void        applyGetterTransform(CallExpr* call);
 static void        transformIfVar(CallExpr* call);
 static void        insertCallTemps(CallExpr* call);
+static void        propagateMarkedGeneric(Symbol* var, Expr* typeExpr);
 static Symbol*     insertCallTempsWithStmt(CallExpr* call, Expr* stmt);
 
 static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur);
@@ -1725,6 +1726,7 @@ static void addTypeBlocksForParentTypeOf(CallExpr* call) {
 ************************************** | *************************************/
 
 static void fixupExportedArrayReturns(FnSymbol* fn);
+static void fixupGenericReturnTypes(FnSymbol* fn);
 static bool isVoidReturn(CallExpr* call);
 static bool hasGenericArrayReturn(FnSymbol* fn);
 static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret,
@@ -1736,6 +1738,7 @@ static void normalizeReturns(FnSymbol* fn) {
   SET_LINENO(fn);
 
   fixupExportedArrayReturns(fn);
+  fixupGenericReturnTypes(fn);
 
   std::vector<CallExpr*> rets;
   std::vector<CallExpr*> calls;
@@ -1908,6 +1911,32 @@ static void fixupExportedArrayReturns(FnSymbol* fn) {
     }
     CallExpr* transformRet = new CallExpr("convertToExternalArray", retVal);
     retCall->get(1)->replace(transformRet);
+  }
+}
+
+// If the return type was declared generic e.g. as R(?), then
+// mark the function with FLAG_RET_TYPE_MARKED_GENERIC.
+// Also simplifies the simplest case to help with problems with
+//   proc f(): domain(?) { ... }
+static void fixupGenericReturnTypes(FnSymbol* fn) {
+  if (fn->retExprType) {
+    // handle nested cases, e.g. (GenericRecord(?), ) or borrowed GenCls(?)
+    propagateMarkedGeneric(fn, fn->retExprType);
+
+    // simpify the simple case
+    Expr*     tail   = fn->retExprType->body.tail;
+    if (CallExpr* call = toCallExpr(tail)) {
+      if (call->numActuals() == 1) {
+        if (SymExpr* se = toSymExpr(call->get(1))) {
+          if (call->baseExpr && se->symbol() == gUninstantiated) {
+            Expr* type = call->baseExpr->remove();
+            tail->replace(type);
+            // flag should have been added in propagateMarkedGeneric
+            INT_ASSERT(fn->hasFlag(FLAG_RET_TYPE_MARKED_GENERIC));
+          }
+        }
+      }
+    }
   }
 }
 
@@ -2485,15 +2514,18 @@ static void insertCallTemps(CallExpr* call) {
   }
 }
 
-// adds FLAG_MARKED_GENERIC to 'var' if the type contains a ?
+// adds FLAG_MARKED_GENERIC/FLAG_RET_TYPE_MARKED_GENERIC
+// to 'var' if the type contains a ?
 // actual or an actual that is a temp marked with that flag.
 static void propagateMarkedGeneric(Symbol* var, Expr* typeExpr) {
   if (SymExpr* se = toSymExpr(typeExpr)) {
     Symbol* sym = se->symbol();
     if (sym == gUninstantiated ||
         (sym->hasFlag(FLAG_MARKED_GENERIC) && sym->hasFlag(FLAG_TEMP))) {
-      var->addFlag(FLAG_MARKED_GENERIC);
-      //      printf("(A) Adding FLAG_MARKED_GENERIC to %s\n", sym->name);
+      if (isFnSymbol(var))
+        var->addFlag(FLAG_RET_TYPE_MARKED_GENERIC);
+      else
+        var->addFlag(FLAG_MARKED_GENERIC);
     }
   } else if (CallExpr* call = toCallExpr(typeExpr)) {
     if (call->baseExpr)
@@ -2501,6 +2533,11 @@ static void propagateMarkedGeneric(Symbol* var, Expr* typeExpr) {
 
     for_actuals(actual, call) {
       propagateMarkedGeneric(var, actual);
+    }
+  } else if (BlockStmt* blk = toBlockStmt(typeExpr)) {
+    // handle blocks since they are used for return type exprs
+    for_alist(expr, blk->body) {
+      propagateMarkedGeneric(var, expr);
     }
   }
 }
@@ -3475,6 +3512,15 @@ void warnIfGenericFormalMissingQ(ArgSymbol* arg, Type* type, Expr* typeExpr) {
         }
       }
     }
+  }
+
+  // error for CR(?) where CR is a concrete record or class type
+  if (!type->symbol->hasFlag(FLAG_GENERIC) &&
+      arg->hasFlag(FLAG_MARKED_GENERIC)) {
+    USR_FATAL(arg,
+              "the formal argument '%s' is marked generic with (?) "
+              "but the type '%s' is not generic",
+              arg->name, toString(type, /*decorators*/ false));
   }
 }
 

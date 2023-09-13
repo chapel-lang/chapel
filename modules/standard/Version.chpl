@@ -626,7 +626,7 @@ module Version {
     return v2 <= v1;
   }
 
-  private proc spaceship(v1: version(?),
+  private proc spaceship(v1: version,
                          v2: versionValue(?)) : int {
     const majComp = spaceship(v1.major, v2.major);
     if majComp != 0 {

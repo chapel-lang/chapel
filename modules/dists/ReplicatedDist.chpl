@@ -156,14 +156,14 @@ record Replicated {
   }
 
   @chpldoc.nodoc
-  inline operator ==(d1: Replicated(?), d2: Replicated(?)) {
+  inline operator ==(d1: Replicated, d2: Replicated) {
     if (d1._value == d2._value) then
       return true;
     return d1._value.dsiEqualDMaps(d2._value);
   }
 
   @chpldoc.nodoc
-  inline operator !=(d1: Replicated(?), d2: Replicated(?)) {
+  inline operator !=(d1: Replicated, d2: Replicated) {
     return !(d1 == d2);
   }
 
@@ -204,7 +204,7 @@ proc ReplicatedImpl.init(targetLocales: [] locale = Locales,
     writeln("ReplicatedImpl initializer over ", targetLocales);
 }
 
-proc ReplicatedImpl.dsiEqualDMaps(that: ReplicatedImpl(?)) {
+proc ReplicatedImpl.dsiEqualDMaps(that: ReplicatedImpl) {
   return this.targetLocales.equals(that.targetLocales);
 }
 

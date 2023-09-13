@@ -120,7 +120,7 @@ private proc getBuildInfo(projectHome: string, skipUpdate: bool) {
 
 // retrieves compopts and execopts for each example.
 // returns assoc array of <example_name> -> <(compopts, execopts)>
-private proc getExampleOptions(toml: Toml(?), exampleNames: list(string)) {
+private proc getExampleOptions(toml: Toml, exampleNames: list(string)) {
 
   var exampleOptions = new map(string, (string, string));
   for example in exampleNames {
@@ -293,7 +293,7 @@ private proc runExampleBinary(projectHome: string, exampleName: string,
   }
 }
 
-private proc getExamples(toml: Toml(?), projectHome: string) {
+private proc getExamples(toml: Toml, projectHome: string) {
   var exampleNames: list(string);
   const examplePath = joinPath(projectHome, "example");
 
