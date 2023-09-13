@@ -42,18 +42,21 @@ public:
   };
 
   /** Provides a way to configure each read or write. */
-  enum Behavior {
+  enum BehaviorTag {
     DEFAULT             = 0,
     READ_UNTIL_NEWLINE  = 1
   };
 
+  /** Behavior is a bitfield composed of 'BehaviorTag'. */
+  using Behavior = int;
+
   virtual ~Transport() = default;
 
   /** Read up to 'size' bytes into 'str' with the given behaviors 'b'. */
-  virtual Status read(int64_t size, std::string& str, int behavior=0) = 0;
+  virtual Status read(int64_t size, std::string& str, Behavior b=0) = 0;
 
   /** Send the bytes of 'str' with the given behaviors 'b'. */
-  virtual Status send(const std::string& str, int behavior=0) = 0;
+  virtual Status send(const std::string& str, Behavior b=0) = 0;
 
   /** Read JSON into the given JSON value 'j'. */
   Status readJson(Server* ctx, JsonValue& j);
@@ -68,9 +71,9 @@ public:
   TransportStdio() {}
   virtual ~TransportStdio() = default;
   virtual Status read(int64_t size, std::string& str,
-                      int behavior=0) override;
+                      Behavior b=0) override;
   virtual Status send(const std::string& str,
-                      int behavior=0) override;
+                      Behavior b=0) override;
 };
 
 } // end namespace 'chpldef'

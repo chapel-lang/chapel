@@ -116,7 +116,7 @@ sourceAstToIds(Server* ctx, const chpl::uast::AstNode* ast) {
 
   auto& rr = resolveModule(ctx, mod->id());
   auto& re = rr.byAst(ast);
-  bool isCallBaseExpression = ctx->withChapel(isCalledExpression, ast);
+  auto parentCall = ctx->withChapel(parentCallIfBaseExpression, ast);
 
   if (re.isBuiltin()) CHPLDEF_TODO();
 
@@ -128,10 +128,8 @@ sourceAstToIds(Server* ctx, const chpl::uast::AstNode* ast) {
     ret.push_back(idTarget);
 
   // It's a call base expression, so we need to pick apart the call.
-  } else if (isCallBaseExpression) {
-    auto p = ctx->withChapel(chpl::parsing::parentAst, ast);
-    auto call = p->toFnCall();
-    auto& reCall = rr.byAst(call);
+  } else if (parentCall) {
+    auto& reCall = rr.byAst(parentCall);
 
     if (auto idTarget = re.toId()) {
       ret.push_back(idTarget);

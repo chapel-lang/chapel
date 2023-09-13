@@ -70,7 +70,7 @@ void ReadMessage::run(Server* ctx, const Message* msg, When when) {
   ctx->enqueue(std::move(work));
 }
 
-static bool resolveModulesForMessageTag(MessageTag::Kind tag) {
+static bool resolveModulesForMessageTag(MessageTag tag) {
   return tag == MessageTag::DidOpen;
 }
 

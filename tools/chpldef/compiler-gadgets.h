@@ -59,9 +59,10 @@ chpl::Location
 locationFromUriAndPosition(chpl::Context* chapel, const std::string& uri,
                            const Position& pos);
 
-/** Determine if a given AST is the base expression of a call. */
-bool isCalledExpression(chpl::Context* chapel,
-                        const chpl::uast::AstNode* ast);
+/** If 'ast' is the base expression of a call, return the parent call. */
+const chpl::uast::FnCall*
+parentCallIfBaseExpression(chpl::Context* chapel,
+                           const chpl::uast::AstNode* ast);
 
 } // end namespace 'chpldef'
 

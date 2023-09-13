@@ -113,7 +113,8 @@ doCollectMentions(chpl::Context* chapel,
     TestClient::Mention m;
     m.tag = ast->tag();
     m.symbol = mentionSymbol(ast);
-    m.isCallBaseExpression = chpldef::isCalledExpression(chapel, ast);
+    bool isBaseExpr = parentCallIfBaseExpression(chapel, ast) != nullptr;
+    m.isCallBaseExpression = isBaseExpr;
     m.source = locationFromAst(chapel, ast);
     mentions.push_back(std::move(m));
   }

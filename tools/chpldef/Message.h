@@ -35,9 +35,9 @@ class Response;
 class Server;
 class Message;
 
-/** These tags are used to do dynamic casts to message types at runtime. */
-namespace MessageTag {
-enum Kind {
+/** These tags are used to do dynamic casts to message types at runtime,
+    and to parameterize `TemplatedMessage` instances at compile-time. */
+enum class MessageTag {
   UNSET                 = 0,
   INVALID               = 1,
   RESPONSE              = 2,
@@ -47,15 +47,14 @@ enum Kind {
   #undef CHPLDEF_MESSAGE
   NUM_MESSAGES
 };
-}
 
-template <MessageTag::Kind> class TemplatedMessage;
+template <MessageTag> class TemplatedMessage;
 
 /** Attempts to model a LSP message. A message may be either incoming or
     outgoing (most are incoming). */
 class Message {
 public:
-  using Tag = MessageTag::Kind;
+  using Tag = MessageTag;
 
   /** Error codes are listed in order according to the LSP spec. */
   enum Error {
@@ -258,7 +257,7 @@ public:
     Server* ctx() const;
   };
 
-  /** Determine a message's behavior as a compile-time expression. */
+  /** Determine a message's behavior. */
   static inline constexpr Message::Behavior
   determineBehavior(bool outbound, bool notify) {
     return outbound
@@ -282,6 +281,8 @@ public:
   /** For outbound requests, compute using a response sent by the client. */
   virtual void handle(Server* ctx, Response* rsp) = 0;
 };
+
+namespace detail {
 
 /** Stores computation results for a message. */
 template <typename R>
@@ -357,8 +358,7 @@ struct Computation<P, R, Message::OUTBOUND_NOTIFY> {
   using FunctionResult = ComputationOutput<Empty>;
 };
 
-template <MessageTag::Kind K>
-struct ComputationByTag {};
+template <MessageTag K> struct ComputationByTag {};
 
 /** Specialize computation details for each tag. */
 #define CHPLDEF_MESSAGE(name__, outbound__, notify__, x3__) \
@@ -370,13 +370,15 @@ struct ComputationByTag {};
 #include "message-macro-list.h"
 #undef CHPLDEF_MESSAGE
 
+} // end namespace 'detail'
+
 template <typename M>
 class TemplatedMessageHandler;
 
-template <MessageTag::Kind K>
+template <MessageTag K>
 class TemplatedMessage : public Message {
 public:
-  using Computation = typename ComputationByTag<K>::type;
+  using Computation = typename detail::ComputationByTag<K>::type;
   static constexpr auto BEHAVIOR = Computation::BEHAVIOR;
   using Params = typename Computation::Params;
   using Result = typename Computation::Result;
@@ -395,9 +397,9 @@ protected:
       : Message(tag, std::move(id), error, std::move(note)),
         p(std::move(p)) {}
 
-  static Message::Error unpack(JsonValue j, Params& p, std::string* note);
-  static Message::Error unpack(JsonValue j, Result& r, std::string* note);
-  static Message::Error unpack(Response* rsp, Result& r, std::string* note);
+  static Message::Error unpack(JsonValue j, Params& p, std::string& note);
+  static Message::Error unpack(JsonValue j, Result& r, std::string& note);
+  static Message::Error unpack(Response* rsp, Result& r, std::string& note);
 
   /** Use in message handlers to return failure. */
   static ComputeResult fail(Error error=Message::ERR_REQUEST_FAILED,

@@ -259,32 +259,32 @@ std::string Message::idToString() const {
   return {};
 }
 
-template <MessageTag::Kind K>
+template <MessageTag T>
 Message::Error
-TemplatedMessage<K>::unpack(JsonValue j, Params& p, std::string* note) {
+TemplatedMessage<T>::unpack(JsonValue j, Params& p, std::string& note) {
   llvm::json::Path::Root root;
   if (p.fromJson(j, root)) return Message::OK;
-  *note = "Failed to unpack JSON for parameters";
+  note = "Failed to unpack JSON for parameters";
   return Message::ERR_INVALID_PARAMS;
 }
 
-template <MessageTag::Kind K>
+template <MessageTag K>
 Message::Error
-TemplatedMessage<K>::unpack(JsonValue j, Result& r, std::string* note) {
+TemplatedMessage<K>::unpack(JsonValue j, Result& r, std::string& note) {
   llvm::json::Path::Root root;
   if (r.fromJson(j, root)) return Message::OK;
-  *note = "Failed to unpack JSON for result";
+  note = "Failed to unpack JSON for result";
   return Message::ERR_INVALID_PARAMS;
 }
 
-template <MessageTag::Kind K>
+template <MessageTag K>
 Message::Error
-TemplatedMessage<K>::unpack(Response* rsp, Result& r, std::string* note) {
+TemplatedMessage<K>::unpack(Response* rsp, Result& r, std::string& note) {
   CHPLDEF_TODO();
   return Message::OK;
 }
 
-template <MessageTag::Kind K>
+template <MessageTag K>
 chpl::owned<TemplatedMessage<K>>
 TemplatedMessage<K>::create(JsonValue id, Params p) {
   auto msg = new TemplatedMessage<K>(K, std::move(id), Message::OK, {},
@@ -293,12 +293,12 @@ TemplatedMessage<K>::create(JsonValue id, Params p) {
   return ret;
 }
 
-template <MessageTag::Kind K>
+template <MessageTag K>
 chpl::owned<TemplatedMessage<K>>
 TemplatedMessage<K>::createFromJson(JsonValue id, JsonValue j) {
   Params p = {};
   std::string note;
-  auto error = unpack(std::move(j), p, &note);
+  auto error = unpack(std::move(j), p, note);
   auto msg = new TemplatedMessage<K>(K, std::move(id), error,
                                      std::move(note),
                                      std::move(p));
@@ -434,28 +434,27 @@ public:
 private:
   Server* ctx_;
   M* msg_;
-  const char* dsc_ = description();
-  std::string fmt_ = ctx_->fmt(static_cast<Message*>(msg_));
 public:
   TemplatedMessageHandler(Server* ctx, M* msg) : ctx_(ctx), msg_(msg) {}
   TemplatedMessageHandler() = default;
 
-  inline const char* description() const {
+  inline std::string fmt() { return ctx_->fmt(static_cast<Message*>(msg_)); }
+  inline const char* dsc() const {
     constexpr bool hasBehavior = BEHAVIOR != Message::NO_BEHAVIOR;
     auto ret = hasBehavior ? Message::behaviorToString(BEHAVIOR) : "message";
     return ret;
   }
 
   void logComputationPrelude() {
-    ctx_->message("Handling %s '%s'\n", dsc_, fmt_.c_str());
+    ctx_->message("Handling %s '%s'\n", dsc(), fmt().c_str());
   }
 
   void logComputationEpilogue(const ComputeResult& cr) {
     if (cr.error != Message::OK) {
-      ctx_->message("The %s %s failed with code '%s'\n", dsc_, fmt_.c_str(),
+      ctx_->message("The %s %s failed with code '%s'\n", dsc(), fmt().c_str(),
                     Message::errorToString(cr.error));
     } else {
-      ctx_->message("The %s '%s' is complete...\n", dsc_, fmt_.c_str());
+      ctx_->message("The %s '%s' is complete...\n", dsc(), fmt().c_str());
     }
   }
 
@@ -509,7 +508,7 @@ public:
     if (rsp->status() == Message::FAILED) CHPLDEF_TODO();
     std::string note;
     Result r;
-    auto error = M::unpack(rsp, r, &note);
+    auto error = M::unpack(rsp, r, note);
     if (error != Message::OK) {
       msg_->markFailed(error, std::move(note));
     } else {
@@ -524,22 +523,22 @@ public:
   }
 };
 
-template <MessageTag::Kind K>
+template <MessageTag K>
 void TemplatedMessage<K>::handle(Server* ctx) {
   TemplatedMessageHandler<TemplatedMessage<K>> tmh(ctx, this);
   tmh.handle();
 }
 
-template <MessageTag::Kind K>
+template <MessageTag K>
 void TemplatedMessage<K>::handle(Server* ctx, Response* rsp) {
   TemplatedMessageHandler<TemplatedMessage<K>> tmh(ctx, this);
   tmh.handle(rsp);
 }
 
-template <MessageTag::Kind K>
+template <MessageTag K>
 void TemplatedMessage<K>::handle(Server* ctx, Result r) {
   TemplatedMessageHandler<TemplatedMessage<K>> tmh(ctx, this);
-  tmh.handle(r);
+  tmh.handle(std::move(r));
 }
 
 } // end namespace 'chpldef'

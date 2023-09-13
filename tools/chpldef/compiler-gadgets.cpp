@@ -50,11 +50,15 @@ static void doMapLinesInModule(chpl::Context* chapel,
   for (auto ast : node->children()) {
     if (ast->isComment()) continue;
 
+    // Push back the occupied lines. This is usually just one line but can
+    // be up to 3 in the case of a dot expression.
     if (isSymbolOfInterest(ast)) {
       auto loc = br.idToLocation(ast->id(), chpl::UniqueString());
       CHPL_ASSERT(!loc.isEmpty());
-      auto& v = m[loc.firstLine()];
-      v.push_back(ast->id());
+      for (int i = loc.firstLine(); i <= loc.lastLine(); i++) {
+        auto& v = m[i];
+        v.push_back(ast->id());
+      }
     }
 
     bool recurse = !ast->isModule() && !ast->isLeaf();
@@ -92,17 +96,17 @@ locationFromUriAndPosition(chpl::Context* chapel, const std::string& uri,
   return chpl::Location(ustr, l1, c1, l2, c2);
 }
 
-bool isCalledExpression(chpl::Context* chapel,
-                        const chpl::uast::AstNode* ast) {
-  if (!ast) return false;
+const chpl::uast::FnCall*
+parentCallIfBaseExpression(chpl::Context* chapel,
+                           const chpl::uast::AstNode* ast) {
+  if (!ast) return nullptr;
   auto p = chpl::parsing::parentAst(chapel, ast);
-  if (!p) return false;
+  if (!p) return nullptr;
 
-  if (auto call = p->toCall())
+  if (auto call = p->toFnCall())
     if (auto ce = call->calledExpression())
-      return ce == ast;
-
-  return false;
+      if (ce == ast) return call;
+  return nullptr;
 }
 
 } // end namespace 'chpldef'

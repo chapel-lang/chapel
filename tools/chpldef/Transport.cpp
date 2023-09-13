@@ -114,11 +114,11 @@ Transport::Status Transport::sendJson(Server* ctx, const JsonValue& j) {
 }
 
 Transport::Status
-TransportStdio::read(int64_t size, std::string& str, int behavior) {
+TransportStdio::read(int64_t size, std::string& str, Transport::Behavior b) {
   if (size < 0) return ERROR_INVALID_SIZE;
 
   bool readEntireContents = (size == 0);
-  bool readUntilNewline = (behavior & READ_UNTIL_NEWLINE);
+  bool readUntilNewline = (b & READ_UNTIL_NEWLINE);
   int64_t bytesToRead = size;
   Status ret = OK;
 
@@ -138,7 +138,7 @@ TransportStdio::read(int64_t size, std::string& str, int behavior) {
 }
 
 Transport::Status
-TransportStdio::send(const std::string& str, int behavior) {
+TransportStdio::send(const std::string& str, Transport::Behavior b) {
   std::cout << str;
   bool err = std::cout.fail() || std::cout.bad();
   return err ? ERROR : OK;
