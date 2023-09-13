@@ -14048,14 +14048,45 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
             s.append("(?)");
           }
 
-          const char* fieldOrVar = isField?"field":"variable";
-          USR_WARN(sym, "please use '?' when declaring a %s with generic type",
-                   fieldOrVar);
+          if (isFnSymbol(sym)) {
+            USR_WARN(sym, "please use '?' when declaring a routine "
+                          "with a generic return type");
+
+          } else {
+            const char* fieldOrVar = isField?"field":"variable";
+            USR_WARN(sym,
+                     "please use '?' when declaring a %s with generic type",
+                     fieldOrVar);
+          }
           USR_PRINT(sym, "for example with '%s'", s.c_str());
         }
         if (fWarnUnstable) {
           USR_PRINT("this warning may be an error in the future");
         }
+      }
+    }
+
+    // if it was marked generic, but it's not generic (or an instantiation)
+    // then have a fatal error
+    if (sym->hasFlag(FLAG_MARKED_GENERIC) ||
+        sym->hasFlag(FLAG_RET_TYPE_MARKED_GENERIC)) {
+      if (!declType->symbol->hasFlag(FLAG_GENERIC) &&
+          !genericWithDefaults) {
+        bool isField = computeIsField(sym, forFieldInHere);
+
+        const char* thing = "";
+        if (isFnSymbol(sym)) {
+          thing = astr("return type of the routine ", sym->name);
+        } else if (isField) {
+          thing = astr("field ", sym->name);
+        } else {
+          thing = astr("variable ", sym->name);
+        }
+
+        USR_FATAL(sym,
+                  "the %s is marked generic with (?) "
+                  "but the type '%s' is not generic",
+                  thing, toString(declType, /*decorators*/ false));
       }
     }
   }
