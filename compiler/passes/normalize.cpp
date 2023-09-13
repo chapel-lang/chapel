@@ -1914,9 +1914,10 @@ static void fixupExportedArrayReturns(FnSymbol* fn) {
   }
 }
 
-// This is a workaround to prevent problems with functions like
+// If the return type was declared generic e.g. as R(?), then
+// mark the function with FLAG_RET_TYPE_MARKED_GENERIC.
+// Also simplifies the simplest case to help with problems with
 //   proc f(): domain(?) { ... }
-// which otherwise runs into problems to do with fixups for runtime types.
 static void fixupGenericReturnTypes(FnSymbol* fn) {
   if (fn->retExprType) {
     // handle nested cases, e.g. (GenericRecord(?), ) or borrowed GenCls(?)
