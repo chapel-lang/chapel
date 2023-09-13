@@ -18,6 +18,9 @@
  * limitations under the License.
  */
 
+@unstable("PrivateDist is unstable and may change in the future")
+prototype module PrivateDist {
+
 use ChplConfig only compiledForSingleLocale;
 
 //
@@ -357,3 +360,5 @@ record chpl_privateDistCleanupWrapper {
 proc deinit() {
   chpl_privateCW.val = chpl_privateDist;
 }
+
+} // PrivateDist

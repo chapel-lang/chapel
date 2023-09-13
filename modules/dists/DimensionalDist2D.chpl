@@ -27,6 +27,9 @@
 // * Ensure that reallocation works with block-cyclic 1-d distribution
 //  when the domain's stride changes.
 
+@unstable("DimensionalDist2D is unstable and may change in the future")
+prototype module DimensionalDist2D {
+
 use DSIUtil;
 //use WrapperDist;
 
@@ -1445,3 +1448,5 @@ iter DimensionalArr._dsiIteratorHelper(alDom, (f1, f2)) ref {
         yield lastLocAdesc!.myStorageArr(i1, i2);
       }
 }
+
+} // DimensionalDist2D

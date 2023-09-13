@@ -32,6 +32,9 @@
 // - support other kinds of domains
 // - allow run-time change in locales
 
+@unstable("ReplicatedDist is unstable and may change in the future")
+prototype module ReplicatedDist {
+
 use DSIUtil;
 
 // trace certain DSI methods as they are being invoked
@@ -765,3 +768,5 @@ proc ReplicatedArr.dsiLocalSubdomain(loc: locale) {
 proc ReplicatedArr.dsiLocalSlice(ranges) {
   return chpl_myLocArr().arrLocalRep((...ranges));
 }
+
+} // ReplicatedDist

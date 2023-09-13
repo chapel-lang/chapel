@@ -33,6 +33,9 @@
 // mapped to by the distribution.
 //
 
+@unstable("StencilDist is unstable and may change in the future")
+prototype module StencilDist {
+
 private use BlockDist;
 private use DSIUtil;
 private use ChapelUtil;
@@ -2504,3 +2507,5 @@ proc StencilArr.doiOptimizedSwap(other) where debugOptimizedSwap {
   writeln("StencilArr doing unoptimized swap. Type mismatch");
   return false;
 }
+
+} // StencilDist

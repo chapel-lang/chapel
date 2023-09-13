@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+@unstable("HashedDist is unstable and may change in the future")
+prototype module HashedDist {
 
 config param debugUserMapAssoc = false;
 
@@ -1072,3 +1074,5 @@ class LocUserMapAssocArr {
     return locDom.myInds.dim(1).boundsCheck(x.dim(1));
   }
 }
+
+} // HashedDist
