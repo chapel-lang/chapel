@@ -221,10 +221,7 @@ By default, parallelism within each locale is applied to that locale's
 block of indices by creating a task for each available processor core
 (or the number of local indices if it is less than the number of
 cores). The local domain indices are then statically divided as evenly
-as possible between those tasks.  This default can be modified by
-changing the values of ``dataParTasksPerLocale``,
-``dataParIgnoreRunningTasks``, and ``dataParMinGranularity`` in the
-``blockDist``'s initializer:
+as possible between those tasks.
 
 
 **Initializer Arguments**
@@ -235,13 +232,7 @@ The ``blockDist`` initializer is defined as follows:
 
     proc blockDist.init(
       boundingBox: domain(?),
-      targetLocales: [] locale  = Locales,
-      dataParTasksPerLocale     = // value of dataParTasksPerLocale config const,
-      dataParIgnoreRunningTasks = // value of dataParIgnoreRunningTasks config const,
-      dataParMinGranularity     = // value of dataParMinGranularity config const,
-      param rank                = boundingBox.rank,
-      type  idxType             = boundingBox.idxType,
-      type  sparseLayoutType    = unmanaged DefaultDist)
+      targetLocales: [] locale  = Locales)
 
 The arguments ``boundingBox`` (a domain) and ``targetLocales`` (an array)
 define the mapping of any index of ``idxType`` type to a locale
@@ -252,25 +243,6 @@ or be ``1``.  If the rank of ``targetLocales`` is ``1``, a greedy
 heuristic is used to reshape the array of target locales so that it
 matches the rank of the distribution and each dimension contains an
 approximately equal number of indices.
-
-The arguments ``dataParTasksPerLocale``,
-``dataParIgnoreRunningTasks``, and ``dataParMinGranularity`` set the
-knobs that are used to control intra-locale data parallelism for
-block-distributed domains and arrays in the same way that the
-like-named config constants control data parallelism for ranges and
-default-distributed domains and arrays.
-
-The ``rank`` and ``idxType`` arguments are inferred from the
-``boundingBox`` argument unless explicitly set.  They must match the
-rank and index type of the domains distributed using the ``blockDist``
-instance. If the ``boundingBox`` argument is a stridable domain, the
-stride information will be ignored and the ``boundingBox`` will only
-use the low and high bounds.
-
-When a ``sparse subdomain`` is created for a ``blockDist`` distributed
-domain, the ``sparseLayoutType`` will be the layout of these sparse
-domains. The default currently uses coordinate storage, but
-:class:`LayoutCS.CS` is an interesting alternative.
 
 **Convenience Factory Methods**
 
@@ -409,6 +381,8 @@ record blockDist {
 
   forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(unmanaged BlockImpl(rank, idxType, _to_unmanaged(sparseLayoutType)));
 
+  pragma "last resort"
+  @unstable("passing arguments other than 'boundingBox' and 'targetLocales' to 'blockDist' is currently unstable")
   proc init(boundingBox: domain,
             targetLocales: [] locale = Locales,
             dataParTasksPerLocale=getDataParTasksPerLocale(),
@@ -430,6 +404,16 @@ record blockDist {
                             then _newPrivatizedClass(value)
                             else nullPid,
                           value);
+  }
+
+  proc init(boundingBox: domain,
+            targetLocales: [] locale = Locales)
+  {
+    this.init(boundingBox, targetLocales,
+              /* by specifying even one unstable argument, this should select
+                 the whole unstable constructor, which has defaults for everything
+                 else. */
+              dataParTasksPerLocale=getDataParTasksPerLocale());
   }
 
     proc init(_pid : int, _instance, _unowned : bool) {
