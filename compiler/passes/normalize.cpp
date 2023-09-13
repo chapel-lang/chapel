@@ -103,6 +103,7 @@ static void        normalizeCallToTypeConstructor(CallExpr* call);
 static void        applyGetterTransform(CallExpr* call);
 static void        transformIfVar(CallExpr* call);
 static void        insertCallTemps(CallExpr* call);
+static void        propagateMarkedGeneric(Symbol* var, Expr* typeExpr);
 static Symbol*     insertCallTempsWithStmt(CallExpr* call, Expr* stmt);
 
 static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur);
@@ -1918,6 +1919,10 @@ static void fixupExportedArrayReturns(FnSymbol* fn) {
 // which otherwise runs into problems to do with fixups for runtime types.
 static void fixupGenericReturnTypes(FnSymbol* fn) {
   if (fn->retExprType) {
+    // handle nested cases, e.g. (GenericRecord(?), ) or borrowed GenCls(?)
+    propagateMarkedGeneric(fn, fn->retExprType);
+
+    // simpify the simple case
     Expr*     tail   = fn->retExprType->body.tail;
     if (CallExpr* call = toCallExpr(tail)) {
       if (call->numActuals() == 1) {
@@ -1925,7 +1930,8 @@ static void fixupGenericReturnTypes(FnSymbol* fn) {
           if (call->baseExpr && se->symbol() == gUninstantiated) {
             Expr* type = call->baseExpr->remove();
             tail->replace(type);
-            fn->addFlag(FLAG_RET_TYPE_MARKED_GENERIC);
+            // flag should have been added in propagateMarkedGeneric
+            INT_ASSERT(fn->hasFlag(FLAG_RET_TYPE_MARKED_GENERIC));
           }
         }
       }
@@ -2507,14 +2513,18 @@ static void insertCallTemps(CallExpr* call) {
   }
 }
 
-// adds FLAG_MARKED_GENERIC to 'var' if the type contains a ?
+// adds FLAG_MARKED_GENERIC/FLAG_RET_TYPE_MARKED_GENERIC
+// to 'var' if the type contains a ?
 // actual or an actual that is a temp marked with that flag.
 static void propagateMarkedGeneric(Symbol* var, Expr* typeExpr) {
   if (SymExpr* se = toSymExpr(typeExpr)) {
     Symbol* sym = se->symbol();
     if (sym == gUninstantiated ||
         (sym->hasFlag(FLAG_MARKED_GENERIC) && sym->hasFlag(FLAG_TEMP))) {
-      var->addFlag(FLAG_MARKED_GENERIC);
+      if (isFnSymbol(var))
+        var->addFlag(FLAG_RET_TYPE_MARKED_GENERIC);
+      else
+        var->addFlag(FLAG_MARKED_GENERIC);
     }
   } else if (CallExpr* call = toCallExpr(typeExpr)) {
     if (call->baseExpr)
@@ -2522,6 +2532,11 @@ static void propagateMarkedGeneric(Symbol* var, Expr* typeExpr) {
 
     for_actuals(actual, call) {
       propagateMarkedGeneric(var, actual);
+    }
+  } else if (BlockStmt* blk = toBlockStmt(typeExpr)) {
+    // handle blocks since they are used for return type exprs
+    for_alist(expr, blk->body) {
+      propagateMarkedGeneric(var, expr);
     }
   }
 }
