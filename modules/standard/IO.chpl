@@ -2248,11 +2248,6 @@ proc openTempFile(hints=ioHintSet.empty, style:iostyle):file throws {
   return opentmpHelper(hints, style: iostyleInternal);
 }
 
-@deprecated(notes="opentmp is deprecated, please use :proc:`openTempFile` instead")
-proc opentmp(hints=ioHintSet.empty, style:iostyle):file throws {
-  return opentmpHelper(hints, style: iostyleInternal);
-}
-
 /*
 
 Open a temporary file. Note that once the file is open, you will need to use a
@@ -2275,11 +2270,6 @@ file is created only for use by the current application.
 :throws SystemError: Thrown if the temporary file could not be opened.
 */
 proc openTempFile(hints=ioHintSet.empty):file throws {
-  return opentmpHelper(hints);
-}
-
-@deprecated(notes="opentmp is deprecated, please use :proc:`openTempFile` instead")
-proc opentmp(hints=ioHintSet.empty):file throws {
   return opentmpHelper(hints);
 }
 
