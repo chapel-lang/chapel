@@ -770,6 +770,12 @@ module Time {
       where DateTimeStaticTZAwareness == true && tzAware == false
         do compilerError("The 'timezone' query is only availible on a 'time' with 'tzAware=true'");
 
+    // for internal use during deprecation. Replace uses with `timezone` after nil-returning version is removed
+    @chpldoc.nodoc
+    proc _timezone: shared Timezone? where DateTimeStaticTZAwareness == false do return chpl_tz;
+    @chpldoc.nodoc
+    proc _timezone: shared Timezone where DateTimeStaticTZAwareness == true do return chpl_tz!;
+
     @chpldoc.nodoc
     @deprecated(notes="'tzinfo' is deprecated, please use 'timezone' instead")
     proc tzinfo {
@@ -794,13 +800,60 @@ module Time {
 
   /* initializers/factories for time values */
 
+  @chpldoc.nodoc
+  @unstable("initializing a 'time' without arguments is unstable; it may become illegal or be replaced with a specific uninitialized 'time' sentinel value in the future")
+  proc time.init(param tzAware: bool = false) {
+    this.tzAware = tzAware;
+  }
+
   /* Initialize a new `time` value from the given `hour`, `minute`, `second`,
      `microsecond`, and `timezone`.  All arguments are optional
    */
   @unstable("tz is unstable; its type may change in the future")
   proc time.init(hour:int=0, minute:int=0, second:int=0, microsecond:int=0,
-                 in tz: shared Timezone) {
+                 in tz: shared Timezone) where DateTimeStaticTZAwareness == true {
+    this.init(hour, minute, second, microsecond, tz, internal=true);
+  }
+
+  // Temporary helper for use during DateTimeStaticTZAwareness deprecation
+  //  This should be removed, and its implementation moved into the above
+  //  initializer when the deprecation is complete. Internal calls to 'new time'
+  //  should remove their: `internal=true` argument.
+  @chpldoc.nodoc
+  proc time.init(hour:int=0, minute:int=0, second:int=0, microsecond:int=0,
+                 in tz: shared Timezone, internal: bool)
+  where DateTimeStaticTZAwareness == true {
     this.tzAware = true;
+    if hour < 0 || hour >= 24 then
+      HaltWrappers.initHalt("hour out of range");
+    if minute < 0 || minute >= 60 then
+      HaltWrappers.initHalt("minute out of range");
+    if second < 0 || second >= 60 then
+      HaltWrappers.initHalt("second out of range");
+    if microsecond < 0 || microsecond >= 1000000 then
+      HaltWrappers.initHalt("microsecond out of range");
+    this.chpl_hour = hour;
+    this.chpl_minute = minute;
+    this.chpl_second = second;
+    this.chpl_microsecond = microsecond;
+    this.chpl_tz = tz;
+  }
+
+  @deprecated(notes="The 'time' initializer that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'")
+  proc time.init(hour:int=0, minute:int=0, second:int=0, microsecond:int=0,
+                 in tz: shared Timezone?)
+  where DateTimeStaticTZAwareness == false {
+    this.init(hour, minute, second, microsecond, tz, internal=true);
+  }
+
+  // Temporary helper for use during DateTimeStaticTZAwareness deprecation
+  //  This helper and the above initailizer should be removed once the
+  //  deprecation is complete. Internal calls to 'new time' should remove
+  //  their: `internal=true` argument.
+  @chpldoc.nodoc
+  proc time.init(hour:int=0, minute:int=0, second:int=0, microsecond:int=0,
+                 in tz: shared Timezone?, internal: bool)
+  where DateTimeStaticTZAwareness == false {
     if hour < 0 || hour >= 24 then
       HaltWrappers.initHalt("hour out of range");
     if minute < 0 || minute >= 60 then
@@ -863,13 +916,28 @@ module Time {
   */
   @unstable("tz is unstable; its type may change in the future")
   proc time.replace(hour=-1, minute=-1, second=-1, microsecond=-1,
-                    in tz: shared Timezone) : time(true) {
+                    in tz: shared Timezone) : time(true)
+    where DateTimeStaticTZAwareness == true
+  {
     const newhour = if hour != -1 then hour else this.hour;
     const newminute = if minute != -1 then minute else this.minute;
     const newsecond = if second != -1 then second else this.second;
     const newmicrosecond = if microsecond != -1 then microsecond else this.microsecond;
 
-    return new time(newhour, newminute, newsecond, newmicrosecond, tz);
+    return new time(newhour, newminute, newsecond, newmicrosecond, tz, internal=true);
+  }
+
+  @unstable("tz is unstable; its type may change in the future")
+  proc time.replace(hour=-1, minute=-1, second=-1, microsecond=-1,
+                    in tz: shared Timezone?) : time
+    where DateTimeStaticTZAwareness == false
+  {
+    const newhour = if hour != -1 then hour else this.hour;
+    const newminute = if minute != -1 then minute else this.minute;
+    const newsecond = if second != -1 then second else this.second;
+    const newmicrosecond = if microsecond != -1 then microsecond else this.microsecond;
+
+    return new time(newhour, newminute, newsecond, newmicrosecond, tz, internal=true);
   }
 
   /* Get a `string` representation of this `time` in ISO format
@@ -894,7 +962,7 @@ module Time {
     var offset = x.utcOffset();
 
     if DateTimeStaticTZAwareness && tzAware ||
-      x.timezone.borrow() != nil
+      x._timezone.borrow() != nil
     {
       var sign: string;
       if offset.days < 0 {
@@ -918,20 +986,28 @@ module Time {
   /* Return the offset from UTC */
   @unstable("'utcOffset' is unstable")
   proc time.utcOffset() : timeDelta {
-    if timezone.borrow() == nil {
-      return new timeDelta();
+    if DateTimeStaticTZAwareness {
+      if tzAware
+        then return this._timezone.utcOffset(dateTime.now());
+        else return new timeDelta();
     } else {
-      return timezone!.utcOffset(dateTime.now());
+      if this._timezone.borrow() == nil
+        then return new timeDelta();
+        else return this._timezone!.utcOffset(dateTime.now());
     }
   }
 
   /* Return the daylight saving time offset */
   @unstable("'dst' is unstable")
   proc time.dst() : timeDelta {
-    if timezone.borrow() == nil {
-      return new timeDelta();
+    if DateTimeStaticTZAwareness {
+      if tzAware
+        then return this._timezone.dst(dateTime.now());
+        else return new timeDelta();
     } else {
-      return timezone!.dst(dateTime.now());
+      if this._timezone.borrow() == nil
+        then return new timeDelta();
+        else return this._timezone!.dst(dateTime.now());
     }
   }
 
@@ -940,12 +1016,12 @@ module Time {
   proc time.tzname() : string {
     if DateTimeStaticTZAwareness {
       if tzAware
-        then return timezone.tzname(new dateTime(1,1,1));
+        then return this._timezone.tzname(new dateTime(1,1,1));
         else return "";
     } else {
-      if timezone.borrow() == nil
+      if this._timezone.borrow() == nil
         then return "";
-        else return timezone!.tzname(new dateTime(1,1,1));
+        else return this._timezone!.tzname(new dateTime(1,1,1));
     }
   }
 
@@ -1054,9 +1130,9 @@ module Time {
     if DateTimeStaticTZAwareness && (t1.tzAware != t2.tzAware)
       then compilerError("both 'time' values must have the same timezone awareness for comparison");
 
-    if !DateTimeStaticTZAwareness && ((t1.timezone.borrow() == nil) != (t2.timezone.borrow() == nil)) {
+    if !DateTimeStaticTZAwareness && ((t1._timezone.borrow() == nil) != (t2._timezone.borrow() == nil)) {
       halt("both 'time' values must have the same timezone awareness for comparison");
-    } else if t1.timezone == t2.timezone {
+    } else if t1._timezone == t2._timezone {
       const sec1 = t1.hour*3600 + t1.minute*60 + t1.second;
       const usec1 = t1.microsecond;
       const sec2 = t2.hour*3600 + t2.minute*60 + t2.second;
@@ -1094,9 +1170,9 @@ module Time {
     if DateTimeStaticTZAwareness && (t1.tzAware != t2.tzAware)
       then compilerError("both 'time' values must have the same timezone awareness for comparison");
 
-    if !DateTimeStaticTZAwareness && ((t1.timezone.borrow() == nil) != (t2.timezone.borrow() == nil)) {
+    if !DateTimeStaticTZAwareness && ((t1._timezone.borrow() == nil) != (t2._timezone.borrow() == nil)) {
       halt("both 'time' values must have the same timezone awareness for comparison");
-    } else if t1.timezone == t2.timezone {
+    } else if t1._timezone == t2._timezone {
       const sec1 = t1.hour*3600 + t1.minute*60 + t1.second;
       const usec1 = t1.microsecond;
       const sec2 = t2.hour*3600 + t2.minute*60 + t2.second;
@@ -1119,9 +1195,9 @@ module Time {
     if DateTimeStaticTZAwareness && (t1.tzAware != t2.tzAware)
       then compilerError("both 'time' values must have the same timezone awareness for comparison");
 
-    if !DateTimeStaticTZAwareness && ((t1.timezone.borrow() == nil) != (t2.timezone.borrow() == nil)) {
+    if !DateTimeStaticTZAwareness && ((t1._timezone.borrow() == nil) != (t2._timezone.borrow() == nil)) {
       halt("both 'time' values must have the same timezone awareness for comparison");
-    } else if t1.timezone == t2.timezone {
+    } else if t1._timezone == t2._timezone {
       const sec1 = t1.hour*3600 + t1.minute*60 + t1.second;
       const usec1 = t1.microsecond;
       const sec2 = t2.hour*3600 + t2.minute*60 + t2.second;
@@ -1144,9 +1220,9 @@ module Time {
     if DateTimeStaticTZAwareness && (t1.tzAware != t2.tzAware)
       then compilerError("both 'time' values must have the same timezone awareness for comparison");
 
-    if !DateTimeStaticTZAwareness && ((t1.timezone.borrow() == nil) != (t2.timezone.borrow() == nil)) {
+    if !DateTimeStaticTZAwareness && ((t1._timezone.borrow() == nil) != (t2._timezone.borrow() == nil)) {
       halt("both 'time' values must have the same timezone awareness for comparison");
-    } else if t1.timezone == t2.timezone {
+    } else if t1._timezone == t2._timezone {
       const sec1 = t1.hour*3600 + t1.minute*60 + t1.second;
       const usec1 = t1.microsecond;
       const sec2 = t2.hour*3600 + t2.minute*60 + t2.second;
@@ -1233,16 +1309,22 @@ module Time {
     @deprecated(notes="The ``timezone`` query that returns a nilable value is deprecated; please recompile with '-sDateTimeStaticTZAwareness=true' to make timezone awareness a feature of the ``datetime`` type")
     proc timezone: shared Timezone?
       where DateTimeStaticTZAwareness == false
-        do return chpl_time.timezone;
+        do return chpl_time._timezone;
 
     proc timezone: shared Timezone
       where DateTimeStaticTZAwareness == true && tzAware == true
-        do return chpl_time.timezone;
+        do return chpl_time._timezone;
 
     @chpldoc.nodoc
     proc timezone: shared Timezone
       where DateTimeStaticTZAwareness == true && tzAware == false
         do compilerError("The 'timezone' query is only availible on a 'dateTime' with 'tzAware=true'");
+
+    // for internal use during deprecation. Replace uses with `timezone` after nil-returning version is removed
+    @chpldoc.nodoc
+    proc _timezone: shared Timezone? where DateTimeStaticTZAwareness == false do return chpl_time._timezone;
+    @chpldoc.nodoc
+    proc _timezone: shared Timezone where DateTimeStaticTZAwareness == true do return chpl_time._timezone!;
 
     @chpldoc.nodoc
     @deprecated(notes="'tzinfo' is deprecated, please use 'timezone' instead")
@@ -1255,7 +1337,8 @@ module Time {
 
   @chpldoc.nodoc
   @unstable("initializing a 'dateTime' without arguments is unstable; it may become illegal or be replaced with a specific uninitialized 'dateTime' sentinel value in the future")
-  proc dateTime.init() {
+  proc dateTime.init(param tzAware: bool = false) {
+    this.tzAware = tzAware;
   }
 
   /* Initialize a new `dateTime` value from the given `year`, `month`, `day`,
@@ -1265,10 +1348,48 @@ module Time {
   @unstable("tz is unstable; its type may change in the future")
   proc dateTime.init(year:int, month:int, day:int,
                      hour:int=0, minute:int=0, second:int=0, microsecond:int=0,
-                     in tz: shared Timezone) {
+                     in tz: shared Timezone)
+    where DateTimeStaticTZAwareness == true
+  {
+    this.init(year, month, day, hour, minute, second, microsecond, tz, internal=true);
+  }
+
+  // Temporary helper for use during DateTimeStaticTZAwareness deprecation
+  //  This should be removed, and its implementation moved into the above
+  //  initializer when the deprecation is complete. Internal calls to 'new datetime'
+  //  should remove their: `internal=true` argument.
+  @chpldoc.nodoc
+  proc dateTime.init(year:int, month:int, day:int,
+                     hour:int=0, minute:int=0, second:int=0, microsecond:int=0,
+                     in tz: shared Timezone, internal: bool)
+    where DateTimeStaticTZAwareness == true
+  {
     tzAware = true;
     chpl_date = new date(year, month, day);
-    chpl_time = new time(hour, minute, second, microsecond, tz);
+    chpl_time = new time(hour, minute, second, microsecond, tz, internal=true);
+  }
+
+  @deprecated(notes="The 'dateTime' initializer that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'")
+  proc dateTime.init(year:int, month:int, day:int,
+                     hour:int=0, minute:int=0, second:int=0, microsecond:int=0,
+                     in tz: shared Timezone?)
+    where DateTimeStaticTZAwareness == false
+  {
+    this.init(year, month, day, hour, minute, second, microsecond, tz, internal=true);
+  }
+
+  // Temporary helper for use during DateTimeStaticTZAwareness deprecation
+  //  This helper and the above initailizer should be removed once the
+  //  deprecation is complete. Internal calls to 'new time' should remove
+  //  their: `internal=true` argument.
+  @chpldoc.nodoc
+  proc dateTime.init(year:int, month:int, day:int,
+                     hour:int=0, minute:int=0, second:int=0, microsecond:int=0,
+                     in tz: shared Timezone?, internal: bool)
+    where DateTimeStaticTZAwareness == false
+  {
+    chpl_date = new date(year, month, day);
+    chpl_time = new time(hour, minute, second, microsecond, tz, internal=true);
   }
 
   /* Initialize a new `dateTime` value from the given `year`, `month`, `day`,
@@ -1417,7 +1538,7 @@ module Time {
                              second=second, microsecond=microsecond);
         else return chpl_time;
     } else {
-      if chpl_time.timezone.borrow() == nil
+      if chpl_time._timezone.borrow() == nil
         then return chpl_time;
         else return new time(hour=hour, minute=minute,
                              second=second, microsecond=microsecond);
@@ -1449,17 +1570,31 @@ module Time {
   @unstable("tz is unstable; its type may change in the future")
   proc dateTime.replace(year=-1, month=-1, day=-1,
                         hour=-1, minute=-1, second=-1, microsecond=-1,
-                        in tz=this.timezone) : dateTime(this.tzAware) {
+                        in tz=this._timezone) : dateTime(true)
+    where DateTimeStaticTZAwareness == true
+  {
     return new dateTime(
-        chpl_date.replace(year, month, day),
-        chpl_time.replace(hour, minute, second, microsecond, tz)
+      chpl_date.replace(year, month, day),
+      chpl_time.replace(hour, minute, second, microsecond, tz)
+    );
+  }
+
+  @unstable("tz is unstable; its type may change in the future")
+  proc dateTime.replace(year=-1, month=-1, day=-1,
+                        hour=-1, minute=-1, second=-1, microsecond=-1,
+                        in tz=this._timezone) : dateTime
+    where DateTimeStaticTZAwareness == false
+  {
+    return new dateTime(
+      chpl_date.replace(year, month, day),
+      chpl_time.replace(hour, minute, second, microsecond, tz)
     );
   }
 
   /* Return the date and time converted into the timezone in the argument */
   @unstable("tz is unstable; its type may change in the future")
   proc dateTime.astimezone(in tz: shared Timezone) : dateTime(true) {
-    if timezone == tz {
+    if this._timezone == tz {
       return this;
     }
     const utc = (this - this.utcOffset()).replace(tz=tz);
@@ -1469,18 +1604,30 @@ module Time {
   /* Return the offset from UTC */
   @unstable("'utcOffset' is unstable")
   proc dateTime.utcOffset() : timeDelta {
-    if timezone.borrow() == nil {
-      halt("utcOffset called on naive dateTime");
+    if DateTimeStaticTZAwareness && !tzAware
+      then compilerError("'utcOffset' called on 'dateTime' without a timezone");
+
+    if DateTimeStaticTZAwareness {
+      return this._timezone.utcOffset(this);
     } else {
-      return timezone!.utcOffset(this);
+      if this._timezone.borrow() == nil
+        then halt("'utcOffset' called on 'dateTime' without a timezone");
+        else return this._timezone!.utcOffset(this);
     }
   }
   /* Return the daylight saving time offset */
   @unstable("'dst' is unstable")
   proc dateTime.dst() : timeDelta {
-    if timezone.borrow() == nil then
-      halt("dst() called with nil timezone");
-    return timezone!.dst(this);
+    if DateTimeStaticTZAwareness && !tzAware
+      then compilerError("'dst' called on 'dateTime' without a timezone");
+
+    if DateTimeStaticTZAwareness {
+        return this._timezone.dst(this);
+    } else {
+      if this._timezone.borrow() == nil
+        then halt("'dst' called on 'dateTime' without a timezone");
+        else return this._timezone!.dst(this);
+    }
   }
 
   /* Return the name of the timezone for this `dateTime` value */
@@ -1488,12 +1635,12 @@ module Time {
   proc dateTime.tzname() : string {
     if DateTimeStaticTZAwareness {
       if this.tzAware
-        then return timezone.tzname(this);
+        then return this._timezone.tzname(this);
         else return "";
     } else {
-      if timezone.borrow() == nil
+      if this._timezone.borrow() == nil
         then return "";
-        else return timezone!.tzname(this);
+        else return this._timezone!.tzname(this);
     }
   }
 
@@ -1599,7 +1746,7 @@ module Time {
     }
     var micro = if x.microsecond > 0 then "." + zeroPad(6, x.microsecond) else "";
     var offset: string;
-    if x.timezone.borrow() != nil {
+    if x._timezone.borrow() != nil {
       var utcoff = x.utcOffset();
       var sign: string;
       if utcoff < new timeDelta(0) {
@@ -1686,14 +1833,26 @@ module Time {
     timeStruct.tm_min = minute: int(32);
     timeStruct.tm_sec = second: int(32);
 
-    if timezone.borrow() != nil {
-      timeStruct.tm_isdst = timezone!.dst(this).seconds: int(32);
-      timeStruct.tm_gmtoff = timezone!.utcOffset(this).seconds: c_long;
-      timeStruct.tm_zone = nil;
+    if DateTimeStaticTZAwareness {
+      if tzAware {
+        timeStruct.tm_isdst = this._timezone.dst(this).seconds: int(32);
+        timeStruct.tm_gmtoff = this._timezone.utcOffset(this).seconds: c_long;
+        timeStruct.tm_zone = nil;
+      } else {
+        timeStruct.tm_isdst = -1: int(32);
+        timeStruct.tm_gmtoff = 0;
+        timeStruct.tm_zone = nil;
+      }
     } else {
-      timeStruct.tm_isdst = -1: int(32);
-      timeStruct.tm_gmtoff = 0;
-      timeStruct.tm_zone = nil;
+      if this._timezone.borrow() != nil {
+        timeStruct.tm_isdst = this._timezone!.dst(this).seconds: int(32);
+        timeStruct.tm_gmtoff = this._timezone!.utcOffset(this).seconds: c_long;
+        timeStruct.tm_zone = nil;
+      } else {
+        timeStruct.tm_isdst = -1: int(32);
+        timeStruct.tm_gmtoff = 0;
+        timeStruct.tm_zone = nil;
+      }
     }
 
     timeStruct.tm_year = (year-1900): int(32); // 1900 based
@@ -1819,7 +1978,7 @@ module Time {
     return new dateTime(date.createFromOrdinal(dt.getDate().toOrdinal()+adddays),
                             new time(hour=newhour, minute=newmin,
                                      second=newsec, microsecond=newmicro,
-                                     tz=dt.timezone));
+                                     tz=dt._timezone, internal=true));
 
   }
 
@@ -1860,7 +2019,7 @@ module Time {
     return new dateTime(date.createFromOrdinal(dt.getDate().toOrdinal()-subDays),
                             new time(hour=newhour, minute=newmin,
                                      second=newsec, microsecond=newmicro,
-                                     tz=dt.timezone));
+                                     tz=dt._timezone, internal=true));
   }
 
   @chpldoc.nodoc
@@ -1868,10 +2027,10 @@ module Time {
     if DateTimeStaticTZAwareness && (dt1.tzAware != dt2.tzAware)
       then compilerError("both 'dateTime' values must have the same timezone awareness for subtraction");
 
-    if !DateTimeStaticTZAwareness && ((dt1.timezone.borrow() == nil) != (dt2.timezone.borrow() == nil))
+    if !DateTimeStaticTZAwareness && ((dt1._timezone.borrow() == nil) != (dt2._timezone.borrow() == nil))
       then halt("both 'dateTime' values must have the same timezone awareness for subtraction");
 
-    if dt1.timezone == dt2.timezone {
+    if dt1._timezone == dt2._timezone {
       const newmicro = dt1.microsecond - dt2.microsecond,
             newsec = dt1.second - dt2.second,
             newmin = dt1.minute - dt2.minute,
@@ -1891,9 +2050,9 @@ module Time {
     if DateTimeStaticTZAwareness && (dt1.tzAware != dt2.tzAware)
       then compilerError("both 'dateTime' values must have the same timezone awareness for comparison");
 
-    if !DateTimeStaticTZAwareness && ((dt1.timezone.borrow() == nil) != (dt2.timezone.borrow() == nil)) {
+    if !DateTimeStaticTZAwareness && ((dt1._timezone.borrow() == nil) != (dt2._timezone.borrow() == nil)) {
       halt("both 'dateTime' values must have the same timezone awareness for comparison");
-    } else if dt1.timezone == dt2.timezone {
+    } else if dt1._timezone == dt2._timezone {
       // just ignore timezone
       var d1: date = dt1.replace(tz=nil).getDate(),
           d2: date = dt2.replace(tz=nil).getDate();
@@ -1920,9 +2079,9 @@ module Time {
     if DateTimeStaticTZAwareness && (dt1.tzAware != dt2.tzAware)
       then compilerError("both 'dateTime' values must have the same timezone awareness for comparison");
 
-    if !DateTimeStaticTZAwareness && ((dt1.timezone.borrow() == nil) != (dt2.timezone.borrow() == nil)) {
+    if !DateTimeStaticTZAwareness && ((dt1._timezone.borrow() == nil) != (dt2._timezone.borrow() == nil)) {
       halt("both 'dateTime' values must have the same timezone awareness for comparison");
-    } else if dt1.timezone == dt2.timezone {
+    } else if dt1._timezone == dt2._timezone {
       const date1 = dt1.getDate(),
             date2 = dt2.getDate();
       if date1 < date2 then return true;
@@ -1939,9 +2098,9 @@ module Time {
     if DateTimeStaticTZAwareness && (dt1.tzAware != dt2.tzAware)
       then compilerError("both 'dateTime' values must have the same timezone awareness for comparison");
 
-    if !DateTimeStaticTZAwareness && ((dt1.timezone.borrow() == nil) != (dt2.timezone.borrow() == nil)) {
+    if !DateTimeStaticTZAwareness && ((dt1._timezone.borrow() == nil) != (dt2._timezone.borrow() == nil)) {
       halt("both 'dateTime' values must have the same timezone awareness for comparison");
-    } else if dt1.timezone == dt2.timezone {
+    } else if dt1._timezone == dt2._timezone {
       const date1 = dt1.getDate(),
             date2 = dt2.getDate();
       if date1 < date2 then return true;
@@ -1958,9 +2117,9 @@ module Time {
     if DateTimeStaticTZAwareness && (dt1.tzAware != dt2.tzAware)
       then compilerError("both 'dateTime' values must have the same timezone awareness for comparison");
 
-    if !DateTimeStaticTZAwareness && ((dt1.timezone.borrow() == nil) != (dt2.timezone.borrow() == nil)) {
+    if !DateTimeStaticTZAwareness && ((dt1._timezone.borrow() == nil) != (dt2._timezone.borrow() == nil)) {
       halt("both 'dateTime' values must have the same timezone awareness for comparison");
-    } else if dt1.timezone == dt2.timezone {
+    } else if dt1._timezone == dt2._timezone {
       const date1 = dt1.getDate(),
             date2 = dt2.getDate();
       if date1 > date2 then return true;
@@ -1977,9 +2136,9 @@ module Time {
     if DateTimeStaticTZAwareness && (dt1.tzAware != dt2.tzAware)
       then compilerError("both 'dateTime' values must have the same timezone awareness for comparison");
 
-    if !DateTimeStaticTZAwareness && ((dt1.timezone.borrow() == nil) != (dt2.timezone.borrow() == nil)) {
+    if !DateTimeStaticTZAwareness && ((dt1._timezone.borrow() == nil) != (dt2._timezone.borrow() == nil)) {
       halt("both 'dateTime' values must have the same timezone awareness for comparison");
-    } else if dt1.timezone == dt2.timezone {
+    } else if dt1._timezone == dt2._timezone {
       const date1 = dt1.getDate(),
             date2 = dt2.getDate();
       if date1 > date2 then return true;
