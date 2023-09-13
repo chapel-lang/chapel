@@ -255,7 +255,7 @@ def _validate_cuda_version_impl():
 
 
 def _validate_rocm_version_impl():
-    """Check that the installed CUDA version is >= MIN_REQ_VERSION and <
+    """Check that the installed ROCM version is >= MIN_REQ_VERSION and <
        MAX_REQ_VERSION"""
     MIN_REQ_VERSION = "4"
     MAX_REQ_VERSION = "6"
