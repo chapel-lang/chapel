@@ -20,25 +20,25 @@ class ReplacementContext:
                 line += 1
                 self.lines[line] = i+1 # the next characrer is the start of the next line
 
-    def get_file_idx(self, loc):
+    def loc_to_idx(self, loc):
         (row, col) = loc
         return self.lines[row] + (col - 1)
 
 
-    def get_node_range(self, node):
+    def node_idx_range(self, node):
         loc = node.location()
 
-        range_start = self.get_file_idx(loc.start())
-        range_end = self.get_file_idx(loc.end())
+        range_start = self.loc_to_idx(loc.start())
+        range_end = self.loc_to_idx(loc.end())
         return (range_start, range_end)
 
-    def get_node_exact_string(self, node):
-        (range_start, range_end) = self.get_node_range(node)
+    def node_exact_string(self, node):
+        (range_start, range_end) = self.node_idx_range(node)
         return self.content[range_start:range_end]
 
-    def get_node_indent(node):
-        (range_start, _) = self.get_node_range(node)
-        return range_start - lines[lines_back[range_start]]
+    def node_indent(self, node):
+        (range_start, _) = self.node_idx_range(node)
+        return range_start - self.lines[self.lines_back[range_start]]
 
 def rename_formals(rc, fn, renames):
     for child in fn:
@@ -47,7 +47,7 @@ def rename_formals(rc, fn, renames):
         name = child.name()
         if name not in renames: continue
 
-        child_text = rc.get_node_exact_string(child)
+        child_text = rc.node_exact_string(child)
         yield (child, child_text.replace(name, renames[name]))
 
 def rename_named_actuals(rc, call, renames):
@@ -56,7 +56,7 @@ def rename_named_actuals(rc, call, renames):
             (name, actual) = actual
             if name not in renames: continue
 
-            actual_text = rc.get_node_exact_string(actual)
+            actual_text = rc.node_exact_string(actual)
 
             # TODO: but there's no node that includes the name = in its location...
             # yield (actual, actual_text.replace(name, renames[name]))
@@ -74,7 +74,21 @@ def do_replace(finder, ctx, filename):
     nodes_to_replace = {}
     for ast in asts:
         for (node, replace_with) in finder(rc, ast):
-            nodes_to_replace[node.unique_id()] = replace_with
+            uid = node.unique_id()
+            # Old result doesn't matter or doesn't exist; throw it out.
+            if not callable(replace_with) or uid not in nodes_to_replace:
+                nodes_to_replace[uid] = replace_with
+            # replace_with is a callable, which means it transforms the previous
+            # text. See if a transformation for this node has already been
+            # requested.
+            elif uid in nodes_to_replace:
+                # Old substitution is also a callable; need to create composition.
+                if callable(nodes_to_replace[uid]):
+                    nodes_to_replace[uid] = lambda text: replace_with(nodes_to_replace[uid](text))
+                # Old substitution is a string; we can apply the callable to get
+                # another string.
+                else:
+                    nodes_to_replace[uid] = replace_with(nodes_to_replace[uid])
 
     def recurse(node):
         my_replace = None
@@ -89,14 +103,14 @@ def do_replace(finder, ctx, filename):
         # If it's not callable, it must be a string; we don't care about child
         # replacements, since our own target is constant.
         elif not callable(my_replace):
-            (replace_from, replace_to) = rc.get_node_range(node)
+            (replace_from, replace_to) = rc.node_idx_range(node)
             yield (replace_from, replace_to, my_replace)
 
         # We have a callable replacement, which means we should apply child
         # substitutions to our text and then call the replacement with that.
         else:
-            (replace_from, replace_to) = rc.get_node_range(node)
-            my_text = rc.get_node_exact_string(node)
+            (replace_from, replace_to) = rc.node_idx_range(node)
+            my_text = rc.node_exact_string(node)
             for child in reversed(list(node)):
                 for (child_from, child_to, child_str) in recurse(child):
                     # Child is not inside this node, so it can be replaced as before
@@ -118,6 +132,39 @@ def do_replace(finder, ctx, filename):
 
     with open(filename, "w") as newfile:
         newfile.write(new_content)
+
+def run(finder, name='replace', description='A tool to search-and-replace Chapel expressions with others'):
+    parser = argparse.ArgumentParser(prog=name, description=description)
+    parser.add_argument('filenames', nargs='*')
+    args = parser.parse_args()
+
+    # Some files might have the same name, which Dyno really doesn't like.
+    # Strateify files into "buckets"; within each bucket, all filenames are
+    # unique. Between each bucket, re-create the Dyno context to avoid giving
+    # it complicting files.
+
+    basenames = defaultdict(lambda: 0)
+    buckets = defaultdict(lambda: [])
+    for filename in args.filenames:
+        filename = os.path.realpath(os.path.expandvars(filename))
+
+        basename = os.path.basename(filename)
+        bucket = basenames[basename]
+        basenames[basename] += 1
+        buckets[bucket].append(filename)
+
+    for bucket in buckets:
+        ctx = chapel.core.Context()
+        to_replace = buckets[bucket]
+
+        for filename in to_replace:
+            do_replace(finder, ctx, filename)
+
+def fuse(*args):
+    def fused(rc, root):
+        for arg in args:
+            yield from arg(rc, root)
+    return fused
 
 # -------------------------
 # Application-Specific Code
@@ -158,7 +205,7 @@ def tag_all_nodes_assert_on_gpu(rc, root):
                 has_assert_on_gpu = True
                 yield (child, '')
 
-        indent = rc.get_node_indent(foreach)
+        indent = rc.node_indent(foreach)
         if has_assert_on_gpu:
             yield (foreach, lambda text, i = indent: "@assertOnGpu\n" + (" " * i) + text)
 
@@ -193,7 +240,7 @@ def tag_aggregates_with_io_interfaces(rc, root):
             continue
 
         this_receiver = fn.this_formal()
-        names_to_tag[rc.get_node_exact_string(this_receiver)].add(tag)
+        names_to_tag[rc.node_exact_string(this_receiver)].add(tag)
 
     def build_tag_str(tags):
         if len(tags) == 3: return "serializable"
@@ -212,7 +259,7 @@ def tag_aggregates_with_io_interfaces(rc, root):
         if len(tags) == 0: continue
 
         tag_str = build_tag_str(tags)
-        record_text = rc.get_node_exact_string(record)
+        record_text = rc.node_exact_string(record)
         curlypos = record_text.find("{")
         colonpos = record_text.find(":")
 
@@ -223,32 +270,4 @@ def tag_aggregates_with_io_interfaces(rc, root):
 
         yield (record, new_text)
 
-def all_transforms(rc, root):
-    # yield from find_this_complete(rc, root)
-    # yield from rename_x_y_to_a_b(rc, root)
-    # yield from tag_all_nodes_assert_on_gpu(rc, root)
-    yield from tag_aggregates_with_io_interfaces(rc, root)
-
-parser = argparse.ArgumentParser( prog='replace', description='A tool to search-and-replace Chapel expressions with others')
-parser.add_argument('filenames', nargs='*')
-args = parser.parse_args()
-
-basenames = defaultdict(lambda: 0)
-buckets = defaultdict(lambda: [])
-
-for filename in args.filenames:
-    filename = os.path.realpath(os.path.expandvars(filename))
-
-    basename = os.path.basename(filename)
-    bucket = basenames[basename]
-    basenames[basename] += 1
-    buckets[bucket].append(filename)
-
-for bucket in buckets:
-    print("Bucket {}".format(bucket), file=sys.stderr)
-    ctx = chapel.core.Context()
-    to_replace = buckets[bucket]
-
-    for filename in to_replace:
-        print(filename, file=sys.stderr)
-        do_replace(all_transforms, ctx, filename)
+run(fuse(find_this_complete, rename_x_y_to_a_b, tag_all_nodes_assert_on_gpu))
