@@ -68,14 +68,6 @@ class BoolType final : public PrimitiveType {
   const char* c_str() const override {
     return "bool";
   }
-
-  /**
-   Returns `true` if this is the type `bool` which is distinct from
-   `bool(8)`.
-   */
-  bool isDefaultBool() const {
-    return true;
-  }
 };
 
 
