@@ -1,0 +1,1 @@
+bug: compiler permits generic query arguments on non-generic arguments

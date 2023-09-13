@@ -77,8 +77,8 @@ proc isIntegralType(type t) param do return
 proc isNothingType(type t) param do return t == nothing;
 
 /* Returns ``true`` if the type ``t`` is a ``bool`` type, of any width. */
-proc isBoolType(type t) param do return
-  (t == bool) || (t == bool(8)) || (t == bool(16)) || (t == bool(32)) || (t == bool(64));
+proc isBoolType(type t) param do
+  return (t == bool);
 
 /* Returns ``true`` if the type ``t`` is an ``int`` type, of any width. */
 proc isIntType(type t) param do return
@@ -710,14 +710,6 @@ It is not available for default-width ``bool``.
 proc numBits(type t) param where t == bool {
   compilerError("default-width 'bool' does not have a well-defined size");
 }
-@chpldoc.nodoc
-proc numBits(type t) param where t == bool(8) do return 8;
-@chpldoc.nodoc
-proc numBits(type t) param where t == bool(16) do return 16;
-@chpldoc.nodoc
-proc numBits(type t) param where t == bool(32) do return 32;
-@chpldoc.nodoc
-proc numBits(type t) param where t == bool(64) do return 64;
 @chpldoc.nodoc
 proc numBits(type t) param where t == int(8) do return 8;
 @chpldoc.nodoc

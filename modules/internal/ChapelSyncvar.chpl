@@ -1250,7 +1250,7 @@ private module AlignedTSupport {
   inline operator :(x: bool, type t:aligned_t) {
     return __primitive("cast", t, x);
   }
-  inline operator :(x : aligned_t, type t:chpl_anybool) {
+  inline operator :(x : aligned_t, type t:bool) {
     return __primitive("cast", t, x);
   }
   inline operator :(x : aligned_t, type t:integral) {

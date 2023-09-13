@@ -814,8 +814,7 @@ static bool isNumericTypeSymExpr(Expr* expr) {
     Type* t = sym->type;
     // if it's the actual type symbol for that type
     if (t->symbol == sym && sym->hasFlag(FLAG_TYPE_VARIABLE))
-      return is_bool_type(t) ||
-             is_int_type(t) ||
+      return is_int_type(t) ||
              is_uint_type(t) ||
              is_real_type(t) ||
              is_imag_type(t) ||
