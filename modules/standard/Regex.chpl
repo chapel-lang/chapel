@@ -1126,21 +1126,6 @@ inline operator :(x: regex(?exprType), type t: exprType) {
   return pattern;
 }
 
-
-// Cast string to regex
-@chpldoc.nodoc
-@deprecated(notes="Casting strings to regex is deprecated. Use new regex(string) from the Regex module instead.")
-inline operator :(x: string, type t: regex(string)) throws {
-  return new regex(x);
-}
-
-// Cast bytes to regex
-@chpldoc.nodoc
-@deprecated(notes="Casting bytes to regex is deprecated. Use new regex(bytes) from the Regex module instead.")
-inline operator :(x: bytes, type t: regex(bytes)) throws {
-  return new regex(x);
-}
-
 /* Search the receiving string for the result of a compiled regular
    expression. Search for matches at any offset.
 
