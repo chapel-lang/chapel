@@ -1,1 +1,1 @@
--sReadBinaryArrayReturnInt=true
+-sReadBinaryArrayReturnInt=true -snewRangeLiteralType

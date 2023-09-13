@@ -41,8 +41,8 @@ type DomType1 = domain(1);
 const init1dom: DomType1 = {7770..7771};
 
 type DomType2 = domain(2, uint(32), strideKind.positive);
-const init2dom: DomType2 = {110001..110002:uint(32),
-                            330004..330033:uint(32) by 3};
+const init2dom: DomType2 = {110001:uint(32)..110002:uint(32),
+                            330004:uint(32)..330033:uint(32) by 3};
 
 type ArrType1 = [init1dom] int;
 const init1arr: ArrType1 = 11011;
