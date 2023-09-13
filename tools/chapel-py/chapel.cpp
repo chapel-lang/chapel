@@ -495,6 +495,28 @@ static PyObject* AttributeObject_actuals(PyObject *self, PyObject *Py_UNUSED(ign
   return astCallIterObjectPy;
 }
 
+static PyObject* FnCallObject_actuals(PyObject *self, PyObject *Py_UNUSED(ignored)) {
+  auto fnCallNode = ((FnCallObject*) self)->parent.astNode->toFnCall();
+
+  auto argList = Py_BuildValue("(O)", (PyObject*) self);
+  auto astCallIterObjectPy = PyObject_CallObject((PyObject *) &AstCallIterType, argList);
+  Py_XDECREF(argList);
+
+  auto astCalliterObject = (AstCallIterObject*) astCallIterObjectPy;
+  astCalliterObject->current = 0;
+  astCalliterObject->num = fnCallNode->numActuals();
+  astCalliterObject->container = fnCallNode;
+  astCalliterObject->childGetter = [](const void* node, int child) {
+    return ((chpl::uast::FnCall*) node)->actual(child);
+  };
+  astCalliterObject->nameGetter = [](const void* node, int child) {
+    return ((chpl::uast::FnCall*) node)->actualName(child);
+  };
+
+  return astCallIterObjectPy;
+}
+
+
 template <chpl::uast::asttags::AstTag tag>
 struct PerNodeInfo {
   static constexpr PyMethodDef methods[] = {
@@ -556,6 +578,7 @@ METHOD_TABLE(Function,
 METHOD_TABLE(FnCall,
   {"used_square_brackets", FnCallObject_used_square_brackets, METH_NOARGS, "Check whether or not this function call was made using square brackets"},
   {"called_expression", FnCallObject_called_expression, METH_NOARGS, "Get the expression invoked by this FnCall node"},
+  {"actuals", FnCallObject_actuals, METH_NOARGS, "Get the actuals of this function call"},
 );
 
 METHOD_TABLE(Dot,
