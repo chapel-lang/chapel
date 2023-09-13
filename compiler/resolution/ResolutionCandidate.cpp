@@ -1065,8 +1065,7 @@ bool ResolutionCandidate::checkGenericFormals(Expr* ctx) {
 }
 
 static bool isNumericType(Type* t) {
-  return is_bool_type(t) ||
-         is_int_type(t) ||
+  return is_int_type(t) ||
          is_uint_type(t) ||
          is_real_type(t) ||
          is_imag_type(t) ||

@@ -116,11 +116,6 @@ static void test2() {
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
   assert(rr.byAst(b).type().type()   == BoolType::get(context, 0));
-  assert(rr.byAst(b8).type().type()  == BoolType::get(context, 8));
-  assert(rr.byAst(b16).type().type() == BoolType::get(context, 16));
-  assert(rr.byAst(b32).type().type() == BoolType::get(context, 32));
-  assert(rr.byAst(b64).type().type() == BoolType::get(context, 64));
-  assert(rr.byAst(bq).type().type()  == AnyBoolType::get(context));
 }
 
 static void test3() {

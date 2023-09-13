@@ -893,10 +893,6 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   }
 
-  if (formalType == dtAnyBool && is_bool_type(actualType)) {
-    return true;
-  }
-
   if (formalType == dtAnyComplex && is_complex_type(actualType)) {
     return true;
   }
@@ -979,10 +975,6 @@ static bool canParamCoerce(Type*   actualType,
                            Symbol* actualSym,
                            Type*   formalType,
                            bool*   paramNarrows) {
-  if (is_bool_type(formalType) && is_bool_type(actualType)) {
-    return true;
-  }
-
   if (is_int_type(formalType)) {
     if (is_bool_type(actualType)) {
       return true;
@@ -2115,8 +2107,7 @@ static int classifyNumericWidth(Type* t)
   if (is_int_type(t) ||
       is_uint_type(t) ||
       is_real_type(t) ||
-      is_imag_type(t) ||
-      is_bool_type(t))
+      is_imag_type(t))
     return get_width(t);
 
   if (is_complex_type(t))
@@ -3658,7 +3649,7 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
     USR_FATAL_CONT(info.call, "illegal type index expression '%s'", info.toString());
     const char* typeclass = (isPrimitiveType(tsType) ? "primitive type" :
                              (isEnumType(tsType) ? "enum type" : "type"));
-    USR_PRINT(info.call, "%s '%s' cannot be used in an index expression", typeclass, tsType->symbol->name);
+    USR_PRINT(info.call, "%s '%s' cannot be indexed in this manner", typeclass, tsType->symbol->name);
     USR_STOP();
   } else if (at->symbol->hasFlag(FLAG_TUPLE)) {
     SymbolMap subs;

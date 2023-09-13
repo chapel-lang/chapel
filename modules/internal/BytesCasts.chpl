@@ -35,7 +35,7 @@ module BytesCasts {
     }
   }
 
-  operator :(x: bytes, type t:chpl_anybool) throws {
+  operator :(x: bytes, type t:bool) throws {
     var b = x.strip();
     if b.isEmpty() {
       // TODO engin: do we really need this check?

@@ -2572,8 +2572,6 @@ static const Type* getNumericType(Context* context,
         return AnyIntType::get(context);
       } else if (name == USTR("uint")) {
         return AnyUintType::get(context);
-      } else if (name == USTR("bool")) {
-        return AnyBoolType::get(context);
       } else if (name == USTR("real")) {
         return AnyRealType::get(context);
       } else if (name == USTR("imag")) {

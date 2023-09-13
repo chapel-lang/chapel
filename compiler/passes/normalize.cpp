@@ -4121,8 +4121,7 @@ static bool isParameterizedPrimitive(CallExpr* typeSpecifier) {
       if (isDefExpr(first) || (query && query->symbol() == gUninstantiated)) {
         Symbol* callFnSym = callFnSymExpr->symbol();
 
-        if (callFnSym == dtBools[BOOL_SIZE_DEFAULT]->symbol ||
-            callFnSym == dtInt[INT_SIZE_DEFAULT]->symbol    ||
+        if (callFnSym == dtInt[INT_SIZE_DEFAULT]->symbol    ||
             callFnSym == dtUInt[INT_SIZE_DEFAULT]->symbol   ||
             callFnSym == dtReal[FLOAT_SIZE_DEFAULT]->symbol ||
             callFnSym == dtImag[FLOAT_SIZE_DEFAULT]->symbol ||
@@ -4136,38 +4135,12 @@ static bool isParameterizedPrimitive(CallExpr* typeSpecifier) {
   return retval;
 }
 
-// return true if a type specifier has the form `bool(?)` and false if
-// it's `bool(?w)`
-//
-static bool typeSpecifierUnnamedQuery(CallExpr* typeSpecifier) {
-  if (typeSpecifier->numActuals()      ==    1) {
-    if (DefExpr* de = toDefExpr(typeSpecifier->get(1))) {
-      return strncmp("chpl__query", de->sym->name, strlen("chpl__query")) == 0;
-    } else if (SymExpr* se = toSymExpr(typeSpecifier->get(1))) {
-      return se->symbol() == gUninstantiated;
-    }
-  }
-  return false;
-}
-
-
 // 'formal' is certain to be a parameterized primitive e.g int(?w)
 static void cloneParameterizedPrimitive(FnSymbol* fn, ArgSymbol* formal, CallExpr* typeSpecifier) {
   Symbol* callFnSym = toSymExpr(typeSpecifier->baseExpr)->symbol();
   Expr*   query     = typeSpecifier->get(1);
 
-  if (callFnSym == dtBools[BOOL_SIZE_DEFAULT]->symbol) {
-    // If 'bool(?)', instantiate for 'bool', and all 'bool(w)'
-    // If 'bool(?w)', skip 'bool' instantiation since 'w' is unknown
-    int start = typeSpecifierUnnamedQuery(typeSpecifier) ? BOOL_SIZE_SYS
-                                                         : BOOL_SIZE_8;
-    for (int i = start; i < BOOL_SIZE_NUM; i++) {
-      cloneParameterizedPrimitive(fn, formal, query, ((i == BOOL_SIZE_SYS) ?
-                                             BOOL_SYS_WIDTH :
-                                             get_width(dtBools[i])));
-    }
-
-  } else if (callFnSym == dtInt [INT_SIZE_DEFAULT]->symbol ||
+  if (callFnSym == dtInt [INT_SIZE_DEFAULT]->symbol ||
              callFnSym == dtUInt[INT_SIZE_DEFAULT]->symbol) {
     for (int i = INT_SIZE_8; i < INT_SIZE_NUM; i++) {
       cloneParameterizedPrimitive(fn, formal, query, get_width(dtInt[i]));

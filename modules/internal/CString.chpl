@@ -148,7 +148,7 @@ module CString {
   //
   // casts from c_string to bool types
   //
-  inline operator :(x:chpl_c_string, type t:chpl_anybool) throws {
+  inline operator :(x:chpl_c_string, type t:bool) throws {
     var chplString: string;
     try! {
       chplString = string.createCopyingBuffer(x:c_ptrConst(c_char));
