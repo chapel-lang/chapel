@@ -5319,14 +5319,11 @@ proc file.readerHelper(param kind=_iokind.dynamic, param locking=true,
     if (region.hasLowBound() && region.hasHighBound()) {
       // This is to ensure the user sees consistent behavior and can control it.
       // - All calls from `openUrlReader` should use the new behavior.
-      // - Only calls from `openReader` that are compiled with the flag that
-      //   controls its region argument should affect its behavior.
+      // - All calls from `openReader` should use the new behavior
       // - Only calls from `file.reader` that are compiled with the flag that
       //   controls its region argument should affect its behavior.
       // Calls from `openReader` should not be impacted by `file.reader`'s flag
-      // and vice versa.
-      if ((fromOpenReader && useNewOpenReaderRegionBounds) ||
-          fromOpenUrlReader ||
+      if (fromOpenReader || fromOpenUrlReader ||
           (!fromOpenReader && useNewFileReaderRegionBounds)) {
         start = region.low;
         end = if region.high == max(region.idxType) then max(region.idxType) else region.high + 1;
@@ -5342,14 +5339,11 @@ proc file.readerHelper(param kind=_iokind.dynamic, param locking=true,
     } else if (region.hasHighBound()) {
       // This is to ensure the user sees consistent behavior and can control it.
       // - All calls from `openUrlReader` should use the new behavior.
-      // - Only calls from `openReader` that are compiled with the flag that
-      //   controls its region argument should affect its behavior.
+      // - All calls from `openReader` should use the new behavior
       // - Only calls from `file.reader` that are compiled with the flag that
       //   controls its region argument should affect its behavior.
       // Calls from `openReader` should not be impacted by `file.reader`'s flag
-      // and vice versa.
-      if ((fromOpenReader && useNewOpenReaderRegionBounds) ||
-          fromOpenUrlReader ||
+      if (fromOpenReader || fromOpenUrlReader ||
           (!fromOpenReader && useNewFileReaderRegionBounds)) {
         start = 0;
         end = if region.high == max(region.idxType) then max(region.idxType) else region.high + 1;
