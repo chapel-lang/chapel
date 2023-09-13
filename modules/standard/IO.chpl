@@ -4980,7 +4980,8 @@ proc openReader(path:string,
    the :type:`fileReader`.  When set to ``false``, the region argument will
    exclude the high bound.  Defaults to ``false``, the original behavior.
  */
-config param useNewOpenReaderRegionBounds = false;
+@deprecated("'useNewOpenReaderRegionBounds' is now deprecated - the region argument for openReader always fully specifies the bounds, and this flag no longer impacts openReader's behavior.  This flag will be removed in a future release")
+config param useNewOpenReaderRegionBounds = true;
 
 // We can simply call fileReader.close() on these, since the underlying file
 // will be closed once we no longer have any references to it (which in this
@@ -5070,8 +5071,7 @@ This function is equivalent to calling :proc:`open` and then
 proc openReader(path:string, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty,
                 in deserializer: ?dt = defaultSerializeVal(false))
-    : fileReader(locking, dt) throws where (!region.hasHighBound() ||
-                                            useNewOpenReaderRegionBounds) {
+    : fileReader(locking, dt) throws {
   return openReaderHelper(path, _iokind.dynamic, locking, region, hints, deserializer=deserializer);
 }
 
@@ -5081,27 +5081,8 @@ proc openReader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty,
                 in deserializer: ?dt = defaultSerializeVal(false,kind))
-    : fileReader(kind, locking, dt) throws where (!region.hasHighBound() ||
-                                              useNewOpenReaderRegionBounds) {
+    : fileReader(kind, locking, dt) throws {
   return openReaderHelper(path, kind, locking, region, hints, deserializer=deserializer);
-}
-
-@deprecated(notes="openreader is deprecated - please use :proc:`openReader` instead")
-proc openreader(path:string,
-                param kind=iokind.dynamic, param locking=true,
-                region: range(?) = 0.., hints=ioHintSet.empty)
-    : fileReader(kind, locking, defaultSerializeType(false,kind)) throws where (region.hasHighBound() &&
-                                              !useNewOpenReaderRegionBounds) {
-  return openReader(path, kind, locking, region, hints);
-}
-
-@deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewOpenReaderRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
-proc openReader(path:string,
-                param kind=iokind.dynamic, param locking=true,
-                region: range(?) = 0.., hints=ioHintSet.empty)
-    : fileReader(kind, locking, defaultSerializeType(false,kind)) throws where (region.hasHighBound() &&
-                                              !useNewOpenReaderRegionBounds) {
-  return openReaderHelper(path, kind, locking, region, hints);
 }
 
 private proc openReaderHelper(path:string,
