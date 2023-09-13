@@ -25,10 +25,6 @@
 
 static int typeSize(VarSymbol* var);
 
-
-
-// TODO: Should dtBool still be here?
-
 Type* typeForTypeSpecifier(Expr* expr, bool fatalOK) {
   Type* retval = NULL;
 
