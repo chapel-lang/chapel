@@ -43,7 +43,7 @@ record R {
     Communication.put(x, src, home.id, numBytes(int));
   }
 
-  proc writeThis(writer) {
+  proc serialize(writer, ref serializer) {
     writer.write("{", get(), "}");
   }
 }

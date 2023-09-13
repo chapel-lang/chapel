@@ -33,8 +33,8 @@ module DistributedMap {
             this.instance!.clear();
         }
 
-        proc writeThis(fr) throws {
-            this.instance!.writeThis(fr);
+        proc serialize(writer, ref serializer) throws {
+            this.instance!.serialize(writer, serializer);
         }
     }
 
@@ -122,7 +122,8 @@ module DistributedMap {
             compilerError("unimplemented");
         }
 
-        proc writeThis(fr) throws {
+        override proc serialize(writer, ref serializer) throws {
+            var fr = writer;
             for locIdx in this.locDom {
                 on this.targetLocales[locIdx] {
                     fr.write("[", this.targetLocales[locIdx], ": ");

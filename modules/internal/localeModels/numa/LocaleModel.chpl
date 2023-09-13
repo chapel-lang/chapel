@@ -86,6 +86,10 @@ module LocaleModel {
       f.write('.'+ndName);
     }
 
+    override proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
+
     override proc _getChildCount(): int { return 0; }
     iter getChildIndices() : int {
       halt("No children to iterate over.");
@@ -256,6 +260,10 @@ module LocaleModel {
 
     override proc writeThis(f) throws {
       f.write(name);
+    }
+
+    override proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
 
     override proc _getChildCount() return this.myLocaleSpace.size;

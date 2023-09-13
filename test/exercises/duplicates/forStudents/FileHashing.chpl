@@ -11,10 +11,10 @@ module FileHashing {
        in a good format.
        */
 
-    proc writeThis(f) throws {
+    proc serialize(writer, ref serializer) throws {
       for component in hashVal {
         var s = try! "%08xu".format(component);
-        f.write(s);
+        writer.write(s);
       }
     }
 

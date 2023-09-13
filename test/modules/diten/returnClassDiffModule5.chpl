@@ -8,9 +8,9 @@ module M1 {
     proc foo() {
       return a+b;
     }
-    override proc writeThis(f) throws {
-      f.writeln("How does this get found?");
-      f.write("{a = ", a, ", b = ", b, "}");
+    override proc serialize(writer, ref serializer) throws {
+      writer.writeln("How does this get found?");
+      writer.write("{a = ", a, ", b = ", b, "}");
     }
   }
 }

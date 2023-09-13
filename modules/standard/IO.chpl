@@ -3932,6 +3932,10 @@ record _internalIoChar {
     // I/O routines should handle ioChar directly
     assert(false);
   }
+  @chpldoc.nodoc
+  proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
+  }
 }
 
 @chpldoc.nodoc
@@ -4042,6 +4046,10 @@ record chpl_ioLiteral {
   proc writeThis(f) throws {
     // Normally this is handled explicitly in read/write.
     f.write(val);
+  }
+  @chpldoc.nodoc
+  proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
   }
 }
 

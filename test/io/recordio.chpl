@@ -88,22 +88,22 @@ var B: [0..#3] MyRecord;
    - the compiler will generate readThis/writeThis for you if you don't
      provide one
  */
-proc ref MyRecord.readThis(fr: fileReader(?)) throws {
-  i = fr.read(int);
-  fr.readLiteral("\t");
-  r = fr.read(real);
-  fr.readLiteral("\t");
-  s = fr.read(string);
-  fr.readLiteral("\n");
+proc ref MyRecord.deserialize(reader, ref deserializer) throws {
+  i = reader.read(int);
+  reader.readLiteral("\t");
+  r = reader.read(real);
+  reader.readLiteral("\t");
+  s = reader.read(string);
+  reader.readLiteral("\n");
 }
 
-proc MyRecord.writeThis(fw: fileWriter(?)) throws {
-  fw.write(i);
-  fw.writeLiteral("\t");
-  fw.write(r);
-  fw.writeLiteral("\t");
-  fw.write(s);
-  fw.writeLiteral("\n");
+proc MyRecord.serialize(writer, ref serializer) throws {
+  writer.write(i);
+  writer.writeLiteral("\t");
+  writer.write(r);
+  writer.writeLiteral("\t");
+  writer.write(s);
+  writer.writeLiteral("\n");
 }
 
 proc MyRecord.init(i: int = 0, r: real = 0.0, s: string = "") {

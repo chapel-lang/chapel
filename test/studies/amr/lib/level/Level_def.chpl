@@ -155,7 +155,7 @@ class Level {
   // sensible.  Mainly for testing and debugging.
   //-----------------------------------------------------------
   
-  proc writeThis(w) throws {
+  proc serialize(writer, ref serializer) throws {
     writeln("Level bounds: ", x_low, "  ", x_high);
     writeln("Number of cells: ", n_cells);
     writeln("Number of ghost cells: ", n_ghost_cells);

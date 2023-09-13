@@ -1474,6 +1474,10 @@ module SampleSortHelp {
       ch.write(")\n");
     }
 
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
+
     proc getNumBuckets() {
       return numBuckets * (1 + equalBuckets:int);
     }
@@ -2232,6 +2236,10 @@ module TwoArrayPartitioning {
         f.write(t);
       }
     }
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
+
     proc isEmpty() {
       return tasks.isEmpty();
     }

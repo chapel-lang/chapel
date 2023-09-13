@@ -22,16 +22,16 @@ class Node {
   var pred : unmanaged Node? = nil;
   var disc,fini : int = -1;
 
-  proc writeThis(w){
-    w.write("{",name,"}");
+  override proc serialize(writer, ref serializer){
+    writer.write("{",name,"}");
   }
 
-  proc writeFancy(w){
-    w.write("{",name," : ",color);
-    if(pred != nil) then w.write("^",pred.name);
-    if(disc >= 0) then w.write(" ",disc);
-    if(fini >= 0) then w.write(",",fini);
-    w.write("}");
+  proc writeFancy(writer){
+    writer.write("{",name," : ",color);
+    if(pred != nil) then writer.write("^",pred.name);
+    if(disc >= 0) then writer.write(" ",disc);
+    if(fini >= 0) then writer.write(",",fini);
+    writer.write("}");
   }
 }
 
@@ -49,7 +49,7 @@ class Edge {
   var dst: unmanaged Node;
   var reversed: bool = false;
   var kind: edgeKind = edgeKind.GRAPH;
-  proc writeThis(w){
+  override proc serialize(writer, ref serializer){
     var ec:string;
     select(kind) {
     when edgeKind.GRAPH do ec = "--->";
@@ -65,7 +65,7 @@ class Edge {
       }
       otherwise halt("invalid edge kind",kind);
     }
-    w.write(src,ec,dst);
+    writer.write(src,ec,dst);
   }
   iter these() {
     if( src != nil) then yield src;
@@ -146,8 +146,8 @@ proc Edge.read(infile: file){
 */
 
 class UndirectedEdge : Edge {
-  proc writeThis(w){
-     w.write(src," -- ",dst);
+  override proc serialize(writer, ref serializer){
+     writer.write(src," -- ",dst);
   }
 }
 

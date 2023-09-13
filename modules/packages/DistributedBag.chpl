@@ -260,6 +260,10 @@ module DistributedBag {
     proc readThis(f) throws {
       compilerError("Reading a DistBag is not supported");
     }
+    @chpldoc.nodoc
+    proc deserialize(reader, ref deserializer) throws {
+      compilerError("Reading a DistBag is not supported");
+    }
 
     @chpldoc.nodoc
     proc init(type eltType, reader: fileReader, ref deserializer) {
@@ -276,6 +280,10 @@ module DistributedBag {
         if iteration < size-1 then ch.write(", ");
       }
       ch.write("]");
+    }
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
 
     forwarding _value;

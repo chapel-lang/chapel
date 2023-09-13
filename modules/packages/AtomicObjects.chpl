@@ -394,6 +394,10 @@ prototype module AtomicObjects {
     proc readThis(f) throws {
       compilerWarning("Reading an ABA is not supported");
     }
+    @chpldoc.nodoc
+    proc deserialize(reader, ref deserializer) throws {
+      compilerWarning("Reading an ABA is not supported");
+    }
 
     @chpldoc.nodoc
     proc init(type __ABA_objType, reader: fileReader, ref deserializer) {
@@ -404,6 +408,10 @@ prototype module AtomicObjects {
     /* Writes an ABA */
     proc writeThis(f) throws {
       f.write("(ABA){cnt=", this.__ABA_cnt, ", obj=", this.getObject(), "}");
+    }
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
 
     forwarding this.getObject()!;
@@ -653,6 +661,10 @@ prototype module AtomicObjects {
     proc readThis(f) throws {
       compilerWarning("Reading an AtomicObject is not supported");
     }
+    @chpldoc.nodoc
+    proc deserialize(reader, ref deserializer) throws {
+      compilerWarning("Reading an AtomicObject is not supported");
+    }
 
     @chpldoc.nodoc
     proc init(type objType,
@@ -666,6 +678,10 @@ prototype module AtomicObjects {
 
     proc writeThis(f) throws {
       f.write(atomicVariable.read());
+    }
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
   }
 }

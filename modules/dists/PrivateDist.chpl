@@ -85,6 +85,10 @@ class Private: BaseDist {
     x.writeln("Private Distribution");
   }
 
+  override proc serialize(writer, ref serializer) throws {
+    writer.writeln("Private Distribution");
+  }
+
   // acts like a singleton
   proc dsiClone() do return _to_unmanaged(this);
 

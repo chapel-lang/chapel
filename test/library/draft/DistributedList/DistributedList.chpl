@@ -516,13 +516,13 @@ module DistributedList {
             }
         }
 
-        proc writeThis(fr) throws {
-            fr.write('[');
+        proc serialize(writer, ref serializer) throws {
+            writer.write('[');
             for (elt, i) in zip(this.these(), 0..) {
-                if i > 0 then fr.write(", ");
-                fr.write(elt);
+                if i > 0 then writer.write(", ");
+                writer.write(elt);
             }
-            fr.write(']');
+            writer.write(']');
         }
 
         // TODO: readThis()?

@@ -416,6 +416,10 @@ module Atomics {
       x.write(read());
     }
 
+    proc const serialize(writer, ref serializer) throws {
+      writer.write(read());
+    }
+
   }
 
   // TODO: should this be an operator method AtomicBool.: ?
@@ -754,6 +758,10 @@ module Atomics {
     @chpldoc.nodoc
     proc const writeThis(x) throws {
       x.write(read());
+    }
+
+    proc const serialize(writer, ref serializer) throws {
+      writer.write(read());
     }
 
   }

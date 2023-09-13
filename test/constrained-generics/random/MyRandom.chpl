@@ -672,14 +672,14 @@ module MyRandom {
     }
 
     @chpldoc.nodoc
-    proc writeThis(f) throws {
-      f.write("RandomStreamInterface(eltType=");
-      f.write(eltType:string);
-      f.write(", parSafe=");
-      f.write(parSafe);
-      f.write(", seed=");
-      f.write(seed);
-      f.write(")");
+    proc serialize(writer, ref serializer) throws {
+      writer.write("RandomStreamInterface(eltType=");
+      writer.write(eltType:string);
+      writer.write(", parSafe=");
+      writer.write(parSafe);
+      writer.write(", seed=");
+      writer.write(seed);
+      writer.write(")");
     }
   }
 
@@ -1279,14 +1279,14 @@ module MyRandom {
       }
 
       @chpldoc.nodoc
-      override proc writeThis(f) throws {
-        f.write("PCGRandomStream(eltType=");
-        f.write(eltType:string);
-        f.write(", parSafe=");
-        f.write(parSafe);
-        f.write(", seed=");
-        f.write(seed);
-        f.write(")");
+      override proc serialize(writer, ref serializer) throws {
+        writer.write("PCGRandomStream(eltType=");
+        writer.write(eltType:string);
+        writer.write(", parSafe=");
+        writer.write(parSafe);
+        writer.write(", seed=");
+        writer.write(seed);
+        writer.write(")");
       }
 
       ///////////////////////////////////////////////////////// CLASS PRIVATE //
@@ -2712,14 +2712,14 @@ module MyRandom {
       }
 
       @chpldoc.nodoc
-      override proc writeThis(f) throws {
-        f.write("NPBRandomStream(eltType=");
-        f.write(eltType:string);
-        f.write(", parSafe=");
-        f.write(parSafe);
-        f.write(", seed=");
-        f.write(seed);
-        f.write(")");
+      override proc serialize(writer, ref serializer) throws {
+        writer.write("NPBRandomStream(eltType=");
+        writer.write(eltType:string);
+        writer.write(", parSafe=");
+        writer.write(parSafe);
+        writer.write(", seed=");
+        writer.write(seed);
+        writer.write(")");
       }
 
       ///////////////////////////////////////////////////////// CLASS PRIVATE //

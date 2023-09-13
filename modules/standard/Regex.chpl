@@ -1068,6 +1068,10 @@ record regex {
     // and there's no way to get the flags
     f.write("new regex(\"", pattern, "\")");
   }
+  @chpldoc.nodoc
+  proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
+  }
 
   @chpldoc.nodoc
   proc ref readThis(f) throws {
@@ -1087,6 +1091,10 @@ record regex {
                                   opts,
                                   this._regex);
       }
+  }
+  @chpldoc.nodoc
+  proc ref deserialize(reader, ref deserializer) throws {
+    readThis(reader);
   }
 
   @chpldoc.nodoc

@@ -246,6 +246,10 @@ class Hashed : BaseDist {
     //  x.writeln("  [", locid, "] ", locDist(locid));
   }
 
+  override proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
+  }
+
   //
   // convert an index into a locale value
   //
@@ -653,6 +657,10 @@ class LocUserMapAssocDom {
     x.write(myInds);
   }
 
+  override proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
+  }
+
 
   // INTERNAL INTERFACE:
 
@@ -1054,6 +1062,10 @@ class LocUserMapAssocArr {
     //      on loc {
     // but it causes deadlock -- see writeThisUsingOn.chpl
     x.write(myElems);
+  }
+
+  override proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
   }
 
   //

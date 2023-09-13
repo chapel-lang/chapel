@@ -136,6 +136,10 @@ module NetworkAtomics {
       x.write(read());
     }
 
+    proc const serialize(writer, ref serializer) throws {
+      writer.write(read());
+    }
+
   }
 
   operator :(rhs: bool, type t:RAtomicBool) {
@@ -335,6 +339,10 @@ module NetworkAtomics {
 
     proc const writeThis(x) throws {
       x.write(read());
+    }
+
+    proc const serialize(writer, ref serializer) throws {
+      writer.write(read());
     }
 
   }

@@ -63,7 +63,7 @@ module Rosslyn
         }
 
 
-        proc writeThis(w) throws
+        override proc serialize(writer, ref serializer) throws
         {
             assert(false,"BenchmarkFactory.writeThis() should be",
                          "overridden in the subclass");

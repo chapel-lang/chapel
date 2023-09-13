@@ -189,6 +189,10 @@ module ChapelSyncvar {
       compilerError("sync variables cannot currently be read - use writeEF/writeFF instead");
     }
 
+    proc deserialize(reader, ref deserializer) throws {
+      compilerError("sync variables cannot currently be read - use writeEF/writeFF instead");
+    }
+
     @chpldoc.nodoc
     proc type deserializeFrom(reader, ref deserializer) throws {
       var ret : this;
@@ -200,6 +204,10 @@ module ChapelSyncvar {
     proc writeThis(x) throws {
       compilerError("sync variables cannot currently be written - apply readFE/readFF() to those variables first");
      }
+
+    proc serialize(writer, ref serializer) throws {
+      compilerError("sync variables cannot currently be written - apply readFE/readFF() to those variables first");
+    }
   }
 
   /*
@@ -869,6 +877,10 @@ module ChapelSyncvar {
       compilerError("single variables cannot currently be read - use writeEF instead");
     }
 
+    proc deserialize(reader, ref deserializer) throws {
+      compilerError("single variables cannot currently be read - use writeEF instead");
+    }
+
     @chpldoc.nodoc
     proc type deserializeFrom(reader, ref deserializer) throws {
       var ret : this;
@@ -880,6 +892,10 @@ module ChapelSyncvar {
     proc writeThis(x) throws {
       compilerError("single variables cannot currently be written - apply readFF() to those variables first");
      }
+
+    proc serialize(writer, ref serializer) throws {
+      compilerError("single variables cannot currently be written - apply readFF() to those variables first");
+    }
   }
 
   /* Read a full ``single`` variable, leaving it full.

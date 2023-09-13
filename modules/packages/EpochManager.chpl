@@ -516,6 +516,10 @@ module EpochManager {
       proc readThis(f) throws {
         compilerError("Reading a Vector is not supported");
       }
+      @chpldoc.nodoc
+      proc deserialize(reader, ref deserializer) throws {
+        compilerError("Reading a Vector is not supported");
+      }
 
       @chpldoc.nodoc
       proc init(type eltType, reader: fileReader, ref deserializer) {
@@ -525,6 +529,10 @@ module EpochManager {
 
       proc writeThis(f) throws {
         f.write("(Vector) {", this.toArray(), "}");
+      }
+      @chpldoc.nodoc
+      override proc serialize(writer, ref serializer) throws {
+        writeThis(writer);
       }
     }
 

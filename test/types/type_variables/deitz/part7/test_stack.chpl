@@ -38,10 +38,10 @@ proc ref stack.pop() : eltType {
   return v;
 }
 
-proc stack.writeThis(f) throws {
+proc stack.serialize(writer, ref serializer) throws {
   var tmp = top;
   while tmp != nil {
-    f.write(tmp!.value, " ");
+    writer.write(tmp!.value, " ");
     tmp = tmp!.next;
   }
 }

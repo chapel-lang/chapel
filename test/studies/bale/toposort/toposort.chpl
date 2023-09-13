@@ -459,23 +459,23 @@ class PermutationMap {
 
   // TODO leader follower iterator
 
-  override proc writeThis( f ){
+  override proc serialize(writer, ref serializer){
     const maxVal = max( (max reduce rowMap), (max reduce columnMap) ) : string;
     const minVal = min( (min reduce rowMap), (min reduce columnMap) ) : string;
     const padding = max( maxVal.size, minVal.size );
     const formatString = "%%%nn -> %%%nn".format( max(2,padding), padding );
     const inSpace = max(padding-2,0);
-    f.writeln("Row map");
-    for i in 0..#inSpace do f.write(" ");
-    f.write("in -> out");
+    writer.writeln("Row map");
+    for i in 0..#inSpace do writer.write(" ");
+    writer.write("in -> out");
     for i in rowDom {
-      f.writeln(formatString.format( i, rowMap[i] ));
+      writer.writeln(formatString.format( i, rowMap[i] ));
     }
-    f.writeln("Column map");
-    for i in 0..#inSpace do f.write(" ");
-    f.writeln("in -> out");
+    writer.writeln("Column map");
+    for i in 0..#inSpace do writer.write(" ");
+    writer.writeln("in -> out");
     for i in columnDom {
-      f.write(formatString.format( i, columnMap[i] ));
+      writer.write(formatString.format( i, columnMap[i] ));
     }
   }
 

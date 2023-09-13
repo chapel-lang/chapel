@@ -76,6 +76,10 @@ module LocaleModel {
       f.write('.'+name_);
     }
 
+    override proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
+
     override proc _getChildCount(): int { return 0; }
 
     iter getChildIndices() : int {

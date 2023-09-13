@@ -3319,6 +3319,9 @@ module ChapelBase {
         halt("Module name is not valid string!");
       }
     }
+    override proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
   }
   var chpl_moduleDeinitFuns = nil: unmanaged chpl_ModuleDeinit?;
 

@@ -404,6 +404,10 @@ record stencilDist {
   proc writeThis(x) {
     chpl_distHelp.writeThis(x);
   }
+
+  proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
+  }
 }
 
 
@@ -603,6 +607,9 @@ class LocStencilArr {
   override proc writeThis(f) throws {
     halt("LocStencilArr.writeThis() is not implemented / should not be needed");
   }
+  override proc serialize(writer, ref serializer) throws {
+    halt("LocStencilArr.serialize() is not implemented / should not be needed");
+  }
 }
 
 private proc makeZero(param rank : int, type idxType) {
@@ -782,6 +789,9 @@ proc StencilImpl.writeThis(x) throws {
   for locid in targetLocDom do
     x.writeln("  [", locid, "] locale ", locDist(locid).locale.id,
       " owns chunk: ", locDist(locid).myChunk);
+}
+override proc StencilImpl.serialize(writer, ref serializer) throws {
+  writeThis(writer);
 }
 
 proc StencilImpl.dsiIndexToLocale(ind: idxType) where rank == 1 {

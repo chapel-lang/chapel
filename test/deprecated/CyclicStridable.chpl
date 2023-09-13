@@ -399,11 +399,11 @@ proc _cyclic_matchArgsShape(type rangeType, type scalarType, args) type {
   return helper(0);
 }
 
-proc Cyclic.writeThis(x) throws {
-  x.writeln(this.type:string);
-  x.writeln("------");
+proc Cyclic.serialize(writer, ref serializer) throws {
+  writer.writeln(this.type:string);
+  writer.writeln("------");
   for locid in targetLocDom do
-    x.writeln(" [", locid, "=", targetLocs(locid), "] owns chunk: ",
+    writer.writeln(" [", locid, "=", targetLocs(locid), "] owns chunk: ",
       locDist(locid).myChunk);
 }
 
@@ -1078,8 +1078,8 @@ class LocCyclicArr {
   // guard against dynamic dispatch resolution trying to resolve
   // write()ing out an array of sync vars and hitting the sync var
   // type's compilerError()
-  override proc writeThis(f) throws {
-    halt("LocCyclicArr.writeThis() is not implemented / should not be needed");
+  override proc serialize(writer, ref serializer) throws {
+    halt("LocCyclicArr.serialize() is not implemented / should not be needed");
   }
 }
 

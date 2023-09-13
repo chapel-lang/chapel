@@ -528,11 +528,16 @@ module BigInteger {
     @deprecated("get_str is deprecated - please use a cast to a string or IO methods to get the string representation")
     proc get_str(base: int = 10): string do return this.getStr(base);
 
-    /* Writes this number to a :type:`~IO.fileWriter` */
+    @chpldoc.nodoc
     proc writeThis(writer) throws {
       var s: string;
       s = this.getStr();
       writer.write(s);
+    }
+
+    /* Writes this number to a :type:`~IO.fileWriter` */
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
   }
 

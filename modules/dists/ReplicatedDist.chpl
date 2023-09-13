@@ -164,8 +164,14 @@ record Replicated {
     return !(d1 == d2);
   }
 
+  @chpldoc.nodoc
   proc writeThis(x) {
     chpl_distHelp.writeThis(x);
+  }
+
+  @chpldoc.nodoc
+  proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
   }
 }
 
@@ -542,6 +548,11 @@ class LocReplicatedArr {
   // type's compilerError()
   override proc writeThis(f) throws {
     halt("LocReplicatedArr.writeThis() is not implemented / should not be needed");
+  }
+
+  @chpldoc.nodoc
+  override proc serialize(writer, ref serializer) throws {
+    halt("LocReplicatedArr.serialize() is not implemented / should not be needed");
   }
 }
 

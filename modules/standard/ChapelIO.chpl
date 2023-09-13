@@ -129,6 +129,15 @@ appropriately before the elements can be read.
   Note that it is not currently possible to read and write circular
   data structures with these mechanisms.
 
+.. _serialize-deserialize:
+
+The `serialize` and `deserialize` Methods
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. warning::
+
+  This section is currently a placeholder for forthcoming documentation.
+
  */
 pragma "module included by default"
 @unstable("The module name 'ChapelIO' is unstable.  If you want to use qualified naming on the symbols within it, please 'use' or 'import' the :mod:`IO` module")
@@ -657,6 +666,11 @@ module ChapelIO {
   }
 
   @chpldoc.nodoc
+  proc locale.serialize(writer, ref serializer) throws {
+    writer.write(this._instance);
+  }
+
+  @chpldoc.nodoc
   proc _ddata.writeThis(f) throws {
     compilerWarning("printing _ddata class");
     f.write("<_ddata class cannot be printed>");
@@ -815,6 +829,11 @@ module ChapelIO {
   }
 
   @chpldoc.nodoc
+  proc range.serialize(writer, ref serializer) throws {
+    writeThis(writer);
+  }
+
+  @chpldoc.nodoc
   proc ref range.readThis(f) throws {
     if hasLowBound() then _low = f.read(_low.type);
 
@@ -853,6 +872,11 @@ module ChapelIO {
   }
 
   @chpldoc.nodoc
+  proc ref range.deserialize(reader, ref deserializer) throws {
+    readThis(reader);
+  }
+
+  @chpldoc.nodoc
   proc range.init(type idxType = int,
                   param bounds : boundKind = boundKind.both,
                   param strides : strideKind = strideKind.one,
@@ -866,6 +890,11 @@ module ChapelIO {
   override proc LocaleModel.writeThis(f) throws {
     f._writeLiteral("LOCALE");
     f.write(chpl_id());
+  }
+
+  @chpldoc.nodoc
+  override proc LocaleModel.serialize(writer, ref serializer) throws {
+    writeThis(writer);
   }
 
   /* Errors can be printed out. In that event, they will
