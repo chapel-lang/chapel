@@ -164,6 +164,12 @@ def compute_internal_compile_link_args(runtime_subdir):
         extend2(tgt_compile, chpl_re2.get_compile_args())
         extend2(tgt_link, chpl_re2.get_link_args())
 
+    # The following communication-oriented options have been moved to
+    # the end of this sequence of third-party package options because
+    # GASNet can involve system library paths which we want to come
+    # after all of our bundled/local arguments to avoid conflicts.
+    # See issue #23362 for a potential way to do this in a more
+    # principled way going forward.
     if chpl_comm.get() == 'ofi':
         extend2(tgt_compile, chpl_libfabric.get_compile_args())
         extend2(tgt_link, chpl_libfabric.get_link_args())
