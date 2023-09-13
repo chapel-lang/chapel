@@ -99,10 +99,7 @@ module URL {
     use Curl;
     use CurlQioIntegration;
     var f = openCurlFile(url, ioMode.r, style);
-    // TODO: change this back to f.reader when the fromOpenUrlReader arg is
-    // removed
-    return f.readerHelper(kind=kind, locking=locking,
-                          region=start..#end, fromOpenUrlReader=true);
+    return f.reader(kind=kind, locking=locking, region=start..#end);
   }
 
   pragma "last resort"
