@@ -46,11 +46,6 @@ def consecutive_decls(node):
 
     yield from recurse(node)
 
-def each(node, pattern):
-    for child in chapel.preorder(node):
-        if chapel.match_pattern(child, pattern) is not None:
-            yield child
-
 def ignores_rule(node, rulename):
     ag = node.attribute_group()
 
@@ -75,7 +70,7 @@ def report_violation(node, name):
 
 def check_basic_rule(root, rule):
     (name, nodetype, func) = rule
-    for node in each(root, nodetype):
+    for (node, _) in chapel.each_matching(root, nodetype):
         if ignores_rule(node, name): continue
 
         if not func(node): report_violation(node, name)

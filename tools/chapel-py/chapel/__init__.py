@@ -193,3 +193,9 @@ def match_pattern(ast, pattern):
             raise Exception("Invalid pattern!")
 
     return variables if match_inner(ast, pattern) else None
+
+def each_matching(node, pattern):
+    for child in preorder(node):
+        variables = match_pattern(child, pattern)
+        if variables is not None:
+            yield (child, variables)
