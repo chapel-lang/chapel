@@ -71,6 +71,8 @@ static void        replaceFunctionWithInstantiationsOfPrimitive(FnSymbol* fn);
 static void        fixupQueryFormals(FnSymbol* fn);
 static void        fixupCastFormals(FnSymbol* fn);
 
+static void       fixupExplicitGenericDomain(CallExpr* ce);
+
 static void        updateInitMethod (FnSymbol* fn);
 
 static void        checkUseBeforeDefs();
@@ -592,6 +594,9 @@ static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
       processSyntacticTupleAssignment(call);
       if (call->isPrimitive(PRIM_TYPEOF))
         addTypeBlocksForParentTypeOf(call);
+
+      // must go last, replaces the call
+      fixupExplicitGenericDomain(call);
     }
   }
 
@@ -4868,6 +4873,33 @@ static void addToWhereClause(FnSymbol*  fn,
   where->replace(combine);
   combine->insertAtTail(where);
   combine->insertAtTail(test);
+}
+
+static void fixupExplicitGenericDomain(CallExpr* ce) {
+  // fixup the pattern `(CallExpr _domain ?)` to be `(_domain(?))`,
+  // marking the `DefExpr` as generic
+
+  // if its a call like `_domain ?`, make it `_domain(?)` and MARKED_GENERIC
+  SymExpr* symExpr = nullptr;
+  bool actIsQuestion = false;
+  if (auto se = toSymExpr(ce->baseExpr)) {
+    symExpr = se;
+  }
+  if (ce->numActuals() == 1) {
+    if (auto se = toSymExpr(ce->get(1))) {
+      actIsQuestion = se->symbol() == gUninstantiated;
+    }
+  }
+
+  if (symExpr && actIsQuestion) {
+    // if the parent expr is a def, mark its symbol as MARKED_GENERIC
+    if (auto def = toDefExpr(ce->parentExpr)) {
+      def->sym->addFlag(FLAG_MARKED_GENERIC);
+    }
+    symExpr->remove();
+    ce->replace(symExpr);
+  }
+
 }
 
 /************************************* | **************************************
