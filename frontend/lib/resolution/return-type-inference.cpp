@@ -951,11 +951,11 @@ static bool helpComputeReturnType(Context* context,
         result = dt->parSafe();
       } else if (untyped->name() == "isRectangular") {
         auto val = BoolParam::get(context, dt->kind() == DomainType::Kind::Rectangular);
-        auto type = BoolType::get(context, 0);
+        auto type = BoolType::get(context);
         result = QualifiedType(QualifiedType::PARAM, type, val);
       } else if (untyped->name() == "isAssociative") {
         auto val = BoolParam::get(context, dt->kind() == DomainType::Kind::Associative);
-        auto type = BoolType::get(context, 0);
+        auto type = BoolType::get(context);
         result = QualifiedType(QualifiedType::PARAM, type, val);
       } else {
         CHPL_ASSERT(false && "unhandled compiler-generated domain method");

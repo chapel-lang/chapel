@@ -48,8 +48,7 @@ PrimitiveType::getWithNameAndWidth(Context* context,
     if (bitwidth == 8 || bitwidth == 16 || bitwidth == 32 || bitwidth == 64)
       return UintType::get(context, bitwidth);
   if (name == USTR("bool"))
-    if (bitwidth == 8 || bitwidth == 16 || bitwidth == 32 || bitwidth == 64)
-      return BoolType::get(context, bitwidth);
+    return BoolType::get(context);
   if (name == USTR("real"))
     if (bitwidth == 32 || bitwidth == 64)
       return RealType::get(context, bitwidth);

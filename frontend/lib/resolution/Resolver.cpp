@@ -3107,12 +3107,12 @@ types::QualifiedType Resolver::typeForBooleanOp(const uast::OpCall* op) {
       // this case is only hit when the result is false (for &&)
       // or when the result is true (for ||), so return !isAnd.
       return QualifiedType(QualifiedType::PARAM,
-                             BoolType::get(context, 0),
+                             BoolType::get(context),
                              BoolParam::get(context, !isAnd));
     } else {
       // otherwise just return a Bool value
       return QualifiedType(QualifiedType::CONST_VAR,
-                             BoolType::get(context, 0));
+                             BoolType::get(context));
     }
   }
 }
@@ -3157,7 +3157,7 @@ QualifiedType Resolver::typeForTypeOperator(const OpCall* op,
     bool opNotEqual = op->op() == USTR("!=");
     bool compareResult = lt == rt;
     return QualifiedType(QualifiedType::PARAM,
-                         BoolType::get(context, 0),
+                         BoolType::get(context),
                          BoolParam::get(context, opNotEqual ^ compareResult));
   }
   CHPL_ASSERT(false && "not implemented!");
