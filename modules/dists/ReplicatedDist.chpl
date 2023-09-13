@@ -22,7 +22,7 @@
 // THE REPLICATED DISTRIBUTION IMPLEMENTATION
 //
 // Classes defined:
-//  Replicated     -- Global distribution descriptor
+//  ReplicatedImpl     -- Global distribution descriptor
 //  ReplicatedDom      -- Global domain descriptor
 //  LocReplicatedDom   -- Local domain descriptor
 //  ReplicatedArr      -- Global array descriptor
@@ -48,12 +48,12 @@ config param traceReplicatedDist = false;
 //   nicer example - pull from primers/distributions.chpl
 
 /*
-This Replicated distribution causes a domain and its arrays
+This ``replicatedDist`` distribution causes a domain and its arrays
 to be replicated across the desired locales (all the locales by default).
 An array receives a distinct set of elements - a "replicand" -
 allocated on each locale.
 
-In other words, a Replicated-distributed domain has
+In other words, a replicated-distributed domain has
 an implicit additional dimension - over the locales,
 making it behave as if there is one copy of its indices per locale.
 
@@ -74,7 +74,7 @@ referring to the domain or array.
   .. code-block:: chapel
 
     const Dbase = {1..5};  // A default-distributed domain
-    const Drepl = Dbase dmapped Replicated();
+    const Drepl = Dbase dmapped replicatedDist();
     var Abase: [Dbase] int;
     var Arepl: [Drepl] int;
 
@@ -93,13 +93,13 @@ distribution.
 
 **Initializer Arguments**
 
-The ``Replicated`` class initializer is defined as follows:
+The ``replicatedDist`` class initializer is defined as follows:
 
   .. code-block:: chapel
 
     proc replicatedDist.init(
       targetLocales: [] locale = Locales,
-      purposeMessage: string = "used to create a Replicated")
+      purposeMessage: string = "used to create a replicatedDist")
 
 The optional ``purposeMessage`` may be useful for debugging
 when the initializer encounters an error.
@@ -117,7 +117,7 @@ record replicatedDist {
   forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(unmanaged ReplicatedImpl);
 
   proc init(targetLocales: [] locale = Locales,
-            purposeMessage = "used to create a Replicated") {
+            purposeMessage = "used to create a replicatedDist") {
     const value = new unmanaged ReplicatedImpl(targetLocales, purposeMessage);
 
     this.chpl_distHelp = new chpl_PrivatizedDistHelper(
@@ -187,7 +187,7 @@ class ReplicatedImpl : BaseDist {
 // initializer: replicate over the given locales
 // (by default, over all locales)
 proc ReplicatedImpl.init(targetLocales: [] locale = Locales,
-                         purposeMessage: string = "used to create a Replicated")
+                         purposeMessage: string = "used to create a replicatedDist")
 {
   init this;
 
