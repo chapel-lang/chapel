@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+@unstable("BlockCycDist is unstable and may change in the future")
+prototype module BlockCycDist {
 //
 // BlockCyclic Distribution
 //
@@ -1310,3 +1312,4 @@ proc _computeBlockCyclic(waylo, numelems, lo, wayhi, numblocks, blocknum) {
 
   return (blo, bhi);
 }
+} // BlockCycDist
