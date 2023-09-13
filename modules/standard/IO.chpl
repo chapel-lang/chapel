@@ -5093,8 +5093,8 @@ private proc openReaderHelper(path:string,
   : fileReader(kind, locking, dt) throws {
 
   var fl:file = try open(path, ioMode.r);
-  return try fl.reader(kind, locking, region, hints, style,
-                       deserializer=deserializer);
+  return try fl.readerHelper(kind, locking, region, hints, style,
+                             deserializer=deserializer);
 }
 
 @deprecated(notes="openwriter is deprecated - please use :proc:`openWriter` instead")
