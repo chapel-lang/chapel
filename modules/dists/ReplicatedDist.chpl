@@ -552,7 +552,7 @@ class LocReplicatedArr {
 
   @chpldoc.nodoc
   override proc serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    halt("LocReplicatedArr.serialize() is not implemented / should not be needed");
   }
 }
 

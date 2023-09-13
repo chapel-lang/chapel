@@ -608,7 +608,7 @@ class LocStencilArr {
     halt("LocStencilArr.writeThis() is not implemented / should not be needed");
   }
   override proc serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    halt("LocStencilArr.serialize() is not implemented / should not be needed");
   }
 }
 

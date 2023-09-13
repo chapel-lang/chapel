@@ -603,7 +603,7 @@ class LocSparseBlockArr {
   }
 
   override proc serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    halt("LocSparseBlockArr.serialize() is not implemented / should not be needed");
   }
 }
 

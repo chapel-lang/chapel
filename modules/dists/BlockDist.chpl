@@ -647,7 +647,7 @@ class LocBlockArr {
   }
 
   override proc serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    halt("LocBlockArr.serialize() is not implemented / should not be needed");
   }
 
   proc deinit() {

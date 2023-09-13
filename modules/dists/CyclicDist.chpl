@@ -1280,7 +1280,7 @@ class LocCyclicArr {
     halt("LocCyclicArr.writeThis() is not implemented / should not be needed");
   }
   override proc serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    halt("LocCyclicArr.serialize() is not implemented / should not be needed");
   }
 }
 
