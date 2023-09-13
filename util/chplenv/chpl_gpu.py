@@ -242,8 +242,7 @@ def _validate_cuda_version_impl():
         if llvm == "system":
             llvm_config = chpl_llvm.find_system_llvm_config()
             llvm_ver_str = chpl_llvm.get_llvm_config_version(llvm_config)
-            llvm_major_ver = llvm_ver_str.strip().split(".")[0]
-            if int(llvm_major_ver) <= 15:
+            if is_ver_in_range(llvm_ver_str, "0", "16"):
                 _reportMissingGpuReq(
                         "LLVM versions before 16 do not support CUDA 12. "
                         "Your LLVM (CHPL_LLVM=system) version is {}. "
