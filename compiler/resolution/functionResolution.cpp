@@ -13938,6 +13938,7 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
       genericWithDefaults = at->isGenericWithDefaults();
 
     if (declType->symbol->hasFlag(FLAG_GENERIC) &&
+        declType != dtAny && // workaround for interfaces
         !genericWithDefaults &&
         !sym->hasFlag(FLAG_MARKED_GENERIC) &&
         !sym->hasFlag(FLAG_RET_TYPE_MARKED_GENERIC) &&
