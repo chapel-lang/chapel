@@ -3,9 +3,9 @@ use IO;
 record MyRecord {
   var i: int;
   proc init(i: int = 0) { this.i = i; }
-  proc init(f: fileReader(?)) throws {
+  proc init(reader, ref deserializer) throws {
     this.init();
-    this.i = f.readln(int);
+    deserialize(reader, deserializer);
   }
 }
 
@@ -16,14 +16,14 @@ config const debug = true;
 // Note that fileName not exist or have no contents
 var f = open(fileName, ioMode.cwr);
 
-proc ref MyRecord.readThis(r: fileReader(?)) throws {
-  i = r.read(int);
-  r.readNewline();
+proc ref MyRecord.deserialize(reader, ref deserializer) throws {
+  i = reader.read(int);
+  reader.readNewline();
 }
 
-proc MyRecord.writeThis(w: fileWriter(?)) throws {
-  w.write(i);
-  w.writeNewline();
+proc MyRecord.serialize(writer, ref serializer) throws {
+  writer.write(i);
+  writer.writeNewline();
 }
 
 {

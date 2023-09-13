@@ -5,6 +5,13 @@ record A {
   var x: int;
   var b: B;
 
+  proc serialize(writer, ref serializer) throws {
+    var ser = serializer.startRecord(writer, "A", 2);
+    ser.writeField("x", x);
+    ser.writeField("b", b);
+    ser.endRecord();
+  }
+
   proc ref deserialize(reader: fileReader(?), ref deserializer: reader.deserializerType) {
     writeln("IN A.deserialize");
     var des = deserializer.startRecord(reader, "A");
@@ -34,6 +41,12 @@ record A {
 
 record B {
   var t: (int, real);
+
+  proc serialize(writer, ref serializer) throws {
+    var ser = serializer.startRecord(writer, "B", 1);
+    ser.writeField("t", t);
+    ser.endRecord();
+  }
 
   proc ref deserialize(reader: fileReader(?), ref deserializer: reader.deserializerType) {
     writeln("IN B.deserialize");

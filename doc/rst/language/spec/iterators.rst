@@ -232,13 +232,13 @@ typically made by iterating over it in a loop.
 
    .. BLOCK-test-chapelnoprint
 
-      proc Tree.writeThis(x)
+      override proc Tree.serialize(writer, ref serializer)
       {
         var first = true;
         for node in postorder(this) {
           if first then first = false;
-            else x.write(" ");
-          write(node);
+            else writer.write(" ");
+          writer.write(node);
         }
       }
       writeln("Tree Data");

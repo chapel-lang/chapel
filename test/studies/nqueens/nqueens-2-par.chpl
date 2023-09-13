@@ -187,27 +187,27 @@ proc Board.nextPlacementIsLegal(col: int): bool {
 //
 config var show1line: bool = true;
 
-override proc Board.writeThis(f) throws {
+override proc Board.serialize(writer, ref serializer) throws {
   if boardSize <= 0 {
-    f.write( taskNum, ": the board is empty");
+    writer.write( taskNum, ": the board is empty");
     return;
   }
   var notFilledMsg = "";
   if lastfilled < boardSize then notFilledMsg =
     " row(s) "+ (lastfilled + 1):string + " to " + boardSize:string + " are not filled";
   if show1line {
-    f.write(
+    writer.write(
             taskNum, ": ",
             [row in 1..lastfilled] (row, queencol(row)),
             notFilledMsg);
   } else {
-    for {1..boardSize} do f.write("-"); f.writeln();
+    for {1..boardSize} do writer.write("-"); writer.writeln();
     for row in 1..lastfilled {
       for col in 1..boardSize do
-        f.write(if queencol(row) == col then "*" else " ");
-      f.writeln();
+        writer.write(if queencol(row) == col then "*" else " ");
+      writer.writeln();
     }
-    if notFilledMsg != "" then f.writeln(notFilledMsg);
-    for {1..boardSize} do f.write("-");
+    if notFilledMsg != "" then writer.writeln(notFilledMsg);
+    for {1..boardSize} do writer.write("-");
   }
 }

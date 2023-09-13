@@ -171,7 +171,7 @@ var tree = new Tree( "a",
 // This method uses the postorder iterator to print out each node.
 // It uses the "first" flag to avoid printing a leading space.
 //
-proc Tree.writeThis(x)
+override proc Tree.serialize(writer, ref serializer)
 {
   var first = true;
 
@@ -179,9 +179,9 @@ proc Tree.writeThis(x)
     if first then
       first = false;
     else
-      x.write(" ");
+      writer.write(" ");
 
-    x.write(node.data);
+    writer.write(node.data);
   }
 }
 

@@ -14,9 +14,9 @@ module Strassen
         {
             return new unmanaged Strassen("name", false, n);
         }
-        override proc writeThis(w) throws
+        override proc serialize(writer, ref serializer) throws
         {
-          w.write("StrassenFactory ", n);
+          writer.write("StrassenFactory ", n);
         }
 
     }
@@ -24,9 +24,9 @@ module Strassen
     class Strassen : Benchmark
     {
         var n;
-        proc writeThis(w) throws
+        proc serialize(writer, ref serializer) throws
         {
-          w.write("Strassen ", n);
+          writer.write("Strassen ", n);
         }
         override proc runKernel()
         {

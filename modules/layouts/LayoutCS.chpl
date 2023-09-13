@@ -18,6 +18,9 @@
  * limitations under the License.
  */
 
+@unstable("LayoutCS is unstable and may change in the future")
+prototype module LayoutCS {
+
 import RangeChunk;
 
 @chpldoc.nodoc
@@ -747,3 +750,5 @@ class CSArr: BaseSparseArrImpl(?) {
     }
   }
 } // CSArr
+
+} // LayoutCS

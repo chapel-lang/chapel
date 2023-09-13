@@ -856,6 +856,11 @@ module ChapelArray {
       f.read(_value);
     }
 
+    @chpldoc.nodoc
+    proc ref deserialize(reader, ref deserializer) throws {
+      readThis(reader);
+    }
+
     // TODO: Can't this be an initializer?
     @chpldoc.nodoc
     proc type deserializeFrom(reader, ref deserializer) throws {
@@ -1470,6 +1475,18 @@ module ChapelArray {
         checkSlice((...d.getIndices()), value=_value);
 
       return chpl__localSliceDefaultArithArrHelp(d);
+    }
+
+    @unstable("tryCopy() is subject to change in the future.")
+    proc tryCopy() throws {
+      use Reflection;
+      if !(__primitive("resolves", this.domain.
+                       tryCreateArray(this.eltType))) then
+        compilerError("cannot call 'tryCopy' on arrays that do not" +
+                      " support a 'tryCreateArray' method.");
+      var res = this.domain.tryCreateArray(this.eltType);
+      res = this;
+      return res;
     }
 
     pragma "no copy return"

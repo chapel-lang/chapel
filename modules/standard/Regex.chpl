@@ -1068,6 +1068,10 @@ record regex {
     // and there's no way to get the flags
     f.write("new regex(\"", pattern, "\")");
   }
+  @chpldoc.nodoc
+  proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
+  }
 
   @chpldoc.nodoc
   proc ref readThis(f) throws {
@@ -1087,6 +1091,10 @@ record regex {
                                   opts,
                                   this._regex);
       }
+  }
+  @chpldoc.nodoc
+  proc ref deserialize(reader, ref deserializer) throws {
+    readThis(reader);
   }
 
   @chpldoc.nodoc
@@ -1124,21 +1132,6 @@ inline operator :(x: regex(?exprType), type t: exprType) {
     try! pattern = t.createCopyingBuffer(cs, len);
   }
   return pattern;
-}
-
-
-// Cast string to regex
-@chpldoc.nodoc
-@deprecated(notes="Casting strings to regex is deprecated. Use new regex(string) from the Regex module instead.")
-inline operator :(x: string, type t: regex(string)) throws {
-  return new regex(x);
-}
-
-// Cast bytes to regex
-@chpldoc.nodoc
-@deprecated(notes="Casting bytes to regex is deprecated. Use new regex(bytes) from the Regex module instead.")
-inline operator :(x: bytes, type t: regex(bytes)) throws {
-  return new regex(x);
 }
 
 /* Search the receiving string for the result of a compiled regular

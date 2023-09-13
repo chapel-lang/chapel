@@ -18,6 +18,9 @@
  * limitations under the License.
  */
 
+@unstable("PrivateDist is unstable and may change in the future")
+prototype module PrivateDist {
+
 use ChplConfig only compiledForSingleLocale;
 
 //
@@ -83,6 +86,10 @@ class Private: BaseDist {
 
   proc writeThis(x) throws {
     x.writeln("Private Distribution");
+  }
+
+  override proc serialize(writer, ref serializer) throws {
+    writer.writeln("Private Distribution");
   }
 
   // acts like a singleton
@@ -357,3 +364,5 @@ record chpl_privateDistCleanupWrapper {
 proc deinit() {
   chpl_privateCW.val = chpl_privateDist;
 }
+
+} // PrivateDist

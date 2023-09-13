@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+@unstable("HashedDist is unstable and may change in the future")
+prototype module HashedDist {
 
 config param debugUserMapAssoc = false;
 
@@ -244,6 +246,10 @@ class Hashed : BaseDist {
     x.writeln("resulting in: ");
     //for locid in targetLocDom do
     //  x.writeln("  [", locid, "] ", locDist(locid));
+  }
+
+  override proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
   }
 
   //
@@ -653,6 +659,10 @@ class LocUserMapAssocDom {
     x.write(myInds);
   }
 
+  override proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
+  }
+
 
   // INTERNAL INTERFACE:
 
@@ -1056,6 +1066,10 @@ class LocUserMapAssocArr {
     x.write(myElems);
   }
 
+  override proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
+  }
+
   //
   // query for the number of local array elements
   //
@@ -1072,3 +1086,5 @@ class LocUserMapAssocArr {
     return locDom.myInds.dim(1).boundsCheck(x.dim(1));
   }
 }
+
+} // HashedDist

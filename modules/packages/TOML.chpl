@@ -844,6 +844,10 @@ used to recursively hold tables and respective values
     override proc writeThis(f) throws {
       writeTOML(f);
     }
+    @chpldoc.nodoc
+    override proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
 
     /* Write a Table to channel f in TOML format */
     proc writeTOML(f) {
@@ -1353,6 +1357,10 @@ module TomlReader {
     proc readThis(f) throws {
       compilerError("Reading a Tokens type is not supported");
     }
+    @chpldoc.nodoc
+    proc deserialize(reader, ref deserializer) throws {
+      compilerError("Reading a Tokens type is not supported");
+    }
 
     @chpldoc.nodoc
     proc init(reader: fileReader, ref deserializer) {
@@ -1362,6 +1370,10 @@ module TomlReader {
 
     override proc writeThis(f) throws {
       f.write(this.A.toArray());
+    }
+    @chpldoc.nodoc
+    override proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
   }
 }

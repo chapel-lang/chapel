@@ -215,7 +215,7 @@ proc chplVersionError(brick:borrowed Toml) {
    from the Mason.toml. Starts at the root of the
    project and continues down dep tree recursively
    until each dep is recorded */
-private proc createDepTree(root: Toml(?)) {
+private proc createDepTree(root: Toml) {
   var dp: domain(string);
   var dps: [dp] shared Toml?;
   var depTree = new shared Toml(dps);
@@ -284,7 +284,7 @@ private proc createDepTree(root: Toml(?)) {
   return depTree;
 }
 
-private proc createDepTrees(depTree: Toml(?), ref deps: list(shared Toml), name: string) : shared Toml {
+private proc createDepTrees(depTree: Toml, ref deps: list(shared Toml), name: string) : shared Toml {
   var depList: list(shared Toml?);
   while deps.size > 0 {
     var dep = deps[0];
@@ -326,7 +326,7 @@ private proc createDepTrees(depTree: Toml(?), ref deps: list(shared Toml), name:
   return depTree;
 }
 
-private proc addGitDeps(depTree: Toml(?), ref gitDeps) {
+private proc addGitDeps(depTree: Toml, ref gitDeps) {
   //val url branch revision
   for key in gitDeps {
     if !depTree.pathExists(key[0]) {
@@ -459,7 +459,7 @@ private proc retrieveGitDep(name: string, branch: string) {
 
 /* Checks if a dependency has deps; if so, the
    dependencies are returned as a (string, Toml) */
-private proc getDependencies(tomlTbl: Toml(?)) {
+private proc getDependencies(tomlTbl: Toml) {
   var depsD: domain(1);
   var deps: list((string, shared Toml?));
   for k in tomlTbl.A.keys() {
@@ -472,7 +472,7 @@ private proc getDependencies(tomlTbl: Toml(?)) {
   return deps;
 }
 
-private proc getGitDeps(tomlTbl: Toml(?)) {
+private proc getGitDeps(tomlTbl: Toml) {
   var gitDeps: list((string, string, shared Toml?));
   for k in tomlTbl["dependencies"]!.A.keys() {
     for (a, d) in allFields(tomlTbl["dependencies"]![k]!) {

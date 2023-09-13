@@ -129,11 +129,7 @@ By default, parallelism within each locale is applied to that locale's
 local, strided block of indices by creating a task for each available
 processor core (or the number of local indices if it is less than the
 number of cores). The local domain indices are then statically divided
-as evenly as possible between those tasks.  This default can be
-modified by changing the values of ``dataParTasksPerLocale``,
-``dataParIgnoreRunningTasks``, and ``dataParMinGranularity`` in the
-``cyclicDist``'s initializer:
-
+as evenly as possible between those tasks.
 
 **Initializer Arguments**
 
@@ -143,12 +139,7 @@ The ``cyclicDist`` initializer is defined as follows:
 
     proc cyclicDist.init(
       startIdx,
-      targetLocales: [] locale = Locales,
-      dataParTasksPerLocale     = // value of  dataParTasksPerLocale      config const,
-      dataParIgnoreRunningTasks = // value of  dataParIgnoreRunningTasks  config const,
-      dataParMinGranularity     = // value of  dataParMinGranularity      config const,
-      param rank: int  = // inferred from startIdx argument,
-      type idxType     = // inferred from startIdx argument )
+      targetLocales: [] locale = Locales)
 
 The argument ``startIdx`` is a tuple of integers defining an index that
 will be distributed to the first locale in ``targetLocales``.
@@ -162,18 +153,6 @@ or be ``1``.  If the rank of ``targetLocales`` is ``1``, a greedy
 heuristic is used to reshape the array of target locales so that it
 matches the rank of the distribution and each dimension contains an
 approximately equal number of indices.
-
-The arguments ``dataParTasksPerLocale``, ``dataParIgnoreRunningTasks``,
-and ``dataParMinGranularity`` set the knobs that are used to
-control intra-locale data parallelism for cyclic-distributed domains
-and arrays in the same way that the like-named config constants
-control data parallelism for ranges and default-distributed domains
-and arrays.
-
-The ``rank`` and ``idxType`` arguments are inferred from the
-``startIdx`` argument unless explicitly set.
-They must match the rank and index type of the domains
-"dmapped" using that Cyclic instance.
 
 **Convenience Factory Methods**
 
@@ -261,6 +240,8 @@ record cyclicDist {
 
   forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(unmanaged CyclicImpl(rank, idxType));
 
+  pragma "last resort"
+  @unstable("passing arguments other than 'boundingBox' and 'targetLocales' to 'cyclicDist' is currently unstable")
   proc init(startIdx,
             targetLocales: [] locale = Locales,
             dataParTasksPerLocale=getDataParTasksPerLocale(),
@@ -284,6 +265,17 @@ record cyclicDist {
                             then _newPrivatizedClass(value)
                             else nullPid,
                           value);
+  }
+
+  proc init(startIdx,
+            targetLocales: [] locale = Locales)
+    where isTuple(startIdx) || isIntegral(startIdx)
+  {
+    this.init(startIdx, targetLocales,
+              /* by specifying even one unstable argument, this should select
+                 the whole unstable constructor, which has defaults for everything
+                 else. */
+              dataParTasksPerLocale=getDataParTasksPerLocale());
   }
 
     proc init(_pid : int, _instance, _unowned : bool) {
@@ -331,6 +323,9 @@ record cyclicDist {
 
   proc writeThis(x) {
     chpl_distHelp.writeThis(x);
+  }
+  proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
   }
 }
 
@@ -580,6 +575,9 @@ proc CyclicImpl.writeThis(x) throws {
   for locid in targetLocDom do
     x.writeln(" [", locid, "=", targetLocs(locid), "] owns chunk: ",
       locDist(locid).myChunk);
+}
+override proc CyclicImpl.serialize(writer, ref serializer) throws {
+  writeThis(writer);
 }
 
 proc CyclicImpl.targetLocsIdx(i: idxType) {
@@ -1272,6 +1270,9 @@ class LocCyclicArr {
   // type's compilerError()
   override proc writeThis(f) throws {
     halt("LocCyclicArr.writeThis() is not implemented / should not be needed");
+  }
+  override proc serialize(writer, ref serializer) throws {
+    halt("LocCyclicArr.serialize() is not implemented / should not be needed");
   }
 }
 

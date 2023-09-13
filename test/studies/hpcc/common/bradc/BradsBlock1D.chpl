@@ -214,8 +214,8 @@ class Block1DDom {
   //
   // the print method for the domain
   //
-  proc writeThis(x) throws {
-    x.write(whole);
+  override proc serialize(writer, ref serializer) throws {
+    writer.write(whole);
   }
 
   //
@@ -276,8 +276,8 @@ class LocBlock1DDom {
   //
   // how to write out this locale's indices
   //
-  proc writeThis(x) throws {
-    x.write(myBlock);
+  override proc serialize(writer, ref serializer) throws {
+    writer.write(myBlock);
   }
 
   //
@@ -373,7 +373,7 @@ class Block1DArr {
   //
   // how to print out the whole array, sequentially
   //
-  proc writeThis(x) throws {
+  override proc serialize(writer, ref serializer) throws {
     var first = true;
     for loc in dom.dist.targetLocs {
       // May want to do something like the following:
@@ -383,9 +383,9 @@ class Block1DArr {
           if (first) {
             first = false;
           } else {
-            x.write(" ");
+            writer.write(" ");
           }
-          x.write(locArr(loc));
+          writer.write(locArr(loc));
         }
         //    }
       stdout.flush();
@@ -445,11 +445,11 @@ class LocBlock1DArr {
   //
   // prints out this locale's piece of the array
   //
-  proc writeThis(x) throws {
+  override proc serialize(writer, ref serializer) throws {
     // May want to do something like the following:
     //      on loc {
     // but it causes deadlock -- see writeThisUsingOn.chpl
-    x.write(myElems);
+    writer.write(myElems);
   }
 
   //

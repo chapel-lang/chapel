@@ -59,6 +59,7 @@
        change.
 
 */
+@unstable("The Random module is unstable and may change in the future")
 module Random {
 
   public use RandomSupport;
@@ -722,6 +723,11 @@ module Random {
       f.write(", parSafe=", parSafe);
       f.write(", seed=", seed, ")");
     }
+
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
   }
 
   // An apparent bug prevents this from working.
@@ -1372,6 +1378,11 @@ module Random {
         f.write("PCGRandomStream(eltType=", eltType:string);
         f.write(", parSafe=", parSafe);
         f.write(", seed=", seed, ")");
+      }
+
+      @chpldoc.nodoc
+      override proc serialize(writer, ref serializer) throws {
+        writeThis(writer);
       }
 
       ///////////////////////////////////////////////////////// CLASS PRIVATE //
@@ -2856,6 +2867,11 @@ module Random {
         f.write("NPBRandomStream(eltType=", eltType:string);
         f.write(", parSafe=", parSafe);
         f.write(", seed=", seed, ")");
+      }
+
+      @chpldoc.nodoc
+      override proc serialize(writer, ref serializer) throws {
+        writeThis(writer);
       }
 
       ///////////////////////////////////////////////////////// CLASS PRIVATE //

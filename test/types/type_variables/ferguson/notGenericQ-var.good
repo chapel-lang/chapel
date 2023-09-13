@@ -1,0 +1,3 @@
+notGenericQ-var.chpl:4: error: invalid type specifier 'R(?)'
+notGenericQ-var.chpl:1: note: type 'R' is not generic
+notGenericQ-var.chpl:4: note: did you forget the 'new' keyword?

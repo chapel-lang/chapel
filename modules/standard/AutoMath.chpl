@@ -2700,18 +2700,14 @@ module AutoMath {
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'gcd' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   proc gcd(in a: int,in b: int): int {
+    (a, b) = (abs(a), abs(b));
     return chpl_gcd(a, b);
   }
 
-  proc chpl_gcd(in a: int,in b: int): int {
-     a = abs(a);
-     b = abs(b);
-     var r: int;
-     while(b != 0) {
-       r = a % b;
-       a = b;
-       b = r;
-     }
+  proc chpl_gcd(in a,in b) {
+    while(b != 0) {
+      (a, b) = (b, a % b);
+    }
     return a;
   }
 

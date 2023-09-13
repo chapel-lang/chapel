@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+@unstable("BlockCycDist is unstable and may change in the future")
+prototype module BlockCycDist {
 //
 // BlockCyclic Distribution
 //
@@ -327,6 +329,9 @@ proc BlockCyclic.writeThis(x) throws {
   for locid in targetLocDom do
     x.writeln("  [", locid, "] ", locDist(locid));
 }
+override proc BlockCyclic.serialize(writer, ref serializer) throws {
+  writeThis(writer);
+}
 
 //
 // convert an index into a locale value
@@ -489,6 +494,9 @@ proc LocBlockCyclic.writeThis(x) throws {
     localeid = here.id;
   }
   x.write("locale ", localeid, " owns blocks: ", myStarts);
+}
+override proc LocBlockCyclic.serialize(writer, ref serializer) throws {
+  writeThis(writer);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -780,6 +788,9 @@ proc LocBlockCyclicDom.computeFlatInds() {
 //
 proc LocBlockCyclicDom.writeThis(x) throws {
   x.write(myStarts);
+}
+override proc LocBlockCyclicDom.serialize(writer, ref serializer) throws {
+  writeThis(writer);
 }
 
 proc LocBlockCyclicDom.enumerateBlocks() {
@@ -1202,6 +1213,9 @@ class LocBlockCyclicArr {
   override proc writeThis(f) throws {
     halt("LocBlockCyclicArr.writeThis() is not implemented / should not be needed");
   }
+  override proc serialize(writer, ref serializer) throws {
+    halt("LocBlockCyclicArr.serialize() is not implemented / should not be needed");
+  }
 }
 
 
@@ -1298,3 +1312,4 @@ proc _computeBlockCyclic(waylo, numelems, lo, wayhi, numblocks, blocknum) {
 
   return (blo, bhi);
 }
+} // BlockCycDist

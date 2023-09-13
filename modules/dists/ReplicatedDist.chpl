@@ -32,6 +32,9 @@
 // - support other kinds of domains
 // - allow run-time change in locales
 
+@unstable("ReplicatedDist is unstable and may change in the future")
+prototype module ReplicatedDist {
+
 use DSIUtil;
 
 // trace certain DSI methods as they are being invoked
@@ -153,19 +156,25 @@ record replicatedDist {
   }
 
   @chpldoc.nodoc
-  inline operator ==(d1: replicatedDist(?), d2: replicatedDist(?)) {
+  inline operator ==(d1: replicatedDist, d2: replicatedDist) {
     if (d1._value == d2._value) then
       return true;
     return d1._value.dsiEqualDMaps(d2._value);
   }
 
   @chpldoc.nodoc
-  inline operator !=(d1: replicatedDist(?), d2: replicatedDist(?)) {
+  inline operator !=(d1: replicatedDist, d2: replicatedDist) {
     return !(d1 == d2);
   }
 
+  @chpldoc.nodoc
   proc writeThis(x) {
     chpl_distHelp.writeThis(x);
+  }
+
+  @chpldoc.nodoc
+  proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
   }
 }
 
@@ -200,7 +209,7 @@ proc ReplicatedImpl.init(targetLocales: [] locale = Locales,
     writeln("ReplicatedImpl initializer over ", targetLocales);
 }
 
-proc ReplicatedImpl.dsiEqualDMaps(that: ReplicatedImpl(?)) {
+proc ReplicatedImpl.dsiEqualDMaps(that: ReplicatedImpl) {
   return this.targetLocales.equals(that.targetLocales);
 }
 
@@ -548,6 +557,11 @@ class LocReplicatedArr {
   override proc writeThis(f) throws {
     halt("LocReplicatedArr.writeThis() is not implemented / should not be needed");
   }
+
+  @chpldoc.nodoc
+  override proc serialize(writer, ref serializer) throws {
+    halt("LocReplicatedArr.serialize() is not implemented / should not be needed");
+  }
 }
 
 
@@ -770,3 +784,5 @@ proc ReplicatedArr.dsiLocalSubdomain(loc: locale) {
 proc ReplicatedArr.dsiLocalSlice(ranges) {
   return chpl_myLocArr().arrLocalRep((...ranges));
 }
+
+} // ReplicatedDist

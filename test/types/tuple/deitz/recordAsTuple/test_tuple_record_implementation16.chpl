@@ -11,8 +11,8 @@ record mytuple {
   }
 }
 
-proc mytuple.writeThis(f) throws {
-  f.write("(", f1, ", ", f2, ")");
+proc mytuple.serialize(writer, ref serializer) throws {
+  writer.write("(", f1, ", ", f2, ")");
 }
 
 var t : mytuple(int, real);

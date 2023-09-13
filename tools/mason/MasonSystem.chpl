@@ -233,7 +233,7 @@ proc getPkgInfo(pkgName: string, version: string) throws {
 
 /* Given a toml of external dependencies returns
    the dependencies in a toml */
-proc getPCDeps(exDeps: Toml(?)) {
+proc getPCDeps(exDeps: Toml) {
 
   var exDom: domain(string);
   var exDepTree: [exDom] shared Toml?;

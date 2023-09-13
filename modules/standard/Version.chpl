@@ -203,6 +203,10 @@ module Version {
     proc writeThis(s) throws {
       s.write(this:string);
     }
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
 
     @chpldoc.nodoc
     proc init(param major: int,
@@ -366,6 +370,10 @@ module Version {
     @chpldoc.nodoc
     proc writeThis(s) throws {
       s.write(this:string);
+    }
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
 
     @chpldoc.nodoc
@@ -618,7 +626,7 @@ module Version {
     return v2 <= v1;
   }
 
-  private proc spaceship(v1: version(?),
+  private proc spaceship(v1: version,
                          v2: versionValue(?)) : int {
     const majComp = spaceship(v1.major, v2.major);
     if majComp != 0 {

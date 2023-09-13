@@ -237,9 +237,9 @@ module HTable {
     /* Debugging routine, prints a human-readable version of how the
        routine has parsed the field.
     */
-    proc writeThis(f) {
+    proc serialize(writer, ref serializer) {
       for ii in 1..nFields {
-        f.writeln(names[ii]:string, " ", offsets[ii]);
+        writer.writeln(names[ii]:string, " ", offsets[ii]);
       }
     }
 

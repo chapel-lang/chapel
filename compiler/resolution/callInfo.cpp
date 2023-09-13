@@ -192,6 +192,9 @@ const char* CallInfo::toString() {
         ii->iterator->hasFlag(FLAG_PROMOTION_WRAPPER) == true) {
       retval = astr(retval, "promoted expression");
 
+    } else if (sym == gUninstantiated) {
+      retval = astr(retval, "?");
+
     } else if (sym->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       retval = astr(retval, "type ", ::toString(type));
 

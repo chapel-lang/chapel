@@ -2,9 +2,9 @@ use IO;
 
 class A {
   var x:int;
-  proc writeThis(writer) throws {
+  override proc serialize(writer, ref serializer) throws {
     var loc = writer.readWriteThisFromLocale();
-    writeln("in A.writeThis loc= ", loc.id);
+    writeln("in A.serialize loc= ", loc.id);
     writer.writeln(x);
   }
 }
@@ -12,37 +12,37 @@ class A {
 class B {
   var x:int;
   proc init(x: int = 0) { this.x = x; }
-  proc init(r: fileReader(?)) {
-    var loc = r.readWriteThisFromLocale();
-    writeln("in B.readThis loc= ", loc.id);
-    this.x = r.readln(int);
+  proc init(reader: fileReader(?), ref deserializer) {
+    var loc = reader.readWriteThisFromLocale();
+    writeln("in B.init loc= ", loc.id);
+    this.x = reader.readln(int);
   }
-  proc readThis(writer) throws {
-    var loc = writer.readWriteThisFromLocale();
-    writeln("in B.readThis loc= ", loc.id);
-    writer.readln(x);
+  override proc deserialize(reader, ref deserializer) throws {
+    var loc = reader.readWriteThisFromLocale();
+    writeln("in B.deserialize loc= ", loc.id);
+    reader.readln(x);
   }
 }
 
 class C {
   var x:int;
   proc init(x: int = 0) { this.x = x; }
-  proc init(r: fileReader(?)) {
-    var loc = r.readWriteThisFromLocale();
-    writeln("in C.readWriteHelper loc= ", loc.id);
-    this.x = r.read(int);
+  proc init(reader: fileReader(?), ref deserializer) {
+    var loc = reader.readWriteThisFromLocale();
+    writeln("in C.init loc= ", loc.id);
+    this.x = reader.read(int);
   }
 
-  proc readThis(r) throws {
-    var loc = r.readWriteThisFromLocale();
-    writeln("in C.readThis loc= ", loc.id);
-    r.read(x);
+  override proc deserialize(reader, ref deserializer) throws {
+    var loc = reader.readWriteThisFromLocale();
+    writeln("in C.deserialize loc= ", loc.id);
+    reader.read(x);
   }
 
-  proc writeThis(w) throws {
-    var loc = w.readWriteThisFromLocale();
-    writeln("in C.writeThis loc= ", loc.id);
-    w.write(x);
+  override proc serialize(writer, ref serializer) throws {
+    var loc = writer.readWriteThisFromLocale();
+    writeln("in C.serialize loc= ", loc.id);
+    writer.write(x);
   }
 }
 

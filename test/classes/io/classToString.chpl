@@ -5,10 +5,6 @@ class C {
 
 class D : C {
   var y: real;
-  proc writeThis(ch) throws {
-    super.writeThis(ch);
-    ch.write("y is: ", y);
-  }
 }
 
 class E : D {

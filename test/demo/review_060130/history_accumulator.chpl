@@ -44,8 +44,8 @@ operator +(x : history_real(?), y : real) {
   return x.f + y;
 }
 
-proc history_real.writeThis(ff) throws {
-  ff.write(f, " (");
+proc history_real.serialize(writer, ref serializer) throws {
+  writer.write(f, " (");
   for i in 0..#size do
-    ff.write(h(i), if i < size-1 then ", " else ")");
+    writer.write(h(i), if i < size-1 then ", " else ")");
 }

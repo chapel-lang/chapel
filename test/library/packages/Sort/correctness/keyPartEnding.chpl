@@ -7,10 +7,10 @@ record TwoRepeated {
   var second:int;
   var nSecond:int;
 
-  proc writeThis(ch) throws {
+  proc serialize(writer, ref serializer) throws {
     var a = (first:string)*nFirst;
     var b = (second:string)*nSecond;
-    ch.write(a, b);
+    writer.write(a, b);
   }
 }
 

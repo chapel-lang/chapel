@@ -1,0 +1,1 @@
+notGenericQ-formal.chpl:3: error: the formal argument 'x' is marked generic with (?) but the type 'R' is not generic

@@ -5,6 +5,10 @@ record A {
   var x: int;
   var b: B;
 
+  proc serialize(writer, ref serializer) throws {
+    ChapelIO.serializeDefaultImpl(writer, serializer, this);
+  }
+
   proc ref deserialize(reader: fileReader(?), ref deserializer: reader.deserializerType) {
     writeln("IN A.deserialize");
     var des = deserializer.startRecord(reader, "A");
@@ -34,6 +38,10 @@ record A {
 
 record B {
   var t: (int, real);
+
+  proc serialize(writer, ref serializer) throws {
+    ChapelIO.serializeDefaultImpl(writer, serializer, this);
+  }
 
   proc ref deserialize(reader: fileReader(?), ref deserializer: reader.deserializerType) {
     writeln("IN B.deserialize");

@@ -5,7 +5,7 @@ class Gen {
 
 var Glob = new Gen(real);
 
-iter rets(): unmanaged Gen {
+iter rets(): unmanaged Gen(?) {
   yield Glob.borrow();
 }
 

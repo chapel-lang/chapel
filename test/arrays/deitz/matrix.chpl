@@ -8,8 +8,8 @@ record Matrix {
   proc const ref this(i: int, j: int) const ref do return A(i,j);
 }
 
-proc Matrix.writeThis(f) throws {
-  f.write(A);
+proc Matrix.serialize(writer, ref serializer) throws {
+  writer.write(A);
 }
 
 proc Matrix.transpose() {

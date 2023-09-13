@@ -42,8 +42,8 @@ record buffer {
   }
 
   // A standard implementation probably shouldn't offer this.
-  proc writeThis(ch) {
-    for slot in this do ch.write(slot, " ");
+  proc serialize(writer, ref serializer) {
+    for slot in this do writer.write(slot, " ");
   }
 }
 

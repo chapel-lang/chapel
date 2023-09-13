@@ -237,6 +237,10 @@ inline operator ==(const ref lhs: ipAddr, const ref rhs: ipAddr) {
 proc ipAddr.writeThis(f) throws {
   f.write("(","family:",this.family,",host:",this.host,",port:",this.port,")");
 }
+@chpldoc.nodoc
+proc ipAddr.serialize(writer, ref serializer) throws {
+  writeThis(writer);
+}
 
 /*
   Get a :type:`~POSIX.struct_timeval` set for indefinite timeout.
@@ -324,6 +328,10 @@ inline operator ==(const ref lhs: tcpConn,const ref rhs: tcpConn) {
 @chpldoc.nodoc
 proc tcpConn.writeThis(f) throws {
   f.write("(","addr:",this.addr,",fd:",this.socketFd,")");
+}
+@chpldoc.nodoc
+proc tcpConn.serialize(writer, ref serializer) throws {
+  writeThis(writer);
 }
 
 @chpldoc.nodoc
@@ -777,6 +785,10 @@ inline operator ==(const ref lhs: tcpListener,const ref rhs: tcpListener) {
 proc tcpListener.writeThis(f) throws {
   f.write("(","addr:",this.addr,",fd:",this.socketFd);
 }
+@chpldoc.nodoc
+proc tcpListener.serialize(writer, ref serializer) throws {
+  writeThis(writer);
+}
 
 @chpldoc.nodoc
 extern const SOMAXCONN: int;
@@ -1226,6 +1238,10 @@ inline operator ==(const ref lhs: udpSocket,const ref rhs: udpSocket) {
 @chpldoc.nodoc
 proc udpSocket.writeThis(f) throws {
   f.write("(","addr:",this.addr,",fd:",this.socketFd);
+}
+@chpldoc.nodoc
+proc udpSocket.serialize(writer, ref serializer) throws {
+  writeThis(writer);
 }
 
 

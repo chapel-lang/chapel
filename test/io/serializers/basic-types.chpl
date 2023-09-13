@@ -2,6 +2,7 @@
 use IO;
 use List;
 use Types;
+use List, Set;
 
 use JSON;
 use FormatHelper;
@@ -178,6 +179,10 @@ proc main() {
   var x = new unmanaged SimpleChild(5, 42.0);
   test(x);
   delete x;
+
+  var s : set(int);
+  for i in 1..10 do s.add(i);
+  test(s);
 
   if failures.size > 0 {
     writeln("FAILURES:");

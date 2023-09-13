@@ -1,16 +1,16 @@
 record A {
   var x:int;
-  proc writeThis(writer) throws {
+  proc serialize(writer, ref serializer) throws {
     var loc = writer.readWriteThisFromLocale();
-    writeln("in A.writeThis loc=", loc.id);
+    writeln("in A.serialize loc=", loc.id);
     writer.write(x);
   }
 }
 record B {
   var a:A;
-  proc writeThis(writer) throws {
+  proc serialize(writer, ref serializer) throws {
     var loc = writer.readWriteThisFromLocale();
-    writeln("in B.writeThis loc=", loc.id);
+    writeln("in B.serialize loc=", loc.id);
     writer.write(a);
   }
 }

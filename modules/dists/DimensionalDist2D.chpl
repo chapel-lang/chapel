@@ -27,6 +27,9 @@
 // * Ensure that reallocation works with block-cyclic 1-d distribution
 //  when the domain's stride changes.
 
+@unstable("DimensionalDist2D is unstable and may change in the future")
+prototype module DimensionalDist2D {
+
 use DSIUtil;
 //use WrapperDist;
 
@@ -396,6 +399,9 @@ class LocDimensionalArr {
   // type's compilerError()
   override proc writeThis(f) throws {
     halt("LocDimensionalArr.writeThis() is not implemented / should not be needed");
+  }
+  override proc serialize(writer, ref serializer) throws {
+    halt("LocDimensionalArr.serialize() is not implemented / should not be needed");
   }
 }
 
@@ -1445,3 +1451,5 @@ iter DimensionalArr._dsiIteratorHelper(alDom, (f1, f2)) ref {
         yield lastLocAdesc!.myStorageArr(i1, i2);
       }
 }
+
+} // DimensionalDist2D

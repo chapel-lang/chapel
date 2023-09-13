@@ -914,6 +914,10 @@ module YAML {
     proc writeThis(fw) throws {
       fw.write("Empty YamlValue");
     }
+    @chpldoc.nodoc
+    override proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
 
     @chpldoc.nodoc
     proc asKey(): string {
@@ -998,6 +1002,10 @@ module YAML {
       }
       fw.writeLiteral("}");
     }
+    @chpldoc.nodoc
+    override proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
 
     @chpldoc.nodoc
     override proc asKey(): string {
@@ -1064,6 +1072,10 @@ module YAML {
         fw.write(v);
       }
       fw.writeLiteral("]");
+    }
+    @chpldoc.nodoc
+    override proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
 
     @chpldoc.nodoc
@@ -1184,6 +1196,10 @@ module YAML {
         then fw.write(this.tag, " ", this.value);
         else fw.write(this.value);
     }
+    @chpldoc.nodoc
+    override proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
 
     @chpldoc.nodoc
     override proc asKey(): string {
@@ -1213,6 +1229,10 @@ module YAML {
 
     override proc writeThis(fw) throws {
       fw.write("*", this._alias);
+    }
+    @chpldoc.nodoc
+    override proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
 
     @chpldoc.nodoc

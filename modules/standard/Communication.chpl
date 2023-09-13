@@ -29,6 +29,7 @@
     under any circumstance.
 
 */
+@unstable("The Communication module is unstable and may change in the future")
 module Communication {
   private use CTypes;
 
