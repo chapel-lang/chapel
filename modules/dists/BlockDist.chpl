@@ -409,6 +409,8 @@ record blockDist {
 
   forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(unmanaged BlockImpl(rank, idxType, _to_unmanaged(sparseLayoutType)));
 
+  pragma "last resort"
+  @unstable("passing arguments other than 'boundingBox' and 'targetLocales' to 'blockDist' is currently unstable")
   proc init(boundingBox: domain,
             targetLocales: [] locale = Locales,
             dataParTasksPerLocale=getDataParTasksPerLocale(),
@@ -430,6 +432,16 @@ record blockDist {
                             then _newPrivatizedClass(value)
                             else nullPid,
                           value);
+  }
+
+  proc init(boundingBox: domain,
+            targetLocales: [] locale = Locales)
+  {
+    this.init(boundingBox, targetLocales,
+              /* by specifying even one unstable argument, this should select
+                 the whole unstable constructor, which has defaults for everything
+                 else. */
+              dataParTasksPerLocale=getDataParTasksPerLocale());
   }
 
     proc init(_pid : int, _instance, _unowned : bool) {

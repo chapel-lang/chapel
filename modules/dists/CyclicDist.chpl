@@ -261,6 +261,8 @@ record cyclicDist {
 
   forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(unmanaged CyclicImpl(rank, idxType));
 
+  pragma "last resort"
+  @unstable("passing arguments other than 'boundingBox' and 'targetLocales' to 'cyclicDist' is currently unstable")
   proc init(startIdx,
             targetLocales: [] locale = Locales,
             dataParTasksPerLocale=getDataParTasksPerLocale(),
@@ -284,6 +286,17 @@ record cyclicDist {
                             then _newPrivatizedClass(value)
                             else nullPid,
                           value);
+  }
+
+  proc init(startIdx,
+            targetLocales: [] locale = Locales)
+    where isTuple(startIdx) || isIntegral(startIdx)
+  {
+    this.init(startIdx, targetLocales,
+              /* by specifying even one unstable argument, this should select
+                 the whole unstable constructor, which has defaults for everything
+                 else. */
+              dataParTasksPerLocale=getDataParTasksPerLocale());
   }
 
     proc init(_pid : int, _instance, _unowned : bool) {
