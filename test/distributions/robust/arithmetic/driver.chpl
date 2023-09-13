@@ -61,11 +61,11 @@ proc setupDistributions(param DT : DistType) {
   }
   if DT == DistType.replicated {
     return (
-            new Replicated(),
-            new Replicated(),
-            new Replicated(),
-            new Replicated(),
-            new Replicated()
+            new replicatedDist(),
+            new replicatedDist(),
+            new replicatedDist(),
+            new replicatedDist(),
+            new replicatedDist()
            );
   }
   if DT == DistType.stencil {

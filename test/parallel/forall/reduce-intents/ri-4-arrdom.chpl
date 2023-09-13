@@ -31,7 +31,7 @@ proc setupDistributions() {
     return new dmap(new BlockCyclic(startIdx=(0,0), blocksize=(3,3)));
 
   else if distType == DistType.replicated then
-    return new Replicated();
+    return new replicatedDist();
 
   else compilerError("unexpected 'distType': ", distType:c_ptrConst(c_char));
 }
