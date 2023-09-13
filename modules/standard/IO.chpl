@@ -5029,8 +5029,7 @@ This function is equivalent to calling :proc:`open` and then
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty)
-    : fileReader(kind, locking, defaultSerializeType(false, kind)) throws where (!region.hasHighBound() ||
-                                              useNewOpenReaderRegionBounds) {
+    : fileReader(kind, locking, defaultSerializeType(false, kind)) throws {
   return openReader(path, kind, locking, region, hints);
 }
 
