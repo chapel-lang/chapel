@@ -1098,7 +1098,7 @@ void initPrimitiveTypes() {
   dtShared                             = new AggregateType(AGGREGATE_RECORD);
   dtShared->symbol                     = new TypeSymbol("_shared", dtShared);
 
-  dtBool                               = createPrimitiveType("bool", "chpl_bool");;
+  dtBool                               = createPrimitiveType("bool", "chpl_bool");
 
   gFalse                               = createSymbol(dtBool, "false");
   gTrue                                = createSymbol(dtBool, "true");
