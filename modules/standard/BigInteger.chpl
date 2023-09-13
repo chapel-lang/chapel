@@ -160,14 +160,9 @@ module BigInteger {
 
   /* A compile-time parameter to control the behavior of bigint initializers
      that take a string argument.
-
-     When ``false``, the deprecated behavior is used (i.e., errors will trigger
-     a halt at execution.)
-
-     When ``true``, the new behavior is used (i.e., errors will cause a
-     :type:`~OS.BadFormatError` to be thrown)
   */
-  config param bigintInitThrows = false;
+  @deprecated("bigint initializers will now always throw instead of halt, this config no longer impacts code and will be removed in a future release")
+  config param bigintInitThrows = true;
 
   // TODO: remove when initializers can throw in their body
   private proc throwingInitWorkaround() throws {
@@ -249,7 +244,7 @@ module BigInteger {
                                number in base ``base``.
 
      */
-    proc init(x: string, base: int = 0) throws where bigintInitThrows == true {
+    proc init(x: string, base: int = 0) throws {
       init this;
       const ref x_ = x.localize().c_str();
       const base_ = base.safeCast(c_int);
@@ -307,42 +302,8 @@ module BigInteger {
      */
     pragma "last resort"
     @deprecated("the argument name 'str' is deprecated - please use 'x' instead")
-    proc init(str: string, base: int = 0) throws where bigintInitThrows == true
+    proc init(str: string, base: int = 0) throws
       do try! this.init(str, base);
-
-    @deprecated(notes="bigint initializers that halt are deprecated, please set the config param :param:`bigintInitThrows` to 'true' to opt in to using the new initializer that throws")
-    proc init(str: string, base: int = 0) where bigintInitThrows == false {
-      init this;
-      const ref str_ = str.localize().c_str();
-      const base_ = base.safeCast(c_int);
-
-      if mpz_init_set_str(this.mpz, str_, base_) != 0 {
-        mpz_clear(this.mpz);
-
-        HaltWrappers.initHalt("Error initializing big integer: bad format");
-      }
-
-      this.localeId = chpl_nodeID;
-    }
-
-    @deprecated(notes="bigint initializers that return the errorCode type via an 'out' argument are deprecated, please remove the argument and ensure the config param :param:`bigintInitThrows` is set to 'true' to opt in to using the new initializer that throws")
-    proc init(str: string, base: int = 0, out error: errorCode) {
-
-      init this;
-      const ref str_ = str.localize().c_str();
-      const base_ = base.safeCast(c_int);
-
-      if mpz_init_set_str(this.mpz, str_, base_) != 0 {
-        mpz_clear(this.mpz);
-
-        error = chpl_macro_int_EFORMAT();
-      } else {
-        error = 0;
-      }
-
-      this.localeId = chpl_nodeID;
-    }
-
 
     // Within a given locale, bigint assignment creates a deep copy of the
     // data and so the record "owns" the GMP data.
