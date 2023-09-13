@@ -1920,11 +1920,13 @@ static void fixupGenericReturnTypes(FnSymbol* fn) {
   if (fn->retExprType) {
     Expr*     tail   = fn->retExprType->body.tail;
     if (CallExpr* call = toCallExpr(tail)) {
-      if (SymExpr* se = toSymExpr(call->get(1))) {
-        if (call->baseExpr && se->symbol() == gUninstantiated) {
-          Expr* type = call->baseExpr->remove();
-          tail->replace(type);
-          fn->addFlag(FLAG_RET_TYPE_MARKED_GENERIC);
+      if (call->numActuals() == 1) {
+        if (SymExpr* se = toSymExpr(call->get(1))) {
+          if (call->baseExpr && se->symbol() == gUninstantiated) {
+            Expr* type = call->baseExpr->remove();
+            tail->replace(type);
+            fn->addFlag(FLAG_RET_TYPE_MARKED_GENERIC);
+          }
         }
       }
     }
