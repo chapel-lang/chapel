@@ -1,8 +1,0 @@
-empty-slice-warnings.chpl:3: warning: slicing a range(int(64),low,positive) with a range(int(64),low,positive) might produce an empty range and result in a halt
-empty-slice-warnings.chpl:4: warning: slicing a range(int(64),low,positive) with a range(int(64),neither,positive) might produce an empty range and result in a halt
-empty-slice-warnings.chpl:6: warning: slicing a range(int(64),high,positive) with a range(int(64),high,positive) might produce an empty range and result in a halt
-empty-slice-warnings.chpl:7: warning: slicing a range(int(64),high,positive) with a range(int(64),neither,positive) might produce an empty range and result in a halt
-empty-slice-warnings.chpl:9: warning: slicing a range(int(64),neither,positive) with a range(int(64),low,positive) might produce an empty range and result in a halt
-empty-slice-warnings.chpl:10: warning: slicing a range(int(64),neither,positive) with a range(int(64),high,positive) might produce an empty range and result in a halt
-empty-slice-warnings.chpl:11: warning: slicing a range(int(64),neither,positive) with a range(int(64),neither,positive) might produce an empty range and result in a halt
-empty-slice-warnings.chpl:3: error: halt reached - could not represent range slice - it needs to be empty, but the slice type is not bounded
