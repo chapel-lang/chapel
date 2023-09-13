@@ -13883,6 +13883,42 @@ void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx) {
 std::set<Symbol*> gAlreadyWarnedSurprisingGenericSyms;
 std::set<Symbol*> gAlreadyWarnedSurprisingGenericManagementSyms;
 
+static bool computeIsField(Symbol*& sym, AggregateType* forFieldInHere) {
+  // is it a field? check to see if it's a temp within an initializer
+  // initializing field (in which case, we should think about
+  // this as a field). If it's a field, replaces 'sym' with the
+  // field to use for error reporting.
+  bool isField = false;
+
+  if (forFieldInHere) {
+    AggregateType* ct = forFieldInHere->getRootInstantiation();
+    Symbol* field = ct->getField(sym->name);
+    isField = true;
+    sym = field;
+  } else if (sym->hasFlag(FLAG_TEMP)) {
+    for_SymbolSymExprs(se, sym) {
+      if (CallExpr* c = toCallExpr(se->parentExpr)) {
+        if ((c->isPrimitive(PRIM_SET_MEMBER) ||
+             c->isPrimitive(PRIM_INIT_FIELD)) && se == c->get(3)) {
+          isField = true;
+
+          // replace 'sym' with the field for the error location
+          AggregateType* ct = toAggregateType(c->get(1)->getValType());
+          ct = ct->getRootInstantiation();
+          SymExpr* nameSe = toSymExpr(c->get(2));
+          VarSymbol* nameVar = toVarSymbol(nameSe->symbol());
+          const char* name = astr(nameVar->immediate->v_string.c_str());
+          Symbol* field = ct->getField(name);
+          sym = field;
+          break;
+        }
+      }
+    }
+  }
+
+  return isField;
+}
+
 void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
                                  AggregateType* forFieldInHere) {
   if (sym == nullptr || typeExpr == nullptr) {
@@ -13910,33 +13946,8 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
       // is it a field? check to see if it's a temp within an initializer
       // initializing field (in which case, we should think about
       // this as a field).
-      bool isField = false;
-
-      if (forFieldInHere) {
-        AggregateType* ct = forFieldInHere->getRootInstantiation();
-        Symbol* field = ct->getField(sym->name);
-        isField = true;
-        sym = field;
-      } else if (sym->hasFlag(FLAG_TEMP)) {
-        for_SymbolSymExprs(se, sym) {
-          if (CallExpr* c = toCallExpr(se->parentExpr)) {
-            if ((c->isPrimitive(PRIM_SET_MEMBER) ||
-                 c->isPrimitive(PRIM_INIT_FIELD)) && se == c->get(3)) {
-              isField = true;
-
-              // replace 'sym' with the field for the error location
-              AggregateType* ct = toAggregateType(c->get(1)->getValType());
-              ct = ct->getRootInstantiation();
-              SymExpr* nameSe = toSymExpr(c->get(2));
-              VarSymbol* nameVar = toVarSymbol(nameSe->symbol());
-              const char* name = astr(nameVar->immediate->v_string.c_str());
-              Symbol* field = ct->getField(name);
-              sym = field;
-              break;
-            }
-          }
-        }
-      }
+      // Note: this can change 'sym' to a field rather than a tmp.
+      bool isField = computeIsField(sym, forFieldInHere);
 
       if (isClassLikeOrManaged(declType)) {
         auto dec = classTypeDecorator(declType);
