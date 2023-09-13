@@ -777,12 +777,12 @@ module Time {
     }
 
     /* The minimum representable `time` */
-    proc type min : time {
+    proc type min : time(false) {
       return new time();
     }
 
     /* The maximum representable `time` */
-    proc type max : time {
+    proc type max : time(false) {
       return new time(23, 59, 59, 999999);
     }
 
@@ -799,7 +799,7 @@ module Time {
    */
   @unstable("tz is unstable; its type may change in the future")
   proc time.init(hour:int=0, minute:int=0, second:int=0, microsecond:int=0,
-                 in tz: shared Timezone): time(true) {
+                 in tz: shared Timezone) {
     this.tzAware = true;
     if hour < 0 || hour >= 24 then
       HaltWrappers.initHalt("hour out of range");
@@ -819,7 +819,7 @@ module Time {
   /* Initialize a new `time` value from the given `hour`, `minute`, `second`,
      `microsecond`.  All arguments are optional
    */
-  proc time.init(hour:int=0, minute:int=0, second:int=0, microsecond:int=0): time(false) {
+  proc time.init(hour:int=0, minute:int=0, second:int=0, microsecond:int=0) {
     this.tzAware = false;
     if hour < 0 || hour >= 24 then
       HaltWrappers.initHalt("hour out of range");
@@ -875,7 +875,7 @@ module Time {
   /* Get a `string` representation of this `time` in ISO format
      ``hh:mm:ss.ssssss``, followed by ``±hh:mm`` if a timezone is specified.
   */
-  operator time.:(x: time, type t: string) {
+  operator time.:(x: time(?), type t: string) {
     proc makeNDigits(n, d) {
       var ret = d: string;
       while ret.size < n {
@@ -892,7 +892,10 @@ module Time {
       ret = ret + "." + makeNDigits(6, x.microsecond);
     }
     var offset = x.utcOffset();
-    if x.timezone.borrow() != nil {
+
+    if DateTimeStaticTZAwareness && tzAware ||
+      x.timezone.borrow() != nil
+    {
       var sign: string;
       if offset.days < 0 {
         offset = -offset;
@@ -903,6 +906,7 @@ module Time {
       ret = ret + sign + makeNDigits(2, offset.seconds/(60*60)) + ":" +
                          makeNDigits(2, offset.seconds % (60*60) / 60);
     }
+
     return ret;
   }
 
@@ -1176,12 +1180,12 @@ module Time {
     var chpl_time: time(tzAware);
 
     /* The minimum representable `date` and `time` */
-    proc type min : dateTime {
+    proc type min : dateTime(false) {
       return new dateTime(date.min, time.min);
     }
 
     /* The maximum representable `date` and `time` */
-    proc type max : dateTime {
+    proc type max : dateTime(false) {
       return new dateTime(date.max, time.max);
     }
 
@@ -1261,7 +1265,8 @@ module Time {
   @unstable("tz is unstable; its type may change in the future")
   proc dateTime.init(year:int, month:int, day:int,
                      hour:int=0, minute:int=0, second:int=0, microsecond:int=0,
-                     in tz: shared Timezone): dateTime(true) {
+                     in tz: shared Timezone) {
+    tzAware = true;
     chpl_date = new date(year, month, day);
     chpl_time = new time(hour, minute, second, microsecond, tz);
   }
@@ -1272,13 +1277,15 @@ module Time {
    */
   proc dateTime.init(year:int, month:int, day:int,
                      hour:int=0, minute:int=0,
-                     second:int=0, microsecond:int=0): dateTime(false) {
+                     second:int=0, microsecond:int=0) {
+    tzAware = false;
     chpl_date = new date(year, month, day);
     chpl_time = new time(hour, minute, second, microsecond);
   }
 
   /* Initialize a new `dateTime` value from the given `date` and `time` */
-  proc dateTime.init(d: date, t: time(?a) = new time()): dateTime(a) {
+  proc dateTime.init(d: date, t: time(?) = new time()) {
+    tzAware = t.tzAware;
     chpl_date = d;
     chpl_time = t;
   }
@@ -1381,7 +1388,7 @@ module Time {
 
   /* Form a `dateTime` value from a given `date` and `time` */
   @deprecated(notes="`dateTime.combine` is deprecated; use `new dateTime` taking a `date` and `time` argument instead")
-  proc type dateTime.combine(d: date, t: time) : dateTime {
+  proc type dateTime.combine(d: date, t: time(?a)) : dateTime(a) {
     return new dateTime(d, t);
   }
 
@@ -1398,7 +1405,7 @@ module Time {
   }
 
   @deprecated(notes="'dateTime.gettime' is deprecated. Please use :proc:`dateTime.getTime` instead")
-  proc dateTime.gettime() : time {
+  proc dateTime.gettime() : time(false) {
     return getTime();
   }
 
@@ -1421,7 +1428,7 @@ module Time {
      `tz` field
    */
   @unstable("tz is unstable; its type may change in the future")
-  proc dateTime.timetz() : time {
+  proc dateTime.timetz() : time(true) {
     return chpl_time;
   }
 
