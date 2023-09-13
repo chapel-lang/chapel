@@ -3495,6 +3495,15 @@ void warnIfGenericFormalMissingQ(ArgSymbol* arg, Type* type, Expr* typeExpr) {
       }
     }
   }
+
+  // error for CR(?) where CR is a concrete record or class type
+  if (!type->symbol->hasFlag(FLAG_GENERIC) &&
+      arg->hasFlag(FLAG_MARKED_GENERIC)) {
+    USR_FATAL(arg,
+              "the formal argument '%s' is marked generic with (?) "
+              "but the type '%s' is not generic",
+              arg->name, toString(type, /*decorators*/ false));
+  }
 }
 
 static void hack_resolve_types(ArgSymbol* arg) {
