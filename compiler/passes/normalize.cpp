@@ -1725,6 +1725,7 @@ static void addTypeBlocksForParentTypeOf(CallExpr* call) {
 ************************************** | *************************************/
 
 static void fixupExportedArrayReturns(FnSymbol* fn);
+static void fixupGenericReturnTypes(FnSymbol* fn);
 static bool isVoidReturn(CallExpr* call);
 static bool hasGenericArrayReturn(FnSymbol* fn);
 static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret,
@@ -1736,6 +1737,7 @@ static void normalizeReturns(FnSymbol* fn) {
   SET_LINENO(fn);
 
   fixupExportedArrayReturns(fn);
+  fixupGenericReturnTypes(fn);
 
   std::vector<CallExpr*> rets;
   std::vector<CallExpr*> calls;
@@ -1908,6 +1910,24 @@ static void fixupExportedArrayReturns(FnSymbol* fn) {
     }
     CallExpr* transformRet = new CallExpr("convertToExternalArray", retVal);
     retCall->get(1)->replace(transformRet);
+  }
+}
+
+// This is a workaround to prevent problems with functions like
+//   proc f(): domain(?) { ... }
+// which otherwise runs into problems to do with fixups for runtime types.
+static void fixupGenericReturnTypes(FnSymbol* fn) {
+  if (fn->retExprType) {
+    Expr*     tail   = fn->retExprType->body.tail;
+    if (CallExpr* call = toCallExpr(tail)) {
+      if (SymExpr* se = toSymExpr(call->get(1))) {
+        if (call->baseExpr && se->symbol() == gUninstantiated) {
+          Expr* type = call->baseExpr->remove();
+          tail->replace(type);
+          fn->addFlag(FLAG_RET_TYPE_MARKED_GENERIC);
+        }
+      }
+    }
   }
 }
 
@@ -2493,7 +2513,6 @@ static void propagateMarkedGeneric(Symbol* var, Expr* typeExpr) {
     if (sym == gUninstantiated ||
         (sym->hasFlag(FLAG_MARKED_GENERIC) && sym->hasFlag(FLAG_TEMP))) {
       var->addFlag(FLAG_MARKED_GENERIC);
-      //      printf("(A) Adding FLAG_MARKED_GENERIC to %s\n", sym->name);
     }
   } else if (CallExpr* call = toCallExpr(typeExpr)) {
     if (call->baseExpr)

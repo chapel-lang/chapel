@@ -13897,8 +13897,14 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
       declType = typeExpr->typeInfo();
     }
 
+    bool genericWithDefaults = false;
+    if (AggregateType* at = toAggregateType(declType))
+      genericWithDefaults = at->isGenericWithDefaults();
+
     if (declType->symbol->hasFlag(FLAG_GENERIC) &&
+        !genericWithDefaults &&
         !sym->hasFlag(FLAG_MARKED_GENERIC) &&
+        !sym->hasFlag(FLAG_RET_TYPE_MARKED_GENERIC) &&
         !sym->hasFlag(FLAG_TYPE_VARIABLE)) {
 
       // is it a field? check to see if it's a temp within an initializer
