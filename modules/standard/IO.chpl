@@ -665,23 +665,17 @@ param iobig = _iokind.big;
 param iolittle = _iokind.little;
 
 /*
-
 The :type:`ioendian` type is an enum. When used as an argument to the
 :record:`fileReader` or :record:`fileWriter` methods, its constants have the
 following meanings:
-
-* ``ioendian.big`` means binary I/O is performed in big-endian byte order.
-
-* ``ioendian.little`` means binary I/O is performed in little-endian byte order.
-
-* ``ioendian.native`` means binary I/O is performed in the byte order that is native
-  to the target platform.
-
 */
-
 enum ioendian {
+  /* ``native`` means binary I/O is performed in the byte order that is native
+  to the target platform. */
   native = 0,
+  /* ``big`` means binary I/O is performed in big-endian byte order.*/
   big = 1,
+  /* ``little`` means binary I/O is performed in little-endian byte order. */
   little = 2
 }
 
@@ -8527,7 +8521,7 @@ proc fileWriter.writeBinary(ptr: c_ptr(void), numBytes: int) throws {
   :arg arg: number to be written
   :arg endian: :type:`ioendian` compile-time argument that specifies the byte
                order in which to write the number. Defaults to
-               ``ioendian.native``.
+               :enumconstant:`ioendian.native`.
 
   :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
   :throws UnexpectedEofError: Thrown if the write operation exceeds the
@@ -8673,7 +8667,7 @@ proc fileWriter.writeBinary(b: bytes, size: int = b.size) throws {
   :arg data: an array of numbers to write to the fileWriter
   :arg endian: :type:`ioendian` compile-time argument that specifies the byte
                order in which to read the numbers. Defaults to
-               ``ioendian.native``.
+               :enumconstant:`ioendian.native`.
 
   :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
   :throws UnexpectedEofError: Thrown if the write operation exceeds the
@@ -8758,7 +8752,7 @@ proc fileWriter.writeBinary(const ref data: [] ?t, endian:ioendian) throws
   :arg arg: number to be read
   :arg endian: :type:`ioendian` compile-time argument that specifies the byte
                order in which to read the number. Defaults to
-               ``ioendian.native``.
+               :enumconstant:`ioendian.native`.
   :returns: ``true`` if the number was read, and ``false`` otherwise (i.e.,
             the ``fileReader`` was already at EOF).
 
@@ -8996,7 +8990,7 @@ proc fileReader.readBinary(ref data: [] ?t, param endian = ioendian.native): boo
   :arg data: an array to read into – existing values are overwritten.
   :arg endian: :type:`ioendian` compile-time argument that specifies the byte
                order in which to read the numbers in. Defaults to
-               ``ioendian.native``.
+               :enumconstant:`ioendian.native`.
   :returns: the number of values that were read into the array. This can be
             less than ``data.size`` if EOF was reached, or an error occurred,
             before filling the array.
