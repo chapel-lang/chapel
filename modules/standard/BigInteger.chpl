@@ -429,11 +429,6 @@ module BigInteger {
       return (dbl: real, exp.safeCast(uint(32)));
     }
 
-    @deprecated(notes="mpzStruct is deprecated, please use :proc:`getImpl` instead")
-    proc mpzStruct() : __mpz_struct {
-      return getImpl();
-    }
-
     // private method
     @chpldoc.nodoc
     proc getStr(base: int = 10): string {
