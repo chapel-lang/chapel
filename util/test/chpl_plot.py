@@ -624,11 +624,22 @@ class Table:
         newData[col][i] = newData[col][i] / self.yData[col_name][i]
     return Table(self.title + " normalized to " + col_name, self.filename, self.xData, newData, self.kvPairs)
 
+  def with_first_col(self, col_name):
+    self._verify_valid_col(col_name)
+    newYData = {}
+    newYData[col_name] = self.yData[col_name]
+    for col in self.yData.keys():
+      if col == col_name:
+        continue
+      newYData[col] = self.yData[col]
+    return Table(self.title, self.filename, self.xData, newYData, self.kvPairs)
+
   def _verify_valid_col(self, col_name):
     if col_name not in self.yData:
       raise Exception(
         "%s not a valid column. Valid columns are: %s" % (
         col_name, list(self.yData.keys())))
+
 
 def loadDatFile(filename):
   """ Returns a dictionary of Table objects for all .dat files under the
