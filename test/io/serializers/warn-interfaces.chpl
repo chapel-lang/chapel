@@ -249,7 +249,7 @@ proc test(type T, param read = mode.readVal) {
     const check = if isClassType(T) then newVal! else newVal;
     assert(check.x == 10);
   } else if read == readInit {
-    var newVal : T = f.reader().read(T);;
+    var newVal : T = f.reader().read(T);
     writeln("got: ", newVal);
     assert(newVal.x == 10);
   }
