@@ -11314,6 +11314,9 @@ static void checkSpeciallyNamedMethods() {
     auto at = getBaseTypeForInterfaceWarnings(receiverType);
     if (!at || (found == gHashable && at == dtObject)) continue;
 
+    // _iteratorRecord currently doesn't work with 'implements' statements at
+    // the moment (likely due to its typeclass-like nature), so we skip all
+    // iterator records manually here for the 'writeSerializable' case.
     if (at->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
         found == gWriteSerializable) continue;
 
