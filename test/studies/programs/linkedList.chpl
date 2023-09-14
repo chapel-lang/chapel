@@ -15,7 +15,7 @@ config const listSize = 10;  // Used when populating the list
 //
 // A generic linked list class
 //
-class List {
+class List : writeSerializable {
   type eltType;
   var head: unmanaged Node(eltType)?;
 

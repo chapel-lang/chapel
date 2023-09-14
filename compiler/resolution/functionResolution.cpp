@@ -11263,11 +11263,36 @@ static AggregateType* getBaseTypeForInterfaceWarnings(Type* ts) {
   return toReturn;
 }
 
+static bool matchesSerializeShape(FnSymbol* fn,
+                                  const char* first, const char* second) {
+  // Initializer needs at least 4 : this, _mt, <generics>, reader, deserializer
+  int n = fn->numFormals();
+  if (fn->isInitializer()) {
+    if (n < 4) return false;
+  } else if (n != 4) {
+    // (de)serialize have only 4: this, _mt, <channel>, <(de)serializer>
+    return false;
+  }
+
+  bool ret = strcmp(fn->getFormal(n-1)->name, first) == 0 &&
+             strcmp(fn->getFormal(n)->name, second) == 0;
+  return ret;
+}
+
+static bool isSerdeSingleInterface(InterfaceSymbol* isym) {
+  return isym == gWriteSerializable ||
+         isym == gReadDeserializable ||
+         isym == gInitDeserializable;
+}
+
 static void checkSpeciallyNamedMethods() {
   static const std::unordered_map<const char*, InterfaceSymbol*> reservedNames = {
     { astr("hash"), gHashable },
     { astr("enterContext"), gContextManager },
-    { astr("exitContext"), gContextManager },
+    { astr("exitContext"),  gContextManager },
+    { astr("serialize"),    gWriteSerializable },
+    { astr("deserialize"),  gReadDeserializable },
+    { astr("init"),         gInitDeserializable },
   };
 
   SpecialMethodMap flagged;
@@ -11275,18 +11300,39 @@ static void checkSpeciallyNamedMethods() {
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
     if (!fn->isMethod()) continue;
     if (fn->isCompilerGenerated() || fn->hasFlag(FLAG_FIELD_ACCESSOR)) continue;
-    // The parent class must have this function, and would've been flagged.
-    // the user will already get the warning.
-    if (fn->hasFlag(FLAG_OVERRIDE)) continue;
     auto reservedIter = reservedNames.find(fn->name);
     if (reservedIter == reservedNames.end()) continue;
+    auto found = reservedIter->second;
+
+    if (found == gHashable || found == gContextManager) {
+      // The parent class must have this function, and would've been flagged.
+      // the user will already get the warning.
+      if (fn->hasFlag(FLAG_OVERRIDE)) continue;
+    }
 
     auto receiverType = fn->getReceiverType();
     auto at = getBaseTypeForInterfaceWarnings(receiverType);
-    if (!at || (reservedIter->second == gHashable && at == dtObject)) continue;
+    if (!at || (found == gHashable && at == dtObject)) continue;
 
-    auto key = SpeciallyNamedMethodKey(reservedIter->second, at);
+    // _iteratorRecord currently doesn't work with 'implements' statements at
+    // the moment (likely due to its typeclass-like nature), so we skip all
+    // iterator records manually here for the 'writeSerializable' case.
+    if (at->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
+        found == gWriteSerializable) continue;
+
+    if ((found == gInitDeserializable || found == gReadDeserializable) &&
+        !matchesSerializeShape(fn, "reader", "deserializer")) continue;
+
+    if (found == gWriteSerializable &&
+        !matchesSerializeShape(fn, "writer", "serializer")) continue;
+
+    auto key = SpeciallyNamedMethodKey(found, at);
     flagged[key].speciallyNamedMethods[fn->name] = fn;
+
+    if (isSerdeSingleInterface(found)) {
+      auto key = SpeciallyNamedMethodKey(gSerializable, at);
+      flagged[key].speciallyNamedMethods[fn->name] = fn;
+    }
   }
 
   for_alive_in_Vec(ImplementsStmt, istm, gImplementsStmts) {
@@ -11299,6 +11345,14 @@ static void checkSpeciallyNamedMethods() {
     // flagged set, because we found an instance.
     auto isym = istm->iConstraint->ifcSymbol();
     flagged.erase(SpeciallyNamedMethodKey(isym, at));
+
+    if (isym == gSerializable) {
+      flagged.erase(SpeciallyNamedMethodKey(gWriteSerializable, at));
+      flagged.erase(SpeciallyNamedMethodKey(gReadDeserializable, at));
+      flagged.erase(SpeciallyNamedMethodKey(gInitDeserializable, at));
+    } else if (isSerdeSingleInterface(isym)) {
+      flagged.erase(SpeciallyNamedMethodKey(gSerializable, at));
+    }
   }
 
   // the things now left in flagged, we did not find any implements statements
@@ -11306,6 +11360,11 @@ static void checkSpeciallyNamedMethods() {
   for (auto& flaggedTypeIfc : flagged) {
     auto ifc = flaggedTypeIfc.first.first;
     auto at = flaggedTypeIfc.first.second;
+
+    // Don't recommend 'serializable' so that there are not duplicates
+    if (ifc == gSerializable) {
+      continue;
+    }
 
     USR_WARN(at,
              "the type '%s' defines methods that previously had special meaning. "

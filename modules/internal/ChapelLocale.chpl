@@ -290,7 +290,7 @@ module ChapelLocale {
     by the corresponding concrete classes.
    */
   @chpldoc.nodoc
-  class BaseLocale {
+  class BaseLocale : writeSerializable {
     //- Constructor
     @chpldoc.nodoc
     proc init() { }

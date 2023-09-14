@@ -2,7 +2,7 @@
 use IO;
 use JSON;
 
-record R {
+record R : writeSerializable, initDeserializable {
   var x : int;
   var y : real;
 
@@ -28,7 +28,7 @@ record R {
   }
 }
 
-record G {
+record G : writeSerializable, initDeserializable {
   type A;
   type B;
   var x : A;
@@ -60,7 +60,7 @@ record G {
   }
 }
 
-class Parent {
+class Parent : writeSerializable, initDeserializable {
   var x : int;
 
   proc init(x: int = 0) {
@@ -83,7 +83,7 @@ class Parent {
   }
 }
 
-class Child : Parent {
+class Child : Parent, writeSerializable, initDeserializable {
   var y : real;
 
   proc init(x: int = 0, y: real = 0.0) {

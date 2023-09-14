@@ -4,7 +4,7 @@ class node {
   var next : unmanaged node(t)?;
 }
 
-record foo {
+record foo : writeSerializable {
   type t;
   var length : int;
   var first : unmanaged node(t)?;

@@ -51,7 +51,7 @@ module LocaleModel {
     return execution_subloc;  // no info needed from full sublocale
   }
 
-  class CPULocale : AbstractLocaleModel {
+  class CPULocale : AbstractLocaleModel, writeSerializable {
     const sid: chpl_sublocID_t;
     const name_: string;
 

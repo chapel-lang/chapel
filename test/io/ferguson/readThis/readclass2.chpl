@@ -1,6 +1,6 @@
 use IO;
 
-class mything {
+class mything : serializable {
   var x:int;
   var y:int;
 

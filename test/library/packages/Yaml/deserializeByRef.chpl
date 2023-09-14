@@ -1,7 +1,7 @@
 
 use IO, List, Map, FormatHelper;
 
-record A {
+record A : serializable {
   var x: int;
   var b: B;
 
@@ -36,7 +36,7 @@ record A {
   }
 }
 
-record B {
+record B : serializable {
   var t: (int, real);
 
   proc serialize(writer, ref serializer) throws {
@@ -66,7 +66,7 @@ record B {
   }
 }
 
-record myList {
+record myList : serializable {
   var values: list(A);
 
   proc ref deserialize(reader: fileReader(?), ref deserializer: reader.deserializerType) {
@@ -98,7 +98,7 @@ record myList {
     writer.write(values);
 }
 
-record myMap {
+record myMap : serializable {
   var values: map(int, A);
 
   proc ref deserialize(reader: fileReader(?), ref deserializer: reader.deserializerType) {

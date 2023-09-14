@@ -849,7 +849,7 @@ module YAML {
   @chpldoc.nodoc
   var _dummy_yaml_value = new owned YamlValue();
 
-  class YamlValue {
+  class YamlValue : writeSerializable {
     @chpldoc.nodoc
 
     /* index into a YAML mapping by string */
@@ -925,7 +925,7 @@ module YAML {
     }
   }
 
-  class YamlMapping: YamlValue {
+  class YamlMapping: YamlValue, writeSerializable {
     // TODO: get map(YamlValue, YamlValue) working...
     @chpldoc.nodoc
     var _map: map(string, (shared YamlValue, shared YamlValue));
@@ -1017,7 +1017,7 @@ module YAML {
     }
   }
 
-  class YamlSequence: YamlValue {
+  class YamlSequence: YamlValue, writeSerializable {
     @chpldoc.nodoc
     var _seq: list(shared YamlValue);
 
@@ -1088,7 +1088,7 @@ module YAML {
     }
   }
 
-  class YamlScalar: YamlValue {
+  class YamlScalar: YamlValue, writeSerializable {
     @chpldoc.nodoc
     var yamlType: YamlScalarType;
     @chpldoc.nodoc
@@ -1207,7 +1207,7 @@ module YAML {
     }
   }
 
-  class YamlAlias: YamlValue {
+  class YamlAlias: YamlValue, writeSerializable {
     @chpldoc.nodoc
     var _alias: string;
 
@@ -1624,7 +1624,7 @@ module YAML {
     // Emitter wrapper
     // ----------------------------------------------------
 
-    class LibYamlEmitter {
+    class LibYamlEmitter : writeSerializable {
       var seqStyle: YamlSequenceStyle;
       var mapStyle: YamlMappingStyle;
       var scalarStyle: YamlScalarStyle;
@@ -1909,7 +1909,7 @@ module YAML {
     // Parser Wrapper
     // ----------------------------------------------------
 
-    class LibYamlParser {
+    class LibYamlParser : writeSerializable {
       var parser: yaml_parser_t;
       var event: yaml_event_t;
 

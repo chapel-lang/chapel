@@ -1,4 +1,4 @@
-record foo {
+record foo : writeSerializable {
   var x : int = 1;
   var y : int = 2;
   var z : int = 3;

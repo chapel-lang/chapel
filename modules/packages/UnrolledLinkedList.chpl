@@ -110,7 +110,7 @@ module UnrolledLinkedList {
     }
   };
 
-  record unrolledLinkedList {
+  record unrolledLinkedList : writeSerializable {
 
     /* The type of the elements contained in this unrolledLinkedList. */
     type eltType;

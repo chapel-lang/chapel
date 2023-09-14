@@ -7,7 +7,7 @@ class DistribArrayNode {
   var arr: [0..size-1] arrType;
 }
 
-class DistribArray {
+class DistribArray : writeSerializable {
   type arrType;
   const arrSize: int;
   const localSize:int = arrSize / numLocales;

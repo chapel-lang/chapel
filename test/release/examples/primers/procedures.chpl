@@ -82,7 +82,7 @@ writeln();
 // we define a new type, ``Point``, and overload the definition of ``+``
 // to handle that type.
 //
-record Point { var x, y: real; }
+record Point : writeSerializable { var x, y: real; }
 
 // Tell how to add two points together.
 operator Point.+(p1: Point, p2: Point)

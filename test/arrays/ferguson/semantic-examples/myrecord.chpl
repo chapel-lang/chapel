@@ -1,4 +1,4 @@
-record R {
+record R : writeSerializable {
   var x: int = 0;
 }
 

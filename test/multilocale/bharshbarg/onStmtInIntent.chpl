@@ -12,7 +12,7 @@ proc alloc() {
   return ret;
 }
 
-record R {
+record R : writeSerializable {
   var x : c_ptr(int);
   var home : locale;
 

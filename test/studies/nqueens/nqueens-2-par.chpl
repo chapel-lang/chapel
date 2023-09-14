@@ -100,7 +100,7 @@ proc tryQueenInNextRow(board: unmanaged Board): void {
 //
 // Record-style value copying can be done with Board.clone().
 //
-class Board {
+class Board : writeSerializable {
 
   // size of the board
   const boardSize: int;

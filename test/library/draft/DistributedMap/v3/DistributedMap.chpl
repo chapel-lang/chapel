@@ -10,7 +10,7 @@ module DistributedMap {
     private use ChapelLocks;
 
 
-    record distributedMap {
+    record distributedMap : writeSerializable {
         type keyType;
         type valType;
 
@@ -38,7 +38,7 @@ module DistributedMap {
         }
     }
 
-    class distMapInternal {
+    class distMapInternal : writeSerializable {
         type keyType;
         type valType;
 

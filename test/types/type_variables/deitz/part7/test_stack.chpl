@@ -4,7 +4,7 @@ class stack_elt {
   var next : unmanaged stack_elt(eltType)?;
 }
 
-record stack {
+record stack : writeSerializable {
   type eltType;
 
   var  top : unmanaged stack_elt(eltType)?;

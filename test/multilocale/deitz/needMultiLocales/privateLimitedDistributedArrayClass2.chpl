@@ -4,7 +4,7 @@ config const verbose: bool = true;
 if n < numLocales || n % numLocales != 0 then
   halt("the number of locales, ", numLocales, ", does not evenly divide n,", n);
 
-class DistributedArray {
+class DistributedArray : writeSerializable {
   var ndata: range(int);
   var data: [ndata] int;
   var others: [0..numLocales-1] unmanaged DistributedArray?;

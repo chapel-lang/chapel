@@ -14,7 +14,7 @@ version of the 1d example code.
 
 type elemType = real(64);
 
-class Vector {
+class Vector : writeSerializable {
   var n : int;
   var d = {1..n};
   var a : [d] elemType;

@@ -578,7 +578,7 @@ module TomlParser {
 Class to hold various types parsed from input
 used to recursively hold tables and respective values
 */
-  class Toml {
+  class Toml : writeSerializable {
 
     @chpldoc.nodoc
     var i: int,
@@ -1319,7 +1319,7 @@ module TomlReader {
 
 
   /* Array wrapper */
-  class Tokens {
+  class Tokens : serializable {
     var A: list(string);
 
     proc init(A: list(string)) {

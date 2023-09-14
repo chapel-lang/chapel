@@ -413,7 +413,7 @@ module Bytes {
   }
 
   @chpldoc.nodoc
-  record _bytes {
+  record _bytes : writeSerializable, readDeserializable {
     var buffLen: int = 0; // length of string in bytes
     var buffSize: int = 0; // size of the buffer we own
     var buff: bufferType = nil;

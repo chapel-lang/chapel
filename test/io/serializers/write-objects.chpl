@@ -2,25 +2,25 @@
 use IO;
 use List;
 
-class A {
+class A : writeSerializable {
   override proc serialize(writer: fileWriter(?), ref serializer) throws {
     writer.write("A()");
   }
 }
 
-class B {
+class B : writeSerializable {
   override proc serialize(writer: fileWriter(?), ref serializer) throws {
     writer.write("B()");
   }
 }
 
-class C {
+class C : writeSerializable {
   override proc serialize(writer: fileWriter(?), ref serializer) throws {
     writer.write("C()");
   }
 }
 
-class D : C {
+class D : C, writeSerializable {
   override proc serialize(writer: fileWriter(?), ref serializer) throws {
     writer.write("D()");
   }

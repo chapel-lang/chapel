@@ -115,7 +115,7 @@ The `Hashed` domain map initializer is defined as follows:
             targetLocales: [] locale = Locales)
 
  */
-class Hashed : BaseDist {
+class Hashed : BaseDist, writeSerializable {
 
   // GENERICS:
 
@@ -572,7 +572,7 @@ class UserMapAssocDom: BaseAssociativeDom {
 //
 // the local domain class
 //
-class LocUserMapAssocDom {
+class LocUserMapAssocDom : writeSerializable {
 
   // GENERICS:
 
@@ -964,7 +964,7 @@ class UserMapAssocArr: AbsBaseArr(?) {
 //
 // the local array class
 //
-class LocUserMapAssocArr {
+class LocUserMapAssocArr : writeSerializable {
 
   // GENERICS:
 

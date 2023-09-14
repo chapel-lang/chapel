@@ -22,7 +22,7 @@ private use IO;
 // cells that will be used by each Grid.
 //-------------------------------------------------------------------
 
-class Level {
+class Level : writeSerializable {
 
   var is_complete: bool = false;
   

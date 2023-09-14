@@ -180,7 +180,7 @@ module Version {
     converted to a string, it is represented as ``major.minor.update (commit)``.
   */
 
-  record versionValue {
+  record versionValue : writeSerializable {
     /*
       The major version number. For version ``2.0.1``, this would be ``2``.
     */
@@ -341,7 +341,7 @@ module Version {
     converted to a string, it is represented as ``major.minor.update (commit)``.
     Unlike :type:`versionValue`, a ``version`` can be created and modified at runtime.
   */
-  record version {
+  record version : writeSerializable {
     /*
       The major version number. For version ``2.0.1``, this would be ``2``.
       Defaults to ``-1``

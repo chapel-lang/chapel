@@ -79,7 +79,7 @@ proc tryQueenInNextRow(board: unmanaged Board): void {
 // - remove a queen
 //   (queens must be removed in the LIFO order).
 //
-class Board {
+class Board : writeSerializable {
 
   // size of the board
   const boardSize: int;

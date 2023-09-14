@@ -170,7 +170,7 @@ module BigInteger {
   }
 
   pragma "ignore noinit"
-  record bigint {
+  record bigint : writeSerializable {
     // The underlying GMP C structure
     pragma "no init"
     @chpldoc.nodoc

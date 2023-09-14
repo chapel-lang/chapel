@@ -328,7 +328,7 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
 
 */
 pragma "ignore noinit"
-record stencilDist {
+record stencilDist : writeSerializable {
   param rank: int;
   type idxType = int;
   param ignoreFluff = false;
@@ -436,7 +436,7 @@ operator =(ref a: stencilDist(?), b: stencilDist(?)) {
 type Stencil = stencilDist;
 
 
-class StencilImpl : BaseDist {
+class StencilImpl : BaseDist, writeSerializable {
   param rank: int;
   type idxType = int;
   param ignoreFluff: bool;
@@ -540,7 +540,7 @@ class StencilArr: BaseRectangularArr(?) {
 // locDom: reference to local domain class
 // myElems: a non-distributed array of local elements
 //
-class LocStencilArr {
+class LocStencilArr : writeSerializable {
   type eltType;
   param rank: int;
   type idxType;

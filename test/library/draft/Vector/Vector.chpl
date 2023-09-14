@@ -65,7 +65,7 @@ module Vector {
                     "here: ", t:string);
     }
   }
-  record vector {
+  record vector : writeSerializable, readDeserializable {
     /* The type of the elements contained in this vector. */
     type eltType;
     /* If `true`, this vector will perform parallel safe operations. */

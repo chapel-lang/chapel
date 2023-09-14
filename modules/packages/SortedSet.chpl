@@ -43,7 +43,7 @@ module SortedSet {
   private use IO;
   public use Sort only defaultComparator;
 
-  record sortedSet {
+  record sortedSet : writeSerializable {
     /* The type of the elements contained in this sortedSet. */
     type eltType;
 

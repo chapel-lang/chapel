@@ -374,7 +374,7 @@ and array:
 */
 
 pragma "ignore noinit"
-record blockDist {
+record blockDist : writeSerializable {
   param rank: int;
   type idxType = int;
   type sparseLayoutType = unmanaged DefaultDist;
@@ -492,7 +492,7 @@ type Block = blockDist;
 
 
 @chpldoc.nodoc
-class BlockImpl : BaseDist {
+class BlockImpl : BaseDist, writeSerializable {
   param rank: int;
   type idxType = int;
   var boundingBox: domain(rank, idxType);
@@ -582,7 +582,7 @@ class BlockArr: BaseRectangularArr(?) {
 // locDom: reference to local domain class
 // myElems: a non-distributed array of local elements
 //
-class LocBlockArr {
+class LocBlockArr : writeSerializable {
   type eltType;
   param rank: int;
   type idxType;
@@ -2147,7 +2147,7 @@ config param debugBlockScan = false;
  * suitable for general use since there are races with when the value gets
  * written to, but safe for single writer, single reader case here.
  */
-class BoxedSync {
+class BoxedSync : writeSerializable {
   type T;
   var s: sync int; // int over bool to enable native qthread sync
   var res: T;

@@ -714,7 +714,7 @@ module ChapelArray {
   pragma "distribution"
   pragma "ignore noinit"
   @chpldoc.nodoc
-  record _distribution {
+  record _distribution : writeSerializable, readDeserializable {
     var _pid:int;  // only used when privatized
     pragma "owned"
     var _instance; // generic, but an instance of a subclass of BaseDist
@@ -958,7 +958,7 @@ module ChapelArray {
   // the serialize routines to fire, when their where-clause permits.
   pragma "always RVF"
   /* The array type */
-  record _array {
+  record _array : writeSerializable, readDeserializable {
     var _pid:int;  // only used when privatized
     pragma "owned"
     pragma "alias scope from this"

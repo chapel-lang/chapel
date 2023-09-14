@@ -2,7 +2,7 @@ class C {
   var x: int;
 }
 
-class D : C {
+class D : C, writeSerializable {
   var y: real;
 
   override proc serialize(writer, ref serializer) throws {

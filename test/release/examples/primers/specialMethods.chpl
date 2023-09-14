@@ -38,7 +38,7 @@ proc ExampleRecord2.secondaryMethod() { }
 // the corresponding interface. For the ``hash`` method we'll see below, the
 // appropriate interface is ``hashable``. We can mark ``R`` as implementing
 // ``hashable`` by including a ``: hashable`` after its name when we declare it.
-record R : hashable {
+record R : hashable, writeSerializable, readDeserializable {
   param size: int = 10;
   var vals: size*int;
 }
