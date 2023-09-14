@@ -12,25 +12,25 @@ pushd $CHAMPS_COMMON_DIR
 git pull
 popd
 
-# All CHAMPS testing is currently on a cray-cs
+source $CRAY_ENABLE_PE
+
+# All CHAMPS testing is currently on a hpe-apollo
 module list
 
-source $CWD/common-cray-cs.bash
-source $CWD/common-perf-cray-cs-hdr.bash
+source $CWD/common-hpe-apollo.bash
+source $CWD/common-perf-hpe-apollo-hdr.bash
 
-loadCSModule PrgEnv-cray
-loadCSModule intel
-loadCSModule cray-mvapich2_nogpu
-
-# CHAMPS dependencies were built with cce 13. Until we rebuild them,
-# pin that version
-module swap cce cce/13.0.2
+module load PrgEnv-gnu
+module load cray-pmi
+module load cray-mpich
+module load cray-hdf5-parallel
 
 module list
 
 # Perf configuration
 source $CWD/common-perf.bash
 CHAMPS_PERF_DIR=${CHAMPS_PERF_DIR:-$COMMON_DIR/NightlyPerformance/champs}
+export CHPL_TEST_PERF_CONFIG_NAME='16-node-apollo-hdr'
 export CHPL_TEST_PERF_DIR=$CHAMPS_PERF_DIR/$CHPL_TEST_PERF_CONFIG_NAME
 export CHPL_TEST_PERF_START_DATE=01/21/22
 
@@ -38,18 +38,29 @@ export CHPL_TEST_PERF_START_DATE=01/21/22
 export CHPL_NIGHTLY_TEST_DIRS=studies/champs/
 export CHPL_TEST_CHAMPS=true
 
+# Intel installation is hard for me to understand, I had to wire things
+# manually.
+export MKLROOT=/sw/sdev/intel/oneapi/2023/v2/mkl/2023.2.0/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$MKLROOT/lib/intel64
+
+# Note that this is used for libiomp. The path for this and MKL are different
+# Also, INTELROOT is not a "standard" CHAMPS Makefile flag. Our patch adds it.
+export INTELROOT=/sw/sdev/intel/oneapi/2023/v2/compiler/2023.2.0/linux/compiler
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INTELROOT/lib/intel64
+
+export MPIROOT=$(dirname $(dirname $(which mpicc)))
+export HDF5ROOT=$(dirname $(dirname $(which h5pcc)))
+
 CHAMPS_DEP_DIR=$CHAMPS_COMMON_DIR/deps-manual
 if [ -d "$CHAMPS_DEP_DIR" ]; then
-  export MKLROOT=/opt/intel/mkl
-  export MPIROOT=$(dirname $(dirname $(which mpicc)))
-  export HDF5ROOT=${HDF5ROOT:-$CHAMPS_DEP_DIR}
   export METISROOT=${METISROOT:-$CHAMPS_DEP_DIR}
   export CGNSROOT=${CGNSROOT:-$CHAMPS_DEP_DIR}
+  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CHAMPS_DEP_DIR/lib
 fi
 
 export CPATH=$CPATH:$MPIROOT/include
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HDF5ROOT/lib
 
+export CHPL_TARGET_CPU=none
 
 # these may be unnecessary
 export GASNET_PHYSMEM_MAX="9/10"
