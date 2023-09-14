@@ -206,6 +206,7 @@ popd
 # Run experiments
 # -----------------------------------------------------------------------------
 
+ranExperiment=""
 for i in "${!experiment_name[@]}"; do
   nameOpt=""
   name="${experiment_name[i]}"
@@ -343,6 +344,7 @@ for i in "${!experiment_name[@]}"; do
   echo "> $cmd \"$logDir/$name.dat\" \"$logDir\" \"$name\""
   eval $cmd "$logDir/$name.dat" "$logDir" "$name"
   set +e
+  ranExperiment="YES"
 
   source $CHPL_HOME/util/test/chplSetupEnv.bash --no-base-cfg "postExperiment"
 
@@ -365,8 +367,14 @@ for i in "${!experiment_name[@]}"; do
 done
 
 # Run paint script if one was specified
-if [[ ! -z "$CHPL_EXP_PAINT_WITH" ]]; then
-  eval "$CHPL_EXP_PAINT_WITH"
+if [[ -n "$CHPL_EXP_PAINT_WITH" ]]; then
+  if [[ -z "$ranExperiment" ]]; then
+    echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
+    echo "* * * * * * * * * SKIPPING PAINTING BECAUSE NO EXPERIMENTS RAN  * * * * * * * *"
+    echo "* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *"
+  else
+    eval "$CHPL_EXP_PAINT_WITH"
+  fi
 fi
 
 echo -e "\n================================================================================\n================================================================================"
