@@ -2232,6 +2232,11 @@ module ChapelArray {
     return try! "%?".format(x);
   }
 
+  @chpldoc.nodoc
+  operator :(in x: [] ?et, type t: et) where t == et {
+    return x;
+  }
+
   pragma "fn returns aliasing array"
   @chpldoc.nodoc
   operator #(arr: [], counts: integral) {
