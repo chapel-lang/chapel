@@ -361,8 +361,7 @@ module ChapelIO {
         if isIoField(x, i) {
           param name : string = __primitive("field num to name", x, i);
           ref field = __primitive("field by num", x, i);
-          field = des.readField(name,
-                                __primitive("field by num", x, i).type);
+          des.readField(name, field);
         }
       }
 
