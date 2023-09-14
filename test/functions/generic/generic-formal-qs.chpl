@@ -21,3 +21,10 @@ e(new C(int));
 
 proc f(arg: WR(R)) { }
 f(new WR(R(int)));
+
+
+proc g(arg: domain) { }
+g({1..10});
+
+proc h(arg: domain(?)) { }
+h({1..10});
