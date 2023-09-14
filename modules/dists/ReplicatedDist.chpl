@@ -116,7 +116,7 @@ when the initializer encounters an error.
 
 
 pragma "ignore noinit"
-record replicatedDist {
+record replicatedDist : writeSerializable {
   forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(unmanaged ReplicatedImpl);
 
   proc init(targetLocales: [] locale = Locales,
@@ -514,7 +514,7 @@ proc _array.replicand(loc: locale) ref {
 //
 // local array class
 //
-class LocReplicatedArr {
+class LocReplicatedArr : writeSerializable {
   // these generic fields let us give types to the other fields easily
   type eltType;
   param rank: int;
