@@ -232,6 +232,7 @@ typically made by iterating over it in a loop.
 
    .. BLOCK-test-chapelnoprint
 
+      Tree implements writeSerializable;
       override proc Tree.serialize(writer, ref serializer)
       {
         var first = true;
