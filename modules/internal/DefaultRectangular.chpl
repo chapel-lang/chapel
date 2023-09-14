@@ -1717,6 +1717,22 @@ module DefaultRectangular {
     rwLiteral("}");
   }
 
+  proc DefaultRectangularDom.dsiSerialWrite(f) throws
+  where _supportsSerializers(f) && f.serializerType != IO.defaultSerializer {
+    var ser = f.serializer.startList(f, rank);
+    for i in 0..<rank do ser.writeElement(dsiDim(i));
+    ser.endList();
+  }
+
+  // TODO: There is currently a bug when returning domains from
+  // 'deserializeFrom', so this isn't tested yet.
+  proc DefaultRectangularDom.dsiSerialRead(f) throws
+  where _supportsSerializers(f) && f.deserializerType != IO.defaultDeserializer {
+    var des = f.deserializer.startList(f);
+    for i in 0..<rank do ranges(i) = des.readElement(ranges(i).type);
+    des.endList();
+  }
+
   proc DefaultRectangularDom.doiToString() {
     var str = "{" + ranges(0):string;
     for i in 1..<rank do
