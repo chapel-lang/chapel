@@ -22,6 +22,8 @@ class Chapel < Formula
   depends_on "llvm@14"
   depends_on "python@3.10"
   depends_on "cmake"
+  depends_on "hwloc"
+  depends_on "jemalloc"
 
   # LLVM is built with gcc11 and we will fail on linux with gcc version 5.xx
   fails_with gcc: "5"
@@ -56,6 +58,8 @@ class Chapel < Formula
     (libexec/"chplconfig").write <<~EOS
       CHPL_RE2=bundled
       CHPL_GMP=system
+      CHPL_TARGET_JEMALLOC=system
+      CHPL_HWLOC=system
       CHPL_LLVM_CONFIG=#{llvm.opt_bin}/llvm-config
       CHPL_LLVM_GCC_PREFIX=none
     EOS
