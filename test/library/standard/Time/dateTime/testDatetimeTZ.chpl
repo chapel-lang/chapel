@@ -43,7 +43,7 @@ proc test_trivial() {
   assert(dt.minute == 5);
   assert(dt.second == 6);
   assert(dt.microsecond == 7);
-  assert(dt.timezone.borrow() == nil);
+  assert(!dt.tzAware);
 }
 
 proc test_even_more_compare() {

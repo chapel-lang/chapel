@@ -639,7 +639,7 @@ module Time {
 
   /* Writes this `date` formatted as ``YYYY-MM-DD`` */
   proc date.writeThis(f) throws {
-    f.write(this:string);
+    f.write("%?".format(this));
   }
 
   // Exists to support some common functionality for `dateTime.readThis`
@@ -784,7 +784,7 @@ module Time {
 
     /* The minimum representable `time` */
     proc type min : time(false) {
-      return new time();
+      return new time(false);
     }
 
     /* The maximum representable `time` */
@@ -1364,7 +1364,7 @@ module Time {
                      in tz: shared Timezone, internal: bool)
     where DateTimeStaticTZAwareness == true
   {
-    tzAware = true;
+    this.tzAware = true;
     chpl_date = new date(year, month, day);
     chpl_time = new time(hour, minute, second, microsecond, tz, internal=true);
   }
@@ -1577,7 +1577,7 @@ module Time {
   @unstable("tz is unstable; its type may change in the future")
   proc dateTime.replace(year=-1, month=-1, day=-1,
                         hour=-1, minute=-1, second=-1, microsecond=-1,
-                        in tz: shared Timezone = this._timezone) : dateTime(true)
+                        in tz: shared Timezone) : dateTime(true)
     where DateTimeStaticTZAwareness == true
   {
     return new dateTime(
@@ -1611,8 +1611,8 @@ module Time {
   /* Return the offset from UTC */
   @unstable("'utcOffset' is unstable")
   proc dateTime.utcOffset() : timeDelta {
-    if DateTimeStaticTZAwareness && !tzAware
-      then compilerError("'utcOffset' called on 'dateTime' without a timezone");
+    // if DateTimeStaticTZAwareness && !tzAware
+    //   then compilerError("'utcOffset' called on 'dateTime' without a timezone");
 
     if DateTimeStaticTZAwareness {
       return this._timezone.utcOffset(this);
@@ -1629,7 +1629,7 @@ module Time {
       then compilerError("'dst' called on 'dateTime' without a timezone");
 
     if DateTimeStaticTZAwareness {
-        return this._timezone.dst(this);
+      return this._timezone.dst(this);
     } else {
       if this._timezone.borrow() == nil
         then halt("'dst' called on 'dateTime' without a timezone");
@@ -1946,7 +1946,7 @@ module Time {
      followed by ``±hh:mm`` if a timezone is specified
   */
   proc dateTime.writeThis(f) throws {
-    f.write(this:string);
+    f.write("%?".format(this));
   }
 
   /* Reads this `dateTime` with the same format used by
@@ -1986,7 +1986,7 @@ module Time {
   /* Operators on dateTime values */
 
   @chpldoc.nodoc
-  operator dateTime.+(td: timeDelta, dt: dateTime) : dateTime {
+  operator dateTime.+(td: timeDelta, dt: dateTime(?a)) : dateTime(a) {
     var newmicro = dt.microsecond + td.microseconds;
     var newsec = dt.second + td.seconds;
     var newmin = dt.minute;
@@ -2013,12 +2013,12 @@ module Time {
   }
 
   @chpldoc.nodoc
-  operator dateTime.+(dt: dateTime, td: timeDelta) : dateTime {
+  operator dateTime.+(dt: dateTime(?a), td: timeDelta) : dateTime(a) {
     return td + dt;
   }
 
   @chpldoc.nodoc
-  operator dateTime.-(dt: dateTime, td: timeDelta) : dateTime {
+  operator dateTime.-(dt: dateTime(?a), td: timeDelta) : dateTime(a) {
     var deltasec  = td.seconds % 60;
     var deltamin  = (td.seconds / 60) % 60;
     var deltahour = td.seconds / (60*60);
@@ -2118,8 +2118,8 @@ module Time {
       else if date2 < date1 then return false;
       else return dt1.getTime() < dt2.getTime();
     } else {
-      return (dt1.replace(tz=nil) - dt1.utcOffset()) <
-             (dt2.replace(tz=nil) - dt2.utcOffset());
+      return (dt1 - dt1.utcOffset()) <
+             (dt2 - dt2.utcOffset());
     }
   }
 
