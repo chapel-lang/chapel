@@ -43,7 +43,7 @@ proc test_trivial() {
   assert(dt.minute == 5);
   assert(dt.second == 6);
   assert(dt.microsecond == 7);
-  assert(!dt.tzAware);
+  assert(dt.timezone.borrow() == nil);
 }
 
 proc test_even_more_compare() {
@@ -62,7 +62,7 @@ proc test_even_more_compare() {
   assert(t1 == t1);
   assert(t2 == t2);
 
-  // Equal after adjustment.
+  // Equal afer adjustment.
   t1 = new dateTime(1, 12, 31, 23, 59,
                     tz=new shared FixedOffset(1, ""));
   t2 = new dateTime(2, 1, 1, 3, 13,
@@ -134,9 +134,9 @@ proc test_tz_aware_arithmetic() {
   use Random;
   var rng = createRandomStream(eltType=int);
 
+  var now = dateTime.now();
   var tz55 = new shared FixedOffset(-330, "west 5:30");
-  var now = dateTime.now(tz55);
-  var timeaware = now.getTime();
+  var timeaware = now.getTime().replace(tz=tz55);
   var nowaware = new dateTime(now.getDate(), timeaware);
   assert(nowaware.timezone == tz55);
   assert(nowaware.timetz() == timeaware);
