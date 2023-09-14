@@ -7883,11 +7883,6 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
 
 }
 
-@deprecated(notes="fileReader.readbits is deprecated - please use :proc:`fileReader.readBits` instead")
-proc fileReader.readbits(ref v:integral, nbits:integral):bool throws {
-    return this.readBits(v, nbits:int);
-}
-
 /*
    Read bits with binary I/O
 
@@ -7939,12 +7934,6 @@ proc fileReader.readBits(type resultType, numBits:int):resultType throws {
   var ret = try this.readBits(tmp, numBits);
   if !ret then throw new EofError("EOF Encountered in readBits");
   return tmp;
-}
-
-
-@deprecated(notes="fileWriter.writebits is deprecated - please use :proc:`fileWriter.writeBits` instead")
-proc fileWriter.writebits(v:integral, nbits:integral) throws {
-  this.writeBits(v, nbits:int);
 }
 
 /*
