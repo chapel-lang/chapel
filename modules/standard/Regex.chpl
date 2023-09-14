@@ -412,63 +412,6 @@ class BadRegexError : Error {
   }
 }
 
-/*
-   Compile a regular expression. This routine will throw a
-   class:`BadRegexError` if compilation failed.
-
-   .. warning::
-
-     This procedure is deprecated. Please use :proc:`regex.init` via ``new
-     regex()``.
-
-
-   :arg pattern: the regular expression to compile. This argument can be string
-                 or bytes. See :ref:`regular-expression-syntax` for details.
-                 Note that you may have to escape backslashes. For example, to
-                 get the regular expression ``\s``, you'd have to write
-                 ``"\\s"`` because the ``\`` is the escape character within
-                 Chapel string/bytes literals. Note that, Chapel supports
-                 triple-quoted raw string/bytes literals, which do not require
-                 escaping backslashes. For example ``"""\s"""`` or ``b"""\s"""``
-                 can be used.
-   :arg posix: (optional) set to true to disable non-POSIX regular expression
-               syntax
-   :arg literal: (optional) set to true to treat the regular expression as a
-                 literal (ie, create a regex matching ``pattern`` as a string
-                 rather than as a regular expression).
-   :arg noCapture: (optional) set to true in order to disable all capture groups
-                   in the regular expression
-   :arg ignoreCase: (optional) set to true in order to ignore case when
-                    matching. Note that this can be set inside the regular
-                    expression with ``(?i)``.
-   :arg multiLine: (optional) set to true in order to activate multiline mode
-                   (meaning that ``^`` and ``$`` match the beginning and end
-                   of a line instead of just the beginning and end of the text.
-                   Note that this can be set inside a regular expression
-                   with ``(?m)``.
-   :arg dotAll: (optional) set to true in order to allow ``.``
-               to match a newline. Note that this can be set inside the
-               regular expression with ``(?s)``.
-   :arg nonGreedy: (optional) set to true in order to prefer shorter matches for
-                   repetitions; for example, normally x* will match as many x
-                   characters as possible and x*? will match as few as possible.
-                   This flag swaps the two, so that x* will match as few as
-                   possible and x*? will match as many as possible. Note that
-                   this flag can be set inside the regular expression with
-                   ``(?U)``.
-
-   :throws BadRegexError: If the argument 'pattern' has syntactical errors.
-                          Refer to https://github.com/google/re2/blob/master/re2/re2.h
-                          for more details about error codes.
- */
-@deprecated(notes="'Regex.compile' is deprecated. Please use 'new regex()' instead.")
-proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
-             /*i*/ ignoreCase=false, /*m*/ multiLine=false, /*s*/ dotAll=false,
-             /*U*/ nonGreedy=false): regex(t) throws where t==string || t==bytes {
-  return new regex(pattern, posix, literal, noCapture, ignoreCase, multiLine,
-                   dotAll, nonGreedy);
-}
-
 /*  The regexMatch record records a regular expression search match
     or a capture group.
 
@@ -557,7 +500,6 @@ record chpl_serializeHelper {
 
 /*  This record represents a compiled regular expression. Regular expressions
     are currently cached on a per-thread basis and are reference counted.
-    To create a compiled regular expression, use the proc:`compile` function.
 
     A string-based regex can be cast to a string (resulting in the pattern that
     was compiled). A string can be cast to a string-based regex (resulting in a
