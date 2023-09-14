@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Ignore line numbers in modules.
+
+sed 's/\.chpl:[0-9]*:/\.chpl:nnnn:/' $2 > $2.tmp
+mv $2.tmp $2
+
