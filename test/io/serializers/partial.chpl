@@ -18,7 +18,7 @@ record A {
 }
 
 // Should disable generation of 'deserialize' and deserializing 'init'
-record B {
+record B : writeSerializable {
   var x : int;
 
   proc serialize(writer, ref serializer) throws {
@@ -27,7 +27,7 @@ record B {
 }
 
 // Should disable generation of 'serialize' and 'deserialize'
-record C {
+record C : initDeserializable {
   var x : int;
 
   proc init(x : int = 0) {
@@ -40,7 +40,7 @@ record C {
 }
 
 // Should disable generation of 'serialize' and deserializing 'init'
-record D {
+record D : readDeserializable {
   var x : int;
 
   proc ref deserialize(reader, ref deserializer) throws {

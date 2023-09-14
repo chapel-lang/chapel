@@ -1,4 +1,4 @@
-record Matrix {
+record Matrix : writeSerializable {
   type elt_type;
   var m, n: int;
   var D: domain(2) = {1..m, 1..n};

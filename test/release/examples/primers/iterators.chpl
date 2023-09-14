@@ -127,7 +127,7 @@ postorder
 // Each yield statement returns a node, or equivalently the subtree
 // rooted at that node.
 //
-class Tree {
+class Tree : writeSerializable {
   var data: string;
   var left, right: owned Tree?;
 }

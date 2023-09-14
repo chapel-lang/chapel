@@ -1,6 +1,6 @@
 // Illustrate the issue by using a customized writeThis method.
 
-class C {
+class C : writeSerializable {
   const home = here.id;
   override proc serialize(writer, ref serializer) throws { writer.write("here=", here.id, " home=", home); }
 }

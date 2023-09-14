@@ -1,4 +1,4 @@
-class myclass {
+class myclass : writeSerializable {
   var x: int;
   var y: real;
 }

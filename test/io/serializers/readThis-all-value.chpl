@@ -1,7 +1,7 @@
 
 use IO;
 
-record B {
+record B : serializable {
   var x : int;
 
   proc serialize(writer, ref serializer) throws {

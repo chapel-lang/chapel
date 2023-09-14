@@ -1,6 +1,6 @@
 use IO;
 
-record MyRecord {
+record MyRecord : serializable {
   var i: int;
   proc init(i: int = 0) { this.i = i; }
   proc init(reader, ref deserializer) throws {

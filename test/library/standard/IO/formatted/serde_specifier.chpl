@@ -1,6 +1,6 @@
 use IO, IO.FormattedIO;
 
-record R {
+record R : writeSerializable, readDeserializable {
   var x: int;
 
   proc serialize(writer, ref serializer) throws {

@@ -1,13 +1,13 @@
 use IO;
 
-class C
+class C : writeSerializable
 {
   override proc serialize(writer, ref serializer) throws { writer.write("C"); }
 }
 
 class SubC : C
 {
-  override proc serialize(writer, ref serializer) throws { writer.write("SubC"); }
+  override proc serialize(writer, ref serializer) throws, writeSerializable { writer.write("SubC"); }
 }
 
 class OverrideMe

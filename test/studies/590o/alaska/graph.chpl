@@ -14,7 +14,7 @@ class position{
   var y: int;
 }
 
-class Node {
+class Node : writeSerializable {
   var id: int;
   var name: string;
   var pos: unmanaged position = new unmanaged position(-1,-1);
@@ -43,7 +43,7 @@ operator Node.<(x: borrowed Node?, y: borrowed Node?) {
   return x!.name < y!.name;
 }
 
-class Edge {
+class Edge : writeSerializable {
   var id: int;
   var src: unmanaged Node;
   var dst: unmanaged Node;
@@ -145,7 +145,7 @@ proc Edge.read(infile: file){
 }
 */
 
-class UndirectedEdge : Edge {
+class UndirectedEdge : Edge, writeSerializable {
   override proc serialize(writer, ref serializer){
      writer.write(src," -- ",dst);
   }

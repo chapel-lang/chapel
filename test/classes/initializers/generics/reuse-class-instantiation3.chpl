@@ -1,4 +1,4 @@
-class Foo {
+class Foo : writeSerializable {
   type T;
   var x: T;
 

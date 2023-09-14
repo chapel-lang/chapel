@@ -49,7 +49,7 @@ use ChapelHashtable;
 // To preserve this future behavior after map updates,
 // a snapshot of `map` was taken at the time of this future
 // creation
-record map {
+record map : writeSerializable {
   type keyType;
   type valType;
 

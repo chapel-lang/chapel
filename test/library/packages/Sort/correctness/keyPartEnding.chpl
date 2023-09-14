@@ -1,7 +1,7 @@
 use Sort;
 use List;
 
-record TwoRepeated {
+record TwoRepeated : writeSerializable {
   var first:int;
   var nFirst:int;
   var second:int;

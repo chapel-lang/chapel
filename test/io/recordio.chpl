@@ -8,7 +8,7 @@
  */
 use IO;
 
-record MyRecord {
+record MyRecord : writeSerializable, readDeserializable {
   var i: int;
   var r: real;
   var s: string;
