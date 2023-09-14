@@ -3802,34 +3802,6 @@ module BigInteger {
   @deprecated(notes="bigint.abs method is deprecated - please use the standalone function :proc:`~BigInteger.abs`")
   proc ref bigint.abs(const ref a: bigint) do BigInteger.abs(this, a);
 
-  @deprecated("bigint.div_q using Round is deprecated, use the standalone function :proc:`~BigInteger.div` with :enum:`roundingMode` instead")
-  proc ref bigint.div_q(const ref n: bigint,
-                    const ref d: bigint,
-                    param     rounding = Round.ZERO) {
-    use Round;
-    if (rounding == UP) {
-      BigInteger.div(this, n, d, roundingMode.up);
-    } else if (rounding == ZERO) {
-      BigInteger.div(this, n, d, roundingMode.zero);
-    } else {
-      BigInteger.div(this, n, d, roundingMode.down);
-    }
-  }
-
-  @deprecated("bigint.div_q using Round is deprecated, use the standalone function :proc:`~BigInteger.div` with :enum:`roundingMode` instead")
-  proc ref bigint.div_q(const ref n: bigint,
-                              d: integral,
-                    param     rounding = Round.ZERO) {
-    use Round;
-    if (rounding == UP) {
-      BigInteger.div(this, n, d, roundingMode.up);
-    } else if (rounding == ZERO) {
-      BigInteger.div(this, n, d, roundingMode.zero);
-    } else {
-      BigInteger.div(this, n, d, roundingMode.down);
-    }
-  }
-
   @deprecated("divQ is deprecated - please use :proc:`div` with :enum:`roundingMode` instead")
   proc divQ(ref result: bigint,
             const ref numer: bigint,
