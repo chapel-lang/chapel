@@ -12,6 +12,8 @@ pushd $CHAMPS_COMMON_DIR
 git pull
 popd
 
+module unload PrgEnv-cray
+
 source $CRAY_ENABLE_PE
 
 # All CHAMPS testing is currently on a hpe-apollo
@@ -20,7 +22,6 @@ module list
 source $CWD/common-hpe-apollo.bash
 source $CWD/common-perf-hpe-apollo-hdr.bash
 
-module unload PrgEnv-cray
 module load PrgEnv-gnu
 module load cray-pmi
 module load cray-mpich
