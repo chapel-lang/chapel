@@ -23,10 +23,12 @@ testDatetimeTZ.chpl:125: In function 'test_extract':
 testDatetimeTZ.chpl:127: warning: The 'dateTime' initializer that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
 testDatetimeTZ.chpl:130: warning: The 'time' initializer that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
 testDatetimeTZ.chpl:133: In function 'test_tz_aware_arithmetic':
+testDatetimeTZ.chpl:139: warning: 'time.replace' that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
 testDatetimeTZ.chpl:141: warning: The ``timezone`` query that returns a nilable value is deprecated; please recompile with '-sDateTimeStaticTZAwareness=true' to make timezone awareness a feature of the ``datetime`` type
 testDatetimeTZ.chpl:151: warning: The ``timezone`` query that returns a nilable value is deprecated; please recompile with '-sDateTimeStaticTZAwareness=true' to make timezone awareness a feature of the ``datetime`` type
 testDatetimeTZ.chpl:153: warning: The ``timezone`` query that returns a nilable value is deprecated; please recompile with '-sDateTimeStaticTZAwareness=true' to make timezone awareness a feature of the ``datetime`` type
 testDatetimeTZ.chpl:159: warning: The ``timezone`` query that returns a nilable value is deprecated; please recompile with '-sDateTimeStaticTZAwareness=true' to make timezone awareness a feature of the ``datetime`` type
+testDatetimeTZ.chpl:167: warning: 'dateTime.replace' that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
 testDatetimeTZ.chpl:168: warning: The ``timezone`` query that returns a nilable value is deprecated; please recompile with '-sDateTimeStaticTZAwareness=true' to make timezone awareness a feature of the ``datetime`` type
 testDatetimeTZ.chpl:180: warning: The 'dateTime' initializer that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
 testDatetimeTZ.chpl:182: warning: The 'dateTime' initializer that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
@@ -34,9 +36,11 @@ testDatetimeTZ.chpl:189: In function 'test_tzinfo_now':
 testDatetimeTZ.chpl:196: warning: The ``timezone`` query that returns a nilable value is deprecated; please recompile with '-sDateTimeStaticTZAwareness=true' to make timezone awareness a feature of the ``datetime`` type
 testDatetimeTZ.chpl:196: warning: The ``timezone`` query that returns a nilable value is deprecated; please recompile with '-sDateTimeStaticTZAwareness=true' to make timezone awareness a feature of the ``datetime`` type
 testDatetimeTZ.chpl:207: warning: The ``timezone`` query that returns a nilable value is deprecated; please recompile with '-sDateTimeStaticTZAwareness=true' to make timezone awareness a feature of the ``datetime`` type
+testDatetimeTZ.chpl:208: warning: 'dateTime.replace' that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
 testDatetimeTZ.chpl:221: In function 'test_tzinfo_fromtimestamp':
 testDatetimeTZ.chpl:242: warning: The ``timezone`` query that returns a nilable value is deprecated; please recompile with '-sDateTimeStaticTZAwareness=true' to make timezone awareness a feature of the ``datetime`` type
 testDatetimeTZ.chpl:242: warning: The ``timezone`` query that returns a nilable value is deprecated; please recompile with '-sDateTimeStaticTZAwareness=true' to make timezone awareness a feature of the ``datetime`` type
+testDatetimeTZ.chpl:256: warning: 'dateTime.replace' that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
 testDatetimeTZ.chpl:259: In function 'test_tzinfo_timetuple':
 testDatetimeTZ.chpl:273: warning: The 'dateTime' initializer that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
 testDatetimeTZ.chpl:288: warning: The 'dateTime' initializer that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
@@ -50,9 +54,20 @@ testDatetimeTZ.chpl:367: warning: The 'dateTime' initializer that accepts a nila
 testDatetimeTZ.chpl:377: In function 'test_replace':
 testDatetimeTZ.chpl:381: warning: The 'dateTime' initializer that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
 testDatetimeTZ.chpl:382: warning: The ``timezone`` query that returns a nilable value is deprecated; please recompile with '-sDateTimeStaticTZAwareness=true' to make timezone awareness a feature of the ``datetime`` type
+testDatetimeTZ.chpl:382: warning: 'dateTime.replace' that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
 testDatetimeTZ.chpl:394: warning: The 'dateTime' initializer that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
+testDatetimeTZ.chpl:397: warning: 'dateTime.replace' that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
+testDatetimeTZ.chpl:399: warning: 'dateTime.replace' that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
+testDatetimeTZ.chpl:401: warning: 'dateTime.replace' that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
+testDatetimeTZ.chpl:403: warning: 'dateTime.replace' that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
+testDatetimeTZ.chpl:405: warning: 'dateTime.replace' that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
+testDatetimeTZ.chpl:407: warning: 'dateTime.replace' that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
+testDatetimeTZ.chpl:409: warning: 'dateTime.replace' that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
 testDatetimeTZ.chpl:416: warning: The 'dateTime' initializer that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
+testDatetimeTZ.chpl:417: warning: 'dateTime.replace' that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
+testDatetimeTZ.chpl:423: warning: 'dateTime.replace' that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
 testDatetimeTZ.chpl:424: warning: The ``timezone`` query that returns a nilable value is deprecated; please recompile with '-sDateTimeStaticTZAwareness=true' to make timezone awareness a feature of the ``datetime`` type
+testDatetimeTZ.chpl:427: warning: 'dateTime.replace' that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
 testDatetimeTZ.chpl:429: warning: The ``timezone`` query that returns a nilable value is deprecated; please recompile with '-sDateTimeStaticTZAwareness=true' to make timezone awareness a feature of the ``datetime`` type
 testDatetimeTZ.chpl:429: warning: The ``timezone`` query that returns a nilable value is deprecated; please recompile with '-sDateTimeStaticTZAwareness=true' to make timezone awareness a feature of the ``datetime`` type
 testDatetimeTZ.chpl:432: In function 'test_more_astimezone':
@@ -60,10 +75,23 @@ testDatetimeTZ.chpl:438: warning: The ``timezone`` query that returns a nilable 
 testDatetimeTZ.chpl:441: warning: The ``timezone`` query that returns a nilable value is deprecated; please recompile with '-sDateTimeStaticTZAwareness=true' to make timezone awareness a feature of the ``datetime`` type
 testDatetimeTZ.chpl:442: warning: The ``timezone`` query that returns a nilable value is deprecated; please recompile with '-sDateTimeStaticTZAwareness=true' to make timezone awareness a feature of the ``datetime`` type
 testDatetimeTZ.chpl:448: warning: The ``timezone`` query that returns a nilable value is deprecated; please recompile with '-sDateTimeStaticTZAwareness=true' to make timezone awareness a feature of the ``datetime`` type
+testDatetimeTZ.chpl:452: warning: 'dateTime.replace' that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
 testDatetimeTZ.chpl:456: warning: The ``timezone`` query that returns a nilable value is deprecated; please recompile with '-sDateTimeStaticTZAwareness=true' to make timezone awareness a feature of the ``datetime`` type
 testDatetimeTZ.chpl:456: warning: The ``timezone`` query that returns a nilable value is deprecated; please recompile with '-sDateTimeStaticTZAwareness=true' to make timezone awareness a feature of the ``datetime`` type
 testDatetimeTZ.chpl:460: In function 'test_aware_subtract':
 testDatetimeTZ.chpl:475: warning: The 'dateTime' initializer that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
 testDatetimeTZ.chpl:476: warning: The ``timezone`` query that returns a nilable value is deprecated; please recompile with '-sDateTimeStaticTZAwareness=true' to make timezone awareness a feature of the ``datetime`` type
+testDatetimeTZ.chpl:476: warning: 'dateTime.replace' that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
 testDatetimeTZ.chpl:477: warning: The ``timezone`` query that returns a nilable value is deprecated; please recompile with '-sDateTimeStaticTZAwareness=true' to make timezone awareness a feature of the ``datetime`` type
+testDatetimeTZ.chpl:477: warning: 'dateTime.replace' that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
 testDatetimeTZ.chpl:478: warning: The ``timezone`` query that returns a nilable value is deprecated; please recompile with '-sDateTimeStaticTZAwareness=true' to make timezone awareness a feature of the ``datetime`` type
+testDatetimeTZ.chpl:478: warning: 'dateTime.replace' that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
+testDatetimeTZ.chpl:489: warning: 'dateTime.replace' that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
+testDatetimeTZ.chpl:490: warning: 'dateTime.replace' that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
+testDatetimeTZ.chpl:491: warning: 'dateTime.replace' that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
+testDatetimeTZ.chpl:511: In function 'test_mixed_compare':
+testDatetimeTZ.chpl:515: warning: 'dateTime.replace' that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
+testDatetimeTZ.chpl:517: warning: 'dateTime.replace' that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
+testDatetimeTZ.chpl:532: warning: 'dateTime.replace' that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
+testDatetimeTZ.chpl:533: warning: 'dateTime.replace' that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
+testDatetimeTZ.chpl:539: warning: 'dateTime.replace' that accepts a nilable 'tz' is deprecated; please recompile with -sDateTimeStaticTZAwareness=true to use the overload that accepts a non-nilable 'tz'
