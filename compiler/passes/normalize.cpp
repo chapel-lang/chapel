@@ -4884,10 +4884,15 @@ static void fixupExplicitGenericVariables(CallExpr* call) {
   SymExpr* symExpr = nullptr;
   bool actIsQuestion = false;
   if (auto se = toSymExpr(call->baseExpr)) {
-    // for some reason this breaks with ranges, skip since they aren't a problem currently
-    if (!dtRange || se->symbol() != dtRange->symbol) {
-      symExpr = se;
+
+    // only perform this transformation if the generic has no defaults
+    //   this is a workaround for something like `range`, which is generic with
+    //   defaults and which this normalization breaks
+    bool genericWithDefaults = false;
+    if (AggregateType* at = toAggregateType(se->symbol()->type)) {
+      genericWithDefaults = at->isGenericWithDefaults();
     }
+    if (!genericWithDefaults) symExpr = se;
   }
   if (call->numActuals() == 1) {
     if (auto se = toSymExpr(call->get(1))) {
