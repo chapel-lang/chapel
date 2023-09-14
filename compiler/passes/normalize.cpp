@@ -666,9 +666,6 @@ static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
 
   for_vector(CallExpr, call, calls2) {
     fixupExplicitGenericVariables(call);
-  }
-
-  for_vector(CallExpr, call, calls2) {
     if (partOfNonNormalizableExpr(call->parentExpr)) continue;
     applyGetterTransform(call);
     insertCallTemps(call);
