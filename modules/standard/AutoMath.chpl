@@ -2752,40 +2752,6 @@ module AutoMath {
     return ( (diff<=abs(rtol*y)) || (diff<=abs(rtol*x)) || (diff<=atol) );
   }
 
-  inline proc chpl_j1(x: real(32)): real(32) {
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc chpl_float_j1(x: real(32)): real(32);
-    return chpl_float_j1(x);
-  }
-
-  inline proc chpl_j1(x: real(64)): real(64) {
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc j1(x: real(64)): real(64);
-    return j1(x);
-  }
-
-  // When removing this deprecated function, be sure to remove chpl_j1 and
-  // move its contents into Math.chpl to reduce the symbols living in this
-  // module
-  pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="j1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
-  inline proc j1(x: real(32)): real(32) {
-    return chpl_j1(x);
-  }
-
-  // When removing this deprecated function, be sure to remove chpl_j1 and
-  // move its contents into Math.chpl to reduce the symbols living in this
-  // module
-  pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="j1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
-  inline proc j1(x: real(64)): real(64) {
-    return chpl_j1(x);
-  }
-
   inline proc chpl_jn(n: int, x: real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
