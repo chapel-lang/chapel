@@ -152,6 +152,15 @@ for i in "${!experiment_name[@]}"; do
   prebuildCmd="${experiment_prebuildCmd[i]}"
   cmd="${experiment_cmd[i]}"
 
+  if [[ "$name" =~ ^__([[:alpha:]]+)__(.*)$ ]]; then
+    nameOpt="${BASH_REMATCH[1]}"
+    name="${BASH_REMATCH[2]}"
+  fi
+
+  if [[ "$nameOpt" = "skip" ]]; then
+    continue
+  fi
+
   if [[ ! -x "$cmd" ]]; then
     >&2 echo "-- [ERROR] --"
     >&2 echo "$cmd (used by $name experiment) is not an executable file"
