@@ -71,7 +71,7 @@ static void        replaceFunctionWithInstantiationsOfPrimitive(FnSymbol* fn);
 static void        fixupQueryFormals(FnSymbol* fn);
 static void        fixupCastFormals(FnSymbol* fn);
 
-static void       fixupExplicitGenericDomain(CallExpr* ce);
+static void        fixupExplicitGenericVariables(CallExpr* ce);
 
 static void        updateInitMethod (FnSymbol* fn);
 
@@ -594,9 +594,6 @@ static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
       processSyntacticTupleAssignment(call);
       if (call->isPrimitive(PRIM_TYPEOF))
         addTypeBlocksForParentTypeOf(call);
-
-      // must go last, replaces the call
-      fixupExplicitGenericDomain(call);
     }
   }
 
@@ -666,6 +663,10 @@ static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
   std::vector<CallExpr*> calls2;
 
   collectCallExprs(base, calls2);
+
+  for_vector(CallExpr, call, calls2) {
+    fixupExplicitGenericVariables(call);
+  }
 
   for_vector(CallExpr, call, calls2) {
     if (partOfNonNormalizableExpr(call->parentExpr)) continue;
@@ -4875,31 +4876,45 @@ static void addToWhereClause(FnSymbol*  fn,
   combine->insertAtTail(test);
 }
 
-static void fixupExplicitGenericDomain(CallExpr* ce) {
+static void fixupExplicitGenericVariables(CallExpr* call) {
   // fixup the pattern `(CallExpr _domain ?)` to be `(_domain(?))`,
   // marking the `DefExpr` as generic
 
   // if its a call like `_domain ?`, make it `_domain(?)` and MARKED_GENERIC
   SymExpr* symExpr = nullptr;
   bool actIsQuestion = false;
-  if (auto se = toSymExpr(ce->baseExpr)) {
-    symExpr = se;
+  if (auto se = toSymExpr(call->baseExpr)) {
+    // for some reason this breaks with ranges, skip since they aren't a problem currently
+    if (se->symbol() != dtRange->symbol) {
+      symExpr = se;
+    }
   }
-  if (ce->numActuals() == 1) {
-    if (auto se = toSymExpr(ce->get(1))) {
+  if (call->numActuals() == 1) {
+    if (auto se = toSymExpr(call->get(1))) {
       actIsQuestion = se->symbol() == gUninstantiated;
     }
   }
 
   if (symExpr && actIsQuestion) {
-    // if the parent expr is a def, mark its symbol as MARKED_GENERIC
-    if (auto def = toDefExpr(ce->parentExpr)) {
-      def->sym->addFlag(FLAG_MARKED_GENERIC);
+    Symbol* symToSetGeneric = nullptr;
+    if (auto def = toDefExpr(call->parentExpr)) {
+      // if the parentExpr is a def, mark the symbol generic
+      symToSetGeneric = def->sym;
+    } else if (auto parentCall = toCallExpr(call->parentExpr)) {
+      // if parentExpr is a init, a move or assign, mark the symbol generic
+      if ((parentCall->isPrimitive(PRIM_INIT_VAR)) ||
+          (isMoveOrAssign(parentCall) && parentCall->get(2) == call)) {
+        if(auto se = toSymExpr(parentCall->get(1))) {
+          symToSetGeneric = se->symbol();
+        }
+      }
     }
-    symExpr->remove();
-    ce->replace(symExpr);
+    if (symToSetGeneric) {
+      symToSetGeneric->addFlag(FLAG_MARKED_GENERIC);
+      symExpr->remove();
+      call->replace(symExpr);
+    }
   }
-
 }
 
 /************************************* | **************************************
