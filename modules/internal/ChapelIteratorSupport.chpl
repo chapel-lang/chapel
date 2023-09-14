@@ -353,22 +353,6 @@ module ChapelIteratorSupport {
     return false;
   }
 
-  proc _iteratorRecord.writeThis(f) throws {
-    var first: bool = true;
-    for e in this {
-      if !first then
-        f.write(" ");
-      else
-        first = false;
-      f.write(e);
-    }
-  }
-
-  @chpldoc.nodoc
-  proc _iteratorRecord.serialize(writer, ref serializer) throws {
-    writeThis(writer);
-  }
-
   operator =(ref ic: _iteratorRecord, xs) {
     for (e, x) in zip(ic, xs) do
       e = x;

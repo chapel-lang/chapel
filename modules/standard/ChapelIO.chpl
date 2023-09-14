@@ -798,6 +798,30 @@ module ChapelIO {
   }
   implements writeSerializable(_tuple);
 
+  proc _iteratorRecord.writeThis(f) throws {
+    var first: bool = true;
+    for e in this {
+      if !first then
+        f.write(" ");
+      else
+        first = false;
+      f.write(e);
+    }
+  }
+
+  @chpldoc.nodoc
+  proc _iteratorRecord.serialize(writer, ref serializer) throws {
+    if serializer.type == IO.defaultSerializer {
+      writeThis(writer);
+    } else {
+      if chpl_warnUnstable then
+        compilerWarning("Serialization of iterators with non-default Serializer is unstable, and may change in the future");
+      var ser = serializer.startList(writer, -1);
+      for e in this do ser.writeElement(e);
+      ser.endList();
+    }
+  }
+
   // Moved here to avoid circular dependencies in ChapelRange
   // Write implementation for ranges
   // Follows operator :(range, string)
@@ -833,7 +857,13 @@ module ChapelIO {
 
   @chpldoc.nodoc
   proc range.serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    if serializer.type == defaultSerializer {
+      writeThis(writer);
+    } else {
+      if chpl_warnUnstable then
+        compilerWarning("Serialization of ranges with non-default Serializer is unstable, and may change in the future");
+      writer.write(this:string);
+    }
   }
   implements writeSerializable(range);
 
@@ -851,7 +881,7 @@ module ChapelIO {
       use strideKind;
       select strides {
         when one      do if strideVal != 1 then expectedStride = "stride 1";
-        when negOne   do if strideVal != 1 then expectedStride = "stride -1";
+        when negOne   do if strideVal != -1 then expectedStride = "stride -1";
         when positive do if strideVal < 0 then expectedStride = "a positive";
         when negative do if strideVal > 0 then expectedStride = "a negative";
         when any      do;
@@ -860,8 +890,9 @@ module ChapelIO {
         "for a range with strides=" + strides:string + ", expected " +
         (if expectedStride.size > 2 then expectedStride + " stride"
          else expectedStride) + ", got stride ", strideVal:string);
+
       if ! hasParamStride() then
-        _stride = strideVal;
+        this = (this by strideVal):this.type;
     }
 
     if f.matchLiteral(" align ") {
@@ -870,14 +901,23 @@ module ChapelIO {
         // It is valid to align any range. In this case we do not store
         // the alignment at runtime because it always normalizes to 0.
       } else {
-        _alignment = chpl__mod(alignVal, _stride);
+        this = (this align alignVal):this.type;
       }
     }
   }
 
   @chpldoc.nodoc
   proc ref range.deserialize(reader, ref deserializer) throws {
-    readThis(reader);
+    if deserializer.type == IO.defaultDeserializer {
+      readThis(reader);
+    } else {
+      if chpl_warnUnstable then
+        compilerWarning("Deserialization of ranges with non-default Deserializer is unstable, and may change in the future");
+      const data = reader.read(string);
+      var f = openMemFile();
+      f.writer().write(data);
+      readThis(f.reader());
+    }
   }
   implements readDeserializable(range);
 
@@ -888,7 +928,7 @@ module ChapelIO {
                   reader: fileReader(?),
                   ref deserializer) throws {
     this.init(idxType, bounds, strides);
-    this.readThis(reader);
+    this.deserialize(reader, deserializer);
   }
   implements initDeserializable(range);
 
