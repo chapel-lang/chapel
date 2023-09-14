@@ -616,6 +616,7 @@ class Table:
   def normalize_to(self, col_name):
     """ Remove 'col_name' from the table and express all other values in terms
     of the ratio of that value to that value in the specified column. """
+    self._verify_valid_col(col_name)
     newData = copy.deepcopy(self.yData)
     del(newData[col_name])
     for col in newData:
@@ -623,6 +624,11 @@ class Table:
         newData[col][i] = newData[col][i] / self.yData[col_name][i]
     return Table(self.title + " normalized to " + col_name, self.filename, self.xData, newData, self.kvPairs)
 
+  def _verify_valid_col(self, col_name):
+    if col_name not in self.yData:
+      raise Exception(
+        "%s not a valid column. Valid columns are: %s" % (
+        col_name, list(self.yData.keys())))
 
 def loadDatFile(filename):
   """ Returns a dictionary of Table objects for all .dat files under the
