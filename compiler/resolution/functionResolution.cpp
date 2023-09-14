@@ -11267,7 +11267,10 @@ static void checkSpeciallyNamedMethods() {
   static const std::unordered_map<const char*, InterfaceSymbol*> reservedNames = {
     { astr("hash"), gHashable },
     { astr("enterContext"), gContextManager },
-    { astr("exitContext"), gContextManager },
+    { astr("exitContext"),  gContextManager },
+    { astr("serialize"),    gWriteSerializable },
+    { astr("deserialize"),  gReadDeserializable },
+    { astr("init"),         gInitDeserializable },
   };
 
   SpecialMethodMap flagged;
@@ -11275,18 +11278,52 @@ static void checkSpeciallyNamedMethods() {
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
     if (!fn->isMethod()) continue;
     if (fn->isCompilerGenerated() || fn->hasFlag(FLAG_FIELD_ACCESSOR)) continue;
-    // The parent class must have this function, and would've been flagged.
-    // the user will already get the warning.
-    if (fn->hasFlag(FLAG_OVERRIDE)) continue;
     auto reservedIter = reservedNames.find(fn->name);
     if (reservedIter == reservedNames.end()) continue;
+    auto found = reservedIter->second;
+
+    if (found == gHashable || found == gContextManager) {
+      // The parent class must have this function, and would've been flagged.
+      // the user will already get the warning.
+      if (fn->hasFlag(FLAG_OVERRIDE)) continue;
+    }
 
     auto receiverType = fn->getReceiverType();
     auto at = getBaseTypeForInterfaceWarnings(receiverType);
-    if (!at || (reservedIter->second == gHashable && at == dtObject)) continue;
+    if (!at || (found == gHashable && at == dtObject)) continue;
 
-    auto key = SpeciallyNamedMethodKey(reservedIter->second, at);
+    int n = fn->numFormals();
+    if (fn->isInitializer() &&
+        !(n >= 4 &&
+        strcmp(fn->getFormal(n-1)->name, "reader") == 0 &&
+        strcmp(fn->getFormal(n)->name, "deserializer") == 0)) {
+      // Skip initializers that don't match the signature closely enough
+      continue;
+    }
+
+    if (found == gWriteSerializable) {
+      bool matches = n == 4 &&
+                     strcmp(fn->getFormal(3)->name, "writer") == 0 &&
+                     strcmp(fn->getFormal(4)->name, "serializer") == 0;
+      if (!matches) continue;
+    }
+
+    if (found == gReadDeserializable) {
+      bool matches = n == 4 &&
+                     strcmp(fn->getFormal(3)->name, "reader") == 0 &&
+                     strcmp(fn->getFormal(4)->name, "deserializer") == 0;
+      if (!matches) continue;
+    }
+
+    auto key = SpeciallyNamedMethodKey(found, at);
     flagged[key].speciallyNamedMethods[fn->name] = fn;
+
+    if (found == gWriteSerializable ||
+        found == gReadDeserializable ||
+        found == gInitDeserializable) {
+      auto key = SpeciallyNamedMethodKey(gSerializable, at);
+      flagged[key].speciallyNamedMethods[fn->name] = fn;
+    }
   }
 
   for_alive_in_Vec(ImplementsStmt, istm, gImplementsStmts) {
@@ -11299,6 +11336,16 @@ static void checkSpeciallyNamedMethods() {
     // flagged set, because we found an instance.
     auto isym = istm->iConstraint->ifcSymbol();
     flagged.erase(SpeciallyNamedMethodKey(isym, at));
+
+    if (isym == gSerializable) {
+      flagged.erase(SpeciallyNamedMethodKey(gWriteSerializable, at));
+      flagged.erase(SpeciallyNamedMethodKey(gReadDeserializable, at));
+      flagged.erase(SpeciallyNamedMethodKey(gInitDeserializable, at));
+    } else if (isym == gWriteSerializable ||
+               isym == gReadDeserializable ||
+               isym == gInitDeserializable) {
+      flagged.erase(SpeciallyNamedMethodKey(gSerializable, at));
+    }
   }
 
   // the things now left in flagged, we did not find any implements statements
@@ -11306,6 +11353,11 @@ static void checkSpeciallyNamedMethods() {
   for (auto& flaggedTypeIfc : flagged) {
     auto ifc = flaggedTypeIfc.first.first;
     auto at = flaggedTypeIfc.first.second;
+
+    // Don't recommend 'serializable' so that there are not duplicates
+    if (ifc == gSerializable) {
+      continue;
+    }
 
     USR_WARN(at,
              "the type '%s' defines methods that previously had special meaning. "

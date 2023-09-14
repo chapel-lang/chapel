@@ -574,6 +574,10 @@ public:
 
 extern InterfaceSymbol* gHashable;
 extern InterfaceSymbol* gContextManager;
+extern InterfaceSymbol* gWriteSerializable;
+extern InterfaceSymbol* gReadDeserializable;
+extern InterfaceSymbol* gInitDeserializable;
+extern InterfaceSymbol* gSerializable;
 
 /************************************* | **************************************
 *                                                                             *
