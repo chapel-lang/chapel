@@ -1,4 +1,8 @@
-generic-with-defaults-q-problem.chpl:11: error: unresolved call 'K.init(GRD(int(64)))'
-generic-with-defaults-q-problem.chpl:5: note: this candidate did not match: K.init(myfield: GRD)
-generic-with-defaults-q-problem.chpl:11: note: because actual argument #1 with type 'GRD(int(64))'
-generic-with-defaults-q-problem.chpl:6: note: is passed to formal 'in myfield: GRD'
+generic-with-defaults-q-problem.chpl:11: internal error: RES-FUN-ION-2764 chpl version 1.32.0 pre-release (9228b511ca)
+Note: This source location is a guess.
+
+Internal errors indicate a bug in the Chapel compiler,
+and we're sorry for the hassle.  We would appreciate your reporting this bug --
+please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
+the filename + line number above may be useful in working around the issue.
+
