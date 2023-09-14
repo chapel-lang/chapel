@@ -672,9 +672,11 @@ void Visitor::checkSparseKeyword(const FnCall* node) {
 
 // TODO: remove this check and warning after 1.34?
 void Visitor::checkPrimCallInUserCode(const PrimCall* node) {
+  // suppress this warning from chpldoc
   if (isUserCode())
-    if (node->prim() == PrimitiveTag::PRIM_CHPL_COMM_GET ||
-        node->prim() == PrimitiveTag::PRIM_CHPL_COMM_PUT)
+    if ((node->prim() == PrimitiveTag::PRIM_CHPL_COMM_GET ||
+         node->prim() == PrimitiveTag::PRIM_CHPL_COMM_PUT) &&
+        context_->configuration().toolName != "chpldoc")
           warn(node, "the primitives 'chpl_comm_get' and 'chpl_comm_put',"
                " have changed behavior in Chapel 1.32. Please use"
                " the 'Communication' module's 'get' and 'put' procedures"
