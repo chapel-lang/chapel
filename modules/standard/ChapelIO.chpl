@@ -798,6 +798,28 @@ module ChapelIO {
   }
   implements writeSerializable(_tuple);
 
+  proc _iteratorRecord.writeThis(f) throws {
+    var first: bool = true;
+    for e in this {
+      if !first then
+        f.write(" ");
+      else
+        first = false;
+      f.write(e);
+    }
+  }
+
+  @chpldoc.nodoc
+  proc _iteratorRecord.serialize(writer, ref serializer) throws {
+    if serializer.type == IO.defaultSerializer {
+      writeThis(writer);
+    } else {
+      var ser = serializer.startList(writer, -1);
+      for e in this do ser.writeElement(e);
+      ser.endList();
+    }
+  }
+
   // Moved here to avoid circular dependencies in ChapelRange
   // Write implementation for ranges
   // Follows operator :(range, string)
