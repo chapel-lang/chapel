@@ -18,7 +18,7 @@ record B {
     this.x = reader.read(int);
   }
 
-  proc deserialize(reader, ref deserializer) throws {
+  proc ref deserialize(reader, ref deserializer) throws {
     writeln("B.deserialize");
     x = reader.read(int);
   }
