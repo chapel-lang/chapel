@@ -38,3 +38,13 @@ config var n = 10;
   const Dist2: dmap(Stencil(1)) = new Stencil({1..n});
   writeln(Dist2.type:string);
 }
+
+{
+  use PrivateDist;
+  var Dist = new dmap(new Private());
+  var Dom = {1..n} dmapped Dist;
+  var A: [Dom] real;
+  writeln(A);
+  const Dist2: dmap(Private) = new Private();
+  writeln(Dist2.type:string);
+}
