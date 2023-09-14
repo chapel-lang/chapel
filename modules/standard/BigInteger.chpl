@@ -1629,28 +1629,6 @@ module BigInteger {
       return false;
   }
 
-  @deprecated("bigint.powm method is deprecated, please use the standalone function :proc:`~BigInteger.powMod` instead")
-  proc ref bigint.powm(const ref base: bigint,
-                   const ref exp:  bigint,
-                   const ref mod:  bigint) {
-    BigInteger.powMod(this, base, exp, mod);
-  }
-
-  @deprecated("bigint.powm method is deprecated, please use the standalone function :proc:`~BigInteger.powMod` instead")
-  proc ref bigint.powm(const ref base: bigint,
-                             exp:  int,
-                   const ref mod:  bigint) {
-    BigInteger.powMod(this, base, exp, mod);
-  }
-
-  @deprecated("bigint.powm method is deprecated, please use the standalone function :proc:`~BigInteger.powMod` instead")
-  proc bigint.powm(const ref base: bigint,
-                             exp:  uint,
-                   const ref mod:  bigint) {
-    BigInteger.powMod(this, base, exp, mod);
-  }
-
-
   /*
     Set ``result`` to the result of ``(base**exp) modulo mod``.
 
