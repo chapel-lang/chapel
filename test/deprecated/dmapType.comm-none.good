@@ -31,5 +31,5 @@ cyclicDist(1,int(64))
 replicatedDist
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 stencilDist(1,int(64),false)
-0.0 0.0 0.0 0.0
+0.0
 privateDist

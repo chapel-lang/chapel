@@ -42,7 +42,7 @@ config var n = 10;
 {
   use PrivateDist;
   var Dist = new dmap(new Private());
-  var Dom = {1..n} dmapped Dist;
+  var Dom: domain(1) dmapped Dist;
   var A: [Dom] real;
   writeln(A);
   const Dist2: dmap(Private) = new Private();
