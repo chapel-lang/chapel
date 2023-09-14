@@ -5340,7 +5340,7 @@ proc file.lines(param locking:bool = true, start:int(64) = 0,
    exclude the high bound.  Defaults to ``false``, the original behavior.
  */
 @deprecated("'useNewLinesRegionBounds' is deprecated - :proc:`file.lines` now always uses the high bound and this flag no longer impacts its behavior.  The flag will be removed in a future release")
-config param useNewLinesRegionBounds = false;
+config param useNewLinesRegionBounds = true;
 
 /* Iterate over all of the lines in a file.
 
