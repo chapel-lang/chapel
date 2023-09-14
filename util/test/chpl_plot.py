@@ -765,8 +765,13 @@ def join(*tables):
   res = copy.deepcopy(tables[0])
   res.title = "join of: (" + res.title
 
-  for data in tables[1:]:
-    assert(res.xData == data.xData)
+  for count, data in enumerate(tables[1:], start=1):
+    if(res.xData != data.xData):
+      raise Exception(
+        "join operation must be passed two tables that have the same column titles\n"
+        "cols in table 0: %s\n"
+        "cols in table %i: %s" % (res.xData, count, data.xData))
+
     res.filename += ":" + data.filename
     res.title += ", " + data.title
     for col in data.yData:
