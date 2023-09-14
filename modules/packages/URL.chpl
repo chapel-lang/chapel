@@ -99,10 +99,8 @@ module URL {
     use Curl;
     use CurlQioIntegration;
     var f = openCurlFile(url, ioMode.r, style);
-    // TODO: change this back to f.reader when the fromOpenUrlReader arg is
-    // removed
-    return f.readerHelper(kind=kind, locking=locking,
-                          region=start..#end, fromOpenUrlReader=true);
+    // TODO: change this back to f.reader when the kind argument is removed
+    return f.readerHelper(kind=kind, locking=locking, region=start..#end);
   }
 
   pragma "last resort"
@@ -161,10 +159,9 @@ module URL {
     use Curl;
     use CurlQioIntegration;
     var f = openCurlFile(url, ioMode.cw, style);
-    // TODO: change this back to f.writer when the fromOpenUrlWriter arg is
+    // TODO: change this back to f.writer when the kind argument has been
     // removed
-    return f.writerHelper(kind=kind, locking=locking,
-                          region=start..#end, fromOpenUrlWriter=true);
+    return f.writerHelper(kind=kind, locking=locking, region=start..#end);
   }
 
 }
