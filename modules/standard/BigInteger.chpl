@@ -429,43 +429,6 @@ module BigInteger {
       return (dbl: real, exp.safeCast(uint(32)));
     }
 
-    @deprecated(notes="bigint.size() is deprecated")
-    proc size() : c_size_t {
-      var ret: c_size_t;
-
-      if compiledForSingleLocale() {
-        ret = mpz_size(this.mpz);
-
-      } else if this.localeId == chpl_nodeID {
-        ret = mpz_size(this.mpz);
-
-      } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          ret = mpz_size(this.mpz);
-        }
-      }
-
-      return ret;
-    }
-
-    @deprecated("bigint.sizeinbase is deprecated, use :proc:`bigint.sizeInBase` instead")
-    proc sizeinbase(base: int) : uint {
-      return sizeInBase(base).safeCast(uint);
-    }
-
-    @deprecated(notes="mpzStruct is deprecated, please use :proc:`getImpl` instead")
-    proc mpzStruct() : __mpz_struct {
-      return getImpl();
-    }
-
-    @deprecated(notes="get_d_2exp is deprecated in favor of :proc:`bigint.getD2Exp`, which returns (d, exp) instead of (exp, d).  Please use that method instead")
-    proc get_d_2exp() : (uint(32), real) {
-      var (dbl, exp) = getD2Exp();
-      return (exp, dbl);
-    }
-
     // private method
     @chpldoc.nodoc
     proc getStr(base: int = 10): string {
@@ -530,13 +493,6 @@ module BigInteger {
     if r == zero then return roundingMode.zero;
     if r == up then return roundingMode.up;
     compilerError("unknown bigint rounding mode");
-  }
-
-  @deprecated(notes="The enum Round is deprecated, please use the enum :enum:`roundingMode` instead")
-  enum Round {
-    DOWN = -1,
-    ZERO =  0,
-    UP   =  1
   }
 
   /* An enumeration of the different rounding strategies, for use with e.g.
@@ -1660,28 +1616,6 @@ module BigInteger {
     else
       return false;
   }
-
-  @deprecated("bigint.powm method is deprecated, please use the standalone function :proc:`~BigInteger.powMod` instead")
-  proc ref bigint.powm(const ref base: bigint,
-                   const ref exp:  bigint,
-                   const ref mod:  bigint) {
-    BigInteger.powMod(this, base, exp, mod);
-  }
-
-  @deprecated("bigint.powm method is deprecated, please use the standalone function :proc:`~BigInteger.powMod` instead")
-  proc ref bigint.powm(const ref base: bigint,
-                             exp:  int,
-                   const ref mod:  bigint) {
-    BigInteger.powMod(this, base, exp, mod);
-  }
-
-  @deprecated("bigint.powm method is deprecated, please use the standalone function :proc:`~BigInteger.powMod` instead")
-  proc bigint.powm(const ref base: bigint,
-                             exp:  uint,
-                   const ref mod:  bigint) {
-    BigInteger.powMod(this, base, exp, mod);
-  }
-
 
   /*
     Set ``result`` to the result of ``(base**exp) modulo mod``.
@@ -3855,34 +3789,6 @@ module BigInteger {
 
   @deprecated(notes="bigint.abs method is deprecated - please use the standalone function :proc:`~BigInteger.abs`")
   proc ref bigint.abs(const ref a: bigint) do BigInteger.abs(this, a);
-
-  @deprecated("bigint.div_q using Round is deprecated, use the standalone function :proc:`~BigInteger.div` with :enum:`roundingMode` instead")
-  proc ref bigint.div_q(const ref n: bigint,
-                    const ref d: bigint,
-                    param     rounding = Round.ZERO) {
-    use Round;
-    if (rounding == UP) {
-      BigInteger.div(this, n, d, roundingMode.up);
-    } else if (rounding == ZERO) {
-      BigInteger.div(this, n, d, roundingMode.zero);
-    } else {
-      BigInteger.div(this, n, d, roundingMode.down);
-    }
-  }
-
-  @deprecated("bigint.div_q using Round is deprecated, use the standalone function :proc:`~BigInteger.div` with :enum:`roundingMode` instead")
-  proc ref bigint.div_q(const ref n: bigint,
-                              d: integral,
-                    param     rounding = Round.ZERO) {
-    use Round;
-    if (rounding == UP) {
-      BigInteger.div(this, n, d, roundingMode.up);
-    } else if (rounding == ZERO) {
-      BigInteger.div(this, n, d, roundingMode.zero);
-    } else {
-      BigInteger.div(this, n, d, roundingMode.down);
-    }
-  }
 
   @deprecated("divQ is deprecated - please use :proc:`div` with :enum:`roundingMode` instead")
   proc divQ(ref result: bigint,
