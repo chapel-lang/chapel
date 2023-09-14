@@ -429,11 +429,6 @@ module BigInteger {
       return (dbl: real, exp.safeCast(uint(32)));
     }
 
-    @deprecated("bigint.sizeinbase is deprecated, use :proc:`bigint.sizeInBase` instead")
-    proc sizeinbase(base: int) : uint {
-      return sizeInBase(base).safeCast(uint);
-    }
-
     @deprecated(notes="mpzStruct is deprecated, please use :proc:`getImpl` instead")
     proc mpzStruct() : __mpz_struct {
       return getImpl();
