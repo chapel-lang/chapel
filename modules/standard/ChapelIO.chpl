@@ -682,7 +682,7 @@ module ChapelIO {
     compilerWarning("printing _ddata class");
     writer.write("<_ddata class cannot be printed>");
   }
-  _ddata implements writeSerializable;
+  implements writeSerializable(_ddata);
 
   proc chpl_taskID_t.writeThis(f) throws {
     f.write(this : uint(64));
@@ -786,7 +786,7 @@ module ChapelIO {
     }
     des.endTuple();
   }
-  _tuple implements readDeserializable;
+  implements readDeserializable(_tuple);
 
   @chpldoc.nodoc
   proc const _tuple.serialize(writer, ref serializer) throws {
@@ -797,7 +797,7 @@ module ChapelIO {
     }
     ser.endTuple();
   }
-  _tuple implements writeSerializable;
+  implements writeSerializable(_tuple);
 
   // Moved here to avoid circular dependencies in ChapelRange
   // Write implementation for ranges
@@ -836,7 +836,7 @@ module ChapelIO {
   proc range.serialize(writer, ref serializer) throws {
     writeThis(writer);
   }
-  range implements writeSerializable;
+  implements writeSerializable(range);
 
   @chpldoc.nodoc
   proc ref range.readThis(f) throws {
@@ -880,7 +880,7 @@ module ChapelIO {
   proc ref range.deserialize(reader, ref deserializer) throws {
     readThis(reader);
   }
-  range implements readDeserializable;
+  implements readDeserializable(range);
 
   @chpldoc.nodoc
   proc range.init(type idxType = int,
@@ -891,7 +891,7 @@ module ChapelIO {
     this.init(idxType, bounds, strides);
     this.readThis(reader);
   }
-  range implements initDeserializable;
+  implements initDeserializable(range);
 
   @chpldoc.nodoc
   override proc LocaleModel.writeThis(f) throws {
