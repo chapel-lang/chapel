@@ -941,15 +941,6 @@ record regex : serializable {
     }
   }
 
-  pragma "last resort"
-  @deprecated(notes="regex.matches arguments 'captures' and 'maxmatches' are deprecated. Use 'numCaptures' and/or 'maxMatches instead.")
-  iter matches(text: exprType, param captures=0, maxmatches: int = max(int))
-  {
-    for m in matches(text, numCaptures=captures, maxMatches=maxmatches) {
-      yield m;
-    }
-  }
-
   /* Perform the same operation as :proc:`regex.sub` but return a tuple
      containing the new text and the number of substitutions made.
 
