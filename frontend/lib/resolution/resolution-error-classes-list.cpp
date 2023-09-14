@@ -760,6 +760,26 @@ void ErrorPhaseTwoInitMarker::write(ErrorWriterBase& wr) const {
   wr.code<ID>(previousMarker, { previousMarker });
 }
 
+void ErrorPotentiallySurprisingShadowing::write(ErrorWriterBase& wr) const {
+  auto id = std::get<ID>(info);
+  auto name = std::get<UniqueString>(info);
+  auto shadowStart = std::get<int>(info);
+  auto& matches = std::get<std::vector<resolution::BorrowedIdsWithName>>(info);
+
+  wr.heading(kind_, type_, id,
+             "potentially surprising shadowing for '", name.c_str(), "'");
+  wr.code<ID,ID>(id, { id });
+  // only print out two matches
+  if (matches.size() > 0 && matches.size() > (size_t) shadowStart) {
+    ID first = matches[0].firstId();
+    ID shadowed = matches[shadowStart].firstId();
+    wr.note(first, "it refers to the symbol declared here");
+    wr.code<ID, ID>(first, { first });
+    wr.note(shadowed, "because this symbol can only be found through a shadow scope");
+    wr.code<ID, ID>(shadowed, { shadowed });
+  }
+}
+
 void ErrorPrivateToPublicInclude::write(ErrorWriterBase& wr) const {
   auto moduleInclude = std::get<const uast::Include*>(info);
   auto moduleDef = std::get<const uast::Module*>(info);

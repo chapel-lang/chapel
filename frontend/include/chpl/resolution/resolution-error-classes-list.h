@@ -60,6 +60,7 @@ ERROR_CLASS(NestedClassFieldRef, const uast::AggregateDecl*, const uast::Aggrega
 ERROR_CLASS(NonIterable, const uast::AstNode*, const uast::AstNode*, types::QualifiedType)
 ERROR_CLASS(NotInModule, const uast::Dot*, ID, UniqueString, ID, bool)
 ERROR_CLASS(PhaseTwoInitMarker, const uast::AstNode*, std::vector<ID>)
+WARNING_CLASS(PotentiallySurprisingShadowing, ID, UniqueString, const resolution::Scope*, int, std::vector<resolution::BorrowedIdsWithName>)
 ERROR_CLASS(PrivateToPublicInclude, const uast::Include*, const uast::Module*)
 ERROR_CLASS(ProcDefExplicitAnonFormal, const uast::Function*, const uast::Formal*)
 ERROR_CLASS(ProcTypeUnannotatedFormal, const uast::FunctionSignature*, const uast::AnonFormal*)

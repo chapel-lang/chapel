@@ -485,6 +485,16 @@ const Scope* scopeForId(Context* context, ID id) {
 
 using VisibilityTraceElt = ResultVisibilityTrace::VisibilityTraceElt;
 
+/*
+struct AdditionalResults {
+  const Scope* scope = nullptr;
+  std::vector<BorrowedIdsWithName> results;
+  AdditionalResults(const Scope* scope,
+                    std::vector<BorrowedIdsWithName> results)
+    : scope(scope), results(std::move(results))
+  { }
+};*/
+
 // a struct to encapsulate arguments to doLookupIn...
 // so that the calls and function signatures do not get too unwieldy.
 struct LookupHelper {
@@ -495,6 +505,14 @@ struct LookupHelper {
   bool& foundExternBlock;
   std::vector<VisibilityTraceElt>* traceCurPath;
   std::vector<ResultVisibilityTrace>* traceResult;
+  const ID* idForWarnings;
+  // set this if we've completed a LOOKUP_INNERMOST search,
+  // but we want to search additional shadow scopes for the purpose
+  // of emitting a warning if there is suprising shadowing occuring.
+  // if it is set, additional results go into additionalResultsForWarning
+  // instead of 'result'.
+  //ssize_t firstResultForWarning = -1;
+  //std::vector<AdditionalResults> additionalResultsForWarning;
 
   LookupHelper(Context* context,
                const ResolvedVisibilityScope* resolving,
@@ -502,10 +520,13 @@ struct LookupHelper {
                std::vector<BorrowedIdsWithName>& result,
                bool& foundExternBlock,
                std::vector<VisibilityTraceElt>* traceCurPath,
-               std::vector<ResultVisibilityTrace>* traceResult)
-    : context(context), resolving(resolving), checkedScopes(checkedScopes),
+               std::vector<ResultVisibilityTrace>* traceResult,
+               const ID* idForWarnings)
+    : context(context), resolving(resolving),
+      checkedScopes(checkedScopes),
       result(result), foundExternBlock(foundExternBlock),
-      traceCurPath(traceCurPath), traceResult(traceResult) {
+      traceCurPath(traceCurPath), traceResult(traceResult),
+      idForWarnings(idForWarnings) {
   }
 
   bool doLookupInImportsAndUses(const Scope* scope,
@@ -1064,6 +1085,16 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     }
   }
 
+  bool canCheckMoreForWarning = onlyInnermost && !skipShadowScopes &&
+                                idForWarnings != nullptr;
+  bool checkMoreForWarning = false;
+  size_t firstResultForWarning = 0;
+  //ssize_t oldFirstResultForWarning = firstResultForWarning;
+
+  if (idForWarnings && idForWarnings->str() == "Application@3" &&
+      scope->id().str() == "Application")
+    gdbShouldBreakHere();
+
   // gather non-shadow scope information
   // (declarations in this scope as well as public use / import)
   {
@@ -1080,11 +1111,18 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
       }
     }
     if (checkUseImport) {
+      bool gotLocalDecls = got;
       got |= doLookupInImportsAndUses(scope, r, name, config,
                                       curFilter, excludeFilter,
                                       VisibilitySymbols::REGULAR_SCOPE);
+      if (got && !gotLocalDecls && canCheckMoreForWarning) {
+        // if we only found it in a 'public use' etc,
+        // check the shadow scopes in addition, to potentially warn.
+        checkMoreForWarning = true;
+        firstResultForWarning = result.size();
+      }
     }
-    if (onlyInnermost && got) return true;
+    if (onlyInnermost && got && !checkMoreForWarning) return true;
   }
 
   // now check shadow scope 1 (only relevant for 'private use')
@@ -1100,7 +1138,11 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
                                  skipPrivateVisibilities,
                                  onlyMethodsFields,
                                  includeMethods);
-    if (onlyInnermost && got) return true;
+    if (got && canCheckMoreForWarning && !checkMoreForWarning) {
+      checkMoreForWarning = true;
+      firstResultForWarning = result.size();
+    }
+    if (onlyInnermost && got && !checkMoreForWarning) return true;
   }
 
   // now check shadow scope 2 (only relevant for 'private use')
@@ -1109,7 +1151,33 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     got = doLookupInImportsAndUses(scope, r, name, config,
                                    curFilter, excludeFilter,
                                    VisibilitySymbols::SHADOW_SCOPE_TWO);
-    if (onlyInnermost && got) return true;
+    if (got && canCheckMoreForWarning && !checkMoreForWarning) {
+      checkMoreForWarning = true;
+      firstResultForWarning = result.size();
+    }
+    if (onlyInnermost && got && !checkMoreForWarning) return true;
+  }
+
+  if (checkMoreForWarning) {
+    // move results after firstResultForWarning to additionalResultsForWarning
+    /*std::vector<BorrowedIdsWithName> additionalResults;
+    additionalResults.insert(additionalResults.end(),
+                             result.begin() + firstResultForWarning,
+                             result.end());
+    additionalResultsForWarning.push_back(
+        AdditionalResults(scope, std::move(additionalResults)));*/
+
+    if (firstResultForWarning < result.size()) {
+      CHPL_REPORT(context, PotentiallySurprisingShadowing,
+                  *idForWarnings, name, scope,
+                  (int) firstResultForWarning, result);
+      result.erase(result.begin() + firstResultForWarning, result.end());
+    }
+
+    // restore firstResultForWarning to its previous value, now that
+    // the shadow scopes have been considered.
+    //firstResultForWarning = oldFirstResultForWarning;
+    return true;
   }
 
   // If we are at a method scope, consider receiver scopes now
@@ -1241,6 +1309,7 @@ static bool lookupInScopeViz(Context* context,
                              const Scope* scope,
                              const ResolvedVisibilityScope* resolving,
                              UniqueString name,
+                             ID idForWarnings,
                              VisibilityStmtKind useOrImport,
                              bool isFirstPart,
                              std::vector<BorrowedIdsWithName>& result,
@@ -1279,10 +1348,11 @@ static bool lookupInScopeViz(Context* context,
     }
 
     bool foundExternBlock = false; // ignored
-    auto helper = LookupHelper(context, resolving, checkedScopes, result,
-                               foundExternBlock,
+    auto helper = LookupHelper(context, resolving,
+                               checkedScopes, result, foundExternBlock,
                                /* traceCurPath */ nullptr,
-                               /* traceResult */ nullptr);
+                               /* traceResult */ nullptr,
+                               &idForWarnings);
     got = helper.doLookupInScope(scope, {}, name, config);
   }
 
@@ -1309,7 +1379,8 @@ static bool lookupInScopeViz(Context* context,
                                improperMatches,
                                foundExternBlock,
                                /* traceCurPath */ nullptr,
-                               /* traceResult */ nullptr);
+                               /* traceResult */ nullptr,
+                               &idForWarnings);
     helper.doLookupInScope(scope, {}, name, config);
   }
 
@@ -1325,7 +1396,8 @@ static bool helpLookupInScope(Context* context,
                               CheckedScopes& checkedScopes,
                               std::vector<BorrowedIdsWithName>& result,
                               std::vector<VisibilityTraceElt>* traceCurPath,
-                              std::vector<ResultVisibilityTrace>* traceResult)
+                              std::vector<ResultVisibilityTrace>* traceResult,
+                              const ID* idForWarnings)
 {
   bool onlyInnermost = (config & LOOKUP_INNERMOST) != 0;
   bool checkExternBlocks = (config & LOOKUP_EXTERN_BLOCKS) != 0;
@@ -1333,7 +1405,8 @@ static bool helpLookupInScope(Context* context,
   CheckedScopes savedCheckedScopes;
 
   auto helper = LookupHelper(context, resolving, checkedScopes, result,
-                             foundExternBlock, traceCurPath, traceResult);
+                             foundExternBlock, traceCurPath, traceResult,
+                             idForWarnings);
 
   if (checkExternBlocks) {
     // clear the extern blocks lookup (since it is a 2nd pass)
@@ -1380,7 +1453,30 @@ lookupNameInScope(Context* context,
                       /* resolving scope */ nullptr,
                       name, config, visited, vec,
                       /* traceCurPath */ nullptr,
-                      /* traceResult */ nullptr);
+                      /* traceResult */ nullptr,
+                      /* idForWarnings */ nullptr);
+  }
+
+  return vec;
+}
+
+std::vector<BorrowedIdsWithName>
+lookupNameInScopeWithWarnings(Context* context,
+                              const Scope* scope,
+                              llvm::ArrayRef<const Scope*> receiverScopes,
+                              UniqueString name,
+                              LookupConfig config,
+                              ID idForWarnings) {
+  CheckedScopes visited;
+  std::vector<BorrowedIdsWithName> vec;
+
+  if (scope) {
+    helpLookupInScope(context, scope, receiverScopes,
+                      /* resolving scope */ nullptr,
+                      name, config, visited, vec,
+                      /* traceCurPath */ nullptr,
+                      /* traceResult */ nullptr,
+                      &idForWarnings);
   }
 
   return vec;
@@ -1401,7 +1497,8 @@ lookupNameInScopeTracing(Context* context,
                       /* resolving scope */ nullptr,
                       name, config, visited, vec,
                       &traceCurPath,
-                      &traceResult);
+                      &traceResult,
+                      /* idForWarnings */ nullptr);
   }
 
   return vec;
@@ -1422,7 +1519,8 @@ lookupNameInScopeWithSet(Context* context,
                       /* resolving scope */ nullptr,
                       name, config, visited, vec,
                       /* traceCurPath */ nullptr,
-                      /* traceResult */ nullptr);
+                      /* traceResult */ nullptr,
+                      /* idForWarnings */ nullptr);
   }
 
   return vec;
@@ -1513,7 +1611,8 @@ static void errorIfNameNotInScope(Context* context,
   bool got = helpLookupInScope(context, scope, {}, resolving, name, config,
                                checkedScopes, result,
                                /* traceCurPath */ nullptr,
-                               /* traceResult */ nullptr);
+                               /* traceResult */ nullptr,
+                               /* idForWarnings */ nullptr);
 
   bool found = got && result.size() > 0;
   bool foundViaPrivate = false;
@@ -1531,7 +1630,8 @@ static void errorIfNameNotInScope(Context* context,
     bool got = helpLookupInScope(context, scope, {}, resolving, name, config,
                                  checkedScopes, result,
                                  /* traceCurPath */ nullptr,
-                                 /* traceResult */ nullptr);
+                                 /* traceResult */ nullptr,
+                                 /* idForWarnings */ nullptr);
 
     found = got && result.size() > 0;
 
@@ -1748,7 +1848,7 @@ static const Scope* findScopeViz(Context* context, const Scope* scope,
   // lookup 'field' in that scope
   std::vector<BorrowedIdsWithName> vec;
   std::vector<BorrowedIdsWithName> improperMatches;
-  bool got = lookupInScopeViz(context, scope, resolving, nameInScope,
+  bool got = lookupInScopeViz(context, scope, resolving, nameInScope, idForErrs,
                               useOrImport, isFirstPart, vec, improperMatches);
 
   // We might've discovered the same ID multiple times, via different
@@ -2299,7 +2399,8 @@ static const bool& warnHiddenFormalsQuery(Context* context,
     auto helper = LookupHelper(context, rs, checkedScopes, matches,
                                foundExternBlock,
                                /* traceCurPath */ nullptr,
-                               /* traceResult */ nullptr);
+                               /* traceResult */ nullptr,
+                               /* idForWarnings */ nullptr);
 
 
     got = helper.doLookupInScope(rs->scope(), {}, name, config);
