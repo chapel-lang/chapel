@@ -460,12 +460,6 @@ module BigInteger {
       return getImpl();
     }
 
-    @deprecated(notes="get_d_2exp is deprecated in favor of :proc:`bigint.getD2Exp`, which returns (d, exp) instead of (exp, d).  Please use that method instead")
-    proc get_d_2exp() : (uint(32), real) {
-      var (dbl, exp) = getD2Exp();
-      return (exp, dbl);
-    }
-
     // private method
     @chpldoc.nodoc
     proc getStr(base: int = 10): string {
