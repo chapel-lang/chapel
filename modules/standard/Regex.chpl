@@ -941,52 +941,6 @@ record regex : serializable {
     }
   }
 
-  /* Perform the same operation as :proc:`regex.sub` but return a tuple
-     containing the new text and the number of substitutions made.
-
-     .. warning::
-
-       This method is deprecated. Please use :proc:`string.replaceAndCount`.
-
-     :arg repl: replace matches with this string or bytes
-     :arg text: the text to search and replace within
-     :type text: `string` or `bytes`
-     :arg global: if true, replace multiple matches
-     :returns: a tuple containing (new text, number of substitutions made)
-   */
-  @deprecated(notes="regex.subn is deprecated. Please use string.replaceAndCount.")
-  proc subn(repl: exprType, text: exprType, global = true ):(exprType, int)
-  {
-    if global then
-      return text.replaceAndCount(this, repl);
-    else
-      return text.replaceAndCount(this, repl, 1);
-  }
-
-  /*
-     Find matches to this regular expression and create a new string or bytes in
-     which those matches are replaced by repl.
-
-     .. warning::
-
-       This method is deprecated. Please use :proc:`string.replace` with `regex`
-       argument.
-
-     :arg repl: replace matches with this string or bytes
-     :arg text: the text to search and replace within
-     :type text: `string` or `bytes`
-     :arg global: if true, replace multiple matches
-     :returns: the new string or bytes
-   */
-  @deprecated(notes="regex.sub is deprecated. Please use string.replace.")
-  proc sub(repl: exprType, text: exprType, global = true )
-  {
-    if global then
-      return text.replace(this, repl);
-    else
-      return text.replace(this, repl, count=1);
-  }
-
   // TODO this could use _serialize to get the pattern and options
   @chpldoc.nodoc
   proc writeThis(f) throws {
