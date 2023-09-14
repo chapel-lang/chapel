@@ -8722,9 +8722,9 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
 
     // Allow either DefaultRectangular arrays or dense slices of DR arrays
     if !data._value.isDataContiguous(d._value) {
-      throw new IllegalArgumentError("array data must be contiguous");
+      throw new IllegalArgumentError("writeBinary() array data must be contiguous");
     } else if data.locale != this._home {
-      throw new IllegalArgumentError("array data must be on same locale as 'fileReader'");
+      throw new IllegalArgumentError("writeBinary() array data must be on same locale as 'fileWriter'");
     } else {
       e = try qio_channel_write_amt(false, this._channel_internal, data[d.low], data.size:c_ssize_t * tSize);
 
@@ -8737,7 +8737,7 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
 
 @chpldoc.nodoc
 proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioendian.native) throws {
-  compilerError("writeBinary() does not currently support this type of array");
+  compilerError("writeBinary() only supports local, rectangular, non-strided arrays");
 }
 
 
@@ -8764,11 +8764,8 @@ proc fileWriter.writeBinary(const ref data: [] ?t, endian:ioendian) throws
     when ioendian.native {
       this.writeBinary(data, ioendian.native);
     }
-    when ioendian.big {
-      this.writeBinary(data, ioendian.big);
-    }
-    when ioendian.little {
-      this.writeBinary(data, ioendian.little);
+    otherwise {
+      throw new IllegalArgumentError("writeBinary() currently only supports 'ioendian.native'");
     }
   }
 }
@@ -8776,7 +8773,7 @@ proc fileWriter.writeBinary(const ref data: [] ?t, endian:ioendian) throws
 @chpldoc.nodoc
 proc fileWriter.writeBinary(const ref data: [] ?t, endian:ioendian) throws
 {
-  compilerError("writeBinary() does not currently support this type of array");
+  compilerError("writeBinary() only supports local, rectangular, non-strided arrays");
 }
 
 /*
@@ -9046,9 +9043,9 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
     try this.lock(); defer { this.unlock(); }
 
     if !data._value.isDataContiguous(d._value) {
-      throw new IllegalArgumentError("array data must be contiguous");
+      throw new IllegalArgumentError("readBinary() array data must be contiguous");
     } else if data.locale != this._home {
-      throw new IllegalArgumentError("array data must be on same locale as 'fileReader'");
+      throw new IllegalArgumentError("readBinary() array data must be on same locale as 'fileReader'");
     } else {
       e = qio_channel_read(false, this._channel_internal, data[d.low], (data.size * c_sizeof(data.eltType)) : c_ssize_t, numRead);
 
@@ -9091,11 +9088,8 @@ proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):bool throws
     when ioendian.native {
       rv = this.readBinary(data, ioendian.native);
     }
-    when ioendian.big {
-      rv = this.readBinary(data, ioendian.big);
-    }
-    when ioendian.little {
-      rv = this.readBinary(data, ioendian.little);
+    otherwise {
+      throw new IllegalArgumentError("readBinary() currently only supports 'ioendian.native'");
     }
   }
 
@@ -9131,11 +9125,8 @@ proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):int throws
     when ioendian.native {
       nr = this.readBinary(data, ioendian.native);
     }
-    when ioendian.big {
-      nr = this.readBinary(data, ioendian.big);
-    }
-    when ioendian.little {
-      nr = this.readBinary(data, ioendian.little);
+    otherwise {
+      throw new IllegalArgumentError("readBinary() currently only supports 'ioendian.native'");
     }
   }
 
@@ -9145,13 +9136,13 @@ proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):int throws
 @chpldoc.nodoc
 proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):int throws
 {
-  compilerError("readBinary() does not currently support this type of array");
+  compilerError("readBinary() only supports local, rectangular, non-strided arrays");
 }
 
 @chpldoc.nodoc
 proc fileReader.readBinary(ref data: [] ?t, param endian = ioendian.native): bool throws
 {
-  compilerError("readBinary() does not currently support this type of array");
+  compilerError("readBinary() only supports local, rectangular, non-strided arrays");
 }
 
 
