@@ -22,28 +22,61 @@ required.
 
 With release 1.32, the Chapel compiler provides an opt-in experimental compiler
 driver mode that can be used via the ``--compiler-driver`` flag; at some point
-in the future this will become the default mode of operation.
+in the future this will become the default mode of operation. The driver
+currently splits work into two phases: phase one, which is responsible for
+everything through code generation (C code or LLVM bitcode), and phase two,
+which is responsible for binary generation (including linking).
 
 ---------------------
 Motivation for Driver
 ---------------------
 
-placeholder
+There are a few potential advantages provided by the compiler driver approach,
+which are not necessarily accomplished by the present implementation yet.
+
+- Reduced memory pressure. Different driver phases phases are separate
+  subprocesses, and the memory used by each can be completely reclaimed after
+  it is done.
+- Ability to perform some parts of compilation but not others, to avoid
+  unnecessary work. For example, some compilers provide ways to check if code
+  is valid without generating a binary, supporting a faster edit-recompile
+  cycle; the driver provides one way of accomplishing this effect.
+- Better debuggability. A developer could debug just the phase(s) of the driver
+  relevant to what they're investigating, simplifying and saving time.
+- Better compiler code organization via looser coupling between components.
 
 --------------------
 Driver Control Flags
 --------------------
 
-placeholder
+Several flags are available to control the actions performed by the driver. Some
+are intended for the user, and others are considered internal and likely only
+to be useful to compiler developers. Both are documented here.
 
------------------
-Known Limitations
------------------
-
-placeholder
+- ``--compiler-driver``: Enable compiler driver mode. This flag mut be present
+  to set any other driver flags. Without this flag, the compiler will run
+  monolithically as usual.
+- ``--driver-debug-phase``: Set which phase of compilation to run in the
+  debugger: '1', '2', or 'all'. If debugging just phase one, phase two will be
+  skipped entirely as it is unlikely to be useful.
+- ``--driver-phase-one``: Internal flag. Causes the execution of phase one.
+  The driver re-invokes itself with this flag to run phase one.
+- ``--driver-phase-two``: Internal flag. Causes the execution of phase two.
+  The driver re-invokes itself with this flag to run phase two.
+- ``--driver-tmp-dir``: Internal flag, specifying where the current phase will
+  look for temporary files that must be carried between phases. The driver sets
+  this flag during re-invocations for the different phases, and will provide the
+  same value to all phases.
 
 -----------
 Future Work
 -----------
 
-placeholder
+- Fix driver behavior for GPU compilation, which currently performs all work
+  in phase one and skips phase two.
+- Reduce work re-done between driver and phase invocations.
+- Enable our usual performance and correctness testing for driver mode, and
+  reach parity with monolithic mode.
+- Measure performance of compiler itself in driver mode, including change in
+  memory pressure.
+- Eventually, make compiler driver mode the default, with an opt-out flag.
