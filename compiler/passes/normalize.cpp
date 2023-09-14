@@ -4885,7 +4885,7 @@ static void fixupExplicitGenericVariables(CallExpr* call) {
   bool actIsQuestion = false;
   if (auto se = toSymExpr(call->baseExpr)) {
     // for some reason this breaks with ranges, skip since they aren't a problem currently
-    if (se->symbol() != dtRange->symbol) {
+    if (!dtRange || se->symbol() != dtRange->symbol) {
       symExpr = se;
     }
   }
