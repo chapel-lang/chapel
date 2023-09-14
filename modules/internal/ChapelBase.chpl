@@ -2168,6 +2168,8 @@ module ChapelBase {
            isIntegralType(t) ||
            isRealType(t);
 
+  inline operator :(x:bool, type t:integral) do
+    return __primitive("cast", t, x);
   inline operator :(x:bool, type t:chpl_anyreal) do
     return __primitive("cast", t, x);
 
