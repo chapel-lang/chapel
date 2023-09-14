@@ -11292,6 +11292,9 @@ static void checkSpeciallyNamedMethods() {
     auto at = getBaseTypeForInterfaceWarnings(receiverType);
     if (!at || (found == gHashable && at == dtObject)) continue;
 
+    if (at->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
+        found == gWriteSerializable) continue;
+
     int n = fn->numFormals();
     if (fn->isInitializer() &&
         !(n >= 4 &&
