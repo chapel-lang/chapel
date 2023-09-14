@@ -27,8 +27,7 @@ proc main() {
     var c_im:real = (upper.im - lower.im) * ipart / size + lower.im;
     var start = datastart+ipart*cols;
     var end = datastart+(ipart+1)*cols;
-    var writer = f.writer(serializer=new binarySerializer(), locking=false,
-                          region=start..#end);
+    var writer = f.writer(locking=false, region=start..#end);
 
     for rstart in 0..#cols {
 
@@ -56,7 +55,7 @@ proc main() {
         if mask == 0 then break;
       }
     
-      writer.write(mask:uint(8));
+      writer.writeBinary(mask:uint(8));
     }
 
     writer.close();
