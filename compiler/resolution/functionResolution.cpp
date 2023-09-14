@@ -11263,6 +11263,28 @@ static AggregateType* getBaseTypeForInterfaceWarnings(Type* ts) {
   return toReturn;
 }
 
+static bool matchesSerializeShape(FnSymbol* fn,
+                                  const char* first, const char* second) {
+  // Initializer needs at least 4 : this, _mt, <generics>, reader, deserializer
+  int n = fn->numFormals();
+  if (fn->isInitializer()) {
+    if (n < 4) return false;
+  } else if (n != 4) {
+    // (de)serialize have only 4: this, _mt, <channel>, <(de)serializer>
+    return false;
+  }
+
+  bool ret = strcmp(fn->getFormal(n-1)->name, first) == 0 &&
+             strcmp(fn->getFormal(n)->name, second) == 0;
+  return ret;
+}
+
+static bool isSerdeSingleInterface(InterfaceSymbol* isym) {
+  return isym == gWriteSerializable ||
+         isym == gReadDeserializable ||
+         isym == gInitDeserializable;
+}
+
 static void checkSpeciallyNamedMethods() {
   static const std::unordered_map<const char*, InterfaceSymbol*> reservedNames = {
     { astr("hash"), gHashable },
@@ -11295,35 +11317,16 @@ static void checkSpeciallyNamedMethods() {
     if (at->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
         found == gWriteSerializable) continue;
 
-    int n = fn->numFormals();
-    if (fn->isInitializer() &&
-        !(n >= 4 &&
-        strcmp(fn->getFormal(n-1)->name, "reader") == 0 &&
-        strcmp(fn->getFormal(n)->name, "deserializer") == 0)) {
-      // Skip initializers that don't match the signature closely enough
-      continue;
-    }
+    if ((found == gInitDeserializable || found == gReadDeserializable) &&
+        !matchesSerializeShape(fn, "reader", "deserializer")) continue;
 
-    if (found == gWriteSerializable) {
-      bool matches = n == 4 &&
-                     strcmp(fn->getFormal(3)->name, "writer") == 0 &&
-                     strcmp(fn->getFormal(4)->name, "serializer") == 0;
-      if (!matches) continue;
-    }
-
-    if (found == gReadDeserializable) {
-      bool matches = n == 4 &&
-                     strcmp(fn->getFormal(3)->name, "reader") == 0 &&
-                     strcmp(fn->getFormal(4)->name, "deserializer") == 0;
-      if (!matches) continue;
-    }
+    if (found == gWriteSerializable &&
+        !matchesSerializeShape(fn, "writer", "serializer")) continue;
 
     auto key = SpeciallyNamedMethodKey(found, at);
     flagged[key].speciallyNamedMethods[fn->name] = fn;
 
-    if (found == gWriteSerializable ||
-        found == gReadDeserializable ||
-        found == gInitDeserializable) {
+    if (isSerdeSingleInterface(found)) {
       auto key = SpeciallyNamedMethodKey(gSerializable, at);
       flagged[key].speciallyNamedMethods[fn->name] = fn;
     }
@@ -11344,9 +11347,7 @@ static void checkSpeciallyNamedMethods() {
       flagged.erase(SpeciallyNamedMethodKey(gWriteSerializable, at));
       flagged.erase(SpeciallyNamedMethodKey(gReadDeserializable, at));
       flagged.erase(SpeciallyNamedMethodKey(gInitDeserializable, at));
-    } else if (isym == gWriteSerializable ||
-               isym == gReadDeserializable ||
-               isym == gInitDeserializable) {
+    } else if (isSerdeSingleInterface(isym)) {
       flagged.erase(SpeciallyNamedMethodKey(gSerializable, at));
     }
   }
