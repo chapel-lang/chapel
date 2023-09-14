@@ -71,7 +71,7 @@ static void        replaceFunctionWithInstantiationsOfPrimitive(FnSymbol* fn);
 static void        fixupQueryFormals(FnSymbol* fn);
 static void        fixupCastFormals(FnSymbol* fn);
 
-static void        fixupExplicitGenericVariables(CallExpr* ce);
+static void        fixupExplicitGenericVariables(DefExpr* def);
 
 static void        updateInitMethod (FnSymbol* fn);
 
@@ -2997,8 +2997,8 @@ void normalizeVariableDefinition(DefExpr* defExpr) {
   if (foundSplitInit == false && refVar)
     errorIfSplitInitializationRequired(defExpr, prevent);
 
-  if (auto callType = toCallExpr(type)) {
-    fixupExplicitGenericVariables(callType);
+  if (type != nullptr) {
+    fixupExplicitGenericVariables(defExpr);
   }
 
   if (requestedSplitInit && foundSplitInit == false) {
@@ -4876,48 +4876,40 @@ static void addToWhereClause(FnSymbol*  fn,
   combine->insertAtTail(test);
 }
 
-static void fixupExplicitGenericVariables(CallExpr* call) {
+static void fixupExplicitGenericVariables(DefExpr* def) {
+  // this is a workaround for `(CallExpr _domain ?)` not being resolved
   // fixup the pattern `(CallExpr _domain ?)` to be `(_domain(?))`,
   // marking the `DefExpr` as generic
+  CHPL_ASSERT(def && def->exprType);
 
-  // if its a call like `_domain ?`, make it `_domain(?)` and MARKED_GENERIC
-  SymExpr* symExpr = nullptr;
-  bool actIsQuestion = false;
-  if (auto se = toSymExpr(call->baseExpr)) {
+  if (CallExpr* call = toCallExpr(def->exprType)) {
+    // if its a call like `_domain ?`, make it `_domain(?)` and MARKED_GENERIC
+    SymExpr* symExpr = nullptr;
+    bool actIsQuestion = false;
+    if (auto se = toSymExpr(call->baseExpr)) {
 
-    // only perform this transformation if the generic has no defaults
-    //   this is a workaround for something like `range`, which is generic with
-    //   defaults and which this normalization breaks
-    bool genericWithDefaults = false;
-    if (AggregateType* at = toAggregateType(se->symbol()->type)) {
-      genericWithDefaults = at->isGenericWithDefaults();
+      // only perform this transformation if the generic has no defaults
+      //   this is a workaround for something like `range`, which is generic with
+      //   defaults and which this normalization breaks
+      bool genericWithDefaults = false;
+      if (AggregateType* at = toAggregateType(se->symbol()->type)) {
+        genericWithDefaults = at->isGenericWithDefaults();
+      }
+      if (!genericWithDefaults) symExpr = se;
     }
-    if (!genericWithDefaults) symExpr = se;
-  }
-  if (call->numActuals() == 1) {
-    if (auto se = toSymExpr(call->get(1))) {
-      actIsQuestion = se->symbol() == gUninstantiated;
-    }
-  }
-
-  if (symExpr && actIsQuestion) {
-    Symbol* symToSetGeneric = nullptr;
-    if (auto def = toDefExpr(call->parentExpr)) {
-      // if the parentExpr is a def, mark the symbol generic
-      symToSetGeneric = def->sym;
-    } else if (auto parentCall = toCallExpr(call->parentExpr)) {
-      // if parentExpr is a init, a move or assign, mark the symbol generic
-      if ((parentCall->isPrimitive(PRIM_INIT_VAR)) ||
-          (isMoveOrAssign(parentCall) && parentCall->get(2) == call)) {
-        if(auto se = toSymExpr(parentCall->get(1))) {
-          symToSetGeneric = se->symbol();
-        }
+    if (call->numActuals() == 1) {
+      if (auto se = toSymExpr(call->get(1))) {
+        actIsQuestion = se->symbol() == gUninstantiated;
       }
     }
-    if (symToSetGeneric) {
-      symToSetGeneric->addFlag(FLAG_MARKED_GENERIC);
-      symExpr->remove();
-      call->replace(symExpr);
+
+    if (symExpr && actIsQuestion) {
+      Symbol* symToSetGeneric = def->sym;
+      if (symToSetGeneric) {
+        symToSetGeneric->addFlag(FLAG_MARKED_GENERIC);
+        symExpr->remove();
+        call->replace(symExpr);
+      }
     }
   }
 }
