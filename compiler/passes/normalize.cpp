@@ -71,6 +71,8 @@ static void        replaceFunctionWithInstantiationsOfPrimitive(FnSymbol* fn);
 static void        fixupQueryFormals(FnSymbol* fn);
 static void        fixupCastFormals(FnSymbol* fn);
 
+static void        fixupExplicitGenericVariables(DefExpr* def);
+
 static void        updateInitMethod (FnSymbol* fn);
 
 static void        checkUseBeforeDefs();
@@ -2995,6 +2997,10 @@ void normalizeVariableDefinition(DefExpr* defExpr) {
   if (foundSplitInit == false && refVar)
     errorIfSplitInitializationRequired(defExpr, prevent);
 
+  if (type != nullptr) {
+    fixupExplicitGenericVariables(defExpr);
+  }
+
   if (requestedSplitInit && foundSplitInit == false) {
     // Create a dummy DEFAULT_INIT_VAR to sort out later in resolution
     // to support a pattern like
@@ -4841,6 +4847,44 @@ static void addToWhereClause(FnSymbol*  fn,
   where->replace(combine);
   combine->insertAtTail(where);
   combine->insertAtTail(test);
+}
+
+static void fixupExplicitGenericVariables(DefExpr* def) {
+  // this is a workaround for `(CallExpr _domain ?)` not being resolved
+  // fixup the pattern `(CallExpr _domain ?)` to be `(_domain(?))`,
+  // marking the `DefExpr` as generic
+  CHPL_ASSERT(def && def->exprType);
+
+  if (CallExpr* call = toCallExpr(def->exprType)) {
+    // if its a call like `_domain ?`, make it `_domain(?)` and MARKED_GENERIC
+    SymExpr* symExpr = nullptr;
+    bool actIsQuestion = false;
+    if (auto se = toSymExpr(call->baseExpr)) {
+
+      // only perform this transformation if the generic has no defaults
+      //   this is a workaround for something like `range`, which is generic with
+      //   defaults and which this normalization breaks
+      bool genericWithDefaults = false;
+      if (AggregateType* at = toAggregateType(se->symbol()->type)) {
+        genericWithDefaults = at->isGenericWithDefaults();
+      }
+      if (!genericWithDefaults) symExpr = se;
+    }
+    if (call->numActuals() == 1) {
+      if (auto se = toSymExpr(call->get(1))) {
+        actIsQuestion = se->symbol() == gUninstantiated;
+      }
+    }
+
+    if (symExpr && actIsQuestion) {
+      Symbol* symToSetGeneric = def->sym;
+      if (symToSetGeneric) {
+        symToSetGeneric->addFlag(FLAG_MARKED_GENERIC);
+        symExpr->remove();
+        call->replace(symExpr);
+      }
+    }
+  }
 }
 
 /************************************* | **************************************
