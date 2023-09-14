@@ -216,6 +216,9 @@ const char* toString(Type* type, bool decorateAllClasses) {
       } else if (strncmp(at->symbol->name, drDomName, drDomNameLen) == 0) {
         retval = astr("domain", at->symbol->name + drDomNameLen);
 
+      } else if (startsWith(at->symbol->name, "_domain")) {
+        retval = astr(at->symbol->name + 1); // skip the leading _
+
       } else if (at->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
         retval = fcfs::functionClassTypeToString(at);
 
