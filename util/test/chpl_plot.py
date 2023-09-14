@@ -748,6 +748,9 @@ def computeUniqColName(existingCols, newCol):
 # -----------------------------------------------------------------------------
 
 def join(*tables):
+  if len(tables) == 1 and isinstance(tables[0], TableCollection):
+    return tables[0].join()
+
   res = copy.deepcopy(tables[0])
   res.title = "join of: (" + res.title
 
