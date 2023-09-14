@@ -8713,9 +8713,6 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
 {
   var e : errorCode = 0;
 
-  if endian != ioendian.native then
-    compilerError("writeBinary() currently only supports 'ioendian.native'");
-
   on this._home {
     try this.lock(); defer { this.unlock(); }
     const tSize = c_sizeof(t) : c_ssize_t;
@@ -8725,11 +8722,28 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
       throw new IllegalArgumentError("writeBinary() array data must be contiguous");
     } else if data.locale != this._home {
       throw new IllegalArgumentError("writeBinary() array data must be on same locale as 'fileWriter'");
-    } else {
+    } else if endian == ioendian.native {
       e = try qio_channel_write_amt(false, this._channel_internal, data[d.low], data.size:c_ssize_t * tSize);
 
       if e != 0 then
         throw createSystemOrChplError(e);
+    } else {
+      for b in data {
+        select (endian) {
+          when ioendian.native {
+            compilerError("unreachable");
+          }
+          when ioendian.big {
+            e = try _write_binary_internal(this._channel_internal, _iokind.big, b);
+          }
+          when ioendian.little {
+            e = try _write_binary_internal(this._channel_internal, _iokind.little, b);
+          }
+        }
+
+        if e != 0 then
+          throw createSystemOrChplError(e);
+      }
     }
   }
 }
@@ -8764,8 +8778,11 @@ proc fileWriter.writeBinary(const ref data: [] ?t, endian:ioendian) throws
     when ioendian.native {
       this.writeBinary(data, ioendian.native);
     }
-    otherwise {
-      throw new IllegalArgumentError("writeBinary() currently only supports 'ioendian.native'");
+    when ioendian.native {
+      this.writeBinary(data, ioendian.big);
+    }
+    when ioendian.native {
+      this.writeBinary(data, ioendian.little);
     }
   }
 }
@@ -9036,9 +9053,6 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
   var e : errorCode = 0,
       numRead : c_ssize_t = 0;
 
-  if endian != ioendian.native then
-    compilerError("readBinary() currently only supports 'ioendian.native'");
-
   on this._home {
     try this.lock(); defer { this.unlock(); }
 
@@ -9046,10 +9060,32 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
       throw new IllegalArgumentError("readBinary() array data must be contiguous");
     } else if data.locale != this._home {
       throw new IllegalArgumentError("readBinary() array data must be on same locale as 'fileReader'");
-    } else {
+    } else if endian == ioendian.native {
       e = qio_channel_read(false, this._channel_internal, data[d.low], (data.size * c_sizeof(data.eltType)) : c_ssize_t, numRead);
 
       if e != 0 && e != EEOF then throw createSystemOrChplError(e);
+    } else {
+      for (i, b) in zip(data.domain, data) {
+        select (endian) {
+          when ioendian.native {
+            compilerError("unreachable");
+          }
+          when ioendian.big {
+            e = try _read_binary_internal(this._channel_internal, _iokind.big,    b);
+          }
+          when ioendian.little {
+            e = try _read_binary_internal(this._channel_internal, _iokind.little, b);
+          }
+        }
+
+        if e == EEOF {
+          break;
+        } else if e != 0 {
+          throw createSystemOrChplError(e);
+        } else {
+          numRead += 1;
+        }
+      }
     }
   }
 
@@ -9088,8 +9124,11 @@ proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):bool throws
     when ioendian.native {
       rv = this.readBinary(data, ioendian.native);
     }
-    otherwise {
-      throw new IllegalArgumentError("readBinary() currently only supports 'ioendian.native'");
+    when ioendian.big {
+      rv = this.readBinary(data, ioendian.big);
+    }
+    when ioendian.little {
+      rv = this.readBinary(data, ioendian.little);
     }
   }
 
@@ -9125,8 +9164,11 @@ proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):int throws
     when ioendian.native {
       nr = this.readBinary(data, ioendian.native);
     }
-    otherwise {
-      throw new IllegalArgumentError("readBinary() currently only supports 'ioendian.native'");
+    when ioendian.big {
+      nr = this.readBinary(data, ioendian.big);
+    }
+    when ioendian.little {
+      nr = this.readBinary(data, ioendian.little);
     }
   }
 
