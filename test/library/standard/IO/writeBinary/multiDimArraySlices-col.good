@@ -9,5 +9,5 @@
 900.01 900.02 900.03 900.04 900.05 900.06 900.07 900.08 900.09 900.1
 1000.01 1000.02 1000.03 1000.04 1000.05 1000.06 1000.07 1000.08 1000.09 1000.1
 uncaught IllegalArgumentError: writeBinary() array data must be contiguous
-  multiDimArraySlices.chpl:13: thrown here
-  multiDimArraySlices.chpl:13: uncaught here
+  multiDimArraySlices.chpl:15: thrown here
+  multiDimArraySlices.chpl:15: uncaught here

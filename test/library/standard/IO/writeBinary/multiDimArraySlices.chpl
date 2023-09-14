@@ -1,8 +1,10 @@
-use IO;
+use IO, BlockDist;
 
 config const useCol = false;
+config param useBlock = false;
 
-var Dom = {1..10, 1..10};
+var Dom = if useBlock then blockDist.createDomain({1..10, 1..10})
+                      else {1..10, 1..10};
 var Slice = if useCol then {1..10, 2..2} else {2..2, 1..10};
 
 var A: [Dom] real = [(i,j) in Dom] i * 100 + j/100.0;
