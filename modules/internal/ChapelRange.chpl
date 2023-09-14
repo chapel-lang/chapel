@@ -2385,6 +2385,12 @@ private proc isBCPindex(type t) param do
 
   /////////// operators + and - ///////////
 
+  operator +(r1: range(?), r2: range(?)) do
+    compilerError("range addition is currently not supported");
+
+  operator -(r1: range(?), r2: range(?)) do
+    compilerError("range subtraction is currently not supported");
+
   //
   // Shifts and entire range to the right or left.
   // The alignment shifts along with the range.
