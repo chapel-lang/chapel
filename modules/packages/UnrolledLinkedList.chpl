@@ -610,26 +610,6 @@ module UnrolledLinkedList {
       return result;
     }
 
-    @deprecated(notes="unrolledLinkedList.extend is deprecated, please use unrolledLinkedList.append")
-    proc ref extend(other: list(eltType, ?p)) lifetime this < other {
-      append(other);
-    }
-
-    @deprecated(notes="unrolledLinkedList.extend is deprecated, please use unrolledLinkedList.append")
-    proc ref extend(other: unrolledLinkedList(eltType, ?p)) lifetime this < other {
-      append(other);
-    }
-
-    @deprecated(notes="unrolledLinkedList.extend is deprecated, please use unrolledLinkedList.append")
-    proc ref extend(other: [?d] eltType) lifetime this < other {
-      append(other);
-    }
-
-    @deprecated(notes="unrolledLinkedList.extend is deprecated, please use unrolledLinkedList.append")
-    proc ref extend(other: range(eltType, ?b, ?d)) lifetime this < other {
-      append(other);
-    }
-
     @chpldoc.nodoc
     proc ref _insert(idx: int, in x: eltType)
          lifetime this < x {
