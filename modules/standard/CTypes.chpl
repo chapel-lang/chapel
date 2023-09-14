@@ -150,7 +150,7 @@ module CTypes {
   pragma "no default functions"
   pragma "no wide class"
   pragma "c_ptr class"
-  class c_ptr {
+  class c_ptr : writeSerializable {
     //   Similar to _ddata from ChapelBase, but differs
     //   from _ddata because it can never be wide.
 
@@ -203,7 +203,7 @@ module CTypes {
   pragma "no wide class"
   pragma "c_ptr class"
   pragma "c_ptrConst class"
-  class c_ptrConst {
+  class c_ptrConst : writeSerializable {
     /*
        The type that this pointer points to, which can be queried like so:
 
@@ -258,7 +258,7 @@ module CTypes {
   */
   pragma "c_array record"
   pragma "default intent is ref if modified"
-  record c_array {
+  record c_array : writeSerializable {
     /*
        The array element type, which can be queried like so:
 

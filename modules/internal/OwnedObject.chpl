@@ -37,7 +37,7 @@ module OwnedObject {
   pragma "no copy"
   pragma "copy mutates"
   pragma "managed pointer"
-  record _owned {
+  record _owned : writeSerializable, readDeserializable {
     type chpl_t;                // contained type (class type)
 
     // contained pointer (class type)

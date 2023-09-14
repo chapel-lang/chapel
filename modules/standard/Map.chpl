@@ -73,7 +73,7 @@ module Map {
     }
   }
 
-  record map {
+  record map : serializable {
     /* Type of map keys. */
     type keyType;
     /* Type of map values. */

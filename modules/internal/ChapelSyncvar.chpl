@@ -121,7 +121,7 @@ module ChapelSyncvar {
   pragma "sync"
   pragma "default intent is ref"
   @chpldoc.nodoc
-  record _syncvar {
+  record _syncvar : writeSerializable, readDeserializable {
     type valType;                              // The compiler knows this name
 
     var  wrapped : getSyncClassType(valType);
@@ -812,7 +812,7 @@ module ChapelSyncvar {
   pragma "single"
   pragma "default intent is ref"
   @chpldoc.nodoc
-  record _singlevar {
+  record _singlevar : writeSerializable, readDeserializable {
     type valType;                              // The compiler knows this name
 
     var  wrapped : unmanaged _singlecls(valType);

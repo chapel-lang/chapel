@@ -72,7 +72,7 @@ do not provide some standard domain/array functionality.
 This distribution may perform unnecessary communication
 between locales.
 */
-class Private: BaseDist {
+class Private: BaseDist, writeSerializable {
   override proc dsiNewRectangularDom(param rank: int, type idxType,
                                      param strides: strideKind, inds) {
     for i in inds do

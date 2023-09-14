@@ -351,7 +351,7 @@ prototype module AtomicObjects {
      should be created by LocalAtomicObject. The object protected by this ABA wrapper can
      be extracted via 'getObject'.
   */
-  record ABA {
+  record ABA : serializable {
     type __ABA_objType;
     @chpldoc.nodoc
     var __ABA_ptr : uint(64);
@@ -464,7 +464,7 @@ prototype module AtomicObjects {
     return aba1.__ABA_cnt != aba2.__ABA_cnt || aba1.__ABA_ptr != aba2.__ABA_ptr;
   }
 
-  record AtomicObject {
+  record AtomicObject : serializable {
     type objType;
     // If this atomic instance provides ABA support
     param hasABASupport : bool;

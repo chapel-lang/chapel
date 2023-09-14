@@ -564,7 +564,7 @@ record chpl_serializeHelper {
     compiled regex). Same applies for bytes.
   */
 pragma "ignore noinit"
-record regex {
+record regex : serializable {
 
   @chpldoc.nodoc
   type exprType;

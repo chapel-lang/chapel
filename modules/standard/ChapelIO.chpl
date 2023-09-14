@@ -669,6 +669,7 @@ module ChapelIO {
   proc locale.serialize(writer, ref serializer) throws {
     writer.write(this._instance);
   }
+  locale implements writeSerializable;
 
   @chpldoc.nodoc
   proc _ddata.writeThis(f) throws {
@@ -681,6 +682,7 @@ module ChapelIO {
     compilerWarning("printing _ddata class");
     writer.write("<_ddata class cannot be printed>");
   }
+  _ddata implements writeSerializable;
 
   proc chpl_taskID_t.writeThis(f) throws {
     f.write(this : uint(64));
@@ -784,6 +786,7 @@ module ChapelIO {
     }
     des.endTuple();
   }
+  _tuple implements readDeserializable;
 
   @chpldoc.nodoc
   proc const _tuple.serialize(writer, ref serializer) throws {
@@ -794,6 +797,7 @@ module ChapelIO {
     }
     ser.endTuple();
   }
+  _tuple implements writeSerializable;
 
   // Moved here to avoid circular dependencies in ChapelRange
   // Write implementation for ranges
@@ -832,6 +836,7 @@ module ChapelIO {
   proc range.serialize(writer, ref serializer) throws {
     writeThis(writer);
   }
+  range implements writeSerializable;
 
   @chpldoc.nodoc
   proc ref range.readThis(f) throws {
@@ -875,6 +880,7 @@ module ChapelIO {
   proc ref range.deserialize(reader, ref deserializer) throws {
     readThis(reader);
   }
+  range implements readDeserializable;
 
   @chpldoc.nodoc
   proc range.init(type idxType = int,
@@ -885,6 +891,7 @@ module ChapelIO {
     this.init(idxType, bounds, strides);
     this.readThis(reader);
   }
+  range implements initDeserializable;
 
   @chpldoc.nodoc
   override proc LocaleModel.writeThis(f) throws {
@@ -896,6 +903,7 @@ module ChapelIO {
   override proc LocaleModel.serialize(writer, ref serializer) throws {
     writeThis(writer);
   }
+  LocaleModel implements writeSerializable;
 
   /* Errors can be printed out. In that event, they will
      show information about the error including the result
@@ -910,6 +918,7 @@ module ChapelIO {
   override proc Error.serialize(writer, ref serializer) throws {
     writer.write(chpl_describe_error(this));
   }
+  Error implements writeSerializable;
 
   /* Equivalent to ``try! stdout.write``. See :proc:`IO.fileWriter.write` */
   proc write(const args ...?n) {

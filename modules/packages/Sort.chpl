@@ -1446,7 +1446,7 @@ module SampleSortHelp {
 
 
 
-  record SampleBucketizer {
+  record SampleBucketizer : writeSerializable {
     type eltType;
 
     // filled from 1 to num_buckets_
@@ -2214,7 +2214,7 @@ module TwoArrayPartitioning {
     }
   }
 
-  record TwoArrayDistSortTask {
+  record TwoArrayDistSortTask : writeSerializable {
     var tasks: list(TwoArrayDistSortPerBucketTask);
 
     // Create an empty one

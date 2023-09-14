@@ -551,7 +551,7 @@ class SparseBlockArr: BaseSparseArr(?) {
 // locDom: reference to local domain class
 // myElems: a non-distributed array of local elements
 //
-class LocSparseBlockArr {
+class LocSparseBlockArr : writeSerializable {
   type eltType;
   param rank: int;
   type idxType;

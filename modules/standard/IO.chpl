@@ -2509,7 +2509,7 @@ private proc defaultSerializeVal(param writing : bool,
 }
 
 @chpldoc.nodoc
-class _serializeWrapper {
+class _serializeWrapper : writeSerializable {
   type T;
   var member: T;
   // TODO: Needed to avoid a weird memory error in the following test in
@@ -3923,7 +3923,7 @@ proc fileWriter.withSerializer(in serializer: ?st) : fileWriter(this._kind, this
 // represents a Unicode codepoint
 // used to pass codepoints to read and write to avoid duplicating code
 @chpldoc.nodoc
-record _internalIoChar {
+record _internalIoChar : writeSerializable {
   /* The codepoint value */
   var ch:int(32);
   @chpldoc.nodoc
@@ -3997,7 +3997,7 @@ When reading an ioNewline, read routines will skip any character sequence
 type ioNewline = chpl_ioNewline;
 
 @chpldoc.nodoc
-record chpl_ioNewline {
+record chpl_ioNewline : writeSerializable {
   /*
     Normally, we will skip anything at all to get to a ``\n``,
     but if skipWhitespaceOnly is set, it will be an error
@@ -4036,7 +4036,7 @@ will return an error for incorrectly formatted input
 type ioLiteral = chpl_ioLiteral;
 
 @chpldoc.nodoc
-record chpl_ioLiteral {
+record chpl_ioLiteral : writeSerializable {
   /* The value of the literal */
   var val: string;
   /* Should read operations using this literal ignore and consume
@@ -10951,7 +10951,7 @@ proc _toRegex(x:?t)
 }
 
 @chpldoc.nodoc
-class _channel_regex_info {
+class _channel_regex_info : writeSerializable {
   var hasRegex = false;
   var matchedRegex = false;
   var releaseRegex = false;
