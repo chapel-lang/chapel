@@ -145,6 +145,7 @@ Constant and Function Definitions
 
 */
 module Math {
+  private import HaltWrappers;
   private use CTypes;
   public use AutoMath;
 
