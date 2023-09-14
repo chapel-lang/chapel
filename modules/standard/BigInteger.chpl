@@ -429,27 +429,6 @@ module BigInteger {
       return (dbl: real, exp.safeCast(uint(32)));
     }
 
-    @deprecated(notes="bigint.size() is deprecated")
-    proc size() : c_size_t {
-      var ret: c_size_t;
-
-      if compiledForSingleLocale() {
-        ret = mpz_size(this.mpz);
-
-      } else if this.localeId == chpl_nodeID {
-        ret = mpz_size(this.mpz);
-
-      } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          ret = mpz_size(this.mpz);
-        }
-      }
-
-      return ret;
-    }
-
     @deprecated("bigint.sizeinbase is deprecated, use :proc:`bigint.sizeInBase` instead")
     proc sizeinbase(base: int) : uint {
       return sizeInBase(base).safeCast(uint);
