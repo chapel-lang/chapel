@@ -20,6 +20,7 @@ module list
 source $CWD/common-hpe-apollo.bash
 source $CWD/common-perf-hpe-apollo-hdr.bash
 
+module unload PrgEnv-cray
 module load PrgEnv-gnu
 module load cray-pmi
 module load cray-mpich
