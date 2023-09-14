@@ -1719,6 +1719,8 @@ module DefaultRectangular {
 
   proc DefaultRectangularDom.dsiSerialWrite(f) throws
   where _supportsSerializers(f) && f.serializerType != IO.defaultSerializer {
+    if chpl_warnUnstable then
+      compilerWarning("Serialization of rectangular domains with non-default Serializer is unstable, and may change in the future");
     var ser = f.serializer.startList(f, rank);
     for i in 0..<rank do ser.writeElement(dsiDim(i));
     ser.endList();
@@ -1728,6 +1730,8 @@ module DefaultRectangular {
   // 'deserializeFrom', so this isn't tested yet.
   proc DefaultRectangularDom.dsiSerialRead(f) throws
   where _supportsSerializers(f) && f.deserializerType != IO.defaultDeserializer {
+    if chpl_warnUnstable then
+      compilerWarning("Deserialization of rectangular domains with non-default Deserializer is unstable, and may change in the future");
     var des = f.deserializer.startList(f);
     for i in 0..<rank do ranges(i) = des.readElement(ranges(i).type);
     des.endList();

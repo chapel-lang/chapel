@@ -814,6 +814,8 @@ module ChapelIO {
     if serializer.type == IO.defaultSerializer {
       writeThis(writer);
     } else {
+      if chpl_warnUnstable then
+        compilerWarning("Serialization of iterators with non-default Serializer is unstable, and may change in the future");
       var ser = serializer.startList(writer, -1);
       for e in this do ser.writeElement(e);
       ser.endList();
@@ -858,6 +860,8 @@ module ChapelIO {
     if serializer.type == defaultSerializer {
       writeThis(writer);
     } else {
+      if chpl_warnUnstable then
+        compilerWarning("Serialization of ranges with non-default Serializer is unstable, and may change in the future");
       writer.write(this:string);
     }
   }
@@ -907,6 +911,8 @@ module ChapelIO {
     if deserializer.type == IO.defaultDeserializer {
       readThis(reader);
     } else {
+      if chpl_warnUnstable then
+        compilerWarning("Deserialization of ranges with non-default Deserializer is unstable, and may change in the future");
       const data = reader.read(string);
       var f = openMemFile();
       f.writer().write(data);
