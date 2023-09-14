@@ -5407,7 +5407,8 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
    exclude the high bound.  Defaults to ``false``, the original behavior.
 
  */
-config param useNewFileWriterRegionBounds = false;
+@deprecated("'useNewFileWriterRegionBounds' is deprecated - :proc:`file.writer` now always includes the high bounds and this flag no longer impacts that behavior.  The flag will be removed in a future release")
+config param useNewFileWriterRegionBounds = true;
 
 /*
    Create a :record:`fileWriter` that supports writing to a file. See
@@ -5455,8 +5456,7 @@ config param useNewFileWriterRegionBounds = false;
 proc file.writer(param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty,
                  in serializer:?st = defaultSerializeVal(true)):
-                 fileWriter(locking,st) throws where (!region.hasHighBound() ||
-                                                      useNewFileWriterRegionBounds) {
+                 fileWriter(locking,st) throws {
   return this.writerHelper(_iokind.dynamic, locking, region, hints, serializer=serializer);
 }
 
@@ -5465,17 +5465,7 @@ pragma "last resort"
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty,
                  in serializer:?st = defaultSerializeVal(true,kind)):
-                 fileWriter(kind,locking,st) throws where (!region.hasHighBound() ||
-                                                        useNewFileWriterRegionBounds) {
-  return this.writerHelper(kind, locking, region, hints, serializer=serializer);
-}
-
-@deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewFileWriterRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
-proc file.writer(param kind=iokind.dynamic, param locking=true,
-                 region: range(?) = 0.., hints = ioHintSet.empty,
-                 in serializer:?st = defaultSerializeVal(true,kind)):
-                 fileWriter(kind,locking,st) throws where (region.hasHighBound() &&
-                                                        !useNewFileWriterRegionBounds) {
+                 fileWriter(kind,locking,st) throws {
   return this.writerHelper(kind, locking, region, hints, serializer=serializer);
 }
 
@@ -5483,7 +5473,6 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
 proc file.writerHelper(param kind=_iokind.dynamic, param locking=true,
                        region: range(?) = 0.., hints = ioHintSet.empty,
                        style:iostyleInternal = this._style,
-                       fromOpenUrlWriter = false,
                        in serializer:?st = defaultSerializeVal(true,kind)):
   fileWriter(kind,locking,st) throws {
 
@@ -5502,28 +5491,16 @@ proc file.writerHelper(param kind=_iokind.dynamic, param locking=true,
     var end : region.idxType;
     try this.checkAssumingLocal();
     if (region.hasLowBound() && region.hasHighBound()) {
-      // TODO: remove the fromOpenUrlWriter arg when the deprecated version is
-      // removed
-      if (useNewFileWriterRegionBounds || fromOpenUrlWriter) {
-        start = region.low;
-        end = if region.high == max(region.idxType) then max(region.idxType) else region.high + 1;
-      } else {
-        start = region.low;
-        end = region.high;
-      }
+      start = region.low;
+      end = if region.high == max(region.idxType) then max(region.idxType) else region.high + 1;
 
     } else if (region.hasLowBound()) {
       start = region.low;
       end = max(region.idxType);
 
     } else if (region.hasHighBound()) {
-      if (useNewFileWriterRegionBounds || fromOpenUrlWriter) {
-        start = 0;
-        end = if region.high == max(region.idxType) then max(region.idxType) else region.high + 1;
-      } else {
-        start = 0;
-        end = region.high;
-      }
+      start = 0;
+      end = if region.high == max(region.idxType) then max(region.idxType) else region.high + 1;
 
     } else {
       start = 0;
