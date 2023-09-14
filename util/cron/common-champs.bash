@@ -12,20 +12,35 @@ pushd $CHAMPS_COMMON_DIR
 git pull
 popd
 
-module unload PrgEnv-cray
-
+echo Enabling Cray PE
 source $CRAY_ENABLE_PE
 
 # All CHAMPS testing is currently on a hpe-apollo
+
+echo Initial list of modules:
 module list
 
-source $CWD/common-hpe-apollo.bash
+module purge
+
 source $CWD/common-perf-hpe-apollo-hdr.bash
+
+module list
 
 module load PrgEnv-gnu
 module load cray-pmi
 module load cray-mpich
 module load cray-hdf5-parallel
+
+module list
+
+# note that this part is similar to common-hpe-apollo.bash, but
+# we don't want the module operations in there, nor we can source it
+# earlier. Because if we source load-chpl-deps.bash early, we can't
+# load PrgEnv-gnu
+export CHPL_HOST_PLATFORM=hpe-apollo
+export CHPL_TEST_LAUNCHCMD=\$CHPL_HOME/util/test/chpl_launchcmd.py
+export CHPL_LAUNCHER_TIMEOUT=pbs
+source $CWD/load-base-deps.bash
 
 module list
 
