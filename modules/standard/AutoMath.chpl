@@ -2752,40 +2752,6 @@ module AutoMath {
     return ( (diff<=abs(rtol*y)) || (diff<=abs(rtol*x)) || (diff<=atol) );
   }
 
-  inline proc chpl_jn(n: int, x: real(32)): real(32) {
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc chpl_float_jn(n: c_int, x: real(32)): real(32);
-    return chpl_float_jn(n.safeCast(c_int), x);
-  }
-
-  inline proc chpl_jn(n: int, x: real(64)): real(64) {
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc jn(n: c_int, x: real(64)): real(64);
-    return jn(n.safeCast(c_int), x);
-  }
-
-  // When removing this deprecated function, be sure to remove chpl_jn and
-  // move its contents into Math.chpl to reduce the symbols living in this
-  // module
-  pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="jn will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
-  inline proc jn(n: int, x: real(32)): real(32) {
-    return chpl_jn(n, x);
-  }
-
-  // When removing this deprecated function, be sure to remove chpl_jn and
-  // move its contents into Math.chpl to reduce the symbols living in this
-  // module
-  pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="jn will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
-  inline proc jn(n: int, x: real(64)): real(64) {
-    return chpl_jn(n, x);
-  }
-
   inline proc chpl_y0(x: real(32)): real(32) {
     if boundsChecking && x < 0 then
       HaltWrappers.boundsCheckHalt("Input value for y0() must be non-negative");

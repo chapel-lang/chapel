@@ -1087,13 +1087,19 @@ module Math {
   /* Returns the Bessel function of the first kind of order `n` of `x`. */
   @unstable("'jn' is unstable and may be renamed or moved to a different module in the future")
   inline proc jn(n: int, x: real(32)): real(32) {
-    return chpl_jn(n, x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_float_jn(n: c_int, x: real(32)): real(32);
+    return chpl_float_jn(n.safeCast(c_int), x);
   }
 
   /* Returns the Bessel function of the first kind of order `n` of `x`. */
   @unstable("'jn' is unstable and may be renamed or moved to a different module in the future")
   inline proc jn(n: int, x: real(64)): real(64) {
-    return chpl_jn(n, x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc jn(n: c_int, x: real(64)): real(64);
+    return jn(n.safeCast(c_int), x);
   }
 
   /* Returns the Bessel function of the second kind of order `0` of `x`, where
