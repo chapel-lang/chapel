@@ -595,14 +595,6 @@ enum ioMode {
   a = 5,
 }
 
-@deprecated(notes="enum iomode is deprecated - please use :enum:`ioMode` instead")
-enum iomode {
-  r = 1,
-  cw = 2,
-  rw = 3,
-  cwr = 4,
-}
-
 @chpldoc.nodoc
 enum _iokind {
   // don't change these without updating qio_style.h QIO_NATIVE, etc
@@ -2108,26 +2100,6 @@ proc _modestring(mode:ioMode) {
   }
 }
 
-pragma "compiler generated"
-@chpldoc.nodoc
-proc convertIoMode(mode:iomode):ioMode {
-  import HaltWrappers;
-  select mode {
-    when iomode.r do return ioMode.r;
-    when iomode.rw do return ioMode.rw;
-    when iomode.cw do return ioMode.cw;
-    when iomode.cwr do return ioMode.cwr;
-    otherwise do HaltWrappers.exhaustiveSelectHalt("Invalid iomode");
-  }
-}
-
-pragma "last resort"
-@deprecated(notes="open with an iomode argument is deprecated - please use :enum:`ioMode`")
-proc open(path:string, mode:iomode, hints=ioHintSet.empty,
-          style:iostyle): file throws {
-  return open(path, convertIoMode(mode), hints, style);
-}
-
 @deprecated("open with a 'style' argument is deprecated")
 proc open(path:string, mode:ioMode, hints=ioHintSet.empty,
           style:iostyle): file throws {
@@ -2157,12 +2129,6 @@ create a fileWriter to actually perform I/O operations
 */
 proc open(path:string, mode:ioMode, hints=ioHintSet.empty): file throws {
   return openHelper(path, mode, hints);
-}
-
-pragma "last resort"
-@deprecated(notes="open with an iomode argument is deprecated - please use :enum:`ioMode`")
-proc open(path:string, mode:iomode, hints=ioHintSet.empty): file throws {
-  return open(path, convertIoMode(mode), hints);
 }
 
 private proc openHelper(path:string, mode:ioMode, hints=ioHintSet.empty,

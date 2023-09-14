@@ -37,7 +37,7 @@ IO module's serialization/deserialization API. For example:
     var b: string;
   }
 
-  var myFile = open("r.yaml", iomode.cwr),
+  var myFile = open("r.yaml", ioMode.cwr),
       r1 = new R(1, "hello");
 
   myFile.writer().withSerializer(new yamlSerializer()).write(r1);
