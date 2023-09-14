@@ -665,7 +665,6 @@ static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
   collectCallExprs(base, calls2);
 
   for_vector(CallExpr, call, calls2) {
-    fixupExplicitGenericVariables(call);
     if (partOfNonNormalizableExpr(call->parentExpr)) continue;
     applyGetterTransform(call);
     insertCallTemps(call);
@@ -2997,6 +2996,10 @@ void normalizeVariableDefinition(DefExpr* defExpr) {
   // these might be set by out intent arguments.
   if (foundSplitInit == false && refVar)
     errorIfSplitInitializationRequired(defExpr, prevent);
+
+  if (auto callType = toCallExpr(type)) {
+    fixupExplicitGenericVariables(callType);
+  }
 
   if (requestedSplitInit && foundSplitInit == false) {
     // Create a dummy DEFAULT_INIT_VAR to sort out later in resolution
