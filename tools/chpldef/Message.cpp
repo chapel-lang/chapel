@@ -432,8 +432,8 @@ public:
   using Result = typename M::Result;
   using ComputeResult = typename M::ComputeResult;
 private:
-  Server* ctx_;
-  M* msg_;
+  Server* ctx_ = nullptr;
+  M* msg_ = nullptr;
 public:
   TemplatedMessageHandler(Server* ctx, M* msg) : ctx_(ctx), msg_(msg) {}
   TemplatedMessageHandler() = default;
@@ -504,7 +504,7 @@ public:
   }
 
   void handle(Response* rsp) {
-    CHPL_ASSERT(rsp && rsp->id() == msg_->id());
+    if (!rsp || rsp->id() != msg_->id()) return;
     if (rsp->status() == Message::FAILED) CHPLDEF_TODO();
     std::string note;
     Result r;

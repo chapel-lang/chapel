@@ -219,7 +219,7 @@ bool Server::handle(chpl::owned<Message> msg) {
         auto idStr = msg->idToString();
         auto it = idToOutboundRequest_.find(idStr);
         if (it != idToOutboundRequest_.end()) CHPLDEF_TODO();
-        auto p = std::make_pair(idStr, std::move(msg));
+        auto p = std::make_pair(std::move(idStr), std::move(msg));
         idToOutboundRequest_.emplace(std::move(p));
       }
     } break;
