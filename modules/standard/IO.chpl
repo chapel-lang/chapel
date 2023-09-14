@@ -2285,16 +2285,6 @@ private proc opentmpHelper(hints=ioHintSet.empty,
   return ret;
 }
 
-@deprecated(notes="openmem is deprecated - please use :proc:`openMemFile` instead")
-proc openmem(style:iostyle):file throws {
-  return openMemFile(style);
-}
-
-@deprecated(notes="openmem is deprecated - please use :proc:`openMemFile` instead")
-proc openmem():file throws {
-  return openMemFile();
-}
-
 @deprecated("openMemFile with a 'style' argument is deprecated")
 proc openMemFile(style:iostyle):file throws {
   return openMemFileHelper(style: iostyleInternal);
