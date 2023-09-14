@@ -256,12 +256,7 @@ module ChapelArray {
   @chpldoc.nodoc
   config param capturedIteratorLowBound = defaultLowBound;
 
-  /* This is a deprecated config param e traditional one-argument form of :proc:`.find()` on arrays
-     has been deprecated in favor of a new interface.  Compiling with
-     this set to `true` will opt into that new interface.  Note that
-     there is also a new two-argument form that is available
-     regardless of this setting. */
-
+  @chpldoc.nodoc
   @deprecated("'useNewArrayFind' no longer has any role and is deprecated")
   config param useNewArrayFind = false;
 
