@@ -5339,6 +5339,7 @@ proc file.lines(param locking:bool = true, start:int(64) = 0,
    this function would cover.  When set to ``false``, the region argument will
    exclude the high bound.  Defaults to ``false``, the original behavior.
  */
+@deprecated("'useNewLinesRegionBounds' is deprecated - :proc:`file.lines` now always uses the high bound and this flag no longer impacts its behavior.  The flag will be removed in a future release")
 config param useNewLinesRegionBounds = false;
 
 /* Iterate over all of the lines in a file.
@@ -5349,18 +5350,9 @@ config param useNewLinesRegionBounds = false;
  */
 @deprecated(notes="`file.lines` is deprecated; please use `file.reader().lines` instead")
 proc file.lines(param locking:bool = true, region: range(?) = 0..,
-                hints = ioHintSet.empty) throws where (!region.hasHighBound() ||
-                                                       useNewLinesRegionBounds) {
+                hints = ioHintSet.empty) throws {
   return this.linesHelper(locking, region, hints);
 }
-
-@deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewLinesRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
-proc file.lines(param locking:bool = true, region: range(?) = 0..,
-                hints = ioHintSet.empty) throws where (region.hasHighBound() &&
-                                                       !useNewLinesRegionBounds) {
-  return this.linesHelper(locking, region, hints);
-}
-
 
 @chpldoc.nodoc
 proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
@@ -5377,28 +5369,16 @@ proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
     var end : region.idxType;
     try this.checkAssumingLocal();
     if (region.hasLowBound() && region.hasHighBound()) {
-      if (useNewLinesRegionBounds) {
-        start = region.low;
-        end = region.high + 1;
-
-      } else {
-        start = region.low;
-        end = region.high;
-      }
+      start = region.low;
+      end = region.high + 1;
 
     } else if (region.hasLowBound()) {
       start = region.low;
       end = max(region.idxType);
 
     } else if (region.hasHighBound()) {
-      if (useNewLinesRegionBounds) {
-        start = 0;
-        end = region.high + 1;
-
-      } else {
-        start = 0;
-        end = region.high;
-      }
+      start = 0;
+      end = region.high + 1;
 
     } else {
       start = 0;
