@@ -1159,13 +1159,25 @@ module Math {
      where `x` must be greater than 0. */
   @unstable("'yn' is unstable and may be renamed or moved to a different module in the future")
   inline proc yn(n: int, x: real(32)): real(32) {
-    return chpl_yn(n, x);
+    if boundsChecking && x < 0 then
+      HaltWrappers.boundsCheckHalt("Input value for yn() must be non-negative");
+
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_float_yn(n: c_int, x: real(32)): real(32);
+    return chpl_float_yn(n.safeCast(c_int), x);
   }
 
   /* Returns the Bessel function of the second kind of order `n` of `x`,
      where `x` must be greater than 0. */
   @unstable("'yn' is unstable and may be renamed or moved to a different module in the future")
   inline proc yn(n: int, x: real(64)): real(64) {
-    return chpl_yn(n, x);
+    if boundsChecking && x < 0 then
+      HaltWrappers.boundsCheckHalt("Input value for yn() must be non-negative");
+
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc yn(n: c_int, x: real(64)): real(64);
+    return yn(n.safeCast(c_int), x);
   }
 }
