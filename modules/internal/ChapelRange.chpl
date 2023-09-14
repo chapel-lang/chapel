@@ -2626,6 +2626,12 @@ private proc isBCPindex(type t) param do
       else                     return boundKind.neither;
     }
 
+    if newBoundKind != boundKind.both &&
+       ! this.strides.isPosNegOne() && ! other.strides.isPosNegOne() then
+      compilerWarning("slicing a ", this.type:string,
+                      " with a ", other.type:string,
+                      " might produce an empty range and result in a halt");
+
     // If this range is unbounded below, we use low from the other range,
     // so that max(lo1, lo2) == lo2.  etc.
     var lo1 = if hasLowBound() then this._low else other._low;
