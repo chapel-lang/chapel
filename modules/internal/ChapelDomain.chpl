@@ -378,21 +378,31 @@ module ChapelDomain {
                   "' using count(s) of type ", counts.type:string);
   }
 
-  @chpldoc.nodoc
-  operator +(d: domain, i: index(d)) {
-    if d.isRectangular() then
-      compilerError("Cannot add indices to a rectangular domain");
-    else
-      compilerError("Cannot add indices to this domain type");
-  }
+  //
+  // Disallow additions and subtractions to rectangular domains of these types
+  // with a specific message, to avoid surpises.
+  // Note: add/sub of a rectangular domain and another type will either
+  // produce a generic error message or compile as a promoted expression.
+  //
+  private proc noRDadds(type t) param do return
+    isPrimitive(t) || isRange(t) || isTuple(t) || isEnum(t);
 
   @chpldoc.nodoc
-  operator +(i, d: domain) where isSubtype(i.type, index(d)) && !d.isIrregular() {
-    if d.isRectangular() then
-      compilerError("Cannot add indices to a rectangular domain");
-    else
-      compilerError("Cannot add indices to this domain type");
-  }
+  operator +(d: domain, i: ?t) where d.isRectangular() && noRDadds(t) do
+    compilerError("addition of a rectangular domain and ", t:string,
+                  " is currently not supported");
+
+  @chpldoc.nodoc
+  operator +(i: ?t, d: domain) where d.isRectangular() && noRDadds(t) do
+    compilerError("addition of ", t:string,
+                  " and a rectangular domain is currently not supported");
+
+  @chpldoc.nodoc
+  operator -(d: domain, i: ?t) where d.isRectangular() && noRDadds(t) do
+    compilerError("subtraction of a rectangular domain and ", t:string,
+                  " is currently not supported");
+
+  // addition and subtraction on irregular domains has set semantics
 
   @chpldoc.nodoc
   @unstable("'+' on domains is unstable and may change in the future")
@@ -433,14 +443,6 @@ module ChapelDomain {
   @chpldoc.nodoc
   @unstable("'+=' on domains is unstable and may change in the future")
   inline operator +=(ref D: domain, param idx) { D.add(idx); }
-
-  @chpldoc.nodoc
-  operator -(d: domain, i: index(d)) {
-    if d.isRectangular() then
-      compilerError("Cannot remove indices from a rectangular domain");
-    else
-      compilerError("Cannot remove indices from this domain type");
-  }
 
   @chpldoc.nodoc
   @unstable("'-' on domains is unstable and may change in the future")

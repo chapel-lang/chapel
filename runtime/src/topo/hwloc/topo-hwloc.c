@@ -498,19 +498,17 @@ static void partitionResources(void) {
   _DBG_P("numSockets = %d", numSockets);
 
   int numLocalesOnNode = chpl_get_num_locales_on_node();
-  int expectedLocalesOnNode = chpl_env_rt_get_int("LOCALES_PER_NODE", 0);
+  int expectedLocalesOnNode = chpl_env_rt_get_int("LOCALES_PER_NODE", 1);
   chpl_bool useSocket = chpl_env_rt_get_bool("USE_SOCKET", false);
   int rank = chpl_get_local_rank();
   _DBG_P("numLocalesOnNode = %d", numLocalesOnNode);
   _DBG_P("expectedLocalesOnNode = %d", expectedLocalesOnNode);
   _DBG_P("rank = %d", rank);
   _DBG_P("useSocket = %d", useSocket);
-  _DBG_P("cond = %d", (numLocalesOnNode > 1) || (expectedLocalesOnNode > 1) || useSocket);
-  if ((numLocalesOnNode > 1) || (expectedLocalesOnNode > 1) || useSocket) {
-    if (numLocalesOnNode > 1) {
-      oversubscribed = true;
-    }
-
+  if (numLocalesOnNode > 1) {
+    oversubscribed = true;
+  }
+  if ((expectedLocalesOnNode > 1) || useSocket) {
     // We get our own socket if all cores are accessible, we know our local
     // rank, and the number of locales on the node is less than or equal to
     // the number of sockets. It is an error if the number of locales on the
