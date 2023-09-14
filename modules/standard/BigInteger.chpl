@@ -500,13 +500,6 @@ module BigInteger {
     compilerError("unknown bigint rounding mode");
   }
 
-  @deprecated(notes="The enum Round is deprecated, please use the enum :enum:`roundingMode` instead")
-  enum Round {
-    DOWN = -1,
-    ZERO =  0,
-    UP   =  1
-  }
-
   /* An enumeration of the different rounding strategies, for use with e.g.
      :proc:`~BigInteger.divQ` to determine how to round the quotient when performing
      the computation.
