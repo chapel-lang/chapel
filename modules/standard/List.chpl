@@ -1036,21 +1036,6 @@ module List {
       return result;
     }
 
-    @deprecated(notes="list.extend is deprecated, please use list.append")
-    proc ref extend(other: list(eltType, ?p)) lifetime this < other {
-      pushBack(other);
-    }
-
-    @deprecated(notes="list.extend is deprecated, please use list.append")
-    proc ref extend(other: [?d] eltType) lifetime this < other {
-      pushBack(other);
-    }
-
-    @deprecated(notes="list.extend is deprecated, please use list.append")
-    proc ref extend(other: range(eltType, ?b, ?d)) lifetime this < other {
-      pushBack(other);
-    }
-
     /*
       Insert an element at a given position in this list, shifting all elements
       currently at and following that index one to the right. The call
