@@ -778,6 +778,14 @@ record chpl_PrivatizedDistHelper : writeSerializable {
     return newRectangularDom(rank, idxType, strides, ranges, definedConst);
   }
 
+  proc newAssociativeDom(type idxType, param parSafe: bool=true) {
+    var x = _value.dsiNewAssociativeDom(idxType, parSafe);
+    if x.linksDistribution() {
+      _value.add_dom(x);
+    }
+    return x;
+  }
+
   proc newSparseDom(param rank: int, type idxType, dom: domain) {
     var x = _value.dsiNewSparseDom(rank, idxType, dom);
     if x.linksDistribution() {

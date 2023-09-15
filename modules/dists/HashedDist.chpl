@@ -21,6 +21,8 @@
 @unstable("HashedDist is unstable and may change in the future")
 prototype module HashedDist {
 
+use DSIUtil;
+
 config param debugUserMapAssoc = false;
 
 
@@ -115,7 +117,99 @@ The `Hashed` domain map initializer is defined as follows:
             targetLocales: [] locale = Locales)
 
  */
-class Hashed : BaseDist, writeSerializable {
+record hashedDist : writeSerializable {
+  type idxType;
+  type mapperT;
+
+  forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(unmanaged HashedImpl(idxType, mapperT));
+
+  proc init(type idxType,
+            mapper:?t = new DefaultMapper(),
+            targetLocales: [] locale = Locales) {
+    const value = new unmanaged HashedImpl(idxType, mapper, targetLocales);
+    this.idxType = idxType;
+    this.mapperT = t;
+    this.chpl_distHelp = new chpl_PrivatizedDistHelper(
+                          if _isPrivatized(value)
+                            then _newPrivatizedClass(value)
+                            else nullPid,
+                          value);
+  }
+
+    proc init(_pid : int, _instance, _unowned : bool) {
+      this.idxType = _instance.idxType;
+      this.mapperT = _instance.mapper.type;
+      this.chpl_distHelp = new chpl_PrivatizedDistHelper(_pid,
+                                                         _instance,
+                                                         _unowned);
+    }
+
+    proc init(value) {
+      this.idxType = value.idxType;
+      this.mapperT = value.mapper.type;
+      this.chpl_distHelp = new chpl_PrivatizedDistHelper(
+                             if _isPrivatized(value)
+                               then _newPrivatizedClass(value)
+                               else nullPid,
+                             _to_unmanaged(value));
+    }
+
+    // Note: This does not handle the case where the desired type of 'this'
+    // does not match the type of 'other'. That case is handled by the compiler
+    // via coercions.
+    proc init=(const ref other : hashedDist(?)) {
+      this.init(other._value.dsiClone());
+    }
+
+    proc clone() {
+      return new hashedDist(this._value.dsiClone());
+    }
+
+  @chpldoc.nodoc
+  inline operator ==(d1: hashedDist(?), d2: hashedDist(?)) {
+    if (d1._value == d2._value) then
+      return true;
+    return d1._value.dsiEqualDMaps(d2._value);
+  }
+
+  @chpldoc.nodoc
+  inline operator !=(d1: hashedDist(?), d2: hashedDist(?)) {
+    return !(d1 == d2);
+  }
+
+  proc writeThis(x) {
+    chpl_distHelp.writeThis(x);
+  }
+
+  proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
+  }
+}
+
+
+@chpldoc.nodoc
+@unstable(category="experimental", reason="assignment between distributions is currently unstable due to lack of testing")
+operator =(ref a: hashedDist(?), b: hashedDist(?)) {
+  if a._value == nil {
+    __primitive("move", a, chpl__autoCopy(b.clone(), definedConst=false));
+  } else {
+    if a._value.type != b._value.type then
+      compilerError("type mismatch in distribution assignment");
+    if a._value == b._value {
+      // do nothing
+    } else
+        a._value.dsiAssign(b._value);
+    if _isPrivatized(a._instance) then
+      _reprivatize(a._value);
+  }
+}
+
+
+@deprecated("'Hashed' is deprecated, please use 'hashedDist' instead")
+type Hashed = hashedDist;
+
+
+class HashedImpl : BaseDist, writeSerializable {
 
   // GENERICS:
 
@@ -175,7 +269,7 @@ class Hashed : BaseDist, writeSerializable {
   //
   proc init(type idxType,
             mapper,
-            other: unmanaged Hashed(idxType, mapper.type)) {
+            other: unmanaged HashedImpl(idxType, mapper.type)) {
     this.idxType = idxType;
     this.mapper = mapper; // normally == other.mapper;
     targetLocDom = other.targetLocDom;
@@ -189,7 +283,7 @@ class Hashed : BaseDist, writeSerializable {
   proc dsiGetPrivatizeData() do return this.mapper;
 
   proc dsiPrivatize(privatizeData) {
-    return new unmanaged Hashed(idxType, privatizeData, _to_unmanaged(this));
+    return new unmanaged HashedImpl(idxType, privatizeData, _to_unmanaged(this));
   }
   proc dsiGetReprivatizeData() do return 0;
 
@@ -198,7 +292,7 @@ class Hashed : BaseDist, writeSerializable {
   }
 
   proc dsiClone() {
-    return new unmanaged Hashed(idxType, mapper, targetLocales);
+    return new unmanaged HashedImpl(idxType, mapper, targetLocales);
   }
 
   // DISTRIBUTION INTERFACE:
@@ -238,8 +332,8 @@ class Hashed : BaseDist, writeSerializable {
   // print out the distribution
   //
   proc writeThis(x) throws {
-    x.writeln("Hashed");
-    x.writeln("-------");
+    x.writeln("hashedDist");
+    x.writeln("----------");
     x.writeln("distributed using: ", mapper);
     x.writeln("across locales: ", targetLocales);
     x.writeln("indexed via: ", targetLocDom);
@@ -304,7 +398,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   //
   // LEFT: a pointer to the parent distribution
   //
-  const dist: unmanaged Hashed(idxType, mapperType);
+  const dist: unmanaged HashedImpl(idxType, mapperType);
 
   //
   // DOWN: an array of local domain class descriptors -- set up in
@@ -519,7 +613,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   //
   // INTERNAL INTERFACE
   //
-  override proc dsiMyDist(): unmanaged Hashed(idxType, mapperType) {
+  override proc dsiMyDist(): unmanaged HashedImpl(idxType, mapperType) {
     return dist;
   }
 
@@ -566,6 +660,13 @@ class UserMapAssocDom: BaseAssociativeDom {
   }
 
   proc rank param { return 1; }
+
+  proc dsiGetDist() {
+    if _isPrivatized(dist) then
+      return new hashedDist(dist.pid, dist, _unowned=true);
+    else
+      return new hashedDist(nullPid, dist, _unowned=true);
+  }
 }
 
 
