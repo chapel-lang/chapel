@@ -18,7 +18,7 @@ can be accessed concurrently. Alternatively for intra-locale parallelism
 we can use, for example, ConcurrentMap from the ConcurrentMap package module.
 */
 pragma "always RVF"
-record distributedMap {
+record distributedMap : writeSerializable, readDeserializable {
   type keyType;
   type valType;
   // privatization id

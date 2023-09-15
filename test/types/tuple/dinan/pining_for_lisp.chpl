@@ -1,4 +1,4 @@
-class NilClass { }
+class NilClass : writeSerializable { }
 override proc NilClass.serialize(writer, ref serializer) throws { writer.write("nil"); }
 var gNil = new owned NilClass();
 

@@ -2,7 +2,7 @@ class D {
   var me: int;
 }
 
-class C {
+class C : writeSerializable {
   var Ds: [LocaleSpace] unmanaged D?;
 
   override proc serialize(writer, ref serializer) throws {

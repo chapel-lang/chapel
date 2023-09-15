@@ -142,7 +142,7 @@ module List {
 
     Unlike an array, the set of indices of a list is always `0..<size`.
   */
-  record list {
+  record list : serializable {
 
     /* The type of the elements contained in this list. */
     type eltType;
@@ -1034,21 +1034,6 @@ module List {
       _leave();
 
       return result;
-    }
-
-    @deprecated(notes="list.extend is deprecated, please use list.append")
-    proc ref extend(other: list(eltType, ?p)) lifetime this < other {
-      pushBack(other);
-    }
-
-    @deprecated(notes="list.extend is deprecated, please use list.append")
-    proc ref extend(other: [?d] eltType) lifetime this < other {
-      pushBack(other);
-    }
-
-    @deprecated(notes="list.extend is deprecated, please use list.append")
-    proc ref extend(other: range(eltType, ?b, ?d)) lifetime this < other {
-      pushBack(other);
     }
 
     /*

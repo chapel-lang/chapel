@@ -116,7 +116,7 @@ proc sys_sockaddr_t.init(in other: sys_sockaddr_t) {
   IPv4 and IPv6 addresses. ipAddr can be compared using
   `==` and `!=` operators.
 */
-record ipAddr {
+record ipAddr : writeSerializable {
   @chpldoc.nodoc
   var _addressStorage:sys_sockaddr_t;
 
@@ -614,7 +614,7 @@ var event_loop_base:c_ptr(event_base);
   A record holding reference to a tcp socket
   bound and listening for connections.
 */
-record tcpListener {
+record tcpListener : writeSerializable {
   /*
     File Descriptor Associated with instance
   */
@@ -998,7 +998,7 @@ proc connect(in host: string, in port: uint(16), family: IPFamily = IPFamily.IPU
   A record holding reference to a udp socket
   bound to any available port.
 */
-record udpSocket {
+record udpSocket : writeSerializable {
   /*
     File Descriptor Associated with instance
   */

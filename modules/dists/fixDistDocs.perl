@@ -75,8 +75,19 @@ sub process {
    }
 
    # Skip everything until "class::" or "record::", edit that line and print.
+   # do skip '.. warning'
    while (<RST>) {
-      if (/^.. (class|record)::/) {
+      # if the next line is a warning (like an unstable warning), keep it
+      #  note this only handles single line warnings
+      if (/^.. warning::$/) {
+          print MOD;
+          # print the three lines after ''.. warning'
+          for (1..3) {
+              my $warningNextLine = <RST>;
+              print MOD $warningNextLine;
+          }
+      }
+      elsif (/^.. (class|record)::/) {
          s/ : Base.*//;
          print MOD;
          last;

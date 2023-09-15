@@ -7,6 +7,9 @@
 -svariant=Variants.C -smode=Modes.Write # partial.noser.good
 -svariant=Variants.C -smode=Modes.Read # partial.no-des.good
 -svariant=Variants.C -smode=Modes.Init
+-svariant=Variants.CG -smode=Modes.Write # partial.noser.good
+-svariant=Variants.CG -smode=Modes.Read # partial.no-des.good
+-svariant=Variants.CG -smode=Modes.Init
 -svariant=Variants.D -smode=Modes.Write # partial.noser.good
 -svariant=Variants.D -smode=Modes.Read
 -svariant=Variants.D -smode=Modes.Init # partial.noinit.good

@@ -7,7 +7,7 @@
 use BlockDist, PrivateDist;
 use Time;
 
-record taskPrivateData {
+record taskPrivateData : writeSerializable {
   var tid: sync chpl_taskID_t = chpl_nullTaskID;
   var x: int;
   var y: [0..#numLocales] real;

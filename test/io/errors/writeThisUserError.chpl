@@ -5,7 +5,7 @@
 //
 use IO;
 
-record foo {
+record foo : writeSerializable {
   var x: int = 0;
 
   proc serialize(writer:fileWriter(?), ref serializer) throws {

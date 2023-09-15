@@ -22,7 +22,7 @@ module DataFrames {
   use Sort;
   private use IO;
 
-  class Index {
+  class Index : writeSerializable {
     @chpldoc.nodoc
     proc contains(lab): bool {
       halt("generic Index contains no elements");
@@ -86,7 +86,7 @@ module DataFrames {
     }
   }
 
-  class TypedIndex : Index {
+  class TypedIndex : Index, writeSerializable {
     type idxType;
 
     // TODO: implement as binary tree
@@ -398,7 +398,7 @@ module DataFrames {
     }
   }
 
-  class TypedSeries : Series {
+  class TypedSeries : Series, writeSerializable {
     type eltType;
 
     // TODO: ords dmap Block
@@ -746,7 +746,7 @@ module DataFrames {
     }
   }
 
-  class DataFrame {
+  class DataFrame : writeSerializable {
     var labels: domain(string);
 
     // TODO: array of owned Series

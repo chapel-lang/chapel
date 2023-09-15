@@ -1916,11 +1916,12 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   }
 
   forv_Vec(FnSymbol, method, ct->methods) {
+    int n = method ? method->numFormals() : 0;
     if (method != nullptr &&
         method->isInitializer() &&
-        method->numFormals() == 4 &&
-        strcmp(method->getFormal(3)->name, "reader") == 0 &&
-        strcmp(method->getFormal(4)->name, "deserializer") == 0) {
+        n >= 4 &&
+        strcmp(method->getFormal(n-1)->name, "reader") == 0 &&
+        strcmp(method->getFormal(n)->name, "deserializer") == 0) {
       readerInit = method;
       break;
     }

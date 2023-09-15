@@ -1,4 +1,4 @@
-record myrecord {
+record myrecord : writeSerializable {
   var x: int;
   var y: real;
 

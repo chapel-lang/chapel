@@ -1,6 +1,6 @@
 use IO;
 
-record xyType {
+record xyType : serializable {
   var x: int;
   var y: real;
 }

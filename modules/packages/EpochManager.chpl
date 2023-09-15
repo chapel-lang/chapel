@@ -421,7 +421,7 @@ module EpochManager {
 
     config param VectorGrowthRate : real = 1.5;
 
-    class Vector {
+    class Vector : serializable {
       type eltType;
       const growthRate : real;
       var dom = {0..-1};

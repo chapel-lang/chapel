@@ -1,4 +1,4 @@
-class trio {
+class trio : writeSerializable {
   type elt_type;
 
   var x1 : elt_type;

@@ -166,6 +166,8 @@ LocalesArray
   from print-module-resolution.ChapelStandard.LocalesArray
 ChapelAutoLocalAccess
   from print-module-resolution.ChapelStandard.ChapelAutoLocalAccess
+ChapelIOSerialize
+  from print-module-resolution.ChapelStandard.ChapelIOSerialize
 ChapelTaskID
   from print-module-resolution.ChapelStandard.ChapelTaskID
 ChapelTaskTable

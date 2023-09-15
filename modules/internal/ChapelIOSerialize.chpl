@@ -1,5 +1,6 @@
 /*
  * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -17,9 +18,27 @@
  * limitations under the License.
  */
 
-@deprecated(notes="The OrderedMap module and the orderedMap type are deprecated in favor of SortedMap and sortedMap")
-module OrderedMap {
-  public use SortedMap;
+// ChapelIOSerialize.chpl
+//
+// IO serialization-related interfaces
+module ChapelIOSerialize {
 
-  type orderedMap = sortedMap;
+  use ChapelBase;
+
+  // for 'serialize'
+  interface writeSerializable {
+  }
+
+  // for 'deserialize'
+  interface readDeserializable {
+  }
+
+  // for 'init' that performs deserialization
+  interface initDeserializable {
+  }
+
+  // combines previous three
+  interface serializable {
+  }
+
 }

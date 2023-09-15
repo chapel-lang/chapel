@@ -135,7 +135,7 @@ module Set {
     the ``parSafe`` mode is currently unstable and will eventually be replaced
     by a standalone parallel-safe set type.
   */
-  record set {
+  record set : serializable {
 
     /* The type of the elements contained in this set. */
     type eltType;

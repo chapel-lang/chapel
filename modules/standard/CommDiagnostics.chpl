@@ -344,6 +344,8 @@ module CommDiagnostics
    */
   type commDiagnostics = chpl_commDiagnostics;
 
+  commDiagnostics implements writeSerializable;
+
   private extern proc chpl_comm_startVerbose(stacktrace: bool,
                                              print_unstable: bool);
 

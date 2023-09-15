@@ -49,7 +49,7 @@ module DistributedList {
 
     */
 
-    record distributedList {
+    record distributedList : writeSerializable {
         type eltType;
         param blockSize: int;
 

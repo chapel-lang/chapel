@@ -168,7 +168,7 @@ module HTable {
      The `names`, `offsets`, `types` and `sizes` elements are the most
      relevant and may be passed on directly to the HDF5 routines.
   */
-  record H5MetaTable {
+  record H5MetaTable : writeSerializable {
     /* The chplType of the record. */
     type R;
 

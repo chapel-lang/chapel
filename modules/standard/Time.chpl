@@ -333,7 +333,7 @@ module Time {
   }
 
 /* A record representing a date */
-  record date {
+  record date : serializable {
     var chpl_year, chpl_month, chpl_day: int;
 
     /* The year represented by this `date` value */
@@ -716,7 +716,7 @@ module Time {
 
 
   /* A record representing a time */
-  record time {
+  record time : serializable {
     var chpl_hour, chpl_minute, chpl_second, chpl_microsecond: int;
     var chpl_tz: shared Timezone?;
 
@@ -1135,7 +1135,7 @@ module Time {
   type datetime = dateTime;
 
   /* A record representing a combined `date` and `time` */
-  record dateTime {
+  record dateTime : serializable {
     var chpl_date: date;
     var chpl_time: time;
 

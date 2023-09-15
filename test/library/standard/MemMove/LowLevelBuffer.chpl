@@ -2,7 +2,7 @@
 // Example of a low level buffer that wraps _ddata. See #16797.
 //
 
-record buffer {
+record buffer : writeSerializable {
   type eltType;
 
   // TODO: How to make "on this" equivalent to "on this._data"?

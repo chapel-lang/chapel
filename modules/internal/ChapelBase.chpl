@@ -3307,7 +3307,7 @@ module ChapelBase {
   extern const QIO_TUPLE_FORMAT_JSON:int;
 
   // Support for module deinit functions.
-  class chpl_ModuleDeinit {
+  class chpl_ModuleDeinit : writeSerializable {
     const moduleName: c_ptrConst(c_char); // for debugging; non-null, not owned
     const deinitFun:  chpl_c_fn_ptr;          // module deinit function
     const prevModule: unmanaged chpl_ModuleDeinit?; // singly-linked list / LIFO queue
