@@ -803,9 +803,9 @@ with the same shape.
 Array Arguments to Functions
 ----------------------------
 
-By default, arrays are passed to function by ``ref`` or ``const ref``
-depending on whether or not the formal argument is modified. The ``in``,
-``inout``, and ``out`` intent can create copies of arrays.
+By default, arrays are passed to function by ``const``, see :ref:`The_Default_Intent`.
+Using the ``ref`` intent allows modification of the array without creating a copy.
+The ``in``, ``inout``, and ``out`` intent can create copies of arrays.
 
 When a formal argument has array type, the element type of the array can
 be omitted and/or the domain of the array can be queried or omitted. In
