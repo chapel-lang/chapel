@@ -38,7 +38,7 @@ proc buildSpace(Dom) {
     return Dom dmapped stencilDist(boundingBox={1..3});
   }
   else if distType == DistType.blockcyclic {
-    return Dom dmapped BlockCyclic(startIdx=1, blocksize=2);
+    return Dom dmapped blockCycDist(startIdx=1, blocksize=2);
   }
   else {
     compilerError("Compiling with unknown DistType.");

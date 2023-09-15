@@ -96,7 +96,7 @@ distribution.
 
 **Initializer Arguments**
 
-The ``replicatedDist`` class initializer is defined as follows:
+The ``replicatedDist`` initializer is defined as follows:
 
   .. code-block:: chapel
 

@@ -18,7 +18,7 @@ proc fooC(X:[CyclicSpace] int) {
 }
 
 
-const BlkCycSpace = Space dmapped BlockCyclic(startIdx=Space.low, 
+const BlkCycSpace = Space dmapped blockCycDist(startIdx=Space.low, 
                                               blocksize=(2, 3));
 var BCA: [BlkCycSpace] int;
 fooBC(BCA);

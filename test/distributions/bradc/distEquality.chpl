@@ -53,13 +53,13 @@ writeln();
 
 
 
-const BC1 = Space dmapped BlockCyclic(startIdx=Space.low, 
+const BC1 = Space dmapped blockCycDist(startIdx=Space.low, 
                                       blocksize=(2, 3));
-const BC2 = Space dmapped BlockCyclic(startIdx=(-1,-1),
+const BC2 = Space dmapped blockCycDist(startIdx=(-1,-1),
                                       blocksize=(2,3));
-const BC3 = Space dmapped BlockCyclic(startIdx=Space.low,
+const BC3 = Space dmapped blockCycDist(startIdx=Space.low,
                                       blocksize=(3,2));
-const BC4 = Space dmapped BlockCyclic(startIdx=Space.low,
+const BC4 = Space dmapped blockCycDist(startIdx=Space.low,
                                       blocksize=(2,3),
                                       targetLocales=OneLocOnly);
 
@@ -79,7 +79,7 @@ writeln(BC3.distribution == BC4.distribution);
 
 writeln(BC4.distribution == BC4.distribution);
 
-writeln(BC1.distribution == (Space dmapped BlockCyclic(startIdx=Space.low,
+writeln(BC1.distribution == (Space dmapped blockCycDist(startIdx=Space.low,
                                           blocksize=(2,3))).distribution);
 
 writeln();

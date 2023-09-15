@@ -14,7 +14,7 @@ test(B);
 const C = Space dmapped cyclicDist(startIdx = Space.low);
 test(C);
 
-const BC = Space dmapped BlockCyclic(startIdx = Space.low, blocksize = (2,2));
+const BC = Space dmapped blockCycDist(startIdx = Space.low, blocksize = (2,2));
 test(BC);
 
 const SC = Space dmapped stencilDist(Space, fluff=(1,1));

@@ -148,7 +148,7 @@ proc main() {
 
   if doBlockCyclic {
     writeln();
-    const bcD: domain(rank) dmapped new dmap (new BlockCyclic(rank=rank,idxType=int,startIdx=zeroT,blocksize=oneT)) = D;
+    const bcD: domain(rank) dmapped new blockCycDist(rank=rank,idxType=int,startIdx=zeroT,blocksize=oneT) = D;
     doit(bcD, "BlockCyclic");
   }
 

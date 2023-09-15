@@ -31,7 +31,7 @@ if dist=='NONE' {
   dobench(mydist, mydom);
 } /*else if dist == 'BC' {
   //won't work for this benchmark because of strided access patterns
-  var mydist = mydom dmapped BlockCyclic(startIdx=mydom.low, blocksize=bsize);
+  var mydist = mydom dmapped blockCycDist(startIdx=mydom.low, blocksize=bsize);
   dobench(mydist, mydom);
 } else if dist == "BCM" {
   //won't work for this benchmark because of strided access patterns

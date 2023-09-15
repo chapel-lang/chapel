@@ -102,7 +102,7 @@ const MyLocales: [MyLocaleView] locale = reshape(Locales, MyLocaleView);
 const bucketDom = bucketSpace dmapped blockDist(boundingBox=bucketSpace, targetLocales=MyLocales, dataParTasksPerLocale=tasksPerLocale);
 const buffDom = if distType==ISDistType.block
   then buffSpace dmapped blockDist(boundingBox=buffSpace, targetLocales=MyLocales, dataParTasksPerLocale=tasksPerLocale)
-  else buffSpace dmapped BlockCyclic (startIdx=buffSpace.low,
+  else buffSpace dmapped blockCycDist (startIdx=buffSpace.low,
                                       blocksize=(tasksPerLocale,
                                                  keybuffsz),
                                       targetLocales=MyLocales);
@@ -111,7 +111,7 @@ const buffDom = if distType==ISDistType.block
 const keyDom   = keySpace dmapped blockDist(boundingBox=keySpace, dataParTasksPerLocale=tasksPerLocale);
 const countDom = if distType==ISDistType.block
   then countSpace dmapped blockDist(boundingBox=countSpace, dataParTasksPerLocale=tasksPerLocale)
-  else countSpace dmapped BlockCyclic(startIdx=countSpace.low,
+  else countSpace dmapped blockCycDist(startIdx=countSpace.low,
                                       blocksize=(tasksPerLocale,1),
                                       targetLocales=MyLocales);
 

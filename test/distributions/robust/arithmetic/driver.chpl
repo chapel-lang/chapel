@@ -52,11 +52,11 @@ proc setupDistributions(param DT : DistType) {
   }
   if DT == DistType.blockcyclic {
     return (
-            new dmap(new BlockCyclic(startIdx=(0,), blocksize=(3,))),
-            new dmap(new BlockCyclic(startIdx=(0,0), blocksize=(3,3))),
-            new dmap(new BlockCyclic(startIdx=(0,0,0), blocksize=(3,3,3))),
-            new dmap(new BlockCyclic(startIdx=(0,0,0,0), blocksize=(3,3,3,3))),
-            new dmap(new BlockCyclic(startIdx=(0:int(32),0:int(32)), blocksize=(2:int(32),3:int(32))))
+            new blockCycDist(startIdx=(0,), blocksize=(3,)),
+            new blockCycDist(startIdx=(0,0), blocksize=(3,3)),
+            new blockCycDist(startIdx=(0,0,0), blocksize=(3,3,3)),
+            new blockCycDist(startIdx=(0,0,0,0), blocksize=(3,3,3,3)),
+            new blockCycDist(startIdx=(0:int(32),0:int(32)), blocksize=(2:int(32),3:int(32)))
            );
   }
   if DT == DistType.replicated {
@@ -70,11 +70,11 @@ proc setupDistributions(param DT : DistType) {
   }
   if DT == DistType.stencil {
     return (
-            new dmap(new stencilDist(rank=1, boundingBox=Space1)),
-            new dmap(new stencilDist(rank=2, boundingBox=Space2)),
-            new dmap(new stencilDist(rank=3, boundingBox=Space3)),
-            new dmap(new stencilDist(rank=4, boundingBox=Space4)),
-            new dmap(new stencilDist(rank=2, idxType=int(32), boundingBox=Space2D32))
+            new stencilDist(rank=1, boundingBox=Space1),
+            new stencilDist(rank=2, boundingBox=Space2),
+            new stencilDist(rank=3, boundingBox=Space3),
+            new stencilDist(rank=4, boundingBox=Space4),
+            new stencilDist(rank=2, idxType=int(32), boundingBox=Space2D32)
            );
   }
   halt("unexpected 'distType': ", DT);

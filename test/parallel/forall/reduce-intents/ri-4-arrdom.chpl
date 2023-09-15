@@ -28,7 +28,7 @@ proc setupDistributions() {
     return new cyclicDist(startIdx=(0,0));
 
   else if distType == DistType.blockcyclic then
-    return new dmap(new BlockCyclic(startIdx=(0,0), blocksize=(3,3)));
+    return new blockCycDist(startIdx=(0,0), blocksize=(3,3));
 
   else if distType == DistType.replicated then
     return new replicatedDist();
