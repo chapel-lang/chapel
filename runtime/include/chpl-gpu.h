@@ -35,8 +35,8 @@ extern "C" {
 extern bool chpl_gpu_debug;
 extern int chpl_gpu_num_devices;
 extern bool chpl_gpu_no_cpu_mode_warning;
-extern bool chpl_gpu_use_async_streams;
-extern bool chpl_gpu_use_default_stream;
+extern bool chpl_gpu_sync_with_host;
+extern bool chpl_gpu_use_stream_per_task;
 
 
 #ifdef HAS_GPU_LOCALE

@@ -24,8 +24,8 @@
 bool chpl_gpu_debug = false;
 bool chpl_gpu_no_cpu_mode_warning = false;
 int chpl_gpu_num_devices = -1;
-bool chpl_gpu_use_async_streams = false;
-bool chpl_gpu_use_default_stream = false;
+bool chpl_gpu_sync_with_host = true;
+bool chpl_gpu_use_stream_per_task = true;
 
 #ifdef HAS_GPU_LOCALE
 
@@ -99,12 +99,12 @@ static inline void wait_stream(void* stream) {
   chpl_gpu_impl_stream_synchronize(stream);
 }
 
-static inline bool async_ok(void) {
-  return !chpl_gpu_use_default_stream && chpl_gpu_impl_stream_supported();
+static inline bool has_stream_per_task(void) {
+  return chpl_gpu_use_stream_per_task && chpl_gpu_impl_stream_supported();
 }
 
 static chpl_gpu_taskPrvData_t* get_gpu_task_private_data(void) {
-  if (!async_ok()) return NULL;
+  if (!has_stream_per_task()) return NULL;
 
   chpl_task_infoRuntime_t* infoRuntime = chpl_task_getInfoRuntime();
   if (infoRuntime != NULL) return &infoRuntime->gpu_data;
@@ -112,7 +112,7 @@ static chpl_gpu_taskPrvData_t* get_gpu_task_private_data(void) {
 }
 
 void chpl_gpu_task_end(void) {
-  if (!async_ok()) return;
+  if (!has_stream_per_task()) return;
 
   chpl_gpu_taskPrvData_t* prvData = get_gpu_task_private_data();
   assert(prvData);
@@ -121,7 +121,8 @@ void chpl_gpu_task_end(void) {
     int i;
     for (i=0 ; i<chpl_gpu_num_devices ; i++) {
       if (prvData->streams[i] != NULL) {
-        CHPL_GPU_DEBUG("Destroying stream %p (subloc %d)\n", prvData->streams[i], i);
+        CHPL_GPU_DEBUG("Destroying stream %p (subloc %d)\n",
+                       prvData->streams[i], i);
         wait_stream(prvData->streams[i]);
         chpl_gpu_impl_stream_destroy(prvData->streams[i]);
         prvData->streams[i] = NULL;
@@ -132,7 +133,7 @@ void chpl_gpu_task_end(void) {
 }
 
 void chpl_gpu_task_fence(void) {
-  if (!async_ok()) return;
+  if (!has_stream_per_task()) return;
 
   int dev = chpl_task_getRequestedSubloc();
   if (dev<0) {
@@ -154,7 +155,7 @@ void chpl_gpu_task_fence(void) {
 }
 
 static void* get_stream(int dev) {
-  if (!async_ok()) return NULL;
+  if (!has_stream_per_task()) return NULL;
 
   CHPL_GPU_START_TIMER(stream_time);
 
@@ -199,9 +200,10 @@ void chpl_gpu_support_module_finished_initializing(void) {
     CHPL_GPU_DEBUG("         other: unified memory\n");
   #endif
 
-  CHPL_GPU_DEBUG("  Asynchrony: %s\n", async_ok() ? "enabled" : "disabled");
-  CHPL_GPU_DEBUG("  Force kernel sync: %s\n",
-                 !chpl_gpu_use_async_streams ? "enabled" : "disabled");
+  CHPL_GPU_DEBUG("  Stream per task: %s\n", has_stream_per_task() ? "enabled" :
+                                                                    "disabled");
+  CHPL_GPU_DEBUG("  Always sync with host: %s\n",
+                 chpl_gpu_sync_with_host ? "enabled" : "disabled");
 }
 
 inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
@@ -240,7 +242,7 @@ inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
                               stream,
                               nargs, args);
 
-  if (!chpl_gpu_use_async_streams) {
+  if (chpl_gpu_sync_with_host) {
     CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
     wait_stream(stream);
   }
@@ -289,7 +291,7 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
                                    stream,
                                    nargs, args);
 
-  if (!chpl_gpu_use_async_streams) {
+  if (chpl_gpu_sync_with_host) {
     CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
     wait_stream(stream);
   }
@@ -424,7 +426,7 @@ void* chpl_gpu_memset(void* addr, const uint8_t val, size_t n) {
   void* stream = get_stream(dev);
 
   void* ret = chpl_gpu_impl_memset(addr, val, n, stream);
-  if (!chpl_gpu_use_async_streams) {
+  if (chpl_gpu_sync_with_host) {
     CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
     wait_stream(stream);
   }
@@ -453,7 +455,7 @@ void chpl_gpu_copy_device_to_device(c_sublocid_t dst_dev, void* dst,
     // going to a device that maybe used by a different task, synchornize
     wait_stream(stream);
   }
-  else if (!chpl_gpu_use_async_streams) {
+  else if (chpl_gpu_sync_with_host) {
     CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
     wait_stream(stream);
   }
@@ -497,7 +499,7 @@ void chpl_gpu_copy_host_to_device(c_sublocid_t dst_dev, void* dst,
   chpl_gpu_diags_incr(host_to_device);
 
   chpl_gpu_impl_copy_host_to_device(dst, src, n, stream);
-  if (!chpl_gpu_use_async_streams) {
+  if (chpl_gpu_sync_with_host) {
     CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
     wait_stream(stream);
   }
