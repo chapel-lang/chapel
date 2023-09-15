@@ -190,8 +190,6 @@ record blockCycDist: writeSerializable {
 
   forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(unmanaged BlockCyclicImpl(rank, idxType));
 
-  pragma "last resort"
-  @unstable("passing arguments other than 'boundingBox' and 'targetLocales' to 'blockCycDist' is currently unstable")
   proc init(startIdx,
             blocksize,
             targetLocales: [] locale = Locales,
@@ -209,16 +207,6 @@ record blockCycDist: writeSerializable {
                             then _newPrivatizedClass(value)
                             else nullPid,
                           value);
-  }
-
-  proc init(boundingBox: domain,
-            targetLocales: [] locale = Locales)
-  {
-    this.init(boundingBox, targetLocales,
-              /* by specifying even one unstable argument, this should select
-                 the whole unstable constructor, which has defaults for everything
-                 else. */
-              dataParTasksPerLocale=getDataParTasksPerLocale());
   }
 
     proc init(_pid : int, _instance, _unowned : bool) {

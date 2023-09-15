@@ -2098,12 +2098,6 @@ proc _modestring(mode:ioMode) {
   }
 }
 
-@deprecated("open with a 'style' argument is deprecated")
-proc open(path:string, mode:ioMode, hints=ioHintSet.empty,
-          style:iostyle): file throws {
-  return openHelper(path, mode, hints, style:iostyleInternal);
-}
-
 /*
 
 Open a file on a filesystem. Note that once the file is open, you will need to
@@ -2127,6 +2121,13 @@ create a fileWriter to actually perform I/O operations
 */
 proc open(path:string, mode:ioMode, hints=ioHintSet.empty): file throws {
   return openHelper(path, mode, hints);
+}
+
+
+@deprecated("open with a 'style' argument is deprecated")
+proc open(path:string, mode:ioMode, hints=ioHintSet.empty,
+          style:iostyle): file throws {
+  return openHelper(path, mode, hints, style:iostyleInternal);
 }
 
 private proc openHelper(path:string, mode:ioMode, hints=ioHintSet.empty,
@@ -8206,10 +8207,15 @@ proc fileWriter.writeBinary(b: bytes, size: int = b.size) throws {
   }
 }
 
+@chpldoc.nodoc
+private proc isSuitableForBinaryReadWrite(arr: _array) param {
+  return chpl__isDROrDRView(arr);
+}
+
 /*
   Write an array of binary numbers to a ``fileWriter``
 
-  Note that this routine currently requires a 1D rectangular non-strided array.
+  Note that this routine currently requires a local rectangular non-strided array.
 
   :arg data: an array of numbers to write to the fileWriter
   :arg endian: :type:`ioendian` compile-time argument that specifies the byte
@@ -8223,7 +8229,7 @@ proc fileWriter.writeBinary(b: bytes, size: int = b.size) throws {
                        due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioendian.native) throws
-  where data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
+  where isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   var e : errorCode = 0;
@@ -8233,9 +8239,11 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
     const tSize = c_sizeof(t) : c_ssize_t;
 
     // Allow either DefaultRectangular arrays or dense slices of DR arrays
-    const denseDR = chpl__isDROrDRView(data) &&
-                    data._value.isDataContiguous(d._value);
-    if endian == ioendian.native && data.locale == this._home && denseDR {
+    if !data._value.isDataContiguous(d._value) {
+      throw new IllegalArgumentError("writeBinary() array data must be contiguous");
+    } else if data.locale != this._home {
+      throw new IllegalArgumentError("writeBinary() array data must be on same locale as 'fileWriter'");
+    } else if endian == ioendian.native {
       e = try qio_channel_write_amt(false, this._channel_internal, data[d.low], data.size:c_ssize_t * tSize);
 
       if e != 0 then
@@ -8244,7 +8252,7 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
       for b in data {
         select (endian) {
           when ioendian.native {
-            e = try _write_binary_internal(this._channel_internal, _iokind.native, b);
+            compilerError("unreachable");
           }
           when ioendian.big {
             e = try _write_binary_internal(this._channel_internal, _iokind.big, b);
@@ -8261,10 +8269,17 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
   }
 }
 
+
+@chpldoc.nodoc
+proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioendian.native) throws {
+  compilerError("writeBinary() only supports local, rectangular, non-strided arrays");
+}
+
+
 /*
   Write an array of binary numbers to a ``fileWriter``
 
-  Note that this routine currently requires a 1D rectangular non-strided array.
+  Note that this routine currently requires a local rectangular non-strided array.
 
   :arg data: an array of numbers to write to the fileWriter
   :arg endian: :type:`ioendian` specifies the byte order in which
@@ -8277,7 +8292,7 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
                        due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileWriter.writeBinary(const ref data: [] ?t, endian:ioendian) throws
-  where data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
+  where isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   select (endian) {
@@ -8291,6 +8306,12 @@ proc fileWriter.writeBinary(const ref data: [] ?t, endian:ioendian) throws
       this.writeBinary(data, ioendian.little);
     }
   }
+}
+
+@chpldoc.nodoc
+proc fileWriter.writeBinary(const ref data: [] ?t, endian:ioendian) throws
+{
+  compilerError("writeBinary() only supports local, rectangular, non-strided arrays");
 }
 
 /*
@@ -8487,7 +8508,7 @@ config param ReadBinaryArrayReturnInt = false;
 @deprecated(notes="The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant")
 proc fileReader.readBinary(ref data: [] ?t, param endian = ioendian.native): bool throws
   where ReadBinaryArrayReturnInt == false &&
-    data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
+    isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   var e : errorCode = 0,
@@ -8547,7 +8568,7 @@ proc fileReader.readBinary(ref data: [] ?t, param endian = ioendian.native): boo
 */
 proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): int throws
   where ReadBinaryArrayReturnInt == true &&
-    data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
+    isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   var e : errorCode = 0,
@@ -8556,10 +8577,11 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
   on this._home {
     try this.lock(); defer { this.unlock(); }
 
-    // Allow either DefaultRectangular arrays or dense slices of DR arrays
-    const denseDR = chpl__isDROrDRView(data) &&
-                    data._value.isDataContiguous(d._value);
-    if data.locale == this._home && denseDR && endian == ioendian.native {
+    if !data._value.isDataContiguous(d._value) {
+      throw new IllegalArgumentError("readBinary() array data must be contiguous");
+    } else if data.locale != this._home {
+      throw new IllegalArgumentError("readBinary() array data must be on same locale as 'fileReader'");
+    } else if endian == ioendian.native {
       e = qio_channel_read(false, this._channel_internal, data[d.low], (data.size * c_sizeof(data.eltType)) : c_ssize_t, numRead);
 
       if e != 0 && e != EEOF then throw createSystemOrChplError(e);
@@ -8567,7 +8589,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
       for (i, b) in zip(data.domain, data) {
         select (endian) {
           when ioendian.native {
-            e = try _read_binary_internal(this._channel_internal, _iokind.native, b);
+            compilerError("unreachable");
           }
           when ioendian.big {
             e = try _read_binary_internal(this._channel_internal, _iokind.big,    b);
@@ -8598,7 +8620,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
    until ``data`` is full or EOF is reached. An :class:`~OS.UnexpectedEofError`
    is thrown if EOF is reached before the array is filled.
 
-   Note that this routine currently requires a 1D rectangular non-strided array.
+   Note that this routine currently requires a local rectangular non-strided array.
 
    :arg data: an array to read into – existing values are overwritten.
    :arg endian: :type:`ioendian` specifies the byte order in which
@@ -8614,7 +8636,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
 @deprecated(notes="The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant")
 proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):bool throws
   where ReadBinaryArrayReturnInt == false &&
-    data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
+    isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   var rv: bool = false;
@@ -8640,7 +8662,7 @@ proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):bool throws
    Binary values of the type ``data.eltType`` are consumed from the fileReader
    until ``data`` is full or EOF is reached.
 
-   Note that this routine currently requires a 1D rectangular non-strided array.
+   Note that this routine currently requires a local rectangular non-strided array.
 
    :arg data: an array to read into – existing values are overwritten.
    :arg endian: :type:`ioendian` specifies the byte order in which
@@ -8654,7 +8676,7 @@ proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):bool throws
 */
 proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):int throws
   where ReadBinaryArrayReturnInt == true &&
-    data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
+    isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   var nr: int = 0;
@@ -8673,6 +8695,19 @@ proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):int throws
 
   return nr;
 }
+
+@chpldoc.nodoc
+proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):int throws
+{
+  compilerError("readBinary() only supports local, rectangular, non-strided arrays");
+}
+
+@chpldoc.nodoc
+proc fileReader.readBinary(ref data: [] ?t, param endian = ioendian.native): bool throws
+{
+  compilerError("readBinary() only supports local, rectangular, non-strided arrays");
+}
+
 
 /*
    Read up to ``maxBytes`` bytes from a ``fileReader`` into a
