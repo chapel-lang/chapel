@@ -42,10 +42,10 @@ type bcdPosInt = int;
 //
 /*
 This Block-Cyclic dimension specifier is for use with the
-``dimensionalDist2D`` distribution.
+:record:`~DimensionalDist2D.dimensionalDist2D` distribution.
 
 It specifies the mapping of indices in its dimension
-that would be produced by a 1D :class:`~BlockCycDist.blockCycDist` distribution.
+that would be produced by a 1D :record:`~BlockCycDist.blockCycDist` distribution.
 
 **Initializer Arguments**
 
@@ -66,7 +66,7 @@ The arguments are as follows:
       to be distributed over
   ``lowIdx``, ``blockSize``
       are the counterparts to ``startIdx`` and ``blocksize``
-      in the :class:`~BlockCycDist.blockCycDist` distribution
+      in the :record:`~BlockCycDist.blockCycDist` distribution
   ``cycleSizePos``
       is used internally by the implementation and
       should not be specified by the user code

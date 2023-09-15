@@ -30,12 +30,12 @@ import RangeChunk;
 
 /*
 This Replicated dimension specifier is for use with the
-``dimensionalDist2D`` distribution.
+:record:`~DimensionalDist2D.dimensionalDist2D` distribution.
 
 The dimension of a domain or array for which this specifier is used
 has a *replicand* for each element of ``targetLocales``
-in the same dimension. This is similar to the Replicated distribution
-(``Replicated``). The dimension specifies differs
+in the same dimension. This is similar to :record:`~ReplicatedDist.replicatedDist`.
+The dimension specifies differs
 in that it always accesses the local replicand, whereas the Replicated
 distribution accesses all replicands in certain cases, as specified there.
 
