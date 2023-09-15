@@ -263,7 +263,7 @@ std::pair<const Param*, const Type*> immediateToParam(Context* context,
         CHPL_ASSERT(false && "case not handled");
     }
   case NUM_KIND_BOOL:
-    return {BoolParam::get(context, imm.v_bool!=0), BoolType::get(context, 0)};
+    return {BoolParam::get(context, imm.v_bool!=0), BoolType::get(context)};
   case CONST_KIND_STRING:
     switch (imm.string_kind) {
       case STRING_KIND_STRING:

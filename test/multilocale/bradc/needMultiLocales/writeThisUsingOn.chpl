@@ -1,6 +1,6 @@
 use Time;
 
-class LocC {
+class LocC : writeSerializable {
   var id: int;
   
   override proc serialize(writer, ref serializer) throws {
@@ -10,7 +10,7 @@ class LocC {
   }
 }
 
-class C {
+class C : writeSerializable {
   var locCs: [LocaleSpace] unmanaged LocC?;
 
   proc postinit() {

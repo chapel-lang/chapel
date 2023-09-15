@@ -374,7 +374,7 @@ class DimensionalArr : BaseRectangularArr(?) {
                       unmanaged LocDimensionalArr(eltType, allocDom.locDdescType);
 }
 
-class LocDimensionalArr {
+class LocDimensionalArr : writeSerializable {
   type eltType;
   const locDom;  // a LocDimensionalDom
   pragma "local field" pragma "unsafe"

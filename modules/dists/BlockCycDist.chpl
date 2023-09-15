@@ -182,7 +182,7 @@ executes each iteration on the locale where that iteration's index
 is mapped to.
 
 */
-class BlockCyclic : BaseDist {
+class BlockCyclic : BaseDist, writeSerializable {
   param rank: int;
   type idxType = int;
 
@@ -447,7 +447,7 @@ proc BlockCyclic.dsiPrivatize(privatizeData) {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Local Distribution Class
 //
-class LocBlockCyclic {
+class LocBlockCyclic : writeSerializable {
   param rank: int;
   type idxType;
 
@@ -747,7 +747,7 @@ proc BlockCyclicDom.dsiReprivatize(other, reprivatizeData) {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Local Domain Class
 //
-class LocBlockCyclicDom {
+class LocBlockCyclicDom : writeSerializable {
   param rank: int;
   type idxType;
   param strides: strideKind;
@@ -1111,7 +1111,7 @@ iter BlockCyclicDom.dsiLocalSubdomains(loc: locale) {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Local Array Class
 //
-class LocBlockCyclicArr {
+class LocBlockCyclicArr : writeSerializable {
   type eltType;
   param rank: int;
   type idxType;

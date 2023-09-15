@@ -1,7 +1,7 @@
 
 use IO, Reflection;
 
-enum Variants { A, B, C, D }
+enum Variants { A, B, C, CG, D }
 enum Modes { Write, Read, Init }
 
 config param variant : Variants = Variants.A;
@@ -18,7 +18,7 @@ record A {
 }
 
 // Should disable generation of 'deserialize' and deserializing 'init'
-record B {
+record B : writeSerializable {
   var x : int;
 
   proc serialize(writer, ref serializer) throws {
@@ -27,7 +27,7 @@ record B {
 }
 
 // Should disable generation of 'serialize' and 'deserialize'
-record C {
+record C : initDeserializable {
   var x : int;
 
   proc init(x : int = 0) {
@@ -39,8 +39,25 @@ record C {
   }
 }
 
+// Should also disable generation of 'serialize' and 'deserialize', but
+// involves generics for completeness.
+record CG : initDeserializable {
+  type T;
+  var x : T;
+
+  proc init(type T, x : T = 0) {
+    this.T = T;
+    this.x = x;
+  }
+  proc init(type T, reader, ref deserializer) {
+    this.T = T;
+    init this;
+    ChapelIO.deserializeDefaultImpl(reader, deserializer, this);
+  }
+}
+
 // Should disable generation of 'serialize' and deserializing 'init'
-record D {
+record D : readDeserializable {
   var x : int;
 
   proc ref deserialize(reader, ref deserializer) throws {
@@ -53,6 +70,7 @@ proc getType() type {
     when Variants.A do return A;
     when Variants.B do return B;
     when Variants.C do return C;
+    when Variants.CG do return CG(int);
     when Variants.D do return D;
     otherwise do return nothing;
   }

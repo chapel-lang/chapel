@@ -25,6 +25,10 @@ proc test(val, type T = val.type) {
 
       f.writer().withSerializer(FormatWriter).write(val);
     }
+
+    // Avoid bug when reading domains for now.
+    if isDomainType(T) then return;
+
     {
       var readVal = f.reader().withDeserializer(FormatReader).read(T);
       writeln("--- read: ---");
@@ -60,7 +64,7 @@ record SimpleRecord {
   var y : real;
 }
 
-record CustomizedRecord {
+record CustomizedRecord : writeSerializable, initDeserializable {
   var x : int;
   var y : real;
 
@@ -158,6 +162,12 @@ proc main() {
   test((1, 2, 3));
   test((1, 42.0, false));
   test(colors.red);
+  test(1..10);
+  test(1..10 by 2);
+  test(1..10 by -1);
+  test(1..20 by 3 align 2);
+  test({1..10, 1..10});
+  test({1..10, 1..10} by 2);
   test(new SimpleRecord(5, 42.0));
   test(new CustomizedRecord(7, 3.14));
   test(new GenericRecord(int, 3, 42, (1,2,3)));

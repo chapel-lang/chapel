@@ -2666,6 +2666,10 @@ static std::string generateClangGpuLangArgs() {
         args += " -lstdc++";
         break;
     }
+
+    if (gpuArches.size() >= 1) {
+      args += " " + std::string("--offload-arch=") + *gpuArches.begin();
+    }
   }
   return args;
 }
@@ -2911,11 +2915,6 @@ void runClang(const char* just_parse_filename) {
     // Need to select CUDA/AMD mode in embedded clang to
     // activate the GPU target
     splitStringWhitespace(generateClangGpuLangArgs(), clangOtherArgs);
-
-    if (gpuArches.size() >= 1) {
-      std::string archFlag = std::string("--offload-arch=") + *gpuArches.begin();
-      clangOtherArgs.push_back(archFlag);
-    }
   }
 
   // Always include sys_basic because it might change the

@@ -71,6 +71,8 @@ static void        replaceFunctionWithInstantiationsOfPrimitive(FnSymbol* fn);
 static void        fixupQueryFormals(FnSymbol* fn);
 static void        fixupCastFormals(FnSymbol* fn);
 
+static void        fixupExplicitGenericVariables(DefExpr* def);
+
 static void        updateInitMethod (FnSymbol* fn);
 
 static void        checkUseBeforeDefs();
@@ -103,6 +105,7 @@ static void        normalizeCallToTypeConstructor(CallExpr* call);
 static void        applyGetterTransform(CallExpr* call);
 static void        transformIfVar(CallExpr* call);
 static void        insertCallTemps(CallExpr* call);
+static void        propagateMarkedGeneric(Symbol* var, Expr* typeExpr);
 static Symbol*     insertCallTempsWithStmt(CallExpr* call, Expr* stmt);
 
 static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur);
@@ -1725,6 +1728,7 @@ static void addTypeBlocksForParentTypeOf(CallExpr* call) {
 ************************************** | *************************************/
 
 static void fixupExportedArrayReturns(FnSymbol* fn);
+static void fixupGenericReturnTypes(FnSymbol* fn);
 static bool isVoidReturn(CallExpr* call);
 static bool hasGenericArrayReturn(FnSymbol* fn);
 static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret,
@@ -1736,6 +1740,7 @@ static void normalizeReturns(FnSymbol* fn) {
   SET_LINENO(fn);
 
   fixupExportedArrayReturns(fn);
+  fixupGenericReturnTypes(fn);
 
   std::vector<CallExpr*> rets;
   std::vector<CallExpr*> calls;
@@ -1908,6 +1913,32 @@ static void fixupExportedArrayReturns(FnSymbol* fn) {
     }
     CallExpr* transformRet = new CallExpr("convertToExternalArray", retVal);
     retCall->get(1)->replace(transformRet);
+  }
+}
+
+// If the return type was declared generic e.g. as R(?), then
+// mark the function with FLAG_RET_TYPE_MARKED_GENERIC.
+// Also simplifies the simplest case to help with problems with
+//   proc f(): domain(?) { ... }
+static void fixupGenericReturnTypes(FnSymbol* fn) {
+  if (fn->retExprType) {
+    // handle nested cases, e.g. (GenericRecord(?), ) or borrowed GenCls(?)
+    propagateMarkedGeneric(fn, fn->retExprType);
+
+    // simpify the simple case
+    Expr*     tail   = fn->retExprType->body.tail;
+    if (CallExpr* call = toCallExpr(tail)) {
+      if (call->numActuals() == 1) {
+        if (SymExpr* se = toSymExpr(call->get(1))) {
+          if (call->baseExpr && se->symbol() == gUninstantiated) {
+            Expr* type = call->baseExpr->remove();
+            tail->replace(type);
+            // flag should have been added in propagateMarkedGeneric
+            INT_ASSERT(fn->hasFlag(FLAG_RET_TYPE_MARKED_GENERIC));
+          }
+        }
+      }
+    }
   }
 }
 
@@ -2485,15 +2516,18 @@ static void insertCallTemps(CallExpr* call) {
   }
 }
 
-// adds FLAG_MARKED_GENERIC to 'var' if the type contains a ?
+// adds FLAG_MARKED_GENERIC/FLAG_RET_TYPE_MARKED_GENERIC
+// to 'var' if the type contains a ?
 // actual or an actual that is a temp marked with that flag.
 static void propagateMarkedGeneric(Symbol* var, Expr* typeExpr) {
   if (SymExpr* se = toSymExpr(typeExpr)) {
     Symbol* sym = se->symbol();
     if (sym == gUninstantiated ||
         (sym->hasFlag(FLAG_MARKED_GENERIC) && sym->hasFlag(FLAG_TEMP))) {
-      var->addFlag(FLAG_MARKED_GENERIC);
-      //      printf("(A) Adding FLAG_MARKED_GENERIC to %s\n", sym->name);
+      if (isFnSymbol(var))
+        var->addFlag(FLAG_RET_TYPE_MARKED_GENERIC);
+      else
+        var->addFlag(FLAG_MARKED_GENERIC);
     }
   } else if (CallExpr* call = toCallExpr(typeExpr)) {
     if (call->baseExpr)
@@ -2501,6 +2535,11 @@ static void propagateMarkedGeneric(Symbol* var, Expr* typeExpr) {
 
     for_actuals(actual, call) {
       propagateMarkedGeneric(var, actual);
+    }
+  } else if (BlockStmt* blk = toBlockStmt(typeExpr)) {
+    // handle blocks since they are used for return type exprs
+    for_alist(expr, blk->body) {
+      propagateMarkedGeneric(var, expr);
     }
   }
 }
@@ -2957,6 +2996,10 @@ void normalizeVariableDefinition(DefExpr* defExpr) {
   // these might be set by out intent arguments.
   if (foundSplitInit == false && refVar)
     errorIfSplitInitializationRequired(defExpr, prevent);
+
+  if (type != nullptr) {
+    fixupExplicitGenericVariables(defExpr);
+  }
 
   if (requestedSplitInit && foundSplitInit == false) {
     // Create a dummy DEFAULT_INIT_VAR to sort out later in resolution
@@ -3475,6 +3518,15 @@ void warnIfGenericFormalMissingQ(ArgSymbol* arg, Type* type, Expr* typeExpr) {
         }
       }
     }
+  }
+
+  // error for CR(?) where CR is a concrete record or class type
+  if (!type->symbol->hasFlag(FLAG_GENERIC) &&
+      arg->hasFlag(FLAG_MARKED_GENERIC)) {
+    USR_FATAL(arg,
+              "the formal argument '%s' is marked generic with (?) "
+              "but the type '%s' is not generic",
+              arg->name, toString(type, /*decorators*/ false));
   }
 }
 
@@ -4121,8 +4173,7 @@ static bool isParameterizedPrimitive(CallExpr* typeSpecifier) {
       if (isDefExpr(first) || (query && query->symbol() == gUninstantiated)) {
         Symbol* callFnSym = callFnSymExpr->symbol();
 
-        if (callFnSym == dtBools[BOOL_SIZE_DEFAULT]->symbol ||
-            callFnSym == dtInt[INT_SIZE_DEFAULT]->symbol    ||
+        if (callFnSym == dtInt[INT_SIZE_DEFAULT]->symbol    ||
             callFnSym == dtUInt[INT_SIZE_DEFAULT]->symbol   ||
             callFnSym == dtReal[FLOAT_SIZE_DEFAULT]->symbol ||
             callFnSym == dtImag[FLOAT_SIZE_DEFAULT]->symbol ||
@@ -4136,38 +4187,12 @@ static bool isParameterizedPrimitive(CallExpr* typeSpecifier) {
   return retval;
 }
 
-// return true if a type specifier has the form `bool(?)` and false if
-// it's `bool(?w)`
-//
-static bool typeSpecifierUnnamedQuery(CallExpr* typeSpecifier) {
-  if (typeSpecifier->numActuals()      ==    1) {
-    if (DefExpr* de = toDefExpr(typeSpecifier->get(1))) {
-      return strncmp("chpl__query", de->sym->name, strlen("chpl__query")) == 0;
-    } else if (SymExpr* se = toSymExpr(typeSpecifier->get(1))) {
-      return se->symbol() == gUninstantiated;
-    }
-  }
-  return false;
-}
-
-
 // 'formal' is certain to be a parameterized primitive e.g int(?w)
 static void cloneParameterizedPrimitive(FnSymbol* fn, ArgSymbol* formal, CallExpr* typeSpecifier) {
   Symbol* callFnSym = toSymExpr(typeSpecifier->baseExpr)->symbol();
   Expr*   query     = typeSpecifier->get(1);
 
-  if (callFnSym == dtBools[BOOL_SIZE_DEFAULT]->symbol) {
-    // If 'bool(?)', instantiate for 'bool', and all 'bool(w)'
-    // If 'bool(?w)', skip 'bool' instantiation since 'w' is unknown
-    int start = typeSpecifierUnnamedQuery(typeSpecifier) ? BOOL_SIZE_SYS
-                                                         : BOOL_SIZE_8;
-    for (int i = start; i < BOOL_SIZE_NUM; i++) {
-      cloneParameterizedPrimitive(fn, formal, query, ((i == BOOL_SIZE_SYS) ?
-                                             BOOL_SYS_WIDTH :
-                                             get_width(dtBools[i])));
-    }
-
-  } else if (callFnSym == dtInt [INT_SIZE_DEFAULT]->symbol ||
+  if (callFnSym == dtInt [INT_SIZE_DEFAULT]->symbol ||
              callFnSym == dtUInt[INT_SIZE_DEFAULT]->symbol) {
     for (int i = INT_SIZE_8; i < INT_SIZE_NUM; i++) {
       cloneParameterizedPrimitive(fn, formal, query, get_width(dtInt[i]));
@@ -4822,6 +4847,44 @@ static void addToWhereClause(FnSymbol*  fn,
   where->replace(combine);
   combine->insertAtTail(where);
   combine->insertAtTail(test);
+}
+
+static void fixupExplicitGenericVariables(DefExpr* def) {
+  // this is a workaround for `(CallExpr _domain ?)` not being resolved
+  // fixup the pattern `(CallExpr _domain ?)` to be `(_domain(?))`,
+  // marking the `DefExpr` as generic
+  CHPL_ASSERT(def && def->exprType);
+
+  if (CallExpr* call = toCallExpr(def->exprType)) {
+    // if its a call like `_domain ?`, make it `_domain(?)` and MARKED_GENERIC
+    SymExpr* symExpr = nullptr;
+    bool actIsQuestion = false;
+    if (auto se = toSymExpr(call->baseExpr)) {
+
+      // only perform this transformation if the generic has no defaults
+      //   this is a workaround for something like `range`, which is generic with
+      //   defaults and which this normalization breaks
+      bool genericWithDefaults = false;
+      if (AggregateType* at = toAggregateType(se->symbol()->type)) {
+        genericWithDefaults = at->isGenericWithDefaults();
+      }
+      if (!genericWithDefaults) symExpr = se;
+    }
+    if (call->numActuals() == 1) {
+      if (auto se = toSymExpr(call->get(1))) {
+        actIsQuestion = se->symbol() == gUninstantiated;
+      }
+    }
+
+    if (symExpr && actIsQuestion) {
+      Symbol* symToSetGeneric = def->sym;
+      if (symToSetGeneric) {
+        symToSetGeneric->addFlag(FLAG_MARKED_GENERIC);
+        symExpr->remove();
+        call->replace(symExpr);
+      }
+    }
+  }
 }
 
 /************************************* | **************************************

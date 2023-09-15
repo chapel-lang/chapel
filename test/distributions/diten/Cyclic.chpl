@@ -15,7 +15,7 @@ enum IteratorType { leader, follower };
 //
 // The distribution class
 //
-class Cyclic1DDist {
+class Cyclic1DDist : writeSerializable {
   //
   // The distribution's index type and domain's global index type
   //
@@ -167,7 +167,7 @@ class Cyclic1DDist {
 //
 // A per-locale local distribution class
 //
-class LocCyclic1DDist {
+class LocCyclic1DDist : writeSerializable {
   // 
   // The distribution's index type and domain's global index type
   //
@@ -214,7 +214,7 @@ class LocCyclic1DDist {
 //
 // The global domain class
 //
-class Cyclic1DDom {
+class Cyclic1DDom : writeSerializable {
   //
   // The index types of the global and local domain portions
   //
@@ -383,7 +383,7 @@ class Cyclic1DDom {
 //
 // the local domain class
 //
-class LocCyclic1DDom {
+class LocCyclic1DDom : writeSerializable {
   //
   // The index types of the global and local domain portions
   //
@@ -455,7 +455,7 @@ private use IO;
 //
 // the global array class
 //
-class Cyclic1DArr {
+class Cyclic1DArr : writeSerializable {
   //
   // The index types of the global and local domain portions
   //
@@ -575,7 +575,7 @@ class Cyclic1DArr {
 //
 // the local array class
 //
-class LocCyclic1DArr {
+class LocCyclic1DArr : writeSerializable {
   //
   // The index types of the global and local domain portions
   //

@@ -106,7 +106,7 @@ module ChapelBase {
   //
   // assignment on primitive types
   //
-  inline operator =(ref a: bool(?), b: bool) { __primitive("=", a, b); }
+  inline operator =(ref a: bool, b: bool) { __primitive("=", a, b); }
 
   inline operator =(ref a: int(8), b: int(8)) do __primitive("=", a, b);
   inline operator =(ref a: int(16), b: int(16)) do __primitive("=", a, b);
@@ -2168,21 +2168,21 @@ module ChapelBase {
            isIntegralType(t) ||
            isRealType(t);
 
-  inline operator :(x:chpl_anybool, type t:chpl_anybool) do
+  inline operator :(x:bool, type t:bool) do
     return __primitive("cast", t, x);
-  inline operator :(x:chpl_anybool, type t:integral) do
+  inline operator :(x:bool, type t:integral) do
     return __primitive("cast", t, x);
-  inline operator :(x:chpl_anybool, type t:chpl_anyreal) do
+  inline operator :(x:bool, type t:chpl_anyreal) do
     return __primitive("cast", t, x);
 
-  inline operator :(x:integral, type t:chpl_anybool) do
+  inline operator :(x:integral, type t:bool) do
     return __primitive("cast", t, x);
   inline operator :(x:integral, type t:integral) do
     return __primitive("cast", t, x);
   inline operator :(x:integral, type t:chpl_anyreal) do
     return __primitive("cast", t, x);
 
-  inline operator :(x:chpl_anyreal, type t:chpl_anybool) do
+  inline operator :(x:chpl_anyreal, type t:bool) do
     return __primitive("cast", t, x);
   inline operator :(x:chpl_anyreal, type t:integral) do
     return __primitive("cast", t, x);
@@ -2190,7 +2190,7 @@ module ChapelBase {
     return __primitive("cast", t, x);
 
   @unstable("enum-to-bool casts are likely to be deprecated in the future")
-  inline operator :(x: enum, type t:chpl_anybool) throws {
+  inline operator :(x: enum, type t:bool) throws {
     return x: int: bool;
   }
   // operator :(x: enum, type t:integral)
@@ -2463,7 +2463,7 @@ module ChapelBase {
   inline operator :(x: chpl_anyimag, type t:integral) do
     return __primitive("cast", t, x);
 
-  inline operator :(x: chpl_anyimag, type t:chpl_anybool) do
+  inline operator :(x: chpl_anyimag, type t:bool) do
     return if x != 0i then true else false;
 
   pragma "init copy fn"
@@ -3307,7 +3307,7 @@ module ChapelBase {
   extern const QIO_TUPLE_FORMAT_JSON:int;
 
   // Support for module deinit functions.
-  class chpl_ModuleDeinit {
+  class chpl_ModuleDeinit : writeSerializable {
     const moduleName: c_ptrConst(c_char); // for debugging; non-null, not owned
     const deinitFun:  chpl_c_fn_ptr;          // module deinit function
     const prevModule: unmanaged chpl_ModuleDeinit?; // singly-linked list / LIFO queue

@@ -43,7 +43,7 @@ Limitations:
 
 .. code-block:: chapel
 
-   var replArray: [MyDomain dmapped Replicated()] real;
+   var replArray: [MyDomain dmapped replicatedDist()] real;
 
 .. _ReplicatedVar_basic-usage:
 
@@ -84,7 +84,7 @@ modify the above variable declarations as follows:
 
 .. code-block:: chapel
 
-    var myRepVar: [rcDomainBase dmapped Replicated(myLocales,
+    var myRepVar: [rcDomainBase dmapped replicatedDist(myLocales,
                      "over which to replicate 'myRepVar'")] MyType;
     var collected: [myLocales.domain] MyType;
 
@@ -106,11 +106,11 @@ private const rcDomainIx   = 1; // todo convert to param
    as shown :ref:`above <ReplicatedVar_subset-of-locales>`. */
 const rcDomainBase = {rcDomainIx..rcDomainIx};
 private const rcLocales    = Locales;
-private const rcDomainMap  = new Replicated(rcLocales);
+private const rcDomainMap  = new replicatedDist(rcLocales);
 /* Use this domain to declare a user-level replicated variable,
    as shown :ref:`above <ReplicatedVar_basic-usage>` . */
 const rcDomain     = rcDomainBase dmapped rcDomainMap;
-private param _rcErr1 = " must be 'rcDomain' or 'rcDomainBase dmapped Replicated(an array of locales)'";
+private param _rcErr1 = " must be 'rcDomain' or 'rcDomainBase dmapped replicatedDist(an array of locales)'";
 
 private proc _rcTargetLocalesHelper(replicatedVar: [?D])
   where isReplicatedArr(replicatedVar)
@@ -236,7 +236,7 @@ proc rcExampleOverLocales(initVal: ?MyType, newVal: MyType, newLocale: locale,
 
   // declare a replicated variable
   // DIFFERENT from rcExample(): the domain in myRepVar's type
-  var myRepVar: [rcDomainBase dmapped Replicated(localesToReplicateOver,
+  var myRepVar: [rcDomainBase dmapped replicatedDist(localesToReplicateOver,
    "over which to replicate 'myRepVar' in rcExampleOverLocales()")] MyType;
 
   // initialize all copies to 'initVal'

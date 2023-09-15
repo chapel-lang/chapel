@@ -1,4 +1,4 @@
-config var n = 10;
+config var n = 10, addLeaks=false;
 {
   use BlockDist;
   var Dist = new dmap(new Block({1..n}));
@@ -37,4 +37,28 @@ config var n = 10;
   writeln(A);
   const Dist2: dmap(Stencil(1)) = new Stencil({1..n});
   writeln(Dist2.type:string);
+}
+
+{
+  // Private distributions leak, and it's not clear they're
+  // ready for prime-time which is why this test of the
+  // deprecation warning puts most of the code into a
+  // conditional that doesn't run.  This checks that the
+  // deprecation warnings still fire without dealing with
+  // the leaks.  The small test outside of the conditional
+  // is leak-free and shows that the type exists even if
+  // it doesn't do anything interesting with it.
+
+  use PrivateDist;
+  proc foo(type t) { writeln("foo got ", t: string); }
+  foo(Private);
+
+  if addLeaks {
+    var Dist = new dmap(new Private());
+    var Dom: domain(1) dmapped Dist;
+    var A: [Dom] real;
+    writeln(A);
+    const Dist2: dmap(Private) = new Private();
+    writeln(Dist2.type:string);
+  }
 }

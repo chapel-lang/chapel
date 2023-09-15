@@ -121,7 +121,7 @@ module ChapelSyncvar {
   pragma "sync"
   pragma "default intent is ref"
   @chpldoc.nodoc
-  record _syncvar {
+  record _syncvar : writeSerializable, readDeserializable {
     type valType;                              // The compiler knows this name
 
     var  wrapped : getSyncClassType(valType);
@@ -812,7 +812,7 @@ module ChapelSyncvar {
   pragma "single"
   pragma "default intent is ref"
   @chpldoc.nodoc
-  record _singlevar {
+  record _singlevar : writeSerializable, readDeserializable {
     type valType;                              // The compiler knows this name
 
     var  wrapped : unmanaged _singlecls(valType);
@@ -1250,7 +1250,7 @@ private module AlignedTSupport {
   inline operator :(x: bool, type t:aligned_t) {
     return __primitive("cast", t, x);
   }
-  inline operator :(x : aligned_t, type t:chpl_anybool) {
+  inline operator :(x : aligned_t, type t:bool) {
     return __primitive("cast", t, x);
   }
   inline operator :(x : aligned_t, type t:integral) {

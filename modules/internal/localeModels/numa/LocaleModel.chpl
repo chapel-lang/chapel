@@ -56,7 +56,7 @@ module LocaleModel {
   //
   // The NUMA sublocale model
   //
-  class NumaDomain : AbstractLocaleModel {
+  class NumaDomain : AbstractLocaleModel, writeSerializable {
     const sid: chpl_sublocID_t;
     const ndName: string; // note: locale provides `proc name`
 
@@ -225,7 +225,7 @@ module LocaleModel {
   // may overwrite this instance or any of its children to establish a more customized
   // representation of the system resources.
   //
-  class RootLocale : AbstractRootLocale {
+  class RootLocale : AbstractRootLocale, writeSerializable {
 
     const myLocaleSpace: domain(1) = {0..numLocales-1};
     pragma "unsafe"

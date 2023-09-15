@@ -7,7 +7,7 @@ module Strassen
     private use IO;
 
     class StrassenFactory : BenchmarkFactory
-    {
+   , writeSerializable {
         var n : int;
 
         override proc getInstance() : unmanaged Strassen  // Error message line# wrong
@@ -22,7 +22,7 @@ module Strassen
     }
 
     class Strassen : Benchmark
-    {
+   , writeSerializable {
         var n;
         proc serialize(writer, ref serializer) throws
         {

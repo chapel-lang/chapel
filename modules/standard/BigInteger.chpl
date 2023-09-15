@@ -160,14 +160,9 @@ module BigInteger {
 
   /* A compile-time parameter to control the behavior of bigint initializers
      that take a string argument.
-
-     When ``false``, the deprecated behavior is used (i.e., errors will trigger
-     a halt at execution.)
-
-     When ``true``, the new behavior is used (i.e., errors will cause a
-     :type:`~OS.BadFormatError` to be thrown)
   */
-  config param bigintInitThrows = false;
+  @deprecated("bigint initializers will now always throw instead of halt, this config no longer impacts code and will be removed in a future release")
+  config param bigintInitThrows = true;
 
   // TODO: remove when initializers can throw in their body
   private proc throwingInitWorkaround() throws {
@@ -175,7 +170,7 @@ module BigInteger {
   }
 
   pragma "ignore noinit"
-  record bigint {
+  record bigint : writeSerializable {
     // The underlying GMP C structure
     pragma "no init"
     @chpldoc.nodoc
@@ -249,7 +244,7 @@ module BigInteger {
                                number in base ``base``.
 
      */
-    proc init(x: string, base: int = 0) throws where bigintInitThrows == true {
+    proc init(x: string, base: int = 0) throws {
       init this;
       const ref x_ = x.localize().c_str();
       const base_ = base.safeCast(c_int);
@@ -307,42 +302,8 @@ module BigInteger {
      */
     pragma "last resort"
     @deprecated("the argument name 'str' is deprecated - please use 'x' instead")
-    proc init(str: string, base: int = 0) throws where bigintInitThrows == true
+    proc init(str: string, base: int = 0) throws
       do try! this.init(str, base);
-
-    @deprecated(notes="bigint initializers that halt are deprecated, please set the config param :param:`bigintInitThrows` to 'true' to opt in to using the new initializer that throws")
-    proc init(str: string, base: int = 0) where bigintInitThrows == false {
-      init this;
-      const ref str_ = str.localize().c_str();
-      const base_ = base.safeCast(c_int);
-
-      if mpz_init_set_str(this.mpz, str_, base_) != 0 {
-        mpz_clear(this.mpz);
-
-        HaltWrappers.initHalt("Error initializing big integer: bad format");
-      }
-
-      this.localeId = chpl_nodeID;
-    }
-
-    @deprecated(notes="bigint initializers that return the errorCode type via an 'out' argument are deprecated, please remove the argument and ensure the config param :param:`bigintInitThrows` is set to 'true' to opt in to using the new initializer that throws")
-    proc init(str: string, base: int = 0, out error: errorCode) {
-
-      init this;
-      const ref str_ = str.localize().c_str();
-      const base_ = base.safeCast(c_int);
-
-      if mpz_init_set_str(this.mpz, str_, base_) != 0 {
-        mpz_clear(this.mpz);
-
-        error = chpl_macro_int_EFORMAT();
-      } else {
-        error = 0;
-      }
-
-      this.localeId = chpl_nodeID;
-    }
-
 
     // Within a given locale, bigint assignment creates a deep copy of the
     // data and so the record "owns" the GMP data.
@@ -468,43 +429,6 @@ module BigInteger {
       return (dbl: real, exp.safeCast(uint(32)));
     }
 
-    @deprecated(notes="bigint.size() is deprecated")
-    proc size() : c_size_t {
-      var ret: c_size_t;
-
-      if compiledForSingleLocale() {
-        ret = mpz_size(this.mpz);
-
-      } else if this.localeId == chpl_nodeID {
-        ret = mpz_size(this.mpz);
-
-      } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          ret = mpz_size(this.mpz);
-        }
-      }
-
-      return ret;
-    }
-
-    @deprecated("bigint.sizeinbase is deprecated, use :proc:`bigint.sizeInBase` instead")
-    proc sizeinbase(base: int) : uint {
-      return sizeInBase(base).safeCast(uint);
-    }
-
-    @deprecated(notes="mpzStruct is deprecated, please use :proc:`getImpl` instead")
-    proc mpzStruct() : __mpz_struct {
-      return getImpl();
-    }
-
-    @deprecated(notes="get_d_2exp is deprecated in favor of :proc:`bigint.getD2Exp`, which returns (d, exp) instead of (exp, d).  Please use that method instead")
-    proc get_d_2exp() : (uint(32), real) {
-      var (dbl, exp) = getD2Exp();
-      return (exp, dbl);
-    }
-
     // private method
     @chpldoc.nodoc
     proc getStr(base: int = 10): string {
@@ -569,13 +493,6 @@ module BigInteger {
     if r == zero then return roundingMode.zero;
     if r == up then return roundingMode.up;
     compilerError("unknown bigint rounding mode");
-  }
-
-  @deprecated(notes="The enum Round is deprecated, please use the enum :enum:`roundingMode` instead")
-  enum Round {
-    DOWN = -1,
-    ZERO =  0,
-    UP   =  1
   }
 
   /* An enumeration of the different rounding strategies, for use with e.g.
@@ -1699,28 +1616,6 @@ module BigInteger {
     else
       return false;
   }
-
-  @deprecated("bigint.powm method is deprecated, please use the standalone function :proc:`~BigInteger.powMod` instead")
-  proc ref bigint.powm(const ref base: bigint,
-                   const ref exp:  bigint,
-                   const ref mod:  bigint) {
-    BigInteger.powMod(this, base, exp, mod);
-  }
-
-  @deprecated("bigint.powm method is deprecated, please use the standalone function :proc:`~BigInteger.powMod` instead")
-  proc ref bigint.powm(const ref base: bigint,
-                             exp:  int,
-                   const ref mod:  bigint) {
-    BigInteger.powMod(this, base, exp, mod);
-  }
-
-  @deprecated("bigint.powm method is deprecated, please use the standalone function :proc:`~BigInteger.powMod` instead")
-  proc bigint.powm(const ref base: bigint,
-                             exp:  uint,
-                   const ref mod:  bigint) {
-    BigInteger.powMod(this, base, exp, mod);
-  }
-
 
   /*
     Set ``result`` to the result of ``(base**exp) modulo mod``.
@@ -3894,34 +3789,6 @@ module BigInteger {
 
   @deprecated(notes="bigint.abs method is deprecated - please use the standalone function :proc:`~BigInteger.abs`")
   proc ref bigint.abs(const ref a: bigint) do BigInteger.abs(this, a);
-
-  @deprecated("bigint.div_q using Round is deprecated, use the standalone function :proc:`~BigInteger.div` with :enum:`roundingMode` instead")
-  proc ref bigint.div_q(const ref n: bigint,
-                    const ref d: bigint,
-                    param     rounding = Round.ZERO) {
-    use Round;
-    if (rounding == UP) {
-      BigInteger.div(this, n, d, roundingMode.up);
-    } else if (rounding == ZERO) {
-      BigInteger.div(this, n, d, roundingMode.zero);
-    } else {
-      BigInteger.div(this, n, d, roundingMode.down);
-    }
-  }
-
-  @deprecated("bigint.div_q using Round is deprecated, use the standalone function :proc:`~BigInteger.div` with :enum:`roundingMode` instead")
-  proc ref bigint.div_q(const ref n: bigint,
-                              d: integral,
-                    param     rounding = Round.ZERO) {
-    use Round;
-    if (rounding == UP) {
-      BigInteger.div(this, n, d, roundingMode.up);
-    } else if (rounding == ZERO) {
-      BigInteger.div(this, n, d, roundingMode.zero);
-    } else {
-      BigInteger.div(this, n, d, roundingMode.down);
-    }
-  }
 
   @deprecated("divQ is deprecated - please use :proc:`div` with :enum:`roundingMode` instead")
   proc divQ(ref result: bigint,

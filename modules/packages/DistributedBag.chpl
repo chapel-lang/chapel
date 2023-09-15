@@ -223,7 +223,7 @@ module DistributedBag {
     the data structure for maximized performance.
   */
   pragma "always RVF"
-  record DistBag {
+  record DistBag : serializable {
     type eltType;
 
     // This is unused, and merely for documentation purposes. See '_value'.

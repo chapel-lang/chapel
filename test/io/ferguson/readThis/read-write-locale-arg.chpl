@@ -1,6 +1,6 @@
 use IO;
 
-class A {
+class A : writeSerializable {
   var x:int;
   override proc serialize(writer, ref serializer) throws {
     var loc = writer.readWriteThisFromLocale();
@@ -9,7 +9,7 @@ class A {
   }
 }
 
-class B {
+class B : readDeserializable, initDeserializable {
   var x:int;
   proc init(x: int = 0) { this.x = x; }
   proc init(reader: fileReader(?), ref deserializer) {
@@ -24,7 +24,7 @@ class B {
   }
 }
 
-class C {
+class C : serializable {
   var x:int;
   proc init(x: int = 0) { this.x = x; }
   proc init(reader: fileReader(?), ref deserializer) {

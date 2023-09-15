@@ -1,1 +1,0 @@
-bug: reading by value should invoke 'deserialize' all the way down

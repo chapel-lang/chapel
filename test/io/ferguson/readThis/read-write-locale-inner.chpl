@@ -1,4 +1,4 @@
-record A {
+record A : writeSerializable {
   var x:int;
   proc serialize(writer, ref serializer) throws {
     var loc = writer.readWriteThisFromLocale();
@@ -6,7 +6,7 @@ record A {
     writer.write(x);
   }
 }
-record B {
+record B : writeSerializable {
   var a:A;
   proc serialize(writer, ref serializer) throws {
     var loc = writer.readWriteThisFromLocale();

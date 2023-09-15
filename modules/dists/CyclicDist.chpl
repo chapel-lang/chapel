@@ -233,7 +233,7 @@ This distribution has not been tuned for performance.
 */
 
 pragma "ignore noinit"
-record cyclicDist {
+record cyclicDist : writeSerializable {
   param rank: int;
   type idxType = int;
 
@@ -351,7 +351,7 @@ operator =(ref a: cyclicDist(?), b: cyclicDist(?)) {
 type Cyclic = cyclicDist;
 
 @chpldoc.nodoc
-class CyclicImpl: BaseDist {
+class CyclicImpl: BaseDist, writeSerializable {
   param rank: int;
   type idxType = int;
 
@@ -1231,7 +1231,7 @@ proc CyclicArr.setRADOpt(val=true) {
   if doRADOpt then setupRADOpt();
 }
 
-class LocCyclicArr {
+class LocCyclicArr : writeSerializable {
   type eltType;
   param rank: int;
   type idxType;

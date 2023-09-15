@@ -188,7 +188,7 @@ where the updates are made.
 
 This distribution has not been tuned for performance.
 */
-class Cyclic: BaseDist {
+class Cyclic: BaseDist, writeSerializable {
   param rank: int;
   type idxType = int;
 
@@ -1041,7 +1041,7 @@ proc CyclicArr.setRADOpt(val=true) {
   if doRADOpt then setupRADOpt();
 }
 
-class LocCyclicArr {
+class LocCyclicArr : writeSerializable {
   type eltType;
   param rank: int;
   type idxType;

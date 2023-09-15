@@ -49,10 +49,6 @@ module StandardInterfaces {
   }
 
   bool implements StdOps;
-/*// currently does not work because: == is implemented for args of the type
-  // "bool"; need coercions to call it; coercions are not supported
-  chpl_anybool implements StdOps;
-*/
   numeric implements StdOps;
   string  implements StdOps;
   private proc stdTypeString(arg) do return arg.type :string;

@@ -3,7 +3,7 @@ module M1 {
   private use IO;
 
   var a = 1;
-  class C {
+  class C : writeSerializable {
     var b = 2;
     proc foo() {
       return a+b;

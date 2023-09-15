@@ -106,7 +106,7 @@ static QualifiedType primIsBound(Context* context, const CallInfo& ci) {
       auto isBound =
         fields->fieldType(i).genericity() == Type::Genericity::CONCRETE;
       type = QualifiedType(QualifiedType::PARAM,
-                           BoolType::get(context, 0),
+                           BoolType::get(context),
                            BoolParam::get(context, isBound));
       break;
     }
@@ -250,7 +250,7 @@ static QualifiedType primCallResolves(Context* context, const CallInfo &ci,
   }
 
   return QualifiedType(QualifiedType::PARAM,
-                       BoolType::get(context, 0),
+                       BoolType::get(context),
                        BoolParam::get(context, callAndFnResolved));
 
 }
@@ -396,7 +396,7 @@ CallResolutionResult resolvePrimCall(Context* context,
             result = tt->isStarTuple();
 
         type = QualifiedType(QualifiedType::PARAM,
-                             BoolType::get(context, 0),
+                             BoolType::get(context),
                              BoolParam::get(context, result));
       }
       break;
@@ -445,7 +445,7 @@ CallResolutionResult resolvePrimCall(Context* context,
       if (ci.actual(0).type().isType() && ci.actual(1).type().isType()) {
         bool isEqual = ci.actual(0).type().type() == ci.actual(1).type().type();
         type = QualifiedType(QualifiedType::PARAM,
-                             BoolType::get(context, 0),
+                             BoolType::get(context),
                              BoolParam::get(context, isEqual));
         break;
       }
@@ -463,7 +463,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_PTR_NOTEQUAL:
     case PRIM_BLOCK_C_FOR_LOOP:
       type = QualifiedType(QualifiedType::CONST_VAR,
-                           BoolType::get(context, 0));
+                           BoolType::get(context));
       break;
 
     /* Primitives that return the type of the 1st operand.

@@ -1,4 +1,4 @@
-record mytuple {
+record mytuple : writeSerializable {
   type t1;
   type t2;
   var f1 : t1;

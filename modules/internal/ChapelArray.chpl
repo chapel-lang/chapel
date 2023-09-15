@@ -256,11 +256,8 @@ module ChapelArray {
   @chpldoc.nodoc
   config param capturedIteratorLowBound = defaultLowBound;
 
-  /* The traditional one-argument form of :proc:`.find()` on arrays
-     has been deprecated in favor of a new interface.  Compiling with
-     this set to `true` will opt into that new interface.  Note that
-     there is also a new two-argument form that is available
-     regardless of this setting. */
+  @chpldoc.nodoc
+  @deprecated("'useNewArrayFind' no longer has any role and is deprecated")
   config param useNewArrayFind = false;
 
 
@@ -717,7 +714,7 @@ module ChapelArray {
   pragma "distribution"
   pragma "ignore noinit"
   @chpldoc.nodoc
-  record _distribution {
+  record _distribution : writeSerializable, readDeserializable {
     var _pid:int;  // only used when privatized
     pragma "owned"
     var _instance; // generic, but an instance of a subclass of BaseDist
@@ -961,7 +958,7 @@ module ChapelArray {
   // the serialize routines to fire, when their where-clause permits.
   pragma "always RVF"
   /* The array type */
-  record _array {
+  record _array : writeSerializable, readDeserializable {
     var _pid:int;  // only used when privatized
     pragma "owned"
     pragma "alias scope from this"
@@ -1922,20 +1919,6 @@ module ChapelArray {
       }
     }
 
-    /* Return a tuple containing ``true`` and the index of the first
-       instance of ``val`` in the array, or if ``val`` is not found, a
-       tuple containing ``false`` and an unspecified value is returned.
-     */
-     @deprecated(notes="The tuple-returning version of '.find()' on arrays is deprecated; to opt into the new index-returning version, recompile with '-suseNewArrayFind'.  Also, note that there is a new two-argument '.find()' that may be preferable in some situations, and it requires no compiler flag to use.")
-     proc find(val: this.eltType): (bool, index(this.domain)) where !useNewArrayFind {
-      for i in this.domain {
-        if this[i] == val then return (true, i);
-      }
-      var arbInd: index(this.domain);
-      return (false, arbInd);
-    }
-
-
     /*
 
       Search an array for ``val``, returning whether or not it is
@@ -2227,6 +2210,7 @@ module ChapelArray {
 
   // How to cast arrays to strings
   @chpldoc.nodoc
+  @deprecated(notes="casting arrays to string is deprecated; please use 'try! \"%?\".format()' from IO.FormattedIO instead")
   operator :(x: [], type t:string) {
     import IO.FormattedIO.string;
     return try! "%?".format(x);

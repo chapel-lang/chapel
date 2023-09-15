@@ -29,6 +29,7 @@
 2 { fileTextQuery ("$CHPL_HOME/modules/internal/ChapelArray.chpl") 
 2 { fileTextQuery ("$CHPL_HOME/modules/internal/ChapelDistribution.chpl") 
 2 { fileTextQuery ("$CHPL_HOME/modules/internal/ChapelAutoLocalAccess.chpl") 
+2 { fileTextQuery ("$CHPL_HOME/modules/internal/ChapelIOSerialize.chpl") 
 2 { fileTextQuery ("$CHPL_HOME/modules/internal/ChapelHashing.chpl") 
 2 { fileTextQuery ("$CHPL_HOME/modules/internal/DefaultAssociative.chpl") 
 2 { fileTextQuery ("$CHPL_HOME/modules/internal/DefaultSparse.chpl") 

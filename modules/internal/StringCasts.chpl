@@ -42,7 +42,7 @@ module StringCasts {
     }
   }
 
-  operator :(x: string, type t:chpl_anybool) throws {
+  operator :(x: string, type t:bool) throws {
     var str = x.strip();
     if str.isEmpty() {
       throw new owned IllegalArgumentError("bad cast from empty string to bool");

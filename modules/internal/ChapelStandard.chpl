@@ -58,6 +58,7 @@ module ChapelStandard {
   public use ChapelArray;
   public use ChapelDistribution;
   public use ChapelAutoLocalAccess;
+  public use ChapelIOSerialize;
   public use ChapelIO as ChapelIO;
   public use ChapelHashing;
   public use DefaultAssociative;
