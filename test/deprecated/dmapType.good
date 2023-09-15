@@ -10,10 +10,10 @@ dmapType.chpl:28: warning: 'Replicated' is deprecated, please use 'replicatedDis
 dmapType.chpl:34: warning: 'Stencil' is deprecated, please use 'stencilDist' instead
 dmapType.chpl:38: warning: 'Stencil' is deprecated, please use 'stencilDist' instead
 dmapType.chpl:38: warning: 'Stencil' is deprecated, please use 'stencilDist' instead
-dmapType.chpl:51: warning: 'Private' is deprecated, please use 'privateDist' instead
 dmapType.chpl:54: warning: 'Private' is deprecated, please use 'privateDist' instead
-dmapType.chpl:58: warning: 'Private' is deprecated, please use 'privateDist' instead
-dmapType.chpl:58: warning: 'Private' is deprecated, please use 'privateDist' instead
+dmapType.chpl:57: warning: 'Private' is deprecated, please use 'privateDist' instead
+dmapType.chpl:61: warning: 'Private' is deprecated, please use 'privateDist' instead
+dmapType.chpl:61: warning: 'Private' is deprecated, please use 'privateDist' instead
 dmapType.chpl:4: warning: The use of 'dmap' is deprecated for this distribution; please replace 'new dmap(new <DistName>(<args>))' with 'new <DistName>(<args>)'
 dmapType.chpl:8: warning: The use of 'dmap' is deprecated for this distribution; please replace 'dmap(<DistName>(<args>))' with '<DistName>(<args>)'
 dmapType.chpl:14: warning: The use of 'dmap' is deprecated for this distribution; please replace 'new dmap(new <DistName>(<args>))' with 'new <DistName>(<args>)'
@@ -22,8 +22,8 @@ dmapType.chpl:24: warning: The use of 'dmap' is deprecated for this distribution
 dmapType.chpl:28: warning: The use of 'dmap' is deprecated for this distribution; please replace 'dmap(<DistName>(<args>))' with '<DistName>(<args>)'
 dmapType.chpl:34: warning: The use of 'dmap' is deprecated for this distribution; please replace 'new dmap(new <DistName>(<args>))' with 'new <DistName>(<args>)'
 dmapType.chpl:38: warning: The use of 'dmap' is deprecated for this distribution; please replace 'dmap(<DistName>(<args>))' with '<DistName>(<args>)'
-dmapType.chpl:54: warning: The use of 'dmap' is deprecated for this distribution; please replace 'new dmap(new <DistName>(<args>))' with 'new <DistName>(<args>)'
-dmapType.chpl:58: warning: The use of 'dmap' is deprecated for this distribution; please replace 'dmap(<DistName>(<args>))' with '<DistName>(<args>)'
+dmapType.chpl:57: warning: The use of 'dmap' is deprecated for this distribution; please replace 'new dmap(new <DistName>(<args>))' with 'new <DistName>(<args>)'
+dmapType.chpl:61: warning: The use of 'dmap' is deprecated for this distribution; please replace 'dmap(<DistName>(<args>))' with '<DistName>(<args>)'
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 blockDist(1,int(64),unmanaged DefaultDist)
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
