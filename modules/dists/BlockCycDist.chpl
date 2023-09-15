@@ -67,7 +67,7 @@ proc _ensureTuple(arg) {
 //
 /*
 
-This Block-Cyclic distribution maps maps blocks of indices to locales in a
+The ``blockCycDist`` distribution maps blocks of indices to locales in a
 round-robin pattern according to a given block size and start index.
 
 Formally, consider a Block-Cyclic distribution with:
@@ -116,7 +116,7 @@ to the ID of the locale to which it is mapped.
     var A: [D] int;
 
     forall a in A do
-      a = a.locale.id;
+      a = a.here.id;
 
     writeln(A);
 
@@ -136,7 +136,7 @@ When run on 6 locales, the output is:
 
 **Initializer Arguments**
 
-The ``blockCycDist`` class initializer is defined as follows:
+The ``blockCycDist`` initializer is defined as follows:
 
   .. code-block:: chapel
 

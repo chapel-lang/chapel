@@ -195,7 +195,7 @@ on Locales[0] {
 // dimension) specifying how large the chunks to be dealt out are.
 //
 const BlkCycSpace = Space dmapped blockCycDist(startIdx=Space.low,
-                                              blocksize=(2, 3));
+                                               blocksize=(2, 3));
 var BCA: [BlkCycSpace] int;
 
 forall bca in BCA do
