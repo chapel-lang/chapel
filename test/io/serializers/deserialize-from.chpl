@@ -1,7 +1,7 @@
 
 use IO;
 
-record R {
+record R : writeSerializable {
   var x : int;
 
   proc serialize(writer: fileWriter(?), ref serializer) {
@@ -13,7 +13,7 @@ record R {
   }
 }
 
-record G {
+record G : writeSerializable {
   var x;
 
   proc serialize(writer: fileWriter(?), ref serializer) {
@@ -26,7 +26,7 @@ record G {
   }
 }
 
-class C {
+class C : writeSerializable {
   var x : int;
 
   override proc serialize(writer: fileWriter(?), ref serializer) {

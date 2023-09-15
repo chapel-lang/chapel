@@ -1,0 +1,3 @@
+declareVariableGenericType.chpl:1: warning: please use 'domain(?)' for the type of a generic variable storing any domain
+{1..34}
+{1..34}

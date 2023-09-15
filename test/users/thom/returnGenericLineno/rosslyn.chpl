@@ -52,7 +52,7 @@ module Rosslyn
     }
 
 
-    class BenchmarkFactory
+    class BenchmarkFactory : writeSerializable
     {
         //abstract
         proc getInstance() : unmanaged Benchmark

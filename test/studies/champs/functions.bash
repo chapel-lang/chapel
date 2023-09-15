@@ -87,7 +87,7 @@ function test_run() {
   local nl=$2
 
   test_start "run $kind"
-  $CHPL_HOME/util/test/chpl_launchcmd.py ./bin/champs_${CHAMPS_VERSION}_$kind -nl $nl -f $CHAMPS_CFG_PATH/$kind.in 2>&1 >$kind.exec.out.tmp
+  $CHPL_TEST_LAUNCHCMD ./bin/champs_${CHAMPS_VERSION}_$kind -nl $nl -f $CHAMPS_CFG_PATH/$kind.in 2>&1 >$kind.exec.out.tmp
 
   local status=$?
   cat $kind.exec.out.tmp

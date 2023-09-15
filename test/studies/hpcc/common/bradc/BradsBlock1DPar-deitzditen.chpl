@@ -148,7 +148,7 @@ class LocBlock1DDist {
 //
 // The global domain class
 //
-class Block1DDom {
+class Block1DDom : writeSerializable {
   //
   // The index types of the global and local domain portions
   //
@@ -280,7 +280,7 @@ class Block1DDom {
 //
 // the local domain class
 //
-class LocBlock1DDom {
+class LocBlock1DDom : writeSerializable {
   //
   // The index types of the global and local domain portions
   //
@@ -354,7 +354,7 @@ class LocBlock1DDom {
 //
 // the global array class
 //
-class Block1DArr {
+class Block1DArr : writeSerializable {
   //
   // The index types of the global and local domain portions
   //
@@ -475,7 +475,7 @@ class Block1DArr {
 //
 // the local array class
 //
-class LocBlock1DArr {
+class LocBlock1DArr : writeSerializable {
   //
   // The index types of the global and local domain portions
   //

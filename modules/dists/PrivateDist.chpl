@@ -74,7 +74,7 @@ This distribution may perform unnecessary communication
 between locales.
 */
 
-record privateDist {
+record privateDist: writeSerializable {
   forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(unmanaged PrivateImpl);
 
   proc init() {
@@ -155,7 +155,7 @@ type Private = privateDist;
 
 
 @chpldoc.nodoc
-class PrivateImpl: BaseDist {
+class PrivateImpl: BaseDist, writeSerializable {
   override proc dsiNewRectangularDom(param rank: int, type idxType,
                                      param strides: strideKind, inds) {
     for i in inds do

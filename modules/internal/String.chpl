@@ -76,7 +76,7 @@ module String {
 
   pragma "plain old data"
   @chpldoc.nodoc
-  record byteIndex {
+  record byteIndex : writeSerializable {
     @chpldoc.nodoc
     var _bindex  : int;
 
@@ -101,7 +101,7 @@ module String {
 
   pragma "plain old data"
   @chpldoc.nodoc
-  record codepointIndex {
+  record codepointIndex : writeSerializable {
     @chpldoc.nodoc
     var _cpindex  : int;
 
@@ -927,7 +927,7 @@ module String {
   pragma "ignore noinit"
   pragma "no default functions" // avoid the default (read|write)This routines
   @chpldoc.nodoc
-  record _string {
+  record _string : writeSerializable {
     var buffLen: int = 0; // length of string in bytes
     var buffSize: int = 0; // size of the buffer we own
     var cachedNumCodepoints: int = 0;

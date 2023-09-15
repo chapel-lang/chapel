@@ -89,7 +89,7 @@ module Heap {
     }
   }
 
-  record heap {
+  record heap : writeSerializable {
 
     /* The type of the elements contained in this heap. */
     type eltType;

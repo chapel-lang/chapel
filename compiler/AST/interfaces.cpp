@@ -34,6 +34,10 @@
 
 InterfaceSymbol* gHashable = nullptr;
 InterfaceSymbol* gContextManager = nullptr;
+InterfaceSymbol* gWriteSerializable = nullptr;
+InterfaceSymbol* gReadDeserializable = nullptr;
+InterfaceSymbol* gInitDeserializable = nullptr;
+InterfaceSymbol* gSerializable = nullptr;
 
 static Symbol* isInterfaceFormalSymbol(Symbol* sym) {
   if (TypeSymbol* var = toTypeSymbol(sym))
@@ -74,6 +78,14 @@ DefExpr* InterfaceSymbol::buildDef(const char* name,
     gHashable = isym;
   } else if (gContextManager == nullptr && strcmp("contextManager", name) == 0) {
     gContextManager = isym;
+  } else if (gWriteSerializable == nullptr && strcmp("writeSerializable", name) == 0) {
+    gWriteSerializable = isym;
+  } else if (gReadDeserializable == nullptr && strcmp("readDeserializable", name) == 0) {
+    gReadDeserializable = isym;
+  } else if (gInitDeserializable == nullptr && strcmp("initDeserializable", name) == 0) {
+    gInitDeserializable = isym;
+  } else if (gSerializable == nullptr && strcmp("serializable", name) == 0) {
+    gSerializable = isym;
   }
 
   for_alist(formal, formals->argList) {

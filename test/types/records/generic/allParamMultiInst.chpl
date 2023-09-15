@@ -1,4 +1,4 @@
-record R {
+record R : writeSerializable {
   param x: int;
   param y: int;
 
@@ -7,7 +7,7 @@ record R {
   }
 }
 
-record S {
+record S : writeSerializable {
   var r: R(?);
   param z: int;
 

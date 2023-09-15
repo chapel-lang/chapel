@@ -683,7 +683,7 @@ proc bulkCommConvertCoordinate(ind, bView:domain, aView:domain)
   return result;
 }
 
-record chpl_PrivatizedDistHelper {
+record chpl_PrivatizedDistHelper : writeSerializable {
 //  type instanceType;
   var _pid:int;  // only used when privatized
   pragma "owned"

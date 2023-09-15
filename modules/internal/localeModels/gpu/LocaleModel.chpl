@@ -211,7 +211,7 @@ module LocaleModel {
     return execution_subloc;  // no info needed from full sublocale
   }
 
-  class GPULocale : AbstractLocaleModel {
+  class GPULocale : AbstractLocaleModel, writeSerializable {
     const sid: chpl_sublocID_t;
 
     override proc chpl_id() do return try! (parent._value:LocaleModel)._node_id; // top-level node id
@@ -376,7 +376,7 @@ module LocaleModel {
   // may overwrite this instance or any of its children to establish a more customized
   // representation of the system resources.
   //
-  class RootLocale : AbstractRootLocale {
+  class RootLocale : AbstractRootLocale, writeSerializable {
 
     const myLocaleSpace: domain(1) = {0..numLocales-1};
     pragma "unsafe"

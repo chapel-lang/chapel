@@ -294,7 +294,7 @@ operator =(ref a: blockCycDist(?), b: blockCycDist(?)) {
 type BlockCyclic = blockCycDist;
 
 
-class BlockCyclicImpl : BaseDist {
+class BlockCyclicImpl : BaseDist, writeSerializable {
   param rank: int;
   type idxType = int;
 
@@ -559,7 +559,7 @@ proc BlockCyclicImpl.dsiPrivatize(privatizeData) {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Local Distribution Class
 //
-class LocBlockCyclic {
+class LocBlockCyclic : writeSerializable {
   param rank: int;
   type idxType;
 
@@ -866,7 +866,7 @@ proc BlockCyclicDom.dsiGetDist() {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Local Domain Class
 //
-class LocBlockCyclicDom {
+class LocBlockCyclicDom : writeSerializable {
   param rank: int;
   type idxType;
   param strides: strideKind;
@@ -1230,7 +1230,7 @@ iter BlockCyclicDom.dsiLocalSubdomains(loc: locale) {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Local Array Class
 //
-class LocBlockCyclicArr {
+class LocBlockCyclicArr : writeSerializable {
   type eltType;
   param rank: int;
   type idxType;

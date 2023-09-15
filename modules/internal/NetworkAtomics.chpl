@@ -32,7 +32,7 @@ module NetworkAtomics {
 
   pragma "atomic type"
   pragma "ignore noinit"
-  record RAtomicBool {
+  record RAtomicBool : writeSerializable {
     proc type valType type { return bool; }
     proc valType type { return bool; }
 
@@ -149,7 +149,7 @@ module NetworkAtomics {
 
   pragma "atomic type"
   pragma "ignore noinit"
-  record RAtomicT {
+  record RAtomicT : writeSerializable {
     type valType;
     var _v: valType;
 

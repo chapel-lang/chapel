@@ -28,7 +28,7 @@ module DistributedMap {
   private use Aggregator;
 
   // TODO: document
-  record distributedMap {
+  record distributedMap : serializable {
     type keyType;
     type valType;
     @chpldoc.nodoc
@@ -68,7 +68,7 @@ module DistributedMap {
   }
 
   // TODO: document type, methods
-  class distributedMapImpl {
+  class distributedMapImpl : serializable {
     /* Type of map keys. */
     type keyType;
     /* Type of map values. */

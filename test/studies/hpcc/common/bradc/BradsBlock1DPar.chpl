@@ -21,7 +21,7 @@ enum IteratorType { leader, follower };
 //
 // The distribution class
 //
-class Block1DDist {
+class Block1DDist : writeSerializable {
 
   // GENERICS:
 
@@ -158,7 +158,7 @@ class Block1DDist {
 //
 // A per-locale local distribution class
 //
-class LocBlock1DDist {
+class LocBlock1DDist : writeSerializable {
 
   // GENERICS:
 
@@ -243,7 +243,7 @@ class LocBlock1DDist {
 //
 // The global domain class
 //
-class Block1DDom {
+class Block1DDom : writeSerializable {
 
   // GENERICS:
 
@@ -420,7 +420,7 @@ class Block1DDom {
 //
 // the local domain class
 //
-class LocBlock1DDom {
+class LocBlock1DDom : writeSerializable {
 
   // GENERICS:
 
@@ -511,7 +511,7 @@ class LocBlock1DDom {
 //
 // the global array class
 //
-class Block1DArr {
+class Block1DArr : writeSerializable {
 
   // GENERICS:
 
@@ -636,7 +636,7 @@ class Block1DArr {
 //
 // the local array class
 //
-class LocBlock1DArr {
+class LocBlock1DArr : writeSerializable {
 
   // GENERICS:
 

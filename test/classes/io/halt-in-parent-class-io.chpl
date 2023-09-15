@@ -1,4 +1,4 @@
-class parent {
+class parent : writeSerializable {
   var p: int;
   override proc serialize(writer, ref serializer) throws { halt("halt"); }
 }

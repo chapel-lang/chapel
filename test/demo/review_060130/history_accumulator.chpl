@@ -1,4 +1,4 @@
-record history_real {
+record history_real : writeSerializable {
   param size : int;
   var h : size*real;
   var f : real;

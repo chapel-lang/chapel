@@ -1,5 +1,5 @@
 module NewTypeMod {
-    record NewType {
+    record NewType : writeSerializable {
         var x: int;
 
         proc serialize(writer, ref serializer) throws {

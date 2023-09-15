@@ -1,6 +1,6 @@
 use IO;
 
-class mything {
+class mything : serializable {
   var x:int;
   proc init(x: int = 0) { this.x = x; }
   proc init(reader: fileReader(?), ref deserializer) {
@@ -16,7 +16,7 @@ class mything {
   }
 }
 
-class subthing : mything {
+class subthing : mything, serializable {
   var y:int;
   proc init(x: int = 0, y: int = 0) {
     super.init(x);

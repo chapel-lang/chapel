@@ -116,7 +116,7 @@ module SharedObject {
     This is currently implemented with task-safe reference counting.
   */
   pragma "managed pointer"
-  record _shared {
+  record _shared : writeSerializable, readDeserializable {
     type chpl_t;         // contained type (class type)
 
     // contained pointer (class type)
@@ -754,7 +754,7 @@ Weak pointers are implemented using task-safe reference counting.
 module WeakPointer {
   use Errors, Atomics, ChapelBase;
 
-  record weak {
+  record weak : writeSerializable {
     /* The shared class type referenced by this pointer */
     type classType;
 

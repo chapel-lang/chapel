@@ -52,7 +52,7 @@ record SimpleRecord {
   var y : real;
 }
 
-record CustomizedRecord {
+record CustomizedRecord : writeSerializable, initDeserializable {
   var x : int;
   var y : real;
 

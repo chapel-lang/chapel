@@ -1,6 +1,6 @@
 use IO;
 
-class mything {
+class mything : writeSerializable {
   var x:int;
   var y:int;
   override proc serialize(writer, ref serializer) throws {

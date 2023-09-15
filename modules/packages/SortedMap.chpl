@@ -86,7 +86,7 @@ module SortedMap {
     var val;
   }
 
-  record sortedMap {
+  record sortedMap : writeSerializable {
     /* Type of sortedMap keys. */
     type keyType;
     /* Type of sortedMap values. */

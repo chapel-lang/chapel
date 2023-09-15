@@ -394,7 +394,7 @@ class LocalDistributedWorkQueue {
   }
 }
 
-class PermutationMap {
+class PermutationMap : writeSerializable {
   type idxType;
   param rank = 2;
   var rowDom : domain(1);
