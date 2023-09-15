@@ -617,15 +617,14 @@ When no intent is specified for a formal argument, the *default
 intent* is applied. It is designed to take the most natural/least
 surprising action for the argument, based on its type. In practice,
 this is ``const`` for most types (as defined by
-:ref:`The_Const_Intent`) to avoid surprises for programmers coming
-from languages where everything is passed by ``in`` or ``ref`` intent
-by default. Exceptions are made for types where modification is considered part
-of their nature, such as types used for synchronization
-(like ``atomic`` or ``sync``).
+:ref:`The_Const_Intent`) to avoid surprises for programmers coming from
+languages where everything is passed by ``in`` or ``ref`` intent by default.
 
-For the following types, the default intent is not ``const``:
+Exceptions are made for types where modification is considered part of their nature.
+In particular, the the default intent for the following types is ``ref``:
 
-  * synchronization types (``atomic``, ``sync``) - the default intent is ``ref``
+  * ``atomic``
+  * ``sync``
 
 Default argument passing for tuples applies the default
 argument passing strategy to each tuple component as if it
