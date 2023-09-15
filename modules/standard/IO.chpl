@@ -3745,6 +3745,15 @@ record _internalIoChar : writeSerializable {
 }
 
 @chpldoc.nodoc
+inline operator :(x: _internalIoChar, type t:string) {
+  var csc: c_ptrConst(c_char) =  qio_encode_to_string(x.ch);
+  // The caller has responsibility for freeing the returned string.
+  try! {
+    return string.createAdoptingBuffer(csc);
+  }
+}
+
+@chpldoc.nodoc
 proc fileReader._getFp(): (bool, c_ptr(c_FILE)) {
   extern proc fdopen(fd: int(32), mode: c_ptrConst(c_char)): c_ptr(c_FILE);
 
