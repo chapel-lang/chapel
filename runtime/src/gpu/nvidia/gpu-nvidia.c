@@ -450,26 +450,20 @@ void chpl_gpu_impl_stream_destroy(void* stream) {
 }
 
 bool chpl_gpu_impl_stream_ready(void* stream) {
-  CUresult res = cuStreamQuery(stream);
-  if (res == CUDA_ERROR_NOT_INITIALIZED) {
-    // this happens only during application intiialization, and doesn't really
-    // matter
-    return true;
+  if (stream) {
+    CUresult res = cuStreamQuery(stream);
+    if (res == CUDA_ERROR_NOT_READY) {
+      return false;
+    }
+    CUDA_CALL(res);
   }
-  else if (res == CUDA_ERROR_NOT_READY) {
-    return false;
-  }
-  CUDA_CALL(res);
-
   return true;
 }
 
 void chpl_gpu_impl_stream_synchronize(void* stream) {
-  CUresult res = cuStreamSynchronize(stream);
-  if (res == CUDA_ERROR_NOT_INITIALIZED) {
-    return;
+  if (stream) {
+    CUDA_CALL(cuStreamSynchronize(stream));
   }
-  CUDA_CALL(res);
 }
 
 #endif // HAS_GPU_LOCALE

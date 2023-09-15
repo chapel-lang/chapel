@@ -469,25 +469,19 @@ void chpl_gpu_impl_stream_destroy(void* stream) {
 }
 
 bool chpl_gpu_impl_stream_ready(void* stream) {
-  hipError_t res = hipStreamQuery(stream);
-  if (res == hipErrorNotInitialized) {
-    // this happens only during application intiialization, and doesn't really
-    // matter
-    return true;
+  if (stream) {
+    hipError_t res = hipStreamQuery(stream);
+    if (res == hipErrorNotReady) {
+      return false;
+    }
+    ROCM_CALL(res);
   }
-  else if (res == hipErrorNotReady) {
-    return false;
-  }
-  ROCM_CALL(res);
-
   return true;
 }
 
 void chpl_gpu_impl_stream_synchronize(void* stream) {
-  hipError_t res = hipStreamSynchronize(stream);
-  if (res == hipErrorNotInitialized) {
-    return;
+  if (stream) {
+    ROCM_CALL(hipStreamSynchronize(stream));
   }
-  ROCM_CALL(res);
 }
 #endif // HAS_GPU_LOCALE
