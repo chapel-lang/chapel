@@ -8,7 +8,7 @@ record MyMapper {
   }
 }
 
-var newDist = hashedDist(idxType=real, mapper=new MyMapper());
+var newDist = new hashedDist(idxType=real, mapper=new MyMapper());
 
 var myMapper = proc(ind:real, targetLocs: Locales.type) {
                         const numlocs = targetLocs.domain.size;

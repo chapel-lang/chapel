@@ -121,14 +121,14 @@ record hashedDist : writeSerializable {
   type idxType;
   type mapperT;
 
-  forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(unmanaged HashedImpl(idxType, mapperT));
+  forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(unmanaged HashedImpl(idxType, _to_unmanaged(mapperT)));
 
   proc init(type idxType,
             mapper:?t = new DefaultMapper(),
             targetLocales: [] locale = Locales) {
     const value = new unmanaged HashedImpl(idxType, mapper, targetLocales);
     this.idxType = idxType;
-    this.mapperT = t;
+    this.mapperT = _to_unmanaged(t);
     this.chpl_distHelp = new chpl_PrivatizedDistHelper(
                           if _isPrivatized(value)
                             then _newPrivatizedClass(value)
@@ -138,7 +138,7 @@ record hashedDist : writeSerializable {
 
     proc init(_pid : int, _instance, _unowned : bool) {
       this.idxType = _instance.idxType;
-      this.mapperT = _instance.mapper.type;
+      this.mapperT = _to_unmanaged(_instance.mapper.type);
       this.chpl_distHelp = new chpl_PrivatizedDistHelper(_pid,
                                                          _instance,
                                                          _unowned);
@@ -146,7 +146,7 @@ record hashedDist : writeSerializable {
 
     proc init(value) {
       this.idxType = value.idxType;
-      this.mapperT = value.mapper.type;
+      this.mapperT = _to_unmanaged(value.mapper.type);
       this.chpl_distHelp = new chpl_PrivatizedDistHelper(
                              if _isPrivatized(value)
                                then _newPrivatizedClass(value)
