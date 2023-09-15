@@ -1,3 +1,2 @@
 # AtomicObjects fails with non-llvm
 CHPL_LLVM==none
-CHPL_TARGET_COMPILER!=llvm
