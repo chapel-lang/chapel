@@ -10377,7 +10377,7 @@ General Conversions
         // fields...
       }
 
-      var f = open("data.json"),
+      var f = open("data.txt"),
           r: R;
 
       // write an 'R' in Chapel Syntax format
