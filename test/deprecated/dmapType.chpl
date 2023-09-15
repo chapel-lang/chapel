@@ -1,4 +1,4 @@
-config var n = 10, addLeaks=false;
+config var n = 10, leaksAndBreaks=false;
 {
   use BlockDist;
   var Dist = new dmap(new Block({1..n}));
@@ -53,7 +53,7 @@ config var n = 10, addLeaks=false;
   proc foo(type t) { writeln("foo got ", t: string); }
   foo(Private);
 
-  if addLeaks {
+  if leaksAndBreaks {
     var Dist = new dmap(new Private());
     var Dom: domain(1) dmapped Dist;
     var A: [Dom] real;
@@ -70,6 +70,27 @@ config var n = 10, addLeaks=false;
   var A: [Dom] real;
   writeln(A);
   const Dist2: dmap(BlockCyclic(1)) = new BlockCyclic(1, 2);
+  writeln(Dist2.type:string);
+}
+
+{
+  use DimensionalDist2D, BlockDim;
+  var lpd = sqrt(numLocales):int;
+  var MyLocDom = {0..<lpd, 0..<lpd};
+  var MyLocs: [MyLocDom] locale = reshape(Locales, MyLocDom);
+  var dimA = new BlockDim(numLocales=lpd, 1..n);
+  var dimB = new BlockDim(numLocales=lpd, 1..n);
+  var Dist = if leaksAndBreaks
+               then new dmap(new DimensionalDist2D(MyLocs, dimA, dimB))
+               else new DimensionalDist2D(MyLocs, dimA, dimB);
+  var Dom = {1..n, 1..n} dmapped Dist;
+  var A: [Dom] real;
+  writeln(A);
+
+  var dim1 = new BlockDim(numLocales=lpd, 1..n);
+  var dim2 = new BlockDim(numLocales=lpd, 1..n);
+  const Dist2: dmap(DimensionalDist2D(MyLocs.type, dim1.type, dim2.type, int))
+             = new DimensionalDist2D(MyLocs, dim1, dim2);
   writeln(Dist2.type:string);
 }
 

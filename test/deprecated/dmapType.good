@@ -17,6 +17,10 @@ dmapType.chpl:61: warning: 'Private' is deprecated, please use 'privateDist' ins
 dmapType.chpl:68: warning: 'BlockCyclic' is deprecated, please use 'blockCycDist' instead
 dmapType.chpl:72: warning: 'BlockCyclic' is deprecated, please use 'blockCycDist' instead
 dmapType.chpl:72: warning: 'BlockCyclic' is deprecated, please use 'blockCycDist' instead
+dmapType.chpl:84: warning: 'DimensionalDist2D' is deprecated, please use 'dimensionalDist2D' instead
+dmapType.chpl:85: warning: 'DimensionalDist2D' is deprecated, please use 'dimensionalDist2D' instead
+dmapType.chpl:93: warning: 'DimensionalDist2D' is deprecated, please use 'dimensionalDist2D' instead
+dmapType.chpl:92: warning: 'DimensionalDist2D' is deprecated, please use 'dimensionalDist2D' instead
 dmapType.chpl:4: warning: The use of 'dmap' is deprecated for this distribution; please replace 'new dmap(new <DistName>(<args>))' with 'new <DistName>(<args>)'
 dmapType.chpl:8: warning: The use of 'dmap' is deprecated for this distribution; please replace 'dmap(<DistName>(<args>))' with '<DistName>(<args>)'
 dmapType.chpl:14: warning: The use of 'dmap' is deprecated for this distribution; please replace 'new dmap(new <DistName>(<args>))' with 'new <DistName>(<args>)'
@@ -29,6 +33,8 @@ dmapType.chpl:57: warning: The use of 'dmap' is deprecated for this distribution
 dmapType.chpl:61: warning: The use of 'dmap' is deprecated for this distribution; please replace 'dmap(<DistName>(<args>))' with '<DistName>(<args>)'
 dmapType.chpl:68: warning: The use of 'dmap' is deprecated for this distribution; please replace 'new dmap(new <DistName>(<args>))' with 'new <DistName>(<args>)'
 dmapType.chpl:72: warning: The use of 'dmap' is deprecated for this distribution; please replace 'dmap(<DistName>(<args>))' with '<DistName>(<args>)'
+dmapType.chpl:84: warning: The use of 'dmap' is deprecated for this distribution; please replace 'new dmap(new <DistName>(<args>))' with 'new <DistName>(<args>)'
+dmapType.chpl:92: warning: The use of 'dmap' is deprecated for this distribution; please replace 'dmap(<DistName>(<args>))' with '<DistName>(<args>)'
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 blockDist(1,int(64),unmanaged DefaultDist)
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
@@ -40,3 +46,14 @@ stencilDist(1,int(64),false)
 foo got privateDist
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 blockCycDist(1,int(64))
+0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+dimensionalDist2D([domain(2,int(64),one)] locale,BlockDim(int(64)),BlockDim(int(64)),int(64))

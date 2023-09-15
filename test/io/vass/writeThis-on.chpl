@@ -23,7 +23,7 @@ const dmp = newDimensionalDist2D(dim1, dim2, Locales);
 
 const ix = (1, 1);
 const D = {1..1, 1..1};
-const R = D dmapped new dmap(dmp);
+const R = D dmapped dmp;
 var A: [R] int;
 
 writeln("initializing");
