@@ -360,10 +360,12 @@ prototype module DistributedFFT {
   */
   proc copy(ref dst, const ref src, numBytes: int) {
     use Communication;
+    const dstLocaleId = dst.locale.id;
+    const srcLocaleId = src.locale.id;
     if dst.locale.id == here.id {
-      get(c_ptrTo(dst), c_ptrToConst(src), src.locale.id, numBytes.safeCast(c_size_t));
+      get(c_ptrTo(dst), c_ptrToConst(src), srcLocaleId, numBytes.safeCast(c_size_t));
     } else if src.locale.id == here.id {
-      put(c_ptrTo(dst), c_ptrToConst(src), dst.locale.id, numBytes.safeCast(c_size_t));
+      put(c_ptrTo(dst), c_ptrToConst(src), dstLocaleId, numBytes.safeCast(c_size_t));
     } else {
       halt("Remote src and remote dst not yet supported");
     }
