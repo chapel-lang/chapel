@@ -33,8 +33,8 @@ proc createDom(space) {
       return space dmapped stencilDist(space, fluff=(1,1));
     }
   }
-  else if distType == Hashed {
-    var D: domain(int) dmapped Hashed(idxType=int);
+  else if distType == hashedDist {
+    var D: domain(int) dmapped hashedDist(idxType=int);
     for i in space {
       D += i;
     }

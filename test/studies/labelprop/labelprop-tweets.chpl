@@ -84,7 +84,7 @@ proc main(args:[] string) {
   // domain assignment in Hashed
   // Pairs is for collecting twitter  user ID to user ID mentions
   if distributed {
-    var Pairs: domain( (int, int) ) dmapped Hashed(idxType=(int, int));
+    var Pairs: domain( (int, int) ) dmapped hashedDist(idxType=(int, int));
     run(todo, Pairs);
   } else {
     var Pairs: domain( (int, int) );
