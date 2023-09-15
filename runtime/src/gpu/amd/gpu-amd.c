@@ -484,8 +484,6 @@ bool chpl_gpu_impl_stream_ready(void* stream) {
 }
 
 void chpl_gpu_impl_stream_synchronize(void* stream) {
-  // TODO do we want to call hipStreamQuery and chpl_task_yield if the stream is
-  // not ready?
   hipError_t res = hipStreamSynchronize(stream);
   if (res == hipErrorNotInitialized) {
     return;
