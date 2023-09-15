@@ -6734,8 +6734,11 @@ proc fileReader._readLiteral(literal:string,
   If the string is not matched exactly, then the fileReader's offset is
   unchanged. In such cases a :class:`OS.BadFormatError` will be thrown, unless
   the end of the fileReader is encountered in which case an :class:`OS.EofError`
-  will be thrown. By default this method will ignore leading whitespace when
-  attempting to read a literal.
+  will be thrown.
+
+  By default this method will ignore leading whitespace in the file when
+  attempting to read a literal (leading whitespace in the ``literal`` itself
+  is still matched against whitespace in the file).
 
   :arg literal: the string to be matched.
   :arg ignoreWhitespace: determines whether leading whitespace is ignored.
@@ -6757,8 +6760,11 @@ proc fileReader.readLiteral(literal:string,
   If the bytes are not matched exactly, then the fileReader's offset is
   unchanged. In such cases a :class:`OS.BadFormatError` will be thrown, unless
   the end of the ``fileReader`` is encountered in which case an
-  :class:`OS.EofError` will be thrown. By default this method will ignore
-  leading whitespace when attempting to read a literal.
+  :class:`OS.EofError` will be thrown.
+
+  By default this method will ignore leading whitespace in the file when
+  attempting to read a literal (leading whitespace in the ``literal`` itself
+  is still matched against whitespace in the file).
 
   :arg literal: the bytes to be matched.
   :arg ignoreWhitespace: determines whether leading whitespace is ignored.
@@ -6840,8 +6846,9 @@ proc fileReader._matchLiteralCommon(literal, ignore : bool) : bool throws {
   :proc:`fileReader.readLiteral` would throw a :class:`OS.BadFormatError` or an
   :class:`OS.EofError`.
 
-  By default this method will ignore leading whitespace when attempting to
-  read a literal.
+  By default this method will ignore leading whitespace in the file when
+  attempting to read a literal (leading whitespace in the ``literal`` itself
+  is still matched against whitespace in the file).
 
   :arg literal: the string to be matched.
   :arg ignoreWhitespace: determines whether leading whitespace is ignored.
@@ -6865,8 +6872,9 @@ proc fileReader.matchLiteral(literal:string,
   :proc:`fileReader.readLiteral` would throw a :class:`OS.BadFormatError` or an
   :class:`OS.EofError`.
 
-  By default this method will ignore leading whitespace when attempting to
-  read a literal.
+  By default this method will ignore leading whitespace in the file when
+  attempting to read a literal (leading whitespace in the ``literal`` itself
+  is still matched against whitespace in the file).
 
   :arg literal: the bytes to be matched.
   :arg ignoreWhitespace: determines whether leading whitespace is ignored.
