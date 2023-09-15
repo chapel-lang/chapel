@@ -94,3 +94,12 @@ config var n = 10, leaksAndBreaks=false;
   writeln(Dist2.type:string);
 }
 
+{
+  use HashedDist;
+  var Dom: domain(int) dmapped new dmap(new Hashed(idxType=int));;
+  Dom += 1;
+  var A: [Dom] real;
+  writeln(A);
+  const Dist2: dmap(Hashed(int, DefaultMapper)) = new Hashed(int);
+  writeln(Dist2.type:string);
+}

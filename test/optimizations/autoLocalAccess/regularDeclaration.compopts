@@ -2,4 +2,4 @@
 -sdistType=blockCycDist --report-auto-local-access -M$CHPL_HOME/test/optimizations/autoLocalAccess/
 -sdistType=cyclicDist --report-auto-local-access -M$CHPL_HOME/test/optimizations/autoLocalAccess/
 -sdistType=stencilDist --report-auto-local-access -M$CHPL_HOME/test/optimizations/autoLocalAccess/
--sdistType=Hashed --report-auto-local-access -M$CHPL_HOME/test/optimizations/autoLocalAccess/
+-sdistType=hashedDist --report-auto-local-access -M$CHPL_HOME/test/optimizations/autoLocalAccess/
