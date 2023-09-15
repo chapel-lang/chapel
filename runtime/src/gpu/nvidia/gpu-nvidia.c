@@ -248,10 +248,13 @@ static void chpl_gpu_launch_kernel_help(int ln,
 
   CHPL_GPU_DEBUG("cuLaunchKernel returned %s\n", name);
 
+#ifdef CHPL_GPU_ENABLE_PROFILE
+  chpl_gpu_impl_stream_synchronize(stream);
+#endif
+  CHPL_GPU_STOP_TIMER(kernel_time);
+
   chpl_task_yield();
 
-  // TODO: this is not a proper kernel_time now. What to do?
-  CHPL_GPU_STOP_TIMER(kernel_time);
   CHPL_GPU_START_TIMER(teardown_time);
 
   // free GPU memory allocated for kernel parameters
