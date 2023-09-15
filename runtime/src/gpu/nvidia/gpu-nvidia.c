@@ -437,6 +437,10 @@ void chpl_gpu_impl_set_peer_access(int dev1, int dev2, bool enable) {
   }
 }
 
+void chpl_gpu_impl_synchronize(void) {
+  CUDA_CALL(cuCtxSynchronize());
+}
+
 void* chpl_gpu_impl_stream_create(void) {
   CUstream stream;
   CUDA_CALL(cuStreamCreate(&stream, CU_STREAM_DEFAULT));

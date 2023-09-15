@@ -242,10 +242,14 @@ inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
                               stream,
                               nargs, args);
 
+#ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
   if (chpl_gpu_sync_with_host) {
     CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
     wait_stream(stream);
   }
+#else
+  chpl_gpu_impl_synchronize();
+#endif
 
   va_end(args);
 
@@ -291,10 +295,14 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
                                    stream,
                                    nargs, args);
 
+#ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
   if (chpl_gpu_sync_with_host) {
     CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
     wait_stream(stream);
   }
+#else
+  chpl_gpu_impl_synchronize();
+#endif
 
   va_end(args);
 
