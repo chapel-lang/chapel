@@ -94,7 +94,7 @@ static void chpl_gpu_impl_set_globals(c_sublocid_t dev_id, CUmodule module) {
   size_t glob_size;
   CUDA_CALL(cuModuleGetGlobal(&ptr, &glob_size, module, "chpl_nodeID"));
   assert(glob_size == sizeof(c_nodeid_t));
-  chpl_gpu_impl_copy_host_to_device((void*)ptr, &chpl_nodeID, glob_size);
+  chpl_gpu_impl_copy_host_to_device((void*)ptr, &chpl_nodeID, glob_size, NULL);
 }
 
 void chpl_gpu_impl_use_device(c_sublocid_t dev_id) {
@@ -137,6 +137,10 @@ void chpl_gpu_impl_init(int* num_devices) {
   }
 }
 
+bool chpl_gpu_impl_stream_supported(void) {
+  return true;
+}
+
 bool chpl_gpu_impl_is_device_ptr(const void* ptr) {
   return chpl_gpu_common_is_device_ptr(ptr);
 }
@@ -173,6 +177,7 @@ static void chpl_gpu_launch_kernel_help(int ln,
                                         int blk_dim_x,
                                         int blk_dim_y,
                                         int blk_dim_z,
+                                        void* stream,
                                         int nargs,
                                         va_list args) {
   CHPL_GPU_START_TIMER(load_time);
@@ -210,12 +215,14 @@ static void chpl_gpu_launch_kernel_help(int ln,
       // TODO this allocation needs to use `chpl_mem_alloc` with a proper desc
       kernel_params[i] = chpl_malloc(1*sizeof(CUdeviceptr));
 
+      // TODO this doesn't work on EX, why?
+      // *kernel_params[i] = chpl_gpu_impl_mem_array_alloc(cur_arg_size, stream);
       *kernel_params[i] = chpl_gpu_mem_alloc(cur_arg_size,
                                              CHPL_RT_MD_GPU_KERNEL_ARG,
                                              ln, fn);
 
       chpl_gpu_impl_copy_host_to_device(*kernel_params[i], cur_arg,
-                                        cur_arg_size);
+                                        cur_arg_size, stream);
 
       CHPL_GPU_DEBUG("\tKernel parameter %d: %p (device ptr)\n",
                    i, *kernel_params[i]);
@@ -234,17 +241,20 @@ static void chpl_gpu_launch_kernel_help(int ln,
   CUDA_CALL(cuLaunchKernel((CUfunction)function,
                            grd_dim_x, grd_dim_y, grd_dim_z,
                            blk_dim_x, blk_dim_y, blk_dim_z,
-                           0,  // shared memory in bytes
-                           0,  // stream ID
+                           0,       // shared memory in bytes
+                           (CUstream)stream,  // stream ID
                            (void**)kernel_params,
                            NULL));  // extra options
 
   CHPL_GPU_DEBUG("cuLaunchKernel returned %s\n", name);
 
-  CUDA_CALL(cudaDeviceSynchronize());
-
-  CHPL_GPU_DEBUG("Synchronization complete %s\n", name);
+#ifdef CHPL_GPU_ENABLE_PROFILE
+  chpl_gpu_impl_stream_synchronize(stream);
+#endif
   CHPL_GPU_STOP_TIMER(kernel_time);
+
+  chpl_task_yield();
+
   CHPL_GPU_START_TIMER(teardown_time);
 
   // free GPU memory allocated for kernel parameters
@@ -273,11 +283,13 @@ inline void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
                                         int blk_dim_x,
                                         int blk_dim_y,
                                         int blk_dim_z,
+                                        void* stream,
                                         int nargs, va_list args) {
   chpl_gpu_launch_kernel_help(ln, fn,
                               name,
                               grd_dim_x, grd_dim_y, grd_dim_z,
                               blk_dim_x, blk_dim_y, blk_dim_z,
+                              stream,
                               nargs, args);
 }
 
@@ -285,6 +297,7 @@ inline void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
                                              const char* name,
                                              int64_t num_threads,
                                              int blk_dim,
+                                             void* stream,
                                              int nargs,
                                              va_list args) {
   int grd_dim = (num_threads+blk_dim-1)/blk_dim;
@@ -293,33 +306,40 @@ inline void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
                               name,
                               grd_dim, 1, 1,
                               blk_dim, 1, 1,
+                              stream,
                               nargs, args);
 }
 
-void* chpl_gpu_impl_memset(void* addr, const uint8_t val, size_t n) {
+void* chpl_gpu_impl_memset(void* addr, const uint8_t val, size_t n,
+                           void* stream) {
   assert(chpl_gpu_is_device_ptr(addr));
 
-  CUDA_CALL(cuMemsetD8((CUdeviceptr)addr, (unsigned int)val, n));
+  CUDA_CALL(cuMemsetD8Async((CUdeviceptr)addr, (unsigned int)val, n,
+                            (CUstream)stream));
 
   return addr;
 }
 
-void chpl_gpu_impl_copy_device_to_host(void* dst, const void* src, size_t n) {
+void chpl_gpu_impl_copy_device_to_host(void* dst, const void* src, size_t n,
+                                       void* stream) {
   assert(chpl_gpu_is_device_ptr(src));
 
-  CUDA_CALL(cuMemcpyDtoH(dst, (CUdeviceptr)src, n));
+  CUDA_CALL(cuMemcpyDtoHAsync(dst, (CUdeviceptr)src, n, (CUstream)stream));
 }
 
-void chpl_gpu_impl_copy_host_to_device(void* dst, const void* src, size_t n) {
+void chpl_gpu_impl_copy_host_to_device(void* dst, const void* src, size_t n,
+                                       void* stream) {
   assert(chpl_gpu_is_device_ptr(dst));
 
-  CUDA_CALL(cuMemcpyHtoD((CUdeviceptr)dst, src, n));
+  CUDA_CALL(cuMemcpyHtoDAsync((CUdeviceptr)dst, src, n, (CUstream)stream));
 }
 
-void chpl_gpu_impl_copy_device_to_device(void* dst, const void* src, size_t n) {
+void chpl_gpu_impl_copy_device_to_device(void* dst, const void* src, size_t n,
+                                         void* stream) {
   assert(chpl_gpu_is_device_ptr(dst) && chpl_gpu_is_device_ptr(src));
 
-  CUDA_CALL(cuMemcpyDtoD((CUdeviceptr)dst, (CUdeviceptr)src, n));
+  CUDA_CALL(cuMemcpyDtoDAsync((CUdeviceptr)dst, (CUdeviceptr)src, n,
+                              (CUstream)stream))
 }
 
 
@@ -341,9 +361,9 @@ void* chpl_gpu_impl_mem_array_alloc(size_t size) {
   CUdeviceptr ptr = 0;
 
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
-    CUDA_CALL(cuMemAlloc(&ptr, size));
+  CUDA_CALL(cuMemAlloc(&ptr, size));
 #else
-    CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));
+  CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));
 #endif
 
   return (void*)ptr;
@@ -371,8 +391,11 @@ void chpl_gpu_impl_mem_free(void* memAlloc) {
       CUDA_CALL(cuMemFreeHost(memAlloc));
     }
     else {
-#endif
+      CUDA_CALL(cuMemFree((CUdeviceptr)memAlloc));
+#else
     CUDA_CALL(cuMemFree((CUdeviceptr)memAlloc));
+#endif
+
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
     }
 #endif
@@ -411,6 +434,39 @@ void chpl_gpu_impl_set_peer_access(int dev1, int dev2, bool enable) {
     CUDA_CALL(cuCtxEnablePeerAccess(chpl_gpu_primary_ctx[dev2], 0));
   } else {
     CUDA_CALL(cuCtxDisablePeerAccess(chpl_gpu_primary_ctx[dev2]));
+  }
+}
+
+void chpl_gpu_impl_synchronize(void) {
+  CUDA_CALL(cuCtxSynchronize());
+}
+
+void* chpl_gpu_impl_stream_create(void) {
+  CUstream stream;
+  CUDA_CALL(cuStreamCreate(&stream, CU_STREAM_DEFAULT));
+  return (void*) stream;
+}
+
+void chpl_gpu_impl_stream_destroy(void* stream) {
+  if (stream) {
+    CUDA_CALL(cuStreamDestroy((CUstream)stream));
+  }
+}
+
+bool chpl_gpu_impl_stream_ready(void* stream) {
+  if (stream) {
+    CUresult res = cuStreamQuery(stream);
+    if (res == CUDA_ERROR_NOT_READY) {
+      return false;
+    }
+    CUDA_CALL(res);
+  }
+  return true;
+}
+
+void chpl_gpu_impl_stream_synchronize(void* stream) {
+  if (stream) {
+    CUDA_CALL(cuStreamSynchronize(stream));
   }
 }
 

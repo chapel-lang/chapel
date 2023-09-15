@@ -55,6 +55,7 @@ inline void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
                                         int blk_dim_x,
                                         int blk_dim_y,
                                         int blk_dim_z,
+                                        void* stream,
                                         int nargs, va_list args) {
 }
 
@@ -62,23 +63,28 @@ inline void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
                                              const char* name,
                                              int64_t num_threads,
                                              int blk_dim,
+                                             void* stream,
                                              int nargs,
                                              va_list args) {
 }
 
-void* chpl_gpu_impl_memset(void* addr, const uint8_t val, size_t n) {
+void* chpl_gpu_impl_memset(void* addr, const uint8_t val, size_t n,
+                           void* stream) {
   return memset(addr, val, n);
 }
 
-void chpl_gpu_impl_copy_device_to_host(void* dst, const void* src, size_t n) {
+void chpl_gpu_impl_copy_device_to_host(void* dst, const void* src, size_t n,
+                                       void* stream) {
   chpl_memcpy(dst, src, n);
 }
 
-void chpl_gpu_impl_copy_host_to_device(void* dst, const void* src, size_t n) {
+void chpl_gpu_impl_copy_host_to_device(void* dst, const void* src, size_t n,
+                                       void* stream) {
   chpl_memcpy(dst, src, n);
 }
 
-void chpl_gpu_impl_copy_device_to_device(void* dst, const void* src, size_t n) {
+void chpl_gpu_impl_copy_device_to_device(void* dst, const void* src, size_t n,
+                                         void* stream) {
   chpl_memcpy(dst, src, n);
 }
 
@@ -128,6 +134,27 @@ void chpl_gpu_impl_set_peer_access(int dev1, int dev2, bool enable) {
 }
 
 void chpl_gpu_impl_use_device(c_sublocid_t dev_id) {
+}
+
+void chpl_gpu_impl_synchronize(void) {
+}
+
+bool chpl_gpu_impl_stream_supported(void) {
+  return false;
+}
+
+void* chpl_gpu_impl_stream_create(void) {
+  return NULL;
+}
+
+void chpl_gpu_impl_stream_destroy(void* stream) {
+}
+
+bool chpl_gpu_impl_stream_ready(void* stream) {
+  return true;
+}
+
+void chpl_gpu_impl_stream_synchronize(void* stream) {
 }
 
 #endif // HAS_GPU_LOCALE

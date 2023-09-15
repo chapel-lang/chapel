@@ -24,8 +24,12 @@
 bool chpl_gpu_debug = false;
 bool chpl_gpu_no_cpu_mode_warning = false;
 int chpl_gpu_num_devices = -1;
+bool chpl_gpu_sync_with_host = true;
+bool chpl_gpu_use_stream_per_task = true;
 
 #ifdef HAS_GPU_LOCALE
+
+// #define CHPL_GPU_ENABLE_PROFILE
 
 #include "chplrt.h"
 #include "chpl-gpu.h"
@@ -78,6 +82,109 @@ void chpl_gpu_init(void) {
   }
 }
 
+// With very limited and artificial benchmarking, we observed that yielding
+// while waiting for a stream to finish actually hurts performance. So,
+// currently, this is hard-wired for `false`. As we explore overlap patterns
+// more, we might want to change it. I expect a begin-based parallelism where
+// multiple tasks are likely to be bunched up in a core, we might prefer this
+// yield.
+static bool yield_in_stream_sync = false;
+
+static inline void wait_stream(void* stream) {
+  if (yield_in_stream_sync) {
+    while (!chpl_gpu_impl_stream_ready(stream)) {
+      chpl_task_yield();
+    }
+  }
+  chpl_gpu_impl_stream_synchronize(stream);
+}
+
+static inline bool has_stream_per_task(void) {
+  return chpl_gpu_use_stream_per_task && chpl_gpu_impl_stream_supported();
+}
+
+static chpl_gpu_taskPrvData_t* get_gpu_task_private_data(void) {
+  if (!has_stream_per_task()) return NULL;
+
+  chpl_task_infoRuntime_t* infoRuntime = chpl_task_getInfoRuntime();
+  if (infoRuntime != NULL) return &infoRuntime->gpu_data;
+  return NULL;
+}
+
+void chpl_gpu_task_end(void) {
+  if (!has_stream_per_task()) return;
+
+  chpl_gpu_taskPrvData_t* prvData = get_gpu_task_private_data();
+  assert(prvData);
+
+  if (prvData->streams != NULL) {
+    int i;
+    for (i=0 ; i<chpl_gpu_num_devices ; i++) {
+      if (prvData->streams[i] != NULL) {
+        CHPL_GPU_DEBUG("Destroying stream %p (subloc %d)\n",
+                       prvData->streams[i], i);
+        wait_stream(prvData->streams[i]);
+        chpl_gpu_impl_stream_destroy(prvData->streams[i]);
+        prvData->streams[i] = NULL;
+      }
+    }
+  }
+
+}
+
+void chpl_gpu_task_fence(void) {
+  if (!has_stream_per_task()) return;
+
+  int dev = chpl_task_getRequestedSubloc();
+  if (dev<0) {
+    return;
+  }
+
+  chpl_gpu_taskPrvData_t* prvData = get_gpu_task_private_data();
+  assert(prvData);
+
+  if (prvData->streams != NULL) {
+    int i;
+    for (i=0 ; i<chpl_gpu_num_devices ; i++) {
+      if (prvData->streams[i] != NULL) {
+        CHPL_GPU_DEBUG("Synchronizing stream %p (subloc %d)\n", prvData->streams[i], i);
+        wait_stream(prvData->streams[i]);
+      }
+    }
+  }
+}
+
+static void* get_stream(int dev) {
+  if (!has_stream_per_task()) return NULL;
+
+  CHPL_GPU_START_TIMER(stream_time);
+
+  // assumes that device has been set correctly with chpl_gpu_impl_use_device
+  chpl_gpu_taskPrvData_t* prvData = get_gpu_task_private_data();
+
+  assert(prvData);
+
+  if (prvData->streams == NULL) {
+    CHPL_GPU_DEBUG("here %p\n", prvData);
+    CHPL_GPU_DEBUG("allocating stream array (subloc %d)\n", dev);
+
+    prvData->streams = chpl_mem_calloc(chpl_gpu_num_devices, sizeof(void*),
+                                       CHPL_RT_MD_GPU_UTIL, 0, 0);
+  }
+  void** stream = &(prvData->streams[dev]);
+  if (*stream == NULL) {
+    *stream = chpl_gpu_impl_stream_create();
+    CHPL_GPU_DEBUG("Stream created: %p (subloc %d)\n", *stream, dev);
+  }
+
+  CHPL_GPU_STOP_TIMER(stream_time);
+  CHPL_GPU_PRINT_TIMERS("Stream obtained in %.1Lf us\n", stream_time*1000);
+
+  CHPL_GPU_DEBUG("Using stream: %p (subloc %d)\n", *stream, dev);
+
+  return *stream;
+}
+
 void chpl_gpu_support_module_finished_initializing(void) {
   // we can't use `CHPL_GPU_DEBUG` before the support module is finished
   // initializing. This call back is used to signal the runtime that that module
@@ -92,6 +199,11 @@ void chpl_gpu_support_module_finished_initializing(void) {
     CHPL_GPU_DEBUG("    array data: unified memory\n");
     CHPL_GPU_DEBUG("         other: unified memory\n");
   #endif
+
+  CHPL_GPU_DEBUG("  Stream per task: %s\n", has_stream_per_task() ? "enabled" :
+                                                                    "disabled");
+  CHPL_GPU_DEBUG("  Always sync with host: %s\n",
+                 chpl_gpu_sync_with_host ? "enabled" : "disabled");
 }
 
 inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
@@ -99,6 +211,11 @@ inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
                                    int grd_dim_x, int grd_dim_y, int grd_dim_z,
                                    int blk_dim_x, int blk_dim_y, int blk_dim_z,
                                    int nargs, ...) {
+
+  int dev = chpl_task_getRequestedSubloc();
+  chpl_gpu_impl_use_device(dev);
+  void* stream = get_stream(dev);
+
   CHPL_GPU_DEBUG("Kernel launcher called. (subloc %d)\n"
                  "\tLocation: %s:%d\n"
                  "\tKernel: %s\n"
@@ -122,7 +239,18 @@ inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
                               name,
                               grd_dim_x, grd_dim_y, grd_dim_z,
                               blk_dim_x, blk_dim_y, blk_dim_z,
+                              stream,
                               nargs, args);
+
+#ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
+  if (chpl_gpu_sync_with_host) {
+    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
+    wait_stream(stream);
+  }
+#else
+  chpl_gpu_impl_synchronize();
+#endif
+
   va_end(args);
 
   CHPL_GPU_DEBUG("Kernel launcher returning. (subloc %d)\n"
@@ -136,19 +264,23 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
                                         int64_t num_threads, int blk_dim, int nargs,
                                         ...) {
 
+  int dev = chpl_task_getRequestedSubloc();
+  chpl_gpu_impl_use_device(dev);
+  void* stream = get_stream(dev);
+
   CHPL_GPU_DEBUG("Kernel launcher called. (subloc %d)\n"
                  "\tLocation: %s:%d\n"
                  "\tKernel: %s\n"
+                 "\tStream: %p\n"
                  "\tNumArgs: %d\n"
                  "\tNumThreads: %lld\n",
                  chpl_task_getRequestedSubloc(),
                  chpl_lookupFilename(fn),
                  ln,
                  name,
+                 stream,
                  nargs,
                  num_threads);
-
-  chpl_gpu_impl_use_device(chpl_task_getRequestedSubloc());
 
   va_list args;
   va_start(args, nargs);
@@ -160,7 +292,18 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
   chpl_gpu_impl_launch_kernel_flat(ln, fn,
                                    name,
                                    num_threads, blk_dim,
+                                   stream,
                                    nargs, args);
+
+#ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
+  if (chpl_gpu_sync_with_host) {
+    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
+    wait_stream(stream);
+  }
+#else
+  chpl_gpu_impl_synchronize();
+#endif
+
   va_end(args);
 
   CHPL_GPU_DEBUG("Kernel launcher returning. (subloc %d)\n"
@@ -286,8 +429,15 @@ void chpl_gpu_memcpy(c_sublocid_t dst_subloc, void* dst,
 void* chpl_gpu_memset(void* addr, const uint8_t val, size_t n) {
   CHPL_GPU_DEBUG("Doing GPU memset of %zu bytes from %p. Val=%d\n\n", n, addr,
                  val);
+  int dev = chpl_task_getRequestedSubloc();
+  chpl_gpu_impl_use_device(dev);
+  void* stream = get_stream(dev);
 
-  void* ret = chpl_gpu_impl_memset(addr, val, n);
+  void* ret = chpl_gpu_impl_memset(addr, val, n, stream);
+  if (chpl_gpu_sync_with_host) {
+    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
+    wait_stream(stream);
+  }
 
   CHPL_GPU_DEBUG("chpl_gpu_memset successful\n");
   return ret;
@@ -299,7 +449,7 @@ void chpl_gpu_copy_device_to_device(c_sublocid_t dst_dev, void* dst,
                                     int32_t fn) {
   assert(chpl_gpu_is_device_ptr(src));
 
-  CHPL_GPU_DEBUG("Copying %zu bytes from device to host\n", n);
+  CHPL_GPU_DEBUG("Copying %zu bytes from device to device\n", n);
 
   chpl_gpu_impl_use_device(dst_dev);
 
@@ -307,7 +457,16 @@ void chpl_gpu_copy_device_to_device(c_sublocid_t dst_dev, void* dst,
                                                commID);
   chpl_gpu_diags_incr(device_to_device);
 
-  chpl_gpu_impl_copy_device_to_device(dst, src, n);
+  void* stream = get_stream(dst_dev);
+  chpl_gpu_impl_copy_device_to_device(dst, src, n, stream);
+  if (dst_dev != src_dev) {
+    // going to a device that maybe used by a different task, synchornize
+    wait_stream(stream);
+  }
+  else if (chpl_gpu_sync_with_host) {
+    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
+    wait_stream(stream);
+  }
 
   CHPL_GPU_DEBUG("Copy successful\n");
 }
@@ -317,14 +476,19 @@ void chpl_gpu_copy_device_to_host(void* dst, c_sublocid_t src_dev,
                                   int ln, int32_t fn) {
   assert(chpl_gpu_is_device_ptr(src));
 
-  CHPL_GPU_DEBUG("Copying %zu bytes from device to host\n", n);
 
   chpl_gpu_impl_use_device(src_dev);
+  void* stream = get_stream(src_dev);
+
+  CHPL_GPU_DEBUG("Copying %zu bytes from device to host on stream %p\n", n, stream);
 
   chpl_gpu_diags_verbose_device_to_host_copy(ln, fn, src_dev, n, commID);
   chpl_gpu_diags_incr(device_to_host);
 
-  chpl_gpu_impl_copy_device_to_host(dst, src, n);
+  chpl_gpu_impl_copy_device_to_host(dst, src, n, stream);
+
+  // data is going to host, synchronize
+  wait_stream(stream);
 
   CHPL_GPU_DEBUG("Copy successful\n");
 }
@@ -337,11 +501,16 @@ void chpl_gpu_copy_host_to_device(c_sublocid_t dst_dev, void* dst,
   CHPL_GPU_DEBUG("Copying %zu bytes from host to device\n", n);
 
   chpl_gpu_impl_use_device(dst_dev);
+  void* stream = get_stream(dst_dev);
 
   chpl_gpu_diags_verbose_host_to_device_copy(ln, fn, dst_dev, n, commID);
   chpl_gpu_diags_incr(host_to_device);
 
-  chpl_gpu_impl_copy_host_to_device(dst, src, n);
+  chpl_gpu_impl_copy_host_to_device(dst, src, n, stream);
+  if (chpl_gpu_sync_with_host) {
+    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
+    wait_stream(stream);
+  }
 
   CHPL_GPU_DEBUG("Copy successful\n");
 }
@@ -390,7 +559,8 @@ void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
   CHPL_GPU_DEBUG("chpl_gpu_mem_array_alloc called. Size:%zu file:%s line:%d\n",
                  size, chpl_lookupFilename(filename), lineno);
 
-  chpl_gpu_impl_use_device(chpl_task_getRequestedSubloc());
+  int dev = chpl_task_getRequestedSubloc();
+  chpl_gpu_impl_use_device(dev);
 
   void* ptr = 0;
   if (size > 0) {
@@ -410,7 +580,8 @@ void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
 void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
   CHPL_GPU_DEBUG("chpl_gpu_mem_free is called. Ptr %p\n", memAlloc);
 
-  chpl_gpu_impl_use_device(chpl_task_getRequestedSubloc());
+  int dev = chpl_task_getRequestedSubloc();
+  chpl_gpu_impl_use_device(dev);
 
   chpl_memhook_free_pre(memAlloc, 0, lineno, filename);
   chpl_gpu_impl_mem_free(memAlloc);
@@ -444,7 +615,7 @@ void* chpl_gpu_mem_calloc(size_t number, size_t size,
     ptr = chpl_gpu_impl_mem_alloc(total_size);
     chpl_memhook_malloc_post((void*)ptr, 1, total_size, description, lineno, filename);
 
-    chpl_gpu_impl_copy_host_to_device(ptr, host_mem, total_size);
+    chpl_gpu_impl_copy_host_to_device(ptr, host_mem, total_size, NULL);
 
     chpl_mem_free(host_mem, lineno, filename);
 
@@ -483,7 +654,9 @@ void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
   void* new_alloc = chpl_gpu_mem_alloc(size, description, lineno, filename);
 
   const size_t copy_size = size < cur_size ? size : cur_size;
-  chpl_gpu_impl_copy_device_to_device(new_alloc, memAlloc, copy_size);
+  chpl_gpu_impl_copy_device_to_device(new_alloc, memAlloc, copy_size,
+                                      /*stream=*/NULL); // for now, keep it on
+                                                        // the default stream
   chpl_gpu_mem_free(memAlloc, lineno, filename);
 
   return new_alloc;

@@ -1997,6 +1997,12 @@ module ChapelBase {
   pragma "down end count fn"
   proc _downEndCount(e: _EndCount, err: unmanaged Error?) {
     chpl_save_task_error(e, err);
+    if CHPL_LOCALE_MODEL == "gpu" {
+      pragma "task complete impl fn"
+      extern proc chpl_gpu_task_end(): void;
+
+      chpl_gpu_task_end();
+    }
     chpl_comm_task_end();
     // inform anybody waiting that we're done
     e.sub(1, memoryOrder.release);
