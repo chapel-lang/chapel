@@ -1,2 +1,2 @@
---n=100_000_000 --debugGpu                                   # syncFlag-forcedSync
---n=100_000_000 --debugGpu --gpuSyncWithHostAfterGpuOp=false # syncFlag-noForcedSync
+--debugGpu                                   # syncFlag-forcedSync
+--debugGpu --gpuSyncWithHostAfterGpuOp=false # syncFlag-noForcedSync

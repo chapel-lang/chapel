@@ -4,8 +4,6 @@ extern proc printf(s...);
 
 config const n = 100;
 config const reps = 100;
-config const timeThreshold = 0.0001;
-config const expectInstantenousKernelReturn = true;
 
 var t: stopwatch;
 
