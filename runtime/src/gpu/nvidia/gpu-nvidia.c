@@ -215,11 +215,11 @@ static void chpl_gpu_launch_kernel_help(int ln,
       // TODO this allocation needs to use `chpl_mem_alloc` with a proper desc
       kernel_params[i] = chpl_malloc(1*sizeof(CUdeviceptr));
 
-      // TODO this now doesn't use memory allocation hooks, but maybe that's OK?
       // TODO this doesn't work on EX, why?
       // *kernel_params[i] = chpl_gpu_impl_mem_array_alloc(cur_arg_size, stream);
-      *kernel_params[i] = chpl_gpu_mem_alloc(cur_arg_size, CHPL_RT_MD_GPU_KERNEL_ARG,
-		      			  ln, fn);
+      *kernel_params[i] = chpl_gpu_mem_alloc(cur_arg_size,
+                                             CHPL_RT_MD_GPU_KERNEL_ARG,
+                                             ln, fn);
 
       chpl_gpu_impl_copy_host_to_device(*kernel_params[i], cur_arg,
                                         cur_arg_size, stream);
