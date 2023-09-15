@@ -73,7 +73,7 @@ module Map {
     }
   }
 
-  record map {
+  record map : serializable {
     /* Type of map keys. */
     type keyType;
     /* Type of map values. */
@@ -202,7 +202,7 @@ module Map {
       this.resizeThreshold = other.resizeThreshold;
       this.table = new chpl__hashtable(keyType, valType,
                                        resizeThreshold);
-      this.complete();
+      init this;
 
       if keyType != kt {
         compilerError('cannot initialize ', this.type:string, ' from ',

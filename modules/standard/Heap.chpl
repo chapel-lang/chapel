@@ -89,7 +89,7 @@ module Heap {
     }
   }
 
-  record heap {
+  record heap : writeSerializable {
 
     /* The type of the elements contained in this heap. */
     type eltType;
@@ -159,7 +159,7 @@ module Heap {
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
       this.comparator = other.comparator;
-      this.complete();
+      init this;
       _commonInitFromIterable(other._data);
     }
 
@@ -383,6 +383,10 @@ module Heap {
       _enter();
       ch.write(this._data);
       _leave();
+    }
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
   }
 

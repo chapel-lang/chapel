@@ -179,7 +179,7 @@ module Graph {
     /* how to use Graph: e.g.
     const vertex_domain =
       if DISTRIBUTION_TYPE == "BLOCK" then
-        {1..N_VERTICES} dmapped Block ( {1..N_VERTICES} )
+        {1..N_VERTICES} dmapped blockDist ( {1..N_VERTICES} )
       else
     {1..N_VERTICES} ;
 

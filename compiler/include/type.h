@@ -520,7 +520,6 @@ class FunctionType final : public Type {
 
 // internal types
 TYPE_EXTERN Type*             dtAny;
-TYPE_EXTERN Type*             dtAnyBool;
 TYPE_EXTERN Type*             dtAnyComplex;
 TYPE_EXTERN Type*             dtAnyEnumerated;
 TYPE_EXTERN Type*             dtAnyImag;
@@ -557,7 +556,6 @@ TYPE_EXTERN PrimitiveType*    dtSplitInitType;
 // Anything declared as PrimitiveType* can now also be declared as Type*
 // This change was made to allow dtComplex to be represented by a record.
 TYPE_EXTERN PrimitiveType*    dtBool;
-TYPE_EXTERN PrimitiveType*    dtBools[BOOL_SIZE_NUM];
 TYPE_EXTERN PrimitiveType*    dtInt[INT_SIZE_NUM];
 TYPE_EXTERN PrimitiveType*    dtUInt[INT_SIZE_NUM];
 TYPE_EXTERN PrimitiveType*    dtReal[FLOAT_SIZE_NUM];
@@ -601,7 +599,10 @@ bool isUnmanagedClass(Type* t);
 bool isBorrowedClass(Type* t);
 bool isOwnedOrSharedOrBorrowed(Type* t);
 bool isClassLike(Type* t); // includes unmanaged, borrow, no ref
+
 bool isBuiltinGenericClassType(Type* t); // 'unmanaged' 'borrowed' etc
+bool isBuiltinGenericType(Type* t); // 'integral' 'unmanaged' etc
+
 bool isClassLikeOrManaged(Type* t); // includes unmanaged, borrow, owned, no ref
 bool isClassLikeOrPtr(Type* t); // includes c_ptr, ddata
 bool isCVoidPtr(Type* t); // includes both c_ptr(void) and raw_c_void_ptr

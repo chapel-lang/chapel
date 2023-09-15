@@ -1,6 +1,6 @@
 use BlockDist;
 
-var D = Block.createDomain(1..10, 1..10);
+var D = blockDist.createDomain(1..10, 1..10);
 
 {
   // access index doesn't match cleanly

@@ -2,7 +2,7 @@
 import sys
 
 import chpl_locale_model, chpl_tasks, overrides, third_party_utils
-from utils import error, memoize, warning
+from utils import error, memoize, warning, try_run_command
 
 
 @memoize

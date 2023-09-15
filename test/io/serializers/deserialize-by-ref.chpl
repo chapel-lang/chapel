@@ -1,11 +1,18 @@
 
-use IO, List, Map, FormatHelper;
+use IO, List, Map, FormatHelper, Types;
 
-record A {
+record A : serializable {
   var x: int;
   var b: B;
 
-  proc ref deserialize(reader: fileReader, ref deserializer: reader.deserializerType) {
+  proc serialize(writer, ref serializer) throws {
+    var ser = serializer.startRecord(writer, "A", 2);
+    ser.writeField("x", x);
+    ser.writeField("b", b);
+    ser.endRecord();
+  }
+
+  proc ref deserialize(reader: fileReader(?), ref deserializer: reader.deserializerType) {
     writeln("IN A.deserialize");
     var des = deserializer.startRecord(reader, "A");
     des.readField("x", this.x);
@@ -13,7 +20,7 @@ record A {
     des.endRecord();
   }
 
-  proc init(reader: fileReader, ref deserializer) {
+  proc init(reader: fileReader(?), ref deserializer) {
     writeln("IN A.init");
     var des = deserializer.startRecord(reader, "A");
     this.x = des.readField("x", int);
@@ -32,17 +39,23 @@ record A {
   }
 }
 
-record B {
+record B : serializable {
   var t: (int, real);
 
-  proc ref deserialize(reader: fileReader, ref deserializer: reader.deserializerType) {
+  proc serialize(writer, ref serializer) throws {
+    var ser = serializer.startRecord(writer, "B", 1);
+    ser.writeField("t", t);
+    ser.endRecord();
+  }
+
+  proc ref deserialize(reader: fileReader(?), ref deserializer: reader.deserializerType) {
     writeln("IN B.deserialize");
     var des = deserializer.startRecord(reader, "B");
     des.readField("t", this.t);
     des.endRecord();
   }
 
-  proc init(reader: fileReader, ref deserializer) {
+  proc init(reader: fileReader(?), ref deserializer) {
     writeln("IN B.init");
     var des = deserializer.startRecord(reader, "B");
     this.t = des.readField("t", (int, real));
@@ -58,10 +71,10 @@ record B {
   }
 }
 
-record myList {
+record myList : serializable {
   var values: list(A);
 
-  proc ref deserialize(reader: fileReader, ref deserializer: reader.deserializerType) {
+  proc ref deserialize(reader: fileReader(?), ref deserializer: reader.deserializerType) {
     writeln("IN myList.deserialize");
     var des = deserializer.startList(reader);
 
@@ -73,9 +86,9 @@ record myList {
     des.endList();
   }
 
-  proc init(reader: fileReader, ref deserializer) {
+  proc init(reader: fileReader(?), ref deserializer) {
     writeln("IN myList.init");
-    this.complete();
+    init this;
     var des = deserializer.startList(reader);
 
     while des.hasMore() do
@@ -86,14 +99,14 @@ record myList {
 
   proc init(in values: list(A)) do this.values = values;
 
-  proc serialize(writer: fileWriter, ref serializer) do
+  proc serialize(writer: fileWriter(?), ref serializer) do
     writer.write(values);
 }
 
-record myMap {
+record myMap : serializable {
   var values: map(int, A);
 
-  proc ref deserialize(reader: fileReader, ref deserializer: reader.deserializerType) {
+  proc ref deserialize(reader: fileReader(?), ref deserializer: reader.deserializerType) {
     writeln("IN myMap.deserialize");
     var des = deserializer.startMap(reader);
 
@@ -107,9 +120,9 @@ record myMap {
     des.endMap();
   }
 
-  proc init(reader: fileReader, ref deserializer) {
+  proc init(reader: fileReader(?), ref deserializer) {
     writeln("IN myMap.init");
-    this.complete();
+    init this;
     var des = deserializer.startMap(reader);
 
     while des.hasMore() do
@@ -120,8 +133,16 @@ record myMap {
 
   proc init(in values: map(int, A)) do this.values = values;
 
-  proc serialize(writer: fileWriter, ref serializer) do
+  proc serialize(writer: fileWriter(?), ref serializer) do
     writer.write(values);
+}
+
+record DefaultRecord {
+  var b : B;
+}
+
+class DefaultClass {
+  var b : B;
 }
 
 proc test(x, ref y) {
@@ -135,7 +156,8 @@ proc test(x, ref y) {
   try {
     f.reader().withDeserializer(FormatReader).read(y);
 
-    if x != y {
+    var mismatch = if isClassType(x.type) then x.b != y.b else x != y;
+    if mismatch {
       writeln("FAILURE: ", x.type:string);
       writeln("GOT: ", y);
     } else
@@ -157,4 +179,15 @@ proc main() {
 
   test(new myList(l), new myList(new list(A)));
   test(new myMap(m), new myMap(new map(int, A)));
+
+  var dr : DefaultRecord;
+  test(new DefaultRecord(new B((11, 1.1))), dr);
+
+  var dco = new owned DefaultClass();
+  test(new owned DefaultClass(new B((22, 2.2))), dco);
+
+  var dcu = new unmanaged DefaultClass();
+  var x = new unmanaged DefaultClass(new B((33, 3.3)));
+  test(x, dcu);
+  delete x, dcu;
 }

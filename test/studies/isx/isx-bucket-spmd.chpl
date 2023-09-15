@@ -132,7 +132,7 @@ if printConfig then
 
 
 const LocBucketSpace = {0..#numBuckets};
-const BucketDist = new Block(LocBucketSpace);
+const BucketDist = new blockDist(LocBucketSpace);
 const BucketSpace = LocBucketSpace dmapped BucketDist;
 
 var allBucketKeys: [BucketSpace] [0..#recvBuffSize] keyType;

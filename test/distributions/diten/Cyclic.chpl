@@ -15,7 +15,7 @@ enum IteratorType { leader, follower };
 //
 // The distribution class
 //
-class Cyclic1DDist {
+class Cyclic1DDist : writeSerializable {
   //
   // The distribution's index type and domain's global index type
   //
@@ -83,7 +83,7 @@ class Cyclic1DDist {
     targetLocDom = targetLocalesDomain;
     targetLocs = targetLocales;
 
-    this.complete();
+    init this;
 
     //
     // WANT TO DO:
@@ -116,14 +116,14 @@ class Cyclic1DDist {
   //
 
 
-  proc writeThis(x) throws {
-    x.writeln("Cyclic1DPar");
-    x.writeln("---------------");
-    x.writeln("across locales: ", targetLocs);
-    x.writeln("indexed via: ", targetLocDom);
-    x.writeln("resulting in: ");
+  proc serialize(writer, ref serializer) throws {
+    writer.writeln("Cyclic1DPar");
+    writer.writeln("---------------");
+    writer.writeln("across locales: ", targetLocs);
+    writer.writeln("indexed via: ", targetLocDom);
+    writer.writeln("resulting in: ");
     for locid in targetLocDom do
-      x.writeln("  [", locid, "] ", locDist(locid));
+      writer.writeln("  [", locid, "] ", locDist(locid));
   }
 
 
@@ -167,7 +167,7 @@ class Cyclic1DDist {
 //
 // A per-locale local distribution class
 //
-class LocCyclic1DDist {
+class LocCyclic1DDist : writeSerializable {
   // 
   // The distribution's index type and domain's global index type
   //
@@ -200,13 +200,13 @@ class LocCyclic1DDist {
     myChunk = {lo..hi by numlocs};
     locid = _locid;
     loc = dist.targetLocs(locid);
-    this.complete();
+    init this;
     if debugCyclic1D then
       writeln("locale ", locid, " owns ", myChunk);
   }
 
-  proc writeThis(x) throws {
-    x.write("locale ", loc.id, " owns chunk: ", myChunk);
+  proc serialize(writer, ref serializer) throws {
+    writer.write("locale ", loc.id, " owns chunk: ", myChunk);
   }
 }
 
@@ -214,7 +214,7 @@ class LocCyclic1DDist {
 //
 // The global domain class
 //
-class Cyclic1DDom {
+class Cyclic1DDom : writeSerializable {
   //
   // The index types of the global and local domain portions
   //
@@ -250,7 +250,7 @@ class Cyclic1DDom {
     dist = myDist;
     whole = myDom;
 
-    this.complete();
+    init this;
     for locid in dist.targetLocDom do
       on dist.targetLocs(locid) do {
         locDoms(locid) = new unmanaged LocCyclic1DDom(glbIdxType, _to_unmanaged(this), 
@@ -352,8 +352,8 @@ class Cyclic1DDom {
   //
   // the print method for the domain
   //
-  proc writeThis(x) throws {
-    x.write(whole);
+  proc serialize(writer, ref serializer) throws {
+    writer.write(whole);
   }
 
   //
@@ -383,7 +383,7 @@ class Cyclic1DDom {
 //
 // the local domain class
 //
-class LocCyclic1DDom {
+class LocCyclic1DDom : writeSerializable {
   //
   // The index types of the global and local domain portions
   //
@@ -430,8 +430,8 @@ class LocCyclic1DDom {
   //
   // how to write out this locale's indices
   //
-  proc writeThis(x) throws {
-    x.write(myBlock);
+  proc serialize(writer, ref serializer) throws {
+    writer.write(myBlock);
   }
 
   //
@@ -455,7 +455,7 @@ private use IO;
 //
 // the global array class
 //
-class Cyclic1DArr {
+class Cyclic1DArr : writeSerializable {
   //
   // The index types of the global and local domain portions
   //
@@ -486,7 +486,7 @@ class Cyclic1DArr {
     glbIdxType = idxType;
     elemType = eltType;
     dom = myDom;
-    this.complete();
+    init this;
     for locid in dom.dist.targetLocDom do
       on dom.dist.targetLocs(locid) do
         locArr(locid) = new unmanaged LocCyclic1DArr(glbIdxType, elemType, dom.locDoms(locid)!);
@@ -542,7 +542,7 @@ class Cyclic1DArr {
   //
   // how to print out the whole array, sequentially
   //
-  proc writeThis(x) throws {
+  override proc serialize(writer, ref serializer) throws {
     var first = true;
     for loc in dom.dist.targetLocDom {
       // May want to do something like the following:
@@ -552,11 +552,11 @@ class Cyclic1DArr {
           if (first) {
             first = false;
           } else {
-            x.write(" ");
+            writer.write(" ");
           }
 	  if debugCyclic1D then
             writeln("Writing elements on locale: ", loc);
-          x.write(locArr(loc));
+          writer.write(locArr(loc));
         }
         //    }
       stdout.flush();
@@ -575,7 +575,7 @@ class Cyclic1DArr {
 //
 // the local array class
 //
-class LocCyclic1DArr {
+class LocCyclic1DArr : writeSerializable {
   //
   // The index types of the global and local domain portions
   //
@@ -628,11 +628,11 @@ class LocCyclic1DArr {
   //
   // prints out this locale's piece of the array
   //
-  proc writeThis(x) throws {
+  override proc serialize(writer, ref serializer) throws {
     // May want to do something like the following:
     //      on loc {
     // but it causes deadlock -- see writeThisUsingOn.chpl
-    x.write(myElems);
+    writer.write(myElems);
   }
 
   //

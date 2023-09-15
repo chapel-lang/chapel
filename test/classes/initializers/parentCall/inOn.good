@@ -1,2 +1,2 @@
 inOn.chpl:4: In initializer:
-inOn.chpl:7: error: use of this.complete() call in an on block
+inOn.chpl:7: error: use of 'init this' call in an on block

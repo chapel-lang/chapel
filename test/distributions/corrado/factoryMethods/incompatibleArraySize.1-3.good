@@ -1,0 +1,1 @@
+incompatibleArraySize.chpl:13: error: halt reached - Domain size mismatch in 'stencilDist.createArray' dimension 0

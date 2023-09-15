@@ -1,4 +1,4 @@
--sdistType=Block --report-auto-local-access -M$CHPL_HOME/test/optimizations/autoLocalAccess/
--sdistType=BlockCyclic --report-auto-local-access -M$CHPL_HOME/test/optimizations/autoLocalAccess/
--sdistType=Cyclic --report-auto-local-access -M$CHPL_HOME/test/optimizations/autoLocalAccess/
--sdistType=Stencil --report-auto-local-access -M$CHPL_HOME/test/optimizations/autoLocalAccess/
+-sdistType=blockDist --report-auto-local-access -M$CHPL_HOME/test/optimizations/autoLocalAccess/
+-sdistType=blockCycDist --report-auto-local-access -M$CHPL_HOME/test/optimizations/autoLocalAccess/
+-sdistType=cyclicDist --report-auto-local-access -M$CHPL_HOME/test/optimizations/autoLocalAccess/
+-sdistType=stencilDist --report-auto-local-access -M$CHPL_HOME/test/optimizations/autoLocalAccess/

@@ -15,7 +15,7 @@ config type elt = int;
 // ARepl - the replicated array to be tested
 
 const repllocales = Locales;  // in case this changes
-var ReplBlockDist = new Replicated();
+var ReplBlockDist = new replicatedDist();
 var DRepl: domain(2) dmapped ReplBlockDist = DsubLoc;
 var ARepl: [DRepl] elt;
 
@@ -200,8 +200,8 @@ iter testLocs(): locale {
 for tloc in testLocs() {
   // gotta create new dmap() on the same locale as 'domainmap'
   trydist(defaultDist, tloc, "default");
-  trydist(new Block(boundingBox=Dbase), tloc, "block");
-  trydist(new Cyclic(startIdx=Dbase.low), tloc, "cyclic");
+  trydist(new blockDist(boundingBox=Dbase), tloc, "block");
+  trydist(new cyclicDist(startIdx=Dbase.low), tloc, "cyclic");
 }
 
 write("\nDone\n");

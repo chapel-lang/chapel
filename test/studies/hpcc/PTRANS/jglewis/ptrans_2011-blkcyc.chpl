@@ -35,19 +35,19 @@ module HPCC_PTRANS {
     // declare distribution rules for matrix and transpose
 
     const Matrix_Block_Dist 
-      = new unmanaged BlockCyclic ( startIdx=(1,1),
+      = new blockCycDist ( startIdx=(1,1),
                           blocksize=(row_block_size, col_block_size) );
 
     const Transpose_Block_Dist 
-      = new unmanaged BlockCyclic ( startIdx=(1,1),
+      = new blockCycDist ( startIdx=(1,1),
                           blocksize=(row_block_size, col_block_size) );
 
     // declare domains (index sets) for matrix and transpose
 
-    const matrix_domain     : domain (2) dmapped new dmap (
-                              Matrix_Block_Dist) = { 1..n_rows, 1..n_cols },
-          transpose_domain  : domain (2) dmapped new dmap (
-                              Transpose_Block_Dist) = { 1..n_cols, 1..n_rows };
+    const matrix_domain     : domain (2) dmapped
+                              Matrix_Block_Dist = { 1..n_rows, 1..n_cols },
+          transpose_domain  : domain (2) dmapped
+                              Transpose_Block_Dist = { 1..n_cols, 1..n_rows };
 
     var A                  : [matrix_domain   ] real, 
         C                  : [transpose_domain] real,

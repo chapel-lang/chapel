@@ -6,7 +6,7 @@ record R {
 
   proc init(x) where !isSubtype(x.type, R) {
     d = x.domain;
-    this.complete();
+    init this;
     for i in d do
       a[i] = i/10.0;
   }

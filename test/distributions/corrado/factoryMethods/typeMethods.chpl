@@ -10,22 +10,22 @@ const a: [dom] int = 5,
 
 writeln("Distributions:");
 
-testDom("Block", Block.createDomain(dom));
-testDom("Block", Block.createDomain((...rng)));
-testDom("Block opts", Block.createDomain(dom, targetLocales=tls));
-testDom("Block opts:", Block.createDomain((...rng), targetLocales=tls));
+testDom("Block", blockDist.createDomain(dom));
+testDom("Block", blockDist.createDomain((...rng)));
+testDom("Block opts", blockDist.createDomain(dom, targetLocales=tls));
+testDom("Block opts:", blockDist.createDomain((...rng), targetLocales=tls));
 
-testDom("Stencil:", Stencil.createDomain(dom));
-testDom("Stencil:", Stencil.createDomain((...rng)));
-testDom("Stencil opts:", Stencil.createDomain(dom, targetLocales=tls, fluff=(2, 2), periodic=true));
-testDom("Stencil opts:", Stencil.createDomain((...rng), targetLocales=tls, fluff=(2, 2), periodic=true));
+testDom("Stencil:", stencilDist.createDomain(dom));
+testDom("Stencil:", stencilDist.createDomain((...rng)));
+testDom("Stencil opts:", stencilDist.createDomain(dom, targetLocales=tls, fluff=(2, 2), periodic=true));
+testDom("Stencil opts:", stencilDist.createDomain((...rng), targetLocales=tls, fluff=(2, 2), periodic=true));
 
-testDom("Cyclic:", Cyclic.createDomain(dom));
-testDom("Cyclic:", Cyclic.createDomain((...rng)));
-testDom("Cyclic opts:", Cyclic.createDomain(dom, targetLocales=tls));
-testDom("Cyclic opts:", Cyclic.createDomain((...rng), targetLocales=tls));
+testDom("Cyclic:", cyclicDist.createDomain(dom));
+testDom("Cyclic:", cyclicDist.createDomain((...rng)));
+testDom("Cyclic opts:", cyclicDist.createDomain(dom, targetLocales=tls));
+testDom("Cyclic opts:", cyclicDist.createDomain((...rng), targetLocales=tls));
 
-proc testDom(test: string, D: domain) {
+proc testDom(test: string, D: domain(?)) {
   writeln("\n", test);
   var A: [D] int;
   forall a in A do a = here.id;
@@ -36,44 +36,44 @@ proc testDom(test: string, D: domain) {
 
 writeln("\nArrays:");
 
-testArray("Block:", Block.createArray(dom, int));
-testArray("Block:", Block.createArray((...rng), int));
-testArray("Block opts:", Block.createArray(dom, int, targetLocales=tls));
-testArray("Block opts:", Block.createArray((...rng), int, targetLocales=tls));
-testArray("Block value:", Block.createArray(dom, int, -1));
-testArray("Block value:", Block.createArray((...rng), int, -1));
-testArray("Block iter:", Block.createArray(dom, int, [(i, j) in dom] i + j));
-testArray("Block iter:", Block.createArray((...rng), int, [(i, j) in dom] i + j));
-testArray("Block array:", Block.createArray(dom, int, a));
-testArray("Block array:", Block.createArray(dom, int, b));
-testArray("Block array:", Block.createArray((...rng), int, a));
-testArray("Block array:", Block.createArray((...rng), int, b));
+testArray("Block:", blockDist.createArray(dom, int));
+testArray("Block:", blockDist.createArray((...rng), int));
+testArray("Block opts:", blockDist.createArray(dom, int, targetLocales=tls));
+testArray("Block opts:", blockDist.createArray((...rng), int, targetLocales=tls));
+testArray("Block value:", blockDist.createArray(dom, int, -1));
+testArray("Block value:", blockDist.createArray((...rng), int, -1));
+testArray("Block iter:", blockDist.createArray(dom, int, [(i, j) in dom] i + j));
+testArray("Block iter:", blockDist.createArray((...rng), int, [(i, j) in dom] i + j));
+testArray("Block array:", blockDist.createArray(dom, int, a));
+testArray("Block array:", blockDist.createArray(dom, int, b));
+testArray("Block array:", blockDist.createArray((...rng), int, a));
+testArray("Block array:", blockDist.createArray((...rng), int, b));
 
-testArray("Stencil:", Stencil.createArray(dom, int));
-testArray("Stencil:", Stencil.createArray((...rng), int));
-testArray("Stencil opts:", Stencil.createArray(dom, int, targetLocales=tls, fluff=(2, 2), periodic=true));
-testArray("Stencil opts:", Stencil.createArray((...rng), int, targetLocales=tls, fluff=(2, 2), periodic=true));
-testArray("Stencil value:", Stencil.createArray(dom, int, -1));
-testArray("Stencil value:", Stencil.createArray((...rng), int, -1));
-testArray("Stencil iter:", Stencil.createArray(dom, int, [(i, j) in dom] i + j));
-testArray("Stencil iter:", Stencil.createArray((...rng), int, [(i, j) in dom] i + j));
-testArray("Stencil array:", Stencil.createArray(dom, int, a));
-testArray("Stencil array:", Stencil.createArray(dom, int, b));
-testArray("Stencil array:", Stencil.createArray((...rng), int, a));
-testArray("Stencil array:", Stencil.createArray((...rng), int, b));
+testArray("Stencil:", stencilDist.createArray(dom, int));
+testArray("Stencil:", stencilDist.createArray((...rng), int));
+testArray("Stencil opts:", stencilDist.createArray(dom, int, targetLocales=tls, fluff=(2, 2), periodic=true));
+testArray("Stencil opts:", stencilDist.createArray((...rng), int, targetLocales=tls, fluff=(2, 2), periodic=true));
+testArray("Stencil value:", stencilDist.createArray(dom, int, -1));
+testArray("Stencil value:", stencilDist.createArray((...rng), int, -1));
+testArray("Stencil iter:", stencilDist.createArray(dom, int, [(i, j) in dom] i + j));
+testArray("Stencil iter:", stencilDist.createArray((...rng), int, [(i, j) in dom] i + j));
+testArray("Stencil array:", stencilDist.createArray(dom, int, a));
+testArray("Stencil array:", stencilDist.createArray(dom, int, b));
+testArray("Stencil array:", stencilDist.createArray((...rng), int, a));
+testArray("Stencil array:", stencilDist.createArray((...rng), int, b));
 
-testArray("Cyclic:", Cyclic.createArray(dom, int));
-testArray("Cyclic:", Cyclic.createArray((...rng), int));
-testArray("Cyclic opts:", Cyclic.createArray(dom, int, targetLocales=tls));
-testArray("Cyclic opts:", Cyclic.createArray((...rng), int, targetLocales=tls));
-testArray("Cyclic value:", Cyclic.createArray(dom, int, -1));
-testArray("Cyclic value:", Cyclic.createArray((...rng), int, -1));
-testArray("Cyclic iter:", Cyclic.createArray(dom, int, [(i, j) in dom] i + j));
-testArray("Cyclic iter:", Cyclic.createArray((...rng), int, [(i, j) in dom] i + j));
-testArray("Cyclic array:", Cyclic.createArray(dom, int, a));
-testArray("Cyclic array:", Cyclic.createArray(dom, int, b));
-testArray("Cyclic array:", Cyclic.createArray((...rng), int, a));
-testArray("Cyclic array:", Cyclic.createArray((...rng), int, b));
+testArray("Cyclic:", cyclicDist.createArray(dom, int));
+testArray("Cyclic:", cyclicDist.createArray((...rng), int));
+testArray("Cyclic opts:", cyclicDist.createArray(dom, int, targetLocales=tls));
+testArray("Cyclic opts:", cyclicDist.createArray((...rng), int, targetLocales=tls));
+testArray("Cyclic value:", cyclicDist.createArray(dom, int, -1));
+testArray("Cyclic value:", cyclicDist.createArray((...rng), int, -1));
+testArray("Cyclic iter:", cyclicDist.createArray(dom, int, [(i, j) in dom] i + j));
+testArray("Cyclic iter:", cyclicDist.createArray((...rng), int, [(i, j) in dom] i + j));
+testArray("Cyclic array:", cyclicDist.createArray(dom, int, a));
+testArray("Cyclic array:", cyclicDist.createArray(dom, int, b));
+testArray("Cyclic array:", cyclicDist.createArray((...rng), int, a));
+testArray("Cyclic array:", cyclicDist.createArray((...rng), int, b));
 
 
 proc testArray(test: string, in A: [] int) {

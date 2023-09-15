@@ -867,6 +867,10 @@ related by the following identity:
    var r = a % b;
    writeln(q * b + r == a);    // true
 
+.. note::
+   This does not have the same behavior as :proc:`~AutoMath.mod` when `b` is
+   negative.
+
 There is an expectation that the predefined modulus operators will be
 extended to handle real, imaginary, and complex types in the future.
 

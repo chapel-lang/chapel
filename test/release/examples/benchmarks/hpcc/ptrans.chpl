@@ -63,20 +63,20 @@ proc main() {
   // Create Block-Cyclic distributions for both the Matrix and its
   // transpose:
   //
-  const MatrixDist = new unmanaged BlockCyclic(startIdx=(1,1),
+  const MatrixDist = new blockCycDist(startIdx=(1,1),
                                      blocksize=(rowBlkSize, colBlkSize));
 
-  const TransposeDist = new unmanaged BlockCyclic(startIdx=(1,1),
+  const TransposeDist = new blockCycDist(startIdx=(1,1),
                                         blocksize=(colBlkSize, rowBlkSize));
 
   //
   // Declare domains (index sets) for the Matrix and its transpose
   // using the distributions above:
   //
-  const MatrixDom     : domain(2) dmapped new dmap(MatrixDist) 
+  const MatrixDom     : domain(2) dmapped MatrixDist
                       = {1..numrows, 1..numcols},
 
-        TransposeDom  : domain(2) dmapped new dmap(TransposeDist) 
+        TransposeDom  : domain(2) dmapped TransposeDist
                        = {1..numcols, 1..numrows};
 
   //

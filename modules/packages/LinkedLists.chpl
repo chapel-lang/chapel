@@ -70,7 +70,7 @@ class listNode {
       :proc:`~LinkedList.destroy` must be called to reclaim any memory used by the list.
 
  */
-record LinkedList {
+record LinkedList : serializable {
   /*
     The type of the data stored in every node.
    */
@@ -96,7 +96,7 @@ record LinkedList {
   @chpldoc.nodoc
   proc init=(l : this.type) {
     this.eltType = l.eltType;
-    this.complete();
+    init this;
     for i in l do
       this.append(i);
   }

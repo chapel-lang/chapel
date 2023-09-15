@@ -65,11 +65,7 @@ void gatherPrimitiveType(Context* context,
 void Type::gatherBuiltins(Context* context,
                           std::unordered_map<UniqueString,const Type*>& map) {
 
-  gatherPrimitiveType(context, map, BoolType::get(context, 0));
-  gatherPrimitiveType(context, map, BoolType::get(context, 8));
-  gatherPrimitiveType(context, map, BoolType::get(context, 16));
-  gatherPrimitiveType(context, map, BoolType::get(context, 32));
-  gatherPrimitiveType(context, map, BoolType::get(context, 64));
+  gatherPrimitiveType(context, map, BoolType::get(context));
 
   gatherPrimitiveType(context, map, IntType::get(context, 8));
   gatherPrimitiveType(context, map, IntType::get(context, 16));
@@ -120,6 +116,10 @@ void Type::gatherBuiltins(Context* context,
   auto localeType = CompositeType::getLocaleType(context);
   gatherType(context, map, "locale", localeType);
   gatherType(context, map, "_locale", localeType);
+
+  auto rangeType = CompositeType::getRangeType(context);
+  gatherType(context, map, "range", rangeType);
+  gatherType(context, map, "_range", rangeType);
 
   gatherType(context, map, "Error", CompositeType::getErrorType(context));
 

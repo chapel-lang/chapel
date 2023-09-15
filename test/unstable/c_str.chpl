@@ -1,3 +1,4 @@
+use CTypes only c_str;
 var s = "my string";
 var b = b"my bytes";
 

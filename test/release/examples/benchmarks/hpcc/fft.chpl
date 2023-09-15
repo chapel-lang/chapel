@@ -1,15 +1,15 @@
 /* This implementation of the FFT benchmark uses radix-4 butterflies
-   and is divided into two main phases: one which uses a Block
+   and is divided into two main phases: one which uses a blockDist
    distribution and the second which uses a Cyclic distribution.  When
    run on 4**k locales, this guarantees that each butterfly will only
    access local data.  In an optimized implementation, this should
    cause most of the communication to occur when copying the vector
-   between Block and Cyclic storage formats.
+   between blockDist and Cyclic storage formats.
 */
 
 //
 // Use standard modules for less common Math functions, Bit operations, Random
-// numbers, Timing, and Block and Cyclic distributions
+// numbers, Timing, and blockDist and Cyclic distributions
 //
 use Math, BitOps, Random, Time, BlockDist, CyclicDist;
 
@@ -72,7 +72,7 @@ proc main() {
   // to m/4-1 stored using a block distribution.
   // Twiddles is the vector of twiddle values.
   //
-  const TwiddleDom: domain(1) dmapped Block(boundingBox={0..m/4-1}) 
+  const TwiddleDom: domain(1) dmapped blockDist(boundingBox={0..m/4-1}) 
                   = {0..m/4-1};
   var Twiddles: [TwiddleDom] elemType;
 
@@ -83,11 +83,11 @@ proc main() {
   const ProblemSpace = {0..m-1};
 
   //
-  // BlkDom defines a Block-distributed problem space and is used to
+  // BlkDom defines a block-distributed problem space and is used to
   // define the vectors z (used to store the input vector) and ZBlk
   // (used for the first half of the FFT phases).
   //
-  const BlkDom: domain(1) dmapped Block(boundingBox=ProblemSpace)
+  const BlkDom: domain(1) dmapped blockDist(boundingBox=ProblemSpace)
               = ProblemSpace;
   var Zblk, z: [BlkDom] elemType;
 
@@ -96,7 +96,7 @@ proc main() {
   // to define the Zcyc vector, used for the second half of the FFT
   // phases.
   //
-  const CycDom: domain(1) dmapped Cyclic(startIdx=0) = ProblemSpace;
+  const CycDom: domain(1) dmapped cyclicDist(startIdx=0) = ProblemSpace;
 
   var Zcyc: [CycDom] elemType;
 

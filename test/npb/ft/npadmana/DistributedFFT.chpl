@@ -95,7 +95,7 @@ prototype module DistributedFFT {
     // Mimic the advanced interface
     proc init(param ftType : FFTtype, args ...?k) {
       this.ftType = ftType;
-      this.complete();
+      init this;
       plannerLock.lock();
       select ftType {
         when FFTtype.DFT do plan = fftw_plan_many_dft((...args));
@@ -147,10 +147,10 @@ prototype module DistributedFFT {
 
       :returns: Returns a slab-distributed domain.
   */
-  proc newSlabDom(dom: domain) where dom.isRectangular() {
+  proc newSlabDom(dom: domain(?)) where dom.isRectangular() {
     if dom.rank != 3 then compilerError("The domain must be 3D");
     const targetLocales = reshape(Locales, {0.. #numLocales, 0..0, 0..0});
-    return dom dmapped Block(boundingBox=dom, targetLocales=targetLocales);
+    return dom dmapped blockDist(boundingBox=dom, targetLocales=targetLocales);
   }
 
   /*
@@ -359,10 +359,13 @@ prototype module DistributedFFT {
       Note that both ``dst`` and ``src`` cannot be remote.
   */
   proc copy(ref dst, const ref src, numBytes: int) {
+    use Communication;
+    const dstLocaleId = dst.locale.id;
+    const srcLocaleId = src.locale.id;
     if dst.locale.id == here.id {
-      __primitive("chpl_comm_get", dst, src.locale.id, src, numBytes.safeCast(c_size_t));
+      get(c_ptrTo(dst), c_ptrToConst(src), srcLocaleId, numBytes.safeCast(c_size_t));
     } else if src.locale.id == here.id {
-      __primitive("chpl_comm_put", src, dst.locale.id, dst, numBytes.safeCast(c_size_t));
+      put(c_ptrTo(dst), c_ptrToConst(src), dstLocaleId, numBytes.safeCast(c_size_t));
     } else {
       halt("Remote src and remote dst not yet supported");
     }

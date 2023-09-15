@@ -30,6 +30,14 @@ module ChapelGpuSupport {
   @unstable("The variable 'gpuNoCpuModeWarning' is unstable and its interface is subject to change in the future")
   config const gpuNoCpuModeWarning = isEnvSet("CHPL_GPU_NO_CPU_MODE_WARNING");
 
+  extern var chpl_gpu_sync_with_host : bool;
+  @unstable("The variable 'gpuSyncWithHostAfterGpuOp' is unstable and its interface is subject to change in the future")
+  config const gpuSyncWithHostAfterGpuOp = true;
+
+  extern var chpl_gpu_use_stream_per_task : bool;
+  @unstable("The variable 'gpuUseDefaultStream' is unstable and its interface is subject to change in the future")
+  config var gpuUseStreamPerTask = CHPL_GPU_MEM_STRATEGY!="unified_memory";
+
   /* If true, upon startup, enables peer-to-peer access between all pairs of
      GPUs that are eligible for peer-to-peer access within each locale. */
   @chpldoc.nodoc
@@ -41,6 +49,19 @@ module ChapelGpuSupport {
   // by virtue of module initialization:
   chpl_gpu_debug = debugGpu;
   chpl_gpu_no_cpu_mode_warning = gpuNoCpuModeWarning;
+  chpl_gpu_sync_with_host = gpuSyncWithHostAfterGpuOp;
+
+  if (CHPL_GPU_MEM_STRATEGY=="unified_memory") {
+    if (gpuUseStreamPerTask) {
+      // the user must have set this
+      warning("gpuUseDefaultStream can't be set to false with ",
+              "CHPL_GPU_MEM_STRATEGY=unified_memory. Assuming ",
+              "gpuUseDefaultStream=true.");
+
+      gpuUseStreamPerTask = false;
+    }
+  }
+  chpl_gpu_use_stream_per_task = gpuUseStreamPerTask;
 
   if CHPL_LOCALE_MODEL == 'gpu' {
     if(enableGpuP2P) {

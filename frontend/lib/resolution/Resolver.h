@@ -479,6 +479,9 @@ struct Resolver {
   bool enter(const uast::Identifier* ident);
   void exit(const uast::Identifier* ident);
 
+  bool enter(const uast::Init* init);
+  void exit(const uast::Init* init);
+
   bool enter(const uast::TypeQuery* tq);
   void exit(const uast::TypeQuery* tq);
 

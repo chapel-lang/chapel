@@ -300,7 +300,7 @@ QualifiedType typeForLiteral(Context* context, const Literal* literal) {
 
   switch (literal->tag()) {
     case asttags::BoolLiteral:
-      typePtr = BoolType::get(context, 0);
+      typePtr = BoolType::get(context);
       break;
     case asttags::ImagLiteral:
       typePtr = ImagType::get(context, 0);
@@ -2572,8 +2572,6 @@ static const Type* getNumericType(Context* context,
         return AnyIntType::get(context);
       } else if (name == USTR("uint")) {
         return AnyUintType::get(context);
-      } else if (name == USTR("bool")) {
-        return AnyBoolType::get(context);
       } else if (name == USTR("real")) {
         return AnyRealType::get(context);
       } else if (name == USTR("imag")) {
@@ -2810,7 +2808,7 @@ static bool resolveFnCallSpecial(Context* context,
     }
     auto got = canPass(context, ci.actual(0).type(), ci.actual(1).type());
     bool result = got.passes();
-    exprTypeOut = QualifiedType(QualifiedType::PARAM, BoolType::get(context, 0),
+    exprTypeOut = QualifiedType(QualifiedType::PARAM, BoolType::get(context),
                                 BoolParam::get(context, result));
     return true;
   }
@@ -3810,7 +3808,7 @@ QualifiedType paramTypeFromValue(Context* context, T value);
 template <>
 QualifiedType paramTypeFromValue<bool>(Context* context, bool value) {
   return QualifiedType(QualifiedType::PARAM,
-                       BoolType::get(context, 0),
+                       BoolType::get(context),
                        BoolParam::get(context, value));
 }
 

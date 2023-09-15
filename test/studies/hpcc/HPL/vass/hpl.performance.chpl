@@ -126,9 +126,9 @@ var tInit, tPS1iter, tUBR1iter, tSC1call, tLF1iter, tBScall, tVer: VTimer;
     rdim2 = new ReplicatedDim(tl2);
 
   const
-    dist1b2b = new unmanaged DimensionalDist2D(targetLocales, bdim1, bdim2, "dist1b2b"),
-    dist1b2r = new unmanaged DimensionalDist2D(targetLocales, bdim1, rdim2, "dist1b2r"),
-    dist1r2b = new unmanaged DimensionalDist2D(targetLocales, rdim1, bdim2, "dist1r2b");
+    dist1b2b = new dimensionalDist2D(targetLocales, bdim1, bdim2, "dist1b2b"),
+    dist1b2r = new dimensionalDist2D(targetLocales, bdim1, rdim2, "dist1b2r"),
+    dist1r2b = new dimensionalDist2D(targetLocales, rdim1, bdim2, "dist1r2b");
 
   //
   // MatVectSpace is a 2D domain of type indexType that represents the
@@ -140,7 +140,7 @@ var tInit, tPS1iter, tUBR1iter, tSC1call, tLF1iter, tBScall, tVer: VTimer;
   //
   // We use 'AbD' instead of 'MatVectSpace' throughout.
   //
-  const AbD = {1..n, 1..n+1} dmapped new dmap(dist1b2b);
+  const AbD = {1..n, 1..n+1} dmapped dist1b2b;
 
   var Ab : [AbD] elemType,           // the matrix A and vector b
       piv: [1..n] indexType;         // a vector of pivot values
@@ -150,15 +150,15 @@ var tInit, tPS1iter, tUBR1iter, tSC1call, tLF1iter, tBScall, tVer: VTimer;
   //
   // Create the 1-d replicated arrays for schurComplement().
   //
-  const replAD = {1..n, 1..blkSize}   dmapped new dmap(dist1b2r),
-        replBD = {1..blkSize, 1..n+1} dmapped new dmap(dist1r2b);
+  const replAD = {1..n, 1..blkSize}   dmapped dist1b2r,
+        replBD = {1..blkSize, 1..n+1} dmapped dist1r2b;
 
   var replA: [replAD] elemType,
       replB: [replBD] elemType;
 
   vmsg("allocated replA,B");
 
-  const replKD = {0..0, 1..n+1} dmapped new dmap(dist1r2b);
+  const replKD = {0..0, 1..n+1} dmapped dist1r2b;
   var   replK: [replKD] elemType;
 
   const replUD = {0..#blkSize, 0..#blkSize} dmapped distReplicated;

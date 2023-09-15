@@ -1,0 +1,5 @@
+cyclicDistArgs.chpl:6: warning: passing arguments other than 'boundingBox' and 'targetLocales' to 'cyclicDist' is currently unstable
+cyclicDistArgs.chpl:7: warning: passing arguments other than 'boundingBox' and 'targetLocales' to 'cyclicDist' is currently unstable
+cyclicDistArgs.chpl:8: warning: passing arguments other than 'boundingBox' and 'targetLocales' to 'cyclicDist' is currently unstable
+cyclicDistArgs.chpl:9: warning: passing arguments other than 'boundingBox' and 'targetLocales' to 'cyclicDist' is currently unstable
+cyclicDistArgs.chpl:10: warning: passing arguments other than 'boundingBox' and 'targetLocales' to 'cyclicDist' is currently unstable

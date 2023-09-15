@@ -42,7 +42,7 @@ module TestHelpers {
       this.matrix_domain = {1..#rows,1..#columns};
       this.epsilon = error;
       
-      this.complete();
+      init this;
       this.populateFromArray( input_array, input_array_order );
       
     }
@@ -75,12 +75,12 @@ module TestHelpers {
       this.matrix_domain = {1..#rows,1..#columns};
       this.epsilon = error;
       
-      this.complete();
+      init this;
       this.populateFromArray( input_array, input_row_order );
       
     }
     
-    proc init( matrix: borrowed LAPACK_Matrix, type data_type = matrix.data_type ){
+    proc init( matrix: borrowed LAPACK_Matrix(?), type data_type = matrix.data_type ){
       this.data_type = data_type;
       this.row_major = matrix.row_major;
       this.rows = matrix.rows;
@@ -88,7 +88,7 @@ module TestHelpers {
       this.data_domain = matrix.data_domain;
       this.matrix_domain = matrix.matrix_domain;
 
-      this.complete();
+      init this;
 
       for idx in data_domain do this.data[idx] = matrix.data[idx];
       this.epsilon = matrix.epsilon;
@@ -190,8 +190,8 @@ module TestHelpers {
   }
   
   // Not using type queries to work around issue #13721
-  operator LAPACK_Matrix.*(A: borrowed LAPACK_Matrix,
-                           B: borrowed LAPACK_Matrix): owned LAPACK_Matrix(A.data_type) {
+  operator LAPACK_Matrix.*(A: borrowed LAPACK_Matrix(?),
+                           B: borrowed LAPACK_Matrix(?)): owned LAPACK_Matrix(A.data_type) {
     if A.data_type != B.data_type then
       compilerError("data_type mismatch in *");
 
@@ -212,8 +212,8 @@ module TestHelpers {
     return retmatrix;
   }
   
-  operator LAPACK_Matrix.==(A: borrowed LAPACK_Matrix,
-                            B: borrowed LAPACK_Matrix ): bool {
+  operator LAPACK_Matrix.==(A: borrowed LAPACK_Matrix(?),
+                            B: borrowed LAPACK_Matrix(?) ): bool {
     if A.data_type != B.data_type then
       compilerError("data_type mismatch in ==");
 

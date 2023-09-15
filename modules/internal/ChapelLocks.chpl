@@ -39,7 +39,7 @@ module ChapelLocks {
     proc init() {
     }
     proc init=(other: chpl_LocalSpinlock) {
-      this.complete();
+      init this;
       this.l.init_helper(other.l.read());
     }
 

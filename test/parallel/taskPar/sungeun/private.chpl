@@ -7,7 +7,7 @@
 use BlockDist, PrivateDist;
 use Time;
 
-record taskPrivateData {
+record taskPrivateData : writeSerializable {
   var tid: sync chpl_taskID_t = chpl_nullTaskID;
   var x: int;
   var y: [0..#numLocales] real;
@@ -20,8 +20,8 @@ record taskPrivateData {
   }
 
   // need our version of writeThis so we can print the sync field
-  proc writeThis(f) throws {
-    f.write("(", tid.readXX(), ": ", x, "  ", y, ")");
+  proc serialize(writer, ref serializer) throws {
+    writer.write("(", tid.readXX(), ": ", x, "  ", y, ")");
   }
 };
 
@@ -60,7 +60,7 @@ forall l in localePrivate do l = new unmanaged localePrivateData(taskPrivateData
 // an example use
 config param nPerLocale = 113;
 config const printTemps = false;
-const D = {0..#nPerLocale*numLocales} dmapped Block(boundingBox={0..#nPerLocale*numLocales});
+const D = {0..#nPerLocale*numLocales} dmapped blockDist(boundingBox={0..#nPerLocale*numLocales});
 forall d in D {
   // my copy of the task private vars
   var lp = localePrivate[here.id]!;

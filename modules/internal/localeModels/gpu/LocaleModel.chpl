@@ -211,7 +211,7 @@ module LocaleModel {
     return execution_subloc;  // no info needed from full sublocale
   }
 
-  class GPULocale : AbstractLocaleModel {
+  class GPULocale : AbstractLocaleModel, writeSerializable {
     const sid: chpl_sublocID_t;
 
     override proc chpl_id() do return try! (parent._value:LocaleModel)._node_id; // top-level node id
@@ -244,6 +244,10 @@ module LocaleModel {
       f.write("-GPU" + sid:string);
     }
 
+    override proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
+
     override proc _getChildCount(): int { return 0; }
 
     iter getChildIndices() : int {
@@ -255,7 +259,6 @@ module LocaleModel {
     }
     override proc _getChild(idx:int) : locale {
       halt("requesting a child from a GPULocale locale");
-      return new locale(this);
     }
 
     override proc isGpu() : bool { return true; }
@@ -296,7 +299,7 @@ module LocaleModel {
       numSublocales = chpl_gpu_num_devices;
       childSpace = {0..#numSublocales};
 
-      this.complete();
+      init this;
 
       setup();
     }
@@ -314,7 +317,7 @@ module LocaleModel {
       numSublocales = chpl_gpu_num_devices;
       childSpace = {0..#numSublocales};
 
-      this.complete();
+      init this;
 
       setup();
     }
@@ -373,7 +376,7 @@ module LocaleModel {
   // may overwrite this instance or any of its children to establish a more customized
   // representation of the system resources.
   //
-  class RootLocale : AbstractRootLocale {
+  class RootLocale : AbstractRootLocale, writeSerializable {
 
     const myLocaleSpace: domain(1) = {0..numLocales-1};
     pragma "unsafe"
@@ -408,6 +411,10 @@ module LocaleModel {
 
     override proc writeThis(f) throws {
       f.write(name);
+    }
+
+    override proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
 
     override proc _getChildCount() do return this.myLocaleSpace.size;

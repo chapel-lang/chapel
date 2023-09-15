@@ -18,6 +18,9 @@
  * limitations under the License.
  */
 
+@unstable("LayoutCS is unstable and may change in the future")
+prototype module LayoutCS {
+
 import RangeChunk;
 
 @chpldoc.nodoc
@@ -147,7 +150,7 @@ class CSDom: BaseSparseDomImpl(?) {
                   then {rowRange.lowBound..rowRange.highBound+1}
                   else {colRange.lowBound..colRange.highBound+1};
 
-    this.complete();
+    init this;
 
     nnzDom = {0..#_nnz};
     dsiClear();
@@ -341,7 +344,6 @@ class CSDom: BaseSparseDomImpl(?) {
       }
     }
     halt("Something went wrong in dsiFirst");
-    return (0, 0);
   }
 
   override proc dsiLast {
@@ -748,3 +750,5 @@ class CSArr: BaseSparseArrImpl(?) {
     }
   }
 } // CSArr
+
+} // LayoutCS

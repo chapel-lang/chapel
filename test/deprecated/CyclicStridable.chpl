@@ -188,7 +188,7 @@ where the updates are made.
 
 This distribution has not been tuned for performance.
 */
-class Cyclic: BaseDist {
+class Cyclic: BaseDist, writeSerializable {
   param rank: int;
   type idxType = int;
 
@@ -246,7 +246,7 @@ class Cyclic: BaseDist {
     this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
     this.dataParMinGranularity = dataParMinGranularity;
 
-    this.complete();
+    init this;
 
     if debugCyclicDist then
       for loc in locDist do writeln(loc);
@@ -317,7 +317,7 @@ override proc Cyclic.dsiDisplayRepresentation() {
 
 override proc CyclicDom.dsiSupportsAutoLocalAccess() param { return true; }
 
-proc Cyclic.init(other: Cyclic, privateData,
+proc Cyclic.init(other: Cyclic(?), privateData,
                  param rank = other.rank,
                  type idxType = other.idxType) {
   this.rank = rank;
@@ -399,11 +399,11 @@ proc _cyclic_matchArgsShape(type rangeType, type scalarType, args) type {
   return helper(0);
 }
 
-proc Cyclic.writeThis(x) throws {
-  x.writeln(this.type:string);
-  x.writeln("------");
+proc Cyclic.serialize(writer, ref serializer) throws {
+  writer.writeln(this.type:string);
+  writer.writeln("------");
   for locid in targetLocDom do
-    x.writeln(" [", locid, "=", targetLocs(locid), "] owns chunk: ",
+    writer.writeln(" [", locid, "=", targetLocs(locid), "] owns chunk: ",
       locDist(locid).myChunk);
 }
 
@@ -582,7 +582,7 @@ override proc CyclicDom.dsiMyDist() do                   return dist;
 
 proc CyclicDom.getLocDom(localeIdx) do return locDoms(localeIdx);
 
-proc CyclicDom.dsiSetIndices(x: domain) {
+proc CyclicDom.dsiSetIndices(x: domain(?)) {
   whole = x;
   setup();
 }
@@ -592,7 +592,7 @@ proc CyclicDom.dsiSetIndices(x) {
   setup();
 }
 
-proc CyclicDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+proc CyclicDom.dsiAssignDomain(rhs: domain(?), lhsPrivate:bool) {
   chpl_assignDomainWithGetSetIndices(this, rhs);
 }
 
@@ -961,7 +961,7 @@ override proc CyclicArr.dsiStaticFastFollowCheck(type leadType) param {
 proc CyclicArr.dsiDynamicFastFollowCheck(lead: []) do
   return this.dsiDynamicFastFollowCheck(lead.domain);
 
-proc CyclicArr.dsiDynamicFastFollowCheck(lead: domain) {
+proc CyclicArr.dsiDynamicFastFollowCheck(lead: domain(?)) {
   return lead.distribution.dsiEqualDMaps(this.dom.dist) && lead._value.whole == this.dom.whole;
 }
 
@@ -1041,7 +1041,7 @@ proc CyclicArr.setRADOpt(val=true) {
   if doRADOpt then setupRADOpt();
 }
 
-class LocCyclicArr {
+class LocCyclicArr : writeSerializable {
   type eltType;
   param rank: int;
   type idxType;
@@ -1078,8 +1078,8 @@ class LocCyclicArr {
   // guard against dynamic dispatch resolution trying to resolve
   // write()ing out an array of sync vars and hitting the sync var
   // type's compilerError()
-  override proc writeThis(f) throws {
-    halt("LocCyclicArr.writeThis() is not implemented / should not be needed");
+  override proc serialize(writer, ref serializer) throws {
+    halt("LocCyclicArr.serialize() is not implemented / should not be needed");
   }
 }
 
@@ -1106,7 +1106,7 @@ class LocCyclicRADCache /* : LocRADCache */ {
     this.rank = rank;
     this.idxType = idxType;
 
-    this.complete();
+    init this;
 
     for param i in 0..rank-1 do
       // NOTE: Not bothering to check to see if length can fit into idxType
@@ -1169,7 +1169,7 @@ where canDoAnyToCyclic(this, destDom, Src, srcDom) {
 }
 
 // For assignments of the form: DefaultRectangular = Cyclic
-proc CyclicArr.doiBulkTransferToKnown(srcDom, Dest:DefaultRectangularArr, destDom) : bool
+proc CyclicArr.doiBulkTransferToKnown(srcDom, Dest:DefaultRectangularArr(?), destDom) : bool
 where useBulkTransferDist {
   if !chpl_allStridesArePositive(this, srcDom, Dest, destDom) then return false;
 
@@ -1213,7 +1213,7 @@ where useBulkTransferDist {
 }
 
 // For assignments of the form: Cyclic = DefaultRectangular
-proc CyclicArr.doiBulkTransferFromKnown(destDom, Src:DefaultRectangularArr, srcDom) : bool
+proc CyclicArr.doiBulkTransferFromKnown(destDom, Src:DefaultRectangularArr(?), srcDom) : bool
 where useBulkTransferDist {
   if !chpl_allStridesArePositive(this, destDom, Src, srcDom) then return false;
 
@@ -1263,7 +1263,7 @@ proc Cyclic.dsiTargetLocales() const ref {
   return targetLocs;
 }
 
-proc type Cyclic.createDomain(dom: domain) {
+proc type Cyclic.createDomain(dom: domain(?)) {
   return dom dmapped Cyclic(startIdx=dom.lowBound);
 }
 
@@ -1271,7 +1271,7 @@ proc type Cyclic.createDomain(rng: range...) {
   return createDomain({(...rng)});
 }
 
-proc type Cyclic.createArray(dom: domain, type eltType) {
+proc type Cyclic.createArray(dom: domain(?), type eltType) {
   var D = createDomain(dom);
   var A: [D] eltType;
   return A;
@@ -1311,12 +1311,12 @@ proc CyclicDom.dsiLocalSubdomain(loc: locale) {
 }
 
 @deprecated(notes="'newCyclicDom' is deprecated - please use 'Cyclic.createDomain' instead")
-proc newCyclicDom(dom: domain) {
+proc newCyclicDom(dom: domain(?)) {
   return dom dmapped Cyclic(startIdx=dom.lowBound);
 }
 
 @deprecated(notes="'newCyclicArr' is deprecated - please use 'Cyclic.createArray' instead")
-proc newCyclicArr(dom: domain, type eltType) {
+proc newCyclicArr(dom: domain(?), type eltType) {
   var D = newCyclicDom(dom);
   var A: [D] eltType;
   return A;

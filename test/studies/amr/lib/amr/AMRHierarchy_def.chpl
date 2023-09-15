@@ -83,7 +83,7 @@ class AMRHierarchy {
     this.max_n_levels      = max_n_levels;
     this.flagger           = flagger;
     this.target_efficiency = target_efficiency;
-    this.complete();
+    init this;
 
 
     //---- Create the base level ----

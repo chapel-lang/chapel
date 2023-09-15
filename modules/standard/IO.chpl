@@ -680,8 +680,6 @@ module IO {
     - Fancy features, like adding a bytes or buffer object to a fileReader or
       fileWriter (so that the fileReader or fileWriter just refers to it and
       does not copy it) are implemented but not well tested.
-    - It would be nice if ioBits:string printed itself in binary instead of
-      decimal.
     - Cleaning up to reduce the number of exported symbols, and using enums for
       all constants once 'use enum' is available and we have a way to get
       C constants into Chapel enums.
@@ -703,7 +701,7 @@ import OS.{errorCode};
 use CTypes;
 public use OS;
 private use Reflection;
-public use ChapelIO;
+public use ChapelIO only write, writeln, writef;
 
 /*
 
@@ -758,14 +756,6 @@ enum ioMode {
   cwr = 4,
   @unstable("append mode is unstable")
   a = 5,
-}
-
-@deprecated(notes="enum iomode is deprecated - please use :enum:`ioMode` instead")
-enum iomode {
-  r = 1,
-  cw = 2,
-  rw = 3,
-  cwr = 4,
 }
 
 @chpldoc.nodoc
@@ -1860,7 +1850,7 @@ record file {
 proc file.init(x: file) {
   this._home = x._home;
   this._file_internal = x._file_internal;
-  this.complete();
+  init this;
   on this._home {
     qio_file_retain(_file_internal);
   }
@@ -2044,17 +2034,6 @@ proc file.checkAssumingLocal() throws {
     throw createSystemError(EBADF, "Operation attempted on an invalid file");
   if !qio_file_isopen(_file_internal) then
     throw createSystemError(EBADF, "Operation attempted on closed file");
-}
-
-/* Throw an error if `this` is not a valid representation of an OS file.
-
-   :throws SystemError: Indicates that `this` does not represent an OS file.
-*/
- @deprecated(notes="'file.check()' is deprecated, please use :proc:`file.isOpen` instead")
-proc file.check() throws {
-  on this._home {
-    this.checkAssumingLocal(); // Remove this function, too?
-  }
 }
 
 /* Indicates if the file is currently open.  Will return ``false`` for both
@@ -2284,32 +2263,6 @@ proc _modestring(mode:ioMode) {
   }
 }
 
-pragma "compiler generated"
-@chpldoc.nodoc
-proc convertIoMode(mode:iomode):ioMode {
-  import HaltWrappers;
-  select mode {
-    when iomode.r do return ioMode.r;
-    when iomode.rw do return ioMode.rw;
-    when iomode.cw do return ioMode.cw;
-    when iomode.cwr do return ioMode.cwr;
-    otherwise do HaltWrappers.exhaustiveSelectHalt("Invalid iomode");
-  }
-}
-
-pragma "last resort"
-@deprecated(notes="open with an iomode argument is deprecated - please use :enum:`ioMode`")
-proc open(path:string, mode:iomode, hints=ioHintSet.empty,
-          style:iostyle): file throws {
-  return open(path, convertIoMode(mode), hints, style);
-}
-
-@deprecated("open with a 'style' argument is deprecated")
-proc open(path:string, mode:ioMode, hints=ioHintSet.empty,
-          style:iostyle): file throws {
-  return openHelper(path, mode, hints, style:iostyleInternal);
-}
-
 /*
 
 Open a file on a filesystem. Note that once the file is open, you will need to
@@ -2335,10 +2288,11 @@ proc open(path:string, mode:ioMode, hints=ioHintSet.empty): file throws {
   return openHelper(path, mode, hints);
 }
 
-pragma "last resort"
-@deprecated(notes="open with an iomode argument is deprecated - please use :enum:`ioMode`")
-proc open(path:string, mode:iomode, hints=ioHintSet.empty): file throws {
-  return open(path, convertIoMode(mode), hints);
+
+@deprecated("open with a 'style' argument is deprecated")
+proc open(path:string, mode:ioMode, hints=ioHintSet.empty,
+          style:iostyle): file throws {
+  return openHelper(path, mode, hints, style:iostyleInternal);
 }
 
 private proc openHelper(path:string, mode:ioMode, hints=ioHintSet.empty,
@@ -2419,140 +2373,8 @@ proc openplugin(pluginFile: QioPluginFile, mode:ioMode,
   return ret;
 }
 
-@deprecated(notes="openfd is deprecated, please use the file initializer with a 'c_int' argument instead")
-proc openfd(fd: c_int, hints=ioHintSet.empty, style:iostyle):file throws {
-  return openfdHelper(fd, hints, style: iostyleInternal);
-}
-
-/*
-
-Create a Chapel file that works with a system file descriptor.  Note that once
-the file is open, you will need to use a :proc:`file.reader` to create a
-fileReader or :proc:`file.writer` to create a fileWriter to actually perform I/O
-operations
-
-The system file descriptor will be closed when the Chapel file is closed.
-
-.. note::
-
-  This function can be used to create Chapel files that refer to system file
-  descriptors that do not support the ``seek`` functionality. For example, file
-  descriptors that represent pipes or open socket connections have this
-  property. In that case, the resulting file value should only be used with one
-  :record:`fileReader` or :record:`fileWriter` at a time.  The I/O system will
-  ignore the fileReader or fileWriter offsets when reading or writing to files
-  backed by non-seekable file descriptors.
-
-
-:arg fd: a system file descriptor.
-:arg hints: optional argument to specify any hints to the I/O system about
-            this file. See :record:`ioHintSet`.
-:returns: an open :record:`file` using the specified file descriptor.
-
-:throws SystemError: Thrown if the file descriptor could not be retrieved.
-*/
-@deprecated(notes="openfd is deprecated, please use the file initializer with a 'c_int' argument instead")
-proc openfd(fd: c_int, hints = ioHintSet.empty):file throws {
-  return openfdHelper(fd, hints);
-}
-
-private proc openfdHelper(fd: c_int, hints = ioHintSet.empty,
-                          style:iostyleInternal = defaultIOStyleInternal()):file throws {
-  var local_style = style;
-  var ret:file;
-  ret._home = here;
-  extern proc chpl_cnullfile():c_ptr(chpl_cFile);
-  var err = qio_file_init(ret._file_internal, chpl_cnullfile(), fd, hints._internal, local_style, 0);
-
-  // On return, either ret._file_internal.ref_cnt == 1, or ret._file_internal is NULL.
-  // err should be nonzero in the latter case.
-  if err {
-    var path_cs:c_ptrConst(c_char);
-    var path_err = qio_file_path_for_fd(fd, path_cs);
-    var path = if path_err then "unknown"
-                           else string.createCopyingBuffer(path_cs,
-                                                          policy=decodePolicy.replace);
-    try ioerror(err, "in openfd", path);
-  }
-  return ret;
-}
-
-@deprecated(notes="openfp is deprecated, please use the file initializer with a 'c_FILE' argument instead")
-proc openfp(fp, hints=ioHintSet.empty, style:iostyle):file throws {
-  return openfpHelper(fp, hints, style: iostyleInternal);
-}
-
-/*
-
-Create a Chapel :record:`file` that wraps around an open C file. A pointer to
-a C ``FILE`` object can be obtained via Chapel's
-:ref:`C Interoperability <primers-C-interop-using-C>` functionality.
-
-Once the Chapel file is created, you will need to use a :proc:`file.reader` to
-create a fileReader or :proc:`file.writer` to create a fileWriter to perform I/O
-operations on the C file.
-
-.. note::
-
-  The resulting file value should only be used with one :record:`fileReader` or
-  :record:`fileWriter` at a time. The I/O system will ignore the fileReader or
-  fileWriter offsets when reading or writing to a file opened with
-  :proc:`openfp`.
-
-
-:arg fp: a pointer to a C ``FILE``. See :type:`~CTypes.c_FILE`.
-:arg hints: optional argument to specify any hints to the I/O system about
-            this file. See :record:`ioHintSet`.
-:returns: an open :record:`file` corresponding to the C file.
-
-:throws SystemError: Thrown if the C file could not be retrieved.
- */
-@deprecated(notes="openfp is deprecated, please use the file initializer with a 'c_FILE' argument instead")
-proc openfp(fp, hints=ioHintSet.empty):file throws {
-  return openfpHelper(fp, hints);
-}
-
-pragma "last resort"
-@deprecated(notes="'_file' is deprecated; use the file initializer that takes a 'c_FILE' instead")
-proc openfp(fp: _file, hints=ioHintSet.empty):file throws {
-  return openfpHelper(fp, hints);
-}
-
-private proc openfpHelper(fp: ?t, hints=ioHintSet.empty,
-                          style:iostyleInternal = defaultIOStyleInternal()):file throws {
-
-  // check if the user passed in a c_FILE rather than a c_ptr(c_FILE)
-  // (TODO: this can be removed when deprecation is complete (along with the type query))
-  if !cFileTypeHasPointer && t == chpl_cFile
-    then compilerError("Cannot initialize a `file` with a `c_FILE` object. ",
-                         "Please pass a pointer to the `c_FILE` object instead.");
-
-  var local_style = style;
-  var ret:file;
-  ret._home = here;
-  var err = qio_file_init(ret._file_internal, fp, -1, hints._internal, local_style, 1);
-
-  // On return either ret._file_internal.ref_cnt == 1, or ret._file_internal is NULL.
-  // error should be nonzero in the latter case.
-  if err {
-    var path_cs:c_ptrConst(c_char);
-    var path_err = qio_file_path_for_fp(fp, path_cs);
-    var path = if path_err then "unknown"
-                           else string.createCopyingBuffer(path_cs,
-                                                          policy=decodePolicy.replace);
-    deallocate(path_cs);
-    try ioerror(err, "in openfp", path);
-  }
-  return ret;
-}
-
 @deprecated("openTempFile with a 'style' argument is deprecated")
 proc openTempFile(hints=ioHintSet.empty, style:iostyle):file throws {
-  return opentmpHelper(hints, style: iostyleInternal);
-}
-
-@deprecated(notes="opentmp is deprecated, please use :proc:`openTempFile` instead")
-proc opentmp(hints=ioHintSet.empty, style:iostyle):file throws {
   return opentmpHelper(hints, style: iostyleInternal);
 }
 
@@ -2581,11 +2403,6 @@ proc openTempFile(hints=ioHintSet.empty):file throws {
   return opentmpHelper(hints);
 }
 
-@deprecated(notes="opentmp is deprecated, please use :proc:`openTempFile` instead")
-proc opentmp(hints=ioHintSet.empty):file throws {
-  return opentmpHelper(hints);
-}
-
 private proc opentmpHelper(hints=ioHintSet.empty,
                            style:iostyleInternal = defaultIOStyleInternal()):file throws {
   var local_style = style;
@@ -2596,16 +2413,6 @@ private proc opentmpHelper(hints=ioHintSet.empty,
   var err = qio_file_open_tmp(ret._file_internal, hints._internal, local_style);
   if err then try ioerror(err, "in opentmp");
   return ret;
-}
-
-@deprecated(notes="openmem is deprecated - please use :proc:`openMemFile` instead")
-proc openmem(style:iostyle):file throws {
-  return openMemFile(style);
-}
-
-@deprecated(notes="openmem is deprecated - please use :proc:`openMemFile` instead")
-proc openmem():file throws {
-  return openMemFile();
 }
 
 @deprecated("openMemFile with a 'style' argument is deprecated")
@@ -2674,7 +2481,7 @@ private proc defaultSerializeVal(param writing : bool,
 }
 
 @chpldoc.nodoc
-class _serializeWrapper {
+class _serializeWrapper : writeSerializable {
   type T;
   var member: T;
   // TODO: Needed to avoid a weird memory error in the following test in
@@ -3590,7 +3397,7 @@ record binaryDeserializer {
   proc init(endian: IO.ioendian = IO.ioendian.native, _structured : bool = true) {
     this.endian = endian;
     this._structured = _structured;
-    this.complete();
+    init this;
   }
 
   // TODO: rewrite in terms of writef, or something
@@ -3919,7 +3726,7 @@ proc fileReader.init=(x: fileReader) {
   this._channel_internal = x._channel_internal;
   this._deserializer = new shared _serializeWrapper(deserializerType, x._deserializer!.member);
   this._readWriteThisFromLocale = x._readWriteThisFromLocale;
-  this.complete();
+  init this;
   on x._home {
     qio_channel_retain(x._channel_internal);
   }
@@ -3938,7 +3745,7 @@ proc fileWriter.init=(x: fileWriter) {
   this._channel_internal = x._channel_internal;
   this._serializer = new shared _serializeWrapper(serializerType, x._serializer!.member);
   this._readWriteThisFromLocale = x._readWriteThisFromLocale;
-  this.complete();
+  init this;
   on x._home {
     qio_channel_retain(x._channel_internal);
   }
@@ -4088,7 +3895,7 @@ proc fileWriter.withSerializer(in serializer: ?st) : fileWriter(this._kind, this
 // represents a Unicode codepoint
 // used to pass codepoints to read and write to avoid duplicating code
 @chpldoc.nodoc
-record _internalIoChar {
+record _internalIoChar : writeSerializable {
   /* The codepoint value */
   var ch:int(32);
   @chpldoc.nodoc
@@ -4096,6 +3903,19 @@ record _internalIoChar {
     // ioChar.writeThis should not be called;
     // I/O routines should handle ioChar directly
     assert(false);
+  }
+  @chpldoc.nodoc
+  proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
+  }
+}
+
+@chpldoc.nodoc
+inline operator :(x: _internalIoChar, type t:string) {
+  var csc: c_ptrConst(c_char) =  qio_encode_to_string(x.ch);
+  // The caller has responsibility for freeing the returned string.
+  try! {
+    return string.createAdoptingBuffer(csc);
   }
 }
 
@@ -4121,25 +3941,6 @@ proc fileReader._getFp(): (bool, c_ptr(c_FILE)) {
   }
 }
 
-/*
-
-Represents a Unicode codepoint. I/O routines (such as :proc:`fileReader.read`
-and :proc:`fileWriter.write`) can use arguments of this type in order to read or
-write a single Unicode codepoint.
-
- */
-@deprecated(notes="ioChar type is deprecated - please use :proc:`fileReader.readCodepoint` and :proc:`fileWriter.writeCodepoint` instead")
-type ioChar = _internalIoChar;
-
-@chpldoc.nodoc
-inline operator :(x: _internalIoChar, type t:string) {
-  var csc: c_ptrConst(c_char) =  qio_encode_to_string(x.ch);
-  // The caller has responsibility for freeing the returned string.
-  try! {
-    return string.createAdoptingBuffer(csc);
-  }
-}
-
 
 /*
 
@@ -4158,7 +3959,7 @@ When reading an ioNewline, read routines will skip any character sequence
 type ioNewline = chpl_ioNewline;
 
 @chpldoc.nodoc
-record chpl_ioNewline {
+record chpl_ioNewline : writeSerializable {
   /*
     Normally, we will skip anything at all to get to a ``\n``,
     but if skipWhitespaceOnly is set, it will be an error
@@ -4197,7 +3998,7 @@ will return an error for incorrectly formatted input
 type ioLiteral = chpl_ioLiteral;
 
 @chpldoc.nodoc
-record chpl_ioLiteral {
+record chpl_ioLiteral : writeSerializable {
   /* The value of the literal */
   var val: string;
   /* Should read operations using this literal ignore and consume
@@ -4207,6 +4008,10 @@ record chpl_ioLiteral {
   proc writeThis(f) throws {
     // Normally this is handled explicitly in read/write.
     f.write(val);
+  }
+  @chpldoc.nodoc
+  proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
   }
 }
 
@@ -4225,15 +4030,6 @@ record _internalIoBits {
   // keep the old names for compatibility with old ioBits
   proc v: x.type {return x;}
   proc nbits:numBits.type {return numBits;}
-}
-
-@deprecated(notes="ioBits type is deprecated - please use :proc:`fileReader.readBits` and :proc:`fileWriter.writeBits` instead")
-type ioBits = _internalIoBits;
-
-@chpldoc.nodoc
-inline operator :(x: _internalIoBits, type t:string) {
-  const ret = "ioBits(v=" + x.v:string + ", nbits=" + x.nbits:string + ")";
-  return ret;
 }
 
 /*
@@ -4865,11 +4661,9 @@ inline proc fileWriter.commit() {
 }
 
 /* Used to control the behavior of the region argument for
-   :proc:`fileReader.seek` or :proc:`fileWriter.seek`.  When set to ``true``,
-   the region argument will fully specify the bounds of the seek.  When set to
-   ``false``, the region argument will exclude the high bound.  Defaults to
-   ``false``, the original behavior.  */
-config param useNewSeekRegionBounds = false;
+   :proc:`fileReader.seek` or :proc:`fileWriter.seek`. */
+@deprecated("'useNewSeekRegionBounds' has been deprecated - the region adjustment it was controlling is now always 'true', this config no longer impacts code and will be removed in a future release")
+config param useNewSeekRegionBounds = true;
 
 /*
    Adjust a :record:`fileReader`'s region. The ``fileReader``'s buffer will be
@@ -4899,8 +4693,7 @@ config param useNewSeekRegionBounds = false;
                          fileReader is marked.
    :throws IllegalArgumentError: if region argument did not have a lower bound
  */
-proc fileReader.seek(region: range(?)) throws where (!region.hasHighBound() ||
-                                                     useNewSeekRegionBounds) {
+proc fileReader.seek(region: range(?)) throws {
 
   if this.locking then
     compilerError("Cannot seek on a locking fileReader");
@@ -4953,8 +4746,7 @@ proc fileReader.seek(region: range(?)) throws where (!region.hasHighBound() ||
                          fileReader is marked.
    :throws IllegalArgumentError: if region argument did not have a lower bound
  */
-proc fileWriter.seek(region: range(?)) throws where (!region.hasHighBound() ||
-                                                     useNewSeekRegionBounds) {
+proc fileWriter.seek(region: range(?)) throws {
 
   if this.locking then
     compilerError("Cannot seek on a locking fileWriter");
@@ -4976,34 +4768,6 @@ proc fileWriter.seek(region: range(?)) throws where (!region.hasHighBound() ||
       if err then
         throw createSystemError(err);
     }
-  }
-}
-
-@deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewSeekRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
-proc fileReader.seek(region: range(?)) throws where (region.hasHighBound() &&
-                                                     !useNewSeekRegionBounds) {
-  if (!region.hasLowBound()) {
-    throw new IllegalArgumentError("illegal argument 'region': must have a lower bound");
-
-  } else {
-    const err = qio_channel_seek(_channel_internal, region.low, region.high);
-
-    if err then
-      throw createSystemError(err);
-  }
-}
-
-@deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewSeekRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
-proc fileWriter.seek(region: range(?)) throws where (region.hasHighBound() &&
-                                                     !useNewSeekRegionBounds) {
-  if (!region.hasLowBound()) {
-    throw new IllegalArgumentError("illegal argument 'region': must have a lower bound");
-
-  } else {
-    const err = qio_channel_seek(_channel_internal, region.low, region.high);
-
-    if err then
-      throw createSystemError(err);
   }
 }
 
@@ -5305,16 +5069,6 @@ proc fileWriter.filePlugin() : borrowed QioPluginFile? {
   return vptr:borrowed QioPluginFile?;
 }
 
-@deprecated(notes="openreader is deprecated - please use :proc:`openReader` instead")
-proc openreader(path:string,
-                param kind=_iokind.dynamic, param locking=true,
-                start:int(64) = 0, end:int(64) = max(int(64)),
-                hints=ioHintSet.empty,
-                style:iostyle)
-    : fileReader(kind, locking) throws {
-  return openReader(path, kind, locking, start, end, hints, style);
-}
-
 
 @deprecated("openReader with a 'style' argument is deprecated, please pass a Deserializer to the 'deserializer' argument instead")
 proc openReader(path:string,
@@ -5328,63 +5082,14 @@ proc openReader(path:string,
 }
 
 /* Used to control the behavior of the region argument for :proc:`openReader`.
-   When set to ``true``, the region argument will fully specify the bounds of
-   the :type:`fileReader`.  When set to ``false``, the region argument will
-   exclude the high bound.  Defaults to ``false``, the original behavior.
  */
-config param useNewOpenReaderRegionBounds = false;
+@deprecated("'useNewOpenReaderRegionBounds' is now deprecated - the region argument for openReader always fully specifies the bounds, and this flag no longer impacts openReader's behavior.  This flag will be removed in a future release")
+config param useNewOpenReaderRegionBounds = true;
 
 // We can simply call fileReader.close() on these, since the underlying file
 // will be closed once we no longer have any references to it (which in this
 // case, since we only will have one reference, will be right after we close
 // this fileReader presumably).
-
-/*
-
-Open a file at a particular path and return a :record:`fileReader` for it.
-This function is equivalent to calling :proc:`open` and then
-:proc:`file.reader` on the resulting file.
-
-:arg path: which file to open (for example, "some/file.txt").
-:arg kind: :type:`iokind` compile-time argument to determine the
-            corresponding parameter of the :record:`fileReader` type. Defaults
-            to ``iokind.dynamic``, meaning that the associated
-            :record:`iostyle` controls the formatting choices.
-:arg locking: compile-time argument to determine whether or not the
-              fileReader should use locking; sets the
-              corresponding parameter of the :record:`fileReader` type.
-              Defaults to true, but when safe, setting it to false
-              can improve performance.
-:arg region: zero-based byte offset indicating where in the file the
-            fileReader should start and stop reading. Defaults to
-            ``0..``, meaning from the start of the file to no specified end
-            point.
-:arg hints: optional argument to specify any hints to the I/O system about
-            this file. See :record:`ioHintSet`.
-:returns: an open fileReader to the requested resource.
-
-.. warning::
-
-   The region argument will ignore any specified stride other than 1.
-
-:throws FileNotFoundError: Thrown if part of the provided path did not exist
-:throws PermissionError: Thrown if part of the provided path had inappropriate
-                         permissions
-:throws NotADirectoryError: Thrown if part of the provided path was expected to
-                            be a directory but was not
-:throws SystemError: Thrown if a fileReader could not be returned.
-:throws IllegalArgumentError: Thrown if trying to read explicitly prior to byte
-                              0.
- */
-@deprecated(notes="openreader is deprecated - please use :proc:`openReader` instead")
-proc openreader(path:string,
-                param kind=iokind.dynamic, param locking=true,
-                region: range(?) = 0.., hints=ioHintSet.empty)
-    : fileReader(kind, locking, defaultSerializeType(false, kind)) throws where (!region.hasHighBound() ||
-                                              useNewOpenReaderRegionBounds) {
-  return openReader(path, kind, locking, region, hints);
-}
-
 
 /*
 
@@ -5422,8 +5127,7 @@ This function is equivalent to calling :proc:`open` and then
 proc openReader(path:string, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty,
                 in deserializer: ?dt = defaultSerializeVal(false))
-    : fileReader(locking, dt) throws where (!region.hasHighBound() ||
-                                            useNewOpenReaderRegionBounds) {
+    : fileReader(locking, dt) throws {
   return openReaderHelper(path, _iokind.dynamic, locking, region, hints, deserializer=deserializer);
 }
 
@@ -5433,27 +5137,8 @@ proc openReader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty,
                 in deserializer: ?dt = defaultSerializeVal(false,kind))
-    : fileReader(kind, locking, dt) throws where (!region.hasHighBound() ||
-                                              useNewOpenReaderRegionBounds) {
+    : fileReader(kind, locking, dt) throws {
   return openReaderHelper(path, kind, locking, region, hints, deserializer=deserializer);
-}
-
-@deprecated(notes="openreader is deprecated - please use :proc:`openReader` instead")
-proc openreader(path:string,
-                param kind=iokind.dynamic, param locking=true,
-                region: range(?) = 0.., hints=ioHintSet.empty)
-    : fileReader(kind, locking, defaultSerializeType(false,kind)) throws where (region.hasHighBound() &&
-                                              !useNewOpenReaderRegionBounds) {
-  return openReader(path, kind, locking, region, hints);
-}
-
-@deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewOpenReaderRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
-proc openReader(path:string,
-                param kind=iokind.dynamic, param locking=true,
-                region: range(?) = 0.., hints=ioHintSet.empty)
-    : fileReader(kind, locking, defaultSerializeType(false,kind)) throws where (region.hasHighBound() &&
-                                              !useNewOpenReaderRegionBounds) {
-  return openReaderHelper(path, kind, locking, region, hints);
 }
 
 private proc openReaderHelper(path:string,
@@ -5466,18 +5151,7 @@ private proc openReaderHelper(path:string,
 
   var fl:file = try open(path, ioMode.r);
   return try fl.readerHelper(kind, locking, region, hints, style,
-                             fromOpenReader=true,
                              deserializer=deserializer);
-}
-
-@deprecated(notes="openwriter is deprecated - please use :proc:`openWriter` instead")
-proc openwriter(path:string,
-                param kind=iokind.dynamic, param locking=true,
-                start:int(64) = 0, end:int(64) = max(int(64)),
-                hints=ioHintSet.empty,
-                style:iostyle)
-    : fileWriter(kind, locking, defaultSerializeType(true,kind)) throws {
-  return openWriter(path, kind, locking, start, end, hints, style);
 }
 
 @deprecated("openWriter with a 'style' argument is deprecated, please pass a Serializer to the 'serializer' argument instead")
@@ -5489,44 +5163,6 @@ proc openWriter(path:string,
     : fileWriter(kind, locking, defaultSerializeType(true,kind)) throws {
   return openWriterHelper(path, kind, locking, start, end, hints,
                     style: iostyleInternal);
-}
-
-
-/*
-
-Open a file at a particular path and return a :record:`fileWriter` for it.
-This function is equivalent to calling :proc:`open` with ``ioMode.cwr`` and then
-:proc:`file.writer` on the resulting file.
-
-:arg path: which file to open (for example, "some/file.txt").
-:arg kind: :type:`iokind` compile-time argument to determine the
-           corresponding parameter of the :record:`fileWriter` type. Defaults
-           to ``iokind.dynamic``, meaning that the associated
-           :record:`iostyle` controls the formatting choices.
-:arg locking: compile-time argument to determine whether or not the
-              fileWriter should use locking; sets the
-              corresponding parameter of the :record:`fileWriter` type.
-              Defaults to true, but when safe, setting it to false
-              can improve performance.
-:arg hints: optional argument to specify any hints to the I/O system about
-            this file. See :record:`ioHintSet`.
-:returns: an open fileWriter to the requested resource.
-
-:throws FileNotFoundError: Thrown if part of the provided path did not exist
-:throws PermissionError: Thrown if part of the provided path had inappropriate
-                         permissions
-:throws NotADirectoryError: Thrown if part of the provided path was expected to
-                            be a directory but was not
-:throws SystemError: Thrown if a fileWriter could not be returned.
-:throws IllegalArgumentError: Thrown if trying to write explicitly prior to byte
-                              0.
-*/
-@deprecated(notes="openwriter is deprecated - please use :proc:`openWriter` instead")
-proc openwriter(path:string,
-                param kind=iokind.dynamic, param locking=true,
-                hints = ioHintSet.empty)
-    : fileWriter(kind, locking, defaultSerializeType(true,kind)) throws {
-  return openWriter(path, kind, locking, hints);
 }
 
 /*
@@ -5593,11 +5229,9 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
 }
 
 /* Used to control the behavior of the region argument for :proc:`file.reader`.
-   When set to ``true``, the region argument will fully specify the bounds of
-   the :type:`fileReader`.  When set to ``false``, the region argument will
-   exclude the high bound.  Defaults to ``false``, the original behavior.
  */
-config param useNewFileReaderRegionBounds = false;
+@deprecated("'useNewFileReaderRegionBounds' is now deprecated - fileReaders now always use the region argument to fully specify the bounds, and this flag is no longer used to change that.  This flag will be removed in a future release")
+config param useNewFileReaderRegionBounds = true;
 
 /*
    Create a :record:`fileReader` that supports reading from a file. See
@@ -5639,8 +5273,7 @@ config param useNewFileReaderRegionBounds = false;
 proc file.reader(param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty,
                  in deserializer: ?dt = defaultSerializeVal(false))
-  : fileReader(locking, dt) throws where (!region.hasHighBound() ||
-                                          useNewFileReaderRegionBounds) {
+  : fileReader(locking, dt) throws {
   return this.readerHelper(_iokind.dynamic, locking, region, hints,
                            deserializer=deserializer);
 }
@@ -5650,28 +5283,15 @@ pragma "last resort"
 proc file.reader(param kind=iokind.dynamic, param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty,
                  in deserializer: ?dt = defaultSerializeVal(false,kind))
-  : fileReader(kind, locking, dt) throws where (!region.hasHighBound() ||
-                                                useNewFileReaderRegionBounds) {
+  : fileReader(kind, locking, dt) throws {
   return this.readerHelper(kind, locking, region, hints,
                            deserializer=deserializer);
 }
 
-@deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewFileReaderRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
-proc file.reader(param kind=iokind.dynamic, param locking=true,
-                 region: range(?) = 0.., hints = ioHintSet.empty,
-                 in deserializer: ?dt = defaultSerializeVal(false,kind))
-  : fileReader(kind, locking, dt) throws where (region.hasHighBound() &&
-                                            !useNewFileReaderRegionBounds) {
-  return this.readerHelper(kind, locking, region, hints, deserializer=deserializer);
-}
-
-// TODO: remove fromOpenReader and fromOpenUrlReader when deprecated versions
-// are removed
 @chpldoc.nodoc
 proc file.readerHelper(param kind=_iokind.dynamic, param locking=true,
                        region: range(?) = 0.., hints = ioHintSet.empty,
                        style:iostyleInternal = this._style,
-                       fromOpenReader=false, fromOpenUrlReader=false,
                        in deserializer: ?dt = defaultSerializeVal(false,kind))
   : fileReader(kind, locking, dt) throws {
   if (region.hasLowBound() && region.low < 0) {
@@ -5688,46 +5308,16 @@ proc file.readerHelper(param kind=_iokind.dynamic, param locking=true,
     var end : region.idxType;
     try this.checkAssumingLocal();
     if (region.hasLowBound() && region.hasHighBound()) {
-      // This is to ensure the user sees consistent behavior and can control it.
-      // - All calls from `openUrlReader` should use the new behavior.
-      // - Only calls from `openReader` that are compiled with the flag that
-      //   controls its region argument should affect its behavior.
-      // - Only calls from `file.reader` that are compiled with the flag that
-      //   controls its region argument should affect its behavior.
-      // Calls from `openReader` should not be impacted by `file.reader`'s flag
-      // and vice versa.
-      if ((fromOpenReader && useNewOpenReaderRegionBounds) ||
-          fromOpenUrlReader ||
-          (!fromOpenReader && useNewFileReaderRegionBounds)) {
-        start = region.low;
-        end = if region.high == max(region.idxType) then max(region.idxType) else region.high + 1;
-      } else {
-        start = region.low;
-        end = region.high;
-      }
+      start = region.low;
+      end = if region.high == max(region.idxType) then max(region.idxType) else region.high + 1;
 
     } else if (region.hasLowBound()) {
       start = region.low;
       end = max(region.idxType);
 
     } else if (region.hasHighBound()) {
-      // This is to ensure the user sees consistent behavior and can control it.
-      // - All calls from `openUrlReader` should use the new behavior.
-      // - Only calls from `openReader` that are compiled with the flag that
-      //   controls its region argument should affect its behavior.
-      // - Only calls from `file.reader` that are compiled with the flag that
-      //   controls its region argument should affect its behavior.
-      // Calls from `openReader` should not be impacted by `file.reader`'s flag
-      // and vice versa.
-      if ((fromOpenReader && useNewOpenReaderRegionBounds) ||
-          fromOpenUrlReader ||
-          (!fromOpenReader && useNewFileReaderRegionBounds)) {
-        start = 0;
-        end = if region.high == max(region.idxType) then max(region.idxType) else region.high + 1;
-      } else {
-        start = 0;
-        end = region.high;
-      }
+      start = 0;
+      end = if region.high == max(region.idxType) then max(region.idxType) else region.high + 1;
 
     } else {
       start = 0;
@@ -5751,11 +5341,9 @@ proc file.lines(param locking:bool = true, start:int(64) = 0,
 }
 
 /* Used to control the behavior of the region argument for :proc:`file.lines`.
-   When set to ``true``, the region argument will fully specify the bounds that
-   this function would cover.  When set to ``false``, the region argument will
-   exclude the high bound.  Defaults to ``false``, the original behavior.
  */
-config param useNewLinesRegionBounds = false;
+@deprecated("'useNewLinesRegionBounds' is deprecated - :proc:`file.lines` now always uses the high bound and this flag no longer impacts its behavior.  The flag will be removed in a future release")
+config param useNewLinesRegionBounds = true;
 
 /* Iterate over all of the lines in a file.
 
@@ -5765,18 +5353,9 @@ config param useNewLinesRegionBounds = false;
  */
 @deprecated(notes="`file.lines` is deprecated; please use `file.reader().lines` instead")
 proc file.lines(param locking:bool = true, region: range(?) = 0..,
-                hints = ioHintSet.empty) throws where (!region.hasHighBound() ||
-                                                       useNewLinesRegionBounds) {
+                hints = ioHintSet.empty) throws {
   return this.linesHelper(locking, region, hints);
 }
-
-@deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewLinesRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
-proc file.lines(param locking:bool = true, region: range(?) = 0..,
-                hints = ioHintSet.empty) throws where (region.hasHighBound() &&
-                                                       !useNewLinesRegionBounds) {
-  return this.linesHelper(locking, region, hints);
-}
-
 
 @chpldoc.nodoc
 proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
@@ -5793,28 +5372,16 @@ proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
     var end : region.idxType;
     try this.checkAssumingLocal();
     if (region.hasLowBound() && region.hasHighBound()) {
-      if (useNewLinesRegionBounds) {
-        start = region.low;
-        end = region.high + 1;
-
-      } else {
-        start = region.low;
-        end = region.high;
-      }
+      start = region.low;
+      end = region.high + 1;
 
     } else if (region.hasLowBound()) {
       start = region.low;
       end = max(region.idxType);
 
     } else if (region.hasHighBound()) {
-      if (useNewLinesRegionBounds) {
-        start = 0;
-        end = region.high + 1;
-
-      } else {
-        start = 0;
-        end = region.high;
-      }
+      start = 0;
+      end = region.high + 1;
 
     } else {
       start = 0;
@@ -5838,12 +5405,9 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
 }
 
 /* Used to control the behavior of the region argument for :proc:`file.writer`.
-   When set to ``true``, the region argument will fully specify the bounds of
-   the :record:`fileWriter`.  When set to ``false``, the region argument will
-   exclude the high bound.  Defaults to ``false``, the original behavior.
-
  */
-config param useNewFileWriterRegionBounds = false;
+@deprecated("'useNewFileWriterRegionBounds' is deprecated - :proc:`file.writer` now always includes the high bounds and this flag no longer impacts that behavior.  The flag will be removed in a future release")
+config param useNewFileWriterRegionBounds = true;
 
 /*
    Create a :record:`fileWriter` that supports writing to a file. See
@@ -5891,8 +5455,7 @@ config param useNewFileWriterRegionBounds = false;
 proc file.writer(param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty,
                  in serializer:?st = defaultSerializeVal(true)):
-                 fileWriter(locking,st) throws where (!region.hasHighBound() ||
-                                                      useNewFileWriterRegionBounds) {
+                 fileWriter(locking,st) throws {
   return this.writerHelper(_iokind.dynamic, locking, region, hints, serializer=serializer);
 }
 
@@ -5901,17 +5464,7 @@ pragma "last resort"
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty,
                  in serializer:?st = defaultSerializeVal(true,kind)):
-                 fileWriter(kind,locking,st) throws where (!region.hasHighBound() ||
-                                                        useNewFileWriterRegionBounds) {
-  return this.writerHelper(kind, locking, region, hints, serializer=serializer);
-}
-
-@deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewFileWriterRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
-proc file.writer(param kind=iokind.dynamic, param locking=true,
-                 region: range(?) = 0.., hints = ioHintSet.empty,
-                 in serializer:?st = defaultSerializeVal(true,kind)):
-                 fileWriter(kind,locking,st) throws where (region.hasHighBound() &&
-                                                        !useNewFileWriterRegionBounds) {
+                 fileWriter(kind,locking,st) throws {
   return this.writerHelper(kind, locking, region, hints, serializer=serializer);
 }
 
@@ -5919,7 +5472,6 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
 proc file.writerHelper(param kind=_iokind.dynamic, param locking=true,
                        region: range(?) = 0.., hints = ioHintSet.empty,
                        style:iostyleInternal = this._style,
-                       fromOpenUrlWriter = false,
                        in serializer:?st = defaultSerializeVal(true,kind)):
   fileWriter(kind,locking,st) throws {
 
@@ -5938,28 +5490,16 @@ proc file.writerHelper(param kind=_iokind.dynamic, param locking=true,
     var end : region.idxType;
     try this.checkAssumingLocal();
     if (region.hasLowBound() && region.hasHighBound()) {
-      // TODO: remove the fromOpenUrlWriter arg when the deprecated version is
-      // removed
-      if (useNewFileWriterRegionBounds || fromOpenUrlWriter) {
-        start = region.low;
-        end = if region.high == max(region.idxType) then max(region.idxType) else region.high + 1;
-      } else {
-        start = region.low;
-        end = region.high;
-      }
+      start = region.low;
+      end = if region.high == max(region.idxType) then max(region.idxType) else region.high + 1;
 
     } else if (region.hasLowBound()) {
       start = region.low;
       end = max(region.idxType);
 
     } else if (region.hasHighBound()) {
-      if (useNewFileWriterRegionBounds || fromOpenUrlWriter) {
-        start = 0;
-        end = if region.high == max(region.idxType) then max(region.idxType) else region.high + 1;
-      } else {
-        start = 0;
-        end = region.high;
-      }
+      start = 0;
+      end = if region.high == max(region.idxType) then max(region.idxType) else region.high + 1;
 
     } else {
       start = 0;
@@ -8402,11 +7942,6 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
 
 }
 
-@deprecated(notes="fileReader.readbits is deprecated - please use :proc:`fileReader.readBits` instead")
-proc fileReader.readbits(ref v:integral, nbits:integral):bool throws {
-    return this.readBits(v, nbits:int);
-}
-
 /*
    Read bits with binary I/O
 
@@ -8458,12 +7993,6 @@ proc fileReader.readBits(type resultType, numBits:int):resultType throws {
   var ret = try this.readBits(tmp, numBits);
   if !ret then throw new EofError("EOF Encountered in readBits");
   return tmp;
-}
-
-
-@deprecated(notes="fileWriter.writebits is deprecated - please use :proc:`fileWriter.writeBits` instead")
-proc fileWriter.writebits(v:integral, nbits:integral) throws {
-  this.writeBits(v, nbits:int);
 }
 
 /*
@@ -8861,10 +8390,15 @@ proc fileWriter.writeBinary(b: bytes, size: int = b.size) throws {
   }
 }
 
+@chpldoc.nodoc
+private proc isSuitableForBinaryReadWrite(arr: _array) param {
+  return chpl__isDROrDRView(arr);
+}
+
 /*
   Write an array of binary numbers to a ``fileWriter``
 
-  Note that this routine currently requires a 1D rectangular non-strided array.
+  Note that this routine currently requires a local rectangular non-strided array.
 
   :arg data: an array of numbers to write to the fileWriter
   :arg endian: :type:`ioendian` compile-time argument that specifies the byte
@@ -8878,7 +8412,7 @@ proc fileWriter.writeBinary(b: bytes, size: int = b.size) throws {
                        due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioendian.native) throws
-  where data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
+  where isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   var e : errorCode = 0;
@@ -8888,9 +8422,11 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
     const tSize = c_sizeof(t) : c_ssize_t;
 
     // Allow either DefaultRectangular arrays or dense slices of DR arrays
-    const denseDR = chpl__isDROrDRView(data) &&
-                    data._value.isDataContiguous(d._value);
-    if endian == ioendian.native && data.locale == this._home && denseDR {
+    if !data._value.isDataContiguous(d._value) {
+      throw new IllegalArgumentError("writeBinary() array data must be contiguous");
+    } else if data.locale != this._home {
+      throw new IllegalArgumentError("writeBinary() array data must be on same locale as 'fileWriter'");
+    } else if endian == ioendian.native {
       e = try qio_channel_write_amt(false, this._channel_internal, data[d.low], data.size:c_ssize_t * tSize);
 
       if e != 0 then
@@ -8899,7 +8435,7 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
       for b in data {
         select (endian) {
           when ioendian.native {
-            e = try _write_binary_internal(this._channel_internal, _iokind.native, b);
+            compilerError("unreachable");
           }
           when ioendian.big {
             e = try _write_binary_internal(this._channel_internal, _iokind.big, b);
@@ -8916,10 +8452,17 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
   }
 }
 
+
+@chpldoc.nodoc
+proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioendian.native) throws {
+  compilerError("writeBinary() only supports local, rectangular, non-strided arrays");
+}
+
+
 /*
   Write an array of binary numbers to a ``fileWriter``
 
-  Note that this routine currently requires a 1D rectangular non-strided array.
+  Note that this routine currently requires a local rectangular non-strided array.
 
   :arg data: an array of numbers to write to the fileWriter
   :arg endian: :type:`ioendian` specifies the byte order in which
@@ -8932,7 +8475,7 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
                        due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileWriter.writeBinary(const ref data: [] ?t, endian:ioendian) throws
-  where data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
+  where isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   select (endian) {
@@ -8946,6 +8489,12 @@ proc fileWriter.writeBinary(const ref data: [] ?t, endian:ioendian) throws
       this.writeBinary(data, ioendian.little);
     }
   }
+}
+
+@chpldoc.nodoc
+proc fileWriter.writeBinary(const ref data: [] ?t, endian:ioendian) throws
+{
+  compilerError("writeBinary() only supports local, rectangular, non-strided arrays");
 }
 
 /*
@@ -9142,7 +8691,7 @@ config param ReadBinaryArrayReturnInt = false;
 @deprecated(notes="The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant")
 proc fileReader.readBinary(ref data: [] ?t, param endian = ioendian.native): bool throws
   where ReadBinaryArrayReturnInt == false &&
-    data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
+    isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   var e : errorCode = 0,
@@ -9202,7 +8751,7 @@ proc fileReader.readBinary(ref data: [] ?t, param endian = ioendian.native): boo
 */
 proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): int throws
   where ReadBinaryArrayReturnInt == true &&
-    data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
+    isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   var e : errorCode = 0,
@@ -9211,10 +8760,11 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
   on this._home {
     try this.lock(); defer { this.unlock(); }
 
-    // Allow either DefaultRectangular arrays or dense slices of DR arrays
-    const denseDR = chpl__isDROrDRView(data) &&
-                    data._value.isDataContiguous(d._value);
-    if data.locale == this._home && denseDR && endian == ioendian.native {
+    if !data._value.isDataContiguous(d._value) {
+      throw new IllegalArgumentError("readBinary() array data must be contiguous");
+    } else if data.locale != this._home {
+      throw new IllegalArgumentError("readBinary() array data must be on same locale as 'fileReader'");
+    } else if endian == ioendian.native {
       e = qio_channel_read(false, this._channel_internal, data[d.low], (data.size * c_sizeof(data.eltType)) : c_ssize_t, numRead);
 
       if e != 0 && e != EEOF then throw createSystemOrChplError(e);
@@ -9222,7 +8772,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
       for (i, b) in zip(data.domain, data) {
         select (endian) {
           when ioendian.native {
-            e = try _read_binary_internal(this._channel_internal, _iokind.native, b);
+            compilerError("unreachable");
           }
           when ioendian.big {
             e = try _read_binary_internal(this._channel_internal, _iokind.big,    b);
@@ -9253,7 +8803,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
    until ``data`` is full or EOF is reached. An :class:`~OS.UnexpectedEofError`
    is thrown if EOF is reached before the array is filled.
 
-   Note that this routine currently requires a 1D rectangular non-strided array.
+   Note that this routine currently requires a local rectangular non-strided array.
 
    :arg data: an array to read into – existing values are overwritten.
    :arg endian: :type:`ioendian` specifies the byte order in which
@@ -9269,7 +8819,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
 @deprecated(notes="The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant")
 proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):bool throws
   where ReadBinaryArrayReturnInt == false &&
-    data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
+    isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   var rv: bool = false;
@@ -9295,7 +8845,7 @@ proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):bool throws
    Binary values of the type ``data.eltType`` are consumed from the fileReader
    until ``data`` is full or EOF is reached.
 
-   Note that this routine currently requires a 1D rectangular non-strided array.
+   Note that this routine currently requires a local rectangular non-strided array.
 
    :arg data: an array to read into – existing values are overwritten.
    :arg endian: :type:`ioendian` specifies the byte order in which
@@ -9309,7 +8859,7 @@ proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):bool throws
 */
 proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):int throws
   where ReadBinaryArrayReturnInt == true &&
-    data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
+    isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   var nr: int = 0;
@@ -9328,6 +8878,19 @@ proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):int throws
 
   return nr;
 }
+
+@chpldoc.nodoc
+proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):int throws
+{
+  compilerError("readBinary() only supports local, rectangular, non-strided arrays");
+}
+
+@chpldoc.nodoc
+proc fileReader.readBinary(ref data: [] ?t, param endian = ioendian.native): bool throws
+{
+  compilerError("readBinary() only supports local, rectangular, non-strided arrays");
+}
+
 
 /*
    Read up to ``maxBytes`` bytes from a ``fileReader`` into a
@@ -9463,9 +9026,14 @@ proc fileReader.read(type t) throws {
   // Need 'do not RVF' here so that 'ret' is passed by reference across the
   // on-stmt. Otherwise it would be serialized/bit-copied and we couldn't
   // return the value that we just read.
+  //
+  // Currently need to use nilable for unmanaged classes due to unknown
+  // "dead value" error in compiler.
+  param specialUnmanaged = isUnmanagedClassType(t) && isNonNilableClassType(t);
+  type retType = if specialUnmanaged then _to_nilable(t) else t;
   pragma "no init"
   pragma "do not RVF"
-  var ret : t;
+  var ret : retType;
 
   on this._home {
     try this.lock(); defer { this.unlock(); }
@@ -9480,7 +9048,8 @@ proc fileReader.read(type t) throws {
     }
   }
 
-  return ret;
+  if specialUnmanaged then return ret!;
+  else return ret;
 }
 
 /*
@@ -9636,15 +9205,6 @@ proc fileWriter.writeln(const args ...?k) throws {
 @deprecated("writeln with a 'style' argument is deprecated")
 proc fileWriter.writeln(const args ...?k, style:iostyle) throws {
   try this.writeHelper((...args), new chpl_ioNewline(), style=style);
-}
-
-@deprecated(notes="fileReader.flush is deprecated; it has no replacement because 'flush' has no effect on 'fileReader'")
-proc fileReader.flush() throws {
-  var err:errorCode = 0;
-  on this._home {
-    err = qio_channel_flush(locking, _channel_internal);
-  }
-  if err then try this._ch_ioerror(err, "in fileReader.flush");
 }
 
 /*
@@ -9804,18 +9364,18 @@ record itemReaderInternal {
 
 // And now, the toplevel items.
 
-/* standard input, otherwise known as file descriptor 0 */
+/* A locking :record:`fileReader` instance that reads from standard input. */
 const stdin:fileReader(true);
 stdin = try! (new file(0)).reader();
 
 extern proc chpl_cstdout():chpl_cFilePtr;
-/* standard output, otherwise known as file descriptor 1 */
+/* A locking :record:`fileWriter` instance that writes to standard output. */
 const stdout:fileWriter(true);
 stdout = try! (new file(chpl_cstdout())).writer();
 
 
 extern proc chpl_cstderr():chpl_cFilePtr;
-/* standard error, otherwise known as file descriptor 2 */
+/* A locking :record:`fileWriter` instance that writes to standard error. */
 const stderr:fileWriter(true);
 stderr = try! (new file(chpl_cstderr())).writer();
 
@@ -11120,7 +10680,7 @@ proc _toRegex(x:?t)
 }
 
 @chpldoc.nodoc
-class _channel_regex_info {
+class _channel_regex_info : writeSerializable {
   var hasRegex = false;
   var matchedRegex = false;
   var releaseRegex = false;

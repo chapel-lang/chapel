@@ -74,7 +74,7 @@ proc main() {
   // Twiddles is the vector of twiddle values.
   //
   const TwiddleDom:
-    domain(1, idxType) dmapped Block(boundingBox={0..m/4-1}) = {0..m/4-1};
+    domain(1, idxType) dmapped blockDist(boundingBox={0..m/4-1}) = {0..m/4-1};
   var Twiddles: [TwiddleDom] elemType;
 
   //
@@ -89,7 +89,7 @@ proc main() {
   // (used for the first half of the FFT phases).
   //
   const BlkDom:
-    domain(1, idxType) dmapped Block(boundingBox=ProblemSpace) = ProblemSpace;
+    domain(1, idxType) dmapped blockDist(boundingBox=ProblemSpace) = ProblemSpace;
   var Zblk, z: [BlkDom] elemType;
 
   //
@@ -98,7 +98,7 @@ proc main() {
   // phases.
   //
   const CycDom:
-    domain(1, idxType) dmapped Cyclic(startIdx=0:idxType) = ProblemSpace;
+    domain(1, idxType) dmapped cyclicDist(startIdx=0:idxType) = ProblemSpace;
 
   var Zcyc: [CycDom] elemType;
   

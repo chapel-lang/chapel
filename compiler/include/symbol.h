@@ -574,6 +574,10 @@ public:
 
 extern InterfaceSymbol* gHashable;
 extern InterfaceSymbol* gContextManager;
+extern InterfaceSymbol* gWriteSerializable;
+extern InterfaceSymbol* gReadDeserializable;
+extern InterfaceSymbol* gInitDeserializable;
+extern InterfaceSymbol* gSerializable;
 
 /************************************* | **************************************
 *                                                                             *
@@ -735,8 +739,8 @@ VarSymbol *new_StringOrBytesSymbol(const char *s, AggregateType *at);
 // Creates a new C string literal with the given value.
 VarSymbol *new_CStringSymbol(const char *s);
 
-// Creates a new boolean literal with the given value and bit-width.
-VarSymbol *new_BoolSymbol(bool b, IF1_bool_type size=BOOL_SIZE_SYS);
+// Creates a new boolean literal with the given value
+VarSymbol *new_BoolSymbol(bool b);
 
 // Creates a new (signed) integer literal with the given value and bit-width.
 VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size=INT_SIZE_64);
@@ -821,6 +825,7 @@ extern const char* astrPostinit;
 extern const char* astrBuildTuple;
 extern const char* astrTag;
 extern const char* astrThis;
+extern const char* astrThese;
 extern const char* astrSuper;
 extern const char* astr_chpl_cname;
 extern const char* astr_chpl_forward_tgt;
@@ -946,6 +951,8 @@ std::vector<std::string> gatherPrintLlvmIrCNames();
 void printLlvmIr(const char* name, llvm::Function *func, llvmStageNum_t numStage);
 #endif
 
+// Restore list of cnames to print, from tmp file on disk into memory.
+void restorePrintIrCNames();
 void preparePrintLlvmIrForCodegen();
 void completePrintLlvmIrStage(llvmStageNum_t numStage);
 

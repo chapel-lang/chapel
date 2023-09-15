@@ -65,7 +65,7 @@ module Vector {
                     "here: ", t:string);
     }
   }
-  record vector {
+  record vector : writeSerializable, readDeserializable {
     /* The type of the elements contained in this vector. */
     type eltType;
     /* If `true`, this vector will perform parallel safe operations. */
@@ -105,7 +105,7 @@ module Vector {
       _checkType(eltType);
       this.eltType = eltType;
       this.parSafe = parSafe;
-      this.complete();
+      init this;
     }
 
     /*
@@ -126,7 +126,7 @@ module Vector {
                       "cannot be copied");
       this.eltType = t;
       this.parSafe = parSafe;
-      this.complete();
+      init this;
       _requestCapacity(other.size);
       _commonInitFromIterable(other);
     }
@@ -149,7 +149,7 @@ module Vector {
                       "cannot be copied");
       this.eltType = t;
       this.parSafe = parSafe;
-      this.complete();
+      init this;
       _requestCapacity(other.size);
       _commonInitFromIterable(other);
     }
@@ -167,7 +167,7 @@ module Vector {
                       "cannot be copied");
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
-      this.complete();
+      init this;
 
       _requestCapacity(other.size);
       _commonInitFromIterable(other);
@@ -192,7 +192,7 @@ module Vector {
 
       this.eltType = t;
       this.parSafe = parSafe;
-      this.complete();
+      init this;
       _requestCapacity(other.size);
       _commonInitFromIterable(other);
     }
@@ -225,7 +225,7 @@ module Vector {
         compilerError(msg);
       }
 
-      this.complete();
+      init this;
       _requestCapacity(other.size);
       _commonInitFromIterable(other);
     }
@@ -244,7 +244,7 @@ module Vector {
 
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
-      this.complete();
+      init this;
 
       _requestCapacity(other.size);
       _commonInitFromIterable(other);
@@ -263,7 +263,7 @@ module Vector {
                       "cannot be copied");
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
-      this.complete();
+      init this;
 
       _requestCapacity(d.size);
       _commonInitFromIterable(other);
@@ -293,7 +293,7 @@ module Vector {
         compilerError(msg);
       }
 
-      this.complete();
+      init this;
 
       _requestCapacity(other.size);
       _commonInitFromIterable(other);
@@ -1158,16 +1158,13 @@ module Vector {
     }
 
     @chpldoc.nodoc
-    proc readThis(ch: fileReader) throws {
+    proc deserialize(reader, ref deserializer) throws {
       compilerError("Reading a Vector is not supported");
     }
 
-    /*
-      Write the contents of this vector to a fileWriter.
-
-      :arg ch: A fileWriter to write to.
-    */
-    proc writeThis(ch: fileWriter) throws {
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      var ch = writer;
       _enter();
 
       ch.write("[");
@@ -1286,17 +1283,17 @@ module Vector {
   }
 
   @chpldoc.nodoc
-  operator :(rhs:list, type t: vector) {
+  operator :(rhs:list(?), type t: vector(?)) {
     var tmp: t = rhs;
     return rhs;
   }
   @chpldoc.nodoc
-  operator :(rhs:[], type t: vector) {
+  operator :(rhs:[], type t: vector(?)) {
     var tmp: t = rhs;
     return rhs;
   }
   @chpldoc.nodoc
-  operator :(rhs:range(?), type t: vector) {
+  operator :(rhs:range(?), type t: vector(?)) {
     var tmp: t = rhs;
     return rhs;
   }

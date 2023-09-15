@@ -1,0 +1,6 @@
+syncSplitInit
+init 1
+syncSplitInitOut
+init 2
+syncCopyElide
+init 1

@@ -127,7 +127,7 @@ const RecordType* CompositeType::getStringType(Context* context) {
 }
 
 const RecordType* CompositeType::getRangeType(Context* context) {
-  auto symbolPath = UniqueString::get(context, "ChapelRange.range");
+  auto symbolPath = UniqueString::get(context, "ChapelRange._range");
   auto name = UniqueString::get(context, "range");
   auto id = ID(symbolPath, -1, 0);
   return RecordType::get(context, id, name,

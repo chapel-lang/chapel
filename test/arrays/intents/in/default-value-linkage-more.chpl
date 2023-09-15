@@ -25,7 +25,7 @@ proc main() {
   writeln();
 }
 
-proc check(ref D : domain, const ref A : []) {
+proc check(ref D : domain(?), const ref A : []) {
   writeln("A.domain is ", A.domain);
   writeln("Modifying D");
   D = {1..5};

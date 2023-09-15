@@ -85,7 +85,7 @@ proc checkCorrectness(Arr:[]int,r:range(?))
     writeln("Dynamic Iterator: Correct");
 }
 
-proc checkCorrectness(Arr:[]int,c:domain)
+proc checkCorrectness(Arr:[]int,c:domain(?))
 {
   var check=true;
   for i in c do {
@@ -117,7 +117,7 @@ proc checkCorrectness2(Arr:[]int,r:range(?), r2:range(?))
 
 }
 
-proc checkCorrectness2(Arr:[]int,c:domain, c2:domain)
+proc checkCorrectness2(Arr:[]int,c:domain(?), c2:domain(?))
 {
   var check=true;
   for (i,j) in zip(c,c2#c.size) do {

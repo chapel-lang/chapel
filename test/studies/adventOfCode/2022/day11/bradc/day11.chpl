@@ -96,9 +96,8 @@ proc Monkey.processItems(canFinishTurn) {
 
 // This is effectively an abstract base class
 class MathOp {
-  proc apply(item) {
+  proc apply(item): item.type {
     halt("We should never end up calling '.apply' on the base class");
-    return item;
   }
 }
 
@@ -174,7 +173,7 @@ proc Monkey.init() {
 
   // copy our temporary item list into the current items list
   // (this was hard to do inline above as a whole-field assignent)
-  this.complete();
+  init this;
   for item in tempItems do
     items[current].pushBack(item);
 }

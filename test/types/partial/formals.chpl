@@ -16,7 +16,7 @@ proc foo(x : R(real)) {
   writeln();
 }
 
-proc foo(x : R) {
+proc foo(x : R(?)) {
   writeln("generic version");
   writeln(x.type:string);
   writeln();
@@ -61,7 +61,7 @@ proc bar(x : P(U=bool)) {
   writeln();
 }
 
-proc bar(x : P) {
+proc bar(x : P(?)) {
   writeln("bar(P)");
   writeln(x.type:string);
   writeln();
@@ -80,7 +80,7 @@ proc baz(x : P(U=real, y=1.0)) {
   writeln();
 }
 
-proc baz(x : P) {
+proc baz(x : P(?)) {
   writeln("baz(P)");
 }
 

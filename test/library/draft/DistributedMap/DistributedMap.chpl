@@ -18,7 +18,7 @@ can be accessed concurrently. Alternatively for intra-locale parallelism
 we can use, for example, ConcurrentMap from the ConcurrentMap package module.
 */
 pragma "always RVF"
-record distributedMap {
+record distributedMap : writeSerializable, readDeserializable {
   type keyType;
   type valType;
   // privatization id
@@ -29,7 +29,7 @@ record distributedMap {
   inline proc _value do return chpl_getPrivatizedCopy(
                        unmanaged DistributedMapImpl(keyType, valType), pid);
 
-  proc init(impl: DistributedMapImpl) {
+  proc init(impl: DistributedMapImpl(?)) {
     this.keyType = impl.keyType;
     this.valType = impl.valType;
     this.pid     = impl.pid;
@@ -39,12 +39,12 @@ record distributedMap {
     this.init(impl);
   }
 
-  proc readThis(ch) throws {
+  proc ref deserialize(reader, ref deserializer) throws {
     compilerError("Reading a distributedMap is not supported");
   }
 
-  proc writeThis(ch) throws {
-    _value.write(ch);
+  proc serialize(writer, ref serializer) throws {
+    _value.write(writer);
   }
 } // record distributedMap
 
@@ -64,11 +64,11 @@ class DistributedMapImpl {
   proc init(type keyType, type valType) {
     this.keyType = keyType;
     this.valType = valType;
-    complete();
+    init this;
     this.pid = _newPrivatizedClass(this);
   }
   // create a privatized instance
-  proc init(original: DistributedMapImpl, targetLocales, numLocalMaps, pid) {
+  proc init(original: DistributedMapImpl(?), targetLocales, numLocalMaps, pid) {
     this.keyType = original.keyType;
     this.valType = original.valType;
     this.targetLocales = targetLocales;

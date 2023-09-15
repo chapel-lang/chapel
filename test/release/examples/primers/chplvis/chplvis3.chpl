@@ -28,9 +28,9 @@ const bspace = {0..n+1, 0..n+1};
 const bsouth = {n+1..n+1, 1..n};
 
 // Dmapped versions of the domains
-const R = space dmapped Block(boundingBox=bspace);
-const BigR = bspace dmapped Block(boundingBox=bspace);
-const South = bsouth dmapped Block(boundingBox=bspace);
+const R = space dmapped blockDist(boundingBox=bspace);
+const BigR = bspace dmapped blockDist(boundingBox=bspace);
+const South = bsouth dmapped blockDist(boundingBox=bspace);
 
 // Dmapped arrays
 var A : [BigR] real;

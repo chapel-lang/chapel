@@ -90,8 +90,6 @@ test-venv: install-chpldeps
 
 chpldoc-venv: install-chpldeps
 
-chpldef-venv: install-chpldeps
-
 c2chapel-venv: install-chpldeps
 
 install-requirements: install-chpldeps

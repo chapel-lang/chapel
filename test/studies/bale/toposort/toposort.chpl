@@ -32,7 +32,7 @@ class SyncLock {
   var lockVar : sync bool;
 
   proc init(){
-    this.complete();
+    init this;
     this.lockVar.writeEF(true);
   }
 
@@ -57,7 +57,7 @@ class AtomicLock {
   var lockVar: atomic bool;
 
   proc init(){
-    this.complete();
+    init this;
     lockVar.clear();
   }
 
@@ -145,7 +145,7 @@ class ParallelWorkQueue {
     this.lockType = lockType;
     this.lock = new lockType();
     this.queue = new unmanaged Vector( eltType );
-    this.complete();
+    init this;
 
     terminated.write(false);
   }
@@ -244,7 +244,7 @@ class DistributedWorkQueue {
 
     this.localInstance = new unmanaged LocalDistributedWorkQueue(eltType, lockType, targetLocales);
     this.pid = this.localInstance.pid;
-    this.complete();
+    init this;
   }
 
   proc deinit(){
@@ -278,7 +278,7 @@ class LocalDistributedWorkQueue {
     this.queue = new unmanaged Vector(eltType);
     this.terminatedRetries = retries;
 
-    this.complete();
+    init this;
 
     terminated.write(false);
     this.pid = _newPrivatizedClass(this);
@@ -294,7 +294,7 @@ class LocalDistributedWorkQueue {
     this.terminatedRetries = that.terminatedRetries;
     this.pid = pid;
 
-    this.complete();
+    init this;
 
     this.lock.lockVar.write( that.lock.isLocked() );
     this.terminated.write(that.terminated.read());
@@ -394,7 +394,7 @@ class LocalDistributedWorkQueue {
   }
 }
 
-class PermutationMap {
+class PermutationMap : writeSerializable {
   type idxType;
   param rank = 2;
   var rowDom : domain(1);
@@ -437,13 +437,13 @@ class PermutationMap {
     return new owned PermutationMap( inverseRowMap, inverseColumnMap );
   }
 
-  iter these( onDomain : domain ) : rank*idxType
+  iter these( onDomain : domain(?) ) : rank*idxType
   where onDomain.rank == 2
   {
     for idx in onDomain do yield this.map( idx );
   }
 
-  iter inverseThese( onDomain : domain ) : rank*idxType
+  iter inverseThese( onDomain : domain(?) ) : rank*idxType
   where onDomain.rank == 2
   {
     for idx in onDomain do yield inverseMap( idx );
@@ -451,7 +451,7 @@ class PermutationMap {
 
 
   // TODO make parallel
-  iter these(param tag : iterKind, onDomain : domain) : rank*idxType
+  iter these(param tag : iterKind, onDomain : domain(?)) : rank*idxType
   where tag == iterKind.standalone && onDomain.rank == 2
   {
     for idx in this.these( onDomain ) do yield idx;
@@ -459,27 +459,27 @@ class PermutationMap {
 
   // TODO leader follower iterator
 
-  override proc writeThis( f ){
+  override proc serialize(writer, ref serializer){
     const maxVal = max( (max reduce rowMap), (max reduce columnMap) ) : string;
     const minVal = min( (min reduce rowMap), (min reduce columnMap) ) : string;
     const padding = max( maxVal.size, minVal.size );
     const formatString = "%%%nn -> %%%nn".format( max(2,padding), padding );
     const inSpace = max(padding-2,0);
-    f.writeln("Row map");
-    for i in 0..#inSpace do f.write(" ");
-    f.write("in -> out");
+    writer.writeln("Row map");
+    for i in 0..#inSpace do writer.write(" ");
+    writer.write("in -> out");
     for i in rowDom {
-      f.writeln(formatString.format( i, rowMap[i] ));
+      writer.writeln(formatString.format( i, rowMap[i] ));
     }
-    f.writeln("Column map");
-    for i in 0..#inSpace do f.write(" ");
-    f.writeln("in -> out");
+    writer.writeln("Column map");
+    for i in 0..#inSpace do writer.write(" ");
+    writer.writeln("in -> out");
     for i in columnDom {
-      f.write(formatString.format( i, columnMap[i] ));
+      writer.write(formatString.format( i, columnMap[i] ));
     }
   }
 
-  proc permuteDomain( D : domain )
+  proc permuteDomain( D : domain(?) )
   where D.rank == 2 && D.isSparse()
   {
     // stopwatch for debugging purposes
@@ -524,7 +524,7 @@ class TopoSortResult {
   }
 }
 
-proc createRandomPermutationMap( D : domain, seed : int ) : shared PermutationMap(D.idxType)
+proc createRandomPermutationMap( D : domain(?), seed : int ) : shared PermutationMap(D.idxType)
 where D.rank == 2
 {
   var rowMap : [D.dim(0)] D.idxType = D.dim(0);
@@ -676,7 +676,7 @@ proc createSparseUpperTriangluarIndexList(
   return sparseD;
 }
 
-proc checkIsUperTriangularDomain( D : domain ) : bool
+proc checkIsUperTriangularDomain( D : domain(?) ) : bool
 where D.rank == 2 && D.isSparse()
 {
   var isUT = true;
@@ -715,7 +715,7 @@ where D.rank == 2
   }
 }
 
-proc toposortSerial( D : domain ) : shared TopoSortResult(D.idxType)
+proc toposortSerial( D : domain(?) ) : shared TopoSortResult(D.idxType)
 where D.rank == 2
 {
   var result = new shared TopoSortResult(D.idxType);
@@ -828,7 +828,7 @@ where D.rank == 2
   return result;
 }
 
-proc toposortParallel( D : domain, numTasks : int = here.maxTaskPar ) : shared TopoSortResult(D.idxType)
+proc toposortParallel( D : domain(?), numTasks : int = here.maxTaskPar ) : shared TopoSortResult(D.idxType)
 where D.rank == 2
 {
   if numTasks < 1 then halt("Must run with numTaks >= 1");
@@ -960,7 +960,7 @@ where D.rank == 2
   return result;
 }
 
-proc toposortDistributed( D : domain ) : shared TopoSortResult(D.idxType)
+proc toposortDistributed( D : domain(?) ) : shared TopoSortResult(D.idxType)
 where D.rank == 2
 {
   var maxTasksPerLocale : [0..#Locales.size] int;
@@ -970,7 +970,7 @@ where D.rank == 2
   return toposortDistributed( D, maxTasksPerLocale );
 }
 
-proc toposortDistributed( D : domain, maxTasksPerLocale : [] int ) : shared TopoSortResult(D.idxType)
+proc toposortDistributed( D : domain(?), maxTasksPerLocale : [] int ) : shared TopoSortResult(D.idxType)
 where D.rank == 2
 {
   if (min reduce maxTasksPerLocale) < 1 then halt("Must run with numTasks >= 1");
@@ -1183,7 +1183,7 @@ proc main(){
     }
     when ToposortImplementation.Distributed {
        if !silentMode then writeln("Converting to Sparse Block domain");
-      var distributedD : D.type dmapped Block(D, targetLocales=reshape(Locales, {Locales.domain.dim(0),1..#1}) ) = D;
+      var distributedD : D.type dmapped blockDist(D, targetLocales=reshape(Locales, {Locales.domain.dim(0),1..#1}) ) = D;
 
       var distributedPermutedSparseD : sparse subdomain(distributedD);
       distributedPermutedSparseD.bulkAdd( permutedSparseUpperTriangularIndexList );

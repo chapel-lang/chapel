@@ -33,3 +33,7 @@ void chpl_comm_verify_num_locales(int64_t proposedNumLocales) {
                0, 0);
   }
 }
+
+void chpl_comm_verify_supports_colocales(int64_t numColocales) {
+  chpl_error("Co-locales are not supported by CHPL_COMM layer 'none'", 0, 0);
+}

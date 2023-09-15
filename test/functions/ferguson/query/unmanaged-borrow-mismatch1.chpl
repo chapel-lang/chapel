@@ -7,7 +7,7 @@ record Wrapper {
   var f;
 }
 
-proc g(x: Wrapper(borrowed GenericClass)) {
+proc g(x: Wrapper(borrowed GenericClass(?))) {
   writeln(x, " : ", x.type:string);
 }
 

@@ -1,4 +1,8 @@
+recursive-generic-declared-type.chpl:8: warning: please use '?' when declaring a routine with a generic return type
+recursive-generic-declared-type.chpl:8: note: for example with 'RR(?)'
 recursive-generic-declared-type.chpl:13: warning: RR(int(64))
+recursive-generic-declared-type.chpl:17: warning: please use '?' when declaring a routine with a generic return type
+recursive-generic-declared-type.chpl:17: note: for example with 'RR(?)'
 recursive-generic-declared-type.chpl:17: In iterator 'recIter':
 recursive-generic-declared-type.chpl:18: error: cannot default-initialize a variable with generic type
 recursive-generic-declared-type.chpl:18: note: '<temporary>' has generic type 'RR'

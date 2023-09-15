@@ -56,7 +56,7 @@ module LocaleModel {
   //
   // The NUMA sublocale model
   //
-  class NumaDomain : AbstractLocaleModel {
+  class NumaDomain : AbstractLocaleModel, writeSerializable {
     const sid: chpl_sublocID_t;
     const ndName: string; // note: locale provides `proc name`
 
@@ -84,6 +84,10 @@ module LocaleModel {
       if parent._instance then
         parent.writeThis(f);
       f.write('.'+ndName);
+    }
+
+    override proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
 
     override proc _getChildCount(): int { return 0; }
@@ -141,7 +145,7 @@ module LocaleModel {
         halt("Cannot create additional LocaleModel instances");
       }
 
-      this.complete();
+      init this;
 
       setup();
     }
@@ -164,7 +168,7 @@ module LocaleModel {
       numSublocales = chpl_topo_getNumNumaDomains();
       childSpace = {0..#numSublocales};
 
-      this.complete();
+      init this;
 
       setup();
     }
@@ -221,7 +225,7 @@ module LocaleModel {
   // may overwrite this instance or any of its children to establish a more customized
   // representation of the system resources.
   //
-  class RootLocale : AbstractRootLocale {
+  class RootLocale : AbstractRootLocale, writeSerializable {
 
     const myLocaleSpace: domain(1) = {0..numLocales-1};
     pragma "unsafe"
@@ -256,6 +260,10 @@ module LocaleModel {
 
     override proc writeThis(f) throws {
       f.write(name);
+    }
+
+    override proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
 
     override proc _getChildCount() return this.myLocaleSpace.size;

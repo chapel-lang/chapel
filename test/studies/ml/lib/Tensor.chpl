@@ -248,7 +248,8 @@ module Tensor {
         }
         
         // Prints the tensor (only really works for rank 1 and 2)
-        proc writeThis(fw: IO.fileWriter) throws {
+        proc serializer(writer: IO.fileWriter(?), ref serializer) throws {
+            const ref fw = writer;
             fw.write("tensor(");
             const shape = this.shape;
             var first: bool = true;
@@ -276,7 +277,7 @@ module Tensor {
         }
 
         // Serializer for tensor: rank,...shape,...data
-        proc write(fw: IO.fileWriter) throws {
+        proc write(fw: IO.fileWriter(?)) throws {
             fw.write(rank);
             for s in shape do
                 fw.write(s:int);
@@ -285,7 +286,7 @@ module Tensor {
         }
 
         // Deserializer for tensor: rank,...shape,...data
-        proc ref read(fr: IO.fileReader) throws {
+        proc ref read(fr: IO.fileReader(?)) throws {
             var r = fr.read(int);
             if r != rank then
                 err("Error reading tensor: rank mismatch.", r , " != this." , rank);

@@ -45,7 +45,7 @@ module Aggregator {
       bufferSize = buffSize;
     }
 
-    proc init=(other: aggregator) {
+    proc init=(other: aggregator(?)) {
       this.client = other.client;
       this.updater = other.updater;
       this.bufferSize = other.bufferSize;

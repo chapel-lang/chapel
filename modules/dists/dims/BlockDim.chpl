@@ -27,10 +27,10 @@ private use DimensionalDist2D;
 
 /*
 This Block dimension specifier is for use with the
-:class:`DimensionalDist2D` distribution.
+``dimensionalDist2D`` distribution.
 
 It specifies the mapping of indices in its dimension
-that would be produced by a 1D :class:`~BlockDist.Block` distribution.
+that would be produced by a 1D :class:`~BlockDist.blockDist` distribution.
 
 **Initializer Arguments**
 
@@ -58,7 +58,7 @@ which specifies the bounding box in this dimension.
 
 The ``idxType``, whether provided or inferred, must match
 the index type of the domains "dmapped" using the corresponding
-``DimensionalDist2D`` distribution.
+``dimensionalDist2D`` distribution.
 */
 record BlockDim {
   // the type of bbStart, bbLength

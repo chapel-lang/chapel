@@ -6,7 +6,7 @@ config const N = 16;
 
 config type sparseLayoutType = DefaultDist;
 
-const FullDom = {0..#N, 0..#N} dmapped Block({0..#N, 0..#N},
+const FullDom = {0..#N, 0..#N} dmapped blockDist({0..#N, 0..#N},
     sparseLayoutType=sparseLayoutType);
 
 var FullSparseDom: sparse subdomain(FullDom);

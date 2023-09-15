@@ -309,12 +309,12 @@ if example == 0 || example == 6 {
     writeln("This should be a chunk: {", "\n a", "\n b", "\n}");
   }
 
-  record MyThing {
-    proc writeThis(w) throws {
-      w.writeln("This should be a chunk: {");
-      w.writeln(" a");
-      w.writeln(" b");
-      w.writeln("}");
+  record MyThing : writeSerializable {
+    proc serialize(writer, ref serializer) throws {
+      writer.writeln("This should be a chunk: {");
+      writer.writeln(" a");
+      writer.writeln(" b");
+      writer.writeln("}");
     }
   }
 

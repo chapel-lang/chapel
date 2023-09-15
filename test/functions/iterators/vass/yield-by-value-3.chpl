@@ -6,8 +6,8 @@ proc nextCnt() do return cnt.fetchAdd(1);
 
 record MyRecord {
   const id = nextCnt();
-  proc init()       { this.complete(); writeln(id, " init"); }
-  proc init=(other) { this.complete(); writeln(id, " init= from ", other.id); }
+  proc init()       { init this; writeln(id, " init"); }
+  proc init=(other) { init this; writeln(id, " init= from ", other.id); }
   proc deinit()     { writeln(id, " deinit"); }
 }
 

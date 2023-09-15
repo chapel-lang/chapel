@@ -4,7 +4,7 @@ record R {
   proc init() {}
   proc init=(other: R) {
     this.s = other.s;
-    this.complete();
+    init this;
 
     if other.a.isFull
       then this.a.writeEF(other.a.readFF());

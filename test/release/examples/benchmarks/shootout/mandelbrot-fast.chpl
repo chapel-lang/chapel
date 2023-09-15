@@ -60,13 +60,12 @@ proc main() {
   }
 
   // Get a lock-free, binary fileWriter on 'stdout'
-  var w = (new file(1)).writer(locking=false,
-                               serializer=new binarySerializer());
+  var w = (new file(1)).writer(locking=false);
 
   // Write the file header and the image array.
   w.writef("P4\n");
   w.writef("%i %i\n", n, n);
-  w.write(image);
+  w.writeBinary(image);
 }
 
 //

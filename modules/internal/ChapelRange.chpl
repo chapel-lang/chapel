@@ -42,6 +42,15 @@ module ChapelRange {
      whereas the new rule reverses such direction. */
   config param newSliceRule = false;
 
+  /* Compile with ``-snewRangeLiteralType`` to switch to using the new rule
+     for determining the idxType of a range literal with param integral bounds
+     and to turn off the deprecation warning for using the old rule.
+
+     The new rule defines such idxType to be the type produced by adding
+     the two bounds. I.e.,``(low..high).idxType`` is ``(low+high).type``
+     when ``low`` and ``high`` are integral params. */
+  config param newRangeLiteralType = false;
+
   private param unalignedMark = -1;
 
   // This enum is documented directly in the spec to fit the presentation flow.
@@ -102,7 +111,7 @@ module ChapelRange {
   pragma "plain old data"
   pragma "range"
   @chpldoc.nodoc
-  record range
+  record _range
   {
     type idxType = int;                            // element type
     param bounds: boundKind = boundKind.both;      // lower/upper bounds
@@ -227,7 +236,7 @@ module ChapelRange {
     this.idxType = t;
     this.bounds = boundKind.low;
     this._low = chpl__idxToInt(low);
-    this.complete();
+    init this;
     if isFiniteIdxType(idxType) {
       this._high = finiteIdxTypeHigh(idxType);
     }
@@ -240,7 +249,7 @@ module ChapelRange {
     this.idxType = t;
     this.bounds = boundKind.high;
     this._high = chpl__idxToInt(high);
-    this.complete();
+    init this;
     if isFiniteIdxType(idxType) {
       this._low = finiteIdxTypeLow(idxType);
     }
@@ -252,7 +261,7 @@ module ChapelRange {
   proc range.init() {
     this.idxType = int;
     this.bounds = boundKind.neither;
-    this.complete();
+    init this;
     if isFiniteIdxType(idxType) {
       this._low = finiteIdxTypeLow(idxType);
       this._high = finiteIdxTypeHigh(idxType);
@@ -265,6 +274,24 @@ module ChapelRange {
   proc range.init(type idxType,
                   param bounds: boundKind,
                   param strides: strideKind) {
+
+    if chpl_warnUnstable && (bounds == boundKind.low || bounds == boundKind.high)
+      then warning("Default initialization of a range with 'boundKind.low' or 'boundKind.high' is unstable");
+
+    this.init(idxType, bounds, strides,
+              _low = chpl__defaultLowBound(idxType, bounds),
+              _high = chpl__defaultHighBound(idxType, bounds),
+              _stride = strides.defaultStride():chpl__rangeStrideType(idxType),
+              alignmentValue = 0:chpl__rangeStrideType(idxType));
+  }
+
+  // this overload can be removed when the unstable warning in the above overload is removed
+  @chpldoc.nodoc
+  proc range.init(type idxType,
+                  param bounds: boundKind,
+                  param strides: strideKind,
+                  param internal: bool) {
+
     this.init(idxType, bounds, strides,
               _low = chpl__defaultLowBound(idxType, bounds),
               _high = chpl__defaultHighBound(idxType, bounds),
@@ -378,9 +405,39 @@ module ChapelRange {
   //
 
   private
+  proc computeParamRangeIndexType_Old(param low, param high) type {
+    // if either type is int, and the int value fits in the other type,
+    // return the other type
+    if low.type == int &&
+       min(high.type) <= low && low <= max(high.type) {
+      return high.type;
+    } else if high.type == int &&
+              min(low.type) <= high && high <= max(low.type) {
+      return low.type;
+    } else {
+      // otherwise, use the type that '+' would produce.
+      return (low+high).type;
+    }
+  }
+  private
   proc computeParamRangeIndexType(param low, param high) type {
+    if newRangeLiteralType {
       // The idxType of 'low..high' is the type that '+' would produce.
       return (low+high).type;
+    }
+    type newRule = (low+high).type;
+    type oldRule = computeParamRangeIndexType_Old(low, high);
+    if newRule == oldRule then
+      return newRule;
+    compilerWarning("the idxType of this range literal ",
+                    low:string, "..", high:string,
+                    " with the low bound of the type ", low.type:string,
+                    " and the high bound of the type ", high.type:string,
+                    " is currently ", oldRule:string,
+          ". In a future release it will be switched to ", newRule:string,
+          ". To switch to this new typing and turn off this warning,",
+          " compile with -snewRangeLiteralType.");
+    return oldRule;
   }
   private proc isValidRangeIdxType(type t) param {
     return isIntegralType(t) || isEnumType(t) || isBoolType(t);
@@ -1760,7 +1817,7 @@ operator :(r: range(?), type t: range(?)) where chpl_castIsSafe(r, t) {
   checkBounds(t, r);
   checkEnumIdx(t, r);
 
-  var tmp: t;
+  var tmp = new range(t.idxType, t.bounds, t.strides, true);
   type srcType = r.idxType,
        dstType = t.idxType,
     dstIntType = tmp.chpl_integralIdxType;
@@ -1792,7 +1849,7 @@ operator :(r: range(?), type t: range(?)) throws where !chpl_castIsSafe(r, t) {
   checkBounds(t, r);
   checkEnumIdx(t, r);
 
-  var tmp: t;
+  var tmp = new range(t.idxType, t.bounds, t.strides, true);
   type srcType = r.idxType,
        dstType = t.idxType,
     dstIntType = tmp.chpl_integralIdxType;
@@ -2328,6 +2385,12 @@ private proc isBCPindex(type t) param do
 
   /////////// operators + and - ///////////
 
+  operator +(r1: range(?), r2: range(?)) do
+    compilerError("range addition is currently not supported");
+
+  operator -(r1: range(?), r2: range(?)) do
+    compilerError("range subtraction is currently not supported");
+
   //
   // Shifts and entire range to the right or left.
   // The alignment shifts along with the range.
@@ -2568,6 +2631,12 @@ private proc isBCPindex(type t) param do
       else if high        then return boundKind.high;
       else                     return boundKind.neither;
     }
+
+    if newBoundKind != boundKind.both &&
+       ! this.strides.isPosNegOne() && ! other.strides.isPosNegOne() then
+      compilerWarning("slicing a ", this.type:string,
+                      " with a ", other.type:string,
+                      " might produce an empty range and result in a halt");
 
     // If this range is unbounded below, we use low from the other range,
     // so that max(lo1, lo2) == lo2.  etc.

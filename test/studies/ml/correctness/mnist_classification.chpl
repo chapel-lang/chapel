@@ -13,7 +13,7 @@ config param networkNum = 1;
 
 
 config const modelDir = "../lib/models/";
-config const numImages = 30000;
+config const numImages = 2000;
 
 if networkNum == 1 {
     var net1 = new chai.Network(
@@ -28,7 +28,9 @@ if networkNum == 1 {
     MNISTTester.classificationEval(
         network=net1,
         numImages=numImages,
-        modelPath= modelDir + "mnist" + net1.signature() + ".model"
+        modelPath= modelDir + "mnist" + net1.signature() + ".model",
+        expectedAccuracy=1694.0/2000.0,
+        expectedLoss=0.72
     );
 }
 
@@ -45,13 +47,17 @@ if networkNum == 2 {
     MNISTTester.classificationEval(
         network=net2,
         numImages=numImages,
-        modelPath=modelDir + "mnist" + net2.signature() + ".model" // this is the lenet output
+        modelPath=modelDir + "mnist" + net2.signature() + ".model", // this is the lenet output
+        expectedAccuracy=1535.0 / 2000.0,
+        expectedLoss=1.58
     );
 
     MNISTTester.classificationEval(
         network=net2,
         numImages=numImages,
-        modelPath=modelDir + "mnist_cnn_epoch_60.model" // this is the lenet output
+        modelPath=modelDir + "mnist_cnn_epoch_60.model", // this is the lenet output
+        expectedAccuracy=1721.0 / 2000.0,
+        expectedLoss=0.77
     );
 }
 
@@ -71,7 +77,9 @@ if networkNum == 3 {
     MNISTTester.classificationEval(
         network=net3,
         numImages=numImages,
-        modelPath=modelDir + "mnist" + net3.signature() + ".model"
+        modelPath=modelDir + "mnist" + net3.signature() + ".model",
+        expectedAccuracy=1900.0 / 2000.0,
+        expectedLoss=0.18
     );
 }
 
@@ -90,7 +98,9 @@ if networkNum == 4 {
     MNISTTester.classificationEval(
         network=net4,
         numImages=numImages,
-        modelPath=modelDir + "mnist" + net4.signature() + ".model"
+        modelPath=modelDir + "mnist" + net4.signature() + ".model",
+        expectedAccuracy= 811.0 / 2000.0,
+        expectedLoss=2.21
     );
 }
 

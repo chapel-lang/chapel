@@ -32,7 +32,7 @@ var expectfile = openMemFile();
 
 {
   writeln("Testing block array");
-  var A = Block.createArray({1..5}, int);
+  var A = blockDist.createArray({1..5}, int);
   A = 1..5;
 
   jsonOut.writef("%?\n", A);
@@ -48,7 +48,7 @@ var expectfile = openMemFile();
 
 {
   writeln("Testing cyclic array");
-  var A = Cyclic.createArray({1..5}, int);
+  var A = cyclicDist.createArray({1..5}, int);
   A = 1..5;
 
   jsonOut.writef("%?\n", A);
@@ -65,7 +65,7 @@ var expectfile = openMemFile();
 {
   writeln("Testing block cyclic array");
   const Space = {1..5};
-  var D = Space dmapped BlockCyclic(startIdx=Space.low,blocksize=2);
+  var D = Space dmapped blockCycDist(startIdx=Space.low,blocksize=2);
   var A:[D] int;
   A = 1..5;
 

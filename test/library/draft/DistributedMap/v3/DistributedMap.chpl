@@ -10,7 +10,7 @@ module DistributedMap {
     private use ChapelLocks;
 
 
-    record distributedMap {
+    record distributedMap : writeSerializable {
         type keyType;
         type valType;
 
@@ -33,12 +33,12 @@ module DistributedMap {
             this.instance!.clear();
         }
 
-        proc writeThis(fr) throws {
-            this.instance!.writeThis(fr);
+        proc serialize(writer, ref serializer) throws {
+            this.instance!.serialize(writer, serializer);
         }
     }
 
-    class distMapInternal {
+    class distMapInternal : writeSerializable {
         type keyType;
         type valType;
 
@@ -47,7 +47,7 @@ module DistributedMap {
 
         @chpldoc.nodoc
         const locDom = {0..<targetLocales.size}
-            dmapped Cyclic(startIdx=0, targetLocales=targetLocales);
+            dmapped cyclicDist(startIdx=0, targetLocales=targetLocales);
 
         @chpldoc.nodoc
             var tables: [locDom] chainTable(keyType, valType);
@@ -102,11 +102,11 @@ module DistributedMap {
             return this.size == 0;
         }
 
-        proc extend(m: map) {
+        proc extend(m: map(?)) {
             compilerError("unimplemented");
         }
 
-        proc extend(other: distributedMap) {
+        proc extend(other: distributedMap(?)) {
             compilerError("unimplemented");
         }
 
@@ -122,7 +122,8 @@ module DistributedMap {
             compilerError("unimplemented");
         }
 
-        proc writeThis(fr) throws {
+        override proc serialize(writer, ref serializer) throws {
+            var fr = writer;
             for locIdx in this.locDom {
                 on this.targetLocales[locIdx] {
                     fr.write("[", this.targetLocales[locIdx], ": ");

@@ -106,7 +106,11 @@ bool useDarwinArmFix(Type* type);
 
 void makeBinaryLLVM();
 void prepareCodegenLLVM();
+// Store filenames of temporary files used by LLVM codegen, initializing them
+// if they do not exist.
+void setupLLVMCodegenFilenames(void);
 void finishCodegenLLVM();
+void initializeGenInfo(void);
 // appends clang arguments to be used to the provided vector
 void computeClangArgs(std::vector<std::string>& clangCCArgs);
 void runClang(const char* just_parse_filename);

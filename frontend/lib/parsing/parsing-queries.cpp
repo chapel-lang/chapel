@@ -1405,9 +1405,31 @@ static bool isAstDeprecated(Context* context, const AstNode* ast) {
   return attr && attr->isDeprecated();
 }
 
+static bool isUnstablePackageModule(Context* context, const ID& id) {
+  auto node = parsing::idToAst(context, id);
+  if (!node) return false;
+
+  // If the node is deprecated, no unstable warning is needed
+  if (isAstDeprecated(context, node)) return false;
+
+  bool isPackageModule = false;
+  if (node->isModule()) {
+    UniqueString path;
+    if (context->filePathForId(id, path)) {
+      path = context->adjustPathForErrorMsg(path);
+      isPackageModule = path.startsWith("$CHPL_HOME/modules/packages/");
+    }
+  }
+
+  // Some package modules may be stable, those exceptions should be encoded here
+
+  return isPackageModule;
+}
+
 static bool isIdUnstable(Context* context, const ID& id) {
   auto attr = parsing::idToAttributeGroup(context, id);
-  return attr && ( attr->isUnstable() || attr->hasPragma(PRAGMA_UNSTABLE) );
+  return (attr && ( attr->isUnstable() || attr->hasPragma(PRAGMA_UNSTABLE) ))
+          || isUnstablePackageModule(context, id);
 }
 
 bool
@@ -1566,7 +1588,7 @@ unstableWarningForIdImpl(Context* context, ID idMention, ID idTarget) {
   if (!targetNamedDecl) return false;
 
   auto attributes = parsing::idToAttributeGroup(context, idTarget);
-  auto storedMsg = attributes->unstableMessage();
+  auto storedMsg = attributes ? attributes->unstableMessage() : UniqueString();
   std::string msg = storedMsg.isEmpty()
       ? createDefaultUnstableMessage(context, targetNamedDecl)
       : storedMsg.c_str();

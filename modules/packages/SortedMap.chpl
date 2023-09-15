@@ -86,7 +86,7 @@ module SortedMap {
     var val;
   }
 
-  record sortedMap {
+  record sortedMap : writeSerializable {
     /* Type of sortedMap keys. */
     type keyType;
     /* Type of sortedMap values. */
@@ -173,7 +173,7 @@ module SortedMap {
 
       this._set = other._set;
 
-      this.complete();
+      init this;
     }
 
     /*
@@ -408,16 +408,7 @@ module SortedMap {
       }
     }
 
-    /*
-      Writes the contents of this sortedMap to a fileWriter.
-      The format looks like:
-
-        .. code-block:: chapel
-
-           {k1: v1, k2: v2, .... , kn: vn}
-
-      :arg ch: A fileWriter to write to.
-    */
+    @chpldoc.nodoc
     proc writeThis(ch: fileWriter) throws {
       _enter(); defer _leave();
       var first = true;
@@ -431,6 +422,11 @@ module SortedMap {
         ch.write(kv[0], ": ", kv[1]!.val);
       }
       ch.write("}");
+    }
+
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
 
     /*

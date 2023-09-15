@@ -61,23 +61,23 @@ writeln();
 
 writeln("var distributed domain defined with var space");
 var distVarSpace = {1..10};
-var distVarDom = distVarSpace dmapped Block(distVarSpace);
+var distVarDom = distVarSpace dmapped blockDist(distVarSpace);
 test(distVarDom);
 writeln();
 
 writeln("var distributed domain defined with const space");
 const distConstSpace = {1..10};
-var distVarDomConstSpace = distConstSpace dmapped Block(distConstSpace);
+var distVarDomConstSpace = distConstSpace dmapped blockDist(distConstSpace);
 test(distVarDomConstSpace);
 writeln();
 
 writeln("const distributed domain defined with var space");
-const distConstDom = distVarSpace dmapped Block(distVarSpace);
+const distConstDom = distVarSpace dmapped blockDist(distVarSpace);
 test(distConstDom);
 writeln();
 
 writeln("const distributed domain defined with const space");
-const distConstDomConstSpace = distConstSpace dmapped Block(distConstSpace);
+const distConstDomConstSpace = distConstSpace dmapped blockDist(distConstSpace);
 test(distConstDomConstSpace);
 writeln();
 

@@ -38,7 +38,7 @@ class GridInvalidRegion {
     parent_level: unmanaged Level,
     fine_level:   unmanaged Level )
   {
-    this.complete();
+    init this;
     //==== Calculate refinement ratio ====
     const ref_ratio = refinementRatio(parent_level, fine_level);
     

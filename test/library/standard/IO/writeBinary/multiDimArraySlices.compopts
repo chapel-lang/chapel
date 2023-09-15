@@ -1,0 +1,2 @@
+-sReadBinaryArrayReturnInt=true
+-sReadBinaryArrayReturnInt=true -suseBlock=true # multiDimArraySlices-block.good

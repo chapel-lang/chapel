@@ -551,7 +551,7 @@ class SparseBlockArr: BaseSparseArr(?) {
 // locDom: reference to local domain class
 // myElems: a non-distributed array of local elements
 //
-class LocSparseBlockArr {
+class LocSparseBlockArr : writeSerializable {
   type eltType;
   param rank: int;
   type idxType;
@@ -601,13 +601,17 @@ class LocSparseBlockArr {
   override proc writeThis(f) throws {
     halt("LocSparseBlockArr.writeThis() is not implemented / should not be needed");
   }
+
+  override proc serialize(writer, ref serializer) throws {
+    halt("LocSparseBlockArr.serialize() is not implemented / should not be needed");
+  }
 }
 
 proc SparseBlockDom.dsiGetDist() {
   if _isPrivatized(dist) then
-    return new Block(dist.pid, dist, _unowned=true);
+    return new blockDist(dist.pid, dist, _unowned=true);
   else
-    return new Block(nullPid, dist, _unowned=true);
+    return new blockDist(nullPid, dist, _unowned=true);
 }
 
 /*

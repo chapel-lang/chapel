@@ -19,7 +19,7 @@ const TD3D: domain(3) = Space3.translate(-o5,-o5,-o5);
 const TD4D: domain(4) = Space4.translate(-o5,-o5,-o5,-o5);
 const TD2D32: domain(2,int(32)) = Space2D32.chpl__unTranslate(o5:int(32),o5:int(32));
 
-proc foo(TD: domain, A: [TD] int, TA) {
+proc foo(TD: domain(?), A: [TD] int, TA) {
   var errs = 0;
   var offset = if (TD.rank==1) then (o5-shift):TD.idxType else fill(TD.rank, (o5-shift):TD.idxType);
   for i in TD do

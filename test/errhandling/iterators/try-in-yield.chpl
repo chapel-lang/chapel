@@ -84,9 +84,9 @@ config const tryBang = true;
 if tryBang {
   writeln("Case 4 - try!");
 
-  proc bar() throws {
+  proc bar(): int throws {
     throw new Error("test");
-    return 0;
+
   }
 
   iter foo() {
@@ -100,9 +100,9 @@ if tryBang {
 else {
   writeln("Case 4 - try");
 
-  proc bar() throws {
+  proc bar(): int throws {
     throw new Error("test");
-    return 0;
+
   }
 
   iter foo() throws { // can throw because can be inlined

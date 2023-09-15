@@ -78,7 +78,7 @@ proc main() {
   // rows and its low column bound.
   //
   const MatVectSpace: domain(2)
-    dmapped DimensionalDist2D(targetLocales,
+    dmapped dimensionalDist2D(targetLocales,
                               new BlockCyclicDim(gridRows, lowIdx=1, blkSize),
                               new BlockCyclicDim(gridCols, lowIdx=1, blkSize))
                     = {1..n, 1..n+1},
@@ -189,7 +189,7 @@ proc LUFactorize(n: int, ref Ab: [?AbD] elemType,
 // locale only stores one copy of each block it requires for all of
 // its rows/columns.
 //
-proc schurComplement(ref Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) {
+proc schurComplement(ref Ab: [?AbD] elemType, AD: domain(?), BD: domain(?), Rest: domain(?)) {
   //
   // Copy data into replicated arrays so every processor has a local copy
   // of the data it will need to perform a local matrix-multiply.
@@ -217,7 +217,7 @@ proc schurComplement(ref Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: doma
 //
 proc replicateD1(Ab, BD) {
   const replBD = {1..blkSize, 1..n+1}
-    dmapped DimensionalDist2D(targetLocales,
+    dmapped dimensionalDist2D(targetLocales,
                               new ReplicatedDim(gridRows),
                               new BlockCyclicDim(gridCols, lowIdx=1, blkSize));
   var replB: [replBD] elemType;
@@ -234,7 +234,7 @@ proc replicateD1(Ab, BD) {
 //
 proc replicateD2(Ab, AD) {
   const replAD = {1..n, 1..blkSize}
-    dmapped DimensionalDist2D(targetLocales,
+    dmapped dimensionalDist2D(targetLocales,
                               new BlockCyclicDim(gridRows, lowIdx=1, blkSize),
                               new ReplicatedDim(gridCols));
   var replA: [replAD] elemType;
@@ -252,7 +252,7 @@ proc replicateD2(Ab, AD) {
 // pivot vector accordingly
 //
 proc panelSolve(ref Ab: [] elemType,
-               panel: domain,
+               panel: domain(?),
                ref piv: [] int) {
 
   for k in panel.dim(1) {             // iterate through the columns
@@ -294,8 +294,8 @@ proc panelSolve(ref Ab: [] elemType,
 // solves the rows to the right of the block.
 //
 proc updateBlockRow(ref Ab: [] elemType,
-                   tl: domain,
-                   tr: domain) {
+                   tl: domain(?),
+                   tr: domain(?)) {
 
   for row in tr.dim(0) {
     const activeRow = tr[row..row, ..],

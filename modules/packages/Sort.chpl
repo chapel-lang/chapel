@@ -1446,7 +1446,7 @@ module SampleSortHelp {
 
 
 
-  record SampleBucketizer {
+  record SampleBucketizer : writeSerializable {
     type eltType;
 
     // filled from 1 to num_buckets_
@@ -1472,6 +1472,10 @@ module SampleSortHelp {
         ch.write(try! " %xt".format(sortedStorage[i]));
       }
       ch.write(")\n");
+    }
+
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
 
     proc getNumBuckets() {
@@ -2210,7 +2214,7 @@ module TwoArrayPartitioning {
     }
   }
 
-  record TwoArrayDistSortTask {
+  record TwoArrayDistSortTask : writeSerializable {
     var tasks: list(TwoArrayDistSortPerBucketTask);
 
     // Create an empty one
@@ -2222,7 +2226,7 @@ module TwoArrayPartitioning {
                                                 firstLocaleId, lastLocaleId,
                                                 false);
       assert(!t.isEmpty());
-      this.complete();
+      init this;
       tasks.pushBack(t);
     }
     proc writeThis(f) throws {
@@ -2232,6 +2236,10 @@ module TwoArrayPartitioning {
         f.write(t);
       }
     }
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
+
     proc isEmpty() {
       return tasks.isEmpty();
     }
@@ -2325,7 +2333,7 @@ module TwoArrayPartitioning {
     type bucketizerType;
 
     var numLocales:int;
-    var perLocale = Block.createArray(0..#numLocales,
+    var perLocale = blockDist.createArray(0..#numLocales,
         TwoArrayDistributedBucketizerStatePerLocale(bucketizerType));
 
     const baseCaseSize:int;
@@ -2823,7 +2831,7 @@ module TwoArrayPartitioning {
                                startbit,
                                0, state1.numLocales-1);
     var nextDistTaskElts: list(TwoArrayDistSortPerBucketTask, parSafe=true);
-    var smallTasksPerLocale = Block.createArray(0..#numLocales,
+    var smallTasksPerLocale = blockDist.createArray(0..#numLocales,
                                           list(TwoArraySortTask, parSafe=true));
 
     assert(!distTask.isEmpty());

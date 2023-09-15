@@ -5,16 +5,16 @@ class VectorListElement {  var x;  }
 const ownVLE = new owned VectorListElement(7);
 const VLE = ownVLE.borrow();
 
-proc p1(): VectorListElement { return VLE; }
+proc p1(): VectorListElement(?) { return VLE; }
 writeln(p1());
 
-proc p2(): (VectorListElement,) { return (VLE,); }
+proc p2(): (VectorListElement(?),) { return (VLE,); }
 writeln(p2());
 
-iter i1(): VectorListElement { yield VLE; }
+iter i1(): VectorListElement(?) { yield VLE; }
 for j1 in i1() do writeln(j1);
 
-iter i2(): (VectorListElement,) { yield (VLE,); }
+iter i2(): (VectorListElement(?),) { yield (VLE,); }
 for j2 in i2() do writeln(j2);
 
 // Ensure that these tuples are generic.

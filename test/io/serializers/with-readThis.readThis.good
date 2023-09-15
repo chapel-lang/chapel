@@ -1,2 +1,3 @@
+with-readThis.chpl:7: warning: 'readThis' is deprecated. Please use 'deserialize' methods instead.
 in readThis
 (x = 5)

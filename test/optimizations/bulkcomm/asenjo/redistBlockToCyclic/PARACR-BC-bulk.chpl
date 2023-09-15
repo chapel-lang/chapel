@@ -173,8 +173,8 @@ if (RedistStage>stages)
 var error:int=0;
 
 const Space = {1..n};
-const Dom = Space dmapped Block(boundingBox=Space);
-const DomC = Space dmapped Cyclic(startIdx=(1));
+const Dom = Space dmapped blockDist(boundingBox=Space);
+const DomC = Space dmapped cyclicDist(startIdx=(1));
 
 var Dstages: domain(1,int)={1..stages};
 var AA,BB,CC,DD, XX:[Dom] real;

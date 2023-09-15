@@ -3,7 +3,7 @@ This code summarizes what happens upon:
 
   record Color {
     var red, green, blue: uint(8);
-    proc writeThis(channel) { }  // can be user-defined or compiler-generated
+    proc serialize(writer, ref serializer) { }  // can be user-defined or compiler-generated
   }
 
   var taupe = new Color(179, 139, 109);
@@ -16,7 +16,7 @@ where the module IO.chpl has:
   }
   ..... more wrappers .....
   proc _write_one_internal(....) {
-    arg.writeThis(channel)
+    arg.serialize(writer, ref serializer)
   }
 */
 

@@ -37,7 +37,7 @@ module OwnedObject {
   pragma "no copy"
   pragma "copy mutates"
   pragma "managed pointer"
-  record _owned {
+  record _owned : writeSerializable, readDeserializable {
     type chpl_t;                // contained type (class type)
 
     // contained pointer (class type)
@@ -98,7 +98,7 @@ module OwnedObject {
       compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
 
     this.chpl_p = owned.release(src);
-    this.complete();
+    init this;
 
     if isNonNilableClass(this.type) && isNilableClass(src) then
       compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
@@ -387,6 +387,11 @@ module OwnedObject {
   @chpldoc.nodoc
   proc _owned.writeThis(f) throws {
     _readWriteHelper(f);
+  }
+
+  @chpldoc.nodoc
+  proc _owned.serialize(writer, ref serializer) throws {
+    _readWriteHelper(writer);
   }
 
   // Don't print out 'chpl_p' when printing an _owned, just print class pointer

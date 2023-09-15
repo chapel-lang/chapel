@@ -1,6 +1,8 @@
 
 use IO;
 use List;
+use Types;
+use List, Set;
 
 use JSON;
 use FormatHelper;
@@ -23,6 +25,10 @@ proc test(val, type T = val.type) {
 
       f.writer().withSerializer(FormatWriter).write(val);
     }
+
+    // Avoid bug when reading domains for now.
+    if isDomainType(T) then return;
+
     {
       var readVal = f.reader().withDeserializer(FormatReader).read(T);
       writeln("--- read: ---");
@@ -38,6 +44,10 @@ proc test(val, type T = val.type) {
         writeln("FAILURE");
         failures.pushBack(T:string);
       } else writeln("SUCCESS");
+
+      if isUnmanagedClassType(val.type) {
+        delete readVal;
+      }
     }
   } catch e : Error {
     writeln("FAILURE: ", e.message());
@@ -54,7 +64,7 @@ record SimpleRecord {
   var y : real;
 }
 
-record CustomizedRecord {
+record CustomizedRecord : writeSerializable, initDeserializable {
   var x : int;
   var y : real;
 
@@ -63,7 +73,7 @@ record CustomizedRecord {
     this.y = y;
   }
 
-  proc init(reader: fileReader, ref deserializer) throws {
+  proc init(reader: fileReader(?), ref deserializer) throws {
     const ref r = reader;
     this.init();
     r.readLiteral("<");
@@ -73,7 +83,7 @@ record CustomizedRecord {
     r.readLiteral(">");
   }
 
-  proc serialize(writer: fileWriter, ref serializer) {
+  proc serialize(writer: fileWriter(?), ref serializer) {
     writer.writeLiteral("<");
     writer.write(x);
     writer.writeLiteral(", ");
@@ -152,6 +162,12 @@ proc main() {
   test((1, 2, 3));
   test((1, 42.0, false));
   test(colors.red);
+  test(1..10);
+  test(1..10 by 2);
+  test(1..10 by -1);
+  test(1..20 by 3 align 2);
+  test({1..10, 1..10});
+  test({1..10, 1..10} by 2);
   test(new SimpleRecord(5, 42.0));
   test(new CustomizedRecord(7, 3.14));
   test(new GenericRecord(int, 3, 42, (1,2,3)));
@@ -169,6 +185,14 @@ proc main() {
   test(new shared Parent(5));
 
   test(new owned Child101());
+
+  var x = new unmanaged SimpleChild(5, 42.0);
+  test(x);
+  delete x;
+
+  var s : set(int);
+  for i in 1..10 do s.add(i);
+  test(s);
 
   if failures.size > 0 {
     writeln("FAILURES:");

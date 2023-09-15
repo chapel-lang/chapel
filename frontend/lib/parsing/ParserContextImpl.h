@@ -2201,8 +2201,9 @@ buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol,
     if (limitationKind == VisibilityClause::LimitationKind::EXCEPT ||
         limitationKind == VisibilityClause::LimitationKind::ONLY) {
       if (!asExpr) {
+        auto limitationLoc = builder->getLocation(expr.get());
         error = CHPL_PARSER_REPORT(this, ExceptOnlyInvalidExpr, location,
-                                   limitationKind);
+                                   limitationLoc, limitationKind);
       }
     } else if (limitationKind == VisibilityClause::LimitationKind::BRACES) {
       CHPL_ASSERT(isImport && "braces should only be used with import statements");

@@ -263,7 +263,7 @@ module ChapelHashtable {
       // Round initial capacity up to nearest power of 2
       this.startingSize = 2 << log2((initialCapacity/
                                      resizeThreshold):int-1);
-      this.complete();
+      init this;
 
       // allocates a _ddata(chpl_TableEntry(keyType,valType)) storing the table
       // All elements are memset to 0 (no initializer is run for the idxType)
@@ -427,7 +427,6 @@ module ChapelHashtable {
           // the deleted entries & the table should only ever be half
           // full of non-deleted entries.
           halt("couldn't add key -- ", tableNumFullSlots, " / ", tableSize, " taken");
-          return (false, -1);
         }
         return (foundSlot, slotNum);
       }

@@ -6,7 +6,7 @@ record R {
   var x: rank*t;
 }
 
-proc foo(r: R) {
+proc foo(r: R(?)) {
   writeln("In foo, r is: ", r);
 }
 

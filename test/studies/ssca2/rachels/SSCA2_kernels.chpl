@@ -26,7 +26,7 @@ module SSCA2_kernels
   // edges, all of which have the largest weight.
   // ========================================================
 
-  proc largest_edges ( G, ref heavy_edge_list :domain )
+  proc largest_edges ( G, ref heavy_edge_list :domain(?) )
 
     // edge_weights can be either an array over an associative
     // domain or over a sparse domain.  the output  heavy_edge_list
@@ -95,7 +95,7 @@ module SSCA2_kernels
   // ===================================================================
 
   proc rooted_heavy_subgraphs ( G,
-                                Heavy_Edge_List     : domain,
+                                Heavy_Edge_List     : domain(?),
                                 Heavy_Edge_Subgraph : [],
                                 in max_path_length  : int )
 
@@ -171,7 +171,7 @@ module SSCA2_kernels
   config const defaultNumTPVs = 16;
   config var numTPVs = min(defaultNumTPVs, numLocales);
   // Would be nice to use PrivateDist, but aliasing is not supported (yet)
-  const PrivateSpace = LocaleSpace dmapped Block(boundingBox=LocaleSpace);
+  const PrivateSpace = LocaleSpace dmapped blockDist(boundingBox=LocaleSpace);
 
   // ==================================================================
   //                              KERNEL 4
@@ -238,7 +238,7 @@ module SSCA2_kernels
       // variables approximately evenly across the 1d locales array.
           Locales[_computeChunkStartEnd(numLocales, numTPVs, t+1)[1]-1];
 
-      const TPVLocaleSpace = TPVSpace dmapped Block(boundingBox=TPVSpace,
+      const TPVLocaleSpace = TPVSpace dmapped blockDist(boundingBox=TPVSpace,
                                                     targetLocales=TPVLocales);
 
       // There will be numTPVs copies of the temps, thus throttling the

@@ -145,6 +145,7 @@ Constant and Function Definitions
 
 */
 module Math {
+  private import HaltWrappers;
   private use CTypes;
   public use AutoMath;
 
@@ -1045,84 +1046,184 @@ module Math {
   /* Returns the greatest common divisor of the integer arguments `x` and
      `y`. */
   proc gcd(in x: int,in y: int): int {
+    (x, y) = (abs(x), abs(y));
+    return chpl_gcd(x, y);
+  }
+
+  /* Returns the greatest common divisor of the integer arguments `x` and
+     `y`. */
+  proc gcd(in x: int(32),in y: int(32)): int(32) {
+    (x, y) = (abs(x), abs(y));
+    return chpl_gcd(x, y);
+  }
+
+  /* Returns the greatest common divisor of the integer arguments `x` and
+     `y`. */
+  proc gcd(in x: int(16),in y: int(16)): int(16) {
+    (x, y) = (abs(x), abs(y));
+    return chpl_gcd(x, y);
+  }
+
+  /* Returns the greatest common divisor of the integer arguments `x` and
+     `y`. */
+  proc gcd(in x: int(8),in y: int(8)): int(8) {
+    (x, y) = (abs(x), abs(y));
+    return chpl_gcd(x, y);
+  }
+
+  /* Returns the greatest common divisor of the unsigned integer arguments `x`
+     and `y`. */
+  proc gcd(in x: uint(64),in y: uint(64)): uint(64) {
+    return chpl_gcd(x, y);
+  }
+
+  /* Returns the greatest common divisor of the unsigned integer arguments `x`
+     and `y`. */
+  proc gcd(in x: uint(32),in y: uint(32)): uint(32) {
+    return chpl_gcd(x, y);
+  }
+
+  /* Returns the greatest common divisor of the unsigned integer arguments `x`
+     and `y`. */
+  proc gcd(in x: uint(16),in y: uint(16)): uint(16) {
+    return chpl_gcd(x, y);
+  }
+
+  /* Returns the greatest common divisor of the unsigned integer arguments `x`
+     and `y`. */
+  proc gcd(in x: uint(8),in y: uint(8)): uint(8) {
     return chpl_gcd(x, y);
   }
 
   /* Returns the Bessel function of the first kind of order `0` of `x`. */
   @unstable("'j0' is unstable and may be renamed or moved to a different module in the future")
   inline proc j0(x: real(32)): real(32) {
-    return chpl_j0(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_float_j0(x: real(32)): real(32);
+    return chpl_float_j0(x);
   }
 
   /* Returns the Bessel function of the first kind of order `0` of `x`. */
   @unstable("'j0' is unstable and may be renamed or moved to a different module in the future")
   inline proc j0(x: real(64)): real(64) {
-    return chpl_j0(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc j0(x: real(64)): real(64);
+    return j0(x);
   }
 
   /* Returns the Bessel function of the first kind of order `1` of `x`. */
   @unstable("'j1' is unstable and may be renamed or moved to a different module in the future")
   inline proc j1(x: real(32)): real(32) {
-    return chpl_j1(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_float_j1(x: real(32)): real(32);
+    return chpl_float_j1(x);
   }
 
   /* Returns the Bessel function of the first kind of order `1` of `x`. */
   @unstable("'j1' is unstable and may be renamed or moved to a different module in the future")
   inline proc j1(x: real(64)): real(64) {
-    return chpl_j1(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc j1(x: real(64)): real(64);
+    return j1(x);
   }
 
   /* Returns the Bessel function of the first kind of order `n` of `x`. */
   @unstable("'jn' is unstable and may be renamed or moved to a different module in the future")
   inline proc jn(n: int, x: real(32)): real(32) {
-    return chpl_jn(n, x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_float_jn(n: c_int, x: real(32)): real(32);
+    return chpl_float_jn(n.safeCast(c_int), x);
   }
 
   /* Returns the Bessel function of the first kind of order `n` of `x`. */
   @unstable("'jn' is unstable and may be renamed or moved to a different module in the future")
   inline proc jn(n: int, x: real(64)): real(64) {
-    return chpl_jn(n, x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc jn(n: c_int, x: real(64)): real(64);
+    return jn(n.safeCast(c_int), x);
   }
 
   /* Returns the Bessel function of the second kind of order `0` of `x`, where
      `x` must be greater than 0. */
   @unstable("'y0' is unstable and may be renamed or moved to a different module in the future")
   inline proc y0(x: real(32)): real(32) {
-    return chpl_y0(x);
+    if boundsChecking && x < 0 then
+      HaltWrappers.boundsCheckHalt("Input value for y0() must be non-negative");
+
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_float_y0(x: real(32)): real(32);
+    return chpl_float_y0(x);
   }
 
   /* Returns the Bessel function of the second kind of order `0` of `x`,
      where `x` must be greater than 0. */
   @unstable("'y0' is unstable and may be renamed or moved to a different module in the future")
   inline proc y0(x: real(64)): real(64) {
-    return chpl_y0(x);
+    if boundsChecking && x < 0 then
+      HaltWrappers.boundsCheckHalt("Input value for y0() must be non-negative");
+
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc y0(x: real(64)): real(64);
+    return y0(x);
   }
 
   /* Returns the Bessel function of the second kind of order `1` of `x`,
      where `x` must be greater than 0. */
   @unstable("'y1' is unstable and may be renamed or moved to a different module in the future")
   inline proc y1(x: real(32)): real(32) {
-    return chpl_y1(x);
+    if boundsChecking && x < 0 then
+      HaltWrappers.boundsCheckHalt("Input value for y1() must be non-negative");
+
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_float_y1(x: real(32)): real(32);
+    return chpl_float_y1(x);
   }
 
   /* Returns the Bessel function of the second kind of order `1` of `x`,
      where `x` must be greater than 0. */
   @unstable("'y1' is unstable and may be renamed or moved to a different module in the future")
   inline proc y1(x: real(64)): real(64) {
-    return chpl_y1(x);
+    if boundsChecking && x < 0 then
+      HaltWrappers.boundsCheckHalt("Input value for y1() must be non-negative");
+
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc y1(x: real(64)): real(64);
+    return y1(x);
   }
 
   /* Returns the Bessel function of the second kind of order `n` of `x`,
      where `x` must be greater than 0. */
   @unstable("'yn' is unstable and may be renamed or moved to a different module in the future")
   inline proc yn(n: int, x: real(32)): real(32) {
-    return chpl_yn(n, x);
+    if boundsChecking && x < 0 then
+      HaltWrappers.boundsCheckHalt("Input value for yn() must be non-negative");
+
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_float_yn(n: c_int, x: real(32)): real(32);
+    return chpl_float_yn(n.safeCast(c_int), x);
   }
 
   /* Returns the Bessel function of the second kind of order `n` of `x`,
      where `x` must be greater than 0. */
   @unstable("'yn' is unstable and may be renamed or moved to a different module in the future")
   inline proc yn(n: int, x: real(64)): real(64) {
-    return chpl_yn(n, x);
+    if boundsChecking && x < 0 then
+      HaltWrappers.boundsCheckHalt("Input value for yn() must be non-negative");
+
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc yn(n: c_int, x: real(64)): real(64);
+    return yn(n.safeCast(c_int), x);
   }
 }

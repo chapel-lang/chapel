@@ -24,3 +24,23 @@ IN B.deserialize
 IN A.deserialize
 IN B.deserialize
 SUCCESS: myMap
+===== writing: =====
+(b = (t = (11, 1.1)))
+--------------------
+0b000000000000009a9999999999f13f
+====================
+IN B.deserialize
+SUCCESS: DefaultRecord
+===== writing: =====
+{b = (t = (22, 2.2))}
+--------------------
+0116000000000000009a99999999990140
+====================
+ERROR: BadFormatError: bad format (invalid binary format found for class nilability)
+===== writing: =====
+{b = (t = (33, 3.3))}
+--------------------
+0121000000000000006666666666660a40
+====================
+IN B.deserialize
+SUCCESS: unmanaged DefaultClass

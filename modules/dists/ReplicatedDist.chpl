@@ -22,7 +22,7 @@
 // THE REPLICATED DISTRIBUTION IMPLEMENTATION
 //
 // Classes defined:
-//  Replicated     -- Global distribution descriptor
+//  ReplicatedImpl     -- Global distribution descriptor
 //  ReplicatedDom      -- Global domain descriptor
 //  LocReplicatedDom   -- Local domain descriptor
 //  ReplicatedArr      -- Global array descriptor
@@ -31,6 +31,9 @@
 // Potential extensions:
 // - support other kinds of domains
 // - allow run-time change in locales
+
+@unstable("ReplicatedDist is unstable and may change in the future")
+prototype module ReplicatedDist {
 
 use DSIUtil;
 
@@ -48,12 +51,12 @@ config param traceReplicatedDist = false;
 //   nicer example - pull from primers/distributions.chpl
 
 /*
-This Replicated distribution causes a domain and its arrays
+This ``replicatedDist`` distribution causes a domain and its arrays
 to be replicated across the desired locales (all the locales by default).
 An array receives a distinct set of elements - a "replicand" -
 allocated on each locale.
 
-In other words, a Replicated-distributed domain has
+In other words, a replicated-distributed domain has
 an implicit additional dimension - over the locales,
 making it behave as if there is one copy of its indices per locale.
 
@@ -74,7 +77,7 @@ referring to the domain or array.
   .. code-block:: chapel
 
     const Dbase = {1..5};  // A default-distributed domain
-    const Drepl = Dbase dmapped Replicated();
+    const Drepl = Dbase dmapped replicatedDist();
     var Abase: [Dbase] int;
     var Arepl: [Drepl] int;
 
@@ -93,13 +96,13 @@ distribution.
 
 **Initializer Arguments**
 
-The ``Replicated`` class initializer is defined as follows:
+The ``replicatedDist`` initializer is defined as follows:
 
   .. code-block:: chapel
 
-    proc Replicated.init(
+    proc replicatedDist.init(
       targetLocales: [] locale = Locales,
-      purposeMessage: string = "used to create a Replicated")
+      purposeMessage: string = "used to create a replicatedDist")
 
 The optional ``purposeMessage`` may be useful for debugging
 when the initializer encounters an error.
@@ -113,11 +116,11 @@ when the initializer encounters an error.
 
 
 pragma "ignore noinit"
-record Replicated {
+record replicatedDist : writeSerializable {
   forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(unmanaged ReplicatedImpl);
 
   proc init(targetLocales: [] locale = Locales,
-            purposeMessage = "used to create a Replicated") {
+            purposeMessage = "used to create a replicatedDist") {
     const value = new unmanaged ReplicatedImpl(targetLocales, purposeMessage);
 
     this.chpl_distHelp = new chpl_PrivatizedDistHelper(
@@ -144,30 +147,41 @@ record Replicated {
   // Note: This does not handle the case where the desired type of 'this'
   // does not match the type of 'other'. That case is handled by the compiler
   // via coercions.
-  proc init=(const ref other : Replicated) {
+  proc init=(const ref other : replicatedDist) {
     this.init(other._value.dsiClone());
   }
 
   proc clone() {
-    return new Replicated(this._value.dsiClone());
+    return new replicatedDist(this._value.dsiClone());
   }
 
   @chpldoc.nodoc
-  inline operator ==(d1: Replicated(?), d2: Replicated(?)) {
+  inline operator ==(d1: replicatedDist, d2: replicatedDist) {
     if (d1._value == d2._value) then
       return true;
     return d1._value.dsiEqualDMaps(d2._value);
   }
 
   @chpldoc.nodoc
-  inline operator !=(d1: Replicated(?), d2: Replicated(?)) {
+  inline operator !=(d1: replicatedDist, d2: replicatedDist) {
     return !(d1 == d2);
   }
 
+  @chpldoc.nodoc
   proc writeThis(x) {
     chpl_distHelp.writeThis(x);
   }
+
+  @chpldoc.nodoc
+  proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
+  }
 }
+
+
+@deprecated("'Replicated' is deprecated, please use 'replicatedDist' instead")
+type Replicated = replicatedDist;
+
 
 
 @chpldoc.nodoc
@@ -182,9 +196,9 @@ class ReplicatedImpl : BaseDist {
 // initializer: replicate over the given locales
 // (by default, over all locales)
 proc ReplicatedImpl.init(targetLocales: [] locale = Locales,
-                         purposeMessage: string = "used to create a Replicated")
+                         purposeMessage: string = "used to create a replicatedDist")
 {
-  this.complete();
+  init this;
 
   for loc in targetLocales {
     this.targetLocDom.add(loc.id);
@@ -195,7 +209,7 @@ proc ReplicatedImpl.init(targetLocales: [] locale = Locales,
     writeln("ReplicatedImpl initializer over ", targetLocales);
 }
 
-proc ReplicatedImpl.dsiEqualDMaps(that: ReplicatedImpl(?)) {
+proc ReplicatedImpl.dsiEqualDMaps(that: ReplicatedImpl) {
   return this.targetLocales.equals(that.targetLocales);
 }
 
@@ -433,9 +447,9 @@ iter ReplicatedDom.these(param tag: iterKind, followThis) where tag == iterKind.
 
 proc ReplicatedDom.dsiGetDist() {
   if _isPrivatized(dist) then
-    return new Replicated(dist.pid, dist, _unowned=true);
+    return new replicatedDist(dist.pid, dist, _unowned=true);
   else
-    return new Replicated(nullPid, dist, _unowned=true);
+    return new replicatedDist(nullPid, dist, _unowned=true);
 }
 
 override proc ReplicatedDom.dsiDestroyDom() {
@@ -500,7 +514,7 @@ proc _array.replicand(loc: locale) ref {
 //
 // local array class
 //
-class LocReplicatedArr {
+class LocReplicatedArr : writeSerializable {
   // these generic fields let us give types to the other fields easily
   type eltType;
   param rank: int;
@@ -542,6 +556,11 @@ class LocReplicatedArr {
   // type's compilerError()
   override proc writeThis(f) throws {
     halt("LocReplicatedArr.writeThis() is not implemented / should not be needed");
+  }
+
+  @chpldoc.nodoc
+  override proc serialize(writer, ref serializer) throws {
+    halt("LocReplicatedArr.serialize() is not implemented / should not be needed");
   }
 }
 
@@ -765,3 +784,5 @@ proc ReplicatedArr.dsiLocalSubdomain(loc: locale) {
 proc ReplicatedArr.dsiLocalSlice(ranges) {
   return chpl_myLocArr().arrLocalRep((...ranges));
 }
+
+} // ReplicatedDist

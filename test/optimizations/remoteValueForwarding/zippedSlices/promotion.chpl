@@ -6,9 +6,9 @@ config param doForall = false;
 
 proc main() {
 
-  var A = Block.createArray(1..n, int);
-  var B = Block.createArray(1..n, int);
-  var C = Block.createArray(1..n, int);
+  var A = blockDist.createArray(1..n, int);
+  var B = blockDist.createArray(1..n, int);
+  var C = blockDist.createArray(1..n, int);
 
   var alpha = 2;
 

@@ -81,7 +81,7 @@ proc checkCorrectness(Arr:[]int, r:range(?))
     writeln("Adaptive Iterator with Stealing method ", methodStealing, ": Correct");
 }
 
-proc checkCorrectness(Arr:[]int, c:domain)
+proc checkCorrectness(Arr:[]int, c:domain(?))
 {
   var check=true;
   for i in Arr do {
@@ -111,7 +111,7 @@ proc checkCorrectness2(Arr:[]int,r:range(?), r2:range(?))
     writeln("Adaptive Iterator with Stealing method ", methodStealing,": Correct");
 }
 
-proc checkCorrectness2(Arr:[]int,c:domain, c2:domain)
+proc checkCorrectness2(Arr:[]int,c:domain(?), c2:domain(?))
 {
   var check=true;
   for (i,j) in zip(c,c2#c.size) do {

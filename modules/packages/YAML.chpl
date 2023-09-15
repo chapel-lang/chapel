@@ -37,7 +37,7 @@ IO module's serialization/deserialization API. For example:
     var b: string;
   }
 
-  var myFile = open("r.yaml", iomode.cwr),
+  var myFile = open("r.yaml", ioMode.cwr),
       r1 = new R(1, "hello");
 
   myFile.writer().withSerializer(new yamlSerializer()).write(r1);
@@ -849,7 +849,7 @@ module YAML {
   @chpldoc.nodoc
   var _dummy_yaml_value = new owned YamlValue();
 
-  class YamlValue {
+  class YamlValue : writeSerializable {
     @chpldoc.nodoc
 
     /* index into a YAML mapping by string */
@@ -914,6 +914,10 @@ module YAML {
     proc writeThis(fw) throws {
       fw.write("Empty YamlValue");
     }
+    @chpldoc.nodoc
+    override proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
 
     @chpldoc.nodoc
     proc asKey(): string {
@@ -921,7 +925,7 @@ module YAML {
     }
   }
 
-  class YamlMapping: YamlValue {
+  class YamlMapping: YamlValue, writeSerializable {
     // TODO: get map(YamlValue, YamlValue) working...
     @chpldoc.nodoc
     var _map: map(string, (shared YamlValue, shared YamlValue));
@@ -998,6 +1002,10 @@ module YAML {
       }
       fw.writeLiteral("}");
     }
+    @chpldoc.nodoc
+    override proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
 
     @chpldoc.nodoc
     override proc asKey(): string {
@@ -1009,7 +1017,7 @@ module YAML {
     }
   }
 
-  class YamlSequence: YamlValue {
+  class YamlSequence: YamlValue, writeSerializable {
     @chpldoc.nodoc
     var _seq: list(shared YamlValue);
 
@@ -1065,6 +1073,10 @@ module YAML {
       }
       fw.writeLiteral("]");
     }
+    @chpldoc.nodoc
+    override proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
 
     @chpldoc.nodoc
     override proc asKey(): string {
@@ -1076,7 +1088,7 @@ module YAML {
     }
   }
 
-  class YamlScalar: YamlValue {
+  class YamlScalar: YamlValue, writeSerializable {
     @chpldoc.nodoc
     var yamlType: YamlScalarType;
     @chpldoc.nodoc
@@ -1184,6 +1196,10 @@ module YAML {
         then fw.write(this.tag, " ", this.value);
         else fw.write(this.value);
     }
+    @chpldoc.nodoc
+    override proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
 
     @chpldoc.nodoc
     override proc asKey(): string {
@@ -1191,7 +1207,7 @@ module YAML {
     }
   }
 
-  class YamlAlias: YamlValue {
+  class YamlAlias: YamlValue, writeSerializable {
     @chpldoc.nodoc
     var _alias: string;
 
@@ -1213,6 +1229,10 @@ module YAML {
 
     override proc writeThis(fw) throws {
       fw.write("*", this._alias);
+    }
+    @chpldoc.nodoc
+    override proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
 
     @chpldoc.nodoc
@@ -1604,7 +1624,7 @@ module YAML {
     // Emitter wrapper
     // ----------------------------------------------------
 
-    class LibYamlEmitter {
+    class LibYamlEmitter : writeSerializable {
       var seqStyle: YamlSequenceStyle;
       var mapStyle: YamlMappingStyle;
       var scalarStyle: YamlScalarStyle;
@@ -1889,7 +1909,7 @@ module YAML {
     // Parser Wrapper
     // ----------------------------------------------------
 
-    class LibYamlParser {
+    class LibYamlParser : writeSerializable {
       var parser: yaml_parser_t;
       var event: yaml_event_t;
 

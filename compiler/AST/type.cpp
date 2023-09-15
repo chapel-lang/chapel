@@ -216,6 +216,9 @@ const char* toString(Type* type, bool decorateAllClasses) {
       } else if (strncmp(at->symbol->name, drDomName, drDomNameLen) == 0) {
         retval = astr("domain", at->symbol->name + drDomNameLen);
 
+      } else if (startsWith(at->symbol->name, "_domain")) {
+        retval = astr(at->symbol->name + 1); // skip the leading _
+
       } else if (at->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
         retval = fcfs::functionClassTypeToString(at);
 
@@ -712,7 +715,7 @@ static const char* builtinTypeName(Type* vt) {
   if (vt == dtInt[INT_SIZE_DEFAULT]) return "int";
   if (vt == dtUInt[INT_SIZE_DEFAULT]) return "uint";
   if (vt == dtReal[COMPLEX_SIZE_DEFAULT]) return "real";
-  if (vt == dtBools[BOOL_SIZE_DEFAULT]) return "bool";
+  if (vt == dtBool) return "bool";
   if (vt == dtComplex[COMPLEX_SIZE_DEFAULT]) return "complex";
   if (vt == dtImag[FLOAT_SIZE_DEFAULT]) return "imag";
   return nullptr;
@@ -1024,9 +1027,6 @@ static VarSymbol*     createSymbol(PrimitiveType* primType, const char* name);
 // Specify name for now.
 // Though it will probably be something like int1, int8, etc. in the end.
 // In that case we can just specify the width (i.e., size).
-#define INIT_PRIM_BOOL(name, width)                                             \
-  dtBools[BOOL_SIZE_ ## width] = createPrimitiveType(name, "chpl_bool" #width); \
-  dtBools[BOOL_SIZE_ ## width]->defaultValue = new_BoolSymbol( false, BOOL_SIZE_ ## width)
 
 #define INIT_PRIM_INT( name, width)                                             \
   dtInt[INT_SIZE_ ## width] = createPrimitiveType (name, "int" #width "_t");    \
@@ -1067,7 +1067,6 @@ void initPrimitiveTypes() {
   dtVoid->symbol->addFlag(FLAG_NO_RENAME);
   dtNothing                            = createInternalType ("nothing",  "nothing");
 
-  dtBools[BOOL_SIZE_SYS]               = createPrimitiveType("bool",     "chpl_bool");
   dtInt[INT_SIZE_64]                   = createPrimitiveType("int",      "int64_t");
   dtReal[FLOAT_SIZE_64]                = createPrimitiveType("real",     "_real64");
 
@@ -1093,32 +1092,36 @@ void initPrimitiveTypes() {
   dtLocale                             = new AggregateType(AGGREGATE_RECORD);
   dtLocale->symbol                     = new TypeSymbol("locale", dtLocale);
 
+  dtRange                              = new AggregateType(AGGREGATE_RECORD);
+  dtRange->symbol                      = new TypeSymbol("range", dtRange);
+
   dtOwned                              = new AggregateType(AGGREGATE_RECORD);
   dtOwned->symbol                      = new TypeSymbol("_owned", dtOwned);
 
   dtShared                             = new AggregateType(AGGREGATE_RECORD);
   dtShared->symbol                     = new TypeSymbol("_shared", dtShared);
 
-  gFalse                               = createSymbol(dtBools[BOOL_SIZE_SYS], "false");
-  gTrue                                = createSymbol(dtBools[BOOL_SIZE_SYS], "true");
+  dtBool                               = createPrimitiveType("bool", "chpl_bool");
+
+  gFalse                               = createSymbol(dtBool, "false");
+  gTrue                                = createSymbol(dtBool, "true");
 
   gFalse->addFlag(FLAG_PARAM);
   gFalse->immediate                    = new Immediate;
   gFalse->immediate->v_bool            = false;
   gFalse->immediate->const_kind        = NUM_KIND_BOOL;
-  gFalse->immediate->num_index         = BOOL_SIZE_DEFAULT;
+  gFalse->immediate->num_index         = BOOL_SIZE_SYS;
 
   gTrue->addFlag(FLAG_PARAM);
   gTrue->immediate                     = new Immediate;
   gTrue->immediate->v_bool             = true;
   gTrue->immediate->const_kind         = NUM_KIND_BOOL;
-  gTrue->immediate->num_index          = BOOL_SIZE_DEFAULT;
+  gTrue->immediate->num_index          = BOOL_SIZE_SYS;
 
-  dtBools[BOOL_SIZE_SYS]->defaultValue = gFalse;
+  dtBool->defaultValue = gFalse;
   dtInt[INT_SIZE_64]->defaultValue     = new_IntSymbol(0, INT_SIZE_64);
   dtReal[FLOAT_SIZE_64]->defaultValue  = new_RealSymbol("0.0", FLOAT_SIZE_64);
 
-  dtBool                               = dtBools[BOOL_SIZE_SYS];
 
   uniqueConstantsHash.put(gFalse->immediate, gFalse);
   uniqueConstantsHash.put(gTrue->immediate,  gTrue);
@@ -1150,11 +1153,6 @@ void initPrimitiveTypes() {
 
   gIteratorBreakToken = createSymbol(dtBool, "_iteratorBreakToken");
   gIteratorBreakToken->addFlag(FLAG_NO_CODEGEN);
-
-  INIT_PRIM_BOOL("bool(8)", 8);
-  INIT_PRIM_BOOL("bool(16)", 16);
-  INIT_PRIM_BOOL("bool(32)", 32);
-  INIT_PRIM_BOOL("bool(64)", 64);
 
   INIT_PRIM_INT( "int(8)", 8);
   INIT_PRIM_INT( "int(16)", 16);
@@ -1226,9 +1224,6 @@ void initPrimitiveTypes() {
 
   dtAny = createInternalType ("_any", "_any");
   dtAny->symbol->addFlag(FLAG_GENERIC);
-
-  dtAnyBool = createInternalType("chpl_anybool", "bool");
-  dtAnyBool->symbol->addFlag(FLAG_GENERIC);
 
   dtAnyComplex = createInternalType("chpl_anycomplex", "complex");
   dtAnyComplex->symbol->addFlag(FLAG_GENERIC);
@@ -1408,12 +1403,7 @@ bool is_nothing_type(Type* t) {
 }
 
 bool is_bool_type(Type* t) {
-  return
-    t == dtBools[BOOL_SIZE_SYS] ||
-    t == dtBools[BOOL_SIZE_8] ||
-    t == dtBools[BOOL_SIZE_16] ||
-    t == dtBools[BOOL_SIZE_32] ||
-    t == dtBools[BOOL_SIZE_64];
+  return t == dtBool;
 }
 
 
@@ -1487,22 +1477,18 @@ bool isLegalParamType(Type* t) {
 }
 
 int get_width(Type *t) {
-  if (t == dtBools[BOOL_SIZE_8] ||
-      t == dtInt[INT_SIZE_8] ||
+  if (t == dtInt[INT_SIZE_8] ||
       t == dtUInt[INT_SIZE_8])
     return 8;
-  if (t == dtBools[BOOL_SIZE_16] ||
-      t == dtInt[INT_SIZE_16] ||
+  if (t == dtInt[INT_SIZE_16] ||
       t == dtUInt[INT_SIZE_16])
     return 16;
-  if (t == dtBools[BOOL_SIZE_32] ||
-      t == dtInt[INT_SIZE_32] ||
+  if (t == dtInt[INT_SIZE_32] ||
       t == dtUInt[INT_SIZE_32] ||
       t == dtReal[FLOAT_SIZE_32] ||
       t == dtImag[FLOAT_SIZE_32])
     return 32;
-  if (t == dtBools[BOOL_SIZE_64] ||
-      t == dtInt[INT_SIZE_64] ||
+  if (t == dtInt[INT_SIZE_64] ||
       t == dtUInt[INT_SIZE_64] ||
       t == dtReal[FLOAT_SIZE_64] ||
       t == dtImag[FLOAT_SIZE_64] ||
@@ -1617,6 +1603,24 @@ bool isBuiltinGenericClassType(Type* t) {
          t == dtAnyManagementAnyNilable ||
          t == dtAnyManagementNonNilable ||
          t == dtAnyManagementNilable;
+}
+
+bool isBuiltinGenericType(Type* t) {
+  // ignore any decorator; irrelevant for knowing if it's builtin+generic
+  if (DecoratedClassType* dct = toDecoratedClassType(t))
+    if (AggregateType* at = dct->getCanonicalClass())
+      t = at;
+
+  return isBuiltinGenericClassType(t) ||
+         t == dtAnyComplex || t == dtAnyImag || t == dtAnyReal ||
+         t == dtAnyEnumerated ||
+         t == dtNumeric || t == dtIntegral ||
+         t == dtIteratorRecord || t == dtIteratorClass ||
+         t == dtAnyPOD ||
+         t == dtOwned || t == dtShared ||
+         t == dtAnyRecord || t == dtTuple ||
+         t->symbol->hasFlag(FLAG_SINGLE) || // _singlevar
+         t->symbol->hasFlag(FLAG_SYNC);  // _syncvar
 }
 
 bool isClassLike(Type* t) {
@@ -2115,11 +2119,7 @@ bool isPOD(Type* t)
 bool isPrimitiveScalar(Type* type) {
   bool retval = false;
 
-  if (type == dtBools[BOOL_SIZE_8]         ||
-      type == dtBools[BOOL_SIZE_16]        ||
-      type == dtBools[BOOL_SIZE_32]        ||
-      type == dtBools[BOOL_SIZE_64]        ||
-      type == dtBools[BOOL_SIZE_SYS]       ||
+  if (type == dtBool                       ||
 
       type == dtInt[INT_SIZE_8]            ||
       type == dtInt[INT_SIZE_16]           ||
@@ -2344,7 +2344,7 @@ bool isNumericParamDefaultType(Type* t)
       t == dtReal[FLOAT_SIZE_DEFAULT] ||
       t == dtImag[FLOAT_SIZE_DEFAULT] ||
       t == dtComplex[COMPLEX_SIZE_DEFAULT] ||
-      t == dtBools[BOOL_SIZE_DEFAULT])
+      t == dtBool)
     return true;
 
   return false;

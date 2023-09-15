@@ -135,7 +135,7 @@ module Set {
     the ``parSafe`` mode is currently unstable and will eventually be replaced
     by a standalone parallel-safe set type.
   */
-  record set {
+  record set : serializable {
 
     /* The type of the elements contained in this set. */
     type eltType;
@@ -241,7 +241,7 @@ module Set {
       }
       this._htb = new chpl__hashtable(eltType, nothing, this.resizeThreshold,
                                       initialCapacity);
-      this.complete();
+      init this;
 
       for elem in iterable do _addElem(elem);
     }
@@ -264,7 +264,7 @@ module Set {
       }
       this._htb = new chpl__hashtable(eltType, nothing, this.resizeThreshold,
                                       initialCapacity);
-      this.complete();
+      init this;
 
       for elem in iterable do _addElem(elem);
     }
@@ -284,7 +284,7 @@ module Set {
       this.resizeThreshold = other.resizeThreshold;
       this._htb = new chpl__hashtable(eltType, nothing,
                                       resizeThreshold);
-      this.complete();
+      init this;
 
       // TODO: Relax this to allow if 'isCoercible(t, this.eltType)'?
       if eltType != t {
@@ -542,11 +542,7 @@ module Set {
         if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
     }
 
-    /*
-      Write the contents of this set to a channel.
-
-      :arg ch: A channel to write to.
-    */
+    @chpldoc.nodoc
     proc const writeThis(ch: fileWriter) throws {
       on this {
         _enter(); defer _leave();
@@ -565,6 +561,60 @@ module Set {
 
         ch.write("}");
       }
+    }
+
+    /*
+      Write the contents of this set to a fileWriter.
+
+      :arg writer: A fileWriter to write to.
+      :arg serializer: The serializer to use when writing.
+    */
+    proc const serialize(writer:fileWriter(?), ref serializer) throws {
+      if serializer.type == IO.defaultSerializer {
+        writeThis(writer);
+      } else {
+        on this {
+          _enter(); defer _leave();
+          var ser = serializer.startList(writer, this.size);
+          for x in this do ser.writeElement(x);
+          ser.endList();
+        }
+      }
+    }
+
+    @chpldoc.nodoc
+    proc ref deserialize(reader, ref deserializer) throws {
+      on this {
+        _enter(); defer _leave();
+
+        this.clear();
+
+        if deserializer.type == IO.defaultDeserializer {
+          reader.readLiteral("{");
+
+          do {
+            this.add(reader.read(eltType));
+          } while reader.matchLiteral(",");
+
+          reader.readLiteral("}");
+        } else {
+          var des = deserializer.startList(reader);
+          while des.hasMore() do
+            this.add(des.readElement(eltType));
+          des.endList();
+        }
+      }
+    }
+
+    @chpldoc.nodoc
+    proc init(type eltType, param parSafe : bool,
+              reader, ref deserializer) throws {
+      this.eltType = eltType;
+      this.parSafe = parSafe;
+
+      init this;
+
+      this.deserialize(reader, deserializer);
     }
 
     /*

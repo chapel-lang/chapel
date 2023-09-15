@@ -7,7 +7,7 @@ class C {
 // This function is bad because the y argument ends up generic, but it should
 // be eliminated as a candidate in this particular instance because of the where
 // clause
-proc foo(param x: bool, y: borrowed C? = nil) where (x == true) {
+proc foo(param x: bool, y: borrowed C(?)? = nil) where (x == true) {
   writeln(y);
 }
 

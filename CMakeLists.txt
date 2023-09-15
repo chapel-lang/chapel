@@ -349,11 +349,14 @@ add_subdirectory(compiler)
 add_subdirectory(frontend)
 add_subdirectory(tools/chpldoc)
 
-# We are not ready to include 'chpldef' in an official release just yet.
-if (NOT CMAKE_BUILD_TYPE STREQUAL "Release")
-  if (EXISTS tools/chpldef)
-    add_subdirectory(tools/chpldef)
-  endif()
+# We are not ready to include 'chpldef' in an official release just yet. This
+# check works because the 'chpldef' source files are currently not included
+# in source releases.
+# message(STATUS "CMAKE_CURRENT_SOURCE_DIR: ${CMAKE_CURRENT_SOURCE_DIR}")
+# message(STATUS "CMAKE_CURRENT_BINARY_DIR: ${CMAKE_CURRENT_BINARY_DIR}")
+if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tools/chpldef)
+  message(STATUS "Added chpldef subdirectory...")
+  add_subdirectory(tools/chpldef)
 endif()
 
 # Adjust the install rpath for chpl and chpldoc

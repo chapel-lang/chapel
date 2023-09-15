@@ -7,7 +7,7 @@ const dimRange = 0..#N;
 
 config type sparseLayoutType = DefaultDist;
 
-const ParentDom = {dimRange, dimRange} dmapped Block({dimRange, dimRange},
+const ParentDom = {dimRange, dimRange} dmapped blockDist({dimRange, dimRange},
     sparseLayoutType=sparseLayoutType);
 
 

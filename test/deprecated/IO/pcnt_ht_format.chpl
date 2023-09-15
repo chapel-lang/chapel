@@ -2,8 +2,8 @@ use IO, IO.FormattedIO;
 
 record R {
   var x: int;
-  proc writeThis(fw: fileWriter) throws do fw.write(x);
-  proc ref readThis(fr: fileReader) throws do this.x = fr.read(int);
+  proc writeThis(fw: fileWriter(?)) throws do fw.write(x);
+  proc ref readThis(fr: fileReader(?)) throws do this.x = fr.read(int);
 }
 
 writeln("%ht \t %ht \t %ht".format("a string", 1, new R(1)));

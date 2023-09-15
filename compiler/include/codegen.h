@@ -74,6 +74,18 @@ struct LoopData
 #endif
 };
 
+/* Holds names of files used by LLVM codegen. */
+struct LLVMGenFilenames {
+  std::string moduleFilename;
+  std::string preOptFilename;
+  std::string opt1Filename;
+  std::string opt2Filename;
+  std::string artifactFilename;
+  std::string gpuObjectFilenamePrefix;
+  std::string outFilenamePrefix;
+  std::string fatbinFilename;
+};
+
 /* GenInfo is meant to be a global variable which stores
  * the code generator state - e.g. FILE* to print C to
  * or LLVM module in which to generate.
@@ -113,6 +125,8 @@ struct GenInfo {
   llvm::IRBuilder<> *irBuilder;
   llvm::MDBuilder *mdBuilder;
   llvm::TargetMachine* targetMachine;
+
+  LLVMGenFilenames llvmGenFilenames;
 
   std::vector<LoopData> loopStack;
   std::vector<std::pair<llvm::AllocaInst*, llvm::Type*> > currentStackVariables;
@@ -167,6 +181,9 @@ extern bool     gCodegenGPU;
 // generated GET/PUT
 extern std::map<std::string, int> commIDMap;
 
+// Freshly initialize gGenInfo, expecting it does not already exist.
+void initializeGenInfo(void);
+
 #ifdef HAVE_LLVM
 void setupClang(GenInfo* info, std::string rtmain);
 #endif
@@ -189,6 +206,7 @@ GenRet codegenCallExpr(const char* fnName);
 GenRet codegenCallExpr(const char* fnName, GenRet a1);
 GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2);
 Type* getNamedTypeDuringCodegen(const char* name);
+void setupDefaultFilenames(void);
 void gatherTypesForCodegen(void);
 GenRet codegenTypeByName(const char* type_name);
 

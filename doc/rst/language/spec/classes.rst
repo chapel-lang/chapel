@@ -1017,19 +1017,17 @@ instances have been initialized, provided their value is not ``nil``.
    partially-initialized instances.
 
 Methods may be called and ``this`` may be passed to functions only after
-the built-in ``complete`` method is invoked. This method may not be
-overridden. If any fields have not been initialized by the time the
-``complete`` method is invoked, they will be considered omitted and the
-compiler will insert initialization statements as described earlier. If
-the user does not invoke the ``complete`` method explicitly, the
-compiler will insert a call to ``complete`` at the end of the
-initializer.
+the special ``init this`` statement is used. If any fields have not been
+initialized by the time the ``init this`` statement is used, they will be
+considered omitted and the compiler will insert initialization statements as
+described earlier. If the user does not use ``init this`` explicitly, the
+compiler will insert it at the end of the initializer.
 
    *Rationale*.
 
    Due to support for omitted field initialization, there is potential
    for confusion regarding the overall status of initialization. This
-   confusion is addressed in the design by requiring ``complete`` to
+   confusion is addressed in the design by requiring ``init this`` to
    explicitly mark the transition between partially and fully
    initialized instances.
 
@@ -1037,8 +1035,8 @@ initializer.
 
    *Implementors’ note*.
 
-   Even if the user explicitly initializes every field, the ``complete``
-   method is still required to invoke other methods.
+   Even if the user explicitly initializes every field, the ``init this``
+   statement is still required to invoke other methods.
 
    *Example (thisDotComplete.chpl)*.
 
@@ -1056,7 +1054,7 @@ initializer.
           this.y = y;
           // compiler inserts initialization for 'max' and 'msg'
 
-          this.complete(); // 'this' is now considered to be fully initialized
+          init this; // 'this' is now considered to be fully initialized
 
           this.verify();
           writeln(this);
@@ -1067,7 +1065,7 @@ initializer.
           this.msg = msg;
 
           // Illegal: this.verify();
-          // Implicit 'this.complete();'
+          // Implicit 'init this;'
         }
 
         proc verify() {
@@ -1091,16 +1089,16 @@ initializer.
       {x = 1.0, y = 2.0, max = 10.0, msg = Unlabeled}
       {x = 0.0, y = 0.0, max = 10.0, msg = Origin}
 
-   The first initializer leverages the ``complete`` method to initialize
+   The first initializer leverages the ``init this`` statement to initialize
    the remaining fields and to allow for the usage of the ``verify``
    method. Calling the ``verify`` method or passing ``this`` to
-   ``writeln`` before the ``complete`` method is called would result in
+   ``writeln`` before the ``init this`` statement is used would result in
    a compile-time error.
 
    The second initializer exists to emphasize the rule that even though
    all fields are initialized after the initialization of the ``msg``
    field, the compiler does not consider the type initialized until the
-   ``complete`` method is called. If the second initializer tried to
+   ``init this`` statement is used. If the second initializer tried to
    invoke the ``verify`` method, a compile-time error would be issued.
 
 .. _Invoking_Other_Initializers:
@@ -1113,7 +1111,7 @@ initializer implemented for the same type. Because the invoked
 initializer must operate on completely uninitialized memory, a
 compile-time error will be issued for field initialization before a call
 to ``init``. Because each initializer either explicitly or implicitly
-invokes the ``complete`` method, all fields and methods may be used
+uses the ``init this`` statement, all fields and methods may be used
 after such a call to ``init``.
 
    *Example (thisDotInit.chpl)*.
@@ -1129,7 +1127,7 @@ after such a call to ``init``.
           this.x = x;
           this.y = y;
           this.z = z;
-          // implicit 'this.complete();'
+          // implicit 'init this;'
         }
 
         proc init(u: real) {
@@ -1147,7 +1145,7 @@ after such a call to ``init``.
 
    The second initializer leverages the first initializer to initialize
    all fields with the same value. After the ``init`` call the type is
-   fully initialized, the ``complete`` method has been invoked, and so
+   fully initialized, the ``init this`` statement has been used, and so
    ``this`` can be passed to the ``writeln`` function.
 
 .. _Initializing_Fields_in_Conditional_Statements:
@@ -1230,7 +1228,7 @@ at the end of the conditional statement.
           if cond {
             super.init(val, val);
             this.z = val;
-            this.complete();
+            init this;
           } else {
             this.init(val, val, val);
           }
@@ -1255,7 +1253,7 @@ at the end of the conditional statement.
 
       {x = 5.0, y = 5.0, z = 5.0}
 
-   The first initializer must invoke the ``complete`` method at the end
+   The first initializer must use ``init this`` statement at the end
    of the if-branch in order to match the state at the end of the
    else-branch.
 
@@ -1524,9 +1522,9 @@ Calling Methods on Parent Classes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Once ``super.init()`` returns, the dynamic type of ``this`` is the
-parent’s type until the ``complete`` method
+parent’s type until the ``init this`` statement
 (:ref:`Limitations_on_Instance_Usage_in_Initializers`) is
-invoked (except when the child’s fields are initialized and used). As a
+used (except when the child’s fields are initialized and used). As a
 result, the parent’s methods may be called and ``this`` may be passed to
 functions as though it were of the parent type.
 
@@ -1560,7 +1558,7 @@ functions as though it were of the parent type.
           super.init(x, y); // parent's compiler-generated initializer
           foo(); // Parent.foo()
           this.z = z;
-          this.complete();
+          init this;
           foo(); // Child.foo()
         }
 
@@ -1579,7 +1577,7 @@ functions as though it were of the parent type.
 
 
    Once the parent’s initializer is finished, the parent method ``foo``
-   may be called. After the ``complete`` method is invoked, a call to
+   may be called. After the ``init this`` statement is used, a call to
    ``foo`` resolves to the child’s overridden
    (:ref:`Overriding_Base_Class_Methods`) implementation:
    

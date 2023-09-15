@@ -2,13 +2,13 @@
   A distributed 2D finite-difference heat/diffusion equation solver
 
   Computation is executed over a 2D distributed array.
-  The array distribution is managed by the `Block` distribution.
+  The array distribution is managed by the `blockDist` distribution.
   Tasks are spawned manually with a `coforall` loop and synchronization
   is done manually using a `barrier`. Halo regions are shared across
   locales manually via halo/buffer arrays.
 */
 
-import BlockDist.Block,
+import BlockDist.blockDist,
        Collectives.barrier,
        Time.stopwatch;
 
@@ -28,7 +28,7 @@ config const nx = 256,      // number of grid points in x
              solutionStd = 0.221167; // known solution for the default parameters
 
 // define distributed domains and block-distributed array
-const Indices = Block.createDomain(0..nx+1, 0..ny+1),
+const Indices = blockDist.createDomain(0..nx+1, 0..ny+1),
       IndicesInner = Indices[1..nx, 1..ny];
 
 // define distributed 2D arrays over the above domain
@@ -48,14 +48,14 @@ record haloArray {
 }
 
 // set up array of halo buffers over same distribution as 'u.targetLocales'
-var OnePerLocale = Block.createDomain(u.targetLocales().domain);
+var OnePerLocale = blockDist.createDomain(u.targetLocales().domain);
 var HaloArrays: [OnePerLocale] [0..<4] haloArray;
 
 // buffer edge indices: North, East, South, West
 param N = 0, S = 1, E = 2, W = 3;
 
 // number of tasks that will be created per dimension based on the
-//  Block distribution's 2D decomposition (with one task per locale)
+//  blockDist distribution's 2D decomposition (with one task per locale)
 const tidXMax = OnePerLocale.dim(0).high,
       tidYMax = OnePerLocale.dim(1).high;
 

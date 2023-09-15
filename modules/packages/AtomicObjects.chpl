@@ -351,7 +351,7 @@ prototype module AtomicObjects {
      should be created by LocalAtomicObject. The object protected by this ABA wrapper can
      be extracted via 'getObject'.
   */
-  record ABA {
+  record ABA : serializable {
     type __ABA_objType;
     @chpldoc.nodoc
     var __ABA_ptr : uint(64);
@@ -394,6 +394,10 @@ prototype module AtomicObjects {
     proc readThis(f) throws {
       compilerWarning("Reading an ABA is not supported");
     }
+    @chpldoc.nodoc
+    proc deserialize(reader, ref deserializer) throws {
+      compilerWarning("Reading an ABA is not supported");
+    }
 
     @chpldoc.nodoc
     proc init(type __ABA_objType, reader: fileReader, ref deserializer) {
@@ -404,6 +408,10 @@ prototype module AtomicObjects {
     /* Writes an ABA */
     proc writeThis(f) throws {
       f.write("(ABA){cnt=", this.__ABA_cnt, ", obj=", this.getObject(), "}");
+    }
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
 
     forwarding this.getObject()!;
@@ -423,14 +431,14 @@ prototype module AtomicObjects {
 
     proc init(type objType, ptr : uint(64), cnt : uint(64)) {
       this.objType = objType;
-      this.complete();
+      init this;
       this._ABA_ptr.write(ptr);
       this._ABA_cnt.write(cnt);
     }
 
     proc init(type objType, ptr : uint(64)) {
       this.objType = objType;
-      this.complete();
+      init this;
       this._ABA_ptr.write(ptr);
     }
 
@@ -456,7 +464,7 @@ prototype module AtomicObjects {
     return aba1.__ABA_cnt != aba2.__ABA_cnt || aba1.__ABA_ptr != aba2.__ABA_ptr;
   }
 
-  record AtomicObject {
+  record AtomicObject : serializable {
     type objType;
     // If this atomic instance provides ABA support
     param hasABASupport : bool;
@@ -471,7 +479,7 @@ prototype module AtomicObjects {
       this.objType = objType;
       this.hasABASupport = hasABASupport;
       this.hasGlobalSupport = hasGlobalSupport;
-      this.complete();
+      init this;
       if hasABASupport {
         var ptr : c_ptr(void);
         var retval = posix_memalign(c_addrOf(ptr), 16, c_sizeof(ABA(objType?)));
@@ -653,6 +661,10 @@ prototype module AtomicObjects {
     proc readThis(f) throws {
       compilerWarning("Reading an AtomicObject is not supported");
     }
+    @chpldoc.nodoc
+    proc deserialize(reader, ref deserializer) throws {
+      compilerWarning("Reading an AtomicObject is not supported");
+    }
 
     @chpldoc.nodoc
     proc init(type objType,
@@ -666,6 +678,10 @@ prototype module AtomicObjects {
 
     proc writeThis(f) throws {
       f.write(atomicVariable.read());
+    }
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
   }
 }

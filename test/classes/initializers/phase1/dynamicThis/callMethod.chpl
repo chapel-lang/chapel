@@ -36,7 +36,7 @@ class Child : Parent {
     parentOnly();
     inheritedMethod();
 
-    this.complete();
+    init this;
 
     writeln("phase two");
     inheritedMethod();
@@ -51,7 +51,7 @@ class Child : Parent {
     parentOnly();
     inheritedMethod();
 
-    this.complete();
+    init this;
 
     writeln("phase two");
     inheritedMethod();

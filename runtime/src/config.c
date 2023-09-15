@@ -347,9 +347,13 @@ void initSetValue(const char* varName, const char* value,
     #endif
   }
   if (strcmp(varName, "numLocales") == 0) {
+    char buf[100];
     parseNumLocales(value, lineno, filename);
+    snprintf(buf, sizeof(buf), "%d", getArgNumLocales());
+    configVar->setValue = chpl_glom_strings(1, buf);
+  } else {
+    configVar->setValue = chpl_glom_strings(1, value);
   }
-  configVar->setValue = chpl_glom_strings(1, value);
 }
 
 
