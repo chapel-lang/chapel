@@ -8429,9 +8429,6 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
       err = "writeBinary() array data must be on same locale as 'fileWriter'";
     } else if endian == ioendian.native {
       e = try qio_channel_write_amt(false, this._channel_internal, data[d.low], data.size:c_ssize_t * tSize);
-
-      if e != 0 then
-        throw createSystemOrChplError(e);
     } else {
       for b in data {
         select (endian) {
