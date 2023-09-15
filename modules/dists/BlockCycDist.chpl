@@ -184,7 +184,7 @@ is mapped to.
 */
 
 
-record blockCycDist {
+record blockCycDist: writeSerializable {
   param rank: int;
   type idxType = int;
 
