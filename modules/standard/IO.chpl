@@ -8778,10 +8778,10 @@ proc fileWriter.writeBinary(const ref data: [] ?t, endian:ioendian) throws
     when ioendian.native {
       this.writeBinary(data, ioendian.native);
     }
-    when ioendian.native {
+    when ioendian.big {
       this.writeBinary(data, ioendian.big);
     }
-    when ioendian.native {
+    when ioendian.little {
       this.writeBinary(data, ioendian.little);
     }
   }
