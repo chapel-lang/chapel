@@ -97,7 +97,7 @@ void chpl_gpu_impl_comm_wait(void *stream) {
   assert(stream==NULL);
 }
 
-void* chpl_gpu_impl_mem_array_alloc(size_t size, void* stream) {
+void* chpl_gpu_impl_mem_array_alloc(size_t size) {
   // this function's upstream is blocked by GPU_RUNTIME_CPU check, This should
   // be unreachable
   chpl_internal_error("chpl_gpu_mem_array_alloc was called unexpectedly.");
@@ -109,7 +109,7 @@ void* chpl_gpu_impl_mem_alloc(size_t size) {
   return chpl_malloc(size);
 }
 
-void chpl_gpu_impl_mem_free(void* memAlloc, void* stream) {
+void chpl_gpu_impl_mem_free(void* memAlloc) {
   chpl_free(memAlloc);
 }
 
@@ -145,6 +145,10 @@ void* chpl_gpu_impl_stream_create(void) {
 }
 
 void chpl_gpu_impl_stream_destroy(void* stream) {
+}
+
+bool chpl_gpu_impl_stream_ready(void* stream) {
+  return true;
 }
 
 void chpl_gpu_impl_stream_synchronize(void* stream) {
