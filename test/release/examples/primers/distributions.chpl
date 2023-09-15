@@ -249,7 +249,7 @@ verifyID(BA);
 // 2D Dimensional
 // --------------
 //
-// The ``DimensionalDist2D`` distribution lets us build a 2D distribution
+// The ``dimensionalDist2D`` distribution lets us build a 2D distribution
 // as a composition of specifiers for individual dimensions.
 // Under such a "dimensional" distribution each dimension is handled
 // independently of the other.
@@ -260,7 +260,7 @@ verifyID(BA);
 // accepts just the number of locales that the indices in the corresponding
 // dimension will be distributed across.
 //
-// The ``DimensionalDist2D`` constructor requires:
+// The ``dimensionalDist2D`` constructor requires:
 //   an ``[0..nl1-1, 0..nl2-1]`` array of locales, where
 //   ``nl1`` and ``nl2`` are the number of locales in each dimension, and
 //   two dimension specifiers, created for ``nl1`` and ``nl2`` locale counts,
@@ -287,7 +287,7 @@ MyLocaleView = {0..#nl1, 0..#nl2};
 MyLocales = reshape(Locales[0..#nl1*nl2], MyLocaleView);
 
 const DimReplicatedBlockcyclicSpace = Space
-  dmapped DimensionalDist2D(MyLocales,
+  dmapped dimensionalDist2D(MyLocales,
                             new ReplicatedDim(numLocales = nl1),
                             new BlockCyclicDim(numLocales = nl2,
                                                lowIdx = 1, blockSize = 2));

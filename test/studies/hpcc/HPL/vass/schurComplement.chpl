@@ -55,7 +55,7 @@ const
   bdim2 = new BlockCyclicDim(lowIdx=st2, blockSize=blkSize, numLocales=tl2),
   rdim2 = new ReplicatedDim(tl2);
 
-const dimdist = new dmap(new unmanaged DimensionalDist2D(tla, bdim1, bdim2, "dim"));
+const dimdist = new dimensionalDist2D(tla, bdim1, bdim2, "dim");
 
 // the distributed domain for Ab
 const AbD: domain(2, indexType) dmapped dimdist = MatVectSpace;
@@ -70,9 +70,9 @@ var Ab: [if do_dgemms then AbD else 1..1] elemType; // small if !do_dgemms
 // the domains for replication
 const
   replAD = {1..n, 1..blkSize} dmapped
-    DimensionalDist2D(tla, bdim1, rdim2, "distBR"),
+    dimensionalDist2D(tla, bdim1, rdim2, "distBR"),
   replBD = {1..blkSize, 1..n+1} dmapped
-    DimensionalDist2D(tla, rdim1, bdim2, "distRB");
+    dimensionalDist2D(tla, rdim1, bdim2, "distRB");
 
 // the arrays for replication
 var replA: [replAD] elemType,
