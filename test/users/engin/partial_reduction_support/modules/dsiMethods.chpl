@@ -636,7 +636,7 @@ proc BlockCyclicDom.dsiPartialDomain(param exceptDim) {
   var ranges = whole._value.ranges.withoutIdx(exceptDim);
   var space = {(...ranges)};
   var ret = space dmapped
-    BlockCyclic(startIdx=this.dist.lowIdx.withoutIdx(exceptDim),
+    blockCycDist(startIdx=this.dist.lowIdx.withoutIdx(exceptDim),
         blocksize=this.dist.blocksize.withoutIdx(exceptDim),
         targetLocales=
             dist.targetLocales[(...faceSliceMask(this, exceptDim))]);

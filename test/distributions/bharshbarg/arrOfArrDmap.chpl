@@ -22,6 +22,6 @@ var CyclicSpace = Dom dmapped cyclicDist(startIdx=Dom.low);
 test(CyclicSpace);
 writeln("Success: Cyclic");
 
-var BCSpace = Dom dmapped BlockCyclic(startIdx=Dom.low, blocksize=2);
+var BCSpace = Dom dmapped blockCycDist(startIdx=Dom.low, blocksize=2);
 test(BCSpace);
 writeln("Success: BlockCyclic");

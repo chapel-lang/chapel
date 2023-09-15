@@ -63,10 +63,10 @@ proc main() {
   // subdomain that is created by slicing into MatVectSpace,
   // inheriting all of its rows and its low column bound.  As our
   // standard distribution library is filled out, MatVectSpace will be
-  // distributed using a BlockCyclic(blkSize) distribution.
+  // distributed using a blockCycDist(blkSize) distribution.
   //
   const MatVectSpace: domain(2, indexType) 
-                      dmapped BlockCyclic(startIdx=(1,1), (blkSize,blkSize)) 
+                      dmapped blockCycDist(startIdx=(1,1), (blkSize,blkSize)) 
                     = {1..n, 1..n+1},
         MatrixSpace = MatVectSpace[.., ..n];
 

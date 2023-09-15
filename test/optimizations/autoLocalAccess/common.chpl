@@ -17,12 +17,12 @@ proc createDom(space) {
   else if distType == cyclicDist {
     return cyclicDist.createDomain(space);
   }
-  else if distType == BlockCyclic {
+  else if distType == blockCycDist {
     if space.rank == 1 {
-      return space dmapped BlockCyclic(startIdx=(space.low,), blocksize=(2,));
+      return space dmapped blockCycDist(startIdx=(space.low,), blocksize=(2,));
     }
     else {
-      return space dmapped BlockCyclic(startIdx=space.low, blocksize=(2,2));
+      return space dmapped blockCycDist(startIdx=space.low, blocksize=(2,2));
     }
   }
   else if distType == stencilDist {

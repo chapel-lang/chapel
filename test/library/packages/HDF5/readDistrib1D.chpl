@@ -39,7 +39,7 @@ proc main {
   if testBlockCyclic {
     use BlockCycDist;
     writeln("BlockCyclicDist:");
-    var BlockCyclicSpace = Space dmapped BlockCyclic(startIdx=Space.low,
+    var BlockCyclicSpace = Space dmapped blockCycDist(startIdx=Space.low,
                                                      blocksize=10);
     var A: [BlockCyclicSpace] int;
     hdf5ReadDistributedArray(A, pathPrefix+fileName, dsetName);

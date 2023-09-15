@@ -222,7 +222,7 @@ proc main() {
         var user_dist = dom dmapped blockDist(boundingBox=dom);
         kernel_2mm(alpha, beta, user_dist, size);   
     } /*else if dist == "BC" {
-      var user_dist = dom dmapped BlockCyclic(startIdx=dom.low, blocksize=(2,2));
+      var user_dist = dom dmapped blockCycDist(startIdx=dom.low, blocksize=(2,2));
     kernel_2mm(alpha, beta, user_dist, size);
     }*/
 }

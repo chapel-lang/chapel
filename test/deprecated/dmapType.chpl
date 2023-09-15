@@ -62,3 +62,14 @@ config var n = 10, addLeaks=false;
     writeln(Dist2.type:string);
   }
 }
+
+{
+  use BlockCycDist;
+  var Dist = new dmap(new BlockCyclic(1, 2));
+  var Dom = {1..n} dmapped Dist;
+  var A: [Dom] real;
+  writeln(A);
+  const Dist2: dmap(BlockCyclic(1)) = new BlockCyclic(1, 2);
+  writeln(Dist2.type:string);
+}
+

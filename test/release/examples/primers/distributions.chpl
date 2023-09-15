@@ -187,14 +187,14 @@ on Locales[0] {
 // Block-Cyclic
 // ------------
 //
-// Next, we'll use a ``BlockCyclic`` distribution.  Block-Cyclic
+// Next, we'll use a ``blockCycDist`` distribution.  Block-Cyclic
 // distributions also deal out indices in a round-robin fashion,
 // but rather than dealing out singleton indices, they deal out blocks
-// of indices.  Thus, the ``BlockCyclic`` distribution is parameterized
+// of indices.  Thus, the ``blockCycDist`` distribution is parameterized
 // by a starting index (as with ``Cyclic``) and a block size (per
 // dimension) specifying how large the chunks to be dealt out are.
 //
-const BlkCycSpace = Space dmapped BlockCyclic(startIdx=Space.low,
+const BlkCycSpace = Space dmapped blockCycDist(startIdx=Space.low,
                                               blocksize=(2, 3));
 var BCA: [BlkCycSpace] int;
 

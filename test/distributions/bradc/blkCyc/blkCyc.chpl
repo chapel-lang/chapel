@@ -2,7 +2,7 @@ use BlockCycDist;
 
 config const n = 25;
 
-var MyBlkCyc = new dmap(new BlockCyclic(startIdx=(1,), blocksize=(4,)));
+var MyBlkCyc = new blockCycDist(startIdx=(1,), blocksize=(4,));
 
 writeln("Declaring D:");
 var D: domain(1) dmapped MyBlkCyc = {1..n};
