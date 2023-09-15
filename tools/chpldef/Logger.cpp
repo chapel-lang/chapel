@@ -69,6 +69,7 @@ Logger& Logger::operator=(Logger&& other) noexcept {
   filePath_ = other.filePath_;
   flushImmediately_ = other.flushImmediately_;
   level_ = other.level_;
+  header_ = other.header_;
   stream_.swap(other.stream_);
   if (other.stream_.is_open()) other.stream_.close();
   return *this;
@@ -127,14 +128,10 @@ void Logger::flush() {
 
 void Logger::logit(const char* msg) {
   if (!isLogging()) return;
-  switch (output_) {
-    case STDERR: std::cerr << msg; break;
-    case STDOUT: std::cout << msg; break;
-    case FILEPATH: stream_ << msg; break;
-  }
-  if (flushImmediately_) {
-    flush();
-  }
+  auto& out = stream();
+  if (!header_.empty()) out << header_ << " ";
+  out << msg;
+  if (flushImmediately_) flush();
 }
 
 void Logger::logit(std::string msg) {

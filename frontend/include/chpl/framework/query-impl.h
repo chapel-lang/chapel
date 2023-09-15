@@ -565,9 +565,9 @@ Context::querySetterUpdateResult(
 
 #if CHPL_QUERY_TIMING_AND_TRACE_ENABLED
 
-#define QUERY_BEGIN_TIMING() \
-  context->queryBeginTrace(BEGIN_QUERY_FUNC_NAME, BEGIN_QUERY_ARGS); \
-  auto QUERY_STOPWATCH = context->makeQueryTimingStopwatch(BEGIN_QUERY_MAP)
+#define QUERY_BEGIN_TIMING(context__) \
+  context__->queryBeginTrace(BEGIN_QUERY_FUNC_NAME, BEGIN_QUERY_ARGS); \
+  auto QUERY_STOPWATCH = context__->makeQueryTimingStopwatch(BEGIN_QUERY_MAP)
 
 #else
 
@@ -590,7 +590,7 @@ Context::querySetterUpdateResult(
     return QUERY_GET_SAVED(); \
   } \
   auto QUERY_RECOMPUTATION_MARKER = context->markRecomputing(false); \
-  QUERY_BEGIN_TIMING();
+  QUERY_BEGIN_TIMING(context);
 
 /**
   QUERY_BEGIN_INPUT is like QUERY_BEGIN but should be used
@@ -602,7 +602,7 @@ Context::querySetterUpdateResult(
     return QUERY_GET_SAVED(); \
   } \
   auto QUERY_RECOMPUTATION_MARKER = context->markRecomputing(false); \
-  QUERY_BEGIN_TIMING();
+  QUERY_BEGIN_TIMING(context);
 
 /**
   Write
