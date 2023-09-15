@@ -715,7 +715,7 @@ also be searched for matching files.
 .. code-block:: syntax
 
    require-statement:
-     'require' string-or-identifier-list
+     'require' string-or-identifier-list ;
 
    string-or-identifier-list:
      string-or-identifier
@@ -725,21 +725,21 @@ also be searched for matching files.
      string-literal
      identifier
 
-The require statement takes a comma-separated list of param string
-filenames as operands. The filenames must be Chapel source files (*.chpl),
-C source files (*.c), C header files (*.h), precompiled C object
-files (*.o), or precompiled library archives (lib*.a). When using
-precompiled library archives, remove the lib and .a parts of the
-filename and add -l to the beginning as if it were being specified on
-the command line.
+The require keyword must be followed by list of filenames. Each
+filename must be a Chapel source file (*.chpl), a C source file (*.c),
+a C header file (*.h), a precompiled C object file (*.o), or a
+precompiled library archive (lib*.a). When using precompiled library
+archives, remove the lib and .a parts of the filename and add -l to
+the beginning as if it were being specified on the command line.
 
 .. code-block:: chapel
 
    require "foo.h", "-lfoo";
 
-Require statements accept general ``param`` string expressions
-beyond the string literals shown in these examples.  Only
-``require`` statements in code that the compiler considers
+Each filename in the require statement must be given by a string
+literal or an identifier that is a ``param`` string expression,
+such as a ``param`` variable or a function returning a ``param``
+string.  Only ``require`` statements in code that the compiler considers
 executable will be processed.  Thus, a ``require`` statement
 guarded by a ``param`` conditional that the compiler folds out, or
 in a module that does not appear in the program's ``use``
