@@ -531,7 +531,6 @@ in bytes) that can be read from or written to:
 * :proc:`file.reader`
 * :proc:`file.writer`
 * :proc:`openReader`
-* :proc:`openWriter`
 
 I/O operations that fall outside of the *region* are illegal. The ``region``
 argument defaults to ``0..``, meaning that the owned region starts at the 0th
@@ -604,21 +603,22 @@ routines:
 * :proc:`openReader`
 * :proc:`openWriter`
 
-With a non-locking ``fileReader`` or ``fileWriter``, one can obtain a lock manually
+With a locking ``fileReader`` or ``fileWriter``, one can obtain a lock manually
 by calling :proc:`fileReader.lock` or :proc:`fileWriter.lock`, and then release a
 lock by calling :proc:`fileReader.unlock` or :proc:`fileWriter.unlock`.
 
-Note: The following methods will not automatically acquire/release a lock for
-``locking=true``:
+.. note::
+  The following methods will not automatically acquire/release a lock for
+  ``locking=true``:
 
-* :proc:`fileReader.mark`
-* :proc:`fileWriter.mark`
-* :proc:`fileReader.commit`
-* :proc:`fileWriter.commit`
-* :proc:`fileReader.revert`
-* :proc:`fileWriter.revert`
-* :proc:`fileReader.offset`
-* :proc:`fileWriter.offset`
+  * :proc:`fileReader.mark`
+  * :proc:`fileWriter.mark`
+  * :proc:`fileReader.commit`
+  * :proc:`fileWriter.commit`
+  * :proc:`fileReader.revert`
+  * :proc:`fileWriter.revert`
+  * :proc:`fileReader.offset`
+  * :proc:`fileWriter.offset`
 
 
 .. _about-io-ensuring-successful-io:
@@ -637,7 +637,6 @@ When a file (or fileWriter) is closed, data written to that file will be written
 to disk eventually by the operating system. If an application needs to be sure
 that the data is immediately written to persistent storage, it should use
 :proc:`file.fsync` prior to closing the file.
-
 
 Correspondence with C I/O
 -------------------------
@@ -4353,7 +4352,7 @@ proc fileWriter._ch_ioerror(errstr:string, msg:string) throws {
 }
 
 /*
-   Acquire a fileReader's lock. See :ref:<locking-filereaders-and-filewriters>
+   Acquire a fileReader's lock. See :ref:`locking-filereaders-and-filewriters`
    for more details.
 
    :throws SystemError: Thrown if the lock could not be acquired.
@@ -4374,7 +4373,7 @@ inline proc fileReader.lock() throws {
 }
 
 /*
-   Acquire a fileWriter's lock. See :ref:<locking-filereaders-and-filewriters>
+   Acquire a fileWriter's lock. See :ref:`locking-filereaders-and-filewriters`
    for more details.
 
    :throws SystemError: Thrown if the lock could not be acquired.
@@ -4395,7 +4394,7 @@ inline proc fileWriter.lock() throws {
 }
 
 /*
-   Release a fileReader's lock. See :ref:<locking-filereaders-and-filewriters>
+   Release a fileReader's lock. See :ref:`locking-filereaders-and-filewriters`
    for more details.
  */
 inline proc fileReader.unlock() {
@@ -4407,7 +4406,7 @@ inline proc fileReader.unlock() {
 }
 
 /*
-   Release a fileWriter's lock. See :ref:<locking-filereaders-and-filewriters>
+   Release a fileWriter's lock. See :ref:`locking-filereaders-and-filewriters`
    for more details.
  */
 inline proc fileWriter.unlock() {
@@ -4832,8 +4831,6 @@ inline proc fileReader.revert() {
    been marked. If called on a fileWriter with ``locking=true``, the fileWriter
    should have already been locked manually with :proc:`~fileWriter.lock` before
    :proc:`~fileWriter.mark` was called.
-
-   See :ref:`io-transactions` for more.
 */
 inline proc fileWriter.revert() {
   qio_channel_revert_unlocked(_channel_internal);
