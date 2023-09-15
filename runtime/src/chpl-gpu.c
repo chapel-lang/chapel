@@ -165,11 +165,11 @@ static void* get_stream(int dev) {
   assert(prvData);
 
   if (prvData->streams == NULL) {
-	  CHPL_GPU_DEBUG("here %p\n", prvData);
-	  CHPL_GPU_DEBUG("allocating stream array (subloc %d)\n", dev);
+    CHPL_GPU_DEBUG("here %p\n", prvData);
+    CHPL_GPU_DEBUG("allocating stream array (subloc %d)\n", dev);
 
-	  // TODO use chpl_mem_alloc
-	  prvData->streams = chpl_calloc(chpl_gpu_num_devices, sizeof(void*));
+    prvData->streams = chpl_mem_calloc(chpl_gpu_num_devices, sizeof(void*),
+                                       CHPL_RT_MD_GPU_UTIL, 0, 0);
   }
   void** stream = &(prvData->streams[dev]);
   if (*stream == NULL) {
