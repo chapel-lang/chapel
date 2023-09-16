@@ -259,6 +259,8 @@ private extern proc qio_get_fd(fl:qio_file_ptr_t, ref fd:c_int):errorCode;
 /* The type returned from :proc:`connect` */
 type tcpConn = file;
 
+tcpConn implements writeSerializable;
+
 /*
   Returns the file descriptor associated with socket
   :return: file descriptor
