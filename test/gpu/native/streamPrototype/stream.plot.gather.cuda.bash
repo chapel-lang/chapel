@@ -12,7 +12,9 @@ rm -fr ./cuda-stream
 git clone https://github.com/bcumming/cuda-stream.git
 cd cuda-stream
 sed -i.bak 's/nvcc/nvcc -allow-unsupported-compiler/g' Makefile
-sed -i.bak "s/ARCH=.*/ARCH=$CHPL_GPU_ARCH/g" Makefile
+if [[ -n "$CHPL_GPU_ARCH" ]]; then
+  sed -i.bak "s/ARCH=.*/ARCH=$CHPL_GPU_ARCH/g" Makefile
+fi
 make
 
 # -----------------------------------------------------------------------------
