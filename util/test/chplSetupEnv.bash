@@ -60,6 +60,22 @@ if [[ ! "$_chplSetupEnv_dryRun" == "y" ]]; then
   OLD_CHPL_HOME="$CHPL_HOME"
 fi
 
+# Search for an and proces any hostname_abbrevs file in our paths
+_chplSetupEnv_abbreviatedHostname=_chplSetupEnv_shortHost
+for _chplSetupEnv_p in ${_chplSetupEnv_pathsToRun[@]}; do
+  if [[ -f "$_chplSetupEnv_p/hostname_abbrevs" ]]; then
+    if ! _chplSetupEnv_abbreviatedHostname=$(\
+      $CHPL_HOME/util/test/abbreviateHostname.py "$_chplSetupEnv_shortHost" ./hostname_abbrevs)
+    then
+      return 1
+    fi
+  fi
+done
+
+if [[ "$_chplSetupEnv_abbreviatedHostname" == "$_chplSetupEnv_shortHost" ]]; then
+  unset _chplSetupEnv_abbreviatedHostname
+fi
+
 _chplSetupEnv_foundFeature=""
 for _chplSetupEnv_feature in $(echo $_chplSetupEnv_featureSet | sed "s/:/ /g"); do
   _chplSetupEnv_foundFeature=""
@@ -76,6 +92,19 @@ for _chplSetupEnv_feature in $(echo $_chplSetupEnv_featureSet | sed "s/:/ /g"); 
         cat  "$_chplSetupEnv_p/$_chplSetupEnv_feature.$_chplSetupEnv_suffix"
       else
         source "$_chplSetupEnv_p/$_chplSetupEnv_feature.$_chplSetupEnv_suffix"
+      fi
+    fi
+
+    # Run <feature>.<abbrev-hostname>.bash
+    if [[ -n "$_chplSetupEnv_abbreviatedHostname" ]]; then
+      if [ -f "$_chplSetupEnv_p/$_chplSetupEnv_feature.$_chplSetupEnv_abbreviatedHostname.$_chplSetupEnv_suffix" ]; then
+        _chplSetupEnv_foundFeature="y"
+        if [[ "$_chplSetupEnv_dryRun" == "y" ]]; then
+          echo -e "\n# --- RUN $_chplSetupEnv_p/$_chplSetupEnv_feature.$_chplSetupEnv_abbreviatedHostname.$_chplSetupEnv_suffix ---"
+          cat  "$_chplSetupEnv_p/$_chplSetupEnv_feature.$_chplSetupEnv_abbreviatedHostname.$_chplSetupEnv_suffix"
+        else
+          source  "$_chplSetupEnv_p/$_chplSetupEnv_feature.$_chplSetupEnv_abbreviatedHostname.$_chplSetupEnv_suffix"
+        fi
       fi
     fi
 
@@ -111,3 +140,4 @@ unset _chplSetupEnv_noBaseCfg
 unset _chplSetupEnv_VAR
 unset _chplSetupEnv_feature
 unset _chplSetupEnv_p
+unset _chplSetupEnv_abbreviatedHostname
