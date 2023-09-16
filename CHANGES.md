@@ -17,6 +17,7 @@ New Language Features
 
 Language Feature Improvements
 -----------------------------
+* added promoted casts from array-of-`T` to `T` without a cast from `T` to `T`
 
 Syntactic / Naming Changes
 --------------------------
@@ -26,6 +27,10 @@ Semantic Changes / Changes to the Chapel Language
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* deprecated the `.intIdxType` query on ranges, domains, and arrays
+* deprecated the `useNewArrayFind` config param
+* removed support for the deprecated array `.find()` overload
+* removed support for variable-width `bool` types and related queries
 
 Namespace Changes
 -----------------
@@ -38,9 +43,14 @@ Package Modules
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
+* converted standard distributions into records, obviating the need for `dmap`
+* renamed the standard distributions to match their module names
+  (e.g., `Block` is now `blockDist`, `Cyclic` is now `cyclicDist`, etc.)
 
 Changes / Feature Improvements in Libraries
 -------------------------------------------
+* made `chpl_library_initialize()` issue an error if called twice
+* made `chpl_finalize()` no longer exit, permitting user code to clean up
 
 Name Changes in Libraries
 -------------------------
@@ -53,12 +63,14 @@ GPU Computing
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* optimized the performance of aligned array swaps for `Cyclic` and `Stencil`
 
 Platform-specific Performance Optimizations / Improvements
 ----------------------------------------------------------
 
 Compilation-Time / Generated Code Improvements
 ----------------------------------------------
+* improved the preservation of paths in compiler-generated `#line` directives
 
 Memory Improvements
 -------------------
@@ -80,6 +92,7 @@ Syntax Highlighting
 
 Portability / Platform-specific Improvements
 --------------------------------------------
+* fixed a linkage issue in which system libraries could override ours
 
 Compiler Improvements
 ---------------------
@@ -101,6 +114,7 @@ Error Messages / Semantic Checks
 
 Bug Fixes
 ---------
+* fixed a bug in which `CHPL_UNWIND` could not be overridden on some platforms
 
 Bug Fixes for Build Issues
 --------------------------
