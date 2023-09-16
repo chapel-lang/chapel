@@ -16,7 +16,7 @@ Contributors to the Chapel 1.31.0 release
 * Ben Harshbarger, [HPE]
 * John Hartman, [HPE]
 * Guillaume Helbecque, external contributor
-o David Iten, [HPE]
+* David Iten, [HPE]
 * Bhavani Jayakumaran, [HPE]
 * Engin Kayraklioglu, [HPE]
 * Shreyas Khandekar, [HPE] (former intern from [University of Arizona])
