@@ -1,0 +1,1 @@
+export CHPL_DEVELOPER=1
