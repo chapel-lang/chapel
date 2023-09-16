@@ -29,4 +29,4 @@ def report(tbl, filename):
   p.save(f'logs/{filename}')
 
 report(tbl_amd, "stream_amd.png")
-report(tbl_nvidia, "nvidia_amd.png")
+report(tbl_nvidia, "stream_nvidia.png")
