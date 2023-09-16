@@ -1303,7 +1303,20 @@ module ChapelRange {
     if boundsChecking && ! isAligned() then
       HaltWrappers.boundsCheckHalt("isEmpty() is invoked on an ambiguously-aligned range");
     else
-      return this.bounds == boundKind.both && this.alignedLowAsInt > this.alignedHighAsInt;
+      return (this.bounds == boundKind.both || isFiniteIdxType(idxType)) && this.alignedLowAsInt > this.alignedHighAsInt;
+  }
+
+
+  @unstable("range.isEmpty() is unstable for unbounded ranged over an enum or bool")
+  inline proc range.isEmpty() where isFiniteIdxType(idxType) && this.bounds !=boundKind.both {
+    if chpl__singleValIdxType(idxType) {
+      if _low > _high then
+        return true;
+    }
+    if boundsChecking && ! isAligned() then
+      HaltWrappers.boundsCheckHalt("isEmpty() is invoked on an ambiguously-aligned range");
+    else
+      return (this.bounds == boundKind.both || isFiniteIdxType(idxType)) && this.alignedLowAsInt > this.alignedHighAsInt;
   }
 
   /* Returns the number of values represented by this range as an integer.
@@ -1380,46 +1393,72 @@ module ChapelRange {
       // low- or high-bounded: need to know stride direction and be unambiguous
       when boundKind.low     do return r.hasPosNegUnitStride();
       when boundKind.high    do return r.hasPosNegUnitStride();
-      // unbounded: never has first/last
-      when boundKind.neither do return true;
+      // unbounded: never has first/last unless its a finite idx type
+      when boundKind.neither do return if isFiniteIdxType(r.idxType) then
+                            r.hasPosNegUnitStride() else true;
     }
 
   // todo: what about ranges over enums, bool?
   /* Returns ``true`` if the range has a first index, ``false`` otherwise. */
-  inline proc range.hasFirst() do
-    return if ! isAligned() || isEmpty() then false else
+  inline proc range.hasFirst() {
+    warnUnstableFirst(this, fromHasFirst = true);
+    return  if ! isAligned() || isEmpty() then false else
+            if isFiniteIdxType(idxType) then true else
             if hasPositiveStride() then hasLowBound() else hasHighBound();
+  }
 
   @chpldoc.nodoc
-  proc range.hasFirst() param where hasFirstLastAreParam(this) do
+  proc range.hasFirst() param where hasFirstLastAreParam(this)
+  {
+    // Issue:
+    // The call below only issues compile time warnings since this is a param
+    // For strideKind=any we need runtime information to issue the right warning
+    // Ex: a range like ..true strideKind=any should issue a warning for hasFirst
+    warnUnstableFirst(this, fromHasFirst = true);
+    if isFiniteIdxType(idxType) then return true;
     select bounds {
       when boundKind.low     do return strides.isPositive();
       when boundKind.high    do return strides.isNegative();
       when boundKind.neither do return false;
     }
+  }
 
   /* Returns the first value in the sequence the range represents.  If
      the range has no first index, the behavior is undefined.  See
      also :proc:`range.hasFirst`. */
   inline proc range.first {
-    warnUnstableFirst(this);
+    warnUnstableFirst(this, fromHasFirst = false);
     return chpl_intToIdx(this.firstAsInt);
   }
 
-  private inline proc warnUnstableFirst(r) {
+  private inline proc warnUnstableFirst(r, param fromHasFirst) {
     if !chpl_warnUnstable || !isFiniteIdxType(r.idxType) then
       return; // nothing to do
     if !r.hasLowBound() {
-      if r.strides.isPositive() then
-        compilerWarning("range.first is unstable for a range over an enum or bool if it has a positive stride and no low bound");
-      else if r.hasPositiveStride() then
-        warning("range.first is unstable for a range over an enum or bool if it has a positive stride and no low bound");
+      if r.strides.isPositive() {
+        if fromHasFirst then
+          compilerWarning("range.hasFirst() is unstable for a range over an enum or bool if it has a positive stride and no low bound");
+        else
+          compilerWarning("range.first is unstable for a range over an enum or bool if it has a positive stride and no low bound");
+      } else if r.hasPositiveStride() {
+        if fromHasFirst then
+            warning("range.hasFirst() is unstable for a range over an enum or bool if it has a positive stride and no low bound");
+        else
+            warning("range.first is unstable for a range over an enum or bool if it has a positive stride and no low bound");
+      }
     }
     if !r.hasHighBound() {
-      if r.strides.isNegative() then
-        compilerWarning("range.first is unstable for a range over an enum or bool if it has a negative stride and no high bound");
-      else if r.hasNegativeStride() then
-        warning("range.first is unstable for a range over an enum or bool if it has a negative stride and no high bound");
+      if r.strides.isNegative() {
+        if fromHasFirst then
+          compilerWarning("range.hasFirst() is unstable for a range over an enum or bool if it has a negative stride and no high bound");
+        else
+          compilerWarning("range.first is unstable for a range over an enum or bool if it has a negative stride and no high bound");
+      } else if r.hasNegativeStride() {
+        if fromHasFirst then
+          warning("range.hasFirst() is unstable for a range over an enum or bool if it has a negative stride and no high bound");
+        else
+          warning("range.first is unstable for a range over an enum or bool if it has a negative stride and no high bound");
+      }
     }
   }
 
@@ -1457,41 +1496,59 @@ module ChapelRange {
 
   // todo: what about ranges over enums, bool?
   /* Returns ``true`` if the range has a last index, ``false`` otherwise. */
-  inline proc range.hasLast() do
+  inline proc range.hasLast(){
+    warnUnstableLast(this, fromHasLast = true);
     return if ! isAligned() || isEmpty() then false else
+            if isFiniteIdxType(idxType) then true else
             if hasPositiveStride() then hasHighBound() else hasLowBound();
+  }
 
   @chpldoc.nodoc
-  proc range.hasLast() param where hasFirstLastAreParam(this) do
+  proc range.hasLast() param where hasFirstLastAreParam(this){
+    warnUnstableLast(this, fromHasLast = true);
+    if isFiniteIdxType(idxType) then return true;
     select bounds {
       when boundKind.low     do return strides.isNegative();
       when boundKind.high    do return strides.isPositive();
       when boundKind.neither do return false;
     }
+  }
 
   /* Returns the last value in the sequence the range represents.  If
      the range has no last index, the behavior is undefined.  See also
      :proc:`range.hasLast`.
   */
   inline proc range.last {
-    warnUnstableLast(this);
+    warnUnstableLast(this, fromHasLast = false);
     return chpl_intToIdx(this.lastAsInt);
   }
 
-  private inline proc warnUnstableLast(r) {
+  private inline proc warnUnstableLast(r, param fromHasLast) {
     if !chpl_warnUnstable || !isFiniteIdxType(r.idxType) then
       return; // nothing to do
     if !r.hasLowBound() {
       if r.strides.isNegative() then
-        compilerWarning("range.last is unstable for a range over an enum or bool if it has a negative stride and no low bound");
+        if fromHasLast then
+          compilerWarning("range.hasLast() is unstable for a range over an enum or bool if it has a negative stride and no low bound");
+        else
+          compilerWarning("range.last is unstable for a range over an enum or bool if it has a negative stride and no low bound");
       else if r.hasNegativeStride() then
-        warning("range.last is unstable for a range over an enum or bool if it has a negative stride and no low bound");
+        if fromHasLast then
+          warning("range.hasLast() is unstable for a range over an enum or bool if it has a negative stride and no low bound");
+        else
+          warning("range.last is unstable for a range over an enum or bool if it has a negative stride and no low bound");
     }
     if !r.hasHighBound() {
       if r.strides.isPositive() then
-        compilerWarning("range.last is unstable for a range over an enum or bool if it has a positive stride and no high bound");
+        if fromHasLast then
+          compilerWarning("range.hasLast() is unstable for a range over an enum or bool if it has a positive stride and no high bound");
+        else
+          compilerWarning("range.last is unstable for a range over an enum or bool if it has a positive stride and no high bound");
       else if r.hasPositiveStride() then
-        warning("range.last is unstable for a range over an enum or bool if it has a positive stride and no high bound");
+        if fromHasLast then
+          warning("range.hasLast() is unstable for a range over an enum or bool if it has a positive stride and no high bound");
+        else
+          warning("range.last is unstable for a range over an enum or bool if it has a positive stride and no high bound");
     }
   }
 
