@@ -4,11 +4,11 @@ use IO;
 record R {
   var x : int;
 
-  proc serialize(writer: fileWriter, ref serializer) {
+  proc serialize(writer: fileWriter(?), ref serializer) {
     writer.write(x);
   }
 
-  proc type deserializeFrom(reader: fileReader, ref deserializer) {
+  proc type deserializeFrom(reader: fileReader(?), ref deserializer) {
     return new R(reader.read(int));
   }
 }
@@ -16,11 +16,11 @@ record R {
 record G {
   var x;
 
-  proc serialize(writer: fileWriter, ref serializer) {
+  proc serialize(writer: fileWriter(?), ref serializer) {
     writer.write(x);
   }
 
-  proc type deserializeFrom(reader: fileReader, ref deserializer) {
+  proc type deserializeFrom(reader: fileReader(?), ref deserializer) {
     type fieldType = __primitive("field by num", this, 1);
     return new G(reader.read(fieldType));
   }
@@ -29,13 +29,13 @@ record G {
 class C {
   var x : int;
 
-  override proc serialize(writer: fileWriter, ref serializer) {
+  override proc serialize(writer: fileWriter(?), ref serializer) {
     writer.writeLiteral("<");
     writer.write(x);
     writer.writeLiteral(">");
   }
 
-  proc type deserializeFrom(reader: fileReader, ref deserializer) {
+  proc type deserializeFrom(reader: fileReader(?), ref deserializer) {
     type retType = this;
     reader.readLiteral("<");
     var ret = new retType(reader.read(int));

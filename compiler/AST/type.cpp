@@ -1622,6 +1622,24 @@ bool isBuiltinGenericClassType(Type* t) {
          t == dtAnyManagementNilable;
 }
 
+bool isBuiltinGenericType(Type* t) {
+  // ignore any decorator; irrelevant for knowing if it's builtin+generic
+  if (DecoratedClassType* dct = toDecoratedClassType(t))
+    if (AggregateType* at = dct->getCanonicalClass())
+      t = at;
+
+  return isBuiltinGenericClassType(t) ||
+         t == dtAnyComplex || t == dtAnyImag || t == dtAnyReal ||
+         t == dtAnyBool || t == dtAnyEnumerated ||
+         t == dtNumeric || t == dtIntegral ||
+         t == dtIteratorRecord || t == dtIteratorClass ||
+         t == dtAnyPOD ||
+         t == dtOwned || t == dtShared ||
+         t == dtAnyRecord || t == dtTuple ||
+         t->symbol->hasFlag(FLAG_SINGLE) || // _singlevar
+         t->symbol->hasFlag(FLAG_SYNC);  // _syncvar
+}
+
 bool isClassLike(Type* t) {
   return isDecoratedClassType(t) ||
          isBuiltinGenericClassType(t) ||

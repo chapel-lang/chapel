@@ -45,6 +45,12 @@ int64_t chpl_comm_default_num_locales(void);
 //
 void chpl_comm_verify_num_locales(int64_t proposedNumLocales);
 
+//
+// Generates an error if the comm layer does not support the specified
+// number of co-locales.
+//
+void chpl_comm_verify_supports_colocales(int64_t numColocales);
+
 #ifdef __cplusplus
 }
 #endif

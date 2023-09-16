@@ -601,7 +601,10 @@ bool isUnmanagedClass(Type* t);
 bool isBorrowedClass(Type* t);
 bool isOwnedOrSharedOrBorrowed(Type* t);
 bool isClassLike(Type* t); // includes unmanaged, borrow, no ref
+
 bool isBuiltinGenericClassType(Type* t); // 'unmanaged' 'borrowed' etc
+bool isBuiltinGenericType(Type* t); // 'integral' 'unmanaged' etc
+
 bool isClassLikeOrManaged(Type* t); // includes unmanaged, borrow, owned, no ref
 bool isClassLikeOrPtr(Type* t); // includes c_ptr, ddata
 bool isCVoidPtr(Type* t); // includes both c_ptr(void) and raw_c_void_ptr

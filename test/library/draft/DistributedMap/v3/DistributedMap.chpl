@@ -47,7 +47,7 @@ module DistributedMap {
 
         @chpldoc.nodoc
         const locDom = {0..<targetLocales.size}
-            dmapped Cyclic(startIdx=0, targetLocales=targetLocales);
+            dmapped cyclicDist(startIdx=0, targetLocales=targetLocales);
 
         @chpldoc.nodoc
             var tables: [locDom] chainTable(keyType, valType);
@@ -102,11 +102,11 @@ module DistributedMap {
             return this.size == 0;
         }
 
-        proc extend(m: map) {
+        proc extend(m: map(?)) {
             compilerError("unimplemented");
         }
 
-        proc extend(other: distributedMap) {
+        proc extend(other: distributedMap(?)) {
             compilerError("unimplemented");
         }
 

@@ -14,8 +14,8 @@ proc createDom(space) {
   if distType == blockDist {
     return blockDist.createDomain(space);
   }
-  else if distType == Cyclic {
-    return Cyclic.createDomain(space);
+  else if distType == cyclicDist {
+    return cyclicDist.createDomain(space);
   }
   else if distType == BlockCyclic {
     if space.rank == 1 {
@@ -25,12 +25,12 @@ proc createDom(space) {
       return space dmapped BlockCyclic(startIdx=space.low, blocksize=(2,2));
     }
   }
-  else if distType == Stencil {
+  else if distType == stencilDist {
     if space.rank == 1 {
-      return space dmapped Stencil(space, fluff=(1,));
+      return space dmapped stencilDist(space, fluff=(1,));
     }
     else {
-      return space dmapped Stencil(space, fluff=(1,1));
+      return space dmapped stencilDist(space, fluff=(1,1));
     }
   }
   else if distType == Hashed {

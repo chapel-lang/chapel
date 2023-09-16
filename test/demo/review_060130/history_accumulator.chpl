@@ -16,31 +16,31 @@ record history_real {
     add(r);
   }
 
-  proc init=(other : history_real) {
+  proc init=(other : history_real(?)) {
     this.size = other.size;
     this.h = other.h;
     this.f = other.f;
   }
 }
 
-operator =(ref x : history_real, y : real) {
+operator =(ref x : history_real(?), y : real) {
   x.add(y);
 }
 
-operator =(ref x : history_real, y : x.type) {
+operator =(ref x : history_real(?), y : x.type) {
   x.h = y.h;
   x.f = y.f;
 }
-operator :(y: real, type t: history_real) {
+operator :(y: real, type t: history_real(?)) {
   var tmp: t = y;
   return tmp;
 }
 
-operator >(x : history_real, y : real) {
+operator >(x : history_real(?), y : real) {
   return x.f > y;
 }
 
-operator +(x : history_real, y : real) {
+operator +(x : history_real(?), y : real) {
   return x.f + y;
 }
 

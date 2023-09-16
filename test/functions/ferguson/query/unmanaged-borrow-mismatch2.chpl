@@ -7,7 +7,7 @@ record Wrapper {
   var f;
 }
 
-proc g(x: Wrapper(unmanaged GenericClass)) {
+proc g(x: Wrapper(unmanaged GenericClass(?))) {
   writeln(x, " : ", x.type:string);
 }
 var obj = new owned GenericClass(int, 3);

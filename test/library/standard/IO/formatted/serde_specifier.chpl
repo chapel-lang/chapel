@@ -3,11 +3,11 @@ use IO, IO.FormattedIO;
 record R {
   var x: int;
 
-  proc writeThis(fw: fileWriter) throws {
+  proc writeThis(fw: fileWriter(?)) throws {
     fw.write("<", x, ">");
   }
 
-  proc ref readThis(fr: fileReader) throws {
+  proc ref readThis(fr: fileReader(?)) throws {
     fr.readLiteral("<");
     this.x = fr.read(int);
     fr.readLiteral(">");

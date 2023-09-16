@@ -98,7 +98,7 @@ proc main() {
   // to define the Zcyc vector, used for the second half of the FFT
   // phases.
   //
-  const CycDom: domain(1) dmapped Cyclic(startIdx=0) = ProblemSpace;
+  const CycDom: domain(1) dmapped cyclicDist(startIdx=0) = ProblemSpace;
 
   var Zcyc: [CycDom] elemType;
 

@@ -36,7 +36,7 @@ class GridVariable {
   //----------------------------------------------------
 
   pragma "no copy return"
-  proc this(D: domain)
+  proc this(D: domain(?))
   {
     return value(D);
   }

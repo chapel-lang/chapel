@@ -136,8 +136,8 @@ proc main() {
         const dist_big = BigDom dmapped CyclicZipOpt(startIdx=BigDom.low);
         kernel_stencil9(dist_little, dist_big, Dom, BigDom);*/
     } else if dist == "C" {
-        const dist_little = Dom dmapped Cyclic(startIdx=Dom.low);
-        const dist_big = BigDom dmapped Cyclic(startIdx=BigDom.low);
+        const dist_little = Dom dmapped cyclicDist(startIdx=Dom.low);
+        const dist_big = BigDom dmapped cyclicDist(startIdx=BigDom.low);
         kernel_stencil9(dist_little, dist_big, Dom, BigDom); 
     } else if dist == "B" {
         const dist_little = Dom dmapped blockDist(boundingBox=Dom);

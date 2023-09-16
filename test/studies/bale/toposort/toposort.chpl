@@ -437,13 +437,13 @@ class PermutationMap {
     return new owned PermutationMap( inverseRowMap, inverseColumnMap );
   }
 
-  iter these( onDomain : domain ) : rank*idxType
+  iter these( onDomain : domain(?) ) : rank*idxType
   where onDomain.rank == 2
   {
     for idx in onDomain do yield this.map( idx );
   }
 
-  iter inverseThese( onDomain : domain ) : rank*idxType
+  iter inverseThese( onDomain : domain(?) ) : rank*idxType
   where onDomain.rank == 2
   {
     for idx in onDomain do yield inverseMap( idx );
@@ -451,7 +451,7 @@ class PermutationMap {
 
 
   // TODO make parallel
-  iter these(param tag : iterKind, onDomain : domain) : rank*idxType
+  iter these(param tag : iterKind, onDomain : domain(?)) : rank*idxType
   where tag == iterKind.standalone && onDomain.rank == 2
   {
     for idx in this.these( onDomain ) do yield idx;
@@ -479,7 +479,7 @@ class PermutationMap {
     }
   }
 
-  proc permuteDomain( D : domain )
+  proc permuteDomain( D : domain(?) )
   where D.rank == 2 && D.isSparse()
   {
     // stopwatch for debugging purposes
@@ -524,7 +524,7 @@ class TopoSortResult {
   }
 }
 
-proc createRandomPermutationMap( D : domain, seed : int ) : shared PermutationMap(D.idxType)
+proc createRandomPermutationMap( D : domain(?), seed : int ) : shared PermutationMap(D.idxType)
 where D.rank == 2
 {
   var rowMap : [D.dim(0)] D.idxType = D.dim(0);
@@ -676,7 +676,7 @@ proc createSparseUpperTriangluarIndexList(
   return sparseD;
 }
 
-proc checkIsUperTriangularDomain( D : domain ) : bool
+proc checkIsUperTriangularDomain( D : domain(?) ) : bool
 where D.rank == 2 && D.isSparse()
 {
   var isUT = true;
@@ -715,7 +715,7 @@ where D.rank == 2
   }
 }
 
-proc toposortSerial( D : domain ) : shared TopoSortResult(D.idxType)
+proc toposortSerial( D : domain(?) ) : shared TopoSortResult(D.idxType)
 where D.rank == 2
 {
   var result = new shared TopoSortResult(D.idxType);
@@ -828,7 +828,7 @@ where D.rank == 2
   return result;
 }
 
-proc toposortParallel( D : domain, numTasks : int = here.maxTaskPar ) : shared TopoSortResult(D.idxType)
+proc toposortParallel( D : domain(?), numTasks : int = here.maxTaskPar ) : shared TopoSortResult(D.idxType)
 where D.rank == 2
 {
   if numTasks < 1 then halt("Must run with numTaks >= 1");
@@ -960,7 +960,7 @@ where D.rank == 2
   return result;
 }
 
-proc toposortDistributed( D : domain ) : shared TopoSortResult(D.idxType)
+proc toposortDistributed( D : domain(?) ) : shared TopoSortResult(D.idxType)
 where D.rank == 2
 {
   var maxTasksPerLocale : [0..#Locales.size] int;
@@ -970,7 +970,7 @@ where D.rank == 2
   return toposortDistributed( D, maxTasksPerLocale );
 }
 
-proc toposortDistributed( D : domain, maxTasksPerLocale : [] int ) : shared TopoSortResult(D.idxType)
+proc toposortDistributed( D : domain(?), maxTasksPerLocale : [] int ) : shared TopoSortResult(D.idxType)
 where D.rank == 2
 {
   if (min reduce maxTasksPerLocale) < 1 then halt("Must run with numTasks >= 1");

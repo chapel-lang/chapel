@@ -3,7 +3,7 @@ use IO;
 class mything {
   var x:int;
   proc init(x: int = 0) { this.x = x; }
-  proc init(r: fileReader) { this.x = r.read(int); }
+  proc init(r: fileReader(?)) { this.x = r.read(int); }
 
   proc readThis(r) throws {
     r.read(x);
@@ -20,7 +20,7 @@ class subthing : mything {
     super.init(x);
     this.y = y;
   }
-  proc init(r: fileReader) {
+  proc init(r: fileReader(?)) {
     this.x = r.read(int);
     r.readLiteral(",");
     this.y = r.read(int);

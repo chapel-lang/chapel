@@ -14,7 +14,7 @@ module M {
         writeln("processArr 2");
     }
 
-    proc processDom(dom: domain) where dom.rank == 2 {
+    proc processDom(dom: domain(?)) where dom.rank == 2 {
         writeln("processDom 1");
     }
 

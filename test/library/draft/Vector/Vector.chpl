@@ -1158,7 +1158,7 @@ module Vector {
     }
 
     @chpldoc.nodoc
-    proc readThis(ch: fileReader) throws {
+    proc readThis(ch: fileReader(?)) throws {
       compilerError("Reading a Vector is not supported");
     }
 
@@ -1167,7 +1167,7 @@ module Vector {
 
       :arg ch: A fileWriter to write to.
     */
-    proc writeThis(ch: fileWriter) throws {
+    proc writeThis(ch: fileWriter(?)) throws {
       _enter();
 
       ch.write("[");
@@ -1286,17 +1286,17 @@ module Vector {
   }
 
   @chpldoc.nodoc
-  operator :(rhs:list, type t: vector) {
+  operator :(rhs:list(?), type t: vector(?)) {
     var tmp: t = rhs;
     return rhs;
   }
   @chpldoc.nodoc
-  operator :(rhs:[], type t: vector) {
+  operator :(rhs:[], type t: vector(?)) {
     var tmp: t = rhs;
     return rhs;
   }
   @chpldoc.nodoc
-  operator :(rhs:range(?), type t: vector) {
+  operator :(rhs:range(?), type t: vector(?)) {
     var tmp: t = rhs;
     return rhs;
   }

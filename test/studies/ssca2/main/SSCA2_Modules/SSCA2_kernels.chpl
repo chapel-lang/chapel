@@ -26,7 +26,7 @@ module SSCA2_kernels
   // edges, all of which have the largest weight.
   // ========================================================
 
-  proc largest_edges ( G, ref heavy_edge_list :domain )
+  proc largest_edges ( G, ref heavy_edge_list :domain(?) )
 
     // edge_weights can be either an array over an associative
     // domain or over a sparse domain.  the output  heavy_edge_list
@@ -95,7 +95,7 @@ module SSCA2_kernels
   // ===================================================================
 
   proc rooted_heavy_subgraphs ( G,
-                                Heavy_Edge_List     : domain,
+                                Heavy_Edge_List     : domain(?),
                                 Heavy_Edge_Subgraph : [],
                                 in max_path_length  : int )
 
@@ -553,7 +553,7 @@ module SSCA2_kernels
     proc init(type vertex) {
       this.vertex = vertex;
     }
-    proc init=(other: child_struct) {
+    proc init=(other: child_struct(?)) {
       this.vertex = other.vertex;
       this.nd = other.nd;
       this.Row_Children = other.Row_Children;
@@ -580,7 +580,7 @@ module SSCA2_kernels
     proc init(type vertex) {
       this.vertex = vertex;
     }
-    proc init=(other: taskPrivateArrayData) {
+    proc init=(other: taskPrivateArrayData(?)) {
       this.vertex = other.vertex;
       this.min_distance = other.min_distance;
       this.path_count = other.path_count.read();

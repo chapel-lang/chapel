@@ -11,7 +11,7 @@ record R {
     this.y = y;
   }
 
-  proc init(reader: fileReader, ref deserializer) {
+  proc init(reader: fileReader(?), ref deserializer) {
     var des = deserializer.startRecord(reader, "R");
     this.x = des.readField("x", int);
     this.y = des.readField("y", real);
@@ -37,7 +37,7 @@ record G {
     this.y = y;
   }
 
-  proc init(type A, type B, reader: fileReader, ref deserializer) {
+  proc init(type A, type B, reader: fileReader(?), ref deserializer) {
     this.A = A;
     this.B = B;
     var des = deserializer.startRecord(reader, "G");
@@ -46,7 +46,7 @@ record G {
     des.endRecord();
   }
 
-  proc equals(other: G) {
+  proc equals(other: G(?)) {
     return this.x == other.x &&
            this.y == other.y;
   }
@@ -58,13 +58,13 @@ class Parent {
   proc init(x: int = 0) {
     this.x = x;
   }
-  proc init(reader: fileReader, ref deserializer) {
+  proc init(reader: fileReader(?), ref deserializer) {
     var des = deserializer.startClass(reader, "Parent");
     this.x = des.readField("x", int);
     des.endClass();
   }
 
-  override proc serialize(writer: fileWriter, ref serializer) {
+  override proc serialize(writer: fileWriter(?), ref serializer) {
     var ser = serializer.startClass(writer, "Parent", 1);
     ser.writeField("x", x);
     ser.endClass();
@@ -82,14 +82,14 @@ class Child : Parent {
     super.init(x);
     this.y = y;
   }
-  proc init(reader: fileReader, ref deserializer) {
+  proc init(reader: fileReader(?), ref deserializer) {
     var des = deserializer.startClass(reader, "Child");
     super.init(reader, des);
     this.y = des.readField("y", real);
     des.endClass();
   }
 
-  override proc serialize(writer: fileWriter, ref serializer) {
+  override proc serialize(writer: fileWriter(?), ref serializer) {
     var ser = serializer.startClass(writer, "Child", 1);
     super.serialize(writer, ser);
     ser.writeField("y", y);

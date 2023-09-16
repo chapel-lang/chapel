@@ -39,8 +39,6 @@
 #define CHPL_PARTITION_FLAG "--partition"
 #define CHPL_EXCLUDE_FLAG "--exclude"
 
-#define CHPL_LPN_VAR "LOCALES_PER_NODE"
-
 static char* debug = NULL;
 static char* walltime = NULL;
 static int generate_sbatch_script = 0;
@@ -203,7 +201,8 @@ static chpl_bool getSlurmDebug(chpl_bool batch) {
 // create the command that will actually launch the program and
 // create any files needed for the launch like the batch script
 static char* chpl_launch_create_command(int argc, char* argv[],
-                                        int32_t numLocales) {
+                                        int32_t numLocales,
+                                        int32_t numLocalesPerNode) {
   int i;
   int size;
   char baseCommand[MAX_COM_LEN];
@@ -220,7 +219,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   char* basenamePtr = strrchr(argv[0], '/');
   pid_t mypid;
   char  jobName[128];
-  int localesPerNode = 1;
 
   // For programs with large amounts of output, a lot of time can be
   // spent syncing the stdout buffer to the output file. This can cause
@@ -246,6 +244,12 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   char stdoutFile         [MAX_COM_LEN];
   char stdoutFileNoFmt    [MAX_COM_LEN];
   char tmpStdoutFileNoFmt [MAX_COM_LEN];
+
+  // Note: if numLocalesPerNode > numLocales then some cores will go unused. This
+  // is by design, as it allows for scalability testing by increasing the
+  // number of locales per node. If the user wants a single locale to use all
+  // of the cores they should set CHPL_RT_LOCALES_PER_NODE to 1 or not set it
+  // at all.
 
   // command line walltime takes precedence over env var
   if (!walltime) {
@@ -304,20 +308,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     memStr = memEnv;
   }
 
-  localesPerNode = chpl_env_rt_get_int(CHPL_LPN_VAR, 1);
-  if (localesPerNode <= 0) {
-    char msg[100];
-    snprintf(msg, sizeof(msg), "%s must be > 0.", "CHPL_RT_" CHPL_LPN_VAR);
-    chpl_warning(msg, 0, 0);
-    localesPerNode = 1;
-  }
-
-  // Note: if localesPerNode > numLocales then some cores will go unused. This
-  // is by design, as it allows for scalability testing by increasing the
-  // number of locales per node. If the user wants a single locale to use all
-  // of the cores they should set CHPL_RT_LOCALES_PER_NODE to 1 or not set it
-  // at all.
-
   if (basenamePtr == NULL) {
     basenamePtr = argv[0];
   } else {
@@ -358,12 +348,12 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       fprintf(slurmFile, "#SBATCH --quiet\n");
     }
 
-    int32_t numNodes = (numLocales + localesPerNode - 1) / localesPerNode;
+    int32_t numNodes = (numLocales + numLocalesPerNode - 1) / numLocalesPerNode;
 
     fprintf(slurmFile, "#SBATCH --nodes=%d\n", numNodes);
     fprintf(slurmFile, "#SBATCH --ntasks=%d\n", numLocales);
-    int localesOnNode = (numLocales < localesPerNode) ?
-                        numLocales : localesPerNode;
+    int localesOnNode = (numLocales < numLocalesPerNode) ?
+                        numLocales : numLocalesPerNode;
     int cpusPerTask = getCoresPerLocale(nomultithread(true), localesOnNode);
     fprintf(slurmFile, "#SBATCH --cpus-per-task=%d\n", cpusPerTask);
 
@@ -437,7 +427,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
     fprintf(slurmFile, "--cpus-per-task=%d ", cpusPerTask);
 
-    if (localesPerNode > 1) {
+    if (numLocalesPerNode > 1) {
       fprintf(slurmFile, "--cpu-bind=none ");
     }
     // add the (possibly wrapped) binary name.
@@ -493,17 +483,17 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // request the number of locales, with 1 task per node, and number of cores
     // cpus-per-task. We probably don't need --nodes and --ntasks specified
     // since 1 task-per-node with n --tasks implies -n nodes
-    int32_t numNodes = (numLocales + localesPerNode - 1) / localesPerNode;
+    int32_t numNodes = (numLocales + numLocalesPerNode - 1) / numLocalesPerNode;
 
     len += snprintf(iCom+len, sizeof(iCom)-len, "--nodes=%d ",numNodes);
     len += snprintf(iCom+len, sizeof(iCom)-len, "--ntasks=%d ", numLocales);
-    int localesOnNode = (numLocales < localesPerNode) ?
-                        numLocales : localesPerNode;
+    int localesOnNode = (numLocales < numLocalesPerNode) ?
+                        numLocales : numLocalesPerNode;
     int cpusPerTask = getCoresPerLocale(nomultithread(false), localesOnNode);
     len += snprintf(iCom+len, sizeof(iCom)-len, "--cpus-per-task=%d ",
                     cpusPerTask);
 
-    if (localesPerNode > 1) {
+    if (numLocalesPerNode > 1) {
       len += snprintf(iCom+len, sizeof(iCom)-len, "--cpu-bind=none ");
     }
 
@@ -574,8 +564,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 }
 
 
-static void genSBatchScript(int argc, char *argv[], int numLocales) {
-  chpl_launch_create_command(argc, argv, numLocales);
+static void genSBatchScript(int argc, char *argv[], int numLocales,
+                            int numLocalesPerNode) {
+  chpl_launch_create_command(argc, argv, numLocales, numLocalesPerNode);
 }
 
 
@@ -596,7 +587,8 @@ static void chpl_launch_cleanup(void) {
 }
 
 
-int chpl_launch(int argc, char* argv[], int32_t numLocales) {
+int chpl_launch(int argc, char* argv[], int32_t numLocales,
+                int32_t numLocalesPerNode) {
   int retcode;
 
   // check the slurm version before continuing
@@ -608,12 +600,13 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
 
   // generate a batch script and exit if user wanted to
   if (generate_sbatch_script) {
-    genSBatchScript(argc, argv, numLocales);
+    genSBatchScript(argc, argv, numLocales, numLocalesPerNode);
     retcode = 0;
   }
   // otherwise generate the batch file or srun command and execute it
   else {
-    char *cmd = chpl_launch_create_command(argc, argv, numLocales);
+    char *cmd = chpl_launch_create_command(argc, argv, numLocales,
+                                           numLocalesPerNode);
     retcode = chpl_launch_using_system(cmd, argv[0]);
 
     chpl_launch_cleanup();

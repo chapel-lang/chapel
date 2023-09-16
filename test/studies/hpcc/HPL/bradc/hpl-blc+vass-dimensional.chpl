@@ -173,7 +173,7 @@ proc LUFactorize(n: indexType, Ab: [?AbD] elemType,
 // locale only stores one copy of each block it requires for all of
 // its rows/columns.
 //
-proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) {
+proc schurComplement(Ab: [?AbD] elemType, AD: domain(?), BD: domain(?), Rest: domain(?)) {
   //
   // Copy data into replicated array so every processor has a local copy
   // of the data it will need to perform a local matrix-multiply.  These
@@ -226,7 +226,7 @@ proc dgemmNativeInds(A: [] elemType,
 // pivot vector accordingly
 //
 proc panelSolve(Ab: [] elemType,
-               panel: domain,
+               panel: domain(?),
                piv: [] indexType) {
 
   for k in panel.dim(1) {             // iterate through the columns
@@ -336,8 +336,8 @@ proc panelSolve(Ab: [] elemType,
 // solves the rows to the right of the block.
 //
 proc updateBlockRow(Ab: [] elemType,
-                   tl: domain,
-                   tr: domain) {
+                   tl: domain(?),
+                   tr: domain(?)) {
 
   for row in tr.dim(0) {
     const activeRow = tr[row..row, ..],

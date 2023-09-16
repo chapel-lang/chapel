@@ -7,7 +7,7 @@ class mything {
     this.x = x;
     this.y = y;
   }
-  proc init(r: fileReader) {
+  proc init(r: fileReader(?)) {
     this.x = r.read(int);
     r.readLiteral(" ");
     this.y = r.read(int);

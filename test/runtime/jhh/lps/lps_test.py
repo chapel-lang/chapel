@@ -134,7 +134,7 @@ class LocalePerSocket(unittest.TestCase):
         self.assertNotIn('--ntasks-per-node', output)
 
     def mrAllocatedRequired(self):
-        output = runCmd("fi_info -v")
+        output = runCmd("srun fi_info -v")
         for line in output.splitlines():
             if "mr_mode" in line:
                 if "FI_MR_ALLOCATED" in line:

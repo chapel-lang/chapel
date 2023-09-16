@@ -10,7 +10,7 @@ module Lib
     type T;
   }
 
-  private proc reqFun(arg: R): void {
+  private proc reqFun(arg: R(?)): void {
     writeln("reqFun argument of type ", arg.type: string);
     if arg.T == string then
       compilerError("some error here");

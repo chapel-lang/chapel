@@ -120,7 +120,7 @@ record map {
     }
   }
 
-  proc writeThis(fw: fileWriter) throws {
+  proc writeThis(fw: fileWriter(?)) throws {
     var first = true;
 
     fw.writeLiteral("{");

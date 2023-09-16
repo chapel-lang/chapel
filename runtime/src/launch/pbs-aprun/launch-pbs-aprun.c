@@ -394,9 +394,14 @@ static void chpl_launch_cleanup(void) {
   }
 }
 
-int chpl_launch(int argc, char* argv[], int32_t numLocales) {
+int chpl_launch(int argc, char* argv[], int32_t numLocales,
+                int32_t numLocalesPerNode) {
   int retcode;
   debug = getenv("CHPL_LAUNCHER_DEBUG");
+
+  if (numLocalesPerNode > 1) {
+    chpl_launcher_no_colocales_error(NULL);
+  }
 
   if (generate_qsub_script) {
     genQsubScript(argc, argv, numLocales);

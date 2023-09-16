@@ -1,4 +1,4 @@
-proc testDom(dom: domain) {
+proc testDom(dom: domain(?)) {
   for (idx, i) in zip(dom, 0..<dom.size) {
     if idx != dom.orderToIndex(i) {
       writeln('wrong index for ', dom, ':', idx, ' != dom.orderToIndex(', i,')');

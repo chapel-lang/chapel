@@ -1472,6 +1472,18 @@ module ChapelArray {
       return chpl__localSliceDefaultArithArrHelp(d);
     }
 
+    @unstable("tryCopy() is subject to change in the future.")
+    proc tryCopy() throws {
+      use Reflection;
+      if !(__primitive("resolves", this.domain.
+                       tryCreateArray(this.eltType))) then
+        compilerError("cannot call 'tryCopy' on arrays that do not" +
+                      " support a 'tryCreateArray' method.");
+      var res = this.domain.tryCreateArray(this.eltType);
+      res = this;
+      return res;
+    }
+
     pragma "no copy return"
     proc chpl__localSliceDefaultArithArrHelp(d: domain) {
       if (_value.locale != here) then

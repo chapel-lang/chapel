@@ -68,7 +68,7 @@ record CustomizedRecord {
     this.y = y;
   }
 
-  proc init(reader: fileReader, ref deserializer) throws {
+  proc init(reader: fileReader(?), ref deserializer) throws {
     const ref r = reader;
     this.init();
     r.readLiteral("<");
@@ -78,7 +78,7 @@ record CustomizedRecord {
     r.readLiteral(">");
   }
 
-  proc serialize(writer: fileWriter, ref serializer) {
+  proc serialize(writer: fileWriter(?), ref serializer) {
     writer.writeLiteral("<");
     writer.write(x);
     writer.writeLiteral(", ");

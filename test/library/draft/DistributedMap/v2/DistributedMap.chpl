@@ -48,7 +48,7 @@ module DistributedMap {
     }
 
     proc init(type keyType, type valType,
-              reader: fileReader, ref deserializer) throws {
+              reader: fileReader(?), ref deserializer) throws {
       this.init(keyType, valType);
       readThis(reader);
     }
@@ -58,11 +58,11 @@ module DistributedMap {
       m!.mapClear();
     }
 
-    proc readThis(ch: fileReader) throws {
+    proc readThis(ch: fileReader(?)) throws {
       m!.readThis(ch);
     }
 
-    proc writeThis(ch: fileWriter) throws {
+    proc writeThis(ch: fileWriter(?)) throws {
       m!.writeThis(ch);
     }
   }
@@ -79,7 +79,7 @@ module DistributedMap {
 
     @chpldoc.nodoc
     const locDom = {0..<targetLocales.size}
-      dmapped Cyclic(startIdx=0, targetLocales=targetLocales);
+      dmapped cyclicDist(startIdx=0, targetLocales=targetLocales);
 
     @chpldoc.nodoc
     var tables: [locDom] chpl__hashtable(keyType, valType);
@@ -399,7 +399,7 @@ module DistributedMap {
       }
     }
 
-    proc init(type keyType, type valType, r: fileReader) {
+    proc init(type keyType, type valType, r: fileReader(?)) {
       this.init(keyType, valType);
       readThis(r);
     }
@@ -416,7 +416,7 @@ module DistributedMap {
 
       :arg ch: A fileReader to read from.
     */
-    proc readThis(ch: fileReader) throws {
+    proc readThis(ch: fileReader(?)) throws {
       for i in locDom {
         locks[i].lock();
       }
@@ -463,7 +463,7 @@ module DistributedMap {
 
       :arg ch: A fileWriter to write to.
     */
-    proc writeThis(ch: fileWriter) throws {
+    proc writeThis(ch: fileWriter(?)) throws {
       for i in locDom {
         locks[i].lock();
       }

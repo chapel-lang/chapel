@@ -32,7 +32,7 @@ module ChainTable {
       this.numEntries.write(0);
     }
 
-    proc init=(other: chainTable) {
+    proc init=(other: chainTable(?)) {
       this.keyType = other.keyType;
       this.valType = other.valType;
       this.numBuckets = other.numBuckets;

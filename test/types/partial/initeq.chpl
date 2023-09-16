@@ -4,7 +4,7 @@ record R {
   param p : T;
 }
 
-proc R.init=(other: R) {
+proc R.init=(other: R(?)) {
   this.T = other.T;
   this.p = other.p;
 }

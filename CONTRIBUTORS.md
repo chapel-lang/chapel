@@ -16,7 +16,7 @@ Contributors to the Chapel 1.31.0 release
 * Ben Harshbarger, [HPE]
 * John Hartman, [HPE]
 * Guillaume Helbecque, individual contributor
-o David Iten, [HPE]
+* David Iten, [HPE]
 * Bhavani Jayakumaran, [HPE]
 * Engin Kayraklioglu, [HPE]
 * Shreyas Khandekar, [HPE] (former intern from [University of Arizona])
@@ -29,6 +29,7 @@ o David Iten, [HPE]
 * Ahmad Rezaii, [HPE]
 * Anna Rift, [HPE]
 * Elliot Ronaghan, [HPE]
+* Chris Stinson, individual contributor
 * Andy Stone, [HPE] (former [Cray Inc.] intern from [Colorado State University])
 * Michelle Mills Strout, [HPE]
 * Karlon West, [HPE]

@@ -112,12 +112,12 @@ module Chai {
             this.weightsGrad.data = 0;
         }
 
-        proc ref write(fw: IO.fileWriter) throws {
+        proc ref write(fw: IO.fileWriter(?)) throws {
             bias.write(fw);
             weights.write(fw);
         }
 
-        proc ref read(fr: IO.fileReader) throws {
+        proc ref read(fr: IO.fileReader(?)) throws {
             bias.read(fr);
             weights.read(fr);
             uninitialized = false;
@@ -158,9 +158,9 @@ module Chai {
 
         proc ref resetGradients() { }
 
-        proc ref write(fw: IO.fileWriter) throws { }
+        proc ref write(fw: IO.fileWriter(?)) throws { }
 
-        proc ref read(fr: IO.fileReader) throws { }
+        proc ref read(fr: IO.fileReader(?)) throws { }
 
         proc ref signature(): string do
             return "Sigmoid()";
@@ -287,12 +287,12 @@ module Chai {
             filtersGrad.data = 0.0;
         }
 
-        proc ref write(fw: IO.fileWriter) throws {
+        proc ref write(fw: IO.fileWriter(?)) throws {
             fw.write(numFilters);
             filters.write(fw);
         }
 
-        proc ref read(fr: IO.fileReader) throws {
+        proc ref read(fr: IO.fileReader(?)) throws {
             var nf = fr.read(int);
             if nf != numFilters then err("Conv read: numFilters mismatch");
             filters.read(fr);
@@ -373,9 +373,9 @@ module Chai {
 
         proc ref resetGradients() { }
 
-        proc ref write(fw: IO.fileWriter) throws { }
+        proc ref write(fw: IO.fileWriter(?)) throws { }
 
-        proc ref read(fr: IO.fileReader) throws { }
+        proc ref read(fr: IO.fileReader(?)) throws { }
 
         proc ref signature(): string do
             return "MaxPool()";
@@ -415,9 +415,9 @@ module Chai {
 
         proc ref resetGradients() { }
 
-        proc ref write(fw: IO.fileWriter) throws { }
+        proc ref write(fw: IO.fileWriter(?)) throws { }
 
-        proc ref read(fr: IO.fileReader) throws { }
+        proc ref read(fr: IO.fileReader(?)) throws { }
 
         proc ref signature(): string do
             return "ReLU(" + a:string + ")";
@@ -447,9 +447,9 @@ module Chai {
 
         proc ref resetGradients() { }
 
-        proc ref write(fw: IO.fileWriter) throws { }
+        proc ref write(fw: IO.fileWriter(?)) throws { }
 
-        proc ref read(fr: IO.fileReader) throws { }
+        proc ref read(fr: IO.fileReader(?)) throws { }
 
         proc ref signature(): string do
             return "Flatten()";
@@ -587,12 +587,12 @@ module Chai {
             biasesGrad.data = 0.0;
         }
 
-        proc ref write(fw: IO.fileWriter) throws {
+        proc ref write(fw: IO.fileWriter(?)) throws {
             weights.write(fw);
             biases.write(fw);
         }
         
-        proc ref read(fr: IO.fileReader) throws {
+        proc ref read(fr: IO.fileReader(?)) throws {
             weights.read(fr);
             biases.read(fr);
             uninitialized = false;

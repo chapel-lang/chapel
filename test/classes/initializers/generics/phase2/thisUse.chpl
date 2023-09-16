@@ -11,7 +11,7 @@ class ThisPhase2 {
   }
 }
 
-proc outsideFunc(x: borrowed ThisPhase2) {
+proc outsideFunc(x: borrowed ThisPhase2(?)) {
   writeln(x.someField);
 }
 

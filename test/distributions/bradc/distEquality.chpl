@@ -25,10 +25,10 @@ writeln(B1.distribution == (Space dmapped blockDist(boundingBox=Space)).distribu
 writeln();
 
 
-const C1 = Space dmapped Cyclic(startIdx=Space.low);
-const C2 = Space dmapped Cyclic(startIdx=(3,3));
-const C3 = Space dmapped Cyclic(startIdx=(4,4));
-const C4 = Space dmapped Cyclic(startIdx=Space.low, targetLocales=OneLocOnly);
+const C1 = Space dmapped cyclicDist(startIdx=Space.low);
+const C2 = Space dmapped cyclicDist(startIdx=(3,3));
+const C3 = Space dmapped cyclicDist(startIdx=(4,4));
+const C4 = Space dmapped cyclicDist(startIdx=Space.low, targetLocales=OneLocOnly);
 
 writeln("Cyclic comparisons:");
 
@@ -47,7 +47,7 @@ writeln(C3.distribution == C4.distribution);
 
 writeln(C4.distribution == C4.distribution);
 
-writeln(C1.distribution == (Space dmapped Cyclic(startIdx=Space.low)).distribution);
+writeln(C1.distribution == (Space dmapped cyclicDist(startIdx=Space.low)).distribution);
 
 writeln();
 

@@ -96,7 +96,7 @@ doNorm(aR2D32, 3);
 
 
 writeln("Vector norm reindexed arrays");
-proc foo(D: domain, A: [D], loc) {
+proc foo(D: domain(?), A: [D], loc) {
   doNorm(A, loc);
 }
 const TD1D: domain(1) = Space1.translate(-o5);

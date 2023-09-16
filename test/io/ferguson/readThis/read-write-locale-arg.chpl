@@ -12,7 +12,7 @@ class A {
 class B {
   var x:int;
   proc init(x: int = 0) { this.x = x; }
-  proc init(r: fileReader) {
+  proc init(r: fileReader(?)) {
     var loc = r.readWriteThisFromLocale();
     writeln("in B.readThis loc= ", loc.id);
     this.x = r.readln(int);
@@ -27,7 +27,7 @@ class B {
 class C {
   var x:int;
   proc init(x: int = 0) { this.x = x; }
-  proc init(r: fileReader) {
+  proc init(r: fileReader(?)) {
     var loc = r.readWriteThisFromLocale();
     writeln("in C.readWriteHelper loc= ", loc.id);
     this.x = r.read(int);
