@@ -157,7 +157,7 @@ Developer-oriented changes: Tool Improvements
 ---------------------------------------------
 
 Developer-oriented changes: Utilities
--------------------------------------~
+-------------------------------------
 
 
 version 1.31.0
