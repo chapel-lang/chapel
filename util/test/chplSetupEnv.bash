@@ -65,7 +65,7 @@ _chplSetupEnv_abbreviatedHostname=_chplSetupEnv_shortHost
 for _chplSetupEnv_p in ${_chplSetupEnv_pathsToRun[@]}; do
   if [[ -f "$_chplSetupEnv_p/hostname_abbrevs" ]]; then
     if ! _chplSetupEnv_abbreviatedHostname=$(\
-      $CHPL_HOME/util/test/abbreviateHostname.py "$_chplSetupEnv_shortHost" ./hostname_abbrevs)
+      $CHPL_HOME/util/test/abbreviateHostname.py "$_chplSetupEnv_shortHost" "$_chplSetupEnv_p/hostname_abbrevs")
     then
       return 1
     fi
