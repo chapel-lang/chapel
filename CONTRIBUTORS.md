@@ -15,7 +15,7 @@ Contributors to the Chapel 1.31.0 release
 * Michael Ferguson, [HPE]
 * Ben Harshbarger, [HPE]
 * John Hartman, [HPE]
-* Guillaume Helbecque, external contributor
+* Guillaume Helbecque, individual contributor
 o David Iten, [HPE]
 * Bhavani Jayakumaran, [HPE]
 * Engin Kayraklioglu, [HPE]
