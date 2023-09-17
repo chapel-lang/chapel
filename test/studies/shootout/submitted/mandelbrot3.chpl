@@ -77,3 +77,4 @@ inline operator >(xs, y) {
       return false;
   return true;
 }
+use Compat;

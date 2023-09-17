@@ -101,3 +101,4 @@ proc createTable() {
 
   return table;
 }
+use Compat;

@@ -137,3 +137,5 @@ record hashVal {
     return val;
   }
 }
+
+use Compat;

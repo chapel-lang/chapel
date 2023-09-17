@@ -131,3 +131,4 @@ inline proc startsWithThree(data) {
          data[3] == "H".toByte();
 }
 
+use Compat;
