@@ -1925,7 +1925,7 @@ static void fixupGenericReturnTypes(FnSymbol* fn) {
     // handle nested cases, e.g. (GenericRecord(?), ) or borrowed GenCls(?)
     propagateMarkedGeneric(fn, fn->retExprType);
 
-    // simpify the simple case
+    // simplify the simple case
     Expr*     tail   = fn->retExprType->body.tail;
     if (CallExpr* call = toCallExpr(tail)) {
       if (call->numActuals() == 1) {
