@@ -460,7 +460,7 @@ void chpl_gpu_copy_device_to_device(c_sublocid_t dst_dev, void* dst,
   void* stream = get_stream(dst_dev);
   chpl_gpu_impl_copy_device_to_device(dst, src, n, stream);
   if (dst_dev != src_dev) {
-    // going to a device that maybe used by a different task, synchornize
+    // going to a device that maybe used by a different task, synchronize
     wait_stream(stream);
   }
   else if (chpl_gpu_sync_with_host) {
