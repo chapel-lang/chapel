@@ -4352,7 +4352,7 @@ record binaryDeserializer {
     /*
       Deserialize ``element`` in-place as an element of the array.
     */
-    proc readElment(ref element) throws {
+    proc readElement(ref element) throws {
       reader.read(element);
     }
 
