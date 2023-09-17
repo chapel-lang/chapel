@@ -14025,7 +14025,7 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
       }
 
 
-      // supress the warning for builtin types like
+      // suppress the warning for builtin types like
       // 'integral', 'record', 'borrowed'.
       if (isBuiltinGenericType(declType)) {
         return;
@@ -14037,7 +14037,7 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
         return;
 
 
-      // supress the warning for fields within owned/shared
+      // suppress the warning for fields within owned/shared
       // themselves (better to see the warning at uses of owned/shared
       // that create generic owned/shared).
       if (TypeSymbol* ts = toTypeSymbol(sym->defPoint->parentSymbol))
