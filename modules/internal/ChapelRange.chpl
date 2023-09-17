@@ -337,7 +337,7 @@ module ChapelRange {
       this._stride    = _stride;
       this._alignment =  alignmentValue;
 
-      if boundsChecking then verifyAppropriateStide(strides, _stride);
+      if boundsChecking then verifyAppropriateStride(strides, _stride);
     }
   }
 
@@ -891,7 +891,7 @@ module ChapelRange {
   private proc isNegativeStride(param strides: strideKind, stride) param
     where strides.hasSign() do return strides.isNegative();
 
-  // chpl_strideProduct(s1,s2) returns the strideKind that accomodates
+  // chpl_strideProduct(s1,s2) returns the strideKind that accommodates
   // the product of two strides that fit in 's1' and 's2'
 
   proc chpl_strideProduct(param s1: strideKind, param s2: strideKind) param {
@@ -1056,7 +1056,7 @@ module ChapelRange {
     return !assignmentIsLegal(to, from, boundKind.both);
   }
 
-  private proc verifyAppropriateStide(param strides, stride) {
+  private proc verifyAppropriateStride(param strides, stride) {
     if strides.isPositive() then assert(stride > 0);
     if strides.isNegative() then assert(stride < 0);
   }
@@ -1069,7 +1069,7 @@ module ChapelRange {
     this._low  = chpl__idxToInt(low):  this.chpl_integralIdxType;
     this._high = chpl__idxToInt(high): this.chpl_integralIdxType;
     if this.hasParamStrideAltvalAld() {
-      if boundsChecking then verifyAppropriateStide(this.strides, stride);
+      if boundsChecking then verifyAppropriateStride(this.strides, stride);
     } else {
       this._stride    = stride: this.strType;
       const first     = if this.hasPositiveStride() then low else high;
