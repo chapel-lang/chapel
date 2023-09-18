@@ -57,7 +57,7 @@ a convenient replacement for the ``boundingBox`` argument,
 which specifies the bounding box in this dimension.
 
 The ``idxType``, whether provided or inferred, must match
-the index type of the domains "dmapped" using the corresponding
+the index type of the domains created using the corresponding
 ``dimensionalDist2D`` distribution.
 */
 record BlockDim {

@@ -216,11 +216,13 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
 
   .. function:: proc type stencilDist.createDomain(dom: domain, targetLocales = Locales, fluff, periodic = false)
 
-    Create a stencil-distributed domain.
+    Create a stencil-distributed domain. The provided domain is used as the
+    ``boundingBox``.
 
   .. function:: proc type stencilDist.createDomain(rng: range(?)..., targetLocales = Locales, fluff, periodic = false)
 
-    Create a stencil-distributed domain from a series of ranges.
+    Create a stencil-distributed domain from a series of ranges. The ranges
+    are also used to construct the ``boundingBox``.
 
   .. function:: proc type stencilDist.createArray(dom: domain, type eltType, targetLocales = Locales, fluff, periodic = false)
 
@@ -234,7 +236,7 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
 
   .. function:: proc type stencilDist.createArray(dom: domain, type eltType, initExpr, targetLocales = Locales, fluff, periodic = false)
 
-    Create a stencil-distributed whose indices match those of the
+    Create a stencil-distributed array whose indices match those of the
     given domain.
 
     The array's values are initialized using ``initExpr`` which can be any of
@@ -262,6 +264,15 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
     * an array of compatible size and type — the array will be assigned into
       the distributed array
 
+  .. function:: proc stencilDist.createDomain(dom: domain(?))
+
+    Create a stencil-distributed domain over an existing ``blockDist``.
+
+  .. function:: proc stencilDist.createDomain(rng: range(?)...)
+
+    Create a stencil-distributed domain from a series of ranges over an existing
+    ``blockDist``.
+
 
   Note that the ``fluff`` argument in the above methods defaults to a
   tuple of *n* zeros, where *n* is the domain's rank or the number of
@@ -279,7 +290,7 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
 
     const Space = {1..10, 1..10};
     const Dist = new stencilDist(boundingBox=Space, fluff=(1,1));
-    const D = Space dmapped Dist;
+    const D = Dist.createDomain(Space);
     var A : [D] int;
 
     forall (i,j) in D with (ref A) do

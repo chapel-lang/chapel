@@ -97,7 +97,7 @@ to the ID of the locale to which it is mapped.
     use CyclicDist;
 
     const Dist = new cyclicDist(startIdx=(1,1));
-    const D = {1..8, 1..8} dmapped Dist;
+    const D = cyclicDist.createDomain({1..8, 1..8});
     var A: [D] int;
 
     forall a in A do
@@ -178,15 +178,17 @@ and arrays using `(1, 1)` as the starting index:
 
 The helper methods on ``Cyclic`` have the following signatures:
 
-  .. function:: proc type cyclicDist.createDomain(dom: domain, targetLocales = Locales)
+  .. function:: proc type cyclicDist.createDomain(dom: domain(?), targetLocales = Locales)
 
-    Create a cyclic-distributed domain.
+    Create a cyclic-distributed domain. The lower bounds of the domain are used
+    as the starting indices.
 
   .. function:: proc type cyclicDist.createDomain(rng: range(?)..., targetLocales = Locales)
 
-    Create a cyclic-distributed ddomain from a series of ranges.
+    Create a cyclic-distributed domain from a series of ranges. The lower
+    bounds of the ranges are used as the starting indices.
 
-  .. function:: proc type cyclicDist.createArray(dom: domain, type eltType, targetLocales = Locales)
+  .. function:: proc type cyclicDist.createArray(dom: domain(?), type eltType, targetLocales = Locales)
 
     Create a default-initialized cyclic-distributed array whose indices
     match those of the given domain.
@@ -196,7 +198,7 @@ The helper methods on ``Cyclic`` have the following signatures:
     Create a default-initialized cyclic-distributed array using a
     domain constructed from the series of ranges.
 
-  .. function:: proc type cyclicDist.createArray(dom: domain, type eltType, initExpr, targetLocales = Locales)
+  .. function:: proc type cyclicDist.createArray(dom: domain(?), type eltType, initExpr, targetLocales = Locales)
 
     Create a cyclic-distributed array whose indices match those of the
     given domain.
@@ -226,6 +228,14 @@ The helper methods on ``Cyclic`` have the following signatures:
     * an array of compatible size and type — the array will be assigned into
       the distributed array
 
+  .. function:: proc cyclicDist.createDomain(dom: domain(?))
+
+    Create a cyclic-distributed domain over an existing ``cyclicDist``.
+
+  .. function:: proc cyclicDist.createDomain(rng: range(?)...)
+
+    Create a cyclic-distributed domain from a series of ranges over an existing
+    ``cyclicDist``.
 
 **Limitations**
 
