@@ -1,1 +1,0 @@
-bug: uncaught exceptions from serialization code seem to cause GASNet segfaults

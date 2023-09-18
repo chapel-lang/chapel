@@ -8415,7 +8415,8 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
   where isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
-  var e : errorCode = 0;
+  var err : string,      // errors from invalid invocation of this function
+      e : errorCode = 0; // errors from performing the IO
 
   on this._home {
     try this.lock(); defer { this.unlock(); }
@@ -8423,14 +8424,11 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
 
     // Allow either DefaultRectangular arrays or dense slices of DR arrays
     if !data._value.isDataContiguous(d._value) {
-      throw new IllegalArgumentError("writeBinary() array data must be contiguous");
+      err = "writeBinary() array data must be contiguous";
     } else if data.locale != this._home {
-      throw new IllegalArgumentError("writeBinary() array data must be on same locale as 'fileWriter'");
+      err = "writeBinary() array data must be on same locale as 'fileWriter'";
     } else if endian == ioendian.native {
       e = try qio_channel_write_amt(false, this._channel_internal, data[d.low], data.size:c_ssize_t * tSize);
-
-      if e != 0 then
-        throw createSystemOrChplError(e);
     } else {
       for b in data {
         select (endian) {
@@ -8445,11 +8443,17 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
           }
         }
 
-        if e != 0 then
-          throw createSystemOrChplError(e);
+        if e != 0 then break;
       }
     }
   }
+
+  // Throwing moved outside of the 'on' block due to a bug in throwing methods
+  // under GASNET.
+  //
+  // https://github.com/chapel-lang/chapel/issues/23400
+  if !err.isEmpty() then throw new IllegalArgumentError(err);
+  if e != 0 then throw createSystemOrChplError(e);
 }
 
 
@@ -8754,20 +8758,19 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
     isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
-  var e : errorCode = 0,
+  var err : string,       // errors from invalid invocation of this function
+      e : errorCode = 0,  // errors from perform the IO
       numRead : c_ssize_t = 0;
 
   on this._home {
     try this.lock(); defer { this.unlock(); }
 
     if !data._value.isDataContiguous(d._value) {
-      throw new IllegalArgumentError("readBinary() array data must be contiguous");
+      err = "readBinary() array data must be contiguous";
     } else if data.locale != this._home {
-      throw new IllegalArgumentError("readBinary() array data must be on same locale as 'fileReader'");
+      err = "readBinary() array data must be on same locale as 'fileReader'";
     } else if endian == ioendian.native {
       e = qio_channel_read(false, this._channel_internal, data[d.low], (data.size * c_sizeof(data.eltType)) : c_ssize_t, numRead);
-
-      if e != 0 && e != EEOF then throw createSystemOrChplError(e);
     } else {
       for (i, b) in zip(data.domain, data) {
         select (endian) {
@@ -8785,13 +8788,20 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
         if e == EEOF {
           break;
         } else if e != 0 {
-          throw createSystemOrChplError(e);
+          break;
         } else {
           numRead += 1;
         }
       }
     }
   }
+
+  // Throwing moved outside of the 'on' block due to a bug in throwing methods
+  // under GASNET.
+  //
+  // https://github.com/chapel-lang/chapel/issues/23400
+  if !err.isEmpty() then throw new IllegalArgumentError(err);
+  if e != 0 && e != EEOF then throw createSystemOrChplError(e);
 
   return numRead : int;
 }
