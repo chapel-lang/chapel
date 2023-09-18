@@ -14,6 +14,8 @@ Configuration / Build / Packaging Changes
 
 New Language Features
 ---------------------
+* added support for an array creation interface that throws if out of memory  
+  (see https://chapel-lang.org/docs/1.32/language/spec/domains.html#ChapelDomain.tryCreateArray)
 
 Language Feature Improvements
 -----------------------------
@@ -21,6 +23,9 @@ Language Feature Improvements
 
 Syntactic / Naming Changes
 --------------------------
+* renamed `[enter|leave]This()` to `[enter|exit]Context()` for context mgmt  
+  (see https://chapel-lang.org/docs/1.32/language/spec/statements.html#the-manage-statement)
+
 
 Semantic Changes / Changes to the Chapel Language
 -------------------------------------------------
@@ -38,6 +43,8 @@ Namespace Changes
 
 Standard Library Modules
 ------------------------
+* added support for casting `bool` values to `bigint`  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.:)
 
 Package Modules
 ---------------
@@ -58,6 +65,8 @@ Changes / Feature Improvements in Libraries
 
 Name Changes in Libraries
 -------------------------
+* renamed `map.addOrSet()` to `map.addOrReplace()`
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Map.html#Map.map.addOrReplace)
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
@@ -87,6 +96,7 @@ Language Specification Improvements
 
 Other Documentation Improvements
 --------------------------------
+* fixed warnings in 'Map' that incorrectly referred to the `set` type
 
 Example Codes
 -------------
@@ -119,6 +129,7 @@ Error Messages / Semantic Checks
 Bug Fixes
 ---------
 * fixed a bug in which `CHPL_UNWIND` could not be overridden on some platforms
+* fixed a bug in which FCPs printed incorrectly with JSON serializers
 
 Bug Fixes for Build Issues
 --------------------------
