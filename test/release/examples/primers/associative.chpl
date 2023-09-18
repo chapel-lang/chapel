@@ -8,6 +8,14 @@
   :ref:`domains.chpl <primers-domains>` primers before proceeding if you're not
   already familiar with Chapel's domains and arrays.
 
+  .. warning::
+
+    Associative domains and arrays are currently unstable.
+    Their functionality is likely to change in the future.
+    Chapel provides stable `map` and `set` data types
+    [see modules :mod:`Set` and :mod:`Map`]
+    that can be used instead in many cases.
+
 */
 
 //

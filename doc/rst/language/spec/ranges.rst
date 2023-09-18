@@ -433,6 +433,15 @@ Range Comparisons
 
 Ranges can be compared using equality and inequality.
 
+.. warning::
+
+   Equality comparisons for ranges over ``enum`` or ``bool`` types
+   when one of the ranges is bounded and the other is unbounded
+   is currently unstable.
+   We currently treat both ranges as being bounded.
+   This functionality is likely to change in the future.
+
+
 .. function:: operator ==(r1: range(?), r2: range(?)): bool
 
    Returns ``true`` if the two ranges have the same represented sequence or
