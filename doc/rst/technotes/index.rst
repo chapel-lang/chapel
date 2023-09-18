@@ -79,6 +79,7 @@ Compiler Features
    Checking for Nil Dereferences <nilChecking>
    Checking Overload Sets <overloadSets>
    Checking Variable Lifetimes <lifetimeChecking>
+   Compiler Driver Mode <driver>
    LLVM Support <llvm>
    Variables to Detect Compilation Configuration <globalvars>
 
