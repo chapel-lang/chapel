@@ -212,6 +212,12 @@ Analogously, const ref may be used instead of c_ptrConst(T).
 c_string
 ~~~~~~~~
 
+.. warning::
+
+  ``c_string`` is deprecated in favor of ``c_ptrConst(c_char)``. See
+  :ref:`c_string deprecation <readme-evolution.c_string-deprecation>` for more
+  information.
+
 The c_string type maps to a constant C string (that is, const char*)
 that is intended for use locally. A c_string can be obtained from a
 Chapel string using the method :proc:`~String.string.c_str`. A Chapel string can be
@@ -220,13 +226,13 @@ because c_string is a local-only type, the .c_str() method can only be
 called on Chapel strings that are stored on the same locale; calling
 .c_str() on a non-local string will result in a runtime error.
 
-.. note::
-
-  ``c_string`` is expected to be deprecated in a future release in favor
-  of instead using ``c_ptr`` types such as ``c_ptrConst(c_char)``.
-
 c_fn_ptr
 ~~~~~~~~
+
+.. warning::
+
+  ``c_fn_ptr`` is unstable and expected to be replaced with more feature-rich
+  functionality in the future.
 
 The c_fn_ptr type is useful for representing arguments to external
 functions that accept function pointers.  At present, there is no way
