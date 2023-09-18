@@ -23,6 +23,8 @@ New Language Features
 
 Language Feature Improvements
 -----------------------------
+* added new routines to create multidimensional arrays from C pointers
+  (see TODO)
 * added promoted casts from array-of-`T` to `T` without a cast from `T` to `T`
 * first-class procedures are now printed similarly to Chapel's syntax
 
@@ -45,6 +47,7 @@ Semantic Changes / Changes to the Chapel Language
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* marked `foreach` loops unstable due to lack of shadowing and `with`-clauses
 * deprecated the `.intIdxType` query on ranges, domains, and arrays  
   (see https://chapel-lang.org/docs/1.32/language/spec/domains.html#ChapelDomain.intIdxType)
 * deprecated the `useNewArrayFind` config param
@@ -131,11 +134,22 @@ Deprecated / Unstable / Removed Library Features
   (see https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.dateTime.toOrdinal et al.)
 * marked `Reflection.getRoutineName()` unstable within first-class procedures
 * removed deprecated `c_sizeof()` signature with formal name `x`
+* removed a `regex.matches()` overload with deprecated arguments
+* removed the deprecated `regex.compile()` type method
+* removed the deprecated `regex.sub()` and `regex.subn()` methods
+* removed the deprecated `[list|unrolledLinkedList].extend()` methods
+* removed the deprecated `OrderedSet` and `OrderedMap` package modules
 
 
 GPU Computing
 -------------
+* significantly improved `array_on_device` performance, making it the default
+  (see TODO)
+* improved the performance of math routines in GPU kernels
 * improved performance when using arrays within kernels
+* started using per-task, per-device streams to enable better overlap
+* CUDA 12 is now supported when using `CHPL_LLVM=bundled`
+  (see TODO?)
 * generated GPU kernels are now named using their source filename/line number
 * added support for multi-arch GPU executables when targeting NVIDIA GPUs
   (see TODO)
@@ -145,6 +159,7 @@ GPU Computing
 Performance Optimizations / Improvements
 ----------------------------------------
 * optimized the performance of aligned array swaps for `Cyclic` and `Stencil`
+* enabled bulk-transfer of Chapel arrays with `c_array` element type
 
 Platform-specific Performance Optimizations / Improvements
 ----------------------------------------------------------
@@ -179,6 +194,8 @@ Generated Executable Flags
 --------------------------
 * added co-locale support to the `-nl`/`--numLocales` flag
   (e.g., `-nl 4x2` means run on 4 nodes with 2 locales per node)
+* unstable `config` variables are now hidden in the `--help` output
+* unstable `config` variables now generate a warning when used on command-line
 
 Portability / Platform-specific Improvements
 --------------------------------------------
@@ -218,6 +235,7 @@ Bug Fixes
 * fixed internal errors when using tuples as formal or return types in FCPs
 * fixed incorrect scoping of variables in `do`...`while` loops' conditions
 * fixed a bug in which FCPs printed incorrectly with JSON serializers
+* fixed a bug when using array type expression actuals within loop bodies
 
 Bug Fixes for Build Issues
 --------------------------
@@ -225,6 +243,8 @@ Bug Fixes for Build Issues
 
 Bug Fixes for GPU Computing
 ---------------------------
+* fixed a bug when accessing `ref`s declared outside of a GPU-eligible loop
+* fixed a bug with `.locale` queries on AMD GPUs or when `--fast` was used
 * fixed an assertion when running GPU programs for AMD w/ `CHPL_DEVELOPER` set
 
 Bug Fixes for Libraries
@@ -281,6 +301,7 @@ Developer-oriented changes: Platform-specific bug fixes
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* added a warning when a line in a `.graph` file is unrecognized
 * removed email capability from `cron` scripts
 
 Developer-oriented changes: Tool Improvements
