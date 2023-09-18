@@ -23,6 +23,8 @@ Language Feature Improvements
 
 Syntactic / Naming Changes
 --------------------------
+* `these` is now reserved as a keyword for use as the default iterator method  
+  (see https://chapel-lang.org/docs/1.32/language/spec/methods.html#the-these-method)
 * renamed `[enter|leave]This()` to `[enter|exit]Context()` for context mgmt  
   (see https://chapel-lang.org/docs/1.32/language/spec/statements.html#the-manage-statement)
 
@@ -45,6 +47,12 @@ Standard Library Modules
 ------------------------
 * added support for casting `bool` values to `bigint`  
   (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.:)
+* added a `compiledForSingleLocale()` query to the `ChplConfig` module  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/ChplConfig.html#ChplConfig.compiledForSingleLocale)
+* began an update to the definition of `dayOfWeek` to use ISO numbering  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.cIsoDayOfWeek)
+* added `date.utcToday` as a UTC version of local-time `date.today`  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.date.utcToday)
 
 Package Modules
 ---------------
@@ -67,9 +75,43 @@ Name Changes in Libraries
 -------------------------
 * renamed `map.addOrSet()` to `map.addOrReplace()`
   (see https://chapel-lang.org/docs/1.32/modules/standard/Map.html#Map.map.addOrReplace)
+* renamed `date.isoCalendar()` to `isoWeekDate()`  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.date.isoWeekDate)
+* replaced `abs(timeDelta)` with a method `timeDelta.abs()`  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.timeDelta.abs)
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
+* deprecated `c_void_ptr` in favor of now-equivalent `c_ptr(void)`  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/CTypes.html#CTypes.c_ptr)
+* deprecated casts from classes to `c_ptr(void)` in favor of `c_ptrTo()`  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/CTypes.html#CTypes.cPtrToLogicalValue)
+* marked `c_fn_ptr` unstable
+  (see https://chapel-lang.org/docs/1.32/technotes/extern.html#c-fn-ptr)
+* deprecated the `day` and `isoDayOfWeek` enums in favor of `dayOfWeek`  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.day)
+* deprecated `MINYEAR`/`MAXYEAR` in favor of `date.[min|max].year`  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.MINYEAR)
+* marked `Timezone` and any `Time` methods using it as unstable  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.Timezone)
+* deprecated `getCurrentDate()` and `getCurrentDayOfWeek()` in `Time`  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.getCurrentDate)
+* marked all `CHPL_*` params in `ChplConfig` as unstable  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/ChplConfig.html#ChplConfig.CHPL_HOME et al.)
+* marked the default 0-argument initializers for `date` and `dateTime` unstable
+* deprecated `date.createFromTimestamp()`  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.date.createFromTimestamp)
+* deprecated `{date,time,dateTime}.isoFormat()` in favor of casts to strings  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.date.:,  
+   https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.time.:,  
+   and https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.dateTime.:)
+* deprecated `dateTime.combine()` in favor of using initializers  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.dateTime.combine  
+   and https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.dateTime.init)
+* deprecated `dateTime.{isoCalendar(), toOrdinal(), weekday(), isoWeekday()}`  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.dateTime.toOrdinal et al.)
+* removed deprecated `c_sizeof()` signature with formal name `x`
+
 
 GPU Computing
 -------------
@@ -90,6 +132,7 @@ Memory Improvements
 
 Tool Improvements
 -----------------
+* made `c2chapel` generate `c_ptr[Const]`s for multidimensional arrays
 
 Language Specification Improvements
 -----------------------------------
@@ -125,6 +168,7 @@ Launchers
 
 Error Messages / Semantic Checks
 --------------------------------
+* simplified error formatting when compiling C code within an `extern` block
 
 Bug Fixes
 ---------
@@ -169,6 +213,8 @@ Developer-oriented changes: Compiler Flags
 
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
+* added an experimental driver mode, enabled using `--compiler-driver`  
+  (see TODO)
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
