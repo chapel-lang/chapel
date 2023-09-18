@@ -15,17 +15,16 @@ Compiler Driver Mode
 The Chapel compiler ``chpl`` currently runs as a single executable responsible
 for compilation, assembly, and linking, with some components done in
 subprocesses depending on which backend is used. By contrast, many compiler
-executables (including ``gcc`` and ``clang``) are actually compiler drivers, a
-smaller driver program which is responsible for processing arguments and
-invoking separate processes for the different components of compilation
-required.
+executables (including ``gcc`` and ``clang``) are actually _compiler drivers_.
+A compiler driver is a smaller program responsible for processing arguments and
+invoking separate processes for the different stages of compilation required.
 
-With release 1.32, the Chapel compiler provides an opt-in experimental compiler
-driver mode that can be used via the ``--compiler-driver`` flag; at some point
-in the future this will become the default mode of operation. The driver
-currently splits work into two phases: phase one, which is responsible for
-everything through code generation (C code or LLVM bitcode), and phase two,
-which is responsible for binary generation (including linking).
+With release 1.32, the Chapel compiler provides an opt-in compiler driver mode
+that can be used via the ``--compiler-driver`` flag. This mode will become the
+default at some point in the future. The driver currently splits work into two
+phases: phase one, which is responsible for everything through code generation
+(C code or LLVM bitcode), and phase two, which is responsible for binary
+generation (including linking).
 
 ---------------------
 Motivation for Driver
