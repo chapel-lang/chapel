@@ -8,7 +8,7 @@ use VisualDebug;
 use BlockDist;
 
 const space =  { 0 .. #numLocales };
-const Dspace = space dmapped blockDist (boundingBox=space);
+const Dspace = blockDist.createDomain(space);
 
 startVdebug("E4");
 
