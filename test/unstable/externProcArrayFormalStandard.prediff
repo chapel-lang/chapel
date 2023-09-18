@@ -1,0 +1,16 @@
+#!/usr/bin/env python3
+
+import sys
+
+TESTNAME=sys.argv[1]
+OUTFILE=sys.argv[2]
+
+hasWarning = False
+with open(OUTFILE, "r") as f:
+  for l in f.readlines():
+    if "warning: using a Chapel array type in an 'extern proc' is unstable and may change in the future" in l:
+      hasWarning = True
+
+if hasWarning:
+  with open(OUTFILE, "w") as f:
+    f.write("unstable warning was thrown\n")
