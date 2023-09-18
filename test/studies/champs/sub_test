@@ -42,7 +42,6 @@ if [ "${CHPL_LLVM}" != "none" ] ; then
   apply_patch $CHAMPS_PATCH_PATH/optional/llvm.patch
 fi
 
-
 # Compile CHAMPS executables
 test_compile prep
 test_compile flow
@@ -69,8 +68,8 @@ test_compile coloring
 # cp $CHAMPS_DATA_PATH/CRMHL_coarse.cgns $CHAMPS_HOME/
 # test_run prep 1
 
-# as a temporary workaround, copy the prepartitoned grid for 16 locales
-cp $CHAMPS_DATA_PATH/CRMHL_coarse_768B.cgns $CHAMPS_HOME/
+# copy the prepartitoned grid for 16 locales into scratch space
+cp $CHAMPS_DATA_PATH/CRMHL_coarse_1152B.cgns $CHAMPS_HOME/
 test_run flow 16
 
 $CHPL_HOME/util/test/genGraphs --configs $CHPL_TEST_PERF_CONFIGS --annotate $CHPL_HOME/test/ANNOTATIONS.yaml --name $CHPL_TEST_PERF_CONFIG_NAME --perfdir $CHPL_TEST_PERF_DIR --outdir $CHPL_TEST_PERF_DIR/html --graphlist $CHAMPS_GRAPH_PATH/GRAPHLIST --testdir $CHAMPS_GRAPH_PATH --alttitle "CHAMPS Performance Graphs"
