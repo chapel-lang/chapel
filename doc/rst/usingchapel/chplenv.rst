@@ -146,6 +146,7 @@ CHPL_HOST_ARCH
         ========  =============================================================
         x86_64    64-bit AMD and Intel processors
         aarch64   64-bit ARM processors
+        arm64     an alternative name for 'aarch64'
         ========  =============================================================
 
    If unset, the default will be computed. The command ``uname -m``
