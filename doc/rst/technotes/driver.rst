@@ -15,7 +15,7 @@ Compiler Driver Mode
 The Chapel compiler ``chpl`` currently runs as a single executable responsible
 for compilation, assembly, and linking, with some components done in
 subprocesses depending on which backend is used. By contrast, many compiler
-executables (including ``gcc`` and ``clang``) are actually _compiler drivers_.
+executables (including ``gcc`` and ``clang``) are actually `compiler drivers`.
 A compiler driver is a smaller program responsible for processing arguments and
 invoking separate processes for the different stages of compilation required.
 
