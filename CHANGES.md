@@ -11,6 +11,7 @@ Highlights (see subsequent sections for further details)
 
 Configuration / Build / Packaging Changes
 -----------------------------------------
+* improved the equivalence of `arm64` and `aarch64` in our scripting
 
 New Language Features
 ---------------------
@@ -140,6 +141,8 @@ Language Specification Improvements
 Other Documentation Improvements
 --------------------------------
 * fixed warnings in 'Map' that incorrectly referred to the `set` type
+* updated docs to mention `arm64` as a synonym for `aarch64`  
+  (see TODO)
 
 Example Codes
 -------------
