@@ -5,7 +5,7 @@ class ParentCallInIf {
     if (val > 10) {
       f1 = val;
     } else {
-      this.complete();
+      init this;
       f1 = -val;
       f1 += 3;
       // Because the conditional is param, this section will know it is in Phase

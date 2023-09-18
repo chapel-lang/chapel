@@ -185,6 +185,8 @@ PRAGMA(DEFAULT_INTENT_IS_REF_MAYBE_CONST, ypr,
        "The default intent for this type is ref if modified const "
        "ref otherwise")
 
+PRAGMA(NO_PROMOTION_WHEN_BY_REF, ypr, "no promotion when by ref", ncm)
+
 PRAGMA(COPY_INIT, npr, "copy initializer", ncm)
 PRAGMA(DEFAULT_INIT, npr, "default initializer", ncm)
 PRAGMA(DESTRUCTOR, npr,
@@ -303,6 +305,7 @@ PRAGMA(INFER_CUSTOM_TYPE, ypr, "infer custom type", ncm)
 PRAGMA(MANAGER_HANDLE, npr, "manager handle", ncm)
 PRAGMA(MANAGER_RESOURCE_INFER_STORAGE, npr, "manager resource infer storage", ncm)
 
+PRAGMA(IFC_ANY_RETURN_INTENT, ypr, "ifc any return intent", "allow a function with any return intent to be a witness for this interface requirement")
 // This can also mark a temp that serves as an intermediate step of
 // destructuring a tuple-typed INDEX_OF_INTEREST variable
 // into loop index variables.
@@ -373,6 +376,7 @@ PRAGMA(LOOP_BODY_ARGUMENT_CLASS, npr, "loop body argument class", ncm)
 PRAGMA(MANAGED_POINTER, ypr, "managed pointer", "e.g. Owned and Shared")
 PRAGMA(MANAGED_POINTER_NONNILABLE, npr, "managed pointer nonnilable", "e.g. non-nilable Owned and Shared")
 PRAGMA(MARKED_GENERIC, npr, "marked generic", "marked generic using the type query syntax")
+PRAGMA(RET_TYPE_MARKED_GENERIC, npr, "ret type marked generic", "ret type marked generic with (?)")
 PRAGMA(SUPERCLASS_MARKED_GENERIC, npr, "supreclass marked generic", "superclass is marked generic")
 PRAGMA(MAYBE_ARRAY_TYPE, npr, "maybe array type", "function may be computing array type")
 PRAGMA(MAYBE_COPY_ELIDED, npr, "maybe copy elided", "symbol might be dead early due to copy elision")

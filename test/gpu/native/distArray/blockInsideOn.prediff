@@ -1,0 +1,11 @@
+#!/bin/sh 
+
+TESTNAME=$1
+OUTFILE=$2
+TMPFILE=$OUTFILE.prediff.tmp
+
+# filter the launch numbers since it is different for um and aod
+sed -E 's/Unexpected GPU Diagnostic: observed [0-9]+ launches instead of [0-9]+/Unexpected GPU Diagnostic: observed n launches instead of m/' < $OUTFILE > $TMPFILE
+cat $TMPFILE > $OUTFILE
+
+rm $TMPFILE

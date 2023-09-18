@@ -98,8 +98,8 @@ config const useOnVerify = true;
 // distribution that is computed by blocking the indices 0..N_U-1
 // across the locales.
 //
-const TableDist = new Block(boundingBox={0..m-1}),
-      UpdateDist = new Block(boundingBox={0..N_U-1});
+const TableDist = new blockDist(boundingBox={0..m-1}),
+      UpdateDist = new blockDist(boundingBox={0..N_U-1});
 
 //
 // TableSpace describes the index set for the table.  It is a 1D
@@ -130,7 +130,7 @@ proc main() {
   // contains its index.  "[i in TableSpace]" is shorthand for "forall
   // i in TableSpace"
   //
-  [i in TableSpace] T[i] = i;
+  [i in TableSpace with (ref T)] T[i] = i;
 
   const startTime = timeSinceEpoch().totalSeconds();              // capture the start time
 
@@ -147,11 +147,11 @@ proc main() {
   // index and as the update value.
   //
   if (useOn) then
-    forall (_, r) in zip(Updates, RAStream()) do
+    forall (_, r) in zip(Updates, RAStream()) with (ref T) do
       on T[r & indexMask] do
         T.localAccess[r & indexMask] ^= r;
   else
-    forall (_, r) in zip(Updates, RAStream()) do
+    forall (_, r) in zip(Updates, RAStream()) with (ref T) do
       T[r & indexMask] ^= r;
 
   const execTime = timeSinceEpoch().totalSeconds() - startTime;   // capture the elapsed time
@@ -207,14 +207,14 @@ proc verifyResults(ref T) {
   // with that table element, but not always.
   //
   if (useOnVerify) then
-    forall (_, r) in zip(Updates, RAStream()) do
+    forall (_, r) in zip(Updates, RAStream()) with (ref T, ref locks) do
       on T[r & indexMask] {
         locks[r & lockIndexMask].lock();
         T[r & indexMask] ^= r;
         locks[r & lockIndexMask].unlock();
       }
   else
-    forall (_, r) in zip(Updates, RAStream()) do {
+    forall (_, r) in zip(Updates, RAStream()) with (ref T, ref locks) do {
       locks[r & lockIndexMask].lock();
       T[r & indexMask] ^= r;
       locks[r & lockIndexMask].unlock();

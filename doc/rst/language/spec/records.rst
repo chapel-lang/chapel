@@ -141,9 +141,9 @@ A record method is a function or iterator that is bound to a record. See
 the methods section :ref:`Chapter-Methods` for more information
 about methods.
 
-Note that the receiver of a record method is passed by ``ref`` or
-``const ref`` intent by default, depending on whether or not ``this`` is
-modified in the body of the method.
+The receiver of a record method is passed by ``const`` intent by default.
+A method that modifies ``this`` must declare an explicit ``this-intent`` of
+``ref``, see :ref:`Method_receiver_and_this`.
 
 .. _Nested_Record_Types:
 
@@ -751,12 +751,9 @@ Assignment of a record to a class variable is not permitted.
 Arguments
 ~~~~~~~~~
 
-Record arguments use the ``const ref`` intent by default - in contrast
-to class arguments which pass by ``const in`` intent by default.
-
-Similarly, the ``this`` receiver argument is passed by ``const in`` by
-default for class methods. In contrast, it is passed by ``ref`` or
-``const ref`` by default for record methods.
+Record arguments use the ``const`` abstract intent by default.
+Similarly, the ``this`` receiver argument is passed by ``const`` by default.
+See :ref:`The_Default_Intent` and :ref:`Method_receiver_and_this`.
 
 No *nil* Value
 ~~~~~~~~~~~~~~

@@ -4,7 +4,7 @@
    1  oversubscribing Locales(0)
    1  setupLocales 2*2
    2  
-   2  new DimensionalDist2D()
+   2  new dimensionalDist2D()
    3  
    3  wrapping ddf in dmap
    4  

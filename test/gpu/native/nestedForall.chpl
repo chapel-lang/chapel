@@ -14,7 +14,7 @@ on here.gpus[0] {
   writeln(A);
   var B: [1..10, 1..10] real;
   @assertOnGpu
-  forall (i,j) in {1..10, 1..10} {
+  forall (i,j) in {1..10, 1..10} with (ref B) {
     B(i,j) = i + j;
   }
   writeln(B);

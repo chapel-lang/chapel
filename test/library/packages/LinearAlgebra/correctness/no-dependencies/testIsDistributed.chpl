@@ -4,7 +4,7 @@ use BlockDist;
 use LayoutCS;
 
 
-var distArr = Block.createArray({1..10}, int);
+var distArr = blockDist.createArray({1..10}, int);
 var sliceOfDist = distArr[1..8];
 var locArr: [1..8] int;
 
@@ -18,7 +18,7 @@ var locSparseArrCSR: [locSparseDomCSR] int;
 var distSparseDom: sparse subdomain(distArr.domain);
 var distSparseArr: [distSparseDom] int;
 
-var distCSRBlock = {1..10, 1..10} dmapped Block({1..10, 1..10}, sparseLayoutType=CS);
+var distCSRBlock = {1..10, 1..10} dmapped blockDist({1..10, 1..10}, sparseLayoutType=CS);
 var distSparseArrCSR: [distCSRBlock] int;
 
 assert(isDistributed(distArr) == true);

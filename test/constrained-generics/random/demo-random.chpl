@@ -86,7 +86,7 @@ if && reduce (A1 == A2) then writeln("fillRandom() check passed");
 
 /////////////////////////////////
 
-proc PCGRandomStream.startCursor(D: domain) {
+proc PCGRandomStream.startCursor(D: domain(?)) {
   type resultType = eltType;
   _lock();
   const start = PCGRandomStreamPrivate_count;

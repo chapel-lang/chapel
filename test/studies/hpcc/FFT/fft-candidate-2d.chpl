@@ -166,7 +166,7 @@ proc computeTwiddles(ref Twiddles) {
   Twiddles(0) = 1.0;
   Twiddles(numTwdls/2) = let x = cos(delta * numTwdls/2)
                           in (x, x):complex;
-  forall i in 1..numTwdls/2-1 {
+  forall i in 1..numTwdls/2-1 with (ref Twiddles) {
     const x = cos(delta*i),
           y = sin(delta*i);
     Twiddles(i)            = (x, y):complex;

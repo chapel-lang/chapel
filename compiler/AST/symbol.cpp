@@ -1735,27 +1735,17 @@ VarSymbol *new_CStringSymbol(const char *str) {
   return s;
 }
 
-VarSymbol* new_BoolSymbol(bool b, IF1_bool_type size) {
-  Immediate imm;
-  switch (size) {
-  default:
-    INT_FATAL( "unknown BOOL_SIZE");
 
-  case BOOL_SIZE_SYS:
-  case BOOL_SIZE_8  :
-  case BOOL_SIZE_16 :
-  case BOOL_SIZE_32 :
-  case BOOL_SIZE_64 :
-    break;
-  }
+VarSymbol* new_BoolSymbol(bool b) {
+  Immediate imm;
   imm.v_bool = b;
   imm.const_kind = NUM_KIND_BOOL;
-  imm.num_index = size;
+  imm.num_index = BOOL_SIZE_SYS;
   VarSymbol *s;
   // doesn't use uniqueConstantsHash because new_BoolSymbol is only
   // called to initialize dtBools[i]->defaultValue.
   // gTrue and gFalse are set up directly in initPrimitiveTypes.
-  PrimitiveType* dtRetType = dtBools[size];
+  PrimitiveType* dtRetType = dtBool;
   s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
   rootModule->block->insertAtTail(new DefExpr(s));
   s->immediate = new Immediate;
@@ -1970,7 +1960,7 @@ immediate_type(Immediate *imm) {
       }
     }
     case NUM_KIND_BOOL:
-      return dtBools[imm->num_index];
+      return dtBool;
     case NUM_KIND_UINT:
       return dtUInt[imm->num_index];
     case NUM_KIND_INT:
@@ -2108,6 +2098,7 @@ const char* astrPostinit = NULL;
 const char* astrBuildTuple = NULL;
 const char* astrTag = NULL;
 const char* astrThis = NULL;
+const char* astrThese = NULL;
 const char* astrSuper = NULL;
 const char* astr_chpl_cname = NULL;
 const char* astr_chpl_forward_tgt = NULL;
@@ -2149,6 +2140,7 @@ void initAstrConsts() {
   astrBuildTuple = astr("_build_tuple");
   astrTag     = astr("tag");
   astrThis    = astr("this");
+  astrThese   = astr("these");
   astrSuper   = astr("super");
   astr_chpl_cname = astr("_chpl_cname");
   astr_chpl_forward_tgt = astr("_chpl_forward_tgt");

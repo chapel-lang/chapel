@@ -7,12 +7,12 @@ config const n = here.maxTaskPar*2;
 startGpuDiagnostics();
 
 var space = {1..n};
-var dom = space dmapped Block(space, targetLocales=[here.gpus[0],]);
+var dom = space dmapped blockDist(space, targetLocales=[here.gpus[0],]);
 var arr: [dom] int;
 
 ref data = arr._value.myLocArr!.myElems;
 
-forall i in dom do
+forall i in dom with (ref data) do
   data[i] = 1;
 
 stopGpuDiagnostics();

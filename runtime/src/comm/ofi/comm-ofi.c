@@ -102,11 +102,11 @@ int chpl_comm_ofi_abort_on_error;
 //
 
 //
-// This is used to check that the libfabric version the runtime is
-// linked with in a user program is the same one it was compiled
-// against.
+// This is used as the API version to request in fi_getinfo(). We don't support
+// versions older than this and requesting an older version allows using
+// different versions at build and user compile time.
 //
-#define COMM_OFI_FI_VERSION FI_VERSION(FI_MAJOR_VERSION, FI_MINOR_VERSION)
+#define COMM_OFI_FI_VERSION FI_VERSION(1, 9)
 
 
 ////////////////////////////////////////
@@ -991,20 +991,6 @@ static chpl_bool mrGetKey(uint64_t*, uint64_t*, int, void*, size_t);
 static chpl_bool mrGetLocalKey(void*, size_t);
 static chpl_bool mrGetDesc(void**, void*, size_t);
 
-void chpl_comm_pre_topo_init(void) {
-  chpl_comm_ofi_abort_on_error =
-    (chpl_env_rt_get("COMM_OFI_ABORT_ON_ERROR", NULL) != NULL);
-  time_init();
-  chpl_comm_ofi_oob_init();
-  DBG_INIT();
-  int32_t rank;
-  int32_t count = chpl_comm_ofi_oob_locales_on_node(&rank);
-  chpl_set_num_locales_on_node(count);
-  if (rank != -1) {
-    chpl_set_local_rank(rank);
-  }
-}
-
 void chpl_comm_init(int *argc_p, char ***argv_p) {
   //
   // Gather run-invariant environment info as early as possible.
@@ -1046,6 +1032,18 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
     }
   }
 
+  chpl_comm_ofi_abort_on_error =
+    (chpl_env_rt_get("COMM_OFI_ABORT_ON_ERROR", NULL) != NULL);
+  time_init();
+  chpl_comm_ofi_oob_init();
+  DBG_INIT();
+  int32_t rank;
+  int32_t count = chpl_comm_ofi_oob_locales_on_node(&rank);
+  chpl_set_num_locales_on_node(count);
+  if (rank != -1) {
+    chpl_set_local_rank(rank);
+  }
+
   pthread_that_inited = pthread_self();
 }
 
@@ -1053,8 +1051,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 void chpl_comm_pre_mem_init(void) {
   //
   // Reserve cores for the AM handlers. This is done here because it has to
-  // happen after chpl_topo_init has been called, but before other functions
-  // access information about the cores, such as pinning the heap.
+  // happen after the topology layer has been initialized, but before other
+  // functions access information about the cores, such as pinning the heap.
   //
   init_ofiReserveCores();
 }

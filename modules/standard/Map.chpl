@@ -43,14 +43,14 @@ module Map {
 
   @chpldoc.nodoc
   class _LockWrapper {
-    var lock$ = new _lockType();
+    var lockVar = new _lockType();
 
     inline proc lock() {
-      lock$.lock();
+      lockVar.lock();
     }
 
     inline proc unlock() {
-      lock$.unlock();
+      lockVar.unlock();
     }
   }
 
@@ -73,7 +73,7 @@ module Map {
     }
   }
 
-  record map {
+  record map : serializable {
     /* Type of map keys. */
     type keyType;
     /* Type of map values. */
@@ -102,18 +102,18 @@ module Map {
     var table: chpl__hashtable(keyType, valType);
 
     @chpldoc.nodoc
-    var _lock$ = if parSafe then new _LockWrapper() else none;
+    var _lock = if parSafe then new _LockWrapper() else none;
 
     @chpldoc.nodoc
     inline proc _enter() {
       if parSafe then
-        _lock$.lock();
+        _lock.lock();
     }
 
     @chpldoc.nodoc
     inline proc _leave() {
       if parSafe then
-        _lock$.unlock();
+        _lock.unlock();
     }
 
 
@@ -202,7 +202,7 @@ module Map {
       this.resizeThreshold = other.resizeThreshold;
       this.table = new chpl__hashtable(keyType, valType,
                                        resizeThreshold);
-      this.complete();
+      init this;
 
       if keyType != kt {
         compilerError('cannot initialize ', this.type:string, ' from ',
@@ -633,21 +633,22 @@ module Map {
     }
 
     @chpldoc.nodoc
-    proc ref _readHelper(r: fileReader, ref des) throws {
+    proc ref _readHelper(r: fileReader, ref deserializer) throws {
+      if deserializer.type == defaultDeserializer &&
+         (keyType == string || valType == string ||
+          keyType == bytes || valType == bytes) then
+        compilerError("Default IO format for 'map' does not support reading when the key or value type is  'string' or 'bytes'.");
+
       _enter(); defer _leave();
 
-      des.startMap(r);
+      var des = deserializer.startMap(r);
 
       var done = false;
-      while !done {
-        try {
-          add(des.readKey(r, keyType), des.readValue(r, valType));
-        } catch e: BadFormatError {
-          done = true;
-        }
+      while des.hasMore() {
+        add(des.readKey(keyType), des.readValue(valType));
       }
 
-      des.endMap(r);
+      des.endMap();
     }
 
     @chpldoc.nodoc
@@ -717,18 +718,17 @@ module Map {
     proc serialize(writer: fileWriter(?), ref serializer) throws {
       _enter(); defer _leave();
 
-      ref ser = serializer;
-      ser.startMap(writer, _size);
+      var ser = serializer.startMap(writer, _size);
 
       for slot in table.allSlots() {
         if table.isSlotFull(slot) {
           ref tabEntry = table.table[slot];
-          ser.writeKey(writer, tabEntry.key);
-          ser.writeValue(writer, tabEntry.val);
+          ser.writeKey(tabEntry.key);
+          ser.writeValue(tabEntry.val);
         }
       }
 
-      ser.endMap(writer);
+      ser.endMap();
     }
 
     @chpldoc.nodoc

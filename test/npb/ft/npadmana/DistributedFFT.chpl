@@ -95,7 +95,7 @@ prototype module DistributedFFT {
     // Mimic the advanced interface
     proc init(param ftType : FFTtype, args ...?k) {
       this.ftType = ftType;
-      this.complete();
+      init this;
       plannerLock.lock();
       select ftType {
         when FFTtype.DFT do plan = fftw_plan_many_dft((...args));
@@ -147,10 +147,10 @@ prototype module DistributedFFT {
 
       :returns: Returns a slab-distributed domain.
   */
-  proc newSlabDom(dom: domain) where dom.isRectangular() {
+  proc newSlabDom(dom: domain(?)) where dom.isRectangular() {
     if dom.rank != 3 then compilerError("The domain must be 3D");
     const targetLocales = reshape(Locales, {0.. #numLocales, 0..0, 0..0});
-    return dom dmapped Block(boundingBox=dom, targetLocales=targetLocales);
+    return dom dmapped blockDist(boundingBox=dom, targetLocales=targetLocales);
   }
 
   /*
@@ -286,7 +286,7 @@ prototype module DistributedFFT {
       var myplane : [{0..0, ySrc, zSrc}] T;
 
       if usePrimitiveComm {
-        forall iy in ySrc {
+        forall iy in ySrc with (ref myplane) {
           copy(myplane[0, iy, zSrc.first], Src[xSrc.first, iy, zSrc.first], myLineSize);
         }
       } else {
@@ -296,14 +296,14 @@ prototype module DistributedFFT {
       for ix in xSrc {
         // Y-transform
         timeTrack.start();
-        forall (plan, myzRange) in yPlan.batch() {
+        forall (plan, myzRange) in yPlan.batch() with (ref myplane) {
           plan.execute(myplane[0, ySrc.first, myzRange.first]);
         }
         timeTrack.stop(TimeStages.Y);
 
         // Z-transform, offset to reduce comm congestion/collision
         timeTrack.start();
-        forall iy in offset(ySrc) {
+        forall iy in offset(ySrc) with (ref Dst, ref myplane) {
           zPlan.execute(myplane[0, iy, zSrc.first]);
           // Transpose data into Dst, and copy the next Src slice into myplane
           if usePrimitiveComm {
@@ -327,7 +327,7 @@ prototype module DistributedFFT {
 
       // X-transform
       timeTrack.start();
-      forall (plan, myzRange) in xPlan.batch() {
+      forall (plan, myzRange) in xPlan.batch() with (ref Dst) {
         for iy in yDst {
           plan.execute(Dst[iy, xDst.first, myzRange.first]);
         }
@@ -359,10 +359,13 @@ prototype module DistributedFFT {
       Note that both ``dst`` and ``src`` cannot be remote.
   */
   proc copy(ref dst, const ref src, numBytes: int) {
+    use Communication;
+    const dstLocaleId = dst.locale.id;
+    const srcLocaleId = src.locale.id;
     if dst.locale.id == here.id {
-      __primitive("chpl_comm_get", dst, src.locale.id, src, numBytes.safeCast(c_size_t));
+      get(c_ptrTo(dst), c_ptrToConst(src), srcLocaleId, numBytes.safeCast(c_size_t));
     } else if src.locale.id == here.id {
-      __primitive("chpl_comm_put", src, dst.locale.id, dst, numBytes.safeCast(c_size_t));
+      put(c_ptrTo(dst), c_ptrToConst(src), dstLocaleId, numBytes.safeCast(c_size_t));
     } else {
       halt("Remote src and remote dst not yet supported");
     }

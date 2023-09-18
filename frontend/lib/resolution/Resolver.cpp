@@ -2544,8 +2544,20 @@ static void maybeEmitWarningsForId(Resolver* rv, QualifiedType qt,
   // TODO: We can skip all parenless functions using the below check, but
   // I'm not sure we can write something similar for functions, since it's
   // possible for function names to appear in other places besides calls.
-  if (qt.kind() != QualifiedType::PARENLESS_FUNCTION &&
-      !isCalledExpression(rv, astMention)) {
+
+  if (qt.kind() == QualifiedType::PARENLESS_FUNCTION) return;
+
+  bool emitUnstableAndDeprecationWarnings = true;
+  if (isCalledExpression(rv, astMention)) {
+    // For functions, do not warn, since call resolution will take
+    // care of that.  However, if we're referring to other symbol
+    // kinds, we know right now that a deprecation warning should be
+    // emitted.
+    emitUnstableAndDeprecationWarnings =
+      !asttags::isFunction(parsing::idToTag(rv->context, idTarget));
+  }
+
+  if (emitUnstableAndDeprecationWarnings) {
     ID idMention = astMention->id();
     Context* context = rv->context;
     parsing::reportDeprecationWarningForId(context, idMention, idTarget);
@@ -2719,6 +2731,16 @@ bool Resolver::enter(const Identifier* ident) {
 }
 
 void Resolver::exit(const Identifier* ident) {
+}
+
+bool Resolver::enter(const uast::Init* init) {
+  return true;
+}
+
+void Resolver::exit(const uast::Init* init) {
+  if (initResolver) {
+    std::ignore = initResolver->handleInitStatement(init);
+  }
 }
 
 bool Resolver::enter(const TypeQuery* tq) {
@@ -3085,12 +3107,12 @@ types::QualifiedType Resolver::typeForBooleanOp(const uast::OpCall* op) {
       // this case is only hit when the result is false (for &&)
       // or when the result is true (for ||), so return !isAnd.
       return QualifiedType(QualifiedType::PARAM,
-                             BoolType::get(context, 0),
+                             BoolType::get(context),
                              BoolParam::get(context, !isAnd));
     } else {
       // otherwise just return a Bool value
       return QualifiedType(QualifiedType::CONST_VAR,
-                             BoolType::get(context, 0));
+                             BoolType::get(context));
     }
   }
 }
@@ -3135,7 +3157,7 @@ QualifiedType Resolver::typeForTypeOperator(const OpCall* op,
     bool opNotEqual = op->op() == USTR("!=");
     bool compareResult = lt == rt;
     return QualifiedType(QualifiedType::PARAM,
-                         BoolType::get(context, 0),
+                         BoolType::get(context),
                          BoolParam::get(context, opNotEqual ^ compareResult));
   }
   CHPL_ASSERT(false && "not implemented!");

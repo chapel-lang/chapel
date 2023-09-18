@@ -223,7 +223,7 @@ module DistributedBag {
     the data structure for maximized performance.
   */
   pragma "always RVF"
-  record DistBag {
+  record DistBag : serializable {
     type eltType;
 
     // This is unused, and merely for documentation purposes. See '_value'.
@@ -260,6 +260,10 @@ module DistributedBag {
     proc readThis(f) throws {
       compilerError("Reading a DistBag is not supported");
     }
+    @chpldoc.nodoc
+    proc deserialize(reader, ref deserializer) throws {
+      compilerError("Reading a DistBag is not supported");
+    }
 
     @chpldoc.nodoc
     proc init(type eltType, reader: fileReader, ref deserializer) {
@@ -276,6 +280,10 @@ module DistributedBag {
         if iteration < size-1 then ch.write(", ");
       }
       ch.write("]");
+    }
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
 
     forwarding _value;
@@ -302,7 +310,7 @@ module DistributedBag {
       this.targetLocDom  = targetLocDom;
       this.targetLocales = targetLocales;
 
-      complete();
+      init this;
 
       this.pid           = _newPrivatizedClass(this);
       this.bag           = new unmanaged Bag(eltType, this);
@@ -316,7 +324,7 @@ module DistributedBag {
       this.targetLocales = other.targetLocales;
       this.pid           = pid;
 
-      complete();
+      init this;
 
       this.bag           = new unmanaged Bag(eltType, this);
     }

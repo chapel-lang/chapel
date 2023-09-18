@@ -33,7 +33,7 @@ proc main() {
 
   do {
     // compute next approximation using Jacobi method and store in XNew
-    forall ij in ProblemSpace do
+    forall ij in ProblemSpace with (ref XNew) do
       XNew(ij) = (X(ij+north) + X(ij+south) + X(ij+east) + X(ij+west)) / 4.0;
 
     // compute difference between next and current approximations

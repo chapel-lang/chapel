@@ -1,0 +1,4 @@
+#!/bin/bash
+
+sed "s/packageModules.chpl:[0-9]*:/packageModules.chpl:XX:/" $2 > $2.prediffed
+mv $2.prediffed $2

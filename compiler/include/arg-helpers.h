@@ -38,11 +38,6 @@
 // in chpldoc; though ideally the common implementation would be shared
 // rather than duplicated.
 
-typedef __uint8_t uint8_t;
-typedef __uint16_t uint16_t;
-typedef __uint32_t uint32_t;
-typedef __uint64_t uint64_t;
-
 bool startsWith(const char* str, const char* prefix);
 void clean_exit(int status);
 std::string findProgramPath(const char* argv0, void* mainAddr);

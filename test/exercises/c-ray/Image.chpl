@@ -1,4 +1,4 @@
-// Allow access to stderr, stdout, ioMode, divceil
+// Allow access to stderr, stdout, ioMode, divCeil
 private use IO, Math;
 
 //
@@ -111,7 +111,7 @@ proc writeImageBMP(outfile, pixels) {
         bitsPerPixel = numColors*bitsPerColor,
 
         // row size in bytes. Pad each row out to 4 bytes.
-        rowQuads = divceil(bitsPerPixel * cols, 32),
+        rowQuads = divCeil(bitsPerPixel * cols, 32),
         rowSize = 4 * rowQuads,
         rowSizeBits = 8 * rowSize,
 

@@ -62,6 +62,8 @@ char fortranModulename[FILENAME_MAX + 1]  = "";
 char pythonModulename[FILENAME_MAX + 1]   = "";
 char saveCDir[FILENAME_MAX + 1]           = "";
 
+const char* additionalFilenamesListFilename = "additionalSourceFiles.tmp";
+
 std::string ccflags;
 std::string ldflags;
 bool ccwarnings = false;
@@ -69,9 +71,11 @@ bool ccwarnings = false;
 std::vector<const char*>   incDirs;
 std::vector<const char*>   libDirs;
 std::vector<const char*>   libFiles;
+static const char* incDirsFilename = "incDirs.tmp";
+static const char* libDirsFilename = "libDirs.tmp";
+static const char* libFilesFilename = "libFiles.tmp";
 
-// directory for intermediates; tmpdir or saveCDir
-static const char* intDirName        = NULL;
+const char* intDirName = NULL;
 
 static void addPath(const char* pathVar, std::vector<const char*>* pathvec) {
   char* dirString = strdup(pathVar);
@@ -91,28 +95,106 @@ static void addPath(const char* pathVar, std::vector<const char*>* pathvec) {
   } while (colon != NULL);
 }
 
+static void appendLineToTmpFile(const char* str, const char* filename) {
+  fileinfo* file = openTmpFile(filename, "a");
+  fprintf(file->fptr, "%s\n", str);
+  closefile(file);
+}
+
 //
 // Convert a libString of the form "foo:bar:baz" to entries in libDirs
 //
 void addLibPath(const char* libString) {
   addPath(libString, &libDirs);
+
+  if (fDriverPhaseOne) {
+    appendLineToTmpFile(libString, libDirsFilename);
+  }
 }
 
 void addLibFile(const char* libFile) {
   // use astr() to get a copy of the string that this vector can own
   libFiles.push_back(astr(libFile));
+
+  if (fDriverPhaseOne) {
+    appendLineToTmpFile(libFile, libFilesFilename);
+  }
 }
 
 void addIncInfo(const char* incDir) {
   addPath(incDir, &incDirs);
+
+  if (fDriverPhaseOne) {
+    appendLineToTmpFile(incDir, incDirsFilename);
+  }
 }
 
-void ensureDirExists(const char* dirname, const char* explanation) {
+// Helper function to feed tmp file lines into a storage/processing function.
+// Used for deserializing library dir, library name, and include dir info for
+// driver.
+static void restoreLinesFromTmp(const char* tmpFileName,
+                               void (*restoreFunc)(const char*)) {
+  // Create file iff it did not already exist, for simpler reading logic in the
+  // rest of the function.
+  fileinfo* tmpFileDummy = openTmpFile(tmpFileName, "a");
+  closefile(tmpFileDummy);
+
+  fileinfo* tmpFile = openTmpFile(tmpFileName, "r");
+
+  char strBuf[4096];
+  while (fgets(strBuf, sizeof(strBuf), tmpFile->fptr)) {
+    // remove trailing newline from fgets
+    // using strlen here is fine because fgets guarantees null termination
+    size_t len = strlen(strBuf);
+    assert(strBuf[len-1] == '\n' && "stored line exceeds maximum length");
+    strBuf[--len] = '\0';
+
+    // invoke restoring function
+    (*restoreFunc)(strBuf);
+  }
+
+  closefile(tmpFile);
+}
+
+void restoreLibraryAndIncludeInfo() {
+  INT_ASSERT(
+      fDriverPhaseTwo &&
+      "should only be restoring library and include info in driver phase two");
+  assert(libDirs.empty() && libFiles.empty() && incDirs.empty() &&
+         "tried to restore library and include info from disk, but it was "
+         "already present in memory");
+
+  restoreLinesFromTmp(libDirsFilename, &addLibPath);
+  restoreLinesFromTmp(libFilesFilename, &addLibFile);
+  restoreLinesFromTmp(incDirsFilename, &addIncInfo);
+}
+
+void restoreAdditionalSourceFiles() {
+  INT_ASSERT(fDriverPhaseTwo &&
+             "should only be restoring filenames in driver phase two");
+  fileinfo* additionalFilenamesList =
+      openTmpFile(additionalFilenamesListFilename, "r");
+  char filename[FILENAME_MAX + 1];
+  while (fgets(filename, sizeof(filename), additionalFilenamesList->fptr)) {
+    // strip trailing newline from filename
+    filename[strcspn(filename, "\n")] = '\0';
+    addSourceFile(filename, NULL);
+  }
+  closefile(additionalFilenamesList);
+}
+
+void ensureDirExists(const char* dirname, const char* explanation,
+                     bool checkWriteable) {
   // forward to chpl::ensureDirExists(), check for errors, and report them
   std::string dirName = std::string(dirname);
   if (auto err = chpl::ensureDirExists(dirName)) {
     USR_FATAL("creating directory %s failed: %s\n", dirname,
                    err.message().c_str());
+  }
+
+  // check writeability if we need it
+  if (checkWriteable && !chpl::isPathWriteable(dirName)) {
+    USR_FATAL("write permission denied for directory %s", dirname);
   }
 }
 
@@ -124,18 +206,17 @@ static const char* makeTempDir() {
 }
 
 void ensureTmpDirExists() {
-  if (saveCDir[0] == '\0') {
-    if (intDirName == NULL) {
-      intDirName = makeTempDir();
-    }
-  } else {
-    if (intDirName != saveCDir) {
-      intDirName = saveCDir;
-      ensureDirExists(saveCDir, "ensuring --savec directory exists");
-      if (0 != strcmp(makeTempDir(), saveCDir)) {
-        // expected gContext to have been constructed with saveCDir
-        INT_FATAL("misconfiguration with temp dir");
-      }
+  // create int dir if not done already
+  if (!intDirName) {
+    intDirName = makeTempDir();
+  }
+  // ensure intermediates dir is the same as savec dir if the latter exists
+  if (saveCDir[0] && intDirName != saveCDir) {
+    intDirName = saveCDir;
+    ensureDirExists(saveCDir, "ensuring --savec directory exists");
+    if (0 != strcmp(makeTempDir(), saveCDir)) {
+      // expected gContext to have been constructed with saveCDir
+      INT_FATAL("misconfiguration with temp dir");
     }
   }
 }
@@ -337,6 +418,10 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
   numInputFiles += numNewFilenames;
   inputFilenames = (const char**)realloc(inputFilenames,
                                          (numInputFiles+1)*sizeof(char*));
+  fileinfo* additionalFilenamesList = NULL;
+  if (fDriverPhaseOne) {
+    additionalFilenamesList = openTmpFile(additionalFilenamesListFilename, "a");
+  }
 
   for (int i = 0; i < numNewFilenames; i++) {
     if (!isRecognizedSource(filename[i])) {
@@ -368,10 +453,19 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
     if (duplicate) {
       numInputFiles--;
     } else {
+      // add file
       inputFilenames[cursor++] = newFilename;
+      if (additionalFilenamesList) {
+        // also save to file for use in driver phase two later
+        fprintf(additionalFilenamesList->fptr, "%s\n", newFilename);
+      }
     }
   }
   inputFilenames[cursor] = NULL;
+
+  if (additionalFilenamesList) {
+    closefile(additionalFilenamesList);
+  }
 }
 
 void assertSourceFilesFound() {

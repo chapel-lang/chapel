@@ -59,13 +59,13 @@ proc simpleDistMultiply(
     }
 
     // do local matrix-multiply
-    forall (locRow, locCol) in localesDom do on myLocales[locRow,locCol] {
+    forall (locRow, locCol) in localesDom with (ref C, ref colCopies, ref rowCopies) do on myLocales[locRow,locCol] {
         ref localA = rowCopies[locRow,locCol].data;
         ref localB = colCopies[locRow,locCol].data;
         ref localC = C[locRow,locCol].data;
 
-        forall i in localC.domain.dim(0) {
-            forall j in localC.domain.dim(1) {
+        forall i in localC.domain.dim(0) with (ref localC) {
+            forall j in localC.domain.dim(1) with (ref localC) {
                 for k in localA.domain.dim(1) {
                     localC[i,j] += localA[i,k] * localB[k,j];
                 }
@@ -97,7 +97,7 @@ proc main() {
     var A : [myLocales.domain] WrappedArray;
     var B : [myLocales.domain] WrappedArray;
     var C : [myLocales.domain] WrappedArray;
-    forall (i,j) in myLocales.domain do on myLocales[i,j] {
+    forall (i,j) in myLocales.domain with (ref A, ref B, ref C) do on myLocales[i,j] {
         cobegin with (ref A, ref B, ref C) {
             A[i,j] = new WrappedArray(
                 (i-1)*blkSize+1, (j-1)*blkSize+1, blkSize, blkSize);
@@ -107,7 +107,7 @@ proc main() {
                 (i-1)*blkSize+1, (j-1)*blkSize+1, blkSize, blkSize);
         }
 
-        forall (locRow, locCol) in A[i,j].dom {
+        forall (locRow, locCol) in A[i,j].dom with (ref A, ref B) {
             cobegin with (ref A, ref B) {
                 A[i,j][locRow, locCol] = locRow + locCol;
                 B[i,j][locRow, locCol] = locRow * locCol;

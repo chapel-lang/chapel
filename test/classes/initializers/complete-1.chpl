@@ -7,7 +7,7 @@ class MyClass {
 
     y = val;
 
-    complete();
+    init this;
 
     y = y + 10;
   }

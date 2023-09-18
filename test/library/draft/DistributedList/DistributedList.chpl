@@ -49,7 +49,7 @@ module DistributedList {
 
     */
 
-    record distributedList {
+    record distributedList : writeSerializable {
         type eltType;
         param blockSize: int;
 
@@ -58,7 +58,7 @@ module DistributedList {
 
         @chpldoc.nodoc
         const locDom = {0..<targetLocales.size}
-            dmapped Cyclic(startIdx=0, targetLocales=targetLocales);
+            dmapped cyclicDist(startIdx=0, targetLocales=targetLocales);
 
         @chpldoc.nodoc
         var locks: [locDom] ChapelLocks.chpl_LocalSpinlock =
@@ -74,7 +74,7 @@ module DistributedList {
         proc init(type eltType, param blockSize=DefaultBlockSize) {
             this.eltType = eltType;
             this.blockSize = blockSize;
-            this.complete();
+            init this;
             this.numEntries.write(0);
         }
 
@@ -83,7 +83,7 @@ module DistributedList {
         {
             this.eltType = t;
             this.blockSize = blockSize;
-            this.complete();
+            init this;
 
             const numBlocks = d.size / blockSize,
                   remainder = d.size % blockSize,
@@ -122,7 +122,7 @@ module DistributedList {
 
             this.numEntries.write(d.size);
         }
-        proc init=(other: distributedList) {
+        proc init=(other: distributedList(?)) {
           this.eltType = other.eltType;
           this.blockSize = other.blockSize;
           this.targetLocales = other.targetLocales;
@@ -496,7 +496,7 @@ module DistributedList {
         proc ref toArray(): [] eltType {
             this.lockAll();
             const dom = {0..<this.numEntries.read()} dmapped
-                BlockCyclic(startIdx=0, blocksize=this.blockSize, targetLocales=this.targetLocales);
+                blockCycDist(startIdx=0, blocksize=this.blockSize, targetLocales=this.targetLocales);
 
             var a : [dom] this.eltType;
             coforall (loc, locIdx) in zip(this.targetLocales, this.locDom) with (ref a) do on loc {
@@ -516,13 +516,13 @@ module DistributedList {
             }
         }
 
-        proc writeThis(fr) throws {
-            fr.write('[');
+        proc serialize(writer, ref serializer) throws {
+            writer.write('[');
             for (elt, i) in zip(this.these(), 0..) {
-                if i > 0 then fr.write(", ");
-                fr.write(elt);
+                if i > 0 then writer.write(", ");
+                writer.write(elt);
             }
-            fr.write(']');
+            writer.write(']');
         }
 
         // TODO: readThis()?
@@ -644,7 +644,7 @@ module DistributedList {
             this.numBlocks = DefaultNumBufferedBlocksPerLocale;
             this.numFilled = 0;
 
-            this.complete();
+            init this;
             on this {
                 this.blocks = this._makeBlockArray(this.numBlocks);
                 for i in 0..<this.numBlocks do this.blocks[i] = this._makeBlock();

@@ -1,6 +1,6 @@
 use BlockDist, Reflection;
 
-var Dist = new Block({1..10});
+var Dist = new blockDist({1..10});
 var Dom = {1..10} dmapped Dist;
 var A: [Dom] real;
 
@@ -10,7 +10,7 @@ var SpsArr: [SpsDom] real;
 var SpsDom2: sparse subdomain(A.domain);
 var SpsArr2: [SpsDom2] real;
 
-var B = Block.createArray({1..10}, int);
+var B = blockDist.createArray({1..10}, int);
 var SpsDom3: sparse subdomain(B.domain);
 var SpsArr3: [SpsDom3] real;
 
@@ -39,7 +39,7 @@ writeln(SpsArr3.domain.distribution.type:string);
 writeln(isBlockDist(SpsArr3.domain.distribution));
 writeln();
 
-proc isBlockDist(x: Block(?)) param {
+proc isBlockDist(x: blockDist(?)) param {
   return true;
 }
 

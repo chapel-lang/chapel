@@ -116,7 +116,7 @@ proc sys_sockaddr_t.init(in other: sys_sockaddr_t) {
   IPv4 and IPv6 addresses. ipAddr can be compared using
   `==` and `!=` operators.
 */
-record ipAddr {
+record ipAddr : writeSerializable {
   @chpldoc.nodoc
   var _addressStorage:sys_sockaddr_t;
 
@@ -237,6 +237,10 @@ inline operator ==(const ref lhs: ipAddr, const ref rhs: ipAddr) {
 proc ipAddr.writeThis(f) throws {
   f.write("(","family:",this.family,",host:",this.host,",port:",this.port,")");
 }
+@chpldoc.nodoc
+proc ipAddr.serialize(writer, ref serializer) throws {
+  writeThis(writer);
+}
 
 /*
   Get a :type:`~POSIX.struct_timeval` set for indefinite timeout.
@@ -254,6 +258,8 @@ private extern proc qio_get_fd(fl:qio_file_ptr_t, ref fd:c_int):errorCode;
 
 /* The type returned from :proc:`connect` */
 type tcpConn = file;
+
+tcpConn implements writeSerializable;
 
 /*
   Returns the file descriptor associated with socket
@@ -324,6 +330,10 @@ inline operator ==(const ref lhs: tcpConn,const ref rhs: tcpConn) {
 @chpldoc.nodoc
 proc tcpConn.writeThis(f) throws {
   f.write("(","addr:",this.addr,",fd:",this.socketFd,")");
+}
+@chpldoc.nodoc
+proc tcpConn.serialize(writer, ref serializer) throws {
+  writeThis(writer);
 }
 
 @chpldoc.nodoc
@@ -440,7 +450,7 @@ extern record sys_sockaddr_t {
   var len:socklen_t;
 
   proc init() {
-    this.complete();
+    init this;
     sys_init_sys_sockaddr_t(this);
   }
 
@@ -499,7 +509,7 @@ extern record sys_sockaddr_t {
   :type port: `c_uint`
   */
   @chpldoc.nodoc
-  proc set(host: sys_in6_addr_t, port: c_uint) {
+  proc ref set(host: sys_in6_addr_t, port: c_uint) {
     sys_set_sys_sockaddr_in6_t(this, host, port);
   }
 
@@ -606,7 +616,7 @@ var event_loop_base:c_ptr(event_base);
   A record holding reference to a tcp socket
   bound and listening for connections.
 */
-record tcpListener {
+record tcpListener : writeSerializable {
   /*
     File Descriptor Associated with instance
   */
@@ -776,6 +786,10 @@ inline operator ==(const ref lhs: tcpListener,const ref rhs: tcpListener) {
 @chpldoc.nodoc
 proc tcpListener.writeThis(f) throws {
   f.write("(","addr:",this.addr,",fd:",this.socketFd);
+}
+@chpldoc.nodoc
+proc tcpListener.serialize(writer, ref serializer) throws {
+  writeThis(writer);
 }
 
 @chpldoc.nodoc
@@ -986,7 +1000,7 @@ proc connect(in host: string, in port: uint(16), family: IPFamily = IPFamily.IPU
   A record holding reference to a udp socket
   bound to any available port.
 */
-record udpSocket {
+record udpSocket : writeSerializable {
   /*
     File Descriptor Associated with instance
   */
@@ -1226,6 +1240,10 @@ inline operator ==(const ref lhs: udpSocket,const ref rhs: udpSocket) {
 @chpldoc.nodoc
 proc udpSocket.writeThis(f) throws {
   f.write("(","addr:",this.addr,",fd:",this.socketFd);
+}
+@chpldoc.nodoc
+proc udpSocket.serialize(writer, ref serializer) throws {
+  writeThis(writer);
 }
 
 

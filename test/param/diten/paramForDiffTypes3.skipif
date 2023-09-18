@@ -1,0 +1,4 @@
+# Skip this test for baseline testing because:
+# * it generates one warning fewer with --baseline, so gets a .good mismatch,
+# * it is not important to test with --baseline.
+COMPOPTS <= --baseline

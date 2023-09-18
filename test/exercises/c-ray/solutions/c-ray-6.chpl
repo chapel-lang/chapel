@@ -139,7 +139,7 @@ proc main() {
   // A local domain, distributed domain, and array representing the image
   //
   const imageSize = {0..#yres, 0..#xres};
-  const pixelPlane = imageSize dmapped Block(imageSize);
+  const pixelPlane = imageSize dmapped blockDist(imageSize);
   var pixels: [pixelPlane] pixelType;
 
   //
@@ -158,7 +158,7 @@ proc main() {
   //
   // The main loop that computes the image in parallel.
   //
-  forall (y, x) in pixelPlane {
+  forall (y, x) in pixelPlane with (ref pixels) {
     pixels[y, x] = computePixel(y, x, scene, rands);
   }
 

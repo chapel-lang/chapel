@@ -9,7 +9,7 @@ record MyRec {
     if a < 10 then
       x = 20;
 
-    this.complete();
+    init this;
   }
 }
 

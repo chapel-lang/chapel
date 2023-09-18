@@ -29,7 +29,7 @@ record localInfo {
 }
 
 // set up the data arrays
-const gridDist = gridDom dmapped Block(gridDom, gridLocales);
+const gridDist = gridDom dmapped blockDist(gridDom, gridLocales);
 var Data: [gridDist] localInfo;
 var delta: elType;
 config const epsilon = 0.1;
@@ -51,11 +51,11 @@ var errCount = 0;
 // oddphase: refdataB -> refdataA
 proc refcomp(oddphase: bool, out delta: elType) {
   if oddphase {
-    forall (i,j) in {1..globN, 1..globM} {
+    forall (i,j) in {1..globN, 1..globM} with (ref refdataA) {
       refdataA[i,j] = (refdataB[i-1,j] + refdataB[i,j+1] + refdataB[i+1,j] + refdataB[i,j-1]) / 4;
     }
   } else {
-    forall (i,j) in {1..globN, 1..globM} {
+    forall (i,j) in {1..globN, 1..globM} with (ref refdataB) {
       refdataB[i,j] = (refdataA[i-1,j] + refdataA[i,j+1] + refdataA[i+1,j] + refdataA[i,j-1]) / 4;
     }
   }
@@ -84,12 +84,12 @@ proc work2ref(i,j,gi,gj) {
 // initialize B
 
 config const singleinit = true;
-forall (dat, (gi,gj)) in zip(Data, gridDom) {
+forall (dat, (gi,gj)) in zip(Data, gridDom) with (ref refdataB) {
   if singleinit {
     dat.B[2,2] = 100;
     refdataB[work2ref(2,2,gi,gj)] = 100;
   } else {
-    forall ((i,j), a) in zip(dat.domCompute, dat.Bcompute) {
+    forall ((i,j), a) in zip(dat.domCompute, dat.Bcompute) with (ref refdataB) {
       a = i*0.1 + j;
       refdataB[work2ref(i,j,gi,gj)] = a;
     }

@@ -157,7 +157,7 @@ def get_gpu_mem_strategy():
             error("CHPL_GPU_MEM_STRATEGY must be set to one of: %s" %
                  ", ".join(valid_options));
         return memtype
-    return "unified_memory"
+    return "array_on_device"
 
 
 def get_cuda_libdevice_path():
@@ -200,7 +200,7 @@ def _validate_cuda_version_impl():
     """Check that the installed CUDA version is >= MIN_REQ_VERSION and <
        MAX_REQ_VERSION"""
     MIN_REQ_VERSION = "7"
-    MAX_REQ_VERSION = "12"
+    MAX_REQ_VERSION = "13"
 
     chpl_cuda_path = get_sdk_path('nvidia')
     version_file_json = '%s/version.json' % chpl_cuda_path
@@ -236,11 +236,26 @@ def _validate_cuda_version_impl():
             (MIN_REQ_VERSION, MAX_REQ_VERSION, cudaVersion))
       return False
 
+    # CUDA 12 requires the bundled LLVM or the major LLVM version must be >15
+    if is_ver_in_range(cudaVersion, "12", "13"):
+        llvm = chpl_llvm.get()
+        if llvm == "system":
+            llvm_config = chpl_llvm.find_system_llvm_config()
+            llvm_ver_str = chpl_llvm.get_llvm_config_version(llvm_config).strip()
+            if is_ver_in_range(llvm_ver_str, "0", "16"):
+                _reportMissingGpuReq(
+                        "LLVM versions before 16 do not support CUDA 12. "
+                        "Your LLVM (CHPL_LLVM=system) version is {}. "
+                        "You can use CUDA 11, or set CHPL_LLVM=bundled to use "
+                        "CUDA 12.".format(llvm_ver_str), suggestNone=False,
+                        allowExempt=False)
+                return False
+
     return True
 
 
 def _validate_rocm_version_impl():
-    """Check that the installed CUDA version is >= MIN_REQ_VERSION and <
+    """Check that the installed ROCM version is >= MIN_REQ_VERSION and <
        MAX_REQ_VERSION"""
     MIN_REQ_VERSION = "4"
     MAX_REQ_VERSION = "6"

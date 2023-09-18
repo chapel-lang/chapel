@@ -1732,6 +1732,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
           //  type if the symbol represents a field, and taking the address of
           //  a type does not make sense.
 
+        } else if (argSym && argSym->hasFlag(FLAG_TYPE_VARIABLE)) {
+          // No need to take address of a type arg. The flag is used here
+          // because the intent is unreliable, and may be INTENT_BLANK.
+
         } else {
           Expr* stmt = call->getStmtExpr();
           Type* t    = sym2->type;
@@ -2978,7 +2982,19 @@ static Symbol* determineQueriedField(CallExpr* call) {
 
   } else {
     Vec<Symbol*> args;
-    int             position      = var->immediate->int_value();
+    int position = var->immediate->int_value();
+
+    // A couple of variables to help us deal with the deprecated 'kind' field
+    // in fileReader and fileWriter.
+    bool isReaderWriter = false;
+    bool specifiesKind = false;
+
+    {
+      AggregateType* root = at->getRootInstantiation();
+      isReaderWriter = root->getModule() == ioModule &&
+          (strcmp(root->symbol->name, "fileReader") == 0 ||
+           strcmp(root->symbol->name, "fileWriter") == 0);
+    }
 
     if (at->symbol->hasFlag(FLAG_TUPLE)) {
       return at->getField(position);
@@ -3015,12 +3031,23 @@ static Symbol* determineQueriedField(CallExpr* call) {
 
       INT_ASSERT(var->immediate->const_kind == CONST_KIND_STRING);
 
+      if (isReaderWriter &&
+          strcmp("kind", var->immediate->v_string.c_str()) == 0) {
+        specifiesKind = true;
+      }
+
       for (int j = 0; j < args.n; j++) {
         if (args.v[j] != NULL &&
             strcmp(args.v[j]->name, var->immediate->v_string.c_str()) == 0) {
           args.v[j] = NULL;
         }
       }
+    }
+
+    // Need to increment by one so that expressions like 'fileWriter(false)'
+    // match up correctly.
+    if (isReaderWriter && !specifiesKind) {
+      position += 1;
     }
 
     forv_Vec(Symbol, arg, args) {

@@ -24,10 +24,10 @@ proc test(A: []) {
 
 proc main() {
   const Dom = {1..n, 1..n};
-  var Space = Dom dmapped Stencil(Dom, fluff=halo, periodic=true);
+  var Space = Dom dmapped stencilDist(Dom, fluff=halo, periodic=true);
 
   var A : [Space] int;
-  [(i,j) in Space] A[i,j] = i*n+j;
+  [(i,j) in Space with (ref A)] A[i,j] = i*n+j;
   A.updateFluff();
 
   test(A);

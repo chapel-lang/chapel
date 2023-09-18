@@ -1,5 +1,5 @@
-class NilClass { }
-override proc NilClass.writeThis(f) throws { f.write("nil"); }
+class NilClass : writeSerializable { }
+override proc NilClass.serialize(writer, ref serializer) throws { writer.write("nil"); }
 var gNil = new owned NilClass();
 
 proc Nil(): borrowed NilClass do

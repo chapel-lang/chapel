@@ -49,10 +49,6 @@ module StandardInterfaces {
   }
 
   bool implements StdOps;
-/*// currently does not work because: == is implemented for args of the type
-  // "bool"; need coercions to call it; coercions are not supported
-  chpl_anybool implements StdOps;
-*/
   numeric implements StdOps;
   string  implements StdOps;
   private proc stdTypeString(arg) do return arg.type :string;
@@ -159,7 +155,7 @@ module RandomInterface {
   implements PCGRandomStreamImpl(borrowed PCGRandomStream(?));
   // how about other management strategies?
 
-  proc PCGRandomStream.startCursor(D: domain) {
+  proc PCGRandomStream.startCursor(D: domain(?)) {
     import MyRandom.PCGRandom.randlc_skipto;
     type resultType = eltType;
     _lock();

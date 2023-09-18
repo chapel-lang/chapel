@@ -7,7 +7,7 @@ use LinkedLists, IO, JSON;
   mylist.append(2);
   mylist.append(3);
 
-  stdout.withSerializer(JsonSerializer).writef("testing json write: %?\n", mylist);
+  stdout.withSerializer(jsonSerializer).writef("testing json write: %?\n", mylist);
 
   mylist.destroy();
 }
@@ -22,7 +22,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer());
 
   var mylist:LinkedList(int);
 
@@ -45,7 +45,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer());
 
   var mylist:LinkedList(int);
 
@@ -69,7 +69,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer());
 
   var mylist:LinkedList(int);
 
@@ -92,7 +92,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer());
 
   var mylist:LinkedList(int);
 
@@ -115,7 +115,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer());
 
   var mylist:LinkedList(int);
 

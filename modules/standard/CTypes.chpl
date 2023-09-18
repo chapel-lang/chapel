@@ -89,6 +89,7 @@ module CTypes {
     supported and behave similarly to those operations in C.
 
   */
+  pragma "last resort"
   @deprecated(notes="c_void_ptr is deprecated, use 'c_ptr(void)' instead.")
   type c_void_ptr = c_ptr(void);
 
@@ -149,7 +150,7 @@ module CTypes {
   pragma "no default functions"
   pragma "no wide class"
   pragma "c_ptr class"
-  class c_ptr {
+  class c_ptr : writeSerializable {
     //   Similar to _ddata from ChapelBase, but differs
     //   from _ddata because it can never be wide.
 
@@ -202,7 +203,7 @@ module CTypes {
   pragma "no wide class"
   pragma "c_ptr class"
   pragma "c_ptrConst class"
-  class c_ptrConst {
+  class c_ptrConst : writeSerializable {
     /*
        The type that this pointer points to, which can be queried like so:
 
@@ -257,7 +258,7 @@ module CTypes {
   */
   pragma "c_array record"
   pragma "default intent is ref if modified"
-  record c_array {
+  record c_array : writeSerializable {
     /*
        The array element type, which can be queried like so:
 
@@ -280,7 +281,7 @@ module CTypes {
     proc init(type eltType, param size) {
       this.eltType = eltType;
       this.size = size;
-      this.complete();
+      init this;
       var i = 0;
       while i < size {
         // create a default value we'll transfer into the element
@@ -366,7 +367,7 @@ module CTypes {
     proc init=(other: c_array) {
       this.eltType = other.eltType;
       this.size = other.size;
-      this.complete();
+      init this;
       for i in 0..#size {
         pragma "no auto destroy"
         var value: eltType = other[i];
@@ -968,14 +969,14 @@ module CTypes {
     return __primitive("cast", c_ptr(void), c.borrow());
   }
   @chpldoc.nodoc
-  inline proc c_ptrToConst_helper(const c: class): c_ptr(void)
+  inline proc c_ptrToConst_helper(const c: class): c_ptrConst(void)
   {
-    return __primitive("cast", c_ptr(void), c.borrow());
+    return __primitive("cast", c_ptrConst(void), c.borrow());
   }
   @chpldoc.nodoc
-  inline proc c_ptrToConst_helper(const c: class?): c_ptr(void)
+  inline proc c_ptrToConst_helper(const c: class?): c_ptrConst(void)
   {
-    return __primitive("cast", c_ptr(void), c.borrow());
+    return __primitive("cast", c_ptrConst(void), c.borrow());
   }
   /****************************************************************************
     End of temporary helper functions while deprecating c_ptr(string) etc
@@ -1028,6 +1029,12 @@ module CTypes {
     return c_addrOfConst(b);
   }
 
+  @chpldoc.nodoc
+  inline proc c_ptrTo(c: class): c_ptr(void)
+    where cPtrToLogicalValue == true
+  {
+    return __primitive("cast", c_ptr(void), c.borrow());
+  }
   /*
     Returns a ``c_ptr(void)`` to the heap instance of a class type.
 
@@ -1035,11 +1042,6 @@ module CTypes {
     lifetime of the instance.  The returned pointer will be invalid if the
     instance is freed or even reallocated.
   */
-  inline proc c_ptrTo(c: class): c_ptr(void)
-    where cPtrToLogicalValue == true
-  {
-    return __primitive("cast", c_ptr(void), c.borrow());
-  }
   inline proc c_ptrTo(c: class?): c_ptr(void)
     where cPtrToLogicalValue == true
   {
@@ -1047,6 +1049,7 @@ module CTypes {
   }
 
   @deprecated(notes="The c_ptrTo(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOf' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
+  @chpldoc.nodoc
   inline proc c_ptrTo(ref c: class): c_ptr(c.type)
     where cPtrToLogicalValue == false
   {
@@ -1059,21 +1062,23 @@ module CTypes {
     return c_addrOf(c);
   }
 
+  @chpldoc.nodoc
+  inline proc c_ptrToConst(const c: class): c_ptrConst(void)
+    where cPtrToLogicalValue == true
+  {
+    return __primitive("cast", c_ptrConst(void), c.borrow());
+  }
   /*
    Like :proc:`c_ptrTo` for class types, but also accepts ``const`` data.
    */
-  inline proc c_ptrToConst(const c: class): c_ptr(void)
+  inline proc c_ptrToConst(const c: class?): c_ptrConst(void)
     where cPtrToLogicalValue == true
   {
-    return __primitive("cast", c_ptr(void), c.borrow());
-  }
-  inline proc c_ptrToConst(const c: class?): c_ptr(void)
-    where cPtrToLogicalValue == true
-  {
-    return __primitive("cast", c_ptr(void), c.borrow());
+    return __primitive("cast", c_ptrConst(void), c.borrow());
   }
 
   @deprecated(notes="The c_ptrToConst(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
+  @chpldoc.nodoc
   inline proc c_ptrToConst(const ref c: class): c_ptrConst(c.type)
     where cPtrToLogicalValue == false
   {
@@ -1095,7 +1100,8 @@ module CTypes {
     :arg x: the by-reference argument to get a pointer to. Domains are not
             supported, and will cause a compiler error. Records, class
             instances, integral, real, imag, and complex types are supported.
-            For arrays, strings, or bytes, separate overloads should be used.
+            See overloads taking arrays, strings, bytes, or class variables
+            which provide special behavior for those types.
     :returns: a pointer to the argument passed by reference
 
   */
@@ -1160,7 +1166,8 @@ module CTypes {
     Returns a :type:`c_ptr` to the address of any chapel object.
 
     Note that the behavior of this procedure is identical to :func:`c_ptrTo`
-    for scalar types. It only differs for arrays, strings, and bytes.
+    for scalar types and records. It only differs for arrays, strings, bytes,
+    and class variables.
   */
   inline proc c_addrOf(ref x: ?t): c_ptr(t) {
     if isDomainType(t) then
@@ -1191,12 +1198,6 @@ module CTypes {
     pragma "fn synchronization free"
     extern proc chpl_memhook_md_num(): chpl_mem_descInt_t;
     return CHPL_RT_MD_ARRAY_ELEMENTS - chpl_memhook_md_num();
-  }
-
-  pragma "last resort"
-  @deprecated(notes="c_sizeof with argument name 'x' is deprecated; please use c_sizeof(type t) instead")
-  inline proc c_sizeof(type x): c_size_t {
-    return c_sizeof(x);
   }
 
   /*
@@ -1511,15 +1512,89 @@ module CTypes {
   }
 
   /*
-    Get the number of bytes in a c_ptrConst(int(8)) or c_ptrConst(uint(8)), excluding the
-    terminating null.
+    Get the number of bytes in a c_ptrConst(int(8)) or c_ptrConst(uint(8)),
+    excluding the terminating NULL.
 
     :arg x: c_ptrConst(int(8)) or c_ptrConst(uint(8)) to get length of
 
-    :returns: the number of bytes in x, excluding the terminating null
+    :returns: the number of bytes in x, excluding the terminating NULL
    */
   @unstable("the strLen function is unstable and may change or go away in a future release")
   inline proc strLen(x:c_ptrConst(?t)): int {
      return __primitive("string_length_bytes", x).safeCast(int);
   }
+
+  /*
+    Get a `c_ptrConst(c_char)` from a :type:`~String.string`. The returned
+    `c_ptrConst(c_char)` shares the buffer with the :type:`~String.string`.
+
+    .. warning::
+
+        This can only be called safely on a :type:`~String.string` whose home is
+        the current locale.  This property can be enforced by calling
+        :proc:`~String.string.localize()` before :proc:`string.c_str()`.
+        If the string is remote, the program will halt.
+
+    For example:
+
+    .. code-block:: chapel
+
+      var myString = "Hello!";
+      on differentLocale {
+        writef("%s", myString.localize().c_str());
+      }
+
+    .. warning::
+
+        A Chapel :type:`~String.string` is capable of containing NULL characters
+        and any C routines relying on NULL terminated buffers may incorrectly
+        process the mid-string NULL as the terminating NULL.
+
+    :returns:
+        A `c_ptrConst(c_char)` that points to the underlying buffer used by this
+        :type:`~String.string`. The returned `c_ptrConst(c_char)` is only valid
+        when used on the same locale as the string.
+   */
+  @unstable("'string.c_str()' is unstable and may change in a future release")
+  inline proc string.c_str() : c_ptrConst(c_char) {
+    use BytesStringCommon only getCStr;
+    return getCStr(this);
+  }
+
+ /*
+    Gets a `c_ptrConst(c_char)` from a :type:`~Bytes.bytes`. The returned
+    `c_ptrConst(c_char)` shares the buffer with the :type:`~Bytes.bytes`.
+
+    .. warning::
+
+      This can only be called safely on a :type:`~Bytes.bytes` whose home is
+      the current locale.  This property can be enforced by calling
+      :proc:`~Bytes.bytes.localize()` before :proc:`bytes.c_str()`.
+      If the bytes is remote, the program will halt.
+
+    For example:
+
+    .. code-block:: chapel
+
+        var myBytes = b"Hello!";
+        on differentLocale {
+          writef("%s", myBytes.localize().c_str());
+        }
+
+    .. warning::
+
+        Chapel :type:`~Bytes.bytes` are capable of containing NULL bytes and
+        any C routines relying on NULL terminated buffers may incorrectly
+        process the mid-buffer NULL as the terminating NULL.
+
+    :returns: A `c_ptrConst(c_char)` that points to the underlying buffer used
+              by this :type:`~Bytes.bytes`. The returned `c_ptrConst(c_char)`
+              is only valid when used on the same locale as the bytes.
+   */
+  @unstable("'bytes.c_str()' is unstable and may change in a future release")
+  inline proc bytes.c_str(): c_ptrConst(c_char) {
+    use BytesStringCommon only getCStr;
+    return getCStr(this);
+  }
+
 }

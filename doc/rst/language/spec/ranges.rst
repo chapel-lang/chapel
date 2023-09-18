@@ -378,6 +378,11 @@ the type’s ``bounds`` parameter as follows:
    ``high``-bounded range (or visa versa) produces an empty range,
    matching the default value for a ``both``-bounded range
 
+.. warning::
+
+   Default initialization of ranges with ``boundKind.low`` or
+   ``boundKind.high`` is unstable.
+
 Default values of ranges with boolean ``idxType`` are similar, but
 substituting ``false`` and ``true`` for 0 and 1 above.  Ranges with
 ``enum`` ``idxType`` use the 0th and 1st values in the enumeration in

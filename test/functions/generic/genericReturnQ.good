@@ -1,0 +1,12 @@
+genericReturnQ.chpl:13: warning: please use '?' when declaring a routine with a generic return type
+genericReturnQ.chpl:13: note: for example with 'GR(?)'
+genericReturnQ.chpl:41: warning: please use '?' when declaring a routine with a generic return type
+genericReturnQ.chpl:41: note: for example with 'GC(?)'
+(x = 1)
+(x = 1)
+(x = 1)
+(x = 1)
+(x = 1)
+{x = 1}
+{x = 1}
+{x = 1}

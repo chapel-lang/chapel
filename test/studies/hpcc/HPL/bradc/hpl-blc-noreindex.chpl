@@ -63,10 +63,10 @@ proc main() {
   // subdomain that is created by slicing into MatVectSpace,
   // inheriting all of its rows and its low column bound.  As our
   // standard distribution library is filled out, MatVectSpace will be
-  // distributed using a BlockCyclic(blkSize) distribution.
+  // distributed using a blockCycDist(blkSize) distribution.
   //
   const MatVectSpace: domain(2, indexType) 
-                      dmapped BlockCyclic(startIdx=(1,1), (blkSize,blkSize)) 
+                      dmapped blockCycDist(startIdx=(1,1), (blkSize,blkSize)) 
                     = {1..n, 1..n+1},
         MatrixSpace = MatVectSpace[.., ..n];
 
@@ -173,7 +173,7 @@ proc LUFactorize(n: indexType, ref Ab: [?AbD] elemType,
 // locale only stores one copy of each block it requires for all of
 // its rows/columns.
 //
-proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) {
+proc schurComplement(Ab: [?AbD] elemType, AD: domain(?), BD: domain(?), Rest: domain(?)) {
   //
   // Copy data into replicated array so every processor has a local copy
   // of the data it will need to perform a local matrix-multiply.  These
@@ -262,7 +262,7 @@ proc dgemmIdeal(A: [1.., 1..] elemType,
 // pivot vector accordingly
 //
 proc panelSolve(ref Ab: [] elemType,
-               panel: domain,
+               panel: domain(?),
                ref piv: [] indexType) {
 
   //
@@ -297,7 +297,7 @@ proc panelSolve(ref Ab: [] elemType,
     Ab[k+1.., k..k] /= pivotVal;
     
     // update all other values below the pivot
-    forall (i,j) in panel[k+1.., k+1..] do
+    forall (i,j) in panel[k+1.., k+1..] with (ref Ab) do
       Ab[i,j] -= Ab[i,k] * Ab[k,j];
   }
 }
@@ -309,14 +309,14 @@ proc panelSolve(ref Ab: [] elemType,
 // solves the rows to the right of the block.
 //
 proc updateBlockRow(ref Ab: [] elemType,
-                   tl: domain,
-                   tr: domain) {
+                   tl: domain(?),
+                   tr: domain(?)) {
 
   for row in tr.dim(0) {
     const activeRow = tr[row..row, ..],
           prevRows = tr.dim(0).low..row-1;
 
-    forall (i,j) in activeRow do
+    forall (i,j) in activeRow with (ref Ab) do
       for k in prevRows do
         Ab[i, j] -= Ab[i, k] * Ab[k,j];
   }
@@ -406,7 +406,7 @@ proc gaxpyMinus(A: [],
   var res: [1..n] elemType;
 
   // TODO: really want a partial reduction here
-  forall i in 1..n do
+  forall i in 1..n with (ref res) do
     res[i] = (+ reduce [j in xD] (A[i,j] * x[j])) - y[i,n+1];
 
   return res;

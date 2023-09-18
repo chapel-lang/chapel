@@ -1,7 +1,7 @@
 // Credit goes to Bryant for this test of a former bug in string.join().
 
 use Random.PCGRandom only PCGRandomStream;
-
+use CTypes only c_str;
 config const count = 100;
 
 proc get_str_with_concat(x: int, y: int): string {

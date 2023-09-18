@@ -39,7 +39,7 @@ in parallel:
 config const n = 5;
 var A: [1..n] real;
 
-forall i in 1..n {
+forall i in 1..n with (ref A) {
   A[i] = i;
 }
 
@@ -85,7 +85,7 @@ Here we illustrate zippering arrays and domains:
 */
 
 var C: [1..n] real;
-forall (a, b, i) in zip(A, B, C.domain) do
+forall (a, b, i) in zip(A, B, C.domain) with (ref C) do
   C[i] = a * 10 + b / 10 + i * 0.001;
 
 writeln("After a zippered loop, C is:");
@@ -154,7 +154,7 @@ Domains declared without a ``dmapped`` clause, including
 default rectangular and default associative domains, as well as
 arrays over such domains, provide both serial and parallel
 iterators. So do domains distributed over standard distributions,
-such as Block and Cyclic (:ref:`primers-distributions`), and
+such as blockDist and cyclicDist (:ref:`primers-distributions`), and
 arrays over such domains. The parallel iterators provided
 by standard distributions place each loop iteration on the
 locale where the corresponding index or array element is placed.
@@ -196,7 +196,7 @@ proc updateOuterVariable() {
 }
 var outerAtomicVariable: atomic int;
 
-forall i in 1..n {
+forall i in 1..n with (ref D) {
 
   D[i] += 0.5; // if multiple iterations of the loop update the same
                // array element, it could lead to a data race

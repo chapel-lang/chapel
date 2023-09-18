@@ -925,6 +925,8 @@ fasta:
     - Optimize enum->int casts for concrete types (#10308)
   08/23/23:
     - Deprecate 'iokind' type and 'kind' field (#23007)
+  08/30/23:
+    - Improve performance of readBinary and writeBinary for dense arrays (#23162)
 
 fastaredux:
   01/14/14:
@@ -1835,6 +1837,10 @@ revcomp: &revcomp-base
     - Reduce uses of Math by automatically included modules (#19885)
   03/07/23:
     - Parallelize array.find() (#21750)
+  08/23/23:
+    - Deprecate 'iokind' type and 'kind' field (#23007)
+  08/30/23:
+    - Improve performance of readBinary and writeBinary for dense arrays (#23162)
 
 revcomp-submitted:
   06/07/22:
@@ -2379,6 +2385,8 @@ arkouda: &arkouda-base
     - Resolve Arkouda deprecation warnings for 1.32 to date (Bears-R-Us/arkouda#2632)
   07/06/23:
     - Upgrade Arkouda release testing from 1.30 to 1.31 (#22669)
+  08/29/23:
+    - Closes 2734 Fix remaining missed symbol table entry creation for distributed builds (Bears-R-Us/arkouda#2735)
 
 
 arkouda-string:
@@ -2423,7 +2431,7 @@ shoc-triad-bw-lg:
   11/10/22:
     - Ensure we time mem transfer in SHOC Triad (#20961)
 
-sort:
+shoc-sort:
   02/24/23:
     - Improve SHOC-Sort implementation (#21610)
 

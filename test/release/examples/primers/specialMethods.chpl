@@ -38,7 +38,7 @@ proc ExampleRecord2.secondaryMethod() { }
 // the corresponding interface. For the ``hash`` method we'll see below, the
 // appropriate interface is ``hashable``. We can mark ``R`` as implementing
 // ``hashable`` by including a ``: hashable`` after its name when we declare it.
-record R : hashable {
+record R : hashable, writeSerializable, readDeserializable {
   param size: int = 10;
   var vals: size*int;
 }
@@ -148,17 +148,18 @@ myD += myR;
   ----------
 */
 
-// The ``writeThis`` method defines how to write an instance of R to a
+// The ``serialize`` method defines how to write an instance of R to a
 // channel. We'll write the ``vals`` tuple between asterisks. See section
-// :ref:`readThis-writeThis` for more information  on the ``writeThis`` and
-// ``readThis`` methods.
+// :ref:`serialize-deserialize` for more information  on the ``serialize`` and
+// ``deserialize`` methods.
 
 use IO; // required for file operations
 
 config const filename = "tempfile.txt";
 
-proc R.writeThis(ch: fileWriter) throws {
-  ch.write("*", vals, "*");
+proc R.serialize(writer: fileWriter(?),
+                 ref serializer: writer.serializerType) throws {
+  writer.write("*", vals, "*");
 }
 
 {
@@ -169,13 +170,14 @@ proc R.writeThis(ch: fileWriter) throws {
   ch.writeln(r);
 }
 
-// The ``readThis`` method defines how to read an instance of R from a
+// The ``deserialize`` method defines how to read an instance of R from a
 // channel. We'll read the ``vals`` tuple between asterisks like how it
 // was written above.
-proc ref R.readThis(ch: fileReader) throws {
-  ch.readLiteral("*");
-  ch.read(vals);
-  ch.readLiteral("*");
+proc ref R.deserialize(reader: fileReader(?),
+                       ref deserializer: reader.deserializerType) throws {
+  reader.readLiteral("*");
+  reader.read(vals);
+  reader.readLiteral("*");
 }
 
 {

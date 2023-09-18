@@ -1,0 +1,1 @@
+FILE.chpl:n: error: range(int(64),both,one) is not a class, record, or union type

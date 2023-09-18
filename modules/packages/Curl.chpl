@@ -329,7 +329,7 @@ module Curl {
 
      :arg str: a string argument to append
     */
-  proc slist.append(str:string) throws {
+  proc ref slist.append(str:string) throws {
     var err: errorCode = 0;
     on this.home {
       this.list = curl_slist_append(this.list, str.localize().c_str());

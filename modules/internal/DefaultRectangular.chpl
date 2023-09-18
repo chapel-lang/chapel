@@ -22,9 +22,11 @@
 //
 module DefaultRectangular {
   import HaltWrappers;
-
+  @unstable("The variable 'dataParTasksPerLocale' is unstable and its interface is subject to change in the future")
   config const dataParTasksPerLocale = 0;
+  @unstable("The variable 'dataParIgnoreRunningTasks' is unstable and its interface is subject to change in the future")
   config const dataParIgnoreRunningTasks = false;
+  @unstable("The variable 'dataParMinGranularity' is unstable and its interface is subject to change in the future")
   config const dataParMinGranularity: int = 1;
 
   if dataParTasksPerLocale<0 then halt("dataParTasksPerLocale must be >= 0");
@@ -94,6 +96,7 @@ module DefaultRectangular {
     return ret;
   }
 
+  @unstable("DefaultDist is unstable and may change in the future")
   class DefaultDist: BaseDist {
     override proc dsiNewRectangularDom(param rank: int, type idxType,
                                        param strides: strideKind, inds) {
@@ -1087,7 +1090,7 @@ module DefaultRectangular {
       this.callPostAlloc = false;
       this.deinitElts = deinitElts;
 
-      this.complete();
+      init this;
       this.setupFieldsAndAllocate(initElts);
     }
 
@@ -1714,6 +1717,26 @@ module DefaultRectangular {
     rwLiteral("}");
   }
 
+  proc DefaultRectangularDom.dsiSerialWrite(f) throws
+  where _supportsSerializers(f) && f.serializerType != IO.defaultSerializer {
+    if chpl_warnUnstable then
+      compilerWarning("Serialization of rectangular domains with non-default Serializer is unstable, and may change in the future");
+    var ser = f.serializer.startList(f, rank);
+    for i in 0..<rank do ser.writeElement(dsiDim(i));
+    ser.endList();
+  }
+
+  // TODO: There is currently a bug when returning domains from
+  // 'deserializeFrom', so this isn't tested yet.
+  proc DefaultRectangularDom.dsiSerialRead(f) throws
+  where _supportsSerializers(f) && f.deserializerType != IO.defaultDeserializer {
+    if chpl_warnUnstable then
+      compilerWarning("Deserialization of rectangular domains with non-default Deserializer is unstable, and may change in the future");
+    var des = f.deserializer.startList(f);
+    for i in 0..<rank do ranges(i) = des.readElement(ranges(i).type);
+    des.endList();
+  }
+
   proc DefaultRectangularDom.doiToString() {
     var str = "{" + ranges(0):string;
     for i in 1..<rank do
@@ -1772,21 +1795,14 @@ module DefaultRectangular {
 
   proc chpl_serialReadWriteRectangularHelper(f, arr, dom) throws
   where _supportsSerializers(f) {
-    if arr.isDefaultRectangular() && !chpl__isArrayView(arr) &&
-       _isSimpleIoType(arr.eltType) && _supportsBulkElements(f, arr) &&
-       arr.isDataContiguous(dom) {
-      _readWriteBulk(f, arr, dom);
-    } else {
-      _readWriteHelper(f, arr, dom);
-    }
-  }
-
-  proc _readWriteHelper(f, arr, dom) throws {
     param rank = arr.rank;
     type idxType = arr.idxType;
     type idxSignedType = chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
 
-    ref fmt = if f._writing then f.serializer else f.deserializer;
+    var helper = if f._writing then
+      f.serializer.startArray(f, dom.dsiNumIndices:int)
+    else
+      f.deserializer.startArray(f);
 
     proc recursiveArrayReaderWriter(in idx: rank*idxType, dim=0, in last=false) throws {
 
@@ -1794,18 +1810,18 @@ module DefaultRectangular {
       const makeStridePositive = if dom.dsiDim(dim).stride > 0 then 1:strType else (-1):strType;
 
       if f._writing then
-        fmt.startArrayDim(f, dom.dsiDim(dim).sizeAs(uint));
+        helper.startDim(dom.dsiDim(dim).size);
       else
-        fmt.startArrayDim(f);
+        helper.startDim();
 
       // The simple 1D case
       if dim == rank-1 {
         for j in dom.dsiDim(dim) by makeStridePositive {
           idx(dim) = j;
           if f._writing then
-            fmt.writeArrayElement(f, arr.dsiAccess(idx));
+            helper.writeElement(arr.dsiAccess(idx));
           else {
-            arr.dsiAccess(idx) = fmt.readArrayElement(f, arr.eltType);
+            arr.dsiAccess(idx) = helper.readElement(arr.eltType);
           }
         }
       } else {
@@ -1819,37 +1835,32 @@ module DefaultRectangular {
         }
       }
 
-      fmt.endArrayDim(f);
+      helper.endDim();
     }
 
-    if f._writing then
-      fmt.startArray(f, dom.dsiNumIndices:uint);
-    else
-      fmt.startArray(f);
+    use Reflection;
+    var dummy : c_ptr(arr.eltType);
+    param canResolveBulkElements = Reflection.canResolveMethod(helper, "writeBulkElements", dummy, 0) ||
+                                   Reflection.canResolveMethod(helper, "readBulkElements", dummy, 0);
+    param useBulkElements = canResolveBulkElements &&
+                            arr.isDefaultRectangular() &&
+                            !chpl__isArrayView(arr) &&
+                            _isSimpleIoType(arr.eltType);
 
-    const zeroTup: rank*idxType;
-    recursiveArrayReaderWriter(zeroTup);
-
-    fmt.endArray(f);
-  }
-
-  proc _readWriteBulk(f, arr, dom) throws {
-    ref fmt = if f._writing then f.serializer else f.deserializer;
-
-    const len = dom.dsiNumIndices:uint;
-    if f._writing then
-      fmt.startArray(f, len);
-    else
-      fmt.startArray(f);
-
-    var ptr = c_ptrTo(arr.dsiAccess(dom.dsiFirst));
-    if f._writing {
-      fmt.writeBulkElements(f, ptr, len);
+    const len = dom.dsiNumIndices:int;
+    if useBulkElements && arr.isDataContiguous(dom) && len > 0 {
+      var ptr = c_addrOf(arr.dsiAccess(dom.dsiFirst));
+      if f._writing then
+        helper.writeBulkElements(ptr, len);
+      else
+        helper.readBulkElements(ptr, len);
     } else {
-      fmt.readBulkElements(f, ptr, len);
+      // Otherwise, recursively read or write the array
+      const zeroTup: rank*idxType;
+      recursiveArrayReaderWriter(zeroTup);
     }
 
-    fmt.endArray(f);
+    helper.endArray();
   }
 
   proc chpl_serialReadWriteRectangularHelper(f, arr, dom) throws {
@@ -2087,7 +2098,7 @@ module DefaultRectangular {
     // 2. we are either not doing communication or doing a PUT
     // See: https://github.com/Cray/chapel-private/issues/1365
     const isSizeAboveThreshold = len:int*elemsizeInBytes >= parallelAssignThreshold;
-    const isFullyLocal = Alocid == Blocid;
+    const isFullyLocal = Alocid == Blocid && Asublocid == Bsublocid;
     var doParallelAssign = isSizeAboveThreshold && isFullyLocal;
 
     if enableParallelGetsInAssignment || enableParallelPutsInAssignment {

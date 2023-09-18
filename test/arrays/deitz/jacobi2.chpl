@@ -8,9 +8,9 @@ var BigR : domain(2) = {0..n+1, 0..n+1};
 var A : [BigR] real;
 var Temp : [R] real;
 
-[(i,j) in BigR] A(i,j) = 0.0;
+[(i,j) in BigR with (ref A)] A(i,j) = 0.0;
 
-[j in 1..n] A(n+1,j) = 1.0;
+[j in 1..n with (ref A)] A(n+1,j) = 1.0;
 
 if (verbose) {
   writeln("Initial configuration:");
@@ -21,9 +21,9 @@ var iteration : int = 0;
 var delta : sync real = 1.0;
 
 while (delta.readFE() > epsilon) {
-  [(i,j) in R] Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
+  [(i,j) in R with (ref Temp)] Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
   delta.writeEF(0.0);
-  [(i,j) in R] {
+  [(i,j) in R with (ref A)] {
     delta.writeEF(max(delta.readFE(), Temp(i,j)-A(i,j)));
     A(i,j) = Temp(i,j);
   }

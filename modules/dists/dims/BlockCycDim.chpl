@@ -42,10 +42,10 @@ type bcdPosInt = int;
 //
 /*
 This Block-Cyclic dimension specifier is for use with the
-:class:`DimensionalDist2D` distribution.
+:mod:`dimensionalDist2D <DimensionalDist2D>` distribution.
 
 It specifies the mapping of indices in its dimension
-that would be produced by a 1D :class:`~BlockCycDist.BlockCyclic` distribution.
+that would be produced by a 1D :class:`~BlockCycDist.blockCycDist` distribution.
 
 **Initializer Arguments**
 
@@ -66,7 +66,7 @@ The arguments are as follows:
       to be distributed over
   ``lowIdx``, ``blockSize``
       are the counterparts to ``startIdx`` and ``blocksize``
-      in the :class:`~BlockCycDist.BlockCyclic` distribution
+      in the :class:`~BlockCycDist.blockCycDist` distribution
   ``cycleSizePos``
       is used internally by the implementation and
       should not be specified by the user code
@@ -181,7 +181,7 @@ inline proc _checkFitsWithin(src: integral, type destT)
   where isIntegralType(destT)
 {
   inline proc ensure(arg:bool) {
-    if !arg then halt("When creating a domain mapped using DimensionalDist2D with a BlockCyclicDim specifier, could not fit BlockCyclicDim's adjusted lowIdx of ", src, " in the domain's idxType ", destT:string);
+    if !arg then halt("When creating a domain mapped using dimensionalDist2D with a BlockCyclicDim specifier, could not fit BlockCyclicDim's adjusted lowIdx of ", src, " in the domain's idxType ", destT:string);
   }
   type maxuT = uint(64); // the largest unsigned type
   type srcT = src.type;

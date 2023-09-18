@@ -422,9 +422,9 @@ the array.
    .. BLOCK-test-chapelpost
 
       var B: [1..5] int;
-      [i in 1..5] B(i) = i;
+      [i in 1..5 with (ref B)] B(i) = i;
       var C: [1..5,1..5] int;
-      [(i,j) in {1..5,1..5}] C(i,j) = i+i*j;
+      [(i,j) in {1..5,1..5} with (ref C)] C(i,j) = i+i*j;
       writeln(f(B, 3));
       writeln(f(C, 3, 3));
 
@@ -803,9 +803,9 @@ with the same shape.
 Array Arguments to Functions
 ----------------------------
 
-By default, arrays are passed to function by ``ref`` or ``const ref``
-depending on whether or not the formal argument is modified. The ``in``,
-``inout``, and ``out`` intent can create copies of arrays.
+By default, arrays are passed to function by ``const``, see :ref:`The_Default_Intent`.
+Using the ``ref`` intent allows modification of the array without creating a copy.
+The ``in``, ``inout``, and ``out`` intent can create copies of arrays.
 
 When a formal argument has array type, the element type of the array can
 be omitted and/or the domain of the array can be queried or omitted. In

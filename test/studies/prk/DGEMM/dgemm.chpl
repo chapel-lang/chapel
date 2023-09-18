@@ -29,14 +29,14 @@ const vecRange = 0..#order;
 
 const matrixSpace = {vecRange, vecRange};
 const matrixDom = matrixSpace dmapped if useBlockDist then
-                      new Block(boundingBox=matrixSpace) else
+                      new blockDist(boundingBox=matrixSpace) else
                       defaultDist;
 
 var A: [matrixDom] dtype,
     B: [matrixDom] dtype,
     C: [matrixDom] dtype;
 
-forall (i,j) in matrixDom {
+forall (i,j) in matrixDom with (ref A, ref B, ref C) {
   A[i,j] = j;
   B[i,j] = j;
   C[i,j] = 0;
@@ -63,7 +63,7 @@ if blockSize == 0 {
   for niter in 0..iterations {
     if niter==1 then t.start();
 
-    forall (i,j) in matrixSpace do
+    forall (i,j) in matrixSpace with (ref C) do
       for k in vecRange do
         C[i,j] += A[i,k] * B[k,j];
 

@@ -1,7 +1,6 @@
 class C {
-  proc bbox(d: int) {
+  proc bbox(d: int): range {
     halt("bbox() is not implemented for this class");
-    return 1..0;
   }
 }
 

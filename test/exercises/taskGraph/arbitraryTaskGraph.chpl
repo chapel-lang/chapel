@@ -19,7 +19,7 @@ var numToWaitFor: [0..<N] atomic int;
 writeln(numToWaitFor);
 
 // encoding how many each task needs to wait for
-forall (i,j) in A.domain {
+forall (i,j) in A.domain with (ref numToWaitFor) {
   if A[i,j] { numToWaitFor[i].fetchAdd(1); }
 }
 

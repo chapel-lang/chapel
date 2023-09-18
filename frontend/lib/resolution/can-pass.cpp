@@ -706,9 +706,6 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
   if (formalT->isAnyType())
     return true;
 
-  if (formalT->isAnyBoolType() && actualT->isBoolType())
-      return true;
-
   if (formalT->isAnyBorrowedNilableType())
     if (auto ct = actualT->toClassType())
       if (ct->decorator().val() == ClassTypeDecorator::BORROWED_NILABLE)

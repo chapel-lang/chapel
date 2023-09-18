@@ -64,14 +64,14 @@ module Heap {
   //
   @chpldoc.nodoc
   class _LockWrapper {
-    var lock$ = new _lockType();
+    var lockVar = new _lockType();
 
     inline proc lock() {
-      lock$.lock();
+      lockVar.lock();
     }
 
     inline proc unlock() {
-      lock$.unlock();
+      lockVar.unlock();
     }
   }
 
@@ -89,7 +89,7 @@ module Heap {
     }
   }
 
-  record heap {
+  record heap : writeSerializable {
 
     /* The type of the elements contained in this heap. */
     type eltType;
@@ -104,7 +104,7 @@ module Heap {
     var comparator: record;
 
     @chpldoc.nodoc
-    var _lock$ = if parSafe then new _LockWrapper() else none;
+    var _lock = if parSafe then new _LockWrapper() else none;
 
     /*
       Use a list to store elements.
@@ -159,7 +159,7 @@ module Heap {
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
       this.comparator = other.comparator;
-      this.complete();
+      init this;
       _commonInitFromIterable(other._data);
     }
 
@@ -169,13 +169,13 @@ module Heap {
     @chpldoc.nodoc
     inline proc _enter() {
       if parSafe then
-        _lock$.lock();
+        _lock.lock();
     }
 
     @chpldoc.nodoc
     inline proc _leave() {
       if parSafe then
-        _lock$.unlock();
+        _lock.unlock();
     }
 
     /*
@@ -383,6 +383,10 @@ module Heap {
       _enter();
       ch.write(this._data);
       _leave();
+    }
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
   }
 

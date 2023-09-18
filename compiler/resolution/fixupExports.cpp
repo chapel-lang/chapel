@@ -248,7 +248,7 @@ static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as) {
   // to put these conditions in tables.
   //
   if (t == dtBytes || t == dtString || t == dtStringC
-                   || t == dtExternalArray) {
+                   || t == dtExternalArray || isCPtrConstChar(t)) {
     IntentTag tag = as->originalIntent;
 
     bool multiloc = fMultiLocaleInterop || strcmp(CHPL_COMM, "none");

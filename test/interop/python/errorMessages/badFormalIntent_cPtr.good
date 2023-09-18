@@ -1,0 +1,6 @@
+badFormalIntent_cPtr.chpl:3: error: Formal 's' of type 'c_ptrConst(int(8))' in exported routine 'badFormalIntentNone' may not be passed by const ref in multilocale python libraries
+badFormalIntent_cPtr.chpl:5: error: Formal 's' of type 'c_ptrConst(int(8))' in exported routine 'badFormalIntentConst' may not have the 'const' intent in multilocale python libraries
+badFormalIntent_cPtr.chpl:7: error: Formal 's' of type 'c_ptrConst(int(8))' in exported routine 'badFormalIntentOut' may not have the 'out' intent in multilocale python libraries
+badFormalIntent_cPtr.chpl:9: error: Formal 's' of type 'c_ptrConst(int(8))' in exported routine 'badFormalIntentInOut' may not have the 'inout' intent in multilocale python libraries
+badFormalIntent_cPtr.chpl:11: error: Formal 's' of type 'c_ptrConst(int(8))' in exported routine 'badFormalIntentRef' may not have the 'ref' intent in multilocale python libraries
+badFormalIntent_cPtr.chpl:13: error: Formal 's' of type 'c_ptrConst(int(8))' in exported routine 'badFormalIntentConstRef' may not have the 'const ref' intent in multilocale python libraries

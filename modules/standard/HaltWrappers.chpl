@@ -94,6 +94,7 @@ module HaltWrappers {
   pragma "function terminates program"
   pragma "always propagate line file info"
   proc outOfMemoryHalt(s:string) {
+    use CTypes only c_str;
     const err = "Out of memory allocating \"" + s + "\"";
     __primitive("chpl_error", err.localize().c_str());
   }

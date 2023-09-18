@@ -83,7 +83,7 @@ module CFD_mini {
  *  Step 3 Return to Step 1 for g' and then for g"
  ****************************************************************************/
    loopTime.start();
-   forall b in boxDomain {
+   forall b in boxDomain with (ref new_data) {
      var FluxCache: [0..nComp-1,0..nCell,0..nCell,0..nCell] real;
 
      // x-direction

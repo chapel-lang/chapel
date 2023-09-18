@@ -4,7 +4,7 @@ config const n = 25;
 
 enum XO {O, X};
 
-var MyBlkCyc = new dmap(new BlockCyclic(startIdx=(1,), blocksize=(4,)));
+var MyBlkCyc = new blockCycDist(startIdx=(1,), blocksize=(4,));
 
 var D: domain(1) dmapped MyBlkCyc = {1..n};
 

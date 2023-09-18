@@ -130,7 +130,7 @@ module Crypto {
 
     */
     proc init(s: string) {
-      this.complete();
+      init this;
       this._len = s.numBytes;
       if (this._len == 0) {
         halt("Enter a string with length greater than 0 in order to create a buffer");
@@ -151,7 +151,7 @@ module Crypto {
 
     */
     proc init(s: bytes) {
-      this.complete();
+      init this;
       this._len = s.numBytes;
       if (this._len == 0) {
         halt("Enter a string with length greater than 0 in order to create a buffer");
@@ -173,7 +173,7 @@ module Crypto {
 
     */
     proc init(s: [] uint(8)) {
-      this.complete();
+      init this;
       this._len = s.size;
       if (this._len == 0) {
         halt("Enter an array with size greater than 0 in order to create a buffer");
@@ -277,7 +277,7 @@ module Crypto {
 
     */
     proc init(keyLen: int) {
-      this.complete();
+      init this;
       if (keyLen != 1024 && keyLen != 2048 && keyLen != 4096) {
         halt("RSAKey: Invalid key length.");
       }
@@ -328,7 +328,7 @@ module Crypto {
 
     */
     proc init(iv: owned CryptoBuffer, encSymmKey: [] owned CryptoBuffer, encSymmValue: owned CryptoBuffer) {
-      this.complete();
+      init this;
       this.keyDomain = encSymmKey.domain;
       for i in this.keyDomain do {
         this.keys[i] = encSymmKey[i];
@@ -454,7 +454,7 @@ module Crypto {
 
     */
     proc init(digestName: Digest) {
-      this.complete();
+      init this;
       select digestName {
         when Digest.MD5        do this.hashLen = 16;
         when Digest.SHA1       do this.hashLen = 20;

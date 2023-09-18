@@ -14,7 +14,7 @@ record C2 {
 }
 
 class Sub1: Base {
-  override proc method(c: C1) {
+  override proc method(c: C1(?)) {
     c.foo();
   }
 }

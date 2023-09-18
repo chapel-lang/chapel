@@ -378,21 +378,31 @@ module ChapelDomain {
                   "' using count(s) of type ", counts.type:string);
   }
 
-  @chpldoc.nodoc
-  operator +(d: domain, i: index(d)) {
-    if d.isRectangular() then
-      compilerError("Cannot add indices to a rectangular domain");
-    else
-      compilerError("Cannot add indices to this domain type");
-  }
+  //
+  // Disallow additions and subtractions to rectangular domains of these types
+  // with a specific message, to avoid surpises.
+  // Note: add/sub of a rectangular domain and another type will either
+  // produce a generic error message or compile as a promoted expression.
+  //
+  private proc noRDadds(type t) param do return
+    isPrimitive(t) || isRange(t) || isTuple(t) || isEnum(t);
 
   @chpldoc.nodoc
-  operator +(i, d: domain) where isSubtype(i.type, index(d)) && !d.isIrregular() {
-    if d.isRectangular() then
-      compilerError("Cannot add indices to a rectangular domain");
-    else
-      compilerError("Cannot add indices to this domain type");
-  }
+  operator +(d: domain, i: ?t) where d.isRectangular() && noRDadds(t) do
+    compilerError("addition of a rectangular domain and ", t:string,
+                  " is currently not supported");
+
+  @chpldoc.nodoc
+  operator +(i: ?t, d: domain) where d.isRectangular() && noRDadds(t) do
+    compilerError("addition of ", t:string,
+                  " and a rectangular domain is currently not supported");
+
+  @chpldoc.nodoc
+  operator -(d: domain, i: ?t) where d.isRectangular() && noRDadds(t) do
+    compilerError("subtraction of a rectangular domain and ", t:string,
+                  " is currently not supported");
+
+  // addition and subtraction on irregular domains has set semantics
 
   @chpldoc.nodoc
   @unstable("'+' on domains is unstable and may change in the future")
@@ -433,14 +443,6 @@ module ChapelDomain {
   @chpldoc.nodoc
   @unstable("'+=' on domains is unstable and may change in the future")
   inline operator +=(ref D: domain, param idx) { D.add(idx); }
-
-  @chpldoc.nodoc
-  operator -(d: domain, i: index(d)) {
-    if d.isRectangular() then
-      compilerError("Cannot remove indices from a rectangular domain");
-    else
-      compilerError("Cannot remove indices from this domain type");
-  }
 
   @chpldoc.nodoc
   @unstable("'-' on domains is unstable and may change in the future")
@@ -1007,7 +1009,7 @@ module ChapelDomain {
   pragma "domain"
   pragma "has runtime type"
   pragma "ignore noinit"
-  record _domain {
+  record _domain : writeSerializable, readDeserializable {
     var _pid:int; // only used when privatized
     pragma "owned"
     var _instance; // generic, but an instance of a subclass of BaseDom
@@ -1566,6 +1568,59 @@ module ChapelDomain {
       return _newArray(x);
     }
 
+    pragma "no copy return"
+    @unstable("tryCreateArray() is subject to change in the future.")
+    proc tryCreateArray(type eltType, initExpr: ?t) throws
+      where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType) {
+      if !(__primitive("resolves", _value.doiTryCreateArray(eltType))) then
+        compilerError("cannot call 'tryCreateArray' on domains that do not" +
+                      " support a 'doiTryCreateArray' method.");
+
+      chpl_checkEltType(eltType);
+      chpl_checkNegativeStride();
+
+      var x = _value.doiTryCreateArray(eltType);
+      pragma "dont disable remote value forwarding"
+      proc help() {
+        _value.add_arr(x);
+      }
+      help();
+
+      chpl_incRefCountsForDomainsInArrayEltTypes(x, x.eltType);
+      var res = _newArray(x);
+      res = initExpr;
+
+      return res;
+    }
+
+    pragma "no copy return"
+    @unstable("tryCreateArray() is subject to change in the future.")
+    proc tryCreateArray(type eltType, initExpr: [?dom] ?arrayEltType) throws
+      where this.rank == dom.rank && isCoercible(arrayEltType, eltType) {
+      if !(__primitive("resolves", _value.doiTryCreateArray(eltType))) then
+        compilerError("cannot call 'tryCreateArray' on domains that do not" +
+                      " support a 'doiTryCreateArray' method.");
+      if boundsChecking then
+        for (d, ad, i) in zip(this.dims(), dom.dims(), 0..) do
+          if d.size != ad.size then halt("Domain size mismatch in 'tryCreateArray' dimension " + i:string);
+
+      chpl_checkEltType(eltType);
+      chpl_checkNegativeStride();
+
+      var x = _value.doiTryCreateArray(eltType);
+      pragma "dont disable remote value forwarding"
+      proc help() {
+        _value.add_arr(x);
+      }
+      help();
+
+      chpl_incRefCountsForDomainsInArrayEltTypes(x, x.eltType);
+      var res = _newArray(x);
+      res = initExpr;
+
+      return res;
+    }
+
     // assumes that data is already initialized
     pragma "no copy return"
     @chpldoc.nodoc
@@ -1609,7 +1664,7 @@ module ChapelDomain {
       domain will be default-initialized. They can be set to desired
       values as usual, for example using an assignment operator.
     */
-    record unsafeAssignManager {
+    record unsafeAssignManager : contextManager {
       @chpldoc.nodoc
       var _lhsInstance;
 
@@ -2614,6 +2669,11 @@ module ChapelDomain {
     @chpldoc.nodoc
     proc ref readThis(f) throws {
       _value.dsiSerialRead(f);
+    }
+
+    @chpldoc.nodoc
+    proc ref deserialize(reader, ref deserializer) throws {
+      readThis(reader);
     }
 
     // TODO: Can we convert this to an initializer despite the potential issues

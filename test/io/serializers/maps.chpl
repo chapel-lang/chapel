@@ -8,8 +8,13 @@ record R {
   var y : real;
 }
 
-proc test(m: map) {
+proc test(m: map(?)) {
   printDebugFmt(m);
+
+  // TODO: reading maps in default format is not supported, at least not
+  // when the key or value type is a string.
+  if FormatReader.type == defaultDeserializer &&
+     (m.keyType == string || m.valType == string) then return;
 
   var f = openMemFile();
   {
@@ -61,5 +66,11 @@ proc main() {
       r.add(m[k], k);
 
     test(r);
+  }
+
+  {
+    var m : map(int, int);
+    for i in 1..5 do m.add(i, i**2);
+    test(m);
   }
 }

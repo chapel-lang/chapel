@@ -3,5 +3,6 @@
   In the 'except' list here:
       |
     1 | use OS except "not a symbol";
+      |               ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
 

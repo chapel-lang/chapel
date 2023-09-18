@@ -29,7 +29,7 @@ const
   bdim2 = new BlockCyclicDim(lowIdx=st2, blockSize=blkSize, numLocales=tl2);
 
 const AbD: domain(2, indexType)
-   dmapped DimensionalDist2D(tla, bdim1, bdim2, "dim") //BC
+   dmapped dimensionalDist2D(tla, bdim1, bdim2, "dim") //BC
   = MatVectSpace;
 
 var Ab: [AbD] elemType;  // the matrix A and vector b
@@ -46,9 +46,9 @@ writeln("n ", n, "  blkSize ", blkSize, "  locales ", tl1, "*", tl2);
 // the domains for the arrays used for replication
 const
   replAD = {1..n, 1..blkSize} dmapped
-    DimensionalDist2D(tla, bdim1, rdim2, "distBR"),
+    dimensionalDist2D(tla, bdim1, rdim2, "distBR"),
   replBD = {1..blkSize, 1..n+1} dmapped
-    DimensionalDist2D(tla, rdim1, bdim2, "distRB");
+    dimensionalDist2D(tla, rdim1, bdim2, "distRB");
 
 var replA: [replAD] elemType,
     replB: [replBD] elemType;

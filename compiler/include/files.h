@@ -39,6 +39,10 @@ extern std::vector<const char*> incDirs;
 extern std::vector<const char*> libDirs;
 extern std::vector<const char*> libFiles;
 
+// directory for intermediates; tmpdir or saveCDir
+// TODO: remove this as redundant with the Dyno Context's tmpdir
+extern const char* intDirName;
+
 struct fileinfo {
   FILE* fptr;
   const char* filename;
@@ -51,7 +55,8 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname=NULL,
                       const std::vector<const char *>& splitFiles
                         = std::vector<const char*>());
 
-void ensureDirExists(const char* /* dirname */, const char* /* explanation */);
+void ensureDirExists(const char* dirname, const char* explanation,
+                     bool checkWriteable = true);
 const char* getCwd();
 void ensureTmpDirExists();
 void deleteDir(const char* dirname);
@@ -91,6 +96,12 @@ const char* nthFilename(int i);
 void addLibPath(const char* filename);
 void addLibFile(const char* filename);
 void addIncInfo(const char* incDir);
+
+// Restore lib dir, lib name, and inc dir info that was saved to disk, for
+// compiler-driver use.
+void restoreLibraryAndIncludeInfo();
+// Restore source file names that were saved to disk, for compiler-driver use.
+void restoreAdditionalSourceFiles();
 
 void genIncludeCommandLineHeaders(FILE* outfile);
 

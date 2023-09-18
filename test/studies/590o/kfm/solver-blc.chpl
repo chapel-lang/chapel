@@ -69,7 +69,7 @@ var colRemainders: [tableSize] domain(int) = All;
 var boxRemainders: [Boxes] domain(int) = All;
 
 // ----- Initialize the values we still need for each row ----
-forall (i,j) in TableSpace {
+forall (i,j) in TableSpace with (ref boxRemainders, ref colRemainders, ref rowRemainders) {
   const v = Table(i,j);
   if (v != 0) {
     rowRemainders[i] -= v;
@@ -94,7 +94,7 @@ var numZeroes = + reduce (Table == 0);
 while (numZeroes > 0) {
   
   //  coforall (i,j) in TableSpace {
-  forall (i,j) in TableSpace {
+  forall (i,j) in TableSpace with (ref Table, ref boxRemainders, ref colRemainders, ref rowRemainders) {
     if (Table[i, j] == 0) {
         // initialize the current set of available numbers
     	var currSet: domain(int);

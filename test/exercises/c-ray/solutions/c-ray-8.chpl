@@ -139,7 +139,7 @@ proc main() {
   // A local domain, distributed domain, and array representing the image
   //
   const imageSize = {0..#yres, 0..#xres};
-  const pixelPlane = imageSize dmapped Block(imageSize);
+  const pixelPlane = imageSize dmapped blockDist(imageSize);
   var pixels: [pixelPlane] pixelType;
 
   //
@@ -175,7 +175,7 @@ proc main() {
   // random numbers.  This avoids communication back to locale #0
   // (where they were allocated) to access them from other locales.
   //
-  forall (y, x) in pixelPlane with (in scene, in rands) {
+  forall (y, x) in pixelPlane with (in scene, in rands, ref pixels) {
     pixels[y, x] = computePixel(y, x, scene, rands);
   }
 

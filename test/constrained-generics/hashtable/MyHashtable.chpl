@@ -137,7 +137,7 @@ module MyHashtable {
   private proc _typeNeedsDeinit(type t) param {
     return __primitive("needs auto destroy", t);
   }
-  private proc _deinitSlot(ref aSlot: chpl_TableEntry) {
+  private proc _deinitSlot(ref aSlot: chpl_TableEntry(?)) {
     if _typeNeedsDeinit(aSlot.key.type) {
       chpl__autoDestroy(aSlot.key);
     }
@@ -146,7 +146,7 @@ module MyHashtable {
     }
   }
 
-  private inline proc _isSlotFull(const ref aSlot: chpl_TableEntry): bool {
+  private inline proc _isSlotFull(const ref aSlot: chpl_TableEntry(?)): bool {
     return aSlot.status == chpl__hash_status.full;
   }
 
@@ -271,7 +271,7 @@ module MyHashtable {
       this.tableSize = chpl__primes(tableSizeNum);
       this.rehashHelpers = rehashHelpers;
       this.postponeResize = false;
-      this.complete();
+      init this;
 
       // allocates a _ddata(chpl_TableEntry(keyType,valType)) storing the table
       // All elements are memset to 0 (no initializer is run for the idxType)
@@ -542,7 +542,6 @@ implements chpl_Hashtable(chpl__hashtable(string, int));
           // the deleted entries & the table should only ever be half
           // full of non-deleted entries.
           halt("couldn't add key -- ", tableNumFullSlots, " / ", tableSize, " taken");
-          return (false, -1);
         }
         return (foundSlot, slotNum);
       }

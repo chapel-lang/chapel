@@ -23,7 +23,7 @@ iter helper(param dim : int, param rank : int, ranges) {
   }
 }
 
-proc buildSlices(param rank : int, OrigArg : domain) {
+proc buildSlices(param rank : int, OrigArg : domain(?)) {
   const Orig = OrigArg: domain(rank, strides=strideKind.any);
 
   //

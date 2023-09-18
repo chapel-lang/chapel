@@ -25,6 +25,7 @@
 #include "chpl/parsing/parser-error.h"
 #include "chpl/uast/all-uast.h"
 #include <vector>
+#include <string.h>
 
 namespace {
 
@@ -100,6 +101,7 @@ struct Visitor {
   bool isParentFalseBlock(int depth=0) const;
 
   bool isNamedThisAndNotReceiverOrFunction(const NamedDecl* node);
+  bool isNamedTheseAndNotIterMethod(const NamedDecl* node);
   bool isSpecialMethodKeywordUsedIncorrectly(const NamedDecl *node);
   bool isNameReservedWord(const NamedDecl* node);
   inline bool shouldEmitUnstableWarning(const AstNode* node);
@@ -114,6 +116,7 @@ struct Visitor {
   void checkExplicitDeinitCalls(const FnCall* node);
   void checkBorrowFromNew(const FnCall* node);
   void checkSparseKeyword(const FnCall* node);
+  void checkPrimCallInUserCode(const PrimCall* node);
   void checkDmappedKeyword(const OpCall* node);
   void checkConstVarNoInit(const Variable* node);
   void checkConfigVar(const Variable* node);
@@ -162,6 +165,7 @@ struct Visitor {
 
   // Warnings.
   void warnUnstableUnions(const Union* node);
+  void warnUnstableForeachLoops(const Foreach* node);
   void warnUnstableSymbolNames(const NamedDecl* node);
 
   // Visitors.
@@ -175,11 +179,13 @@ struct Visitor {
   void visit(const Continue* node);
   void visit(const CStringLiteral* node);
   void visit(const ExternBlock* node);
+  void visit(const Foreach* node);
   void visit(const FnCall* node);
   void visit(const Function* node);
   void visit(const FunctionSignature* node);
   void visit(const Import* node);
   void visit(const OpCall* node);
+  void visit(const PrimCall* node);
   void visit(const Return* node);
   void visit(const TypeQuery* node);
   void visit(const Union* node);
@@ -664,6 +670,19 @@ void Visitor::checkSparseKeyword(const FnCall* node) {
                " their behavior is likely to change in the future.");
 }
 
+// TODO: remove this check and warning after 1.34?
+void Visitor::checkPrimCallInUserCode(const PrimCall* node) {
+  // suppress this warning from chpldoc
+  if (isUserCode())
+    if ((node->prim() == PrimitiveTag::PRIM_CHPL_COMM_GET ||
+         node->prim() == PrimitiveTag::PRIM_CHPL_COMM_PUT) &&
+        context_->configuration().toolName != "chpldoc")
+          warn(node, "the primitives 'chpl_comm_get' and 'chpl_comm_put',"
+               " have changed behavior in Chapel 1.32. Please use"
+               " the 'Communication' module's 'get' and 'put' procedures"
+               " as replacements for calling the primitives directly");
+}
+
 void Visitor::checkDmappedKeyword(const OpCall* node) {
   if (node->op() == USTR("dmapped"))
     if (shouldEmitUnstableWarning(node))
@@ -1050,6 +1069,26 @@ bool Visitor::isNamedThisAndNotReceiverOrFunction(const NamedDecl* node) {
   return true;
 }
 
+bool Visitor::isNamedTheseAndNotIterMethod(const NamedDecl* node) {
+  if (node->name() != USTR("these")) return false;
+  if (auto asFn = node->toFunction()) {
+    if (asFn->isMethod()) {
+      if (asFn->kind() == Function::Kind::ITER) {
+        return false;
+      } else if (asFn->kind() == Function::Kind::PROC &&
+                 node->attributeGroup() &&
+                 node->attributeGroup()->hasPragma(
+                     pragmatags::PRAGMA_FN_RETURNS_ITERATOR)) {
+        // also allow proc methods that forward an iterator,
+        // via: pragma "fn returns iterator"
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
 bool Visitor::isSpecialMethodKeywordUsedIncorrectly(
   const NamedDecl *node)
 {
@@ -1072,10 +1111,12 @@ bool Visitor::isSpecialMethodKeywordUsedIncorrectly(
 bool Visitor::isNameReservedWord(const NamedDecl* node) {
   auto name = node->name();
   if (isNamedThisAndNotReceiverOrFunction(node)) return true;
+  if (isNamedTheseAndNotIterMethod(node)) return true;
   if (isSpecialMethodKeywordUsedIncorrectly(node)) return true;
   if (name == "none") return true;
   if (name == "false") return true;
   if (name == "true") return true;
+  if (name == "super") return true;
   return false;
 }
 
@@ -1098,6 +1139,7 @@ static bool isNameReservedType(UniqueString name) {
       name == USTR("domain")    ||
       name == USTR("index")     ||
       name == USTR("locale")    ||
+      name == USTR("range")     ||
       name == USTR("nothing")   ||
       name == USTR("void"))
     return true;
@@ -1121,6 +1163,10 @@ void Visitor::checkReservedSymbolName(const NamedDecl* node) {
     error(node, "attempt to redefine reserved word '%s'.", name.c_str());
   } else if (isNameReservedType(name)) {
     error(node, "attempt to redefine reserved type '%s'.", name.c_str());
+  }
+
+  if(strchr(name.c_str(), '$') != nullptr) {
+    warn(node, "Using '$' in identifiers is deprecated; rename this to not use a '$'.");
   }
 }
 
@@ -1193,6 +1239,12 @@ void Visitor::warnUnstableUnions(const Union* node) {
   if (!shouldEmitUnstableWarning(node)) return;
   warn(node, "unions are currently unstable and are expected to change "
              "in ways that will break their current uses.");
+}
+
+void Visitor::warnUnstableForeachLoops(const Foreach* node) {
+  if (!shouldEmitUnstableWarning(node)) return;
+  warn(node, "foreach loops are currently unstable and are expected to change "
+             "in ways that may break some of their current uses.");
 }
 
 void Visitor::warnUnstableSymbolNames(const NamedDecl* node) {
@@ -1357,6 +1409,11 @@ void Visitor::visit(const FnCall* node) {
   checkExplicitDeinitCalls(node);
   checkBorrowFromNew(node);
   checkSparseKeyword(node);
+
+}
+
+void Visitor::visit(const PrimCall* node) {
+  checkPrimCallInUserCode(node);
 }
 
 void Visitor::visit(const OpCall* node) {
@@ -1394,6 +1451,10 @@ void Visitor::visit(const FunctionSignature* node) {
 
 void Visitor::visit(const Union* node) {
   warnUnstableUnions(node);
+}
+
+void Visitor::visit(const Foreach* node) {
+  warnUnstableForeachLoops(node);
 }
 
 void Visitor::visit(const Use* node) {

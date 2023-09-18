@@ -1,7 +1,7 @@
-record item {
+record item : writeSerializable {
   var data: int = 0;
 
-  proc writeThis(f) throws { f.write(data); }
+  proc serialize(writer, ref serializer) throws { writer.write(data); }
 }
 
 record itemset {

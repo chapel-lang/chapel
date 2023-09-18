@@ -2,19 +2,19 @@ use CyclicDist, CommDiagnostics;
 
 resetCommDiagnostics();
 startCommDiagnostics();
-var dom = {1..10} dmapped Cyclic(1);
+var dom = {1..10} dmapped cyclicDist(1);
 stopCommDiagnostics();
 printCommDiagnosticsTable();
 
 resetCommDiagnostics();
 startCommDiagnostics();
-var dom2 = Cyclic.createDomain({1..10});
+var dom2 = cyclicDist.createDomain({1..10});
 stopCommDiagnostics();
 printCommDiagnosticsTable();
 
 resetCommDiagnostics();
 startCommDiagnostics();
-var dist = new Cyclic(1);
+var dist = new cyclicDist(1);
 stopCommDiagnostics();
 printCommDiagnosticsTable();
 

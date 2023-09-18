@@ -996,7 +996,7 @@ module ArgumentParser {
         _help.setHelp(helpMessage);
 
 
-      this.complete();
+      init this;
 
       try! {
         // configure to allow consuming of -- if passed from runtime

@@ -70,7 +70,7 @@ class listNode {
       :proc:`~LinkedList.destroy` must be called to reclaim any memory used by the list.
 
  */
-record LinkedList {
+record LinkedList : serializable {
   /*
     The type of the data stored in every node.
    */
@@ -96,7 +96,7 @@ record LinkedList {
   @chpldoc.nodoc
   proc init=(l : this.type) {
     this.eltType = l.eltType;
-    this.complete();
+    init this;
     for i in l do
       this.append(i);
   }
@@ -324,14 +324,13 @@ record LinkedList {
   }
 
   proc serialize(writer, ref serializer) throws {
-    if writer.serializerType == IO.DefaultSerializer {
+    if writer.serializerType == IO.defaultSerializer {
       writeThis(writer);
     } else {
-      ref ser = serializer;
-      ser.startList(writer, size);
+      var ser = serializer.startList(writer, size);
       for e in this do
-        ser.writeListElement(writer, e);
-      ser.endList(writer);
+        ser.writeElement(e);
+      ser.endList();
     }
   }
 
@@ -406,44 +405,38 @@ record LinkedList {
   }
 
   proc ref deserialize(reader: fileReader, ref deserializer) throws
-  where reader.deserializerType == IO.DefaultDeserializer {
+  where reader.deserializerType == IO.defaultDeserializer {
     destroy();
 
     // Default format works as a 1D array
-    ref des = deserializer;
-    des.startArray(reader);
-    des.startArrayDim(reader);
+    var des = deserializer.startArray(reader);
+    des.startDim();
 
     var done = false;
     while !done {
       try {
-        append(des.readArrayElement(reader, eltType));
+        append(des.readElement(eltType));
       } catch {
         done = true;
       }
     }
 
-    des.endArrayDim(reader);
-    des.endArray(reader);
+    des.endDim();
+    des.endArray();
   }
 
   proc ref deserialize(reader: fileReader, ref deserializer) throws {
     // Clear out existing elements in the list.
     destroy();
 
-    ref des = deserializer;
-    des.startList(reader);
+    var des = deserializer.startList(reader);
 
     var done = false;
-    while !done {
-      try {
-        append(des.readListElement(reader, eltType));
-      } catch {
-        done = true;
-      }
+    while des.hasMore() {
+      append(des.readElement(eltType));
     }
 
-    des.endList(reader);
+    des.endList();
   }
 
   // TODO: temporary implementation to get some tests passing, but needs to

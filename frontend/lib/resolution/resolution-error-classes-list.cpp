@@ -746,6 +746,20 @@ void ErrorNotInModule::write(ErrorWriterBase& wr) const {
   return;
 }
 
+void ErrorPhaseTwoInitMarker::write(ErrorWriterBase& wr) const {
+  auto node = std::get<const uast::AstNode*>(info);
+  auto& others = std::get<std::vector<ID>>(info);
+
+  const char* markerType = node->isInit() ? "init this" : "this.complete()";
+  wr.heading(kind_, type_, node,
+             "use of '", markerType, "' after type has been initialized.");
+  wr.code(node, { node });
+
+  auto previousMarker = others.at(0);
+  wr.note(previousMarker, "the type was previously marked as initialized here:");
+  wr.code<ID>(previousMarker, { previousMarker });
+}
+
 void ErrorPrivateToPublicInclude::write(ErrorWriterBase& wr) const {
   auto moduleInclude = std::get<const uast::Include*>(info);
   auto moduleDef = std::get<const uast::Module*>(info);
@@ -937,6 +951,22 @@ void ErrorSuperFromTopLevelModule::write(ErrorWriterBase& wr) const {
   wr.note(mod->id(), "module '", mod->name(), "' was declared at the ",
                      "top level here:");
   wr.codeForLocation(mod);
+}
+
+void ErrorTertiaryUseImportUnstable::write(ErrorWriterBase& wr) const {
+  auto name = std::get<UniqueString>(info);
+  auto node = std::get<const uast::AstNode*>(info);
+  auto clause = std::get<const uast::VisibilityClause*>(info);
+  auto searchedScope = std::get<const resolution::Scope*>(info);
+  auto useOrImport = std::get<resolution::VisibilityStmtKind>(info);
+  auto useOrImportStr = (useOrImport == resolution::VIS_USE) ? "a 'use'"
+                                                             : "an 'import'";
+  wr.heading(kind_, type_, clause,
+             "using a type's name ('", name, "' in this case) in ", useOrImportStr,
+             " statement to access its tertiary methods is an unstable feature.");
+  wr.message("In the following clause:");
+  wr.code(clause, { node });
+  wr.message("The type '", name, "' is not defined in '", searchedScope->name(), "'.");
 }
 
 void ErrorTupleDeclMismatchedElems::write(ErrorWriterBase& wr) const {

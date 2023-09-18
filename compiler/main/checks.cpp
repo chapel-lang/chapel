@@ -180,6 +180,55 @@ void check_flattenFunctions()
   // Suggestion: Ensure no nested functions.
 }
 
+static
+bool symbolIsUsedAsRef(Symbol* sym) {
+
+  auto checkForMove = [](SymExpr* use, CallExpr* call) {
+    SymExpr* lhs = toSymExpr(call->get(1));
+    Symbol* lhsSymbol = lhs->symbol();
+    return lhs != use && symbolIsUsedAsRef(lhsSymbol);
+  };
+
+  for_SymbolSymExprs(se, sym) {
+    if (symExprIsUsedAsRef(se, false, checkForMove)) return true;
+  }
+  return false;
+}
+
+static
+void checkForInvalidPromotions() {
+  // for all CallExprs, if we call a promotion wrapper that is marked no promotion, warn
+  // checking here after all ContextCallExpr's have been resolved to plain CallExpr's
+  for_alive_in_Vec(CallExpr, ce, gCallExprs) {
+    if (FnSymbol* fn = ce->theFnSymbol()) {
+      if (fn->hasFlag(FLAG_PROMOTION_WRAPPER) &&
+          fn->hasFlag(FLAG_NO_PROMOTION_WHEN_BY_REF)) {
+
+        // We cannot rely on retTag to tell us if this promoted function returns
+        // a ref or not, we need to use the result of the call and see if it is
+        // used in any ref contexts.
+        // Assuming ce is used as a move/assign, get the lhs as a SymExpr. If its
+        // symbol is used as a ref (either a ref var or passed to a ref formal)
+        // then we should warn
+
+        if (CallExpr* parentCe = toCallExpr(ce->parentExpr)) {
+          if (isMoveOrAssign(parentCe)) {
+            if (SymExpr* lhs = toSymExpr(parentCe->get(1))) {
+              if(symbolIsUsedAsRef(lhs->symbol())) {
+                USR_WARN(ce,
+                         "modifying an array over an array of indices is "
+                         "deprecated and will be an error in a future release "
+                         "- please use an explicit loop instead");
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
 void check_cullOverReferences()
 {
   check_afterEveryPass();
@@ -191,6 +240,8 @@ void check_cullOverReferences()
   for_alive_in_Vec(ContextCallExpr, cc, gContextCallExprs) {
     INT_FATAL("ContextCallExpr should no longer be in AST");
   }
+
+  checkForInvalidPromotions();
 }
 
 void check_lowerErrorHandling()

@@ -816,15 +816,15 @@ fold_result(Immediate *im1, Immediate *im2, Immediate *imm) {
   }
   // The const_kind will be either a uint or an int, depending on what the
   // non-bool argument is.  Keep the larger size
-  if (im1->num_index >= BOOL_SIZE_64 || im2->num_index >= INT_SIZE_64) {
+  if (im2->num_index >= INT_SIZE_64) {
     imm->const_kind = im2->const_kind;
     imm->num_index = INT_SIZE_64;
     return;
-  } else if (im1->num_index >= BOOL_SIZE_32 || im2->num_index >= INT_SIZE_32) {
+  } else if (im2->num_index >= INT_SIZE_32) {
     imm->const_kind = im2->const_kind;
     imm->num_index = INT_SIZE_32;
     return;
-  } else if (im1->num_index >= BOOL_SIZE_16 || im2->num_index >= INT_SIZE_16) {
+  } else if (im2->num_index >= INT_SIZE_16) {
     imm->const_kind = im2->const_kind;
     imm->num_index = INT_SIZE_16;
     return;

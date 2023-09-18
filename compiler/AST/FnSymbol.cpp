@@ -874,6 +874,14 @@ static void checkFormalType(const FnSymbol* enclosingFn, ArgSymbol* formal) {
           USR_FATAL_CONT(typeExp, "The declared type of the formal "
           "%s is given by non-type function '%s'", formal->name, target->name);
     }
+
+    if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
+      if (enclosingFn->hasFlag(FLAG_COMPILER_GENERATED)) {
+        // We shouldn't complain to the user about routines we generate
+      } else {
+        warnIfGenericFormalMissingQ(formal, formal->type, nullptr);
+      }
+    }
   }
 }
 

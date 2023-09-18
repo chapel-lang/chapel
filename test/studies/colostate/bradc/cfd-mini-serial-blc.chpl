@@ -87,7 +87,7 @@ module CFD_mini {
  *  Step 3 Return to Step 1 for g' and then for g"
  ****************************************************************************/
    loopTime.start();
-   forall b in boxRange {
+   forall b in boxRange with (ref new_data, ref old_data) {
      var FluxCache: [compRange][FluxDomain] real;
 
      computeDirection(2, FluxCache, old_data[b], new_data[b], xFluxDomain, 2);

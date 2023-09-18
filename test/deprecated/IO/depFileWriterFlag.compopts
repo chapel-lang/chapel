@@ -1,0 +1,3 @@
+-suseNewFileWriterRegionBounds=true # depFileWriterFlag.set-true.good
+-suseNewFileWriterRegionBounds=false # depFileWriterFlag.set-false.good
+ # depFileWriterFlag.unset.good

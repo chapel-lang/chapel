@@ -36,7 +36,7 @@ class MeetingPlace {
   /* constructor for MeetingPlace, sets the
      number of meetings to take place */
   proc init() {
-    this.complete();
+    init this;
     spotsLeftSync.writeXF(numMeetings*2);
   }
 

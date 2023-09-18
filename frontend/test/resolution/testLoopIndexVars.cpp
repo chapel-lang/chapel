@@ -339,7 +339,7 @@ static void testCForLoop() {
   auto rf = fn->resolutionById();
   auto whileLoop = m->stmt(0)->toFunction()->stmt(1)->toWhile();
   auto cond = rf.byAst(whileLoop->condition());
-  assert(cond.type().type() == BoolType::get(context, 0));
+  assert(cond.type().type() == BoolType::get(context));
 }
 
 static void testParamFor() {

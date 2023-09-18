@@ -14,7 +14,7 @@ module M {
         writeln("processArr 2");
     }
 
-    proc processDom(dom: domain) where dom.rank == 2 {
+    proc processDom(dom: domain(?)) where dom.rank == 2 {
         writeln("processDom 1");
     }
 
@@ -49,7 +49,8 @@ module M {
     }
 
     // From CMO_array.chpl
-    iter these(param tag, followThis) ref where tag == iterKind.follower {
+    iter these_example(param tag, followThis) ref
+      where tag == iterKind.follower {
         yield followThis;
     }
 

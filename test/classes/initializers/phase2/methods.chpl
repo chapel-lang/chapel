@@ -3,7 +3,7 @@ class ThisPhase2 {
 
   proc init(val: complex) {
     someField = val;
-    this.complete();
+    init this;
     myMethod(); // Verifies that we can call methods in Phase 2
   }
 

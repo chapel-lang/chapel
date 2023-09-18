@@ -6,7 +6,7 @@ class D {
   var cs: [0..numLocales-1] unmanaged C?;
 
   proc init() {
-    this.complete();
+    init this;
     coforall i in 0..numLocales-1 do 
       on Locales(i) do cs[i] = new unmanaged C(i);
   }

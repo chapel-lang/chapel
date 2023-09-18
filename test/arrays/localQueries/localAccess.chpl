@@ -31,7 +31,7 @@ var baseDom = {1..10};
 }
 
 
-proc test(dom: domain) {
+proc test(dom: domain(?)) {
   var arr: [dom] int;
 
   for i in dom {

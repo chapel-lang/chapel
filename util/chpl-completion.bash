@@ -43,6 +43,7 @@ _chpl ()
 --comm \
 --comm-substrate \
 --compile-time-nil-checking \
+--compiler-driver \
 --copy-elision \
 --copy-propagation \
 --copyright \
@@ -56,6 +57,10 @@ _chpl ()
 --detailed-errors \
 --devel \
 --div-by-zero-checks \
+--driver-debug-phase \
+--driver-phase-one \
+--driver-phase-two \
+--driver-tmp-dir \
 --dynamic \
 --dynamic-auto-local-access \
 --dyno \

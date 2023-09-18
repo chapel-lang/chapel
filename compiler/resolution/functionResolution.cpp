@@ -893,10 +893,6 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   }
 
-  if (formalType == dtAnyBool && is_bool_type(actualType)) {
-    return true;
-  }
-
   if (formalType == dtAnyComplex && is_complex_type(actualType)) {
     return true;
   }
@@ -979,10 +975,6 @@ static bool canParamCoerce(Type*   actualType,
                            Symbol* actualSym,
                            Type*   formalType,
                            bool*   paramNarrows) {
-  if (is_bool_type(formalType) && is_bool_type(actualType)) {
-    return true;
-  }
-
   if (is_int_type(formalType)) {
     if (is_bool_type(actualType)) {
       return true;
@@ -2115,8 +2107,7 @@ static int classifyNumericWidth(Type* t)
   if (is_int_type(t) ||
       is_uint_type(t) ||
       is_real_type(t) ||
-      is_imag_type(t) ||
-      is_bool_type(t))
+      is_imag_type(t))
     return get_width(t);
 
   if (is_complex_type(t))
@@ -3106,8 +3097,12 @@ static void adjustClassCastCall(CallExpr* call)
     // (Note, this assumes that managedType.borrow() does not throw/halt
     //  for nilable managed types storing nil. If that changed, we'd
     //  need another method to call here to get the possibly nil ptr).
+    // This code is important to allow proper borrowing, but without
+    //  `!isDecoratorUnmanaged(d)` it is too eager and is applied where it
+    //  should not be
     if (isDecoratorManaged(valueD) &&
         !isDecoratorManaged(d) &&
+        !isDecoratorUnmanaged(d) &&
         !valueIsType) {
       if (isDecoratorUnknownManagement(d))
         INT_FATAL(call, "actual value has unknown type");
@@ -3654,7 +3649,7 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
     USR_FATAL_CONT(info.call, "illegal type index expression '%s'", info.toString());
     const char* typeclass = (isPrimitiveType(tsType) ? "primitive type" :
                              (isEnumType(tsType) ? "enum type" : "type"));
-    USR_PRINT(info.call, "%s '%s' cannot be used in an index expression", typeclass, tsType->symbol->name);
+    USR_PRINT(info.call, "%s '%s' cannot be indexed in this manner", typeclass, tsType->symbol->name);
     USR_STOP();
   } else if (at->symbol->hasFlag(FLAG_TUPLE)) {
     SymbolMap subs;
@@ -10156,27 +10151,10 @@ static bool terminatesControlFlow(Expr* expr) {
   return false;
 }
 
-// If 'expr' terminates CF, make an exception if 'expr' halts or throws.
-// Reason: existing code uses unreachable code to infer the return type, ex.
-//   proc bulkAdd_help(...) { halt(...); return -1; } --> returns int
-// Ex. test/sparse/CS/multiplication/correctness.chpl
-static bool needLaterReturn(Expr* expr) {
-  return isCallExpr(expr);
-}
-
 // If 'expr' aborts control flow, ex. goto (incl. return), throw, or call
 // to a "terminate program" function, remove subsequent unreachable stmts.
 static void handleEarlyFinish(Expr* expr) {
   if (! terminatesControlFlow(expr)) return; // nothing to do
-
-  if (needLaterReturn(expr))
-    if (isFnSymbol(expr->parentSymbol)) // returns are only in functions
-      for (Expr* cur = expr->next; cur; cur = cur->next)
-        if (CallExpr* call = toCallExpr(cur))
-          if (call->isPrimitive(PRIM_MOVE))
-            if (SymExpr* destSE = toSymExpr(call->get(1)))
-              if (destSE->symbol()->hasFlag(FLAG_RVV))
-                return; // keep the unreachable code
 
   if (CallExpr* nextCall = toCallExpr(expr->next))
     if (nextCall->isPrimitive(PRIM_END_OF_STATEMENT))
@@ -11255,6 +11233,151 @@ static void checkNoVoidFields()
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*  Find specially named methods such as 'hash' that are placed on types that  *
+*  don't have the corresponding interface. This is executed here because      *
+*  resolution cleans up unused functions and interface statements, but we want*
+*  to warn even if a function isn't used.                                     *
+*                                                                             *
+************************************** | *************************************/
+
+struct SpeciallyNamedMethodInfo {
+  std::map<std::string, FnSymbol*> speciallyNamedMethods;
+};
+
+using SpeciallyNamedMethodKey = std::pair<InterfaceSymbol*, AggregateType*>;
+using SpecialMethodMap = std::map<SpeciallyNamedMethodKey, SpeciallyNamedMethodInfo>;
+
+static AggregateType* getBaseTypeForInterfaceWarnings(Type* ts) {
+  AggregateType* toReturn = toAggregateType(ts);
+
+  if (!toReturn) {
+    if (auto dct = toDecoratedClassType(ts)) {
+      toReturn = dct->getCanonicalClass();
+    }
+  }
+
+  if (toReturn) toReturn = toReturn->getRootInstantiation();
+
+  return toReturn;
+}
+
+static bool matchesSerializeShape(FnSymbol* fn,
+                                  const char* first, const char* second) {
+  // Initializer needs at least 4 : this, _mt, <generics>, reader, deserializer
+  int n = fn->numFormals();
+  if (fn->isInitializer()) {
+    if (n < 4) return false;
+  } else if (n != 4) {
+    // (de)serialize have only 4: this, _mt, <channel>, <(de)serializer>
+    return false;
+  }
+
+  bool ret = strcmp(fn->getFormal(n-1)->name, first) == 0 &&
+             strcmp(fn->getFormal(n)->name, second) == 0;
+  return ret;
+}
+
+static bool isSerdeSingleInterface(InterfaceSymbol* isym) {
+  return isym == gWriteSerializable ||
+         isym == gReadDeserializable ||
+         isym == gInitDeserializable;
+}
+
+static void checkSpeciallyNamedMethods() {
+  static const std::unordered_map<const char*, InterfaceSymbol*> reservedNames = {
+    { astr("hash"), gHashable },
+    { astr("enterContext"), gContextManager },
+    { astr("exitContext"),  gContextManager },
+    { astr("serialize"),    gWriteSerializable },
+    { astr("deserialize"),  gReadDeserializable },
+    { astr("init"),         gInitDeserializable },
+  };
+
+  SpecialMethodMap flagged;
+
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+    if (!fn->isMethod()) continue;
+    if (fn->isCompilerGenerated() || fn->hasFlag(FLAG_FIELD_ACCESSOR)) continue;
+    auto reservedIter = reservedNames.find(fn->name);
+    if (reservedIter == reservedNames.end()) continue;
+    auto found = reservedIter->second;
+
+    if (found == gHashable || found == gContextManager) {
+      // The parent class must have this function, and would've been flagged.
+      // the user will already get the warning.
+      if (fn->hasFlag(FLAG_OVERRIDE)) continue;
+    }
+
+    auto receiverType = fn->getReceiverType();
+    auto at = getBaseTypeForInterfaceWarnings(receiverType);
+    if (!at || (found == gHashable && at == dtObject)) continue;
+
+    // _iteratorRecord currently doesn't work with 'implements' statements at
+    // the moment (likely due to its typeclass-like nature), so we skip all
+    // iterator records manually here for the 'writeSerializable' case.
+    if (at->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
+        found == gWriteSerializable) continue;
+
+    if ((found == gInitDeserializable || found == gReadDeserializable) &&
+        !matchesSerializeShape(fn, "reader", "deserializer")) continue;
+
+    if (found == gWriteSerializable &&
+        !matchesSerializeShape(fn, "writer", "serializer")) continue;
+
+    auto key = SpeciallyNamedMethodKey(found, at);
+    flagged[key].speciallyNamedMethods[fn->name] = fn;
+
+    if (isSerdeSingleInterface(found)) {
+      auto key = SpeciallyNamedMethodKey(gSerializable, at);
+      flagged[key].speciallyNamedMethods[fn->name] = fn;
+    }
+  }
+
+  for_alive_in_Vec(ImplementsStmt, istm, gImplementsStmts) {
+    auto se = toSymExpr(istm->iConstraint->consActuals.get(1));
+    auto ts = toTypeSymbol(se->symbol());
+    auto at = getBaseTypeForInterfaceWarnings(ts->type);
+    if (!at) continue;
+
+    // For this pair of aggregate type / interface, remove it from the
+    // flagged set, because we found an instance.
+    auto isym = istm->iConstraint->ifcSymbol();
+    flagged.erase(SpeciallyNamedMethodKey(isym, at));
+
+    if (isym == gSerializable) {
+      flagged.erase(SpeciallyNamedMethodKey(gWriteSerializable, at));
+      flagged.erase(SpeciallyNamedMethodKey(gReadDeserializable, at));
+      flagged.erase(SpeciallyNamedMethodKey(gInitDeserializable, at));
+    } else if (isSerdeSingleInterface(isym)) {
+      flagged.erase(SpeciallyNamedMethodKey(gSerializable, at));
+    }
+  }
+
+  // the things now left in flagged, we did not find any implements statements
+  // for.
+  for (auto& flaggedTypeIfc : flagged) {
+    auto ifc = flaggedTypeIfc.first.first;
+    auto at = flaggedTypeIfc.first.second;
+
+    // Don't recommend 'serializable' so that there are not duplicates
+    if (ifc == gSerializable) {
+      continue;
+    }
+
+    USR_WARN(at,
+             "the type '%s' defines methods that previously had special meaning. "
+             "These will soon require '%s' to implement the '%s' interface to "
+             "continue to be treated specially.", at->name(), at->name(), ifc->name);
+    for (auto& flaggedNameFn : flaggedTypeIfc.second.speciallyNamedMethods) {
+      USR_PRINT(flaggedNameFn.second, "formerly-special function '%s' defined here",
+               flaggedNameFn.second->name);
+    }
+  }
+}
+
+
 
 void resolve() {
   parseExplainFlag(fExplainCall, &explainCallLine, &explainCallModule);
@@ -11328,6 +11451,8 @@ void resolve() {
 
   if (fPrintUnusedFns || fPrintUnusedInternalFns)
     printUnusedFunctions();
+
+  checkSpeciallyNamedMethods();
 
   saveGenericSubstitutions();
 
@@ -13805,19 +13930,44 @@ void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx) {
   }
 }
 
-static bool isBuiltinGenericType(Type* t) {
-  return isBuiltinGenericClassType(t) ||
-         t == dtAnyComplex || t == dtAnyImag || t == dtAnyReal ||
-         t == dtAnyBool || t == dtAnyEnumerated ||
-         t == dtNumeric || t == dtIntegral ||
-         t == dtIteratorRecord || t == dtIteratorClass ||
-         t == dtAnyPOD ||
-         t == dtOwned || t == dtShared ||
-         t == dtAnyRecord;
-}
-
 std::set<Symbol*> gAlreadyWarnedSurprisingGenericSyms;
 std::set<Symbol*> gAlreadyWarnedSurprisingGenericManagementSyms;
+
+static bool computeIsField(Symbol*& sym, AggregateType* forFieldInHere) {
+  // is it a field? check to see if it's a temp within an initializer
+  // initializing field (in which case, we should think about
+  // this as a field). If it's a field, replaces 'sym' with the
+  // field to use for error reporting.
+  bool isField = false;
+
+  if (forFieldInHere) {
+    AggregateType* ct = forFieldInHere->getRootInstantiation();
+    Symbol* field = ct->getField(sym->name);
+    isField = true;
+    sym = field;
+  } else if (sym->hasFlag(FLAG_TEMP)) {
+    for_SymbolSymExprs(se, sym) {
+      if (CallExpr* c = toCallExpr(se->parentExpr)) {
+        if ((c->isPrimitive(PRIM_SET_MEMBER) ||
+             c->isPrimitive(PRIM_INIT_FIELD)) && se == c->get(3)) {
+          isField = true;
+
+          // replace 'sym' with the field for the error location
+          AggregateType* ct = toAggregateType(c->get(1)->getValType());
+          ct = ct->getRootInstantiation();
+          SymExpr* nameSe = toSymExpr(c->get(2));
+          VarSymbol* nameVar = toVarSymbol(nameSe->symbol());
+          const char* name = astr(nameVar->immediate->v_string.c_str());
+          Symbol* field = ct->getField(name);
+          sym = field;
+          break;
+        }
+      }
+    }
+  }
+
+  return isField;
+}
 
 void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
                                  AggregateType* forFieldInHere) {
@@ -13833,40 +13983,22 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
       declType = typeExpr->typeInfo();
     }
 
+    bool genericWithDefaults = false;
+    if (AggregateType* at = toAggregateType(declType))
+      genericWithDefaults = at->isGenericWithDefaults();
+
     if (declType->symbol->hasFlag(FLAG_GENERIC) &&
+        declType != dtAny && // workaround for interfaces
+        !genericWithDefaults &&
         !sym->hasFlag(FLAG_MARKED_GENERIC) &&
+        !sym->hasFlag(FLAG_RET_TYPE_MARKED_GENERIC) &&
         !sym->hasFlag(FLAG_TYPE_VARIABLE)) {
 
       // is it a field? check to see if it's a temp within an initializer
       // initializing field (in which case, we should think about
       // this as a field).
-      bool isField = false;
-
-      if (forFieldInHere) {
-        AggregateType* ct = forFieldInHere->getRootInstantiation();
-        Symbol* field = ct->getField(sym->name);
-        isField = true;
-        sym = field;
-      } else if (sym->hasFlag(FLAG_TEMP)) {
-        for_SymbolSymExprs(se, sym) {
-          if (CallExpr* c = toCallExpr(se->parentExpr)) {
-            if ((c->isPrimitive(PRIM_SET_MEMBER) ||
-                 c->isPrimitive(PRIM_INIT_FIELD)) && se == c->get(3)) {
-              isField = true;
-
-              // replace 'sym' with the field for the error location
-              AggregateType* ct = toAggregateType(c->get(1)->getValType());
-              ct = ct->getRootInstantiation();
-              SymExpr* nameSe = toSymExpr(c->get(2));
-              VarSymbol* nameVar = toVarSymbol(nameSe->symbol());
-              const char* name = astr(nameVar->immediate->v_string.c_str());
-              Symbol* field = ct->getField(name);
-              sym = field;
-              break;
-            }
-          }
-        }
-      }
+      // Note: this can change 'sym' to a field rather than a tmp.
+      bool isField = computeIsField(sym, forFieldInHere);
 
       if (isClassLikeOrManaged(declType)) {
         auto dec = classTypeDecorator(declType);
@@ -13967,14 +14099,45 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
             s.append("(?)");
           }
 
-          const char* fieldOrVar = isField?"field":"variable";
-          USR_WARN(sym, "please use '?' when declaring a %s with generic type",
-                   fieldOrVar);
+          if (isFnSymbol(sym)) {
+            USR_WARN(sym, "please use '?' when declaring a routine "
+                          "with a generic return type");
+
+          } else {
+            const char* fieldOrVar = isField?"field":"variable";
+            USR_WARN(sym,
+                     "please use '?' when declaring a %s with generic type",
+                     fieldOrVar);
+          }
           USR_PRINT(sym, "for example with '%s'", s.c_str());
         }
         if (fWarnUnstable) {
           USR_PRINT("this warning may be an error in the future");
         }
+      }
+    }
+
+    // if it was marked generic, but it's not generic (or an instantiation)
+    // then have a fatal error
+    if (sym->hasFlag(FLAG_MARKED_GENERIC) ||
+        sym->hasFlag(FLAG_RET_TYPE_MARKED_GENERIC)) {
+      if (!declType->symbol->hasFlag(FLAG_GENERIC) &&
+          !genericWithDefaults) {
+        bool isField = computeIsField(sym, forFieldInHere);
+
+        const char* thing = "";
+        if (isFnSymbol(sym)) {
+          thing = astr("return type of the routine ", sym->name);
+        } else if (isField) {
+          thing = astr("field ", sym->name);
+        } else {
+          thing = astr("variable ", sym->name);
+        }
+
+        USR_FATAL(sym,
+                  "the %s is marked generic with (?) "
+                  "but the type '%s' is not generic",
+                  thing, toString(declType, /*decorators*/ false));
       }
     }
   }

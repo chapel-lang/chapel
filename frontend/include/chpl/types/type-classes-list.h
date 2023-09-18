@@ -64,9 +64,8 @@ TYPE_BEGIN_SUBCLASSES(BuiltinType)
   BUILTIN_TYPE_NODE(SyncAuxType, "_sync_aux_t")
   BUILTIN_TYPE_NODE(TaskIdType, "chpl_nullTaskID")
 
-  // generic builtin types. AnyBoolType must be the first of these
+  // generic builtin types. AnyBorrowedNilableType must be the first of these
   // (or else adjust BuiltinType::isGeneric and this comment)
-  BUILTIN_TYPE_NODE(AnyBoolType, "chpl_anybool")
   BUILTIN_TYPE_NODE(AnyBorrowedNilableType, "_borrowedNilable")
   BUILTIN_TYPE_NODE(AnyBorrowedNonNilableType, "_borrowedNonNilable")
   BUILTIN_TYPE_NODE(AnyBorrowedType, "borrowed")

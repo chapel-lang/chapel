@@ -18,8 +18,8 @@ config const printLocaleData = false,
 // such logic so many times in your life before it gets really old.
 //
 const LocDom = {1..n  , 1..n  },
-         Dom = LocDom dmapped Block(LocDom),
-      BigDom = {0..n+1, 0..n+1} dmapped Block(LocDom);
+         Dom = LocDom dmapped blockDist(LocDom),
+      BigDom = {0..n+1, 0..n+1} dmapped blockDist(LocDom);
 
 //
 // query out the domain and array of the locales we're targeting
@@ -241,7 +241,7 @@ coforall (lr,lc) in LocaleGridDom with (ref LocalDomArrs) {
       //
       // TODO: wrap this in a local block.  Big perf boost expected
       //
-      forall (i,j) in MyLocDom do
+      forall (i,j) in MyLocDom with (ref B) do
         B[i,j] = 0.25   * A[i,j]
                + 0.125  * (A[i+1,j  ] + A[i-1,j  ] + A[i  ,j-1] + A[i  ,j+1])
                + 0.0625 * (A[i-1,j-1] + A[i-1,j+1] + A[i+1,j-1] + A[i+1,j+1]);

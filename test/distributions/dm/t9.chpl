@@ -14,17 +14,17 @@ setupLocales(s1, s2);
 var vdf = new BlockCyclicDim(lowIdx=-100, blockSize=3, numLocales=s1);
 var sdf = new BlockCyclicDim(lowIdx=-10, blockSize=2, numLocales=s2);
 
-hd("new DimensionalDist2D()");
-var ddf = new unmanaged DimensionalDist2D(mylocs, vdf, sdf, "ddf");
+hd("new dimensionalDist2D()");
+var ddf = new dimensionalDist2D(mylocs, vdf, sdf, "ddf");
 tl();
 
 hd("wrapping ddf in dmap");
-var ddfm = new dmap(ddf);
+ref ddfm = ddf;
 tl();
 
 // Wrapping a second time would result in double-deletion of ddf.
 hd("skipping: wrapping ddf in another dmap, without assignment");
-//new dmap(ddf);
+//ddf;
 tl();
 
 i2lTest(ddfm, (1,1));

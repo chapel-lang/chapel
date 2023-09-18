@@ -41,11 +41,11 @@ proc main(args:[] string)
   // a file id is just the index into the paths array.
   var hashAndFileId:[pathsArray.domain] (Hash, int);
 
-  forall (id,path) in zip(pathsArray.domain, pathsArray) {
+  forall (id,path) in zip(pathsArray.domain, pathsArray) with (ref hashAndFileId) {
     var mdArray:[0..19] uint(8);
     var data:string;
     var f = open(path, ioMode.r);
-    f.reader(deserializer=new BinaryDeserializer()).readAll(data);
+    f.reader(deserializer=new binaryDeserializer()).readAll(data);
     // The extern block above included everything in openssl/sha.h,
     // including the SHA1 function. But, in order to call it, we
     // need to create C types from some Chapel data.

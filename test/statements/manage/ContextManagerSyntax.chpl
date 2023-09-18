@@ -12,6 +12,7 @@ proc r.exitContext(in err: owned Error?) {
   writeln('leaving');
   if err then try! { throw err; }
 }
+r implements contextManager;
 
 record res {
   proc doSomething() {
@@ -23,7 +24,7 @@ var globalRes = new res();
 
 // Multiple overloads of 'enterContext()' can exist, that just means that the
 // resource storage cannot be inferred.
-record man {
+record man : contextManager {
   var x = new r();
 
   proc enterContext() ref {

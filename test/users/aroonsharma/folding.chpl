@@ -24,14 +24,14 @@ if dist=='NONE' {
   //totalcomm2=volume;
   dobench(mydist, mydom);  */
 } else if dist=='C' {
-  var mydist = mydom dmapped Cyclic(startIdx=mydom.low);
+  var mydist = mydom dmapped cyclicDist(startIdx=mydom.low);
   dobench(mydist, mydom);  
 } else if dist=='B' {
-  var mydist = mydom dmapped Block(boundingBox=mydom);
+  var mydist = mydom dmapped blockDist(boundingBox=mydom);
   dobench(mydist, mydom);
 } /*else if dist == 'BC' {
   //won't work for this benchmark because of strided access patterns
-  var mydist = mydom dmapped BlockCyclic(startIdx=mydom.low, blocksize=bsize);
+  var mydist = mydom dmapped blockCycDist(startIdx=mydom.low, blocksize=bsize);
   dobench(mydist, mydom);
 } else if dist == "BCM" {
   //won't work for this benchmark because of strided access patterns

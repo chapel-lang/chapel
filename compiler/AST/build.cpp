@@ -1589,6 +1589,9 @@ DefExpr* buildClassDefExpr(const char*               name,
   } else if (strcmp("_locale", name) == 0) {
     ct = installInternalType(ct, dtLocale);
     ts = ct->symbol;
+  } else if (strcmp("_range", name) == 0) {
+    ct = installInternalType(ct, dtRange);
+    ts = ct->symbol;
   } else if (strcmp("_object", name) == 0) {
     ct = installInternalType(ct, dtObject);
     ts = ct->symbol;
@@ -1968,6 +1971,7 @@ static TryStmt* buildTryCatchForManagerBlock(VarSymbol* managerHandle,
 
   {
     TEMP ref manager = PRIM_ADDR_OF(myManager());
+    chpl__verifyTypeContext(manager);
     USER [var/ref/const] myResource = manager.enterContext();
     TEMP errorCaught = false;
 
@@ -1997,7 +2001,10 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
   auto moveIntoHandle = new CallExpr(PRIM_MOVE, managerHandle, addrOfExpr);
   ret->insertAtTail(moveIntoHandle);
 
-  // Build call to 'enterContext()', but don't insert into the tree yet.
+  auto verifyCall = new CallExpr("chpl__verifyTypeContext", new SymExpr(managerHandle));
+  ret->insertAtTail(verifyCall);
+
+  // Build call to 'enterContext', but don't insert into the tree yet.
   auto seManager = new SymExpr(managerHandle);
   auto enterContext = new CallExpr("enterContext", gMethodToken, seManager);
 

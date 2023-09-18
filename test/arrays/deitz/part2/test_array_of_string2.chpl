@@ -4,7 +4,7 @@ var a : [d] string = "nada";
 
 writeln(a);
 
-[i in 1..3] {
+[i in 1..3 with (ref a)] {
   a(i,i) = (i + i):string;
 }
 

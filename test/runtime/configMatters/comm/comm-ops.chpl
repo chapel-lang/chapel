@@ -42,7 +42,7 @@ record padded {
   proc init(type T) {
     this.T = T;
   }
-  proc init=(other: padded) {
+  proc init=(other: padded(?)) {
     this.T = other.T;
     // I think `pad` does not need to be copied here
     // it is an optimization to make the struct consume a whole cache line
@@ -56,8 +56,8 @@ record padded {
 }
 
 // Create arrays and warmup / init RAD cache
-var A = Block.createArray(1..numTasks*2, padded(atomic int));
-var B = Block.createArray(1..numTasks*2, padded(int));
+var A = blockDist.createArray(1..numTasks*2, padded(atomic int));
+var B = blockDist.createArray(1..numTasks*2, padded(int));
 for loc in Locales do on loc {
   coforall tid in 1..numTasks*2 with (ref A, ref B) {
     A[tid].val.write(0);

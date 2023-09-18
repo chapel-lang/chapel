@@ -56,6 +56,8 @@ class Chapel < Formula
     (libexec/"chplconfig").write <<~EOS
       CHPL_RE2=bundled
       CHPL_GMP=system
+      CHPL_MEM=cstdlib
+      CHPL_TASKS=fifo
       CHPL_LLVM_CONFIG=#{llvm.opt_bin}/llvm-config
       CHPL_LLVM_GCC_PREFIX=none
     EOS

@@ -37,7 +37,7 @@ proc radix_sort(Values, ref Permute, radix:int(64), nbits:int(64)): void {
       var mask:int(64) = (nbuckets - 1) << (pass * radix);
 
       Histogram.write(0);
-      forall i in D1 {
+      forall i in D1 with (ref Histogram) {
         var r:int(64) = ((mask & Values[Permute_old[i]]) >> (pass * radix));
         Histogram[r].add(1);
       }
@@ -49,7 +49,7 @@ proc radix_sort(Values, ref Permute, radix:int(64), nbits:int(64)): void {
       }
       Offsets_old = Offsets.read();
 
-      forall i in D1 {
+      forall i in D1 with (ref Index, ref Offsets, ref Permute) {
         var r:int(64) = ((mask & Values[Permute_old[i]]) >> (pass * radix));
         var loc = Offsets[r].fetchAdd(1);
         Permute[loc] = Permute_old[i];
@@ -62,13 +62,13 @@ proc radix_sort(Values, ref Permute, radix:int(64), nbits:int(64)): void {
         for i in base..(nelem-1) do
           Count[i].write(All_counts[i]);
 
-        forall i in (0..(Histogram[b].read()-1)) {
+        forall i in (0..(Histogram[b].read()-1)) with (ref Count, ref Permute_old) {
           Count[(i+base)].write(0);
           Permute_old[(i+base)] = Permute[(i+base)];
         }
 
         for i in (1..(Histogram[b].read()-1)) {
-          forall j in (0..(i-1)) {
+          forall j in (0..(i-1)) with (ref Count) {
             if (Index[(i+base)] < Index[(j+base)]) {
               Count[(j+base)].add(1);
             } else {
@@ -77,7 +77,7 @@ proc radix_sort(Values, ref Permute, radix:int(64), nbits:int(64)): void {
           }
         }
 
-        forall i in (0..(Histogram[b].read()-1)) {
+        forall i in (0..(Histogram[b].read()-1)) with (ref Permute) {
           Permute[(Count[(i+base)].read()+base)] = Permute_old[(i+base)];
         }
       }
@@ -117,7 +117,7 @@ F_prime = (F * 9223372036854775808):int(64);
 rngTime = timeSinceEpoch().totalSeconds() - rngStartTime;
 //writeln("Finished generating numbers in ", rngTime, " sec");
 
-forall i in D {
+forall i in D with (ref G, ref Permute_F, ref Permute_G) {
   Permute_F[i] = i;
   Permute_G[i] = i;
   G[i] = i % 10;

@@ -86,6 +86,20 @@ public:
     return chpl::hash(path_, firstLine_, firstColumn_, lastLine_, lastColumn_);
   }
 
+  /** True if this contains 'loc' or if this and 'loc' are equal. */
+  bool contains(const Location& loc) {
+    return firstLine() <= loc.firstLine() &&
+           firstColumn() <= loc.firstColumn() &&
+           lastLine() >= loc.lastLine() &&
+           lastColumn() >= loc.lastColumn();
+  }
+
+  inline bool operator>(const Location& rhs) {
+    if (firstLine() > rhs.firstLine()) return true;
+    return firstLine() == rhs.firstLine() &&
+           firstColumn() > rhs.firstColumn();
+  }
+
   void stringify(std::ostream& os, StringifyKind stringifyKind) const;
 
   // TODO: We could probably save some space by using a variable byte

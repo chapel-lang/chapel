@@ -67,7 +67,7 @@ module performance_cholesky_test {
 
     A = 0.0;
 
-    forall (i,j) in mat_dom do
+    forall (i,j) in mat_dom with (ref A) do
       A (i,j) = + reduce (  [k in mat_dom.dim (0) ]
     			    B (i, k) * B (j, k) );
 
@@ -122,8 +122,8 @@ module performance_cholesky_test {
 		( (n**3) / 3.0 )  / (10.0**6 * clock.elapsed () ) );
     }
 
-    forall j in mat_dom.dim (0) do
-      forall i in j+1 .. mat_dom.dim(0).high do
+    forall j in mat_dom.dim (0) with (ref L) do
+      forall i in j+1 .. mat_dom.dim(0).high with (ref L) do
 	L (i,j) = L (j,i);
     print_lower_triangle ( L );
 
@@ -151,8 +151,8 @@ module performance_cholesky_test {
 		( (n**3) / 3.0 )  / (10.0**6 * clock.elapsed () ) );
     }
 
-    forall j in mat_dom.dim (0) do
-      forall i in j+1 .. mat_dom.dim(0).high do
+    forall j in mat_dom.dim (0) with (ref L) do
+      forall i in j+1 .. mat_dom.dim(0).high with (ref L) do
 	L (i,j) = L (j,i);
     print_lower_triangle ( L );
 
@@ -180,8 +180,8 @@ module performance_cholesky_test {
 		( (n**3) / 3.0 )  / (10.0**6 * clock.elapsed () ) );
     }
 
-    forall j in mat_dom.dim (0) do
-      forall i in j+1 .. mat_dom.dim(0).high do
+    forall j in mat_dom.dim (0) with (ref L) do
+      forall i in j+1 .. mat_dom.dim(0).high with (ref L) do
 	L (i,j) = L (j,i);
     print_lower_triangle ( L );
 
@@ -208,8 +208,8 @@ module performance_cholesky_test {
 		( (n**3) / 3.0 )  / (10.0**6 * clock.elapsed () ) );
     }
 
-    forall j in mat_dom.dim (0) do
-      forall i in j+1 .. mat_dom.dim(0).high do
+    forall j in mat_dom.dim (0) with (ref L) do
+      forall i in j+1 .. mat_dom.dim(0).high with (ref L) do
 	L (i,j) = L (j,i);
 
     print_lower_triangle ( L );

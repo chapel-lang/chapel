@@ -63,8 +63,13 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 }
 
 
-int chpl_launch(int argc, char* argv[], int32_t numLocales) {
-  return chpl_launch_using_system(chpl_launch_create_command(argc, argv, numLocales),
+int chpl_launch(int argc, char* argv[], int32_t numLocales,
+                int32_t numLocalesPerNode) {
+  if (numLocalesPerNode > 1) {
+    chpl_launcher_no_colocales_error(NULL);
+  }
+  return chpl_launch_using_system(chpl_launch_create_command(argc, argv, numLocales,
+                                      numLocalesPerNode),
                                   argv[0]);
 }
 

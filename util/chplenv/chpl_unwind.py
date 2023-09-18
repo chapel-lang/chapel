@@ -23,8 +23,10 @@ def get():
                   "\nUse CHPL_UNWIND=system instead.", ValueError)
         elif val == 'system':
             return 'system'
-    return 'none'
-
+    if val:
+        return val
+    else:
+        return 'none'
 
 @memoize
 def get_uniq_cfg_path():

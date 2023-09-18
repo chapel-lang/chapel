@@ -82,7 +82,7 @@ proc readArray(filename) {
 proc SQR(const A)
 {
 	var R = A;
-	forall (i) in (A.domain) do R(i) *= R(i);
+	forall (i) in (A.domain) with (ref R) do R(i) *= R(i);
 	return R;
 }	
 

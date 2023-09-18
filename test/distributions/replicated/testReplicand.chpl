@@ -1,7 +1,7 @@
 use ReplicatedDist;
 
 var locD = {1..5};
-var D = locD dmapped Replicated();
+var D = locD dmapped replicatedDist();
 
 var A: [D] int;
 

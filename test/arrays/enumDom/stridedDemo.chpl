@@ -21,7 +21,7 @@ forall (a, i) in zip(A, 1..) do
   a = i;
 
 // parallel iteration
-forall c in meetingfree do
+forall c in meetingfree with (ref A) do
   A[c] = -A[c];
 
 writeln(A);

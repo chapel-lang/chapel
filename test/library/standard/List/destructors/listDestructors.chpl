@@ -13,13 +13,13 @@ record DummyRecord {
 
   proc init() {
     this.cid = createdRecords;
-    this.complete();
+    init this;
     createdRecords += 1;
   }
 
   proc init=(const ref other: DummyRecord) {
     this.cid = createdRecords;
-    this.complete();
+    init this;
     this.cpy.pushBack(other.cid);
     createdRecords += 1;
   }
@@ -38,7 +38,7 @@ class DummyClass {
 
   proc init() {
     this.cid = createdClasses;
-    this.complete();
+    init this;
     createdClasses += 1;
   }
 

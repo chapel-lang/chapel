@@ -13,12 +13,12 @@ const bl2 = new BlockDim(s2, -3..7);
 const bc1 = new BlockCyclicDim(s1, 1, 2);
 const bc2 = new BlockCyclicDim(s2, -1, 4);
 
-const BlBl = new dmap(new DimensionalDist2D(mylocs, bl1, bl2, "bl1,bl2"));
-const BlBc = new dmap(new DimensionalDist2D(mylocs, bl1, bc2, "bl1,bc2"));
-const BcBl = new dmap(new DimensionalDist2D(mylocs, bc1, bl2, "bc1,bl2"));
-const BcBc = new dmap(new DimensionalDist2D(mylocs, bc1, bc2, "bc1,bc2"));
+const BlBl = new dimensionalDist2D(mylocs, bl1, bl2, "bl1,bl2");
+const BlBc = new dimensionalDist2D(mylocs, bl1, bc2, "bl1,bc2");
+const BcBl = new dimensionalDist2D(mylocs, bc1, bl2, "bc1,bl2");
+const BcBc = new dimensionalDist2D(mylocs, bc1, bc2, "bc1,bc2");
 
-proc testDomainAPI2D(param lbl, DR: domain, idx, OOBidx1, OOBidx2, intDom) {
+proc testDomainAPI2D(param lbl, DR: domain(?), idx, OOBidx1, OOBidx2, intDom) {
   inline proc help(dd) {
     write("### ", dd.name, " ");
     doTestDomainAPI2D(lbl, DR dmapped dd, idx, OOBidx1, OOBidx2, intDom);

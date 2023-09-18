@@ -74,8 +74,8 @@ proc main() {
   while (maxDifference > tolerance) {
     // these two foralls:
     //   expectedValueFunction = mValueFunction dot transpose(mTransition)
-    forall nProductivity in 1..nGridProductivity {
-      forall nCapital in 1..nGridCapital {
+    forall nProductivity in 1..nGridProductivity with (ref expectedValueFunction) {
+      forall nCapital in 1..nGridCapital with (ref expectedValueFunction) {
         expectedValueFunction[nCapital, nProductivity] = 0.0;
 
         // TODO: Try to rewrite this as some kind of + reduce (thomasvandoren, 2014-07-02)

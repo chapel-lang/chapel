@@ -8,7 +8,7 @@ record SubTimer {
   var A : [D] stopwatch;
 
   proc init(names : string...) {
-    this.complete();
+    init this;
     for n in names do D.add(n);
   }
 
